@@ -20,6 +20,7 @@ use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
@@ -539,6 +540,76 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertCount( 1, $violations );
 		$this->assertSame( 'relation-target-not-found', $violations[0]->code );
 		$this->assertSame( 1, $violations[0]->valuePartIndex );
+	}
+
+	/**
+	 * Resolving a target where it is used costs a round trip apiece, paid serially by every Subject
+	 * that carries more than one relation.
+	 */
+	public function testResolvesEveryRelationTargetInOneLookup(): void {
+		$subjectLookup = $this->newSubjectLookup();
+		$validator = new SubjectValidator(
+			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes(),
+			subjectLookup: $subjectLookup,
+		);
+
+		$violations = $validator->validate(
+			new SubjectLabel( 'X' ),
+			new StatementList( [
+				$this->newRelationStatement( self::MATCHING_TARGET_ID, self::MISMATCHING_TARGET_ID ),
+				new Statement(
+					new PropertyName( 'Employers' ),
+					'relation',
+					new RelationValue(
+						TestRelation::build( targetId: self::NONEXISTENT_TARGET_ID ),
+						TestRelation::build( targetId: 'srt111111111ccc' ),
+					)
+				),
+			] ),
+			$this->newSchema( [
+				'Links' => $this->newRelationProperty(),
+				'Employers' => $this->newRelationProperty(),
+			] ),
+		);
+
+		$this->assertSame( 1, $subjectLookup->getSubjectsCallCount );
+
+		// Batching the resolution buys nothing if the targets are then fetched again where they are
+		// checked, which is what the per-target round trips this replaces looked like.
+		$this->assertSame( 0, $subjectLookup->getSubjectCallCount );
+
+		// Reading targets out of one map rather than resolving each where it is checked must leave
+		// the composed result alone. This is the only Subject here carrying relations under more
+		// than one property, so an id list that stops short of the later Statements' targets shows
+		// up here: those targets fall out of the map and report as not-found, turning a blocking
+		// mismatch into a non-blocking warning. Filtering the collected ids by the Schema is a
+		// different matter - it cannot reach a violation, so this assertion does not constrain it.
+		$this->assertEquals(
+			[
+				new Violation(
+					propertyName: new PropertyName( 'Links' ),
+					code: 'relation-target-schema-mismatch',
+					args: [ self::TARGET_SCHEMA, 'Company' ],
+					valuePartIndex: 1,
+					severity: Severity::Error,
+				),
+				new Violation(
+					propertyName: new PropertyName( 'Employers' ),
+					code: 'relation-target-not-found',
+					args: [ self::NONEXISTENT_TARGET_ID ],
+					valuePartIndex: 0,
+					severity: Severity::Warning,
+				),
+				new Violation(
+					propertyName: new PropertyName( 'Employers' ),
+					code: 'relation-target-schema-mismatch',
+					args: [ self::TARGET_SCHEMA, 'DecoySchema' ],
+					valuePartIndex: 1,
+					severity: Severity::Error,
+				),
+			],
+			$violations
+		);
 	}
 
 	// --- Helpers ---

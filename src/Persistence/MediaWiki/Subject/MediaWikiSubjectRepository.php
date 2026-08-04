@@ -13,6 +13,8 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
@@ -29,19 +31,22 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 	}
 
 	public function getSubject( SubjectId $subjectId ): ?Subject {
-		return $this->getContentBySubjectId( $subjectId )
-			?->getPageSubjects()->getAllSubjects()
-			->getSubject( $subjectId );
+		return $this->getSubjects( new SubjectIdList( [ $subjectId ] ) )->getSubject( $subjectId );
 	}
 
-	private function getContentBySubjectId( SubjectId $subjectId ): ?SubjectContent {
-		$pageId = $this->getPageIdForSubject( $subjectId );
+	public function getSubjects( SubjectIdList $subjectIds ): SubjectMap {
+		$subjects = new SubjectMap();
+		$idsByHostingPage = new SubjectIdsByHostingPage( $this->pageIdentifiersLookup );
 
-		if ( $pageId === null ) {
-			return null;
+		foreach ( $idsByHostingPage->group( $subjectIds ) as $pageId => $idsOnPage ) {
+			$pageSubjects = $this->getContentByPageId( new PageId( $pageId ) )?->getPageSubjects()->getAllSubjects();
+
+			if ( $pageSubjects !== null ) {
+				$subjects = $subjects->union( $pageSubjects->onlyWithIds( $idsOnPage ) );
+			}
 		}
 
-		return $this->getContentByPageId( $pageId );
+		return $subjects;
 	}
 
 	private function getPageIdForSubject( SubjectId $subjectId ): ?PageId {

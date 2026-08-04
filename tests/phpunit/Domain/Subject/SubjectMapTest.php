@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -122,6 +123,60 @@ class SubjectMapTest extends TestCase {
 		$this->assertEquals(
 			[ self::GUID_123, self::GUID_456 ],
 			$subjectMap->getIdsAsTextArray()
+		);
+	}
+
+	public function testOnlyWithIdsKeepsTheRequestedSubjects(): void {
+		$subject1 = TestSubject::build( self::GUID_123 );
+		$subject2 = TestSubject::build( self::GUID_456 );
+		$subject3 = TestSubject::build( self::GUID_789 );
+
+		$subjectMap = new SubjectMap( $subject1, $subject2, $subject3 );
+
+		$this->assertEquals(
+			new SubjectMap( $subject2 ),
+			$subjectMap->onlyWithIds( new SubjectIdList( [ $subject2->id ] ) )
+		);
+	}
+
+	public function testOnlyWithIdsSkipsIdsTheMapDoesNotHold(): void {
+		$subject1 = TestSubject::build( self::GUID_123 );
+
+		$subjectMap = new SubjectMap( $subject1 );
+
+		$this->assertEquals(
+			new SubjectMap( $subject1 ),
+			$subjectMap->onlyWithIds( new SubjectIdList( [
+				new SubjectId( self::GUID_456 ),
+				$subject1->id,
+				new SubjectId( self::GUID_789 ),
+			] ) )
+		);
+	}
+
+	public function testOnlyWithIdsOrdersByTheGivenIds(): void {
+		$subject1 = TestSubject::build( self::GUID_123 );
+		$subject2 = TestSubject::build( self::GUID_456 );
+		$subject3 = TestSubject::build( self::GUID_789 );
+
+		$subjectMap = new SubjectMap( $subject1, $subject2, $subject3 );
+
+		$this->assertEquals(
+			[ $subject3, $subject1 ],
+			$subjectMap->onlyWithIds( new SubjectIdList( [ $subject3->id, $subject1->id ] ) )->asArray()
+		);
+	}
+
+	public function testOnlyWithIdsDoesNotMutate(): void {
+		$subject1 = TestSubject::build( self::GUID_123 );
+		$subject2 = TestSubject::build( self::GUID_456 );
+
+		$subjectMap = new SubjectMap( $subject1, $subject2 );
+		$subjectMap->onlyWithIds( new SubjectIdList( [ $subject1->id ] ) );
+
+		$this->assertEquals(
+			new SubjectMap( $subject1, $subject2 ),
+			$subjectMap
 		);
 	}
 

@@ -7,10 +7,15 @@ namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 
 class InMemoryPageIdentifiersLookup implements PageIdentifiersLookup {
 
 	private array $pageIdentifiers = [];
+
+	public int $getPageIdsOfSubjectsCallCount = 0;
+
+	public int $getPageIdOfSubjectCallCount = 0;
 
 	/**
 	 * @param array<int, array{0: SubjectId, 1: PageIdentifiers}> $subjectIdsAndPageIdentifiers
@@ -25,8 +30,32 @@ class InMemoryPageIdentifiersLookup implements PageIdentifiersLookup {
 		$this->pageIdentifiers[$subjectId->text] = $pageIdentifiers;
 	}
 
+	/**
+	 * Counted separately from getPageIdsOfSubjects because the production lookup answers this one
+	 * by running the batch query, so a caller that resolves ids one at a time here is one graph
+	 * round trip per id there. Tests that pin batching assert this count is zero.
+	 */
 	public function getPageIdOfSubject( SubjectId $subjectId ): ?PageIdentifiers {
+		$this->getPageIdOfSubjectCallCount++;
+
 		return $this->pageIdentifiers[$subjectId->text] ?? null;
+	}
+
+	/**
+	 * @return array<string, PageIdentifiers>
+	 */
+	public function getPageIdsOfSubjects( SubjectIdList $subjectIds ): array {
+		$this->getPageIdsOfSubjectsCallCount++;
+
+		$found = [];
+
+		foreach ( $subjectIds->asStringArray() as $idText ) {
+			if ( array_key_exists( $idText, $this->pageIdentifiers ) ) {
+				$found[$idText] = $this->pageIdentifiers[$idText];
+			}
+		}
+
+		return $found;
 	}
 
 }

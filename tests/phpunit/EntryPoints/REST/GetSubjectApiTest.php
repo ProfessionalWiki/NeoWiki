@@ -370,8 +370,8 @@ JSON,
 	}
 
 	/**
-	 * PointInTimeSubjectLookup::getSubjectFromOtherPage() resolves a requested Subject via the
-	 * graph and reads a DIFFERENT page's revision content when the Subject isn't in the primary
+	 * PointInTimeSubjectLookup::getSubjects() resolves a requested Subject via the graph and reads
+	 * a DIFFERENT page's revision content when the Subject isn't in the primary
 	 * (caller-supplied) revision. The handler's revision gate only authorizes the primary
 	 * revision's page, so a caller can name a revision on a page they CAN read while asking for
 	 * a Subject that actually lives on a page they CANNOT read. GetSubjectQuery::pageIsReadable()

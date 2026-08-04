@@ -12,6 +12,8 @@ use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use Wikimedia\Rdbms\IConnectionProvider;
 
@@ -26,49 +28,52 @@ class PointInTimeSubjectLookup implements SubjectLookup {
 	}
 
 	public function getSubject( SubjectId $subjectId ): ?Subject {
-		return $this->getSubjectFromPrimaryRevision( $subjectId )
-			?? $this->getSubjectFromOtherPage( $subjectId );
+		return $this->getSubjects( new SubjectIdList( [ $subjectId ] ) )->getSubject( $subjectId );
 	}
 
-	private function getSubjectFromPrimaryRevision( SubjectId $subjectId ): ?Subject {
-		$content = $this->getSubjectContent( $this->primaryRevision );
+	public function getSubjects( SubjectIdList $subjectIds ): SubjectMap {
+		$subjects = $this->getSubjectsFromRevision( $this->primaryRevision, $subjectIds );
+		$idsByHostingPage = new SubjectIdsByHostingPage( $this->pageIdentifiersLookup );
+
+		foreach ( $idsByHostingPage->group( $this->idsMissingFrom( $subjects, $subjectIds ) ) as $pageId => $idsOnPage ) {
+			$revision = $this->getRevisionAtOrBefore( new PageId( $pageId ) );
+
+			if ( $revision !== null ) {
+				$subjects = $subjects->union( $this->getSubjectsFromRevision( $revision, $idsOnPage ) );
+			}
+		}
+
+		return $subjects;
+	}
+
+	private function getSubjectsFromRevision( RevisionRecord $revision, SubjectIdList $subjectIds ): SubjectMap {
+		$content = $this->getSubjectContent( $revision );
 
 		if ( $content === null ) {
-			return null;
+			return new SubjectMap();
 		}
 
-		return $content->getPageSubjects()->getAllSubjects()->getSubject( $subjectId );
+		return $content->getPageSubjects()->getAllSubjects()->onlyWithIds( $subjectIds );
 	}
 
-	private function getSubjectFromOtherPage( SubjectId $subjectId ): ?Subject {
-		$pageId = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId )?->getId();
+	private function idsMissingFrom( SubjectMap $subjects, SubjectIdList $subjectIds ): SubjectIdList {
+		return new SubjectIdList( array_filter(
+			$subjectIds->asArray(),
+			static fn ( SubjectId $subjectId ): bool => !$subjects->hasSubject( $subjectId )
+		) );
+	}
 
-		if ( $pageId === null ) {
-			return null;
-		}
-
-		$revisionId = $this->findRevisionAtOrBefore( $pageId );
+	private function getRevisionAtOrBefore( PageId $pageId ): ?RevisionRecord {
+		$revisionId = $this->findRevisionIdAtOrBefore( $pageId );
 
 		if ( $revisionId === null ) {
 			return null;
 		}
 
-		$revision = $this->revisionLookup->getRevisionById( $revisionId );
-
-		if ( $revision === null ) {
-			return null;
-		}
-
-		$content = $this->getSubjectContent( $revision );
-
-		if ( $content === null ) {
-			return null;
-		}
-
-		return $content->getPageSubjects()->getAllSubjects()->getSubject( $subjectId );
+		return $this->revisionLookup->getRevisionById( $revisionId );
 	}
 
-	private function findRevisionAtOrBefore( PageId $pageId ): ?int {
+	private function findRevisionIdAtOrBefore( PageId $pageId ): ?int {
 		$dbr = $this->connectionProvider->getReplicaDatabase();
 
 		$row = $dbr->newSelectQueryBuilder()

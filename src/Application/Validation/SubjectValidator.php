@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
@@ -37,11 +38,23 @@ readonly class SubjectValidator {
 			$violations[] = new Violation( propertyName: null, code: 'label-required', severity: Severity::Error );
 		}
 
+		// Resolved in one lookup ahead of the per-Statement pass: resolving each target where it is
+		// checked costs a round trip apiece, paid serially. Ids absent from the map resolved to no
+		// Subject. Where the Schema has drifted this reaches targets the pass below never checks:
+		// they cannot produce a violation, but they are not free either - the graph query stays one
+		// query however long the id list, while a target on a page no other target shares still
+		// costs that page's revision load and slot deserialization.
+		$relationTargets = $this->subjectLookup->getSubjects( $statements->getReferencedSubjects() );
+
 		foreach ( $statements->asArray() as $statement ) {
 			if ( $schema->hasProperty( $statement->getPropertyName() ) ) {
 				$violations = array_merge(
 					$violations,
-					$this->validateStatement( $statement, $schema->getProperty( $statement->getPropertyName() ) )
+					$this->validateStatement(
+						$statement,
+						$schema->getProperty( $statement->getPropertyName() ),
+						$relationTargets
+					)
 				);
 			}
 		}
@@ -52,7 +65,11 @@ readonly class SubjectValidator {
 	/**
 	 * @return Violation[]
 	 */
-	private function validateStatement( Statement $statement, PropertyDefinition $definition ): array {
+	private function validateStatement(
+		Statement $statement,
+		PropertyDefinition $definition,
+		SubjectMap $relationTargets
+	): array {
 		$propertyName = $statement->getPropertyName();
 
 		// Writer's-schema drift (ADR 11 / ADR 12): the Schema property's type
@@ -83,7 +100,7 @@ readonly class SubjectValidator {
 			$violations[] = $rawViolation->withPropertyName( $propertyName );
 		}
 
-		return array_merge( $violations, $this->validateRelationTargets( $statement, $definition ) );
+		return array_merge( $violations, $this->validateRelationTargets( $statement, $definition, $relationTargets ) );
 	}
 
 	/**
@@ -106,7 +123,11 @@ readonly class SubjectValidator {
 	 *
 	 * @return Violation[]
 	 */
-	private function validateRelationTargets( Statement $statement, PropertyDefinition $definition ): array {
+	private function validateRelationTargets(
+		Statement $statement,
+		PropertyDefinition $definition,
+		SubjectMap $relationTargets
+	): array {
 		$value = $statement->getValue();
 
 		if ( !$definition instanceof RelationProperty || !$value instanceof RelationValue ) {
@@ -120,7 +141,8 @@ readonly class SubjectValidator {
 				$relation,
 				$statement->getPropertyName(),
 				$definition->getTargetSchema(),
-				(int)$index
+				(int)$index,
+				$relationTargets
 			);
 
 			if ( $violation !== null ) {
@@ -140,9 +162,10 @@ readonly class SubjectValidator {
 		Relation $relation,
 		PropertyName $propertyName,
 		SchemaName $targetSchema,
-		int $valuePartIndex
+		int $valuePartIndex,
+		SubjectMap $relationTargets
 	): ?Violation {
-		$target = $this->subjectLookup->getSubject( $relation->targetId );
+		$target = $relationTargets->getSubject( $relation->targetId );
 
 		if ( $target === null ) {
 			return new Violation(

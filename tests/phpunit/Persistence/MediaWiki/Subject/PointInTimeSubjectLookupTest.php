@@ -12,6 +12,7 @@ use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PointInTimeSubjectLookup;
@@ -166,6 +167,99 @@ class PointInTimeSubjectLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertEquals(
 			$crossPageSubject,
 			$lookup->getSubject( new SubjectId( 'sPitTest1111117' ) )
+		);
+	}
+
+	public function testGetSubjectsResolvesSubjectsFromEveryHostingPageInOneLookup(): void {
+		$primarySubject = TestSubject::build( id: 'sPitBatch111111', label: new SubjectLabel( 'Primary' ) );
+		$firstShared = TestSubject::build( id: 'sPitBatch111112', label: new SubjectLabel( 'First shared' ) );
+		$secondShared = TestSubject::build( id: 'sPitBatch111113', label: new SubjectLabel( 'Second shared' ) );
+		$ownPageSubject = TestSubject::build( id: 'sPitBatch111114', label: new SubjectLabel( 'Own page' ) );
+
+		$sharedRevision = $this->createPageWithSubjects(
+			'PitTestBatchShared',
+			mainSubject: $firstShared,
+			childSubjects: new SubjectMap( $secondShared ),
+		);
+
+		$ownRevision = $this->createPageWithSubjects(
+			'PitTestBatchOwn',
+			mainSubject: $ownPageSubject,
+		);
+
+		$primaryRevision = $this->createPageWithSubjects(
+			'PitTestBatchPrimary',
+			mainSubject: $primarySubject,
+		);
+
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
+		$this->registerHostingPage( $pageIdentifiersLookup, $firstShared->id, $sharedRevision, 'PitTestBatchShared' );
+		$this->registerHostingPage( $pageIdentifiersLookup, $secondShared->id, $sharedRevision, 'PitTestBatchShared' );
+		$this->registerHostingPage( $pageIdentifiersLookup, $ownPageSubject->id, $ownRevision, 'PitTestBatchOwn' );
+
+		$subjects = $this->newLookup( $primaryRevision, $pageIdentifiersLookup )->getSubjects(
+			new SubjectIdList( [
+				$primarySubject->id,
+				$firstShared->id,
+				$ownPageSubject->id,
+				$secondShared->id,
+				new SubjectId( 'sPitBatch119999' ),
+			] )
+		);
+
+		$this->assertEqualsCanonicalizing(
+			[ $primarySubject, $firstShared, $secondShared, $ownPageSubject ],
+			$subjects->asArray()
+		);
+
+		$this->assertSame( 1, $pageIdentifiersLookup->getPageIdsOfSubjectsCallCount );
+
+		// Keeping the batch call and resolving the ids again one at a time would leave the count
+		// above at one while costing a graph round trip per id, since the production lookup answers
+		// getPageIdOfSubject by running the batch query.
+		$this->assertSame( 0, $pageIdentifiersLookup->getPageIdOfSubjectCallCount );
+	}
+
+	public function testGetSubjectsOmitsSubjectsSharingAPageWithARequestedOne(): void {
+		$requestedOnPrimary = TestSubject::build( id: 'sPitSubset11111', label: new SubjectLabel( 'Requested on primary' ) );
+		$decoyOnPrimary = TestSubject::build( id: 'sPitSubset11112', label: new SubjectLabel( 'Decoy on primary' ) );
+		$requestedOnOther = TestSubject::build( id: 'sPitSubset11113', label: new SubjectLabel( 'Requested on other' ) );
+		$decoyOnOther = TestSubject::build( id: 'sPitSubset11114', label: new SubjectLabel( 'Decoy on other' ) );
+
+		$otherRevision = $this->createPageWithSubjects(
+			'PitTestSubsetOther',
+			mainSubject: $requestedOnOther,
+			childSubjects: new SubjectMap( $decoyOnOther ),
+		);
+
+		$primaryRevision = $this->createPageWithSubjects(
+			'PitTestSubsetPrimary',
+			mainSubject: $requestedOnPrimary,
+			childSubjects: new SubjectMap( $decoyOnPrimary ),
+		);
+
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
+		$this->registerHostingPage( $pageIdentifiersLookup, $requestedOnOther->id, $otherRevision, 'PitTestSubsetOther' );
+
+		$subjects = $this->newLookup( $primaryRevision, $pageIdentifiersLookup )->getSubjects(
+			new SubjectIdList( [ $requestedOnPrimary->id, $requestedOnOther->id ] )
+		);
+
+		$this->assertSame(
+			[ 'sPitSubset11111', 'sPitSubset11113' ],
+			$subjects->getIdsAsTextArray()
+		);
+	}
+
+	private function registerHostingPage(
+		InMemoryPageIdentifiersLookup $pageIdentifiersLookup,
+		SubjectId $subjectId,
+		RevisionRecord $revision,
+		string $pageName
+	): void {
+		$pageIdentifiersLookup->addIdentifiers(
+			$subjectId,
+			new PageIdentifiers( new PageId( $revision->getPage()->getId() ), $pageName, 0 )
 		);
 	}
 
