@@ -63,12 +63,15 @@ sync, which covers both a failed run and one that finished having left pages beh
 resume; rebuild the store for the second.
 
 A rebuild killed outright — `kill -9`, or the machine going down — leaves its run recorded as still going, and every
-later rebuild of that store refuses to start while it is. Release it by cancelling it on
+later rebuild of that store refuses to start while it is. So does a background rebuild whose first batch never
+reached the job queue, or whose job the queue lost: that one is left queued rather than running, and blocks the store
+just as hard. Release it by cancelling it on
 [Special:GraphStores](#background-rebuilds), which keeps the cursor `--resume` continues from. When the wiki is out of
 reach, record the run as cancelled directly:
 
 ```sql
-UPDATE neowiki_rebuild_runs SET nwrr_status = 'cancelled' WHERE nwrr_store = '<name>' AND nwrr_status = 'running';
+UPDATE neowiki_rebuild_runs SET nwrr_status = 'cancelled'
+WHERE nwrr_store = '<name>' AND nwrr_status IN ( 'running', 'queued' );
 ```
 
 ## Background rebuilds
