@@ -36,14 +36,28 @@ class MappingChangeRebuilder {
 	}
 
 	/**
+	 * The stores whose projection this Mapping page defines. Each of them has to be started in a
+	 * transaction round of its own: starting one takes a database lock that flushes the connection's
+	 * snapshot, which a connection still holding the previous store's writes may not do.
+	 *
 	 * @param string $mappingName The name of the Mapping page that was saved or deleted, normalised.
+	 *
+	 * @return string[] Store names
 	 */
-	public function onMappingChanged( string $mappingName ): void {
+	public function storesHoldingProjection( string $mappingName ): array {
+		$stores = [];
+
 		foreach ( $this->projectionsByStore as $storeName => $projection ) {
 			if ( $projection === $mappingName ) {
-				$this->restartRebuildOf( (string)$storeName );
+				$stores[] = (string)$storeName;
 			}
 		}
+
+		return $stores;
+	}
+
+	public function onMappingChanged( string $storeName ): void {
+		$this->restartRebuildOf( $storeName );
 	}
 
 	/**

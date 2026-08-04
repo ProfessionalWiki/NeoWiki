@@ -327,9 +327,16 @@ class NeoWikiHooks {
 
 		$mappingName = $title->getText();
 
-		DeferredUpdates::addCallableUpdate( static function () use ( $mappingName ): void {
-			self::rebuildStoresHoldingMapping( $mappingName );
-		} );
+		// One update per store, so each takes its start lock on a connection with nothing pending. Sharing
+		// a round, the second store's lock would find the first store's writes still there and throw.
+		foreach (
+			NeoWikiExtension::getInstance()->newMappingChangeRebuilder()->storesHoldingProjection( $mappingName )
+			as $storeName
+		) {
+			DeferredUpdates::addCallableUpdate( static function () use ( $storeName, $mappingName ): void {
+				self::rebuildStoreHoldingMapping( $storeName, $mappingName );
+			} );
+		}
 	}
 
 	/**
@@ -338,14 +345,14 @@ class NeoWikiHooks {
 	 * reported rather than allowed to take the rest of the deferred work down with it, and
 	 * Special:GraphStores still shows the store as stale.
 	 */
-	private static function rebuildStoresHoldingMapping( string $mappingName ): void {
+	private static function rebuildStoreHoldingMapping( string $storeName, string $mappingName ): void {
 		try {
-			NeoWikiExtension::getInstance()->newMappingChangeRebuilder()->onMappingChanged( $mappingName );
+			NeoWikiExtension::getInstance()->newMappingChangeRebuilder()->onMappingChanged( $storeName );
 		} catch ( Throwable $e ) {
 			LoggerFactory::getInstance( 'NeoWiki' )->error(
-				'NeoWiki could not rebuild the graph stores holding the projection Mapping page "'
-				. $mappingName . '" defines, so they still hold the old vocabulary. Rebuild them from '
-				. 'Special:GraphStores. Underlying error: '
+				'NeoWiki could not rebuild graph store "' . $storeName . '", which holds the projection '
+				. 'Mapping page "' . $mappingName . '" defines, so it still holds the old vocabulary. '
+				. 'Rebuild it from Special:GraphStores. Underlying error: '
 				. BackendFailureMessage::withoutCredentials( $e->getMessage() ),
 				[ 'exception' => $e, 'mapping' => $mappingName ]
 			);
