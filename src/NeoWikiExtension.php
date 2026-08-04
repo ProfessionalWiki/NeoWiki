@@ -292,26 +292,41 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Hook-facing write path (edit/delete/undelete). Each backend is isolated and logged, so a
-	 * projection failure never aborts the triggering user operation and one failing backend does not
-	 * starve the others. See FailureIsolatingGraphDatabasePlugin.
+	 * Hook-facing write path (edit/delete/undelete). Both halves of a projection are isolated and
+	 * logged, so a failure never aborts the triggering user operation: each backend, so one failing
+	 * backend does not starve the others, and the page-properties build, since it parses the page and
+	 * runs extension-contributed providers. See FailureIsolatingGraphDatabasePlugin and
+	 * FailureIsolatingPagePropertiesSource.
 	 */
 	public function getStoreContentUC(): OnRevisionCreatedHandler {
-		return $this->newStoreContentHandler( $this->getIsolatingGraphDatabasePlugin() );
+		return $this->newStoreContentHandler(
+			$this->getIsolatingGraphDatabasePlugin(),
+			new FailureIsolatingPagePropertiesSource(
+				$this->getPagePropertiesBuilder(),
+				LoggerFactory::getInstance( 'NeoWiki' )
+			)
+		);
 	}
 
 	/**
 	 * Maintenance rebuild path (RebuildGraphDatabases). Failures propagate so the script reports which
-	 * pages failed to reconcile, rather than the hook path's per-plugin isolation swallowing them.
+	 * pages failed to reconcile and why, rather than the hook path's isolation swallowing them and
+	 * leaving the operator a skip they cannot act on.
 	 */
 	private function newRebuildStoreContentHandler(): OnRevisionCreatedHandler {
-		return $this->newStoreContentHandler( $this->getGraphDatabasePlugin() );
+		return $this->newStoreContentHandler(
+			$this->getGraphDatabasePlugin(),
+			$this->getPagePropertiesBuilder()
+		);
 	}
 
-	private function newStoreContentHandler( GraphDatabasePlugin $graphDatabasePlugin ): OnRevisionCreatedHandler {
+	private function newStoreContentHandler(
+		GraphDatabasePlugin $graphDatabasePlugin,
+		PagePropertiesSource $pagePropertiesSource
+	): OnRevisionCreatedHandler {
 		return new OnRevisionCreatedHandler(
 			$graphDatabasePlugin,
-			$this->getPagePropertiesBuilder(),
+			$pagePropertiesSource,
 			LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
