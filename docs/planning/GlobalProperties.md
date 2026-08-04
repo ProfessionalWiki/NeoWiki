@@ -70,6 +70,13 @@ terms during import/export. ECHOLOT T2.3 talks about "model-model mappings" betw
 system to adopt the same model. A mapping configuration like "Person.Name maps to `foaf:name`" and "City.Name
 maps to `dcterms:title`" achieves interoperability without changing the data model.
 
+**Sub-property declarations can keep local distinctions while answering ontology-term queries.** Instead of only
+renaming local properties to ontology terms, the projection can emit them as distinct terms declared
+`rdfs:subPropertyOf` the ontology term — `Person.Name` and `City.Name` stay separate in the exported RDF while both
+answer a `foaf:name` query. The unification exists only in the projection, and only for consumers that follow the
+declaration: an entailment-aware store applies it automatically, while on NeoWiki's own SPARQL endpoints (neither
+QLever nor Oxigraph does RDFS reasoning) queries must traverse it explicitly with a property path.
+
 ## Summary
 
 The main argument for global properties is direct alignment with RDF ontologies. The main argument against is
