@@ -4,12 +4,16 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
+use Exception;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Wikimedia\ParamValidator\ParamValidator;
+use Wikimedia\Rdbms\DBError;
+use Wikimedia\RequestTimeout\TimeoutException;
 
 /**
  * Exports one page's Subjects and metadata as RDF. The `projection` query parameter selects the
@@ -53,9 +57,28 @@ class ExportPageRdfApi extends SimpleHandler {
 
 		$format = $this->resolveFormat();
 
-		$document = $extension
-			->newRdfPageExporterForProjection( $resolution->projection )
-			->exportByPageId( $page, $format );
+		// Building the page's properties parses it and runs the registered Page Property Providers,
+		// either of which can throw for a page MediaWiki can no longer fully handle — one whose content
+		// model an uninstalled extension owned, say. Every page has an export now, so such a page is
+		// reachable here, and letting the throwable out turns the documented 404 into a 500 carrying the
+		// exception message. Report it as no data, the same answer the caller gets for the other page
+		// states this export cannot describe. Which throwables are let through matches
+		// FailureIsolatingGraphDatabasePlugin: a request timeout must still abort the request, and a
+		// wiki-database error belongs to the request rather than to this page.
+		try {
+			$document = $extension
+				->newRdfPageExporterForProjection( $resolution->projection )
+				->exportByPageId( $page, $format );
+		} catch ( TimeoutException | DBError $e ) {
+			throw $e;
+		} catch ( Exception $e ) {
+			LoggerFactory::getInstance( 'NeoWiki' )->error(
+				'NeoWiki could not export page {pageId} as RDF: {message}',
+				[ 'pageId' => $pageId, 'message' => $e->getMessage(), 'exception' => $e ]
+			);
+
+			return $this->noDataResponse( $pageId );
+		}
 
 		if ( $document === null ) {
 			return $this->noDataResponse( $pageId );
