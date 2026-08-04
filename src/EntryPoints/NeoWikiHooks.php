@@ -283,7 +283,29 @@ class NeoWikiHooks {
 	): void {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision, $user );
 		$wikiPage->doPurge(); // clear cache
-		self::rebuildStoresHoldingChangedMapping( $wikiPage->getTitle() );
+
+		if ( self::changedTheContent( $revision ) ) {
+			self::rebuildStoresHoldingChangedMapping( $wikiPage->getTitle() );
+		}
+	}
+
+	/**
+	 * Whether this revision says anything new. Protecting or unprotecting a page, or changing when that
+	 * expires, inserts a revision carrying the content of the one before it, and this hook fires for
+	 * those as for any other. A Mapping page is what a projection is defined by, so reading one of them
+	 * as a definition change throws away an in-flight rebuild and reprojects the wiki to reach the same
+	 * graph it already had.
+	 */
+	private static function changedTheContent( RevisionRecord $revision ): bool {
+		$parentId = $revision->getParentId();
+
+		if ( $parentId === null || $parentId === 0 ) {
+			return true;
+		}
+
+		$parent = MediaWikiServices::getInstance()->getRevisionLookup()->getRevisionById( $parentId );
+
+		return $parent === null || $parent->getSha1() !== $revision->getSha1();
 	}
 
 	/**
