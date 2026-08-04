@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\GraphDatabase;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphStoreName;
 use Psr\Log\Test\TestLogger;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 
@@ -71,7 +72,7 @@ class GraphDatabasePluginRegistryTest extends TestCase {
 
 		$registry->addPlugin( 'neo4j', new SpyGraphDatabasePlugin() );
 
-		$this->assertTrue( $logger->hasWarningThatContains( 'already taken' ) );
+		$this->assertTrue( $logger->hasWarningThatContains( 'held by a bundled backend' ) );
 	}
 
 	public function testReservingANameLeavesTheOtherNamesFree(): void {
@@ -82,6 +83,41 @@ class GraphDatabasePluginRegistryTest extends TestCase {
 		$registry->addPlugin( 'redherb', $plugin );
 
 		$this->assertSame( [ 'redherb' => $plugin ], $registry->getPlugins() );
+	}
+
+	/**
+	 * A name the run records cannot hold whole is cut to fit when a run is filed, and every lookup then
+	 * passes the uncut name and matches nothing — so the store's rebuilds never find their own records.
+	 */
+	public function testAPluginWhoseNameTheRunRecordsCannotHoldIsIgnored(): void {
+		$registry = new GraphDatabasePluginRegistry();
+
+		$registry->addPlugin( str_repeat( 'a', GraphStoreName::MAX_LENGTH + 1 ), new SpyGraphDatabasePlugin() );
+
+		$this->assertSame( [], $registry->getPlugins() );
+	}
+
+	public function testAPluginNamedExactlyAsLongAsTheRunRecordsAllowIsRegistered(): void {
+		$registry = new GraphDatabasePluginRegistry();
+		$name = str_repeat( 'a', GraphStoreName::MAX_LENGTH );
+
+		$registry->addPlugin( $name, new SpyGraphDatabasePlugin() );
+
+		$this->assertSame( [ $name ], array_keys( $registry->getPlugins() ) );
+	}
+
+	/**
+	 * The bundled backends' names are reserved whatever the casing, as they are for a configured store:
+	 * a plugin registered as "Neo4j" would otherwise stand beside the bundled one and read as it
+	 * wherever a store name is written or reported.
+	 */
+	public function testAPluginTakingAReservedNameInAnotherCasingIsIgnored(): void {
+		$registry = new GraphDatabasePluginRegistry();
+		$registry->reserveNames( 'neo4j' );
+
+		$registry->addPlugin( 'Neo4j', new SpyGraphDatabasePlugin() );
+
+		$this->assertSame( [], $registry->getPlugins() );
 	}
 
 	public function testEmptyRegistryHasNoPlugins(): void {
