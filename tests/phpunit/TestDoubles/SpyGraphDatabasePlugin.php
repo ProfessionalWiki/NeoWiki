@@ -42,17 +42,26 @@ class SpyGraphDatabasePlugin implements GraphDatabasePlugin {
 	 *        store raises about a page it cannot accept.
 	 * @param Closure(): void|null $whileSavingEachPage Run as each page is saved, standing in for whatever
 	 *        else the wiki does during the seconds a real store spends on a batch.
+	 * @param Throwable|null $whenReopened What opening it throws every time after the first, standing in
+	 *        for a store that was there when the rebuild started and has gone since. A rebuild that has
+	 *        just watched a whole batch fail reopens the store to tell one that has gone from one refusing
+	 *        the pages it was sent, so this is what tells the two apart in a test.
 	 */
 	public function __construct(
 		private readonly array $refusedPageIds = [],
 		private readonly bool $refusesDeletions = false,
 		private readonly ?Throwable $failure = null,
 		private readonly ?Closure $whileSavingEachPage = null,
+		private readonly ?Throwable $whenReopened = null,
 	) {
 	}
 
 	public function initialize(): void {
 		$this->initializeCount++;
+
+		if ( $this->whenReopened !== null && $this->initializeCount > 1 ) {
+			throw $this->whenReopened;
+		}
 	}
 
 	public function savePage( Page $page ): void {

@@ -166,7 +166,7 @@ class GraphRebuildExecutor {
 		}
 
 		return match ( $current->phase ) {
-			RebuildPhase::Pages => $this->projectPageBatch( $current, $pageRebuilder, $batchSize, $observer ),
+			RebuildPhase::Pages => $this->projectPageBatch( $current, $store, $pageRebuilder, $batchSize, $observer ),
 			RebuildPhase::Deletions => $this->removePageBatch( $current, $store, $batchSize, $observer ),
 		};
 	}
@@ -202,6 +202,7 @@ class GraphRebuildExecutor {
 	 */
 	private function projectPageBatch(
 		RebuildRun $run,
+		GraphDatabasePlugin $store,
 		SubjectPageRebuilder $pageRebuilder,
 		int $batchSize,
 		RebuildBatchObserver $observer
@@ -228,8 +229,12 @@ class GraphRebuildExecutor {
 			}
 		}
 
-		if ( self::storeLooksGone( count( $pageIds ), $batchSize, $offered, count( $failures ) ) ) {
-			return $this->failWholeBatch( $run, $failures );
+		if ( self::everyOfferedPageFailed( count( $pageIds ), $batchSize, $offered, count( $failures ) ) ) {
+			$storeFailure = $this->whyTheStoreCannotBeReached( $store );
+
+			if ( $storeFailure !== null ) {
+				return $this->failWholeBatch( $run, $storeFailure );
+			}
 		}
 
 		$this->reportFailedPages( 'project', $failures, $observer );
@@ -241,19 +246,21 @@ class GraphRebuildExecutor {
 	}
 
 	/**
-	 * Whether a batch failing says something about the store rather than about its pages. Three things
-	 * have to hold at once, and each of them rules out a way of being wrong:
+	 * Whether a batch failed in a way worth asking the store about. Three things have to hold at once,
+	 * and each of them rules out a way of being wrong:
 	 *
 	 * - The batch was a full one. A short batch is the tail of the walk, where a handful of permanently
-	 *   unprojectable pages is enough to fail every page there is — and reading that as the store having
-	 *   gone would leave `--resume` retrying those same pages for ever.
+	 *   unprojectable pages is enough to fail every page there is.
 	 * - The store was offered enough of it for a wholly failed batch to mean anything. One page failing is
 	 *   one page failing, whether the batch held only it or the rest of the batch never reached the store.
 	 * - Every page the store was offered failed. Counted over those rather than over the batch, because a
 	 *   page the walk found and the wiki has since dropped never reached the store: letting one of those
-	 *   stand for a page the store took would walk the whole wiki one failure at a time.
+	 *   stand for a page the store took would ask about the store once per page.
+	 *
+	 * A batch that fails this way still says nothing on its own about whose fault it is — that is what
+	 * whyTheStoreCannotBeReached() settles.
 	 */
-	private static function storeLooksGone(
+	private static function everyOfferedPageFailed(
 		int $batchPageCount,
 		int $batchSize,
 		int $offeredPageCount,
@@ -265,19 +272,42 @@ class GraphRebuildExecutor {
 	}
 
 	/**
-	 * @param array<int, Throwable> $failures Keys are page ids
+	 * Asks a store that has just refused a whole batch whether it is still there, because the batch alone
+	 * cannot say: a store that has gone refuses everything sent to it, and so does a store that is up and
+	 * holding a run of pages it will not take — a family of bulk-imported pages too large for it, say.
+	 *
+	 * Counting the failures cannot tell those apart, and reading the run of pages as the store having gone
+	 * is the worse way to be wrong: the cursor is rewound to the batch, so every later attempt walks back
+	 * into the same pages and stops there, and a store rebuilt only from the wiki never gets past them.
+	 *
+	 * Opening the store is what the plugin contract already offers for this. It is idempotent, callers are
+	 * asked to be free to repeat it, and a rebuild already reads a store whose initialize() throws as one
+	 * it cannot reach. This costs one round trip per wholly failed batch, which is a batch that has just
+	 * cost as many failed round trips as it held pages.
+	 *
+	 * @return ?Throwable Why the store could not be reached, or null when it answered.
 	 */
-	private function failWholeBatch( RebuildRun $run, array $failures ): RebuildRun {
-		$failure = $failures[array_key_last( $failures )];
+	private function whyTheStoreCannotBeReached( GraphDatabasePlugin $store ): ?Throwable {
+		try {
+			$store->initialize();
+		} catch ( TimeoutException | DBError $e ) {
+			throw $e;
+		} catch ( Exception $e ) {
+			return $e;
+		}
 
+		return null;
+	}
+
+	private function failWholeBatch( RebuildRun $run, Throwable $storeFailure ): RebuildRun {
 		// The run rather than its progress, so the cursor stays where this batch began and a resumed run
 		// retries it rather than walking past pages nothing is known to be wrong with.
 		return $this->failRun(
 			$run,
-			'Every page of a batch failed, so the store is treated as gone rather than its pages as '
-				. 'unprojectable. Underlying error: '
-				. BackendFailureMessage::withoutCredentials( $failure->getMessage() ),
-			$failure
+			'Every page of a batch failed and the store could not be opened, so it is treated as gone '
+				. 'rather than its pages as unprojectable. Underlying error: '
+				. BackendFailureMessage::withoutCredentials( $storeFailure->getMessage() ),
+			$storeFailure
 		);
 	}
 
@@ -371,8 +401,12 @@ class GraphRebuildExecutor {
 
 		// Every page of a deletion batch is offered to the store: there is nothing to read off the wiki
 		// first, so none of them can be skipped the way a page the wiki has dropped is while projecting.
-		if ( self::storeLooksGone( count( $pageIds ), $batchSize, count( $pageIds ), count( $failures ) ) ) {
-			return $this->failWholeBatch( $run, $failures );
+		if ( self::everyOfferedPageFailed( count( $pageIds ), $batchSize, count( $pageIds ), count( $failures ) ) ) {
+			$storeFailure = $this->whyTheStoreCannotBeReached( $store );
+
+			if ( $storeFailure !== null ) {
+				return $this->failWholeBatch( $run, $storeFailure );
+			}
 		}
 
 		$this->reportFailedPages( 'remove', $failures, $observer );
