@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence;
 use GenerateSchemaChangeSql;
 use GenerateSchemaSql;
 use MediaWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphStoreName;
 
 /**
  * The per-DBMS SQL that update.php applies is generated from the abstract schema and committed
@@ -16,6 +17,28 @@ use MediaWikiIntegrationTestCase;
  * @coversNothing
  */
 class RebuildRunsSchemaTest extends MediaWikiIntegrationTestCase {
+
+	/**
+	 * The longest name a store may be called and the width of the column its runs are filed under are
+	 * declared in two places that know nothing about each other. Narrowing the column alone would leave
+	 * accepted names the records cannot hold whole, and every lookup for such a store would then match
+	 * nothing. Read off the abstract schema rather than off a per-DBMS file, so this holds wherever the
+	 * suite runs — only MySQL materialises the width at all.
+	 */
+	public function testTheStoreNameLimitIsTheWidthOfTheColumnItIsFiledUnder(): void {
+		$schema = json_decode(
+			(string)file_get_contents( dirname( __DIR__, 3 ) . '/sql/neowiki_rebuild_runs.json' ),
+			true
+		);
+
+		$columns = array_column( $schema[0]['columns'], null, 'name' );
+
+		$this->assertSame(
+			GraphStoreName::MAX_LENGTH,
+			$columns['nwrr_store']['type'] === 'binary' ? $columns['nwrr_store']['options']['length'] : null,
+			'GraphStoreName::MAX_LENGTH and the nwrr_store column width have to agree'
+		);
+	}
 
 	/**
 	 * @dataProvider databaseTypeProvider
