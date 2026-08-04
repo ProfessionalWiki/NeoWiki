@@ -18,6 +18,9 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\Domain\Rdf\ParsedRdf;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingPagePropertyProvider;
+use RuntimeException;
+use Wikimedia\Rdbms\DBUnexpectedError;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportPageRdfApi
@@ -206,6 +209,37 @@ JSON
 			'No NeoWiki data found for page: ' . $this->pageId,
 			$response->getBody()->getContents()
 		);
+	}
+
+	/**
+	 * A page whose properties cannot be built is one more page state this export cannot describe, so it
+	 * gets the same answer as the others rather than a 500 carrying the exception message.
+	 */
+	public function testPageWhosePropertiesCannotBeBuiltIsReportedAsNoData(): void {
+		$this->registerPagePropertyProviders( new ThrowingPagePropertyProvider(
+			Title::newFromID( $this->pageId )->getPrefixedText(),
+			new RuntimeException( 'the provider is down' )
+		) );
+
+		$response = $this->export();
+
+		$this->assertSame( 404, $response->getStatusCode() );
+		$this->assertStringNotContainsString( 'the provider is down', $response->getBody()->getContents() );
+	}
+
+	/**
+	 * A wiki-database error belongs to the request rather than to this page, so it must not be reported
+	 * as the page having no data.
+	 */
+	public function testDatabaseFailureIsNotReportedAsNoData(): void {
+		$this->registerPagePropertyProviders( new ThrowingPagePropertyProvider(
+			Title::newFromID( $this->pageId )->getPrefixedText(),
+			new DBUnexpectedError( null, 'the database went away' )
+		) );
+
+		$this->expectException( DBUnexpectedError::class );
+
+		$this->export();
 	}
 
 	public function testPageReadableByANonUltimateAuthorityIsExported(): void {
