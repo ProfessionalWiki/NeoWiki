@@ -111,6 +111,20 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
+	 * Protecting a page inserts a revision carrying the content of the one before it. Read as a
+	 * definition change, that throws away whatever rebuild the store had going and starts the wiki over
+	 * from the first page to reach the graph it already had.
+	 */
+	public function testProtectingAMappingLeavesTheRebuildItsStoreAlreadyHadGoing(): void {
+		$this->createMapping( self::PROJECTION, self::MAPPING_JSON );
+		$firstRun = $this->activeRunOf( self::MAPPED_STORE );
+
+		$this->protectMapping( self::PROJECTION );
+
+		$this->assertSame( $firstRun?->id, $this->activeRunOf( self::MAPPED_STORE )?->id );
+	}
+
+	/**
 	 * NeoWiki's own code defines the native projection, so creating a page that happens to be called
 	 * Mapping:Native changes nothing about what a store holding it should contain.
 	 */
@@ -230,6 +244,21 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 
 	private function newRunRepository(): RebuildRunRepository {
 		return NeoWikiExtension::getInstance()->newRebuildRunRepository();
+	}
+
+	private function protectMapping( string $name ): void {
+		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle(
+			Title::newFromText( $name, NeoWikiExtension::NS_MAPPING )
+		);
+		$status = $page->doUpdateRestrictions(
+			[ 'edit' => 'sysop' ],
+			[],
+			$cascade,
+			'test protection',
+			$this->getTestSysop()->getUser()
+		);
+
+		$this->assertStatusGood( $status );
 	}
 
 	private function deleteMapping( string $name ): void {
