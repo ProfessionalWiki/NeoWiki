@@ -56,6 +56,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	private const STORE = 'scoped-store';
 	private const OTHER_STORE = 'other-store';
 	private const WIKI_DATABASE_FAILURE_MESSAGE = 'the wiki database is gone';
+	private const STORE_IS_GONE_MESSAGE = 'the store is not answering';
 	private const PAGE_ID_THE_WIKI_NO_LONGER_HAS = 987654;
 	private const OTHER_PAGE_ID_THE_WIKI_NO_LONGER_HAS = 987655;
 	private const PASSWORD = 'sekrit';
@@ -475,17 +476,53 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * Nothing about a store that is answering makes a whole batch of unrelated pages fail at once, so
-	 * that is read as the store having gone rather than as a wiki full of unprojectable pages.
+	 * A whole batch failing is read as the store having gone only once the store has been asked and could
+	 * not be opened either.
 	 */
-	public function testAStoreThatFailsEveryPageOfABatchFailsTheRun(): void {
+	public function testAStoreThatFailsEveryPageOfABatchAndCannotBeOpenedFailsTheRun(): void {
 		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four' );
-		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: $pageIds ) );
+		$this->registerStore( self::newStoreThatHasGone( refusedPageIds: $pageIds ) );
 
 		$run = $this->rebuild( batchSize: 2 );
 
 		$this->assertSame( RebuildStatus::Failed, $run->status );
-		$this->assertStringContainsString( SpyGraphDatabasePlugin::FAILURE_MESSAGE, (string)$run->error );
+		$this->assertStringContainsString( self::STORE_IS_GONE_MESSAGE, (string)$run->error );
+	}
+
+	/**
+	 * A store that is up and holding a run of pages it will not take refuses a whole batch exactly as a
+	 * store that has gone does, and reading that as the store having gone rewinds the cursor to the batch,
+	 * so every later attempt walks back into the same pages and stops there. The pages are counted and
+	 * reported instead, and the walk goes on past them.
+	 */
+	public function testAStoreThatStillOpensWalksPastAWholeBatchItRefused(): void {
+		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four' );
+		$store = new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[0], $pageIds[1] ] );
+		$this->registerStore( $store );
+
+		$run = $this->rebuild( batchSize: 2 );
+
+		$this->assertSame( RebuildStatus::Succeeded, $run->status );
+		$this->assertSame( 2, $run->failed, 'the refused pages are counted against the wiki, not the store' );
+		$this->assertSame(
+			[ $pageIds[2], $pageIds[3] ],
+			self::savedPageIds( $store ),
+			'the pages behind the refused batch are still projected'
+		);
+	}
+
+	public function testAWholeBatchAStoreRefusedWhileStillOpeningIsReportedPageByPage(): void {
+		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four' );
+		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[0], $pageIds[1] ] ) );
+		$observer = new SpyRebuildBatchObserver();
+
+		$this->rebuild( batchSize: 2, observer: $observer );
+
+		$this->assertSame(
+			[ $pageIds[0], $pageIds[1] ],
+			$observer->failedPageIds,
+			'the operator is told which pages the store would not take'
+		);
 	}
 
 	/**
@@ -494,7 +531,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	 */
 	public function testARunEndedByAWholeBatchFailingIsRewoundToThatBatch(): void {
 		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four' );
-		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[2], $pageIds[3] ] ) );
+		$this->registerStore( self::newStoreThatHasGone( refusedPageIds: [ $pageIds[2], $pageIds[3] ] ) );
 
 		$run = $this->rebuild( batchSize: 2 );
 
@@ -505,7 +542,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 	public function testAStoreThatFailsEveryPageOfABatchIsRetriedFromThereOnResume(): void {
 		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four' );
-		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[2], $pageIds[3] ] ) );
+		$this->registerStore( self::newStoreThatHasGone( refusedPageIds: [ $pageIds[2], $pageIds[3] ] ) );
 		$this->rebuild( batchSize: 2 );
 
 		$recoveredStore = new SpyGraphDatabasePlugin();
@@ -537,7 +574,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	 */
 	public function testAPageTheWikiDroppedDoesNotSpareAStoreThatFailedEveryPageItWasOffered(): void {
 		$pageIds = $this->createSubjectPages( 'One', 'Two' );
-		$store = new SpyGraphDatabasePlugin( refusedPageIds: $pageIds );
+		$store = self::newStoreThatHasGone( refusedPageIds: $pageIds );
 
 		$run = $this->executeOver(
 			new InMemorySubjectPageIdsLookup( self::PAGE_ID_THE_WIKI_NO_LONGER_HAS, ...$pageIds ),
@@ -547,7 +584,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertSame( RebuildStatus::Failed, $run->status );
-		$this->assertStringContainsString( SpyGraphDatabasePlugin::FAILURE_MESSAGE, (string)$run->error );
+		$this->assertStringContainsString( self::STORE_IS_GONE_MESSAGE, (string)$run->error );
 	}
 
 	/**
@@ -576,7 +613,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	 */
 	public function testAStoreThatRefusesAWholeBatchOfRemovalsFailsTheRun(): void {
 		$this->createDeletedSubjectPages( 'First deleted', 'Second deleted' );
-		$this->registerStore( new SpyGraphDatabasePlugin( refusesDeletions: true ) );
+		$this->registerStore( self::newStoreThatHasGone( refusesDeletions: true ) );
 
 		$run = $this->rebuild( batchSize: 2 );
 
@@ -588,7 +625,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 	public function testAStoreThatRefusedAWholeBatchOfRemovalsRetriesItOnResume(): void {
 		$this->createDeletedSubjectPages( 'First deleted', 'Second deleted' );
-		$this->registerStore( new SpyGraphDatabasePlugin( refusesDeletions: true ) );
+		$this->registerStore( self::newStoreThatHasGone( refusesDeletions: true ) );
 		$this->rebuild( batchSize: 2 );
 
 		$recoveredStore = new SpyGraphDatabasePlugin();
@@ -606,7 +643,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	 */
 	public function testThePagesOfARewoundBatchAreNotReportedAsFailed(): void {
 		$pageIds = $this->createSubjectPages( 'One', 'Two' );
-		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: $pageIds ) );
+		$this->registerStore( self::newStoreThatHasGone( refusedPageIds: $pageIds ) );
 		$observer = new SpyRebuildBatchObserver();
 
 		$this->rebuild( batchSize: 2, observer: $observer );
@@ -804,6 +841,24 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		RebuildBatchObserver $observer = new NullRebuildBatchObserver()
 	): RebuildRun {
 		return $this->newCoordinator()->rebuild( self::STORE, RebuildTrigger::Cli, $batchSize, $observer );
+	}
+
+	/**
+	 * A store that goes during the walk: it opens for the run, then refuses what it is sent and will not
+	 * open again. Both halves matter, because refusing a batch is what a store holding pages it will not
+	 * take does too, and reopening it is what tells the two apart.
+	 *
+	 * @param int[] $refusedPageIds
+	 */
+	private static function newStoreThatHasGone(
+		array $refusedPageIds = [],
+		bool $refusesDeletions = false
+	): SpyGraphDatabasePlugin {
+		return new SpyGraphDatabasePlugin(
+			refusedPageIds: $refusedPageIds,
+			refusesDeletions: $refusesDeletions,
+			whenReopened: new RuntimeException( self::STORE_IS_GONE_MESSAGE )
+		);
 	}
 
 	/**
