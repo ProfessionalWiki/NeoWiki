@@ -125,10 +125,36 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		return array_values( array_filter( $pageIds, static fn ( int $pageId ): bool => $pageId > $firstPageId ) );
 	}
 
-	private function runRebuild(): void {
+	/**
+	 * A whole-wiki rebuild parses and re-projects every page, so an interrupted run must be able to pick
+	 * up where it stopped instead of redoing the pages it already reconciled.
+	 */
+	public function testResumesAfterTheGivenPageId(): void {
+		$firstPageId = $this->insertPage( 'Resume first page', 'One.' )['id'];
+		$secondPageId = $this->insertPage( 'Resume second page', 'Two.' )['id'];
+
+		$spy = new SpyGraphDatabasePlugin();
+		$this->registerGraphDatabasePlugins( $spy );
+
+		$this->runRebuild( fromPageId: $firstPageId );
+
+		$this->assertSame(
+			[ $secondPageId ],
+			$this->savedPageIdsAfter( $spy, $firstPageId - 1 ),
+			'the page resumed past should not be projected again'
+		);
+	}
+
+	private function runRebuild( ?int $fromPageId = null ): void {
+		$script = new RebuildGraphDatabases();
+
+		if ( $fromPageId !== null ) {
+			$script->setOption( 'from-page-id', (string)$fromPageId );
+		}
+
 		ob_start();
 		try {
-			( new RebuildGraphDatabases() )->execute();
+			$script->execute();
 		} finally {
 			ob_end_clean();
 		}

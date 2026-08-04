@@ -53,6 +53,27 @@ class DatabasePageIdsLookupTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
+	 * A whole-wiki rebuild is long enough that being able to pick it back up matters, so the walk can
+	 * start past a page id already handled.
+	 */
+	public function testStartsPastTheGivenPageId(): void {
+		$first = $this->insertPage( 'Resume first page', 'One.' )['id'];
+		$second = $this->insertPage( 'Resume second page', 'Two.' )['id'];
+		$third = $this->insertPage( 'Resume third page', 'Three.' )['id'];
+
+		$pageIds = iterator_to_array(
+			( new DatabasePageIdsLookup( $this->getDb() ) )->getPageIds( $first ),
+			false
+		);
+
+		$this->assertNotContains( $first, $pageIds );
+		$this->assertSame( [ $second, $third ], array_values( array_filter(
+			$pageIds,
+			static fn ( int $pageId ): bool => $pageId > $first
+		) ) );
+	}
+
+	/**
 	 * The lookup yields every page on the wiki, so a test asserting a full list has to bound it: this
 	 * drops the pages that exist before the ones the test creates, such as its Schema page.
 	 *

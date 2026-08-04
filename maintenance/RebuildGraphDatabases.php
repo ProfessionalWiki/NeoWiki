@@ -19,6 +19,8 @@ require_once $basePath . '/maintenance/Maintenance.php';
 
 class RebuildGraphDatabases extends Maintenance {
 
+	private const int PROGRESS_INTERVAL = 500;
+
 	public function __construct() {
 		parent::__construct();
 
@@ -28,6 +30,13 @@ class RebuildGraphDatabases extends Maintenance {
 			'revision. Useful after a graph database has been wiped or has otherwise drifted from the ' .
 			'MediaWiki source of truth.'
 		);
+		$this->addOption(
+			'from-page-id',
+			'Resume after this page id, as reported by the progress output, instead of starting at the '
+			. 'first page. Only affects the re-projection; deleted pages are always reconciled in full.',
+			false,
+			true
+		);
 	}
 
 	public function execute(): void {
@@ -36,15 +45,25 @@ class RebuildGraphDatabases extends Maintenance {
 		$this->outputChanneled( 'Rebuilding graph databases...' );
 
 		$rebuilder = NeoWikiExtension::getInstance()->newPageRebuilder();
+		$afterPageId = (int)$this->getOption( 'from-page-id', 0 );
 
 		$rebuilt = 0;
 		$total = 0;
 
-		foreach ( NeoWikiExtension::getInstance()->newPageIdsLookup()->getPageIds() as $pageId ) {
+		foreach ( NeoWikiExtension::getInstance()->newPageIdsLookup()->getPageIds( $afterPageId ) as $pageId ) {
 			$total++;
 
 			if ( $this->rebuildPage( $pageId, $rebuilder ) ) {
 				$rebuilt++;
+			}
+
+			if ( $total % self::PROGRESS_INTERVAL === 0 ) {
+				$this->outputChanneled( "... $total pages so far, last page id $pageId" );
+
+				// Projecting a page parses it and writes to every backend, so a whole-wiki rebuild runs
+				// long enough to matter to the replicas. Yielding here is also what lets the load
+				// balancer let go of a replica that has been taken out of the pool.
+				$this->waitForReplication();
 			}
 		}
 
@@ -73,6 +92,10 @@ class RebuildGraphDatabases extends Maintenance {
 	private function removeDeletedPages(): void {
 		$graphDatabasePlugin = NeoWikiExtension::getInstance()->getGraphDatabasePlugin();
 
+		// Announced before the walk rather than after it: this reads the whole archive table, which on a
+		// wiki with a long deletion history is a lot of work to spend without saying anything.
+		$this->outputChanneled( 'Removing deleted pages from the graph databases...' );
+
 		$removed = 0;
 		$total = 0;
 
@@ -82,13 +105,15 @@ class RebuildGraphDatabases extends Maintenance {
 			if ( $this->removePage( $pageId, $graphDatabasePlugin ) ) {
 				$removed++;
 			}
+
+			if ( $total % self::PROGRESS_INTERVAL === 0 ) {
+				$this->waitForReplication();
+			}
 		}
 
-		if ( $total === 0 ) {
-			return;
-		}
-
-		$this->outputChanneled( "Removed $removed of $total deleted pages from the graph databases." );
+		// A page id the archive yields more than once is counted more than once, so this counts
+		// deletions handled rather than distinct pages. Removing an already absent page is a no-op.
+		$this->outputChanneled( "Removed $removed of $total deletions from the graph databases." );
 	}
 
 	private function removePage( int $pageId, GraphDatabasePlugin $graphDatabasePlugin ): bool {
