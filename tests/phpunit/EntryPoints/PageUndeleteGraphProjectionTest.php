@@ -7,8 +7,10 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 
 /**
  * Restoring a page from the archive projects the page as it stands afterwards — once, from its current
@@ -63,6 +65,31 @@ class PageUndeleteGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( 1, $this->countPageNodes( $pageId ) );
 		$this->assertSame( 'Deleted plain page', $this->readPageNodeName( $pageId ) );
+	}
+
+	/**
+	 * Which revision is projected is asserted above; this pins how many times. Restoring a page with
+	 * several archived revisions must project it once, from the revision that ends up current — the
+	 * per-revision RevisionUndeleted hook this moved off fired once per restored revision, and a
+	 * regression back to that shape would write the page as many times as it has history without
+	 * changing the data any of the other cases assert.
+	 */
+	public function testRestoringAPageWithSeveralRevisionsProjectsItOnce(): void {
+		$this->editPage( 'Page with history', 'First revision.' );
+		$this->editPage( 'Page with history', 'Second revision.' );
+		$pageId = $this->editPage( 'Page with history', 'Third revision.' )->getNewRevision()->getPageId();
+		$this->deletePageByName( 'Page with history' );
+
+		$spy = new SpyGraphDatabasePlugin();
+		$this->registerGraphDatabasePlugins( $spy );
+
+		$this->undeletePageByName( 'Page with history' );
+
+		$this->assertSame(
+			[ $pageId ],
+			array_map( static fn ( Page $page ): int => $page->getId()->id, $spy->savedPages )
+		);
+		$this->assertSame( [], $spy->deletedPageIds );
 	}
 
 	private function countPageNodes( int $pageId ): int {
