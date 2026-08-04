@@ -114,6 +114,7 @@ class DatabaseRebuildRunRepository implements RebuildRunRepository {
 				'nwrr_cursor' => $run->cursor,
 				'nwrr_processed' => $run->processed,
 				'nwrr_failed' => $run->failed,
+				'nwrr_trigger' => $run->trigger->value,
 				'nwrr_finished' => $run->status->isTerminal() ? $db->timestamp() : null,
 				'nwrr_error' => $run->error === null ? null : mb_strcut( $run->error, 0, self::MAX_ERROR_LENGTH ),
 			] )

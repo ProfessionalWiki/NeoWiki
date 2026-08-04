@@ -271,7 +271,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$coordinator = $this->newCoordinatorThatCannotBuildARebuilder();
 
 		try {
-			$coordinator->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+			$coordinator->resume( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
 			$this->fail( 'a rebuilder that cannot be built has to say so' );
 		} catch ( LogicException ) {
 		}
@@ -304,7 +304,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->registerStore( $store );
 		$this->recordFailedRunStoppedAt( $pageIds[1], processed: 2 );
 
-		$run = $this->newCoordinator()->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+		$run = $this->newCoordinator()->resume( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
 
 		$this->assertSame(
 			[ $pageIds[2], $pageIds[3] ],
@@ -327,7 +327,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->registerStore( $store );
 		$this->recordFailedRunInTheDeletionPhase( cursor: 0 );
 
-		$run = $this->newCoordinator()->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+		$run = $this->newCoordinator()->resume( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
 		$this->assertSame( [], $store->savedPages, 'the pages the run already projected are left alone' );
@@ -344,7 +344,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->registerStore( $store );
 		$this->recordFailedRunInTheDeletionPhase( cursor: $deletedPageIds[0] );
 
-		$run = $this->newCoordinator()->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+		$run = $this->newCoordinator()->resume( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
 		$this->assertSame(
@@ -359,7 +359,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->registerStore( new SpyGraphDatabasePlugin() );
 		$failedRun = $this->recordFailedRunStoppedAt( $pageIds[0], processed: 1 );
 
-		$resumedRun = $this->newCoordinator()->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+		$resumedRun = $this->newCoordinator()->resume( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
 
 		$this->assertSame( $failedRun->id, $resumedRun->id );
 	}
@@ -371,7 +371,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->expectException( NothingToResumeException::class );
 
-		$this->newCoordinator()->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+		$this->newCoordinator()->resume( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
 	}
 
 	public function testResumingAStoreThatWasNeverRebuiltIsRefused(): void {
@@ -379,7 +379,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->expectException( NothingToResumeException::class );
 
-		$this->newCoordinator()->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+		$this->newCoordinator()->resume( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
 	}
 
 	/**
@@ -547,7 +547,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$recoveredStore = new SpyGraphDatabasePlugin();
 		$this->registerStore( $recoveredStore );
-		$run = $this->newCoordinator()->resume( self::STORE, 2, new NullRebuildBatchObserver() );
+		$run = $this->newCoordinator()->resume( self::STORE, RebuildTrigger::Cli, 2, new NullRebuildBatchObserver() );
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
 		$this->assertSame( [ $pageIds[2], $pageIds[3] ], self::savedPageIds( $recoveredStore ) );
@@ -630,7 +630,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$recoveredStore = new SpyGraphDatabasePlugin();
 		$this->registerStore( $recoveredStore );
-		$run = $this->newCoordinator()->resume( self::STORE, 2, new NullRebuildBatchObserver() );
+		$run = $this->newCoordinator()->resume( self::STORE, RebuildTrigger::Cli, 2, new NullRebuildBatchObserver() );
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
 		$this->assertCount( 2, $recoveredStore->deletedPageIds );
@@ -699,7 +699,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$coordinator = $this->newCoordinatorThatCannotTakeTheStartLock();
 
 		try {
-			$coordinator->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+			$coordinator->resume( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
 			$this->fail( 'a resume that cannot take the start lock has to say so' );
 		} catch ( RebuildStartLockUnavailableException ) {
 		}
@@ -712,7 +712,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->expectException( UnknownGraphStoreException::class );
 
-		$this->newCoordinator()->resume( 'no-such-store', 200, new NullRebuildBatchObserver() );
+		$this->newCoordinator()->resume( 'no-such-store', RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
 	}
 
 	public function testResumingAStoreAlreadyRebuildingIsRefused(): void {
@@ -721,7 +721,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->expectException( RebuildAlreadyRunningException::class );
 
-		$this->newCoordinator()->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+		$this->newCoordinator()->resume( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
 	}
 
 	public function testAWikiDatabaseFailureWhileRemovingEndsTheRunRatherThanCountingOnePage(): void {
@@ -841,6 +841,34 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		RebuildBatchObserver $observer = new NullRebuildBatchObserver()
 	): RebuildRun {
 		return $this->newCoordinator()->rebuild( self::STORE, RebuildTrigger::Cli, $batchSize, $observer );
+	}
+
+	/**
+	 * Resuming from a shell is someone driving the rebuild by hand, whatever filed the run being picked
+	 * up. Left recorded as the automatic rebuild it started life as, an operator's resumed run is one an
+	 * automatic restart reads as unattended and takes away from them mid-walk.
+	 */
+	public function testResumingARunRecordsWhoeverIsDrivingItNow(): void {
+		$this->createSubjectPages( 'One' );
+		$this->registerStore( new SpyGraphDatabasePlugin() );
+		$this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Auto, RebuildStatus::Failed );
+
+		$run = $this->newCoordinator()->resume( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
+
+		$this->assertSame( RebuildTrigger::Cli, $run->trigger );
+	}
+
+	public function testAnAutoStartedRunResumedFromAShellIsLeftAloneByAnAutomaticRestart(): void {
+		$this->createSubjectPages( 'One' );
+		$this->registerStore( new SpyGraphDatabasePlugin() );
+		$repository = $this->newRunRepository();
+		$repository->startRun( self::STORE, RebuildTrigger::Auto, RebuildStatus::Failed );
+		$resumedRun = $this->newCoordinator()->resume( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
+		$repository->updateRun( $resumedRun->started() );
+
+		$this->expectException( RebuildAlreadyRunningException::class );
+
+		$this->newCoordinator()->restartBackground( self::STORE, RebuildTrigger::Auto );
 	}
 
 	/**

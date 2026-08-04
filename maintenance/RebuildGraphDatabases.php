@@ -150,7 +150,7 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 
 		try {
 			$run = $this->hasOption( 'resume' )
-				? $coordinator->resume( $storeName, $batchSize, $this )
+				? $coordinator->resume( $storeName, RebuildTrigger::Cli, $batchSize, $this )
 				: $coordinator->rebuild( $storeName, RebuildTrigger::Cli, $batchSize, $this );
 		} catch ( NothingToResumeException $e ) {
 			return $this->reportNothingToResume( $storeName, $e );
