@@ -23,8 +23,8 @@ class DatabasePageIdsLookup implements PageIdsLookup {
 	 *
 	 * @return iterable<int>
 	 */
-	public function getPageIds(): iterable {
-		$lastPageId = 0;
+	public function getPageIds( int $afterPageId = 0 ): iterable {
+		$lastPageId = $afterPageId;
 
 		do {
 			$pageIds = $this->db->newSelectQueryBuilder()
