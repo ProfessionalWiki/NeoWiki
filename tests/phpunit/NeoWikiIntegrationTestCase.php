@@ -37,6 +37,12 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	use HandlesNeo4jEnvOverrides;
 	use TempUserTestTrait;
 
+	/** @var GraphDatabasePlugin[] */
+	private array $registeredGraphDatabasePlugins = [];
+
+	/** @var PagePropertyProvider[] */
+	private array $registeredPagePropertyProviders = [];
+
 	/**
 	 * The singleton pins a SchemaLookup whose cache is keyed by page and revision id, and those ids
 	 * repeat across tests' temp tables, so an instance surviving a test would serve one test's Schema
@@ -220,16 +226,9 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	 * its choosing (a spy, or one that always throws).
 	 */
 	protected function registerGraphDatabasePlugins( GraphDatabasePlugin ...$plugins ): void {
-		$this->setTemporaryHook(
-			'NeoWikiRegistration',
-			static function ( NeoWikiRegistrar $registrar ) use ( $plugins ): void {
-				foreach ( $plugins as $plugin ) {
-					$registrar->addGraphDatabasePlugin( $plugin );
-				}
-			}
-		);
+		array_push( $this->registeredGraphDatabasePlugins, ...$plugins );
 
-		NeoWikiExtension::resetInstance();
+		$this->registerWithNeoWiki();
 	}
 
 	/**
@@ -237,9 +236,28 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	 * singleton, so their properties reach the page nodes the write paths project.
 	 */
 	protected function registerPagePropertyProviders( PagePropertyProvider ...$providers ): void {
+		array_push( $this->registeredPagePropertyProviders, ...$providers );
+
+		$this->registerWithNeoWiki();
+	}
+
+	/**
+	 * Everything registered so far goes through one hook handler, replacing the previous one.
+	 * setTemporaryHook clears the hook before adding its handler, so registering plugins and providers
+	 * as two handlers would silently leave only whichever was registered last — with the test still
+	 * green, since what the first helper registered simply never sees a projection.
+	 */
+	private function registerWithNeoWiki(): void {
+		$plugins = $this->registeredGraphDatabasePlugins;
+		$providers = $this->registeredPagePropertyProviders;
+
 		$this->setTemporaryHook(
 			'NeoWikiRegistration',
-			static function ( NeoWikiRegistrar $registrar ) use ( $providers ): void {
+			static function ( NeoWikiRegistrar $registrar ) use ( $plugins, $providers ): void {
+				foreach ( $plugins as $plugin ) {
+					$registrar->addGraphDatabasePlugin( $plugin );
+				}
+
 				foreach ( $providers as $provider ) {
 					$registrar->addPagePropertyProvider( $provider );
 				}
