@@ -74,8 +74,11 @@ extension (`42.trig`, `42.ttl`).
 
 `GET /rest.php/neowiki/v0/page/{pageId}/rdf`
 
-Returns the page's projection: its page metadata and every Subject on it, in the page's named graph. Returns `404`
-when the page does not exist, carries no NeoWiki Subject data, or is not readable by the caller.
+Returns the page's projection: its page metadata and every Subject on it, in the page's named graph. Under the
+native projection, a page holding no Subjects projects to its page metadata alone; an ontology projection emits
+no page metadata at all, so the same page projects to an empty graph — a `200`, not a `404`. Returns `404` when
+the page does not exist, is not readable by the caller (the two are indistinguishable), its subject slot holds
+content NeoWiki cannot read as Subjects, or its Page Properties cannot be built.
 
 ```sh
 curl 'https://wiki.example/rest.php/neowiki/v0/page/42/rdf?format=turtle'
@@ -134,15 +137,15 @@ the operator's own routing concern.
 
 ### Finding these exports
 
-These exports are surfaced in the UI. The Data tab links to each Subject's JSON and per-projection
-Turtle/TriG, and the same for the whole page. Pages that carry NeoWiki data also emit `<link rel="alternate">`
-autodiscovery tags (Turtle and TriG, native projection) in the HTML head.
+These exports are surfaced in the UI. The Data tab links to each Subject's JSON and per-projection Turtle/TriG,
+and the same for the whole page. Content pages that exist also emit `<link rel="alternate">` autodiscovery tags
+(Turtle and TriG, native projection) in the HTML head, on a wiki with a graph database configured.
 
 ## Bulk dump
 
-`maintenance/DumpRdf.php` streams the projection of **every** subject page to stdout as TriG, one named graph per page.
-Progress goes to stderr. It defaults to the native projection; `--projection=<name>`
-selects an ontology projection by its Mapping page name (see [Ontology Mapping](ontology-mapping.md)).
+`maintenance/DumpRdf.php` streams the projection of **every** page on the wiki to stdout as TriG, one named graph
+per page. Progress goes to stderr. It defaults to the native projection; `--projection=<name>` selects an ontology
+projection by its Mapping page name (see [Ontology Mapping](ontology-mapping.md)).
 
 ```sh
 php maintenance/run.php NeoWiki:DumpRdf > dump.trig

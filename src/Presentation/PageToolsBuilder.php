@@ -17,7 +17,6 @@ class PageToolsBuilder {
 		Title $title,
 		int $pageId,
 		bool $isContentNamespace,
-		bool $hasSubjects,
 		bool $canCreateMainSubject,
 		bool $canEditSubject,
 		bool $isLatestRevision,
@@ -51,7 +50,10 @@ class PageToolsBuilder {
 			];
 		}
 
-		if ( $hasSubjects ) {
+		// Every page that exists has an RDF export, so every page links to one. A title with no page
+		// behind it has nothing to export. The link 404s for the one page state the export cannot
+		// describe: a subject slot holding content that is not Subject data.
+		if ( $pageId !== 0 ) {
 			$items[] = [
 				'text' => wfMessage( 'neowiki-page-tools-rdf' )->text(),
 				'href' => wfScript( 'rest' ) . '/neowiki/v0/page/'

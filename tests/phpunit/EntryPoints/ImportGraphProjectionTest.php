@@ -67,14 +67,14 @@ class ImportGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testImportedPageWithoutSubjectSlotIsNotProjected(): void {
+	public function testImportedPageWithoutSubjectsIsProjected(): void {
 		$this->insertPage( 'Plain source', 'Just wikitext, no subjects.' );
 		$xml = $this->exportPageToXml( 'Plain source' );
 		$this->emptyTheGraph();
 
 		$this->importXml( str_replace( 'Plain source', 'Plain target', $xml ) );
 
-		$this->assertSame( 0, $this->countPageNodes( $this->pageIdOf( 'Plain target' ) ) );
+		$this->assertSame( 1, $this->countPageNodes( $this->pageIdOf( 'Plain target' ) ) );
 	}
 
 	/**

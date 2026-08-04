@@ -32,26 +32,28 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 				$this->rdfItem(),
 				$this->editJsonItem(),
 			],
-			$this->build( hasSubjects: true )
+			$this->build()
 		);
 	}
 
-	public function testShowsRdfLinkWhenPageHasSubjects(): void {
+	public function testHidesRdfLinkForATitleWithoutAPage(): void {
+		// A red link has no page id, and the export of page 0 is a 404.
 		$this->assertSame(
-			[ $this->manageSubjectsItem(), $this->rdfItem() ],
+			[ $this->manageSubjectsItem() ],
 			$this->build(
-				hasSubjects: true,
+				pageId: 0,
 				canCreateMainSubject: false,
 				devUiEnabled: false
 			)
 		);
 	}
 
-	public function testHidesRdfLinkWhenPageHasNoSubjects(): void {
+	public function testShowsRdfLinkOnAPageWithoutSubjects(): void {
+		// Every page has an RDF export, holding its page metadata and any Subjects, so every page links to
+		// one — as the head autodiscovery tags and the endpoint itself do.
 		$this->assertSame(
-			[ $this->manageSubjectsItem() ],
+			[ $this->manageSubjectsItem(), $this->rdfItem() ],
 			$this->build(
-				hasSubjects: false,
 				canCreateMainSubject: false,
 				devUiEnabled: false
 			)
@@ -60,28 +62,28 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 
 	public function testShowsCreateAndManageWhenDevUiDisabled(): void {
 		$this->assertSame(
-			[ $this->createSubjectItem(), $this->manageSubjectsItem() ],
+			[ $this->createSubjectItem(), $this->manageSubjectsItem(), $this->rdfItem() ],
 			$this->build( devUiEnabled: false )
 		);
 	}
 
 	public function testShowsManageAndEditJsonOnOldRevision(): void {
 		$this->assertSame(
-			[ $this->manageSubjectsItem(), $this->editJsonItem() ],
+			[ $this->manageSubjectsItem(), $this->rdfItem(), $this->editJsonItem() ],
 			$this->build( isLatestRevision: false )
 		);
 	}
 
 	public function testShowsManageAndEditJsonWhenUserCannotCreateSubjects(): void {
 		$this->assertSame(
-			[ $this->manageSubjectsItem(), $this->editJsonItem() ],
+			[ $this->manageSubjectsItem(), $this->rdfItem(), $this->editJsonItem() ],
 			$this->build( canCreateMainSubject: false )
 		);
 	}
 
-	public function testReturnsOnlyManageSubjectsWhenNothingElseQualifies(): void {
+	public function testReturnsOnlyManageSubjectsAndRdfWhenNothingElseQualifies(): void {
 		$this->assertSame(
-			[ $this->manageSubjectsItem() ],
+			[ $this->manageSubjectsItem(), $this->rdfItem() ],
 			$this->build(
 				canCreateMainSubject: false,
 				devUiEnabled: false
@@ -91,14 +93,14 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 
 	public function testHidesManageSubjectsLinkWhenAlreadyViewingSubjectsAction(): void {
 		$this->assertSame(
-			[ $this->createSubjectItem(), $this->editJsonItem() ],
+			[ $this->createSubjectItem(), $this->rdfItem(), $this->editJsonItem() ],
 			$this->build( currentAction: 'subjects' )
 		);
 	}
 
-	public function testReturnsEmptyListOnSubjectsActionWhenNothingElseQualifies(): void {
+	public function testReturnsOnlyTheRdfLinkOnSubjectsActionWhenNothingElseQualifies(): void {
 		$this->assertSame(
-			[],
+			[ $this->rdfItem() ],
 			$this->build(
 				canCreateMainSubject: false,
 				devUiEnabled: false,
@@ -111,6 +113,7 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame(
 			[
 				$this->manageSubjectsItem( 'neowiki-page-tools-view-subjects' ),
+				$this->rdfItem(),
 				$this->editJsonItem( 'neowiki-page-tools-view-json' ),
 			],
 			$this->build(
@@ -124,8 +127,8 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 	 * @return list<array<string, mixed>>
 	 */
 	private function build(
+		int $pageId = self::PAGE_ID,
 		bool $isContentNamespace = true,
-		bool $hasSubjects = false,
 		bool $canCreateMainSubject = true,
 		bool $canEditSubject = true,
 		bool $isLatestRevision = true,
@@ -134,9 +137,8 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 	): array {
 		return ( new PageToolsBuilder() )->build(
 			title: Title::newFromText( self::PAGE_NAME ),
-			pageId: self::PAGE_ID,
+			pageId: $pageId,
 			isContentNamespace: $isContentNamespace,
-			hasSubjects: $hasSubjects,
 			canCreateMainSubject: $canCreateMainSubject,
 			canEditSubject: $canEditSubject,
 			isLatestRevision: $isLatestRevision,

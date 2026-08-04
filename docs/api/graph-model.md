@@ -21,7 +21,11 @@ Two node types and two relationship categories:
 
 ## Page Nodes
 
-Every page that contains structured data has a `:Page` node.
+Every page is projected as a `:Page` node when it is saved and by
+[`RebuildGraphDatabases.php`](../operations/maintenance.md#rebuilding-the-graph), whether or not it holds Subjects. The
+exceptions are pages NeoWiki cannot read: one whose subject slot holds content it cannot read as Subjects, and one whose
+Page Properties cannot be built. Both are reported by the rebuild and left out of the graph rather than projected as
+holding nothing, which would drop data the page does hold.
 
 A shared graph can hold pages from multiple wikis (a wiki farm), and MediaWiki page ids are unique only within a wiki,
 so a page is identified by the `(wiki_id, id)` pair, not `id` alone ([ADR 22](../adr/022-multi-wiki-node-identity.md)).

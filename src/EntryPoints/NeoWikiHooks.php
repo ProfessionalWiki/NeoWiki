@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use Exception;
+use ManualLogEntry;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
 use MediaWiki\Installer\DatabaseUpdater;
@@ -124,13 +125,17 @@ class NeoWikiHooks {
 	/**
 	 * Advertises the page's RDF export (native projection) via `<link rel="alternate">` autodiscovery
 	 * tags — one Turtle, one TriG — so Linked Data tooling finds the data without reading the API docs.
-	 * Emitted only when the page has Subjects, so the advertised endpoint never 404s. Native only; the
-	 * per-projection exports are reachable from the Data tab UI.
+	 * Every page that exists has an export, holding its page metadata and any Subjects, so every page
+	 * advertises one. The exception is a page NeoWiki cannot read, whose export 404s; such a page does
+	 * not render at all, so no link is advertised for it either way.
+	 * Native only; the per-projection exports are reachable from the Data tab UI.
 	 */
 	private static function addRdfAutodiscoveryLinks( OutputPage $out ): void {
 		$pageId = $out->getTitle()->getArticleID();
 
-		if ( !NeoWikiExtension::getInstance()->newPageSubjectsLookup()->pageHasSubjects( new PageId( $pageId ) ) ) {
+		// A view of a title that has no page is still a content-page view, and there is nothing to
+		// advertise for a page that does not exist.
+		if ( $pageId === 0 ) {
 			return;
 		}
 
@@ -306,7 +311,7 @@ class NeoWikiHooks {
 		int $sRevCount,
 		array $pageInfo
 	): void {
-		NeoWikiExtension::getInstance()->newImportSubjectPageRebuilder()->rebuildFromPrimary( $title );
+		NeoWikiExtension::getInstance()->newImportPageRebuilder()->rebuildFromPrimary( $title );
 	}
 
 	public static function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, ?string $model, ?string $format ): void {
@@ -319,8 +324,33 @@ class NeoWikiHooks {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onPageDelete( $pageId );
 	}
 
-	public static function onRevisionUndeleted( RevisionRecord $restoredRevision, ?int $oldPageId ): void {
-		NeoWikiExtension::getInstance()->getStoreContentUC()->onPageUndelete( $restoredRevision );
+	/**
+	 * Projects a page restored from the archive, once per undeletion. The per-revision RevisionUndeleted
+	 * hook cannot do this: it fires for every restored revision, including ones that do not become
+	 * current, and projecting those would write the page as of a stale revision — a restore of old
+	 * history onto a page that still exists would replace its Subjects with the ones that revision held.
+	 *
+	 * The page's current revision is read fresh from the primary database rather than taken from
+	 * $restoredRev, which is the last restored revision: a partial restore leaves a newer revision
+	 * current.
+	 *
+	 * @see PageUndeleteCompleteHook
+	 *
+	 * @param int[] $restoredPageIds
+	 */
+	public static function onPageUndeleteComplete(
+		ProperPageIdentity $page,
+		Authority $restorer,
+		string $reason,
+		RevisionRecord $restoredRev,
+		ManualLogEntry $logEntry,
+		int $restoredRevisionCount,
+		bool $created,
+		array $restoredPageIds
+	): void {
+		NeoWikiExtension::getInstance()->newImportPageRebuilder()->rebuildFromPrimary(
+			Title::newFromPageIdentity( $page )
+		);
 	}
 
 	public static function onSpecialPageInitList( array &$specialPages ): void {
@@ -378,8 +408,6 @@ class NeoWikiHooks {
 			title: $title,
 			pageId: $title->getArticleID(),
 			isContentNamespace: $isContentNamespace,
-			hasSubjects: $isContentNamespace
-				&& $extension->newPageSubjectsLookup()->pageHasSubjects( $pageId ),
 			canCreateMainSubject: $hints->canCreateMainSubject( $pageId ),
 			canEditSubject: $hints->canEditSubject( $pageId ),
 			isLatestRevision: self::pageIsLatestRevision( $skin->getOutput() ),

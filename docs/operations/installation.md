@@ -133,9 +133,9 @@ Run this from the MediaWiki root:
 php maintenance/run.php update --quick
 ```
 
-Build the Neo4j projection from MediaWiki whenever it is out of sync with the revision slots — after the initial
-install if the wiki already has subject pages, and after Subjects arrive by a path other than a normal edit (such as
-an import):
+Build the Neo4j projection from MediaWiki whenever it is out of sync with the wiki — after installing on a wiki that
+already has pages, since a page is otherwise projected on its next edit, and after data arrives by a path other than a
+normal edit (such as an import):
 
 ```sh
 php maintenance/run.php NeoWiki:RebuildGraphDatabases

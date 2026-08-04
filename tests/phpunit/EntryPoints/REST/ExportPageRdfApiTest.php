@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
+use MediaWiki\Title\Title;
 use MediaWiki\Rest\Response;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -17,6 +18,9 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\Domain\Rdf\ParsedRdf;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingPagePropertyProvider;
+use RuntimeException;
+use Wikimedia\Rdbms\DBUnexpectedError;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportPageRdfApi
@@ -156,22 +160,31 @@ JSON
 		$this->assertSame( 404, $response->getStatusCode() );
 	}
 
-	public function testReturns404ForPageWithoutSubjectSlot(): void {
+	public function testExportsThePageMetadataOfAPageWithoutSubjects(): void {
 		$plainPage = $this->insertPage( 'ExportPageRdfApiTest_Plain', 'Just wikitext, no NeoWiki subjects.' );
 
 		$response = $this->export( pageId: $plainPage['id'] );
 
-		$this->assertSame( 404, $response->getStatusCode() );
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertStringContainsString(
+			'neo:pageName "ExportPageRdfApiTest Plain"',
+			$response->getBody()->getContents()
+		);
 	}
 
-	public function testAbsentAndDeniedPagesProduceByteIdenticalResponses(): void {
-		$plainPage = $this->insertPage( 'ExportPageRdfApiTest_PlainForByteIdentity', 'Just wikitext, no NeoWiki subjects.' );
+	public function testDeniedPageIsByteIdenticalToAnAbsentOne(): void {
+		// A page the caller may not read must be indistinguishable from a page that does not exist, so the
+		// endpoint cannot be used to probe which pages a wiki has. Both responses name the page id they
+		// were asked for, so the comparison uses one id: the existing page, denied, against the same id
+		// once it is not there.
+		$deniedResponse = $this->export( authority: $this->authorityWithGlobalReadButNoPageRead() );
 
-		$absentResponse = $this->export( pageId: $plainPage['id'] );
-		$deniedResponse = $this->export(
-			pageId: $plainPage['id'],
-			authority: $this->authorityWithGlobalReadButNoPageRead()
+		$this->deletePage(
+			$this->getServiceContainer()->getWikiPageFactory()->newFromID( $this->pageId ),
+			'making the page absent'
 		);
+
+		$absentResponse = $this->export();
 
 		$this->assertSame( $absentResponse->getStatusCode(), $deniedResponse->getStatusCode() );
 		$this->assertSame(
@@ -188,7 +201,7 @@ JSON
 		);
 	}
 
-	public function testUnreadablePageIsIndistinguishableFromAPageWithoutData(): void {
+	public function testUnreadablePageIsIndistinguishableFromAnAbsentPage(): void {
 		$response = $this->export( authority: $this->authorityWithGlobalReadButNoPageRead() );
 
 		$this->assertSame( 404, $response->getStatusCode() );
@@ -196,6 +209,37 @@ JSON
 			'No NeoWiki data found for page: ' . $this->pageId,
 			$response->getBody()->getContents()
 		);
+	}
+
+	/**
+	 * A page whose properties cannot be built is one more page state this export cannot describe, so it
+	 * gets the same answer as the others rather than a 500 carrying the exception message.
+	 */
+	public function testPageWhosePropertiesCannotBeBuiltIsReportedAsNoData(): void {
+		$this->registerPagePropertyProviders( new ThrowingPagePropertyProvider(
+			Title::newFromID( $this->pageId )->getPrefixedText(),
+			new RuntimeException( 'the provider is down' )
+		) );
+
+		$response = $this->export();
+
+		$this->assertSame( 404, $response->getStatusCode() );
+		$this->assertStringNotContainsString( 'the provider is down', $response->getBody()->getContents() );
+	}
+
+	/**
+	 * A wiki-database error belongs to the request rather than to this page, so it must not be reported
+	 * as the page having no data.
+	 */
+	public function testDatabaseFailureIsNotReportedAsNoData(): void {
+		$this->registerPagePropertyProviders( new ThrowingPagePropertyProvider(
+			Title::newFromID( $this->pageId )->getPrefixedText(),
+			new DBUnexpectedError( null, 'the database went away' )
+		) );
+
+		$this->expectException( DBUnexpectedError::class );
+
+		$this->export();
 	}
 
 	public function testPageReadableByANonUltimateAuthorityIsExported(): void {

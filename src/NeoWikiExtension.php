@@ -66,7 +66,7 @@ use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
-use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
+use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectIdMinter;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
@@ -115,7 +115,8 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedPageIdentifiersResolver;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseDeletedSubjectPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseDeletedPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiWikiConfigSource;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
@@ -144,7 +145,8 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQuery
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\SparqlQueryApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\SparqlRouteRegistration;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin;
-use ProfessionalWiki\NeoWiki\Persistence\DeletedSubjectPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\DeletedPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\PageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLayoutNameLookup;
@@ -290,26 +292,42 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Hook-facing write path (edit/delete/undelete). Each backend is isolated and logged, so a
-	 * projection failure never aborts the triggering user operation and one failing backend does not
-	 * starve the others. See FailureIsolatingGraphDatabasePlugin.
+	 * Hook-facing write path (edit/delete/undelete). Both halves of a projection are isolated and
+	 * logged, so a failure never aborts the triggering user operation: each backend, so one failing
+	 * backend does not starve the others, and the page-properties build, since it parses the page and
+	 * runs extension-contributed providers. See FailureIsolatingGraphDatabasePlugin and
+	 * FailureIsolatingPagePropertiesSource.
 	 */
 	public function getStoreContentUC(): OnRevisionCreatedHandler {
-		return $this->newStoreContentHandler( $this->getIsolatingGraphDatabasePlugin() );
+		return $this->newStoreContentHandler(
+			$this->getIsolatingGraphDatabasePlugin(),
+			new FailureIsolatingPagePropertiesSource(
+				$this->getPagePropertiesBuilder(),
+				LoggerFactory::getInstance( 'NeoWiki' )
+			)
+		);
 	}
 
 	/**
 	 * Maintenance rebuild path (RebuildGraphDatabases). Failures propagate so the script reports which
-	 * pages failed to reconcile, rather than the hook path's per-plugin isolation swallowing them.
+	 * pages failed to reconcile and why, rather than the hook path's isolation swallowing them and
+	 * leaving the operator a skip they cannot act on.
 	 */
 	private function newRebuildStoreContentHandler(): OnRevisionCreatedHandler {
-		return $this->newStoreContentHandler( $this->getGraphDatabasePlugin() );
+		return $this->newStoreContentHandler(
+			$this->getGraphDatabasePlugin(),
+			$this->getPagePropertiesBuilder()
+		);
 	}
 
-	private function newStoreContentHandler( GraphDatabasePlugin $graphDatabasePlugin ): OnRevisionCreatedHandler {
+	private function newStoreContentHandler(
+		GraphDatabasePlugin $graphDatabasePlugin,
+		PagePropertiesSource $pagePropertiesSource
+	): OnRevisionCreatedHandler {
 		return new OnRevisionCreatedHandler(
 			$graphDatabasePlugin,
-			$this->getPagePropertiesBuilder(),
+			$pagePropertiesSource,
+			LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
 
@@ -876,29 +894,34 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newSubjectPageRebuilder(): SubjectPageRebuilder {
-		return $this->newSubjectPageRebuilderWith( $this->newRebuildStoreContentHandler() );
+	public function newPageRebuilder(): PageRebuilder {
+		return $this->newPageRebuilderWith( $this->newRebuildStoreContentHandler() );
 	}
 
 	/**
-	 * Import path: projects the current revision of a page like the rebuild path, but with the hook
-	 * path's failure isolation, since a projection failure must not abort the user's import.
+	 * Import and undelete paths: projects the current revision of a page like the rebuild path, but with
+	 * the hook path's failure isolation, since a projection failure must not abort the user's operation.
 	 */
-	public function newImportSubjectPageRebuilder(): SubjectPageRebuilder {
-		return $this->newSubjectPageRebuilderWith( $this->getStoreContentUC() );
+	public function newImportPageRebuilder(): PageRebuilder {
+		return $this->newPageRebuilderWith( $this->getStoreContentUC() );
 	}
 
-	private function newSubjectPageRebuilderWith( OnRevisionCreatedHandler $handler ): SubjectPageRebuilder {
-		return new SubjectPageRebuilder(
+	private function newPageRebuilderWith( OnRevisionCreatedHandler $handler ): PageRebuilder {
+		return new PageRebuilder(
 			$handler,
 			MediaWikiServices::getInstance()->getWikiPageFactory()
 		);
 	}
 
-	public function newDeletedSubjectPageIdsLookup(): DeletedSubjectPageIdsLookup {
-		return new DatabaseDeletedSubjectPageIdsLookup(
-			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
-			MediaWikiServices::getInstance()->getSlotRoleStore()
+	public function newPageIdsLookup(): PageIdsLookup {
+		return new DatabasePageIdsLookup(
+			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase()
+		);
+	}
+
+	public function newDeletedPageIdsLookup(): DeletedPageIdsLookup {
+		return new DatabaseDeletedPageIdsLookup(
+			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase()
 		);
 	}
 

@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\User\UserIdentity;
+use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 
 class SpyOnRevisionCreatedHandler extends OnRevisionCreatedHandler {
@@ -13,14 +14,14 @@ class SpyOnRevisionCreatedHandler extends OnRevisionCreatedHandler {
 	/** @var list<array{revision: RevisionRecord, user: ?UserIdentity}> */
 	public array $calls = [];
 
-	public bool $pageWasWritten = true;
+	public PageRefreshOutcome $outcome = PageRefreshOutcome::Refreshed;
 
 	public function __construct() {
 	}
 
-	public function onRevisionCreated( RevisionRecord $revisionRecord, ?UserIdentity $user ): bool {
+	public function onRevisionCreated( RevisionRecord $revisionRecord, ?UserIdentity $user ): PageRefreshOutcome {
 		$this->calls[] = [ 'revision' => $revisionRecord, 'user' => $user ];
-		return $this->pageWasWritten;
+		return $this->outcome;
 	}
 
 }

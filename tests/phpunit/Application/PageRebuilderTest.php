@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application;
 
+use LogicException;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
@@ -11,15 +12,15 @@ use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
-use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
+use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyOnRevisionCreatedHandler;
 use Wikimedia\Rdbms\IDBAccessObject;
 use WikiPage;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder
+ * @covers \ProfessionalWiki\NeoWiki\Application\PageRebuilder
  */
-class SubjectPageRebuilderTest extends TestCase {
+class PageRebuilderTest extends TestCase {
 
 	private SpyOnRevisionCreatedHandler $handler;
 
@@ -33,8 +34,36 @@ class SubjectPageRebuilderTest extends TestCase {
 		$this->pageDataReads = [];
 	}
 
+	/**
+	 * @dataProvider skipOutcomeProvider
+	 * @covers \ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome::skipReason
+	 */
+	public function testEverySkipOutcomeExplainsItself( PageRefreshOutcome $outcome ): void {
+		$this->assertNotSame( '', $outcome->skipReason() );
+	}
+
+	/**
+	 * @return iterable<array{PageRefreshOutcome}>
+	 */
+	public static function skipOutcomeProvider(): iterable {
+		foreach ( PageRefreshOutcome::cases() as $outcome ) {
+			if ( $outcome !== PageRefreshOutcome::Refreshed ) {
+				yield $outcome->value => [ $outcome ];
+			}
+		}
+	}
+
+	/**
+	 * @covers \ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome::skipReason
+	 */
+	public function testRefreshedHasNoSkipReason(): void {
+		$this->expectException( LogicException::class );
+
+		PageRefreshOutcome::Refreshed->skipReason();
+	}
+
 	public function testReturnsRefreshedWhenHandlerWritesPage(): void {
-		$this->handler->pageWasWritten = true;
+		$this->handler->outcome = PageRefreshOutcome::Refreshed;
 
 		$outcome = $this->newRebuilder( $this->newRevisionByUser( new UserIdentityValue( 42, 'RevisionAuthor' ) ) )
 			->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
@@ -42,13 +71,13 @@ class SubjectPageRebuilderTest extends TestCase {
 		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
 	}
 
-	public function testReturnsSkippedMissingSubjectSlotWhenHandlerDoesNotWrite(): void {
-		$this->handler->pageWasWritten = false;
+	public function testReturnsTheOutcomeOfTheHandlerForAnExistingPage(): void {
+		$this->handler->outcome = PageRefreshOutcome::SkippedUnreadableSubjects;
 
 		$outcome = $this->newRebuilder( $this->newRevisionByUser( new UserIdentityValue( 42, 'RevisionAuthor' ) ) )
 			->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
 
-		$this->assertSame( PageRefreshOutcome::SkippedMissingSubjectSlot, $outcome );
+		$this->assertSame( PageRefreshOutcome::SkippedUnreadableSubjects, $outcome );
 	}
 
 	public function testReturnsSkippedMissingRevisionWhenNoCurrentRevision(): void {
@@ -93,7 +122,7 @@ class SubjectPageRebuilderTest extends TestCase {
 		);
 	}
 
-	private function newRebuilder( ?RevisionRecord $revision ): SubjectPageRebuilder {
+	private function newRebuilder( ?RevisionRecord $revision ): PageRebuilder {
 		$page = $this->createStub( WikiPage::class );
 		$page->method( 'getRevisionRecord' )->willReturn( $revision );
 		$page->method( 'loadPageData' )->willReturnCallback(
@@ -105,7 +134,7 @@ class SubjectPageRebuilderTest extends TestCase {
 		$factory = $this->createStub( WikiPageFactory::class );
 		$factory->method( 'newFromTitle' )->willReturn( $page );
 
-		return new SubjectPageRebuilder( $this->handler, $factory );
+		return new PageRebuilder( $this->handler, $factory );
 	}
 
 	private function newRevisionByUser( UserIdentity $user ): RevisionRecord {

@@ -88,8 +88,8 @@ Neo4j projection.
 ### Page Property Providers
 
 Page Property Providers contribute key/value metadata to the Page node in the graph (queryable via Cypher;
-Neo4j is currently the only graph backend). Providers run when a page carrying the NeoWiki subject slot is
-saved or rebuilt; pages without Subjects are not projected. Implement `PagePropertyProvider`:
+Neo4j is currently the only graph backend). Providers run for every page that is saved or rebuilt, whether or
+not it holds Subjects. Implement `PagePropertyProvider`:
 
 ```php
 class StaticPagePropertyProvider implements PagePropertyProvider {
@@ -115,7 +115,7 @@ the graph keeps the old value until the page is next saved. Trigger a refresh on
 
 ```php
 $outcome = NeoWikiExtension::getInstance()
-	->newSubjectPageRebuilder()
+	->newPageRebuilder()
 	->rebuild( $title );
 ```
 
@@ -124,7 +124,9 @@ the Page node. No new revision is created. `rebuild()` returns a `PageRefreshOut
 
 - `Refreshed` — the Page node was updated.
 - `SkippedMissingRevision` — the page has no current revision.
-- `SkippedMissingSubjectSlot` — the page carries no NeoWiki subject slot, so there was nothing to write.
+- `SkippedUnreadableSubjects` — the page's subject slot holds content NeoWiki cannot read as Subjects.
+- `SkippedUnreadablePageProperties` — the page's properties could not be built, for instance because a provider or the
+  page's own parse threw.
 
 Genuine failures (such as the graph store being unreachable) throw rather than returning an outcome.
 
@@ -450,10 +452,10 @@ client, but compare what the documented query interfaces
   Laudis driver types that you convert yourself.
 
 Writing to the graph directly deserves particular caution: the graph is a projection of wiki content that
-NeoWiki rewrites at will. Saving a page that carries the Subject slot re-projects that page's nodes, and
-the `RebuildGraphDatabases` maintenance script rebuilds the projection from scratch, so anything a third
-party writes into the graph can be overwritten, orphaned, or deleted at any time. For page-level key/value
-metadata there is a durable path: [Page Property Providers](#page-property-providers), which NeoWiki
-re-runs whenever a Subject-slot page is saved or rebuilt. For arbitrary nodes and relationships there is
+NeoWiki rewrites at will. Saving a page re-projects that page's nodes, and the `RebuildGraphDatabases`
+maintenance script rebuilds the projection from scratch, so anything a third party writes into the graph
+can be overwritten, orphaned, or deleted at any time. For page-level key/value metadata there is a durable
+path: [Page Property Providers](#page-property-providers), which NeoWiki re-runs whenever a page is saved
+or rebuilt. For arbitrary nodes and relationships there is
 currently no durable third-party write path into NeoWiki's graph; a
 [Graph Database Backend](#graph-database-backends) projects durably, but into its own store.
