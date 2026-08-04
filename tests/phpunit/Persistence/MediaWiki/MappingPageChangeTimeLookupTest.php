@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use Wikimedia\Timestamp\ConvertibleTimestamp;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\ProjectionChangeTimeLookup;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPageChangeTimeLookup;
@@ -49,12 +50,21 @@ class MappingPageChangeTimeLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testAProjectionWhoseMappingPageWasRestoredChangedWhenItWasLastEdited(): void {
-		$latestRevision = $this->createMapping( 'EDM', '{"version":1,"schemas":{}}' );
+	/**
+	 * A restored revision keeps its original timestamp, so reading the page alone puts the projection's
+	 * last change before the deletion. A store rebuilt while the page was gone was built without the
+	 * projection and is exactly as far from the wiki as one rebuilt before an edit, so the restoration
+	 * is what it has to be measured against.
+	 */
+	public function testAProjectionWhoseMappingPageWasRestoredChangedWhenItWasPutBack(): void {
+		ConvertibleTimestamp::setFakeTime( '20260101000000' );
+		$this->createMapping( 'EDM', '{"version":1,"schemas":{}}' );
 		$this->deleteMapping( 'EDM' );
+
+		ConvertibleTimestamp::setFakeTime( '20260202000000' );
 		$this->undeleteMapping( 'EDM' );
 
-		$this->assertSame( $latestRevision?->getTimestamp(), $this->newLookup()->getLastChangeTime( 'EDM' ) );
+		$this->assertSame( '20260202000000', $this->newLookup()->getLastChangeTime( 'EDM' ) );
 	}
 
 	private function deleteMapping( string $name ): void {

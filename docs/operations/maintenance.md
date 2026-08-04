@@ -92,12 +92,13 @@ A rebuild started this way runs on MediaWiki's job queue, a batch of pages per j
 
 ### Stale stores
 
-A store is reported as stale when the Mapping page defining its projection was edited or deleted after that store's
-last successful rebuild started: the store still describes every page projected before that change in the old
-vocabulary. Rebuilding it is the fix.
+A store is reported as stale when the Mapping page defining its projection was edited, deleted or restored after that
+store's last successful rebuild started: the store still describes every page projected before that change in the old
+vocabulary. Rebuilding it is the fix. Restoring counts because a store rebuilt while the page was gone was built with
+no projection for it at all.
 
-Set `$wgNeoWikiAutoRebuildOnMappingChange = true;` to have saving or deleting a Mapping page rebuild every store
-holding that projection in the background. It is off by default: such a rebuild reprojects every page carrying a
+Set `$wgNeoWikiAutoRebuildOnMappingChange = true;` to have saving, deleting or restoring a Mapping page rebuild every
+store holding that projection in the background. It is off by default: such a rebuild reprojects every page carrying a
 Subject, and it lets anyone who may edit Mapping pages set that going — work `neowiki-admin` otherwise gates. A
 rebuild somebody started by hand is left to finish rather than restarted; the store shows up stale once it ends.
 

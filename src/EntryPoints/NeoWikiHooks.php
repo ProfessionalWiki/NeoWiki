@@ -10,6 +10,7 @@ use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
 use MediaWiki\Installer\DatabaseUpdater;
+use ManualLogEntry;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
@@ -418,6 +419,28 @@ class NeoWikiHooks {
 		NeoWikiExtension::getInstance()->newImportPageRebuilder()->rebuildFromPrimary(
 			Title::newFromPageIdentity( $page )
 		);
+	}
+
+	/**
+	 * Restoring a Mapping page puts a projection back that the stores holding it were rebuilt without,
+	 * so it changes what their graphs should contain exactly as deleting it did. Handled here rather
+	 * than in onRevisionUndeleted, which fires once per restored revision.
+	 *
+	 * @see PageUndeleteCompleteHook
+	 *
+	 * @param int[] $restoredPageIds
+	 */
+	public static function onPageUndeleteComplete(
+		ProperPageIdentity $page,
+		Authority $restorer,
+		string $reason,
+		RevisionRecord $restoredRev,
+		ManualLogEntry $logEntry,
+		int $restoredRevisionCount,
+		bool $created,
+		array $restoredPageIds
+	): void {
+		self::rebuildStoresHoldingChangedMapping( Title::newFromPageIdentity( $page ) );
 	}
 
 	public static function onSpecialPageInitList( array &$specialPages ): void {
