@@ -125,7 +125,9 @@ class NeoWikiHooks {
 	/**
 	 * Advertises the page's RDF export (native projection) via `<link rel="alternate">` autodiscovery
 	 * tags — one Turtle, one TriG — so Linked Data tooling finds the data without reading the API docs.
-	 * Every page has an export, holding its page metadata and any Subjects, so every page advertises one.
+	 * Every page that exists has an export, holding its page metadata and any Subjects, so every page
+	 * advertises one. The exception is a page NeoWiki cannot read, whose export 404s; such a page does
+	 * not render at all, so no link is advertised for it either way.
 	 * Native only; the per-projection exports are reachable from the Data tab UI.
 	 */
 	private static function addRdfAutodiscoveryLinks( OutputPage $out ): void {
