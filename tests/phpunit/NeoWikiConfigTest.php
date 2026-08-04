@@ -145,4 +145,39 @@ class NeoWikiConfigTest extends TestCase {
 		);
 	}
 
+	/**
+	 * The gate decides whether the SPARQL query route is registered, and the factory decides whether a
+	 * plugin is built for it to reach. A config whose only usable entry the factory drops for its name
+	 * would otherwise register a route with nothing behind it, which answers a query with a 500 rather
+	 * than the 404 the gate exists to produce.
+	 */
+	public function testAStoreWhoseNameIsReservedDoesNotRegisterTheQueryRoute(): void {
+		$this->assertFalse( NeoWikiConfig::hasConfiguredSparqlStore( [
+			[ 'updateUrl' => 'http://sparql.invalid/', 'name' => 'Neo4j' ],
+		] ) );
+	}
+
+	public function testAStoreWhoseNameTheRunRecordsCannotHoldDoesNotRegisterTheQueryRoute(): void {
+		$this->assertFalse( NeoWikiConfig::hasConfiguredSparqlStore( [
+			[ 'updateUrl' => 'http://sparql.invalid/', 'name' => str_repeat( 'a', 256 ) ],
+		] ) );
+	}
+
+	public function testAStoreSurvivingTheNameRulesRegistersTheQueryRoute(): void {
+		$this->assertTrue( NeoWikiConfig::hasConfiguredSparqlStore( [
+			[ 'updateUrl' => 'http://sparql.invalid/', 'name' => 'Neo4j' ],
+			[ 'updateUrl' => 'http://sparql.invalid/edm', 'projection' => 'EDM' ],
+		] ) );
+	}
+
+	/**
+	 * A duplicate never empties the stores on its own: the first entry claiming the name keeps it.
+	 */
+	public function testADuplicateNameStillRegistersTheQueryRoute(): void {
+		$this->assertTrue( NeoWikiConfig::hasConfiguredSparqlStore( [
+			[ 'updateUrl' => 'http://sparql.invalid/a', 'projection' => 'EDM' ],
+			[ 'updateUrl' => 'http://sparql.invalid/b', 'projection' => 'EDM' ],
+		] ) );
+	}
+
 }
