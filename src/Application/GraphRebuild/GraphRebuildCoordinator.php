@@ -256,12 +256,17 @@ class GraphRebuildCoordinator {
 	 *
 	 * @param int<1, max> $batchSize
 	 */
-	public function resume( string $storeName, int $batchSize, RebuildBatchObserver $observer ): RebuildRun {
+	public function resume(
+		string $storeName,
+		RebuildTrigger $trigger,
+		int $batchSize,
+		RebuildBatchObserver $observer
+	): RebuildRun {
 		self::refuseAnEmptyBatch( $batchSize );
 		$store = $this->getStore( $storeName );
 		$pageRebuilder = ( $this->newPageRebuilder )( $store );
 
-		$reopenedRun = $this->startLock->whileHeld( $storeName, function () use ( $storeName ): RebuildRun {
+		$reopenedRun = $this->startLock->whileHeld( $storeName, function () use ( $storeName, $trigger ): RebuildRun {
 			$this->refuseWhenAlreadyActive( $storeName );
 
 			$latestRun = $this->runs->getLatestRun( $storeName );
@@ -270,7 +275,7 @@ class GraphRebuildCoordinator {
 				throw new NothingToResumeException( $storeName, $latestRun );
 			}
 
-			$reopenedRun = $latestRun->started();
+			$reopenedRun = $latestRun->resumedBy( $trigger );
 			$this->runs->updateRun( $reopenedRun );
 
 			return $reopenedRun;

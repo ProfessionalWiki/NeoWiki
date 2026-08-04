@@ -75,6 +75,16 @@ readonly class RebuildRun {
 		return $this->with( status: RebuildStatus::Cancelled );
 	}
 
+	/**
+	 * The run is being picked back up by hand, so it is now driven by whoever asked for that rather than
+	 * by whatever filed it. The trigger is what decides whether an automatic rebuild may take a run away
+	 * from someone and how a failure tells them to continue, and both of those are about who is driving
+	 * it now, not about how it started.
+	 */
+	public function resumedBy( RebuildTrigger $trigger ): self {
+		return $this->with( status: RebuildStatus::Running, trigger: $trigger );
+	}
+
 	private function with(
 		RebuildStatus $status,
 		?RebuildPhase $phase = null,
@@ -82,6 +92,7 @@ readonly class RebuildRun {
 		?int $processed = null,
 		?int $failed = null,
 		?string $error = null,
+		?RebuildTrigger $trigger = null,
 	): self {
 		return new self(
 			id: $this->id,
@@ -91,7 +102,7 @@ readonly class RebuildRun {
 			cursor: $cursor ?? $this->cursor,
 			processed: $processed ?? $this->processed,
 			failed: $failed ?? $this->failed,
-			trigger: $this->trigger,
+			trigger: $trigger ?? $this->trigger,
 			error: $error,
 			started: $this->started,
 			finished: $this->finished,

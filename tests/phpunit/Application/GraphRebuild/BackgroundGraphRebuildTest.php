@@ -296,7 +296,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$run = $coordinator->startBackground( self::STORE, RebuildTrigger::Api );
 		$coordinator->continueInBackground( $run->id );
 		$coordinator->cancel( self::STORE );
-		$coordinator->resume( self::STORE, 200, new NullRebuildBatchObserver() );
+		$coordinator->resume( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
 
 		$this->assertSame( $pageIds, self::savedPageIds( $store ) );
 	}
