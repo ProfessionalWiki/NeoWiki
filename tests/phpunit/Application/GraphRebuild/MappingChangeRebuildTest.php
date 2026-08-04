@@ -110,6 +110,24 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertNotSame( $firstRun->id, $this->activeRunOf( self::MAPPED_STORE )?->id );
 	}
 
+	/**
+	 * Starting a rebuild takes a database lock that flushes the connection's snapshot, which a connection
+	 * still holding the previous store's writes may not do. Started in one transaction round, every store
+	 * after the first threw, so a mirrored projection left all but one store on the old vocabulary.
+	 */
+	public function testEveryStoreSharingAProjectionIsQueued(): void {
+		$this->overrideConfigValue( 'NeoWikiSparqlStores', [
+			[ 'updateUrl' => 'http://sparql.invalid/edm-a', 'projection' => self::PROJECTION, 'name' => 'edm-a' ],
+			[ 'updateUrl' => 'http://sparql.invalid/edm-b', 'projection' => self::PROJECTION, 'name' => 'edm-b' ],
+		] );
+		NeoWikiExtension::resetInstance();
+
+		$this->createMapping( self::PROJECTION, self::MAPPING_JSON );
+
+		$this->assertNotNull( $this->activeRunOf( 'edm-a' ), 'the first store sharing the projection' );
+		$this->assertNotNull( $this->activeRunOf( 'edm-b' ), 'the second store sharing the projection' );
+	}
+
 	public function testRestoringAMappingQueuesARebuildOfTheStoreHoldingItsProjection(): void {
 		$this->createMapping( self::PROJECTION, self::MAPPING_JSON );
 		$this->deleteMapping( self::PROJECTION );
@@ -234,7 +252,7 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 			logger: $logger,
 		);
 
-		$rebuilder->onMappingChanged( self::PROJECTION );
+		$rebuilder->onMappingChanged( self::MAPPED_STORE );
 
 		$this->assertStringContainsString(
 			'could not rebuild graph store "' . self::MAPPED_STORE . '"',
