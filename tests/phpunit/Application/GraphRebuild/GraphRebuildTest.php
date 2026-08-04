@@ -44,6 +44,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 use TestLogger;
 use Wikimedia\Rdbms\DBUnexpectedError;
+use Wikimedia\RequestTimeout\TimeoutException;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator
@@ -56,6 +57,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	private const STORE = 'scoped-store';
 	private const OTHER_STORE = 'other-store';
 	private const WIKI_DATABASE_FAILURE_MESSAGE = 'the wiki database is gone';
+	private const REQUEST_TIMEOUT_MESSAGE = 'the request ran out of time';
 	private const STORE_IS_GONE_MESSAGE = 'the store is not answering';
 	private const PAGE_ID_THE_WIKI_NO_LONGER_HAS = 987654;
 	private const OTHER_PAGE_ID_THE_WIKI_NO_LONGER_HAS = 987655;
@@ -220,6 +222,25 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( RebuildStatus::Failed, $run->status, 'the pages after it would fail identically' );
 		$this->assertSame( self::WIKI_DATABASE_FAILURE_MESSAGE, $run->error );
+		$this->assertSame( 0, $run->failed, 'the run ended rather than counting a page against the store' );
+	}
+
+	/**
+	 * A request that has run out of time does not get more of it by moving to the next page, so the run
+	 * ends where a wiki-database error would. The twin of the case above: both types are re-thrown by the
+	 * same clause, and without this only one of them holds it in place.
+	 */
+	public function testARequestTimeoutEndsTheRunRatherThanCountingOnePage(): void {
+		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three' );
+		$this->registerStore( new SpyGraphDatabasePlugin(
+			refusedPageIds: $pageIds,
+			failure: new TimeoutException( self::REQUEST_TIMEOUT_MESSAGE, 30.0 )
+		) );
+
+		$run = $this->rebuild();
+
+		$this->assertSame( RebuildStatus::Failed, $run->status, 'the pages after it would fail identically' );
+		$this->assertStringContainsString( self::REQUEST_TIMEOUT_MESSAGE, (string)$run->error );
 		$this->assertSame( 0, $run->failed, 'the run ended rather than counting a page against the store' );
 	}
 
@@ -736,6 +757,21 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( RebuildStatus::Failed, $run->status, 'the removals after it would fail identically' );
 		$this->assertSame( self::WIKI_DATABASE_FAILURE_MESSAGE, $run->error );
+		$this->assertSame( 0, $run->failed, 'the run ended rather than counting a page against the store' );
+	}
+
+	public function testARequestTimeoutWhileRemovingEndsTheRunRatherThanCountingOnePage(): void {
+		$this->createSubjectPages( 'Page deleted during the outage' );
+		$this->deletePageByName( 'Page deleted during the outage' );
+		$this->registerStore( new SpyGraphDatabasePlugin(
+			refusesDeletions: true,
+			failure: new TimeoutException( self::REQUEST_TIMEOUT_MESSAGE, 30.0 )
+		) );
+
+		$run = $this->rebuild();
+
+		$this->assertSame( RebuildStatus::Failed, $run->status, 'the removals after it would fail identically' );
+		$this->assertStringContainsString( self::REQUEST_TIMEOUT_MESSAGE, (string)$run->error );
 		$this->assertSame( 0, $run->failed, 'the run ended rather than counting a page against the store' );
 	}
 
