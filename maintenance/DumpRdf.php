@@ -13,6 +13,8 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfFormat;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfStreamWriter;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use Wikimedia\Rdbms\DBError;
+use Wikimedia\RequestTimeout\TimeoutException;
 
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../..';
 
@@ -68,11 +70,21 @@ class DumpRdf extends Maintenance {
 
 		$this->output( $writer->finish() );
 		$this->error( "Dumped $dumped of $total pages." );
+
+		if ( $dumped < $total ) {
+			// The document on stdout is well formed whatever happened, so a caller that only checks
+			// the exit code cannot otherwise tell a complete dump from one missing most of the wiki.
+			$this->fatalError( 'The dump is incomplete: ' . ( $total - $dumped ) . ' of ' . $total
+				. ' pages were skipped. See the messages above for why.' );
+		}
 	}
 
 	/**
-	 * A page that cannot be loaded or projected is reported to stderr and skipped, as on the rebuild
-	 * path: one unreadable page out of a wiki must not truncate the dump into an invalid document.
+	 * A page that cannot be loaded or projected is reported to stderr and skipped, so one unreadable
+	 * page out of a wiki does not truncate the dump into an invalid document. Skipping is for page
+	 * state the dump cannot describe; a failure of the infrastructure underneath is not that, so
+	 * TimeoutException and DBError propagate and end the run rather than turning every remaining page
+	 * into a skip. Which throwables are let through matches FailureIsolatingGraphDatabasePlugin.
 	 */
 	private function dumpPage(
 		int $pageId,
@@ -82,6 +94,8 @@ class DumpRdf extends Maintenance {
 	): bool {
 		try {
 			$page = $loader->loadByPageId( new PageId( $pageId ) );
+		} catch ( TimeoutException | DBError $e ) {
+			throw $e;
 		} catch ( Exception $e ) {
 			$this->error( "Skipped page $pageId: " . $e->getMessage() );
 			return false;
@@ -94,6 +108,8 @@ class DumpRdf extends Maintenance {
 
 		try {
 			$quads = $projector->projectPage( $page );
+		} catch ( TimeoutException | DBError $e ) {
+			throw $e;
 		} catch ( Exception $e ) {
 			$this->error( "Skipped page $pageId: " . $e->getMessage() );
 			return false;
