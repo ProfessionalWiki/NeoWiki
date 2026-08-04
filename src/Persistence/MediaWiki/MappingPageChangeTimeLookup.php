@@ -39,21 +39,32 @@ class MappingPageChangeTimeLookup implements ProjectionChangeTimeLookup {
 			return null;
 		}
 
-		return $this->revisionLookup->getRevisionByTitle( $title )?->getTimestamp()
-			?? $this->getDeletionTime( $title );
+		$revisionTime = $this->revisionLookup->getRevisionByTitle( $title )?->getTimestamp();
+		$logTime = $this->getLastDeletionOrRestorationTime( $title );
+
+		if ( $revisionTime === null || $logTime === null ) {
+			return $revisionTime ?? $logTime;
+		}
+
+		// Both are TS_MW, which sorts as it reads.
+		return max( $revisionTime, $logTime );
 	}
 
 	/**
-	 * The most recent time the page was deleted. Most recent, because a page can be deleted, restored and
-	 * deleted again, and only a page that is gone now gets this far.
+	 * The most recent time the page was deleted or put back. Most recent, because a page can be deleted,
+	 * restored and deleted again.
+	 *
+	 * Restoring counts because a restored revision keeps its original timestamp: read off the page alone,
+	 * a projection put back after its stores were rebuilt without it looks untouched since before the
+	 * deletion, and the stores that no longer describe it report as in sync.
 	 */
-	private function getDeletionTime( Title $title ): ?string {
+	private function getLastDeletionOrRestorationTime( Title $title ): ?string {
 		$timestamp = $this->connectionProvider->getReplicaDatabase()->newSelectQueryBuilder()
 			->select( 'MAX(log_timestamp)' )
 			->from( 'logging' )
 			->where( [
 				'log_type' => 'delete',
-				'log_action' => 'delete',
+				'log_action' => [ 'delete', 'restore' ],
 				'log_namespace' => $title->getNamespace(),
 				'log_title' => $title->getDBkey(),
 			] )

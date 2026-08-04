@@ -110,6 +110,16 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertNotSame( $firstRun->id, $this->activeRunOf( self::MAPPED_STORE )?->id );
 	}
 
+	public function testRestoringAMappingQueuesARebuildOfTheStoreHoldingItsProjection(): void {
+		$this->createMapping( self::PROJECTION, self::MAPPING_JSON );
+		$this->deleteMapping( self::PROJECTION );
+		$this->newRunRepository()->cancelActiveRun( self::MAPPED_STORE );
+
+		$this->restoreMapping( self::PROJECTION );
+
+		$this->assertNotNull( $this->activeRunOf( self::MAPPED_STORE ) );
+	}
+
 	/**
 	 * Protecting a page inserts a revision carrying the content of the one before it. Read as a
 	 * definition change, that throws away whatever rebuild the store had going and starts the wiki over
@@ -244,6 +254,17 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 
 	private function newRunRepository(): RebuildRunRepository {
 		return NeoWikiExtension::getInstance()->newRebuildRunRepository();
+	}
+
+	private function restoreMapping( string $name ): void {
+		$status = MediaWikiServices::getInstance()->getUndeletePageFactory()->newUndeletePage(
+			MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle(
+				Title::newFromText( $name, NeoWikiExtension::NS_MAPPING )
+			),
+			$this->getTestSysop()->getAuthority()
+		)->undeleteUnsafe( 'test restoration' );
+
+		$this->assertStatusGood( $status );
 	}
 
 	private function protectMapping( string $name ): void {
