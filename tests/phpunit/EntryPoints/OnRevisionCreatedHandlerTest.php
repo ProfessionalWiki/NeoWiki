@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderContext;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
+use ProfessionalWiki\NeoWiki\FailureIsolatingPagePropertiesSource;
 use ProfessionalWiki\NeoWiki\PagePropertiesBuilder;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -74,22 +75,34 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 
 	public function testWritesNothingWhenThePagePropertiesCannotBeBuilt(): void {
 		// Building the properties parses the page and runs every provider, which throws for a page
-		// MediaWiki can no longer handle or a provider that fails. That must not abort the triggering edit.
-		$registry = new PagePropertyProviderRegistry();
-		$registry->addProvider( new class implements PagePropertyProvider {
-			public function getProperties( PagePropertyProviderContext $context ): array {
-				throw new RuntimeException( 'unknown content model' );
-			}
-		} );
-
+		// MediaWiki can no longer handle or a provider that fails. On the hook path that must not abort
+		// the triggering edit, which is what the isolating source production wires there is for.
 		$revision = $this->newPlainPageRevision( 'Page with unbuildable properties' );
 
-		$outcome = $this->newHandlerWith( $this->graphStore, $registry )
-			->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+		$outcome = $this->newHandlerWith(
+			$this->graphStore,
+			$this->newFailingProviderRegistry(),
+			isolatePageProperties: true
+		)->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
 
 		$this->assertSame( PageRefreshOutcome::SkippedUnreadablePageProperties, $outcome );
 		$this->assertSame( [], $this->graphStore->savedPages );
-		$this->assertTrue( $this->logger->hasWarningRecords(), 'the skipped page should be logged' );
+		$this->assertTrue( $this->logger->hasErrorRecords(), 'the skipped page should be logged' );
+	}
+
+	/**
+	 * The rebuild path is given the undecorated source, so a page whose properties cannot be built
+	 * surfaces to RebuildGraphDatabases, which reports it against the page with its cause, rather than
+	 * as a skip the operator cannot act on.
+	 */
+	public function testPagePropertyFailurePropagatesWithoutTheIsolatingSource(): void {
+		$revision = $this->newPlainPageRevision( 'Page with unbuildable properties' );
+
+		$this->expectException( RuntimeException::class );
+		$this->expectExceptionMessage( 'unknown content model' );
+
+		$this->newHandlerWith( $this->graphStore, $this->newFailingProviderRegistry() )
+			->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
 	}
 
 	public function testWritesNothingWhenTheSubjectSlotDoesNotHoldSubjectContent(): void {
@@ -137,6 +150,17 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	private function newFailingProviderRegistry(): PagePropertyProviderRegistry {
+		$registry = new PagePropertyProviderRegistry();
+		$registry->addProvider( new class implements PagePropertyProvider {
+			public function getProperties( PagePropertyProviderContext $context ): array {
+				throw new RuntimeException( 'unknown content model' );
+			}
+		} );
+
+		return $registry;
+	}
+
 	private function newRevisionWithSlotContent( Content $content ): RevisionRecord {
 		$slots = $this->createStub( RevisionSlots::class );
 		$slots->method( 'getContent' )->willReturn( $content );
@@ -163,18 +187,23 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 
 	private function newHandlerWith(
 		GraphDatabasePlugin $graphStore,
-		?PagePropertyProviderRegistry $providerRegistry = null
+		?PagePropertyProviderRegistry $providerRegistry = null,
+		bool $isolatePageProperties = false
 	): OnRevisionCreatedHandler {
 		$services = $this->getServiceContainer();
 
+		$pageProperties = new PagePropertiesBuilder(
+			revisionStore: $services->getRevisionStore(),
+			contentHandlerFactory: $services->getContentHandlerFactory(),
+			titleFormatter: $services->getTitleFormatter(),
+			providerRegistry: $providerRegistry ?? new PagePropertyProviderRegistry(),
+		);
+
 		return new OnRevisionCreatedHandler(
 			$graphStore,
-			new PagePropertiesBuilder(
-				revisionStore: $services->getRevisionStore(),
-				contentHandlerFactory: $services->getContentHandlerFactory(),
-				titleFormatter: $services->getTitleFormatter(),
-				providerRegistry: $providerRegistry ?? new PagePropertyProviderRegistry(),
-			),
+			$isolatePageProperties
+				? new FailureIsolatingPagePropertiesSource( $pageProperties, $this->logger )
+				: $pageProperties,
 			$this->logger
 		);
 	}

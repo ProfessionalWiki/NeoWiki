@@ -16,7 +16,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderContext;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 
-readonly class PagePropertiesBuilder {
+readonly class PagePropertiesBuilder implements PagePropertiesSource {
 
 	public function __construct(
 		private RevisionStore $revisionStore,
