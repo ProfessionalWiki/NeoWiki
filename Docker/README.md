@@ -66,13 +66,20 @@ source file. A named volume (not a bind mount) keeps the index clear of host SEL
 labeling and ownership issues under rootless Podman.
 
 To query it from the host, add the `docker-compose.tools.yml` overlay, which maps `QLEVER_PORT`
-(default 7019) — on the dev stack `make dev-tools` does that for you:
+(default 7019). On the dev stack, `make dev-tools` does that for you. The demo stack has no make
+target for it, so drive compose directly, passing the demo stack's project name (`docker compose ls`
+lists it):
 
 ```sh
-# <project> is this stack's compose project name, which `docker compose ls` lists.
-docker compose -p <project> --env-file Docker/.env \
+docker compose -p <demo-project> --env-file Docker/.env \
   -f Docker/docker-compose.yml -f Docker/docker-compose.tools.yml up -d
+```
 
+That `-f` list is the demo stack's. Pointed at a dev stack's project name it would recreate
+`mediawiki` from the base image and drop the dev overlay's source bind-mount, so reach for
+`make dev-tools` there instead.
+
+```sh
 curl http://localhost:7019/ \
   --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' \
   -H 'Accept: application/sparql-results+json'
