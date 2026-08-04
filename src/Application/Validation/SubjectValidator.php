@@ -40,8 +40,10 @@ readonly class SubjectValidator {
 
 		// Resolved in one lookup ahead of the per-Statement pass: resolving each target where it is
 		// checked costs a round trip apiece, paid serially. Ids absent from the map resolved to no
-		// Subject. Where the Schema has drifted this reaches targets the pass below never checks,
-		// which costs a longer id list and no violations.
+		// Subject. Where the Schema has drifted this reaches targets the pass below never checks:
+		// they cannot produce a violation, but they are not free either - the graph query stays one
+		// query however long the id list, while a target on a page no other target shares still
+		// costs that page's revision load and slot deserialization.
 		$relationTargets = $this->subjectLookup->getSubjects( $statements->getReferencedSubjects() );
 
 		foreach ( $statements->asArray() as $statement ) {
