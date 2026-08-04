@@ -15,6 +15,8 @@ class InMemoryPageIdentifiersLookup implements PageIdentifiersLookup {
 
 	public int $getPageIdsOfSubjectsCallCount = 0;
 
+	public int $getPageIdOfSubjectCallCount = 0;
+
 	/**
 	 * @param array<int, array{0: SubjectId, 1: PageIdentifiers}> $subjectIdsAndPageIdentifiers
 	 */
@@ -28,7 +30,14 @@ class InMemoryPageIdentifiersLookup implements PageIdentifiersLookup {
 		$this->pageIdentifiers[$subjectId->text] = $pageIdentifiers;
 	}
 
+	/**
+	 * Counted separately from getPageIdsOfSubjects because the production lookup answers this one
+	 * by running the batch query, so a caller that resolves ids one at a time here is one graph
+	 * round trip per id there. Tests that pin batching assert this count is zero.
+	 */
 	public function getPageIdOfSubject( SubjectId $subjectId ): ?PageIdentifiers {
+		$this->getPageIdOfSubjectCallCount++;
+
 		return $this->pageIdentifiers[$subjectId->text] ?? null;
 	}
 

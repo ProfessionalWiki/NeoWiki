@@ -213,6 +213,11 @@ class PointInTimeSubjectLookupTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertSame( 1, $pageIdentifiersLookup->getPageIdsOfSubjectsCallCount );
+
+		// Keeping the batch call and resolving the ids again one at a time would leave the count
+		// above at one while costing a graph round trip per id, since the production lookup answers
+		// getPageIdOfSubject by running the batch query.
+		$this->assertSame( 0, $pageIdentifiersLookup->getPageIdOfSubjectCallCount );
 	}
 
 	public function testGetSubjectsOmitsSubjectsSharingAPageWithARequestedOne(): void {

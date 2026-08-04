@@ -247,6 +247,11 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertCount( 3, $subjects );
 		$this->assertSame( 1, $pageIdentifiersLookup->getPageIdsOfSubjectsCallCount );
+
+		// Keeping the batch call and resolving the ids again one at a time would leave the count
+		// above at one while costing a graph round trip per id, since the production lookup answers
+		// getPageIdOfSubject by running the batch query.
+		$this->assertSame( 0, $pageIdentifiersLookup->getPageIdOfSubjectCallCount );
 	}
 
 	private function getPageId( string $pageName ): PageId {
