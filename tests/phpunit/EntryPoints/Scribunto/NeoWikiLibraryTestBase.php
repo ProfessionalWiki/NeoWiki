@@ -97,7 +97,7 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 			],
 		] ) );
 
-		$this->createPageWithSubjects(
+		$this->createPageWithMainSubject(
 			'NeoWikiLuaTestPage',
 			mainSubject: new Subject(
 				id: new SubjectId( 's1test5aaaaaaaa' ),
@@ -111,7 +111,7 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 			),
 		);
 
-		$this->createPageWithSubjects(
+		$this->createPageWithMainSubject(
 			'NeoWikiLuaTestPageChildren',
 			mainSubject: new Subject(
 				id: new SubjectId( 's1test5cccccccc' ),
@@ -142,7 +142,7 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 		$updater->saveRevision( CommentStoreComment::newUnsavedComment( 'Lua test data' ) );
 	}
 
-	private function createPageWithSubjects(
+	private function createPageWithMainSubject(
 		string $pageName,
 		Subject $mainSubject,
 		SubjectMap $childSubjects = new SubjectMap(),

@@ -154,7 +154,7 @@ class SpecialGraphStoresTest extends SpecialPageTestBase {
 		] ] );
 		NeoWikiExtension::resetInstance();
 		$this->atTime( self::REBUILT_AT, fn () => $this->recordSucceededRun( self::PROJECTION ) );
-		$this->atTime( self::MAPPING_EDITED_AT, fn () => $this->createMapping( self::PROJECTION ) );
+		$this->atTime( self::MAPPING_EDITED_AT, fn () => $this->createMappingPage( self::PROJECTION ) );
 
 		[ $html ] = $this->executeSpecialPage( '', null, null, $this->newAdmin() );
 
@@ -319,7 +319,7 @@ class SpecialGraphStoresTest extends SpecialPageTestBase {
 		);
 	}
 
-	private function createMapping( string $name ): void {
+	private function createMappingPage( string $name ): void {
 		$title = MediaWikiServices::getInstance()->getTitleFactory()
 			->newFromText( $name, NeoWikiExtension::NS_MAPPING );
 		$this->assertNotNull( $title );

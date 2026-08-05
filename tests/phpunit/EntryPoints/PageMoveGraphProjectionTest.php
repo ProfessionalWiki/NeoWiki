@@ -91,7 +91,7 @@ class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame(
 			[ $pageId ],
-			$this->savedPageIds( $spy ),
+			self::savedPageIds( $spy ),
 			'a move should project the moved page exactly once'
 		);
 		$this->assertSame( [], $spy->deletedPageIds );
@@ -107,7 +107,7 @@ class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame(
 			[ $movedPageId, Title::newFromText( 'Redirect write count source' )->getArticleID() ],
-			$this->savedPageIds( $spy ),
+			self::savedPageIds( $spy ),
 			'the moved page and the redirect left behind should each be projected exactly once'
 		);
 		$this->assertSame( [], $spy->deletedPageIds );
@@ -116,10 +116,6 @@ class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
 	/**
 	 * @return int[]
 	 */
-	private function savedPageIds( SpyGraphDatabasePlugin $spy ): array {
-		return array_map( static fn ( Page $page ): int => $page->getId()->id, $spy->savedPages );
-	}
-
 	private function movePage( string $from, string $to, bool $createRedirect = false ): void {
 		$movePage = MediaWikiServices::getInstance()->getMovePageFactory()->newMovePage(
 			Title::newFromText( $from ),
