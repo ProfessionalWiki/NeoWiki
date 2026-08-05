@@ -40,7 +40,6 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	use HandlesNeo4jEnvOverrides;
 	use TempUserTestTrait;
 
-	/** @var GraphDatabasePlugin[] */
 	/**
 	 * @var array<string, GraphDatabasePlugin> Keys are store names
 	 */

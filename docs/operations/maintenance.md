@@ -98,8 +98,8 @@ vocabulary. Rebuilding it is the fix. Restoring counts because a store rebuilt w
 no projection for it at all.
 
 Set `$wgNeoWikiAutoRebuildOnMappingChange = true;` to have saving, deleting or restoring a Mapping page rebuild every
-store holding that projection in the background. It is off by default: such a rebuild reprojects every page carrying a
-Subject, and it lets anyone who may edit Mapping pages set that going — work `neowiki-admin` otherwise gates. A
+store holding that projection in the background. It is off by default: such a rebuild reprojects every page on the
+wiki, and it lets anyone who may edit Mapping pages set that going — work `neowiki-admin` otherwise gates. A
 rebuild somebody started by hand is left to finish rather than restarted; the store shows up stale once it ends.
 
 ## What happens during a Neo4j outage

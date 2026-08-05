@@ -50,15 +50,15 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 	 * against. Counted once per store: each is a scan of the wiki, and a rebuild is many batches. The
 	 * cost is that a wiki edited under a long rebuild is measured against the size it started at.
 	 */
-	private int $totalSubjectPages = 0;
-	private int $totalDeletedSubjectPages = 0;
+	private int $totalPages = 0;
+	private int $totalDeletedPages = 0;
 
 	public function __construct() {
 		parent::__construct();
 
 		$this->requireExtension( 'NeoWiki' );
 		$this->addDescription(
-			'Rebuilds the graph databases by re-saving every Subject from the latest revision of its page. ' .
+			'Rebuilds the graph databases by re-projecting every page on the wiki from its latest revision. ' .
 			'Useful after a graph database has been wiped or has otherwise drifted from the MediaWiki source of truth.'
 		);
 		$this->addOption(
@@ -260,8 +260,8 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 	private function countWhatThereIsToDo(): void {
 		$extension = NeoWikiExtension::getInstance();
 
-		$this->totalSubjectPages = $extension->newPageIdsLookup()->countPages();
-		$this->totalDeletedSubjectPages = $extension->newDeletedPageIdsLookup()->countDeletedPages();
+		$this->totalPages = $extension->newPageIdsLookup()->countPages();
+		$this->totalDeletedPages = $extension->newDeletedPageIdsLookup()->countDeletedPages();
 	}
 
 	public function pageFailed( int $pageId ): void {
@@ -270,7 +270,7 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 
 	public function afterPageBatch( RebuildRun $run ): void {
 		$this->outputChanneled(
-			$run->store . ': ' . $run->processed . '/' . $this->totalSubjectPages
+			$run->store . ': ' . $run->processed . '/' . $this->totalPages
 			. ' pages (failed ' . $run->failed . ')'
 		);
 		$this->waitForReplication();
@@ -280,7 +280,7 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 		$this->removedPages += $removedInBatch;
 
 		$this->outputChanneled(
-			$run->store . ': ' . $this->removedPages . '/' . $this->totalDeletedSubjectPages
+			$run->store . ': ' . $this->removedPages . '/' . $this->totalDeletedPages
 			. ' deleted pages removed'
 		);
 		$this->waitForReplication();

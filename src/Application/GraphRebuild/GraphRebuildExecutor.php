@@ -27,7 +27,7 @@ use Wikimedia\RequestTimeout\TimeoutException;
 /**
  * Walks the wiki for one rebuild run, projecting it into that run's store.
  *
- * A rebuild has two phases. It reprojects every page that carries a Subject, then removes the pages
+ * A rebuild has two phases. It reprojects every page on the wiki, then removes the pages
  * MediaWiki no longer has — re-saving what still exists cannot undo a projection delete that failed, so
  * a page deleted while the store was unreachable would otherwise stay queryable for good. Deleting a
  * page that is already absent is a no-op, so repeating part of the second phase is safe.
@@ -53,7 +53,7 @@ use Wikimedia\RequestTimeout\TimeoutException;
  * - A store that dies mid-walk is recognised by a whole batch of it failing, in either phase: nothing
  *   about a store that is answering makes a batch of unrelated pages fail at once. The run ends with its
  *   cursor left at the batch it was reading, so resuming retries that batch rather than skipping it as
- *   settled. What counts as a whole batch failing is narrow — see {@see self::storeLooksGone()} — because
+ *   settled. What counts as a whole batch failing is narrow — see {@see self::everyOfferedPageFailed()} and {@see self::whyTheStoreCannotBeReached()} — because
  *   every way of reading it too widely ends in `--resume` retrying pages that will never work.
  * - A request timeout or a wiki-database error ends the run: the pages after this one would fail
  *   identically.
