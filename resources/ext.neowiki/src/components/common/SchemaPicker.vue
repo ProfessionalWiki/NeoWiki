@@ -7,7 +7,7 @@
 			v-model:input-value="inputText"
 			:menu-items="menuItems"
 			:placeholder="$i18n( 'neowiki-schema-picker-placeholder' ).text()"
-			@input="filterSchemas"
+			@input="recordTypedText"
 			@update:selected="onSelect"
 			@blur="revertUncommittedTyping"
 		/>
@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, triggerRef, watch } from 'vue';
 import { CdxLookup } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -35,10 +35,8 @@ const selectedSchema = ref<string | null>( props.selected ?? null );
 const inputText = ref<string | number>( props.selected ?? '' );
 const summaries = ref<SchemaSummary[]>( [] );
 const schemasLoaded = ref( false );
-// The field's text as last typed, verbatim, or null when nothing has been typed since the
-// last commit. It holds the raw text rather than the filter it reduces to because
-// CdxLookup leaves the pending state each keystroke puts it in only once it is handed a
-// different menu-items array, so keystrokes that filter alike must still rebuild the menu.
+// The field's text as last typed, or null while the field shows the committed schema
+// rather than typing.
 const typedText = ref<string | null>( null );
 const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
 
@@ -84,8 +82,13 @@ function selectableSchema( schemaName: string | null ): string | null {
 	return summaries.value.some( ( summary ) => summary.name === schemaName ) ? schemaName : null;
 }
 
-function filterSchemas( value: string ): void {
+// CdxLookup takes a change to its menu items as the answer to the user's keystroke, and
+// marks the field as loading until one arrives. Every edit therefore has to produce a new
+// list, including an edit that leaves the text exactly as it found it: pasting a name over
+// its own selection, or a cancelled composition.
+function recordTypedText( value: string ): void {
 	typedText.value = value;
+	triggerRef( typedText );
 }
 
 // CdxLookup reports a selection only for a menu entry the user picks, and null while

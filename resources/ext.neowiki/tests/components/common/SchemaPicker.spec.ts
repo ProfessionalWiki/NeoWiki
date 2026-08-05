@@ -79,6 +79,14 @@ describe( 'SchemaPicker', () => {
 		return chosen.exists() ? chosen.text() : null;
 	}
 
+	// CdxLookup marks the field as loading on every keystroke and stops once it has a menu
+	// to show, so a field left marked is one whose keystroke never reached the menu. Codex
+	// renaming this class would leave the callers passing rather than failing, since a
+	// healthy field carries no modifier class at all.
+	function fieldMarkedLoading( wrapper: VueWrapper ): boolean {
+		return wrapper.find( '.cdx-lookup' ).classes().includes( 'cdx-lookup--pending' );
+	}
+
 	async function type( wrapper: VueWrapper, text: string ): Promise<void> {
 		await field( wrapper ).setValue( text );
 		await flushPromises();
@@ -160,6 +168,24 @@ describe( 'SchemaPicker', () => {
 			await type( wrapper, ' ' );
 
 			expect( field( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'true' );
+		} );
+
+		it( 'stops marking the field as loading when a keystroke leaves the matches unchanged', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			await type( wrapper, 'off' );
+			await type( wrapper, 'off ' );
+
+			expect( fieldMarkedLoading( wrapper ) ).toBe( false );
+		} );
+
+		it( 'stops marking the field as loading when an edit leaves the text unchanged', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			await type( wrapper, 'off' );
+			await type( wrapper, 'off' );
+
+			expect( fieldMarkedLoading( wrapper ) ).toBe( false );
 		} );
 
 		it( 'lists no schemas and reports the failure when loading them fails', async () => {
