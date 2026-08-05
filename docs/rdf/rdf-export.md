@@ -75,15 +75,16 @@ falling back to the `Accept` header, then to TriG; a value other than `trig` or 
 Responses carry `Content-Disposition: inline` with a filename of the page or Subject ID plus the format's
 extension (`42.trig`, `42.ttl`).
 
+Both endpoints and the concept-URI negotiator answer one indistinguishable `404` when the page or Subject does
+not exist, the caller may not read it, or NeoWiki cannot describe it; a malformed Subject ID returns `400`.
+
 ### Page
 
 `GET /rest.php/neowiki/v0/page/{pageId}/rdf`
 
 Returns the page's projection: its page metadata and every Subject on it, in the page's named graph. Under the
 native projection, a page holding no Subjects projects to its page metadata alone; an ontology projection emits
-no page metadata at all, so the same page projects to an empty graph — a `200`, not a `404`. Returns `404` when
-the page does not exist, is not readable by the caller (the two are indistinguishable), its subject slot holds
-content NeoWiki cannot read as Subjects, or its Page Properties cannot be built.
+no page metadata at all, so the same page projects to an empty graph — a `200`, not a `404`.
 
 ```sh
 curl 'https://wiki.example/rest.php/neowiki/v0/page/42/rdf?format=turtle'
@@ -97,9 +98,8 @@ Returns one Subject's projection: exactly the triples the page export emits for 
 description, including the native relation reification — with none of the page-metadata triples, in the hosting page's
 named graph. Inbound relations pointing at the Subject from elsewhere are not included.
 
-Returns `404` when the Subject does not exist or is on a page the caller may not read — the two are indistinguishable.
-A malformed Subject ID returns `400`. A readable Subject whose Schema has no mapping for the requested ontology target
-projects to an empty graph — a `200`, not a `404`.
+A readable Subject whose Schema has no mapping for the requested ontology target projects to an empty graph —
+a `200`, not a `404`.
 
 ```sh
 curl 'https://wiki.example/rest.php/neowiki/v0/subject/s1demo8aaaaaab5/rdf?projection=EDM'
@@ -116,8 +116,7 @@ content-negotiates it and answers `303 See Other` with an absolute `Location`:
 | `text/turtle` | the Subject's Turtle RDF (`.../subject/{id}/rdf?format=turtle`) |
 | `text/html`, `*/*`, absent, anything else | the Subject's hosting page |
 
-TriG wins when both RDF types are acceptable; the RDF redirects use the native projection. A Subject that is absent or
-on a page the caller may not read returns one indistinguishable `404`; a malformed id `400`.
+TriG wins when both RDF types are acceptable; the RDF redirects use the native projection.
 
 The default HTML target is that page's Data tab (`/Example_Page/subjects`) opened on the Subject's row.
 When `$wgNeoWikiDereferenceSubjectsToDataTab` is set to `false`, the target is the wiki page itself (`/Example_Page`).
