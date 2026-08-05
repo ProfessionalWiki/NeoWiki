@@ -16,6 +16,7 @@ use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildAlreadyRunningExcep
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\UnknownGraphStoreException;
 use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
+use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildPhase;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
@@ -525,7 +526,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	 */
 	public function testAStoreThatStillOpensWalksPastAWholeBatchItRefused(): void {
 		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four' );
-		$store = new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[0], $pageIds[1] ] );
+		$store = new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[1], $pageIds[2] ] );
 		$this->registerStore( $store );
 
 		$run = $this->rebuild( batchSize: 2 );
@@ -533,21 +534,21 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
 		$this->assertSame( 2, $run->failed, 'the refused pages are counted against the wiki, not the store' );
 		$this->assertSame(
-			[ $pageIds[2], $pageIds[3] ],
+			[ $pageIds[0], $pageIds[3] ],
 			self::savedPageIdsFrom( $store, $pageIds[0] ),
-			'the pages behind the refused batch are still projected'
+			'the pages around the refused batch are still projected'
 		);
 	}
 
 	public function testAWholeBatchAStoreRefusedWhileStillOpeningIsReportedPageByPage(): void {
 		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four' );
-		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[0], $pageIds[1] ] ) );
+		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[1], $pageIds[2] ] ) );
 		$observer = new SpyRebuildBatchObserver();
 
 		$this->rebuild( batchSize: 2, observer: $observer );
 
 		$this->assertSame(
-			[ $pageIds[0], $pageIds[1] ],
+			[ $pageIds[1], $pageIds[2] ],
 			$observer->failedPageIds,
 			'the operator is told which pages the store would not take'
 		);
@@ -592,9 +593,11 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	 */
 	public function testAShortLastBatchFailingEntirelyIsNotReadAsTheStoreHavingGone(): void {
 		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four', 'Five' );
-		$this->registerStore( new SpyGraphDatabasePlugin( refusedPageIds: [ $pageIds[3], $pageIds[4] ] ) );
+		// A store that would fail the liveness probe if it were asked: only the full-batch guard keeps
+		// this run from being read as the store having gone.
+		$this->registerStore( self::newStoreThatHasGone( refusedPageIds: [ $pageIds[3], $pageIds[4] ] ) );
 
-		$run = $this->rebuild( batchSize: 3 );
+		$run = $this->rebuild( batchSize: 4 );
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
 		$this->assertSame( 2, $run->failed, 'the pages of a short batch are just pages that failed' );
@@ -985,6 +988,40 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 			newPageRebuilder: static fn ( GraphDatabasePlugin $store ): PageRebuilder
 				=> NeoWikiExtension::getInstance()->newPageRebuilderFor( $store ),
 			logger: new NullLogger(),
+		);
+	}
+
+	/**
+	 * A page can become unreadable between the walk finding it and the rebuild reaching it — its
+	 * revision vanished, or its slot content will not parse. Nothing was projected and nothing failed:
+	 * the walk records why and gets past it, and the page never counts as one the store was offered,
+	 * so a batch of them says nothing about the store being alive.
+	 */
+	public function testAPageTheRebuilderCannotReadIsSkippedAndWalkedPast(): void {
+		$pageId = $this->getExistingTestPage( 'Unreadable page' )->getId();
+		$store = new SpyGraphDatabasePlugin();
+		$logger = new TestLogger( true );
+
+		$rebuilder = $this->createStub( PageRebuilder::class );
+		$rebuilder->method( 'rebuild' )->willReturn( PageRefreshOutcome::SkippedMissingRevision );
+
+		$run = $this->newExecutor( new InMemoryPageIdsLookup( $pageId ), $logger )->execute(
+			run: $this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running ),
+			store: $store,
+			pageRebuilder: $rebuilder,
+			batchSize: 200,
+			observer: new NullRebuildBatchObserver()
+		);
+
+		$this->assertSame( RebuildStatus::Succeeded, $run->status );
+		$this->assertSame( 0, $run->processed );
+		$this->assertSame( 0, $run->failed, 'a page with nothing readable to project has not failed' );
+		$this->assertSame( RebuildPhase::Deletions, $run->phase, 'the walk got past it to the second phase' );
+		$this->assertSame( [], $store->savedPages );
+		$this->assertStringContainsString(
+			PageRefreshOutcome::SkippedMissingRevision->skipReason(),
+			$this->loggedText( $logger ),
+			'the operator is told why the page was skipped'
 		);
 	}
 
