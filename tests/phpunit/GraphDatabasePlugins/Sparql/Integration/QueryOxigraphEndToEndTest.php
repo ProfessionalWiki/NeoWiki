@@ -37,7 +37,9 @@ class QueryOxigraphEndToEndTest extends QuerySparqlEndToEndTestCase {
 	}
 
 	/**
-	 * The service is started without `--union-default-graph`.
+	 * The service is started without `--union-default-graph`. Unlike QLever's counterpart this is not
+	 * an engine property but Oxigraph's spec-conforming default, which the `:latest` image tracks: an
+	 * upstream change to it would fail this suite with nothing here having changed.
 	 */
 	protected function storeUnionsNamedGraphsIntoTheDefaultGraph(): bool {
 		return false;

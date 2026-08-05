@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Sparql\Integration
 
 /**
  * {@see QuerySparqlEndToEndTestCase} against QLever — the `test_qlever` dev-stack service, and the
- * engine the development stack points the wiki itself at.
+ * engine both Docker stacks point the wiki itself at.
  *
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Persistence\HttpSparqlQueryEndpoint
@@ -28,8 +28,12 @@ class QueryQLeverEndToEndTest extends QuerySparqlEndToEndTestCase {
 		return $this->storeUpdateUrl();
 	}
 
+	/**
+	 * QLever rejects unauthorized updates, so an unset token is as fatal as an unset URL and fails
+	 * the same way rather than surfacing later as a 403 from the store.
+	 */
 	protected function storeAccessToken(): ?string {
-		return getenv( 'QLEVER_TEST_ACCESS_TOKEN' ) ?: null;
+		return $this->requireEnv( 'QLEVER_TEST_ACCESS_TOKEN', 'QLever (the `test_qlever` service)' );
 	}
 
 	/**
