@@ -25,8 +25,14 @@ PORT_RANGE_END := 8499
 DC := docker compose -p $(PROJECT_NAME) -f Docker/docker-compose.yml
 DC_DEV := $(DC) -f Docker/docker-compose.dev.yml
 DC_TOOLS := $(DC_DEV) -f Docker/docker-compose.tools.yml
-# The `test` profile holds the test-only backends: test_neo and test_qlever.
+# The `test` profile holds the test-only backends: test_neo, test_qlever and test_oxigraph.
 DC_TEST := $(DC_DEV) --profile test
+# Teardown has to see every service, including the profile-gated `oxigraph` and `caddy`. With no
+# profile active Compose leaves those out of the plan entirely, so the container survives `down`
+# and the project network then fails to go with it. They are not orphans either — they are declared
+# in the file Compose was given — so --remove-orphans does not reach them. `--profile '*'` enables
+# every profile, which for a teardown is exactly the intent.
+DC_ALL := $(DC) --profile '*'
 
 # Detect the engine from what `docker` actually is (its version string), not from
 # whether a `podman` binary happens to exist: a stray podman binary alongside real
@@ -118,8 +124,11 @@ _dev-tools-impl:
 	@echo "Neo4j Bolt endpoint:  bolt://localhost:$${NEO_BOLT_PORT:-7687}"
 	@echo "QLever SPARQL:        http://localhost:$${QLEVER_PORT:-7019}/"
 	@# The tools overlay maps Oxigraph's port too, but that service only runs when its
-	@# profile is on (see Docker/docker-compose.dev.yml), so only then is there a URL.
-	@case ",$$COMPOSE_PROFILES," in \
+	@# profile is on (see Docker/docker-compose.yml), so only then is there a URL. Compose
+	@# trims whitespace around profile names ("test, oxigraph" activates both), so strip it
+	@# here as well or the URL goes missing for a stack that did start the service.
+	@profiles=$$(printf '%s' "$$COMPOSE_PROFILES" | tr -d '[:space:]'); \
+	case ",$$profiles," in \
 		*,oxigraph,*) echo "Oxigraph SPARQL:      http://localhost:$${OXIGRAPH_PORT:-7878}/query";; \
 	esac
 	@echo "Project:              $(PROJECT_NAME)"
@@ -165,10 +174,10 @@ _dev-impl:
 	@echo "Project:           $(PROJECT_NAME)"
 
 down: ## Stop and remove containers (preserves volumes)
-	$(DC) down --remove-orphans
+	$(DC_ALL) down --remove-orphans
 
 remove: ## Stop and remove containers AND volumes (deletes all data)
-	$(DC) down --volumes --remove-orphans
+	$(DC_ALL) down --volumes --remove-orphans
 
 logs: ## Tail logs from all services
 	$(DC_DEV) logs -f

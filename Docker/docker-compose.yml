@@ -168,7 +168,7 @@ services:
     # `make down` snappy. Safe: acknowledged updates survive a SIGKILL and reload on startup.
     stop_grace_period: 2s
 
-  # The dev-only sidecars (test_neo, node, mailcatcher) live in
+  # The dev-only sidecars (test_neo, test_qlever, test_oxigraph, node, mailcatcher) live in
   # docker-compose.dev.yml, not here, so `make up` stays minimal and `make down`
   # can clean them up as orphans on every compose backend (see that file).
 

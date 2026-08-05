@@ -36,9 +36,10 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  * sharply whether an unscoped query sees the named graphs NeoWiki writes into: SPARQL 1.1 leaves
  * that to the store — QLever always unions them in, a strict store keeps them out.
  *
- * Deliberately does NOT skip when a store is unreachable: an unset store URL fails the test through
- * {@see requireEnv}, and an unreachable store surfaces as a loud query/HTTP failure. A silently
- * skipped system test would leave the headline deliverable unverified.
+ * Deliberately does NOT skip when a store is unreachable: any unset setting the store cannot be
+ * reached without fails the test through {@see requireEnv}, and an unreachable store surfaces as a
+ * loud query/HTTP failure. A silently skipped system test would leave the headline deliverable
+ * unverified.
  *
  * Each subclass carries its own `@covers` and `@group Database`; MediaWiki reads the group off the
  * concrete class alone.
@@ -100,9 +101,10 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * Reads a store URL from the environment, failing the test when it is unset rather than
-	 * skipping — see the class docblock for why. The store description goes into the failure
-	 * message, so name the dev-stack service the reader has to bring up.
+	 * Reads a setting the live store cannot be reached without — a URL, or a token the store rejects
+	 * requests lacking — failing the test when it is unset rather than skipping; see the class
+	 * docblock for why. The store description goes into the failure message, so name the dev-stack
+	 * service the reader has to bring up.
 	 */
 	protected function requireEnv( string $variable, string $store ): string {
 		$value = getenv( $variable );
@@ -127,16 +129,32 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 		$this->overrideConfigValue(
 			'NeoWikiSparqlStores',
 			array_map(
-				fn ( string $projection ): array => [
-					'updateUrl' => $this->updateUrl,
-					'queryUrl' => $this->queryUrl,
-					'accessToken' => $this->accessToken,
-					'projection' => $projection,
-				],
+				fn ( string $projection ): array => $this->storeEntryFor( $projection ),
 				$projections
 			)
 		);
 		NeoWikiExtension::resetInstance();
+	}
+
+	/**
+	 * Omits `queryUrl` when the store serves queries and updates on one path, so a store like QLever
+	 * exercises the production default (it falls back to `updateUrl`) instead of a shape no real
+	 * deployment writes. A store that splits the two sets it explicitly, as its own entry must.
+	 *
+	 * @return array<string, string|null>
+	 */
+	private function storeEntryFor( string $projection ): array {
+		$entry = [
+			'updateUrl' => $this->updateUrl,
+			'accessToken' => $this->accessToken,
+			'projection' => $projection,
+		];
+
+		if ( $this->queryUrl !== $this->updateUrl ) {
+			$entry['queryUrl'] = $this->queryUrl;
+		}
+
+		return $entry;
 	}
 
 	public function testSubjectLabelRoundTripsThroughTheSparqlQueryService(): void {
@@ -188,7 +206,10 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 		$this->assertSame(
 			$this->storeUnionsNamedGraphsIntoTheDefaultGraph() ? [ $label ] : [],
 			$this->queryLabelsWithoutGraphScopeOf( $subjectId ),
-			'a query without a GRAPH clause reaches the page graphs only on a unioning store'
+			'a query without a GRAPH clause reaches the page graphs only on a unioning store. If this '
+			. 'failed, check whether --union-default-graph was added to the store this subclass names '
+			. '(test_oxigraph in Docker/docker-compose.dev.yml and .github/workflows/ci-php.yml) before '
+			. 'changing the expectation — flipping it silently drops the strict-store half of the pair.'
 		);
 	}
 
@@ -327,10 +348,11 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 		$subjectIri = NeoWikiExtension::getInstance()->getRdfNamespaces()->subject( $subjectId )->value;
 
 		// GRAPH-scoped, because NeoWiki writes each page into a named graph and never the default
-		// graph. See queryLabelsWithoutGraphScopeOf() for what dropping the clause costs. DISTINCT
-		// because a Subject saved under several projections carries its label in each of their graphs.
+		// graph. See queryLabelsWithoutGraphScopeOf() for what dropping the clause costs. No DISTINCT:
+		// its callers configure one projection, so one graph must hold the label, and scoping by GRAPH
+		// makes that cardinality observable — collapsing it would hide a page projected twice.
 		return $this->labelsFrom(
-			'SELECT DISTINCT ?label WHERE { GRAPH ?graph { <' . $subjectIri . '> <'
+			'SELECT ?label WHERE { GRAPH ?graph { <' . $subjectIri . '> <'
 			. self::LABEL_PREDICATE . '> ?label } }'
 		);
 	}
