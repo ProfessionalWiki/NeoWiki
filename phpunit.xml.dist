@@ -12,5 +12,8 @@
 		     via job-level env to reach the runner-published port). -->
 		<env name="QLEVER_TEST_URL" value="http://test_qlever:7019/" />
 		<env name="QLEVER_TEST_ACCESS_TOKEN" value="neowiki_test_token" />
+		<!-- Live Oxigraph store for the same system test, run a second time against a second engine.
+		     Oxigraph has no authentication, so there is no token to set. -->
+		<env name="OXIGRAPH_TEST_BASE_URL" value="http://test_oxigraph:7878" />
 	</php>
 </phpunit>

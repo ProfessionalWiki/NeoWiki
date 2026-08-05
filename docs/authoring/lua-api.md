@@ -259,6 +259,11 @@ Always throws on failure; wrap in `pcall` if you need graceful degradation.
 
 Every call counts as an expensive parser function.
 
+#### Named graphs
+
+Pages are projected into named graphs, so which of them an unscoped query reaches depends on the store — see
+[RDF Export](../rdf/rdf-export.md#iri-scheme).
+
 #### Examples
 
 ```lua

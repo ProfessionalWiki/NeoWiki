@@ -133,6 +133,27 @@ services:
       timeout: 5s
       retries: 20
 
+  # Dedicated Oxigraph store for the SPARQL query system test, isolated from the `oxigraph` service in
+  # docker-compose.yml exactly as test_qlever is from qlever: the system test writes and deletes
+  # Subjects, so it must not mutate the wiki's data. It is reached in-network as
+  # http://test_oxigraph:7878/ (see OXIGRAPH_TEST_BASE_URL in phpunit.xml.dist); no host port is
+  # exposed. Behind the `test` profile, like `test_neo` and `test_qlever`. With no healthcheck to gate
+  # on, `make test-backends` waits for its port from the mediawiki container.
+  test_oxigraph:
+    profiles:
+      - test
+    image: ghcr.io/oxigraph/oxigraph:latest
+    restart: unless-stopped
+    mem_limit: 1536m
+    # No --location, so the store is in memory. Ephemeral test scaffolding, like test_qlever running
+    # without --persist-updates: every run clears it (DROP ALL) and nothing survives a restart by
+    # design. It matches how CI starts it.
+    #
+    # Deliberately WITHOUT --union-default-graph: the spec-strict half of the engine pair (see
+    # Docker/README.md). QueryOxigraphEndToEndTest asserts it.
+    command: serve --bind 0.0.0.0:7878
+    stop_grace_period: 2s
+
   node:
     image: node:24
     restart: on-failure:3

@@ -39,6 +39,11 @@ Mapping page name (e.g. `EDM`), encoded like the names below — see [Ontology M
 *resource* IRI (`neo-page:42`)
 stays projection-independent and appears inside the triples.
 
+Nothing is written to the default graph. Stores that fold their named graphs into it answer unscoped queries anyway —
+QLever always does, and Oxigraph does with `--union-default-graph` — and on a store that does not, a query reaches
+page data only through `GRAPH`. Scope each pattern by the graph holding it rather than wrapping a whole query in one
+`GRAPH` block: patterns sharing a block must match within a single page.
+
 Property, Schema, and Relation-type names, and Relation-property keys, form the local part of their IRI: spaces become
 underscores (`Has author` → `neo-prop:Has_author`), and characters illegal in an IRI (`%`, `< > " { } | ^ \`, backtick,
 control characters) are percent-encoded. Non-ASCII Unicode is kept raw. **Caveat:** the space→underscore step collides

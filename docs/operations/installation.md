@@ -208,8 +208,8 @@ content model, validated, or read.
 ## Optional: SPARQL graph stores
 
 Alongside Neo4j, NeoWiki can keep one or more SPARQL 1.1 graph stores in sync with page changes. This
-works with QLever and any other SPARQL 1.1 store. Each configured store receives the NeoWiki data as RDF: every page
-becomes a named graph, replaced on each edit and dropped on deletion.
+works with QLever, Oxigraph and any other SPARQL 1.1 store. Each configured store receives the NeoWiki data as RDF:
+every page becomes a named graph, replaced on each edit and dropped on deletion.
 
 A SPARQL store does not yet replace Neo4j: NeoWiki's interactive features (the Subject editing UIs, views, and value
 accessors) still require a configured Neo4j backend.
@@ -236,6 +236,24 @@ $wgNeoWikiSparqlStores = [
 ```
 
 A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki.
+
+### Oxigraph
+
+Oxigraph serves queries on `/query` and updates on `/update`, so an entry needs both:
+
+```php
+$wgNeoWikiSparqlStores = [
+	[
+		'updateUrl' => 'https://oxigraph.example/update',
+		'queryUrl' => 'https://oxigraph.example/query',
+		'projection' => 'native',
+	],
+];
+```
+
+Oxigraph has no authentication and ignores `accessToken`: it accepts every request, updates included, from anyone who
+can reach it. Put it behind network isolation or an authenticating reverse proxy, and see
+[Restricting federation](#restricting-federation).
 
 ### Several projections in one store
 
@@ -279,9 +297,12 @@ Each is read-only: the query is sent as a SPARQL 1.1 *query* operation, posted o
 
 A projection configured on a different endpoint is therefore not reachable from these surfaces.
 
-Both bundled Docker stacks, demo and dev, ship a working QLever example wired up this way — see
-[`Docker/README.md`](../../Docker/README.md#qlever-sparql-store) for the service, its `--persist-updates` requirement,
-and how to query it.
+NeoWiki writes pages into named graphs and nothing into the default graph, so whether an unscoped query finds them is
+the store's choice; see [RDF Export](../rdf/rdf-export.md#iri-scheme).
+
+Both bundled Docker stacks, demo and dev, ship working QLever and Oxigraph examples wired up this way — see
+[`Docker/README.md`](../../Docker/README.md#qlever-sparql-store) for the services, QLever's `--persist-updates`
+requirement, and how to query them.
 
 ### Restricting federation
 
@@ -300,13 +321,14 @@ qlever-server -i neowiki -p 7019 -m 1G --service-allowed-iri-prefixes -
 qlever-server -i neowiki -p 7019 -m 1G --service-allowed-iri-prefixes https://sparql.example.org/
 ```
 
-The bundled Docker stack sets the deny-all value, so federation is off unless you change it. The setting can
-also be changed at runtime through the store's endpoint by anyone holding its access token, so keep that token
-secret. Other SPARQL stores have equivalent settings — consult their documentation.
+The bundled Docker stacks set the deny-all value on their QLever services, so those do not federate unless you
+change it. The setting can also be changed at runtime through the store's endpoint by anyone holding its access
+token, so keep that token secret.
 
-Restricting the store is worth combining with restricting who may query it. The query surfaces are gated by the
-`neowiki-query` right, which by default is granted to everyone including anonymous visitors; see
-[Permissions](../api/query-api.md#permissions) for how to narrow it.
+Oxigraph has no equivalent setting and will attempt the outbound request; the stacks' Oxigraph services federate
+for that reason. Other stores vary — consult their documentation. Where the store cannot be restricted, restrict
+around it: block its outbound traffic at the network layer, and narrow the `neowiki-query` right, which by default
+is granted to everyone including anonymous visitors — see [Permissions](../api/query-api.md#permissions).
 
 ## Production hardening
 
