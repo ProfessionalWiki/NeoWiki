@@ -302,6 +302,46 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
+	 * Cancelling does not reach into the queue, because a job for an ended run does nothing — which held
+	 * until --resume reopened a run under its old id. A batch still queued from before the cancel then
+	 * found the run going again and advanced it alongside the script, each writing over the other's
+	 * phase, cursor and counters, so the wiki was walked twice and the totals came out short.
+	 */
+	public function testABatchQueuedBeforeACancelDoesNotDriveTheRunAShellResumed(): void {
+		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four' );
+		$this->registerStore( new SpyGraphDatabasePlugin() );
+		$coordinator = $this->newCoordinator( batchSize: 2 );
+		$run = $coordinator->startBackground( self::STORE, RebuildTrigger::Api );
+		$coordinator->cancel( self::STORE );
+
+		// The job runner pops the batch queued before the cancel while the script is mid-walk, which is
+		// the window the run id being reopened creates.
+		$stragglerRan = false;
+		$store = new SpyGraphDatabasePlugin(
+			whileSavingEachPage: function () use ( $run, &$stragglerRan ): void {
+				if ( $stragglerRan ) {
+					return;
+				}
+
+				$stragglerRan = true;
+				$this->newCoordinator( batchSize: 2 )->continueInBackground( $run->id );
+			}
+		);
+		$this->registerStore( $store );
+
+		$resumedRun = $this->newCoordinator( batchSize: 2 )
+			->resume( self::STORE, RebuildTrigger::Cli, 2, new NullRebuildBatchObserver() );
+
+		$this->assertTrue( $stragglerRan, 'the queued batch has to have been run for this to test anything' );
+		$this->assertSame( RebuildStatus::Succeeded, $resumedRun->status );
+		$this->assertSame(
+			$pageIds,
+			self::savedPageIds( $store ),
+			'the queued batch must not have projected pages the script is already walking'
+		);
+	}
+
+	/**
 	 * A batch that could not run at all leaves no way for the queue to carry the run forward, so it has
 	 * to end the run rather than leave it recorded as going with nothing going.
 	 */

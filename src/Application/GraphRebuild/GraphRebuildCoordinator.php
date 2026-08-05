@@ -195,6 +195,21 @@ class GraphRebuildCoordinator {
 			return;
 		}
 
+		if ( $run->trigger === RebuildTrigger::Cli ) {
+			// A shell is driving this run. Terminal used to be enough to tell a stale job to stop, because
+			// nothing reopened a run id — until --resume did: cancel a background rebuild, resume it from a
+			// shell, and a batch still queued for it finds it going again and advances it alongside the
+			// script, each writing over the other's phase, cursor and counters. Only the maintenance script
+			// resumes, and it is also the only caller that never queues, so a queued batch that finds its
+			// run being driven from a shell has nothing left to do.
+			$this->logger->info(
+				'NeoWiki background graph rebuild left run ' . $runId . ' of graph store "' . $run->store
+				. '" to the shell that is driving it.',
+				[ 'runId' => $runId, 'store' => $run->store ]
+			);
+			return;
+		}
+
 		try {
 			$store = $this->getStore( $run->store );
 
