@@ -49,9 +49,10 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		$spy = new SpyGraphDatabasePlugin();
 		$this->registerGraphDatabasePlugins( $spy );
 
-		$this->runRebuild();
+		$reconciled = $this->runRebuild();
 
-		$this->assertSame( [], $spy->savedPages, 'a wiki with no Subjects has nothing to project' );
+		$this->assertTrue( $reconciled, 'a wiki with no Subjects rebuilds rather than crashing' );
+		$this->assertNotEmpty( $spy->savedPages, 'every page is projected, Subjects or not' );
 	}
 
 	public function testRebuildRemovesADeletedSubjectPageFromTheGraph(): void {
@@ -120,9 +121,9 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 
 		$this->runRebuild();
 
-		$this->assertCount( 1, $first->savedPages );
-		$this->assertCount( 1, $second->savedPages );
-		$this->assertSame( $pageId, $second->savedPages[0]->getId()->id );
+		$this->assertCount( 1 + self::FIXTURE_PAGES, $first->savedPages );
+		$this->assertCount( 1 + self::FIXTURE_PAGES, $second->savedPages );
+		$this->assertSame( [ $pageId ], self::savedPageIdsFrom( $second, (int)$pageId ) );
 	}
 
 	public function testTheStoreOptionRebuildsOnlyThatStore(): void {
@@ -133,7 +134,7 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 
 		$this->runRebuild( [ '--store=scoped' ] );
 
-		$this->assertCount( 1, $scopedStore->savedPages );
+		$this->assertCount( 1 + self::FIXTURE_PAGES, $scopedStore->savedPages );
 		$this->assertSame( [], $otherStore->savedPages );
 	}
 
@@ -204,7 +205,7 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		$reconciled = $this->runRebuild();
 
 		$this->assertFalse( $reconciled );
-		$this->assertCount( 1, $workingStore->savedPages );
+		$this->assertCount( 1 + self::FIXTURE_PAGES, $workingStore->savedPages );
 	}
 
 	public function testAPageTheStoreRejectsExitsNonZero(): void {
@@ -216,7 +217,7 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		$reconciled = $this->runRebuild( [ '--store=picky' ] );
 
 		$this->assertFalse( $reconciled );
-		$this->assertStringContainsString( 'Projected 0 pages, 1 failed.', $this->getScriptOutput() );
+		$this->assertStringContainsString( 'Projected 1 pages, 1 failed.', $this->getScriptOutput() );
 	}
 
 	public function testProgressIsReportedPerBatchRatherThanPerPage(): void {
@@ -227,8 +228,8 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 
 		$this->runRebuild( [ '--store=batched', '--batch-size=2' ] );
 
-		$this->assertStringContainsString( 'batched: 2/3 pages (failed 0)', $this->getScriptOutput() );
-		$this->assertStringContainsString( 'batched: 3/3 pages (failed 0)', $this->getScriptOutput() );
+		$this->assertStringContainsString( 'batched: 2/4 pages (failed 0)', $this->getScriptOutput() );
+		$this->assertStringContainsString( 'batched: 4/4 pages (failed 0)', $this->getScriptOutput() );
 	}
 
 	/**
@@ -284,7 +285,11 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		$this->registerNamedGraphDatabasePlugins( [ 'recovering' => $store ] );
 		$this->runRebuild( [ '--store=recovering', '--resume' ] );
 
-		$this->assertCount( 2, $store->savedPages, 'the resumed run reconciles the pages the failed one did not' );
+		$this->assertCount(
+			2 + self::FIXTURE_PAGES,
+			$store->savedPages,
+			'the resumed run reconciles the pages the failed one did not'
+		);
 	}
 
 	public function testResumingANamedStoreWithNothingToResumeExitsNonZero(): void {
@@ -312,7 +317,7 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		$reconciled = $this->runRebuild( [ '--resume' ] );
 
 		$this->assertTrue( $reconciled, 'a store whose last rebuild finished is not a failure to resume' );
-		$this->assertCount( 1, $recoveringStore->savedPages );
+		$this->assertCount( 1 + self::FIXTURE_PAGES, $recoveringStore->savedPages );
 	}
 
 	/**

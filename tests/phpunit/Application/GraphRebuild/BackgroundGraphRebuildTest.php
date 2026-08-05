@@ -71,7 +71,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->runJobs();
 
 		$this->assertSame( RebuildStatus::Succeeded, $this->readRun( $run )?->status );
-		$this->assertSame( $pageIds, self::savedPageIds( $store ) );
+		$this->assertSame( $pageIds, self::savedPageIdsFrom( $store, $pageIds[0] ) );
 	}
 
 	public function testEachBatchQueuesTheNextOneUntilTheRunIsDone(): void {
@@ -157,7 +157,11 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( RebuildStatus::Failed, $this->readRun( $run )?->status );
 		$this->assertNull( $this->newRunRepository()->getActiveRun( self::STORE ) );
-		$this->assertCount( 2, $store->savedPages, 'what the batch projected before that stays projected' );
+		$this->assertCount(
+			2 + self::FIXTURE_PAGES,
+			$store->savedPages,
+			'what the batch projected before that stays projected'
+		);
 	}
 
 	public function testCancellingAQueuedRunEndsItBeforeAnythingIsProjected(): void {
@@ -191,7 +195,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->runJobs();
 
 		$this->assertSame( RebuildStatus::Cancelled, $this->readRun( $run )?->status );
-		$this->assertSame( [ $pageIds[0], $pageIds[1] ], self::savedPageIds( $store ) );
+		$this->assertSame( [ $pageIds[0] ], self::savedPageIdsFrom( $store, $pageIds[0] ) );
 	}
 
 	/**
@@ -212,7 +216,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertSame( RebuildStatus::Cancelled, $run->status );
-		$this->assertSame( [ $pageIds[0], $pageIds[1] ], self::savedPageIds( $store ) );
+		$this->assertSame( [ $pageIds[0] ], self::savedPageIdsFrom( $store, $pageIds[0] ) );
 	}
 
 	/**
@@ -298,7 +302,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$coordinator->cancel( self::STORE );
 		$coordinator->resume( self::STORE, RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
 
-		$this->assertSame( $pageIds, self::savedPageIds( $store ) );
+		$this->assertSame( $pageIds, self::savedPageIdsFrom( $store, $pageIds[0] ) );
 	}
 
 	/**
@@ -336,7 +340,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( RebuildStatus::Succeeded, $resumedRun->status );
 		$this->assertSame(
 			$pageIds,
-			self::savedPageIds( $store ),
+			self::savedPageIdsFrom( $store, $pageIds[0] ),
 			'the queued batch must not have projected pages the script is already walking'
 		);
 	}

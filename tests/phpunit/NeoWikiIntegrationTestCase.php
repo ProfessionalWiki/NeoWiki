@@ -135,6 +135,26 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
+	 * The pages the wiki has that a test did not create itself. Every page is projected, and a test's
+	 * Subjects need a Schema page, which the fixture creates before the pages the test names — so a
+	 * rebuild gets through one more page than the test asked for, and reaches it first.
+	 */
+	protected const FIXTURE_PAGES = 1;
+
+	/**
+	 * What the store was given, dropping the fixture's pages: they sort before the test's own, so a test
+	 * asserting on a whole list bounds it by the first page it created.
+	 *
+	 * @return int[]
+	 */
+	protected static function savedPageIdsFrom( SpyGraphDatabasePlugin $store, int $firstTestPageId ): array {
+		return array_values( array_filter(
+			self::savedPageIds( $store ),
+			static fn ( int $pageId ): bool => $pageId >= $firstTestPageId
+		) );
+	}
+
+	/**
 	 * Everything the logger was told, as one string to look for a phrase in.
 	 */
 	protected static function loggedText( TestLogger $logger ): string {

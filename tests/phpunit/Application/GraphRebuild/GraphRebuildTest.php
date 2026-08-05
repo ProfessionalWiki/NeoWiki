@@ -78,14 +78,19 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		NeoWikiExtension::resetInstance();
 	}
 
-	public function testEveryPageCarryingASubjectIsProjectedIntoTheScopedStore(): void {
+	public function testEveryPageIsProjectedIntoTheScopedStore(): void {
 		$pageIds = $this->createSubjectPages( 'First page', 'Second page', 'Third page' );
 		$store = new SpyGraphDatabasePlugin();
 		$this->registerStore( $store );
 
 		$this->rebuild();
 
-		$this->assertSame( $pageIds, self::savedPageIds( $store ) );
+		$this->assertSame( $pageIds, self::savedPageIdsFrom( $store, $pageIds[0] ) );
+		$this->assertCount(
+			count( $pageIds ) + self::FIXTURE_PAGES,
+			$store->savedPages,
+			'the Schema page behind the Subjects is projected too'
+		);
 	}
 
 	public function testTheScopedStoreIsPreparedBeforeAnythingIsProjected(): void {
@@ -120,12 +125,12 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->rebuild( batchSize: 2, observer: $observer );
 
 		$this->assertSame(
-			[ $pageIds[1], $pageIds[3], $pageIds[4] ],
+			[ $pageIds[0], $pageIds[2], $pageIds[4] ],
 			array_map( static fn ( RebuildRun $run ): int => $run->cursor, $observer->pageBatches ),
 			'each batch leaves the cursor on the last page it projected'
 		);
 		$this->assertSame(
-			[ 2, 4, 5 ],
+			[ 2, 4, 6 ],
 			array_map( static fn ( RebuildRun $run ): int => $run->processed, $observer->pageBatches )
 		);
 	}
@@ -138,9 +143,9 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$run = $this->rebuild();
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status, 'one bad page does not fail the run' );
-		$this->assertSame( 2, $run->processed );
+		$this->assertSame( 2 + self::FIXTURE_PAGES, $run->processed );
 		$this->assertSame( 1, $run->failed );
-		$this->assertSame( [ $pageIds[0], $pageIds[2] ], self::savedPageIds( $store ) );
+		$this->assertSame( [ $pageIds[0], $pageIds[2] ], self::savedPageIdsFrom( $store, $pageIds[0] ) );
 	}
 
 	public function testAStoreThatCannotBePreparedFailsItsRun(): void {
@@ -171,7 +176,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( RebuildStatus::Failed, $failedRun->status );
 		$this->assertSame( RebuildStatus::Succeeded, $succeededRun->status );
-		$this->assertSame( $pageIds, self::savedPageIds( $workingStore ) );
+		$this->assertSame( $pageIds, self::savedPageIdsFrom( $workingStore, $pageIds[0] ) );
 	}
 
 	public function testPagesMediaWikiNoLongerHasAreRemovedFromTheScopedStore(): void {
@@ -417,28 +422,30 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
 		$this->assertSame( 3, $run->failed );
-		$this->assertSame( 0, $run->processed );
-		$this->assertSame( $pageIds, self::batchCursors( $observer ) );
+		$this->assertSame( self::FIXTURE_PAGES, $run->processed );
+		$this->assertSame(
+			$pageIds,
+			array_slice( self::batchCursors( $observer ), -count( $pageIds ) ),
+			'the walk got past every one of them'
+		);
 	}
 
 	/**
-	 * A page can lose its Subject between the walk finding it and the rebuild reaching it, since the walk
-	 * reads a replica. Nothing failed and nothing was projected, but the walk still has to get past it.
+	 * Every page is projected, so a page carrying no Subject is not a page there is nothing to do with:
+	 * it reaches the store like any other, as its page node.
 	 */
-	public function testAPageWithNoSubjectLeftToProjectIsSkippedAndWalkedPast(): void {
+	public function testAPageWithNoSubjectIsProjectedLikeAnyOther(): void {
 		$pageId = $this->getExistingTestPage( 'Page without a Subject' )->getId();
 		$store = new SpyGraphDatabasePlugin();
-		$logger = new TestLogger( true );
 		$observer = new SpyRebuildBatchObserver();
 
-		$run = $this->executeOver( new InMemoryPageIdsLookup( $pageId ), $store, $logger, 200, $observer );
+		$run = $this->executeOver( new InMemoryPageIdsLookup( $pageId ), $store, new NullLogger(), 200, $observer );
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
-		$this->assertSame( 0, $run->processed );
-		$this->assertSame( 0, $run->failed, 'a page with nothing to project has not failed' );
+		$this->assertSame( 1, $run->processed );
+		$this->assertSame( 0, $run->failed );
 		$this->assertSame( [ $pageId ], self::batchCursors( $observer ) );
-		$this->assertSame( [], $store->savedPages );
-		$this->assertStringContainsString( 'skipped page ' . $pageId, $this->loggedText( $logger ) );
+		$this->assertSame( [ $pageId ], self::savedPageIds( $store ) );
 	}
 
 	/**
@@ -527,7 +534,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 2, $run->failed, 'the refused pages are counted against the wiki, not the store' );
 		$this->assertSame(
 			[ $pageIds[2], $pageIds[3] ],
-			self::savedPageIds( $store ),
+			self::savedPageIdsFrom( $store, $pageIds[0] ),
 			'the pages behind the refused batch are still projected'
 		);
 	}
@@ -552,18 +559,18 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	 */
 	public function testARunEndedByAWholeBatchFailingIsRewoundToThatBatch(): void {
 		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four' );
-		$this->registerStore( self::newStoreThatHasGone( refusedPageIds: [ $pageIds[2], $pageIds[3] ] ) );
+		$this->registerStore( self::newStoreThatHasGone( refusedPageIds: [ $pageIds[1], $pageIds[2] ] ) );
 
 		$run = $this->rebuild( batchSize: 2 );
 
-		$this->assertSame( $pageIds[1], $run->cursor, 'the cursor is left where the failing batch began' );
-		$this->assertSame( 2, $run->processed );
+		$this->assertSame( $pageIds[0], $run->cursor, 'the cursor is left where the failing batch began' );
+		$this->assertSame( 1 + self::FIXTURE_PAGES, $run->processed );
 		$this->assertSame( 0, $run->failed, 'the pages of the batch are not counted against the wiki' );
 	}
 
 	public function testAStoreThatFailsEveryPageOfABatchIsRetriedFromThereOnResume(): void {
 		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four' );
-		$this->registerStore( self::newStoreThatHasGone( refusedPageIds: [ $pageIds[2], $pageIds[3] ] ) );
+		$this->registerStore( self::newStoreThatHasGone( refusedPageIds: [ $pageIds[1], $pageIds[2] ] ) );
 		$this->rebuild( batchSize: 2 );
 
 		$recoveredStore = new SpyGraphDatabasePlugin();
@@ -571,7 +578,11 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$run = $this->newCoordinator()->resume( self::STORE, RebuildTrigger::Cli, 2, new NullRebuildBatchObserver() );
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
-		$this->assertSame( [ $pageIds[2], $pageIds[3] ], self::savedPageIds( $recoveredStore ) );
+		$this->assertSame(
+			[ $pageIds[1], $pageIds[2], $pageIds[3] ],
+			self::savedPageIds( $recoveredStore ),
+			'the resumed run retries the rewound batch and finishes the walk'
+		);
 	}
 
 	/**
@@ -663,8 +674,8 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	 * pages to go and look at.
 	 */
 	public function testThePagesOfARewoundBatchAreNotReportedAsFailed(): void {
-		$pageIds = $this->createSubjectPages( 'One', 'Two' );
-		$this->registerStore( self::newStoreThatHasGone( refusedPageIds: $pageIds ) );
+		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four' );
+		$this->registerStore( self::newStoreThatHasGone( refusedPageIds: [ $pageIds[1], $pageIds[2] ] ) );
 		$observer = new SpyRebuildBatchObserver();
 
 		$this->rebuild( batchSize: 2, observer: $observer );
@@ -684,7 +695,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
 		$this->assertSame( 1, $run->failed );
-		$this->assertSame( 1, $run->processed, 'the page after it was still reached' );
+		$this->assertSame( 1 + self::FIXTURE_PAGES, $run->processed, 'the page after it was still reached' );
 	}
 
 	/**
@@ -785,7 +796,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertNotNull( $storedRun );
 		$this->assertSame( RebuildStatus::Succeeded, $storedRun->status );
 		$this->assertSame( RebuildTrigger::Cli, $storedRun->trigger );
-		$this->assertSame( 1, $storedRun->processed );
+		$this->assertSame( 1 + self::FIXTURE_PAGES, $storedRun->processed );
 		$this->assertSame( 0, $storedRun->failed );
 		$this->assertSame( RebuildPhase::Deletions, $storedRun->phase, 'a run that reconciled the wiki got to its second phase' );
 	}

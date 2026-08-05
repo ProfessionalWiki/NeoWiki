@@ -215,7 +215,25 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 		DeferredUpdates::doUpdates();
 
 		$this->assertStringContainsString( 'left the rebuild graph store', self::loggedText( $logger ) );
-		$this->assertSame( [], self::loggedErrors( $logger ), 'leaving a rebuild alone is not a failure' );
+		$this->assertSame(
+			[],
+			self::loggedRebuildErrors( $logger ),
+			'leaving a rebuild alone is not a failure'
+		);
+	}
+
+	/**
+	 * Errors about the rebuild itself. Saving the Mapping page projects it like any other page, and the
+	 * test's stores are configured with endpoints that cannot be reached, so the write path logs about
+	 * them too — which says nothing about whether the rebuild was left alone.
+	 *
+	 * @return string[]
+	 */
+	private static function loggedRebuildErrors( TestLogger $logger ): array {
+		return array_values( array_filter(
+			self::loggedErrors( $logger ),
+			static fn ( string $message ): bool => str_contains( $message, 'rebuild graph store' )
+		) );
 	}
 
 	/**
