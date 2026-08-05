@@ -18,13 +18,6 @@ class InMemoryDeletedPageIdsLookup implements DeletedPageIdsLookup {
 	}
 
 	/**
-	 * @return iterable<int>
-	 */
-	public function getDeletedPageIds(): iterable {
-		yield from $this->pageIds;
-	}
-
-	/**
 	 * @return int[]
 	 */
 	public function getDeletedPageIdsAfter( int $afterPageId, int $limit ): array {

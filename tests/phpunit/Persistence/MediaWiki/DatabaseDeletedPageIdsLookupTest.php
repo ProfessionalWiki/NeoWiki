@@ -112,24 +112,6 @@ class DatabaseDeletedPageIdsLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 0, $this->newLookup()->countDeletedPages() );
 	}
 
-	public function testDrainsEveryBatch(): void {
-		// The generator pages the archive in fixed-size keyset batches. With more deleted pages than one
-		// batch, it must keep querying past the first batch and yield every page exactly once — a single
-		// truncated batch would drop the tail.
-		$pageIds = $this->archiveRowsForPagesThatNoLongerExist( DatabaseDeletedPageIdsLookup::BATCH_SIZE + 20 );
-
-		$this->assertSame( $pageIds, $this->getDeletedPageIds() );
-	}
-
-	/**
-	 * @return int[]
-	 */
-	private function getDeletedPageIds(): array {
-		$lookup = new DatabaseDeletedPageIdsLookup( $this->getDb() );
-
-		return iterator_to_array( $lookup->getDeletedPageIds(), false );
-	}
-
 	/**
 	 * Writes one archive row per page for page ids no page table row uses, which is the state deleting
 	 * that many pages would leave behind. Written straight to the archive table: creating and deleting
@@ -137,38 +119,6 @@ class DatabaseDeletedPageIdsLookupTest extends NeoWikiIntegrationTestCase {
 	 *
 	 * @return int[] The page ids, in ascending order.
 	 */
-	private function archiveRowsForPagesThatNoLongerExist( int $count ): array {
-		$firstPageId = (int)$this->getDb()->newSelectQueryBuilder()
-			->select( 'MAX(page_id)' )
-			->from( 'page' )
-			->caller( __METHOD__ )
-			->fetchField() + 1;
-
-		$pageIds = range( $firstPageId, $firstPageId + $count - 1 );
-
-		$this->getDb()->newInsertQueryBuilder()
-			->insertInto( 'archive' )
-			->rows( array_map(
-				fn ( int $pageId ): array => [
-					'ar_page_id' => $pageId,
-					'ar_rev_id' => $pageId,
-					'ar_namespace' => NS_HELP,
-					'ar_title' => 'Bulk deleted page ' . $pageId,
-					'ar_actor' => 1,
-					'ar_comment_id' => 1,
-					'ar_timestamp' => $this->getDb()->timestamp(),
-					'ar_len' => 0,
-					'ar_minor_edit' => 0,
-					'ar_deleted' => 0,
-				],
-				$pageIds
-			) )
-			->caller( __METHOD__ )
-			->execute();
-
-		return $pageIds;
-	}
-
 	private function undeletePageByName( string $pageName ): void {
 		$undeletePage = MediaWikiServices::getInstance()->getUndeletePageFactory()->newUndeletePage(
 			MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) ),
