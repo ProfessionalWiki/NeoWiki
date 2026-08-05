@@ -59,9 +59,11 @@ class SparqlGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 	public function testEveryConfiguredSparqlStoreReceivesThePageEdit(): void {
 		$this->installMockHttp( $this->capturingHttp() );
+		// Both stores hold the same projection, so neither can take the default name and each names
+		// itself. A store name identifies one store, which is what a scoped rebuild is addressed by.
 		$this->overrideConfigValue( 'NeoWikiSparqlStores', [
-			[ 'updateUrl' => self::ENDPOINT ],
-			[ 'updateUrl' => self::SECOND_ENDPOINT ],
+			[ 'updateUrl' => self::ENDPOINT, 'name' => 'primary' ],
+			[ 'updateUrl' => self::SECOND_ENDPOINT, 'name' => 'mirror' ],
 		] );
 
 		$pageId = $this->runWithoutGraphBackend(
@@ -128,7 +130,10 @@ class SparqlGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( '/graph/native/page/' . $pageId, $update );
 	}
 
-	private function deletePageByName( string $pageName ): void {
+	/**
+	 * The base class's, plus the deferred updates the projection this test watches runs in.
+	 */
+	protected function deletePageByName( string $pageName ): void {
 		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
 		$deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()->newDeletePage( $page, $this->getTestSysop()->getUser() );
 

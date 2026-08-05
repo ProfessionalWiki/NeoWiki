@@ -36,7 +36,7 @@ class RedHerbHooks {
 			}
 		);
 		$registrar->addPagePropertyProvider( new StaticPagePropertyProvider() );
-		$registrar->addGraphDatabasePlugin( new RedHerbGraphDatabasePlugin() );
+		$registrar->addGraphDatabasePlugin( 'redherb', new RedHerbGraphDatabasePlugin() );
 	}
 
 }

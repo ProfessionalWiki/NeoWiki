@@ -128,7 +128,8 @@ the Page node. No new revision is created. `rebuild()` returns a `PageRefreshOut
 - `SkippedUnreadablePageProperties` — the page's properties could not be built, for instance because a provider or the
   page's own parse threw.
 
-Genuine failures (such as the graph store being unreachable) throw rather than returning an outcome.
+A graph store that fails is logged and skipped, exactly as on a normal page save; only request timeouts and
+wiki-database errors throw.
 
 ### Graph Database Backends
 
@@ -153,22 +154,29 @@ class MyGraphDatabasePlugin implements GraphDatabasePlugin {
 }
 ```
 
-Register with `NeoWikiRegistrar::addGraphDatabasePlugin()`. Example:
+Register with `NeoWikiRegistrar::addGraphDatabasePlugin( $name, $plugin )`. Example:
 [`src/RedHerbGraphDatabasePlugin.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbGraphDatabasePlugin.php).
+
+The name is what [`--store`](../operations/maintenance.md#rebuilding-one-store) addresses, and what a rebuild files
+its run records under. Pick a stable one and namespace it to your extension. A name is refused with a warning on the
+`NeoWiki` channel when another backend already holds it, when it is `neo4j` in any casing — reserved for the bundled
+Neo4j backend — or when it is longer than 255 bytes, which is all a run record can hold. A refused backend receives
+no page changes and cannot be rebuilt.
 
 `savePage` hands you the page with all of its Subjects and the Page Properties contributed by every
 `PagePropertyProvider`, and runs for every revision, so subject edits, undeletions and page moves all reach you as a
 save. `deletePage` gets only the page id.
 
-`initialize` runs on `update.php`, and at the start of a `RebuildGraphDatabases` run before any page is projected —
-create the store-level structures a fresh store needs there. Make it idempotent, since both paths call it every time;
-it never runs on an individual edit.
+`initialize` runs on `update.php`, at the start of a `RebuildGraphDatabases` run of your store before any page is
+projected, and once per batch of a rebuild started from the wiki — create the store-level structures a fresh store
+needs there. Make it idempotent and cheap, since every path calls it every time; it never runs on an individual edit.
+A rebuild also calls it to ask whether your store is still there when a whole batch of pages has failed.
 
 **Signal failure by throwing.** On an edit, delete or undelete, NeoWiki logs the failure and lets the user's
 operation commit, so a backend being down never blocks the wiki or starves the other backends — your projection is
-simply out of sync until someone runs `RebuildGraphDatabases`. During that rebuild, failures propagate instead, so
-the script can report which pages did not reconcile — an `initialize` throw there aborts the run before any page is
-projected. On `update.php` a failing `initialize` is reported and the update carries on, though the backends
+simply out of sync until the store is rebuilt. During a rebuild, failures reach the rebuild instead: a page you refuse
+is logged and counted and the rebuild carries on, while an `initialize` throw ends the run — before a page is read
+when it opens the store for the run, and at whichever batch it happens on otherwise. On `update.php` a failing `initialize` is reported and the update carries on, though the backends
 registered after yours do not initialize on that run.
 
 Make `deletePage` idempotent: the rebuild re-issues a delete for every page MediaWiki no longer has, so it will ask

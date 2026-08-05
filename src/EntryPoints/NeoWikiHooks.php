@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use Exception;
 use ManualLogEntry;
+use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
 use MediaWiki\Installer\DatabaseUpdater;
@@ -24,6 +25,7 @@ use MediaWiki\User\UserIdentity;
 use MessageLocalizer;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigExample;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -38,6 +40,7 @@ use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
 use MediaWiki\SpecialPage\SpecialPage;
 use Skin;
 use SkinTemplate;
+use Throwable;
 use WikiPage;
 
 class NeoWikiHooks {
@@ -188,6 +191,15 @@ class NeoWikiHooks {
 	 * @see LoadExtensionSchemaUpdatesHook
 	 */
 	public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ): void {
+		$sqlDirectory = dirname( __DIR__, 2 ) . '/sql/' . $updater->getDB()->getType();
+
+		$updater->addExtensionTable( 'neowiki_rebuild_runs', $sqlDirectory . '/neowiki_rebuild_runs.sql' );
+		$updater->addExtensionField(
+			'neowiki_rebuild_runs',
+			'nwrr_phase',
+			$sqlDirectory . '/patch-neowiki_rebuild_runs-nwrr_phase.sql'
+		);
+
 		$updater->addExtensionUpdate( [ [ self::class, 'initializeGraphDatabases' ] ] );
 	}
 
@@ -216,7 +228,7 @@ class NeoWikiHooks {
 	}
 
 	private static function reportFailedGraphDatabaseInitialization( DatabaseUpdater $updater, Exception $e ): void {
-		$reason = self::withoutCredentials( $e->getMessage() );
+		$reason = BackendFailureMessage::withoutCredentials( $e->getMessage() );
 
 		$updater->output(
 			"failed.\n"
@@ -233,20 +245,6 @@ class NeoWikiHooks {
 			'NeoWiki failed to initialize its graph databases during update.php. The wiki is updated, but '
 			. 'the store-level structures its projection relies on are missing. Underlying error: ' . $reason
 		);
-	}
-
-	/**
-	 * Strips the userinfo out of any URI in a message. A backend client reports an unreachable server by
-	 * quoting the connection URI it tried, credentials included, and this message goes to the operator's
-	 * terminal and to deployment logs.
-	 *
-	 * The run is bounded only by whitespace and matched greedily up to its last `@`, because a password
-	 * may itself contain `/`, `@` or a quote: stopping at the first of those leaves the rest of it in
-	 * the message. The cost is that a credential-free URI whose path holds an `@` loses that path, which
-	 * is the right way round for a redaction.
-	 */
-	private static function withoutCredentials( string $message ): string {
-		return (string)preg_replace( '#(?<=://)\S*@#', '', $message );
 	}
 
 	public static function onParserFirstCallInit( Parser $parser ): void {
@@ -290,6 +288,79 @@ class NeoWikiHooks {
 	): void {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision, $user );
 		$wikiPage->doPurge(); // clear cache
+
+		if ( self::changedTheContent( $revision ) ) {
+			self::rebuildStoresHoldingChangedMapping( $wikiPage->getTitle() );
+		}
+	}
+
+	/**
+	 * Whether this revision says anything new. Protecting or unprotecting a page, or changing when that
+	 * expires, inserts a revision carrying the content of the one before it, and this hook fires for
+	 * those as for any other. A Mapping page is what a projection is defined by, so reading one of them
+	 * as a definition change throws away an in-flight rebuild and reprojects the wiki to reach the same
+	 * graph it already had.
+	 */
+	private static function changedTheContent( RevisionRecord $revision ): bool {
+		$parentId = $revision->getParentId();
+
+		if ( $parentId === null || $parentId === 0 ) {
+			return true;
+		}
+
+		$parent = MediaWikiServices::getInstance()->getRevisionLookup()->getRevisionById( $parentId );
+
+		return $parent === null || $parent->getSha1() !== $revision->getSha1();
+	}
+
+	/**
+	 * A saved or deleted Mapping page changes what every mapped page's graph should contain, and nothing
+	 * reprojects those pages. Wikis that have asked for it have the stores holding that projection
+	 * rebuilt here; the rest are left to Special:GraphStores, which reports them as stale.
+	 *
+	 * Deferred past the change's own transaction, because starting a rebuild takes a database lock that
+	 * flushes the connection's snapshot, which a transaction with writes pending may not do — and because
+	 * an edit must not wait on a lock or a queue to be saved. A wiki that has not asked for this registers
+	 * no update at all, so every Mapping edit on it costs nothing.
+	 */
+	private static function rebuildStoresHoldingChangedMapping( Title $title ): void {
+		if ( $title->getNamespace() !== NeoWikiExtension::NS_MAPPING
+			|| !NeoWikiExtension::getInstance()->shouldRebuildOnMappingChange() ) {
+			return;
+		}
+
+		$mappingName = $title->getText();
+
+		// One update per store, so each takes its start lock on a connection with nothing pending. Sharing
+		// a round, the second store's lock would find the first store's writes still there and throw.
+		foreach (
+			NeoWikiExtension::getInstance()->newMappingChangeRebuilder()->storesHoldingProjection( $mappingName )
+			as $storeName
+		) {
+			DeferredUpdates::addCallableUpdate( static function () use ( $storeName, $mappingName ): void {
+				self::rebuildStoreHoldingMapping( $storeName, $mappingName );
+			} );
+		}
+	}
+
+	/**
+	 * Nothing is thrown out of here: the Mapping has been saved or deleted by the time this runs. A store
+	 * whose rebuild could not even be assembled — a backend whose configuration will not resolve — is
+	 * reported rather than allowed to take the rest of the deferred work down with it, and
+	 * Special:GraphStores still shows the store as stale.
+	 */
+	private static function rebuildStoreHoldingMapping( string $storeName, string $mappingName ): void {
+		try {
+			NeoWikiExtension::getInstance()->newMappingChangeRebuilder()->onMappingChanged( $storeName );
+		} catch ( Throwable $e ) {
+			LoggerFactory::getInstance( 'NeoWiki' )->error(
+				'NeoWiki could not rebuild graph store "' . $storeName . '", which holds the projection '
+				. 'Mapping page "' . $mappingName . '" defines, so it still holds the old vocabulary. '
+				. 'Rebuild it from Special:GraphStores. Underlying error: '
+				. BackendFailureMessage::withoutCredentials( $e->getMessage() ),
+				[ 'exception' => $e, 'mapping' => $mappingName ]
+			);
+		}
 	}
 
 	/**
@@ -322,6 +393,9 @@ class NeoWikiHooks {
 
 	public static function onPageDeleteComplete( ProperPageIdentity $page, Authority $deleter, string $reason, int $pageId, RevisionRecord $deletedRev ): void {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onPageDelete( $pageId );
+
+		$title = Title::newFromPageIdentity( $page );
+		self::rebuildStoresHoldingChangedMapping( $title );
 	}
 
 	/**
@@ -348,9 +422,13 @@ class NeoWikiHooks {
 		bool $created,
 		array $restoredPageIds
 	): void {
-		NeoWikiExtension::getInstance()->newImportPageRebuilder()->rebuildFromPrimary(
-			Title::newFromPageIdentity( $page )
-		);
+		$title = Title::newFromPageIdentity( $page );
+
+		NeoWikiExtension::getInstance()->newImportPageRebuilder()->rebuildFromPrimary( $title );
+
+		// Restoring a Mapping page puts a projection back that the stores holding it were rebuilt
+		// without, so it changes what their graphs should contain exactly as deleting it did.
+		self::rebuildStoresHoldingChangedMapping( $title );
 	}
 
 	public static function onSpecialPageInitList( array &$specialPages ): void {

@@ -33,6 +33,17 @@ class ModuleSpecHandlerNeoWikiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 
 	/**
+	 * A route that changes something normally has to say what to send it, and MediaWiki emits no
+	 * requestBody for a handler that declares no body parameters. The exceptions are the routes whose
+	 * whole request is their path — an administrative action on one named thing — and they are listed
+	 * here rather than exempted by rule, so that adding one is a decision rather than an oversight.
+	 */
+	private const BODYLESS_MUTATING_ROUTES = [
+		'POST /neowiki/v0/graph-stores/{name}/rebuild',
+		'DELETE /neowiki/v0/graph-stores/{name}/rebuild',
+	];
+
+	/**
 	 * ModuleManager exists from MediaWiki 1.46, a release before Router started taking one, so the
 	 * Router's own signature is what decides which of the two it wants.
 	 */
@@ -294,7 +305,9 @@ class ModuleSpecHandlerNeoWikiTest extends NeoWikiIntegrationTestCase {
 				self::assertIsString( $method );
 				self::assertIsArray( $op );
 
-				if ( in_array( $method, $mutating, true ) ) {
+				if ( in_array( $method, $mutating, true )
+					&& !in_array( strtoupper( $method ) . ' ' . $specPath, self::BODYLESS_MUTATING_ROUTES, true )
+				) {
 					$this->assertArrayHasKey(
 						'requestBody',
 						$op,

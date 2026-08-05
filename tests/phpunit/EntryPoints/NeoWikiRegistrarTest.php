@@ -48,14 +48,14 @@ class NeoWikiRegistrarTest extends TestCase {
 		$this->assertSame( [ $provider ], $providerRegistry->getProviders() );
 	}
 
-	public function testAddGraphDatabasePluginRegistersInRegistry(): void {
+	public function testAddGraphDatabasePluginRegistersInRegistryUnderItsName(): void {
 		$pluginRegistry = new GraphDatabasePluginRegistry();
 		$registrar = $this->newRegistrar( graphDatabasePluginRegistry: $pluginRegistry );
 
 		$plugin = new SpyGraphDatabasePlugin();
-		$registrar->addGraphDatabasePlugin( $plugin );
+		$registrar->addGraphDatabasePlugin( 'my-store', $plugin );
 
-		$this->assertSame( [ $plugin ], $pluginRegistry->getPlugins() );
+		$this->assertSame( [ 'my-store' => $plugin ], $pluginRegistry->getPlugins() );
 	}
 
 	public function testAddRdfValueMapperRegistersInRegistry(): void {

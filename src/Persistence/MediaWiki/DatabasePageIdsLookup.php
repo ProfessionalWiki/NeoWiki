@@ -27,20 +27,37 @@ class DatabasePageIdsLookup implements PageIdsLookup {
 		$lastPageId = $afterPageId;
 
 		do {
-			$pageIds = $this->db->newSelectQueryBuilder()
-				->select( 'page_id' )
-				->from( 'page' )
-				->where( $this->db->expr( 'page_id', '>', $lastPageId ) )
-				->orderBy( 'page_id' )
-				->limit( self::BATCH_SIZE )
-				->caller( __METHOD__ )
-				->fetchFieldValues();
+			$pageIds = $this->getPageIdsAfter( $lastPageId, self::BATCH_SIZE );
 
 			foreach ( $pageIds as $pageId ) {
-				$lastPageId = (int)$pageId;
-				yield $lastPageId;
+				$lastPageId = $pageId;
+				yield $pageId;
 			}
 		} while ( count( $pageIds ) === self::BATCH_SIZE );
+	}
+
+	/**
+	 * @return int[]
+	 */
+	public function getPageIdsAfter( int $afterPageId, int $limit ): array {
+		return array_map( 'intval', $this->db->newSelectQueryBuilder()
+			->select( 'page_id' )
+			->from( 'page' )
+			->where( $this->db->buildComparison( '>', [ 'page_id' => $afterPageId ] ) )
+			->orderBy( 'page_id' )
+			->limit( $limit )
+			->caller( __METHOD__ )
+			->fetchFieldValues() );
+	}
+
+	public function countPages(): int {
+		$count = $this->db->newSelectQueryBuilder()
+			->select( 'COUNT(*)' )
+			->from( 'page' )
+			->caller( __METHOD__ )
+			->fetchField();
+
+		return is_numeric( $count ) ? (int)$count : 0;
 	}
 
 }

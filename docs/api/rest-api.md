@@ -35,6 +35,8 @@ you may not read and for a Subject id that does not exist.
 The Cypher query endpoint is gated only by the `neowiki-query` right, with no per-page filtering (see
 [Query API](query-api.md)).
 
+The graph-store endpoints are gated by the `neowiki-admin` right.
+
 ## Endpoints
 
 <!-- REST-ENDPOINTS:START — drift-checked against extension.json by
@@ -106,6 +108,17 @@ An ontology Mapping projects native Schemas to a target ontology. For the format
 | Endpoint | Description |
 |---|---|
 | `POST /neowiki/v0/query/cypher` | Run a read-only Cypher query against the graph. See [Query API](query-api.md). |
+
+### Graph stores
+
+Report and rebuild the graph stores this wiki projects into. A rebuild's `202` means filed, not started: poll the
+`GET` until `activeRun` clears. See [Background rebuilds](../operations/maintenance.md#background-rebuilds).
+
+| Endpoint | Description |
+|---|---|
+| `GET /neowiki/v0/graph-stores` | Report every configured store: its `projection`, its `state` (`in-sync`, `stale` or `never-built`), its `activeRun`, and the `processed`/`failed` counts of its `lastSuccessfulRun`. |
+| `POST /neowiki/v0/graph-stores/{name}/rebuild` | Queue a rebuild of one store. `202` with the run; `409` when one is already active. |
+| `DELETE /neowiki/v0/graph-stores/{name}/rebuild` | Cancel the rebuild a store has queued or running. `200` with the cancelled run; `404` when it has none, and when no such store is configured. |
 
 <!-- REST-ENDPOINTS:END -->
 

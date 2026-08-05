@@ -181,6 +181,17 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new `error`-severity violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
 | `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
+| `$wgNeoWikiAutoRebuildOnMappingChange` | Rebuilds every store holding a Mapping's projection when that Mapping changes | `false` | No |
+
+## User rights
+
+`neowiki-admin` allows viewing and rebuilding the wiki's graph stores, through
+[Special:GraphStores](maintenance.md#background-rebuilds) or the matching REST endpoints. Administrators have it by
+default.
+
+`neowiki-query` gates the query surfaces; see [Permissions](../api/query-api.md#permissions). The remaining rights —
+`neowiki-schema-edit`, `neowiki-layout-edit` and `neowiki-mapping-edit` — gate editing in NeoWiki's own namespaces and
+are granted to logged-in users.
 
 ## On-wiki configuration
 
@@ -237,6 +248,12 @@ $wgNeoWikiSparqlStores = [
 
 A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki.
 
+Each store's `name` identifies it when [rebuilding one store](maintenance.md#rebuilding-one-store), so no two entries
+may share one, and none may be `neo4j` in any casing — reserved for the bundled Neo4j backend. Since the name defaults
+to the projection, two entries holding the same projection — mirroring it to a second endpoint, say — collide until
+one of them sets an explicit `name`. An entry whose name cannot identify it is skipped with a warning, so its store
+receives no page changes.
+
 ### Oxigraph
 
 Oxigraph serves queries on `/query` and updates on `/update`, so an entry needs both:
@@ -280,8 +297,11 @@ Sibling projections mint the same entity IRIs, so one query can combine data fro
 alongside a property that ontology does not model. The
 [Person-to-EDM example](../rdf/person-to-edm.md#querying-via-sparql) shows such a query.
 
-A newly added entry only receives pages saved from then on. Backfill it by
-[rebuilding the graph](maintenance.md#rebuilding-the-graph).
+A newly added entry only receives pages saved from then on. Backfill it, and only it, by
+[rebuilding that one store](maintenance.md#rebuilding-one-store).
+
+Editing a Mapping page leaves every page already projected under it in the old vocabulary until the store is
+rebuilt: see [stale stores](maintenance.md#stale-stores), which also covers `$wgNeoWikiAutoRebuildOnMappingChange`.
 
 ### Querying a SPARQL store
 

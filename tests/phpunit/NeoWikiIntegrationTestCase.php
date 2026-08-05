@@ -17,6 +17,7 @@ use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
+use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -30,6 +31,8 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepos
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
+use TestLogger;
 use WikiExporter;
 
 class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
@@ -37,7 +40,9 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	use HandlesNeo4jEnvOverrides;
 	use TempUserTestTrait;
 
-	/** @var GraphDatabasePlugin[] */
+	/**
+	 * @var array<string, GraphDatabasePlugin> Keys are store names
+	 */
 	private array $registeredGraphDatabasePlugins = [];
 
 	/** @var PagePropertyProvider[] */
@@ -90,6 +95,69 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		);
 
 		return $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'TODO' ) );
+	}
+
+	/**
+	 * Pages carrying one Subject each, in the order they were created.
+	 *
+	 * @return int[] The page ids
+	 */
+	protected function createSubjectPages( string ...$pageNames ): array {
+		$pageIds = [];
+
+		foreach ( $pageNames as $pageName ) {
+			$revision = $this->createPageWithSubjects( $pageName, TestSubject::build() );
+			$this->assertNotNull( $revision );
+			$pageIds[] = $revision->getPageId();
+		}
+
+		return $pageIds;
+	}
+
+	protected function deletePageByName( string $pageName ): void {
+		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
+		$deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()->newDeletePage(
+			$page,
+			$this->getTestSysop()->getUser()
+		);
+
+		$this->assertStatusGood( $deletePage->deleteUnsafe( 'test deletion' ) );
+	}
+
+	/**
+	 * The pages a graph store was given, in the order it was given them.
+	 *
+	 * @return int[] The page ids
+	 */
+	protected static function savedPageIds( SpyGraphDatabasePlugin $store ): array {
+		return array_map( static fn ( Page $page ): int => $page->getId()->id, $store->savedPages );
+	}
+
+	/**
+	 * The pages the wiki has that a test did not create itself. Every page is projected, and a test's
+	 * Subjects need a Schema page, which the fixture creates before the pages the test names — so a
+	 * rebuild gets through one more page than the test asked for, and reaches it first.
+	 */
+	protected const FIXTURE_PAGES = 1;
+
+	/**
+	 * What the store was given, dropping the fixture's pages: they sort before the test's own, so a test
+	 * asserting on a whole list bounds it by the first page it created.
+	 *
+	 * @return int[]
+	 */
+	protected static function savedPageIdsFrom( SpyGraphDatabasePlugin $store, int $firstTestPageId ): array {
+		return array_values( array_filter(
+			self::savedPageIds( $store ),
+			static fn ( int $pageId ): bool => $pageId >= $firstTestPageId
+		) );
+	}
+
+	/**
+	 * Everything the logger was told, as one string to look for a phrase in.
+	 */
+	protected static function loggedText( TestLogger $logger ): string {
+		return implode( "\n", array_column( $logger->getBuffer(), 1 ) );
 	}
 
 	protected function createSchema( string $name, ?string $json = null ): ?RevisionRecord {
@@ -223,10 +291,25 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	/**
 	 * Registers extra graph database plugins through the NeoWikiRegistration hook and rebuilds the singleton
 	 * so they are composed into the write paths, letting a test drive the real hook wiring with a backend of
-	 * its choosing (a spy, or one that always throws).
+	 * its choosing (a spy, or one that always throws). Names them after their position, for tests that only
+	 * care about what reaches the backends; use {@see self::registerNamedGraphDatabasePlugins} to address
+	 * one by name.
 	 */
 	protected function registerGraphDatabasePlugins( GraphDatabasePlugin ...$plugins ): void {
-		array_push( $this->registeredGraphDatabasePlugins, ...$plugins );
+		$named = [];
+
+		foreach ( $plugins as $index => $plugin ) {
+			$named['test-store-' . $index] = $plugin;
+		}
+
+		$this->registerNamedGraphDatabasePlugins( $named );
+	}
+
+	/**
+	 * @param array<string, GraphDatabasePlugin> $plugins Keys are store names
+	 */
+	protected function registerNamedGraphDatabasePlugins( array $plugins ): void {
+		$this->registeredGraphDatabasePlugins = $plugins + $this->registeredGraphDatabasePlugins;
 
 		$this->registerWithNeoWiki();
 	}
@@ -254,8 +337,8 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		$this->setTemporaryHook(
 			'NeoWikiRegistration',
 			static function ( NeoWikiRegistrar $registrar ) use ( $plugins, $providers ): void {
-				foreach ( $plugins as $plugin ) {
-					$registrar->addGraphDatabasePlugin( $plugin );
+				foreach ( $plugins as $name => $plugin ) {
+					$registrar->addGraphDatabasePlugin( $name, $plugin );
 				}
 
 				foreach ( $providers as $provider ) {

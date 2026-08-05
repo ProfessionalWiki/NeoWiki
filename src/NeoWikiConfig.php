@@ -4,6 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki;
 
+use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphStoreName;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
+
 readonly class NeoWikiConfig {
 
 	/**
@@ -59,9 +63,10 @@ readonly class NeoWikiConfig {
 	/**
 	 * Whether at least one usable SPARQL store is present in the raw `NeoWikiSparqlStores` config. Used
 	 * at registration time (before the config is parsed into {@see SparqlStoreConfig} objects) to gate
-	 * the SPARQL query surfaces. The acceptance rule — an array entry with a non-empty-string
-	 * `updateUrl` — mirrors {@see NeoWikiConfigFactory::buildSparqlStore}, so the route is present
-	 * exactly when a plugin will be built.
+	 * the SPARQL query surfaces. The acceptance rule mirrors {@see NeoWikiConfigFactory::buildSparqlStore}
+	 * and the name rules applied after it, so the route is present exactly when a plugin will be built:
+	 * a route registered over a config every entry of which was dropped answers a query with a 500 where
+	 * it should not answer at all.
 	 */
 	public static function hasConfiguredSparqlStore( mixed $rawStores ): bool {
 		if ( !is_array( $rawStores ) ) {
@@ -69,12 +74,41 @@ readonly class NeoWikiConfig {
 		}
 
 		foreach ( $rawStores as $entry ) {
-			if ( is_array( $entry ) && is_string( $entry['updateUrl'] ?? null ) && trim( $entry['updateUrl'] ) !== '' ) {
-				return true;
+			if ( !is_array( $entry ) || !is_string( $entry['updateUrl'] ?? null ) || trim( $entry['updateUrl'] ) === '' ) {
+				continue;
 			}
+
+			// A duplicate name is not among the rules checked here: the first entry claiming a name keeps
+			// it, so a later duplicate being dropped can never leave the stores empty.
+			$name = self::rawStoreName( $entry );
+
+			if ( GraphStoreName::isTooLong( $name )
+				|| GraphStoreName::isReserved( $name, [ Neo4jPlugin::STORE_NAME => true ] ) ) {
+				continue;
+			}
+
+			return true;
 		}
 
 		return false;
+	}
+
+	/**
+	 * The name an entry would be filed under, derived exactly as {@see NeoWikiConfigFactory::buildSparqlStore}
+	 * derives it: an explicit "name", or the projection it holds, or the native projection.
+	 *
+	 * @param array<string, mixed> $entry
+	 */
+	private static function rawStoreName( array $entry ): string {
+		foreach ( [ 'name', 'projection' ] as $key ) {
+			$value = $entry[$key] ?? null;
+
+			if ( is_string( $value ) && trim( $value ) !== '' ) {
+				return trim( $value );
+			}
+		}
+
+		return RdfPageProjector::PROJECTION;
 	}
 
 }

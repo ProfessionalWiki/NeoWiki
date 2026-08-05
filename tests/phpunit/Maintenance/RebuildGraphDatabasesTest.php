@@ -6,13 +6,13 @@ namespace ProfessionalWiki\NeoWiki\Tests\Maintenance;
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
-use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildGraphDatabases;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
 
 // The maintenance script is not PSR-4 autoloadable (it lives outside src/), so load it explicitly.
 // Its RUN_MAINTENANCE_IF_MAIN guard is a no-op under PHPUnit, so this does not execute the script.
@@ -23,6 +23,8 @@ require_once __DIR__ . '/../../../maintenance/RebuildGraphDatabases.php';
  * @group Database
  */
 class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
+
+	private string $scriptOutput = '';
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -37,30 +39,28 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		NeoWikiExtension::resetInstance();
 	}
 
-	public function testRebuildProjectsPagesWithAndWithoutSubjects(): void {
-		$subjectPageId = $this->createPageWithSubjects( 'Page with subjects', TestSubject::build() )->getPageId();
-		$plainPageId = $this->insertPage( 'Plain page', 'No subjects here.' )['id'];
+	public function testRebuildSucceedsOnAWikiThatHasNeverStoredASubject(): void {
+		// A wiki with no Subjects has never registered the 'neo' slot role, so the role-id lookup
+		// throws NameTableAccessException. Forcing that state (empty table + a store without a warmed
+		// cache) proves the rebuild treats it as an empty run instead of crashing.
+		$this->truncateTable( 'slot_roles' );
+		$this->getServiceContainer()->resetServiceForTesting( 'SlotRoleStore' );
 
 		$spy = new SpyGraphDatabasePlugin();
 		$this->registerGraphDatabasePlugins( $spy );
 
-		$this->runRebuild();
+		$reconciled = $this->runRebuild();
 
-		$this->assertSame(
-			[ $subjectPageId, $plainPageId ],
-			$this->savedPageIdsAfter( $spy, $subjectPageId - 1 ),
-			'the rebuild should project every page, whether or not it holds Subjects'
-		);
+		$this->assertTrue( $reconciled, 'a wiki with no Subjects rebuilds rather than crashing' );
+		$this->assertNotEmpty( $spy->savedPages, 'every page is projected, Subjects or not' );
 	}
 
-	public function testRebuildRemovesDeletedPagesFromTheGraph(): void {
+	public function testRebuildRemovesADeletedSubjectPageFromTheGraph(): void {
 		$this->createPageWithSubjects( 'Surviving page before', TestSubject::build() );
-		$deletedSubjectPage = $this->createPageWithSubjects( 'Deleted during outage', TestSubject::build() );
-		$deletedPlainPage = $this->editPage( 'Deleted plain page', 'No subjects here.' )->getNewRevision();
+		$deleted = $this->createPageWithSubjects( 'Deleted during outage', TestSubject::build() );
 		$this->createPageWithSubjects( 'Surviving page after', TestSubject::build() );
 
 		$this->deletePageByName( 'Deleted during outage' );
-		$this->deletePageByName( 'Deleted plain page' );
 
 		$spy = new SpyGraphDatabasePlugin();
 		$this->registerGraphDatabasePlugins( $spy );
@@ -68,9 +68,9 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		$this->runRebuild();
 
 		$this->assertSame(
-			[ $deletedSubjectPage->getPageId(), $deletedPlainPage->getPageId() ],
+			[ $deleted->getPageId() ],
 			array_map( static fn ( PageId $pageId ) => $pageId->id, $spy->deletedPageIds ),
-			'the rebuild should remove exactly the pages MediaWiki no longer has'
+			'the rebuild should remove exactly the page MediaWiki no longer has'
 		);
 	}
 
@@ -113,61 +113,274 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 		} );
 	}
 
-	/**
-	 * The rebuild projects every page on the wiki, so a test asserting a full list has to bound it: this
-	 * drops the pages that exist before the ones the test creates, such as its Schema page.
-	 *
-	 * @return int[]
-	 */
-	private function savedPageIdsAfter( SpyGraphDatabasePlugin $spy, int $firstPageId ): array {
-		$pageIds = array_map( static fn ( Page $page ): int => $page->getId()->id, $spy->savedPages );
+	public function testWithoutAStoreOptionEveryConfiguredStoreIsRebuilt(): void {
+		$pageId = $this->createPageWithSubjects( 'Page for every store', TestSubject::build() )?->getPageId();
+		$first = new SpyGraphDatabasePlugin();
+		$second = new SpyGraphDatabasePlugin();
+		$this->registerNamedGraphDatabasePlugins( [ 'first-store' => $first, 'second-store' => $second ] );
 
-		return array_values( array_filter( $pageIds, static fn ( int $pageId ): bool => $pageId > $firstPageId ) );
+		$this->runRebuild();
+
+		$this->assertCount( 1 + self::FIXTURE_PAGES, $first->savedPages );
+		$this->assertCount( 1 + self::FIXTURE_PAGES, $second->savedPages );
+		$this->assertSame( [ $pageId ], self::savedPageIdsFrom( $second, (int)$pageId ) );
+	}
+
+	public function testTheStoreOptionRebuildsOnlyThatStore(): void {
+		$this->createPageWithSubjects( 'Page for one store', TestSubject::build() );
+		$scopedStore = new SpyGraphDatabasePlugin();
+		$otherStore = new SpyGraphDatabasePlugin();
+		$this->registerNamedGraphDatabasePlugins( [ 'scoped' => $scopedStore, 'other' => $otherStore ] );
+
+		$this->runRebuild( [ '--store=scoped' ] );
+
+		$this->assertCount( 1 + self::FIXTURE_PAGES, $scopedStore->savedPages );
+		$this->assertSame( [], $otherStore->savedPages );
+	}
+
+	public function testRebuildingAnUnconfiguredStoreExitsNonZero(): void {
+		$this->registerNamedGraphDatabasePlugins( [ 'scoped' => new SpyGraphDatabasePlugin() ] );
+
+		$reconciled = $this->runRebuild( [ '--store=typo' ] );
+
+		$this->assertFalse( $reconciled );
+		$this->assertStringContainsString( 'Unknown graph store "typo"', $this->getScriptOutput() );
+	}
+
+	public function testTheSummaryNamesTheStoresLeftOutOfSync(): void {
+		$this->createPageWithSubjects( 'Page the working store wants', TestSubject::build() );
+		$this->registerNamedGraphDatabasePlugins( [
+			'broken' => new ThrowingGraphDatabasePlugin(),
+			'working' => new SpyGraphDatabasePlugin(),
+		] );
+
+		$this->runRebuild();
+
+		$this->assertStringContainsString( 'Still out of sync: broken', $this->getScriptOutput() );
 	}
 
 	/**
-	 * A whole-wiki rebuild parses and re-projects every page, so an interrupted run must be able to pick
-	 * up where it stopped instead of redoing the pages it already reconciled.
+	 * A count of failures is not something an operator can act on. Naming the pages is, and naming only
+	 * the first few keeps a wiki-wide failure from burying the summary under its own page ids.
 	 */
-	public function testResumesAfterTheGivenPageId(): void {
-		$firstPageId = $this->insertPage( 'Resume first page', 'One.' )['id'];
-		$secondPageId = $this->insertPage( 'Resume second page', 'Two.' )['id'];
+	public function testTheFailingPagesAreNamedUpToAHandful(): void {
+		$pageIds = $this->createSubjectPages( 'One', 'Two', 'Three', 'Four', 'Five', 'Six' );
+		$this->registerNamedGraphDatabasePlugins( [
+			'picky' => new SpyGraphDatabasePlugin( refusedPageIds: $pageIds ),
+		] );
 
-		$spy = new SpyGraphDatabasePlugin();
-		$this->registerGraphDatabasePlugins( $spy );
+		$this->runRebuild( [ '--store=picky' ] );
 
-		$this->runRebuild( fromPageId: $firstPageId );
+		$this->assertStringContainsString(
+			implode( ', ', array_slice( $pageIds, 0, 5 ) ),
+			$this->getScriptOutput()
+		);
+		$this->assertStringContainsString( 'and 1 more', $this->getScriptOutput() );
+	}
 
-		$this->assertSame(
-			[ $secondPageId ],
-			$this->savedPageIdsAfter( $spy, $firstPageId - 1 ),
-			'the page resumed past should not be projected again'
+	/**
+	 * @return int[]
+	 */
+	public function testAStoreThatCannotBeReachedExitsNonZero(): void {
+		$this->createPageWithSubjects( 'Page nobody projects', TestSubject::build() );
+		$this->registerNamedGraphDatabasePlugins( [ 'broken' => new ThrowingGraphDatabasePlugin() ] );
+
+		$reconciled = $this->runRebuild( [ '--store=broken' ] );
+
+		$this->assertFalse( $reconciled );
+		$this->assertStringContainsString( ThrowingGraphDatabasePlugin::FAILURE_MESSAGE, $this->getScriptOutput() );
+		$this->assertStringContainsString(
+			'--resume', $this->getScriptOutput(), 'a failed run must say how to continue it'
 		);
 	}
 
-	private function runRebuild( ?int $fromPageId = null ): void {
-		$script = new RebuildGraphDatabases();
+	public function testOneStoreFailingDoesNotStopTheStoresAfterIt(): void {
+		$this->createPageWithSubjects( 'Page the working store wants', TestSubject::build() );
+		$workingStore = new SpyGraphDatabasePlugin();
+		$this->registerNamedGraphDatabasePlugins( [
+			'broken' => new ThrowingGraphDatabasePlugin(),
+			'working' => $workingStore,
+		] );
 
-		if ( $fromPageId !== null ) {
-			$script->setOption( 'from-page-id', (string)$fromPageId );
+		$reconciled = $this->runRebuild();
+
+		$this->assertFalse( $reconciled );
+		$this->assertCount( 1 + self::FIXTURE_PAGES, $workingStore->savedPages );
+	}
+
+	public function testAPageTheStoreRejectsExitsNonZero(): void {
+		$pageId = $this->createPageWithSubjects( 'Rejected page', TestSubject::build() )?->getPageId();
+		$this->registerNamedGraphDatabasePlugins( [
+			'picky' => new SpyGraphDatabasePlugin( refusedPageIds: [ (int)$pageId ] ),
+		] );
+
+		$reconciled = $this->runRebuild( [ '--store=picky' ] );
+
+		$this->assertFalse( $reconciled );
+		$this->assertStringContainsString( 'Projected 1 pages, 1 failed.', $this->getScriptOutput() );
+	}
+
+	public function testProgressIsReportedPerBatchRatherThanPerPage(): void {
+		$this->createPageWithSubjects( 'One', TestSubject::build() );
+		$this->createPageWithSubjects( 'Two', TestSubject::build() );
+		$this->createPageWithSubjects( 'Three', TestSubject::build() );
+		$this->registerNamedGraphDatabasePlugins( [ 'batched' => new SpyGraphDatabasePlugin() ] );
+
+		$this->runRebuild( [ '--store=batched', '--batch-size=2' ] );
+
+		$this->assertStringContainsString( 'batched: 2/4 pages (failed 0)', $this->getScriptOutput() );
+		$this->assertStringContainsString( 'batched: 4/4 pages (failed 0)', $this->getScriptOutput() );
+	}
+
+	/**
+	 * Each batch reports what it removed, and the script keeps the running total, because a run continued
+	 * in another process has no memory of what the batches before it removed.
+	 */
+	public function testRemovalProgressAddsUpAcrossBatches(): void {
+		foreach ( [ 'First gone', 'Second gone', 'Third gone' ] as $pageName ) {
+			$this->createPageWithSubjects( $pageName, TestSubject::build() );
+			$this->deletePageByName( $pageName );
 		}
+		$this->registerNamedGraphDatabasePlugins( [ 'batched' => new SpyGraphDatabasePlugin() ] );
+
+		$this->runRebuild( [ '--store=batched', '--batch-size=2' ] );
+
+		$this->assertStringContainsString( 'batched: 2/3 deleted pages removed', $this->getScriptOutput() );
+		$this->assertStringContainsString( 'batched: 3/3 deleted pages removed', $this->getScriptOutput() );
+	}
+
+	/**
+	 * Rounding one of these up to the smallest batch that works would rebuild the whole wiki one page
+	 * at a time under an option the operator got wrong, and say nothing about it.
+	 *
+	 * @dataProvider nonsensicalBatchSizeProvider
+	 */
+	public function testANonsensicalBatchSizeIsRefusedRatherThanRounded( string $batchSize ): void {
+		$this->createPageWithSubjects( 'Page nobody gets to', TestSubject::build() );
+		$store = new SpyGraphDatabasePlugin();
+		$this->registerNamedGraphDatabasePlugins( [ 'batched' => $store ] );
+
+		$reconciled = $this->runRebuild( [ '--batch-size=' . $batchSize ] );
+
+		$this->assertFalse( $reconciled );
+		$this->assertStringContainsString( '--batch-size', $this->getScriptOutput() );
+		$this->assertSame( [], $store->savedPages, 'nothing is rebuilt under an option that makes no sense' );
+	}
+
+	public function nonsensicalBatchSizeProvider(): iterable {
+		yield 'nothing at all' => [ '0' ];
+		yield 'less than nothing' => [ '-5' ];
+		yield 'a fraction of a page' => [ '2.5' ];
+		yield 'not a number' => [ 'lots' ];
+	}
+
+	public function testResumeContinuesTheStoresUnfinishedRebuild(): void {
+		$this->createPageWithSubjects( 'Page before the outage', TestSubject::build() );
+		$this->createPageWithSubjects( 'Page after the outage', TestSubject::build() );
+		$store = new SpyGraphDatabasePlugin();
+		$this->registerNamedGraphDatabasePlugins( [ 'recovering' => new ThrowingGraphDatabasePlugin() ] );
+		$this->runRebuild( [ '--store=recovering' ] );
+
+		// The store is back: the same name now resolves to a plugin that works.
+		$this->registerNamedGraphDatabasePlugins( [ 'recovering' => $store ] );
+		$this->runRebuild( [ '--store=recovering', '--resume' ] );
+
+		$this->assertCount(
+			2 + self::FIXTURE_PAGES,
+			$store->savedPages,
+			'the resumed run reconciles the pages the failed one did not'
+		);
+	}
+
+	public function testResumingANamedStoreWithNothingToResumeExitsNonZero(): void {
+		$this->registerNamedGraphDatabasePlugins( [ 'fresh' => new SpyGraphDatabasePlugin() ] );
+
+		$reconciled = $this->runRebuild( [ '--store=fresh', '--resume' ] );
+
+		$this->assertFalse( $reconciled, 'the operator asked for something that could not be done' );
+		$this->assertStringContainsString( 'no unfinished rebuild to resume', $this->getScriptOutput() );
+	}
+
+	public function testResumingEveryStorePassesOverTheOnesWithNothingToResume(): void {
+		$this->createPageWithSubjects( 'Page for the recovering store', TestSubject::build() );
+		$recoveringStore = new SpyGraphDatabasePlugin();
+		$this->registerNamedGraphDatabasePlugins( [
+			'finished' => new SpyGraphDatabasePlugin(),
+			'recovering' => new ThrowingGraphDatabasePlugin(),
+		] );
+		$this->runRebuild();
+
+		$this->registerNamedGraphDatabasePlugins( [
+			'finished' => new SpyGraphDatabasePlugin(),
+			'recovering' => $recoveringStore,
+		] );
+		$reconciled = $this->runRebuild( [ '--resume' ] );
+
+		$this->assertTrue( $reconciled, 'a store whose last rebuild finished is not a failure to resume' );
+		$this->assertCount( 1 + self::FIXTURE_PAGES, $recoveringStore->savedPages );
+	}
+
+	/**
+	 * A store added to the configuration since the last rebuild holds none of the wiki, and has no
+	 * unfinished run to continue either. Reporting that as in sync is how a scheduled `--resume` leaves
+	 * a store empty and still says it is done.
+	 */
+	public function testResumingEveryStoreReportsAStoreThatWasNeverRebuilt(): void {
+		$this->registerNamedGraphDatabasePlugins( [ 'newly-added' => new SpyGraphDatabasePlugin() ] );
+
+		$reconciled = $this->runRebuild( [ '--resume' ] );
+
+		$this->assertFalse( $reconciled );
+		$this->assertStringContainsString( 'newly-added', $this->getScriptOutput() );
+	}
+
+	public function testResumingEveryStoreReportsAStoreWhoseLastRunLeftPagesBehind(): void {
+		$pageId = $this->createPageWithSubjects( 'Rejected page', TestSubject::build() )?->getPageId();
+		$this->registerNamedGraphDatabasePlugins( [
+			'picky' => new SpyGraphDatabasePlugin( refusedPageIds: [ (int)$pageId ] ),
+		] );
+		$this->runRebuild();
+
+		$reconciled = $this->runRebuild( [ '--resume' ] );
+
+		$this->assertFalse( $reconciled, 'a run that finished without reconciling every page is not in sync' );
+	}
+
+	public function testRebuildingWithNoStoresConfiguredSucceeds(): void {
+		$reconciled = $this->runWithoutGraphBackend( function (): bool {
+			// Replaces the registration hook, so the bundled test extension contributes no store either.
+			$this->registerNamedGraphDatabasePlugins( [] );
+
+			return $this->runRebuild();
+		} );
+
+		$this->assertTrue( $reconciled );
+		$this->assertStringContainsString( 'No graph stores are configured', $this->getScriptOutput() );
+	}
+
+	/**
+	 * Drives the script the way the command line does, so the run covers option parsing too. It reports
+	 * failure by returning false, which is what MaintenanceRunner turns into the exit status.
+	 *
+	 * @param string[] $arguments
+	 */
+	private function runRebuild( array $arguments = [] ): bool {
+		$script = new RebuildGraphDatabases();
+		$script->loadWithArgv( $arguments );
 
 		ob_start();
 		try {
-			$script->execute();
+			$reconciled = $script->execute();
 		} finally {
-			ob_end_clean();
+			$script->cleanupChanneled();
+			$this->scriptOutput = (string)ob_get_clean();
 		}
+
+		return $reconciled;
 	}
 
-	private function deletePageByName( string $pageName ): void {
-		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
-		$deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()->newDeletePage(
-			$page,
-			$this->getTestSysop()->getUser()
-		);
-
-		$this->assertStatusGood( $deletePage->deleteUnsafe( 'test deletion' ) );
+	private function getScriptOutput(): string {
+		return $this->scriptOutput;
 	}
 
 }

@@ -10,6 +10,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\Test\TestLogger;
 use ProfessionalWiki\NeoWiki\NeoWikiConfig;
 use ProfessionalWiki\NeoWiki\NeoWikiConfigFactory;
+use ProfessionalWiki\NeoWiki\SparqlStoreConfig;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiConfigFactory
@@ -168,6 +169,140 @@ class NeoWikiConfigFactoryTest extends TestCase {
 
 	public function testEmptySparqlStoresConfigProducesEmptyList(): void {
 		$this->assertSame( [], $this->buildSparqlConfig( [] )->sparqlStores );
+	}
+
+	/**
+	 * Surrounding whitespace is a typo in every one of these, and a padded name or projection would
+	 * silently fail to match what a rebuild or a Mapping lookup asks for.
+	 */
+	public function testSurroundingWhitespaceIsTrimmedOffEveryConfiguredString(): void {
+		$config = $this->buildSparqlConfig( [ [
+			'updateUrl' => "  https://qlever.example/api\n",
+			'queryUrl' => ' https://qlever.example/query ',
+			'accessToken' => "\tSECRET ",
+			'projection' => ' EDM ',
+			'name' => ' edm-public ',
+		] ] );
+
+		$this->assertEquals(
+			new SparqlStoreConfig(
+				updateUrl: 'https://qlever.example/api',
+				queryUrl: 'https://qlever.example/query',
+				accessToken: 'SECRET',
+				projection: 'EDM',
+				name: 'edm-public',
+			),
+			$config->sparqlStores[0]
+		);
+	}
+
+	public function testSparqlStoreNameDefaultsToItsProjection(): void {
+		$config = $this->buildSparqlConfig( [
+			[ 'updateUrl' => 'https://qlever.example/api' ],
+			[ 'updateUrl' => 'https://qlever.example/api', 'projection' => 'EDM' ],
+		] );
+
+		$this->assertSame( 'native', $config->sparqlStores[0]->name );
+		$this->assertSame( 'EDM', $config->sparqlStores[1]->name );
+	}
+
+	public function testExplicitSparqlStoreNameOverridesTheProjectionDefault(): void {
+		$config = $this->buildSparqlConfig( [
+			[ 'updateUrl' => 'https://qlever.example/api', 'projection' => 'EDM', 'name' => 'edm-public' ],
+		] );
+
+		$this->assertSame( 'edm-public', $config->sparqlStores[0]->name );
+		$this->assertSame( 'EDM', $config->sparqlStores[0]->projection );
+	}
+
+	public function testBlankSparqlStoreNameFallsBackToTheProjection(): void {
+		$config = $this->buildSparqlConfig( [
+			[ 'updateUrl' => 'https://qlever.example/api', 'projection' => 'EDM', 'name' => '   ' ],
+		] );
+
+		$this->assertSame( 'EDM', $config->sparqlStores[0]->name );
+	}
+
+	public function testSparqlStoreEntryWithADuplicateNameIsSkippedWithWarning(): void {
+		$logger = new TestLogger();
+
+		$config = $this->buildSparqlConfig(
+			[
+				[ 'updateUrl' => 'https://first.example/api', 'projection' => 'EDM' ],
+				[ 'updateUrl' => 'https://second.example/api', 'projection' => 'EDM' ],
+				[ 'updateUrl' => 'https://third.example/api', 'projection' => 'native' ],
+			],
+			$logger
+		);
+
+		$this->assertSame(
+			[ 'https://first.example/api', 'https://third.example/api' ],
+			array_map( static fn ( SparqlStoreConfig $store ): string => $store->updateUrl, $config->sparqlStores ),
+			'the first entry claiming a name keeps it, and only the later duplicate is dropped'
+		);
+		$this->assertTrue( $logger->hasWarningThatContains( 'earlier entry' ) );
+	}
+
+	public function testSparqlStoreEntryTakingTheNeo4jNameIsSkippedWithWarning(): void {
+		$logger = new TestLogger();
+
+		$config = $this->buildSparqlConfig(
+			[ [ 'updateUrl' => 'https://qlever.example/api', 'name' => 'neo4j' ] ],
+			$logger
+		);
+
+		$this->assertSame( [], $config->sparqlStores, 'the bundled Neo4j backend keeps its own name' );
+		$this->assertTrue(
+			$logger->hasWarningThatContains( 'reserved' ),
+			'a name nothing else in the configuration claims needs its own reason'
+		);
+	}
+
+	/**
+	 * @dataProvider neo4jNameCasingProvider
+	 */
+	public function testSparqlStoreEntryTakingTheNeo4jNameInAnyCasingIsSkipped( string $name ): void {
+		$config = $this->buildSparqlConfig( [ [ 'updateUrl' => 'https://qlever.example/api', 'name' => $name ] ] );
+
+		$this->assertSame( [], $config->sparqlStores );
+	}
+
+	public function neo4jNameCasingProvider(): iterable {
+		yield 'as written' => [ 'neo4j' ];
+		yield 'capitalized' => [ 'Neo4j' ];
+		yield 'shouted' => [ 'NEO4J' ];
+	}
+
+	public function testSparqlStoreEntryWithANameTooLongToFileRunsUnderIsSkippedWithWarning(): void {
+		$logger = new TestLogger();
+
+		$config = $this->buildSparqlConfig(
+			[ [ 'updateUrl' => 'https://qlever.example/api', 'name' => str_repeat( 'a', 256 ) ] ],
+			$logger
+		);
+
+		$this->assertSame( [], $config->sparqlStores );
+		$this->assertTrue( $logger->hasWarningThatContains( 'longer than' ) );
+	}
+
+	public function testASparqlStoreNameOfTheGreatestLengthTheRunRecordsHoldIsKept(): void {
+		$config = $this->buildSparqlConfig(
+			[ [ 'updateUrl' => 'https://qlever.example/api', 'name' => str_repeat( 'a', 255 ) ] ]
+		);
+
+		$this->assertCount( 1, $config->sparqlStores );
+	}
+
+	public function testExplicitNamesLetSiblingProjectionsRepeatATargetOntology(): void {
+		$config = $this->buildSparqlConfig( [
+			[ 'updateUrl' => 'https://public.example/api', 'projection' => 'EDM', 'name' => 'edm-public' ],
+			[ 'updateUrl' => 'https://internal.example/api', 'projection' => 'EDM', 'name' => 'edm-internal' ],
+		] );
+
+		$this->assertSame(
+			[ 'edm-public', 'edm-internal' ],
+			array_map( static fn ( SparqlStoreConfig $store ): string => $store->name, $config->sparqlStores )
+		);
 	}
 
 	/**
