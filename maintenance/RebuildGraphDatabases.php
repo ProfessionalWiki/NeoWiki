@@ -260,8 +260,8 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 	private function countWhatThereIsToDo(): void {
 		$extension = NeoWikiExtension::getInstance();
 
-		$this->totalSubjectPages = $extension->newSubjectPageIdsLookup()->countSubjectPages();
-		$this->totalDeletedSubjectPages = $extension->newDeletedSubjectPageIdsLookup()->countDeletedSubjectPages();
+		$this->totalSubjectPages = $extension->newPageIdsLookup()->countPages();
+		$this->totalDeletedSubjectPages = $extension->newDeletedPageIdsLookup()->countDeletedPages();
 	}
 
 	public function pageFailed( int $pageId ): void {

@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application\GraphRebuild;
 use Exception;
 use MediaWiki\Title\TitleFactory;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
-use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
+use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildPhase;
@@ -15,9 +15,9 @@ use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Persistence\DeletedSubjectPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\DeletedPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
-use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\PageIdsLookup;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -67,8 +67,8 @@ class GraphRebuildExecutor {
 	private const int MIN_BATCH_SIZE_FOR_STORE_DEATH = 2;
 
 	public function __construct(
-		private readonly SubjectPageIdsLookup $subjectPageIds,
-		private readonly DeletedSubjectPageIdsLookup $deletedSubjectPageIds,
+		private readonly PageIdsLookup $pageIds,
+		private readonly DeletedPageIdsLookup $deletedPageIds,
 		private readonly RebuildRunRepository $runs,
 		private readonly TitleFactory $titleFactory,
 		private readonly LoggerInterface $logger,
@@ -83,7 +83,7 @@ class GraphRebuildExecutor {
 	public function execute(
 		RebuildRun $run,
 		GraphDatabasePlugin $store,
-		SubjectPageRebuilder $pageRebuilder,
+		PageRebuilder $pageRebuilder,
 		int $batchSize,
 		RebuildBatchObserver $observer
 	): RebuildRun {
@@ -115,7 +115,7 @@ class GraphRebuildExecutor {
 	public function executeOneBatch(
 		RebuildRun $run,
 		GraphDatabasePlugin $store,
-		SubjectPageRebuilder $pageRebuilder,
+		PageRebuilder $pageRebuilder,
 		int $batchSize,
 		RebuildBatchObserver $observer
 	): RebuildRun {
@@ -138,7 +138,7 @@ class GraphRebuildExecutor {
 	private function runBatch(
 		RebuildRun $run,
 		GraphDatabasePlugin $store,
-		SubjectPageRebuilder $pageRebuilder,
+		PageRebuilder $pageRebuilder,
 		int $batchSize,
 		RebuildBatchObserver $observer
 	): RebuildRun {
@@ -203,11 +203,11 @@ class GraphRebuildExecutor {
 	private function projectPageBatch(
 		RebuildRun $run,
 		GraphDatabasePlugin $store,
-		SubjectPageRebuilder $pageRebuilder,
+		PageRebuilder $pageRebuilder,
 		int $batchSize,
 		RebuildBatchObserver $observer
 	): RebuildRun {
-		$pageIds = $this->subjectPageIds->getSubjectPageIdsAfter( $run->cursor, $batchSize );
+		$pageIds = $this->pageIds->getPageIdsAfter( $run->cursor, $batchSize );
 
 		if ( $pageIds === [] ) {
 			return $this->recordRun( $run->enteredDeletionPhase() );
@@ -329,7 +329,7 @@ class GraphRebuildExecutor {
 	private function projectPage(
 		int $pageId,
 		RebuildProgress $progress,
-		SubjectPageRebuilder $pageRebuilder
+		PageRebuilder $pageRebuilder
 	): ProjectedPageOutcome {
 		$title = $this->titleFactory->newFromID( $pageId );
 
@@ -379,7 +379,7 @@ class GraphRebuildExecutor {
 		int $batchSize,
 		RebuildBatchObserver $observer
 	): RebuildRun {
-		$pageIds = $this->deletedSubjectPageIds->getDeletedSubjectPageIdsAfter( $run->cursor, $batchSize );
+		$pageIds = $this->deletedPageIds->getDeletedPageIdsAfter( $run->cursor, $batchSize );
 
 		if ( $pageIds === [] ) {
 			return $this->recordRun( $run->succeeded() );

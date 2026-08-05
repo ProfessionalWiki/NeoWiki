@@ -246,7 +246,7 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 				startLock: $extension->newRebuildStartLock(),
 				executor: $extension->newGraphRebuildExecutor(),
 				jobQueue: SpyRebuildJobQueue::refusingEverything(),
-				newPageRebuilder: static fn ( GraphDatabasePlugin $store ) => $extension->newSubjectPageRebuilderFor( $store ),
+				newPageRebuilder: static fn ( GraphDatabasePlugin $store ) => $extension->newPageRebuilderFor( $store ),
 				logger: new NullLogger(),
 			),
 			logger: $logger,

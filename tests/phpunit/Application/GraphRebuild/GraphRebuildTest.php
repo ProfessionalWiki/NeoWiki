@@ -15,7 +15,7 @@ use ProfessionalWiki\NeoWiki\Application\GraphRebuild\NullRebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildAlreadyRunningException;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\UnknownGraphStoreException;
-use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
+use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildPhase;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
@@ -28,13 +28,13 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildStartLock;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildStartLock;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildStartLockUnavailableException;
-use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\PageIdsLookup;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\CancellingRebuildRunRepository;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryDeletedSubjectPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryDeletedPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\RefusingRebuildStartLock;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyRebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyRebuildJobQueue;
@@ -431,7 +431,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$logger = new TestLogger( true );
 		$observer = new SpyRebuildBatchObserver();
 
-		$run = $this->executeOver( new InMemorySubjectPageIdsLookup( $pageId ), $store, $logger, 200, $observer );
+		$run = $this->executeOver( new InMemoryPageIdsLookup( $pageId ), $store, $logger, 200, $observer );
 
 		$this->assertSame( RebuildStatus::Succeeded, $run->status );
 		$this->assertSame( 0, $run->processed );
@@ -480,8 +480,8 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		array $pageIds
 	): RebuildRun {
 		$executor = new GraphRebuildExecutor(
-			subjectPageIds: new InMemorySubjectPageIdsLookup( ...$pageIds ),
-			deletedSubjectPageIds: new InMemoryDeletedSubjectPageIdsLookup(),
+			pageIds: new InMemoryPageIdsLookup( ...$pageIds ),
+			deletedPageIds: new InMemoryDeletedPageIdsLookup(),
 			runs: new CancellingRebuildRunRepository( $this->newRunRepository() ),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			logger: new NullLogger(),
@@ -490,7 +490,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		return $executor->executeOneBatch(
 			run: $run,
 			store: $store,
-			pageRebuilder: NeoWikiExtension::getInstance()->newSubjectPageRebuilderFor( $store ),
+			pageRebuilder: NeoWikiExtension::getInstance()->newPageRebuilderFor( $store ),
 			batchSize: 200,
 			observer: new NullRebuildBatchObserver()
 		);
@@ -598,7 +598,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$store = self::newStoreThatHasGone( refusedPageIds: $pageIds );
 
 		$run = $this->executeOver(
-			new InMemorySubjectPageIdsLookup( self::PAGE_ID_THE_WIKI_NO_LONGER_HAS, ...$pageIds ),
+			new InMemoryPageIdsLookup( self::PAGE_ID_THE_WIKI_NO_LONGER_HAS, ...$pageIds ),
 			$store,
 			new NullLogger(),
 			batchSize: 3
@@ -617,7 +617,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$store = new SpyGraphDatabasePlugin( refusedPageIds: $pageIds );
 
 		$run = $this->executeOver(
-			new InMemorySubjectPageIdsLookup( self::PAGE_ID_THE_WIKI_NO_LONGER_HAS, self::OTHER_PAGE_ID_THE_WIKI_NO_LONGER_HAS, ...$pageIds ),
+			new InMemoryPageIdsLookup( self::PAGE_ID_THE_WIKI_NO_LONGER_HAS, self::OTHER_PAGE_ID_THE_WIKI_NO_LONGER_HAS, ...$pageIds ),
 			$store,
 			new NullLogger(),
 			batchSize: 3
@@ -950,9 +950,9 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 			stores: [ self::STORE => new SpyGraphDatabasePlugin() ],
 			runs: $this->newRunRepository(),
 			startLock: $this->newStartLock(),
-			executor: $this->newExecutor( new InMemorySubjectPageIdsLookup(), new NullLogger() ),
+			executor: $this->newExecutor( new InMemoryPageIdsLookup(), new NullLogger() ),
 			jobQueue: new SpyRebuildJobQueue(),
-			newPageRebuilder: static fn (): SubjectPageRebuilder => throw new LogicException( 'unresolvable backend' ),
+			newPageRebuilder: static fn (): PageRebuilder => throw new LogicException( 'unresolvable backend' ),
 			logger: new NullLogger(),
 		);
 	}
@@ -969,37 +969,37 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 			stores: [ self::STORE => new SpyGraphDatabasePlugin() ],
 			runs: $this->newRunRepository(),
 			startLock: new RefusingRebuildStartLock(),
-			executor: $this->newExecutor( new InMemorySubjectPageIdsLookup(), new NullLogger() ),
+			executor: $this->newExecutor( new InMemoryPageIdsLookup(), new NullLogger() ),
 			jobQueue: new SpyRebuildJobQueue(),
-			newPageRebuilder: static fn ( GraphDatabasePlugin $store ): SubjectPageRebuilder
-				=> NeoWikiExtension::getInstance()->newSubjectPageRebuilderFor( $store ),
+			newPageRebuilder: static fn ( GraphDatabasePlugin $store ): PageRebuilder
+				=> NeoWikiExtension::getInstance()->newPageRebuilderFor( $store ),
 			logger: new NullLogger(),
 		);
 	}
 
 	/**
-	 * Rebuilds $store over exactly the pages $subjectPageIds walks, rather than over what the wiki holds.
+	 * Rebuilds $store over exactly the pages $pageIds walks, rather than over what the wiki holds.
 	 */
 	private function executeOver(
-		SubjectPageIdsLookup $subjectPageIds,
+		PageIdsLookup $pageIds,
 		GraphDatabasePlugin $store,
 		LoggerInterface $logger,
 		int $batchSize,
 		RebuildBatchObserver $observer = new NullRebuildBatchObserver()
 	): RebuildRun {
-		return $this->newExecutor( $subjectPageIds, $logger )->execute(
+		return $this->newExecutor( $pageIds, $logger )->execute(
 			run: $this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running ),
 			store: $store,
-			pageRebuilder: NeoWikiExtension::getInstance()->newSubjectPageRebuilderFor( $store ),
+			pageRebuilder: NeoWikiExtension::getInstance()->newPageRebuilderFor( $store ),
 			batchSize: $batchSize,
 			observer: $observer
 		);
 	}
 
-	private function newExecutor( SubjectPageIdsLookup $subjectPageIds, LoggerInterface $logger ): GraphRebuildExecutor {
+	private function newExecutor( PageIdsLookup $pageIds, LoggerInterface $logger ): GraphRebuildExecutor {
 		return new GraphRebuildExecutor(
-			subjectPageIds: $subjectPageIds,
-			deletedSubjectPageIds: new InMemoryDeletedSubjectPageIdsLookup(),
+			pageIds: $pageIds,
+			deletedPageIds: new InMemoryDeletedPageIdsLookup(),
 			runs: $this->newRunRepository(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			logger: $logger,

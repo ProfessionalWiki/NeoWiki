@@ -29,7 +29,7 @@ class DatabaseDeletedPageIdsLookupTest extends NeoWikiIntegrationTestCase {
 
 		$this->deletePageByName( 'Deleted page' );
 
-		$this->assertSame( [ $deleted->getPageId() ], $this->newLookup()->getDeletedSubjectPageIdsAfter( 0, 100 ) );
+		$this->assertSame( [ $deleted->getPageId() ], $this->newLookup()->getDeletedPageIdsAfter( 0, 100 ) );
 	}
 
 	public function testUndeletedPageIsNoLongerReported(): void {
@@ -38,7 +38,7 @@ class DatabaseDeletedPageIdsLookupTest extends NeoWikiIntegrationTestCase {
 		$this->deletePageByName( 'Restored page' );
 		$this->undeletePageByName( 'Restored page' );
 
-		$this->assertSame( [], $this->newLookup()->getDeletedSubjectPageIdsAfter( 0, 100 ) );
+		$this->assertSame( [], $this->newLookup()->getDeletedPageIdsAfter( 0, 100 ) );
 	}
 
 	public function testFindsDeletedPagesWithAndWithoutSubjects(): void {
@@ -48,7 +48,7 @@ class DatabaseDeletedPageIdsLookupTest extends NeoWikiIntegrationTestCase {
 		$this->deletePageByName( 'Deleted subject page' );
 		$this->deletePageByName( 'Deleted plain page' );
 
-		$this->assertSame( [ $subjectPage->getPageId() ], $this->newLookup()->getDeletedSubjectPageIdsAfter( 0, 100 ) );
+		$this->assertSame( [ $subjectPage->getPageId() ], $this->newLookup()->getDeletedPageIdsAfter( 0, 100 ) );
 	}
 
 	/**
@@ -61,7 +61,7 @@ class DatabaseDeletedPageIdsLookupTest extends NeoWikiIntegrationTestCase {
 
 		$this->archiveRevisionOfExistingPage( $revision );
 
-		$this->assertSame( [], $this->newLookup()->getDeletedSubjectPageIdsAfter( 0, 100 ) );
+		$this->assertSame( [], $this->newLookup()->getDeletedPageIdsAfter( 0, 100 ) );
 	}
 
 	public function testWalksOnePageAtATimeFromTheCursor(): void {
@@ -72,12 +72,12 @@ class DatabaseDeletedPageIdsLookupTest extends NeoWikiIntegrationTestCase {
 
 		$lookup = $this->newLookup();
 
-		$this->assertSame( [ $first->getPageId() ], $lookup->getDeletedSubjectPageIdsAfter( 0, 1 ) );
+		$this->assertSame( [ $first->getPageId() ], $lookup->getDeletedPageIdsAfter( 0, 1 ) );
 		$this->assertSame(
 			[ $second->getPageId() ],
-			$lookup->getDeletedSubjectPageIdsAfter( $first->getPageId(), 1 )
+			$lookup->getDeletedPageIdsAfter( $first->getPageId(), 1 )
 		);
-		$this->assertSame( [], $lookup->getDeletedSubjectPageIdsAfter( $second->getPageId(), 1 ) );
+		$this->assertSame( [], $lookup->getDeletedPageIdsAfter( $second->getPageId(), 1 ) );
 	}
 
 	/**
@@ -98,14 +98,14 @@ class DatabaseDeletedPageIdsLookupTest extends NeoWikiIntegrationTestCase {
 		$this->deletePageByName( 'Twice edited page' );
 		$this->deletePageByName( 'Later page' );
 
-		$this->assertSame( 2, $this->newLookup()->countDeletedSubjectPages() );
-		$this->assertSame( $next->getPageId(), $this->newLookup()->getDeletedSubjectPageIdsAfter( 0, 2 )[1] );
+		$this->assertSame( 2, $this->newLookup()->countDeletedPages() );
+		$this->assertSame( $next->getPageId(), $this->newLookup()->getDeletedPageIdsAfter( 0, 2 )[1] );
 	}
 
 	public function testAWikiThatLostNoSubjectPageHasNoneToRemove(): void {
 		$this->createPageWithSubjects( 'Surviving page', TestSubject::build() );
 
-		$this->assertSame( 0, $this->newLookup()->countDeletedSubjectPages() );
+		$this->assertSame( 0, $this->newLookup()->countDeletedPages() );
 	}
 
 	public function testDrainsEveryBatch(): void {

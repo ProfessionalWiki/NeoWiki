@@ -4,9 +4,9 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
-use ProfessionalWiki\NeoWiki\Persistence\DeletedSubjectPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\DeletedPageIdsLookup;
 
-class InMemoryDeletedSubjectPageIdsLookup implements DeletedSubjectPageIdsLookup {
+class InMemoryDeletedPageIdsLookup implements DeletedPageIdsLookup {
 
 	/**
 	 * @var int[]
@@ -17,13 +17,23 @@ class InMemoryDeletedSubjectPageIdsLookup implements DeletedSubjectPageIdsLookup
 		$this->pageIds = $pageIds;
 	}
 
-	public function getDeletedSubjectPageIdsAfter( int $afterPageId, int $limit ): array {
+	/**
+	 * @return iterable<int>
+	 */
+	public function getDeletedPageIds(): iterable {
+		yield from $this->pageIds;
+	}
+
+	/**
+	 * @return int[]
+	 */
+	public function getDeletedPageIdsAfter( int $afterPageId, int $limit ): array {
 		$remaining = array_filter( $this->pageIds, static fn ( int $pageId ): bool => $pageId > $afterPageId );
 
 		return array_slice( array_values( $remaining ), 0, $limit );
 	}
 
-	public function countDeletedSubjectPages(): int {
+	public function countDeletedPages(): int {
 		return count( $this->pageIds );
 	}
 

@@ -150,7 +150,6 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\Sparql
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin;
 use ProfessionalWiki\NeoWiki\Persistence\DeletedPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\PageIdsLookup;
-use ProfessionalWiki\NeoWiki\Persistence\DeletedSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildExecutor;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphStoreStatusLookup;
@@ -158,11 +157,9 @@ use ProfessionalWiki\NeoWiki\Application\GraphRebuild\MappingChangeRebuilder;
 use ProfessionalWiki\NeoWiki\Infrastructure\MediaWikiRebuildJobQueue;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildStartLock;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPageChangeTimeLookup;
 use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildStartLock;
-use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLayoutNameLookup;
@@ -992,6 +989,12 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function newDeletedPageIdsLookup(): DeletedPageIdsLookup {
+		return new DatabaseDeletedPageIdsLookup(
+			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase()
+		);
+	}
+
 	/**
 	 * @param int<1, max> $backgroundBatchSize How many pages a background batch projects. Production
 	 *        callers pass {@see GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE}; a test passes a size it
@@ -1017,8 +1020,8 @@ class NeoWikiExtension {
 
 	public function newGraphRebuildExecutor(): GraphRebuildExecutor {
 		return new GraphRebuildExecutor(
-			subjectPageIds: $this->newSubjectPageIdsLookup(),
-			deletedSubjectPageIds: $this->newDeletedSubjectPageIdsLookup(),
+			pageIds: $this->newPageIdsLookup(),
+			deletedPageIds: $this->newDeletedPageIdsLookup(),
 			runs: $this->newRebuildRunRepository(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			logger: LoggerFactory::getInstance( 'NeoWiki' ),
@@ -1097,20 +1100,6 @@ class NeoWikiExtension {
 	public function newRebuildRunRepository(): RebuildRunRepository {
 		return new DatabaseRebuildRunRepository(
 			MediaWikiServices::getInstance()->getConnectionProvider()
-		);
-	}
-
-	public function newSubjectPageIdsLookup(): SubjectPageIdsLookup {
-		return new DatabaseSubjectPageIdsLookup(
-			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
-			MediaWikiServices::getInstance()->getSlotRoleStore()
-		);
-	}
-
-	public function newDeletedSubjectPageIdsLookup(): DeletedSubjectPageIdsLookup {
-		return new DatabaseDeletedSubjectPageIdsLookup(
-			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
-			MediaWikiServices::getInstance()->getSlotRoleStore()
 		);
 	}
 

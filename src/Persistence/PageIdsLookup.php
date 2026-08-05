@@ -17,4 +17,19 @@ interface PageIdsLookup {
 	 */
 	public function getPageIds( int $afterPageId = 0 ): iterable;
 
+	/**
+	 * The next $limit page ids after $afterPageId, in ascending page id order.
+	 *
+	 * Bounded rather than yielded, for the graph rebuild: it records how far it got after each batch and
+	 * continues there, which it cannot do part-way through a generator.
+	 *
+	 * @return int[]
+	 */
+	public function getPageIdsAfter( int $afterPageId, int $limit ): array;
+
+	/**
+	 * How many pages the wiki has, for reporting progress against.
+	 */
+	public function countPages(): int;
+
 }

@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\GraphRebuild;
 
 use Closure;
 use InvalidArgumentException;
-use ProfessionalWiki\NeoWiki\Application\SubjectPageRebuilder;
+use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
@@ -44,7 +44,7 @@ class GraphRebuildCoordinator {
 
 	/**
 	 * @param array<string, GraphDatabasePlugin> $stores Keys are store names
-	 * @param Closure(GraphDatabasePlugin): SubjectPageRebuilder $newPageRebuilder Builds a rebuilder that
+	 * @param Closure(GraphDatabasePlugin): PageRebuilder $newPageRebuilder Builds a rebuilder that
 	 *        projects into one store and no other
 	 * @param int<1, max> $backgroundBatchSize
 	 */
