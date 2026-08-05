@@ -39,7 +39,7 @@ class MappingPageChangeTimeLookup implements ProjectionChangeTimeLookup {
 			return null;
 		}
 
-		$revisionTime = $this->revisionLookup->getRevisionByTitle( $title )?->getTimestamp();
+		$revisionTime = $this->getLastContentChangeTime( $title );
 		$logTime = $this->getLastDeletionOrRestorationTime( $title );
 
 		if ( $revisionTime === null || $logTime === null ) {
@@ -48,6 +48,31 @@ class MappingPageChangeTimeLookup implements ProjectionChangeTimeLookup {
 
 		// Both are TS_MW, which sorts as it reads.
 		return max( $revisionTime, $logTime );
+	}
+
+	/**
+	 * When the page's content last changed. Protecting or unprotecting a page inserts a revision
+	 * carrying the content of the one before it, with a fresh timestamp — read as a change, that
+	 * reports every store holding the projection as stale over an action that changed nothing. Walked
+	 * past by content hash; in practice at most a few protection entries deep.
+	 */
+	private function getLastContentChangeTime( Title $title ): ?string {
+		$revision = $this->revisionLookup->getRevisionByTitle( $title );
+
+		while ( $revision !== null ) {
+			$parentId = $revision->getParentId();
+			$parent = ( $parentId === null || $parentId === 0 )
+				? null
+				: $this->revisionLookup->getRevisionById( $parentId );
+
+			if ( $parent === null || $parent->getSha1() !== $revision->getSha1() ) {
+				return $revision->getTimestamp();
+			}
+
+			$revision = $parent;
+		}
+
+		return null;
 	}
 
 	/**

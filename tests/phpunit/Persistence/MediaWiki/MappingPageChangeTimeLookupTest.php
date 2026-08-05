@@ -67,6 +67,29 @@ class MappingPageChangeTimeLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( '20260202000000', $this->newLookup()->getLastChangeTime( 'EDM' ) );
 	}
 
+	/**
+	 * Protecting a page inserts a revision carrying the content of the one before it. Read as a change,
+	 * every store holding the projection reports stale over an action that changed nothing.
+	 */
+	public function testProtectingAMappingPageIsNotAChangeToItsProjection(): void {
+		ConvertibleTimestamp::setFakeTime( '20260101000000' );
+		$this->createMapping( 'EDM', '{"version":1,"schemas":{}}' );
+
+		ConvertibleTimestamp::setFakeTime( '20260202000000' );
+		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle(
+			Title::newFromText( 'EDM', NeoWikiExtension::NS_MAPPING )
+		);
+		$this->assertStatusGood( $page->doUpdateRestrictions(
+			[ 'edit' => 'sysop' ],
+			[],
+			$cascade,
+			'protection is not a definition change',
+			$this->getTestSysop()->getUser()
+		) );
+
+		$this->assertSame( '20260101000000', $this->newLookup()->getLastChangeTime( 'EDM' ) );
+	}
+
 	private function deleteMapping( string $name ): void {
 		$deletePage = MediaWikiServices::getInstance()->getDeletePageFactory()->newDeletePage(
 			MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $this->mappingTitle( $name ) ),
