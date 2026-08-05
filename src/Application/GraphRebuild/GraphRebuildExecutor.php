@@ -353,7 +353,7 @@ class GraphRebuildExecutor {
 			return ProjectedPageOutcome::projected();
 		}
 
-		$this->logSkippedPage( $pageId, 'it carries no Subject to project' );
+		$this->logSkippedPage( $pageId, $outcome->skipReason() );
 		$progress->pageSkipped( $pageId );
 
 		return ProjectedPageOutcome::skipped();
