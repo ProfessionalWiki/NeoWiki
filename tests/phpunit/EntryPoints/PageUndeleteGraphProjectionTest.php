@@ -106,7 +106,6 @@ class PageUndeleteGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		)->first()->toRecursiveArray()['count'];
 	}
 
-
 	private function undeletePageByName( string $pageName ): void {
 		$undeletePage = MediaWikiServices::getInstance()->getUndeletePageFactory()->newUndeletePage(
 			MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) ),

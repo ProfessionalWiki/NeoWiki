@@ -48,7 +48,11 @@ class DatabaseDeletedPageIdsLookupTest extends NeoWikiIntegrationTestCase {
 		$this->deletePageByName( 'Deleted subject page' );
 		$this->deletePageByName( 'Deleted plain page' );
 
-		$this->assertSame( [ $subjectPage->getPageId() ], $this->newLookup()->getDeletedPageIdsAfter( 0, 100 ) );
+		$this->assertSame(
+			[ $subjectPage->getPageId(), $plainPage->getPageId() ],
+			$this->newLookup()->getDeletedPageIdsAfter( 0, 100 ),
+			'every page the wiki lost is one to remove, Subjects or not'
+		);
 	}
 
 	/**
@@ -203,6 +207,10 @@ class DatabaseDeletedPageIdsLookupTest extends NeoWikiIntegrationTestCase {
 			] )
 			->caller( __METHOD__ )
 			->execute();
+	}
+
+	private function newLookup(): DatabaseDeletedPageIdsLookup {
+		return new DatabaseDeletedPageIdsLookup( $this->getDb() );
 	}
 
 }
