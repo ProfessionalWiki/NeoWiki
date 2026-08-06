@@ -55,7 +55,25 @@ endif
 DESELECTED_SERVICES := $(filter-out $(SELECTED_SERVICES) $(USER_PROFILES),$(OPTIONAL_SERVICES))
 
 # The union drives every compose invocation via the global `export` above.
-COMPOSE_PROFILES := $(subst $(space),$(comma),$(strip $(sort $(USER_PROFILES) $(SELECTED_SERVICES))))
+ACTIVE_PROFILES := $(sort $(USER_PROFILES) $(SELECTED_SERVICES))
+COMPOSE_PROFILES := $(subst $(space),$(comma),$(strip $(ACTIVE_PROFILES)))
+
+# Wiki-side config follows the selection. Empty means "disabled" to
+# Docker/SettingsTemplate.php; unset means "use the default". Values already
+# present (environment or Docker/.env) always win.
+ifeq ($(origin QLEVER_URL),undefined)
+ifeq ($(filter qlever,$(SELECTED_SERVICES) $(USER_PROFILES)),)
+QLEVER_URL :=
+else
+QLEVER_URL := http://qlever:7019/
+endif
+endif
+
+ifeq ($(origin MW_SMTP_HOST),undefined)
+ifeq ($(filter mailcatcher,$(SELECTED_SERVICES) $(USER_PROFILES)),)
+MW_SMTP_HOST :=
+endif
+endif
 
 # ---- Compose invocations -----------------------------------------------------
 
@@ -66,7 +84,7 @@ DC_TOOLS := $(DC_DEV) -f Docker/docker-compose.tools.yml
 # The selection's profiles are passed explicitly (not just via the exported COMPOSE_PROFILES
 # env var): this compose version lets a --profile CLI flag override rather than union with the
 # env var, which would otherwise drop the selected optional services from $(DC_TEST) invocations.
-DC_TEST := $(DC_DEV) --profile test $(foreach p,$(sort $(USER_PROFILES) $(SELECTED_SERVICES)),--profile $(p))
+DC_TEST := $(DC_DEV) --profile test $(foreach p,$(ACTIVE_PROFILES),--profile $(p))
 # Teardown has to see every service, including the profile-gated `oxigraph` and `caddy`. With no
 # profile active Compose leaves those out of the plan entirely, so the container survives `down`
 # and the project network then fails to go with it. They are not orphans either — they are declared
