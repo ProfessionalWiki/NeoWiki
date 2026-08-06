@@ -145,7 +145,7 @@ _preflight:
 doctor: ## Diagnose dev-environment prerequisites (Docker runtime)
 	@PREFLIGHT_VERBOSE=1 ./Docker/scripts/preflight.sh
 
-up: _preflight ## Bring up try-it-out stack (no profile, prebuilt image)
+up: _preflight ## Bring up try-it-out stack (prebuilt image)
 	$(DC) up -d
 
 pull: _preflight ## Pull the latest prebuilt demo image
@@ -185,12 +185,15 @@ _dev-tools-impl:
 	@echo "Dev wiki ready at:    http://localhost:$$MW_SERVER_PORT"
 	@echo "Neo4j Browser:        http://localhost:$${NEO_BROWSER_PORT:-7474}"
 	@echo "Neo4j Bolt endpoint:  bolt://localhost:$${NEO_BOLT_PORT:-7687}"
-	@echo "QLever SPARQL:        http://localhost:$${QLEVER_PORT:-7019}/"
-	@# The tools overlay maps Oxigraph's port too, but that service only runs when its
-	@# profile is on (see Docker/docker-compose.yml), so only then is there a URL. Compose
-	@# trims whitespace around profile names ("test, oxigraph" activates both), so strip it
-	@# here as well or the URL goes missing for a stack that did start the service.
+	@# The tools overlay maps the QLever and Oxigraph ports too, but each service only runs
+	@# when its own profile is on (see Docker/docker-compose.yml and .dev.yml), so only then
+	@# is there a URL. Compose trims whitespace around profile names ("test, oxigraph"
+	@# activates both), so strip it here as well or a URL goes missing for a stack that did
+	@# start the service.
 	@profiles=$$(printf '%s' "$$COMPOSE_PROFILES" | tr -d '[:space:]'); \
+	case ",$$profiles," in \
+		*,qlever,*) echo "QLever SPARQL:        http://localhost:$${QLEVER_PORT:-7019}/";; \
+	esac; \
 	case ",$$profiles," in \
 		*,oxigraph,*) echo "Oxigraph SPARQL:      http://localhost:$${OXIGRAPH_PORT:-7878}/query";; \
 	esac

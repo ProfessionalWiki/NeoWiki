@@ -66,6 +66,7 @@ store or mail host is never configured. Details:
 
 - Without `node`, `make dev` builds the frontend bundle once in a throwaway container (`dist/` is
   gitignored), so the UI works; the `ts-*` targets start the watcher on demand if you begin TS work.
+  A bundle left stale by a later `git pull` is refreshed with `make ts-build`.
 - The test-only backends (`test_neo`, `test_qlever`, `test_oxigraph`) are independent of this selection:
   `make phpunit` starts them on demand, and `make test-backends-stop` stops them again.
 - Setting `COMPOSE_PROFILES` directly still works and is unioned with the selection; the profile names
@@ -141,6 +142,10 @@ default, so it sits behind the `oxigraph` compose profile and neither stack star
 ```sh
 COMPOSE_PROFILES=oxigraph make dev
 ```
+
+This only holds for that invocation: `COMPOSE_PROFILES` is not persisted, so a later plain `make dev`
+deselects Oxigraph again and stops it (its data volume survives for reselection). Pass
+`COMPOSE_PROFILES=oxigraph` again each time you want it running.
 
 `SettingsTemplate.php` points `$wgNeoWikiSparqlStores` at `QLEVER_URL`, so nothing reaches Oxigraph until
 you repoint it: `updateUrl` `http://oxigraph:7878/update`, `queryUrl` `http://oxigraph:7878/query`. On the
