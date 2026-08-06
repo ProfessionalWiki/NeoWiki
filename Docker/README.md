@@ -50,7 +50,7 @@ The dev stack's core is `mediawiki`, `db` and `neo`; everything else is optional
 | `mailcatcher` | Testing outgoing email (web UI on `MAILCATCHER_PORT`)                   |
 | `oxigraph`    | Second SPARQL engine; needs manual wiring via `LocalSettings.local.php` |
 
-Without the flag, `node`, `qlever` and `mailcatcher` run (the default); `oxigraph` only runs when named.
+Without the flag, `node`, `qlever` and `mailcatcher` run by default; `oxigraph` runs only when named.
 `services=none` runs core only. Examples:
 
 ```sh
@@ -61,12 +61,12 @@ make dev services=qlever,node   # SPARQL plus frontend
 ```
 
 Rerunning `make dev` with a different selection reconfigures a running stack: newly-deselected services
-are stopped (their volumes survive for reselection) and the wiki's config follows, so a deselected
+stop (their volumes survive for reselection) and the wiki's config follows, so a deselected
 store or mail host is never configured. Details:
 
 - Without `node`, `make dev` builds the frontend bundle once in a throwaway container (`dist/` is
   gitignored), so the UI works; the `ts-*` targets start the watcher on demand if you begin TS work.
-  A bundle left stale by a later `git pull` is refreshed with `make ts-build`.
+  `make ts-build` refreshes a bundle left stale by a later `git pull`.
 - The test-only backends (`test_neo`, `test_qlever`, `test_oxigraph`) are independent of this selection:
   `make phpunit` starts them on demand, and `make test-backends-stop` stops them again.
 - Setting `COMPOSE_PROFILES` directly still works and is unioned with the selection; the profile names
@@ -80,7 +80,7 @@ SPARQL 1.1 graph store by default as a working example of NeoWiki's SPARQL proje
 `SettingsTemplate.php` points `$wgNeoWikiSparqlStores` at that endpoint, so every page save and
 `RebuildGraphDatabases.php` also projects the page's RDF into QLever as named graphs.
 
-On the dev stack, you can deselect QLever with `services=` (see Optional services above), which
+On the dev stack, you can deselect QLever with `services=` (see [Optional services](#optional-services)), which
 leaves `QLEVER_URL` empty.
 
 Two entries point at that one endpoint: the `native` projection and the `EDM` one defined
@@ -202,8 +202,8 @@ report the backends as missing instead of starting them.
   production `php.ini`; intermediate, no `LocalSettings.php`), `final-mw` (the prebuilt
   demo image published as `ghcr.io/professionalwiki/neowiki:latest`, which bakes in
   `LocalSettings.php`), and `dev-mw` (the dev image with mounted NeoWiki source).
-- `docker-compose.yml` — the demo stack's services (`mediawiki`, `db`, `neo`, `qlever`
-  — SPARQL store, see above, unconditional so raw `docker compose` and the `--profile server`
+- `docker-compose.yml` — the demo stack's services `mediawiki`, `db`, `neo` and `qlever` (the
+  SPARQL store, see above, unconditional so raw `docker compose` and the `--profile server`
   deployment always get it) plus the profile-gated `caddy` (the `server` profile, for HTTPS
   hosting) and `oxigraph` (the `oxigraph` profile, the second SPARQL store, see above). The dev
   overlay builds on this file, so these services are in both stacks.
