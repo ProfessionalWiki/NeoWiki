@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki;
 use Exception;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\User\UserIdentity;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
 use Psr\Log\LoggerInterface;
 use Wikimedia\Rdbms\DBError;
@@ -41,7 +42,11 @@ class FailureIsolatingPagePropertiesSource implements PagePropertiesSource {
 			$this->logger->error(
 				'NeoWiki did not project page {pageId} because its page properties could not be built: '
 				. '{message}. The graph is out of sync for that page until the cause is resolved.',
-				[ 'pageId' => $revision->getPageId(), 'message' => $e->getMessage(), 'exception' => $e ]
+				[
+					'pageId' => $revision->getPageId(),
+					'message' => BackendFailureMessage::withoutCredentials( $e->getMessage() ),
+					'exception' => $e,
+				]
 			);
 
 			return null;

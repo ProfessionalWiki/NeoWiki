@@ -55,12 +55,12 @@ A run that finished but left individual pages behind has nothing to continue: re
 
 Pass `--batch-size` to change how many pages are projected between recordings; it defaults to 200.
 
-A page the store rejects is counted and the rebuild carries on; the `NeoWiki` channel says which pages failed and why.
-A store that stops answering partway is another matter: when a whole batch fails the rebuild reopens the store, and
-ends the run for `--resume` to retry that batch only if it cannot. A store that still opens means its pages were at
-fault, so they are counted and the walk goes on past them. The script exits non-zero whenever a store was left out of
-sync, which covers both a failed run and one that finished having left pages behind. Only the first has anything to
-resume; rebuild the store for the second.
+A page the store rejects is counted and the rebuild carries on; the [`NeoWiki` log channel](installation.md#logging)
+says which pages failed and why. A store that stops answering partway is another matter: when a whole batch fails the
+rebuild reopens the store, and ends the run for `--resume` to retry that batch only if it cannot. A store that still
+opens means its pages were at fault, so they are counted and the walk goes on past them. The script exits non-zero
+whenever a store was left out of sync, which covers both a failed run and one that finished having left pages behind.
+Only the first has anything to resume; rebuild the store for the second.
 
 A rebuild killed outright — `kill -9`, or the machine going down — leaves its run recorded as still going, and every
 later rebuild of that store refuses to start while it is. So does a background rebuild whose first batch never
@@ -105,13 +105,10 @@ rebuild somebody started by hand is left to finish rather than restarted; the st
 ## What happens during a Neo4j outage
 
 - **Editing pages works.** Edits, deletions and undeletions all commit. NeoWiki logs the projection failure on the
-  `NeoWiki` channel.
+  [`NeoWiki` channel](installation.md#logging).
 - **Editing and displaying Subjects fails**, along with queries and anything else that reads the graph.
 
 Once Neo4j is back, [rebuild the graph](#rebuilding-the-graph): it repairs both a failed save and a failed delete.
-
-Route the `NeoWiki` log channel somewhere you read. On a default MediaWiki install it goes nowhere, and it carries
-both the outage and the pages a rebuild could not reconcile.
 
 ## Backups
 

@@ -134,7 +134,8 @@ to an IRI containing an IRIREF-illegal character (`< > " { } | ^ \` backtick, sp
 
 The same checks re-run at **projection time**: a class, predicate, datatype, or prefix that does not re-expand
 safely is dropped, an unusable node takes everything below it with it, an invalid language tag falls back to a
-plain literal, and each is logged. The projection degrades rather than aborting the export.
+plain literal, and each is logged on the [`NeoWiki` channel](../operations/installation.md#logging). The projection
+degrades rather than aborting the export.
 
 ## What gets emitted
 

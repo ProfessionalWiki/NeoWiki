@@ -2,6 +2,13 @@ services:
   mediawiki:
     image: ghcr.io/professionalwiki/neowiki:latest
     restart: unless-stopped
+    # LocalSettings routes the NeoWiki log channel here, and a stack whose EDM projection has no Mapping
+    # page reports a failure on every save. Rotate, so a long-running stack cannot fill the host with it.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "${MW_SERVER_PORT:-8484}:80"
     volumes:
