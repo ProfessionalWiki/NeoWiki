@@ -35,6 +35,8 @@ This builds a dev-mode image, brings up the stack (mediawiki, db, neo, qlever, n
 watcher, mailcatcher), runs first-time install and seed, and waits until the wiki is
 reachable. It prints the URL when ready (the default is `http://localhost:8484` but
 the actual port is auto-allocated; see [Reserved ports](Docker/README.md#reserved-host-ports)).
+To run a smaller or different set of these optional services, see
+[Optional services](Docker/README.md#optional-services).
 
 Mailcatcher web UI is at the port `make dev` printed (default `8025`,
 configurable via `MAILCATCHER_PORT` in `Docker/.env`).
@@ -59,6 +61,7 @@ make bash                 # shell into the mediawiki container
 make logs                 # tail logs
 make reset                # wipe DB + Neo and reseed demo data
 make import-demo-data     # load the latest demo data, overriding your changes
+make test-backends-stop   # stop the test-only backends (make phpunit restarts them on demand)
 ```
 
 The first `make phpunit` after `make dev` starts the test-only backends, so it is slower than
