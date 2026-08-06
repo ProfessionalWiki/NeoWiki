@@ -502,8 +502,11 @@ endif
 # The node sidecar runs `npm install && npm run build:watch` on startup. Targets
 # that depend on node_modules being populated should depend on _wait-node so the
 # first invocation after `make dev` does not race the sidecar's initial install.
+# Naming the service explicitly also starts it on stacks where the `node` profile
+# is not selected.
 .PHONY: _wait-node
 _wait-node:
+	@$(DC_DEV) up -d node
 	@for i in $$(seq 1 60); do \
 		if [ -f resources/ext.neowiki/node_modules/.package-lock.json ]; then \
 			exit 0; \
