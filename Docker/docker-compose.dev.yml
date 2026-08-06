@@ -155,6 +155,8 @@ services:
     stop_grace_period: 2s
 
   node:
+    profiles:
+      - node
     image: node:24
     restart: on-failure:3
     mem_limit: 1536m
@@ -177,6 +179,8 @@ services:
       - HOME=/tmp
 
   mailcatcher:
+    profiles:
+      - mailcatcher
     image: sj26/mailcatcher
     restart: unless-stopped
     ports:

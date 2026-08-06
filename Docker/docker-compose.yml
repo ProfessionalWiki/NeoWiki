@@ -22,8 +22,9 @@ services:
       - NEO4J_USERNAME_READ
       - NEO4J_PASSWORD_READ
       # Endpoint of the qlever service below. Its presence is what makes SettingsTemplate.php
-      # configure $wgNeoWikiSparqlStores, so every stack built on this file gets the store while
-      # an image run outside one gets none.
+      # configure $wgNeoWikiSparqlStores; an image run outside this file gets none. Not itself
+      # profile-gated: deselecting qlever (see below) stops the container but leaves this pointed
+      # at an endpoint that is not running, rather than clearing it.
       - QLEVER_URL=http://qlever:7019/
       # Bearer token the wiki sends to authorize SPARQL updates. Defaulted here instead of being
       # required from Docker/.env, so a .env written before the variable existed still works; the
@@ -69,13 +70,17 @@ services:
       timeout: 1s
       retries: 10
 
-  # SPARQL 1.1 graph store (QLever) for the SPARQL projection plugin (#586). Defined in this base
-  # file rather than the dev overlay, so the demo stack gets the same RDF/SPARQL surface as the dev
-  # stack: every page save and RebuildGraphDatabases.php also projects the page's RDF here as named
-  # graphs, and the query surfaces read from it. The wiki is pointed at it by QLEVER_URL above.
-  # NeoWiki reaches it in-network as http://qlever:7019/; a host port for manual inspection is
-  # opt-in via docker-compose.tools.yml.
+  # SPARQL 1.1 graph store (QLever) for the SPARQL projection plugin (#586). Profile-gated below;
+  # the bundled Makefile enables the profile by default, so both the demo and dev stacks get the
+  # same RDF/SPARQL surface unless `services=` deselects it: every page save and
+  # RebuildGraphDatabases.php also projects the page's RDF here as named graphs, and the query
+  # surfaces read from it. The wiki is pointed at it by QLEVER_URL above; deselecting the profile
+  # stops this container but does not clear that variable (see the comment there), so a deselected
+  # wiki still tries to reach a store that is not running. NeoWiki reaches it in-network as
+  # http://qlever:7019/; a host port for manual inspection is opt-in via docker-compose.tools.yml.
   qlever:
+    profiles:
+      - qlever
     image: docker.io/adfreiburg/qlever:latest
     restart: unless-stopped
     # Above QLever's own -m 1G query budget (server command below) plus index overhead.
