@@ -58,7 +58,7 @@ literal** per part (`"Zinema"@eu`, datatype `rdf:langString`). Extensions map th
 registered mapper — including an unregistered type — is omitted from the projection.
 
 A Subject whose Schema cannot be loaded (for example, its Schema page was deleted) is omitted from the projection; a
-warning is logged for each.
+warning is logged for each on the [`NeoWiki` channel](../operations/installation.md#logging).
 
 ## Projected triples
 
