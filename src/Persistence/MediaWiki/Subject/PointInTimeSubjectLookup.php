@@ -32,6 +32,13 @@ class PointInTimeSubjectLookup implements SubjectLookup {
 	}
 
 	public function getSubjects( SubjectIdList $subjectIds ): SubjectMap {
+		// Not merely defensive: without it the primary revision's slot is deserialized to select
+		// nothing out of it, and SubjectContent::getPageSubjects() deserializes on every call.
+		// A Subject with no relations reaches here with an empty list, which is the common case.
+		if ( $subjectIds->asStringArray() === [] ) {
+			return new SubjectMap();
+		}
+
 		$subjects = $this->getSubjectsFromRevision( $this->primaryRevision, $subjectIds );
 		$idsByHostingPage = new SubjectIdsByHostingPage( $this->pageIdentifiersLookup );
 

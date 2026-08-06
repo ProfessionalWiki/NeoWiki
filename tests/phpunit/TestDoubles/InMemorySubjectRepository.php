@@ -42,12 +42,21 @@ class InMemorySubjectRepository implements SubjectRepository {
 		return $this->subjects[$subjectId->text] ?? null;
 	}
 
+	/**
+	 * Returns the Subjects in the order this repository stored them, deliberately not in the order
+	 * they were requested, for the reason {@see InMemorySubjectLookup::getSubjects} gives: the
+	 * production implementations promise no order, and a double that mirrors the request hides
+	 * callers that read the returned map in the map's own order. This class is a SubjectRepository,
+	 * which extends SubjectLookup, and production hands one object to both roles, so a test is free
+	 * to wire it as the subjectLookup.
+	 */
 	public function getSubjects( SubjectIdList $subjectIds ): SubjectMap {
+		$requested = $subjectIds->asArray();
 		$found = new SubjectMap();
 
-		foreach ( $subjectIds->asStringArray() as $idText ) {
-			if ( array_key_exists( $idText, $this->subjects ) ) {
-				$found->addOrUpdateSubject( $this->subjects[$idText] );
+		foreach ( $this->subjects as $idText => $subject ) {
+			if ( array_key_exists( $idText, $requested ) ) {
+				$found->addOrUpdateSubject( $subject );
 			}
 		}
 

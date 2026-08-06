@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 
 readonly class GetPageSubjectsQuery {
@@ -39,25 +40,31 @@ readonly class GetPageSubjectsQuery {
 			: PageSubjects::newEmpty();
 
 		$mainSubject = $pageSubjects->getMainSubject();
+		$subjectsOnPage = $pageSubjects->getAllSubjects();
+
+		// Each Subject takes its own entry rather than the page's: these all came out of one page's
+		// content, but an unrebuilt or stale graph can still place two of them on different pages.
+		$hostingPages = $this->pageIdentifiersLookup->getPageIdsOfSubjects( $subjectsOnPage->getIds() );
+
 		$subjectItems = [];
 
 		if ( $mainSubject !== null ) {
 			$subjectItems[$mainSubject->id->text] = GetSubjectResponseItem::fromSubject(
 				$mainSubject,
-				$this->pageIdentifiersLookup->getPageIdOfSubject( $mainSubject->id )
+				$hostingPages[$mainSubject->id->text] ?? null
 			);
 		}
 
 		foreach ( $pageSubjects->getChildSubjects()->asArray() as $childSubject ) {
 			$subjectItems[$childSubject->id->text] = GetSubjectResponseItem::fromSubject(
 				$childSubject,
-				$this->pageIdentifiersLookup->getPageIdOfSubject( $childSubject->id )
+				$hostingPages[$childSubject->id->text] ?? null
 			);
 		}
 
 		$referencedSubjectItems = null;
 		if ( $includeReferencedSubjects ) {
-			$referencedSubjectItems = $this->buildReferencedSubjectItems( $pageSubjects->getAllSubjects()->asArray(), $subjectItems );
+			$referencedSubjectItems = $this->buildReferencedSubjectItems( $subjectsOnPage->asArray(), $subjectItems );
 		}
 
 		$schemas = null;
@@ -82,35 +89,57 @@ readonly class GetPageSubjectsQuery {
 	 * @return array<string, GetSubjectResponseItem>
 	 */
 	private function buildReferencedSubjectItems( array $pageSubjects, array $alreadyIncluded ): array {
+		$referencedIds = $this->collectReferencedIds( $pageSubjects, $alreadyIncluded );
+
+		$referencedSubjects = $this->subjectLookup->getSubjects( $referencedIds );
+		$hostingPages = $this->pageIdentifiersLookup->getPageIdsOfSubjects( $referencedIds );
+
 		$referenced = [];
 
-		foreach ( $pageSubjects as $subject ) {
-			foreach ( $subject->getReferencedSubjects()->asArray() as $referencedId ) {
-				if ( array_key_exists( $referencedId->text, $alreadyIncluded ) || array_key_exists( $referencedId->text, $referenced ) ) {
-					continue;
-				}
+		// Iterated by the collected ids, not the returned map: the response keeps the order the
+		// Statements reach the targets, and SubjectMap promises no order of its own.
+		foreach ( $referencedIds->asArray() as $idText => $referencedId ) {
+			$referencedSubject = $referencedSubjects->getSubject( $referencedId );
 
-				$referencedSubject = $this->subjectLookup->getSubject( $referencedId );
-
-				if ( $referencedSubject === null ) {
-					continue;
-				}
-
-				$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $referencedSubject->id );
-
-				// An unresolvable page is omitted rather than served ungated. The graph-backed
-				// repository cannot reach one (it returns null first), so this only guards a
-				// future SubjectLookup that bypasses the graph.
-				if ( $pageIdentifiers === null
-					|| !$this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() ) ) {
-					continue;
-				}
-
-				$referenced[$referencedId->text] = GetSubjectResponseItem::fromSubject( $referencedSubject, $pageIdentifiers );
+			if ( $referencedSubject === null ) {
+				continue;
 			}
+
+			$pageIdentifiers = $hostingPages[$idText] ?? null;
+
+			// An unresolvable page is omitted rather than served ungated. The graph-backed
+			// repository cannot reach one (it returns null first), so this only guards a
+			// future SubjectLookup that bypasses the graph.
+			if ( $pageIdentifiers === null
+				|| !$this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() ) ) {
+				continue;
+			}
+
+			$referenced[$idText] = GetSubjectResponseItem::fromSubject( $referencedSubject, $pageIdentifiers );
 		}
 
 		return $referenced;
+	}
+
+	/**
+	 * The distinct Subjects the page's Statements reach that the page does not itself carry.
+	 * SubjectIdList deduplicates, so a target reached from two Statements is resolved once.
+	 *
+	 * @param array<int, Subject> $pageSubjects
+	 * @param array<string, GetSubjectResponseItem> $alreadyIncluded
+	 */
+	private function collectReferencedIds( array $pageSubjects, array $alreadyIncluded ): SubjectIdList {
+		$ids = [];
+
+		foreach ( $pageSubjects as $subject ) {
+			foreach ( $subject->getReferencedSubjects()->asArray() as $idText => $referencedId ) {
+				if ( !array_key_exists( $idText, $alreadyIncluded ) ) {
+					$ids[] = $referencedId;
+				}
+			}
+		}
+
+		return new SubjectIdList( $ids );
 	}
 
 	/**

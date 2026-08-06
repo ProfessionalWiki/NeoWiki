@@ -56,6 +56,13 @@ class SubjectMap implements Countable {
 		return array_keys( $this->subjects );
 	}
 
+	public function getIds(): SubjectIdList {
+		return new SubjectIdList( array_map(
+			static fn ( Subject $subject ): SubjectId => $subject->id,
+			$this->subjects
+		) );
+	}
+
 	public function prepend( ?Subject $subject ): self {
 		$subjects = $this->subjects;
 
