@@ -176,6 +176,7 @@ dev-tools: _preflight bootstrap ensure-port ## Like 'dev' but also exposes the N
 _dev-tools-impl:
 	@$(MAKE) --no-print-directory _stop-deselected
 	$(DC_TOOLS) up -d --build
+	@$(MAKE) --no-print-directory _ensure-frontend-bundle
 	@$(MAKE) --no-print-directory _wait-mw
 	@$(MAKE) --no-print-directory _first-run-seed
 	@echo ""
@@ -228,6 +229,7 @@ bootstrap: ## Clone MW core into Docker/mediawiki/ and prep gitignored files (id
 _dev-impl:
 	@$(MAKE) --no-print-directory _stop-deselected
 	$(DC_DEV) up -d --build
+	@$(MAKE) --no-print-directory _ensure-frontend-bundle
 	@$(MAKE) --no-print-directory _wait-mw
 	@$(MAKE) --no-print-directory _first-run-seed
 	@echo ""
@@ -240,6 +242,18 @@ _dev-impl:
 _stop-deselected:
 ifneq ($(DESELECTED_SERVICES),)
 	@$(DC_DEV_ALL) stop $(DESELECTED_SERVICES)
+endif
+
+# A stack without the node watcher still needs a built frontend: dist/ is
+# gitignored and only node builds it. One-shot build in a throwaway container;
+# a stale bundle after git pull is refreshed via make ts-build.
+.PHONY: _ensure-frontend-bundle
+_ensure-frontend-bundle:
+ifeq ($(filter node,$(SELECTED_SERVICES) $(USER_PROFILES)),)
+	@if [ ! -f resources/ext.neowiki/dist/neowiki.js ]; then \
+		echo "No frontend bundle and no node watcher selected; building once..."; \
+		$(DC_DEV) run --rm node sh -c 'npm install && npm run build' < /dev/null; \
+	fi
 endif
 
 down: ## Stop and remove containers (preserves volumes)
