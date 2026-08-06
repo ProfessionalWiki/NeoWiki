@@ -308,6 +308,7 @@ endif
 test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-set-port.sh
 	@./Docker/tests/test-preflight.sh
+	@./Docker/tests/test-services.sh
 
 # ---- Health gate -------------------------------------------------------------
 
