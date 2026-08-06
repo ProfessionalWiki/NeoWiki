@@ -20,19 +20,60 @@ PROJECT_NAME := $(shell echo "neowiki-$(notdir $(CURDIR))" | tr A-Z a-z)
 PORT_RANGE_START := 8484
 PORT_RANGE_END := 8499
 
+# ---- Optional-service selection (services=) ----------------------------------
+
+# `make dev services=node,qlever` runs only the named optional services;
+# `services=none` runs core only (mediawiki, db, neo). Absent = the default set
+# below, which is the full status quo. Values are compose service names; see
+# Docker/README.md. A COMPOSE_PROFILES value from the environment is unioned in,
+# so the documented oxigraph escape hatch keeps working.
+OPTIONAL_SERVICES := node qlever mailcatcher oxigraph
+DEFAULT_SERVICES := node qlever mailcatcher
+
+comma := ,
+empty :=
+space := $(empty) $(empty)
+
+# Captured before COMPOSE_PROFILES is overridden below.
+USER_PROFILES := $(strip $(subst $(comma),$(space),$(COMPOSE_PROFILES)))
+
+ifeq ($(origin services),undefined)
+SELECTED_SERVICES := $(DEFAULT_SERVICES)
+else ifeq ($(services),none)
+SELECTED_SERVICES :=
+else
+SELECTED_SERVICES := $(strip $(subst $(comma),$(space),$(services)))
+UNKNOWN_SERVICES := $(filter-out $(OPTIONAL_SERVICES),$(SELECTED_SERVICES))
+ifneq ($(UNKNOWN_SERVICES),)
+$(error Unknown services '$(UNKNOWN_SERVICES)'. Valid: $(subst $(space),$(comma),$(OPTIONAL_SERVICES)), or none)
+endif
+endif
+
+# Optional services outside the desired state, stopped by the dev targets so a
+# rerun with a smaller selection downgrades a running stack. Never contains
+# anything a user-supplied COMPOSE_PROFILES asked for.
+DESELECTED_SERVICES := $(filter-out $(SELECTED_SERVICES) $(USER_PROFILES),$(OPTIONAL_SERVICES))
+
+# The union drives every compose invocation via the global `export` above.
+COMPOSE_PROFILES := $(subst $(space),$(comma),$(strip $(sort $(USER_PROFILES) $(SELECTED_SERVICES))))
+
 # ---- Compose invocations -----------------------------------------------------
 
 DC := docker compose -p $(PROJECT_NAME) -f Docker/docker-compose.yml
 DC_DEV := $(DC) -f Docker/docker-compose.dev.yml
 DC_TOOLS := $(DC_DEV) -f Docker/docker-compose.tools.yml
 # The `test` profile holds the test-only backends: test_neo, test_qlever and test_oxigraph.
-DC_TEST := $(DC_DEV) --profile test
+# The selection's profiles are passed explicitly (not just via the exported COMPOSE_PROFILES
+# env var): this compose version lets a --profile CLI flag override rather than union with the
+# env var, which would otherwise drop the selected optional services from $(DC_TEST) invocations.
+DC_TEST := $(DC_DEV) --profile test $(foreach p,$(sort $(USER_PROFILES) $(SELECTED_SERVICES)),--profile $(p))
 # Teardown has to see every service, including the profile-gated `oxigraph` and `caddy`. With no
 # profile active Compose leaves those out of the plan entirely, so the container survives `down`
 # and the project network then fails to go with it. They are not orphans either — they are declared
 # in the file Compose was given — so --remove-orphans does not reach them. `--profile '*'` enables
 # every profile, which for a teardown is exactly the intent.
 DC_ALL := $(DC) --profile '*'
+DC_DEV_ALL := $(DC_DEV) --profile '*'
 
 # Detect the engine from what `docker` actually is (its version string), not from
 # whether a `podman` binary happens to exist: a stray podman binary alongside real
@@ -74,7 +115,7 @@ help:
 
 # ---- Lifecycle (host only) ---------------------------------------------------
 
-.PHONY: up pull demo upgrade dev dev-tools _dev-tools-impl down remove logs ps bash _preflight doctor
+.PHONY: up pull demo upgrade dev dev-tools _dev-tools-impl down remove logs ps print-services bash _preflight doctor
 
 # Fail fast on a broken Docker runtime (Docker or Compose missing, daemon down or
 # denied) before the lifecycle targets do expensive work. Source: Docker/scripts/preflight.sh.
@@ -115,6 +156,7 @@ dev-tools: _preflight bootstrap ensure-port ## Like 'dev' but also exposes the N
 	@$(MAKE) --no-print-directory _dev-tools-impl
 
 _dev-tools-impl:
+	@$(MAKE) --no-print-directory _stop-deselected
 	$(DC_TOOLS) up -d --build
 	@$(MAKE) --no-print-directory _wait-mw
 	@$(MAKE) --no-print-directory _first-run-seed
@@ -166,12 +208,21 @@ bootstrap: ## Clone MW core into Docker/mediawiki/ and prep gitignored files (id
 	@touch Docker/LocalSettings.local.php
 
 _dev-impl:
+	@$(MAKE) --no-print-directory _stop-deselected
 	$(DC_DEV) up -d --build
 	@$(MAKE) --no-print-directory _wait-mw
 	@$(MAKE) --no-print-directory _first-run-seed
 	@echo ""
 	@echo "Dev wiki ready at: http://localhost:$$MW_SERVER_PORT"
 	@echo "Project:           $(PROJECT_NAME)"
+
+# Downgrade a running stack to the current selection. `stop`, not `down`: the
+# containers and volumes stay for a cheap restart when reselected.
+.PHONY: _stop-deselected
+_stop-deselected:
+ifneq ($(DESELECTED_SERVICES),)
+	@$(DC_DEV_ALL) stop $(DESELECTED_SERVICES)
+endif
 
 down: ## Stop and remove containers (preserves volumes)
 	$(DC_ALL) down --remove-orphans
@@ -184,6 +235,11 @@ logs: ## Tail logs from all services
 
 ps: ## Show service status
 	$(DC_TEST) ps
+
+print-services: ## Show the optional-service selection and resulting profiles
+	@echo "selected:   $(SELECTED_SERVICES)"
+	@echo "deselected: $(DESELECTED_SERVICES)"
+	@echo "profiles:   $(COMPOSE_PROFILES)"
 
 bash: ## Shell into the mediawiki container
 	$(DC_DEV) exec mediawiki bash
