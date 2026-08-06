@@ -20,19 +20,80 @@ PROJECT_NAME := $(shell echo "neowiki-$(notdir $(CURDIR))" | tr A-Z a-z)
 PORT_RANGE_START := 8484
 PORT_RANGE_END := 8499
 
+# ---- Optional-service selection (services=) ----------------------------------
+
+# `make dev services=node,qlever` runs only the named optional services;
+# `services=none` runs core only (mediawiki, db, neo). Absent = the default set
+# below, which is the full status quo. Values are compose service names; see
+# Docker/README.md. A COMPOSE_PROFILES value from the environment is unioned in,
+# so the documented oxigraph escape hatch keeps working.
+OPTIONAL_SERVICES := node qlever mailcatcher oxigraph
+DEFAULT_SERVICES := node qlever mailcatcher
+
+comma := ,
+empty :=
+space := $(empty) $(empty)
+
+# Captured before COMPOSE_PROFILES is overridden below.
+USER_PROFILES := $(strip $(subst $(comma),$(space),$(COMPOSE_PROFILES)))
+
+ifeq ($(origin services),undefined)
+SELECTED_SERVICES := $(DEFAULT_SERVICES)
+else ifeq ($(services),none)
+SELECTED_SERVICES :=
+else
+SELECTED_SERVICES := $(strip $(subst $(comma),$(space),$(services)))
+UNKNOWN_SERVICES := $(filter-out $(OPTIONAL_SERVICES),$(SELECTED_SERVICES))
+ifneq ($(UNKNOWN_SERVICES),)
+$(error Unknown services '$(UNKNOWN_SERVICES)'. Valid: $(subst $(space),$(comma),$(OPTIONAL_SERVICES)), or none)
+endif
+endif
+
+# The union drives every compose invocation via the global `export` above. Defined ahead of the
+# derived values below so they can all filter against this one set instead of open-coding
+# $(SELECTED_SERVICES) $(USER_PROFILES) at each site.
+ACTIVE_PROFILES := $(sort $(USER_PROFILES) $(SELECTED_SERVICES))
+COMPOSE_PROFILES := $(subst $(space),$(comma),$(strip $(ACTIVE_PROFILES)))
+
+# Optional services outside the desired state, stopped by the dev targets so a
+# rerun with a smaller selection downgrades a running stack. Never contains
+# anything a user-supplied COMPOSE_PROFILES asked for (ACTIVE_PROFILES includes it).
+DESELECTED_SERVICES := $(filter-out $(ACTIVE_PROFILES),$(OPTIONAL_SERVICES))
+
+# Wiki-side config follows the selection. Empty means "disabled" to
+# Docker/SettingsTemplate.php; unset means "use the default". Values already
+# present (environment or Docker/.env) always win.
+ifeq ($(origin QLEVER_URL),undefined)
+ifeq ($(filter qlever,$(ACTIVE_PROFILES)),)
+QLEVER_URL :=
+else
+QLEVER_URL := http://qlever:7019/
+endif
+endif
+
+ifeq ($(origin MW_SMTP_HOST),undefined)
+ifeq ($(filter mailcatcher,$(ACTIVE_PROFILES)),)
+MW_SMTP_HOST :=
+endif
+endif
+
 # ---- Compose invocations -----------------------------------------------------
 
 DC := docker compose -p $(PROJECT_NAME) -f Docker/docker-compose.yml
 DC_DEV := $(DC) -f Docker/docker-compose.dev.yml
 DC_TOOLS := $(DC_DEV) -f Docker/docker-compose.tools.yml
 # The `test` profile holds the test-only backends: test_neo, test_qlever and test_oxigraph.
-DC_TEST := $(DC_DEV) --profile test
+# The selection's profiles are passed explicitly (not just via the exported COMPOSE_PROFILES
+# env var): this compose version lets a --profile CLI flag override rather than union with the
+# env var, which would otherwise drop the selected optional services from $(DC_TEST) invocations.
+DC_TEST := $(DC_DEV) --profile test $(foreach p,$(ACTIVE_PROFILES),--profile $(p))
 # Teardown has to see every service, including the profile-gated `oxigraph` and `caddy`. With no
 # profile active Compose leaves those out of the plan entirely, so the container survives `down`
 # and the project network then fails to go with it. They are not orphans either — they are declared
 # in the file Compose was given — so --remove-orphans does not reach them. `--profile '*'` enables
 # every profile, which for a teardown is exactly the intent.
 DC_ALL := $(DC) --profile '*'
+DC_DEV_ALL := $(DC_DEV) --profile '*'
 
 # Detect the engine from what `docker` actually is (its version string), not from
 # whether a `podman` binary happens to exist: a stray podman binary alongside real
@@ -74,7 +135,7 @@ help:
 
 # ---- Lifecycle (host only) ---------------------------------------------------
 
-.PHONY: up pull demo upgrade dev dev-tools _dev-tools-impl down remove logs ps bash _preflight doctor
+.PHONY: up pull demo upgrade dev dev-tools _dev-tools-impl down remove logs ps print-services bash _preflight doctor
 
 # Fail fast on a broken Docker runtime (Docker or Compose missing, daemon down or
 # denied) before the lifecycle targets do expensive work. Source: Docker/scripts/preflight.sh.
@@ -84,7 +145,7 @@ _preflight:
 doctor: ## Diagnose dev-environment prerequisites (Docker runtime)
 	@PREFLIGHT_VERBOSE=1 ./Docker/scripts/preflight.sh
 
-up: _preflight ## Bring up try-it-out stack (no profile, prebuilt image)
+up: _preflight ## Bring up try-it-out stack (prebuilt image)
 	$(DC) up -d
 
 pull: _preflight ## Pull the latest prebuilt demo image
@@ -115,19 +176,24 @@ dev-tools: _preflight bootstrap ensure-port ## Like 'dev' but also exposes the N
 	@$(MAKE) --no-print-directory _dev-tools-impl
 
 _dev-tools-impl:
+	@$(MAKE) --no-print-directory _stop-deselected
 	$(DC_TOOLS) up -d --build
+	@$(MAKE) --no-print-directory _ensure-frontend-bundle
 	@$(MAKE) --no-print-directory _wait-mw
 	@$(MAKE) --no-print-directory _first-run-seed
 	@echo ""
 	@echo "Dev wiki ready at:    http://localhost:$$MW_SERVER_PORT"
 	@echo "Neo4j Browser:        http://localhost:$${NEO_BROWSER_PORT:-7474}"
 	@echo "Neo4j Bolt endpoint:  bolt://localhost:$${NEO_BOLT_PORT:-7687}"
-	@echo "QLever SPARQL:        http://localhost:$${QLEVER_PORT:-7019}/"
-	@# The tools overlay maps Oxigraph's port too, but that service only runs when its
-	@# profile is on (see Docker/docker-compose.yml), so only then is there a URL. Compose
-	@# trims whitespace around profile names ("test, oxigraph" activates both), so strip it
-	@# here as well or the URL goes missing for a stack that did start the service.
+	@# The tools overlay maps the QLever and Oxigraph ports too, but each service only runs
+	@# when its own profile is on (see Docker/docker-compose.yml and .dev.yml), so only then
+	@# is there a URL. Compose trims whitespace around profile names ("test, oxigraph"
+	@# activates both), so strip it here as well or a URL goes missing for a stack that did
+	@# start the service.
 	@profiles=$$(printf '%s' "$$COMPOSE_PROFILES" | tr -d '[:space:]'); \
+	case ",$$profiles," in \
+		*,qlever,*) echo "QLever SPARQL:        http://localhost:$${QLEVER_PORT:-7019}/";; \
+	esac; \
 	case ",$$profiles," in \
 		*,oxigraph,*) echo "Oxigraph SPARQL:      http://localhost:$${OXIGRAPH_PORT:-7878}/query";; \
 	esac
@@ -166,12 +232,34 @@ bootstrap: ## Clone MW core into Docker/mediawiki/ and prep gitignored files (id
 	@touch Docker/LocalSettings.local.php
 
 _dev-impl:
+	@$(MAKE) --no-print-directory _stop-deselected
 	$(DC_DEV) up -d --build
+	@$(MAKE) --no-print-directory _ensure-frontend-bundle
 	@$(MAKE) --no-print-directory _wait-mw
 	@$(MAKE) --no-print-directory _first-run-seed
 	@echo ""
 	@echo "Dev wiki ready at: http://localhost:$$MW_SERVER_PORT"
 	@echo "Project:           $(PROJECT_NAME)"
+
+# Downgrade a running stack to the current selection. `stop`, not `down`: the
+# containers and volumes stay for a cheap restart when reselected.
+.PHONY: _stop-deselected
+_stop-deselected:
+ifneq ($(DESELECTED_SERVICES),)
+	@$(DC_DEV_ALL) stop $(DESELECTED_SERVICES)
+endif
+
+# A stack without the node watcher still needs a built frontend: dist/ is
+# gitignored and only node builds it. One-shot build in a throwaway container;
+# a stale bundle after git pull is refreshed via make ts-build.
+.PHONY: _ensure-frontend-bundle
+_ensure-frontend-bundle:
+ifeq ($(filter node,$(ACTIVE_PROFILES)),)
+	@if [ ! -f resources/ext.neowiki/dist/neowiki.js ]; then \
+		echo "No frontend bundle and no node watcher selected; building once..."; \
+		$(DC_DEV) run --rm node sh -c 'npm install && npm run build' < /dev/null; \
+	fi
+endif
 
 down: ## Stop and remove containers (preserves volumes)
 	$(DC_ALL) down --remove-orphans
@@ -184,6 +272,11 @@ logs: ## Tail logs from all services
 
 ps: ## Show service status
 	$(DC_TEST) ps
+
+print-services: ## Show the optional-service selection and resulting profiles
+	@echo "selected:   $(SELECTED_SERVICES)"
+	@echo "deselected: $(DESELECTED_SERVICES)"
+	@echo "profiles:   $(COMPOSE_PROFILES)"
 
 bash: ## Shell into the mediawiki container
 	$(DC_DEV) exec mediawiki bash
@@ -215,6 +308,7 @@ endif
 test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-set-port.sh
 	@./Docker/tests/test-preflight.sh
+	@./Docker/tests/test-services.sh
 
 # ---- Health gate -------------------------------------------------------------
 
@@ -258,7 +352,7 @@ _first-run-seed-demo:
 
 # ---- DB and Neo4j init -------------------------------------------------------
 
-.PHONY: install-db load-neo4j-users wait-for-neo4j setup-test-neo test-backends
+.PHONY: install-db load-neo4j-users wait-for-neo4j setup-test-neo test-backends test-backends-stop
 
 install-db:
 	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh db:3306 -t 60'
@@ -315,6 +409,9 @@ setup-test-neo:
 	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh test_neo:7689 -t 60'
 	$(DC_TEST) exec -T test_neo bash -c \
 		"echo \"CREATE USER mediawiki_read IF NOT EXISTS SET PASSWORD 'mediawiki_read' CHANGE NOT REQUIRED; GRANT ROLE reader TO mediawiki_read;\" | cypher-shell -u neo4j -p password -a bolt://localhost:7689"
+
+test-backends-stop: ## Stop the test-only backends (make phpunit restarts them on demand)
+	$(DC_TEST) stop test_neo test_qlever test_oxigraph
 
 # ---- Composer ----------------------------------------------------------------
 
@@ -414,8 +511,11 @@ endif
 # The node sidecar runs `npm install && npm run build:watch` on startup. Targets
 # that depend on node_modules being populated should depend on _wait-node so the
 # first invocation after `make dev` does not race the sidecar's initial install.
+# Naming the service explicitly also starts it on stacks where the `node` profile
+# is not selected.
 .PHONY: _wait-node
 _wait-node:
+	@$(DC_DEV) up -d node
 	@for i in $$(seq 1 60); do \
 		if [ -f resources/ext.neowiki/node_modules/.package-lock.json ]; then \
 			exit 0; \
@@ -432,10 +532,10 @@ ts-ci:
 	$(MAKE) --no-print-directory ts-build
 	$(MAKE) --no-print-directory ts-lint
 
-ts-install: ## npm install for NeoWiki frontend
+ts-install: _wait-node ## npm install for NeoWiki frontend
 	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm install' < /dev/null
 
-ts-update: ## npm update for NeoWiki frontend
+ts-update: _wait-node ## npm update for NeoWiki frontend
 	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm update' < /dev/null
 
 ts-build: _wait-node ## Build TS bundle (one-shot; the watcher runs as a sidecar)
