@@ -21,15 +21,20 @@ services:
       - NEO4J_PASSWORD
       - NEO4J_USERNAME_READ
       - NEO4J_PASSWORD_READ
-      # Endpoint of the qlever service below. Its presence is what makes SettingsTemplate.php
-      # configure $wgNeoWikiSparqlStores; an image run outside this file gets none. Not itself
-      # profile-gated: deselecting qlever (see below) stops the container but leaves this pointed
-      # at an endpoint that is not running, rather than clearing it.
-      - QLEVER_URL=http://qlever:7019/
+      # Endpoint of the qlever service below; a non-empty value is what makes
+      # SettingsTemplate.php configure $wgNeoWikiSparqlStores. The bundled Makefile
+      # owns the value: the qlever endpoint when the service is selected, empty
+      # ("disabled") when deselected. Running this file without the Makefile leaves
+      # it unset, which matches the qlever profile not being active: no store runs
+      # and none is configured.
+      - QLEVER_URL
       # Bearer token the wiki sends to authorize SPARQL updates. Defaulted here instead of being
       # required from Docker/.env, so a .env written before the variable existed still works; the
       # qlever service below defaults it the same way, so wiki and server always agree.
       - QLEVER_ACCESS_TOKEN=${QLEVER_ACCESS_TOKEN:-neowiki_dev_token}
+      # Empty means "no SMTP" to SettingsTemplate.php (set by the Makefile when the
+      # mailcatcher service is deselected); unset means "use the mode's default".
+      - MW_SMTP_HOST
     healthcheck:
       test: "curl -fs http://localhost:80/wiki/Special:Version | grep -q 'Jeroen De Dauw'"
       interval: 60s
@@ -74,9 +79,9 @@ services:
   # the bundled Makefile enables the profile by default, so both the demo and dev stacks get the
   # same RDF/SPARQL surface unless `services=` deselects it: every page save and
   # RebuildGraphDatabases.php also projects the page's RDF here as named graphs, and the query
-  # surfaces read from it. The wiki is pointed at it by QLEVER_URL above; deselecting the profile
-  # stops this container but does not clear that variable (see the comment there), so a deselected
-  # wiki still tries to reach a store that is not running. NeoWiki reaches it in-network as
+  # surfaces read from it. The wiki is pointed at it by QLEVER_URL above; the bundled Makefile
+  # clears that variable when the profile is deselected (see the comment there), so a deselected
+  # wiki does not try to reach a store that is not running. NeoWiki reaches it in-network as
   # http://qlever:7019/; a host port for manual inspection is opt-in via docker-compose.tools.yml.
   qlever:
     profiles:
