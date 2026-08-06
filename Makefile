@@ -346,7 +346,7 @@ _first-run-seed-demo:
 
 # ---- DB and Neo4j init -------------------------------------------------------
 
-.PHONY: install-db load-neo4j-users wait-for-neo4j setup-test-neo test-backends
+.PHONY: install-db load-neo4j-users wait-for-neo4j setup-test-neo test-backends test-backends-stop
 
 install-db:
 	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh db:3306 -t 60'
@@ -403,6 +403,9 @@ setup-test-neo:
 	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh test_neo:7689 -t 60'
 	$(DC_TEST) exec -T test_neo bash -c \
 		"echo \"CREATE USER mediawiki_read IF NOT EXISTS SET PASSWORD 'mediawiki_read' CHANGE NOT REQUIRED; GRANT ROLE reader TO mediawiki_read;\" | cypher-shell -u neo4j -p password -a bolt://localhost:7689"
+
+test-backends-stop: ## Stop the test-only backends (make phpunit restarts them on demand)
+	$(DC_TEST) stop test_neo test_qlever test_oxigraph
 
 # ---- Composer ----------------------------------------------------------------
 
