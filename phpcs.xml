@@ -27,7 +27,12 @@
 		<exclude name="Universal.WhiteSpace.CommaSpacing.SpaceBeforeInFunctionCall" />
 	</rule>
 
-	<rule ref="Generic.Formatting.NoSpaceAfterCast" />
+	<!-- Generic.Formatting.NoSpaceAfterCast is deprecated; this is its replacement. -->
+	<rule ref="Generic.Formatting.SpaceAfterCast">
+		<properties>
+			<property name="spacing" value="0" />
+		</properties>
+	</rule>
 	<rule ref="Generic.Metrics.CyclomaticComplexity">
 	</rule>
 	<rule ref="Generic.Metrics.NestingLevel" />
