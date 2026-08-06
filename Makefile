@@ -49,20 +49,22 @@ $(error Unknown services '$(UNKNOWN_SERVICES)'. Valid: $(subst $(space),$(comma)
 endif
 endif
 
-# Optional services outside the desired state, stopped by the dev targets so a
-# rerun with a smaller selection downgrades a running stack. Never contains
-# anything a user-supplied COMPOSE_PROFILES asked for.
-DESELECTED_SERVICES := $(filter-out $(SELECTED_SERVICES) $(USER_PROFILES),$(OPTIONAL_SERVICES))
-
-# The union drives every compose invocation via the global `export` above.
+# The union drives every compose invocation via the global `export` above. Defined ahead of the
+# derived values below so they can all filter against this one set instead of open-coding
+# $(SELECTED_SERVICES) $(USER_PROFILES) at each site.
 ACTIVE_PROFILES := $(sort $(USER_PROFILES) $(SELECTED_SERVICES))
 COMPOSE_PROFILES := $(subst $(space),$(comma),$(strip $(ACTIVE_PROFILES)))
+
+# Optional services outside the desired state, stopped by the dev targets so a
+# rerun with a smaller selection downgrades a running stack. Never contains
+# anything a user-supplied COMPOSE_PROFILES asked for (ACTIVE_PROFILES includes it).
+DESELECTED_SERVICES := $(filter-out $(ACTIVE_PROFILES),$(OPTIONAL_SERVICES))
 
 # Wiki-side config follows the selection. Empty means "disabled" to
 # Docker/SettingsTemplate.php; unset means "use the default". Values already
 # present (environment or Docker/.env) always win.
 ifeq ($(origin QLEVER_URL),undefined)
-ifeq ($(filter qlever,$(SELECTED_SERVICES) $(USER_PROFILES)),)
+ifeq ($(filter qlever,$(ACTIVE_PROFILES)),)
 QLEVER_URL :=
 else
 QLEVER_URL := http://qlever:7019/
@@ -70,7 +72,7 @@ endif
 endif
 
 ifeq ($(origin MW_SMTP_HOST),undefined)
-ifeq ($(filter mailcatcher,$(SELECTED_SERVICES) $(USER_PROFILES)),)
+ifeq ($(filter mailcatcher,$(ACTIVE_PROFILES)),)
 MW_SMTP_HOST :=
 endif
 endif
@@ -249,7 +251,7 @@ endif
 # a stale bundle after git pull is refreshed via make ts-build.
 .PHONY: _ensure-frontend-bundle
 _ensure-frontend-bundle:
-ifeq ($(filter node,$(SELECTED_SERVICES) $(USER_PROFILES)),)
+ifeq ($(filter node,$(ACTIVE_PROFILES)),)
 	@if [ ! -f resources/ext.neowiki/dist/neowiki.js ]; then \
 		echo "No frontend bundle and no node watcher selected; building once..."; \
 		$(DC_DEV) run --rm node sh -c 'npm install && npm run build' < /dev/null; \
