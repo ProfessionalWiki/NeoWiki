@@ -88,7 +88,7 @@ class Neo4jValueBuilderRegistry {
 	}
 
 	/**
-	 * @phan-template T of object
+	 * @template T of object
 	 * @param callable(string): ?T $parse
 	 * @return T[]
 	 */
