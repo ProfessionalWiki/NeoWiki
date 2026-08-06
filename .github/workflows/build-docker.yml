@@ -56,10 +56,7 @@ jobs:
         run: make up
 
       - name: Wait for Neo4j
-        uses: iFaxity/wait-on-action@v1.1.0
-        with:
-          resource: http-get://localhost:7687
-          timeout: 60000
+        run: make wait-for-neo4j
 
       - name: Install MediaWiki
         run: make install-db

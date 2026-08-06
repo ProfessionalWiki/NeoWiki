@@ -120,11 +120,18 @@ jobs:
 
       - run: composer update
 
+      # Waits by asking Neo4j to answer a query, which is what the next step needs of it, rather than by
+      # opening its port. A retry loop like the QLever and Oxigraph waits below rather than an action:
+      # iFaxity/wait-on-action has no release that does not run on Node 20.
       - name: Wait for Neo4j
-        uses: iFaxity/wait-on-action@v1
-        with:
-          resource: http-get://localhost:7689
-          timeout: 60000
+        run: |
+          for i in $(seq 1 30); do
+            if docker exec test_neo cypher-shell -u neo4j -p password -a bolt://localhost:7689 'RETURN 1' >/dev/null 2>&1; then
+              echo "Neo4j is serving"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Neo4j did not become ready in time; dumping logs:"; docker logs test_neo; exit 1
 
       # QLever for the SPARQL query system test. It cannot be a `services:` container: its bring-up needs
       # a multi-step entrypoint (build an empty index, then serve) that a service container cannot express
