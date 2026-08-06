@@ -5,9 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\SpecialPages;
 
 use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Session\CsrfTokenSet;
+use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\User;
 use PermissionsError;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
@@ -64,6 +66,19 @@ class SpecialGraphStoresTest extends SpecialPageTestBase {
 		$this->expectException( PermissionsError::class );
 
 		$this->executeSpecialPage( '', null, null, $this->getTestUser()->getUser() );
+	}
+
+	public function testThePageNamesTheAdminRightAsItsRestriction(): void {
+		$this->assertSame( NeoWikiExtension::ADMIN_RIGHT, $this->newSpecialPage()->getRestriction() );
+	}
+
+	/**
+	 * Whether a page is listed is decided from isRestricted() and userCanExecute() together, so it is
+	 * asserted through the factory that combines them rather than through either one.
+	 */
+	public function testThePageIsListedOnlyForUsersWithTheAdminRight(): void {
+		$this->assertArrayNotHasKey( 'GraphStores', $this->usablePages( $this->getTestUser()->getUser() ) );
+		$this->assertArrayHasKey( 'GraphStores', $this->usablePages( $this->newAdmin() ) );
 	}
 
 	public function testEachStoreIsListedWithHowFarItIsFromTheWiki(): void {
@@ -292,6 +307,16 @@ class SpecialGraphStoresTest extends SpecialPageTestBase {
 
 	private function newAdmin(): User {
 		return $this->getTestUser( [ 'sysop' ] )->getUser();
+	}
+
+	/**
+	 * The context argument is mandatory from MediaWiki 1.47 and ignored before 1.45, so it is always passed.
+	 *
+	 * @return SpecialPage[]
+	 */
+	private function usablePages( User $user ): array {
+		return $this->getServiceContainer()->getSpecialPageFactory()
+			->getUsablePages( $user, RequestContext::getMain() );
 	}
 
 	private function newRunRepository(): RebuildRunRepository {
