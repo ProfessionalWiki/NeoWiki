@@ -528,10 +528,10 @@ ts-ci:
 	$(MAKE) --no-print-directory ts-build
 	$(MAKE) --no-print-directory ts-lint
 
-ts-install: ## npm install for NeoWiki frontend
+ts-install: _wait-node ## npm install for NeoWiki frontend
 	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm install' < /dev/null
 
-ts-update: ## npm update for NeoWiki frontend
+ts-update: _wait-node ## npm update for NeoWiki frontend
 	$(EXEC_NODE) sh -c 'cd /workspace/resources/ext.neowiki && npm update' < /dev/null
 
 ts-build: _wait-node ## Build TS bundle (one-shot; the watcher runs as a sidecar)
