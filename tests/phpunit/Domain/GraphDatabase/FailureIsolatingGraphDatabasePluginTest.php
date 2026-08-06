@@ -80,6 +80,24 @@ class FailureIsolatingGraphDatabasePluginTest extends TestCase {
 		$this->assertStringContainsString( 'triggering operation', $message, 'stays operation-neutral' );
 	}
 
+	/**
+	 * The Neo4j client reports what it could not reach by quoting the bolt URI it tried, userinfo and
+	 * all, so relaying its message verbatim writes the store's password to wherever the NeoWiki channel
+	 * is routed — on every save, for as long as the backend is down.
+	 */
+	public function testTheBackendPasswordIsKeptOutOfTheLoggedFailure(): void {
+		$plugin = new ThrowingGraphDatabasePlugin(
+			'Cannot connect to any server on alias: default with Uris: '
+			. "('bolt://neo4j:s3cr3t@neo.example:7687')"
+		);
+
+		$this->newDecorator( $plugin )->savePage( TestPage::build( id: 42 ) );
+
+		$message = $this->logger->records[0]['message'];
+		$this->assertStringNotContainsString( 's3cr3t', $message );
+		$this->assertStringContainsString( 'bolt://neo.example:7687', $message, 'still names the unreachable server' );
+	}
+
 	public function testFailingDeleteIsSwallowedAndLoggedForTheDeleteOperation(): void {
 		$this->newDecorator( new ThrowingGraphDatabasePlugin() )->deletePage( new PageId( 42 ) );
 

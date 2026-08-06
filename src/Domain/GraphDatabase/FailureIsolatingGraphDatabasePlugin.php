@@ -76,7 +76,7 @@ class FailureIsolatingGraphDatabasePlugin implements GraphDatabasePlugin {
 			'NeoWiki failed to ' . $operation . ' page ' . $pageId->id . ' in graph backend '
 			. $this->plugin::class . '. The triggering operation was not aborted, but this backend is '
 			. 'now out of sync for that page. Run the RebuildGraphDatabases maintenance script to '
-			. 'reconcile it. Underlying error: ' . $e->getMessage(),
+			. 'reconcile it. Underlying error: ' . BackendFailureMessage::withoutCredentials( $e->getMessage() ),
 			[ 'exception' => $e ]
 		);
 	}
