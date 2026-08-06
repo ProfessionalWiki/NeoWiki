@@ -9,6 +9,7 @@ use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -75,7 +76,11 @@ class ExportPageRdfApi extends SimpleHandler {
 		} catch ( Exception $e ) {
 			LoggerFactory::getInstance( 'NeoWiki' )->error(
 				'NeoWiki could not export page {pageId} as RDF: {message}',
-				[ 'pageId' => $pageId, 'message' => $e->getMessage(), 'exception' => $e ]
+				[
+					'pageId' => $pageId,
+					'message' => BackendFailureMessage::withoutCredentials( $e->getMessage() ),
+					'exception' => $e,
+				]
 			);
 
 			return $this->noDataResponse( $pageId );
