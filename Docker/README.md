@@ -198,13 +198,15 @@ report the backends as missing instead of starting them.
   demo image published as `ghcr.io/professionalwiki/neowiki:latest`, which bakes in
   `LocalSettings.php`), and `dev-mw` (the dev image with mounted NeoWiki source).
 - `docker-compose.yml` — the demo stack's services (`mediawiki`, `db`, `neo`, `qlever`
-  — SPARQL store, see above) plus the profile-gated `caddy` (the `server` profile, for
-  HTTPS hosting) and `oxigraph` (the `oxigraph` profile, the second SPARQL store, see
-  above). The dev overlay builds on this file, so these services are in both stacks.
-- `docker-compose.dev.yml` — dev overlay; switches `mediawiki` to the dev image,
-  bind-mounts the NeoWiki source, sets `MW_MODE=dev`, and adds the dev-only sidecars
-  `node` and `mailcatcher`, plus `test_neo`, `test_qlever` and `test_oxigraph` behind the
-  `test` profile.
+  — SPARQL store, see above, unconditional so raw `docker compose` and the `--profile server`
+  deployment always get it) plus the profile-gated `caddy` (the `server` profile, for HTTPS
+  hosting) and `oxigraph` (the `oxigraph` profile, the second SPARQL store, see above). The dev
+  overlay builds on this file, so these services are in both stacks.
+- `docker-compose.dev.yml` — dev overlay; switches `mediawiki` to the dev image, bind-mounts the
+  NeoWiki source, sets `MW_MODE=dev`, and adds a `qlever` profile onto that base-file service plus
+  the dev-only sidecars `node` and `mailcatcher`, each behind its own profile so `services=` (see
+  [Optional services](#optional-services)) can select or deselect them, plus `test_neo`,
+  `test_qlever` and `test_oxigraph` behind the `test` profile.
 - `docker-compose.tools.yml` — opt-in overlay that exposes Neo4j, QLever and Oxigraph to the
   host, usable with either stack.
 - `SettingsTemplate.php` — `LocalSettings.php` that branches on `MW_MODE`.
