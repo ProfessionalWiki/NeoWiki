@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Rdf;
 
+use ProfessionalWiki\NeoWiki\Domain\Mapping\LinkDirection;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Quad;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
@@ -14,11 +15,11 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
  * The synthesized intermediate-node instances of one Subject's projection: it mints their IRIs and, for
  * the instances that ended up carrying something, the triples that put them in the graph.
  *
- * Instances are minted on demand and their scaffolding — the `rdf:type` triple and the link triple from
- * the anchor (the parent node's instance, or the Subject) — is recorded at the same moment, so a node is
- * in the output only when a value attached to it or to something below it. Asking for an instance also
- * pulls in its parent chain, which is how a nested node brings its ancestors along. Nothing is emitted
- * for a node no value reached, so an event ontology's projection carries no empty event nodes.
+ * Instances are minted on demand and their scaffolding — the `rdf:type` triple and the link triple between
+ * the instance and its anchor (the parent node's instance, or the Subject) — is recorded at the same
+ * moment, so a node is in the output only when a value attached to it or to something below it. Asking
+ * for an instance also pulls in its parent chain, which is how a nested node brings its ancestors along.
+ * Nothing is emitted for a node no value reached, so an event ontology's projection carries no empty nodes.
  */
 class SynthesizedNodes {
 
@@ -89,16 +90,23 @@ class SynthesizedNodes {
 		$anchor = $this->anchor( $node );
 
 		$this->scaffold[] = new Quad( $instance, $this->namespaces->rdfType(), $node->class, $this->graph );
-		$this->scaffold[] = new Quad( $anchor, $node->linkPredicate, $instance, $this->graph );
+		$this->scaffold[] = $this->linkQuad( $node, $instance, $anchor );
 
 		return $instance;
 	}
 
+	private function linkQuad( SynthesizedNode $node, Iri $instance, Iri $anchor ): Quad {
+		return match ( $node->linkDirection ) {
+			LinkDirection::ToNode => new Quad( $anchor, $node->linkPredicate, $instance, $this->graph ),
+			LinkDirection::FromNode => new Quad( $instance, $node->linkPredicate, $anchor, $this->graph ),
+		};
+	}
+
 	/**
-	 * What the node's link triple runs from: its parent's instance, or the Subject when it has no parent.
-	 * A parent is always subject-scoped, so it has exactly one instance. Reaching for it records it, which
-	 * is what makes a whole ancestor chain appear when only its deepest node carries a value. Node
-	 * resolution drops a node whose parent is missing or unusable, so a resolved node's parent is here.
+	 * The node's other end: its parent's instance, or the Subject when it has no parent. A parent is
+	 * always subject-scoped, so it has exactly one instance. Reaching for it records it, which is what
+	 * makes a whole ancestor chain appear when only its deepest node carries a value. Node resolution
+	 * drops a node whose parent is missing or unusable, so a resolved node's parent is here.
 	 */
 	private function anchor( SynthesizedNode $node ): Iri {
 		$parentKey = $node->parentKey();

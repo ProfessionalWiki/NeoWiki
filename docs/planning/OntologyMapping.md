@@ -226,7 +226,7 @@ WHERE {
 
 Here `crm:` is CIDOC-CRM and `crm-prod:` is an illustrative namespace for synthesized event nodes; the `BIND` anchors
 that node's IRI on the Relation ID so it is stable across re-projections. The same Artwork Schema mapped to EDM would be
-mostly flat rules (`?object a edm:ProvidedCHO`, `?object dc:creator ?actor`) with no synthesized nodes — illustrating
+mostly flat rules (`?object a edm:ProvidedCHO`, `?object dc:creator ?actor`) — illustrating
 that one formalism must span both ends of the spectrum.
 
 `CONSTRUCT` is one candidate form. Whether authors write templates directly, or write something higher-level (LinkML,

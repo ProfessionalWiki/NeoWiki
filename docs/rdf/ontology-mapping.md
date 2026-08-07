@@ -17,11 +17,10 @@ page is the as-built reference for the shipped format. The
 and mapped output side by side.
 
 > **Scope.** A mapping reshapes the data as well as the vocabulary: it can **synthesize** the intermediate
-> event nodes a target like CIDOC-CRM routes its paths through, and it can **contract** structure a flat
+> nodes a target like CIDOC-CRM routes its paths through, and it can **contract** structure a flat
 > target does not want by contributing a Subject's values to the Subject it points at. Out of scope: RDF
-> **import** (a mapping drives export only), contributions across more than one relation hop, and link
-> predicates running from a node back to its anchor. The stored `"version": 1` format may change; see the
-> [open questions](../planning/OntologyMapping.md#open-questions).
+> **import** (a mapping drives export only) and contributions across more than one relation hop. The stored
+> `"version": 1` format may change; see the [open questions](../planning/OntologyMapping.md#open-questions).
 
 ## Ontology Mappings are wiki pages
 
@@ -103,7 +102,8 @@ Each **node** entry (a value in `nodes`):
 | Field | Required | Meaning |
 |---|---|---|
 | `class` | yes | The `rdf:type` given to each instance of the node. |
-| `linkPredicate` | yes | Predicate of the triple from the anchor — the parent node's instance, or the Subject — to the node instance. |
+| `linkPredicate` | yes | Predicate of the triple between the node instance and its anchor — the parent node's instance, or the Subject. |
+| `linkDirection` | no | `toNode` (default) emits `<anchor> <linkPredicate> <node>`; `fromNode` emits `<node> <linkPredicate> <anchor>`. |
 | `parent` | no | Another node key, making this node hang off that node instead of off the Subject. |
 | `per` | no | `subject` (default) for one instance shared by every property attached to it, or `value` for one instance per value. A `per: "value"` node takes at most one property and cannot be a `parent`. |
 

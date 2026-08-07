@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Rdf;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\LinkDirection;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\NodeMapping;
@@ -53,6 +54,7 @@ class OntologyMappingProjectorTest extends TestCase {
 	private const string BIRTH_ID = 's1birthaaaaaaa6';
 
 	private const string EDM = 'http://www.europeana.eu/schemas/edm/';
+	private const string ORE = 'http://www.openarchives.org/ore/terms/';
 	private const string DC = 'http://purl.org/dc/elements/1.1/';
 	private const string CRM = 'http://www.cidoc-crm.org/cidoc-crm/';
 	private const string RDA_GR2 = 'http://rdvocab.info/ElementsGr2/';
@@ -627,7 +629,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		return $this->newProjector( [ $schemaName => $mapping ], [ 'crm' => self::CRM, 'rdaGr2' => self::RDA_GR2 ] );
 	}
 
-	private function crmTriG( string $body ): string {
+	private function triG( string $body ): string {
 		return <<<TRIG
 			@prefix neo-subj: <https://wiki.example/entity/> .
 			@prefix neo-graph: <https://wiki.example/graph/edm/page/> .
@@ -636,6 +638,8 @@ class OntologyMappingProjectorTest extends TestCase {
 			@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 			@prefix crm: <http://www.cidoc-crm.org/cidoc-crm/> .
 			@prefix rdaGr2: <http://rdvocab.info/ElementsGr2/> .
+			@prefix edm: <http://www.europeana.eu/schemas/edm/> .
+			@prefix ore: <http://www.openarchives.org/ore/terms/> .
 
 			neo-graph:42 {
 			$body
@@ -683,7 +687,7 @@ class OntologyMappingProjectorTest extends TestCase {
 
 		// One E67_Birth, reached by one P98i_was_born, carrying both properties: the two flat fields are
 		// coordinated onto the same synthesized node.
-		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
 			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
 				rdfs:label "Jane" ;
 				crm:P98i_was_born <https://wiki.example/node/s1janeaaaaaaaa2/birth> .
@@ -713,7 +717,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			],
 		) )->projectPage( $this->personWithFlatBirthFields() );
 
-		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
 			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
 				rdfs:label "Jane" ;
 				crm:P98i_was_born <https://wiki.example/node/s1janeaaaaaaaa2/birth> .
@@ -740,7 +744,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			],
 		) )->projectPage( $this->personWithFlatBirthFields() );
 
-		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
 			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
 				rdfs:label "Jane" .
 			TRIG ), $quads );
@@ -769,7 +773,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			],
 		) )->projectPage( $page );
 
-		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
 			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
 				rdfs:label "Jane" .
 			TRIG ), $quads );
@@ -807,7 +811,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		)->projectPage( $artwork );
 
 		// Two creators, two production events, each IRI derived from its Relation's persistent ID.
-		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
 			neo-subj:s1artworkaaaaa4 a crm:E22_Human-Made_Object ;
 				rdfs:label "The Milkmaid" ;
 				crm:P108i_was_produced_by <https://wiki.example/node/r1firstaaaaaaa2>, <https://wiki.example/node/r1secondaaaaaa3> .
@@ -845,7 +849,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			],
 		) )->projectPage( $page );
 
-		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
 			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
 				rdfs:label "Jane" ;
 				crm:P1_is_identified_by <https://wiki.example/node/s1janeaaaaaaaa2/appellation/0>, <https://wiki.example/node/s1janeaaaaaaaa2/appellation/1> .
@@ -877,7 +881,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			],
 		) )->projectPage( $this->personWithFlatBirthFields() );
 
-		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
 			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
 				rdfs:label "Jane" ;
 				rdaGr2:placeOfBirth neo-subj:s1cityaaaaaaaa3 .
@@ -892,7 +896,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			subject: new SubjectMapping( class: 'crm:E21_Person', labelPredicate: 'rdaGr2:nameOfThePerson' ),
 		) )->projectPage( TestPage::build( id: 42, mainSubject: $this->examplePersonWithoutRelations() ) );
 
-		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
 			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
 				rdfs:label "Jane" ;
 				rdaGr2:nameOfThePerson "Jane" .
@@ -935,7 +939,7 @@ class OntologyMappingProjectorTest extends TestCase {
 
 		// No type or label for the Birth itself: the entry only contributes. The unmapped Weather is
 		// absent, as unmapped properties always are.
-		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
 			neo-subj:s1janeaaaaaaaa2 rdaGr2:dateOfBirth "1990-01-31"^^xsd:date ;
 				rdaGr2:placeOfBirth neo-subj:s1cityaaaaaaaa3 .
 
@@ -1030,7 +1034,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			[ 'crm' => self::CRM, 'rdaGr2' => self::RDA_GR2 ]
 		)->projectPage( $birth );
 
-		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
 			neo-subj:s1birthaaaaaaa6 a crm:E67_Birth ;
 				rdfs:label "Birth of Jane" ;
 				crm:P98_brought_into_life neo-subj:s1janeaaaaaaaa2 .
@@ -1072,7 +1076,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			}
 			JSON )->projectPage( $this->personWithFlatBirthFields() );
 
-		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
 			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
 				rdfs:label "Jane" ;
 				crm:P98i_was_born <https://wiki.example/node/s1janeaaaaaaaa2/2024> .
@@ -1105,7 +1109,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			}
 			JSON )->projectPage( $page );
 
-		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
 			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
 				rdfs:label "Jane" ;
 				crm:P3_has_note "Sabbatical" .
@@ -1156,7 +1160,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			}
 			JSON )->projectPage( $artwork );
 
-		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
 			neo-subj:s1artworkaaaaa4 a crm:E22_Human-Made_Object ;
 				rdfs:label "The Milkmaid" ;
 				crm:P108i_was_produced_by <https://wiki.example/node/r1firstaaaaaaa2> .
@@ -1208,7 +1212,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			}
 			JSON )->projectPage( $page );
 
-		$this->assertProjectsTo( $this->crmTriG( <<<'TRIG'
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
 			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
 				rdfs:label "Jane" ;
 				crm:P1_is_identified_by <https://wiki.example/node/s1janeaaaaaaaa2/naming> .
@@ -1248,6 +1252,175 @@ class OntologyMappingProjectorTest extends TestCase {
 			$serializer->serialize( $first, RdfFormat::TriG ),
 			$serializer->serialize( $second, RdfFormat::TriG )
 		);
+	}
+
+	// A node whose link triple runs the other way: the ore:Aggregation an EDM record wraps its CHO in.
+
+	private function newOreProjector( SchemaMapping $mapping ): OntologyMappingProjector {
+		return $this->newProjector( [ 'Artwork' => $mapping ], [ 'edm' => self::EDM, 'ore' => self::ORE ] );
+	}
+
+	private function artworkWithImage(): Page {
+		return $this->artworkWith( 'Image', 'https://example.org/milkmaid.jpg' );
+	}
+
+	private function artworkWithRights(): Page {
+		return $this->artworkWith( 'Rights', 'https://example.org/rights/publicdomain' );
+	}
+
+	private function artworkWith( string $property, string $url ): Page {
+		return TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::ARTWORK_ID,
+			label: 'The Milkmaid',
+			schemaName: new SchemaName( 'Artwork' ),
+			statements: new StatementList( [ TestStatement::build( $property, new StringValue( $url ), 'url' ) ] )
+		) );
+	}
+
+	public function testAReversedNodeIsLinkedFromItselfToTheSubject(): void {
+		$quads = $this->newOreProjector( new SchemaMapping(
+			subject: new SubjectMapping( 'edm:ProvidedCHO' ),
+			properties: new PropertyMappings( [
+				'Image' => new PropertyMapping( predicate: 'edm:isShownBy', node: 'aggregation' ),
+			] ),
+			nodes: [
+				'aggregation' => new NodeMapping(
+					class: 'ore:Aggregation',
+					linkPredicate: 'edm:aggregatedCHO',
+					linkDirection: LinkDirection::FromNode
+				),
+			],
+		) )->projectPage( $this->artworkWithImage() );
+
+		// The aggregation, not the CHO, is the subject of the link triple, so the record has the shape
+		// Europeana ingests; the CHO itself carries only what is mapped onto it.
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
+			neo-subj:s1artworkaaaaa4 a edm:ProvidedCHO ;
+				rdfs:label "The Milkmaid" .
+
+			<https://wiki.example/node/s1artworkaaaaa4/aggregation> a ore:Aggregation ;
+				edm:aggregatedCHO neo-subj:s1artworkaaaaa4 ;
+				edm:isShownBy <https://example.org/milkmaid.jpg> .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testEachNodeUsesItsOwnLinkDirection(): void {
+		$quads = $this->newOreProjector( new SchemaMapping(
+			subject: new SubjectMapping( 'edm:ProvidedCHO' ),
+			properties: new PropertyMappings( [
+				'Rights' => new PropertyMapping( predicate: 'edm:rights', node: 'webResource' ),
+			] ),
+			nodes: [
+				'aggregation' => new NodeMapping(
+					class: 'ore:Aggregation',
+					linkPredicate: 'edm:aggregatedCHO',
+					linkDirection: LinkDirection::FromNode
+				),
+				'webResource' => new NodeMapping(
+					class: 'edm:WebResource',
+					linkPredicate: 'edm:isShownBy',
+					parent: 'aggregation'
+				),
+			],
+		) )->projectPage( $this->artworkWithRights() );
+
+		// Only the web resource carries a value, so it pulls the aggregation above it into the output.
+		// Each node's own direction applies: the aggregation points back at the CHO, the web resource is
+		// pointed at by the aggregation.
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
+			neo-subj:s1artworkaaaaa4 a edm:ProvidedCHO ;
+				rdfs:label "The Milkmaid" .
+
+			<https://wiki.example/node/s1artworkaaaaa4/aggregation> a ore:Aggregation ;
+				edm:aggregatedCHO neo-subj:s1artworkaaaaa4 ;
+				edm:isShownBy <https://wiki.example/node/s1artworkaaaaa4/aggregation/webResource> .
+
+			<https://wiki.example/node/s1artworkaaaaa4/aggregation/webResource> a edm:WebResource ;
+				edm:rights <https://example.org/rights/publicdomain> .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testAReversedNodeUnderAParentPointsAtTheParentsInstance(): void {
+		$quads = $this->newOreProjector( new SchemaMapping(
+			subject: new SubjectMapping( 'edm:ProvidedCHO' ),
+			properties: new PropertyMappings( [
+				'Rights' => new PropertyMapping( predicate: 'edm:rights', node: 'proxy' ),
+			] ),
+			nodes: [
+				'aggregation' => new NodeMapping(
+					class: 'ore:Aggregation',
+					linkPredicate: 'edm:aggregatedCHO',
+					linkDirection: LinkDirection::FromNode
+				),
+				'proxy' => new NodeMapping(
+					class: 'ore:Proxy',
+					linkPredicate: 'ore:proxyIn',
+					parent: 'aggregation',
+					linkDirection: LinkDirection::FromNode
+				),
+			],
+		) )->projectPage( $this->artworkWithRights() );
+
+		// A reversed node points at its own anchor, which here is the aggregation above it rather than the
+		// Subject: the proxy sits in the aggregation, not in the CHO.
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
+			neo-subj:s1artworkaaaaa4 a edm:ProvidedCHO ;
+				rdfs:label "The Milkmaid" .
+
+			<https://wiki.example/node/s1artworkaaaaa4/aggregation> a ore:Aggregation ;
+				edm:aggregatedCHO neo-subj:s1artworkaaaaa4 .
+
+			<https://wiki.example/node/s1artworkaaaaa4/aggregation/proxy> a ore:Proxy ;
+				ore:proxyIn <https://wiki.example/node/s1artworkaaaaa4/aggregation> ;
+				edm:rights <https://example.org/rights/publicdomain> .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testEveryInstanceOfAReversedPerValueNodeIsLinkedToTheSubject(): void {
+		$artwork = TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::ARTWORK_ID,
+			label: 'The Milkmaid',
+			schemaName: new SchemaName( 'Artwork' ),
+			statements: new StatementList( [
+				TestStatement::buildRelation( 'Provider', [
+					TestRelation::build( id: 'r1firstaaaaaaa2', targetId: self::PERSON_ID ),
+					TestRelation::build( id: 'r1secondaaaaaa3', targetId: self::CITY_ID ),
+				] ),
+			] )
+		) );
+
+		$quads = $this->newOreProjector( new SchemaMapping(
+			subject: new SubjectMapping( 'edm:ProvidedCHO' ),
+			properties: new PropertyMappings( [
+				'Provider' => new PropertyMapping( predicate: 'edm:provider', node: 'aggregation' ),
+			] ),
+			nodes: [
+				'aggregation' => new NodeMapping(
+					class: 'ore:Aggregation',
+					linkPredicate: 'edm:aggregatedCHO',
+					scope: NodeScope::Value,
+					linkDirection: LinkDirection::FromNode
+				),
+			],
+		) )->projectPage( $artwork );
+
+		// One aggregation per provider, each pointing back at the same CHO.
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
+			neo-subj:s1artworkaaaaa4 a edm:ProvidedCHO ;
+				rdfs:label "The Milkmaid" .
+
+			<https://wiki.example/node/r1firstaaaaaaa2> a ore:Aggregation ;
+				edm:aggregatedCHO neo-subj:s1artworkaaaaa4 ;
+				edm:provider neo-subj:s1janeaaaaaaaa2 .
+
+			<https://wiki.example/node/r1secondaaaaaa3> a ore:Aggregation ;
+				edm:aggregatedCHO neo-subj:s1artworkaaaaa4 ;
+				edm:provider neo-subj:s1cityaaaaaaaa3 .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
 	}
 
 }

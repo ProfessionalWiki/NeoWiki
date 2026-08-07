@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\LinkDirection;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\NodeMapping;
@@ -140,15 +141,35 @@ class MappingPersistenceDeserializer {
 				continue;
 			}
 
+			$linkDirection = $this->linkDirection( $node['linkDirection'] ?? null );
+
+			if ( $linkDirection === null ) {
+				continue;
+			}
+
 			$nodes[(string)$key] = new NodeMapping(
 				class: $node['class'],
 				linkPredicate: $node['linkPredicate'],
 				parent: $this->stringOrNull( $node['parent'] ?? null ),
 				scope: NodeScope::tryFrom( (string)( $node['per'] ?? '' ) ) ?? NodeScope::Subject,
+				linkDirection: $linkDirection,
 			);
 		}
 
 		return $nodes;
+	}
+
+	/**
+	 * A stored direction the projector does not know — reachable through import, since save validation
+	 * rejects it — drops the node. Not the fallback-to-default an unknown `per` gets: a guessed direction
+	 * puts the link triple the wrong way round in output that is meant to be conformant.
+	 */
+	private function linkDirection( mixed $value ): ?LinkDirection {
+		if ( $value === null ) {
+			return LinkDirection::ToNode;
+		}
+
+		return is_string( $value ) ? LinkDirection::tryFrom( $value ) : null;
 	}
 
 	/**

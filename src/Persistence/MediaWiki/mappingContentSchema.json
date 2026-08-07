@@ -88,6 +88,13 @@
 										"value"
 									],
 									"$error": "A node is either per \"subject\" or per \"value\"."
+								},
+								"linkDirection": {
+									"enum": [
+										"toNode",
+										"fromNode"
+									],
+									"$error": "A node's link direction is either \"toNode\" or \"fromNode\"."
 								}
 							},
 							"additionalProperties": false

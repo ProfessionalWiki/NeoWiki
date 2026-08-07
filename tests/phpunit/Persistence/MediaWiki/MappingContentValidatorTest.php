@@ -458,6 +458,29 @@ class MappingContentValidatorTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
+	public function testRejectsALinkDirectionThatIsNeitherToNodeNorFromNode(): void {
+		$this->assertInvalidAt(
+			<<<JSON
+			{
+				"version": 1,
+				"schemas": {
+					"Person": {
+						"subject": { "class": "http://example.org/Person" },
+						"nodes": {
+							"birth": {
+								"class": "http://example.org/Birth",
+								"linkPredicate": "http://example.org/wasBorn",
+								"linkDirection": "eitherWay"
+							}
+						}
+					}
+				}
+			}
+			JSON,
+			'/schemas/Person/nodes/birth/linkDirection'
+		);
+	}
+
 	public function testRejectsAPropertyAttachedToAnUndeclaredNode(): void {
 		$this->assertInvalidAt(
 			<<<JSON
@@ -676,7 +699,8 @@ class MappingContentValidatorTest extends MediaWikiIntegrationTestCase {
 							"birthTimespan": {
 								"class": "crm:E52_Time-Span",
 								"linkPredicate": "crm:P4_has_time-span",
-								"parent": "birth"
+								"parent": "birth",
+								"linkDirection": "toNode"
 							},
 							"appellation": {
 								"class": "crm:E41_Appellation",

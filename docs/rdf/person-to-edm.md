@@ -12,8 +12,9 @@ It projects the EDM column of a small "person to many standards" toy model. Ever
 [demo data](../../DemoData/), so a wiki with the demo data imported (`php maintenance/run.php NeoWiki:ImportDemoData`)
 reproduces it — up to instance-specific page IDs and base URI (and, in the page metadata, timestamps and last editor).
 
-> **Scope: the near-1:1 tier.** EDM is flat, so this walkthrough is term substitution. For the structural tier, the
-> same demo data ships a `Mapping:CIDOC-CRM` — see [the same data in CIDOC-CRM](#the-same-data-in-cidoc-crm) below.
+> **Scope: the near-1:1 tier.** This Person mapping is flat, so the walkthrough is term substitution. For the
+> structural tier, the same demo data ships a `Mapping:CIDOC-CRM` — see
+> [the same data in CIDOC-CRM](#the-same-data-in-cidoc-crm) below.
 
 ## The toy model
 
@@ -53,7 +54,7 @@ The demo `City` Schema ([`DemoData/Schema/City.json`](../../DemoData/Schema/City
 One Mapping page, **[`Mapping:EDM`](../../DemoData/Mapping/EDM.json)**, holds an entry per mapped Schema; its title
 (`EDM`) is the projection name (see [Ontology Mapping](ontology-mapping.md) for the format). Abbreviated to the
 two entries this walkthrough uses — the shipped file also maps `Birth`, `Place`, `Artwork` and `Artist` and declares
-the `dc`/`dcterms`/`xsd` prefixes those need:
+the `dc`/`dcterms`/`xsd`/`ore` prefixes those need:
 
 ```json
 {

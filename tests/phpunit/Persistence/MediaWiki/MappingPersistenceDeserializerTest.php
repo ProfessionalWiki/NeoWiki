@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\LinkDirection;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\NodeMapping;
@@ -154,6 +155,53 @@ class MappingPersistenceDeserializerTest extends TestCase {
 		$this->assertSame( NodeScope::Value, $this->personNodes()['appellation']?->scope );
 	}
 
+	public function testANodeWithoutALinkDirectionDefaultsToToNode(): void {
+		$this->assertSame( LinkDirection::ToNode, $this->personNodes()['birth']?->linkDirection );
+	}
+
+	public function testDeserializesAnExplicitToNodeLinkDirection(): void {
+		$this->assertSame( LinkDirection::ToNode, $this->personNodes()['birthTimespan']?->linkDirection );
+	}
+
+	public function testDeserializesAReversedNodesLinkDirection(): void {
+		$this->assertSame( LinkDirection::FromNode, $this->personNodes()['death']?->linkDirection );
+	}
+
+	public function testSkipsANodeWithAnUnknownLinkDirection(): void {
+		// Save validation rejects any other value, but an import can store one. Defaulting it would emit
+		// the node's link triple the wrong way round, so the node goes instead — as it does when its terms
+		// are missing.
+		$nodes = $this->deserialize( <<<'JSON'
+			{
+				"version": 1,
+				"prefixes": { "ore": "http://www.openarchives.org/ore/terms/" },
+				"schemas": {
+					"Artwork": {
+						"subject": { "class": "http://www.europeana.eu/schemas/edm/ProvidedCHO" },
+						"nodes": {
+							"forwards": {
+								"class": "ore:Aggregation",
+								"linkPredicate": "http://www.europeana.eu/schemas/edm/aggregatedCHO"
+							},
+							"sideways": {
+								"class": "ore:Aggregation",
+								"linkPredicate": "http://www.europeana.eu/schemas/edm/aggregatedCHO",
+								"linkDirection": "eitherWay"
+							},
+							"backwards": {
+								"class": "ore:Aggregation",
+								"linkPredicate": "http://www.europeana.eu/schemas/edm/aggregatedCHO",
+								"linkDirection": "fromNode"
+							}
+						}
+					}
+				}
+			}
+			JSON )->forSchema( new SchemaName( 'Artwork' ) )?->nodes ?? [];
+
+		$this->assertSame( [ 'forwards', 'backwards' ], array_keys( $nodes ) );
+	}
+
 	public function testSkipsANodeWithoutTheTermsItNeeds(): void {
 		// Shapes save validation rejects: a node with no class, and one with no link predicate. Neither
 		// can be placed in the graph, so both are dropped while their valid sibling survives.
@@ -274,12 +322,18 @@ class MappingPersistenceDeserializerTest extends TestCase {
 							"birthTimespan": {
 								"class": "crm:E52_Time-Span",
 								"linkPredicate": "crm:P4_has_time-span",
-								"parent": "birth"
+								"parent": "birth",
+								"linkDirection": "toNode"
 							},
 							"appellation": {
 								"class": "crm:E41_Appellation",
 								"linkPredicate": "crm:P1_is_identified_by",
 								"per": "value"
+							},
+							"death": {
+								"class": "crm:E69_Death",
+								"linkPredicate": "crm:P100_was_death_of",
+								"linkDirection": "fromNode"
 							}
 						},
 						"properties": {
