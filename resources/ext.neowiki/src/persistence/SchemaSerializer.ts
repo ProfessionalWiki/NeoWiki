@@ -1,6 +1,7 @@
 import { Schema } from '@/domain/Schema';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 import { PropertyDefinition } from '@/domain/PropertyDefinition';
+import { applySeverities } from '@/domain/SeverityNormalizer';
 import { valueToJson } from '@/domain/Value';
 
 export class SchemaSerializer {
@@ -25,10 +26,13 @@ export class SchemaSerializer {
 	}
 
 	private serializePropertyDefinition( property: PropertyDefinition ): any {
-		const { name, ...propertyWithoutName } = property;
-		return {
-			...propertyWithoutName,
-			default: property.default !== undefined ? valueToJson( property.default ) : undefined,
-		};
+		const { name, constraintSeverities, ...propertyWithoutName } = property;
+		return applySeverities(
+			{
+				...propertyWithoutName,
+				default: property.default !== undefined ? valueToJson( property.default ) : undefined,
+			},
+			constraintSeverities ?? {},
+		);
 	}
 }

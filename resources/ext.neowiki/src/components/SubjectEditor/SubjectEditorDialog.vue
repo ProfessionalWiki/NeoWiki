@@ -47,19 +47,7 @@
 				</CdxButton>
 			</template>
 
-			<CdxMessage
-				v-if="anchorlessViolations.length > 0"
-				type="error"
-			>
-				<ul class="ext-neowiki-subject-editor__form-errors">
-					<li
-						v-for="( v, idx ) in anchorlessViolations"
-						:key="idx"
-					>
-						{{ formatViolationMessage( v ) }}
-					</li>
-				</ul>
-			</CdxMessage>
+			<SubjectViolationBanners :violations="anchorlessViolations" />
 
 			<SubjectEditor
 				ref="subjectEditorRef"
@@ -101,9 +89,10 @@
 <script setup lang="ts">
 import { ref, shallowRef, nextTick, computed, watch } from 'vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
+import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
-import { CdxButton, CdxDialog, CdxIcon, CdxMessage } from '@wikimedia/codex';
+import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
 import { cdxIconClose } from '@wikimedia/codex-icons';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
@@ -205,10 +194,6 @@ const anchorlessViolations = computed<SubjectViolation[]>( () => {
 		return !renderedPropertyNames.has( v.propertyName );
 	} );
 } );
-
-function formatViolationMessage( v: SubjectViolation ): string {
-	return mw.message( `neowiki-field-${ v.code }`, ...( v.args as string[] ) ).text();
-}
 
 function handleClearViolation( payload: { propertyName: string; valuePartIndex: number | null } ): void {
 	serverViolations.value = serverViolations.value.filter(

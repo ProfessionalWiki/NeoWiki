@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { ref, shallowRef, type Ref } from 'vue';
-import { useServerViolations } from '@/composables/useServerViolations.ts';
+import { useServerViolations, violationStatus } from '@/composables/useServerViolations.ts';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 
@@ -26,6 +26,7 @@ function violation( overrides: Partial<SubjectViolation> = {} ): SubjectViolatio
 		propertyName: PROPERTY_NAME,
 		code: 'invalid-option',
 		args: [],
+		severity: 'error',
 		valuePartIndex: null,
 		...overrides,
 	};
@@ -82,34 +83,73 @@ describe( 'useServerViolations', () => {
 		} );
 	} );
 
-	describe( 'firstMessage', () => {
-		it( 'is the first relevant violation, even when it is part-indexed', () => {
+	describe( 'firstMessages', () => {
+		it( 'keys the first relevant violation by its severity, even when part-indexed', () => {
 			const { composable } = setup( [ violation( { code: 'invalid-option', args: [ 'x' ], valuePartIndex: 1 } ) ] );
 
-			expect( composable.firstMessage.value ).toBe( 'neowiki-field-invalid-option|x' );
+			expect( composable.firstMessages.value ).toEqual( { error: 'neowiki-field-invalid-option|x' } );
 		} );
 
-		it( 'is null when there are no relevant violations', () => {
+		it( 'keys a warning violation under warning', () => {
+			const { composable } = setup( [ violation( { severity: 'warning' } ) ] );
+
+			expect( composable.firstMessages.value ).toEqual( { warning: 'neowiki-field-invalid-option' } );
+		} );
+
+		it( 'is empty when there are no relevant violations', () => {
 			const { composable } = setup( [ violation( { propertyName: 'Other' } ) ] );
 
-			expect( composable.firstMessage.value ).toBeNull();
+			expect( composable.firstMessages.value ).toEqual( {} );
+		} );
+
+		it( 'prefers an error over an earlier warning, so a blocker is never masked', () => {
+			const { composable } = setup( [
+				violation( { code: 'max-value', args: [ '100' ], severity: 'warning' } ),
+				violation( { code: 'required', severity: 'error' } ),
+			] );
+
+			expect( composable.firstMessages.value ).toEqual( { error: 'neowiki-field-required' } );
 		} );
 	} );
 
-	describe( 'fieldLevelMessage', () => {
-		it( 'is the null-index violation, ignoring part-indexed ones', () => {
+	describe( 'fieldLevelMessages', () => {
+		it( 'is the null-index violation keyed by its severity, ignoring part-indexed ones', () => {
 			const { composable } = setup( [
 				violation( { code: 'invalid-option', valuePartIndex: 0 } ),
-				violation( { code: 'required', valuePartIndex: null } ),
+				violation( { code: 'required', severity: 'warning', valuePartIndex: null } ),
 			] );
 
-			expect( composable.fieldLevelMessage.value ).toBe( 'neowiki-field-required' );
+			expect( composable.fieldLevelMessages.value ).toEqual( { warning: 'neowiki-field-required' } );
 		} );
 
-		it( 'is null when only part-indexed violations exist', () => {
+		it( 'is empty when only part-indexed violations exist', () => {
 			const { composable } = setup( [ violation( { valuePartIndex: 2 } ) ] );
 
-			expect( composable.fieldLevelMessage.value ).toBeNull();
+			expect( composable.fieldLevelMessages.value ).toEqual( {} );
+		} );
+
+		it( 'prefers a field-level error over an earlier field-level warning', () => {
+			const { composable } = setup( [
+				violation( { code: 'max-value', args: [ '100' ], severity: 'warning', valuePartIndex: null } ),
+				violation( { code: 'required', severity: 'error', valuePartIndex: null } ),
+			] );
+
+			expect( composable.fieldLevelMessages.value ).toEqual( { error: 'neowiki-field-required' } );
+		} );
+	} );
+
+	describe( 'violationStatus', () => {
+		it( 'is the key of the single message', () => {
+			expect( violationStatus( { error: 'x' } ) ).toBe( 'error' );
+			expect( violationStatus( { warning: 'x' } ) ).toBe( 'warning' );
+		} );
+
+		it( 'is default when there are no messages', () => {
+			expect( violationStatus( {} ) ).toBe( 'default' );
+		} );
+
+		it( 'prefers error when both severities carry a message', () => {
+			expect( violationStatus( { error: 'x', warning: 'y' } ) ).toBe( 'error' );
 		} );
 	} );
 
@@ -204,15 +244,15 @@ describe( 'useServerViolations', () => {
 	describe( 'reactivity', () => {
 		it( 'recomputes the display messages when serverViolations changes after creation', () => {
 			const { composable, serverViolations } = setup( [] );
-			expect( composable.firstMessage.value ).toBeNull();
-			expect( composable.fieldLevelMessage.value ).toBeNull();
+			expect( composable.firstMessages.value ).toEqual( {} );
+			expect( composable.fieldLevelMessages.value ).toEqual( {} );
 
 			// A failed save sets serverViolations on an already-mounted input; the display
 			// computeds must recompute from the live ref, not a snapshot taken at creation.
 			serverViolations.value = [ violation( { code: 'required', valuePartIndex: null } ) ];
 
-			expect( composable.firstMessage.value ).toBe( 'neowiki-field-required' );
-			expect( composable.fieldLevelMessage.value ).toBe( 'neowiki-field-required' );
+			expect( composable.firstMessages.value ).toEqual( { error: 'neowiki-field-required' } );
+			expect( composable.fieldLevelMessages.value ).toEqual( { error: 'neowiki-field-required' } );
 		} );
 	} );
 } );

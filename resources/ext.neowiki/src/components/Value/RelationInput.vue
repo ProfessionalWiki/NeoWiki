@@ -56,7 +56,7 @@ import { ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/component
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { Value, ValueType, RelationValue, newRelation, relationValuesHaveSameTargets } from '@/domain/Value';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { useServerViolations } from '@/composables/useServerViolations.ts';
+import { useServerViolations, violationStatus } from '@/composables/useServerViolations.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<RelationProperty>>(),
@@ -73,25 +73,25 @@ const emit = defineEmits<ValueInputEmits>();
 const internalValue = ref<RelationValue | undefined>( undefined );
 const singleHasUnmatchedText = ref( false );
 
-const { firstMessage, emitClears } = useServerViolations(
+const { firstMessages, emitClears } = useServerViolations(
 	toRef( props, 'property' ),
 	toRef( props, 'serverViolations' ),
 	emit
 );
 
-// One aggregate error for the whole property (NeoMultiLookupInput has no per-index slot).
+// One aggregate message for the whole property (NeoMultiLookupInput has no per-index slot).
 const displayedFieldMessages = computed( (): ValidationMessages => {
-	if ( singleHasUnmatchedText.value || firstMessage.value === null ) {
+	if ( singleHasUnmatchedText.value ) {
 		return {};
 	}
-	return { error: firstMessage.value };
+	return firstMessages.value;
 } );
 
-const fieldStatus = computed( (): 'error' | 'default' => {
+const fieldStatus = computed( (): 'default' | 'error' | 'warning' => {
 	if ( props.property.multiple || singleHasUnmatchedText.value ) {
 		return 'default';
 	}
-	return displayedFieldMessages.value.error !== undefined ? 'error' : 'default';
+	return violationStatus( displayedFieldMessages.value );
 } );
 
 function initializeInternalValue( value: Value | undefined ): void {

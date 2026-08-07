@@ -491,9 +491,9 @@ describe( 'RestSubjectRepository', () => {
 				status: 'error',
 				message: 'Validation failed',
 				violations: [
-					{ propertyName: 'Status', code: 'required', args: [], valuePartIndex: null },
-					{ propertyName: 'Website', code: 'invalid-url', args: [], valuePartIndex: 1 },
-					{ propertyName: null, code: 'schema-not-found', args: [ 'Person' ], valuePartIndex: null },
+					{ propertyName: 'Status', code: 'required', args: [], severity: 'error', valuePartIndex: null },
+					{ propertyName: 'Website', code: 'invalid-url', args: [], severity: 'error', valuePartIndex: 1 },
+					{ propertyName: null, code: 'schema-not-found', args: [ 'Person' ], severity: 'error', valuePartIndex: null },
 				],
 			};
 
@@ -503,9 +503,9 @@ describe( 'RestSubjectRepository', () => {
 			const error = await promise.catch( ( e ) => e );
 			expect( error ).toBeInstanceOf( ValidationFailedError );
 			expect( ( error as ValidationFailedError ).violations ).toEqual( [
-				{ propertyName: 'Status', code: 'required', args: [], valuePartIndex: null },
-				{ propertyName: 'Website', code: 'invalid-url', args: [], valuePartIndex: 1 },
-				{ propertyName: null, code: 'schema-not-found', args: [ 'Person' ], valuePartIndex: null },
+				{ propertyName: 'Status', code: 'required', args: [], severity: 'error', valuePartIndex: null },
+				{ propertyName: 'Website', code: 'invalid-url', args: [], severity: 'error', valuePartIndex: 1 },
+				{ propertyName: null, code: 'schema-not-found', args: [ 'Person' ], severity: 'error', valuePartIndex: null },
 			] );
 		} );
 
@@ -530,7 +530,7 @@ describe( 'RestSubjectRepository', () => {
 
 		it( 'throws generic Error when a violation entry has a non-string code', async () => {
 			const promise = repoWith( make422Response( {
-				violations: [ { propertyName: 'Foo', code: 123, args: [], valuePartIndex: null } ],
+				violations: [ { propertyName: 'Foo', code: 123, args: [], severity: 'error', valuePartIndex: null } ],
 			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ) );
 
 			await expect( promise ).rejects.toSatisfy(
@@ -563,7 +563,7 @@ describe( 'RestSubjectRepository', () => {
 		it( 'throws ValidationFailedError on well-formed 422', async () => {
 			const body = {
 				violations: [
-					{ propertyName: 'Status', code: 'required', args: [], valuePartIndex: null },
+					{ propertyName: 'Status', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 				],
 			};
 			const inMemoryHttpClient = new InMemoryHttpClient( {
@@ -584,7 +584,7 @@ describe( 'RestSubjectRepository', () => {
 		it( 'throws ValidationFailedError on well-formed 422', async () => {
 			const body = {
 				violations: [
-					{ propertyName: 'Status', code: 'required', args: [], valuePartIndex: null },
+					{ propertyName: 'Status', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 				],
 			};
 			const inMemoryHttpClient = new InMemoryHttpClient( {

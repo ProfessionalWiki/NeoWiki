@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { withoutMissingValueViolations, SubjectViolation } from '@/domain/SubjectViolation.ts';
 
 function violation( code: string, propertyName: string | null = 'Homepage' ): SubjectViolation {
-	return { propertyName, code, args: [], valuePartIndex: null };
+	return { propertyName, code, args: [], severity: 'error', valuePartIndex: null };
 }
 
 describe( 'withoutMissingValueViolations', () => {

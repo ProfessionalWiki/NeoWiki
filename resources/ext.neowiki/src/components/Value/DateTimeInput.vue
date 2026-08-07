@@ -1,7 +1,7 @@
 <template>
 	<CdxField
-		:status="validationError === null ? 'default' : 'error'"
-		:messages="validationError === null ? {} : { error: validationError }"
+		:status="validationStatus"
+		:messages="validationMessages"
 		:optional="props.property.required === false"
 	>
 		<template #label>
@@ -49,7 +49,7 @@ const props = withDefaults(
 
 const emit = defineEmits<ValueInputEmits>();
 
-const { validationError, clearServerViolation } = useFieldServerViolation(
+const { validationMessages, validationStatus, clearServerViolation } = useFieldServerViolation(
 	toRef( props, 'property' ),
 	toRef( props, 'serverViolations' ),
 	emit,

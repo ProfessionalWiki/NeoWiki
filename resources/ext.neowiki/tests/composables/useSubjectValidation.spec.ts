@@ -3,7 +3,7 @@ import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 
 function violation( code: string ): SubjectViolation {
-	return { propertyName: 'Title', code, args: [], valuePartIndex: null };
+	return { propertyName: 'Title', code, args: [], severity: 'error', valuePartIndex: null };
 }
 
 describe( 'useSubjectValidation', () => {
