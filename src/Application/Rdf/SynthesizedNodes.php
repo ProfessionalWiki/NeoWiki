@@ -102,11 +102,10 @@ class SynthesizedNodes {
 	 * `aggregation edm:aggregatedCHO cho`, whose wrapper is the subject of its own link.
 	 */
 	private function linkQuad( SynthesizedNode $node, Iri $instance, Iri $anchor ): Quad {
-		if ( $node->linkDirection === LinkDirection::FromNode ) {
-			return new Quad( $instance, $node->linkPredicate, $anchor, $this->graph );
-		}
-
-		return new Quad( $anchor, $node->linkPredicate, $instance, $this->graph );
+		return match ( $node->linkDirection ) {
+			LinkDirection::ToNode => new Quad( $anchor, $node->linkPredicate, $instance, $this->graph ),
+			LinkDirection::FromNode => new Quad( $instance, $node->linkPredicate, $anchor, $this->graph ),
+		};
 	}
 
 	/**

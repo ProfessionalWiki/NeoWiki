@@ -163,37 +163,6 @@ class MappingPersistenceDeserializerTest extends TestCase {
 		$this->assertSame( LinkDirection::FromNode, $this->aggregationNodes()['aggregation']?->linkDirection );
 	}
 
-	public function testSkipsANodeWithAnUnknownLinkDirection(): void {
-		// Save validation rejects any other value, but an import can store one. Defaulting it would emit
-		// the node's link triple the wrong way round, so the node goes instead — as it does when its terms
-		// are missing.
-		$nodes = $this->deserialize( <<<'JSON'
-			{
-				"version": 1,
-				"prefixes": { "ore": "http://www.openarchives.org/ore/terms/" },
-				"schemas": {
-					"Artwork": {
-						"subject": { "class": "http://www.europeana.eu/schemas/edm/ProvidedCHO" },
-						"nodes": {
-							"sideways": {
-								"class": "ore:Aggregation",
-								"linkPredicate": "http://www.europeana.eu/schemas/edm/aggregatedCHO",
-								"linkDirection": "eitherWay"
-							},
-							"aggregation": {
-								"class": "ore:Aggregation",
-								"linkPredicate": "http://www.europeana.eu/schemas/edm/aggregatedCHO",
-								"linkDirection": "fromNode"
-							}
-						}
-					}
-				}
-			}
-			JSON )->forSchema( new SchemaName( 'Artwork' ) )?->nodes ?? [];
-
-		$this->assertSame( [ 'aggregation' ], array_keys( $nodes ) );
-	}
-
 	/**
 	 * @return array<string, NodeMapping>
 	 */
@@ -214,14 +183,46 @@ class MappingPersistenceDeserializerTest extends TestCase {
 								"linkPredicate": "edm:aggregatedCHO",
 								"linkDirection": "fromNode"
 							}
-						},
-						"properties": {
-							"Image": { "predicate": "edm:isShownBy", "node": "aggregation" }
 						}
 					}
 				}
 			}
 			JSON )->forSchema( new SchemaName( 'Artwork' ) )?->nodes ?? [];
+	}
+
+	public function testSkipsANodeWithAnUnknownLinkDirection(): void {
+		// Save validation rejects any other value, but an import can store one. Defaulting it would emit
+		// the node's link triple the wrong way round, so the node goes instead — as it does when its terms
+		// are missing.
+		$nodes = $this->deserialize( <<<'JSON'
+			{
+				"version": 1,
+				"prefixes": { "ore": "http://www.openarchives.org/ore/terms/" },
+				"schemas": {
+					"Artwork": {
+						"subject": { "class": "http://www.europeana.eu/schemas/edm/ProvidedCHO" },
+						"nodes": {
+							"forwards": {
+								"class": "ore:Aggregation",
+								"linkPredicate": "http://www.europeana.eu/schemas/edm/aggregatedCHO"
+							},
+							"sideways": {
+								"class": "ore:Aggregation",
+								"linkPredicate": "http://www.europeana.eu/schemas/edm/aggregatedCHO",
+								"linkDirection": "eitherWay"
+							},
+							"backwards": {
+								"class": "ore:Aggregation",
+								"linkPredicate": "http://www.europeana.eu/schemas/edm/aggregatedCHO",
+								"linkDirection": "fromNode"
+							}
+						}
+					}
+				}
+			}
+			JSON )->forSchema( new SchemaName( 'Artwork' ) )?->nodes ?? [];
+
+		$this->assertSame( [ 'forwards', 'backwards' ], array_keys( $nodes ) );
 	}
 
 	public function testSkipsANodeWithoutTheTermsItNeeds(): void {

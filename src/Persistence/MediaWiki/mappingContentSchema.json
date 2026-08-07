@@ -94,7 +94,7 @@
 										"toNode",
 										"fromNode"
 									],
-									"$error": "A node's link triple runs either \"toNode\" or \"fromNode\"."
+									"$error": "A node's link direction is either \"toNode\" or \"fromNode\"."
 								}
 							},
 							"additionalProperties": false

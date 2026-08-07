@@ -1274,7 +1274,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			TRIG;
 	}
 
-	private function artworkWithWebResourceFields(): Page {
+	private function artworkWithImageAndRights(): Page {
 		return TestPage::build( id: 42, mainSubject: TestSubject::build(
 			id: self::ARTWORK_ID,
 			label: 'The Milkmaid',
@@ -1299,7 +1299,7 @@ class OntologyMappingProjectorTest extends TestCase {
 					linkDirection: LinkDirection::FromNode
 				),
 			],
-		) )->projectPage( $this->artworkWithWebResourceFields() );
+		) )->projectPage( $this->artworkWithImageAndRights() );
 
 		// The aggregation, not the CHO, is the subject of the link triple, so the record has the shape
 		// Europeana ingests; the CHO itself carries only what is mapped onto it.
@@ -1332,7 +1332,7 @@ class OntologyMappingProjectorTest extends TestCase {
 					parent: 'aggregation'
 				),
 			],
-		) )->projectPage( $this->artworkWithWebResourceFields() );
+		) )->projectPage( $this->artworkWithImageAndRights() );
 
 		// Only the web resource carries a value, so it pulls the aggregation above it into the output.
 		// Each node's own direction applies: the aggregation points back at the CHO, the web resource is

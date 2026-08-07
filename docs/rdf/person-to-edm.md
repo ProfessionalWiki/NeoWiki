@@ -53,7 +53,7 @@ The demo `City` Schema ([`DemoData/Schema/City.json`](../../DemoData/Schema/City
 One Mapping page, **[`Mapping:EDM`](../../DemoData/Mapping/EDM.json)**, holds an entry per mapped Schema; its title
 (`EDM`) is the projection name (see [Ontology Mapping](ontology-mapping.md) for the format). Abbreviated to the
 two entries this walkthrough uses — the shipped file also maps `Birth`, `Place`, `Artwork` and `Artist` and declares
-the `dc`/`dcterms`/`xsd` prefixes those need:
+the `dc`/`dcterms`/`xsd`/`ore` prefixes those need:
 
 ```json
 {
