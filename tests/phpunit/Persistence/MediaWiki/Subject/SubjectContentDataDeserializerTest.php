@@ -19,6 +19,7 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer
@@ -36,7 +37,8 @@ class SubjectContentDataDeserializerTest extends TestCase {
 
 	private function newDeserializer(): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer(
-			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup() )
+			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup(), TestSubjectIds::newParser() ),
+			TestSubjectIds::newParser()
 		);
 	}
 

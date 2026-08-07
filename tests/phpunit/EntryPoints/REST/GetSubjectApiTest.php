@@ -105,6 +105,35 @@ JSON,
 		$this->assertSame( 200, $response->getStatusCode() );
 	}
 
+	public function testMalformedSubjectIdReturns400(): void {
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => 'not-a-subject-id' ]
+			] )
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
+	/**
+	 * A Source this wiki does not have is a well-formed id that resolves to nothing, which is the
+	 * absent-Subject answer rather than a client error (ADR 23).
+	 */
+	public function testSubjectFromAnUnregisteredSourceIsReportedAsAbsent(): void {
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => 'neverinstalled:sTestGSA1111115' ]
+			] )
+		);
+
+		$this->assertSame( '{"subject":null}', $response->getBody()->getContents() );
+		$this->assertSame( 200, $response->getStatusCode() );
+	}
+
 	public function testReturnsSubjectDataFromSpecificRevision(): void {
 		$originalSubject = TestSubject::build(
 			id: 'sTestGSA1111116',

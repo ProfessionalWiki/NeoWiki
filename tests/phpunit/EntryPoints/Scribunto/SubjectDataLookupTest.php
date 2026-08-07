@@ -27,6 +27,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup
@@ -57,7 +58,8 @@ class SubjectDataLookupTest extends TestCase {
 	private function resolverWithPageSubjects( ?PageSubjects $pageSubjects, ?SubjectLookup $subjectLookup = null ): SubjectResolver {
 		return new SubjectResolver(
 			new InMemorySubjectContentRepository( $pageSubjects ),
-			$subjectLookup ?? $this->createStub( SubjectLookup::class )
+			$subjectLookup ?? $this->createStub( SubjectLookup::class ),
+			TestSubjectIds::newParser()
 		);
 	}
 

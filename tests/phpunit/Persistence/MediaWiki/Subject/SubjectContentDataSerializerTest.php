@@ -24,6 +24,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDes
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer
@@ -225,7 +226,10 @@ class SubjectContentDataSerializerTest extends TestCase {
 	 * Core types only: no extension is loaded, so "color" is an unregistered type.
 	 */
 	private function roundTrip( string $contentJson ): string {
-		$deserializer = new SubjectContentDataDeserializer( new StatementDeserializer( PropertyTypeRegistry::withCoreTypes() ) );
+		$deserializer = new SubjectContentDataDeserializer(
+			new StatementDeserializer( PropertyTypeRegistry::withCoreTypes(), TestSubjectIds::newParser() ),
+			TestSubjectIds::newParser()
+		);
 
 		return ( new SubjectContentDataSerializer() )->serialize( $deserializer->deserialize( $contentJson ) );
 	}

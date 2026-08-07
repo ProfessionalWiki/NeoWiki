@@ -269,6 +269,7 @@ class NeoWikiHooks {
 					new SubjectResolver(
 						$extension->newSubjectContentRepository(),
 						$extension->getSubjectRepository(),
+						$extension->getSubjectIdParser(),
 					)
 				);
 				return $parserFunction->handle( $parser, ...$args );

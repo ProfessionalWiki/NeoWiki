@@ -9,7 +9,6 @@ use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -36,15 +35,18 @@ use Wikimedia\ParamValidator\ParamValidator;
 class ResolveSubjectIriApi extends SimpleHandler {
 
 	public function run( string $subjectId ): Response {
-		if ( !SubjectId::isValid( $subjectId ) ) {
+		$extension = NeoWikiExtension::getInstance();
+		$id = $extension->getSubjectIdParser()->parse( $subjectId );
+
+		if ( $id === null ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'message' => 'Invalid Subject ID: ' . $subjectId,
 			] );
 		}
 
-		$hostingPage = NeoWikiExtension::getInstance()
+		$hostingPage = $extension
 			->newSubjectHostingPageResolver( $this->getAuthority() )
-			->resolveReadableHostingPage( new SubjectId( $subjectId ) );
+			->resolveReadableHostingPage( $id );
 
 		if ( $hostingPage === null ) {
 			return $this->noDataResponse( $subjectId );
@@ -126,7 +128,7 @@ class ResolveSubjectIriApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject whose concept URI to dereference. 15 characters, starting with "s".',
+				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject whose concept URI to dereference: 15 characters starting with "s" for a Subject of this wiki, or "sourceKey:localId" for one from another Source.',
 			],
 		];
 	}

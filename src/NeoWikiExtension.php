@@ -90,6 +90,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportSubjectRdfApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ResolveSubjectIriApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
@@ -297,7 +298,19 @@ class NeoWikiExtension {
 	}
 
 	public function newSubjectContentDataDeserializer(): SubjectContentDataDeserializer {
-		return new SubjectContentDataDeserializer( new StatementDeserializer( $this->getPropertyTypeLookup() ) );
+		return new SubjectContentDataDeserializer(
+			new StatementDeserializer( $this->getPropertyTypeLookup(), $this->getSubjectIdParser() ),
+			$this->getSubjectIdParser()
+		);
+	}
+
+	/**
+	 * Parses Subject ids arriving from outside — a REST path, a revision slot, a Lua call — into
+	 * {@see \ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId}s. The local Source key is the
+	 * MediaWiki Wiki ID (ADR 22), so an id naming this wiki explicitly canonicalizes to its bare form.
+	 */
+	public function getSubjectIdParser(): SubjectIdParser {
+		return new SubjectIdParser( $this->config->wikiId );
 	}
 
 	public function getPagePropertyProviderRegistry(): PagePropertyProviderRegistry {
@@ -1116,6 +1129,7 @@ class NeoWikiExtension {
 			proposedSubjectValidator: $this->getProposedSubjectValidator(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
+			subjectIdParser: $this->getSubjectIdParser(),
 			validationEnforced: $this->isValidationEnforced(),
 		);
 	}
@@ -1158,7 +1172,8 @@ class NeoWikiExtension {
 	public function getStatementListBuilder(): StatementListBuilder {
 		return new StatementListBuilder(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
-			idGenerator: $this->getIdGenerator()
+			idGenerator: $this->getIdGenerator(),
+			subjectIdParser: $this->getSubjectIdParser()
 		);
 	}
 
@@ -1187,6 +1202,7 @@ class NeoWikiExtension {
 			subjectRepository: $this->getSubjectRepository(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
+			subjectIdParser: $this->getSubjectIdParser(),
 		);
 	}
 
@@ -1196,6 +1212,7 @@ class NeoWikiExtension {
 			subjectRepository: $this->getSubjectRepository(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
+			subjectIdParser: $this->getSubjectIdParser(),
 		);
 	}
 
@@ -1342,6 +1359,7 @@ class NeoWikiExtension {
 			subjectLookup: $this->getSubjectRepository(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			subjectIdParser: $this->getSubjectIdParser(),
 		);
 	}
 
@@ -1356,6 +1374,7 @@ class NeoWikiExtension {
 			),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			subjectIdParser: $this->getSubjectIdParser(),
 		);
 	}
 
@@ -1413,6 +1432,7 @@ class NeoWikiExtension {
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			subjectIdParser: $this->getSubjectIdParser(),
 		);
 	}
 

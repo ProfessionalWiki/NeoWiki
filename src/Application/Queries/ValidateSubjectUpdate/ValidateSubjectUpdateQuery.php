@@ -12,7 +12,7 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundExcept
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
@@ -27,6 +27,7 @@ readonly class ValidateSubjectUpdateQuery {
 		private SelectStatementResolver $selectStatementResolver,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
 		private PageReadAuthorizer $readAuthorizer,
+		private SubjectIdParser $subjectIdParser,
 	) {
 	}
 
@@ -39,7 +40,7 @@ readonly class ValidateSubjectUpdateQuery {
 	 * @throws SubjectNotFoundException when the subject does not exist or the caller may not read its page.
 	 */
 	public function validate( string $subjectId, string $label, array $statements ): array {
-		$id = new SubjectId( $subjectId );
+		$id = $this->subjectIdParser->parseOrThrow( $subjectId );
 		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $id );
 
 		if ( $pageIdentifiers === null ) {
