@@ -18,6 +18,15 @@ class RelationType implements PropertyType {
 
 	public const NAME = 'relation';
 
+	/**
+	 * @param string $localSourceKey Needed to read a `targetSchema` naming this wiki's own Source as
+	 *   the local reference it is (ADR 23).
+	 */
+	public function __construct(
+		private readonly string $localSourceKey
+	) {
+	}
+
 	public function getTypeName(): string {
 		return self::NAME;
 	}
@@ -31,7 +40,7 @@ class RelationType implements PropertyType {
 	}
 
 	public function buildPropertyDefinitionFromJson( PropertyCore $core, array $property ): RelationProperty {
-		return RelationProperty::fromPartialJson( $core, $property );
+		return RelationProperty::fromPartialJson( $core, $property, $this->localSourceKey );
 	}
 
 	/**

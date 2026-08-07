@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherMap;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
@@ -32,6 +33,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jProjectionStore
@@ -71,9 +73,9 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		return new Neo4jProjectionStore(
 			client: $extension->getNeo4jClient(),
 			subjectUpdaterFactory: new Neo4jSubjectUpdaterFactory(
-				schemaLookup: new InMemorySchemaLookup(
+				schemaResolver: TestSources::newSchemaResolver( new InMemorySchemaLookup(
 					TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID )
-				),
+				) ),
 				valueBuilderRegistry: $extension->getValueBuilderRegistry(),
 				logger: new NullLogger(),
 				wikiId: $wikiId,
@@ -430,6 +432,29 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_3, 'rTestNQS1111rr2' );
 	}
 
+	/**
+	 * Only an XML import can store such a target, the write guard refusing it on every API path. The
+	 * edge is dropped rather than MERGEd, which would stamp a foreign Subject's stub with this wiki's
+	 * `wiki_id` (graph-model.md).
+	 */
+	public function testRelationToASubjectOfAnotherSourceIsNotProjected(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$store->savePage( TestPage::build(
+			id: 3,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, 'otherwiki:Q42', 'rTestNQS1111rr9' ),
+		) );
+
+		$this->assertNoNodeWithId( 'otherwiki:Q42' );
+		$this->assertSingleNodeWithId( self::GUID_1 );
+	}
+
+	private function assertNoNodeWithId( string $id ): void {
+		$result = $this->readGraph( 'MATCH (node {id: $id}) RETURN count(node) AS count', [ 'id' => $id ] );
+
+		$this->assertSame( 0, $result->first()->toRecursiveArray()['count'] );
+	}
+
 	private function assertSingleNodeWithId( string $id ): void {
 		// Deliberately unlabeled, so a node that failed to get the Subject label still counts.
 		$result = $this->readGraph( 'MATCH (node {id: $id}) RETURN count(node) AS count', [ 'id' => $id ] );
@@ -761,19 +786,19 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		return new Neo4jProjectionStore(
 			client: $extension->getNeo4jClient(),
 			subjectUpdaterFactory: new Neo4jSubjectUpdaterFactory(
-				schemaLookup: new InMemorySchemaLookup(
+				schemaResolver: TestSources::newSchemaResolver( new InMemorySchemaLookup(
 					TestSchema::build(
 						name: TestSubject::DEFAULT_SCHEMA_ID,
 						properties: new PropertyDefinitions( [
 							'locatedIn' => new RelationProperty(
 								core: new PropertyCore( description: '', required: false, default: null ),
 								relationType: new RelationType( 'LocatedIn' ),
-								targetSchema: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ),
+								targetSchema: SchemaReference::local( new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
 								multiple: false,
 							),
 						] ),
 					),
-				),
+				) ),
 				valueBuilderRegistry: $extension->getValueBuilderRegistry(),
 				logger: new NullLogger(),
 				wikiId: $wikiId,
@@ -995,7 +1020,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 						$relationPropertyName => new RelationProperty(
 							core: new PropertyCore( description: '', required: false, default: null ),
 							relationType: new RelationType( $relationType ),
-							targetSchema: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ),
+							targetSchema: SchemaReference::local( new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
 							multiple: false,
 						),
 					] ),

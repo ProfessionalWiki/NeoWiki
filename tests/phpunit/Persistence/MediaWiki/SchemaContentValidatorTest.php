@@ -189,7 +189,7 @@ JSON
 		);
 
 		$this->assertContains(
-			'The target schema must not be empty or have surrounding whitespace.',
+			'The target schema must be a Schema name, or an object with a source key and a name. Neither may be empty or have surrounding whitespace.',
 			$validator->getErrors()
 		);
 	}
@@ -204,8 +204,54 @@ JSON
 		);
 
 		$this->assertContains(
-			'The target schema must not be empty or have surrounding whitespace.',
+			'The target schema must be a Schema name, or an object with a source key and a name. Neither may be empty or have surrounding whitespace.',
 			$validator->getErrors()
+		);
+	}
+
+	public function testColonBearingTargetSchemaPassesValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertTrue(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "relation", "relation": "Likes", "targetSchema": "ISO:9001" }' )
+			)
+		);
+	}
+
+	public function testSourcedTargetSchemaObjectPassesValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertTrue(
+			$validator->validate(
+				$this->schemaWithProperty(
+					'{ "type": "relation", "relation": "Likes", "targetSchema": { "source": "otherwiki", "name": "Person" } }'
+				)
+			)
+		);
+	}
+
+	public function testTargetSchemaObjectWithoutANameFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty(
+					'{ "type": "relation", "relation": "Likes", "targetSchema": { "source": "otherwiki" } }'
+				)
+			)
+		);
+	}
+
+	public function testTargetSchemaObjectWithAMalformedSourceKeyFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty(
+					'{ "type": "relation", "relation": "Likes", "targetSchema": { "source": "2wiki", "name": "Person" } }'
+				)
+			)
 		);
 	}
 

@@ -9,7 +9,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 
 readonly class GetSubjectQuery {
 
@@ -18,6 +18,7 @@ readonly class GetSubjectQuery {
 		private SubjectLookup $subjectLookup,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
 		private PageReadAuthorizer $readAuthorizer,
+		private SubjectIdParser $subjectIdParser,
 	) {
 	}
 
@@ -26,7 +27,7 @@ readonly class GetSubjectQuery {
 		bool $includePageIdentifiers,
 		bool $includeReferencedSubjects
 	): void {
-		$subject = $this->subjectLookup->getSubject( new SubjectId( $subjectId ) ); // TODO: error handling on invalid ID
+		$subject = $this->subjectLookup->getSubject( $this->subjectIdParser->parseOrThrow( $subjectId ) );
 
 		if ( $subject === null ) {
 			$this->presenter->presentSubjectNotFound();

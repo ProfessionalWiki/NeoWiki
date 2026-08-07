@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\PropertyType\Types;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
@@ -111,7 +112,7 @@ class SelectTypeValidateTest extends TestCase {
 					'severity' => 'error',
 				],
 			],
-			PropertyTypeRegistry::withCoreTypes(),
+			PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
 		);
 
 		$violations = $this->type->validate( new StringValue( 'opt_a', 'opt_c', 'opt_b' ), $definition );

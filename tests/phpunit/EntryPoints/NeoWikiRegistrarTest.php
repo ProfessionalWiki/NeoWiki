@@ -10,6 +10,9 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
+use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySource;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
@@ -67,12 +70,22 @@ class NeoWikiRegistrarTest extends TestCase {
 		$this->assertTrue( $rdfValueMapperRegistry->hasMapper( 'custom' ) );
 	}
 
+	public function testAddSourceRegistersItUnderItsKey(): void {
+		$sourceRegistry = new SourceRegistry( TestSubjectIds::LOCAL_SOURCE_KEY );
+		$source = new InMemorySource();
+
+		$this->newRegistrar( sourceRegistry: $sourceRegistry )->addSource( 'custom', $source );
+
+		$this->assertSame( $source, $sourceRegistry->getSource( 'custom' ) );
+	}
+
 	private function newRegistrar(
 		?PropertyTypeRegistry $propertyTypeRegistry = null,
 		?Neo4jValueBuilderRegistry $valueBuilderRegistry = null,
 		?PagePropertyProviderRegistry $pagePropertyProviderRegistry = null,
 		?GraphDatabasePluginRegistry $graphDatabasePluginRegistry = null,
 		?RdfValueMapperRegistry $rdfValueMapperRegistry = null,
+		?SourceRegistry $sourceRegistry = null,
 	): NeoWikiRegistrar {
 		return new NeoWikiRegistrar(
 			propertyTypeRegistry: $propertyTypeRegistry ?? new PropertyTypeRegistry(),
@@ -80,6 +93,7 @@ class NeoWikiRegistrarTest extends TestCase {
 			pagePropertyProviderRegistry: $pagePropertyProviderRegistry ?? new PagePropertyProviderRegistry(),
 			graphDatabasePluginRegistry: $graphDatabasePluginRegistry ?? new GraphDatabasePluginRegistry(),
 			rdfValueMapperRegistry: $rdfValueMapperRegistry ?? new RdfValueMapperRegistry(),
+			sourceRegistry: $sourceRegistry ?? new SourceRegistry( TestSubjectIds::LOCAL_SOURCE_KEY ),
 		);
 	}
 

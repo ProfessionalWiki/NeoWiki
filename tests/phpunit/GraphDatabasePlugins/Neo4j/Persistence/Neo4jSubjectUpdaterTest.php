@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Types\Date;
 use PHPUnit\Framework\TestCase;
@@ -26,6 +27,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use Psr\Log\LogLevel;
 use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdater
@@ -51,7 +53,7 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 		$this->subject = new Subject(
 			$subjectId,
 			new SubjectLabel( 'Test Label' ),
-			new SchemaName( self::SCHEMA_NAME ),
+			SchemaReference::local( new SchemaName( self::SCHEMA_NAME ) ),
 			new StatementList( [] )
 		);
 	}
@@ -60,7 +62,7 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 		return new Neo4jSubjectUpdater(
 			$this->transaction,
 			$this->pageId,
-			$this->schemaLookup,
+			TestSources::newSchemaResolver( $this->schemaLookup ),
 			$valueBuilderRegistry ?? Neo4jValueBuilderRegistry::withCoreBuilders(),
 			$this->logger,
 			'test_wiki',

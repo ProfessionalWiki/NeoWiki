@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer
@@ -62,7 +63,7 @@ class StatementDeserializerTest extends TestCase {
 	 * Core types only: no extension is loaded, so "color" is an unregistered type.
 	 */
 	private function newDeserializer(): StatementDeserializer {
-		return new StatementDeserializer( PropertyTypeRegistry::withCoreTypes() );
+		return new StatementDeserializer( PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ), TestSubjectIds::newParser() );
 	}
 
 	public function testDeserializesText(): void {
@@ -120,6 +121,26 @@ class StatementDeserializerTest extends TestCase {
 				]
 			)
 		);
+	}
+
+	/**
+	 * Never reject already-persisted data on read (ADR 23): whether the Source is still installed is
+	 * answered where the target is resolved, not here.
+	 */
+	public function testDeserializesARelationTargetFromAnotherSource(): void {
+		$statement = $this->newDeserializer()->deserialize(
+			'MyRelation',
+			[
+				'propertyType' => 'relation',
+				'value' => [
+					[ 'id' => 'rTestSDT1111rr1', 'target' => 'neverinstalled:Q42' ],
+				],
+			]
+		);
+
+		$value = $statement->getValue();
+		$this->assertInstanceOf( RelationValue::class, $value );
+		$this->assertSame( 'neverinstalled:Q42', $value->relations[0]->targetId->text );
 	}
 
 	public function testDeserializesUnregisteredTypeWithoutThrowing(): void {

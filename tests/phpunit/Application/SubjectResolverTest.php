@@ -19,6 +19,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\SubjectResolver
@@ -32,7 +34,7 @@ class SubjectResolverTest extends TestCase {
 		return new Subject(
 			id: new SubjectId( $id ),
 			label: new SubjectLabel( $label ),
-			schemaName: new SchemaName( 'TestSchema' ),
+			schema: SchemaReference::local( new SchemaName( 'TestSchema' ) ),
 			statements: new StatementList(),
 		);
 	}
@@ -47,7 +49,7 @@ class SubjectResolverTest extends TestCase {
 		$lookup = $this->createStub( SubjectLookup::class );
 		$lookup->method( 'getSubject' )->willReturn( $subject );
 
-		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup );
+		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup, TestSubjectIds::newParser() );
 
 		$this->assertSame( $subject, $resolver->resolveById( self::SUBJECT_ID ) );
 	}
@@ -55,7 +57,8 @@ class SubjectResolverTest extends TestCase {
 	public function testResolveByIdReturnsNullForInvalidId(): void {
 		$resolver = new SubjectResolver(
 			new InMemorySubjectContentRepository(),
-			$this->createStub( SubjectLookup::class )
+			$this->createStub( SubjectLookup::class ),
+			TestSubjectIds::newParser()
 		);
 
 		$this->assertNull( $resolver->resolveById( 'invalid' ) );
@@ -65,7 +68,7 @@ class SubjectResolverTest extends TestCase {
 		$lookup = $this->createStub( SubjectLookup::class );
 		$lookup->method( 'getSubject' )->willReturn( null );
 
-		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup );
+		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup, TestSubjectIds::newParser() );
 
 		$this->assertNull( $resolver->resolveById( self::SUBJECT_ID ) );
 	}
@@ -74,7 +77,7 @@ class SubjectResolverTest extends TestCase {
 		$lookup = $this->createStub( SubjectLookup::class );
 		$lookup->method( 'getSubject' )->willThrowException( new \RuntimeException( 'db error' ) );
 
-		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup );
+		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup, TestSubjectIds::newParser() );
 
 		$this->assertNull( $resolver->resolveById( self::SUBJECT_ID ) );
 	}
@@ -84,7 +87,8 @@ class SubjectResolverTest extends TestCase {
 
 		$resolver = new SubjectResolver(
 			$this->repositoryWithMainSubject( $subject ),
-			$this->createStub( SubjectLookup::class )
+			$this->createStub( SubjectLookup::class ),
+			TestSubjectIds::newParser()
 		);
 
 		$this->assertSame( $subject, $resolver->resolveMainByTitle( $this->createStub( Title::class ) ) );
@@ -93,7 +97,8 @@ class SubjectResolverTest extends TestCase {
 	public function testResolveMainByTitleReturnsNullWhenNoContent(): void {
 		$resolver = new SubjectResolver(
 			new InMemorySubjectContentRepository(),
-			$this->createStub( SubjectLookup::class )
+			$this->createStub( SubjectLookup::class ),
+			TestSubjectIds::newParser()
 		);
 
 		$this->assertNull( $resolver->resolveMainByTitle( $this->createStub( Title::class ) ) );
@@ -104,7 +109,8 @@ class SubjectResolverTest extends TestCase {
 
 		$resolver = new SubjectResolver(
 			$this->repositoryWithMainSubject( $subject ),
-			$this->createStub( SubjectLookup::class )
+			$this->createStub( SubjectLookup::class ),
+			TestSubjectIds::newParser()
 		);
 
 		$pageSubjects = $resolver->getPageSubjectsByTitle( $this->createStub( Title::class ) );
@@ -116,7 +122,8 @@ class SubjectResolverTest extends TestCase {
 	public function testGetPageSubjectsByTitleReturnsNullWhenNoContent(): void {
 		$resolver = new SubjectResolver(
 			new InMemorySubjectContentRepository(),
-			$this->createStub( SubjectLookup::class )
+			$this->createStub( SubjectLookup::class ),
+			TestSubjectIds::newParser()
 		);
 
 		$this->assertNull( $resolver->getPageSubjectsByTitle( $this->createStub( Title::class ) ) );
@@ -128,7 +135,7 @@ class SubjectResolverTest extends TestCase {
 		$lookup = $this->createStub( SubjectLookup::class );
 		$lookup->method( 'getSubject' )->willReturn( $target );
 
-		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup );
+		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup, TestSubjectIds::newParser() );
 
 		$relation = new Relation(
 			id: new RelationId( 'r1test5cccccccc' ),
@@ -143,7 +150,7 @@ class SubjectResolverTest extends TestCase {
 		$lookup = $this->createStub( SubjectLookup::class );
 		$lookup->method( 'getSubject' )->willReturn( null );
 
-		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup );
+		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup, TestSubjectIds::newParser() );
 
 		$relation = new Relation(
 			id: new RelationId( 'r1test5cccccccc' ),
@@ -158,7 +165,7 @@ class SubjectResolverTest extends TestCase {
 		$lookup = $this->createStub( SubjectLookup::class );
 		$lookup->method( 'getSubject' )->willThrowException( new \RuntimeException( 'db error' ) );
 
-		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup );
+		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup, TestSubjectIds::newParser() );
 
 		$relation = new Relation(
 			id: new RelationId( 'r1test5cccccccc' ),

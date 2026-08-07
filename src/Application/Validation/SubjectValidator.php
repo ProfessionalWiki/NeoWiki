@@ -11,7 +11,8 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -25,6 +26,7 @@ readonly class SubjectValidator {
 	public function __construct(
 		private PropertyTypeLookup $propertyTypeLookup,
 		private SubjectLookup $subjectLookup,
+		private SourceRegistry $sourceRegistry,
 	) {
 	}
 
@@ -37,6 +39,8 @@ readonly class SubjectValidator {
 		if ( trim( $label->text ) === '' ) {
 			$violations[] = new Violation( propertyName: null, code: 'label-required', severity: Severity::Error );
 		}
+
+		$violations = array_merge( $violations, $this->validateRelationTargetSources( $statements ) );
 
 		// Resolved in one lookup ahead of the per-Statement pass: resolving each target where it is
 		// checked costs a round trip apiece, paid serially. Ids absent from the map resolved to no
@@ -60,6 +64,44 @@ readonly class SubjectValidator {
 		}
 
 		return array_merge( $violations, $this->validateRequiredProperties( $statements, $schema ) );
+	}
+
+	/**
+	 * Every relation target naming a Source this wiki has no way to reach, wherever it sits.
+	 *
+	 * Unlike every other check here this one is not Schema-scoped: it needs no PropertyDefinition, and
+	 * what it reports is not data failing a Schema rule but a reference nothing can resolve. Scoping it
+	 * would mean a Statement the Schema no longer declares, or a Subject whose Schema cannot be loaded
+	 * at all, could be written with a target that is unreadable from the moment it lands — the one
+	 * outcome the guard exists to prevent (ADR 23). Callers that cannot resolve a Schema run this on
+	 * its own.
+	 *
+	 * @return Violation[]
+	 */
+	public function validateRelationTargetSources( StatementList $statements ): array {
+		$violations = [];
+
+		foreach ( $statements->asArray() as $statement ) {
+			$value = $statement->getValue();
+
+			if ( !$value instanceof RelationValue ) {
+				continue;
+			}
+
+			foreach ( $value->relations as $index => $relation ) {
+				if ( !$this->sourceRegistry->canResolve( $relation->targetId ) ) {
+					$violations[] = new Violation(
+						propertyName: $statement->getPropertyName(),
+						code: Violation::UNRESOLVABLE_RELATION_TARGET_SOURCE,
+						args: [ $relation->targetId->text ],
+						valuePartIndex: (int)$index,
+						severity: Severity::Error,
+					);
+				}
+			}
+		}
+
+		return $violations;
 	}
 
 	/**
@@ -110,9 +152,10 @@ readonly class SubjectValidator {
 	 * Statement's type still matches the Schema's relation property here; a type-mismatched
 	 * Statement returned earlier and is not treated as a relation.
 	 *
-	 * A missing target is a non-blocking `relation-target-not-found` warning (red-link philosophy:
-	 * the target may be minted later, e.g. during import); a resolvable target whose own Schema is
-	 * not the declared targetSchema is a blocking `relation-target-schema-mismatch` error.
+	 * A missing target is a non-blocking `relation-target-not-found` warning (red-link philosophy: the
+	 * target may be minted later, e.g. during import); a resolvable target whose own Schema is not the
+	 * declared targetSchema is a blocking `relation-target-schema-mismatch` error. A target whose
+	 * Source this wiki cannot reach is left to {@see validateRelationTargetSources()}.
 	 *
 	 * The Schema compared is the target's own writer's-schema, read from its revision slot rather
 	 * than from a graph node property. Reaching that slot still resolves the target id through the
@@ -161,10 +204,16 @@ readonly class SubjectValidator {
 	private function validateRelationTarget(
 		Relation $relation,
 		PropertyName $propertyName,
-		SchemaName $targetSchema,
+		SchemaReference $targetSchema,
 		int $valuePartIndex,
 		SubjectMap $relationTargets
 	): ?Violation {
+		// Already reported by validateRelationTargetSources(), which runs over every Statement. The
+		// checks below would only add noise about a target nothing can fetch.
+		if ( !$this->sourceRegistry->canResolve( $relation->targetId ) ) {
+			return null;
+		}
+
 		$target = $relationTargets->getSubject( $relation->targetId );
 
 		if ( $target === null ) {
@@ -177,11 +226,11 @@ readonly class SubjectValidator {
 			);
 		}
 
-		if ( $target->getSchemaName()->getText() !== $targetSchema->getText() ) {
+		if ( !$target->getSchemaReference()->equals( $targetSchema ) ) {
 			return new Violation(
 				propertyName: $propertyName,
 				code: 'relation-target-schema-mismatch',
-				args: [ $targetSchema->getText(), $target->getSchemaName()->getText() ],
+				args: [ $targetSchema->getText(), $target->getSchemaReference()->getText() ],
 				valuePartIndex: $valuePartIndex,
 				severity: Severity::Error,
 			);

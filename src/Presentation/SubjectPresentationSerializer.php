@@ -19,7 +19,7 @@ class SubjectPresentationSerializer {
 		$entry = [
 			'id' => $item->id,
 			'label' => $item->label,
-			'schema' => $item->schemaName,
+			'schema' => $item->schema,
 		];
 
 		if ( $item->pageId !== null ) {

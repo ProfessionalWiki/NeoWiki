@@ -94,9 +94,31 @@
 										"$error": "The relation type must not be empty or have surrounding whitespace."
 									},
 									"targetSchema": {
-										"type": "string",
-										"pattern": "^\\S(.*\\S)?$",
-										"$error": "The target schema must not be empty or have surrounding whitespace."
+										"oneOf": [
+											{
+												"type": "string",
+												"pattern": "^\\S(.*\\S)?$"
+											},
+											{
+												"type": "object",
+												"required": [
+													"source",
+													"name"
+												],
+												"properties": {
+													"source": {
+														"type": "string",
+														"pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+													},
+													"name": {
+														"type": "string",
+														"pattern": "^\\S(.*\\S)?$"
+													}
+												},
+												"additionalProperties": false
+											}
+										],
+										"$error": "The target schema must be a Schema name, or an object with a source key and a name. Neither may be empty or have surrounding whitespace."
 									}
 								}
 							}

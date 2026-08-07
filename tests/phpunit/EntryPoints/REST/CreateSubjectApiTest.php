@@ -9,6 +9,7 @@ use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Response;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use MediaWiki\WikiMap\WikiMap;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -475,6 +476,31 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$response = $this->executeCreate( $this->getIdOfExistingPage(), $body, isMainSubject: false );
 
 		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
+	public function testSuppliedIdFromAnotherSourceReturns400(): void {
+		$this->createSchema( 'Employee' );
+
+		$body = $this->validBody();
+		$body['id'] = 'otherwiki:sMintFFFFFFFFF6';
+
+		$response = $this->executeCreate( $this->getIdOfExistingPage(), $body, isMainSubject: false );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
+	public function testExplicitlyLocalSuppliedIdIsCreatedUnderItsBareForm(): void {
+		$this->createSchema( 'Employee' );
+
+		$body = $this->validBody();
+		$body['id'] = WikiMap::getCurrentWikiId() . ':sMintGGGGGGGGG7';
+
+		$response = $this->executeCreate( $this->getIdOfExistingPage(), $body, isMainSubject: false );
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertSame( 'sMintGGGGGGGGG7', $responseData['subjectId'] );
 	}
 
 	public function testSuppliedIdAlreadyUsedOnAnotherPageReturns409(): void {

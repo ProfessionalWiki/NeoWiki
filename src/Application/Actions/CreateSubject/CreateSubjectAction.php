@@ -9,7 +9,7 @@ use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
@@ -18,8 +18,10 @@ use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
@@ -35,11 +37,12 @@ readonly class CreateSubjectAction {
 		private PageReadAuthorizer $readAuthorizer,
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
-		private SchemaLookup $schemaLookup,
+		private SchemaResolver $schemaResolver,
 		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
 		private PageIdentifiersResolver $pageIdentifiersResolver,
+		private SubjectIdParser $subjectIdParser,
 		private bool $validationEnforced,
 	) {
 	}
@@ -64,7 +67,7 @@ readonly class CreateSubjectAction {
 			throw new RuntimeException( 'You do not have the necessary permissions to create this subject' );
 		}
 
-		$schema = $this->schemaLookup->getSchema( new SchemaName( $request->schemaName ) );
+		$schema = $this->schemaResolver->getSchema( $this->schemaReference( $request ) );
 
 		$subject = $this->buildSubject( $request, $schema );
 
@@ -88,7 +91,7 @@ readonly class CreateSubjectAction {
 
 		$violations = $this->proposedSubjectValidator->validate( $subject );
 
-		if ( $this->validationEnforced && $this->blockingViolations( $violations ) !== [] ) {
+		if ( $this->violationsBlockingWrite( $violations ) !== [] ) {
 			$this->presenter->presentValidationFailed( $violations );
 			return;
 		}
@@ -119,15 +122,15 @@ readonly class CreateSubjectAction {
 	 * @param Violation[] $violations
 	 * @return Violation[]
 	 */
-	private function blockingViolations( array $violations ): array {
+	private function violationsBlockingWrite( array $violations ): array {
 		return array_values( array_filter(
 			$violations,
-			static fn ( Violation $v ): bool => $v->isBlocking()
+			fn ( Violation $v ): bool => $v->alwaysBlocksWrites() || ( $this->validationEnforced && $v->isBlocking() )
 		) );
 	}
 
 	private function buildSubject( CreateSubjectRequest $request, ?Schema $schema ): Subject {
-		$schemaName = new SchemaName( $request->schemaName );
+		$schemaReference = $this->schemaReference( $request );
 		$label = new SubjectLabel( $request->label );
 		$statements = $this->statementListBuilder->build(
 			$this->resolveSelectValues( $schema, $request->statements )
@@ -137,17 +140,39 @@ readonly class CreateSubjectAction {
 			return Subject::createNew(
 				idGenerator: $this->idGenerator,
 				label: $label,
-				schemaName: $schemaName,
+				schema: $schemaReference,
 				statements: $statements,
 			);
 		}
 
 		return new Subject(
-			id: new SubjectId( $request->id ),
+			id: $this->localId( $request->id ),
 			label: $label,
-			schemaName: $schemaName,
+			schema: $schemaReference,
 			statements: $statements,
 		);
+	}
+
+	/**
+	 * A Subject is only ever created in the local Source, so the Schema it names is a local one too.
+	 */
+	private function schemaReference( CreateSubjectRequest $request ): SchemaReference {
+		return SchemaReference::local( new SchemaName( $request->schemaName ) );
+	}
+
+	/**
+	 * A Subject is only ever created in the local Source, so a caller-supplied id must be a local one.
+	 *
+	 * @throws InvalidArgumentException
+	 */
+	private function localId( string $id ): SubjectId {
+		$subjectId = $this->subjectIdParser->parseOrThrow( $id );
+
+		if ( !$subjectId->isLocal() ) {
+			throw new InvalidArgumentException( "Subjects can only be created in the local Source: '$id'" );
+		}
+
+		return $subjectId;
 	}
 
 	/**

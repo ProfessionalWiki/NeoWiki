@@ -68,6 +68,7 @@ use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectIdMinter;
+use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
 use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
@@ -90,6 +91,11 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportSubjectRdfApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ResolveSubjectIriApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
+use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
+use ProfessionalWiki\NeoWiki\Application\Source\LocalSource;
+use ProfessionalWiki\NeoWiki\Application\Source\SourceRoutingSubjectLookup;
+use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
@@ -192,6 +198,7 @@ class NeoWikiExtension {
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
+	private SourceRegistry $sourceRegistry;
 	private Neo4jValueBuilderRegistry $valueBuilderRegistry;
 	private RdfValueMapperRegistry $rdfValueMapperRegistry;
 	private bool $extensionsRegistered = false;
@@ -247,7 +254,7 @@ class NeoWikiExtension {
 
 	public function getPropertyTypeRegistry(): PropertyTypeRegistry {
 		if ( !isset( $this->propertyTypeRegistry ) ) {
-			$this->propertyTypeRegistry = PropertyTypeRegistry::withCoreTypes();
+			$this->propertyTypeRegistry = PropertyTypeRegistry::withCoreTypes( $this->config->wikiId );
 		}
 
 		$this->ensureExtensionsRegistered();
@@ -292,12 +299,77 @@ class NeoWikiExtension {
 				$this->getPagePropertyProviderRegistry(),
 				$this->getGraphDatabasePluginRegistry(),
 				$this->getRdfValueMapperRegistry(),
+				$this->getSourceRegistry(),
 			) ]
 		);
 	}
 
 	public function newSubjectContentDataDeserializer(): SubjectContentDataDeserializer {
-		return new SubjectContentDataDeserializer( new StatementDeserializer( $this->getPropertyTypeLookup() ) );
+		return new SubjectContentDataDeserializer(
+			new StatementDeserializer( $this->getPropertyTypeLookup(), $this->getSubjectIdParser() ),
+			$this->getSubjectIdParser()
+		);
+	}
+
+	/**
+	 * Parses Subject ids arriving from outside — a REST path, a revision slot, a Lua call — into
+	 * {@see \ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId}s. The local Source key is the
+	 * MediaWiki Wiki ID (ADR 22), so an id naming this wiki explicitly canonicalizes to its bare form.
+	 */
+	public function getSubjectIdParser(): SubjectIdParser {
+		return new SubjectIdParser( $this->config->wikiId );
+	}
+
+	/**
+	 * The Sources this wiki resolves Subjects and Schemas through (ADR 23). The local one is always
+	 * registered, under the MediaWiki Wiki ID; extensions add theirs through
+	 * {@see NeoWikiRegistrar::addSource()}.
+	 */
+	public function getSourceRegistry(): SourceRegistry {
+		if ( !isset( $this->sourceRegistry ) ) {
+			$this->sourceRegistry = new SourceRegistry( $this->config->wikiId );
+			// Registered as a factory: building it reaches the subject-to-page index, which lives in
+			// the graph projection, and a wiki without a configured graph backend must still boot.
+			$this->sourceRegistry->registerSource(
+				$this->config->wikiId,
+				fn (): LocalSource => $this->newLocalSource()
+			);
+		}
+
+		$this->ensureExtensionsRegistered();
+
+		return $this->sourceRegistry;
+	}
+
+	private function newLocalSource(): LocalSource {
+		return new LocalSource(
+			subjectLookup: fn (): SubjectLookup => $this->getSubjectRepository(),
+			schemaLookup: $this->getSchemaLookup(),
+			baseUri: $this->getRdfNamespaces()->subjectIriBase(),
+		);
+	}
+
+	/**
+	 * Resolves each Schema through the Source it is referenced from; the counterpart of
+	 * {@see self::getSourceRoutingSubjectLookup()} for Schemas.
+	 */
+	public function getSchemaResolver(): SchemaResolver {
+		return new SchemaResolver(
+			$this->getSourceRegistry(),
+			LoggerFactory::getInstance( 'NeoWiki' )
+		);
+	}
+
+	/**
+	 * Reads every Subject through its own Source. The seam that lets a Subject from elsewhere be
+	 * fetched by id; with only the local Source registered it resolves exactly what the repository does.
+	 */
+
+	public function getSourceRoutingSubjectLookup(): SubjectLookup {
+		return new SourceRoutingSubjectLookup(
+			$this->getSourceRegistry(),
+			LoggerFactory::getInstance( 'NeoWiki' )
+		);
 	}
 
 	public function getPagePropertyProviderRegistry(): PagePropertyProviderRegistry {
@@ -372,7 +444,8 @@ class NeoWikiExtension {
 		return new RdfPageProjector(
 			$this->getRdfValueMapperRegistry(),
 			$this->getRdfNamespaces(),
-			$this->getSchemaLookup(),
+			$this->getSchemaResolver(),
+			$this->getSourceRegistry(),
 			LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
@@ -754,7 +827,7 @@ class NeoWikiExtension {
 		}
 
 		if ( $this->neo4jPlugin === null ) {
-			$this->neo4jPlugin = $this->buildNeo4jPlugin( $this->getSchemaLookup() );
+			$this->neo4jPlugin = $this->buildNeo4jPlugin( $this->getSchemaResolver() );
 		}
 
 		return $this->neo4jPlugin;
@@ -774,14 +847,32 @@ class NeoWikiExtension {
 	// Test seam: lets tests build a projection store with a custom SchemaLookup.
 	// This is a hack; we should have a proper test environment.
 	public function newNeo4jProjectionStore( SchemaLookup $schemaLookup ): GraphDatabasePlugin {
-		return $this->buildNeo4jPlugin( $schemaLookup )->getGraphDatabasePlugin();
+		return $this->buildNeo4jPlugin( $this->newSchemaResolverServedBy( $schemaLookup ) )->getGraphDatabasePlugin();
 	}
 
-	private function buildNeo4jPlugin( SchemaLookup $schemaLookup ): Neo4jPlugin {
+	/**
+	 * A resolver whose local Source serves $schemaLookup's Schemas. Part of the same test hack: it
+	 * holds no other Source, so only the local half of resolution is exercised through it.
+	 */
+	private function newSchemaResolverServedBy( SchemaLookup $schemaLookup ): SchemaResolver {
+		$registry = new SourceRegistry( $this->config->wikiId );
+		$registry->registerSource(
+			$this->config->wikiId,
+			fn (): LocalSource => new LocalSource(
+				subjectLookup: fn (): SubjectLookup => $this->getSubjectRepository(),
+				schemaLookup: $schemaLookup,
+				baseUri: $this->getRdfNamespaces()->subjectIriBase(),
+			)
+		);
+
+		return new SchemaResolver( $registry, LoggerFactory::getInstance( 'NeoWiki' ) );
+	}
+
+	private function buildNeo4jPlugin( SchemaResolver $schemaResolver ): Neo4jPlugin {
 		return new Neo4jPlugin(
 			client: $this->getNeo4jClient(),
 			readOnlyClient: $this->getReadOnlyNeo4jClient(),
-			schemaLookup: $schemaLookup,
+			schemaResolver: $schemaResolver,
 			valueBuilderRegistry: $this->getValueBuilderRegistry(),
 			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 			wikiId: $this->config->wikiId,
@@ -1111,11 +1202,12 @@ class NeoWikiExtension {
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
-			schemaLookup: $this->getSchemaLookup(),
+			schemaResolver: $this->getSchemaResolver(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->getProposedSubjectValidator(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
+			subjectIdParser: $this->getSubjectIdParser(),
 			validationEnforced: $this->isValidationEnforced(),
 		);
 	}
@@ -1158,7 +1250,8 @@ class NeoWikiExtension {
 	public function getStatementListBuilder(): StatementListBuilder {
 		return new StatementListBuilder(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
-			idGenerator: $this->getIdGenerator()
+			idGenerator: $this->getIdGenerator(),
+			subjectIdParser: $this->getSubjectIdParser()
 		);
 	}
 
@@ -1187,6 +1280,7 @@ class NeoWikiExtension {
 			subjectRepository: $this->getSubjectRepository(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
+			subjectIdParser: $this->getSubjectIdParser(),
 		);
 	}
 
@@ -1196,6 +1290,7 @@ class NeoWikiExtension {
 			subjectRepository: $this->getSubjectRepository(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
+			subjectIdParser: $this->getSubjectIdParser(),
 		);
 	}
 
@@ -1328,7 +1423,7 @@ class NeoWikiExtension {
 		return new GetPageSubjectsQuery(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			subjectLookup: $this->getSubjectRepository(),
+			subjectLookup: $this->getSourceRoutingSubjectLookup(),
 			schemaLookup: $this->getSchemaLookup(),
 			schemaSerializer: $this->getSchemaPresentationSerializer(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
@@ -1339,9 +1434,10 @@ class NeoWikiExtension {
 	public function newGetSubjectQuery( RestGetSubjectPresenter $presenter, Authority $authority ): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
-			subjectLookup: $this->getSubjectRepository(),
+			subjectLookup: $this->getSourceRoutingSubjectLookup(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			subjectIdParser: $this->getSubjectIdParser(),
 		);
 	}
 
@@ -1356,6 +1452,7 @@ class NeoWikiExtension {
 			),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			subjectIdParser: $this->getSubjectIdParser(),
 		);
 	}
 
@@ -1365,7 +1462,7 @@ class NeoWikiExtension {
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
-			schemaLookup: $this->getSchemaLookup(),
+			schemaResolver: $this->getSchemaResolver(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->getProposedSubjectValidator(),
 			presenter: $presenter,
@@ -1384,13 +1481,14 @@ class NeoWikiExtension {
 	public function getSubjectValidator(): SubjectValidator {
 		return new SubjectValidator(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
-			subjectLookup: $this->getSubjectRepository(),
+			subjectLookup: $this->getSourceRoutingSubjectLookup(),
+			sourceRegistry: $this->getSourceRegistry(),
 		);
 	}
 
 	public function getProposedSubjectValidator(): ProposedSubjectValidator {
 		return new ProposedSubjectValidator(
-			schemaLookup: $this->getSchemaLookup(),
+			schemaResolver: $this->getSchemaResolver(),
 			subjectValidator: $this->getSubjectValidator(),
 		);
 	}
@@ -1407,12 +1505,13 @@ class NeoWikiExtension {
 	public function newValidateSubjectUpdateQuery( Authority $authority ): ValidateSubjectUpdateQuery {
 		return new ValidateSubjectUpdateQuery(
 			subjectRepository: $this->getSubjectRepository(),
-			schemaLookup: $this->getSchemaLookup(),
+			schemaResolver: $this->getSchemaResolver(),
 			subjectValidator: $this->getSubjectValidator(),
 			statementListBuilder: $this->getStatementListBuilder(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			subjectIdParser: $this->getSubjectIdParser(),
 		);
 	}
 

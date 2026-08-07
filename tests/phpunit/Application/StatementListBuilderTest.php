@@ -4,12 +4,15 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application;
 
+use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\StatementListBuilder
@@ -18,8 +21,9 @@ class StatementListBuilderTest extends TestCase {
 
 	private function newBuilder(): StatementListBuilder {
 		return new StatementListBuilder(
-			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes(),
-			idGenerator: new StubIdGenerator( '11111111111111' )
+			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			idGenerator: new StubIdGenerator( '11111111111111' ),
+			subjectIdParser: TestSubjectIds::newParser()
 		);
 	}
 
@@ -48,6 +52,36 @@ class StatementListBuilderTest extends TestCase {
 
 		$this->assertNotNull( $list->getStatement( new PropertyName( 'A' ) ) );
 		$this->assertNotNull( $list->getStatement( new PropertyName( 'B' ) ) );
+	}
+
+	public function testExplicitlyLocalRelationTargetIsStoredBare(): void {
+		$list = $this->newBuilder()->build( [
+			'Owner' => [
+				'propertyType' => 'relation',
+				'value' => [ [ 'target' => TestSubjectIds::LOCAL_SOURCE_KEY . ':s11111111111111' ] ],
+			],
+		] );
+
+		$this->assertSame( 's11111111111111', $this->firstRelationTarget( $list ) );
+	}
+
+	public function testRelationTargetFromAnotherSourceKeepsItsQualifiedForm(): void {
+		$list = $this->newBuilder()->build( [
+			'Owner' => [
+				'propertyType' => 'relation',
+				'value' => [ [ 'target' => 'otherwiki:Q42' ] ],
+			],
+		] );
+
+		$this->assertSame( 'otherwiki:Q42', $this->firstRelationTarget( $list ) );
+	}
+
+	private function firstRelationTarget( StatementList $list ): string {
+		$value = $list->getStatement( new PropertyName( 'Owner' ) )?->getValue();
+
+		$this->assertInstanceOf( RelationValue::class, $value );
+
+		return $value->relations[0]->targetId->text;
 	}
 
 	public function testUnregisteredTypePreservesRawValue(): void {

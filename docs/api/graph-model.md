@@ -53,12 +53,15 @@ Schema (e.g. `:Subject:Person`, `:Subject:Company`). The Schema label changes if
 
 | Property | Neo4j Type | Description |
 |----------|------------|-------------|
-| `id` | string | Subject ID, 15 characters starting with `s` (unique) |
+| `id` | string | ID of a Subject of this wiki, 15 characters starting with `s` (unique) |
 | `name` | string | Subject label |
 | `wiki_id` | string | [MediaWiki Wiki ID](https://www.mediawiki.org/wiki/Manual:Wiki_ID) of the wiki that owns the Subject |
 
 Unlike page ids, Subject ids are globally unique nanoids ([ADR 14](../adr/014-improved-id-format.md)), so a Subject's
 identity is its `id` alone. The `wiki_id` is carried only for per-wiki query filtering in a shared graph.
+
+Only Subjects of this wiki are projected, so `id` is always the bare form, never the `sourceKey:localId` form of a
+Subject from another Source ([ADR 23](../adr/023-subject-sources.md)). See [Subject format](subject-format.md#ids).
 
 ### Dynamic properties
 
@@ -131,6 +134,9 @@ backtick-escaped.
 
 When a Subject is removed while other Subjects still reference it, its node is kept as a
 [stub](#stub-subject-nodes) for as long as those references last.
+
+Relation edges to Subjects from another Source ([ADR 23](../adr/023-subject-sources.md)) are not projected yet;
+cross-Source querying is deferred.
 
 ## Constraints
 
