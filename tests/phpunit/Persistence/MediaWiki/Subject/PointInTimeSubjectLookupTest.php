@@ -286,4 +286,23 @@ class PointInTimeSubjectLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * Callers resolving a Subject's relation targets pass an empty list whenever it has none, so
+	 * this is the common case rather than an edge one. Without the guard the primary revision's
+	 * slot is deserialized in order to select nothing out of it, and SubjectContent deserializes on
+	 * every getPageSubjects() call.
+	 */
+	public function testEmptyIdListReadsNothing(): void {
+		$primaryRevision = $this->createMock( RevisionRecord::class );
+		$primaryRevision->expects( $this->never() )->method( 'getContent' );
+
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
+
+		$subjects = $this->newLookup( $primaryRevision, $pageIdentifiersLookup )
+			->getSubjects( new SubjectIdList( [] ) );
+
+		$this->assertTrue( $subjects->isEmpty() );
+		$this->assertSame( 0, $pageIdentifiersLookup->getPageIdsOfSubjectsCallCount );
+	}
+
 }

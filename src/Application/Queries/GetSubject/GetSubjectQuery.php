@@ -47,21 +47,27 @@ readonly class GetSubjectQuery {
 		];
 
 		if ( $includeReferencedSubjects ) {
-			foreach ( $subject->getReferencedSubjects()->asArray() as $id ) {
-				$referencedSubject = $this->subjectLookup->getSubject( $id );
+			$referencedIds = $subject->getReferencedSubjects();
+
+			$referencedSubjects = $this->subjectLookup->getSubjects( $referencedIds );
+			$hostingPages = $this->pageIdentifiersLookup->getPageIdsOfSubjects( $referencedIds );
+
+			// Iterated by the requested ids, not the returned map: the response keeps relation
+			// order, and SubjectMap promises no order of its own.
+			foreach ( $referencedIds->asArray() as $idText => $id ) {
+				$referencedSubject = $referencedSubjects->getSubject( $id );
 
 				if ( $referencedSubject === null ) {
 					continue;
 				}
 
-				$referencedPageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $referencedSubject->id );
+				$referencedPage = $hostingPages[$idText] ?? null;
 
-				if ( !$this->pageIsReadableOrUnresolved( $referencedPageIdentifiers ) ) {
+				if ( !$this->pageIsReadableOrUnresolved( $referencedPage ) ) {
 					continue;
 				}
 
-				$response[$referencedSubject->getId()->text] =
-					$this->createResponse( $referencedSubject, $includePageIdentifiers, $referencedPageIdentifiers );
+				$response[$idText] = $this->createResponse( $referencedSubject, $includePageIdentifiers, $referencedPage );
 			}
 		}
 
