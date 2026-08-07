@@ -11,7 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -161,7 +161,7 @@ readonly class SubjectValidator {
 	private function validateRelationTarget(
 		Relation $relation,
 		PropertyName $propertyName,
-		SchemaName $targetSchema,
+		SchemaReference $targetSchema,
 		int $valuePartIndex,
 		SubjectMap $relationTargets
 	): ?Violation {
@@ -177,11 +177,11 @@ readonly class SubjectValidator {
 			);
 		}
 
-		if ( $target->getSchemaName()->getText() !== $targetSchema->getText() ) {
+		if ( !$target->getSchemaReference()->equals( $targetSchema ) ) {
 			return new Violation(
 				propertyName: $propertyName,
 				code: 'relation-target-schema-mismatch',
-				args: [ $targetSchema->getText(), $target->getSchemaName()->getText() ],
+				args: [ $targetSchema->getText(), $target->getSchemaReference()->getText() ],
 				valuePartIndex: $valuePartIndex,
 				severity: Severity::Error,
 			);

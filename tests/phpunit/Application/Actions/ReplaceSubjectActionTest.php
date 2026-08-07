@@ -43,6 +43,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction
@@ -80,10 +81,10 @@ class ReplaceSubjectActionTest extends TestCase {
 			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
 			writeAuthorizer: $authorizer ?? new SpySubjectWriteAuthorizer( allowed: true ),
 			statementListBuilder: $builder,
-			schemaLookup: $this->schemaLookup,
+			schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
 			proposedSubjectValidator: new ProposedSubjectValidator(
-				schemaLookup: $this->schemaLookup,
+				schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
 				subjectValidator: new SubjectValidator(
 					propertyTypeLookup: $registry,
 					subjectLookup: new InMemorySubjectLookup(),

@@ -224,7 +224,7 @@ class SubjectDataLookup {
 		return [
 			'id' => $subject->getId()->text,
 			'label' => $subject->getLabel()->text,
-			'schema' => $subject->getSchemaName()->getText(),
+			'schema' => $subject->getSchemaReference()->toJson(),
 			'statements' => $this->statementsToTable( $subject ),
 		];
 	}

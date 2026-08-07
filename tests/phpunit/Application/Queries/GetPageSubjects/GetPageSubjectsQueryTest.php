@@ -88,7 +88,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 					's11111111111maa' => new GetSubjectResponseItem(
 						id: 's11111111111maa',
 						label: 'main label',
-						schemaName: 'TestSchema',
+						schema: 'TestSchema',
 						statements: [
 							'name' => [
 								'propertyType' => 'text',
@@ -102,7 +102,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 					's11111111111ca2' => new GetSubjectResponseItem(
 						id: 's11111111111ca2',
 						label: 'child two',
-						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
+						schema: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
 						pageId: null,
 						pageTitle: null,
@@ -111,7 +111,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 					's11111111111ca3' => new GetSubjectResponseItem(
 						id: 's11111111111ca3',
 						label: 'child three',
-						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
+						schema: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
 						pageId: null,
 						pageTitle: null,
@@ -120,7 +120,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 					's11111111111ca1' => new GetSubjectResponseItem(
 						id: 's11111111111ca1',
 						label: 'child one',
-						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
+						schema: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
 						pageId: null,
 						pageTitle: null,

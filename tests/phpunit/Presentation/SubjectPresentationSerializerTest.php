@@ -17,7 +17,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 		return new GetSubjectResponseItem(
 			id: 's1demo1aaaaaaa1',
 			label: 'ACME Corp',
-			schemaName: 'Organization',
+			schema: 'Organization',
 			statements: [ 'Animal' => [ 'propertyType' => 'text', 'value' => [ 'bunny' ] ] ],
 			pageId: $pageId,
 			pageTitle: $pageTitle,

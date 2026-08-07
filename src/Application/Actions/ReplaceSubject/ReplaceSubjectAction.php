@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
@@ -29,7 +29,7 @@ readonly class ReplaceSubjectAction {
 		private PageReadAuthorizer $readAuthorizer,
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
-		private SchemaLookup $schemaLookup,
+		private SchemaResolver $schemaResolver,
 		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private ReplaceSubjectPresenter $presenter,
@@ -71,7 +71,7 @@ readonly class ReplaceSubjectAction {
 			throw SubjectNotFoundException::forId( $subjectId );
 		}
 
-		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+		$schema = $this->schemaResolver->getSchema( $subject->getSchemaReference() );
 
 		$priorViolations = $this->proposedSubjectValidator->validate( $subject );
 

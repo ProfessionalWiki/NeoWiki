@@ -20,6 +20,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\SubjectResolver
@@ -33,7 +34,7 @@ class SubjectResolverTest extends TestCase {
 		return new Subject(
 			id: new SubjectId( $id ),
 			label: new SubjectLabel( $label ),
-			schemaName: new SchemaName( 'TestSchema' ),
+			schema: SchemaReference::local( new SchemaName( 'TestSchema' ) ),
 			statements: new StatementList(),
 		);
 	}

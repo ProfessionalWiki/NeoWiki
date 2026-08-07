@@ -92,6 +92,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\ResolveSubjectIriApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Application\Source\LazySource;
+use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\Source\LocalSource;
 use ProfessionalWiki\NeoWiki\Application\Source\SourceRoutingSubjectLookup;
 use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
@@ -348,9 +349,21 @@ class NeoWikiExtension {
 	}
 
 	/**
+	 * Resolves each Schema through the Source it is referenced from; the counterpart of
+	 * {@see self::getSourceRoutingSubjectLookup()} for Schemas.
+	 */
+	public function getSchemaResolver(): SchemaResolver {
+		return new SchemaResolver(
+			$this->getSourceRegistry(),
+			LoggerFactory::getInstance( 'NeoWiki' )
+		);
+	}
+
+	/**
 	 * Reads every Subject through its own Source. The seam that lets a Subject from elsewhere be
 	 * fetched by id; with only the local Source registered it resolves exactly what the repository does.
 	 */
+
 	public function getSourceRoutingSubjectLookup(): SubjectLookup {
 		return new SourceRoutingSubjectLookup(
 			$this->getSourceRegistry(),
@@ -1169,7 +1182,7 @@ class NeoWikiExtension {
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
-			schemaLookup: $this->getSchemaLookup(),
+			schemaResolver: $this->getSchemaResolver(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->getProposedSubjectValidator(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
@@ -1429,7 +1442,7 @@ class NeoWikiExtension {
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
-			schemaLookup: $this->getSchemaLookup(),
+			schemaResolver: $this->getSchemaResolver(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->getProposedSubjectValidator(),
 			presenter: $presenter,
@@ -1454,7 +1467,7 @@ class NeoWikiExtension {
 
 	public function getProposedSubjectValidator(): ProposedSubjectValidator {
 		return new ProposedSubjectValidator(
-			schemaLookup: $this->getSchemaLookup(),
+			schemaResolver: $this->getSchemaResolver(),
 			subjectValidator: $this->getSubjectValidator(),
 		);
 	}
@@ -1471,7 +1484,7 @@ class NeoWikiExtension {
 	public function newValidateSubjectUpdateQuery( Authority $authority ): ValidateSubjectUpdateQuery {
 		return new ValidateSubjectUpdateQuery(
 			subjectRepository: $this->getSubjectRepository(),
-			schemaLookup: $this->getSchemaLookup(),
+			schemaResolver: $this->getSchemaResolver(),
 			subjectValidator: $this->getSubjectValidator(),
 			statementListBuilder: $this->getStatementListBuilder(),
 			selectStatementResolver: $this->getSelectStatementResolver(),

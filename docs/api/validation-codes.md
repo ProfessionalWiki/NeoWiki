@@ -164,7 +164,8 @@ so the Subject stays saveable.
 ### `schema-not-found`
 
 The Subject's Schema cannot be loaded — usually deleted or renamed since the Subject
-was created, or the Subject was created or imported referencing a Schema that does not (yet) exist.
+was created, or the Subject was created or imported referencing a Schema that does not (yet) exist. A
+[reference](schema-format.md#schema-references) to a Source this wiki does not have reports the same.
 The write proceeds and reports the violation; creating or renaming the Schema page resolves it.
 Subject-level: `propertyName` is `null`.
 

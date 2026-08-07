@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator
@@ -33,7 +34,7 @@ class ProposedSubjectValidatorTest extends TestCase {
 
 	private function newValidator(): ProposedSubjectValidator {
 		return new ProposedSubjectValidator(
-			schemaLookup: $this->schemaLookup,
+			schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
 			subjectValidator: new SubjectValidator(
 				propertyTypeLookup: PropertyTypeRegistry::withCoreTypes(),
 				subjectLookup: new InMemorySubjectLookup(),

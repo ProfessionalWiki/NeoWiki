@@ -44,7 +44,7 @@ the main one.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `label` | string | Yes | Human-readable label for the Subject. |
-| `schema` | string | Yes | Name of the Schema the Subject follows (a page in the Schema namespace). |
+| `schema` | string or object | Yes | [Reference](schema-format.md#schema-references) to the Schema the Subject follows. A string for a Schema of this wiki, where it is the page title in the Schema namespace. |
 | `statements` | object | No | Map of property name to [Statement object](#statement-object). Omitted when the Subject has none. |
 
 A property mapped to `null` instead of a Statement object is skipped when the JSON is read.
