@@ -223,6 +223,60 @@ class SubjectContentDataSerializerTest extends TestCase {
 	}
 
 	/**
+	 * Widening a Subject id to a (Source, localId) pair (ADR 23) must leave the slot of a page whose
+	 * Subjects are all local exactly as it was, down to the byte: every existing revision is such a
+	 * slot, and revision content cannot be migrated.
+	 */
+	public function testLocalOnlySlotIsSerializedByteIdentically(): void {
+		$contentJson = <<<'JSON'
+{
+    "mainSubject": "sTestSCDS111111",
+    "subjects": {
+        "sTestSCDS111111": {
+            "label": "Berlin",
+            "schema": "City",
+            "statements": {
+                "Country": {
+                    "propertyType": "text",
+                    "value": [
+                        "Germany"
+                    ]
+                },
+                "Population": {
+                    "propertyType": "number",
+                    "value": 3677472
+                },
+                "Capital": {
+                    "propertyType": "boolean",
+                    "value": true
+                },
+                "Mayor": {
+                    "propertyType": "relation",
+                    "value": [
+                        {
+                            "id": "rTestSCDS111111",
+                            "target": "sTestSCDS111112",
+                            "properties": {
+                                "since": "2023"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "sTestSCDS111112": {
+            "label": "Kai Wegner",
+            "schema": "Person",
+            "statements": {}
+        }
+    }
+}
+JSON;
+
+		$this->assertSame( $contentJson, $this->roundTrip( $contentJson ) );
+	}
+
+	/**
 	 * Core types only: no extension is loaded, so "color" is an unregistered type.
 	 */
 	private function roundTrip( string $contentJson ): string {
