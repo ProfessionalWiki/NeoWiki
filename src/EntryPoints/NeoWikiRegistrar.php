@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
+use Closure;
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
@@ -12,6 +14,8 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfTerm;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
+use ProfessionalWiki\NeoWiki\Domain\Source\Source;
+use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 
@@ -23,6 +27,7 @@ readonly class NeoWikiRegistrar {
 		private PagePropertyProviderRegistry $pagePropertyProviderRegistry,
 		private GraphDatabasePluginRegistry $graphDatabasePluginRegistry,
 		private RdfValueMapperRegistry $rdfValueMapperRegistry,
+		private SourceRegistry $sourceRegistry,
 	) {
 	}
 
@@ -60,6 +65,25 @@ readonly class NeoWikiRegistrar {
 	 */
 	public function addGraphDatabasePlugin( string $name, GraphDatabasePlugin $plugin ): void {
 		$this->graphDatabasePluginRegistry->addPlugin( $name, $plugin );
+	}
+
+	/**
+	 * Registers a Source to resolve Subjects and Schemas from (ADR 23).
+	 *
+	 * The key is what a Subject id names before its colon, so it identifies the Source across runs and
+	 * installs: pick a stable one and namespace it to your extension. It must be a letter followed by
+	 * up to 63 letters, digits, underscores or hyphens; anything else throws. Registering a key already
+	 * taken replaces that Source, except the wiki's own key (the MediaWiki Wiki ID), which is refused.
+	 *
+	 * Pass a closure returning the Source rather than the Source itself when building it is not free:
+	 * it is called at most once, the first time something resolves that Source.
+	 *
+	 * @param Source|Closure(): Source $source
+	 *
+	 * @throws InvalidArgumentException
+	 */
+	public function addSource( string $key, Source|Closure $source ): void {
+		$this->sourceRegistry->registerSource( $key, $source );
 	}
 
 }
