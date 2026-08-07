@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement\UpdateStatementAction;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
@@ -20,12 +21,14 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -37,6 +40,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 
 /**
@@ -60,11 +64,13 @@ class UpdateStatementActionTest extends TestCase {
 	private function newAction(
 		?SubjectWriteAuthorizer $authorizer = null,
 		bool $validationEnforced = false,
+		?PageReadAuthorizer $readAuthorizer = null,
 	): UpdateStatementAction {
 		$registry = PropertyTypeRegistry::withCoreTypes();
 
 		return new UpdateStatementAction(
 			subjectRepository: $this->subjectRepository,
+			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
 			writeAuthorizer: $authorizer ?? new SpySubjectWriteAuthorizer( allowed: true ),
 			statementListBuilder: new StatementListBuilder(
 				propertyTypeLookup: $registry,
@@ -81,9 +87,33 @@ class UpdateStatementActionTest extends TestCase {
 			),
 			presenter: $this->presenterSpy,
 			validationEnforced: $validationEnforced,
+			// The Subject under test sits on a namespaced page between two others, so neither a
+			// hardcoded main-namespace id nor an implementation answering with some other seeded
+			// page passes.
 			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
-				[ new SubjectId( self::SUBJECT_ID ), new PageIdentifiers( new PageId( 7 ), 'Test page', 0 ) ]
+				[ new SubjectId( 's11111111111126' ), new PageIdentifiers( new PageId( 6 ), 'Earlier page', 0 ) ],
+				[ new SubjectId( self::SUBJECT_ID ), new PageIdentifiers( new PageId( 7 ), 'Help:Test page', 12 ) ],
+				[ new SubjectId( 's11111111111128' ), new PageIdentifiers( new PageId( 8 ), 'Talk:Later page', 1 ) ],
 			] ),
+		);
+	}
+
+	/**
+	 * `required` at Error severity, so that missing it blocks a write under enforcement. The
+	 * shorthand form TestProperty builds defaults to Warning, which never blocks (ADR 26).
+	 */
+	private function newRequiredTextProperty(): TextProperty {
+		return new TextProperty(
+			core: new PropertyCore(
+				description: '',
+				required: true,
+				default: null,
+				constraintSeverities: [ 'required' => Severity::Error ],
+			),
+			multiple: false,
+			uniqueItems: false,
+			minLength: null,
+			maxLength: null,
 		);
 	}
 
@@ -321,6 +351,97 @@ class UpdateStatementActionTest extends TestCase {
 		);
 	}
 
+	public function testUnreadablePageAnswersNotFound(): void {
+		// The caller may edit the page but may not read it. Answering anything other than not-found
+		// would confirm the Subject exists, and hand out the page title and namespace with it.
+		$this->storeSubject();
+
+		$action = $this->newAction( readAuthorizer: new StubPageReadAuthorizer( allowed: false ) );
+
+		$this->expectException( SubjectNotFoundException::class );
+		$this->expectExceptionMessage( 'Subject not found: ' . self::SUBJECT_ID );
+
+		$action->setStatement(
+			new SubjectId( self::SUBJECT_ID ),
+			new PropertyName( 'Website' ),
+			'url',
+			[ 'https://pro.wiki' ],
+			null
+		);
+	}
+
+	public function testUnreadablePageIsRejectedBeforeTheWrite(): void {
+		$this->storeSubject( new StatementList( [
+			TestStatement::build( property: 'Website', value: 'https://pro.wiki', propertyType: 'url' ),
+		] ) );
+
+		try {
+			$this->newAction( readAuthorizer: new StubPageReadAuthorizer( allowed: false ) )->setStatement(
+				new SubjectId( self::SUBJECT_ID ),
+				new PropertyName( 'Website' ),
+				'url',
+				[ 'https://overwritten.example' ],
+				null
+			);
+		} catch ( SubjectNotFoundException ) {
+		}
+
+		$this->assertSame( [ 'https://pro.wiki' ], $this->getStoredValue( 'Website' ) );
+	}
+
+	public function testRemoveOnAnUnreadablePageAnswersNotFound(): void {
+		$this->storeSubject();
+
+		$action = $this->newAction( readAuthorizer: new StubPageReadAuthorizer( allowed: false ) );
+
+		$this->expectException( SubjectNotFoundException::class );
+
+		$action->removeStatement( new SubjectId( self::SUBJECT_ID ), new PropertyName( 'Website' ), null );
+	}
+
+	public function testPresentedSubjectCarriesThePersistedStatements(): void {
+		$this->storeSubject( new StatementList( [
+			TestStatement::build( property: 'Kept', value: 'kept' ),
+		] ) );
+
+		$this->setStatement( 'Website', 'url', [ 'https://pro.wiki' ] );
+
+		$this->assertSame(
+			[
+				'Kept' => [ 'propertyType' => 'text', 'value' => [ 'kept' ] ],
+				'Website' => [ 'propertyType' => 'url', 'value' => [ 'https://pro.wiki' ] ],
+			],
+			$this->presenterSpy->subject?->statements
+		);
+	}
+
+	public function testPresentedSubjectCarriesThePageItSitsOn(): void {
+		$this->storeSubject();
+
+		$this->setStatement( 'Website', 'url', [ 'https://pro.wiki' ] );
+
+		$this->assertSame( 7, $this->presenterSpy->subject?->pageId );
+		$this->assertSame( 'Help:Test page', $this->presenterSpy->subject?->pageTitle );
+		$this->assertSame( 12, $this->presenterSpy->subject?->pageNamespaceId );
+	}
+
+	public function testPresentedSchemaIsTheOneTheSubjectInstantiates(): void {
+		$this->registerSchema( new PropertyDefinitions( [ 'Website' => TestProperty::buildUrl() ] ) );
+		$this->storeSubject();
+
+		$this->setStatement( 'Website', 'url', [ 'https://pro.wiki' ] );
+
+		$this->assertSame( self::SCHEMA_NAME, $this->presenterSpy->schema?->getName()->getText() );
+	}
+
+	public function testNoSchemaIsPresentedWhenTheSubjectNamesAMissingOne(): void {
+		$this->storeSubject( schemaName: new SchemaName( 'NonexistentSchema' ) );
+
+		$this->setStatement( 'Website', 'url', [ 'https://pro.wiki' ] );
+
+		$this->assertNull( $this->presenterSpy->schema );
+	}
+
 	public function testRemoveStatementDeletesOnlyTheNamedStatement(): void {
 		$this->storeSubject( new StatementList( [
 			TestStatement::build( property: 'Before' ),
@@ -403,7 +524,7 @@ class UpdateStatementActionTest extends TestCase {
 	}
 
 	public function testEnforcementOnRejectsRemovalOfARequiredStatement(): void {
-		$this->registerSchema( new PropertyDefinitions( [ 'Required' => TestProperty::buildText( required: true ) ] ) );
+		$this->registerSchema( new PropertyDefinitions( [ 'Required' => $this->newRequiredTextProperty() ] ) );
 		$this->storeSubject( new StatementList( [
 			TestStatement::build( property: 'Required', value: 'present' ),
 		] ) );
@@ -421,7 +542,7 @@ class UpdateStatementActionTest extends TestCase {
 	public function testEnforcementOnAllowsAnEditThatOnlyKeepsPreExistingViolations(): void {
 		$this->registerSchema( new PropertyDefinitions( [
 			'Website' => TestProperty::buildUrl(),
-			'Required' => TestProperty::buildText( required: true ),
+			'Required' => $this->newRequiredTextProperty(),
 		] ) );
 		$this->storeSubject();
 

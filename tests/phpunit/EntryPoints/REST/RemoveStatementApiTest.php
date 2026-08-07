@@ -6,7 +6,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
-use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -18,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\RemoveStatementApi
@@ -26,7 +26,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class RemoveStatementApiTest extends NeoWikiIntegrationTestCase {
 
 	use HandlerTestTrait;
-	use MockAuthorityTrait;
+	use NeoWikiMockAuthorityTrait;
 
 	private const string SUBJECT_ID = 'sTestRS11111111';
 
@@ -147,19 +147,49 @@ class RemoveStatementApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 400, $response->getStatusCode() );
 	}
 
-	public function testPermissionDeniedReturns403(): void {
+	public function testReadableButNotEditablePageReturns403(): void {
 		$this->createSubjectPage();
 
+		// The caller can read the page - so its existence is already public - but cannot edit it.
 		$response = $this->executeHandler(
 			$this->newRemoveStatementApi(),
 			$this->newRequest( 'Website' ),
-			authority: $this->mockAnonAuthorityWithPermissions( [] )
+			authority: $this->authorityWithGlobalEditButNoPageEdit()
 		);
 
 		$responseData = json_decode( $response->getBody()->getContents(), true );
 
 		$this->assertSame( 403, $response->getStatusCode() );
 		$this->assertSame( 'error', $responseData['status'] );
+	}
+
+	public function testSubjectOnAnUnreadablePageAnswersLikeAnAbsentSubject(): void {
+		$this->createSubjectPage();
+
+		// One Authority for both requests: comparing responses obtained under two different
+		// Authorities says nothing about what any single caller can tell apart.
+		$authority = $this->authorityWithGlobalReadButNoPageRead();
+
+		$unreadable = $this->executeHandler(
+			$this->newRemoveStatementApi(),
+			$this->newRequest( 'Website' ),
+			authority: $authority
+		);
+
+		$absent = $this->executeHandler(
+			$this->newRemoveStatementApi(),
+			$this->newRequest( 'Website', subjectId: 'sDoesNotExist99' ),
+			authority: $authority
+		);
+
+		$unreadableData = json_decode( $unreadable->getBody()->getContents(), true );
+		$absentData = json_decode( $absent->getBody()->getContents(), true );
+
+		// A caller holding a harvested Subject id learns nothing about whether it exists. The
+		// message names the id the caller supplied, so it carries nothing they did not send.
+		$this->assertSame( 404, $unreadable->getStatusCode() );
+		$this->assertSame( $unreadable->getStatusCode(), $absent->getStatusCode() );
+		$this->assertSame( $unreadableData['status'], $absentData['status'] );
 	}
 
 	public function testCommentIsAccepted(): void {
@@ -176,7 +206,8 @@ class RemoveStatementApiTest extends NeoWikiIntegrationTestCase {
 	public function testEnforcementBlocksRemovingARequiredStatement(): void {
 		$this->setMwGlobals( 'wgNeoWikiEnforceValidation', true );
 		$this->createSubjectPage(
-			'{"title":"RemoveStatementSchema","propertyDefinitions":{"Website":{"type":"url","required":true}}}'
+			'{"title":"RemoveStatementSchema","propertyDefinitions":'
+				. '{"Website":{"type":"url","required":{"severity":"error"}}}}'
 		);
 
 		$response = $this->executeHandler(
