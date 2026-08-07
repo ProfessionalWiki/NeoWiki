@@ -155,39 +155,16 @@ class MappingPersistenceDeserializerTest extends TestCase {
 		$this->assertSame( NodeScope::Value, $this->personNodes()['appellation']?->scope );
 	}
 
-	public function testANodeWithoutALinkDirectionIsLinkedTowardsItself(): void {
+	public function testANodeWithoutALinkDirectionDefaultsToToNode(): void {
 		$this->assertSame( LinkDirection::ToNode, $this->personNodes()['birth']?->linkDirection );
 	}
 
-	public function testDeserializesAReversedNodesLinkDirection(): void {
-		$this->assertSame( LinkDirection::FromNode, $this->aggregationNodes()['aggregation']?->linkDirection );
+	public function testDeserializesAnExplicitToNodeLinkDirection(): void {
+		$this->assertSame( LinkDirection::ToNode, $this->personNodes()['birthTimespan']?->linkDirection );
 	}
 
-	/**
-	 * @return array<string, NodeMapping>
-	 */
-	private function aggregationNodes(): array {
-		return $this->deserialize( <<<'JSON'
-			{
-				"version": 1,
-				"prefixes": {
-					"edm": "http://www.europeana.eu/schemas/edm/",
-					"ore": "http://www.openarchives.org/ore/terms/"
-				},
-				"schemas": {
-					"Artwork": {
-						"subject": { "class": "edm:ProvidedCHO" },
-						"nodes": {
-							"aggregation": {
-								"class": "ore:Aggregation",
-								"linkPredicate": "edm:aggregatedCHO",
-								"linkDirection": "fromNode"
-							}
-						}
-					}
-				}
-			}
-			JSON )->forSchema( new SchemaName( 'Artwork' ) )?->nodes ?? [];
+	public function testDeserializesAReversedNodesLinkDirection(): void {
+		$this->assertSame( LinkDirection::FromNode, $this->personNodes()['death']?->linkDirection );
 	}
 
 	public function testSkipsANodeWithAnUnknownLinkDirection(): void {
@@ -345,12 +322,18 @@ class MappingPersistenceDeserializerTest extends TestCase {
 							"birthTimespan": {
 								"class": "crm:E52_Time-Span",
 								"linkPredicate": "crm:P4_has_time-span",
-								"parent": "birth"
+								"parent": "birth",
+								"linkDirection": "toNode"
 							},
 							"appellation": {
 								"class": "crm:E41_Appellation",
 								"linkPredicate": "crm:P1_is_identified_by",
 								"per": "value"
+							},
+							"death": {
+								"class": "crm:E69_Death",
+								"linkPredicate": "crm:P100_was_death_of",
+								"linkDirection": "fromNode"
 							}
 						},
 						"properties": {

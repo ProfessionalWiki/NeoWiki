@@ -161,10 +161,8 @@ class MappingPersistenceDeserializer {
 
 	/**
 	 * A stored direction the projector does not know — reachable through import, since save validation
-	 * rejects it — drops the node, the way a node missing its terms is dropped. Deliberately not the
-	 * fallback-to-default an unknown `per` gets: a guessed direction puts the link triple the wrong way
-	 * round in output that is meant to be conformant, and the wrong direction is harder to notice than a
-	 * missing node.
+	 * rejects it — drops the node. Not the fallback-to-default an unknown `per` gets: a guessed direction
+	 * puts the link triple the wrong way round in output that is meant to be conformant.
 	 */
 	private function linkDirection( mixed $value ): ?LinkDirection {
 		if ( $value === null ) {

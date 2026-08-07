@@ -699,7 +699,8 @@ class MappingContentValidatorTest extends MediaWikiIntegrationTestCase {
 							"birthTimespan": {
 								"class": "crm:E52_Time-Span",
 								"linkPredicate": "crm:P4_has_time-span",
-								"parent": "birth"
+								"parent": "birth",
+								"linkDirection": "toNode"
 							},
 							"appellation": {
 								"class": "crm:E41_Appellation",

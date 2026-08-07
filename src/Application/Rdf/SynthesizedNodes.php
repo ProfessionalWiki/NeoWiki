@@ -19,8 +19,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
  * the instance and its anchor (the parent node's instance, or the Subject) — is recorded at the same
  * moment, so a node is in the output only when a value attached to it or to something below it. Asking
  * for an instance also pulls in its parent chain, which is how a nested node brings its ancestors along.
- * Nothing is emitted for a node no value reached, so an event ontology's projection carries no empty
- * event nodes.
+ * Nothing is emitted for a node no value reached, so an event ontology's projection carries no empty nodes.
  */
 class SynthesizedNodes {
 
@@ -96,11 +95,6 @@ class SynthesizedNodes {
 		return $instance;
 	}
 
-	/**
-	 * The triple that puts the node in the graph, pointing whichever way the node declares: at the node
-	 * for the CIDOC-CRM `person crm:P98i_was_born birth`, or at the anchor for the EDM
-	 * `aggregation edm:aggregatedCHO cho`, whose wrapper is the subject of its own link.
-	 */
 	private function linkQuad( SynthesizedNode $node, Iri $instance, Iri $anchor ): Quad {
 		return match ( $node->linkDirection ) {
 			LinkDirection::ToNode => new Quad( $anchor, $node->linkPredicate, $instance, $this->graph ),

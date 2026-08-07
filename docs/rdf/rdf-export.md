@@ -94,8 +94,8 @@ curl 'https://wiki.example/rest.php/neowiki/v0/page/42/rdf?format=turtle'
 
 `GET /rest.php/neowiki/v0/subject/{subjectId}/rdf`
 
-Returns one Subject's projection: exactly the triples the page export emits for that Subject — its outbound
-description, including the native relation reification — with none of the page-metadata triples, in the hosting page's
+Returns one Subject's projection: exactly the triples the page export emits for that Subject — its description,
+including the native relation reification — with none of the page-metadata triples, in the hosting page's
 named graph. Inbound relations pointing at the Subject from elsewhere are not included.
 
 A readable Subject whose Schema has no mapping for the requested ontology target projects to an empty graph —

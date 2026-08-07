@@ -17,7 +17,7 @@ page is the as-built reference for the shipped format. The
 and mapped output side by side.
 
 > **Scope.** A mapping reshapes the data as well as the vocabulary: it can **synthesize** the intermediate
-> event nodes a target like CIDOC-CRM routes its paths through, and it can **contract** structure a flat
+> nodes a target like CIDOC-CRM routes its paths through, and it can **contract** structure a flat
 > target does not want by contributing a Subject's values to the Subject it points at. Out of scope: RDF
 > **import** (a mapping drives export only) and contributions across more than one relation hop. The stored
 > `"version": 1` format may change; see the [open questions](../planning/OntologyMapping.md#open-questions).

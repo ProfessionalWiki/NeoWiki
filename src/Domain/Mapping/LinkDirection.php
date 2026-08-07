@@ -16,8 +16,7 @@ enum LinkDirection: string {
 	case ToNode = 'toNode';
 
 	/**
-	 * `<node> <linkPredicate> <anchor>` — the EDM `aggregation edm:aggregatedCHO cho`, where the node
-	 * wraps the entity it points at.
+	 * `<node> <linkPredicate> <anchor>` — the EDM `aggregation edm:aggregatedCHO cho`.
 	 */
 	case FromNode = 'fromNode';
 
