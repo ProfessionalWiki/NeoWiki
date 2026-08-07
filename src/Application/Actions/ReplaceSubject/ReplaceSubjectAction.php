@@ -82,12 +82,14 @@ readonly class ReplaceSubjectAction {
 
 		$proposedViolations = $this->proposedSubjectValidator->validate( $subject );
 
+		// Only violations this edit introduces block it, so a Subject that already carries one stays
+		// editable rather than being frozen by it.
 		$newBlockingViolations = array_filter(
 			ViolationDiff::newViolations( $proposedViolations, $priorViolations ),
-			static fn ( Violation $v ): bool => $v->isBlocking()
+			fn ( Violation $v ): bool => $v->alwaysBlocksWrites() || ( $this->validationEnforced && $v->isBlocking() )
 		);
 
-		if ( $this->validationEnforced && $newBlockingViolations !== [] ) {
+		if ( $newBlockingViolations !== [] ) {
 			$this->presenter->presentValidationFailed( $proposedViolations );
 			return;
 		}

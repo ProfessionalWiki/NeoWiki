@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Validation;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
@@ -14,6 +15,11 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Statement;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
@@ -36,8 +42,9 @@ class ProposedSubjectValidatorTest extends TestCase {
 		return new ProposedSubjectValidator(
 			schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
 			subjectValidator: new SubjectValidator(
-				propertyTypeLookup: PropertyTypeRegistry::withCoreTypes(),
+				propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
 				subjectLookup: new InMemorySubjectLookup(),
+				sourceRegistry: TestSources::newRegistry(),
 			),
 		);
 	}
@@ -87,6 +94,32 @@ class ProposedSubjectValidatorTest extends TestCase {
 		$this->assertSame( 'schema-not-found', $violations[0]->code );
 		$this->assertNull( $violations[0]->propertyName );
 		$this->assertSame( [ 'UnregisteredSchema' ], $violations[0]->args );
+	}
+
+	/**
+	 * A missing Schema costs the Schema-scoped checks, not the reachability one: the target would be
+	 * written unreadable whether or not the Schema turns up later.
+	 */
+	public function testStillRejectsAnUnresolvableRelationTargetWhenTheSchemaIsMissing(): void {
+		$subject = TestSubject::build(
+			label: 'John Doe',
+			schemaName: new SchemaName( 'UnregisteredSchema' ),
+			statements: new StatementList( [
+				new Statement(
+					new PropertyName( 'Links' ),
+					'relation',
+					new RelationValue( TestRelation::build( targetId: 'neverinstalled:Q42' ) )
+				),
+			] ),
+		);
+
+		$violations = $this->newValidator()->validate( $subject );
+
+		$this->assertSame(
+			[ 'schema-not-found', 'relation-target-unresolvable-source' ],
+			array_map( static fn ( $violation ): string => $violation->code, $violations )
+		);
+		$this->assertTrue( $violations[1]->alwaysBlocksWrites() );
 	}
 
 }

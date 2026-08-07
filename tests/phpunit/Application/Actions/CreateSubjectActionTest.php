@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
@@ -45,6 +46,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use RuntimeException;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction
@@ -82,7 +84,7 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	private function newCreateSubjectAction( bool $validationEnforced = false ): CreateSubjectAction {
-		$registry = PropertyTypeRegistry::withCoreTypes();
+		$registry = PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY );
 		return new CreateSubjectAction(
 			$this->presenterSpy,
 			$this->subjectRepository,
@@ -101,6 +103,7 @@ class CreateSubjectActionTest extends TestCase {
 				subjectValidator: new SubjectValidator(
 					propertyTypeLookup: $registry,
 					subjectLookup: new InMemorySubjectLookup(),
+					sourceRegistry: TestSources::newRegistry(),
 				),
 			),
 			$this->pageIdentifiersLookup,
@@ -552,6 +555,54 @@ class CreateSubjectActionTest extends TestCase {
 		);
 	}
 
+	public function testCreateWithARelationTargetFromAnUnregisteredSourceIsRejectedWithoutEnforcement(): void {
+		$this->registerPersonSchemaWithRelation();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction( validationEnforced: false )->createSubject(
+			$this->newRelationRequest( 'neverinstalled:Q42' )
+		);
+
+		$this->assertTrue( $this->presenterSpy->validationFailed );
+		$this->assertNull( $this->subjectRepository->getSubject( new SubjectId( 's' . self::STUB_ID ) ) );
+	}
+
+	public function testCreateWithABareRelationTargetIsAcceptedWithoutEnforcement(): void {
+		$this->registerPersonSchemaWithRelation();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction( validationEnforced: false )->createSubject(
+			$this->newRelationRequest( 's11111111111111' )
+		);
+
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+	}
+
+	private function newRelationRequest( string $targetId ): CreateSubjectRequest {
+		return new CreateSubjectRequest(
+			pageId: 1,
+			isMainSubject: true,
+			label: 'Bob',
+			schemaName: 'PersonSchema',
+			statements: [
+				'Knows' => [
+					'propertyType' => 'relation',
+					'value' => [ [ 'target' => $targetId ] ],
+				],
+			],
+		);
+	}
+
+	private function registerPersonSchemaWithRelation(): void {
+		$this->schemaLookup->updateSchema( new Schema(
+			name: new SchemaName( 'PersonSchema' ),
+			description: '',
+			properties: new PropertyDefinitions( [
+				'Knows' => TestProperty::buildRelation( targetSchema: 'PersonSchema' ),
+			] )
+		) );
+	}
+
 	private function registerPersonSchemaWithRequiredName(): void {
 		$this->schemaLookup->updateSchema( new Schema(
 			name: new SchemaName( 'PersonSchema' ),
@@ -740,6 +791,48 @@ class CreateSubjectActionTest extends TestCase {
 		);
 	}
 
+	public function testCreateWithExplicitlyLocalSuppliedIdStoresTheBareId(): void {
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: false,
+				label: 'Some Label',
+				schemaName: 'some-schema',
+				statements: [],
+				id: TestSubjectIds::LOCAL_SOURCE_KEY . ':' . self::SUPPLIED_ID,
+			)
+		);
+
+		$this->assertSame( self::SUPPLIED_ID, $this->presenterSpy->result );
+	}
+
+	public function testCreateWithForeignSuppliedIdSavesNothing(): void {
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		try {
+			$this->newCreateSubjectAction()->createSubject(
+				new CreateSubjectRequest(
+					pageId: 1,
+					isMainSubject: false,
+					label: 'Some Label',
+					schemaName: 'some-schema',
+					statements: [],
+					id: TestSubjectIds::OTHER_SOURCE_KEY . ':' . self::SUPPLIED_ID,
+				)
+			);
+		} catch ( InvalidArgumentException ) {
+			$this->assertSame(
+				[],
+				$this->subjectRepository->getSubjectsByPageId( new PageId( 1 ) )->getAllSubjects()->asArray()
+			);
+			return;
+		}
+
+		$this->fail( 'A Subject id from another Source should be rejected' );
+	}
+
 	public function testCreateWithSuppliedIdAlreadyUsedElsewherePresentsAlreadyExists(): void {
 		$this->pageIdentifiersLookup->addIdentifiers(
 			new SubjectId( self::SUPPLIED_ID ),
@@ -779,7 +872,7 @@ class CreateSubjectActionTest extends TestCase {
 
 		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->subject?->id );
 		$this->assertSame( 'Some Label', $this->presenterSpy->subject?->label );
-		$this->assertSame( self::SELECT_SCHEMA_NAME, $this->presenterSpy->subject?->schemaName );
+		$this->assertSame( self::SELECT_SCHEMA_NAME, $this->presenterSpy->subject?->schema );
 		$this->assertSame(
 			// The label the request supplied was resolved to the option id.
 			[ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'opt_approved' ] ] ],

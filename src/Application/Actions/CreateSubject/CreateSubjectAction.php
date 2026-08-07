@@ -91,7 +91,7 @@ readonly class CreateSubjectAction {
 
 		$violations = $this->proposedSubjectValidator->validate( $subject );
 
-		if ( $this->validationEnforced && $this->blockingViolations( $violations ) !== [] ) {
+		if ( $this->violationsBlockingWrite( $violations ) !== [] ) {
 			$this->presenter->presentValidationFailed( $violations );
 			return;
 		}
@@ -122,10 +122,10 @@ readonly class CreateSubjectAction {
 	 * @param Violation[] $violations
 	 * @return Violation[]
 	 */
-	private function blockingViolations( array $violations ): array {
+	private function violationsBlockingWrite( array $violations ): array {
 		return array_values( array_filter(
 			$violations,
-			static fn ( Violation $v ): bool => $v->isBlocking()
+			fn ( Violation $v ): bool => $v->alwaysBlocksWrites() || ( $this->validationEnforced && $v->isBlocking() )
 		) );
 	}
 
