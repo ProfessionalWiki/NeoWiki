@@ -218,8 +218,8 @@ Schema change fixes.
 A Statement whose property is not declared on the current Schema is ignored — no violation. This is
 schema-drift tolerance: a property may have been removed from the Schema while Subjects still carry
 old Statements. The one exception is
-[`relation-target-unresolvable-source`](#relation-target-unresolvable-source), which reports a
-reference nothing can resolve rather than data failing a Schema rule.
+[`relation-target-unresolvable-source`](#relation-target-unresolvable-source), which is reported for
+every relation value whether or not the Schema declares its property.
 
 ## Adding a new validation code
 

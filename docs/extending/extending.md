@@ -129,7 +129,7 @@ most once, the first time something resolves that Source.
 
 Your Source answers fetch-by-id (one Subject or a list), Schema-by-name, whether its Subjects are editable, which
 localIds it recognises, and its RDF base URI. It is never asked to run a query: a Subject becomes queryable by
-being materialised in a graph store, and that is the only gate.
+being materialised in a graph store.
 
 A Source that cannot reach its store answers as though the Subject or Schema is absent, so a page that names it
 degrades rather than breaking. Sourced Subjects are read-only, and rendering them in Views is not built yet, so
