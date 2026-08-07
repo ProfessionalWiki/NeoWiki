@@ -1381,6 +1381,7 @@ class NeoWikiExtension {
 	public function newUpdateStatementAction( UpdateStatementPresenter $presenter, Authority $authority ): UpdateStatementAction {
 		return new UpdateStatementAction(
 			subjectRepository: $this->getSubjectRepository(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),

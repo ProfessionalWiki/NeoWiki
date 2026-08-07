@@ -201,14 +201,16 @@ Subject's label and its other Statements as they are:
 `DELETE` on the same path removes the Statement and takes only `comment`. Removing a Statement the Subject does
 not have succeeds and changes nothing.
 
+Violations in the response cover the whole Subject, not only the property written.
+
 `{propertyName}` is URL-encoded, so `Founded at` is `Founded%20at`. A property name containing `/` is not
 addressable this way on servers that reject `%2F` in paths; write those Statements with
 `PUT /subject/{subjectId}`.
 
 ### Write responses
 
-Creating and writing a Subject both answer with the Subject as persisted and the Schema it instantiates, so a
-client does not have to re-read after a write:
+Creating a Subject, writing one, and writing one of its Statements all answer with the Subject as persisted and
+the Schema it instantiates, so a client does not have to re-read after a write:
 
 ```json
 {

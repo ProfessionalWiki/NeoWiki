@@ -6,6 +6,8 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
@@ -14,6 +16,7 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundExcept
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
@@ -30,6 +33,7 @@ readonly class UpdateStatementAction {
 
 	public function __construct(
 		private SubjectRepository $subjectRepository,
+		private PageReadAuthorizer $readAuthorizer,
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaLookup $schemaLookup,
@@ -57,7 +61,8 @@ readonly class UpdateStatementAction {
 		mixed $value,
 		?string $comment
 	): void {
-		$subject = $this->getSubjectToEdit( $subjectId );
+		$pageIdentifiers = $this->getPageOfSubjectToEdit( $subjectId );
+		$subject = $this->getSubject( $subjectId );
 		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
 
 		$statement = $this->buildStatement( $schema, $propertyName, $propertyType, $value );
@@ -67,6 +72,8 @@ readonly class UpdateStatementAction {
 			$statement === null
 				? $subject->getStatements()->withoutStatement( $propertyName )
 				: $subject->getStatements()->withStatement( $statement ),
+			$schema,
+			$pageIdentifiers,
 			$comment
 		);
 	}
@@ -76,21 +83,42 @@ readonly class UpdateStatementAction {
 	 * @throws SubjectEditNotAuthorizedException
 	 */
 	public function removeStatement( SubjectId $subjectId, PropertyName $propertyName, ?string $comment ): void {
-		$subject = $this->getSubjectToEdit( $subjectId );
+		$pageIdentifiers = $this->getPageOfSubjectToEdit( $subjectId );
+		$subject = $this->getSubject( $subjectId );
 
-		$this->save( $subject, $subject->getStatements()->withoutStatement( $propertyName ), $comment );
+		$this->save(
+			$subject,
+			$subject->getStatements()->withoutStatement( $propertyName ),
+			$this->schemaLookup->getSchema( $subject->getSchemaName() ),
+			$pageIdentifiers,
+			$comment
+		);
 	}
 
-	private function getSubjectToEdit( SubjectId $subjectId ): Subject {
-		// A null pageId (unresolvable Subject) makes the authorizer fall back to the global 'edit' right.
-		// This cannot bypass page protection: an unresolvable Subject is not found below (getSubject
-		// returns null), so the request 404s before any write rather than touching a protected page.
-		$pageId = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId )?->getId();
+	private function getPageOfSubjectToEdit( SubjectId $subjectId ): PageIdentifiers {
+		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId );
 
-		if ( !$this->writeAuthorizer->authorize( $pageId ) ) {
+		// Gate on read before write: a page the caller may not read answers exactly like a Subject
+		// that does not exist, so restricted pages cannot be told apart from absent ones - and the
+		// page title and namespace this endpoint returns never reach a caller denied the page. An
+		// unresolvable Subject takes that same path, since it has no page to authorize against.
+		// Reaching the write check with null identifiers would answer 403 where a restricted page
+		// answers 404, telling a caller who lacks the wiki-global 'edit' right which of the
+		// Subject ids they hold exist. Only a Subject on a page the caller can read (its existence
+		// already public) proceeds to the write check and its 403.
+		if ( $pageIdentifiers === null
+			|| !$this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() ) ) {
+			throw SubjectNotFoundException::forId( $subjectId );
+		}
+
+		if ( !$this->writeAuthorizer->authorize( $pageIdentifiers->getId() ) ) {
 			throw new SubjectEditNotAuthorizedException();
 		}
 
+		return $pageIdentifiers;
+	}
+
+	private function getSubject( SubjectId $subjectId ): Subject {
 		$subject = $this->subjectRepository->getSubject( $subjectId );
 
 		if ( $subject === null ) {
@@ -138,7 +166,13 @@ readonly class UpdateStatementAction {
 		);
 	}
 
-	private function save( Subject $subject, StatementList $statements, ?string $comment ): void {
+	private function save(
+		Subject $subject,
+		StatementList $statements,
+		?Schema $schema,
+		PageIdentifiers $pageIdentifiers,
+		?string $comment
+	): void {
 		$priorViolations = $this->proposedSubjectValidator->validate( $subject );
 
 		$proposedSubject = $subject->withStatements( $statements );
@@ -156,7 +190,13 @@ readonly class UpdateStatementAction {
 
 		$this->subjectRepository->updateSubject( $proposedSubject, $comment );
 
-		$this->presenter->presentUpdated( $proposedSubject->getId()->text, $proposedViolations );
+		// The proposed Subject is the persisted state: the builder and the resolver above already
+		// normalized what the request supplied.
+		$this->presenter->presentUpdated(
+			GetSubjectResponseItem::fromSubject( $proposedSubject, $pageIdentifiers ),
+			$schema,
+			$proposedViolations
+		);
 	}
 
 }

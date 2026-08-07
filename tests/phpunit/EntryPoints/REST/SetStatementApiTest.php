@@ -7,19 +7,20 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
-use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetStatementApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\SetStatementApi
@@ -28,7 +29,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 
 	use HandlerTestTrait;
-	use MockAuthorityTrait;
+	use NeoWikiMockAuthorityTrait;
 
 	private const string SUBJECT_ID = 'sTestSS11111111';
 
@@ -101,6 +102,56 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'updated', $responseData['status'] );
 		$this->assertSame( self::SUBJECT_ID, $responseData['subjectId'] );
 		$this->assertSame( [], $responseData['violations'] );
+	}
+
+	/**
+	 * The point of bundling the Subject is that the client can store server truth instead of its own
+	 * copy, so the entry must be the one the read endpoint serves, down to the page identifiers the
+	 * client cannot know.
+	 */
+	public function testUpdatedResponseCarriesTheSubjectEntryTheReadEndpointServes(): void {
+		$this->createSubjectPage();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Website', [ 'statement' => [ 'propertyType' => 'url', 'value' => [ 'https://pro.wiki' ] ] ] )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame(
+			$this->readSubjectEntryFromApi( self::SUBJECT_ID ),
+			$responseData['subject']
+		);
+	}
+
+	public function testUpdatedResponseCarriesTheSchemaTheSubjectInstantiates(): void {
+		$this->createSubjectPage();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Website', [ 'statement' => [ 'propertyType' => 'url', 'value' => [ 'https://pro.wiki' ] ] ] )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame(
+			[ 'Website', 'Founded at' ],
+			array_keys( $responseData['schema']['propertyDefinitions'] )
+		);
+	}
+
+	private function readSubjectEntryFromApi( string $subjectId ): array {
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => $subjectId ],
+				'queryParams' => [ 'expand' => 'page' ],
+			] )
+		);
+
+		return json_decode( $response->getBody()->getContents(), true )['subjects'][$subjectId];
 	}
 
 	public function testStatementIsStored(): void {
@@ -261,19 +312,49 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'error', $responseData['status'] );
 	}
 
-	public function testPermissionDeniedReturns403(): void {
+	public function testReadableButNotEditablePageReturns403(): void {
 		$this->createSubjectPage();
 
+		// The caller can read the page - so its existence is already public - but cannot edit it.
 		$response = $this->executeHandler(
 			$this->newSetStatementApi(),
 			$this->newRequest( 'Website', [ 'statement' => [ 'propertyType' => 'url', 'value' => [ 'https://pro.wiki' ] ] ] ),
-			authority: $this->mockAnonAuthorityWithPermissions( [] )
+			authority: $this->authorityWithGlobalEditButNoPageEdit()
 		);
 
 		$responseData = json_decode( $response->getBody()->getContents(), true );
 
 		$this->assertSame( 403, $response->getStatusCode() );
 		$this->assertSame( 'error', $responseData['status'] );
+	}
+
+	public function testSubjectOnAnUnreadablePageAnswersLikeAnAbsentSubject(): void {
+		$this->createSubjectPage();
+
+		// One Authority for both requests: comparing responses obtained under two different
+		// Authorities says nothing about what any single caller can tell apart.
+		$authority = $this->authorityWithGlobalReadButNoPageRead();
+
+		$unreadable = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Website', [ 'statement' => [ 'propertyType' => 'url', 'value' => [ 'https://pro.wiki' ] ] ] ),
+			authority: $authority
+		);
+
+		$absent = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Website', [ 'statement' => [ 'propertyType' => 'url', 'value' => [ 'https://pro.wiki' ] ] ], subjectId: 'sDoesNotExist99' ),
+			authority: $authority
+		);
+
+		$unreadableData = json_decode( $unreadable->getBody()->getContents(), true );
+		$absentData = json_decode( $absent->getBody()->getContents(), true );
+
+		// A caller holding a harvested Subject id learns nothing about whether it exists. The
+		// message names the id the caller supplied, so it carries nothing they did not send.
+		$this->assertSame( 404, $unreadable->getStatusCode() );
+		$this->assertSame( $unreadable->getStatusCode(), $absent->getStatusCode() );
+		$this->assertSame( $unreadableData['status'], $absentData['status'] );
 	}
 
 	public function testCommentIsAccepted(): void {
