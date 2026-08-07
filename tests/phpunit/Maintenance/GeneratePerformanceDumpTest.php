@@ -283,8 +283,6 @@ class GeneratePerformanceDumpTest extends MaintenanceBaseTestCase {
 	 * Imports the way importDump.php does: bare, with no reporter wrapping the importer.
 	 */
 	private function importDump( string $dump ): void {
-		$this->tablesUsed[] = 'page';
-
 		$this->getServiceContainer()->getWikiImporterFactory()->getWikiImporter(
 			new ImportStringSource( $dump ),
 			$this->getTestSysop()->getAuthority()

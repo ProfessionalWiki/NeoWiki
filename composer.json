@@ -43,7 +43,10 @@
 		}
 	},
 	"scripts": {
-		"phpunit": "cd ${MW_INSTALL_PATH:-../..} && (composer phpunit:config 2>/dev/null || true) && vendor/bin/phpunit -c extensions/NeoWiki/phpunit.xml.dist --bootstrap tests/phpunit/bootstrap.php",
+		"phpunit": [
+			"Composer\\Config::disableProcessTimeout",
+			"cd ${MW_INSTALL_PATH:-../..} && if [ -f phpunit.xml.template ]; then composer phpunit:config; fi && vendor/bin/phpunit -c extensions/NeoWiki/phpunit.xml.dist --bootstrap tests/phpunit/bootstrap.php"
+		],
 		"dbschema": [
 			"php ../../maintenance/generateSchemaSql.php --json sql/neowiki_rebuild_runs.json --sql sql/mysql/neowiki_rebuild_runs.sql --type mysql",
 			"php ../../maintenance/generateSchemaSql.php --json sql/neowiki_rebuild_runs.json --sql sql/sqlite/neowiki_rebuild_runs.sql --type sqlite",
@@ -52,6 +55,9 @@
 			"php ../../maintenance/generateSchemaChangeSql.php --json sql/abstractSchemaChanges/patch-neowiki_rebuild_runs-nwrr_phase.json --sql sql/sqlite/patch-neowiki_rebuild_runs-nwrr_phase.sql --type sqlite",
 			"php ../../maintenance/generateSchemaChangeSql.php --json sql/abstractSchemaChanges/patch-neowiki_rebuild_runs-nwrr_phase.json --sql sql/postgres/patch-neowiki_rebuild_runs-nwrr_phase.sql --type postgres"
 		]
+	},
+	"scripts-descriptions": {
+		"phpunit": "Runs the test suite against the surrounding MediaWiki. Generates core's phpunit.xml first where core ships the generator, because from MediaWiki 1.46 core's bootstrap refuses to run without it."
 	},
 	"config": {
 		"allow-plugins": {
