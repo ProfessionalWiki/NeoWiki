@@ -225,7 +225,6 @@ id; rich chain-of-production provenance is a separate model.
 
 ### Still open
 
-- **Source interface contract** for by-id and query (per-page being a deterministic by-id).
 - **Federation resolution** (fetch-at-read vs cache/materialise) and **shared-graph instance tagging** (the farm
   deliverable proper).
 - **History-page rendering** for non-history-correct sourced Subjects (show current values, or hide them?).
