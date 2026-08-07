@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Rdf;
 
+use ProfessionalWiki\NeoWiki\Domain\Mapping\LinkDirection;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\NodeMapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\NodeScope;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
@@ -25,6 +26,7 @@ readonly class SynthesizedNode {
 		public Iri $class,
 		public Iri $linkPredicate,
 		public NodeScope $scope,
+		public LinkDirection $linkDirection,
 		public array $keyPath,
 	) {
 	}

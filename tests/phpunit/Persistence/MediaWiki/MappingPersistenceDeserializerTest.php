@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\LinkDirection;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\NodeMapping;
@@ -152,6 +153,75 @@ class MappingPersistenceDeserializerTest extends TestCase {
 
 	public function testDeserializesAPerValueNodesScope(): void {
 		$this->assertSame( NodeScope::Value, $this->personNodes()['appellation']?->scope );
+	}
+
+	public function testANodeWithoutALinkDirectionIsLinkedTowardsItself(): void {
+		$this->assertSame( LinkDirection::ToNode, $this->personNodes()['birth']?->linkDirection );
+	}
+
+	public function testDeserializesAReversedNodesLinkDirection(): void {
+		$this->assertSame( LinkDirection::FromNode, $this->aggregationNodes()['aggregation']?->linkDirection );
+	}
+
+	public function testSkipsANodeWithAnUnknownLinkDirection(): void {
+		// Save validation rejects any other value, but an import can store one. Defaulting it would emit
+		// the node's link triple the wrong way round, so the node goes instead — as it does when its terms
+		// are missing.
+		$nodes = $this->deserialize( <<<'JSON'
+			{
+				"version": 1,
+				"prefixes": { "ore": "http://www.openarchives.org/ore/terms/" },
+				"schemas": {
+					"Artwork": {
+						"subject": { "class": "http://www.europeana.eu/schemas/edm/ProvidedCHO" },
+						"nodes": {
+							"sideways": {
+								"class": "ore:Aggregation",
+								"linkPredicate": "http://www.europeana.eu/schemas/edm/aggregatedCHO",
+								"linkDirection": "eitherWay"
+							},
+							"aggregation": {
+								"class": "ore:Aggregation",
+								"linkPredicate": "http://www.europeana.eu/schemas/edm/aggregatedCHO",
+								"linkDirection": "fromNode"
+							}
+						}
+					}
+				}
+			}
+			JSON )->forSchema( new SchemaName( 'Artwork' ) )?->nodes ?? [];
+
+		$this->assertSame( [ 'aggregation' ], array_keys( $nodes ) );
+	}
+
+	/**
+	 * @return array<string, NodeMapping>
+	 */
+	private function aggregationNodes(): array {
+		return $this->deserialize( <<<'JSON'
+			{
+				"version": 1,
+				"prefixes": {
+					"edm": "http://www.europeana.eu/schemas/edm/",
+					"ore": "http://www.openarchives.org/ore/terms/"
+				},
+				"schemas": {
+					"Artwork": {
+						"subject": { "class": "edm:ProvidedCHO" },
+						"nodes": {
+							"aggregation": {
+								"class": "ore:Aggregation",
+								"linkPredicate": "edm:aggregatedCHO",
+								"linkDirection": "fromNode"
+							}
+						},
+						"properties": {
+							"Image": { "predicate": "edm:isShownBy", "node": "aggregation" }
+						}
+					}
+				}
+			}
+			JSON )->forSchema( new SchemaName( 'Artwork' ) )?->nodes ?? [];
 	}
 
 	public function testSkipsANodeWithoutTheTermsItNeeds(): void {

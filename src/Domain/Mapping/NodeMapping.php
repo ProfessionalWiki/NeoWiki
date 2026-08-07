@@ -17,8 +17,8 @@ readonly class NodeMapping {
 
 	/**
 	 * @param string $class The `rdf:type` given to each instance of the node.
-	 * @param string $linkPredicate The predicate of the triple from the anchor — the parent node's
-	 *   instance, or the Subject when there is no parent — to the node instance.
+	 * @param string $linkPredicate The predicate of the triple between the node instance and its anchor —
+	 *   the parent node's instance, or the Subject when there is no parent.
 	 * @param string|null $parent The key of the node this one hangs off, instead of the Subject.
 	 */
 	public function __construct(
@@ -26,6 +26,7 @@ readonly class NodeMapping {
 		public string $linkPredicate,
 		public ?string $parent = null,
 		public NodeScope $scope = NodeScope::Subject,
+		public LinkDirection $linkDirection = LinkDirection::ToNode,
 	) {
 	}
 

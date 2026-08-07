@@ -480,6 +480,7 @@ class OntologyMappingProjector implements PageProjector {
 				class: $node['class'],
 				linkPredicate: $node['linkPredicate'],
 				scope: $node['mapping']->scope,
+				linkDirection: $node['mapping']->linkDirection,
 				keyPath: $keyPath,
 			);
 		}

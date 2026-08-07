@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Rdf;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
+use ProfessionalWiki\NeoWiki\Domain\Mapping\LinkDirection;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\NodeMapping;
@@ -53,6 +54,7 @@ class OntologyMappingProjectorTest extends TestCase {
 	private const string BIRTH_ID = 's1birthaaaaaaa6';
 
 	private const string EDM = 'http://www.europeana.eu/schemas/edm/';
+	private const string ORE = 'http://www.openarchives.org/ore/terms/';
 	private const string DC = 'http://purl.org/dc/elements/1.1/';
 	private const string CRM = 'http://www.cidoc-crm.org/cidoc-crm/';
 	private const string RDA_GR2 = 'http://rdvocab.info/ElementsGr2/';
@@ -1248,6 +1250,149 @@ class OntologyMappingProjectorTest extends TestCase {
 			$serializer->serialize( $first, RdfFormat::TriG ),
 			$serializer->serialize( $second, RdfFormat::TriG )
 		);
+	}
+
+	// A node whose link triple runs the other way: the ore:Aggregation an EDM record wraps its CHO in.
+
+	private function newOreProjector( SchemaMapping $mapping ): OntologyMappingProjector {
+		return $this->newProjector( [ 'Artwork' => $mapping ], [ 'edm' => self::EDM, 'ore' => self::ORE ] );
+	}
+
+	private function oreTriG( string $body ): string {
+		return <<<TRIG
+			@prefix neo-subj: <https://wiki.example/entity/> .
+			@prefix neo-graph: <https://wiki.example/graph/edm/page/> .
+			@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+			@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+			@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+			@prefix edm: <http://www.europeana.eu/schemas/edm/> .
+			@prefix ore: <http://www.openarchives.org/ore/terms/> .
+
+			neo-graph:42 {
+			$body
+			}
+			TRIG;
+	}
+
+	private function artworkWithWebResourceFields(): Page {
+		return TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::ARTWORK_ID,
+			label: 'The Milkmaid',
+			schemaName: new SchemaName( 'Artwork' ),
+			statements: new StatementList( [
+				TestStatement::build( 'Image', new StringValue( 'https://example.org/milkmaid.jpg' ), 'url' ),
+				TestStatement::build( 'Rights', new StringValue( 'https://example.org/rights/publicdomain' ), 'url' ),
+			] )
+		) );
+	}
+
+	public function testAReversedNodeIsLinkedFromItselfToTheSubject(): void {
+		$quads = $this->newOreProjector( new SchemaMapping(
+			subject: new SubjectMapping( 'edm:ProvidedCHO' ),
+			properties: new PropertyMappings( [
+				'Image' => new PropertyMapping( predicate: 'edm:isShownBy', node: 'aggregation' ),
+			] ),
+			nodes: [
+				'aggregation' => new NodeMapping(
+					class: 'ore:Aggregation',
+					linkPredicate: 'edm:aggregatedCHO',
+					linkDirection: LinkDirection::FromNode
+				),
+			],
+		) )->projectPage( $this->artworkWithWebResourceFields() );
+
+		// The aggregation, not the CHO, is the subject of the link triple, so the record has the shape
+		// Europeana ingests; the CHO itself carries only what is mapped onto it.
+		$this->assertProjectsTo( $this->oreTriG( <<<'TRIG'
+			neo-subj:s1artworkaaaaa4 a edm:ProvidedCHO ;
+				rdfs:label "The Milkmaid" .
+
+			<https://wiki.example/node/s1artworkaaaaa4/aggregation> a ore:Aggregation ;
+				edm:aggregatedCHO neo-subj:s1artworkaaaaa4 ;
+				edm:isShownBy <https://example.org/milkmaid.jpg> .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testANodeUnderAReversedParentIsLinkedToTheParentsInstance(): void {
+		$quads = $this->newOreProjector( new SchemaMapping(
+			subject: new SubjectMapping( 'edm:ProvidedCHO' ),
+			properties: new PropertyMappings( [
+				'Rights' => new PropertyMapping( predicate: 'edm:rights', node: 'webResource' ),
+			] ),
+			nodes: [
+				'aggregation' => new NodeMapping(
+					class: 'ore:Aggregation',
+					linkPredicate: 'edm:aggregatedCHO',
+					linkDirection: LinkDirection::FromNode
+				),
+				'webResource' => new NodeMapping(
+					class: 'edm:WebResource',
+					linkPredicate: 'edm:isShownBy',
+					parent: 'aggregation'
+				),
+			],
+		) )->projectPage( $this->artworkWithWebResourceFields() );
+
+		// Only the web resource carries a value, so it pulls the aggregation above it into the output.
+		// Each node's own direction applies: the aggregation points back at the CHO, the web resource is
+		// pointed at by the aggregation.
+		$this->assertProjectsTo( $this->oreTriG( <<<'TRIG'
+			neo-subj:s1artworkaaaaa4 a edm:ProvidedCHO ;
+				rdfs:label "The Milkmaid" .
+
+			<https://wiki.example/node/s1artworkaaaaa4/aggregation> a ore:Aggregation ;
+				edm:aggregatedCHO neo-subj:s1artworkaaaaa4 ;
+				edm:isShownBy <https://wiki.example/node/s1artworkaaaaa4/aggregation/webResource> .
+
+			<https://wiki.example/node/s1artworkaaaaa4/aggregation/webResource> a edm:WebResource ;
+				edm:rights <https://example.org/rights/publicdomain> .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testEveryInstanceOfAReversedPerValueNodeIsLinkedToTheSubject(): void {
+		$artwork = TestPage::build( id: 42, mainSubject: TestSubject::build(
+			id: self::ARTWORK_ID,
+			label: 'The Milkmaid',
+			schemaName: new SchemaName( 'Artwork' ),
+			statements: new StatementList( [
+				TestStatement::buildRelation( 'Provider', [
+					TestRelation::build( id: 'r1firstaaaaaaa2', targetId: self::PERSON_ID ),
+					TestRelation::build( id: 'r1secondaaaaaa3', targetId: self::CITY_ID ),
+				] ),
+			] )
+		) );
+
+		$quads = $this->newOreProjector( new SchemaMapping(
+			subject: new SubjectMapping( 'edm:ProvidedCHO' ),
+			properties: new PropertyMappings( [
+				'Provider' => new PropertyMapping( predicate: 'edm:provider', node: 'aggregation' ),
+			] ),
+			nodes: [
+				'aggregation' => new NodeMapping(
+					class: 'ore:Aggregation',
+					linkPredicate: 'edm:aggregatedCHO',
+					scope: NodeScope::Value,
+					linkDirection: LinkDirection::FromNode
+				),
+			],
+		) )->projectPage( $artwork );
+
+		// One aggregation per provider, each pointing back at the same CHO.
+		$this->assertProjectsTo( $this->oreTriG( <<<'TRIG'
+			neo-subj:s1artworkaaaaa4 a edm:ProvidedCHO ;
+				rdfs:label "The Milkmaid" .
+
+			<https://wiki.example/node/r1firstaaaaaaa2> a ore:Aggregation ;
+				edm:aggregatedCHO neo-subj:s1artworkaaaaa4 ;
+				edm:provider neo-subj:s1janeaaaaaaaa2 .
+
+			<https://wiki.example/node/r1secondaaaaaa3> a ore:Aggregation ;
+				edm:aggregatedCHO neo-subj:s1artworkaaaaa4 ;
+				edm:provider neo-subj:s1cityaaaaaaaa3 .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
 	}
 
 }
