@@ -29,8 +29,8 @@ pagination.
 Subject write endpoints require per-page `edit` permission and answer `403` when you may read the page but not edit it.
 Denial of `read` answers `404` instead, so that a page you may not read stays indistinguishable from one that is absent.
 The write endpoints keyed by page id ([Pages and Subjects](#pages-and-subjects)) return that `404` for a page you may
-not read and for a page id that does not exist; `PUT /neowiki/v0/subject/{subjectId}` returns it for a Subject on a page
-you may not read and for a Subject id that does not exist.
+not read and for a page id that does not exist; the write endpoints keyed by Subject id return it for a Subject on a
+page you may not read and for a Subject id that does not exist.
 
 The Cypher query endpoint is gated only by the `neowiki-query` right, with no per-page filtering (see
 [Query API](query-api.md)).
@@ -55,6 +55,8 @@ Read, change, and validate Subjects. New Subjects are created on a page — see
 | `GET /neowiki/v0/entity/{subjectId}` | Dereference a Subject's concept URI. `303` to the Subject's RDF (`Accept: application/trig` or `text/turtle`) or to the hosting page (otherwise). See [Dereferencing subject IRIs](../rdf/rdf-export.md#dereferencing-subject-iris). |
 | `PUT /neowiki/v0/subject/{subjectId}` | Replace a Subject's label and statements. |
 | `DELETE /neowiki/v0/subject/{subjectId}` | Delete a Subject. |
+| `PUT /neowiki/v0/subject/{subjectId}/statements/{propertyName}` | Set one Statement, leaving the Subject's label and other Statements as they are. |
+| `DELETE /neowiki/v0/subject/{subjectId}/statements/{propertyName}` | Remove one Statement. |
 | `POST /neowiki/v0/subject/validate` | Check whether a new Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject/{subjectId}/validate` | Check whether a change to a Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject-ids` | Mint a batch of unused Subject IDs to assign on create, e.g. to wire relations across an interlinked import. Body `count` (1–1000). |

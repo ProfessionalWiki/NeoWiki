@@ -171,15 +171,46 @@ The server mints the Subject ID unless you pass one:
 | `comment` | No | Edit summary. |
 
 On every endpoint that takes `statements`, an entry without `propertyType`, or whose value is empty for its type, is
-dropped without error. For schema/value validation outcomes see [Validation Codes](validation-codes.md).
+dropped without error. A value whose shape does not match its `propertyType` (see
+[Value formats](#value-formats)) is rejected with `400`. For schema/value validation outcomes see
+[Validation Codes](validation-codes.md).
 
 A relation may omit `id`; the server generates one. The Subject's `id`, `schema`, and page fields are immutable
 and ignored if sent.
 
+### Writing one Statement
+
+`PUT /rest.php/neowiki/v0/subject/{subjectId}/statements/{propertyName}` sets a single Statement, leaving the
+Subject's label and its other Statements as they are:
+
+```json
+{
+  "statement": {
+    "propertyType": "url",
+    "value": ["https://example.com"]
+  },
+  "comment": "Optional edit summary"
+}
+```
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `statement` | Yes | A [Statement object](#statement-object). `propertyType` may be omitted, and then takes the type the Subject's Schema currently gives the property; a property the Schema does not define is rejected with `400`. A value that is empty for its type removes the Statement. |
+| `comment` | No | Edit summary. |
+
+`DELETE` on the same path removes the Statement and takes only `comment`. Removing a Statement the Subject does
+not have succeeds and changes nothing.
+
+Violations in the response cover the whole Subject, not only the property written.
+
+`{propertyName}` is URL-encoded, so `Founded at` is `Founded%20at`. A property name containing `/` is not
+addressable this way on servers that reject `%2F` in paths; write those Statements with
+`PUT /subject/{subjectId}`.
+
 ### Write responses
 
-Creating and writing a Subject both answer with the Subject as persisted and the Schema it instantiates, so a
-client does not have to re-read after a write:
+Creating a Subject, writing one, and writing one of its Statements all answer with the Subject as persisted and
+the Schema it instantiates, so a client does not have to re-read after a write:
 
 ```json
 {

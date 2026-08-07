@@ -113,4 +113,22 @@ readonly class StatementList {
 		return $this->statements[$property->text] ?? null;
 	}
 
+	/**
+	 * Replaces the Statement for the property, keeping its position in the list, or appends it
+	 * when the property has none yet.
+	 */
+	public function withStatement( Statement $statement ): self {
+		$statements = $this->statements;
+		$statements[$statement->getPropertyName()->text] = $statement;
+
+		return new self( $statements );
+	}
+
+	public function withoutStatement( PropertyName $property ): self {
+		$statements = $this->statements;
+		unset( $statements[$property->text] );
+
+		return new self( $statements );
+	}
+
 }

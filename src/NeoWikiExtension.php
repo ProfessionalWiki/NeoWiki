@@ -28,6 +28,8 @@ use ProfessionalWiki\NeoWiki\Application\Actions\SetSubjectsOrdering\SetSubjects
 use ProfessionalWiki\NeoWiki\Application\Actions\SetSubjectsOrdering\SetSubjectsOrderingPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectPresenter;
+use ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement\UpdateStatementAction;
+use ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement\UpdateStatementPresenter;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
@@ -109,8 +111,10 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\MintSubjectIdsApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQueryApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\Neo4jRouteRegistration;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\RemoveStatementApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetStatementApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\StartGraphStoreRebuildApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetSubjectsOrderingApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
@@ -1374,6 +1378,21 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function newUpdateStatementAction( UpdateStatementPresenter $presenter, Authority $authority ): UpdateStatementAction {
+		return new UpdateStatementAction(
+			subjectRepository: $this->getSubjectRepository(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
+			statementListBuilder: $this->getStatementListBuilder(),
+			schemaLookup: $this->getSchemaLookup(),
+			selectStatementResolver: $this->getSelectStatementResolver(),
+			proposedSubjectValidator: $this->getProposedSubjectValidator(),
+			presenter: $presenter,
+			validationEnforced: $this->isValidationEnforced(),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+		);
+	}
+
 	private function isValidationEnforced(): bool {
 		// Behavioral config is read live from MainConfig (like Neo4jQueryLimits), so the admin's
 		// LocalSettings value applies per request and tests can override it via overrideConfigValue()
@@ -1460,6 +1479,14 @@ class NeoWikiExtension {
 
 	public static function newDeleteSubjectApi(): DeleteSubjectApi {
 		return new DeleteSubjectApi( csrfValidator: self::getCsrfValidator() );
+	}
+
+	public static function newSetStatementApi(): SetStatementApi {
+		return new SetStatementApi( csrfValidator: self::getCsrfValidator() );
+	}
+
+	public static function newRemoveStatementApi(): RemoveStatementApi {
+		return new RemoveStatementApi( csrfValidator: self::getCsrfValidator() );
 	}
 
 	public static function newSetMainSubjectApi(): SetMainSubjectApi {
