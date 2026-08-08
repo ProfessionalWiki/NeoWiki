@@ -49,9 +49,8 @@ $(error Unknown services '$(UNKNOWN_SERVICES)'. Valid: $(subst $(space),$(comma)
 endif
 endif
 
-# The union drives every compose invocation via the global `export` above. Defined ahead of the
-# derived values below so they can all filter against this one set instead of open-coding
-# $(SELECTED_SERVICES) $(USER_PROFILES) at each site.
+# The union drives every compose invocation via the global `export` above. Defined before the
+# derived values below, which filter against it.
 ACTIVE_PROFILES := $(sort $(USER_PROFILES) $(SELECTED_SERVICES))
 COMPOSE_PROFILES := $(subst $(space),$(comma),$(strip $(ACTIVE_PROFILES)))
 

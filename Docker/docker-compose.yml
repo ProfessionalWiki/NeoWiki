@@ -24,9 +24,8 @@ services:
       # Endpoint of the qlever service below; a non-empty value is what makes
       # SettingsTemplate.php configure $wgNeoWikiSparqlStores. The bundled Makefile
       # owns the value: the qlever endpoint when the service is selected, empty
-      # ("disabled") when deselected. Running this file without the Makefile leaves
-      # it unset, which matches the qlever profile not being active: no store runs
-      # and none is configured.
+      # ("disabled") when deselected. Without the Makefile it is unset and no
+      # store is configured.
       - QLEVER_URL
       # Bearer token the wiki sends to authorize SPARQL updates. Defaulted here instead of being
       # required from Docker/.env, so a .env written before the variable existed still works; the
@@ -77,13 +76,10 @@ services:
 
   # SPARQL 1.1 graph store (QLever) for the SPARQL projection plugin (#586), as a working example
   # of NeoWiki's SPARQL projection: every page save and RebuildGraphDatabases.php also projects the
-  # page's RDF here as named graphs, and the query surfaces read from it. Unconditional here, so raw
-  # `docker compose` invocations (and the `--profile server` demo deployment) always get it. The dev
-  # overlay (docker-compose.dev.yml) adds a `qlever` profile to this same service, gating it behind
-  # `services=` there — see the comment on that override. The wiki is pointed at it by QLEVER_URL
-  # above; the bundled Makefile clears that variable when the dev-overlay profile is deselected, so a
-  # deselected wiki does not try to reach a store that is not running. NeoWiki reaches it in-network
-  # as http://qlever:7019/; a host port for manual inspection is opt-in via docker-compose.tools.yml.
+  # page's RDF here as named graphs, and the query surfaces read from it. The wiki is pointed at it
+  # by QLEVER_URL above. Unconditional in this file; the dev overlay gates it behind a `qlever`
+  # profile for `services=` selection — see the comment there. NeoWiki reaches it in-network as
+  # http://qlever:7019/; a host port for manual inspection is opt-in via docker-compose.tools.yml.
   qlever:
     image: docker.io/adfreiburg/qlever:latest
     restart: unless-stopped

@@ -50,12 +50,10 @@ services:
     command: --innodb-buffer-pool-size=128M
     mem_limit: 512m
 
-  # `qlever` itself is defined in the base file (docker-compose.yml) and runs unconditionally
-  # there, so the demo stack and raw `docker compose` invocations always get it. Only the dev
-  # stack supports deselecting optional services via `services=`, so this overlay adds the
-  # `qlever` profile here rather than in the base file — the bundled Makefile enables it by
-  # default (see the Optional services comment there), so `make dev` keeps QLever on unless
-  # `services=` deselects it.
+  # `qlever` is defined in the base file (docker-compose.yml) and runs unconditionally there, so
+  # the demo stack and raw `docker compose` invocations always get it. Only the dev stack supports
+  # `services=` selection, so the profile gating it goes in this overlay, not the base file. The
+  # Makefile selects it by default, so `make dev` keeps QLever on unless `services=` deselects it.
   qlever:
     profiles:
       - qlever

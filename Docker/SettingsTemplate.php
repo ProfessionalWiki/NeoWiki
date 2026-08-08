@@ -229,16 +229,15 @@ $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://' . getenv( 'NEO4J_USERNAME' ) . ':' .
 $wgNeoWikiNeo4jInternalReadUrl = 'bolt://' . getenv( 'NEO4J_USERNAME_READ' ) . ':' . getenv( 'NEO4J_PASSWORD_READ' ) . '@neo:7687';
 
 // SPARQL graph store (QLever) for the SPARQL projection plugin (#586). Both the demo stack and the
-// dev stack run the qlever service defined in docker-compose.yml by default and are pointed at its
-// endpoint below via QLEVER_URL. A non-empty value is the gate: an image started outside those stacks
-// gets QLEVER_URL unset rather than a configuration pointing at a host that does not exist, and so does
-// CI, whose docker-compose.ci.yml replaces that file and sets neither variable; the dev stack's bundled
-// Makefile sets QLEVER_URL to the empty string instead when its `services=` selection deselects qlever,
-// which disables this configuration the same way being unset does. The access token is an ordinary
-// optional credential, defaulted in the compose file so a Docker/.env written before it existed still
-// yields a working store. Skipped under PHPUnit so integration tests never post updates here — they
-// configure their own stores with mocked HTTP via overrideConfigValue(), so the default must stay empty
-// during tests.
+// dev stack run the qlever service defined in docker-compose.yml by default and point the wiki at
+// its endpoint via QLEVER_URL. A non-empty value is the gate: an image started outside those stacks
+// gets QLEVER_URL unset rather than a configuration pointing at a host that does not exist, and so
+// does CI, whose docker-compose.ci.yml replaces that file and sets neither variable. The dev stack's
+// Makefile sets it to the empty string when `services=` deselects qlever, which disables the
+// configuration the same way. The access token is an ordinary optional credential, defaulted in the
+// compose file so a Docker/.env written before it existed still yields a working store. Skipped
+// under PHPUnit so integration tests never post updates here — they configure their own stores with
+// mocked HTTP via overrideConfigValue(), so the default must stay empty during tests.
 //
 // Two entries, one endpoint: the native projection and the EDM projection of the demo data's
 // Mapping:EDM page are kept in the same QLever index as sibling projections. Each lands in its own
