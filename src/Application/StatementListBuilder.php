@@ -110,6 +110,8 @@ readonly class StatementListBuilder {
 		foreach ( $json as $relation ) {
 			// Skipping an entry that is not a relation object would turn a list of bare target
 			// ids into an empty value, which the write paths read as the Statement being absent.
+			// Raised as a TypeError so it reaches the caller as the same bad-value report the
+			// constructors below produce for every other misshapen relation.
 			if ( !is_array( $relation ) ) {
 				throw new TypeError( 'Relation entry must be an object' );
 			}
