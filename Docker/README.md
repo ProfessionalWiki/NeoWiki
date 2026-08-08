@@ -64,9 +64,9 @@ Rerunning `make dev` with a different selection reconfigures a running stack: ne
 stop (their volumes survive for reselection) and the wiki's config follows, so a deselected
 store or mail host is never configured. Details:
 
-- Without `node`, `make dev` builds the frontend bundle once in a throwaway container (`dist/` is
-  gitignored), so the UI works; the `ts-*` targets start the watcher on demand if you begin TS work.
-  `make ts-build` refreshes a bundle left stale by a later `git pull`.
+- Without `node`, `make dev` builds the frontend bundle once in a throwaway container, so the UI
+  works; the `ts-*` targets start the watcher on demand. `make ts-build` refreshes a bundle left
+  stale by a later `git pull`.
 - The test-only backends (`test_neo`, `test_qlever`, `test_oxigraph`) are independent of this selection:
   `make phpunit` starts them on demand, and `make test-backends-stop` stops them again.
 - Setting `COMPOSE_PROFILES` directly still works and is unioned with the selection; the profile names
@@ -79,9 +79,6 @@ SPARQL 1.1 graph store by default as a working example of NeoWiki's SPARQL proje
 (issue #586). The bundled Makefile passes the store's endpoint to the wiki as `QLEVER_URL`.
 `SettingsTemplate.php` points `$wgNeoWikiSparqlStores` at that endpoint, so every page save and
 `RebuildGraphDatabases.php` also projects the page's RDF into QLever as named graphs.
-
-On the dev stack, you can deselect QLever with `services=` (see [Optional services](#optional-services)), which
-leaves `QLEVER_URL` empty.
 
 Two entries point at that one endpoint: the `native` projection and the `EDM` one defined
 by the demo data's `Mapping:EDM` page. Each writes its own per-page named graphs, so one
@@ -143,9 +140,8 @@ default, so it sits behind the `oxigraph` compose profile and neither stack star
 COMPOSE_PROFILES=oxigraph make dev
 ```
 
-This only holds for that invocation: `COMPOSE_PROFILES` is not persisted, so a later plain `make dev`
-deselects Oxigraph again and stops it (its data volume survives for reselection). Pass
-`COMPOSE_PROFILES=oxigraph` again each time you want it running.
+`COMPOSE_PROFILES` is not persisted: a later plain `make dev` deselects Oxigraph again and stops it,
+though its data volume survives.
 
 `SettingsTemplate.php` points `$wgNeoWikiSparqlStores` at `QLEVER_URL`, so nothing reaches Oxigraph until
 you repoint it: `updateUrl` `http://oxigraph:7878/update`, `queryUrl` `http://oxigraph:7878/query`. On the
@@ -202,16 +198,14 @@ report the backends as missing instead of starting them.
   production `php.ini`; intermediate, no `LocalSettings.php`), `final-mw` (the prebuilt
   demo image published as `ghcr.io/professionalwiki/neowiki:latest`, which bakes in
   `LocalSettings.php`), and `dev-mw` (the dev image with mounted NeoWiki source).
-- `docker-compose.yml` — the demo stack's services `mediawiki`, `db`, `neo` and `qlever` (the
-  SPARQL store, see above, unconditional so raw `docker compose` and the `--profile server`
-  deployment always get it) plus the profile-gated `caddy` (the `server` profile, for HTTPS
-  hosting) and `oxigraph` (the `oxigraph` profile, the second SPARQL store, see above). The dev
-  overlay builds on this file, so these services are in both stacks.
+- `docker-compose.yml` — the demo stack's services (`mediawiki`, `db`, `neo`, `qlever`
+  — SPARQL store, see above) plus the profile-gated `caddy` (the `server` profile, for
+  HTTPS hosting) and `oxigraph` (the `oxigraph` profile, the second SPARQL store, see
+  above). The dev overlay builds on this file, so these services are in both stacks.
 - `docker-compose.dev.yml` — dev overlay; switches `mediawiki` to the dev image, bind-mounts the
-  NeoWiki source, sets `MW_MODE=dev`, and adds a `qlever` profile onto that base-file service plus
-  the dev-only sidecars `node` and `mailcatcher`, each behind its own profile so `services=` (see
-  [Optional services](#optional-services)) can select or deselect them, plus `test_neo`,
-  `test_qlever` and `test_oxigraph` behind the `test` profile.
+  NeoWiki source, sets `MW_MODE=dev`, adds the dev-only sidecars `node` and `mailcatcher`, and gates
+  them plus `qlever` behind their `services=` profiles (see [Optional services](#optional-services));
+  `test_neo`, `test_qlever` and `test_oxigraph` sit behind the `test` profile.
 - `docker-compose.tools.yml` — opt-in overlay that exposes Neo4j, QLever and Oxigraph to the
   host, usable with either stack.
 - `SettingsTemplate.php` — `LocalSettings.php` that branches on `MW_MODE`.
