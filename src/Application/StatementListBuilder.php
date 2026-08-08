@@ -45,6 +45,11 @@ readonly class StatementListBuilder {
 			}
 
 			$propertyType = $entry['propertyType'];
+
+			if ( !is_string( $propertyType ) ) {
+				throw new InvalidArgumentException( "Property type of \"{$propertyName}\" must be a string" );
+			}
+
 			$value = $this->deserializeValue( (string)$propertyName, $propertyType, $entry['value'] ?? null );
 
 			if ( $value->isEmpty() ) {

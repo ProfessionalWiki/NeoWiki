@@ -113,6 +113,25 @@ class StatementListBuilderTest extends TestCase {
 	}
 
 	/**
+	 * @dataProvider nonStringPropertyTypeProvider
+	 */
+	public function testNonStringPropertyTypeIsRejected( mixed $propertyType ): void {
+		$builder = $this->newBuilder();
+
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Mistyped' );
+
+		$builder->build( [ 'Mistyped' => [ 'propertyType' => $propertyType, 'value' => 'yes' ] ] );
+	}
+
+	public static function nonStringPropertyTypeProvider(): iterable {
+		yield 'number' => [ 2019 ];
+		yield 'boolean' => [ true ];
+		yield 'array' => [ [ 'text' ] ];
+		yield 'object' => [ [ 'name' => 'text' ] ];
+	}
+
+	/**
 	 * The legacy `type` key is tolerated when reading stored revisions, never on API input:
 	 * accepting both here would restore the ambiguity the rename removed.
 	 */

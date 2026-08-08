@@ -260,6 +260,30 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertNull( $this->getStoredValue( 'Founded at' ) );
 	}
 
+	/**
+	 * The body validator types `statement` but not the keys inside it, so a non-string
+	 * `propertyType` reaches the action unchecked.
+	 *
+	 * @dataProvider nonStringPropertyTypeProvider
+	 */
+	public function testNonStringPropertyTypeReturns400( mixed $propertyType ): void {
+		$this->createSubjectPage();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Website', [ 'statement' => [ 'propertyType' => $propertyType, 'value' => [ 'https://pro.wiki' ] ] ] )
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertNull( $this->getStoredValue( 'Website' ) );
+	}
+
+	public static function nonStringPropertyTypeProvider(): iterable {
+		yield 'number' => [ 2019 ];
+		yield 'boolean' => [ true ];
+		yield 'array' => [ [ 'url' ] ];
+	}
+
 	public function testStatementWithoutAValueReturns400(): void {
 		$this->createSubjectPage();
 

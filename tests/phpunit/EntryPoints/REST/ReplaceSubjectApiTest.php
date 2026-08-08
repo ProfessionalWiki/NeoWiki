@@ -456,6 +456,21 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $this->getSubjectFromRepository( 'sTestSA11111111' )->getStatements()->asArray() );
 	}
 
+	public function testNonStringPropertyTypeReturns400(): void {
+		$this->createPages();
+
+		$body = $this->validBody();
+		$body['statements'] = [ 'Founded at' => [ 'propertyType' => [ 'number' ], 'value' => 2019 ] ];
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestData( $body )
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertSame( [], $this->getSubjectFromRepository( 'sTestSA11111111' )->getStatements()->asArray() );
+	}
+
 	public function testReadableButNotEditablePageReturns403(): void {
 		$this->createPages();
 
