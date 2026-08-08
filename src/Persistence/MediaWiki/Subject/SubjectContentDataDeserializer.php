@@ -67,7 +67,8 @@ class SubjectContentDataDeserializer {
 
 		foreach ( $jsonArray['statements'] ?? [] as $propertyName => $value ) {
 			if ( $value !== null ) {
-				$statements[] = $this->statementDeserializer->deserialize( $propertyName, $value );
+				// A property named like a decimal integer comes back from json_decode as an int key.
+				$statements[] = $this->statementDeserializer->deserialize( (string)$propertyName, $value );
 			}
 		}
 

@@ -4,8 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
+use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -201,6 +203,48 @@ class RemoveStatementApiTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertSame( 200, $response->getStatusCode() );
+	}
+
+	public function testCommentBecomesTheEditSummary(): void {
+		$this->createSubjectPage();
+
+		$this->executeHandler(
+			$this->newRemoveStatementApi(),
+			$this->newRequest( 'Website', [ 'comment' => 'My edit summary' ] )
+		);
+
+		$this->assertSame(
+			'My edit summary',
+			$this->latestRevisionOfSubjectPage()->getComment()?->text
+		);
+	}
+
+	private function latestRevisionOfSubjectPage(): RevisionRecord {
+		$revision = $this->getServiceContainer()->getRevisionLookup()->getRevisionByTitle(
+			Title::newFromText( 'RemoveStatementApiTest' )
+		);
+
+		$this->assertNotNull( $revision );
+		return $revision;
+	}
+
+	public function testUpdatedResponseOmitsTheSchemaWhenTheSchemaIsMissing(): void {
+		$this->createSubjectPage();
+		$this->deletePage(
+			$this->getServiceContainer()->getWikiPageFactory()->newFromTitle(
+				Title::newFromText( 'RemoveStatementSchema', NeoWikiExtension::NS_SCHEMA )
+			)
+		);
+
+		$response = $this->executeHandler(
+			$this->newRemoveStatementApi(),
+			$this->newRequest( 'Website' )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertArrayHasKey( 'subject', $responseData );
+		$this->assertArrayNotHasKey( 'schema', $responseData );
 	}
 
 	public function testEnforcementBlocksRemovingARequiredStatement(): void {
