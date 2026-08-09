@@ -46,8 +46,10 @@ unpadded.
 | Interactive save | 40 ms | 44–54 ms | ~1.2 s |
 
 QLever's per-update cost grows as the store fills: within one such import the rate fell from 102 to
-20 Subjects/second and had not levelled off, so a fuller store is slower still. Oxigraph declined about 1.2× over
-the same growth. Both engines end up holding the identical projection, triple for triple.
+20 Subjects/second and had not levelled off, so a fuller store is slower still. That is why QLever's rebuild runs
+slower than its import — the import's mean includes the near-empty start, while the rebuild writes into the
+already-full store throughout. Oxigraph declined about 1.2× over the same growth. Both engines end up holding the
+identical projection, triple for triple.
 
 For an actively edited wiki, project into Oxigraph: at the measured size it meets
 [ADR 29](../adr/029-scalability-targets.md)'s import and interactive-save targets with room and misses its rebuild
