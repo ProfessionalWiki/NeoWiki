@@ -102,12 +102,8 @@ neo-subj:s0gje3k4m8n2p1q  neo-prop:Website  <https://example.com> ;
 
 #### Value type mapping
 
-| NeoWiki Value Type | RDF Datatype | Notes |
-|--------------------|-------------|-------|
-| `text` | `xsd:string` | Each part is a separate triple |
-| `number` | `xsd:decimal` | Or `xsd:integer` when the value has no fractional part |
-| `boolean` | `xsd:boolean` | |
-| `url` | IRI object (`<…>`), or `xsd:anyURI` when the value is not a valid absolute IRI | Each part is a separate triple |
+How each Value Type is represented in RDF — and how extensions map their own property types — is specified in the
+[RDF Export reference](../rdf/rdf-export.md).
 
 ### Relations
 
@@ -231,6 +227,9 @@ DROP SILENT GRAPH <neo-graph:42>
 
 `DROP SILENT` avoids errors when the graph does not exist (e.g., first save of a new page).
 
+The measured cost of this write path, and the targets it is held to, are in the
+[performance reference](../operations/performance.md) and [ADR 29](../adr/029-scalability-targets.md).
+
 ## What This Does Not Cover
 
 - **Ontology mapping.** The [Global Properties](GlobalProperties.md) document concluded that ontology alignment
@@ -238,7 +237,9 @@ DROP SILENT GRAPH <neo-graph:42>
   model. That mapping is designed in [Ontology Mapping](OntologyMapping.md). The projection described here emits
   NeoWiki-native predicates; an ontology mapping instead projects the data into standard-ontology terms. Ontology
   mappings need to be quite expressive: CIDOC-CRM alignment isn't just predicate renaming — it requires generating
-  intermediate nodes that don't exist in NeoWiki's data (worked example under Q4 below).
+  intermediate nodes that don't exist in NeoWiki's data (worked example under Q4 below). That node synthesis has
+  shipped ([#1229](https://github.com/ProfessionalWiki/NeoWiki/pull/1229),
+  [#1263](https://github.com/ProfessionalWiki/NeoWiki/pull/1263)).
   At the ECHOLOT meeting in Bilbao (March 2026), the consortium agreed that wiki admins should be able to define
   mappings between ontologies they care about and the NeoWiki Schemas of their wiki. This confirms the
   separate-mapping approach and means several open questions below (Q1, Q2, Q4) are less critical for the native
@@ -251,9 +252,10 @@ DROP SILENT GRAPH <neo-graph:42>
   NeoWiki Subjects is a T3.2/T4.1 concern and has its own challenges (mapping external ontologies to NeoWiki
   Schemas).
 - **RDF-star / RDF 1.2.** The grant (T3.2) and the D2.1 system spec refer to "native RDF/RDF*" import/export. The
-  native projection deliberately targets standard RDF 1.1 (Relation reification, see Design Principle 3), and common
-  target stores such as QLever do not support RDF-star. RDF-star is out of scope for now; it would only be
-  revisited given a concrete need, and then at the import/export serialization layer rather than the triple store.
+  native projection deliberately targets standard RDF 1.1 (Relation reification, see Design Principle 3), and QLever,
+  the primary target store, does not support RDF-star (Oxigraph has preliminary RDF 1.2 support). RDF-star is out of
+  scope for now; it would only be revisited given a concrete need, and then at the import/export serialization layer
+  rather than the triple store.
 
 ## Open Questions
 
@@ -331,6 +333,9 @@ there a convention in the ECHOLOT/ECCCH context for how services should mint URI
 *Feedback: There is a URI policy being discussed within ECCCH. Aligning with it would be beneficial. To be
 followed up on.*
 
+*As built: the base URI is configurable — `$wgNeoWikiRdfBaseUri`, defaulting to the wiki's canonical URL
+(`$wgCanonicalServer`); see the [RDF Export reference](../rdf/rdf-export.md).*
+
 **Q7: URI design for Properties.** Property Names can contain spaces and special characters (e.g., "Founded at",
 "Has author"). What's the convention — URL-encode them (`Has%20author`), replace spaces with underscores
 (`Has_author`), or something else?
@@ -364,5 +369,6 @@ ordering is real data, model it explicitly so it stays recoverable in the export
 Property Definition (as a property with domain/range)? This would make the RDF self-describing. Tentative answer:
 yes, but as a separate enhancement, not blocking the initial projection. Partner demand recorded (takin, 2026-07-03):
 an RDFS export of local Schemas is wanted as an input for authoring ontology mappings — a wiki's Schemas are
-effectively its own ontology, and the native projection should be able to say so in RDF. See also the generated shape
-exports in [ShapeLanguages.md](ShapeLanguages.md).
+effectively its own ontology, and the native projection should be able to say so in RDF. Tracked in
+[#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163). See also the generated shape exports in
+[ShapeLanguages.md](ShapeLanguages.md).

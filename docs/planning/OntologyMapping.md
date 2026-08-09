@@ -1,11 +1,11 @@
 # Ontology Mapping
 
-This is an early design document for stakeholder feedback before we start implementation and record decisions via a
-new ADR.
+A design document whose implementation has since shipped (see the as-built note below). The open questions at the end
+still stand, and the decisions still need consolidating into an ADR.
 
 Started 2026-06-24 by Jeroen De Dauw with help from Claude Opus 4.8.
 
-Status: Draft strawman, for discussion with ECHOLOT partners (T2.3 and T3.x).
+Status: Implemented; open questions still under discussion with ECHOLOT partners (T2.3 and T3.x).
 
 Discussion: [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996).
 
@@ -179,8 +179,8 @@ back to the wiki (both below).
 
 ## Strawman model
 
-A concrete proposal to react to. Details are deliberately tentative; the open questions below are where partner input is
-needed.
+*Superseded by the shipped format ([reference](../rdf/ontology-mapping.md)), and kept because the open questions
+below still refer to it.*
 
 ### The Mapping object
 
@@ -252,7 +252,8 @@ export projection does not have:
 
 - **Reconciliation / entity linking** of incoming IRIs to existing Subjects — a WP4 concern (T4.2), not the mapping
   itself.
-- **Batch ID-minting** for many interlinked incoming Subjects (the current API mints one Subject at a time).
+- **Batch ID-minting** for many interlinked incoming Subjects — shipped
+  ([#1100](https://github.com/ProfessionalWiki/NeoWiki/issues/1100)).
 - **Target-Schema selection** for incoming data.
 
 So a Mapping should aim to be a bidirectional *definition*, while import and export are separate *executors* and the
