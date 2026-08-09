@@ -29,8 +29,8 @@ Discussion: [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996).
 - [Q5 — Validation via SHACL](#q5-validation-via-shacl): which shapes, and where findings surface for curators.
 - [Q7 — Packaging and distribution](#q7-packaging-and-distribution): bundles across wikis and a farm.
 - [Q8 — Multilinguality](#q8-multilinguality): the cohesive pass across NeoWiki's surfaces.
-- [Q10 — Flat vs nested native modelling](#q10-flat-vs-nested-native-modelling): the modelling fork, settled outside
-  this document.
+- [Q10 — Flat vs nested native modelling](#q10-flat-vs-nested-native-modelling): the modelling fork, to be settled
+  outside this document.
 
 Everything else the document asked has been answered by the implementation — see [Decided](#decided).
 
@@ -129,7 +129,7 @@ should be and where the burden sits:
   editing UI, which must project the nesting down into an accessible form — what Arches and ResearchSpace do. George
   Bruseker leans (b) if the UI can project down.
 
-The fork is settled outside this document — it is a schema-model and editing-UX decision, exercised through the shared
+The fork is to be settled outside this document — it is a schema-model and editing-UX decision, exercised through the shared
 toy model ([Neutral Person to Many Standards](https://docs.google.com/spreadsheets/d/1j2_7j8RCUJrrMsfZaXtqHQOwp9cN9F8HIBtd3pfsToU/edit))
 that expresses one person model across several ontologies. The same toy model doubles as the first end-to-end
 exercise of this document's approach: implement its neutral person schema in NeoWiki, define a Mapping for it, and
@@ -282,8 +282,8 @@ cohesive pass across surfaces is wanted rather than per-surface answers.
 
 The [fork above](#flat-vs-nested-native-modelling-open-fork): should case-study data live in flat Schemas with the
 mapping synthesizing intermediate nodes, or in nested Schemas with the editing UI projecting the nesting down?
-Settled through the toy model, outside this document. If (b) wins: what does nesting look like in the schema format,
-and how much of the synthesis machinery stops being exercised in practice?
+To be settled through the toy model, outside this document. If (b) wins: what does nesting look like in the schema
+format, and how much of the synthesis machinery stops being exercised in practice?
 
 *Update (2026-07): the fork no longer gates the transformation machinery — both directions are needed however it
 resolves, since sibling targets disagree about shape and at least one mismatches whichever style the data is
