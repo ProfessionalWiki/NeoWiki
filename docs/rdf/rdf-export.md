@@ -7,8 +7,8 @@ order: 1
 NeoWiki projects its data to RDF in its own vocabulary — the **native projection**. Each wiki page becomes a named
 graph holding its page metadata and its Subjects (one RDF resource each) with their Statements and Relations.
 
-The model is specified in [NativeRdfProjection.md](../planning/NativeRdfProjection.md); this page is the as-built
-reference for the export surface.
+This page is the reference for what NeoWiki emits. Why the projection is shaped this way, and what is still open
+about it, is in [NativeRdfProjection.md](../planning/NativeRdfProjection.md).
 
 For an end-to-end example comparing the native and ontology-mapped output, see the
 [Person-to-EDM worked example](person-to-edm.md).
@@ -59,6 +59,39 @@ registered mapper — including an unregistered type — is omitted from the pro
 
 A Subject whose Schema cannot be loaded (for example, its Schema page was deleted) is omitted from the projection; a
 warning is logged for each.
+
+## Projected triples
+
+A Subject becomes one RDF resource: its `rdf:type` is its Schema's `neo-schema:` class, and its label is always
+emitted as `rdfs:label`. Each Statement adds triples whose predicate is the property's `neo-prop:` IRI, one per part
+of a multi-part Value.
+
+A Relation is emitted twice, so that a simple query never has to navigate reification:
+
+| Layer | Triples |
+|---|---|
+| Direct | `neo-subj:<source> neo-prop:<RelationType> neo-subj:<target>` |
+| Reified | `neo-rel:<relationId> a neo:Relation`, carrying `neo:source`, `neo:target`, `neo:relationType`, and each scalar Relation property as `neo-prop:<key>` |
+
+Both are always present, including for a Relation carrying no properties: the reified node is what preserves the
+Relation ID. The direct predicate is the **Relation type** declared in the Schema, which need not match the property
+name, and `neo:relationType`'s object is that same predicate IRI. Non-scalar Relation property values are dropped.
+
+Page metadata describes the `neo-page:` resource, in the same named graph as the page's Subjects:
+
+| Predicate | Emitted |
+|---|---|
+| `rdf:type neo:Page` | always |
+| `neo:pageName` | when the name is not empty |
+| `dcterms:created`, `dcterms:modified` | as `xsd:dateTime`, when the stored timestamp parses |
+| `neo:lastEditor` | when not empty |
+| `neo:category` | one per category |
+| `neo:mainSubject` | when a Main Subject is set and is itself projected |
+| `neo:hasSubject` | one per projected Subject, the Main Subject included |
+
+That list is exhaustive. Page Properties contributed by extensions through
+[`PagePropertyProvider`](../extending/extending.md#page-property-providers) reach the Neo4j projection only, and
+nothing carries a page's namespace or wiki id.
 
 ## Endpoint
 

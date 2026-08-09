@@ -42,7 +42,7 @@ and the editing UI renders what the server returns. For RDF, the wiki's data is 
 ## Why not as the internal format or engine
 
 [ADR 9](../adr/009-move-away-from-json-schema.md) already records the short form of this decision. Since the project
-has changed around it — validation moved to the backend, RDF projections and ontology mappings are being designed —
+has changed around it — validation moved to the backend, RDF projections and ontology mappings were being designed —
 we revisited it. The conclusion stands, for these reasons:
 
 1. **Our data model is not an RDF graph.** Shape engines validate RDF. Using one internally would put a
