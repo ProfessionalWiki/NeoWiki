@@ -15,5 +15,8 @@
 		<!-- Live Oxigraph store for the same system test, run a second time against a second engine.
 		     Oxigraph has no authentication, so there is no token to set. -->
 		<env name="OXIGRAPH_TEST_BASE_URL" value="http://test_oxigraph:7878" />
+		<!-- FUSEKI_TEST_BASE_URL is deliberately absent. The stacks bring up the two stores above, so a
+		     test without one is a broken stack; Fuseki is a conformance target only CI starts, so the
+		     suite naming it skips here instead. QueryFusekiEndToEndTest's docblock has the opt-in. -->
 	</php>
 </phpunit>

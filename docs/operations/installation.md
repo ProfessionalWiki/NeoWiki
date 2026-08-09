@@ -218,8 +218,8 @@ content model, validated, or read.
 
 ## Optional: SPARQL graph stores
 
-Alongside Neo4j, NeoWiki can keep one or more SPARQL 1.1 graph stores in sync with page changes. This
-works with QLever, Oxigraph and any other SPARQL 1.1 store. Each configured store receives the NeoWiki data as RDF:
+Alongside Neo4j, NeoWiki can keep one or more SPARQL 1.1 graph stores in sync with page changes. This works with
+QLever, Oxigraph, Fuseki and any other SPARQL 1.1 store. Each configured store receives the NeoWiki data as RDF:
 every page becomes a named graph, replaced on each edit and dropped on deletion.
 
 A SPARQL store does not yet replace Neo4j: NeoWiki's interactive features (the Subject editing UIs, views, and value
@@ -271,6 +271,24 @@ $wgNeoWikiSparqlStores = [
 Oxigraph has no authentication and ignores `accessToken`: it accepts every request, updates included, from anyone who
 can reach it. Put it behind network isolation or an authenticating reverse proxy, and see
 [Restricting federation](#restricting-federation).
+
+### Fuseki
+
+Fuseki serves each dataset under its own path, queries on `/query` and updates on `/update` below it:
+
+```php
+$wgNeoWikiSparqlStores = [
+	[
+		'updateUrl' => 'https://fuseki.example/ds/update',
+		'queryUrl' => 'https://fuseki.example/ds/query',
+		'projection' => 'native',
+	],
+];
+```
+
+A dataset's endpoints accept every request, updates included, from anyone who can reach them: Fuseki's shipped
+configuration protects its admin interface, not its data. Put it behind network isolation or an authenticating
+reverse proxy, and see [Restricting federation](#restricting-federation).
 
 ### Several projections in one store
 
