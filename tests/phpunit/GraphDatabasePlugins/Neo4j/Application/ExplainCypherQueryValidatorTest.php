@@ -72,6 +72,10 @@ class ExplainCypherQueryValidatorTest extends NeoWikiIntegrationTestCase {
 		$this->assertFalse( $this->validator->queryIsAllowed( 'CREATE (n:Test) RETURN n' ) );
 	}
 
+	public function testInsertIsNotAllowed(): void {
+		$this->assertFalse( $this->validator->queryIsAllowed( 'INSERT (n:Test {name: "x"}) RETURN n' ) );
+	}
+
 	public function testSetPropertyIsNotAllowed(): void {
 		$this->assertFalse( $this->validator->queryIsAllowed( 'MATCH (n) SET n.x = 1 RETURN n' ) );
 	}

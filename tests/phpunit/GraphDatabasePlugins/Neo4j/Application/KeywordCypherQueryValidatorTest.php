@@ -57,6 +57,7 @@ class KeywordCypherQueryValidatorTest extends TestCase {
 	public static function writeOperationProvider(): array {
 		return [
 			[ 'CREATE' ],
+			[ 'INSERT' ],
 			[ 'SET' ],
 			[ 'DELETE' ],
 			[ 'REMOVE' ],
@@ -151,6 +152,11 @@ class KeywordCypherQueryValidatorTest extends TestCase {
 		yield 'CREATE with MATCH' => [
 			"MATCH (a:Person) CREATE (b:Person)-[:KNOWS]->(a)",
 			'Should reject CREATE after MATCH'
+		];
+
+		yield 'Simple INSERT' => [
+			"INSERT (n:Person {name: 'Alice'})",
+			'Should reject INSERT, the CREATE synonym'
 		];
 
 		yield 'Simple SET' => [

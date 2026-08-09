@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application;
 class KeywordCypherQueryValidator implements CypherQueryValidator {
 
 	private const array WRITE_KEYWORDS = [
-		'CREATE', 'SET', 'DELETE', 'REMOVE', 'MERGE', 'DROP',
+		'CREATE', 'INSERT', 'SET', 'DELETE', 'REMOVE', 'MERGE', 'DROP',
 		'CALL', 'LOAD', 'FOREACH',
 		'GRANT', 'DENY', 'REVOKE',
 		'SHOW',
