@@ -15,11 +15,11 @@ namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Sparql\Integration
  * server, so `make phpunit` skips it and CI runs it. Its siblings guard stores the Docker stacks bring
  * up, where an unreachable store is a broken stack rather than an absent extra.
  *
- * To run it here, put a Fuseki on the dev stack's network — `<stack project>_default`, so
- * `neowiki-neowiki_default` for the main checkout:
+ * To run it here, build Fuseki's container image — Apache publishes none, only a build kit
+ * (https://jena.apache.org/documentation/fuseki2/fuseki-docker.html) — and put it on the dev stack's
+ * network (`<stack project>_default`, so `neowiki-neowiki_default` for the main checkout):
  *
- *     docker run --rm --name test_fuseki --network neowiki-neowiki_default \
- *         -e JAVA_OPTIONS=-Xmx512m docker.io/atomgraph/fuseki:6.1.0 --mem /ds
+ *     docker run --rm --name test_fuseki --network neowiki-neowiki_default <your-image> --mem /ds
  *
  * then, from a shell in the mediawiki container (`make bash`):
  *
