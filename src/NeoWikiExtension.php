@@ -53,6 +53,12 @@ use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubjectUpdate\ValidateS
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
 use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
+use ProfessionalWiki\NeoWiki\Application\EditNotice\InterfaceMessageNoticeProvider;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetSubjectEditNotices\GetSubjectEditNoticesPresenter;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetSubjectEditNotices\GetSubjectEditNoticesQuery;
+use ProfessionalWiki\NeoWiki\Domain\EditNotice\SubjectEditNoticeProviderRegistry;
+use ProfessionalWiki\NeoWiki\Infrastructure\MediaWikiEditNoticeMessageRenderer;
+use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedSubjectEditNoticeContextFactory;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabasePlugin;
@@ -99,6 +105,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\CancelGraphStoreRebuildApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectEditNoticesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetLayoutApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetGraphStoresApi;
@@ -196,6 +203,7 @@ class NeoWikiExtension {
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
+	private SubjectEditNoticeProviderRegistry $subjectEditNoticeProviderRegistry;
 	private Neo4jValueBuilderRegistry $valueBuilderRegistry;
 	private RdfValueMapperRegistry $rdfValueMapperRegistry;
 	private bool $extensionsRegistered = false;
@@ -296,12 +304,35 @@ class NeoWikiExtension {
 				$this->getPagePropertyProviderRegistry(),
 				$this->getGraphDatabasePluginRegistry(),
 				$this->getRdfValueMapperRegistry(),
+				$this->getSubjectEditNoticeProviderRegistry(),
 			) ]
 		);
 	}
 
 	public function newSubjectContentDataDeserializer(): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer( new StatementDeserializer( $this->getPropertyTypeLookup() ) );
+	}
+
+	/**
+	 * Seeded with the interface-message source, so admin-written notices come before any an
+	 * extension contributes.
+	 */
+	public function getSubjectEditNoticeProviderRegistry(): SubjectEditNoticeProviderRegistry {
+		if ( !isset( $this->subjectEditNoticeProviderRegistry ) ) {
+			$this->subjectEditNoticeProviderRegistry = new SubjectEditNoticeProviderRegistry();
+			$this->subjectEditNoticeProviderRegistry->addProvider(
+				new InterfaceMessageNoticeProvider(
+					new MediaWikiEditNoticeMessageRenderer(
+						RequestContext::getMain(),
+						MediaWikiServices::getInstance()->getTitleFactory()
+					)
+				)
+			);
+		}
+
+		$this->ensureExtensionsRegistered();
+
+		return $this->subjectEditNoticeProviderRegistry;
 	}
 
 	public function getPagePropertyProviderRegistry(): PagePropertyProviderRegistry {
@@ -1328,6 +1359,20 @@ class NeoWikiExtension {
 		return $db;
 	}
 
+	public function newGetSubjectEditNoticesQuery(
+		GetSubjectEditNoticesPresenter $presenter,
+		Authority $authority
+	): GetSubjectEditNoticesQuery {
+		return new GetSubjectEditNoticesQuery(
+			presenter: $presenter,
+			registry: $this->getSubjectEditNoticeProviderRegistry(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			contextFactory: new TitleBasedSubjectEditNoticeContextFactory(
+				MediaWikiServices::getInstance()->getTitleFactory()
+			),
+		);
+	}
+
 	public function newGetPageSubjectsQuery( GetPageSubjectsPresenter $presenter, Authority $authority ): GetPageSubjectsQuery {
 		return new GetPageSubjectsQuery(
 			presenter: $presenter,
@@ -1467,6 +1512,10 @@ class NeoWikiExtension {
 
 	public static function newGetSubjectApi(): GetSubjectApi|Response {
 		return new GetSubjectApi();
+	}
+
+	public static function newGetSubjectEditNoticesApi(): GetSubjectEditNoticesApi {
+		return new GetSubjectEditNoticesApi();
 	}
 
 	public static function newGetPageSubjectsApi(): GetPageSubjectsApi {

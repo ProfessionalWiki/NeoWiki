@@ -260,6 +260,11 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetPageSubjectsApi"
 		},
 		{
+			"path": "/neowiki/v0/page/{pageId}/editNotices",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectEditNoticesApi"
+		},
+		{
 			"path": "/neowiki/v0/page/{pageId}/rdf",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newExportPageRdfApi"
