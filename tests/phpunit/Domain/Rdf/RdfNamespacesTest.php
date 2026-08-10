@@ -154,9 +154,9 @@ class RdfNamespacesTest extends TestCase {
 		);
 	}
 
-	public function testVocabularyTermUsesOntologyPath(): void {
+	public function testVocabularyTermUsesVocabPath(): void {
 		$this->assertSame(
-			'https://wiki.example/ontology/hasSubject',
+			'https://wiki.example/vocab/hasSubject',
 			$this->namespaces()->term( RdfNamespaces::TERM_HAS_SUBJECT )->value
 		);
 	}
@@ -182,7 +182,7 @@ class RdfNamespacesTest extends TestCase {
 	public function testPrefixMapCoversEveryNeoAndStandardNamespace(): void {
 		$this->assertSame(
 			[
-				'neo' => 'https://wiki.example/ontology/',
+				'neo' => 'https://wiki.example/vocab/',
 				'neo-subj' => 'https://wiki.example/entity/',
 				'neo-prop' => 'https://wiki.example/prop/',
 				'neo-schema' => 'https://wiki.example/schema/',

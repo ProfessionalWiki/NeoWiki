@@ -27,7 +27,7 @@ All NeoWiki IRIs live under `$base` (`$wgNeoWikiRdfBaseUri`). Standard vocabular
 
 | Prefix | Namespace | Used for |
 |---|---|---|
-| `neo:` | `$base/ontology/` | NeoWiki vocabulary terms (`neo:Page`, `neo:Relation`, `neo:hasSubject`, `neo:source`, …) |
+| `neo:` | `$base/vocab/` | NeoWiki vocabulary terms (`neo:Page`, `neo:Relation`, `neo:hasSubject`, `neo:source`, …) |
 | `neo-subj:` | `$base/entity/` | Subject IRIs (`neo-subj:s1demo8aaaaaab5`) |
 | `neo-prop:` | `$base/prop/` | Property and Relation-type predicates (`neo-prop:Has_author`) |
 | `neo-schema:` | `$base/schema/` | Schema classes (`neo-schema:Person`) |

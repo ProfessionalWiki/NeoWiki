@@ -127,7 +127,7 @@ class RdfPageProjectorTest extends TestCase {
 
 	private function completeExampleTriG(): string {
 		return <<<TRIG
-			@prefix neo: <https://wiki.example/ontology/> .
+			@prefix neo: <https://wiki.example/vocab/> .
 			@prefix neo-subj: <https://wiki.example/entity/> .
 			@prefix neo-prop: <https://wiki.example/prop/> .
 			@prefix neo-schema: <https://wiki.example/schema/> .
@@ -398,7 +398,7 @@ class RdfPageProjectorTest extends TestCase {
 
 	private function acmeSubjectTriG(): string {
 		return <<<TRIG
-			@prefix neo: <https://wiki.example/ontology/> .
+			@prefix neo: <https://wiki.example/vocab/> .
 			@prefix neo-subj: <https://wiki.example/entity/> .
 			@prefix neo-prop: <https://wiki.example/prop/> .
 			@prefix neo-schema: <https://wiki.example/schema/> .
@@ -495,7 +495,7 @@ class RdfPageProjectorTest extends TestCase {
 
 	private function expectedTriGForTextProperty( string $predicateIri ): string {
 		return <<<TRIG
-			@prefix neo: <https://wiki.example/ontology/> .
+			@prefix neo: <https://wiki.example/vocab/> .
 			@prefix neo-subj: <https://wiki.example/entity/> .
 			@prefix neo-schema: <https://wiki.example/schema/> .
 			@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .

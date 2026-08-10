@@ -111,7 +111,7 @@ readonly class RdfNamespaces {
 	}
 
 	public function term( string $localName ): Iri {
-		return new Iri( $this->baseUri . '/ontology/' . $localName );
+		return new Iri( $this->baseUri . '/vocab/' . $localName );
 	}
 
 	public function rdfType(): Iri {
@@ -183,7 +183,7 @@ readonly class RdfNamespaces {
 	 */
 	public function prefixMap(): array {
 		return [
-			'neo' => $this->baseUri . '/ontology/',
+			'neo' => $this->baseUri . '/vocab/',
 			'neo-subj' => $this->subjectIriBase(),
 			'neo-prop' => $this->baseUri . '/prop/',
 			'neo-schema' => $this->baseUri . '/schema/',
