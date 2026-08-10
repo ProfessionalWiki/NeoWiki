@@ -542,4 +542,157 @@ describe( 'SubjectEditorDialog', () => {
 			expect( passed ).toEqual( [ existingViolation ] );
 		} );
 	} );
+
+	describe( 'Label editing', () => {
+		function titleText( wrapper: VueWrapper ): string {
+			return wrapper.find( '.ext-neowiki-editable-text__text' ).text();
+		}
+
+		async function editLabel( wrapper: VueWrapper, value: string ): Promise<void> {
+			await wrapper.find( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
+			const input = wrapper.find( '.ext-neowiki-editable-text input' );
+			await input.setValue( value );
+			await input.trigger( 'keydown.enter' );
+		}
+
+		it( 'shows the current label as the dialog title', async () => {
+			const wrapper = mountComponent( false, validationTestStubs );
+			await flushPromises();
+
+			expect( titleText( wrapper ) ).toBe( 'Test Subject' );
+		} );
+
+		it( 'enables save after the label is edited', async () => {
+			const wrapper = mountComponent( false, validationTestStubs );
+			await flushPromises();
+
+			await editLabel( wrapper, 'Renamed Subject' );
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+		} );
+
+		it( 'saves the subject with the edited label', async () => {
+			const onSave = vi.fn().mockResolvedValue( undefined );
+			const wrapper = mountComponent( false, validationTestStubs, onSave );
+			await flushPromises();
+
+			await editLabel( wrapper, 'Renamed Subject' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( ( onSave.mock.calls[ 0 ][ 0 ] as Subject ).getLabel() ).toBe( 'Renamed Subject' );
+		} );
+
+		it( 'trims the label on save', async () => {
+			const onSave = vi.fn().mockResolvedValue( undefined );
+			const wrapper = mountComponent( false, validationTestStubs, onSave );
+			await flushPromises();
+
+			await editLabel( wrapper, '  Renamed Subject  ' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( ( onSave.mock.calls[ 0 ][ 0 ] as Subject ).getLabel() ).toBe( 'Renamed Subject' );
+		} );
+
+		it( 'does not save when the label is blank', async () => {
+			const onSave = vi.fn().mockResolvedValue( undefined );
+			const wrapper = mountComponent( false, validationTestStubs, onSave );
+			await flushPromises();
+
+			await editLabel( wrapper, '   ' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( onSave ).not.toHaveBeenCalled();
+			expect( ( mw.notify as Mock ).mock.calls ).toContainEqual( [
+				expect.stringContaining( 'neowiki-field-label-required' ),
+				{ type: 'error' },
+			] );
+		} );
+
+		it( 'sends the edited label trimmed to the dry-run validation', async () => {
+			const validate = vi.fn().mockResolvedValue( [] );
+			useSubjectStore().validateSubjectUpdate = validate;
+			const wrapper = mountComponent( false, validationTestStubs );
+			await flushPromises();
+
+			await editLabel( wrapper, '  Renamed Subject  ' );
+			await flushPromises();
+
+			const lastCall = validate.mock.calls[ validate.mock.calls.length - 1 ];
+			expect( lastCall[ 1 ] ).toBe( 'Renamed Subject' );
+		} );
+
+		it( 'points assistive technology at the label error', async () => {
+			const labelRequired: SubjectViolation = {
+				propertyName: null, code: 'label-required', args: [], valuePartIndex: null,
+			};
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ labelRequired ] );
+			const wrapper = mountComponent( false, validationTestStubs );
+			await flushPromises();
+
+			await wrapper.find( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
+
+			const error = wrapper.find( '.ext-neowiki-subject-editor-dialog__label-error' );
+			const input = wrapper.find( '.ext-neowiki-editable-text input' );
+			expect( error.attributes( 'role' ) ).toBe( 'alert' );
+			expect( input.attributes( 'aria-invalid' ) ).toBe( 'true' );
+		} );
+
+		it( 'keeps the rename input open in error state when the label is committed blank', async () => {
+			const labelRequired: SubjectViolation = {
+				propertyName: null, code: 'label-required', args: [], valuePartIndex: null,
+			};
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ labelRequired ] );
+			const wrapper = mountComponent( false, validationTestStubs );
+			await flushPromises();
+
+			await editLabel( wrapper, '' );
+			await flushPromises();
+
+			expect( wrapper.find( '.ext-neowiki-editable-text input' ).exists() ).toBe( true );
+			expect( wrapper.find( '.cdx-text-input--status-error' ).exists() ).toBe( true );
+		} );
+
+		it( 'routes the label-required violation to the title area instead of the banner', async () => {
+			const labelRequired: SubjectViolation = {
+				propertyName: null, code: 'label-required', args: [], valuePartIndex: null,
+			};
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ labelRequired ] );
+			const wrapper = mountComponent( false, validationTestStubs );
+			await flushPromises();
+
+			expect( wrapper.find( '.ext-neowiki-subject-editor-dialog__label-error' ).text() )
+				.toContain( 'neowiki-field-label-required' );
+			expect( wrapper.find( '.ext-neowiki-subject-editor__form-errors' ).exists() ).toBe( false );
+		} );
+
+		it( 'follows the label when the host replaces the subject', async () => {
+			const wrapper = mountComponent( false, validationTestStubs );
+			await flushPromises();
+
+			await wrapper.setProps( {
+				subject: new Subject(
+					new SubjectId( 's1demo5sssssss1' ),
+					'Renamed Subject',
+					'TestSchema',
+					new StatementList( [] ),
+				),
+			} );
+
+			expect( titleText( wrapper ) ).toBe( 'Renamed Subject' );
+		} );
+
+		it( 'resets the label to the stored one when the dialog reopens', async () => {
+			const wrapper = mountComponent( false, validationTestStubs );
+			await flushPromises();
+
+			await editLabel( wrapper, 'Renamed Subject' );
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
+
+			expect( titleText( wrapper ) ).toBe( 'Test Subject' );
+		} );
+	} );
 } );

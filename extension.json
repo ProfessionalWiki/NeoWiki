@@ -525,6 +525,8 @@
 				"neowiki-delete-error",
 				"neowiki-subject-editor-title",
 				"neowiki-subject-editor-save",
+				"neowiki-subject-editor-label-field",
+				"neowiki-subject-editor-rename",
 				"neowiki-schema-editor-new-property",
 				"neowiki-schema-editor-delete-property",
 				"neowiki-schema-editor-optional",
