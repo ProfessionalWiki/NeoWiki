@@ -33,17 +33,16 @@ small subset of what shape languages express. The reverse direction is lossy, wh
 For NeoWiki terminology, see the [glossary](../glossary.md). The short version: Subjects hold Statements
 whose Values can have multiple ordered parts; Relations between Subjects carry persistent IDs and their own
 properties. Schemas define Subject types via Property Definitions. Subject validation is backend-only: a single PHP
-validator behind REST endpoints returns structured violations
-([ADR 21](../adr/021-add-backend-validation.md), amended by ADR 25 in
-[#973](https://github.com/ProfessionalWiki/NeoWiki/pull/973); [codes reference](../api/validation-codes.md)),
+validator behind REST endpoints returns structured violations ([ADR 21](../adr/021-add-backend-validation.md),
+amended by [ADR 25](../adr/025-backend-driven-frontend-validation.md); [codes reference](../api/validation-codes.md)),
 and the editing UI renders what the server returns. For RDF, the wiki's data is *projected*: a native projection
 ([NativeRdfProjection](NativeRdfProjection.md)) and per-store ontology projections
-([OntologyMapping](OntologyMapping.md), in review in [#920](https://github.com/ProfessionalWiki/NeoWiki/pull/920)).
+([OntologyMapping](OntologyMapping.md); shipped, see the [reference](../rdf/ontology-mapping.md)).
 
 ## Why not as the internal format or engine
 
 [ADR 9](../adr/009-move-away-from-json-schema.md) already records the short form of this decision. Since the project
-has changed around it — validation moved to the backend, RDF projections and ontology mappings are being designed —
+has changed around it — validation moved to the backend, RDF projections and ontology mappings were being designed —
 we revisited it. The conclusion stands, for these reasons:
 
 1. **Our data model is not an RDF graph.** Shape engines validate RDF. Using one internally would put a
@@ -142,8 +141,8 @@ something the boundary approach above cannot serve?
   [ECHOLOT](ECHOLOT.md).
 - ADRs: [006 schemas](../adr/006-schemas.md), [009 move away from JSON Schema](../adr/009-move-away-from-json-schema.md)
   (records ShEx/SHACL as considered alternatives), [011 writer's schema](../adr/011-include-writers-schema.md),
-  [021 backend validation](../adr/021-add-backend-validation.md) and its amendment in
-  [#973](https://github.com/ProfessionalWiki/NeoWiki/pull/973).
+  [021 backend validation](../adr/021-add-backend-validation.md) and its amendment
+  [025 backend-driven frontend validation](../adr/025-backend-driven-frontend-validation.md).
 - Reference: [schema format](../api/schema-format.md), [validation codes](../api/validation-codes.md).
 - ECHOLOT tasks: T3.1 (structured data, constraints and validation), T3.2 (RDF import/export), T2.3 (semantic
   interoperability / ontology patterns), T4.1 (import pipelines), T4.5 (quality checks, names SHACL).

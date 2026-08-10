@@ -1,11 +1,11 @@
 # Ontology Mapping
 
-This is an early design document for stakeholder feedback before we start implementation and record decisions via a
-new ADR.
+A design document whose implementation has since shipped (see the as-built note below). The open questions at the end
+still stand, and the decisions still need consolidating into an ADR.
 
 Started 2026-06-24 by Jeroen De Dauw with help from Claude Opus 4.8.
 
-Status: Draft strawman, for discussion with ECHOLOT partners (T2.3 and T3.x).
+Status: Implemented; open questions still under discussion with ECHOLOT partners (T2.3 and T3.x).
 
 Discussion: [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996).
 
@@ -17,8 +17,22 @@ Discussion: [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996).
 > contributions. See the [Ontology Mapping reference](../rdf/ontology-mapping.md) and the worked
 > [Person → EDM example](../rdf/person-to-edm.md). The rule format is NeoWiki-native, so the
 > mapping-formalism question (Q1, [#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995)) stays open
-> at the authoring level; the stored format is provisional. Where the as-built provisionally answers an open
-> question below, that is noted inline.
+> at the authoring level; the stored format is provisional. The questions it answered are listed under
+> [Decided](#decided).
+
+## Still open (2026-08)
+
+- [Q1 — Authoring formalism](#q1-authoring-formalism): should LinkML or a Platka export sit in front of the shipped
+  JSON?
+- [Q3 — Platka boundary](#q3-platka-boundary): division of labour, format, and interface with takin's library.
+- [Q4 — Import](#q4-import): how far to shape the format for the import direction.
+- [Q5 — Validation via SHACL](#q5-validation-via-shacl): which shapes, and where findings surface for curators.
+- [Q7 — Packaging and distribution](#q7-packaging-and-distribution): bundles across wikis and a farm.
+- [Q8 — Multilinguality](#q8-multilinguality): the cohesive pass across NeoWiki's surfaces.
+- [Q10 — Flat vs nested native modelling](#q10-flat-vs-nested-native-modelling): the modelling fork, to be settled
+  outside this document.
+
+Everything else the document asked has been answered by the implementation — see [Decided](#decided).
 
 ## Summary
 
@@ -27,13 +41,9 @@ RDF; the native projection uses NeoWiki-native predicates ([NativeRdfProjection.
 interoperability — the core of ECHOLOT (SO2, T3.1, T3.2) — the data must instead be available in established
 cultural-heritage ontologies such as CIDOC-CRM, EDM, HDTO, and BIBFRAME.
 
-An **ontology mapping** projects native NeoWiki data **directly into a target ontology**. That ontology RDF is what a
-configured triple store holds and what SPARQL queries run against. The NeoWiki-native projection
-([NativeRdfProjection.md](NativeRdfProjection.md)) and each target ontology are **sibling projections** of the same
-source data, selected per store rather than stacked: a store can hold one or more projections, each in its own family
-of named graphs, and different stores can hold different projection sets of the same wiki. The native
-projection is the default (used when no ontology mapping is configured) and the lossless-export target; ontology
-mappings define the other targets.
+An **ontology mapping** projects native NeoWiki data **directly into a target ontology**: that ontology RDF is what a
+configured triple store holds and what SPARQL queries run against. The native projection stays the default — used
+when no mapping is configured — and the lossless-export target; ontology mappings define the others.
 
 Mappings are first-class, authorable, installable objects, kept separate from Schemas so the native data model is not
 deformed to fit an ontology. A mapping defines the **correspondence** between NeoWiki's model and an ontology, and is
@@ -41,13 +51,11 @@ intended to drive both export (native → ontology) and, later, import (ontology
 
 The central difficulty is that good ontology mapping is **not predicate renaming**: CIDOC-CRM and similar ontologies
 are event-centric and require *synthesizing intermediate nodes that do not exist in NeoWiki's data*. The mapping is a
-graph-to-graph transformation governed by reusable patterns. Most of this document is about expressing those patterns,
-where they come from, how the open flat-vs-nested modelling fork affects them, the import direction, and validating
-what the projections produce.
+graph-to-graph transformation governed by reusable patterns.
 
 > Terminology note: ECHOLOT partners often say "RDF mapping" for ontology alignment — that is *this* document. The
-> native vocabulary and the projection infrastructure shared by all projections (IRIs, named graphs, sync) live in
-> [NativeRdfProjection.md](NativeRdfProjection.md).
+> native vocabulary and the infrastructure shared by all projections (IRIs, named graphs, sync) are specified in the
+> [RDF Export reference](../rdf/rdf-export.md).
 
 ## Projections, not layers
 
@@ -96,33 +104,16 @@ Settled across our planning:
 
 ## What makes this hard: structural transformation
 
-Target ontologies sit on a spectrum of difficulty.
+Targets sit on a spectrum. Flat, property-centric ones (Dublin Core, much of EDM) mostly need term substitution:
+`Person.Name` → `foaf:name`. Event-centric ones do not: CIDOC-CRM mediates relationships through events, so a native
+`Creator` relation expands to a path through an `E12_Production` node that has **no counterpart in NeoWiki's data**
+and must be minted. The mirror case is contraction — where the data carries structure a target does not want, the
+mapping collapses it, as a Birth event Subject collapses to `rdaGr2:dateOfBirth` on a flat EDM agent. Both directions
+are needed because a wiki serves several targets at once ([sibling projections](#projections-not-layers)) that
+disagree about shape, so at least one mismatches whichever style the data is modelled in.
 
-**The easy tier — near 1:1 alignment.** Flat, property-centric targets (Dublin Core, much of EDM) mostly need term
-substitution: `Person.Name` → `foaf:name`, `Artwork.Creator` → `dc:creator`.
-
-**The hard tier — structural / event-centric alignment.** CIDOC-CRM, the dominant CH ontology, mediates relationships
-through events. A single native `Creator` relation from an object to a person does not map to one predicate; it expands
-to a path with an intermediate event node:
-
-```
-E22_Human-Made_Object  →  P108i_was_produced_by  →  E12_Production  →  P14_carried_out_by  →  E39_Actor
-```
-
-The `E12_Production` node has **no counterpart in NeoWiki's data**. The mapping must mint it. This is the crux: any
-mapping formalism we adopt has to express **path expansion and node synthesis**, not just renaming. A formalism that
-only substitutes terms covers flat data going to EDM but fails CIDOC-CRM — and CIDOC-CRM is the one that matters most
-for the case studies.
-
-**The mirror requirement — contraction.** The transformation also runs the other way: where the data carries structure
-a target does not want, the mapping must walk it and collapse it — a Birth event Subject linked from a Person collapses
-to `rdaGr2:dateOfBirth` on the flat EDM agent. Both directions are needed because a wiki serves several targets at once
-([sibling projections](#projections-not-layers)) that disagree about shape, so at least one target mismatches whichever
-style the data is modelled in. Live on the demo wiki ([neowiki.dev](https://neowiki.dev)): flat-modelled Picasso
-projects fully to EDM and expands into `E67_Birth` for CIDOC-CRM; Bach, whose birth is an explicit Subject, has that
-Subject contribute the flat `rdaGr2:dateOfBirth` and `rdaGr2:placeOfBirth` back onto him. Contraction is source-side —
-the contributing page emits the triples into its own graph — so a store or bulk dump sees the complete flat agent
-while a per-page export of Bach alone does not.
+Expressing both in one declarative form is what the mapping format had to solve, and does. The
+[Person → EDM example](../rdf/person-to-edm.md) walks a real projection, including the `E67_Birth` synthesis.
 
 ### Flat vs nested native modelling (open fork)
 
@@ -138,7 +129,7 @@ should be and where the burden sits:
   editing UI, which must project the nesting down into an accessible form — what Arches and ResearchSpace do. George
   Bruseker leans (b) if the UI can project down.
 
-The fork is settled outside this document — it is a schema-model and editing-UX decision, exercised through the shared
+The fork is to be settled outside this document — it is a schema-model and editing-UX decision, exercised through the shared
 toy model ([Neutral Person to Many Standards](https://docs.google.com/spreadsheets/d/1j2_7j8RCUJrrMsfZaXtqHQOwp9cN9F8HIBtd3pfsToU/edit))
 that expresses one person model across several ontologies. The same toy model doubles as the first end-to-end
 exercise of this document's approach: implement its neutral person schema in NeoWiki, define a Mapping for it, and
@@ -147,20 +138,7 @@ WP2/3/4 call). What matters here is that the formalism needs both directions und
 will model maximally nested (a mapping must handle whatever the native model is), and sibling targets decompose
 differently — EDM stays flat where CIDOC-CRM wants events — so no single nesting depth spares all projections.
 Route (b) reduces how often synthesis fires and makes contraction fire for the flat targets instead; it does not
-remove the requirement (Q2, Q10).
-
-### Identity for synthesized nodes
-
-Synthesized nodes need stable, deterministic IRIs so that re-projecting a page is idempotent and the per-page
-named-graph sync in [NativeRdfProjection.md](NativeRdfProjection.md#named-graphs) (`DROP GRAPH` + `INSERT DATA`)
-stays correct for an ontology store too.
-
-NeoWiki gives a natural anchor: **Relations carry a persistent ID** ([ADR 10](../adr/010-add-guids-to-relations.md)).
-The mediating CIDOC-CRM event node can derive its IRI from that Relation ID, so the `E12_Production` for a given Creator
-relation is the same node on every projection. Where no native ID exists (e.g. a literal-valued statement that expands
-structurally), the IRI is derived deterministically from the source Subject IRI plus the rule and a stable position key.
-Stable synthesized-node identity is also what makes the import direction tractable and validation reports traceable
-back to the wiki (both below).
+remove the requirement (Q10).
 
 ## Design principles
 
@@ -177,67 +155,11 @@ back to the wiki (both below).
 5. **Bidirectional correspondence.** A mapping describes how NeoWiki's model and an ontology correspond, for both export
    and import. Export ships first; import (below) reuses the correspondence but needs additional machinery.
 
-## Strawman model
+## The shipped format
 
-A concrete proposal to react to. Details are deliberately tentative; the open questions below are where partner input is
-needed.
-
-### The Mapping object
-
-A **Mapping** binds one source Schema to one target ontology and is a set of **rules**. It is a first-class object,
-separate from the Schema it references ([ADR 17](../adr/017-names-as-identifiers.md): Schemas are referenced by name),
-so the Schema stays clean and can carry several mappings (one per target ontology), installed independently.
-
-```
-Mapping {
-  schema:  "Artwork"            # source Schema (by name)
-  target:  "cidoc-crm"          # target ontology / profile
-  rules:   [ Rule, Rule, ... ]
-}
-```
-
-### Rules and the transformation
-
-Each **rule** matches a native construct — a Subject of the Schema, a Statement on a given property, or a Relation of a
-given type — and emits a **pattern**: target triples that may mint intermediate nodes.
-
-A natural way to express a rule is a **`CONSTRUCT`-style template**: standard, store-agnostic, minting nodes via
-deterministic IRI templates. The native projection serves as the transformation's input representation, and the
-target-ontology triples it produces are what the store holds. A rule for the Creator example:
-
-```sparql
-# rule: Artwork.Creator → CIDOC-CRM production event
-CONSTRUCT {
-  ?object      a crm:E22_Human-Made_Object ;
-               crm:P108i_was_produced_by ?production .
-  ?production  a crm:E12_Production ;
-               crm:P14_carried_out_by ?actor .
-  ?actor       a crm:E39_Actor .
-}
-WHERE {
-  ?rel  a neo:Relation ;
-        neo:relationType neo-prop:Creator ;
-        neo:source ?object ;
-        neo:target ?actor .
-  # deterministic IRI for the synthesized event, anchored on the Relation ID
-  BIND( IRI(CONCAT(STR(crm-prod:), STRAFTER(STR(?rel), STR(neo-rel:)))) AS ?production )
-}
-```
-
-Here `crm:` is CIDOC-CRM and `crm-prod:` is an illustrative namespace for synthesized event nodes; the `BIND` anchors
-that node's IRI on the Relation ID so it is stable across re-projections. The same Artwork Schema mapped to EDM would be
-mostly flat rules (`?object a edm:ProvidedCHO`, `?object dc:creator ?actor`) — illustrating
-that one formalism must span both ends of the spectrum.
-
-`CONSTRUCT` is one candidate form. Whether authors write templates directly, or write something higher-level (LinkML,
-SHACL rules, or patterns sourced from the T2.3 library) that compiles to them, is the central open question below.
-
-### Where patterns come from
-
-We should not hand-encode CIDOC-CRM paths from scratch if a curated source exists. T2.3 (takin) is building a pattern
-library (Platka) that stores ontology patterns as machine-readable paths. The ideal division of labour: the library
-owns the *recipe* (the exact RDF a given alignment must produce); NeoWiki owns the *binding* of local Schemas and data
-onto those recipes and the *execution* against actual Subjects. The exact interface and format are open (below).
+A Mapping is a JSON page in the `Mapping:` namespace, one per target ontology, declaring per Schema how the Subject,
+its properties, its synthesized nodes, and its contributions project. It is specified in the
+[Ontology Mapping reference](../rdf/ontology-mapping.md).
 
 ## Import
 
@@ -252,7 +174,8 @@ export projection does not have:
 
 - **Reconciliation / entity linking** of incoming IRIs to existing Subjects — a WP4 concern (T4.2), not the mapping
   itself.
-- **Batch ID-minting** for many interlinked incoming Subjects (the current API mints one Subject at a time).
+- **Batch ID-minting** for many interlinked incoming Subjects — shipped
+  ([#1100](https://github.com/ProfessionalWiki/NeoWiki/issues/1100)).
 - **Target-Schema selection** for incoming data.
 
 So a Mapping should aim to be a bidirectional *definition*, while import and export are separate *executors* and the
@@ -275,8 +198,8 @@ Proposed division of labour: shape engines run in external quality tooling (T4.5
 NeoWiki's job is to keep projections checkable and findings traceable:
 
 - Export of projected RDF for a given mapping (per page and in bulk), so external validators have input.
-- Per-page named graphs ([NativeRdfProjection.md](NativeRdfProjection.md#named-graphs)) make re-validation
-  incremental: only pages whose graphs changed since the last run need re-checking.
+- Per-page named graphs ([RDF Export reference](../rdf/rdf-export.md#iri-scheme)) make re-validation incremental:
+  only pages whose graphs changed since the last run need re-checking.
 - **Traceability requirement.** A validation report references ontology-projection nodes, but the people acting on it
   work in the wiki. Reports must be translatable back to the originating page, Subject, and property. The anchors
   exist by construction — focus node → named graph → page; synthesized-node IRI → Relation ID → Statement; violated
@@ -295,7 +218,8 @@ native projection as the default target; the Mapping as a bidirectional definiti
 **Out of scope (separate concerns, cross-referenced):**
 
 - The native projection and the shared projection infrastructure (IRIs, named graphs, sync) —
-  [NativeRdfProjection.md](NativeRdfProjection.md).
+  [NativeRdfProjection.md](NativeRdfProjection.md) for the rationale, the
+  [RDF Export reference](../rdf/rdf-export.md) for what it emits.
 - The import *pipeline* mechanics and orchestration — T4.1.
 - Reconciliation / entity linking / `owl:sameAs` minting — WP4 (T4.2); mapped IRIs are its input.
 - Rich chain-of-production provenance and rights — T2.4 model and a T3.4 plug-in (see [ECHOLOT.md](ECHOLOT.md)).
@@ -304,87 +228,62 @@ native projection as the default target; the Mapping as a bidirectional definiti
 ## Open questions
 
 These need ECHOLOT partner input, especially from T2.3 (semantic interoperability / ontology patterns) and partners
-with deep CIDOC-CRM / EDM / RDF experience.
+with deep CIDOC-CRM / EDM / RDF experience. Questions the implementation answered are listed under
+[Decided](#decided), keeping their original numbers so a thread that cites "Q6" still resolves.
 
-**Q1: Mapping formalism.** The central fork. Candidates:
-  1. **A NeoWiki-native mapping object** (rules compiling to `CONSTRUCT`-style templates as sketched above). Full
-     control, fitted to our model; but a formalism we own and maintain.
-  2. **LinkML.** An established, tooling-rich modelling language with class/slot mappings to external vocabularies. Open
-     whether its mapping facilities are expressive enough for CIDOC-CRM-style structural expansion, or only the near-1:1
-     tier.
-  3. **Patterns sourced from the T2.3 library (Platka).** Bind local constructs to externally-curated patterns,
-     minimizing ontology knowledge in NeoWiki. Depends on what the library can emit and how stable that interface is.
+### Q1: Authoring formalism
 
-  These are not mutually exclusive: e.g. consume patterns from (3), expressed in a formalism like (2), executed via (1).
-  What combination do partners recommend? Independent of the combination: survey existing CH mapping tooling before
-  building — mature ontology-mapping frameworks exist in this space, and reusing or aligning with one may beat
-  rebuilding (George, 2026-07-03).
+The shipped format is a NeoWiki-native declarative JSON, and it is the executable substrate. What stays open is
+whether a higher-level formalism should sit in front of it: **LinkML**, whose class/slot mappings to external
+vocabularies are established and tooling-rich but of unproven expressiveness for CIDOC-CRM-style structural expansion
+([#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995)), or an export from the T2.3 pattern library that
+compiles down to it. Independent of the answer: survey existing CH mapping tooling before building more — mature
+ontology-mapping frameworks exist in this space, and reusing or aligning with one may beat rebuilding (George,
+2026-07-03).
 
-**Q2: Expressiveness for node synthesis.** Whatever formalism is chosen, can it express path expansion and
-intermediate-node minting (the `E12_Production` case) — not just term substitution? Can it equally express the
-[mirror direction](#what-makes-this-hard-structural-transformation) — recognizing explicitly modelled structure and
-collapsing it for a flatter target? Both directions are recorded as an evaluation constraint on
-[#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995). Are SHACL Advanced Features
-(SPARQL-based `sh:rule`) or `CONSTRUCT` the right executable substrate? Do partners already have CIDOC-CRM expansion
-patterns in an executable form we can target?
+### Q3: Platka boundary
 
-*As built: the native format expresses both directions — synthesized nodes for expansion, contributions for
-contraction ([reference](../rdf/ontology-mapping.md)). Whether a higher-level formalism should author or compile to
-it stays open on Q1.*
+Platka is the T2.3 pattern library (takin). Open: the division of labour between it and NeoWiki, what NeoWiki would
+consume from it, in what format, and over what interface. The division we have assumed is that the library owns the
+*recipe* — the exact RDF a given alignment must produce — while NeoWiki owns the *binding* of local Schemas onto it
+and the *execution* against actual Subjects; to be confirmed with takin
+([#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996)).
 
-**Q3: Platka boundary.** Our understanding (to confirm): the T2.3 pattern library *creates* ontologies and derivatives
-(e.g. SHACL for validation) but does **not** perform ontology-to-ontology mapping. If so, NeoWiki owns Schema→ontology
-mappings, and the library supplies (a) the target patterns we project to and possibly (b) SHACL we validate against.
-What exactly does NeoWiki consume from the library, in what format, over what interface?
+### Q4: Import
 
-**Q4: Import.** How far should the export formalism be shaped now so the same Mapping can drive import later? Where is
-the boundary between the Mapping (correspondence), the import executor (pattern recognition), and T4.1/T4.2 (pipeline,
+How far should the export format be shaped now so the same Mapping can drive import later? Where is the boundary
+between the Mapping (correspondence), the import executor (pattern recognition), and T4.1/T4.2 (pipeline,
 reconciliation)?
 
-**Q5: Validation via SHACL.** [Validating projections](#validating-projections) proposes consuming shapes emitted by
-the T2.3 library to check ontology projections, with the engines in the T4.5 tooling rather than in NeoWiki. Open:
-which shapes the library actually emits and their coverage per ontology; and where findings surface for curators
-(report pages, a dashboard, an API the quality component writes back to) — in NeoWiki core or a plug-in. Candidate
-engine (suggested 2026-07-03): [rudof](https://github.com/rudof-project/rudof) — Rust, SHACL + ShEx, has an MCP
-interface, and can validate a QLever endpoint directly; endpoint-side validation still needs the traceability path
-above, since the store has no sync-back to the wiki.
+### Q5: Validation via SHACL
 
-**Q6: One mapping per target vs combined.** A separate Mapping per (Schema, target ontology), or a single multi-target
-mapping per Schema? Per-target is more modular and independently installable; combined may reduce duplication for shared
-sub-patterns.
+[Validating projections](#validating-projections) proposes consuming shapes emitted by the T2.3 library to check
+ontology projections, with the engines in the T4.5 tooling rather than in NeoWiki. Open: which shapes the library
+actually emits and their coverage per ontology; and where findings surface for curators (report pages, a dashboard,
+an API the quality component writes back to) — in NeoWiki core or a plug-in. Candidate engine (suggested 2026-07-03):
+[rudof](https://github.com/rudof-project/rudof) — Rust, SHACL + ShEx, has an MCP interface, and can validate a QLever
+endpoint directly; endpoint-side validation still needs the traceability path above, since the store has no sync-back
+to the wiki.
 
-*As built: one Mapping page per target ontology, holding an entry for every mapped Schema — the page title is the
-target name, so uniqueness needs no save-time check
-([#1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)). Combined multi-target pages stay open for a
-later format version.*
+### Q7: Packaging and distribution
 
-**Q7: Authoring and distribution.** Where do Mappings live (a dedicated namespace? API-only?), who authors them (data
-modellers) vs installs them (wiki admins), and how are bundles (e.g. "CIDOC-CRM for Person / Place / Object") packaged
-and shared across wikis and a farm?
+Mappings are wiki pages, but bundles are not addressed: how a set such as "CIDOC-CRM for Person / Place / Object" is
+packaged, versioned, installed, and shared across wikis and a farm.
 
-*As built: Mappings live as pages in a dedicated `Mapping:` namespace (one page per target ontology, named after it —
-[ADR 17](../adr/017-names-as-identifiers.md)-style), authored like Schemas/Layouts and gated by the
-`neowiki-mapping-edit` right, and seedable as demo/bundle data (the Person→EDM example ships this way). Packaging and
-farm-wide sharing of bundles is not yet addressed.*
+### Q8: Multilinguality
 
-**Q8: Multilinguality.** Mapped labels should carry language tags (`@lang`); canonical values used in queries stay
-language-neutral. CH data is heavily multilingual (Basque, the ELB languages, etc.). How much belongs in the mapping vs
-the native projection vs Views?
+A mapping can language-tag the literals it projects, which leaves the harder half open: where multilinguality lives
+across NeoWiki as a whole — property labels ([#710](https://github.com/ProfessionalWiki/NeoWiki/issues/710)), select
+options ([#726](https://github.com/ProfessionalWiki/NeoWiki/issues/726)), the native projection, and Views. CH data is
+heavily multilingual (Basque, the ELB languages), while canonical values used in queries stay language-neutral. A
+cohesive pass across surfaces is wanted rather than per-surface answers.
 
-**Q9: Multiple projections per wiki.** Should a wiki be able to serve several projections at once (several stores:
-native + one or more ontologies), and is a native projection always available as a baseline? This makes "which
-vocabulary is in the store" a per-store configuration rather than a single global choice.
+### Q10: Flat vs nested native modelling
 
-*As built: yes for export — a wiki serves several projections at once, selected per request via the `projection`
-parameter, with `native` always the baseline and each Mapping page adding its target to the known set. Named graphs
-are qualified by projection ([#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053)), so a single store can
-likewise hold several projections at once — see [Projections, not layers](#projections-not-layers). The
-projector/serializer seam #586 consumes is `newRdfProjection(name)`.*
-
-**Q10: Flat vs nested native modelling.** The [fork above](#flat-vs-nested-native-modelling-open-fork): should
-case-study data live in flat Schemas with the mapping synthesizing intermediate nodes, or in nested Schemas with the
-editing UI projecting the nesting down? Settled through the toy model, outside this document. If (b) wins: what does
-nesting look like in the schema format, and how much of the synthesis machinery here stops being exercised in practice?
+The [fork above](#flat-vs-nested-native-modelling-open-fork): should case-study data live in flat Schemas with the
+mapping synthesizing intermediate nodes, or in nested Schemas with the editing UI projecting the nesting down?
+To be settled through the toy model, outside this document. If (b) wins: what does nesting look like in the schema
+format, and how much of the synthesis machinery stops being exercised in practice?
 
 *Update (2026-07): the fork no longer gates the transformation machinery — both directions are needed however it
 resolves, since sibling targets disagree about shape and at least one mismatches whichever style the data is
@@ -392,9 +291,32 @@ modelled in ("one would need to expand (or contract) on export/import" — Georg
 [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999), 2026-07-06). What the fork still steers: build
 order, editing-UI investment, and what standard Schema bundles default to.*
 
+## Decided
+
+Answered by the shipped implementation. Numbers are the original question numbers.
+
+- **Q2 — expressiveness for node synthesis.** The format expresses both directions natively: synthesized nodes for
+  expansion, contributions for contraction. Neither SHACL Advanced Features nor `CONSTRUCT` became the substrate
+  ([reference](../rdf/ontology-mapping.md)).
+- **Q6 — one mapping per target vs combined.** One Mapping page per target ontology, holding an entry for every mapped
+  Schema ([#1086](https://github.com/ProfessionalWiki/NeoWiki/pull/1086),
+  [discussion #1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)).
+- **Q7 — where Mappings live.** Pages in the `Mapping:` namespace, listed on `Special:Mappings` and gated by the
+  `neowiki-mapping-edit` right ([reference](../rdf/ontology-mapping.md#ontology-mappings-are-wiki-pages)).
+- **Q8 — language tags in a mapping.** A mapped property or contribution takes a `lang` tag, applied to the plain-string
+  literals it produces ([reference](../rdf/ontology-mapping.md#format-version-1)); the native projection mints none.
+- **Q9 — multiple projections per wiki.** A wiki serves several sibling projections at once, selected per request, with
+  `native` always the baseline; named graphs are qualified by projection so one store can hold several
+  ([#1055](https://github.com/ProfessionalWiki/NeoWiki/pull/1055),
+  [config](../operations/installation.md#several-projections-in-one-store)).
+- **Identity for synthesized nodes.** Node IRIs are derived deterministically from the data — from the Relation's
+  persistent ID where one exists ([ADR 10](../adr/010-add-guids-to-relations.md)), otherwise from the Subject IRI and
+  the node key — so re-projecting a page is idempotent
+  ([reference](../rdf/ontology-mapping.md#synthesized-node-iris)).
+
 ## Related
 
-- Planning: [NativeRdfProjection](NativeRdfProjection.md) (the native projection and shared per-store infrastructure),
+- Planning: [NativeRdfProjection](NativeRdfProjection.md) (why the native projection is shaped as it is),
   [GlobalProperties](GlobalProperties.md) (why mapping is separate from the data model),
   [SubjectSources](SubjectSources.md) (the `source → base-URI` registry that is also the RDF prefix/URI map),
   [ECHOLOT](ECHOLOT.md).
