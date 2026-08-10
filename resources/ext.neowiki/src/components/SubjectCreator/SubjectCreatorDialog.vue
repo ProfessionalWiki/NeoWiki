@@ -169,6 +169,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
+import { defaultSubjectLabel } from '@/domain/defaultSubjectLabel.ts';
 import { withoutMissingValueViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { CdxMessage } from '@wikimedia/codex';
@@ -376,7 +377,7 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 	}
 
 	selectedSchemaName.value = schemaName;
-	subjectLabel.value = String( mw.config.get( 'wgTitle' ) ?? '' );
+	subjectLabel.value = defaultSubjectLabel( props.pageHasMainSubject, pageName(), schemaName );
 	markChanged();
 
 	const currentSequence = ++requestSequence;
@@ -419,8 +420,12 @@ async function handleCreateSchema(): Promise<void> {
 	draftSchema.value = schema;
 	selectedSchemaName.value = schema.getName();
 	loadedSchema.value = schema;
-	subjectLabel.value = String( mw.config.get( 'wgTitle' ) ?? '' );
+	subjectLabel.value = defaultSubjectLabel( props.pageHasMainSubject, pageName(), schema.getName() );
 	markChanged();
+}
+
+function pageName(): string {
+	return String( mw.config.get( 'wgTitle' ) ?? '' );
 }
 
 const statements = computed( (): StatementList | null =>

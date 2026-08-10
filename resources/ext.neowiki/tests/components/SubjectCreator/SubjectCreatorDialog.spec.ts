@@ -358,6 +358,16 @@ describe( 'SubjectCreatorDialog', () => {
 		expect( ( labelInput.element as HTMLInputElement ).value ).toBe( PAGE_TITLE );
 	} );
 
+	it( 'defaults label to the schema name when the page already has a main subject', async () => {
+		const wrapper = mountComponent( {}, { pageHasMainSubject: true } );
+
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+		await flushPromises();
+
+		const labelInput = wrapper.find( '.cdx-text-input-stub' );
+		expect( ( labelInput.element as HTMLInputElement ).value ).toBe( SCHEMA_NAME );
+	} );
+
 	it( 'calls createMainSubject on save with correct arguments', async () => {
 		const wrapper = mountComponent();
 
@@ -405,7 +415,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 		expect( subjectStore.createChildSubject ).toHaveBeenCalledWith(
 			PAGE_ID,
-			PAGE_TITLE,
+			SCHEMA_NAME,
 			SCHEMA_NAME,
 			expect.any( StatementList ),
 			'test summary',
@@ -543,6 +553,17 @@ describe( 'SubjectCreatorDialog', () => {
 
 			const labelInput = wrapper.find( '.cdx-text-input-stub' );
 			expect( ( labelInput.element as HTMLInputElement ).value ).toBe( PAGE_TITLE );
+		} );
+
+		it( 'defaults label to the new schema name after schema creation when the page already has a main subject', async () => {
+			const wrapper = mountComponent( {}, { pageHasMainSubject: true } );
+
+			await switchToNewSchema( wrapper );
+
+			await clickContinue( wrapper );
+
+			const labelInput = wrapper.find( '.cdx-text-input-stub' );
+			expect( ( labelInput.element as HTMLInputElement ).value ).toBe( NEW_SCHEMA_NAME );
 		} );
 
 		it( 'saves schema and creates subject on final save', async () => {
