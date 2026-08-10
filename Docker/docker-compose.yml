@@ -8,9 +8,13 @@ services:
       - mediawiki-images-data:/var/www/html/w/images
       # Uncomment to use custom LocalSettings.
       # - ./LocalSettings.php:/var/www/html/w/LocalSettings.php:ro
+    # Waits for the healthchecks below rather than just for the containers to appear: the wiki talks to
+    # both on startup, and a bare `depends_on` only orders creation.
     depends_on:
-      - db
-      - neo
+      db:
+        condition: service_healthy
+      neo:
+        condition: service_healthy
     environment:
       - MARIADB_DATABASE
       - MARIADB_USER
