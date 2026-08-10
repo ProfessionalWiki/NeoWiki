@@ -25,13 +25,13 @@ and mapped output side by side.
 ## Ontology Mappings are wiki pages
 
 A Mapping is a page in the **`Mapping:` namespace** with content model `NeoWikiMapping` (JSON), gated by the
-`neowiki-mapping-edit` right. There is **one Mapping page per target ontology**, and the page title is the
+`neowiki-mapping-edit` right. Each Mapping page defines **one projection**, and the page title is the
 projection name you pass to the export surfaces: the page `Mapping:EDM` defines the `EDM` projection. The
 `Special:Mappings` page lists every Mapping on the wiki.
 
-A single page holds an entry for **every mapped Schema** — map a Schema to an ontology by adding an entry to
-that ontology's page, not by creating a page. A Schema maps to several ontologies through one entry on each
-ontology's page.
+A single page holds an entry for **every mapped Schema** — map a Schema by adding an entry to the
+projection's page, not by creating a page. A Schema can take part in several projections, through one entry on
+each page.
 
 The name **`native`** is reserved for the built-in [native projection](rdf-export.md), so a `Mapping:Native`
 page is rejected on save.
@@ -188,7 +188,7 @@ prefix (`EDM`), or `native` for the built-in projection. See
 
 ## Authoring a Mapping
 
-1. Create a page in the `Mapping:` namespace named after the target ontology (`Mapping:EDM`), or edit the
+1. Create a page in the `Mapping:` namespace whose title is the projection name (`Mapping:EDM`), or edit an
    existing one.
 2. Declare the page-level `prefixes` you will use.
 3. Add an entry under `schemas` for each Schema to project: give the Subject a `subject.class` and map the
