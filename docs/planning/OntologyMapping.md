@@ -9,9 +9,10 @@ Status: Implemented; open questions still under discussion with ECHOLOT partners
 
 Discussion: [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996).
 
-> **As-built (2026-08).** Mappings are pages in a `Mapping:` namespace — one page per target ontology, the
-> page title being the target name ([#1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)) —
-> and an ontology projection is selectable alongside the native one on the RDF export endpoint and `DumpRdf`.
+> **As-built (2026-08).** Mappings are pages in a `Mapping:` namespace — one page per projection, holding
+> every mapped Schema, the page title being the projection name
+> ([#1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)) — and an ontology projection is
+> selectable alongside the native one on the RDF export endpoint and `DumpRdf`.
 > The near-1:1 term-substitution tier shipped first (2026-07); the **structural tier** followed as an optional
 > addition to the same format: node synthesis with deterministic IRIs, and contraction as source-side
 > contributions. See the [Ontology Mapping reference](../rdf/ontology-mapping.md) and the worked
@@ -157,7 +158,7 @@ remove the requirement (Q10).
 
 ## The shipped format
 
-A Mapping is a JSON page in the `Mapping:` namespace, one per target ontology, declaring per Schema how the Subject,
+A Mapping is a JSON page in the `Mapping:` namespace that defines one projection, declaring per Schema how the Subject,
 its properties, its synthesized nodes, and its contributions project. It is specified in the
 [Ontology Mapping reference](../rdf/ontology-mapping.md).
 
@@ -298,9 +299,11 @@ Answered by the shipped implementation. Numbers are the original question number
 - **Q2 — expressiveness for node synthesis.** The format expresses both directions natively: synthesized nodes for
   expansion, contributions for contraction. Neither SHACL Advanced Features nor `CONSTRUCT` became the substrate
   ([reference](../rdf/ontology-mapping.md)).
-- **Q6 — one mapping per target vs combined.** One Mapping page per target ontology, holding an entry for every mapped
+- **Q6 — one mapping per target vs combined.** One Mapping page per projection, holding an entry for every mapped
   Schema ([#1086](https://github.com/ProfessionalWiki/NeoWiki/pull/1086),
-  [discussion #1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)).
+  [discussion #1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)). A projection is not an ontology:
+  two Mapping pages can both use CIDOC-CRM terms, each defining its own shape
+  ([#996 comment](https://github.com/ProfessionalWiki/NeoWiki/discussions/996#discussioncomment-17920073), 2026-08-06).
 - **Q7 — where Mappings live.** Pages in the `Mapping:` namespace, listed on `Special:Mappings` and gated by the
   `neowiki-mapping-edit` right ([reference](../rdf/ontology-mapping.md#ontology-mappings-are-wiki-pages)).
 - **Q8 — language tags in a mapping.** A mapped property or contribution takes a `lang` tag, applied to the plain-string

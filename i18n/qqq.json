@@ -286,7 +286,7 @@
 	"neowiki-managesubjects-export-format-trig": "Level-1 export menu item selecting the TriG serialization; reveals the projection list. \"TriG\" is the RDF serialization format name and is not translated.",
 	"neowiki-managesubjects-export-back": "Export menu item that returns from the projection list to the serialization choice.",
 	"neowiki-managesubjects-export-choose-format": "Announced to screen-reader users when the data export menu returns to its list of export formats (JSON, Turtle, TriG).",
-	"neowiki-managesubjects-export-choose-projection": "Announced to screen-reader users when the data export menu shows its list of projections after a format is chosen. A projection is the ontology/vocabulary the data is exported as, e.g. EDM or CIDOC-CRM.",
+	"neowiki-managesubjects-export-choose-projection": "Announced to screen-reader users when the data export menu shows its list of projections after a format is chosen. A projection is a named RDF rendering of the data, e.g. EDM or CIDOC-CRM.",
 	"neowiki-managesubjects-export-native": "Display name of the native (NeoWiki-vocabulary) RDF projection, shown in the projection list of the data export menu.",
 	"action-subjects": "Description of the Subject management action used by MediaWiki when generating action descriptions.",
 	"neowiki-config-invalid": "Heading shown above the list of errors when an edit to the MediaWiki:NeoWiki JSON configuration page is rejected.",

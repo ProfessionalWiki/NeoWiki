@@ -96,8 +96,8 @@ A Layout defines how a Subject is displayed.
 
 ### Mappings
 
-An ontology Mapping projects native Schemas to a target ontology. For the format and concepts, see
-[Ontology Mapping](../rdf/ontology-mapping.md).
+An ontology Mapping defines one projection: it projects native Schemas into a target ontology. For the format
+and concepts, see [Ontology Mapping](../rdf/ontology-mapping.md).
 
 | Endpoint | Description |
 |---|---|
