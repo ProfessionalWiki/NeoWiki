@@ -4,8 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
-use MediaWiki\Context\RequestContext;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -15,8 +13,6 @@ use Wikimedia\ParamValidator\ParamValidator;
 class GetSubjectEditNoticesApi extends SimpleHandler {
 
 	public function run( int $pageId ): Response {
-		$this->giveProvidersTheirPageContext( $pageId );
-
 		$presenter = new RestGetSubjectEditNoticesPresenter();
 
 		NeoWikiExtension::getInstance()->newGetSubjectEditNoticesQuery( $presenter, $this->getAuthority() )->execute(
@@ -32,18 +28,8 @@ class GetSubjectEditNoticesApi extends SimpleHandler {
 		return $response;
 	}
 
-	/**
-	 * Providers may read the main request context rather than the context they are handed:
-	 * ContentStabilization does, when describing pending revisions. Outside a page request that
-	 * context carries no title, so it is set here. VisualEditor does the same for the same reason
-	 * (T307852).
-	 */
-	private function giveProvidersTheirPageContext( int $pageId ): void {
-		$title = MediaWikiServices::getInstance()->getTitleFactory()->newFromID( $pageId );
-
-		if ( $title !== null ) {
-			RequestContext::getMain()->setTitle( $title );
-		}
+	public function needsWriteAccess(): bool {
+		return false;
 	}
 
 	public function getParamSettings(): array {

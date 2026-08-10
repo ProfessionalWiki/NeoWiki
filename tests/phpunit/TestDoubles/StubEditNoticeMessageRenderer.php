@@ -16,7 +16,14 @@ class StubEditNoticeMessageRenderer implements EditNoticeMessageRenderer {
 	) {
 	}
 
+	/**
+	 * @var array<int, array{key: string, namespaceId: int, pageDbKey: string}>
+	 */
+	public array $calls = [];
+
 	public function render( string $messageKey, int $namespaceId, string $pageDbKey ): ?string {
+		$this->calls[] = [ 'key' => $messageKey, 'namespaceId' => $namespaceId, 'pageDbKey' => $pageDbKey ];
+
 		return $this->renderedMessages[$messageKey] ?? null;
 	}
 

@@ -42,24 +42,56 @@ readonly class InterfaceMessageNoticeProvider implements SubjectEditNoticeProvid
 	 * @return string[]
 	 */
 	private function messageKeys( SubjectEditNoticeContext $context ): array {
-		$keys = [
-			self::KEY_PREFIX . $context->namespaceId,
-			self::KEY_PREFIX . $context->namespaceId . '-' . self::asKeySegment( $context->pageDbKey ),
-		];
+		$namespaceKey = self::KEY_PREFIX . $context->namespaceId;
 
-		if ( $context->schemaName !== null ) {
-			$keys[] = self::KEY_PREFIX . 'schema-' . self::asKeySegment( $context->schemaName );
+		return [
+			$namespaceKey,
+			...$this->pageKeys( $namespaceKey, $context ),
+			...$this->schemaKeys( $context ),
+		];
+	}
+
+	/**
+	 * Core gives a subpage-enabled namespace one key per ancestor, so a notice on a parent page
+	 * covers its whole subtree, and flattens the path everywhere else. Both branches are mirrored
+	 * so admins can carry their expectations over from core's edit notices.
+	 *
+	 * @return string[]
+	 */
+	private function pageKeys( string $namespaceKey, SubjectEditNoticeContext $context ): array {
+		if ( !$context->namespaceHasSubpages ) {
+			return [ $namespaceKey . '-' . self::asKeySegment( $context->pageDbKey ) ];
+		}
+
+		$keys = [];
+		$ancestorKey = $namespaceKey;
+
+		foreach ( explode( '/', $context->pageDbKey ) as $segment ) {
+			$ancestorKey .= '-' . self::asKeySegment( $segment );
+			$keys[] = $ancestorKey;
 		}
 
 		return $keys;
 	}
 
 	/**
+	 * @return string[]
+	 */
+	private function schemaKeys( SubjectEditNoticeContext $context ): array {
+		if ( $context->schemaName === null ) {
+			return [];
+		}
+
+		return [ self::KEY_PREFIX . 'schema-' . self::asKeySegment( $context->schemaName ) ];
+	}
+
+	/**
 	 * A slash would make the message page a subpage, which collides with the language subpages the
-	 * MediaWiki namespace uses. Core flattens the same way.
+	 * MediaWiki namespace uses. Spaces become underscores so the key names the message page an admin
+	 * actually creates, which is what the response echoes back.
 	 */
 	private static function asKeySegment( string $value ): string {
-		return strtr( $value, '/', '-' );
+		return strtr( $value, [ '/' => '-', ' ' => '_' ] );
 	}
 
 }

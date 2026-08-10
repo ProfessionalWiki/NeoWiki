@@ -58,6 +58,7 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetSubjectEditNotices\GetSubjec
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubjectEditNotices\GetSubjectEditNoticesQuery;
 use ProfessionalWiki\NeoWiki\Domain\EditNotice\SubjectEditNoticeProviderRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\MediaWikiEditNoticeMessageRenderer;
+use ProfessionalWiki\NeoWiki\Infrastructure\RequestContextSubjectEditNoticeEnvironment;
 use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedSubjectEditNoticeContextFactory;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\CompositeGraphDatabasePlugin;
@@ -1368,6 +1369,10 @@ class NeoWikiExtension {
 			registry: $this->getSubjectEditNoticeProviderRegistry(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			contextFactory: new TitleBasedSubjectEditNoticeContextFactory(
+				MediaWikiServices::getInstance()->getTitleFactory(),
+				MediaWikiServices::getInstance()->getNamespaceInfo()
+			),
+			environment: new RequestContextSubjectEditNoticeEnvironment(
 				MediaWikiServices::getInstance()->getTitleFactory()
 			),
 		);

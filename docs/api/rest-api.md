@@ -70,6 +70,7 @@ Subjects and arrange them.
 | Endpoint | Description |
 |---|---|
 | `GET /neowiki/v0/page/{pageId}/subjects` | List a page's main and child Subjects. `expand` with `schemas` or `relations`. |
+| `GET /neowiki/v0/page/{pageId}/editNotices` | List the notices to show before editing the page's Subjects. `schema` names the Schema being edited, enabling Schema-scoped notices. See [Edit notices](../authoring/edit-notices.md). |
 | `GET /neowiki/v0/page/{pageId}/rdf` | Export the page's Subjects and metadata as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or the name of a Mapping page. See [RDF export](../rdf/rdf-export.md) and [Ontology Mapping](../rdf/ontology-mapping.md). |
 | `POST /neowiki/v0/page/{pageId}/mainSubject` | Create the page's main Subject. |
 | `PUT /neowiki/v0/page/{pageId}/mainSubject` | Promote a child Subject to main, or clear it. |

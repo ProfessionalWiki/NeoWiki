@@ -15,12 +15,18 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubEditNoticeMessageRenderer;
  */
 class InterfaceMessageNoticeProviderTest extends TestCase {
 
-	private function newContext( int $namespaceId = 0, string $dbKey = 'Berlin', ?string $schemaName = null ): SubjectEditNoticeContext {
+	private function newContext(
+		int $namespaceId = 0,
+		string $dbKey = 'Berlin',
+		?string $schemaName = null,
+		bool $namespaceHasSubpages = false
+	): SubjectEditNoticeContext {
 		return new SubjectEditNoticeContext(
 			pageId: new PageId( 42 ),
 			pageDbKey: $dbKey,
 			namespaceId: $namespaceId,
-			schemaName: $schemaName
+			schemaName: $schemaName,
+			namespaceHasSubpages: $namespaceHasSubpages
 		);
 	}
 
@@ -53,12 +59,47 @@ class InterfaceMessageNoticeProviderTest extends TestCase {
 		$this->assertSame( 'neowiki-editnotice-4-Berlin', $notices[0]->key );
 	}
 
-	public function testSlashesInDbKeyBecomeDashes(): void {
-		$provider = $this->newProvider( [ 'neowiki-editnotice-0-Europe-Berlin' => '<p>Subpage notice</p>' ] );
+	public function testSlashesAreFlattenedWhereTheNamespaceHasNoSubpages(): void {
+		$provider = $this->newProvider( [ 'neowiki-editnotice-0-Europe-Berlin' => '<p>Flattened</p>' ] );
 
 		$notices = $provider->getNotices( $this->newContext( dbKey: 'Europe/Berlin' ) );
 
 		$this->assertCount( 1, $notices );
+	}
+
+	public function testSubpageNamespaceGetsANoticePerAncestor(): void {
+		$provider = $this->newProvider( [
+			'neowiki-editnotice-4-Europe' => '<p>Subtree</p>',
+			'neowiki-editnotice-4-Europe-Berlin' => '<p>Leaf</p>',
+		] );
+
+		$notices = $provider->getNotices(
+			$this->newContext( namespaceId: 4, dbKey: 'Europe/Berlin', namespaceHasSubpages: true )
+		);
+
+		$this->assertSame(
+			[ 'neowiki-editnotice-4-Europe', 'neowiki-editnotice-4-Europe-Berlin' ],
+			array_map( static fn ( $notice ) => $notice->key, $notices )
+		);
+	}
+
+	public function testAncestorNoticeCoversItsSubpages(): void {
+		$provider = $this->newProvider( [ 'neowiki-editnotice-4-Handbook' => '<p>Subtree</p>' ] );
+
+		$notices = $provider->getNotices(
+			$this->newContext( namespaceId: 4, dbKey: 'Handbook/Chapter1', namespaceHasSubpages: true )
+		);
+
+		$this->assertCount( 1, $notices );
+	}
+
+	public function testSpacesInSchemaNameBecomeUnderscores(): void {
+		$provider = $this->newProvider( [ 'neowiki-editnotice-schema-Control_Document' => '<p>Schema</p>' ] );
+
+		$notices = $provider->getNotices( $this->newContext( schemaName: 'Control Document' ) );
+
+		$this->assertCount( 1, $notices );
+		$this->assertSame( 'neowiki-editnotice-schema-Control_Document', $notices[0]->key );
 	}
 
 	public function testSchemaMessageBecomesNoticeWhenSchemaIsKnown(): void {
@@ -82,6 +123,21 @@ class InterfaceMessageNoticeProviderTest extends TestCase {
 		$notices = $provider->getNotices( $this->newContext( schemaName: 'Person/Author' ) );
 
 		$this->assertCount( 1, $notices );
+	}
+
+	public function testThePageBeingEditedReachesTheRenderer(): void {
+		$renderer = new StubEditNoticeMessageRenderer( [] );
+
+		( new InterfaceMessageNoticeProvider( $renderer ) )
+			->getNotices( $this->newContext( namespaceId: 12, dbKey: 'New_York' ) );
+
+		$this->assertSame(
+			[ [ 12, 'New_York' ] ],
+			array_values( array_unique(
+				array_map( static fn ( array $call ) => [ $call['namespaceId'], $call['pageDbKey'] ], $renderer->calls ),
+				SORT_REGULAR
+			) )
+		);
 	}
 
 	public function testNoticesAreOrderedFromBroadestToNarrowest(): void {
