@@ -33,6 +33,8 @@ interface GraphDatabasePlugin {
 	 * run it every time. update.php calls this so an ordinary install or upgrade establishes those
 	 * structures, and a rebuild calls it on the store it is scoped to before re-projecting into it, so a
 	 * rebuilt graph carries them; the incremental per-edit path does not.
+	 *
+	 * A backend with no such structures still has to reach its store here and throw when it cannot.
 	 */
 	public function initialize(): void;
 

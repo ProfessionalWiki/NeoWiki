@@ -25,6 +25,7 @@ use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Domain\Rdf\ParsedRdf;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\CapturingSparqlUpdateEndpoint;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedPageProjector;
+use RuntimeException;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Persistence\SparqlProjectionStore
@@ -40,6 +41,26 @@ class SparqlProjectionStoreTest extends TestCase {
 	protected function setUp(): void {
 		$this->ns = new RdfNamespaces( self::BASE );
 		$this->endpoint = new CapturingSparqlUpdateEndpoint();
+	}
+
+	public function testInitializeProbesTheUpdateEndpoint(): void {
+		$this->newStore( $this->resolverReturning( $this->personQuads() ), 'native' )->initialize();
+
+		$this->assertSame(
+			[ 'DROP SILENT GRAPH <https://wiki.example/graph/liveness-probe>' ],
+			$this->endpoint->updates,
+			'A rebuild reads a store whose initialize() throws as one it cannot reach, so initialize() '
+				. 'has to reach the store rather than assume it is there.'
+		);
+	}
+
+	public function testInitializeFailsWhenTheStoreWillNotTakeUpdates(): void {
+		$this->endpoint = new CapturingSparqlUpdateEndpoint( new RuntimeException( 'endpoint unreachable' ) );
+		$store = $this->newStore( $this->resolverReturning( $this->personQuads() ), 'native' );
+
+		$this->expectExceptionMessage( 'endpoint unreachable' );
+
+		$store->initialize();
 	}
 
 	public function testSavePersistsDropThenInsertDataForThePageGraph(): void {
@@ -119,6 +140,17 @@ class SparqlProjectionStoreTest extends TestCase {
 			'DROP SILENT GRAPH <https://wiki.example/graph/bogus/page/42>',
 			$this->endpoint->lastUpdate(),
 			'The store names its own graph, so a delete needs no projection resolution.'
+		);
+	}
+
+	public function testInitializeWorksEvenWhenProjectionIsUnknown(): void {
+		$this->newStore( $this->unknownProjectionResolver( [ 'native' ] ), 'bogus' )->initialize();
+
+		$this->assertSame(
+			[ 'DROP SILENT GRAPH <https://wiki.example/graph/liveness-probe>' ],
+			$this->endpoint->updates,
+			'A store whose Mapping is broken is still reachable; reading it as gone would rewind the '
+				. 'rebuild cursor into pages that will never project.'
 		);
 	}
 

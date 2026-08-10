@@ -22,8 +22,7 @@ class RedHerbGraphDatabasePlugin implements GraphDatabasePlugin {
 	public array $deletedPageIds = [];
 
 	public function initialize(): void {
-		// A real backend would create its store-level structures (e.g. uniqueness constraints) here.
-		// This example store needs none, so initialization is a no-op.
+		// This example store is this object, so there is nothing to create and nothing to reach.
 	}
 
 	public function savePage( Page $page ): void {

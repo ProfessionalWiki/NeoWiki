@@ -157,6 +157,12 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 		return $entry;
 	}
 
+	public function testALiveStoreAcceptsTheLivenessProbe(): void {
+		$this->expectNotToPerformAssertions();
+
+		NeoWikiExtension::getInstance()->getNamedGraphDatabasePlugins()['native']->initialize();
+	}
+
 	public function testSubjectLabelRoundTripsThroughTheSparqlQueryService(): void {
 		$subjectId = TestSubject::uniqueId();
 		$initialLabel = 'System test subject ' . uniqid( '', true );

@@ -45,9 +45,13 @@ readonly class SparqlProjectionStore implements GraphDatabasePlugin {
 	) {
 	}
 
+	/**
+	 * Reaching the store is all there is to prepare: a SPARQL graph store has no store-level structures
+	 * (e.g. uniqueness constraints) to create up front, unlike Neo4j. The store is reached rather than
+	 * assumed, as {@see GraphDatabasePlugin::initialize()} requires (#1279).
+	 */
 	public function initialize(): void {
-		// Nothing to prepare: a SPARQL graph store has no store-level structures (e.g. uniqueness
-		// constraints) to create up front, unlike Neo4j.
+		$this->endpoint->postUpdate( $this->dropGraph( $this->namespaces->probeGraph() ) );
 	}
 
 	public function savePage( Page $page ): void {
@@ -99,10 +103,12 @@ readonly class SparqlProjectionStore implements GraphDatabasePlugin {
 	}
 
 	private function dropGraph( Iri $graph ): string {
-		// DROP SILENT so the first save of a new page does not error on a not-yet-existing graph. The
-		// graph IRI is built from trusted config (the base URI), an integer page id, and the projection
-		// name — the one untrusted part, since a Mapping target is author-controlled. RdfNamespaces::graph()
-		// percent-encodes it, `>` included, so it cannot close the <...> early and forge an update clause.
+		// DROP SILENT so a graph that need not exist is not an error: the first save of a new page names
+		// one, and so does every probe — without SILENT a healthy store answers those with a failure. The
+		// graph IRI is built from trusted config (the base URI) plus, for a page graph, an integer page id
+		// and the projection name — the one untrusted part, since a Mapping target is author-controlled.
+		// RdfNamespaces::graph() percent-encodes it, `>` included, so it cannot close the <...> early and
+		// forge an update clause.
 		return 'DROP SILENT GRAPH <' . $graph->value . '>';
 	}
 

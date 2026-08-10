@@ -110,6 +110,15 @@ readonly class RdfNamespaces {
 		return new Iri( $this->baseUri . '/graph/' . self::localName( $projection ) . '/page/' . $id->id );
 	}
 
+	/**
+	 * A named graph reserved for probing whether a store can be reached, so an update naming it is
+	 * harmless whatever the store holds: nothing writes to it. No page graph can collide with it,
+	 * whatever a projection is named, since every IRI that {@see graph()} mints ends in `/page/{id}`.
+	 */
+	public function probeGraph(): Iri {
+		return new Iri( $this->baseUri . '/graph/liveness-probe' );
+	}
+
 	public function term( string $localName ): Iri {
 		return new Iri( $this->baseUri . '/ontology/' . $localName );
 	}

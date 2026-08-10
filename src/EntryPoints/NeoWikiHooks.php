@@ -233,17 +233,17 @@ class NeoWikiHooks {
 		$updater->output(
 			"failed.\n"
 			. '...' . $reason . "\n"
-			. "...Re-run update.php once the cause is resolved. While a backend is unreachable, Subject\n"
-			. "...editing and display and every graph read fail, and the edits made meanwhile are missing\n"
-			. "...from the projection: run RebuildGraphDatabases.php to reconcile it.\n"
+			. "...Re-run update.php once the cause is resolved. The reads the backend serves fail while\n"
+			. "...it is unreachable, and the edits made meanwhile are missing from its projection: run\n"
+			. "...RebuildGraphDatabases.php to reconcile it.\n"
 		);
 
 		// Logged as well, because update.php --quiet discards everything written to the updater, which
 		// would otherwise leave a failed initialization with no trace anywhere. The redacted reason
 		// rather than the exception, so that what is kept out of the terminal stays out of the log too.
 		LoggerFactory::getInstance( 'NeoWiki' )->error(
-			'NeoWiki failed to initialize its graph databases during update.php. The wiki is updated, but '
-			. 'the store-level structures its projection relies on are missing. Underlying error: ' . $reason
+			'NeoWiki failed to initialize its graph databases during update.php. The wiki itself is updated. '
+			. 'Underlying error: ' . $reason
 		);
 	}
 
