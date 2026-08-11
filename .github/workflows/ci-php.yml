@@ -56,6 +56,10 @@ jobs:
       # Live Oxigraph store for the same system test run against a second engine, published by the
       # "Start Oxigraph" step.
       OXIGRAPH_TEST_BASE_URL: http://localhost:7878
+      # Live Fuseki store for a third run of the same system test, published by the "Start Fuseki" step.
+      # Nothing outside CI sets this, and QueryFusekiEndToEndTest skips without it, so this line is what
+      # makes that suite run at all.
+      FUSEKI_TEST_BASE_URL: http://localhost:3030/ds
 
     services:
       test_neo:
@@ -159,6 +163,39 @@ jobs:
           docker run -d --name test_oxigraph -p 127.0.0.1:7878:7878 \
             ghcr.io/oxigraph/oxigraph:latest serve --bind 0.0.0.0:7878
 
+      # Apache Jena Fuseki, which the same system test runs against a third time. It is here as a
+      # conformance target, not as an engine NeoWiki ships: Jena is the most complete SPARQL 1.1
+      # implementation to check the emitted queries and updates against. The version is pinned for that
+      # reason — the reference to test against should change deliberately, not with upstream releases.
+      # Apache publishes no container image, so instead of trusting a third-party build this runs the
+      # release Apache itself publishes: the tarball comes from the ASF archive (cached, so the archive
+      # is only hit when the pin changes) and is checked against the checksum recorded here before
+      # anything in it runs. `--mem /ds` serves an in-memory dataset unauthenticated on /ds/query and
+      # /ds/update, which is all a fresh-per-run CI store needs, and keeps named graphs out of the
+      # default graph the way Oxigraph above does — the spec-strict behaviour the suite asserts.
+      # JVM_ARGS caps a heap the launcher otherwise defaults to -Xmx4G.
+      - name: Cache Fuseki
+        uses: actions/cache@v5
+        with:
+          path: ~/fuseki-dist
+          key: fuseki-6.2.0
+
+      - name: Start Fuseki
+        env:
+          FUSEKI_VERSION: 6.2.0
+          FUSEKI_SHA512: ba65f5867d2d4741b2ed9e2af5a0d4fbb447909894ab2a0c6bc4dac8997f4fe339c87b13c48d45d054977769f0f8bf763ea346b1f7792d5cdc458041bd43a132
+        run: |
+          mkdir -p ~/fuseki-dist && cd ~/fuseki-dist
+          if [ ! -f "apache-jena-fuseki-$FUSEKI_VERSION.tar.gz" ]; then
+            curl -fsSL -o "apache-jena-fuseki-$FUSEKI_VERSION.tar.gz" \
+              "https://archive.apache.org/dist/jena/binaries/apache-jena-fuseki-$FUSEKI_VERSION.tar.gz"
+          fi
+          echo "$FUSEKI_SHA512  apache-jena-fuseki-$FUSEKI_VERSION.tar.gz" | sha512sum -c -
+          tar -xzf "apache-jena-fuseki-$FUSEKI_VERSION.tar.gz"
+          cd "apache-jena-fuseki-$FUSEKI_VERSION"
+          JAVA_HOME="$JAVA_HOME_21_X64" JVM_ARGS=-Xmx512m \
+            nohup ./fuseki-server --mem /ds > "$RUNNER_TEMP/fuseki.log" 2>&1 &
+
       - name: Run update.php
         run: php maintenance/update.php --quick
 
@@ -185,6 +222,16 @@ jobs:
             sleep 2
           done
           echo "Oxigraph did not become ready in time; dumping logs:"; docker logs test_oxigraph; exit 1
+
+      - name: Wait for Fuseki
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS -o /dev/null "http://localhost:3030/ds/query?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"; then
+              echo "Fuseki is serving"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Fuseki did not become ready in time; dumping logs:"; cat "$RUNNER_TEMP/fuseki.log"; exit 1
 
       - name: Run PHPUnit
         run: composer phpunit
