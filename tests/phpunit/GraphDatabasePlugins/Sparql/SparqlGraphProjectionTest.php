@@ -123,7 +123,8 @@ class SparqlGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		} );
 
 		$this->assertSame( RebuildStatus::Failed, $run->status );
-		$this->assertSame( 0, $run->processed, 'the walk never starts against a store that cannot be opened' );
+		$this->assertSame( 0, $run->processed, 'nothing is projected into a store that never opened' );
+		$this->assertSame( 0, $run->failed, 'and the walk never starts, so no page is pushed at it to fail' );
 	}
 
 	private function capturingHttp(): callable {
