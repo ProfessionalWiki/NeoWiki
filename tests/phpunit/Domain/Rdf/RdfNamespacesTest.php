@@ -118,6 +118,13 @@ class RdfNamespacesTest extends TestCase {
 		);
 	}
 
+	public function testProbeGraphIriUsesTheReservedProbePath(): void {
+		$this->assertSame(
+			'https://wiki.example/graph/liveness-probe',
+			$this->namespaces()->probeGraph()->value
+		);
+	}
+
 	public function testSubjectAnchoredSynthesizedNodeIriUsesNodePathUnderTheSubjectId(): void {
 		$this->assertSame(
 			'https://wiki.example/node/s1demo8aaaaaab5/birth',

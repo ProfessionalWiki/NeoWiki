@@ -8,14 +8,21 @@ use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use MockHttpTrait;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
+use ProfessionalWiki\NeoWiki\Application\GraphRebuild\NullRebuildBatchObserver;
+use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
+use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
+use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
- * Proves that a configured SPARQL store participates in the real hook-facing write path: a page edit
- * that stores a Subject sends the store its DROP/INSERT update, a deletion sends the DROP, and a
- * failing store does not abort the edit (the per-plugin failure isolation covers the new plugin). The
- * HTTP layer is faked, so no live SPARQL endpoint is needed.
+ * Proves that a configured SPARQL store participates in the real write paths: a page edit that stores
+ * a Subject sends the store its DROP/INSERT update, a deletion sends the DROP, a failing store does
+ * not abort the edit (the per-plugin failure isolation covers the new plugin), and a rebuild against
+ * an unreachable store ends before walking the wiki. The HTTP layer is faked, so no live SPARQL
+ * endpoint is needed.
  *
  * Neo4j is switched off for these tests (runWithoutGraphBackend), so the SPARQL plugin is exercised on
  * its own and the assertions do not depend on a live Neo4j.
@@ -101,6 +108,23 @@ class SparqlGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertNotNull( $revision, 'the edit must still commit despite the SPARQL endpoint failing' );
 		$this->assertGreaterThan( 0, $revision->getPageId() );
+	}
+
+	public function testRebuildingAnUnreachableSparqlStoreEndsBeforeWalkingTheWiki(): void {
+		$this->installMockHttp( $this->makeFakeHttpRequest( 'connection refused', 0 ) );
+		$this->overrideConfigValue( 'NeoWikiSparqlStores', [ [ 'updateUrl' => self::ENDPOINT ] ] );
+
+		$run = $this->runWithoutGraphBackend( function (): RebuildRun {
+			$this->createPageWithSubjects( 'Page the rebuild must not walk', TestSubject::build() );
+
+			return NeoWikiExtension::getInstance()
+				->newGraphRebuildCoordinator( GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE )
+				->rebuild( 'native', RebuildTrigger::Cli, 200, new NullRebuildBatchObserver() );
+		} );
+
+		$this->assertSame( RebuildStatus::Failed, $run->status );
+		$this->assertSame( 0, $run->processed, 'nothing is projected into a store that never opened' );
+		$this->assertSame( 0, $run->failed, 'and the walk never starts, so no page is pushed at it to fail' );
 	}
 
 	private function capturingHttp(): callable {
