@@ -9,8 +9,10 @@ services:
       # Uncomment to use custom LocalSettings.
       # - ./LocalSettings.php:/var/www/html/w/LocalSettings.php:ro
     depends_on:
-      - db
-      - neo
+      db:
+        condition: service_healthy
+      neo:
+        condition: service_healthy
     environment:
       - MARIADB_DATABASE
       - MARIADB_USER
