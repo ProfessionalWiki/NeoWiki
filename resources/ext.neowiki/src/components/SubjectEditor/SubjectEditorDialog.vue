@@ -268,6 +268,8 @@ function onDialogUpdateOpen( value: boolean ): void {
 	}
 }
 
+// Immediate, because the host renders this dialog with v-if: it mounts with open already true, so a
+// deferred watcher would never see the opening that created it.
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
 		subjectLabel.value = props.subject.getLabel();
@@ -276,7 +278,7 @@ watch( () => props.open, ( isOpen ) => {
 		// Fetched per opening: approval state and the viewer's permissions both change without an edit.
 		loadNotices( Number( mw.config.get( 'wgArticleId' ) ), props.subject.getSchemaName() );
 	}
-} );
+}, { immediate: true } );
 
 // Existing subjects are expected to be complete, so validate as soon as the
 // editor mounts for an open dialog: pre-existing violations (e.g. a now-empty
