@@ -33,7 +33,13 @@ readonly class GetSubjectEditNoticesQuery {
 
 		$this->environment->prepareFor( $context );
 
-		$this->presenter->presentNotices( $this->collectNotices( $context ) );
+		try {
+			$notices = $this->collectNotices( $context );
+		} finally {
+			$this->environment->restore();
+		}
+
+		$this->presenter->presentNotices( $notices );
 	}
 
 	/**

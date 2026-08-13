@@ -15,4 +15,9 @@ interface SubjectEditNoticeEnvironment {
 
 	public function prepareFor( SubjectEditNoticeContext $context ): void;
 
+	/**
+	 * Puts back what {@see prepareFor} replaced, so the rest of the request is unaffected.
+	 */
+	public function restore(): void;
+
 }

@@ -167,7 +167,7 @@ const subjectLabel = ref( '' );
 // without waiting for the host to pass a new one down.
 const currentSchema = shallowRef<Schema>( props.schema );
 const { canEditSchema, checkEditPermission } = useSchemaPermissions();
-const { notices, loadNotices } = useEditNotices();
+const { notices, loadNotices } = useEditNotices( () => NeoWikiExtension.getInstance().getEditNoticeRepository() );
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
 const { violations: serverViolations, revalidate, flush, reset } = useSubjectValidation(
@@ -276,6 +276,11 @@ watch( () => props.open, ( isOpen ) => {
 		resetChanged();
 		reset();
 		// Fetched per opening: approval state and the viewer's permissions both change without an edit.
+		// Keyed on the page being viewed, which is the page storing this Subject except when
+		// {{#view: <subjectId>}} renders a Subject from elsewhere. Then the wrong page's notices are
+		// shown, a v1 limitation documented in docs/authoring/edit-notices.md: the frontend Subject
+		// carries no page id, so fixing it needs the endpoint to resolve the page from a Subject id
+		// and to read-gate on the page it resolved rather than the one asked for.
 		loadNotices( Number( mw.config.get( 'wgArticleId' ) ), props.subject.getSchemaName() );
 	}
 }, { immediate: true } );

@@ -199,7 +199,7 @@ const props = defineProps<{
 
 const selectedSchemaOption = ref( 'existing' );
 const selectedSchemaName = ref<string | null>( null );
-const { notices, loadNotices } = useEditNotices();
+const { notices, loadNotices } = useEditNotices( () => NeoWikiExtension.getInstance().getEditNoticeRepository() );
 
 const loadedSchema = ref<Schema | null>( null );
 const subjectLabel = ref( '' );

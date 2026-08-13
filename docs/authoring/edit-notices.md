@@ -49,6 +49,13 @@ Check the [[Project:Naming|naming convention]] before changing a person's name.
 
 Anyone editing a Person Subject now sees that notice.
 
+## Known limitation
+
+Notices are chosen by the page being viewed, not by the page that stores the Subject. A Subject rendered on
+another page with `{{#view: <subjectId>}}` (see [Parser Functions](parser-functions.md)) therefore shows the
+viewing page's notices, and its own page's notices do not appear. Editing a Subject from its own page, which is
+the usual case, is unaffected.
+
 ## From an extension
 
 Extensions add notices of their own through `addSubjectEditNoticeProvider` — see
