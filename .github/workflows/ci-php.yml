@@ -205,33 +205,18 @@ jobs:
 
       - name: Wait for QLever
         run: |
-          for i in $(seq 1 40); do
-            if curl -fsS -o /dev/null "http://localhost:7019/?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"; then
-              echo "QLever is serving"; exit 0
-            fi
-            sleep 2
-          done
-          echo "QLever did not become ready in time; dumping logs:"; docker logs test_qlever; exit 1
+          timeout 90 bash -c 'until curl -fsS -o /dev/null "http://localhost:7019/?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"; do sleep 2; done' \
+            || { echo "QLever did not become ready in time; dumping logs:"; docker logs test_qlever; exit 1; }
 
       - name: Wait for Oxigraph
         run: |
-          for i in $(seq 1 40); do
-            if curl -fsS -o /dev/null "http://localhost:7878/query?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"; then
-              echo "Oxigraph is serving"; exit 0
-            fi
-            sleep 2
-          done
-          echo "Oxigraph did not become ready in time; dumping logs:"; docker logs test_oxigraph; exit 1
+          timeout 90 bash -c 'until curl -fsS -o /dev/null "http://localhost:7878/query?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"; do sleep 2; done' \
+            || { echo "Oxigraph did not become ready in time; dumping logs:"; docker logs test_oxigraph; exit 1; }
 
       - name: Wait for Fuseki
         run: |
-          for i in $(seq 1 40); do
-            if curl -fsS -o /dev/null "http://localhost:3030/ds/query?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"; then
-              echo "Fuseki is serving"; exit 0
-            fi
-            sleep 2
-          done
-          echo "Fuseki did not become ready in time; dumping logs:"; cat "$RUNNER_TEMP/fuseki.log"; exit 1
+          timeout 90 bash -c 'until curl -fsS -o /dev/null "http://localhost:3030/ds/query?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"; do sleep 2; done' \
+            || { echo "Fuseki did not become ready in time; dumping logs:"; cat "$RUNNER_TEMP/fuseki.log"; exit 1; }
 
       - name: Run PHPUnit
         run: composer phpunit
