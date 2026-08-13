@@ -236,6 +236,8 @@ class RemoveStatementApiTest extends NeoWikiIntegrationTestCase {
 			)
 		);
 
+		$this->startFreshRequest();
+
 		$response = $this->executeHandler(
 			$this->newRemoveStatementApi(),
 			$this->newRequest( 'Website' )
