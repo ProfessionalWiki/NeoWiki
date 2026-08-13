@@ -4,59 +4,51 @@ order: 3
 ---
 # Edit Notices
 
-A message shown to users before they edit a Subject. Create one as an interface message; NeoWiki ships none, so a
-key resolves only once the corresponding `MediaWiki:` page exists.
+Interface messages shown to the user in the Subject editor, the Subject creator, and Manage subjects. NeoWiki ships
+none, so nothing appears until you create one.
 
-These are separate from MediaWiki's own edit notices, which stay with the wikitext editors.
+## Add a notice
 
-## Message keys
+Create the interface message whose key matches the scope you want:
 
-| Key | Applies to |
+| Create | Shown when editing |
 |---|---|
-| `MediaWiki:Neowiki-editnotice-{ns}` | Every Subject edit in namespace `{ns}` |
-| `MediaWiki:Neowiki-editnotice-{ns}-{dbkey}` | One page |
-| `MediaWiki:Neowiki-editnotice-schema-{Schema}` | Every Subject of that Schema, wiki-wide |
+| `MediaWiki:Neowiki-editnotice-{ns}` | Any Subject in namespace `{ns}` |
+| `MediaWiki:Neowiki-editnotice-{ns}-{dbkey}` | A Subject on one page |
+| `MediaWiki:Neowiki-editnotice-schema-{Schema}` | A Subject of one Schema, anywhere |
 
-`{ns}` is the numeric namespace ID, `0` for the main namespace. `{dbkey}` is the page title with spaces as
-underscores and without the namespace prefix, so `Help:New York` is `12-New_York`.
+`{ns}` is the numeric namespace ID, `0` for the main namespace. `{dbkey}` and `{Schema}` use underscores for spaces,
+and `{dbkey}` drops the namespace prefix, so `Help:New York` is `12-New_York` and a Schema named `Control Document`
+is `schema-Control_Document`.
 
-Where the namespace has subpages enabled, a notice applies to the page and everything beneath it:
-`Neowiki-editnotice-4-Handbook` also covers `Project:Handbook/Chapter1`. Elsewhere slashes become dashes, so
+Where the namespace has subpages enabled, a notice covers the page and everything beneath it:
+`Neowiki-editnotice-4-Handbook` also applies to `Project:Handbook/Chapter1`. Elsewhere slashes become dashes, so
 `Foo/Bar` in the main namespace is `0-Foo-Bar`.
 
-Matching notices are shown broadest first: namespace, then page, then Schema.
-
-## Content
-
-The message is wikitext and carries its own presentation: it renders as written, with no frame or icon
-added around it. Magic words resolve against the page being edited, making `{{PAGENAME}}` the page the user
-is on.
-
-Each notice is wrapped in `<div class="ext-neowiki-edit-notice" data-mw-neowiki-editnotice-key="...">`, so a
-notice can be styled by its key from `MediaWiki:Common.css`. Editors are bounded dialogs, so a notice longer
-than the space available scrolls rather than pushing the fields out of reach.
-
-Set a message to `-` to disable it. A message that renders to nothing is skipped rather than shown as an empty
-frame.
-
-## Example
-
-Create `MediaWiki:Neowiki-editnotice-schema-Person`:
+To warn anyone editing a Person Subject, create `MediaWiki:Neowiki-editnotice-schema-Person`:
 
 ```
 Check the [[Project:Naming|naming convention]] before changing a person's name.
 ```
 
-Anyone editing a Person Subject now sees that notice.
+## Write the content
+
+Magic words resolve against the page being edited, so `{{PAGENAME}}` is that page's name.
+
+To style a notice, target it in CSS by its key: each one is wrapped in
+`<div class="ext-neowiki-edit-notice" data-mw-neowiki-editnotice-key="...">`.
+
+## When several notices match
+
+All of them are shown, in this order: namespace, page, Schema, then any contributed by extensions. In the Subject
+creator the Schema notice appears only once a Schema has been chosen.
 
 ## Known limitation
 
-Notices are chosen by the page being viewed, not by the page that stores the Subject. A Subject rendered on
-another page with `{{#view: <subjectId>}}` (see [Parser Functions](parser-functions.md)) therefore shows the
-viewing page's notices, and its own page's notices do not appear. Editing a Subject from its own page, which is
-the usual case, is unaffected.
+Notices follow the page being viewed, not the page that stores the Subject. A Subject rendered elsewhere with
+`{{#view: <subjectId>}}` (see [Parser Functions](parser-functions.md)) therefore shows the viewing page's
+notices.
 
 ## From an extension
 
-Extensions add notices of their own through `addSubjectEditNoticeProvider` — see
-[Extending NeoWiki](../extending/extending.md).
+Extensions can add notices of their own — see [Extending NeoWiki](../extending/extending.md#edit-notices).

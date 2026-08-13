@@ -109,7 +109,7 @@ categories, and last editor. Example:
 
 ### Edit notices
 
-Show a message before a user edits a Subject, for instance to say a saved change stays hidden until it is reviewed.
+Show a message before a user edits a Subject.
 
 ```php
 class ApprovalEditNoticeProvider implements SubjectEditNoticeProvider {
@@ -130,15 +130,15 @@ class ApprovalEditNoticeProvider implements SubjectEditNoticeProvider {
 ```
 
 Register with `NeoWikiRegistrar::addSubjectEditNoticeProvider()`. Providers run in registration order, after the
-notices wiki admins write as interface messages, and the first provider to claim a key keeps it. The context
-exposes the page id, database key and namespace, plus the Schema being edited when one is known.
+notices wiki admins write as interface messages, and only for pages the requesting user may read.
+`SubjectEditNoticeContext` exposes `$pageId`, `$pageDbKey`, `$namespaceId`, and `$schemaName` when a Schema is
+known.
 
-The `html` is used as given, so escape or parse it yourself, and bring whatever presentation the notice needs:
-NeoWiki wraps it in a bare container and adds no frame, icon or colour of its own.
+Unlike an admin's wikitext, which MediaWiki's parser sanitizes, provider `html` is inserted as given: escape it
+yourself.
 
-Providers run only for pages the requesting user may read, and only after that check, so the main request context
-carries the page by the time a provider runs. Admin-written notices use the keys documented in
-[Edit notices](../authoring/edit-notices.md).
+Namespace your keys to your extension. A key reaches the browser as a styling handle, and the first provider to
+claim one keeps it. See [Edit notices](../authoring/edit-notices.md) for the keys admins use.
 
 ### Refreshing a page's data without an edit
 
