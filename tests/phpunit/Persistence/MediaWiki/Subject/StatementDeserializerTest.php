@@ -82,6 +82,18 @@ class StatementDeserializerTest extends TestCase {
 		);
 	}
 
+	public function testDropsStoredPartsWithoutContent(): void {
+		$statement = $this->newDeserializer()->deserialize(
+			'MyText',
+			[
+				'propertyType' => 'text',
+				'value' => [ '', 'Foo' ],
+			]
+		);
+
+		$this->assertSame( [ 'Foo' ], $statement->getValue()->toScalars() );
+	}
+
 	public function testDeserializesRelation(): void {
 		$this->assertEquals(
 			new Statement(

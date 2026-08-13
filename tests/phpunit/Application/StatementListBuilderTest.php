@@ -72,12 +72,68 @@ class StatementListBuilderTest extends TestCase {
 		$this->assertNull( $list->getStatement( new PropertyName( 'Dropped' ) ) );
 	}
 
+	public function testScalarEmptyStringIsDropped(): void {
+		$list = $this->newBuilder()->build( [
+			'Kept' => [ 'propertyType' => 'text', 'value' => 'yes' ],
+			'Dropped' => [ 'propertyType' => 'text', 'value' => '' ],
+		] );
+
+		$this->assertNotNull( $list->getStatement( new PropertyName( 'Kept' ) ) );
+		$this->assertNull( $list->getStatement( new PropertyName( 'Dropped' ) ) );
+	}
+
+	public function testListWithOnlyAnEmptyPartIsDropped(): void {
+		$list = $this->newBuilder()->build( [
+			'Dropped' => [ 'propertyType' => 'text', 'value' => [ '' ] ],
+		] );
+
+		$this->assertNull( $list->getStatement( new PropertyName( 'Dropped' ) ) );
+	}
+
+	public function testWhitespaceOnlyPartIsDropped(): void {
+		$list = $this->newBuilder()->build( [
+			'Dropped' => [ 'propertyType' => 'text', 'value' => [ ' ' ] ],
+		] );
+
+		$this->assertNull( $list->getStatement( new PropertyName( 'Dropped' ) ) );
+	}
+
+	public function testStatementWithSomeEmptyPartsKeepsTheOthers(): void {
+		$list = $this->newBuilder()->build( [
+			'Aliases' => [ 'propertyType' => 'text', 'value' => [ 'a', '', ' b ' ] ],
+		] );
+
+		$statement = $list->getStatement( new PropertyName( 'Aliases' ) );
+
+		$this->assertNotNull( $statement );
+		$this->assertSame( [ 'a', ' b ' ], $statement->getValue()->toScalars() );
+	}
+
+	public function testNullValueOfStringTypeIsDropped(): void {
+		$list = $this->newBuilder()->build( [
+			'Dropped' => [ 'propertyType' => 'text', 'value' => null ],
+		] );
+
+		$this->assertNull( $list->getStatement( new PropertyName( 'Dropped' ) ) );
+	}
+
 	public function testUnregisteredTypeStatementIsNotDroppedAsEmpty(): void {
 		$list = $this->newBuilder()->build( [
 			'Swatch' => [ 'propertyType' => 'color', 'value' => [] ],
 		] );
 
 		$this->assertNotNull( $list->getStatement( new PropertyName( 'Swatch' ) ) );
+	}
+
+	public function testUnregisteredTypeKeepsEmptyStringValue(): void {
+		$list = $this->newBuilder()->build( [
+			'Swatch' => [ 'propertyType' => 'color', 'value' => '' ],
+		] );
+
+		$statement = $list->getStatement( new PropertyName( 'Swatch' ) );
+
+		$this->assertNotNull( $statement );
+		$this->assertEquals( new UnregisteredTypeValue( 'color', '' ), $statement->getValue() );
 	}
 
 	public function testNullValueIsDropped(): void {

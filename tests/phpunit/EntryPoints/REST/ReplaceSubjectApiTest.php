@@ -278,6 +278,30 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ 'Founded at' ], array_keys( $subject->getStatements()->asArray() ) );
 	}
 
+	public function testEmptyStringValueClearsTheStatement(): void {
+		$this->createPages();
+
+		$bodyWithTwoStatements = $this->validBody();
+		$bodyWithTwoStatements['statements'] = $this->twoStatements();
+		$this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestData( $bodyWithTwoStatements )
+		);
+
+		$bodyClearingOne = $this->validBody();
+		$bodyClearingOne['statements'] = [
+			'Founded at' => [ 'propertyType' => 'number', 'value' => 2019 ],
+			'Website' => [ 'propertyType' => 'url', 'value' => '' ],
+		];
+		$this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestData( $bodyClearingOne )
+		);
+
+		$subject = $this->getSubjectFromRepository( 'sTestSA11111111' );
+		$this->assertSame( [ 'Founded at' ], array_keys( $subject->getStatements()->asArray() ) );
+	}
+
 	public function testEmptyStatementsMapClearsAll(): void {
 		$this->createPages();
 

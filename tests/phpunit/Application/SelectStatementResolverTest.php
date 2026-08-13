@@ -166,6 +166,39 @@ class SelectStatementResolverTest extends TestCase {
 		$this->assertSame( 'Nonexistent', $resolved['Status']['value'] );
 	}
 
+	public function testLeavesEmptyValueInPlace(): void {
+		$patch = [
+			'Status' => [ 'propertyType' => 'select', 'value' => '' ],
+		];
+
+		$resolved = $this->newResolver()->resolve( $this->newSchemaWithSelect(), $patch );
+
+		$this->assertSame( $patch, $resolved );
+	}
+
+	public function testLeavesWhitespaceOnlyValueInPlace(): void {
+		$patch = [
+			'Status' => [ 'propertyType' => 'select', 'value' => ' ' ],
+		];
+
+		$resolved = $this->newResolver()->resolve( $this->newSchemaWithSelect(), $patch );
+
+		$this->assertSame( $patch, $resolved );
+	}
+
+	public function testResolvesListContainingAnEmptyValue(): void {
+		$patch = [
+			'Status' => [
+				'propertyType' => 'select',
+				'value' => [ '', 'Approved' ],
+			],
+		];
+
+		$resolved = $this->newResolver()->resolve( $this->newSchemaWithSelect( multiple: true ), $patch );
+
+		$this->assertSame( [ '', 'opt2' ], $resolved['Status']['value'] );
+	}
+
 	public function testThrowsOnUnknownValueForKnownSelectProperty(): void {
 		$patch = [
 			'Status' => [ 'propertyType' => 'select', 'value' => 'Nonexistent' ],

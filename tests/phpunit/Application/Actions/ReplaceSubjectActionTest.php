@@ -180,6 +180,152 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->assertNull( $persisted->getStatements()->getStatement( new PropertyName( 'Keep' ) ) );
 	}
 
+	public function testEmptyStringValueDeletesTheStatement(): void {
+		$subject = TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) );
+		$this->subjectRepository->updateSubject( $subject );
+
+		$action = $this->newAction();
+		$action->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'Label',
+			[ 'Website' => [ 'propertyType' => 'url', 'value' => 'https://example.com' ] ],
+			null
+		);
+
+		$action->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'Label',
+			[ 'Website' => [ 'propertyType' => 'url', 'value' => '' ] ],
+			null
+		);
+
+		$persisted = $this->subjectRepository->getSubject( new SubjectId( self::SUBJECT_ID ) );
+
+		$this->assertNull( $persisted->getStatements()->getStatement( new PropertyName( 'Website' ) ) );
+	}
+
+	public function testEmptySelectValueDeletesTheStatement(): void {
+		$this->registerSchemaWithSelect();
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		) );
+
+		$action = $this->newAction();
+		$action->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'Label',
+			[ 'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ] ],
+			null
+		);
+
+		$action->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'Label',
+			[ 'Status' => [ 'propertyType' => 'select', 'value' => '' ] ],
+			null
+		);
+
+		$persisted = $this->subjectRepository->getSubject( new SubjectId( self::SUBJECT_ID ) );
+
+		$this->assertNull( $persisted->getStatements()->getStatement( new PropertyName( 'Status' ) ) );
+	}
+
+	/**
+	 * Both sides of the violation diff drop empty parts, so a request that echoes one back leaves
+	 * the violations of the parts around it on the same part index. A violation that moved would
+	 * read as new, and enforcement blocks new blocking violations.
+	 */
+	public function testEchoingBackAnEmptyPartIsNotBlocked(): void {
+		$this->registerSchemaWithMultiValueWebsite();
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+			statements: new StatementList( [
+				TestStatement::build(
+					property: 'Website',
+					value: new StringValue( '', 'not a url' ),
+					propertyType: 'url'
+				),
+			] ),
+		) );
+
+		$this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'Label',
+			[ 'Website' => [ 'propertyType' => 'url', 'value' => [ '', 'not a url' ] ] ],
+			null
+		);
+
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+		$this->assertSame(
+			[ 'not a url' ],
+			$this->subjectRepository
+				->getSubject( new SubjectId( self::SUBJECT_ID ) )
+				->getStatements()
+				->getStatement( new PropertyName( 'Website' ) )
+				?->getValue()
+				->toScalars()
+		);
+	}
+
+	/**
+	 * The Statement the write drops carries the same `required` violation the Subject-level check
+	 * raises once it is gone, so clearing a required property is not a new violation either.
+	 */
+	public function testClearingARequiredPropertyIsNotBlocked(): void {
+		$this->registerSchemaWithRequiredWebsite();
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+			statements: new StatementList( [
+				TestStatement::build( property: 'Website', value: new StringValue( '' ), propertyType: 'url' ),
+			] ),
+		) );
+
+		$this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'Label',
+			[ 'Website' => [ 'propertyType' => 'url', 'value' => '' ] ],
+			null
+		);
+
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+		$this->assertNull(
+			$this->subjectRepository
+				->getSubject( new SubjectId( self::SUBJECT_ID ) )
+				->getStatements()
+				->getStatement( new PropertyName( 'Website' ) )
+		);
+	}
+
+	private function registerSchemaWithMultiValueWebsite(): void {
+		$this->registerSchemaWithWebsite( required: false, multiple: true );
+	}
+
+	private function registerSchemaWithRequiredWebsite(): void {
+		$this->registerSchemaWithWebsite( required: true, multiple: false );
+	}
+
+	private function registerSchemaWithWebsite( bool $required, bool $multiple ): void {
+		$this->schemaLookup->updateSchema( new Schema(
+			name: new SchemaName( self::SCHEMA_NAME ),
+			description: '',
+			properties: new PropertyDefinitions( [
+				'Website' => new UrlProperty(
+					core: new PropertyCore(
+						description: '',
+						required: $required,
+						default: null,
+						constraintSeverities: [ 'required' => Severity::Error ]
+					),
+					multiple: $multiple,
+					uniqueItems: false,
+				),
+			] )
+		) );
+	}
+
 	public function testCommentIsForwarded(): void {
 		$subject = TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) );
 		$this->subjectRepository->updateSubject( $subject );
