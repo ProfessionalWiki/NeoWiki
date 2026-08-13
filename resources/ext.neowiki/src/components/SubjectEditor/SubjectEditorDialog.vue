@@ -77,6 +77,8 @@
 				</ul>
 			</CdxMessage>
 
+			<EditNoticeList :notices="notices" />
+
 			<SubjectEditor
 				ref="subjectEditorRef"
 				:statements="statements"
@@ -129,6 +131,8 @@ import { Schema } from '@/domain/Schema.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
+import EditNoticeList from '@/components/common/EditNoticeList.vue';
+import { useEditNotices } from '@/composables/useEditNotices.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
@@ -163,6 +167,7 @@ const subjectLabel = ref( '' );
 // without waiting for the host to pass a new one down.
 const currentSchema = shallowRef<Schema>( props.schema );
 const { canEditSchema, checkEditPermission } = useSchemaPermissions();
+const { notices, loadNotices } = useEditNotices();
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
 const { violations: serverViolations, revalidate, flush, reset } = useSubjectValidation(
@@ -268,6 +273,8 @@ watch( () => props.open, ( isOpen ) => {
 		subjectLabel.value = props.subject.getLabel();
 		resetChanged();
 		reset();
+		// Fetched per opening: approval state and the viewer's permissions both change without an edit.
+		loadNotices( Number( mw.config.get( 'wgArticleId' ) ), props.subject.getSchemaName() );
 	}
 } );
 

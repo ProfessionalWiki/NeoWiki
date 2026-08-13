@@ -27,6 +27,8 @@ import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import { ProductionHttpClient } from '@/infrastructure/HttpClient/ProductionHttpClient';
 import { RestSchemaRepository } from '@/persistence/RestSchemaRepository.ts';
 import { SchemaRepository } from '@/application/SchemaRepository.ts';
+import { RestEditNoticeRepository } from '@/persistence/RestEditNoticeRepository.ts';
+import { EditNoticeRepository } from '@/application/EditNoticeRepository.ts';
 import { LayoutRepository } from '@/application/LayoutRepository.ts';
 import { RestLayoutRepository } from '@/persistence/RestLayoutRepository.ts';
 import { LayoutSerializer } from '@/persistence/LayoutSerializer.ts';
@@ -211,6 +213,13 @@ export class NeoWikiExtension {
 			new SchemaSerializer(),
 			new SchemaDeserializer(),
 			new MediaWikiPageSaver( this.getMediaWiki() ),
+		);
+	}
+
+	public getEditNoticeRepository(): EditNoticeRepository {
+		return new RestEditNoticeRepository(
+			this.getMediaWiki().util.wikiScript( 'rest' ),
+			this.newHttpClient(),
 		);
 	}
 
