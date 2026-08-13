@@ -8,9 +8,25 @@
 		>
 			<template #header>
 				<div class="cdx-dialog__header__title-group">
-					<h2 class="cdx-dialog__header__title">
-						{{ $i18n( 'neowiki-subject-editor-title', props.subject.getLabel() ).text() }}
-					</h2>
+					<div class="cdx-dialog__header__title ext-neowiki-subject-editor-dialog__title">
+						<EditableText
+							:model-value="subjectLabel"
+							:edit-button-label="$i18n( 'neowiki-subject-editor-rename' ).text()"
+							:input-aria-label="$i18n( 'neowiki-subject-editor-label-field' ).text()"
+							:placeholder="$i18n( 'neowiki-subject-editor-label-field' ).text()"
+							:status="labelViolation ? 'error' : 'default'"
+							:required="true"
+							@update:model-value="onLabelEdited"
+						/>
+					</div>
+
+					<p
+						v-if="labelViolation"
+						class="ext-neowiki-subject-editor-dialog__label-error"
+						role="alert"
+					>
+						{{ formatViolationMessage( labelViolation ) }}
+					</p>
 
 					<p class="cdx-dialog__header__subtitle">
 						<I18nSlot
@@ -104,6 +120,7 @@ import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import { CdxButton, CdxDialog, CdxIcon, CdxMessage } from '@wikimedia/codex';
+import EditableText from '@/components/common/EditableText.vue';
 import { cdxIconClose } from '@wikimedia/codex-icons';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
@@ -140,6 +157,8 @@ interface SubjectEditorInstance {
 
 const isSchemaEditorOpen = ref( false );
 const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
+// Initialized by the immediate props.subject watch below.
+const subjectLabel = ref( '' );
 // Mirrors the prop so a schema saved through the nested SchemaEditorDialog takes effect here
 // without waiting for the host to pass a new one down.
 const currentSchema = shallowRef<Schema>( props.schema );
@@ -158,7 +177,7 @@ const { violations: serverViolations, revalidate, flush, reset } = useSubjectVal
 			// field the user is still on their way to filling in.
 			return await subjectStore.validateSubjectUpdate(
 				props.subject.getId(),
-				props.subject.getLabel(),
+				subjectLabel.value.trim(),
 				new StatementList( statements )
 			);
 		} catch ( error ) {
@@ -189,6 +208,18 @@ function handleEditorBlur(): void {
 	}
 }
 
+// EditableText commits once per edit, so a commit is both the change and the
+// end of the interaction: validate immediately rather than waiting for a blur.
+function onLabelEdited( value: string ): void {
+	subjectLabel.value = value;
+	handleEditorChange();
+	handleEditorBlur();
+}
+
+const labelViolation = computed<SubjectViolation | null>( () =>
+	serverViolations.value.find( ( v ) => v.code === 'label-required' ) ?? null
+);
+
 const anchorlessViolations = computed<SubjectViolation[]>( () => {
 	// SubjectEditor renders one field per entry in `statements`, which the
 	// schema materialises from its property definitions (so empty/missing
@@ -199,6 +230,10 @@ const anchorlessViolations = computed<SubjectViolation[]>( () => {
 		[ ...statements.value ].map( ( s ) => s.propertyName.toString() )
 	);
 	return serverViolations.value.filter( ( v ) => {
+		// label-required renders at the label itself, in the dialog header.
+		if ( v.code === 'label-required' ) {
+			return false;
+		}
 		if ( v.propertyName === null ) {
 			return true;
 		}
@@ -230,6 +265,7 @@ function onDialogUpdateOpen( value: boolean ): void {
 
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
+		subjectLabel.value = props.subject.getLabel();
 		resetChanged();
 		reset();
 	}
@@ -246,6 +282,7 @@ watch( subjectEditorRef, ( editor ) => {
 } );
 
 watch( () => props.subject, ( newSubject ) => {
+	subjectLabel.value = newSubject.getLabel();
 	checkEditPermission( newSubject.getSchemaName() );
 }, { immediate: true } );
 
@@ -260,6 +297,13 @@ const statements = computed( (): StatementList =>
 const handleSave = async ( summary: string ): Promise<void> => {
 	await nextTick();
 
+	const label = subjectLabel.value.trim();
+
+	if ( !label ) {
+		mw.notify( mw.msg( 'neowiki-field-label-required' ), { type: 'error' } );
+		return;
+	}
+
 	if ( !subjectEditorRef.value ) {
 		return;
 	}
@@ -269,7 +313,9 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	const updatedStatements = subjectEditorRef.value.getSubjectData();
 	// Filter out statements that don't have a value set.
 	const statementsToSave = [ ...updatedStatements ].filter( ( statement ) => statement.hasValue() );
-	const updatedSubject = props.subject.withStatements( new StatementList( statementsToSave ) );
+	const updatedSubject = props.subject
+		.withLabel( label )
+		.withStatements( new StatementList( statementsToSave ) );
 	const subjectName = updatedSubject.getLabel();
 	const editSummary = summary || mw.msg( 'neowiki-subject-editor-summary-default' );
 
@@ -326,6 +372,30 @@ defineExpose( { hasChanged } );
 		justify-content: flex-end;
 		box-sizing: @box-sizing-base;
 		width: @size-full;
+
+		/* Secondary to the title, like the statement-field labels below.
+			Nested under the header to out-rank Codex's runtime-injected
+			two-class subtitle rule. */
+		.cdx-dialog__header__subtitle {
+			font-size: @font-size-small;
+		}
+	}
+
+	/* The title row's edit button already provides vertical air; Codex's
+		default gap on top of it reads too wide. */
+	.cdx-dialog__header__title-group {
+		gap: 0;
+	}
+
+	&__title {
+		display: flex;
+		min-width: 0;
+	}
+
+	&__label-error {
+		color: @color-error;
+		font-size: @font-size-small;
+		margin: @spacing-25 0 0;
 	}
 }
 </style>
