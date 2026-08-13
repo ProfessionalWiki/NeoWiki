@@ -28,8 +28,13 @@ Matching notices are shown broadest first: namespace, then page, then Schema.
 
 ## Content
 
-The message is wikitext, rendered inside a message frame, so keep it to a sentence or two with inline formatting.
-Magic words resolve against the page being edited, making `{{PAGENAME}}` the page the user is on.
+The message is wikitext and carries its own presentation: it renders as written, with no frame or icon
+added around it. Magic words resolve against the page being edited, making `{{PAGENAME}}` the page the user
+is on.
+
+Each notice is wrapped in `<div class="ext-neowiki-edit-notice" data-mw-neowiki-editnotice-key="...">`, so a
+notice can be styled by its key from `MediaWiki:Common.css`. Editors are bounded dialogs, so a notice longer
+than the space available scrolls rather than pushing the fields out of reach.
 
 Set a message to `-` to disable it. A message that renders to nothing is skipped rather than shown as an empty
 frame.

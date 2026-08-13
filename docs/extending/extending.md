@@ -133,8 +133,8 @@ Register with `NeoWikiRegistrar::addSubjectEditNoticeProvider()`. Providers run 
 notices wiki admins write as interface messages, and the first provider to claim a key keeps it. The context
 exposes the page id, database key and namespace, plus the Schema being edited when one is known.
 
-The `html` is used as given, so escape or parse it yourself. Keep it short: it renders inside a message frame in an
-editing dialog.
+The `html` is used as given, so escape or parse it yourself, and bring whatever presentation the notice needs:
+NeoWiki wraps it in a bare container and adds no frame, icon or colour of its own.
 
 Providers run only for pages the requesting user may read, and only after that check, so the main request context
 carries the page by the time a provider runs. Admin-written notices use the keys documented in
