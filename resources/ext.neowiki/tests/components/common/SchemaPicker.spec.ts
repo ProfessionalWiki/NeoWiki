@@ -326,7 +326,7 @@ describe( 'SchemaPicker', () => {
 		// network: the field must end up focused with its list open regardless.
 		it( 'lists every schema straight away when focused, without waiting for a second focus', async () => {
 			let deliverSchemas: ( summaries: typeof SUMMARIES ) => void = () => undefined;
-			schemaStore.getAllSchemaSummaries = vi.fn().mockReturnValue(
+			schemaStore.fetchAllSchemaSummaries = vi.fn().mockReturnValue(
 				new Promise( ( resolve ) => {
 					deliverSchemas = resolve;
 				} ),
