@@ -112,14 +112,16 @@ class Neo4jSubjectUpdater {
 	 * @return array<string, mixed>
 	 */
 	private function nodeProperties( Subject $subject ): array {
-		return array_merge(
-			$this->statementsToNodeProperties( $subject->getStatements() ),
-			[
-				'name' => $subject->label->text,
-				'id' => $subject->id->text,
-				'wiki_id' => $this->wikiId,
-			]
-		);
+		$properties = $this->statementsToNodeProperties( $subject->getStatements() );
+
+		// Assigned rather than array_merge()d: a property named like a decimal integer is an int
+		// key by then, and array_merge() renumbers those, which would file its value under a
+		// different property name.
+		$properties['name'] = $subject->label->text;
+		$properties['id'] = $subject->id->text;
+		$properties['wiki_id'] = $this->wikiId;
+
+		return $properties;
 	}
 
 	/**

@@ -260,6 +260,82 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertNull( $this->getStoredValue( 'Founded at' ) );
 	}
 
+	/**
+	 * The body validator types `statement` but not the keys inside it, so a non-string
+	 * `propertyType` reaches the action unchecked.
+	 *
+	 * @dataProvider nonStringPropertyTypeProvider
+	 */
+	public function testNonStringPropertyTypeReturns400( mixed $propertyType ): void {
+		$this->createSubjectPage();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Website', [ 'statement' => [ 'propertyType' => $propertyType, 'value' => [ 'https://pro.wiki' ] ] ] )
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertNull( $this->getStoredValue( 'Website' ) );
+	}
+
+	public static function nonStringPropertyTypeProvider(): iterable {
+		yield 'number' => [ 2019 ];
+		yield 'boolean' => [ true ];
+		yield 'array' => [ [ 'url' ] ];
+	}
+
+	/**
+	 * A property named like a year is ordinary, and the name reaches the write path as an array
+	 * key, which PHP hands on as an int.
+	 */
+	public function testPropertyNameThatLooksLikeAnIntegerIsStored(): void {
+		$this->createSubjectPage();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( '2024', [ 'statement' => [ 'propertyType' => 'url', 'value' => [ 'https://pro.wiki' ] ] ] )
+		);
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( [ 'https://pro.wiki' ], $this->getStoredValue( '2024' ) );
+	}
+
+	/**
+	 * A JSON object unpacks into the value objects as named arguments, so it used to be stored as
+	 * an object where every reader expects a list.
+	 */
+	public function testObjectValueWhereAListIsExpectedReturns400(): void {
+		$this->createSubjectPage( new StatementList( [
+			TestStatement::build( property: 'Website', value: 'https://pro.wiki', propertyType: 'url' ),
+		] ) );
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Website', [ 'statement' => [ 'propertyType' => 'url', 'value' => [ 'a' => 'https://evil.example' ] ] ] )
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertSame( [ 'https://pro.wiki' ], $this->getStoredValue( 'Website' ) );
+	}
+
+	/**
+	 * Without a value there is nothing to set. Treating the absent key as an empty value would
+	 * delete the Statement and answer 200, so a client that drops the key loses data silently.
+	 */
+	public function testStatementWithoutAValueKeyLeavesTheStatementAlone(): void {
+		$this->createSubjectPage( new StatementList( [
+			TestStatement::build( property: 'Website', value: 'https://pro.wiki', propertyType: 'url' ),
+		] ) );
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Website', [ 'statement' => [ 'propertyType' => 'url' ] ] )
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertSame( [ 'https://pro.wiki' ], $this->getStoredValue( 'Website' ) );
+	}
+
 	public function testStatementWithoutAValueReturns400(): void {
 		$this->createSubjectPage();
 

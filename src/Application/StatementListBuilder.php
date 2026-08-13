@@ -45,6 +45,11 @@ readonly class StatementListBuilder {
 			}
 
 			$propertyType = $entry['propertyType'];
+
+			if ( !is_string( $propertyType ) ) {
+				throw new InvalidArgumentException( "Property type of \"{$propertyName}\" must be a string" );
+			}
+
 			$value = $this->deserializeValue( (string)$propertyName, $propertyType, $entry['value'] ?? null );
 
 			if ( $value->isEmpty() ) {
@@ -52,7 +57,7 @@ readonly class StatementListBuilder {
 			}
 
 			$built[$propertyName] = new Statement(
-				property: new PropertyName( $propertyName ),
+				property: new PropertyName( (string)$propertyName ),
 				propertyType: $propertyType,
 				value: $value
 			);
@@ -67,6 +72,17 @@ readonly class StatementListBuilder {
 	private function deserializeValue( string $propertyName, string $propertyType, mixed $value ): NeoValue {
 		$valueType = $this->propertyTypeLookup->getType( $propertyType )?->getValueType()
 			?? ValueType::UnregisteredType;
+
+		// A JSON object reaches the list-shaped types as named arguments rather than as a type
+		// error: it would be stored as an object where every reader expects a list, and the graph
+		// projection cannot hold one. The value types cannot tell it apart from a list, so it is
+		// rejected before they see it.
+		if ( in_array( $valueType, [ ValueType::String, ValueType::Relation ], true )
+			&& is_array( $value ) && !array_is_list( $value ) ) {
+			throw new InvalidArgumentException(
+				"Value of \"{$propertyName}\" must be a list, not an object"
+			);
+		}
 
 		// The value types below declare what each shape accepts, so a value of the wrong shape
 		// arrives here as a TypeError. Every one of them comes from the caller's value, never from
@@ -92,13 +108,19 @@ readonly class StatementListBuilder {
 		$relations = [];
 
 		foreach ( $json as $relation ) {
-			if ( is_array( $relation ) ) {
-				$relations[] = new Relation(
-					id: $this->buildRelationId( $relation ),
-					targetId: new SubjectId( $relation['target'] ?? null ),
-					properties: new RelationProperties( $relation['properties'] ?? [] )
-				);
+			// Skipping an entry that is not a relation object would turn a list of bare target
+			// ids into an empty value, which the write paths read as the Statement being absent.
+			// Raised as a TypeError so it reaches the caller as the same bad-value report the
+			// constructors below produce for every other misshapen relation.
+			if ( !is_array( $relation ) ) {
+				throw new TypeError( 'Relation entry must be an object' );
 			}
+
+			$relations[] = new Relation(
+				id: $this->buildRelationId( $relation ),
+				targetId: new SubjectId( $relation['target'] ?? null ),
+				properties: new RelationProperties( $relation['properties'] ?? [] )
+			);
 		}
 
 		return new RelationValue( ...$relations );

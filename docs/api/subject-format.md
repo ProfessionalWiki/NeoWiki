@@ -195,7 +195,7 @@ Subject's label and its other Statements as they are:
 
 | Field | Required | Notes |
 |-------|----------|-------|
-| `statement` | Yes | A [Statement object](#statement-object). `propertyType` may be omitted, and then takes the type the Subject's Schema currently gives the property; a property the Schema does not define is rejected with `400`. A value that is empty for its type removes the Statement. |
+| `statement` | Yes | A [Statement object](#statement-object) carrying a `value`. `propertyType` may be omitted, and then takes the type the Subject's Schema currently gives the property; a property the Schema does not define is rejected with `400`. A value that is empty for its type removes the Statement. |
 | `comment` | No | Edit summary. |
 
 `DELETE` on the same path removes the Statement and takes only `comment`. Removing a Statement the Subject does
