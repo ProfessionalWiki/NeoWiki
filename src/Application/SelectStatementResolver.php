@@ -62,11 +62,11 @@ readonly class SelectStatementResolver {
 				continue;
 			}
 
-			if ( !$schema->hasProperty( $propertyName ) ) {
+			if ( !$schema->hasProperty( (string)$propertyName ) ) {
 				continue;
 			}
 
-			$property = $schema->getProperty( $propertyName );
+			$property = $schema->getProperty( (string)$propertyName );
 
 			if ( !$property instanceof SelectProperty ) {
 				continue;
@@ -137,11 +137,11 @@ readonly class SelectStatementResolver {
 				continue;
 			}
 
-			if ( !$schema->hasProperty( $propertyName ) ) {
+			if ( !$schema->hasProperty( (string)$propertyName ) ) {
 				continue;
 			}
 
-			$property = $schema->getProperty( $propertyName );
+			$property = $schema->getProperty( (string)$propertyName );
 
 			if ( !$property instanceof SelectProperty ) {
 				continue;

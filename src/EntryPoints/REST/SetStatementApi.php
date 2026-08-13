@@ -33,6 +33,16 @@ class SetStatementApi extends SimpleHandler {
 		$body = $this->getValidatedBody();
 		$statement = $body['statement'];
 
+		// The body validator types `statement` but nothing inside it, so the value has to be
+		// required here. Without this, an absent value reads as an empty one and removes the
+		// Statement, so a client that drops the key is told its write succeeded.
+		if ( !array_key_exists( 'value', $statement ) ) {
+			return $this->getResponseFactory()->createHttpError( 400, [
+				'status' => 'error',
+				'message' => 'The "statement" parameter must have a "value".',
+			] );
+		}
+
 		$presenter = new RestUpdateStatementPresenter();
 
 		try {

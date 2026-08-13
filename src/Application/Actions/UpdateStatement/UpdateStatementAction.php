@@ -46,18 +46,20 @@ readonly class UpdateStatementAction {
 	}
 
 	/**
-	 * @param string|null $propertyType The writer's type for the value. Falls back to the type the
-	 *  Subject's Schema currently gives the property.
+	 * @param mixed $propertyType The writer's type for the value, as the caller supplied it. Falls
+	 *  back to the type the Subject's Schema currently gives the property when null. Taken raw
+	 *  rather than as a string because the request body it comes from is unvalidated below its top
+	 *  level; the builder rejects anything that is not a string.
 	 *
-	 * @throws InvalidArgumentException When no property type is given and none can be derived,
-	 *  or when a select value cannot be resolved.
+	 * @throws InvalidArgumentException When the property type is not a string, when none is given
+	 *  and none can be derived, or when a select value cannot be resolved.
 	 * @throws SubjectNotFoundException
 	 * @throws SubjectEditNotAuthorizedException
 	 */
 	public function setStatement(
 		SubjectId $subjectId,
 		PropertyName $propertyName,
-		?string $propertyType,
+		mixed $propertyType,
 		mixed $value,
 		?string $comment
 	): void {
@@ -135,7 +137,7 @@ readonly class UpdateStatementAction {
 	private function buildStatement(
 		?Schema $schema,
 		PropertyName $propertyName,
-		?string $propertyType,
+		mixed $propertyType,
 		mixed $value
 	): ?Statement {
 		$statements = [

@@ -129,6 +129,7 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 				Title::newFromText( 'GoneSchema', NeoWikiExtension::NS_SCHEMA )
 			)
 		);
+		$this->startFreshRequest();
 
 		$response = $this->executeHandler(
 			$this->newReplaceSubjectApi(),
@@ -356,6 +357,7 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 				Title::newFromText( 'OrphanSchema', NeoWikiExtension::NS_SCHEMA )
 			)
 		);
+		$this->startFreshRequest();
 
 		$response = $this->executeHandler(
 			$this->newReplaceSubjectApi(),
@@ -446,6 +448,21 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$body = $this->validBody();
 		$body['statements'] = [ 'Founded at' => [ 'propertyType' => 'number', 'value' => 'not a number' ] ];
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestData( $body )
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertSame( [], $this->getSubjectFromRepository( 'sTestSA11111111' )->getStatements()->asArray() );
+	}
+
+	public function testNonStringPropertyTypeReturns400(): void {
+		$this->createPages();
+
+		$body = $this->validBody();
+		$body['statements'] = [ 'Founded at' => [ 'propertyType' => [ 'number' ], 'value' => 2019 ] ];
 
 		$response = $this->executeHandler(
 			$this->newReplaceSubjectApi(),

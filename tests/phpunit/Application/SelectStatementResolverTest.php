@@ -26,11 +26,15 @@ class SelectStatementResolverTest extends TestCase {
 	}
 
 	private function newSchemaWithSelect( bool $multiple = false ): Schema {
+		return $this->newSchemaWithSelectNamed( 'Status', $multiple );
+	}
+
+	private function newSchemaWithSelectNamed( string $propertyName, bool $multiple ): Schema {
 		return new Schema(
 			name: new SchemaName( 'SomeSchema' ),
 			description: '',
 			properties: new PropertyDefinitions( [
-				'Status' => new SelectProperty(
+				$propertyName => new SelectProperty(
 					core: new PropertyCore( description: '', required: false, default: null ),
 					options: [
 						new SelectOption( id: 'opt1', label: 'Draft' ),
@@ -134,6 +138,30 @@ class SelectStatementResolverTest extends TestCase {
 		$resolved = $this->newResolver()->resolve( $this->newSchemaWithSelect(), $patch );
 
 		$this->assertSame( $patch, $resolved );
+	}
+
+	/**
+	 * PHP turns a decimal-integer array key into an int, so a select property named like a year
+	 * reaches the Schema lookups as one.
+	 */
+	public function testResolvesValueOfPropertyNamedLikeAnInteger(): void {
+		$patch = [
+			'2024' => [ 'propertyType' => 'select', 'value' => 'Draft' ],
+		];
+
+		$resolved = $this->newResolver()->resolve( $this->newSchemaWithSelectNamed( '2024', false ), $patch );
+
+		$this->assertSame( 'opt1', $resolved['2024']['value'] );
+	}
+
+	public function testResolveOrLeaveResolvesValueOfPropertyNamedLikeAnInteger(): void {
+		$patch = [
+			'2024' => [ 'propertyType' => 'select', 'value' => 'Draft' ],
+		];
+
+		$resolved = $this->newResolver()->resolveOrLeave( $this->newSchemaWithSelectNamed( '2024', false ), $patch );
+
+		$this->assertSame( 'opt1', $resolved['2024']['value'] );
 	}
 
 	public function testResolveOrLeaveResolvesKnownLabelToId(): void {

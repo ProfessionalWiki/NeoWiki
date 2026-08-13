@@ -110,6 +110,60 @@ class StatementListBuilderTest extends TestCase {
 		yield 'boolean given a string' => [ 'boolean', 'yes' ];
 		yield 'relation given a scalar' => [ 'relation', 'sTargetIdWanted' ];
 		yield 'relation target missing' => [ 'relation', [ [ 'properties' => [] ] ] ];
+		yield 'relation given a list of bare target ids' => [ 'relation', [ 'sTargetIdWanted' ] ];
+	}
+
+	/**
+	 * @dataProvider nonStringPropertyTypeProvider
+	 */
+	public function testNonStringPropertyTypeIsRejected( mixed $propertyType ): void {
+		$builder = $this->newBuilder();
+
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Mistyped' );
+
+		$builder->build( [ 'Mistyped' => [ 'propertyType' => $propertyType, 'value' => 'yes' ] ] );
+	}
+
+	public static function nonStringPropertyTypeProvider(): iterable {
+		yield 'number' => [ 2019 ];
+		yield 'boolean' => [ true ];
+		yield 'array' => [ [ 'text' ] ];
+		yield 'object' => [ [ 'name' => 'text' ] ];
+	}
+
+	/**
+	 * PHP turns a decimal-integer array key into an int, so a property named like a year
+	 * reaches the value objects as one.
+	 */
+	public function testPropertyNameThatLooksLikeAnIntegerIsBuilt(): void {
+		$list = $this->newBuilder()->build( [ '2024' => [ 'propertyType' => 'text', 'value' => 'yes' ] ] );
+
+		$this->assertSame(
+			[ 'yes' ],
+			$list->getStatement( new PropertyName( '2024' ) )?->getValue()->toScalars()
+		);
+	}
+
+	/**
+	 * @dataProvider objectWhereAListIsExpectedProvider
+	 */
+	public function testObjectValueWhereAListIsExpectedIsRejected( string $propertyType, mixed $value ): void {
+		$builder = $this->newBuilder();
+
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Objected' );
+
+		$builder->build( [ 'Objected' => [ 'propertyType' => $propertyType, 'value' => $value ] ] );
+	}
+
+	public static function objectWhereAListIsExpectedProvider(): iterable {
+		yield 'text given an object' => [ 'text', [ 'a' => 'yes' ] ];
+		yield 'url given an object' => [ 'url', [ 'a' => 'https://pro.wiki' ] ];
+		yield 'relation given one relation rather than a list' => [
+			'relation',
+			[ 'target' => 'sTargetIdWanted' ],
+		];
 	}
 
 	/**
