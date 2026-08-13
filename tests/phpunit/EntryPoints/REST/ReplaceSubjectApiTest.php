@@ -129,6 +129,7 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 				Title::newFromText( 'GoneSchema', NeoWikiExtension::NS_SCHEMA )
 			)
 		);
+		$this->startFreshRequest();
 
 		$response = $this->executeHandler(
 			$this->newReplaceSubjectApi(),
@@ -356,6 +357,7 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 				Title::newFromText( 'OrphanSchema', NeoWikiExtension::NS_SCHEMA )
 			)
 		);
+		$this->startFreshRequest();
 
 		$response = $this->executeHandler(
 			$this->newReplaceSubjectApi(),

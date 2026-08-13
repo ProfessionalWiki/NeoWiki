@@ -358,6 +358,16 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * Drops the state a real request would not inherit: MediaWiki's services, and the extension
+	 * singleton that pins the Schema lookup and its caches. A test that changes a page and then
+	 * reads it back otherwise depends on every cache in this process having noticed the change.
+	 */
+	protected function startFreshRequest(): void {
+		$this->resetServices();
+		NeoWikiExtension::resetInstance();
+	}
+
 	protected function readGraph( string $cypher, array $parameters = [] ): SummarizedResult {
 		return NeoWikiExtension::getInstance()->requireNeo4jPlugin()->getReadQueryEngine()->runReadQuery( $cypher, $parameters );
 	}
