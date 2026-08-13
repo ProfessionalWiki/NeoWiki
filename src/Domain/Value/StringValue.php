@@ -12,7 +12,9 @@ readonly class StringValue implements NeoValue {
 	public array $strings;
 
 	public function __construct( string ...$strings ) {
-		$this->strings = $strings;
+		$this->strings = array_values(
+			array_filter( $strings, static fn ( string $part ): bool => trim( $part ) !== '' )
+		);
 	}
 
 	public function getType(): ValueType {

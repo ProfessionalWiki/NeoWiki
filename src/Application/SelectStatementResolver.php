@@ -96,6 +96,13 @@ readonly class SelectStatementResolver {
 	}
 
 	private function resolveSingle( string $propertyName, SelectProperty $property, mixed $value ): string {
+		// An empty value is a cleared field, not a reference to an option. Left in place for
+		// StatementListBuilder to drop, the way the validate paths already treat it, rather than
+		// answering 400 to a caller clearing a select.
+		if ( is_string( $value ) && trim( $value ) === '' ) {
+			return $value;
+		}
+
 		if ( !is_string( $value ) && !is_array( $value ) ) {
 			throw new InvalidArgumentException(
 				"Select value for \"{$propertyName}\" must be a string or object"

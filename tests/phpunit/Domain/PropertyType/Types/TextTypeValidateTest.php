@@ -106,14 +106,14 @@ class TextTypeValidateTest extends TestCase {
 		$this->assertSame( [], $violations );
 	}
 
-	public function testRequiredAndUniqueViolationsBothReturnedWhenBothConditionsTrigger(): void {
+	public function testLengthAndUniqueViolationsBothReturnedWhenBothConditionsTrigger(): void {
 		$violations = $this->type->validate(
-			new StringValue( '', '' ),
-			$this->newProperty( required: true, uniqueItems: true ),
+			new StringValue( 'ab', 'ab' ),
+			$this->newProperty( required: false, uniqueItems: true, minLength: 3 ),
 		);
 
 		$codes = array_map( fn( $v ) => $v->code, $violations );
-		$this->assertContains( 'required', $codes );
+		$this->assertContains( 'min-length', $codes );
 		$this->assertContains( 'unique', $codes );
 	}
 
