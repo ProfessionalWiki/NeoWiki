@@ -195,11 +195,14 @@ wfLoadExtension( 'SyntaxHighlight_GeSHi' );
 wfLoadExtension( 'Scribunto' );
 wfLoadExtension( 'ParserFunctions' );
 
+// Empty MW_SMTP_HOST means "no SMTP at all": the dev stack sets it when the
+// mailcatcher service is deselected. Unset means "use the mode's default".
+$mwSmtpHost = getenv( 'MW_SMTP_HOST' );
 $wgSMTP = [];
-if ( $mwIsDev && getenv( 'MW_SMTP_HOST' ) === false ) {
+if ( $mwIsDev && $mwSmtpHost === false ) {
 	// Default to the mailcatcher sidecar in dev mode.
 	$wgSMTP = [ 'host' => 'mailcatcher', 'port' => 1025 ];
-} elseif ( getenv( 'MW_SMTP_HOST' ) !== false ) {
+} elseif ( $mwSmtpHost !== false && $mwSmtpHost !== '' ) {
 	$wgSMTP = [
 		'host' => getenv( 'MW_SMTP_HOST' ),
 		'IDHost' => getenv( 'MW_SMTP_ID_HOST' ),
@@ -225,15 +228,16 @@ $wgNeoWikiEnableDevelopmentUI = true;
 $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://' . getenv( 'NEO4J_USERNAME' ) . ':' . getenv( 'NEO4J_PASSWORD' ) . '@neo:7687';
 $wgNeoWikiNeo4jInternalReadUrl = 'bolt://' . getenv( 'NEO4J_USERNAME_READ' ) . ':' . getenv( 'NEO4J_PASSWORD_READ' ) . '@neo:7687';
 
-// SPARQL graph store (QLever) for the SPARQL projection plugin (#586). Configured in every mode, so
-// the demo stack has the same SPARQL surface as the dev stack — both run the qlever service defined
-// in docker-compose.yml, and that file is what supplies the endpoint below. The endpoint is therefore
-// the gate: an image started outside those stacks gets no store rather than a configuration pointing
-// at a host that does not exist, and so does CI, whose docker-compose.ci.yml replaces that file and
-// sets neither variable. The access token is an ordinary optional credential, defaulted in the compose
-// file so a Docker/.env written before it existed still yields a working store. Skipped under PHPUnit
-// so integration tests never post updates here — they configure their own stores with mocked HTTP via
-// overrideConfigValue(), so the default must stay empty during tests.
+// SPARQL graph store (QLever) for the SPARQL projection plugin (#586). Both the demo stack and the
+// dev stack run the qlever service defined in docker-compose.yml by default and point the wiki at
+// its endpoint via QLEVER_URL. A non-empty value is the gate: an image started outside those stacks
+// gets QLEVER_URL unset rather than a configuration pointing at a host that does not exist, and so
+// does CI, whose docker-compose.ci.yml replaces that file and sets neither variable. The dev stack's
+// Makefile sets it to the empty string when `services=` deselects qlever, which disables the
+// configuration the same way. The access token is an ordinary optional credential, defaulted in the
+// compose file so a Docker/.env written before it existed still yields a working store. Skipped
+// under PHPUnit so integration tests never post updates here — they configure their own stores with
+// mocked HTTP via overrideConfigValue(), so the default must stay empty during tests.
 //
 // Two entries, one endpoint: the native projection and the EDM projection of the demo data's
 // Mapping:EDM page are kept in the same QLever index as sibling projections. Each lands in its own
@@ -241,7 +245,7 @@ $wgNeoWikiNeo4jInternalReadUrl = 'bolt://' . getenv( 'NEO4J_USERNAME_READ' ) . '
 // target the first entry's endpoint, which both entries share, so a query reaches both projections.
 $qleverUrl = getenv( 'QLEVER_URL' );
 
-if ( $qleverUrl !== false && !defined( 'MW_PHPUNIT_TEST' ) ) {
+if ( $qleverUrl !== false && $qleverUrl !== '' && !defined( 'MW_PHPUNIT_TEST' ) ) {
 	$wgNeoWikiSparqlStores = [
 		[
 			'updateUrl' => $qleverUrl,
