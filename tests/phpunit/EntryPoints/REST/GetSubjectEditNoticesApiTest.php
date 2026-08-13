@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectEditNoticesApi;
@@ -33,7 +34,7 @@ class GetSubjectEditNoticesApiTest extends NeoWikiIntegrationTestCase {
 	/**
 	 * @return array<string, mixed>
 	 */
-	private function requestNotices( int $pageId, ?string $schemaName = null, $authority = null ): array {
+	private function requestNotices( int $pageId, ?string $schemaName = null, ?Authority $authority = null ): array {
 		$queryParams = $schemaName === null ? [] : [ 'schema' => $schemaName ];
 
 		return json_decode(

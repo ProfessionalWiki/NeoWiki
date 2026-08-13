@@ -40,7 +40,9 @@ defineProps<{
 	margin-bottom: @spacing-100;
 
 	// Layout hygiene rather than presentation: an editor is a bounded dialog, so a long notice
-	// scrolls instead of pushing the fields and the save button out of reach.
+	// scrolls instead of pushing the fields and the save button out of reach. This bounds flow
+	// content only; a notice that positions itself out of flow is not contained by it, which is
+	// accepted since writing one requires the editinterface right.
 	max-height: 40vh;
 	overflow-y: auto;
 }

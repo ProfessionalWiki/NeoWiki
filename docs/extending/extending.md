@@ -107,7 +107,7 @@ extension prefix). The context exposes the page id, title and namespace, creatio
 categories, and last editor. Example:
 [`src/StaticPagePropertyProvider.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/StaticPagePropertyProvider.php).
 
-## Edit notices
+### Edit notices
 
 Show a message before a user edits a Subject, for instance to say a saved change stays hidden until it is reviewed.
 

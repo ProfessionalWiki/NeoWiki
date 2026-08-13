@@ -15,16 +15,27 @@ interface EditNoticesComposable {
  */
 export function useEditNotices(): EditNoticesComposable {
 	const notices = ref<EditNotice[]>( [] );
+	// The creator refetches whenever the Schema changes, so two selections can be in flight at once.
+	// Only the newest request may write, or a slower earlier one lands on top of it.
+	let latestRequest = 0;
 
 	// Advisory to the last step: resolving the repository can fail too, and an editor must open
 	// whether or not its notices could be fetched.
 	async function loadNotices( pageId: number, schemaName?: string ): Promise<void> {
+		const request = ++latestRequest;
+
 		try {
-			notices.value = await NeoWikiExtension.getInstance()
+			const fetched = await NeoWikiExtension.getInstance()
 				.getEditNoticeRepository()
 				.getNotices( pageId, schemaName );
+
+			if ( request === latestRequest ) {
+				notices.value = fetched;
+			}
 		} catch {
-			notices.value = [];
+			if ( request === latestRequest ) {
+				notices.value = [];
+			}
 		}
 	}
 

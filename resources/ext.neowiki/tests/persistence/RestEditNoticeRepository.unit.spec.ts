@@ -58,11 +58,11 @@ describe( 'RestEditNoticeRepository', () => {
 	} );
 
 	it( 'shows no notices rather than breaking the editor when the request fails', async () => {
-		const httpClient = respondingWith(
-			`${ API_URL }/neowiki/v0/page/${ PAGE_ID }/editNotices`,
-			{ httpCode: 500 },
-			500,
-		);
+		// Rejecting rather than resolving, because ProductionHttpClient's validateStatus rejects any
+		// non-2xx that is not a 422, so a resolved error response is not a path production can take.
+		const httpClient: HttpClient = {
+			get: () => Promise.reject( new Error( 'Request failed with status code 500' ) ),
+		} as unknown as HttpClient;
 
 		expect( await newRepository( httpClient ).getNotices( PAGE_ID ) ).toStrictEqual( [] );
 	} );

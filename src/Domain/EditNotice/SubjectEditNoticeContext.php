@@ -18,8 +18,8 @@ readonly class SubjectEditNoticeContext {
 		public PageId $pageId,
 		public string $pageDbKey,
 		public int $namespaceId,
+		public bool $namespaceHasSubpages,
 		public ?string $schemaName = null,
-		public bool $namespaceHasSubpages = false,
 	) {
 	}
 

@@ -24,6 +24,7 @@ class StubSubjectEditNoticeContextFactory implements SubjectEditNoticeContextFac
 			pageId: $pageId,
 			pageDbKey: 'Berlin',
 			namespaceId: 0,
+			namespaceHasSubpages: false,
 			schemaName: $schemaName
 		);
 	}
