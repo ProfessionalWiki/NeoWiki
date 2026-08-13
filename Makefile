@@ -351,10 +351,9 @@ _first-run-seed-demo:
 
 # ---- DB and Neo4j init -------------------------------------------------------
 
-.PHONY: install-db load-neo4j-users wait-for-neo4j setup-test-neo test-backends test-backends-stop
+.PHONY: install-db load-neo4j-users setup-test-neo test-backends test-backends-stop
 
 install-db:
-	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh db:3306 -t 60'
 	$(EXEC_MW_ROOT) mv LocalSettings.php __LocalSettings.php
 	$(EXEC_MW_ROOT) \
 		php maintenance/install.php --dbuser $(MARIADB_USER) --dbpass $(MARIADB_PASSWORD) \
@@ -364,14 +363,9 @@ install-db:
 			SiteName AdminName
 	$(EXEC_MW_ROOT) rm LocalSettings.php
 	$(EXEC_MW_ROOT) mv __LocalSettings.php LocalSettings.php
-	$(MAKE) --no-print-directory wait-for-neo4j
 	$(EXEC_MW_ROOT) php maintenance/run.php update --quick
 
-wait-for-neo4j:
-	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh neo:7687 -t 60'
-
 load-neo4j-users:
-	$(MAKE) --no-print-directory wait-for-neo4j
 	$(DC) exec -T neo bash -c \
 		"echo \"CREATE USER $(NEO4J_USERNAME_READ) SET PASSWORD '$(NEO4J_PASSWORD_READ)' CHANGE NOT REQUIRED; GRANT ROLE reader TO $(NEO4J_USERNAME_READ);\" | cypher-shell -u neo4j -p $(NEO4J_PASSWORD) -a bolt://localhost:7687"
 
