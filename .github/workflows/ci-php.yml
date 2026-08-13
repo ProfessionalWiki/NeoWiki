@@ -124,11 +124,12 @@ jobs:
 
       - run: composer update
 
+      # Asks Neo4j to answer a query rather than to open its port, which is what the next step needs of it.
+      # Not a `--health-cmd` on the service: that gates every step on it, measured at some 26 seconds a leg.
       - name: Wait for Neo4j
-        uses: iFaxity/wait-on-action@v1
-        with:
-          resource: http-get://localhost:7689
-          timeout: 60000
+        run: |
+          timeout 90 bash -c 'until docker exec test_neo cypher-shell -u neo4j -p password -a bolt://localhost:7689 "RETURN 1" >/dev/null 2>&1; do sleep 2; done' \
+            || { echo "Neo4j did not become ready in time; dumping logs:"; docker logs test_neo; exit 1; }
 
       # QLever for the SPARQL query system test. It cannot be a `services:` container: its bring-up needs
       # a multi-step entrypoint (build an empty index, then serve) that a service container cannot express
@@ -205,33 +206,18 @@ jobs:
 
       - name: Wait for QLever
         run: |
-          for i in $(seq 1 40); do
-            if curl -fsS -o /dev/null "http://localhost:7019/?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"; then
-              echo "QLever is serving"; exit 0
-            fi
-            sleep 2
-          done
-          echo "QLever did not become ready in time; dumping logs:"; docker logs test_qlever; exit 1
+          timeout 90 bash -c 'until curl -fsS -o /dev/null "http://localhost:7019/?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"; do sleep 2; done' \
+            || { echo "QLever did not become ready in time; dumping logs:"; docker logs test_qlever; exit 1; }
 
       - name: Wait for Oxigraph
         run: |
-          for i in $(seq 1 40); do
-            if curl -fsS -o /dev/null "http://localhost:7878/query?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"; then
-              echo "Oxigraph is serving"; exit 0
-            fi
-            sleep 2
-          done
-          echo "Oxigraph did not become ready in time; dumping logs:"; docker logs test_oxigraph; exit 1
+          timeout 90 bash -c 'until curl -fsS -o /dev/null "http://localhost:7878/query?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"; do sleep 2; done' \
+            || { echo "Oxigraph did not become ready in time; dumping logs:"; docker logs test_oxigraph; exit 1; }
 
       - name: Wait for Fuseki
         run: |
-          for i in $(seq 1 40); do
-            if curl -fsS -o /dev/null "http://localhost:3030/ds/query?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"; then
-              echo "Fuseki is serving"; exit 0
-            fi
-            sleep 2
-          done
-          echo "Fuseki did not become ready in time; dumping logs:"; cat "$RUNNER_TEMP/fuseki.log"; exit 1
+          timeout 90 bash -c 'until curl -fsS -o /dev/null "http://localhost:3030/ds/query?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"; do sleep 2; done' \
+            || { echo "Fuseki did not become ready in time; dumping logs:"; cat "$RUNNER_TEMP/fuseki.log"; exit 1; }
 
       - name: Run PHPUnit
         run: composer phpunit
