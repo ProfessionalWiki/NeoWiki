@@ -2,7 +2,7 @@
 
 Date: 2026-07-21
 
-Status: Draft
+Status: Draft; not fully reviewed by Jeroen yet
 
 Feedback welcome; the decisions are proposed as a set, and ratification (team and partner review) gates implementation.
 
