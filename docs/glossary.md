@@ -7,6 +7,9 @@ order: 1
 Definitions of NeoWiki terms. Concepts are capitalized. Used in the code and UI
 ([Ubiquitous Language](https://softwaresystemdesign.com/domain-driven-design/ubiquitous-language/)).
 
+Some entries list *Avoid* terms: banned synonyms and former names. Do not use them for the concept in new
+code, docs, or discussion.
+
 ## Page
 
 MediaWiki concept. Also known as "Wiki page".
@@ -26,9 +29,11 @@ Data about one thing. Similar to an Item in Wikibase or a Page/SubObject in SMW.
 Subjects have
 
 - An `id`: persistent identifier. Subject IDs start with `s` and are always 15 characters long ([ADR 14](adr/014-improved-id-format.md))
-- A `type`: reference to a Schema. Example: Person, Company, Product, etc.
+- A `schema`: reference to a Schema by name. Example: Person, Company, Product, etc.
 - A `label`: the name of the subject. Example: "John Doe". This is a string, not a reference to a page.
 - `statements`: a list of Statements
+
+*Avoid: "object", "entity", "item" — data about one thing is a Subject.*
 
 ### Statement
 
@@ -58,6 +63,8 @@ Value Types:
 - NumberValue, identified with `number`. A single number
 - BooleanValue, identified with `boolean`. A single boolean
 - RelationValue, identified with `relation`. A collection of Relations
+- UnregisteredTypeValue, identified with `unregisteredType`. Holds the raw value of a Statement whose Property
+  Type is not registered on the wiki, preserving it unchanged until the type is available again
 
 Each Relation has
 
@@ -94,6 +101,18 @@ The kind of data a Property Definition holds, and how it is edited and displayed
 "number", "relation". Extensions can define additional Property Types ([Extending NeoWiki](extending/extending.md)).
 Each Property Type stores its values as one of the Value Types.
 
+*Avoid: "Value Format", "format" — former names of this concept.*
+
+### Violation
+
+A Violation is a single validation finding: a value that does not satisfy one of its Property Definition's
+Constraints ([ADR 26](adr/026-validation-severity-levels.md)). Validating a Subject against its Schema yields
+Violations; the possible kinds are cataloged in [Validation codes](api/validation-codes.md).
+
+Each Violation carries the **Severity** of the violated Constraint: `warning` Violations inform but never
+block, while `error` Violations can block saving. Whether errors actually block is decided by the wiki's
+validation **Enforcement** setting.
+
 
 
 ## View
@@ -120,11 +139,14 @@ You create a finances Layout for that company Schema that shows only Revenue, Pr
 
 Layouts have:
 
+- A **name**: the title of the Layout's page, used to reference it ([ADR 17](adr/017-names-as-identifiers.md))
 - A **Schema** reference
 - A **View Type**
 - **Display Rules**: an ordered list that specifies which properties to show and how (see below)
 - **Settings**: Layout-level configuration specific to the View Type (e.g., `borderColor` for infobox)
 - Optional **description**
+
+*Avoid: "View" — the former name of this concept. A View is now the on-page rendering (see above).*
 
 ### Display Rule
 
@@ -134,10 +156,50 @@ properties are hidden.
 
 
 
+## Graph Store
+
+A Graph Store is a database that NeoWiki projects wiki data into so it can be queried: Neo4j or a
+SPARQL-capable store. A wiki can have several Graph Stores, each identified by name. A Graph Store holds one
+or more Projections and can always be rebuilt from wiki content.
+
+*Avoid: "graph database", "graph backend", "triple store" (as names for this concept).*
+
+## Projection
+
+A Projection is a derived, query-optimized copy of the wiki's data in a Graph Store
+([ADR 19](adr/019-graph-database-architecture.md)). Page content remains the source of truth; a Projection can
+be rebuilt from it at any time. The built-in **native projection** uses NeoWiki's own vocabulary; each Mapping
+defines one additional **ontology projection**. Export and query surfaces select a Projection by name.
+
+*Avoid: "base mapping", "target ontology" — former names for the native and ontology projections.*
+
+## Mapping
+
+A Mapping defines how Subjects that follow native Schemas are expressed in an established ontology such as EDM
+or CIDOC-CRM ([Ontology Mapping](rdf/ontology-mapping.md)). Each Mapping is a page in the `Mapping:` namespace
+and defines one ontology Projection; the Mapping page's title is that Projection's name.
+
+
+
 ## Page Property
 
-A key-value pair stored on the Page node in the graph database. Page Properties are metadata about the wiki page
+A key-value pair stored on the Page node in graph Projections. Page Properties are metadata about the wiki page
 itself, as opposed to Subject Statements, which are structured data about the entities described on the page.
 
 Built-in Page Properties include `name`, `namespaceId`, `creationTime`, `lastUpdated`, `categories`, and `lastEditor`.
 Extensions can contribute additional Page Properties (see [Extending NeoWiki](extending/extending.md)).
+
+
+
+## Flagged ambiguities
+
+Open naming questions. These terms are current but contested; expect them to change:
+
+- **View Type** may be renamed to "Layout Type"
+  ([#925](https://github.com/ProfessionalWiki/NeoWiki/issues/925)).
+- `RelationType` names two different things in the code: the graph edge label and the `relation` Property Type
+  ([#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630)).
+- "Allow multiple values", the `multiple` schema field, and multi-part Values name one concept three ways
+  ([#712](https://github.com/ProfessionalWiki/NeoWiki/issues/712)).
+- Subjects have a `label` while Schemas, Layouts, and Mappings have a `name`, and a computed "display-name"
+  is proposed as a third term ([#1283](https://github.com/ProfessionalWiki/NeoWiki/issues/1283)).
