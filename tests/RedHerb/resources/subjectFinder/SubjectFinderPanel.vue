@@ -14,11 +14,11 @@
 			<template #label>
 				{{ pickLabel }}
 			</template>
-			<subject-lookup
+			<subject-picker
 				:selected="selectedSubjectId"
 				:target-schema="trimmedSchemaName"
 				@update:selected="onSelected"
-			></subject-lookup>
+			></subject-picker>
 		</cdx-field>
 
 		<div
@@ -43,7 +43,7 @@ module.exports = exports = {
 	components: {
 		CdxField: codex.CdxField,
 		CdxTextInput: codex.CdxTextInput,
-		SubjectLookup: nw.SubjectLookup,
+		SubjectPicker: nw.SubjectPicker,
 		Infobox: nw.Infobox
 	},
 	setup: function () {

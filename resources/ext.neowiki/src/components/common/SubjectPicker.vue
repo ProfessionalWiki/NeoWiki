@@ -1,12 +1,12 @@
 <template>
-	<div class="ext-neowiki-subject-lookup">
+	<div class="ext-neowiki-subject-picker">
 		<CdxLookup
 			ref="lookupRef"
 			v-model:selected="selectedSubject"
 			v-model:input-value="inputText"
 			:menu-items="menuItems"
 			:start-icon="props.startIcon"
-			:placeholder="$i18n( 'neowiki-subject-lookup-placeholder' ).text()"
+			:placeholder="$i18n( 'neowiki-subject-picker-placeholder' ).text()"
 			:status="effectiveStatus"
 			:aria-label="props.ariaLabel"
 			@input="onLookupInput"
@@ -14,7 +14,7 @@
 			@blur="onBlur"
 		>
 			<template v-if="searchActive" #no-results>
-				{{ $i18n( 'neowiki-subject-lookup-no-results' ).text() }}
+				{{ $i18n( 'neowiki-subject-picker-no-results' ).text() }}
 			</template>
 		</CdxLookup>
 		<CdxMessage
@@ -22,7 +22,7 @@
 			type="error"
 			inline
 		>
-			{{ $i18n( 'neowiki-subject-lookup-no-match' ).text() }}
+			{{ $i18n( 'neowiki-subject-picker-no-match' ).text() }}
 		</CdxMessage>
 	</div>
 </template>
@@ -36,7 +36,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
-interface SubjectLookupProps {
+interface SubjectPickerProps {
 	selected: string | null;
 	targetSchema: string;
 	startIcon?: Icon;
@@ -45,7 +45,7 @@ interface SubjectLookupProps {
 }
 
 const props = withDefaults(
-	defineProps<SubjectLookupProps>(),
+	defineProps<SubjectPickerProps>(),
 	{
 		startIcon: undefined,
 		status: 'default',

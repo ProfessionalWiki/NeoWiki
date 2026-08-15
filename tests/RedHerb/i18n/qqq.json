@@ -11,7 +11,7 @@
 	"redherb-content-page-count-error": "Error shown on Special:RedHerbContentPageCount when the Cypher query fails. $1 is the underlying error message.",
 	"redherb-subject-finder-schema-label": "Label of the schema name input on Special:RedHerbSubjectFinder.\n{{Identical|Schema}}",
 	"redherb-subject-finder-schema-placeholder": "Placeholder text inside the schema name input on Special:RedHerbSubjectFinder.",
-	"redherb-subject-finder-pick-subject": "Label of the subject lookup on Special:RedHerbSubjectFinder.",
+	"redherb-subject-finder-pick-subject": "Label of the subject picker on Special:RedHerbSubjectFinder.",
 	"redherb-create-child-dialog-title": "Title of the RedHerb dialog that creates a child Company subject.",
 	"redherb-create-child-dialog-label": "Label of the subject label input in the RedHerb create-child-Company dialog.\n{{Identical|Label}}",
 	"redherb-create-child-dialog-save": "Label of the save button in the RedHerb create-child-Company dialog.\n{{Identical|Create}}",

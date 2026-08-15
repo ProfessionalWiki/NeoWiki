@@ -22,7 +22,7 @@
 			@update:model-value="onSelectionsChanged"
 		>
 			<template #input="{ value, onUpdate, onBlur, onFocus, status, ariaLabel }">
-				<SubjectLookup
+				<SubjectPicker
 					:selected="value"
 					:target-schema="props.property.targetSchema"
 					:start-icon="startIcon"
@@ -34,7 +34,7 @@
 				/>
 			</template>
 		</NeoMultiLookupInput>
-		<SubjectLookup
+		<SubjectPicker
 			v-else
 			:selected="selectedId"
 			:target-schema="props.property.targetSchema"
@@ -51,7 +51,7 @@ import { ref, watch, computed, toRef } from 'vue';
 import { CdxField, CdxIcon, ValidationMessages } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import NeoMultiLookupInput from '@/components/common/NeoMultiLookupInput.vue';
-import SubjectLookup from '@/components/common/SubjectLookup.vue';
+import SubjectPicker from '@/components/common/SubjectPicker.vue';
 import { ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/components/Value/ValueInputContract';
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { Value, ValueType, RelationValue, newRelation, relationValuesHaveSameTargets } from '@/domain/Value';

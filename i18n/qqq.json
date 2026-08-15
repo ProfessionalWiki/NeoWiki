@@ -67,10 +67,10 @@
 	"neowiki-subject-editor-success": "Success notification shown after updating a subject. $1 is the subject label.",
 	"neowiki-subject-editor-error": "Error notification title shown when updating a subject fails. $1 is the subject label.",
 	"neowiki-subject-editor-validation-failed": "Toast title shown when the backend rejects a Subject save under enforcement. $1 is the Subject label.",
-	"neowiki-subject-lookup-placeholder": "Placeholder text shown in the subject search input field.",
+	"neowiki-subject-picker-placeholder": "Placeholder text shown in the subject search input field.",
 	"neowiki-schema-picker-placeholder": "Placeholder text shown in the schema picker input field.",
-	"neowiki-subject-lookup-no-results": "Message shown in the subject lookup dropdown when no subjects match the search query.",
-	"neowiki-subject-lookup-no-match": "Error message shown in the subject lookup when the user types text but does not select a subject from the dropdown results.",
+	"neowiki-subject-picker-no-results": "Message shown in the subject picker dropdown when no subjects match the search query.",
+	"neowiki-subject-picker-no-match": "Error message shown in the subject picker when the user types text but does not select a subject from the dropdown results.",
 
 	"neowiki-schema-creator-title": "Title of the dialog for creating a new schema.",
 	"neowiki-schema-creator-button": "Label for the button that opens the schema creation dialog on [[Special:Schemas]].",

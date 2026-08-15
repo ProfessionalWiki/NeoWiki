@@ -156,4 +156,4 @@ export { default as I18nSlot } from './components/common/I18nSlot.vue';
 export { default as NeoMultiLookupInput } from './components/common/NeoMultiLookupInput.vue';
 export { default as NeoMultiTextInput } from './components/common/NeoMultiTextInput.vue';
 export { default as NeoNestedField } from './components/common/NeoNestedField.vue';
-export { default as SubjectLookup } from './components/common/SubjectLookup.vue';
+export { default as SubjectPicker } from './components/common/SubjectPicker.vue';
