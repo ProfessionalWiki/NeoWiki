@@ -241,7 +241,7 @@ describe( 'useStringValueInput', () => {
 		};
 
 		function violation( overrides: Partial<SubjectViolation> = {} ): SubjectViolation {
-			return { propertyName: 'testProp', code: 'required', args: [], valuePartIndex: null, ...overrides };
+			return { propertyName: 'testProp', code: 'required', args: [], severity: 'error', valuePartIndex: null, ...overrides };
 		}
 
 		it( 'shows a field-level server violation in fieldMessages for a single-value property', async () => {
@@ -271,6 +271,44 @@ describe( 'useStringValueInput', () => {
 			await nextTick();
 
 			expect( fieldMessages.value ).toEqual( { error: 'neowiki-field-min-length' } );
+		} );
+
+		it( 'keys a warning field-level violation under warning in fieldMessages', async () => {
+			const { fieldMessages } = createComposableWithViolations(
+				[ violation( { code: 'min-length', args: [ '10' ], severity: 'warning' } ) ],
+				{ name: new PropertyName( 'testProp' ), multiple: false },
+			);
+
+			await nextTick();
+
+			expect( fieldMessages.value ).toEqual( { warning: 'neowiki-field-min-length' } );
+		} );
+
+		it( 'prefers an error over an earlier warning competing for the same input slot', async () => {
+			const { inputMessages, onInput } = createComposableWithViolations(
+				[
+					violation( { code: 'unique', severity: 'warning', valuePartIndex: 1 } ),
+					violation( { code: 'max-length', args: [ '3' ], severity: 'error', valuePartIndex: 1 } ),
+				],
+				{ name: new PropertyName( 'testProp' ), multiple: true },
+			);
+
+			onInput( [ 'a', 'a' ] );
+			await nextTick();
+
+			expect( inputMessages.value[ 1 ] ).toEqual( { error: 'neowiki-field-max-length' } );
+		} );
+
+		it( 'keys a warning per-index violation under warning in inputMessages', async () => {
+			const { inputMessages, onInput } = createComposableWithViolations(
+				[ violation( { code: 'unique', severity: 'warning', valuePartIndex: 1 } ) ],
+				{ name: new PropertyName( 'testProp' ), multiple: true },
+			);
+
+			onInput( [ 'a', 'a' ] );
+			await nextTick();
+
+			expect( inputMessages.value[ 1 ] ).toEqual( { warning: 'neowiki-field-unique' } );
 		} );
 
 		it( 'does not show a server violation belonging to a different property', async () => {

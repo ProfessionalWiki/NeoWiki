@@ -2,7 +2,8 @@ import { VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CdxSelect } from '@wikimedia/codex';
 import PropertyDefinitionEditor from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
-import { newTextProperty } from '@/domain/propertyTypes/Text';
+import { newTextProperty, TextProperty } from '@/domain/propertyTypes/Text';
+import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import { SelectProperty } from '@/domain/propertyTypes/Select';
 import { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { newStringValue } from '@/domain/Value';
@@ -53,5 +54,29 @@ describe( 'PropertyDefinitionEditor', () => {
 		await changeTypeTo( wrapper, 'select' );
 
 		expect( lastEmittedProperty( wrapper ).default ).toBeUndefined();
+	} );
+
+	it( 'keeps Constraint severities when an attribute is edited', async () => {
+		const wrapper = newWrapper( {
+			...newTextProperty( { name: 'Status', minLength: 2 } ),
+			constraintSeverities: { minLength: 'error' },
+		} );
+
+		await wrapper.findComponent( TextAttributesEditor ).vm.$emit( 'update:property', { minLength: 5 } );
+
+		const property = lastEmittedProperty( wrapper ) as TextProperty;
+		expect( property.minLength ).toBe( 5 );
+		expect( property.constraintSeverities ).toEqual( { minLength: 'error' } );
+	} );
+
+	it( 'drops Constraint severities when the type changes, like the other Constraint fields', async () => {
+		const wrapper = newWrapper( {
+			...newTextProperty( { name: 'Status' } ),
+			constraintSeverities: { minLength: 'error' },
+		} );
+
+		await changeTypeTo( wrapper, 'select' );
+
+		expect( lastEmittedProperty( wrapper ).constraintSeverities ).toBeUndefined();
 	} );
 } );

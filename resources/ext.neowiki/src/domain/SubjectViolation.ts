@@ -1,3 +1,5 @@
+import type { Severity } from '@/domain/Severity';
+
 /**
  * Frontend mirror of the backend's Violation wire shape (see
  * src/Domain/Validation/Violation.php). Read from the backend by the
@@ -11,11 +13,15 @@
  * single-value properties. For per-value violations on multi-value
  * properties (e.g. one bad URL among many), it identifies which entry
  * in the multi-input is at fault.
+ *
+ * severity decides styling and blocking (ADR 26): an `error` can be rejected
+ * under enforcement, a `warning` never blocks and renders as advisory.
  */
 export interface SubjectViolation {
 	readonly propertyName: string | null;
 	readonly code: string;
 	readonly args: readonly unknown[];
+	readonly severity: Severity;
 	readonly valuePartIndex: number | null;
 }
 

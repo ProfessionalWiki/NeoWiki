@@ -128,6 +128,17 @@ describe( 'UrlInput', () => {
 			expect( field.props( 'status' ) ).toBe( 'error' );
 		} );
 
+		it( 'sets status to warning when fieldMessages carries a warning (single input)', () => {
+			mockFieldMessages.value = { warning: 'Advisory only' };
+			const wrapper = newWrapper( {
+				property: newUrlProperty( { multiple: false } ),
+			} );
+			const field = wrapper.findComponent( CdxField );
+
+			expect( field.props( 'messages' ) ).toEqual( { warning: 'Advisory only' } );
+			expect( field.props( 'status' ) ).toBe( 'warning' );
+		} );
+
 		it( 'sets CdxField status to default if no fieldMessages.error (single input)', () => {
 			const wrapper = newWrapper( {
 				property: newUrlProperty( { multiple: false } ),
@@ -182,7 +193,7 @@ describe( 'UrlInput', () => {
 
 	describe( 'Server violations (multi-value)', () => {
 		it( 'passes serverViolations to useStringValueInput as the fifth argument', () => {
-			const violation = { propertyName: 'Website', code: 'invalid-url', args: [], valuePartIndex: 1 };
+			const violation = { propertyName: 'Website', code: 'invalid-url', args: [], severity: 'error' as const, valuePartIndex: 1 };
 			newWrapper( {
 				property: newUrlProperty( { name: 'Website', multiple: true } ),
 				serverViolations: [ violation ],
@@ -200,7 +211,7 @@ describe( 'UrlInput', () => {
 			const wrapper = newWrapper( {
 				property: newUrlProperty( { name: 'Website', multiple: true } ),
 				serverViolations: [
-					{ propertyName: 'Website', code: 'invalid-url', args: [], valuePartIndex: 1 },
+					{ propertyName: 'Website', code: 'invalid-url', args: [], severity: 'error', valuePartIndex: 1 },
 				],
 			} );
 
@@ -214,7 +225,7 @@ describe( 'UrlInput', () => {
 			const wrapper = newWrapper( {
 				property: newUrlProperty( { name: 'Website', multiple: true } ),
 				serverViolations: [
-					{ propertyName: 'Website', code: 'invalid-url', args: [], valuePartIndex: 1 },
+					{ propertyName: 'Website', code: 'invalid-url', args: [], severity: 'error', valuePartIndex: 1 },
 				],
 			} );
 
@@ -234,7 +245,7 @@ describe( 'UrlInput', () => {
 				property: newUrlProperty( { name: 'Website', multiple: true } ),
 				serverViolations: [
 					// violation only at index 1, not index 0
-					{ propertyName: 'Website', code: 'invalid-url', args: [], valuePartIndex: 1 },
+					{ propertyName: 'Website', code: 'invalid-url', args: [], severity: 'error', valuePartIndex: 1 },
 				],
 			} );
 

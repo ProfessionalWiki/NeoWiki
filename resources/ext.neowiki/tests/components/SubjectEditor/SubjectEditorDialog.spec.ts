@@ -16,7 +16,7 @@ import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
-import { CdxDialog } from '@wikimedia/codex';
+import { CdxDialog, CdxMessage } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
@@ -334,6 +334,7 @@ describe( 'SubjectEditorDialog', () => {
 				propertyName: 'name',
 				code: 'required',
 				args: [],
+				severity: 'error',
 				valuePartIndex: null,
 			};
 			const onSave = vi.fn().mockRejectedValue( new ValidationFailedError( [ violation ] ) );
@@ -354,6 +355,7 @@ describe( 'SubjectEditorDialog', () => {
 				propertyName: 'name',
 				code: 'required',
 				args: [],
+				severity: 'error',
 				valuePartIndex: null,
 			};
 			const onSave = vi.fn().mockRejectedValue( new ValidationFailedError( [ violation ] ) );
@@ -371,6 +373,7 @@ describe( 'SubjectEditorDialog', () => {
 				propertyName: 'name',
 				code: 'required',
 				args: [],
+				severity: 'error',
 				valuePartIndex: null,
 			};
 			const onSave = vi.fn().mockRejectedValue( new ValidationFailedError( [ violation ] ) );
@@ -391,6 +394,7 @@ describe( 'SubjectEditorDialog', () => {
 				propertyName: null,
 				code: 'schema-not-found',
 				args: [ 'Person' ],
+				severity: 'error',
 				valuePartIndex: null,
 			};
 			const onSave = vi.fn().mockRejectedValue( new ValidationFailedError( [ violation ] ) );
@@ -400,11 +404,65 @@ describe( 'SubjectEditorDialog', () => {
 			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
-			expect( wrapper.find( '.ext-neowiki-subject-editor__form-errors' ).exists() ).toBe( true );
+			expect( wrapper.find( '.ext-neowiki-violation-banners__list' ).exists() ).toBe( true );
 
 			const passedViolations = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
 			expect( passedViolations ).toHaveLength( 1 );
 			expect( passedViolations[ 0 ].propertyName ).toBeNull();
+		} );
+
+		it( 'splits banner violations by severity into an error and a warning message', async () => {
+			// Anchored to a property the schema no longer has, so it lands in the
+			// banner: the other subject-level error, label-required, renders in
+			// the dialog header instead.
+			const errorViolation: SubjectViolation = {
+				propertyName: 'name',
+				code: 'type-mismatch',
+				args: [ 'text', 'number' ],
+				severity: 'error',
+				valuePartIndex: null,
+			};
+			const warningViolation: SubjectViolation = {
+				propertyName: null,
+				code: 'schema-not-found',
+				args: [ 'Person' ],
+				severity: 'warning',
+				valuePartIndex: null,
+			};
+			const onSave = vi.fn().mockRejectedValue(
+				new ValidationFailedError( [ warningViolation, errorViolation ] ),
+			);
+			const wrapper = mountComponent( true, validationTestStubs, onSave );
+			await flushPromises();
+
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			const banners = wrapper.findAllComponents( CdxMessage );
+			expect( banners ).toHaveLength( 2 );
+			expect( banners[ 0 ].props( 'type' ) ).toBe( 'error' );
+			expect( banners[ 0 ].text() ).toContain( 'neowiki-field-type-mismatch' );
+			expect( banners[ 1 ].props( 'type' ) ).toBe( 'warning' );
+			expect( banners[ 1 ].text() ).toContain( 'neowiki-field-schema-not-found' );
+		} );
+
+		it( 'does not treat a warning-only dry-run result as blocking the save', async () => {
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ {
+				propertyName: null,
+				code: 'schema-not-found',
+				args: [ 'Person' ],
+				severity: 'warning',
+				valuePartIndex: null,
+			} ] );
+			const onSave = vi.fn().mockResolvedValue( undefined );
+			const wrapper = mountComponent( true, validationTestStubs, onSave );
+			await flushPromises();
+
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( onSave ).toHaveBeenCalledTimes( 1 );
+			expect( wrapper.emitted( 'update:open' )?.[ 0 ] ).toEqual( [ false ] );
 		} );
 
 		it( 'drops the matching entry on clear-server-violation event from child', async () => {
@@ -412,6 +470,7 @@ describe( 'SubjectEditorDialog', () => {
 				propertyName: 'name',
 				code: 'required',
 				args: [],
+				severity: 'error',
 				valuePartIndex: null,
 			};
 			const onSave = vi.fn().mockRejectedValue( new ValidationFailedError( [ violation ] ) );
@@ -456,6 +515,7 @@ describe( 'SubjectEditorDialog', () => {
 			propertyName: 'name',
 			code: 'max-length',
 			args: [ 5 ],
+			severity: 'error',
 			valuePartIndex: null,
 		};
 
@@ -512,7 +572,7 @@ describe( 'SubjectEditorDialog', () => {
 
 		it( 'surfaces required violations from the dry-run; an existing subject flags missing required', async () => {
 			const requiredViolation: SubjectViolation = {
-				propertyName: 'name', code: 'required', args: [], valuePartIndex: null,
+				propertyName: 'name', code: 'required', args: [], severity: 'error', valuePartIndex: null,
 			};
 			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ requiredViolation ] );
 			const wrapper = mountComponent( true, validationTestStubs );
@@ -528,7 +588,7 @@ describe( 'SubjectEditorDialog', () => {
 
 		it( 'validates on open so an existing subject\'s violations surface without an edit', async () => {
 			const existingViolation: SubjectViolation = {
-				propertyName: 'name', code: 'required', args: [], valuePartIndex: null,
+				propertyName: 'name', code: 'required', args: [], severity: 'error', valuePartIndex: null,
 			};
 			const validate = vi.fn().mockResolvedValue( [ existingViolation ] );
 			useSubjectStore().validateSubjectUpdate = validate;
@@ -626,7 +686,7 @@ describe( 'SubjectEditorDialog', () => {
 
 		it( 'points assistive technology at the label error', async () => {
 			const labelRequired: SubjectViolation = {
-				propertyName: null, code: 'label-required', args: [], valuePartIndex: null,
+				propertyName: null, code: 'label-required', args: [], severity: 'error', valuePartIndex: null,
 			};
 			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ labelRequired ] );
 			const wrapper = mountComponent( false, validationTestStubs );
@@ -642,7 +702,7 @@ describe( 'SubjectEditorDialog', () => {
 
 		it( 'keeps the rename input open in error state when the label is committed blank', async () => {
 			const labelRequired: SubjectViolation = {
-				propertyName: null, code: 'label-required', args: [], valuePartIndex: null,
+				propertyName: null, code: 'label-required', args: [], severity: 'error', valuePartIndex: null,
 			};
 			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ labelRequired ] );
 			const wrapper = mountComponent( false, validationTestStubs );
@@ -657,7 +717,7 @@ describe( 'SubjectEditorDialog', () => {
 
 		it( 'routes the label-required violation to the title area instead of the banner', async () => {
 			const labelRequired: SubjectViolation = {
-				propertyName: null, code: 'label-required', args: [], valuePartIndex: null,
+				propertyName: null, code: 'label-required', args: [], severity: 'error', valuePartIndex: null,
 			};
 			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ labelRequired ] );
 			const wrapper = mountComponent( false, validationTestStubs );
@@ -665,7 +725,7 @@ describe( 'SubjectEditorDialog', () => {
 
 			expect( wrapper.find( '.ext-neowiki-subject-editor-dialog__label-error' ).text() )
 				.toContain( 'neowiki-field-label-required' );
-			expect( wrapper.find( '.ext-neowiki-subject-editor__form-errors' ).exists() ).toBe( false );
+			expect( wrapper.find( '.ext-neowiki-violation-banners__list' ).exists() ).toBe( false );
 		} );
 
 		it( 'follows the label when the host replaces the subject', async () => {

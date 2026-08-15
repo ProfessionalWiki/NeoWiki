@@ -4,6 +4,7 @@ import { newBooleanValue, newNumberValue, newStringValue, newUnregisteredTypeVal
 import { TextProperty, TextType } from '@/domain/propertyTypes/Text';
 import { NumberProperty, NumberType } from '@/domain/propertyTypes/Number';
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
+import { SelectProperty } from '@/domain/propertyTypes/Select';
 import { Neo } from '@/Neo';
 
 const serializer = new PropertyDefinitionDeserializer( Neo.getInstance().getPropertyTypeRegistry(), Neo.getInstance().getValueDeserializer() );
@@ -218,6 +219,79 @@ it( 'preserves default: 0 for a number property', () => {
 	);
 
 	expect( property.default ).toEqual( newNumberValue( 0 ) );
+} );
+
+it( 'unwraps object-form Constraints and records their severities', () => {
+	const json = {
+		type: 'number',
+		required: { severity: 'error' },
+		minimum: 0,
+		maximum: { value: 100, severity: 'error' },
+	};
+
+	const property = serializer.propertyDefinitionFromJson( 'test', json ) as NumberProperty;
+
+	expect( property.required ).toBe( true );
+	expect( property.minimum ).toBe( 0 );
+	expect( property.maximum ).toBe( 100 );
+	expect( property.constraintSeverities ).toEqual( { required: 'error', maximum: 'error' } );
+} );
+
+it( 'records a warning annotation so it survives a round-trip', () => {
+	const json = {
+		type: 'text',
+		uniqueItems: { severity: 'error' },
+		minLength: { value: 2, severity: 'warning' },
+	};
+
+	const property = serializer.propertyDefinitionFromJson( 'test', json ) as TextProperty;
+
+	expect( property.uniqueItems ).toBe( true );
+	expect( property.minLength ).toBe( 2 );
+	expect( property.constraintSeverities ).toEqual( { uniqueItems: 'error', minLength: 'warning' } );
+} );
+
+it( 'unwraps an object-form options Constraint to its array', () => {
+	const options = [ { id: 'a', label: 'A' }, { id: 'b', label: 'B' } ];
+	const json = {
+		type: 'select',
+		options: { value: options, severity: 'error' },
+	};
+
+	const property = serializer.propertyDefinitionFromJson( 'test', json ) as SelectProperty;
+
+	expect( property.options ).toEqual( options );
+	expect( property.constraintSeverities ).toEqual( { options: 'error' } );
+} );
+
+it( 'drops a severity on a Display Attribute but keeps its value', () => {
+	const json = {
+		type: 'number',
+		precision: { value: 2, severity: 'error' },
+	};
+
+	const property = serializer.propertyDefinitionFromJson( 'test', json ) as NumberProperty;
+
+	expect( property.precision ).toBe( 2 );
+	expect( property.constraintSeverities ).toBeUndefined();
+} );
+
+it( 'omits the severity map when no Constraint carries one', () => {
+	const property = serializer.propertyDefinitionFromJson( 'test', { type: 'number', maximum: 100 } );
+
+	expect( property.constraintSeverities ).toBeUndefined();
+} );
+
+it( 'unwraps object-form keys of an unregistered type and keeps their severities', () => {
+	const json = {
+		type: 'color',
+		palette: { value: 'warm', severity: 'error' },
+	};
+
+	const property = serializer.propertyDefinitionFromJson( 'test', json );
+
+	expect( ( property as unknown as Record<string, unknown> ).palette ).toBe( 'warm' );
+	expect( property.constraintSeverities ).toEqual( { palette: 'error' } );
 } );
 
 it( 'treats default: null as no default', () => {

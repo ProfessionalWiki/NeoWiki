@@ -147,7 +147,7 @@ describe( 'BooleanInput', () => {
 			return newWrapper( {
 				property: newBooleanProperty( { name: 'Foo' } ),
 				serverViolations: [
-					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'string', 'boolean' ], valuePartIndex: null },
+					{ propertyName: 'Foo', code: 'type-mismatch', args: [ 'string', 'boolean' ], severity: 'error', valuePartIndex: null },
 				],
 			} );
 		}
@@ -158,6 +158,19 @@ describe( 'BooleanInput', () => {
 			const field = wrapper.findComponent( CdxField );
 			expect( field.props( 'status' ) ).toBe( 'error' );
 			expect( field.props( 'messages' ) ).toEqual( { error: 'neowiki-field-type-mismatch' } );
+		} );
+
+		it( 'shows a warning violation with the warning status', () => {
+			const wrapper = newWrapper( {
+				property: newBooleanProperty( { name: 'Foo' } ),
+				serverViolations: [
+					{ propertyName: 'Foo', code: 'required', args: [], severity: 'warning', valuePartIndex: null },
+				],
+			} );
+
+			const field = wrapper.findComponent( CdxField );
+			expect( field.props( 'status' ) ).toBe( 'warning' );
+			expect( field.props( 'messages' ) ).toEqual( { warning: 'neowiki-field-required' } );
 		} );
 
 		it( 'emits clear-server-violation when the user edits the field', async () => {

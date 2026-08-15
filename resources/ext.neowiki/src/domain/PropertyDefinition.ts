@@ -1,5 +1,7 @@
 import { Neo } from '@/Neo';
 import { PropertyTypeRegistry } from '@/domain/PropertyType';
+import type { Severity } from '@/domain/Severity';
+import { extractSeverities } from '@/domain/SeverityNormalizer';
 import { Value } from '@/domain/Value';
 import { ValueDeserializer } from '@/persistence/ValueDeserializer';
 
@@ -37,6 +39,14 @@ export interface PropertyDefinition {
 	readonly required: boolean;
 	readonly default?: Value;
 
+	/**
+	 * Severity per Constraint name for Constraints written in the object form
+	 * (ADR 26). Absent means every Constraint has the default `warning` severity;
+	 * the map is only set when at least one Constraint is annotated, so shorthand
+	 * Schemas produce domain objects identical to factory-built ones.
+	 */
+	readonly constraintSeverities?: Readonly<Record<string, Severity>>;
+
 }
 
 export interface MultiStringProperty extends PropertyDefinition {
@@ -61,25 +71,40 @@ export class PropertyDefinitionDeserializer {
 	) {}
 
 	public propertyDefinitionFromJson( name: string | PropertyName, json: any ): PropertyDefinition {
+		const [ values, severities ] = extractSeverities( json );
+
+		// Severity is a Constraint concept. Display Attributes are explicitly not
+		// Constraints (they are overridable per Layout), so a severity on one is
+		// meaningless. Drop it: left in the map it would make serialization re-emit
+		// the attribute in object form and break every consumer reading a scalar.
+		if ( this.registry.hasType( json.type ) ) {
+			for ( const attribute of this.registry.getType( json.type ).getDisplayAttributeNames() ) {
+				delete severities[ attribute ];
+			}
+		}
+
 		const base: PropertyDefinition = {
 			name: typeof name === 'string' ? new PropertyName( name ) : name,
 			type: json.type as string,
-			description: json.description ?? '',
-			required: json.required ?? false,
-			default: json.default !== undefined && json.default !== null ?
-				this.valueDeserializer.deserialize( json.default, json.type ) :
+			description: values.description as string ?? '',
+			required: values.required as boolean ?? false,
+			default: values.default !== undefined && values.default !== null ?
+				this.valueDeserializer.deserialize( values.default, json.type ) :
 				undefined,
+			...( Object.keys( severities ).length > 0 ? { constraintSeverities: severities } : {} ),
 		};
 
 		// A type owned by a disabled or failed extension is not registered. Degrade
 		// to the base definition so the rest of the Schema still loads and renders.
 		// Retain the original type-specific keys (constraints, display attributes)
-		// so they are not silently dropped when the Schema is later re-saved.
+		// so they are not silently dropped when the Schema is later re-saved. The
+		// normalized values (not the raw JSON) are spread so serialization re-wraps
+		// every annotated key through the same applySeverities path.
 		if ( !this.registry.hasType( json.type ) ) {
-			return { ...json, ...base };
+			return { ...values, ...base };
 		}
 
-		return this.registry.getType( json.type ).createPropertyDefinitionFromJson( base, json );
+		return this.registry.getType( json.type ).createPropertyDefinitionFromJson( base, values );
 	}
 
 }

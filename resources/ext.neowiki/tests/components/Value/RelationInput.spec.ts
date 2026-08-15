@@ -136,7 +136,7 @@ describe( 'RelationInput', () => {
 			const withViolation = newWrapper( {
 				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
 				serverViolations: [
-					{ propertyName: 'Owner', code: 'required', args: [], valuePartIndex: null },
+					{ propertyName: 'Owner', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 				],
 			} );
 			expect( withViolation.findComponent( SubjectPicker ).props( 'status' ) ).toBe( 'error' );
@@ -160,7 +160,7 @@ describe( 'RelationInput', () => {
 				// The message can only originate from the server-sourced violation.
 				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
 				serverViolations: [
-					{ propertyName: 'Owner', code: 'type-mismatch', args: [], valuePartIndex: null },
+					{ propertyName: 'Owner', code: 'type-mismatch', args: [], severity: 'error', valuePartIndex: null },
 				],
 			} );
 
@@ -173,7 +173,7 @@ describe( 'RelationInput', () => {
 			const wrapper = newWrapper( {
 				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
 				serverViolations: [
-					{ propertyName: 'Owner', code: 'type-mismatch', args: [], valuePartIndex: null },
+					{ propertyName: 'Owner', code: 'type-mismatch', args: [], severity: 'error', valuePartIndex: null },
 				],
 			} );
 
@@ -244,7 +244,7 @@ describe( 'RelationInput', () => {
 			const wrapper = newWrapper( {
 				property: newRelationProperty( { name: 'Owners', required: true, multiple: true } ),
 				serverViolations: [
-					{ propertyName: 'Owners', code: 'required', args: [], valuePartIndex: null },
+					{ propertyName: 'Owners', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 				],
 			} );
 
@@ -253,11 +253,25 @@ describe( 'RelationInput', () => {
 			);
 		} );
 
+		it( 'shows a warning violation with the warning status on a single relation', () => {
+			const wrapper = newWrapper( {
+				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				serverViolations: [
+					{ propertyName: 'Owner', code: 'relation-target-not-found', args: [], severity: 'warning', valuePartIndex: null },
+				],
+			} );
+
+			expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'warning' );
+			expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toEqual(
+				{ warning: 'neowiki-field-relation-target-not-found' },
+			);
+		} );
+
 		it( 'keeps field status default for a multiple relation even with a violation', () => {
 			const wrapper = newWrapper( {
 				property: newRelationProperty( { name: 'Owners', required: true, multiple: true } ),
 				serverViolations: [
-					{ propertyName: 'Owners', code: 'required', args: [], valuePartIndex: null },
+					{ propertyName: 'Owners', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 				],
 			} );
 
@@ -300,6 +314,7 @@ describe( 'RelationInput', () => {
 						propertyName: 'Owner',
 						code: 'relation-target-schema-mismatch',
 						args: [ 'Company', 'Person' ],
+						severity: 'error',
 						valuePartIndex: 0,
 					},
 				],
@@ -319,8 +334,8 @@ describe( 'RelationInput', () => {
 			const wrapper = newWrapper( {
 				property: newRelationProperty( { name: 'Owners', targetSchema: 'Company', multiple: true } ),
 				serverViolations: [
-					{ propertyName: 'Owners', code: 'relation-target-not-found', args: [ 'x' ], valuePartIndex: 0 },
-					{ propertyName: 'Owners', code: 'relation-target-schema-mismatch', args: [], valuePartIndex: 1 },
+					{ propertyName: 'Owners', code: 'relation-target-not-found', args: [ 'x' ], severity: 'error', valuePartIndex: 0 },
+					{ propertyName: 'Owners', code: 'relation-target-schema-mismatch', args: [], severity: 'error', valuePartIndex: 1 },
 				],
 			} );
 
@@ -339,7 +354,7 @@ describe( 'RelationInput', () => {
 			const wrapper = newWrapper( {
 				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
 				serverViolations: [
-					{ propertyName: 'Other', code: 'required', args: [], valuePartIndex: null },
+					{ propertyName: 'Other', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 				],
 			} );
 
@@ -353,7 +368,7 @@ describe( 'RelationInput', () => {
 			const wrapper = newWrapper( {
 				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
 				serverViolations: [
-					{ propertyName: 'Owner', code: 'required', args: [], valuePartIndex: null },
+					{ propertyName: 'Owner', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 				],
 			} );
 
@@ -371,8 +386,8 @@ describe( 'RelationInput', () => {
 			const wrapper = newWrapper( {
 				property: newRelationProperty( { name: 'Owners', targetSchema: 'Company', multiple: true } ),
 				serverViolations: [
-					{ propertyName: 'Owners', code: 'relation-target-not-found', args: [ 'x' ], valuePartIndex: 0 },
-					{ propertyName: 'Owners', code: 'relation-target-schema-mismatch', args: [], valuePartIndex: 2 },
+					{ propertyName: 'Owners', code: 'relation-target-not-found', args: [ 'x' ], severity: 'error', valuePartIndex: 0 },
+					{ propertyName: 'Owners', code: 'relation-target-schema-mismatch', args: [], severity: 'error', valuePartIndex: 2 },
 				],
 			} );
 
