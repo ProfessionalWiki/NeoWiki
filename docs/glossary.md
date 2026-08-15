@@ -7,8 +7,8 @@ order: 1
 Definitions of NeoWiki terms. Concepts are capitalized. Used in the code and UI
 ([Ubiquitous Language](https://softwaresystemdesign.com/domain-driven-design/ubiquitous-language/)).
 
-Some entries list *Avoid* terms: banned synonyms and former names. Do not use them for the concept in new
-code, docs, or discussion.
+Some entries list *Avoid* terms: synonyms and former names. Do not use them for the concept in new code,
+docs, or discussion.
 
 ## Page
 
@@ -33,7 +33,7 @@ Subjects have
 - A `label`: the name of the subject. Example: "John Doe". This is a string, not a reference to a page.
 - `statements`: a list of Statements
 
-*Avoid: "object", "entity", "item" — data about one thing is a Subject.*
+*Avoid: "object", "entity", "item" — synonyms for this concept.*
 
 ### Statement
 
@@ -63,8 +63,8 @@ Value Types:
 - NumberValue, identified with `number`. A single number
 - BooleanValue, identified with `boolean`. A single boolean
 - RelationValue, identified with `relation`. A collection of Relations
-- UnregisteredTypeValue, identified with `unregisteredType`. Holds the raw value of a Statement whose Property
-  Type is not registered on the wiki, preserving it unchanged until the type is available again
+- UnregisteredTypeValue, identified with `unregisteredType`. Holds a Statement's value unchanged while its
+  Property Type is not registered on the wiki
 
 Each Relation has
 
@@ -110,8 +110,7 @@ Constraints ([ADR 26](adr/026-validation-severity-levels.md)). Validating a Subj
 Violations; the possible kinds are cataloged in [Validation codes](api/validation-codes.md).
 
 Each Violation carries the **Severity** of the violated Constraint: `warning` Violations inform but never
-block, while `error` Violations can block saving. Whether errors actually block is decided by the wiki's
-validation **Enforcement** setting.
+block, while `error` Violations can block saving, depending on the wiki's validation **Enforcement** setting.
 
 
 
@@ -146,7 +145,7 @@ Layouts have:
 - **Settings**: Layout-level configuration specific to the View Type (e.g., `borderColor` for infobox)
 - Optional **description**
 
-*Avoid: "View" — the former name of this concept. A View is now the on-page rendering (see above).*
+*Avoid: "View" — the former name of this concept. A View is now the on-page rendering.*
 
 ### Display Rule
 
@@ -158,9 +157,8 @@ properties are hidden.
 
 ## Graph Store
 
-A Graph Store is a database that NeoWiki projects wiki data into so it can be queried: Neo4j or a
-SPARQL-capable store. A wiki can have several Graph Stores, each identified by name. A Graph Store holds one
-or more Projections and can always be rebuilt from wiki content.
+A Graph Store is a database that NeoWiki projects wiki data into so it can be queried: Neo4j or a SPARQL-capable
+store. A wiki can have several Graph Stores, each identified by name. Each holds one or more Projections.
 
 *Avoid: "graph database", "graph backend", "triple store" (as names for this concept).*
 
@@ -193,7 +191,7 @@ Extensions can contribute additional Page Properties (see [Extending NeoWiki](ex
 
 ## Flagged ambiguities
 
-Open naming questions. These terms are current but contested; expect them to change:
+These terms are current but contested; expect them to change:
 
 - **View Type** may be renamed to "Layout Type"
   ([#925](https://github.com/ProfessionalWiki/NeoWiki/issues/925)).
