@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
+use ProfessionalWiki\NeoWiki\Domain\EditNotice\SubjectEditNoticeProvider;
+use ProfessionalWiki\NeoWiki\Domain\EditNotice\SubjectEditNoticeProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
@@ -23,6 +25,7 @@ readonly class NeoWikiRegistrar {
 		private PagePropertyProviderRegistry $pagePropertyProviderRegistry,
 		private GraphDatabasePluginRegistry $graphDatabasePluginRegistry,
 		private RdfValueMapperRegistry $rdfValueMapperRegistry,
+		private SubjectEditNoticeProviderRegistry $subjectEditNoticeProviderRegistry,
 	) {
 	}
 
@@ -45,6 +48,14 @@ readonly class NeoWikiRegistrar {
 	 */
 	public function addRdfValueMapper( string $propertyTypeName, callable $mapper ): void {
 		$this->rdfValueMapperRegistry->registerMapper( $propertyTypeName, $mapper );
+	}
+
+	/**
+	 * Registers a source of messages shown to users before they edit a Subject. Providers are
+	 * consulted in registration order, after the notices wiki admins write as interface messages.
+	 */
+	public function addSubjectEditNoticeProvider( SubjectEditNoticeProvider $provider ): void {
+		$this->subjectEditNoticeProviderRegistry->addProvider( $provider );
 	}
 
 	public function addPagePropertyProvider( PagePropertyProvider $provider ): void {

@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
+use ProfessionalWiki\NeoWiki\Domain\EditNotice\SubjectEditNoticeProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
@@ -13,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubSubjectEditNoticeProvider;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPagePropertyProvider;
 
 /**
@@ -67,12 +69,23 @@ class NeoWikiRegistrarTest extends TestCase {
 		$this->assertTrue( $rdfValueMapperRegistry->hasMapper( 'custom' ) );
 	}
 
+	public function testAddSubjectEditNoticeProviderRegistersInRegistry(): void {
+		$noticeRegistry = new SubjectEditNoticeProviderRegistry();
+		$registrar = $this->newRegistrar( subjectEditNoticeProviderRegistry: $noticeRegistry );
+		$provider = new StubSubjectEditNoticeProvider( [] );
+
+		$registrar->addSubjectEditNoticeProvider( $provider );
+
+		$this->assertSame( [ $provider ], $noticeRegistry->getProviders() );
+	}
+
 	private function newRegistrar(
 		?PropertyTypeRegistry $propertyTypeRegistry = null,
 		?Neo4jValueBuilderRegistry $valueBuilderRegistry = null,
 		?PagePropertyProviderRegistry $pagePropertyProviderRegistry = null,
 		?GraphDatabasePluginRegistry $graphDatabasePluginRegistry = null,
 		?RdfValueMapperRegistry $rdfValueMapperRegistry = null,
+		?SubjectEditNoticeProviderRegistry $subjectEditNoticeProviderRegistry = null,
 	): NeoWikiRegistrar {
 		return new NeoWikiRegistrar(
 			propertyTypeRegistry: $propertyTypeRegistry ?? new PropertyTypeRegistry(),
@@ -80,6 +93,7 @@ class NeoWikiRegistrarTest extends TestCase {
 			pagePropertyProviderRegistry: $pagePropertyProviderRegistry ?? new PagePropertyProviderRegistry(),
 			graphDatabasePluginRegistry: $graphDatabasePluginRegistry ?? new GraphDatabasePluginRegistry(),
 			rdfValueMapperRegistry: $rdfValueMapperRegistry ?? new RdfValueMapperRegistry(),
+			subjectEditNoticeProviderRegistry: $subjectEditNoticeProviderRegistry ?? new SubjectEditNoticeProviderRegistry(),
 		);
 	}
 

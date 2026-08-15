@@ -44,6 +44,9 @@
 				</CdxButton>
 			</div>
 		</template>
+
+		<EditNoticeList :notices="notices" />
+
 		<template v-if="!selectedSchemaName">
 			<p>
 				{{ $i18n( 'neowiki-subject-creator-schema-title' ).text() }}
@@ -175,6 +178,8 @@ import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { setPendingNotification } from '@/presentation/PendingNotification.ts';
+import EditNoticeList from '@/components/common/EditNoticeList.vue';
+import { useEditNotices } from '@/composables/useEditNotices.ts';
 
 const props = defineProps<{
 	pageHasMainSubject: boolean;
@@ -182,6 +187,8 @@ const props = defineProps<{
 
 const selectedSchemaOption = ref( 'existing' );
 const selectedSchemaName = ref<string | null>( null );
+const { notices, loadNotices } = useEditNotices( () => NeoWikiExtension.getInstance().getEditNoticeRepository() );
+
 const loadedSchema = ref<Schema | null>( null );
 const subjectLabel = ref( '' );
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -195,6 +202,16 @@ const draftSchema = shallowRef<Schema | null>( null );
 let requestSequence = 0;
 
 const subjectStore = useSubjectStore();
+// Reloaded when the Schema is chosen too, since Schema-scoped notices cannot apply before there
+// is a Schema to scope them to.
+watch(
+	() => [ subjectStore.subjectCreatorOpen, selectedSchemaName.value ],
+	() => {
+		if ( subjectStore.subjectCreatorOpen ) {
+			loadNotices( Number( mw.config.get( 'wgArticleId' ) ), selectedSchemaName.value ?? undefined );
+		}
+	}
+);
 const schemaStore = useSchemaStore();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();

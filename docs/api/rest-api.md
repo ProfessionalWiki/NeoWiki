@@ -15,7 +15,8 @@ Every endpoint is also published as a complete [OpenAPI 3.0 description](#full-s
 
 ## Permissions
 
-The Subject, page-subjects, subject-labels, Schema, Layout, Mapping, RDF export, and entity-dereference read endpoints
+The Subject, page-subjects, edit-notices, subject-labels, Schema, Layout, Mapping, RDF export, and entity-dereference
+read endpoints
 enforce the caller's per-page `read` permission; page protection and `$wgNamespaceProtection` do not restrict them,
 because MediaWiki's `read` action ignores both. When you may not read a page they respond as if the data were absent — a
 `null` value, an empty list, or a `404` — never a `403`. `GET /subject-labels` omits the labels of Subjects whose page
@@ -70,6 +71,7 @@ Subjects and arrange them.
 | Endpoint | Description |
 |---|---|
 | `GET /neowiki/v0/page/{pageId}/subjects` | List a page's main and child Subjects. `expand` with `schemas` or `relations`. |
+| `GET /neowiki/v0/page/{pageId}/editNotices` | List the notices to show before editing the page's Subjects, in display order. Optional `schema` adds notices scoped to that Schema. Returns `{notices: [{key, html}]}`. See [Edit notices](../authoring/edit-notices.md). |
 | `GET /neowiki/v0/page/{pageId}/rdf` | Export the page's Subjects and metadata as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or the name of a Mapping page. See [RDF export](../rdf/rdf-export.md) and [Ontology Mapping](../rdf/ontology-mapping.md). |
 | `POST /neowiki/v0/page/{pageId}/mainSubject` | Create the page's main Subject. |
 | `PUT /neowiki/v0/page/{pageId}/mainSubject` | Promote a child Subject to main, or clear it. |

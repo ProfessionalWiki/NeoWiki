@@ -107,6 +107,39 @@ extension prefix). The context exposes the page id, title and namespace, creatio
 categories, and last editor. Example:
 [`src/StaticPagePropertyProvider.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/StaticPagePropertyProvider.php).
 
+### Edit notices
+
+Show a message before a user edits a Subject.
+
+```php
+class ApprovalEditNoticeProvider implements SubjectEditNoticeProvider {
+
+	public function __construct(
+		private readonly MessageLocalizer $messageLocalizer
+	) {
+	}
+
+	public function getNotices( SubjectEditNoticeContext $context ): array {
+		return [ new SubjectEditNotice(
+			key: 'myext-approval',
+			html: $this->messageLocalizer->msg( 'myext-approval-notice' )->parse()
+		) ];
+	}
+
+}
+```
+
+Register with `NeoWikiRegistrar::addSubjectEditNoticeProvider()`. Providers run in registration order, after the
+notices wiki admins write as interface messages, and only for pages the requesting user may read.
+`SubjectEditNoticeContext` exposes `$pageId`, `$pageDbKey`, `$namespaceId`, and `$schemaName` when a Schema is
+known.
+
+Unlike an admin's wikitext, which MediaWiki's parser sanitizes, provider `html` is inserted as given: escape it
+yourself.
+
+Namespace your keys to your extension. A key reaches the browser as a styling handle, and the first provider to
+claim one keeps it. See [Edit notices](../authoring/edit-notices.md) for the keys admins use.
+
 ### Refreshing a page's data without an edit
 
 A page's graph data is written on edit and on full rebuild. When data your extension contributes through a

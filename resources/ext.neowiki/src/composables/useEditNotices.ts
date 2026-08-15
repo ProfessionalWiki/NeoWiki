@@ -1,0 +1,44 @@
+import { ref, type Ref } from 'vue';
+import type { EditNotice } from '@/domain/EditNotice';
+import type { EditNoticeRepository } from '@/application/EditNoticeRepository';
+
+interface EditNoticesComposable {
+	notices: Ref<EditNotice[]>;
+	loadNotices: ( pageId: number, schemaName?: string ) => Promise<void>;
+}
+
+/**
+ * Fetches the notices to show before a Subject is edited.
+ *
+ * Fetched on demand rather than with the page, because a notice can depend on the viewer and on
+ * state that changes without an edit, such as approval.
+ */
+/**
+ * The repository is resolved per call rather than passed ready-made: building it reaches the
+ * extension singleton, which must not happen while a component is setting up.
+ */
+export function useEditNotices( resolveRepository: () => EditNoticeRepository ): EditNoticesComposable {
+	const notices = ref<EditNotice[]>( [] );
+	// The creator refetches whenever the Schema changes, so two selections can be in flight at once.
+	// Only the newest request may write, or a slower earlier one lands on top of it.
+	let latestRequest = 0;
+
+	// Advisory to the last step: an editor must open whether or not its notices could be fetched.
+	async function loadNotices( pageId: number, schemaName?: string ): Promise<void> {
+		const request = ++latestRequest;
+
+		try {
+			const fetched = await resolveRepository().getNotices( pageId, schemaName );
+
+			if ( request === latestRequest ) {
+				notices.value = fetched;
+			}
+		} catch {
+			if ( request === latestRequest ) {
+				notices.value = [];
+			}
+		}
+	}
+
+	return { notices, loadNotices };
+}

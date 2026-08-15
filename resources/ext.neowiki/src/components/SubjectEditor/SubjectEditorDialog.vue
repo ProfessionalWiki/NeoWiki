@@ -65,6 +65,8 @@
 
 			<SubjectViolationBanners :violations="anchorlessViolations" />
 
+			<EditNoticeList :notices="notices" />
+
 			<SubjectEditor
 				ref="subjectEditorRef"
 				:statements="statements"
@@ -118,6 +120,8 @@ import { Schema } from '@/domain/Schema.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
+import EditNoticeList from '@/components/common/EditNoticeList.vue';
+import { useEditNotices } from '@/composables/useEditNotices.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
@@ -152,6 +156,7 @@ const subjectLabel = ref( '' );
 // without waiting for the host to pass a new one down.
 const currentSchema = shallowRef<Schema>( props.schema );
 const { canEditSchema, checkEditPermission } = useSchemaPermissions();
+const { notices, loadNotices } = useEditNotices( () => NeoWikiExtension.getInstance().getEditNoticeRepository() );
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
 const { violations: serverViolations, revalidate, flush, reset } = useSubjectValidation(
@@ -254,13 +259,22 @@ function onDialogUpdateOpen( value: boolean ): void {
 	}
 }
 
+// Immediate, because the host renders this dialog with v-if: it mounts with open already true, so a
+// deferred watcher would never see the opening that created it.
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
 		subjectLabel.value = props.subject.getLabel();
 		resetChanged();
 		reset();
+		// Fetched per opening: approval state and the viewer's permissions both change without an edit.
+		// Keyed on the page being viewed, which is the page storing this Subject except when
+		// {{#view: <subjectId>}} renders a Subject from elsewhere. Then the wrong page's notices are
+		// shown, a v1 limitation documented in docs/authoring/edit-notices.md: the frontend Subject
+		// carries no page id, so fixing it needs the endpoint to resolve the page from a Subject id
+		// and to read-gate on the page it resolved rather than the one asked for.
+		loadNotices( Number( mw.config.get( 'wgArticleId' ) ), props.subject.getSchemaName() );
 	}
-} );
+}, { immediate: true } );
 
 // Existing subjects are expected to be complete, so validate as soon as the
 // editor mounts for an open dialog: pre-existing violations (e.g. a now-empty
