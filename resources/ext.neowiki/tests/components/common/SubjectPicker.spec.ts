@@ -1,7 +1,7 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { defineComponent } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SubjectLookup from '@/components/common/SubjectLookup.vue';
+import SubjectPicker from '@/components/common/SubjectPicker.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { CdxLookup, CdxMessage } from '@wikimedia/codex';
@@ -28,13 +28,13 @@ const CdxLookupWithVModel = defineComponent( {
 	emits: [ 'update:selected', 'update:input-value', 'input', 'blur' ],
 } );
 
-describe( 'SubjectLookup', () => {
+describe( 'SubjectPicker', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let subjectStore: any;
 	let mockSubjectLabelSearch: SubjectLabelSearch;
 
-	function createWrapper( props: Partial<InstanceType<typeof SubjectLookup>['$props']> = {} ): VueWrapper {
-		return mount( SubjectLookup, {
+	function createWrapper( props: Partial<InstanceType<typeof SubjectPicker>['$props']> = {} ): VueWrapper {
+		return mount( SubjectPicker, {
 			props: {
 				selected: null,
 				targetSchema: 'Product',
@@ -51,8 +51,8 @@ describe( 'SubjectLookup', () => {
 		} );
 	}
 
-	function createWrapperWithVModel( props: Partial<InstanceType<typeof SubjectLookup>['$props']> = {} ): VueWrapper {
-		return mount( SubjectLookup, {
+	function createWrapperWithVModel( props: Partial<InstanceType<typeof SubjectPicker>['$props']> = {} ): VueWrapper {
+		return mount( SubjectPicker, {
 			props: {
 				selected: null,
 				targetSchema: 'Product',
@@ -349,7 +349,7 @@ describe( 'SubjectLookup', () => {
 			template: '<div><input /></div>',
 		};
 
-		const wrapper = mount( SubjectLookup, {
+		const wrapper = mount( SubjectPicker, {
 			props: {
 				selected: null,
 				targetSchema: 'Product',

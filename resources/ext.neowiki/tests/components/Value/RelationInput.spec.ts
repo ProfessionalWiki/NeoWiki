@@ -2,7 +2,7 @@ import { mount, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CdxField, CdxIcon } from '@wikimedia/codex';
 import RelationInput from '@/components/Value/RelationInput.vue';
-import SubjectLookup from '@/components/common/SubjectLookup.vue';
+import SubjectPicker from '@/components/common/SubjectPicker.vue';
 import NeoMultiLookupInput from '@/components/common/NeoMultiLookupInput.vue';
 import { RelationValue, newRelation } from '@/domain/Value';
 import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Relation';
@@ -28,7 +28,7 @@ describe( 'RelationInput', () => {
 				directives: { tooltip: {} },
 				mocks: { $i18n: createI18nMock() },
 				stubs: {
-					SubjectLookup: true,
+					SubjectPicker: true,
 					NeoMultiLookupInput: true,
 				},
 			},
@@ -36,10 +36,10 @@ describe( 'RelationInput', () => {
 	}
 
 	describe( 'rendering', () => {
-		it( 'renders SubjectLookup for single mode', () => {
+		it( 'renders SubjectPicker for single mode', () => {
 			const wrapper = newWrapper();
 
-			expect( wrapper.findComponent( SubjectLookup ).exists() ).toBe( true );
+			expect( wrapper.findComponent( SubjectPicker ).exists() ).toBe( true );
 			expect( wrapper.findComponent( NeoMultiLookupInput ).exists() ).toBe( false );
 		} );
 
@@ -49,7 +49,7 @@ describe( 'RelationInput', () => {
 			} );
 
 			expect( wrapper.findComponent( NeoMultiLookupInput ).exists() ).toBe( true );
-			expect( wrapper.findComponent( SubjectLookup ).exists() ).toBe( false );
+			expect( wrapper.findComponent( SubjectPicker ).exists() ).toBe( false );
 		} );
 
 		it( 'renders description icon when property has description', () => {
@@ -70,32 +70,32 @@ describe( 'RelationInput', () => {
 	} );
 
 	describe( 'single mode', () => {
-		it( 'passes subject ID from initial value to SubjectLookup', () => {
+		it( 'passes subject ID from initial value to SubjectPicker', () => {
 			const wrapper = newWrapper( {
 				modelValue: new RelationValue( [ newRelation( undefined, 's1demo1aaaaaaa1' ) ] ),
 			} );
 
-			expect( wrapper.findComponent( SubjectLookup ).props( 'selected' ) ).toBe( 's1demo1aaaaaaa1' );
+			expect( wrapper.findComponent( SubjectPicker ).props( 'selected' ) ).toBe( 's1demo1aaaaaaa1' );
 		} );
 
 		it( 'passes null when no initial value', () => {
 			const wrapper = newWrapper();
 
-			expect( wrapper.findComponent( SubjectLookup ).props( 'selected' ) ).toBeNull();
+			expect( wrapper.findComponent( SubjectPicker ).props( 'selected' ) ).toBeNull();
 		} );
 
-		it( 'passes targetSchema to SubjectLookup', () => {
+		it( 'passes targetSchema to SubjectPicker', () => {
 			const wrapper = newWrapper( {
 				property: newRelationProperty( { targetSchema: 'Person' } ),
 			} );
 
-			expect( wrapper.findComponent( SubjectLookup ).props( 'targetSchema' ) ).toBe( 'Person' );
+			expect( wrapper.findComponent( SubjectPicker ).props( 'targetSchema' ) ).toBe( 'Person' );
 		} );
 
 		it( 'emits RelationValue when subject is selected', async () => {
 			const wrapper = newWrapper();
 
-			wrapper.findComponent( SubjectLookup ).vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
+			wrapper.findComponent( SubjectPicker ).vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
 			await wrapper.vm.$nextTick();
 
 			const emitted = wrapper.emitted( 'update:modelValue' )!;
@@ -111,7 +111,7 @@ describe( 'RelationInput', () => {
 				modelValue: new RelationValue( [ newRelation( undefined, 's1demo1aaaaaaa1' ) ] ),
 			} );
 
-			wrapper.findComponent( SubjectLookup ).vm.$emit( 'update:selected', null );
+			wrapper.findComponent( SubjectPicker ).vm.$emit( 'update:selected', null );
 			await wrapper.vm.$nextTick();
 
 			expect( wrapper.emitted( 'update:modelValue' )![ 0 ][ 0 ] ).toBeUndefined();
@@ -127,11 +127,11 @@ describe( 'RelationInput', () => {
 			expect( field.props( 'status' ) ).toBe( 'default' );
 		} );
 
-		it( 'passes field status to SubjectLookup', () => {
+		it( 'passes field status to SubjectPicker', () => {
 			const clean = newWrapper( {
 				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
 			} );
-			expect( clean.findComponent( SubjectLookup ).props( 'status' ) ).toBe( 'default' );
+			expect( clean.findComponent( SubjectPicker ).props( 'status' ) ).toBe( 'default' );
 
 			const withViolation = newWrapper( {
 				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
@@ -139,15 +139,15 @@ describe( 'RelationInput', () => {
 					{ propertyName: 'Owner', code: 'required', args: [], valuePartIndex: null },
 				],
 			} );
-			expect( withViolation.findComponent( SubjectLookup ).props( 'status' ) ).toBe( 'error' );
+			expect( withViolation.findComponent( SubjectPicker ).props( 'status' ) ).toBe( 'error' );
 		} );
 
-		it( 'suppresses required error when SubjectLookup reports unmatched text', async () => {
+		it( 'suppresses required error when SubjectPicker reports unmatched text', async () => {
 			const wrapper = newWrapper( {
 				property: newRelationProperty( { required: true } ),
 			} );
 
-			wrapper.findComponent( SubjectLookup ).vm.$emit( 'blur', true );
+			wrapper.findComponent( SubjectPicker ).vm.$emit( 'blur', true );
 			await wrapper.vm.$nextTick();
 
 			const field = wrapper.findComponent( CdxField );
@@ -177,7 +177,7 @@ describe( 'RelationInput', () => {
 				],
 			} );
 
-			wrapper.findComponent( SubjectLookup ).vm.$emit( 'blur', true );
+			wrapper.findComponent( SubjectPicker ).vm.$emit( 'blur', true );
 			await wrapper.vm.$nextTick();
 
 			const field = wrapper.findComponent( CdxField );
@@ -282,7 +282,7 @@ describe( 'RelationInput', () => {
 		it( 'returns updated value after selection', async () => {
 			const wrapper = newWrapper();
 
-			wrapper.findComponent( SubjectLookup ).vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
+			wrapper.findComponent( SubjectPicker ).vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
 			await wrapper.vm.$nextTick();
 
 			const currentValue = ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() as RelationValue;
@@ -305,7 +305,7 @@ describe( 'RelationInput', () => {
 				],
 			} );
 
-			wrapper.findComponent( SubjectLookup ).vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
+			wrapper.findComponent( SubjectPicker ).vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
 			await wrapper.vm.$nextTick();
 
 			// The parent drops violations by exact valuePartIndex match, so a null here would
@@ -343,7 +343,7 @@ describe( 'RelationInput', () => {
 				],
 			} );
 
-			wrapper.findComponent( SubjectLookup ).vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
+			wrapper.findComponent( SubjectPicker ).vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
 			await wrapper.vm.$nextTick();
 
 			expect( wrapper.emitted( 'clear-server-violation' ) ).toBeUndefined();
@@ -357,7 +357,7 @@ describe( 'RelationInput', () => {
 				],
 			} );
 
-			wrapper.findComponent( SubjectLookup ).vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
+			wrapper.findComponent( SubjectPicker ).vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
 			await wrapper.vm.$nextTick();
 
 			// A required violation carries valuePartIndex: null; the parent drops by exact match,
