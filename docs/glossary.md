@@ -7,9 +7,6 @@ order: 1
 Definitions of NeoWiki terms. Concepts are capitalized. Used in the code and UI
 ([Ubiquitous Language](https://softwaresystemdesign.com/domain-driven-design/ubiquitous-language/)).
 
-Some entries list *Avoid* terms: synonyms and former names. Do not use them for the concept in new code,
-docs, or discussion.
-
 ## Page
 
 MediaWiki concept. Also known as "Wiki page".
@@ -33,7 +30,7 @@ Subjects have
 - A `label`: the name of the subject. Example: "John Doe". This is a string, not a reference to a page.
 - `statements`: a list of Statements
 
-*Avoid: "object", "entity", "item" — synonyms for this concept.*
+*Avoid using these terms as synonyms: "object", "entity", "item"*
 
 ### Statement
 
@@ -157,8 +154,8 @@ properties are hidden.
 
 ## Graph Store
 
-A Graph Store is a database that NeoWiki projects wiki data into so it can be queried: Neo4j or a SPARQL-capable
-store. A wiki can have several Graph Stores, each identified by name. Each holds one or more Projections.
+A Graph Store is a database that NeoWiki projects wiki data into so it can be queried, such as Neo4j or SPARQL-capable
+stores. A wiki can have several Graph Stores, each identified by name. Each holds one or more Projections.
 
 *Avoid: "graph database", "graph backend", "triple store" (as names for this concept).*
 
@@ -166,9 +163,8 @@ store. A wiki can have several Graph Stores, each identified by name. Each holds
 
 A Projection is a derived, query-optimized copy of the wiki's data in a Graph Store
 ([ADR 19](adr/019-graph-database-architecture.md)). Page content remains the source of truth; a Projection can
-be rebuilt from it at any time. Every Projection is one of two kinds: the built-in **native projection**,
-which uses NeoWiki's own vocabulary, or an **ontology projection**, defined by a Mapping. Export and query
-surfaces select a Projection by name.
+be rebuilt from it at any time. The built-in **native projection** uses NeoWiki's own vocabulary; each Mapping
+defines one additional **ontology projection**. Export and query surfaces select a Projection by name.
 
 *Avoid: "base mapping", "target ontology" — former names for the native and ontology projections.*
 
@@ -176,7 +172,7 @@ surfaces select a Projection by name.
 
 A Mapping defines how Subjects that follow native Schemas are expressed in an established ontology such as EDM
 or CIDOC-CRM ([Ontology Mapping](rdf/ontology-mapping.md)). Each Mapping is a page in the `Mapping:` namespace
-and defines one ontology projection; the Mapping page's title is the projection name.
+and defines one ontology Projection; the Mapping page's title is that Projection's name.
 
 
 
