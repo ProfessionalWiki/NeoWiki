@@ -96,6 +96,11 @@ module.exports = exports = {
 			if ( trimmed === '' || editorRef.value === null ) {
 				return;
 			}
+			// A field showing text it cannot turn into a value would be dropped
+			// on save; the field is already flagging it, so let the user fix it.
+			if ( editorRef.value.hasUnparseableInput() ) {
+				return;
+			}
 			const pageId = mw.config.get( 'wgArticleId' );
 			const subjectStatements = editorRef.value.getSubjectData();
 			subjectStore.createChildSubject( pageId, trimmed, SCHEMA_NAME, subjectStatements )

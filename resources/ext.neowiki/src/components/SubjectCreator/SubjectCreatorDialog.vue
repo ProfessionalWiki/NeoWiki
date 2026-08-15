@@ -164,6 +164,7 @@ import { defaultSubjectLabel } from '@/domain/defaultSubjectLabel.ts';
 import { withoutMissingValueViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
+import type { SubjectEditorExposes } from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
 import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import type { SchemaCreatorExposes } from '@/components/SchemaCreator/SchemaCreator.vue';
@@ -259,11 +260,7 @@ function onDialogUpdateOpen( value: boolean ): void {
 	}
 }
 
-interface SubjectEditorInstance {
-	getSubjectData: () => StatementList;
-}
-
-const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
+const subjectEditorRef = ref<SubjectEditorExposes | null>( null );
 
 const { violations: serverViolations, revalidate, flush, reset } = useSubjectValidation(
 	async () => {
@@ -478,6 +475,12 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	}
 
 	if ( !subjectEditorRef.value || !selectedSchemaName.value ) {
+		return;
+	}
+
+	// Saving now would silently drop the unparseable text the user can still see.
+	if ( subjectEditorRef.value.hasUnparseableInput() ) {
+		mw.notify( mw.msg( 'neowiki-field-invalid-number' ), { type: 'error' } );
 		return;
 	}
 

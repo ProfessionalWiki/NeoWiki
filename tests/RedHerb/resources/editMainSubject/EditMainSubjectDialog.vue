@@ -113,6 +113,11 @@ module.exports = exports = {
 			if ( trimmed === '' || editorRef.value === null || loadedSubject.value === null ) {
 				return;
 			}
+			// A field showing text it cannot turn into a value would be dropped
+			// on save; the field is already flagging it, so let the user fix it.
+			if ( editorRef.value.hasUnparseableInput() ) {
+				return;
+			}
 			const newStatements = editorRef.value.getSubjectData();
 			const updatedSubject = loadedSubject.value
 				.withLabel( trimmed )

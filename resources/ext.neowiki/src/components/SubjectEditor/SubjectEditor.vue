@@ -18,10 +18,18 @@
 	</div>
 </template>
 
+<script lang="ts">
+import { StatementList } from '@/domain/StatementList.ts';
+
+export interface SubjectEditorExposes {
+	getSubjectData(): StatementList;
+	hasUnparseableInput(): boolean;
+}
+</script>
+
 <script setup lang="ts">
 import { ref, onBeforeUpdate } from 'vue';
 import { CdxField } from '@wikimedia/codex';
-import { StatementList } from '@/domain/StatementList.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
@@ -64,8 +72,13 @@ const getSubjectData = (): StatementList => {
 	return new StatementList( newStatements );
 };
 
-defineExpose( {
-	getSubjectData
-} );
+/**
+ * Whether any field is showing the user text it cannot turn into a Value, so
+ * getSubjectData() would silently drop it. Callers hold the save while true.
+ */
+const hasUnparseableInput = (): boolean =>
+	valueEditors.value.some( ( editor ) => editor?.hasUnparseableInput?.() === true );
+
+defineExpose<SubjectEditorExposes>( { getSubjectData, hasUnparseableInput } );
 
 </script>

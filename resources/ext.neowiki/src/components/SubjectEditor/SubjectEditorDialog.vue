@@ -107,6 +107,7 @@
 <script setup lang="ts">
 import { ref, shallowRef, nextTick, computed, watch } from 'vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
+import type { SubjectEditorExposes } from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
@@ -144,12 +145,8 @@ const emit = defineEmits( [ 'update:open' ] );
 
 const subjectStore = useSubjectStore();
 
-interface SubjectEditorInstance {
-	getSubjectData: () => StatementList;
-}
-
 const isSchemaEditorOpen = ref( false );
-const subjectEditorRef = ref<SubjectEditorInstance | null>( null );
+const subjectEditorRef = ref<SubjectEditorExposes | null>( null );
 // Initialized by the immediate props.subject watch below.
 const subjectLabel = ref( '' );
 // Mirrors the prop so a schema saved through the nested SchemaEditorDialog takes effect here
@@ -310,6 +307,12 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	}
 
 	if ( !subjectEditorRef.value ) {
+		return;
+	}
+
+	// Saving now would silently drop the unparseable text the user can still see.
+	if ( subjectEditorRef.value.hasUnparseableInput() ) {
+		mw.notify( mw.msg( 'neowiki-field-invalid-number' ), { type: 'error' } );
 		return;
 	}
 
