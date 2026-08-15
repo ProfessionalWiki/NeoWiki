@@ -23,13 +23,18 @@ import type { SubjectViolation } from '@/domain/SubjectViolation';
 
 const $i18n = createI18nMock();
 
+// What the stubbed editor reports about fields holding text it cannot turn into
+// a value. Reset per test by the beforeEach below.
+let editorHoldsUnparseableInput = false;
+
 const SubjectEditorStub = {
 	template: '<div class="subject-editor-stub"></div>',
 	props: [ 'statements', 'schema', 'serverViolations' ],
 	emits: [ 'change', 'clear-server-violation' ],
 	setup() {
 		const getSubjectData = (): StatementList => new StatementList( [] );
-		return { getSubjectData };
+		const hasUnparseableInput = (): boolean => editorHoldsUnparseableInput;
+		return { getSubjectData, hasUnparseableInput };
 	},
 };
 
@@ -47,6 +52,7 @@ const CloseConfirmationDialogStub = {
 
 describe( 'SubjectEditorDialog', () => {
 	beforeEach( () => {
+		editorHoldsUnparseableInput = false;
 		setupMwMock( {
 			functions: [ 'message', 'msg', 'notify', 'config' ],
 			// Debounce 0 is blur-only mode: the dry-run fires on blur / pre-save
@@ -600,6 +606,41 @@ describe( 'SubjectEditorDialog', () => {
 			expect( validate ).toHaveBeenCalled();
 			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
 			expect( passed ).toEqual( [ existingViolation ] );
+		} );
+	} );
+
+	describe( 'Unparseable field input', () => {
+		it( 'does not save while a field holds text that cannot be turned into a value', async () => {
+			const onSave = vi.fn().mockResolvedValue( undefined );
+			const wrapper = mountComponent( false, validationTestStubs, onSave );
+			await flushPromises();
+			editorHoldsUnparseableInput = true;
+
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( onSave ).not.toHaveBeenCalled();
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+			expect( mw.notify ).toHaveBeenCalledTimes( 1 );
+			expect( mw.notify ).toHaveBeenCalledWith(
+				'neowiki-field-invalid-number',
+				{ type: 'error' },
+			);
+		} );
+
+		it( 'saves once the text parses again', async () => {
+			const onSave = vi.fn().mockResolvedValue( undefined );
+			const wrapper = mountComponent( false, validationTestStubs, onSave );
+			await flushPromises();
+			editorHoldsUnparseableInput = true;
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			editorHoldsUnparseableInput = false;
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( onSave ).toHaveBeenCalledTimes( 1 );
 		} );
 	} );
 

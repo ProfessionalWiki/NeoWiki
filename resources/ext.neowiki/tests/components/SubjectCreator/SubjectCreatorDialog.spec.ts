@@ -44,6 +44,10 @@ const SchemaPickerStub = {
 	},
 };
 
+// What the stubbed editor reports about fields holding text it cannot turn into
+// a value. Reset per test by the beforeEach below.
+let editorHoldsUnparseableInput = false;
+
 const SubjectEditorStub = {
 	template: '<div class="subject-editor-stub"></div>',
 	props: [ 'statements', 'schema', 'serverViolations' ],
@@ -52,7 +56,8 @@ const SubjectEditorStub = {
 		const getSubjectData = (): StatementList => new StatementList( [
 			new Statement( new PropertyName( 'Color' ), TextType.typeName, newStringValue( 'Red' ) ),
 		] );
-		return { getSubjectData };
+		const hasUnparseableInput = (): boolean => editorHoldsUnparseableInput;
+		return { getSubjectData, hasUnparseableInput };
 	},
 };
 
@@ -182,6 +187,7 @@ describe( 'SubjectCreatorDialog', () => {
 	let reloadMock: ReturnType<typeof vi.fn>;
 
 	beforeEach( () => {
+		editorHoldsUnparseableInput = false;
 		reloadMock = vi.fn();
 		vi.stubGlobal( 'location', { ...window.location, reload: reloadMock } );
 
@@ -478,6 +484,46 @@ describe( 'SubjectCreatorDialog', () => {
 			expect.any( String ),
 			expect.objectContaining( { type: 'error' } ),
 		);
+	} );
+
+	describe( 'Unparseable field input', () => {
+		async function pickSchema( wrapper: VueWrapper ): Promise<void> {
+			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+		}
+
+		async function save( wrapper: VueWrapper ): Promise<void> {
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+		}
+
+		it( 'does not save while a field holds text that cannot be turned into a value', async () => {
+			const wrapper = mountComponent();
+			await pickSchema( wrapper );
+			editorHoldsUnparseableInput = true;
+
+			await save( wrapper );
+
+			expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
+			expect( reloadMock ).not.toHaveBeenCalled();
+			expect( mw.notify ).toHaveBeenCalledTimes( 1 );
+			expect( mw.notify ).toHaveBeenCalledWith(
+				'neowiki-field-invalid-number',
+				{ type: 'error' },
+			);
+		} );
+
+		it( 'saves once the text parses again', async () => {
+			const wrapper = mountComponent();
+			await pickSchema( wrapper );
+			editorHoldsUnparseableInput = true;
+			await save( wrapper );
+
+			editorHoldsUnparseableInput = false;
+			await save( wrapper );
+
+			expect( subjectStore.createMainSubject ).toHaveBeenCalledTimes( 1 );
+		} );
 	} );
 
 	describe( 'Existing schema flow', () => {
