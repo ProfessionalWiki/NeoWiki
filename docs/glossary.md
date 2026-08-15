@@ -163,8 +163,9 @@ stores. A wiki can have several Graph Stores, each identified by name. Each hold
 
 A Projection is a derived, query-optimized copy of the wiki's data in a Graph Store
 ([ADR 19](adr/019-graph-database-architecture.md)). Page content remains the source of truth; a Projection can
-be rebuilt from it at any time. The built-in **native projection** uses NeoWiki's own vocabulary; each Mapping
-defines one additional **ontology projection**. Export and query surfaces select a Projection by name.
+be rebuilt from it at any time. Every Projection is one of two kinds: the built-in **native projection**,
+which uses NeoWiki's own vocabulary, or an **ontology projection**, defined by a Mapping. Export and query
+surfaces select a Projection by name.
 
 *Avoid: "base mapping", "target ontology" — former names for the native and ontology projections.*
 
@@ -172,7 +173,7 @@ defines one additional **ontology projection**. Export and query surfaces select
 
 A Mapping defines how Subjects that follow native Schemas are expressed in an established ontology such as EDM
 or CIDOC-CRM ([Ontology Mapping](rdf/ontology-mapping.md)). Each Mapping is a page in the `Mapping:` namespace
-and defines one ontology Projection; the Mapping page's title is that Projection's name.
+and defines one ontology projection; the Mapping page's title is the projection name.
 
 
 
