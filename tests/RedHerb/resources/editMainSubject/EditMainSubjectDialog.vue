@@ -113,9 +113,10 @@ module.exports = exports = {
 			if ( trimmed === '' || editorRef.value === null || loadedSubject.value === null ) {
 				return;
 			}
-			// A field showing text it cannot turn into a value would be dropped
-			// on save; the field is already flagging it, so let the user fix it.
-			if ( editorRef.value.hasUnparseableInput() ) {
+			const unparseable = editorRef.value.unparseableInput();
+			if ( unparseable !== null ) {
+				// The field is already flagging this; name it so the user knows where to look.
+				mw.notify( unparseable.message, { title: unparseable.propertyName, type: 'error' } );
 				return;
 			}
 			const newStatements = editorRef.value.getSubjectData();

@@ -386,6 +386,14 @@ async function handleCreateSchema(): Promise<void> {
 		return;
 	}
 
+	const unparseable = schemaCreatorRef.value.unparseableInput();
+
+	// Continuing now would freeze a draft schema with the unparseable text dropped.
+	if ( unparseable !== null ) {
+		mw.notify( unparseable.message, { title: unparseable.propertyName, type: 'error' } );
+		return;
+	}
+
 	const valid = await schemaCreatorRef.value.validate();
 
 	if ( !valid ) {
@@ -461,13 +469,18 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		return;
 	}
 
-	// Saving now would silently drop the unparseable text the user can still see.
-	if ( subjectEditorRef.value.hasUnparseableInput() ) {
-		mw.notify( mw.msg( 'neowiki-field-invalid-number' ), { type: 'error' } );
+	await flush();
+
+	const unparseable = subjectEditorRef.value.unparseableInput();
+
+	// Saving now would silently drop the text the user can still see. Held after
+	// the dry-run so the field's own complaint and the server's findings on the
+	// other fields surface in one pass rather than one round at a time, and above
+	// the writes below so no draft schema is created for a subject that is not saved.
+	if ( unparseable !== null ) {
+		mw.notify( unparseable.message, { title: unparseable.propertyName, type: 'error' } );
 		return;
 	}
-
-	await flush();
 
 	try {
 		if ( draftSchema.value ) {

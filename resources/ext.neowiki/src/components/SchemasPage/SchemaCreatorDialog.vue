@@ -87,6 +87,14 @@ async function handleSave( summary: string ): Promise<void> {
 		return;
 	}
 
+	const unparseable = schemaCreatorRef.value.unparseableInput();
+
+	// Saving now would silently drop the text the user can still see.
+	if ( unparseable !== null ) {
+		mw.notify( unparseable.message, { title: unparseable.propertyName, type: 'error' } );
+		return;
+	}
+
 	const valid = await schemaCreatorRef.value.validate();
 
 	if ( !valid ) {
