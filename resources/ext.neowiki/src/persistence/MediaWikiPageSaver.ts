@@ -45,9 +45,14 @@ export class MediaWikiPageSaver implements PageSaver {
 		} );
 	}
 
-	private async getPageRevision( pageName: string ): Promise<string | undefined> {
+	/**
+	 * The page's current revision id, or undefined for a page that does not exist yet.
+	 * Cache-Control keeps the browser from answering from its cache, which would make the
+	 * save carry a stale base revision (#1303).
+	 */
+	private async getPageRevision( pageName: string ): Promise<number | undefined> {
 		try {
-			const page = await this.rest.get( `/v1/page/${ pageName }`, {} );
+			const page = await this.rest.get( `/v1/page/${ pageName }`, {}, { 'Cache-Control': 'no-cache' } );
 			return page.latest.id;
 		} catch ( _error ) {
 			return undefined;
