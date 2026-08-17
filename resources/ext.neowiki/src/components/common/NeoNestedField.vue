@@ -31,7 +31,9 @@ withDefaults( defineProps<{
 	&__inputs {
 		display: flex;
 		flex-direction: column;
-		gap: @spacing-50;
+		// Wide enough that a bound's severity control, at the end of its label row, does not
+		// crowd the next bound's label.
+		gap: @spacing-100;
 
 		@media screen and ( min-width: @min-width-breakpoint-desktop ) {
 			flex-direction: row;

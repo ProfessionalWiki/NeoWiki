@@ -32,10 +32,22 @@
 			/>
 		</CdxField>
 
-		<CdxField :hide-label="true">
-			<CdxCheckbox v-model="localProperty.required">
+		<CdxField
+			class="ext-neowiki-property-editor__required ext-neowiki-severity-row"
+			:hide-label="true"
+		>
+			<CdxCheckbox
+				:model-value="localProperty.required"
+				@update:model-value="updateRequired"
+			>
 				{{ $i18n( 'neowiki-property-editor-required' ).text() }}
 			</CdxCheckbox>
+			<SeverityInput
+				v-if="localProperty.required"
+				:constraint="$i18n( 'neowiki-property-editor-required' ).text()"
+				:model-value="localProperty.constraintSeverities?.required"
+				@update:model-value="updateRequiredSeverity"
+			/>
 		</CdxField>
 
 		<component
@@ -55,7 +67,9 @@
 </template>
 
 <script setup lang="ts">
-import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
+import { PropertyDefinition, PropertyName, withConstraintSeverity, withoutSeveritiesOfClearedConstraints } from '@/domain/PropertyDefinition.ts';
+import type { Severity } from '@/domain/Severity.ts';
+import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { CdxCheckbox, CdxField, CdxSelect, CdxTextArea, CdxTextInput, type MenuItemData } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
@@ -101,10 +115,25 @@ function updatePropertyName( name: string ): void {
 	};
 }
 
+function updateRequired( required: boolean ): void {
+	updatePropertyAttributes( { required } );
+}
+
+function updateRequiredSeverity( severity: Severity ): void {
+	updatePropertyAttributes( withConstraintSeverity( localProperty.value as PropertyDefinition, 'required', severity ) );
+}
+
+// Every Constraint change from this editor and the type-specific attributes editors funnels
+// through here, so this is where a cleared Constraint also loses its severity.
 function updatePropertyAttributes<T extends PropertyDefinition>( attributes: Partial<T> ): void {
-	localProperty.value = {
+	const updated = {
 		...localProperty.value,
 		...attributes
+	} as PropertyDefinition;
+
+	localProperty.value = {
+		...updated,
+		...withoutSeveritiesOfClearedConstraints( updated, attributes )
 	};
 }
 
@@ -113,14 +142,19 @@ const propertyTypeRegistry = NeoWikiServices.getPropertyTypeRegistry();
 // Rebuild the property when the type changes so its type-specific fields are
 // initialized (e.g. a Select gets an empty options list). Otherwise the editors
 // for the new type would receive a property missing the fields they expect.
+// The type-specific Constraints go, and their severities with them; required is
+// shared by every type, so it keeps its severity along with its value.
 function changePropertyType( type: string ): void {
+	const requiredSeverity = localProperty.value.constraintSeverities?.required;
+
 	localProperty.value = propertyTypeRegistry.getType( type ).createPropertyDefinitionFromJson(
 		{
 			name: localProperty.value.name,
 			type: type,
 			description: localProperty.value.description,
 			required: localProperty.value.required,
-			default: undefined
+			default: undefined,
+			...( requiredSeverity === undefined ? {} : { constraintSeverities: { required: requiredSeverity } } )
 		} as PropertyDefinition,
 		{}
 	);

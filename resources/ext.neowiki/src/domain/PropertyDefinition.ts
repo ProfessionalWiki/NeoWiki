@@ -49,6 +49,57 @@ export interface PropertyDefinition {
 
 }
 
+/**
+ * The Constraint-severity change to emit from an attributes editor: the given Constraint set to
+ * the given severity, the other annotations kept. Warning is the default and is not stored, so
+ * setting it removes the annotation, and an emptied map is dropped altogether — a definition
+ * with no annotations stays identical to one that never had any.
+ */
+export function withConstraintSeverity(
+	property: PropertyDefinition,
+	constraint: string,
+	severity: Severity,
+): Pick<PropertyDefinition, 'constraintSeverities'> {
+	const severities: Record<string, Severity> = { ...property.constraintSeverities };
+
+	if ( severity === 'warning' ) {
+		delete severities[ constraint ];
+	} else {
+		severities[ constraint ] = severity;
+	}
+
+	return { constraintSeverities: Object.keys( severities ).length > 0 ? severities : undefined };
+}
+
+/**
+ * The severity map without the entries of Constraints that the given change deliberately unsets:
+ * an unticked boolean (false) or an emptied list ([]). Such a Constraint carries no severity, and
+ * serialization drops the entry anyway; pruning it here keeps the in-memory definition equal to
+ * what a save would store, so the Constraint set again starts at the default.
+ *
+ * A bound cleared to undefined keeps its entry: a number input reports interim text such as "1."
+ * as empty, so pruning there would lose the choice while the author is still typing. Serialization
+ * drops it if the bound is still empty when saving.
+ */
+export function withoutSeveritiesOfClearedConstraints<T extends PropertyDefinition>(
+	property: T,
+	changes: Partial<T>,
+): Pick<PropertyDefinition, 'constraintSeverities'> {
+	const severities: Record<string, Severity> = { ...property.constraintSeverities };
+
+	for ( const [ key, value ] of Object.entries( changes ) ) {
+		if ( key !== 'constraintSeverities' && constraintIsCleared( value ) ) {
+			delete severities[ key ];
+		}
+	}
+
+	return { constraintSeverities: Object.keys( severities ).length > 0 ? severities : undefined };
+}
+
+function constraintIsCleared( value: unknown ): boolean {
+	return value === false || ( Array.isArray( value ) && value.length === 0 );
+}
+
 export interface MultiStringProperty extends PropertyDefinition {
 
 	readonly multiple: boolean;

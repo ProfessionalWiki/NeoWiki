@@ -2,6 +2,7 @@ import { VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CdxTextInput } from '@wikimedia/codex';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
+import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newNumberProperty, NumberProperty } from '@/domain/propertyTypes/Number';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { createTestWrapper, FieldProps, setupMwMock } from '../../../VueTestHelpers.ts';
@@ -13,7 +14,7 @@ describe( 'NumberAttributesEditor', () => {
 				'neowiki-property-editor-precision-non-negative': 'Precision cannot be negative.',
 				'neowiki-property-editor-min-exceeds-max': 'Minimum cannot exceed maximum.',
 			},
-			functions: [ 'message' ],
+			functions: [ 'config', 'message' ],
 		} );
 	} );
 
@@ -171,6 +172,59 @@ describe( 'NumberAttributesEditor', () => {
 
 			await inputs[ 2 ].vm.$emit( 'update:modelValue', '5' );
 			expect( getPrecisionFieldProps( wrapper ).status ).toBe( 'default' );
+		} );
+	} );
+
+	describe( 'Constraint severity', () => {
+		function severityInputs( wrapper: VueWrapper ): VueWrapper<InstanceType<typeof SeverityInput>>[] {
+			return wrapper.findAllComponents( SeverityInput );
+		}
+
+		it( 'offers no severity for an unset bound', () => {
+			const wrapper = newWrapper( { property: newNumberProperty( { maximum: 10 } ) } );
+
+			expect( severityInputs( wrapper ) ).toHaveLength( 1 );
+			expect( getMinimumFieldProps( wrapper ) ).toBeDefined();
+			expect( ( wrapper.findComponent( '.number-attributes__minimum' ) as VueWrapper ).findComponent( SeverityInput ).exists() ).toBe( false );
+		} );
+
+		it( 'offers a severity for each set bound, showing the current one', () => {
+			const wrapper = newWrapper( {
+				property: { ...newNumberProperty( { minimum: 0, maximum: 10 } ), constraintSeverities: { maximum: 'error' } },
+			} );
+
+			const inputs = severityInputs( wrapper );
+			expect( inputs ).toHaveLength( 2 );
+			expect( inputs[ 0 ].props( 'modelValue' ) ).toBeUndefined();
+			expect( inputs[ 1 ].props( 'modelValue' ) ).toBe( 'error' );
+		} );
+
+		it( 'emits the changed severity of a bound, keeping the other bound\'s', async () => {
+			const wrapper = newWrapper( {
+				property: { ...newNumberProperty( { minimum: 0, maximum: 10 } ), constraintSeverities: { maximum: 'error' } },
+			} );
+
+			await severityInputs( wrapper )[ 0 ].vm.$emit( 'update:modelValue', 'error' );
+
+			expect( wrapper.emitted( 'update:property' ) ).toEqual( [
+				[ { constraintSeverities: { maximum: 'error', minimum: 'error' } } ],
+			] );
+		} );
+
+		it( 'emits the removal of the annotation when a bound goes back to warning', async () => {
+			const wrapper = newWrapper( {
+				property: { ...newNumberProperty( { minimum: 0 } ), constraintSeverities: { minimum: 'error' } },
+			} );
+
+			await severityInputs( wrapper )[ 0 ].vm.$emit( 'update:modelValue', 'warning' );
+
+			expect( wrapper.emitted( 'update:property' ) ).toStrictEqual( [ [ { constraintSeverities: undefined } ] ] );
+		} );
+
+		it( 'offers no severity for precision, a Display Attribute', () => {
+			const wrapper = newWrapper( { property: newNumberProperty( { precision: 2 } ) } );
+
+			expect( severityInputs( wrapper ) ).toHaveLength( 0 );
 		} );
 	} );
 

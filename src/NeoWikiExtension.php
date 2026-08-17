@@ -976,6 +976,7 @@ class NeoWikiExtension {
 		return new FrontendModuleLoader(
 			MediaWikiServices::getInstance()->getHookContainer(),
 			is_int( $debounceMs ) ? $debounceMs : 300,
+			$this->isValidationEnforced(),
 		);
 	}
 

@@ -81,8 +81,28 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( 450, $this->addedJsConfigVars['wgNeoWikiValidationDebounceMs'] ?? null );
 	}
 
-	private function newLoader( int $validationDebounceMs = 300 ): FrontendModuleLoader {
-		return new FrontendModuleLoader( $this->getServiceContainer()->getHookContainer(), $validationDebounceMs );
+	public function testEmitsWhetherValidationIsEnforcedAsJsConfigVar(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$this->newLoader( validationEnforced: true )->load( $this->newCapturingOutputPage(), $this->createMock( Skin::class ) );
+
+		$this->assertTrue( $this->addedJsConfigVars['wgNeoWikiEnforceValidation'] ?? null );
+	}
+
+	public function testEmitsFalseWhenValidationIsNotEnforced(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$this->newLoader( validationEnforced: false )->load( $this->newCapturingOutputPage(), $this->createMock( Skin::class ) );
+
+		$this->assertFalse( $this->addedJsConfigVars['wgNeoWikiEnforceValidation'] ?? null );
+	}
+
+	private function newLoader( int $validationDebounceMs = 300, bool $validationEnforced = false ): FrontendModuleLoader {
+		return new FrontendModuleLoader(
+			$this->getServiceContainer()->getHookContainer(),
+			$validationDebounceMs,
+			$validationEnforced,
+		);
 	}
 
 	private function newCapturingOutputPage(): OutputPage {

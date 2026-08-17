@@ -2,6 +2,7 @@ import { VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
+import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newTextProperty, TextProperty } from '@/domain/propertyTypes/Text';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { createTestWrapper, FieldProps, setupMwMock } from '../../../VueTestHelpers.ts';
@@ -13,7 +14,7 @@ describe( 'TextAttributesEditor', () => {
 				'neowiki-property-editor-length-whole-number': 'Must be a whole number of at least 1.',
 				'neowiki-property-editor-length-min-exceeds-max': 'Minimum cannot exceed maximum.',
 			},
-			functions: [ 'message' ],
+			functions: [ 'config', 'message' ],
 		} );
 	} );
 
@@ -235,6 +236,57 @@ describe( 'TextAttributesEditor', () => {
 
 			expect( wrapper.emitted( 'update:property' ) ).toBeTruthy();
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { multiple: true } ] );
+		} );
+	} );
+	describe( 'Constraint severity', () => {
+		function severityInputIn( wrapper: VueWrapper, selector: string ): VueWrapper<InstanceType<typeof SeverityInput>> {
+			return ( wrapper.findComponent( selector ) as VueWrapper ).findComponent( SeverityInput );
+		}
+
+		it( 'shows the current severity of a set length bound', () => {
+			const wrapper = newWrapper( {
+				property: { ...newTextProperty( { maxLength: 40 } ), constraintSeverities: { maxLength: 'error' } },
+			} );
+
+			expect( severityInputIn( wrapper, '.text-attributes__max-length' ).props( 'modelValue' ) ).toBe( 'error' );
+		} );
+
+		it( 'offers no severity for an unset length bound', () => {
+			const wrapper = newWrapper( { property: newTextProperty( { maxLength: 40 } ) } );
+
+			expect( severityInputIn( wrapper, '.text-attributes__min-length' ).exists() ).toBe( false );
+		} );
+
+		it( 'emits the changed severity of a length bound, keeping the other bound\'s', async () => {
+			const wrapper = newWrapper( {
+				property: { ...newTextProperty( { minLength: 2, maxLength: 40 } ), constraintSeverities: { maxLength: 'error' } },
+			} );
+
+			await severityInputIn( wrapper, '.text-attributes__min-length' ).vm.$emit( 'update:modelValue', 'error' );
+
+			expect( wrapper.emitted( 'update:property' ) ).toEqual( [
+				[ { constraintSeverities: { maxLength: 'error', minLength: 'error' } } ],
+			] );
+		} );
+
+		it( 'offers a severity for unique values while they are required', () => {
+			const wrapper = newWrapper( { property: newTextProperty( { multiple: true, uniqueItems: true } ) } );
+
+			expect( severityInputIn( wrapper, '.text-attributes__unique-items' ).exists() ).toBe( true );
+		} );
+
+		it( 'emits the changed severity of unique values', async () => {
+			const wrapper = newWrapper( { property: newTextProperty( { multiple: true, uniqueItems: true } ) } );
+
+			await severityInputIn( wrapper, '.text-attributes__unique-items' ).vm.$emit( 'update:modelValue', 'error' );
+
+			expect( wrapper.emitted( 'update:property' ) ).toEqual( [ [ { constraintSeverities: { uniqueItems: 'error' } } ] ] );
+		} );
+
+		it( 'offers no severity for allowing multiple values, a shape field', () => {
+			const wrapper = newWrapper( { property: newTextProperty( { multiple: true, uniqueItems: false } ) } );
+
+			expect( wrapper.findAllComponents( SeverityInput ) ).toHaveLength( 0 );
 		} );
 	} );
 } );

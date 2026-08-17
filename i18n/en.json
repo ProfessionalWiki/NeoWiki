@@ -68,6 +68,12 @@
 	"neowiki-property-editor-target-schema-required": "Target schema is required.",
 	"neowiki-property-editor-options": "Options",
 	"neowiki-property-editor-options-unique": "Each option must be unique.",
+	"neowiki-severity-input-label": "Severity of \"$1\": $2",
+	"neowiki-severity-warning": "Warning",
+	"neowiki-severity-warning-description": "Flags the value as a warning",
+	"neowiki-severity-error": "Error",
+	"neowiki-severity-error-description-enforced": "Flags the value as an error and blocks saving",
+	"neowiki-severity-error-description-not-enforced": "Flags the value as an error",
 
 	"neowiki-schema-label": "Schema: $1",
 
