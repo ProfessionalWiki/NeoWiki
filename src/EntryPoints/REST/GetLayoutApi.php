@@ -13,6 +13,8 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class GetLayoutApi extends SimpleHandler {
 
+	use ReadOnlyEndpoint;
+
 	public function run( string $layoutName ): Response {
 		$presenter = new RestGetLayoutPresenter();
 

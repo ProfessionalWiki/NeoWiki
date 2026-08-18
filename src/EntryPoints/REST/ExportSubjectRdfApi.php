@@ -26,6 +26,7 @@ use Wikimedia\ParamValidator\ParamValidator;
 class ExportSubjectRdfApi extends SimpleHandler {
 
 	use RdfFormatNegotiation;
+	use ReadOnlyEndpoint;
 
 	public function run( string $subjectId ): Response {
 		// Validate the ID shape first, so a malformed value is a clean 400 rather than reaching

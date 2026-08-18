@@ -14,6 +14,8 @@ use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
 class GetSubjectLabelsApi extends SimpleHandler {
 
+	use ReadOnlyEndpoint;
+
 	public function run(): Response {
 		$params = $this->getValidatedParams();
 

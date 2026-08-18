@@ -25,6 +25,7 @@ use Wikimedia\RequestTimeout\TimeoutException;
 class ExportPageRdfApi extends SimpleHandler {
 
 	use RdfFormatNegotiation;
+	use ReadOnlyEndpoint;
 
 	public function run( int $pageId ): Response {
 		$extension = NeoWikiExtension::getInstance();

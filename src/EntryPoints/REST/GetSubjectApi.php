@@ -16,6 +16,8 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class GetSubjectApi extends SimpleHandler {
 
+	use ReadOnlyEndpoint;
+
 	private const string EXPAND_PAGE = 'page';
 	private const string EXPAND_RELATIONS = 'relations';
 

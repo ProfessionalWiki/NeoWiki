@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Presentation\GraphStoreStatusSerializer;
 class GetGraphStoresApi extends SimpleHandler {
 
 	use GraphStoreAdminAccess;
+	use ReadOnlyEndpoint;
 
 	public function run(): Response {
 		$refusal = $this->refuseWithoutTheAdminRight();
@@ -33,10 +34,6 @@ class GetGraphStoresApi extends SimpleHandler {
 				NeoWikiExtension::getInstance()->newGraphStoreStatusLookup()->getStatuses()
 			),
 		] );
-	}
-
-	public function needsWriteAccess(): bool {
-		return false;
 	}
 
 }

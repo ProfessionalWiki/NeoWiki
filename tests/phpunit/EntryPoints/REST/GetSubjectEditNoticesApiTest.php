@@ -58,6 +58,24 @@ class GetSubjectEditNoticesApiTest extends NeoWikiIntegrationTestCase {
 		return array_column( $body['notices'], 'key' );
 	}
 
+	/**
+	 * The default HandlerTestTrait session is persistent, which is the case MediaWiki overwrites.
+	 */
+	public function testNoticesAreNeverStored(): void {
+		$handler = new GetSubjectEditNoticesApi();
+
+		$response = $this->executeHandler(
+			$handler,
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'pageId' => (string)$this->createPage( 'GetSubjectEditNoticesApiTest_Uncached' ) ],
+			] )
+		);
+		$handler->applyCacheControl( $response );
+
+		$this->assertSame( 'private,no-store', $response->getHeaderLine( 'Cache-Control' ) );
+	}
+
 	public function testPageWithoutNoticesYieldsAnEmptyList(): void {
 		$pageId = $this->createPage( 'GetSubjectEditNoticesApiTest_Plain' );
 

@@ -13,6 +13,8 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class GetSchemaNamesApi extends SimpleHandler {
 
+	use ReadOnlyEndpoint;
+
 	public function run( string $search ): Response {
 		$schemaNames = array_map(
 			function ( TitleValue $title ): string {

@@ -35,6 +35,8 @@ use Wikimedia\ParamValidator\ParamValidator;
  */
 class ResolveSubjectIriApi extends SimpleHandler {
 
+	use ReadOnlyEndpoint;
+
 	public function run( string $subjectId ): Response {
 		if ( !SubjectId::isValid( $subjectId ) ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
@@ -53,7 +55,7 @@ class ResolveSubjectIriApi extends SimpleHandler {
 		$rdfFormat = $this->negotiatedRdfFormat();
 
 		if ( $rdfFormat !== null ) {
-			return $this->getResponseFactory()->createSeeOther( $this->subjectRdfUrl( $subjectId, $rdfFormat ) );
+			return $this->negotiatedRedirect( $this->subjectRdfUrl( $subjectId, $rdfFormat ) );
 		}
 
 		return $this->hostingPageRedirect( $subjectId, $hostingPage );
@@ -95,7 +97,18 @@ class ResolveSubjectIriApi extends SimpleHandler {
 			return $this->noDataResponse( $subjectId );
 		}
 
-		return $this->getResponseFactory()->createSeeOther( $this->hostingPageUrl( $title, $subjectId ) );
+		return $this->negotiatedRedirect( $this->hostingPageUrl( $title, $subjectId ) );
+	}
+
+	/**
+	 * Where a redirect points is chosen from the `Accept` header, so a cache must key on it. The 400
+	 * and 404 replies are the same for every representation and carry no Vary.
+	 */
+	private function negotiatedRedirect( string $url ): Response {
+		$response = $this->getResponseFactory()->createSeeOther( $url );
+		$response->addHeader( 'Vary', 'Accept' );
+
+		return $response;
 	}
 
 	private function hostingPageUrl( Title $title, string $subjectId ): string {

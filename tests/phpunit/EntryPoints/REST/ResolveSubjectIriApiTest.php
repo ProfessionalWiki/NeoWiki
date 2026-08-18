@@ -146,6 +146,11 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectRdfLocation( $response, 'trig' );
 	}
 
+	public function testNegotiatedRedirectsVaryOnAccept(): void {
+		$this->assertSame( 'Accept', $this->deref( [ 'Accept' => 'application/trig' ] )->getHeaderLine( 'Vary' ) );
+		$this->assertSame( 'Accept', $this->deref( [ 'Accept' => 'text/html' ] )->getHeaderLine( 'Vary' ) );
+	}
+
 	public function testReturns404ForAnUnknownSubject(): void {
 		$response = $this->deref( subjectId: self::ABSENT_ID );
 
