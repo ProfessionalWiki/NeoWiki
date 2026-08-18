@@ -1,6 +1,8 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { defineComponent } from 'vue';
 import SchemaEditorDialog, { type SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
+import EditableText from '@/components/common/EditableText.vue';
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
@@ -16,16 +18,23 @@ const $i18n = createI18nMock();
 // cannot turn into a value. Reset per test by the beforeEach below.
 let editorUnparseableInput: UnparseableInput | null = null;
 
-const SchemaEditorStub = {
+const SchemaEditorStub = defineComponent( {
 	template: '<div class="schema-editor-stub"></div>',
-	props: [ 'initialSchema' ],
-	emits: [ 'overflow', 'change' ],
-	setup() {
-		const getSchema = (): Schema => new Schema( 'TestSchema', '', new PropertyDefinitionList( [] ) );
-		const unparseableInput = (): UnparseableInput | null => editorUnparseableInput;
-		return { getSchema, unparseableInput };
+	props: {
+		initialSchema: { type: Object, required: true },
+		description: { type: String, required: true },
 	},
-};
+	emits: [ 'overflow', 'change' ],
+	methods: {
+		// Mirrors the real editor, which applies the host-owned description.
+		getSchema(): Schema {
+			return new Schema( 'TestSchema', this.description, new PropertyDefinitionList( [] ) );
+		},
+		unparseableInput(): UnparseableInput | null {
+			return editorUnparseableInput;
+		},
+	},
+} );
 
 const SummaryActionStub = {
 	template: '<div class="edit-summary-stub"></div>',
@@ -98,6 +107,56 @@ describe( 'SchemaEditorDialog', () => {
 			await wrapper.setProps( { open: true } );
 
 			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+		} );
+	} );
+
+	describe( 'Description', () => {
+		it( 'shows the description of the schema being edited', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			expect( wrapper.findComponent( EditableText ).props( 'modelValue' ) ).toBe( 'A test schema' );
+		} );
+
+		it( 'passes the description down to the editor', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			await wrapper.findComponent( EditableText ).vm.$emit( 'update:modelValue', 'Rewritten' );
+
+			expect( wrapper.findComponent( SchemaEditor ).props( 'description' ) ).toBe( 'Rewritten' );
+		} );
+
+		it( 'enables save once the description is edited', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			await wrapper.findComponent( EditableText ).vm.$emit( 'update:modelValue', 'Rewritten' );
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+		} );
+
+		it( 'saves the edited description', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			await wrapper.findComponent( EditableText ).vm.$emit( 'update:modelValue', 'Rewritten' );
+			wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'a summary' );
+			await flushPromises();
+
+			expect( onSave.mock.calls[ 0 ][ 0 ].getDescription() ).toBe( 'Rewritten' );
+		} );
+
+		it( 'drops an abandoned description when the dialog reopens', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			await wrapper.findComponent( EditableText ).vm.$emit( 'update:modelValue', 'Abandoned' );
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			expect( wrapper.findComponent( EditableText ).props( 'modelValue' ) ).toBe( 'A test schema' );
 		} );
 	} );
 

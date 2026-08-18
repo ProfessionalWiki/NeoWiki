@@ -15,6 +15,17 @@
 					{{ $i18n( 'neowiki-schema-creator-name-field' ).text() }}
 				</template>
 			</CdxField>
+
+			<CdxField :optional="true">
+				<CdxTextInput
+					v-model="schemaDescription"
+					:placeholder="$i18n( 'neowiki-schema-editor-description-placeholder' ).text()"
+					@input="onChange"
+				/>
+				<template #label>
+					{{ $i18n( 'neowiki-schema-editor-description' ).text() }}
+				</template>
+			</CdxField>
 		</div>
 
 		<SchemaEditor
@@ -57,6 +68,7 @@ const baseSchema = computed( () =>
 );
 
 const schemaName = ref( props.initialSchema?.getName() ?? '' );
+const schemaDescription = ref( props.initialSchema?.getDescription() ?? '' );
 const nameError = ref( '' );
 const nameStatus = ref<ValidationStatusType>( 'default' );
 const nameInputRef = ref<InstanceType<typeof CdxTextInput> | null>( null );
@@ -139,11 +151,10 @@ function getSchema(): Schema | null {
 		return null;
 	}
 
-	const editorSchema = schemaEditorRef.value?.getSchema();
-	const propertyDefinitions = editorSchema?.getPropertyDefinitions() ?? new PropertyDefinitionList( [] );
-	const description = editorSchema?.getDescription() ?? '';
+	const propertyDefinitions = schemaEditorRef.value?.getSchema().getPropertyDefinitions() ??
+		new PropertyDefinitionList( [] );
 
-	return new Schema( name, description, propertyDefinitions );
+	return new Schema( name, schemaDescription.value.trim(), propertyDefinitions );
 }
 
 function unparseableInput(): UnparseableInput | null {
@@ -154,6 +165,7 @@ function reset(): void {
 	clearDebounceTimer();
 	requestSequence++;
 	schemaName.value = '';
+	schemaDescription.value = '';
 	nameError.value = '';
 	nameStatus.value = 'default';
 }

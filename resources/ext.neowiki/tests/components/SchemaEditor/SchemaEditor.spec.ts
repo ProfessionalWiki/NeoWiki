@@ -7,14 +7,14 @@ import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
-import { CdxTextArea } from '@wikimedia/codex';
 import { createI18nMock, reportUnparseableNumber } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 
-function createWrapper( schema: Schema ): VueWrapper {
+function createWrapper( schema: Schema, description = '' ): VueWrapper {
 	return mount( SchemaEditor, {
 		props: {
 			initialSchema: schema,
+			description,
 		},
 		global: {
 			mocks: {
@@ -147,44 +147,54 @@ describe( 'SchemaEditor', () => {
 		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'secondProp' );
 	} );
 
-	it( 'loads existing description into textarea', () => {
+	it( 'builds the schema with the description supplied by the host', () => {
 		const schema = new Schema(
 			'TestSchema',
-			'My schema description',
+			'The description the editor was handed',
 			new PropertyDefinitionList( [] ),
 		);
 
-		const wrapper = createWrapper( schema );
+		const wrapper = createWrapper( schema, 'The description the host now holds' );
 
-		expect( wrapper.findComponent( CdxTextArea ).props( 'modelValue' ) ).toBe( 'My schema description' );
+		const built = ( wrapper.vm as any ).getSchema() as Schema;
+		expect( built.getDescription() ).toBe( 'The description the host now holds' );
+		expect( built.getName() ).toBe( 'TestSchema' );
 	} );
 
-	it( 'renders empty textarea for empty description', () => {
+	it( 'keeps the schema its own description when the host presents none', () => {
+		const schema = new Schema(
+			'TestSchema',
+			'The description it arrived with',
+			new PropertyDefinitionList( [] ),
+		);
+
+		const wrapper = mount( SchemaEditor, {
+			props: { initialSchema: schema },
+			global: {
+				mocks: { $i18n: createI18nMock() },
+				stubs: { PropertyList: true, PropertyDefinitionEditor: true },
+			},
+		} );
+
+		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getDescription() )
+			.toBe( 'The description it arrived with' );
+	} );
+
+	it( 'keeps the host description when a property is edited', async () => {
 		const schema = new Schema(
 			'TestSchema',
 			'',
-			new PropertyDefinitionList( [] ),
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
+			] ),
 		);
 
-		const wrapper = createWrapper( schema );
+		const wrapper = createWrapper( schema, 'Held by the host' );
+		const editor = wrapper.findComponent( { name: 'PropertyDefinitionEditor' } );
+		const updatedProperty = createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName, description: 'Updated' } );
+		await editor.vm.$emit( 'update:propertyDefinition', updatedProperty );
 
-		expect( wrapper.findComponent( CdxTextArea ).props( 'modelValue' ) ).toBe( '' );
-	} );
-
-	it( 'updates schema description when textarea changes', async () => {
-		const schema = new Schema(
-			'TestSchema',
-			'Original description',
-			new PropertyDefinitionList( [] ),
-		);
-
-		const wrapper = createWrapper( schema );
-
-		await wrapper.findComponent( CdxTextArea ).vm.$emit( 'update:modelValue', 'Updated description' );
-
-		const updatedSchema = ( wrapper.vm as any ).getSchema();
-		expect( updatedSchema.getDescription() ).toBe( 'Updated description' );
-		expect( updatedSchema.getName() ).toBe( 'TestSchema' );
+		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getDescription() ).toBe( 'Held by the host' );
 	} );
 
 	it( 'emits change when a property is created', async () => {
@@ -235,20 +245,6 @@ describe( 'SchemaEditor', () => {
 
 		const updatedProperty = createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName, description: 'Updated' } );
 		await editor.vm.$emit( 'update:propertyDefinition', updatedProperty );
-
-		expect( wrapper.emitted( 'change' ) ).toHaveLength( 1 );
-	} );
-
-	it( 'emits change when description is changed', async () => {
-		const schema = new Schema(
-			'TestSchema',
-			'Original',
-			new PropertyDefinitionList( [] ),
-		);
-
-		const wrapper = createWrapper( schema );
-
-		await wrapper.findComponent( CdxTextArea ).vm.$emit( 'update:modelValue', 'Updated' );
 
 		expect( wrapper.emitted( 'change' ) ).toHaveLength( 1 );
 	} );
@@ -310,7 +306,6 @@ describe( 'SchemaEditor', () => {
 
 		const wrapper = createWrapper( schema );
 
-		expect( wrapper.findComponent( CdxTextArea ).props( 'modelValue' ) ).toBe( 'Original' );
 		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'firstProp' );
 
 		const newSchema = new Schema(
@@ -324,7 +319,7 @@ describe( 'SchemaEditor', () => {
 
 		await wrapper.setProps( { initialSchema: newSchema } );
 
-		expect( wrapper.findComponent( CdxTextArea ).props( 'modelValue' ) ).toBe( 'Updated description' );
+		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getName() ).toBe( 'UpdatedSchema' );
 		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'alphaProperty' );
 	} );
 

@@ -48,4 +48,12 @@ describe( 'SchemaDeserializer', () => {
 		expect( schema.getPropertyDefinitions().asRecord() ).toEqual( {} );
 	} );
 
+	it( 'deserializes an omitted description as an empty one', () => {
+		const schema = new SchemaDeserializer().deserialize( 'Undescribed', {
+			propertyDefinitions: {},
+		} );
+
+		expect( schema.getDescription() ).toEqual( '' );
+	} );
+
 } );
