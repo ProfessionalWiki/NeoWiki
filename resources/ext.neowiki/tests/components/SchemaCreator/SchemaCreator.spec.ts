@@ -1,5 +1,6 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { defineComponent } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -18,17 +19,22 @@ const DEBOUNCE_DELAY = 300;
 // cannot turn into a value. Reset per test by the beforeEach below.
 let editorUnparseableInput: UnparseableInput | null = null;
 
-const SchemaEditorStub = {
+const SchemaEditorStub = defineComponent( {
 	name: 'SchemaEditor',
 	template: '<div class="schema-editor-stub"></div>',
-	props: [ 'initialSchema' ],
-	emits: [ 'change', 'overflow' ],
-	setup() {
-		const getSchema = (): Schema => new Schema( '', 'A description', new PropertyDefinitionList( [] ) );
-		const unparseableInput = (): UnparseableInput | null => editorUnparseableInput;
-		return { getSchema, unparseableInput };
+	props: {
+		initialSchema: { type: Object, required: true },
 	},
-};
+	emits: [ 'change', 'overflow' ],
+	methods: {
+		getSchema(): Schema {
+			return new Schema( '', '', new PropertyDefinitionList( [] ) );
+		},
+		unparseableInput(): UnparseableInput | null {
+			return editorUnparseableInput;
+		},
+	},
+} );
 
 describe( 'SchemaCreator', () => {
 	let pinia: ReturnType<typeof createPinia>;
@@ -247,17 +253,28 @@ describe( 'SchemaCreator', () => {
 			expect( schema ).toBeNull();
 		} );
 
-		it( 'returns schema with name and description from SchemaEditor', async () => {
+		it( 'returns the schema with the name and description that were entered', async () => {
+			const wrapper = mountComponent();
+
+			const [ nameInput, descriptionInput ] = wrapper.findAll( '.cdx-text-input-stub' );
+			await nameInput.setValue( NEW_SCHEMA_NAME );
+			await descriptionInput.setValue( 'What this schema is for' );
+			await flushPromises();
+
+			const schema = ( wrapper.vm as any ).getSchema() as Schema;
+
+			expect( schema.getName() ).toBe( NEW_SCHEMA_NAME );
+			expect( schema.getDescription() ).toBe( 'What this schema is for' );
+		} );
+
+		it( 'returns an empty description when none was entered', async () => {
 			const wrapper = mountComponent();
 
 			const nameInput = wrapper.find( '.cdx-text-input-stub' );
 			await nameInput.setValue( NEW_SCHEMA_NAME );
 			await flushPromises();
 
-			const schema = ( wrapper.vm as any ).getSchema() as Schema;
-
-			expect( schema.getName() ).toBe( NEW_SCHEMA_NAME );
-			expect( schema.getDescription() ).toBe( 'A description' );
+			expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getDescription() ).toBe( '' );
 		} );
 	} );
 
@@ -295,6 +312,29 @@ describe( 'SchemaCreator', () => {
 			await flushPromises();
 
 			expect( field.props( 'status' ) ).toBe( 'default' );
+		} );
+
+		it( 'reports a change when the description is typed, so the dialog can offer to save', async () => {
+			const wrapper = mountComponent();
+
+			const descriptionInput = wrapper.findAll( '.cdx-text-input-stub' )[ 1 ];
+			await descriptionInput.setValue( 'Something worth saving' );
+
+			expect( wrapper.emitted( 'change' ) ).toBeTruthy();
+		} );
+
+		it( 'clears the description', async () => {
+			const wrapper = mountComponent();
+
+			const [ nameInput, descriptionInput ] = wrapper.findAll( '.cdx-text-input-stub' );
+			await nameInput.setValue( NEW_SCHEMA_NAME );
+			await descriptionInput.setValue( 'Left over from the last one' );
+
+			( wrapper.vm as any ).reset();
+			await flushPromises();
+			await nameInput.setValue( NEW_SCHEMA_NAME );
+
+			expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getDescription() ).toBe( '' );
 		} );
 	} );
 

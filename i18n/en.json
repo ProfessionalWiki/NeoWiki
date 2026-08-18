@@ -126,6 +126,10 @@
 	"neowiki-schema-editor-optional": "Optional",
 	"neowiki-schema-editor-description": "Description",
 	"neowiki-schema-editor-description-placeholder": "Enter a description for the schema",
+	"neowiki-schema-editor-description-edit": "Edit description",
+	"neowiki-schema-editor-description-expand": "Show the full description",
+	"neowiki-schema-editor-description-collapse": "Show less of the description",
+	"neowiki-schema-editor-description-add": "Add description",
 
 	"neowiki-subject-creator-title": "Creating subject",
 	"neowiki-subject-creator-schema-title": "Have an existing schema?",

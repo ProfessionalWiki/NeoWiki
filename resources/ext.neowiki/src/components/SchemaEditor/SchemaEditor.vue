@@ -3,20 +3,6 @@
 		class="ext-neowiki-schema-editor"
 		:class="{ 'ext-neowiki-schema-editor--has-selected-property': selectedProperty !== undefined }"
 	>
-		<div class="ext-neowiki-schema-editor__description">
-			<CdxField
-				:optional="true"
-			>
-				<template #label>
-					{{ $i18n( 'neowiki-schema-editor-description' ).text() }}
-				</template>
-				<CdxTextArea
-					:model-value="currentSchema.getDescription()"
-					:placeholder="$i18n( 'neowiki-schema-editor-description-placeholder' ).text()"
-					@update:model-value="onDescriptionChanged"
-				/>
-			</CdxField>
-		</div>
 		<PropertyList
 			ref="propertyList"
 			:properties="currentSchema.getPropertyDefinitions()"
@@ -40,7 +26,6 @@
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
 import { Schema } from '@/domain/Schema.ts';
 import { ComponentPublicInstance, computed, onUpdated, ref, watch } from 'vue';
-import { CdxField, CdxTextArea } from '@wikimedia/codex';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
 import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
@@ -49,6 +34,13 @@ import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 
 const props = defineProps<{
 	initialSchema: Schema;
+	/**
+	 * The Schema's description, owned by the host: the editor covers the property
+	 * definitions, while creating and editing present the description
+	 * differently. Optional, because a caller that does not present it at all
+	 * should keep the one the Schema arrived with rather than clear it.
+	 */
+	description?: string;
 }>();
 
 const emit = defineEmits<{
@@ -86,11 +78,6 @@ const selectedProperty = computed( () => {
 
 function onPropertySelected( name: PropertyName ): void {
 	selectedPropertyName.value = name.toString();
-}
-
-function onDescriptionChanged( value: string ): void {
-	currentSchema.value = currentSchema.value.withDescription( value );
-	emit( 'change' );
 }
 
 function onPropertyCreated( newProperty: PropertyDefinition ): void {
@@ -176,7 +163,9 @@ const unparseableInput = (): UnparseableInput | null => {
 
 defineExpose<SchemaEditorExposes>( {
 	getSchema: function(): Schema {
-		return currentSchema.value as Schema;
+		const schema = currentSchema.value as Schema;
+
+		return props.description === undefined ? schema : schema.withDescription( props.description );
 	},
 	unparseableInput
 } );
@@ -189,15 +178,6 @@ defineExpose<SchemaEditorExposes>( {
 	display: grid;
 
 	.ext-neowiki-schema-editor {
-		&__description {
-			padding: @spacing-100;
-			border-block-end: @border-subtle;
-
-			@media ( min-width: @min-width-breakpoint-desktop ) {
-				padding: @spacing-150;
-			}
-		}
-
 		&__property-editor {
 			padding: @spacing-100;
 
@@ -260,13 +240,9 @@ defineExpose<SchemaEditorExposes>( {
 		@media ( min-width: @min-width-breakpoint-desktop ) {
 			min-height: 0;
 			grid-template-columns: minmax( 0, 20rem ) auto;
-			grid-template-rows: auto minmax( 0, 1fr );
+			grid-template-rows: minmax( 0, 1fr );
 
 			.ext-neowiki-schema-editor {
-				&__description {
-					grid-column: 1 / -1;
-				}
-
 				&__property-list,
 				&__property-editor {
 					overflow-y: auto;

@@ -60,6 +60,10 @@
 	"neowiki-schema-editor-delete-property": "Aria label for the button that deletes a property definition in the schema editor.",
 	"neowiki-schema-editor-description": "Label for the description field in the schema editor.",
 	"neowiki-schema-editor-description-placeholder": "Placeholder text for the description field in the schema editor.",
+	"neowiki-schema-editor-description-edit": "Accessibility label and tooltip for the button that starts editing the schema description in the schema editor dialog header.",
+	"neowiki-schema-editor-description-expand": "Accessibility label and tooltip for the button that expands a schema description truncated to two lines.",
+	"neowiki-schema-editor-description-collapse": "Accessibility label and tooltip for the button that collapses an expanded schema description back to two lines.",
+	"neowiki-schema-editor-description-add": "Label of the button that starts writing a description for a schema that has none, shown in the schema editor dialog header.",
 
 	"neowiki-subject-editor-label-field": "Accessibility label for the input shown in place of the dialog title while renaming a subject in the subject editor dialog.",
 	"neowiki-subject-editor-rename": "Accessibility label for the button next to the subject editor dialog title that starts renaming the subject.",

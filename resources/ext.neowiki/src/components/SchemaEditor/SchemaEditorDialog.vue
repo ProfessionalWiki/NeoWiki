@@ -2,15 +2,47 @@
 	<div>
 		<CdxDialog
 			:open="props.open"
-			:use-close-button="true"
 			class="ext-neowiki-ui ext-neowiki-schema-editor-dialog"
 			:class="{ 'cdx-dialog--dividers': hasOverflow }"
-			:title="$i18n( 'neowiki-editing-schema', props.initialSchema.getName() ).text()"
+			:title="dialogTitle"
 			@update:open="onDialogUpdateOpen"
 		>
+			<template #header>
+				<div class="cdx-dialog__header__title-group">
+					<h2 class="cdx-dialog__header__title">
+						{{ dialogTitle }}
+					</h2>
+
+					<div class="cdx-dialog__header__subtitle">
+						<EditableText
+							:model-value="description"
+							:edit-button-label="$i18n( 'neowiki-schema-editor-description-edit' ).text()"
+							:input-aria-label="$i18n( 'neowiki-schema-editor-description' ).text()"
+							:expand-label="$i18n( 'neowiki-schema-editor-description-expand' ).text()"
+							:collapse-label="$i18n( 'neowiki-schema-editor-description-collapse' ).text()"
+							:add-label="$i18n( 'neowiki-schema-editor-description-add' ).text()"
+							:multiline="true"
+							:clamp-lines="2"
+							@update:model-value="onDescriptionChanged"
+						/>
+					</div>
+				</div>
+
+				<CdxButton
+					class="cdx-dialog__header__close-button"
+					weight="quiet"
+					type="button"
+					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
+					@click="requestClose"
+				>
+					<CdxIcon :icon="cdxIconClose" />
+				</CdxButton>
+			</template>
+
 			<SchemaEditor
 				ref="schemaEditor"
 				:initial-schema="initialSchema"
+				:description="description"
 				@overflow="onOverflow"
 				@change="markChanged"
 			/>
@@ -37,9 +69,11 @@
 import SchemaEditor, { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
-import { CdxDialog } from '@wikimedia/codex';
+import EditableText from '@/components/common/EditableText.vue';
+import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
+import { cdxIconClose } from '@wikimedia/codex-icons';
 import { Schema } from '@/domain/Schema.ts';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 
@@ -58,7 +92,19 @@ const emit = defineEmits<{
 
 const schemaEditor = ref<SchemaEditorExposes | null>( null );
 const hasOverflow = ref( false );
+const description = ref( props.initialSchema.getDescription() );
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
+
+const dialogTitle = computed( () => mw.msg( 'neowiki-editing-schema', props.initialSchema.getName() ) );
+
+watch( () => props.initialSchema, ( schema ) => {
+	description.value = schema.getDescription();
+} );
+
+function onDescriptionChanged( value: string ): void {
+	description.value = value;
+	markChanged();
+}
 
 function close(): void {
 	emit( 'update:open', false );
@@ -74,6 +120,8 @@ function onDialogUpdateOpen( value: boolean ): void {
 
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
+		// Reopening after a discard must not keep the abandoned description.
+		description.value = props.initialSchema.getDescription();
 		resetChanged();
 	}
 } );
@@ -129,6 +177,28 @@ defineExpose( { hasChanged } );
 			padding: 0;
 			display: grid;
 			overflow: hidden;
+		}
+
+		/* Replicate the Codex default dialog header styles, which a custom
+			header slot does not get. Aligned to the start rather than the
+			baseline, so the close button stays put as the description wraps. */
+		.cdx-dialog__header {
+			display: flex;
+			align-items: flex-start;
+			justify-content: flex-end;
+			box-sizing: @box-sizing-base;
+			width: @size-full;
+
+			/* Secondary to the title, matching the subject editor's header.
+				Nested under the header to out-rank Codex's runtime-injected
+				two-class subtitle rule. */
+			.cdx-dialog__header__subtitle {
+				font-size: @font-size-small;
+			}
+		}
+
+		.cdx-dialog__header__title-group {
+			min-width: 0;
 		}
 	}
 }
