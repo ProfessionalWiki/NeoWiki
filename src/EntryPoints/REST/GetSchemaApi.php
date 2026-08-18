@@ -13,6 +13,8 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class GetSchemaApi extends SimpleHandler {
 
+	use ReadOnlyEndpoint;
+
 	public function run( string $schemaName ): Response {
 		$presenter = new RestGetSchemaPresenter();
 

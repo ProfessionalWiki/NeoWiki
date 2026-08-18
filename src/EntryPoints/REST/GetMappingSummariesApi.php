@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 class GetMappingSummariesApi extends SimpleHandler {
 
 	use CursorPaginationTrait;
+	use ReadOnlyEndpoint;
 
 	public function run(): Response {
 		$params = $this->getValidatedParams();

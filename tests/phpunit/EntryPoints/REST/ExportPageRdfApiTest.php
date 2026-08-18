@@ -81,6 +81,14 @@ JSON
 		);
 	}
 
+	public function testExportVariesOnAcceptWhenTheHeaderPicksTheSerialization(): void {
+		$this->assertSame( 'Accept', $this->export()->getHeaderLine( 'Vary' ) );
+	}
+
+	public function testExportDoesNotVaryWhenTheFormatParameterFixesTheSerialization(): void {
+		$this->assertSame( '', $this->export( [ 'format' => 'turtle' ] )->getHeaderLine( 'Vary' ) );
+	}
+
 	public function testDefaultsToTriGWithTheNativeProjectionsPageNamedGraph(): void {
 		$response = $this->export();
 		$body = $response->getBody()->getContents();

@@ -46,6 +46,16 @@ trait RdfFormatNegotiation {
 		return $this->formatFromAcceptHeader();
 	}
 
+	/**
+	 * Always declaring `Vary: Accept` would split a fixed-format URL's cache entries across every
+	 * `Accept` value clients happen to send.
+	 */
+	private function formatCameFromAcceptHeader(): bool {
+		$requested = $this->getValidatedParams()['format'] ?? null;
+
+		return $requested !== self::FORMAT_TURTLE && $requested !== self::FORMAT_TRIG;
+	}
+
 	private function formatFromAcceptHeader(): RdfFormat {
 		$accept = $this->getRequest()->getHeaderLine( 'Accept' );
 
@@ -67,6 +77,9 @@ trait RdfFormatNegotiation {
 			'Content-Disposition',
 			'inline; filename="' . $filenameStem . '.' . $this->fileExtension( $format ) . '"'
 		);
+		if ( $this->formatCameFromAcceptHeader() ) {
+			$response->addHeader( 'Vary', 'Accept' );
+		}
 		$response->setBody( new StringStream( $document ) );
 
 		return $response;

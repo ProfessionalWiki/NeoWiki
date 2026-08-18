@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 class GetLayoutSummariesApi extends SimpleHandler {
 
 	use CursorPaginationTrait;
+	use ReadOnlyEndpoint;
 
 	public function run(): Response {
 		$params = $this->getValidatedParams();

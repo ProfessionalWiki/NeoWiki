@@ -5,12 +5,15 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
 use MediaWiki\Rest\Response;
+use MediaWiki\Rest\ResponseInterface;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\RestGetSubjectEditNoticesPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class GetSubjectEditNoticesApi extends SimpleHandler {
+
+	use ReadOnlyEndpoint;
 
 	public function run( int $pageId ): Response {
 		$presenter = new RestGetSubjectEditNoticesPresenter();
@@ -20,16 +23,18 @@ class GetSubjectEditNoticesApi extends SimpleHandler {
 			schemaName: $this->getValidatedParams()['schema'],
 		);
 
-		$response = $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
-
-		// Notices depend on the viewer and on state that changes without an edit, such as approval.
-		$response->setHeader( 'Cache-Control', 'private, no-store' );
-
-		return $response;
+		return $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
 	}
 
-	public function needsWriteAccess(): bool {
-		return false;
+	/**
+	 * Notices depend on the viewer and on state that changes without an edit, such as approval, so
+	 * they may not be stored at all. Doing this in run() would not hold: core overwrites the header
+	 * afterwards whenever the session is persistent.
+	 */
+	public function applyCacheControl( ResponseInterface $response ): void {
+		parent::applyCacheControl( $response );
+
+		$response->setHeader( 'Cache-Control', 'private,no-store' );
 	}
 
 	public function getParamSettings(): array {

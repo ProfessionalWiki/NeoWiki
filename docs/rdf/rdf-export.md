@@ -106,7 +106,8 @@ falling back to the `Accept` header, then to TriG; a value other than `trig` or 
 | `turtle` | `text/turtle` | `text/turtle; charset=utf-8` | no (same triples, no graph wrapper) |
 
 Responses carry `Content-Disposition: inline` with a filename of the page or Subject ID plus the format's
-extension (`42.trig`, `42.ttl`).
+extension (`42.trig`, `42.ttl`). A response that the `Accept` header selected also carries `Vary: Accept`;
+passing `format` fixes the serialization, and those responses do not vary.
 
 Both endpoints and the concept-URI negotiator answer one indistinguishable `404` when the page or Subject does
 not exist, the caller may not read it, or NeoWiki cannot describe it; a malformed Subject ID returns `400`.
