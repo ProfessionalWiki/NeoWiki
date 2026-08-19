@@ -14,6 +14,13 @@ services:
       neo:
         condition: service_healthy
     environment:
+      # Where the wiki reaches the backing services, defaulted here so a Docker/.env without
+      # these still starts a working stack. See Docker/README.md.
+      - MARIADB_HOST=${MARIADB_HOST:-db}
+      - MARIADB_PORT=${MARIADB_PORT:-3306}
+      - NEO4J_SCHEME=${NEO4J_SCHEME:-bolt}
+      - NEO4J_HOST=${NEO4J_HOST:-neo}
+      - NEO4J_PORT=${NEO4J_PORT:-7687}
       - MARIADB_DATABASE
       - MARIADB_USER
       - MARIADB_PASSWORD

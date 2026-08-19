@@ -72,7 +72,7 @@ $wgEmailAuthentication = false;
 
 ## Database settings
 $wgDBtype = "mysql";
-$wgDBserver = "db:3306";
+$wgDBserver = ( getenv( 'MARIADB_HOST' ) ?: 'db' ) . ':' . ( getenv( 'MARIADB_PORT' ) ?: '3306' );
 $wgDBname = getenv( 'MARIADB_DATABASE' );
 $wgDBuser = getenv( 'MARIADB_USER' );
 $wgDBpassword = getenv( 'MARIADB_PASSWORD' );
@@ -225,8 +225,11 @@ wfLoadExtension( 'RedHerb', "$IP/extensions/NeoWiki/tests/RedHerb/extension.json
 
 $wgNeoWikiEnableDevelopmentUI = true;
 
-$wgNeoWikiNeo4jInternalWriteUrl = 'bolt://' . getenv( 'NEO4J_USERNAME' ) . ':' . getenv( 'NEO4J_PASSWORD' ) . '@neo:7687';
-$wgNeoWikiNeo4jInternalReadUrl = 'bolt://' . getenv( 'NEO4J_USERNAME_READ' ) . ':' . getenv( 'NEO4J_PASSWORD_READ' ) . '@neo:7687';
+$neo4jScheme = getenv( 'NEO4J_SCHEME' ) ?: 'bolt';
+$neo4jAddress = ( getenv( 'NEO4J_HOST' ) ?: 'neo' ) . ':' . ( getenv( 'NEO4J_PORT' ) ?: '7687' );
+
+$wgNeoWikiNeo4jInternalWriteUrl = $neo4jScheme . '://' . getenv( 'NEO4J_USERNAME' ) . ':' . getenv( 'NEO4J_PASSWORD' ) . '@' . $neo4jAddress;
+$wgNeoWikiNeo4jInternalReadUrl = $neo4jScheme . '://' . getenv( 'NEO4J_USERNAME_READ' ) . ':' . getenv( 'NEO4J_PASSWORD_READ' ) . '@' . $neo4jAddress;
 
 // SPARQL graph store (QLever) for the SPARQL projection plugin (#586). Both the demo stack and the
 // dev stack run the qlever service defined in docker-compose.yml by default and point the wiki at
