@@ -367,6 +367,12 @@ Examples: [`resources/createChild/`](https://github.com/ProfessionalWiki/NeoWiki
 [`resources/editMainSubject/`](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb/resources/editMainSubject),
 and [`resources/subjectFinder/`](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb/resources/subjectFinder).
 
+`nw.SubjectEditor` reads back through two calls, not one. `unparseableInput()` returns the first field showing text
+the widget cannot turn into a Value — its property name and the message the field is displaying — or `null`.
+`getSubjectData()` cannot represent that text, so it returns the statement with no value and the text is lost on save.
+Check `unparseableInput()` before you read, hold the save while it is non-null, and show the message it hands you.
+`nw.SubjectEditorDialog` does this for you.
+
 ### Authoring in TypeScript
 
 You can write your extension in TypeScript and get types for NeoWiki's API. This is configuration on your side;

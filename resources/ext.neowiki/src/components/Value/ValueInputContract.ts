@@ -27,14 +27,15 @@ export type ValueInputEmits = {
 export interface ValueInputExposes {
 	getCurrentValue(): Value | undefined;
 	/**
-	 * Whether the widget is showing the user text it cannot turn into a Value.
-	 * A native number input does this: text like "5foo" stays on screen while
-	 * the value reads as empty, so getCurrentValue() has nothing to return.
-	 * Saving is held while any input reports true, rather than dropping the
-	 * text the user can still see. Inputs whose widget cannot reach such a
-	 * state omit this.
+	 * The message the widget is showing because it holds text it cannot turn
+	 * into a Value, or null when it holds none. A native number input reaches
+	 * this state: text like "5foo" stays on screen while the value reads as
+	 * empty, so getCurrentValue() has nothing to return. Callers hold the save
+	 * while any input reports a message, and surface that same message, rather
+	 * than dropping text the user can still see. Inputs whose widget cannot
+	 * reach such a state omit this.
 	 */
-	hasUnparseableInput?(): boolean;
+	unparseableInputMessage?(): string | null;
 }
 
 export type ValueInputEmitFunction = {

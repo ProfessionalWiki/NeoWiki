@@ -10,8 +10,13 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 
 const NEW_SCHEMA_NAME = 'Company';
+
+// What the stubbed creator reports about a field holding text it cannot turn
+// into a value. Reset per test by the beforeEach below.
+let creatorUnparseableInput: UnparseableInput | null = null;
 
 const SchemaCreatorStub = {
 	template: '<div class="schema-creator-stub"></div>',
@@ -22,12 +27,14 @@ const SchemaCreatorStub = {
 
 		const validate = vi.fn( async (): Promise<boolean> => valid );
 		const getSchema = vi.fn( (): Schema | null => schema );
+		const unparseableInput = (): UnparseableInput | null => creatorUnparseableInput;
 		const reset = vi.fn();
 		const focus = vi.fn();
 
 		return {
 			validate,
 			getSchema,
+			unparseableInput,
 			reset,
 			focus,
 			setStubValid( v: boolean ) {
@@ -84,6 +91,8 @@ describe( 'SchemaCreatorDialog', () => {
 	}
 
 	beforeEach( () => {
+		creatorUnparseableInput = null;
+
 		setupMwMock( {
 			functions: [ 'msg', 'notify' ],
 		} );
@@ -165,5 +174,37 @@ describe( 'SchemaCreatorDialog', () => {
 		await flushPromises();
 
 		expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
+	} );
+
+	describe( 'Unparseable field input', () => {
+		async function save( wrapper: VueWrapper ): Promise<void> {
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+		}
+
+		it( 'does not save while the initial-value field holds text that cannot be turned into a value', async () => {
+			const wrapper = mountComponent();
+			creatorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+
+			await save( wrapper );
+
+			expect( schemaStore.saveSchema ).not.toHaveBeenCalled();
+			expect( wrapper.emitted( 'created' ) ).toBeUndefined();
+			expect( mw.notify ).toHaveBeenCalledWith(
+				'neowiki-field-invalid-number',
+				{ title: 'Score', type: 'error' },
+			);
+		} );
+
+		it( 'saves once the text parses again', async () => {
+			const wrapper = mountComponent();
+			creatorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+			await save( wrapper );
+
+			creatorUnparseableInput = null;
+			await save( wrapper );
+
+			expect( schemaStore.saveSchema ).toHaveBeenCalledTimes( 1 );
+		} );
 	} );
 } );

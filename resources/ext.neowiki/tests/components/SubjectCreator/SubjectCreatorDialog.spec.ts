@@ -27,6 +27,7 @@ import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
+import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 
 const PAGE_ID = 123;
@@ -46,7 +47,7 @@ const SchemaPickerStub = {
 
 // What the stubbed editor reports about fields holding text it cannot turn into
 // a value. Reset per test by the beforeEach below.
-let editorHoldsUnparseableInput = false;
+let editorUnparseableInput: UnparseableInput | null = null;
 
 const SubjectEditorStub = {
 	template: '<div class="subject-editor-stub"></div>',
@@ -56,10 +57,14 @@ const SubjectEditorStub = {
 		const getSubjectData = (): StatementList => new StatementList( [
 			new Statement( new PropertyName( 'Color' ), TextType.typeName, newStringValue( 'Red' ) ),
 		] );
-		const hasUnparseableInput = (): boolean => editorHoldsUnparseableInput;
-		return { getSubjectData, hasUnparseableInput };
+		const unparseableInput = (): UnparseableInput | null => editorUnparseableInput;
+		return { getSubjectData, unparseableInput };
 	},
 };
+
+// What the stubbed creator reports about its initial-value field holding text it
+// cannot turn into a value. Reset per test by the beforeEach below.
+let schemaCreatorUnparseableInput: UnparseableInput | null = null;
 
 const SchemaCreatorStub = {
 	template: '<div class="schema-creator-stub"></div>',
@@ -73,12 +78,14 @@ const SchemaCreatorStub = {
 
 		const validate = vi.fn( async (): Promise<boolean> => valid );
 		const getSchema = vi.fn( (): Schema | null => schema );
+		const unparseableInput = (): UnparseableInput | null => schemaCreatorUnparseableInput;
 		const reset = vi.fn();
 		const focus = vi.fn();
 
 		return {
 			validate,
 			getSchema,
+			unparseableInput,
 			reset,
 			focus,
 			setStubValid( v: boolean ) {
@@ -187,7 +194,8 @@ describe( 'SubjectCreatorDialog', () => {
 	let reloadMock: ReturnType<typeof vi.fn>;
 
 	beforeEach( () => {
-		editorHoldsUnparseableInput = false;
+		editorUnparseableInput = null;
+		schemaCreatorUnparseableInput = null;
 		reloadMock = vi.fn();
 		vi.stubGlobal( 'location', { ...window.location, reload: reloadMock } );
 
@@ -500,7 +508,7 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'does not save while a field holds text that cannot be turned into a value', async () => {
 			const wrapper = mountComponent();
 			await pickSchema( wrapper );
-			editorHoldsUnparseableInput = true;
+			editorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
 
 			await save( wrapper );
 
@@ -509,20 +517,50 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( mw.notify ).toHaveBeenCalledTimes( 1 );
 			expect( mw.notify ).toHaveBeenCalledWith(
 				'neowiki-field-invalid-number',
-				{ type: 'error' },
+				{ title: 'Score', type: 'error' },
+			);
+		} );
+
+		// The message comes from the field that is holding the text, so any input can
+		// report one; a gate that reused the number-specific message would misreport it.
+		it( 'names the offending field in the blocked-save notification', async () => {
+			const wrapper = mountComponent();
+			await pickSchema( wrapper );
+			editorUnparseableInput = { propertyName: 'Score', message: 'whatever the field shows' };
+
+			await save( wrapper );
+
+			expect( mw.notify ).toHaveBeenCalledWith(
+				'whatever the field shows',
+				{ title: 'Score', type: 'error' },
 			);
 		} );
 
 		it( 'saves once the text parses again', async () => {
 			const wrapper = mountComponent();
 			await pickSchema( wrapper );
-			editorHoldsUnparseableInput = true;
+			editorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
 			await save( wrapper );
 
-			editorHoldsUnparseableInput = false;
+			editorUnparseableInput = null;
 			await save( wrapper );
 
 			expect( subjectStore.createMainSubject ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		// Saving the draft schema creates a real Schema page and clears draftSchema,
+		// so a gate that fired after it would leave behind an orphan schema the
+		// abandonment dialog no longer knows about.
+		it( 'does not save the draft schema while a field holds text that cannot be turned into a value', async () => {
+			const wrapper = mountComponent();
+			await switchToNewSchema( wrapper );
+			await clickContinue( wrapper );
+			editorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+
+			await save( wrapper );
+
+			expect( schemaStore.saveSchema ).not.toHaveBeenCalled();
+			expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
 		} );
 	} );
 
@@ -587,6 +625,35 @@ describe( 'SubjectCreatorDialog', () => {
 			await clickContinue( wrapper );
 
 			expect( schemaStore.saveSchema ).not.toHaveBeenCalled();
+		} );
+
+		// Continue is the only point on this route where the schema can still be held
+		// back: it captures the draft and tears the creator down.
+		it( 'does not continue while the initial-value field holds text that cannot be turned into a value', async () => {
+			const wrapper = mountComponent();
+			await switchToNewSchema( wrapper );
+			schemaCreatorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+
+			await clickContinue( wrapper );
+
+			expect( wrapper.find( '.schema-creator-stub' ).exists() ).toBe( true );
+			expect( schemaStore.saveSchema ).not.toHaveBeenCalled();
+			expect( mw.notify ).toHaveBeenCalledWith(
+				'neowiki-field-invalid-number',
+				{ title: 'Score', type: 'error' },
+			);
+		} );
+
+		it( 'continues once the text parses again', async () => {
+			const wrapper = mountComponent();
+			await switchToNewSchema( wrapper );
+			schemaCreatorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+			await clickContinue( wrapper );
+
+			schemaCreatorUnparseableInput = null;
+			await clickContinue( wrapper );
+
+			expect( wrapper.find( '.schema-creator-stub' ).exists() ).toBe( false );
 		} );
 
 		it( 'hides schema selector after creating a new schema', async () => {
