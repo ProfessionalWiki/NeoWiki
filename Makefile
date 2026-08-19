@@ -10,6 +10,13 @@ endif
 include Docker/.env
 export
 
+# Blank counts as unset, so a value resolves the same way here as through docker-compose.yml's
+# ${VAR:-default} and SettingsTemplate.php's ?:. ?= would keep a blank and hand install.php a
+# hostless ":3306"; override is what makes that hold for `make MARIADB_HOST= ...` too, since a
+# command-line assignment otherwise outranks this one.
+override MARIADB_HOST := $(or $(strip $(MARIADB_HOST)),db)
+override MARIADB_PORT := $(or $(strip $(MARIADB_PORT)),3306)
+
 # ---- Project namespace and ports ---------------------------------------------
 
 # Derive a unique project name from the extension directory.
@@ -324,10 +331,12 @@ _wait-mw:
 
 # ---- First-run seed ----------------------------------------------------------
 
-# Idempotent: skips if the database already has a wiki installed.
+# Idempotent: skips if the database already has a wiki installed. The probe has to ask the same
+# server install-db writes to, or pointing MARIADB_HOST at an installed wiki reinstalls over it on
+# every run. It asks from the db container because that is where a mariadb client exists.
 .PHONY: _first-run-seed
 _first-run-seed:
-	@if $(DC_DEV) exec -T db sh -c "mariadb -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE -e 'SELECT 1 FROM page LIMIT 1' 2>/dev/null" >/dev/null 2>&1; then \
+	@if $(DC_DEV) exec -T db sh -c "mariadb -h $$MARIADB_HOST -P $$MARIADB_PORT -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE -e 'SELECT 1 FROM page LIMIT 1' 2>/dev/null" >/dev/null 2>&1; then \
 		echo "Wiki already initialized; skipping install-db."; \
 	else \
 		$(MAKE) --no-print-directory install-db; \
@@ -341,7 +350,7 @@ _first-run-seed:
 # $(DC) since the demo stack has no dev overlay. Idempotent like _first-run-seed.
 .PHONY: _first-run-seed-demo
 _first-run-seed-demo:
-	@if $(DC) exec -T db sh -c "mariadb -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE -e 'SELECT 1 FROM page LIMIT 1' 2>/dev/null" >/dev/null 2>&1; then \
+	@if $(DC) exec -T db sh -c "mariadb -h $$MARIADB_HOST -P $$MARIADB_PORT -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE -e 'SELECT 1 FROM page LIMIT 1' 2>/dev/null" >/dev/null 2>&1; then \
 		echo "Wiki already initialized; skipping install."; \
 	else \
 		$(MAKE) --no-print-directory install-db; \
@@ -353,11 +362,13 @@ _first-run-seed-demo:
 
 .PHONY: install-db load-neo4j-users setup-test-neo test-backends test-backends-stop
 
+# --dbserver must match MARIADB_HOST: a literal here installs the schema on a different server
+# than SettingsTemplate.php points the wiki at.
 install-db:
 	$(EXEC_MW_ROOT) mv LocalSettings.php __LocalSettings.php
 	$(EXEC_MW_ROOT) \
 		php maintenance/install.php --dbuser $(MARIADB_USER) --dbpass $(MARIADB_PASSWORD) \
-			--dbname $(MARIADB_DATABASE) --dbserver db:3306 --lang en \
+			--dbname $(MARIADB_DATABASE) --dbserver $(MARIADB_HOST):$(MARIADB_PORT) --lang en \
 			--pass $(MW_ADMIN_PASSWORD) \
 			--server $(MW_SERVER) \
 			SiteName AdminName

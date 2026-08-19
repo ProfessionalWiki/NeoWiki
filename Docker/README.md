@@ -38,6 +38,31 @@ need to run two tools-mode stacks simultaneously.
 The MariaDB, (default) Neo4j, QLever and Oxigraph ports are not exposed to the host. Reach
 them from inside the stack via `make bash` or `docker compose exec`.
 
+## Backing service addresses
+
+Where the wiki reaches MariaDB and Neo4j, defaulting to this stack's own `db` and `neo` services.
+
+| Variable       | Default | Notes                                                    |
+|----------------|---------|----------------------------------------------------------|
+| `MARIADB_HOST` | `db`    | Also where `make install-db` installs                    |
+| `MARIADB_PORT` | `3306`  |                                                          |
+| `NEO4J_SCHEME` | `bolt`  | Plaintext. Any host outside this stack wants `bolt+s` or `neo4j+s` |
+| `NEO4J_HOST`   | `neo`   | Both the read and the write URL                          |
+| `NEO4J_PORT`   | `7687`  | The port the wiki dials, not the host publish port `NEO_BOLT_PORT` |
+
+Set them in the environment rather than in `Docker/.env`: a value there becomes a makefile
+assignment, which a later `MARIADB_HOST=... make dev` cannot override.
+
+An address outside this stack reaches the wiki, `make install-db` and the first-run seed, but not
+the rest of the tooling. `make load-neo4j-users` and the perf snapshot targets still act on the
+bundled `neo` and `db`, `make remove` still wipes only this stack's volumes, and the `mediawiki`
+service still waits on both bundled services being healthy. An external server also has to already
+carry the database, user and Neo4j accounts the bundled services create for themselves.
+
+`make reset` is the sharp edge: it wipes the bundled volumes and then reinstalls and reimports the
+demo data over whatever `MARIADB_HOST` and `NEO4J_HOST` point at, so against a populated external
+server it destroys data rather than being inert.
+
 ## Optional services
 
 The dev stack's core is `mediawiki`, `db` and `neo`; everything else is optional. `make dev` (and
