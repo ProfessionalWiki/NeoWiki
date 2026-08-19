@@ -42,9 +42,10 @@ import { Schema } from '@/domain/Schema.ts';
 import { ComponentPublicInstance, computed, onUpdated, ref, watch } from 'vue';
 import { CdxField, CdxTextArea } from '@wikimedia/codex';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
-import PropertyDefinitionEditor from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
+import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { useOverflowDetection } from '@/composables/useOverflowDetection.ts';
+import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 
 const props = defineProps<{
 	initialSchema: Schema;
@@ -65,7 +66,7 @@ watch( () => props.initialSchema, ( schema ) => {
 }, { immediate: true } );
 
 const propertyList = ref<ComponentPublicInstance | null>( null );
-const propertyDefinitionEditor = ref<ComponentPublicInstance | null>( null );
+const propertyDefinitionEditor = ref<( ComponentPublicInstance & PropertyDefinitionEditorExposes ) | null>( null );
 
 const { hasOverflow, checkOverflow } = useOverflowDetection( [ propertyList, propertyDefinitionEditor ] );
 
@@ -155,12 +156,29 @@ onUpdated( () => {
 
 export interface SchemaEditorExposes {
 	getSchema: () => Schema;
+	unparseableInput: () => UnparseableInput | null;
 }
 
-defineExpose( {
+/**
+ * The property whose initial-value field is showing text it cannot turn into a
+ * Value, so getSchema() would return that property with its default dropped.
+ * Only the selected property has an editor mounted.
+ */
+const unparseableInput = (): UnparseableInput | null => {
+	const message = propertyDefinitionEditor.value?.unparseableInputMessage() ?? null;
+
+	if ( message === null || selectedPropertyName.value === undefined ) {
+		return null;
+	}
+
+	return { propertyName: selectedPropertyName.value, message };
+};
+
+defineExpose<SchemaEditorExposes>( {
 	getSchema: function(): Schema {
 		return currentSchema.value as Schema;
-	}
+	},
+	unparseableInput
 } );
 </script>
 

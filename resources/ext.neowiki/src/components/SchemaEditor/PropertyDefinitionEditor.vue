@@ -45,6 +45,7 @@
 		/>
 		<component
 			:is="componentRegistry.getValueEditingComponent( localProperty.type )"
+			ref="defaultValueInput"
 			v-model="localProperty.default"
 			class="property-definition-editor__default"
 			:label="$i18n( 'neowiki-property-editor-initial-value' ).text()"
@@ -57,6 +58,7 @@
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { CdxCheckbox, CdxField, CdxSelect, CdxTextArea, CdxTextInput, type MenuItemData } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -148,4 +150,22 @@ const typeOptions = computed( (): MenuItemData[] => {
 
 	return options;
 } );
+
+const defaultValueInput = ref<ValueInputExposes | null>( null );
+
+export interface PropertyDefinitionEditorExposes {
+	unparseableInputMessage(): string | null;
+}
+
+/**
+ * The message the initial-value field is showing because it holds text it cannot
+ * turn into a Value, or null. The default is already dropped from the definition
+ * at that point; callers hold the save rather than persist a removal the user
+ * cannot see.
+ */
+function unparseableInputMessage(): string | null {
+	return defaultValueInput.value?.unparseableInputMessage?.() ?? null;
+}
+
+defineExpose<PropertyDefinitionEditorExposes>( { unparseableInputMessage } );
 </script>

@@ -310,13 +310,17 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		return;
 	}
 
-	// Saving now would silently drop the unparseable text the user can still see.
-	if ( subjectEditorRef.value.hasUnparseableInput() ) {
-		mw.notify( mw.msg( 'neowiki-field-invalid-number' ), { type: 'error' } );
+	await flush();
+
+	const unparseable = subjectEditorRef.value.unparseableInput();
+
+	// Saving now would silently drop the text the user can still see. Held after
+	// the dry-run so the field's own complaint and the server's findings on the
+	// other fields surface in one pass rather than one round at a time.
+	if ( unparseable !== null ) {
+		mw.notify( unparseable.message, { title: unparseable.propertyName, type: 'error' } );
 		return;
 	}
-
-	await flush();
 
 	const updatedStatements = subjectEditorRef.value.getSubjectData();
 	// Filter out statements that don't have a value set.

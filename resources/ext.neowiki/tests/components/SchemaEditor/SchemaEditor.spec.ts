@@ -1,12 +1,15 @@
 import { mount, VueWrapper } from '@vue/test-utils';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
+import SchemaEditor, { type SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
+import NumberInput from '@/components/Value/NumberInput.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
+import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { CdxTextArea } from '@wikimedia/codex';
-import { createI18nMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, reportUnparseableNumber } from '../../VueTestHelpers.ts';
+import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 
 function createWrapper( schema: Schema ): VueWrapper {
 	return mount( SchemaEditor, {
@@ -20,6 +23,26 @@ function createWrapper( schema: Schema ): VueWrapper {
 			stubs: {
 				PropertyList: true,
 				PropertyDefinitionEditor: true,
+			},
+		},
+	} );
+}
+
+function createWrapperWithPropertyEditor( schema: Schema ): VueWrapper {
+	return mount( SchemaEditor, {
+		props: {
+			initialSchema: schema,
+		},
+		global: {
+			provide: NeoWikiTestServices.getServices(),
+			directives: {
+				tooltip: {},
+			},
+			mocks: {
+				$i18n: createI18nMock(),
+			},
+			stubs: {
+				PropertyList: true,
 			},
 		},
 	} );
@@ -321,5 +344,51 @@ describe( 'SchemaEditor', () => {
 		await propertyList.vm.$emit( 'propertySelected', schema.getPropertyDefinition( 'secondProp' ).name );
 
 		expect( wrapper.emitted( 'change' ) ).toBeUndefined();
+	} );
+
+	describe( 'Unparseable initial value', () => {
+		function schemaWithScore(): Schema {
+			return new Schema(
+				'TestSchema',
+				'Description',
+				new PropertyDefinitionList( [ newNumberProperty( { name: 'Score' } ) ] ),
+			);
+		}
+
+		/**
+		 * Puts the selected property's Initial value field in the state a browser
+		 * leaves it in for text like "5foo": the reported value is empty while
+		 * validity.badInput is set. jsdom neither keeps such text nor sets the flag.
+		 */
+		function unparseableInput( wrapper: VueWrapper ): ReturnType<SchemaEditorExposes['unparseableInput']> {
+			return ( wrapper.vm as unknown as SchemaEditorExposes ).unparseableInput();
+		}
+
+		it( 'reports nothing while the selected property editor reports nothing', () => {
+			const wrapper = createWrapperWithPropertyEditor( schemaWithScore() );
+
+			expect( unparseableInput( wrapper ) ).toBeNull();
+		} );
+
+		it( 'names the selected property when its editor holds text it cannot turn into a value', async () => {
+			const wrapper = createWrapperWithPropertyEditor( schemaWithScore() );
+
+			await reportUnparseableNumber( wrapper.findComponent( NumberInput ).find( 'input' ) );
+
+			expect( unparseableInput( wrapper ) ).toEqual( {
+				propertyName: 'Score',
+				message: 'neowiki-field-invalid-number',
+			} );
+		} );
+
+		it( 'reports nothing when no property is selected', () => {
+			const wrapper = createWrapperWithPropertyEditor( new Schema(
+				'EmptySchema',
+				'Description',
+				new PropertyDefinitionList( [] ),
+			) );
+
+			expect( unparseableInput( wrapper ) ).toBeNull();
+		} );
 	} );
 } );

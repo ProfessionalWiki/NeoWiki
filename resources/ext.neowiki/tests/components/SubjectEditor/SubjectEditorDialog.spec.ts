@@ -20,12 +20,13 @@ import { CdxDialog, CdxMessage } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
+import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 
 const $i18n = createI18nMock();
 
 // What the stubbed editor reports about fields holding text it cannot turn into
 // a value. Reset per test by the beforeEach below.
-let editorHoldsUnparseableInput = false;
+let editorUnparseableInput: UnparseableInput | null = null;
 
 const SubjectEditorStub = {
 	template: '<div class="subject-editor-stub"></div>',
@@ -33,8 +34,8 @@ const SubjectEditorStub = {
 	emits: [ 'change', 'clear-server-violation' ],
 	setup() {
 		const getSubjectData = (): StatementList => new StatementList( [] );
-		const hasUnparseableInput = (): boolean => editorHoldsUnparseableInput;
-		return { getSubjectData, hasUnparseableInput };
+		const unparseableInput = (): UnparseableInput | null => editorUnparseableInput;
+		return { getSubjectData, unparseableInput };
 	},
 };
 
@@ -52,7 +53,7 @@ const CloseConfirmationDialogStub = {
 
 describe( 'SubjectEditorDialog', () => {
 	beforeEach( () => {
-		editorHoldsUnparseableInput = false;
+		editorUnparseableInput = null;
 		setupMwMock( {
 			functions: [ 'message', 'msg', 'notify', 'config' ],
 			// Debounce 0 is blur-only mode: the dry-run fires on blur / pre-save
@@ -614,7 +615,7 @@ describe( 'SubjectEditorDialog', () => {
 			const onSave = vi.fn().mockResolvedValue( undefined );
 			const wrapper = mountComponent( false, validationTestStubs, onSave );
 			await flushPromises();
-			editorHoldsUnparseableInput = true;
+			editorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
 
 			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
@@ -624,7 +625,23 @@ describe( 'SubjectEditorDialog', () => {
 			expect( mw.notify ).toHaveBeenCalledTimes( 1 );
 			expect( mw.notify ).toHaveBeenCalledWith(
 				'neowiki-field-invalid-number',
-				{ type: 'error' },
+				{ title: 'Score', type: 'error' },
+			);
+		} );
+
+		// The message comes from the field that is holding the text, so any input can
+		// report one; a gate that reused the number-specific message would misreport it.
+		it( 'names the offending field in the blocked-save notification', async () => {
+			const wrapper = mountComponent( false, validationTestStubs );
+			await flushPromises();
+			editorUnparseableInput = { propertyName: 'Score', message: 'whatever the field shows' };
+
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( mw.notify ).toHaveBeenCalledWith(
+				'whatever the field shows',
+				{ title: 'Score', type: 'error' },
 			);
 		} );
 
@@ -632,15 +649,32 @@ describe( 'SubjectEditorDialog', () => {
 			const onSave = vi.fn().mockResolvedValue( undefined );
 			const wrapper = mountComponent( false, validationTestStubs, onSave );
 			await flushPromises();
-			editorHoldsUnparseableInput = true;
+			editorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
 			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
-			editorHoldsUnparseableInput = false;
+			editorUnparseableInput = null;
 			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
 			expect( onSave ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		it( 'still runs the pre-save dry-run, so the other fields report alongside the invalid number', async () => {
+			const otherViolation: SubjectViolation = {
+				propertyName: 'name', code: 'required', args: [], severity: 'error', valuePartIndex: null,
+			};
+			const onSave = vi.fn().mockResolvedValue( undefined );
+			const wrapper = mountComponent( false, validationTestStubs, onSave );
+			await flushPromises();
+
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ otherViolation ] );
+			editorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( onSave ).not.toHaveBeenCalled();
+			expect( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) ).toEqual( [ otherViolation ] );
 		} );
 	} );
 

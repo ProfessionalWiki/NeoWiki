@@ -35,6 +35,7 @@ import type { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 
 const props = withDefaults( defineProps<{
 	initialSchema?: Schema;
@@ -145,6 +146,10 @@ function getSchema(): Schema | null {
 	return new Schema( name, description, propertyDefinitions );
 }
 
+function unparseableInput(): UnparseableInput | null {
+	return schemaEditorRef.value?.unparseableInput() ?? null;
+}
+
 function reset(): void {
 	clearDebounceTimer();
 	requestSequence++;
@@ -160,11 +165,12 @@ function focus(): void {
 export interface SchemaCreatorExposes {
 	validate: () => Promise<boolean>;
 	getSchema: () => Schema | null;
+	unparseableInput: () => UnparseableInput | null;
 	reset: () => void;
 	focus: () => void;
 }
 
-defineExpose( { validate, getSchema, reset, focus } );
+defineExpose( { validate, getSchema, unparseableInput, reset, focus } );
 </script>
 
 <style lang="less">

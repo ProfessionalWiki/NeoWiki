@@ -8,10 +8,15 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 
 const EXISTING_SCHEMA_NAME = 'Person';
 const NEW_SCHEMA_NAME = 'Company';
 const DEBOUNCE_DELAY = 300;
+
+// What the stubbed editor reports about its initial-value field holding text it
+// cannot turn into a value. Reset per test by the beforeEach below.
+let editorUnparseableInput: UnparseableInput | null = null;
 
 const SchemaEditorStub = {
 	name: 'SchemaEditor',
@@ -20,7 +25,8 @@ const SchemaEditorStub = {
 	emits: [ 'change', 'overflow' ],
 	setup() {
 		const getSchema = (): Schema => new Schema( '', 'A description', new PropertyDefinitionList( [] ) );
-		return { getSchema };
+		const unparseableInput = (): UnparseableInput | null => editorUnparseableInput;
+		return { getSchema, unparseableInput };
 	},
 };
 
@@ -64,6 +70,7 @@ describe( 'SchemaCreator', () => {
 	}
 
 	beforeEach( () => {
+		editorUnparseableInput = null;
 		vi.useFakeTimers();
 
 		setupMwMock( {
@@ -251,6 +258,25 @@ describe( 'SchemaCreator', () => {
 
 			expect( schema.getName() ).toBe( NEW_SCHEMA_NAME );
 			expect( schema.getDescription() ).toBe( 'A description' );
+		} );
+	} );
+
+	describe( 'unparseableInput', () => {
+		it( 'reports nothing while the schema editor reports nothing', () => {
+			const wrapper = mountComponent();
+
+			expect( ( wrapper.vm as any ).unparseableInput() ).toBeNull();
+		} );
+
+		it( 'forwards what the schema editor reports', () => {
+			editorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+
+			const wrapper = mountComponent();
+
+			expect( ( wrapper.vm as any ).unparseableInput() ).toEqual( {
+				propertyName: 'Score',
+				message: 'neowiki-field-invalid-number',
+			} );
 		} );
 	} );
 

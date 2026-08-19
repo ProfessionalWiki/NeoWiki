@@ -27,6 +27,21 @@ export function findNextPageButton( wrapper: VueWrapper ): DOMWrapper<Element> {
 	return button;
 }
 
+/**
+ * Puts a native number input into the state a browser reports for text it cannot
+ * parse, such as "5foo": the characters stay visible in the widget, the value
+ * reads as empty, and validity.badInput is set. jsdom never sets that flag from
+ * typing, so the browser's report is stubbed here.
+ */
+export async function reportUnparseableNumber( input: DOMWrapper<Element> ): Promise<void> {
+	Object.defineProperty( input.element, 'validity', {
+		configurable: true,
+		get: () => ( { badInput: true } ),
+	} );
+
+	await input.setValue( '' );
+}
+
 export function createTestWrapper<TComponent extends DefineComponent<any, any, any>>(
 	component: Component,
 	props: InstanceType<TComponent>['$props'],

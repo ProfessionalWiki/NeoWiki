@@ -1,6 +1,6 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
+import SchemaEditorDialog, { type SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
@@ -8,8 +8,13 @@ import { CdxDialog } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 
 const $i18n = createI18nMock();
+
+// What the stubbed editor reports about its initial-value field holding text it
+// cannot turn into a value. Reset per test by the beforeEach below.
+let editorUnparseableInput: UnparseableInput | null = null;
 
 const SchemaEditorStub = {
 	template: '<div class="schema-editor-stub"></div>',
@@ -17,7 +22,8 @@ const SchemaEditorStub = {
 	emits: [ 'overflow', 'change' ],
 	setup() {
 		const getSchema = (): Schema => new Schema( 'TestSchema', '', new PropertyDefinitionList( [] ) );
-		return { getSchema };
+		const unparseableInput = (): UnparseableInput | null => editorUnparseableInput;
+		return { getSchema, unparseableInput };
 	},
 };
 
@@ -34,7 +40,11 @@ const CloseConfirmationDialogStub = {
 };
 
 describe( 'SchemaEditorDialog', () => {
+	let onSave: ReturnType<typeof vi.fn<SchemaSaveHandler>>;
+
 	beforeEach( () => {
+		editorUnparseableInput = null;
+		onSave = vi.fn<SchemaSaveHandler>();
 		setupMwMock( { functions: [ 'message', 'msg', 'notify' ] } );
 	} );
 
@@ -51,7 +61,7 @@ describe( 'SchemaEditorDialog', () => {
 			props: {
 				initialSchema: mockSchema,
 				open: true,
-				onSave: vi.fn(),
+				onSave,
 			},
 			global: {
 				mocks: { $i18n },
@@ -141,6 +151,38 @@ describe( 'SchemaEditorDialog', () => {
 
 			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
 			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
+		} );
+	} );
+
+	describe( 'Unparseable field input', () => {
+		async function save( wrapper: VueWrapper ): Promise<void> {
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+		}
+
+		it( 'does not save while the initial-value field holds text that cannot be turned into a value', async () => {
+			const wrapper = mountComponent();
+			editorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+
+			await save( wrapper );
+
+			expect( onSave ).not.toHaveBeenCalled();
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+			expect( mw.notify ).toHaveBeenCalledWith(
+				'neowiki-field-invalid-number',
+				{ title: 'Score', type: 'error' },
+			);
+		} );
+
+		it( 'saves once the text parses again', async () => {
+			const wrapper = mountComponent();
+			editorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+			await save( wrapper );
+
+			editorUnparseableInput = null;
+			await save( wrapper );
+
+			expect( onSave ).toHaveBeenCalledTimes( 1 );
 		} );
 	} );
 } );

@@ -77,28 +77,70 @@ describe( 'NumberInput', () => {
 	} );
 
 	describe( 'Unparseable input', () => {
-		/**
-		 * A native number input keeps text it cannot parse (say "5foo") visible in the
-		 * widget while reporting an empty value to JavaScript, and flags the state
-		 * through validity.badInput. jsdom never sets that flag from typing, so the
-		 * browser's report is stubbed here.
-		 */
-		async function report( wrapper: VueWrapper, badInput: boolean, shownValue = '' ): Promise<void> {
-			const input = wrapper.find( 'input' );
-			const element = input.element as HTMLInputElement;
-			element.value = shownValue;
-			Object.defineProperty( element, 'validity', { value: { badInput }, configurable: true } );
-			await input.trigger( 'input' );
+		interface NativeNumberField {
+			reportBadInput(): Promise<void>;
+			reportValue( text: string ): Promise<void>;
+			valueWrites: string[];
 		}
 
-		function hasUnparseableInput( wrapper: VueWrapper ): boolean | undefined {
-			return ( wrapper.vm as unknown as ValueInputExposes ).hasUnparseableInput!();
+		/**
+		 * Models what a browser does with a native number input, which jsdom does not:
+		 * text it cannot parse ("5foo") stays on screen while `value` reads empty and
+		 * `validity.badInput` is set, and any assignment to `value` replaces that text
+		 * and clears the flag. jsdom sanitizes `element.value = '5foo'` to '' and never
+		 * sets badInput, so `valueWrites` stands in for the text on screen: an empty
+		 * `valueWrites` means the characters the user typed are still there.
+		 */
+		function bindNativeNumberField( wrapper: VueWrapper ): NativeNumberField {
+			const input = wrapper.find( 'input' );
+			const element = input.element as HTMLInputElement;
+			const descriptor = Object.getOwnPropertyDescriptor( Object.getPrototypeOf( element ), 'value' )!;
+			const valueWrites: string[] = [];
+			let badInput = false;
+
+			function write( text: string ): void {
+				badInput = false;
+				descriptor.set!.call( element, text );
+			}
+
+			Object.defineProperty( element, 'value', {
+				configurable: true,
+				get: () => descriptor.get!.call( element ),
+				set: ( text: string ) => {
+					valueWrites.push( text );
+					write( text );
+				},
+			} );
+			Object.defineProperty( element, 'validity', {
+				configurable: true,
+				get: () => ( { badInput } ),
+			} );
+
+			return {
+				async reportBadInput(): Promise<void> {
+					// The browser reports an empty value for text it cannot parse. Written
+					// through the raw setter so it is not counted as a write by Vue.
+					descriptor.set!.call( element, '' );
+					badInput = true;
+					await input.trigger( 'input' );
+				},
+				async reportValue( text: string ): Promise<void> {
+					write( text );
+					await input.trigger( 'input' );
+				},
+				valueWrites,
+			};
+		}
+
+		function unparseableInputMessage( wrapper: VueWrapper ): string | null {
+			return ( wrapper.vm as unknown as ValueInputExposes ).unparseableInputMessage!();
 		}
 
 		it( 'shows the invalid number message as a field error', async () => {
 			const wrapper = newWrapper();
+			const field = bindNativeNumberField( wrapper );
 
-			await report( wrapper, true );
+			await field.reportBadInput();
 
 			expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
 			expect( wrapper.findComponent( CdxField ).props( 'messages' ) )
@@ -107,9 +149,10 @@ describe( 'NumberInput', () => {
 
 		it( 'drops the invalid number message once the text parses again', async () => {
 			const wrapper = newWrapper();
-			await report( wrapper, true );
+			const field = bindNativeNumberField( wrapper );
+			await field.reportBadInput();
 
-			await report( wrapper, false, '5' );
+			await field.reportValue( '5' );
 
 			expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'default' );
 			expect( wrapper.findComponent( CdxField ).props( 'messages' ) ).toEqual( {} );
@@ -117,19 +160,33 @@ describe( 'NumberInput', () => {
 
 		it( 'reports unparseable input so the save can be held', async () => {
 			const wrapper = newWrapper();
+			const field = bindNativeNumberField( wrapper );
 
-			await report( wrapper, true );
+			await field.reportBadInput();
 
-			expect( hasUnparseableInput( wrapper ) ).toBe( true );
+			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-field-invalid-number' );
+		} );
+
+		// The save gates show what they are given, so a message that diverged from the
+		// one on screen would send the user looking for an error the field never showed.
+		it( 'exposes the same message the field renders', async () => {
+			const wrapper = newWrapper();
+			const field = bindNativeNumberField( wrapper );
+
+			await field.reportBadInput();
+
+			expect( wrapper.findComponent( CdxField ).props( 'messages' ) )
+				.toEqual( { error: unparseableInputMessage( wrapper ) } );
 		} );
 
 		it( 'stops reporting unparseable input once the text parses again', async () => {
 			const wrapper = newWrapper();
-			await report( wrapper, true );
+			const field = bindNativeNumberField( wrapper );
+			await field.reportBadInput();
 
-			await report( wrapper, false, '5' );
+			await field.reportValue( '5' );
 
-			expect( hasUnparseableInput( wrapper ) ).toBe( false );
+			expect( unparseableInputMessage( wrapper ) ).toBeNull();
 		} );
 
 		// Selecting all and deleting is the natural recovery from bad text: badInput
@@ -137,33 +194,38 @@ describe( 'NumberInput', () => {
 		// not a model-value change — is there to clear the flag.
 		it( 'stops reporting unparseable input when the user clears the field', async () => {
 			const wrapper = newWrapper();
-			await report( wrapper, true );
+			const field = bindNativeNumberField( wrapper );
+			await field.reportBadInput();
 
-			await report( wrapper, false );
+			await field.reportValue( '' );
 
-			expect( hasUnparseableInput( wrapper ) ).toBe( false );
+			expect( unparseableInputMessage( wrapper ) ).toBeNull();
 		} );
 
 		// A value that renders as the text already bound leaves the widget's DOM
 		// untouched, so the unparseable text is still on screen and still unsavable.
 		it( 'keeps reporting unparseable input when the parent supplies an empty value', async () => {
 			const wrapper = newWrapper();
-			await report( wrapper, true );
+			const field = bindNativeNumberField( wrapper );
+			await field.reportBadInput();
 
 			await wrapper.setProps( { modelValue: undefined } );
 
-			expect( hasUnparseableInput( wrapper ) ).toBe( true );
+			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-field-invalid-number' );
+			expect( field.valueWrites ).toEqual( [] );
 		} );
 
 		// The editor dialogs outlive the subject being edited, so a field left in this
 		// state must not keep blocking saves once a different value is loaded into it.
 		it( 'stops reporting unparseable input when the parent supplies a new value', async () => {
 			const wrapper = newWrapper();
-			await report( wrapper, true );
+			const field = bindNativeNumberField( wrapper );
+			await field.reportBadInput();
 
 			await wrapper.setProps( { modelValue: newNumberValue( 7 ) } );
 
-			expect( hasUnparseableInput( wrapper ) ).toBe( false );
+			expect( unparseableInputMessage( wrapper ) ).toBeNull();
+			expect( field.valueWrites ).toEqual( [ '7' ] );
 		} );
 
 		// The violation was raised against the value the backend was given, which is
@@ -176,8 +238,9 @@ describe( 'NumberInput', () => {
 					{ propertyName: 'Foo', code: 'max-value', args: [ '100' ], severity: 'warning', valuePartIndex: null },
 				],
 			} );
+			const field = bindNativeNumberField( wrapper );
 
-			await report( wrapper, true );
+			await field.reportBadInput();
 
 			expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
 			expect( wrapper.findComponent( CdxField ).props( 'messages' ) )

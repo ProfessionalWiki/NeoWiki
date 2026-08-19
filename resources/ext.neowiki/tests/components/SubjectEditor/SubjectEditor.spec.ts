@@ -7,7 +7,7 @@ import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson } from '@/domain/PropertyDefinition.ts';
 import { NumberType } from '@/domain/propertyTypes/Number.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
-import { createTestWrapper } from '../../VueTestHelpers.ts';
+import { createTestWrapper, reportUnparseableNumber } from '../../VueTestHelpers.ts';
 
 describe( 'SubjectEditor', () => {
 	beforeEach( () => {
@@ -42,37 +42,26 @@ describe( 'SubjectEditor', () => {
 		return wrapper.vm as unknown as SubjectEditorExposes;
 	}
 
-	/**
-	 * Puts the number field into the state a browser reports for text it cannot
-	 * parse (say "5foo"): the characters stay visible in the widget, the value
-	 * reads as empty, and validity.badInput is set. jsdom never sets that flag
-	 * from typing, so the browser's report is stubbed here.
-	 */
-	async function reportBadNumberInput( wrapper: VueWrapper ): Promise<void> {
-		const input = wrapper.find( 'input[type="number"]' );
-		Object.defineProperty( input.element, 'validity', { value: { badInput: true }, configurable: true } );
-		await input.trigger( 'input' );
-	}
-
 	it( 'reports no unparseable input while every field can be read', () => {
 		const wrapper = newWrapper();
 
-		expect( editor( wrapper ).hasUnparseableInput() ).toBe( false );
+		expect( editor( wrapper ).unparseableInput() ).toBeNull();
 	} );
 
 	it( 'reports unparseable input when one of its fields holds text it cannot turn into a value', async () => {
 		const wrapper = newWrapper();
 
-		await reportBadNumberInput( wrapper );
+		await reportUnparseableNumber( wrapper.find( 'input[type="number"]' ) );
 
-		expect( editor( wrapper ).hasUnparseableInput() ).toBe( true );
+		expect( editor( wrapper ).unparseableInput() )
+			.toEqual( { propertyName: 'Score', message: 'neowiki-field-invalid-number' } );
 	} );
 
 	// A dry-run response re-renders the editor; the report lives in the field, so it
 	// survives that — but would be lost if fields were remounted rather than patched.
 	it( 'keeps reporting unparseable input after a re-render', async () => {
 		const wrapper = newWrapper();
-		await reportBadNumberInput( wrapper );
+		await reportUnparseableNumber( wrapper.find( 'input[type="number"]' ) );
 
 		await wrapper.setProps( {
 			serverViolations: [
@@ -80,7 +69,8 @@ describe( 'SubjectEditor', () => {
 			],
 		} );
 
-		expect( editor( wrapper ).hasUnparseableInput() ).toBe( true );
+		expect( editor( wrapper ).unparseableInput() )
+			.toEqual( { propertyName: 'Score', message: 'neowiki-field-invalid-number' } );
 	} );
 
 	// The schema can change while the dialog is open (the nested schema editor); a
@@ -94,13 +84,13 @@ describe( 'SubjectEditor', () => {
 			statements: withTrailingNumber.blankStatements(),
 			schema: withTrailingNumber,
 		} );
-		await reportBadNumberInput( wrapper );
+		await reportUnparseableNumber( wrapper.find( 'input[type="number"]' ) );
 
 		const withoutNumber = new Schema( 'TestSchema', 'A test schema', new PropertyDefinitionList( [
 			createPropertyDefinitionFromJson( 'Name', { type: TextType.typeName } ),
 		] ) );
 		await wrapper.setProps( { schema: withoutNumber, statements: withoutNumber.blankStatements() } );
 
-		expect( editor( wrapper ).hasUnparseableInput() ).toBe( false );
+		expect( editor( wrapper ).unparseableInput() ).toBeNull();
 	} );
 } );

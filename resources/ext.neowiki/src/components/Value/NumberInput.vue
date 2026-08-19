@@ -37,6 +37,7 @@ import { NumberType, NumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useFieldServerViolation } from '@/composables/useFieldServerViolation.ts';
+import { violationStatus } from '@/composables/useServerViolations.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<NumberProperty>>(),
@@ -50,7 +51,7 @@ const startIcon = NeoWikiServices.getComponentRegistry().getIcon( NumberType.typ
 
 const emit = defineEmits<ValueInputEmits>();
 
-const { validationMessages, validationStatus, clearServerViolation } = useFieldServerViolation(
+const { validationMessages, clearServerViolation } = useFieldServerViolation(
 	toRef( props, 'property' ),
 	toRef( props, 'serverViolations' ),
 	emit
@@ -95,17 +96,21 @@ function onNativeInput( event: Event ): void {
 	unparseableInput.value = ( event.target as HTMLInputElement ).validity.badInput;
 }
 
+const unparseableMessage = computed<string | null>( () =>
+	unparseableInput.value ? mw.message( 'neowiki-field-invalid-number' ).text() : null
+);
+
 // Unparseable text outranks a server violation: the violation was raised against
 // the value the backend was given, which is not what the field is showing.
 const fieldMessages = computed<ValidationMessages>( () =>
-	unparseableInput.value ?
-		{ error: mw.message( 'neowiki-field-invalid-number' ).text() } :
-		validationMessages.value
+	unparseableMessage.value === null ?
+		validationMessages.value :
+		{ error: unparseableMessage.value }
 );
 
-const fieldStatus = computed<'default' | 'error' | 'warning'>( () =>
-	unparseableInput.value ? 'error' : validationStatus.value
-);
+// Derived from the merged messages rather than branched a second time: CdxField
+// only renders the message whose key equals the current status.
+const fieldStatus = computed( () => violationStatus( fieldMessages.value ) );
 
 const isInputEmpty = ( inputString: string ): boolean =>
 	inputString === '' || isNaN( Number( inputString ) );
@@ -114,6 +119,6 @@ defineExpose<ValueInputExposes>( {
 	getCurrentValue: function(): Value | undefined {
 		return isInputEmpty( internalInputValue.value ) ? undefined : newNumberValue( Number( internalInputValue.value ) );
 	},
-	hasUnparseableInput: (): boolean => unparseableInput.value
+	unparseableInputMessage: (): string | null => unparseableMessage.value
 } );
 </script>

@@ -20,10 +20,16 @@
 
 <script lang="ts">
 import { StatementList } from '@/domain/StatementList.ts';
+import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 
 export interface SubjectEditorExposes {
+	/**
+	 * The statements as the fields currently hold them. A field showing text it
+	 * cannot turn into a Value yields a statement with no value and that text is
+	 * lost — check unparseableInput() first and hold the save while it is non-null.
+	 */
 	getSubjectData(): StatementList;
-	hasUnparseableInput(): boolean;
+	unparseableInput(): UnparseableInput | null;
 }
 </script>
 
@@ -73,12 +79,23 @@ const getSubjectData = (): StatementList => {
 };
 
 /**
- * Whether any field is showing the user text it cannot turn into a Value, so
- * getSubjectData() would silently drop it. Callers hold the save while true.
+ * The first field showing the user text it cannot turn into a Value, so
+ * getSubjectData() would silently drop it — named by its property and carrying
+ * the message that field is showing. Null when every field can be read.
+ * Callers hold the save while this is non-null and surface the message.
  */
-const hasUnparseableInput = (): boolean =>
-	valueEditors.value.some( ( editor ) => editor?.hasUnparseableInput?.() === true );
+const unparseableInput = (): UnparseableInput | null => {
+	for ( const [ index, statement ] of [ ...props.statements ].entries() ) {
+		const message = valueEditors.value[ index ]?.unparseableInputMessage?.() ?? null;
 
-defineExpose<SubjectEditorExposes>( { getSubjectData, hasUnparseableInput } );
+		if ( message !== null ) {
+			return { propertyName: statement.propertyName.toString(), message };
+		}
+	}
+
+	return null;
+};
+
+defineExpose<SubjectEditorExposes>( { getSubjectData, unparseableInput } );
 
 </script>
