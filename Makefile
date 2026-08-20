@@ -7,15 +7,35 @@ ifeq ($(wildcard Docker/.env),)
 $(shell cp Docker/.env.dist Docker/.env)
 endif
 
+# The backing-service addresses (see Docker/README.md) may arrive from the environment or the
+# make command line as well as from Docker/.env. The include below would let a Docker/.env value
+# shadow both, so capture the pre-include view first: what each variable holds, and whether it
+# is set at all.
+_ENV_MARIADB_HOST := $(strip $(MARIADB_HOST))
+_ENV_MARIADB_PORT := $(strip $(MARIADB_PORT))
+_ENV_NEO4J_SCHEME := $(strip $(NEO4J_SCHEME))
+_ENV_NEO4J_HOST := $(strip $(NEO4J_HOST))
+_ENV_NEO4J_PORT := $(strip $(NEO4J_PORT))
+_SET_MARIADB_HOST := $(filter-out undefined,$(origin MARIADB_HOST))
+_SET_MARIADB_PORT := $(filter-out undefined,$(origin MARIADB_PORT))
+_SET_NEO4J_SCHEME := $(filter-out undefined,$(origin NEO4J_SCHEME))
+_SET_NEO4J_HOST := $(filter-out undefined,$(origin NEO4J_HOST))
+_SET_NEO4J_PORT := $(filter-out undefined,$(origin NEO4J_PORT))
+
 include Docker/.env
 export
 
-# Blank counts as unset, so a value resolves the same way here as through docker-compose.yml's
-# ${VAR:-default} and SettingsTemplate.php's ?:. ?= would keep a blank and hand install.php a
-# hostless ":3306"; override is what makes that hold for `make MARIADB_HOST= ...` too, since a
+# Environment beats Docker/.env beats the default, and a blank value resolves to the default —
+# a blank environment value hides Docker/.env, as it does for compose — matching the resolution
+# docker compose applies to ${VAR:-default} with --env-file, so make, raw compose commands and
+# the container agree on one server. ?= would keep a blank and hand install.php a hostless
+# ":3306"; override is what makes the resolution hold for `make MARIADB_HOST= ...` too, since a
 # command-line assignment otherwise outranks this one.
-override MARIADB_HOST := $(or $(strip $(MARIADB_HOST)),db)
-override MARIADB_PORT := $(or $(strip $(MARIADB_PORT)),3306)
+override MARIADB_HOST := $(or $(_ENV_MARIADB_HOST),$(if $(_SET_MARIADB_HOST),,$(strip $(MARIADB_HOST))),db)
+override MARIADB_PORT := $(or $(_ENV_MARIADB_PORT),$(if $(_SET_MARIADB_PORT),,$(strip $(MARIADB_PORT))),3306)
+override NEO4J_SCHEME := $(or $(_ENV_NEO4J_SCHEME),$(if $(_SET_NEO4J_SCHEME),,$(strip $(NEO4J_SCHEME))),bolt)
+override NEO4J_HOST := $(or $(_ENV_NEO4J_HOST),$(if $(_SET_NEO4J_HOST),,$(strip $(NEO4J_HOST))),neo)
+override NEO4J_PORT := $(or $(_ENV_NEO4J_PORT),$(if $(_SET_NEO4J_PORT),,$(strip $(NEO4J_PORT))),7687)
 
 # ---- Project namespace and ports ---------------------------------------------
 
@@ -141,7 +161,7 @@ help:
 
 # ---- Lifecycle (host only) ---------------------------------------------------
 
-.PHONY: up pull demo upgrade dev dev-tools _dev-tools-impl down remove logs ps print-services bash _preflight doctor
+.PHONY: up pull demo upgrade dev dev-tools _dev-tools-impl down remove logs ps print-services print-backing-services bash _preflight doctor
 
 # Fail fast on a broken Docker runtime (Docker or Compose missing, daemon down or
 # denied) before the lifecycle targets do expensive work. Source: Docker/scripts/preflight.sh.
@@ -284,6 +304,10 @@ print-services: ## Show the optional-service selection and resulting profiles
 	@echo "deselected: $(DESELECTED_SERVICES)"
 	@echo "profiles:   $(COMPOSE_PROFILES)"
 
+print-backing-services: ## Show the backing-service addresses this make invocation resolves
+	@echo "mariadb: $(MARIADB_HOST):$(MARIADB_PORT)"
+	@echo "neo4j:   $(NEO4J_SCHEME)://$(NEO4J_HOST):$(NEO4J_PORT)"
+
 bash: ## Shell into the mediawiki container
 	$(DC_DEV) exec mediawiki bash
 
@@ -315,6 +339,7 @@ test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-set-port.sh
 	@./Docker/tests/test-preflight.sh
 	@./Docker/tests/test-services.sh
+	@./Docker/tests/test-backing-services.sh
 
 # ---- Health gate -------------------------------------------------------------
 
@@ -334,9 +359,13 @@ _wait-mw:
 # Idempotent: skips if the database already has a wiki installed. The probe has to ask the same
 # server install-db writes to, or pointing MARIADB_HOST at an installed wiki reinstalls over it on
 # every run. It asks from the db container because that is where a mariadb client exists.
+# --connect-timeout keeps an unreachable external server from stalling every `make dev` for the
+# OS connect timeout (~2 minutes against a dropping firewall); the client's own default is no
+# limit. Generous, because a timeout against a reachable-but-slow installed server would read as
+# "not installed" and send the seed at it.
 .PHONY: _first-run-seed
 _first-run-seed:
-	@if $(DC_DEV) exec -T db sh -c "mariadb -h $$MARIADB_HOST -P $$MARIADB_PORT -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE -e 'SELECT 1 FROM page LIMIT 1' 2>/dev/null" >/dev/null 2>&1; then \
+	@if $(DC_DEV) exec -T db sh -c "mariadb --connect-timeout=15 -h $$MARIADB_HOST -P $$MARIADB_PORT -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE -e 'SELECT 1 FROM page LIMIT 1' 2>/dev/null" >/dev/null 2>&1; then \
 		echo "Wiki already initialized; skipping install-db."; \
 	else \
 		$(MAKE) --no-print-directory install-db; \
@@ -350,7 +379,7 @@ _first-run-seed:
 # $(DC) since the demo stack has no dev overlay. Idempotent like _first-run-seed.
 .PHONY: _first-run-seed-demo
 _first-run-seed-demo:
-	@if $(DC) exec -T db sh -c "mariadb -h $$MARIADB_HOST -P $$MARIADB_PORT -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE -e 'SELECT 1 FROM page LIMIT 1' 2>/dev/null" >/dev/null 2>&1; then \
+	@if $(DC) exec -T db sh -c "mariadb --connect-timeout=15 -h $$MARIADB_HOST -P $$MARIADB_PORT -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE -e 'SELECT 1 FROM page LIMIT 1' 2>/dev/null" >/dev/null 2>&1; then \
 		echo "Wiki already initialized; skipping install."; \
 	else \
 		$(MAKE) --no-print-directory install-db; \
@@ -364,16 +393,23 @@ _first-run-seed-demo:
 
 # --dbserver must match MARIADB_HOST: a literal here installs the schema on a different server
 # than SettingsTemplate.php points the wiki at.
+#
+# MW_CONFIG_FILE points the installer's LocalSettings.php detection at a nonexistent path and
+# --confpath sends the file it generates to a throwaway directory, so install.php runs while the
+# real LocalSettings.php stays in place: no settings-less window for web requests, and nothing
+# to restore after a failed, interrupted, or concurrent run. The leading mv restores a
+# LocalSettings.php that an earlier version of this target left parked as __LocalSettings.php.
 install-db:
-	$(EXEC_MW_ROOT) mv LocalSettings.php __LocalSettings.php
-	$(EXEC_MW_ROOT) \
-		php maintenance/install.php --dbuser $(MARIADB_USER) --dbpass $(MARIADB_PASSWORD) \
+	$(EXEC_MW_ROOT) bash -c '\
+		if [ -e __LocalSettings.php ]; then mv __LocalSettings.php LocalSettings.php; fi; \
+		rm -rf /tmp/neowiki-install && mkdir -p /tmp/neowiki-install && \
+		MW_CONFIG_FILE=/nonexistent php maintenance/install.php \
+			--confpath /tmp/neowiki-install \
+			--dbuser $(MARIADB_USER) --dbpass $(MARIADB_PASSWORD) \
 			--dbname $(MARIADB_DATABASE) --dbserver $(MARIADB_HOST):$(MARIADB_PORT) --lang en \
 			--pass $(MW_ADMIN_PASSWORD) \
 			--server $(MW_SERVER) \
-			SiteName AdminName
-	$(EXEC_MW_ROOT) rm LocalSettings.php
-	$(EXEC_MW_ROOT) mv __LocalSettings.php LocalSettings.php
+			SiteName AdminName'
 	$(EXEC_MW_ROOT) php maintenance/run.php update --quick
 
 load-neo4j-users:
@@ -385,6 +421,11 @@ load-neo4j-users:
 # The already-running check is a speed optimization, not a correctness requirement: the seed
 # is idempotent. Without it every `make phpunit filter=X` would pay a few seconds for the
 # compose up and the cypher-shell JVM.
+#
+# The first up is --no-recreate: it exists to start missing test backends, and must not recreate
+# the running wiki containers over config drift — e.g. the backing-service addresses resolving
+# differently in this shell than when the stack came up (see Docker/README.md). The second up is
+# scoped to the three test services so compose-file changes to them still apply.
 #
 # Inside the mediawiki container there is no compose to drive, so it can only report that the
 # backends are missing.
@@ -403,7 +444,8 @@ else
 			| grep -cE '^(test_neo|test_qlever|test_oxigraph)$$')" = "3" ]; then \
 		exit 0; \
 	fi; \
-	$(DC_TEST) up -d; \
+	$(DC_TEST) up -d --no-recreate; \
+	$(DC_TEST) up -d test_neo test_qlever test_oxigraph; \
 	$(MAKE) --no-print-directory setup-test-neo; \
 	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh test_qlever:7019 -t 120 && /wait-for-it.sh test_oxigraph:7878 -t 120'
 endif

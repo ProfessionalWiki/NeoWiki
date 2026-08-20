@@ -50,14 +50,21 @@ Where the wiki reaches MariaDB and Neo4j, defaulting to this stack's own `db` an
 | `NEO4J_HOST`   | `neo`   | Both the read and the write URL                          |
 | `NEO4J_PORT`   | `7687`  | The port the wiki dials, not the host publish port `NEO_BOLT_PORT` |
 
-Set them in the environment rather than in `Docker/.env`: a value there becomes a makefile
-assignment, which a later `MARIADB_HOST=... make dev` cannot override.
+Set them in `Docker/.env` so every shell and every later `make` invocation resolves the same
+servers. A value in the environment or on the `make` command line wins over `Docker/.env` for
+that one invocation, for `make` and raw `docker compose` commands alike; an invocation without
+it is back on `Docker/.env` or the defaults.
 
-An address outside this stack reaches the wiki, `make install-db` and the first-run seed, but not
-the rest of the tooling. `make load-neo4j-users` and the perf snapshot targets still act on the
-bundled `neo` and `db`, `make remove` still wipes only this stack's volumes, and the `mediawiki`
-service still waits on both bundled services being healthy. An external server also has to already
-carry the database, user and Neo4j accounts the bundled services create for themselves.
+The addresses reach the wiki, `make install-db`, the first-run seed, and the maintenance targets
+that run inside the `mediawiki` container (`make import-demo-data`, `make rebuild-graph-databases`,
+`make update-dot-php`); the wiki follows a change once `make dev` recreates its container. They
+are dialed from inside the stack's containers, so `localhost` names the container itself, not
+the docker host.
+
+`make load-neo4j-users` and the perf snapshot targets still act on the bundled `neo` and `db`,
+`make remove` still wipes only this stack's volumes, and the `mediawiki` service still waits on
+both bundled services being healthy. An external server also has to already carry the database,
+user and Neo4j accounts the bundled services create for themselves.
 
 `make reset` is the sharp edge: it wipes the bundled volumes and then reinstalls and reimports the
 demo data over whatever `MARIADB_HOST` and `NEO4J_HOST` point at, so against a populated external
@@ -128,9 +135,10 @@ To query it from the host, add the `docker-compose.tools.yml` overlay, which map
 (default 7019) — on the dev stack `make dev-tools` does that for you:
 
 ```sh
-# <project> is this stack's compose project name, which `docker compose ls` lists.
+# <project> is this stack's compose project name, which `docker compose ls` lists. Naming the
+# service keeps the command from recreating the rest of a running stack.
 docker compose -p <project> --env-file Docker/.env \
-  -f Docker/docker-compose.yml -f Docker/docker-compose.tools.yml up -d
+  -f Docker/docker-compose.yml -f Docker/docker-compose.tools.yml up -d qlever
 
 curl http://localhost:7019/ \
   --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' \
@@ -184,9 +192,10 @@ To query it from the host, add the `docker-compose.tools.yml` overlay, which map
 (default 7878) — on the dev stack `COMPOSE_PROFILES=oxigraph make dev-tools` does that for you:
 
 ```sh
-# <project> is this stack's compose project name, which `docker compose ls` lists.
+# <project> is this stack's compose project name, which `docker compose ls` lists. Naming the
+# service keeps the command from recreating the rest of a running stack.
 COMPOSE_PROFILES=oxigraph docker compose -p <project> --env-file Docker/.env \
-  -f Docker/docker-compose.yml -f Docker/docker-compose.tools.yml up -d
+  -f Docker/docker-compose.yml -f Docker/docker-compose.tools.yml up -d oxigraph
 
 curl http://localhost:7878/query \
   --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' \
