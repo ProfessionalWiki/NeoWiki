@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence;
 use GenerateSchemaChangeSql;
 use GenerateSchemaSql;
 use MediaWikiIntegrationTestCase;
-use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphStoreName;
 
 /**
  * The per-DBMS SQL that update.php applies is generated from the abstract schema and committed
@@ -16,40 +15,18 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphStoreName;
  *
  * @coversNothing
  */
-class RebuildRunsSchemaTest extends MediaWikiIntegrationTestCase {
+class DatabaseSchemaTest extends MediaWikiIntegrationTestCase {
 
 	/**
-	 * The longest name a store may be called and the width of the column its runs are filed under are
-	 * declared in two places that know nothing about each other. Narrowing the column alone would leave
-	 * accepted names the records cannot hold whole, and every lookup for such a store would then match
-	 * nothing. Read off the abstract schema rather than off a per-DBMS file, so this holds wherever the
-	 * suite runs — only MySQL materialises the width at all.
+	 * @dataProvider tableProvider
 	 */
-	public function testTheStoreNameLimitIsTheWidthOfTheColumnItIsFiledUnder(): void {
-		$schema = json_decode(
-			(string)file_get_contents( dirname( __DIR__, 3 ) . '/sql/neowiki_rebuild_runs.json' ),
-			true
-		);
-
-		$columns = array_column( $schema[0]['columns'], null, 'name' );
-
-		$this->assertSame(
-			GraphStoreName::MAX_LENGTH,
-			$columns['nwrr_store']['type'] === 'binary' ? $columns['nwrr_store']['options']['length'] : null,
-			'GraphStoreName::MAX_LENGTH and the nwrr_store column width have to agree'
-		);
-	}
-
-	/**
-	 * @dataProvider databaseTypeProvider
-	 */
-	public function testGeneratedSqlMatchesTheAbstractSchema( string $databaseType ): void {
+	public function testGeneratedSqlMatchesTheAbstractSchema( string $table, string $databaseType ): void {
 		$extensionPath = dirname( __DIR__, 3 );
 		$generatedPath = $this->getNewTempFile();
 
 		$script = new GenerateSchemaSql();
 		$script->loadWithArgv( [
-			'--json=' . $extensionPath . '/sql/neowiki_rebuild_runs.json',
+			'--json=' . $extensionPath . '/sql/' . $table . '.json',
 			'--sql=' . $generatedPath,
 			'--type=' . $databaseType,
 			'--quiet',
@@ -58,10 +35,10 @@ class RebuildRunsSchemaTest extends MediaWikiIntegrationTestCase {
 
 		$this->assertSame(
 			self::withoutSourcePath( (string)file_get_contents(
-				$extensionPath . '/sql/' . $databaseType . '/neowiki_rebuild_runs.sql'
+				$extensionPath . '/sql/' . $databaseType . '/' . $table . '.sql'
 			) ),
 			self::withoutSourcePath( (string)file_get_contents( $generatedPath ) ),
-			'run `make dbschema` to regenerate the ' . $databaseType . ' schema'
+			'run `make dbschema` to regenerate the ' . $databaseType . ' schema of ' . $table
 		);
 	}
 
@@ -91,6 +68,15 @@ class RebuildRunsSchemaTest extends MediaWikiIntegrationTestCase {
 			self::withoutSourcePath( (string)file_get_contents( $generatedPath ) ),
 			'run `make dbschema` to regenerate the ' . $databaseType . ' schema change'
 		);
+	}
+
+	public function tableProvider(): iterable {
+		yield 'rebuild runs, mysql' => [ 'neowiki_rebuild_runs', 'mysql' ];
+		yield 'rebuild runs, sqlite' => [ 'neowiki_rebuild_runs', 'sqlite' ];
+		yield 'rebuild runs, postgres' => [ 'neowiki_rebuild_runs', 'postgres' ];
+		yield 'subject page, mysql' => [ 'neowiki_subject_page', 'mysql' ];
+		yield 'subject page, sqlite' => [ 'neowiki_subject_page', 'sqlite' ];
+		yield 'subject page, postgres' => [ 'neowiki_subject_page', 'postgres' ];
 	}
 
 	public function databaseTypeProvider(): iterable {

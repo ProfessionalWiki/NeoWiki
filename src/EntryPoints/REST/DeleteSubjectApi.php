@@ -7,9 +7,11 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use RuntimeException;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class DeleteSubjectApi extends SimpleHandler {
@@ -34,7 +36,12 @@ class DeleteSubjectApi extends SimpleHandler {
 				new SubjectId( $subjectId ),
 				$comment
 			);
-		} catch ( \RuntimeException $e ) {
+		} catch ( SubjectNotFoundException $e ) {
+			return $this->getResponseFactory()->createHttpError( 404, [
+				'status' => 'error',
+				'message' => $e->getMessage(),
+			] );
+		} catch ( RuntimeException $e ) {
 			return $this->getResponseFactory()->createHttpError( 403, [
 				'status' => 'error',
 				'message' => $e->getMessage(),

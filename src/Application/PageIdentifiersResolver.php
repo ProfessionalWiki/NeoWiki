@@ -8,9 +8,8 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 
 /**
- * Answers what a page id identifies, from the wiki itself rather than from the graph projection.
- * Callers that hold a page id use this instead of {@see PageIdentifiersLookup}: it needs no graph
- * round trip, and it answers for a page written moments ago, which a graph read replica may not.
+ * Answers what a page id identifies: the page's current title and namespace. For callers that hold a
+ * page id, where {@see PageIdentifiersLookup} is for callers that hold a Subject id.
  */
 interface PageIdentifiersResolver {
 

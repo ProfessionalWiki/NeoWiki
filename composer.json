@@ -53,7 +53,10 @@
 			"php ../../maintenance/generateSchemaSql.php --json sql/neowiki_rebuild_runs.json --sql sql/postgres/neowiki_rebuild_runs.sql --type postgres",
 			"php ../../maintenance/generateSchemaChangeSql.php --json sql/abstractSchemaChanges/patch-neowiki_rebuild_runs-nwrr_phase.json --sql sql/mysql/patch-neowiki_rebuild_runs-nwrr_phase.sql --type mysql",
 			"php ../../maintenance/generateSchemaChangeSql.php --json sql/abstractSchemaChanges/patch-neowiki_rebuild_runs-nwrr_phase.json --sql sql/sqlite/patch-neowiki_rebuild_runs-nwrr_phase.sql --type sqlite",
-			"php ../../maintenance/generateSchemaChangeSql.php --json sql/abstractSchemaChanges/patch-neowiki_rebuild_runs-nwrr_phase.json --sql sql/postgres/patch-neowiki_rebuild_runs-nwrr_phase.sql --type postgres"
+			"php ../../maintenance/generateSchemaChangeSql.php --json sql/abstractSchemaChanges/patch-neowiki_rebuild_runs-nwrr_phase.json --sql sql/postgres/patch-neowiki_rebuild_runs-nwrr_phase.sql --type postgres",
+			"php ../../maintenance/generateSchemaSql.php --json sql/neowiki_subject_page.json --sql sql/mysql/neowiki_subject_page.sql --type mysql",
+			"php ../../maintenance/generateSchemaSql.php --json sql/neowiki_subject_page.json --sql sql/sqlite/neowiki_subject_page.sql --type sqlite",
+			"php ../../maintenance/generateSchemaSql.php --json sql/neowiki_subject_page.json --sql sql/postgres/neowiki_subject_page.sql --type postgres"
 		]
 	},
 	"scripts-descriptions": {

@@ -103,8 +103,7 @@ readonly class CreateSubjectAction {
 		}
 
 		// The page identifiers come from the page id the request named, not from the subject -> page
-		// index: that index is the graph projection, which a read replica may not carry yet for the
-		// revision just written.
+		// index, which is read from a replica that may not carry the revision just written.
 		$this->presenter->presentCreated(
 			GetSubjectResponseItem::fromSubject(
 				$subject,
@@ -151,8 +150,9 @@ readonly class CreateSubjectAction {
 	}
 
 	/**
-	 * Best-effort global uniqueness check: the subject -> page index lags slot writes, so this can
-	 * miss a very recently created Subject; ID entropy carries the rest (same posture as relation IDs).
+	 * Best-effort global uniqueness check: the subject -> page index is read from a replica, so this
+	 * can miss a Subject another request just created; ID entropy carries the rest (same posture as
+	 * relation IDs).
 	 */
 	private function subjectIdIsInUse( SubjectId $id ): bool {
 		return $this->pageIdentifiersLookup->getPageIdOfSubject( $id ) !== null;

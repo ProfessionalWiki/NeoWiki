@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use RuntimeException;
 
@@ -20,10 +21,13 @@ readonly class DeleteSubjectAction {
 	}
 
 	public function deleteSubject( SubjectId $subjectId, ?string $comment ): void {
-		// A null pageId (unresolvable Subject) makes the authorizer fall back to the global 'edit' right.
-		// This cannot bypass page protection: the repository resolves the page via the same lookup, so an
-		// unresolvable Subject results in a no-op delete rather than a write to a protected page.
 		$pageId = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId )?->getId();
+
+		// A Subject on no page has no page rights to check, so it is answered as absent rather than as
+		// forbidden.
+		if ( $pageId === null ) {
+			throw SubjectNotFoundException::forId( $subjectId );
+		}
 
 		if ( !$this->writeAuthorizer->authorize( $pageId ) ) {
 			throw new RuntimeException( 'You do not have the necessary permissions to delete this subject' );

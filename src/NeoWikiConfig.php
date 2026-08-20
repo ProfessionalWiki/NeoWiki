@@ -32,6 +32,14 @@ readonly class NeoWikiConfig {
 	}
 
 	/**
+	 * One of the two Neo4j Bolt URLs set and the other not, which is no backend rather than half of one.
+	 */
+	public function hasHalfConfiguredNeo4j(): bool {
+		return !$this->hasNeo4jBackend()
+			&& ( $this->neo4jInternalReadUrl !== null || $this->neo4jInternalWriteUrl !== null );
+	}
+
+	/**
 	 * Whether the store the SPARQL read surfaces query — the first configured one, see
 	 * {@see NeoWikiExtension::getFirstSparqlPlugin()} — holds the given projection, either as its own or
 	 * through a sibling entry projecting into the same store. Sibling projections share a store, each in

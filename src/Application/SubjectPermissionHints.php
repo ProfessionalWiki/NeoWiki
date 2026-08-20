@@ -13,10 +13,10 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
  */
 interface SubjectPermissionHints {
 
-	public function canCreateMainSubject( ?PageId $pageId ): bool;
+	public function canCreateMainSubject( PageId $pageId ): bool;
 
-	public function canCreateChildSubject( ?PageId $pageId ): bool;
+	public function canCreateChildSubject( PageId $pageId ): bool;
 
-	public function canEditSubject( ?PageId $pageId ): bool;
+	public function canEditSubject( PageId $pageId ): bool;
 
 }

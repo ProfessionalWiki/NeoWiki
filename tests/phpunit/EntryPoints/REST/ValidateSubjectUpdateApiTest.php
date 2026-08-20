@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -174,16 +175,31 @@ class ValidateSubjectUpdateApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'Test subject sTestSU11111111', $subject->getLabel()->text );
 	}
 
+	/**
+	 * The index is written from the subject slot, which knows nothing about Schemas, so a Subject whose
+	 * Schema never existed resolves like any other and validation reaches the schema check rather than
+	 * answering 404 before it.
+	 */
 	public function testSubjectWithMissingSchemaReturnsSchemaNotFoundViolation(): void {
-		$this->markTestSkipped(
-			'The schema-not-found path requires a Subject to be findable via the Neo4j page-identifier '
-			. 'lookup AND for its Schema to be absent. In practice, a Subject created with a never-existing '
-			. 'Schema cannot be projected into Neo4j, so the lookup returns null and the handler responds 404 '
-			. 'before reaching the schema check. The defensive schema-not-found path remains in the code as '
-			. 'belt-and-suspenders for the rare scenario where a Schema page is deleted after Subject creation; '
-			. 'reaching it in a test requires a fixture sequence (create schema -> create subject -> rebuild '
-			. 'projection -> delete schema page) that this test harness does not currently support.'
+		$this->createPageWithSubjects(
+			'ValidateSubjectUpdateApiMissingSchemaTest',
+			mainSubject: TestSubject::build(
+				id: 'sTestSU11111111',
+				label: new SubjectLabel( 'Test subject sTestSU11111111' ),
+				schemaName: new SchemaName( 'SchemaThatWasNeverCreated' ),
+			)
 		);
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'sTestSU11111111', $this->validBody() )
+		);
+
+		$responseBody = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertCount( 1, $responseBody['violations'] );
+		$this->assertSame( 'schema-not-found', $responseBody['violations'][0]['code'] );
 	}
 
 	public function testNeedsWriteAccessReturnsFalse(): void {

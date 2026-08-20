@@ -73,4 +73,22 @@ class SubjectContentTest extends TestCase {
 		$this->assertNull( $content->getPageSubjects()->getMainSubject() );
 	}
 
+	public function testSubjectIdsAreReadWithoutDeserializing(): void {
+		$content = new SubjectContent( TestSubject::jsonThatDoesNotDeserialize( TestSubject::ZERO_GUID ) );
+
+		$this->assertSame( [ TestSubject::ZERO_GUID ], $content->getSubjectIds() );
+	}
+
+	public function testSubjectIdsLeaveOutKeysThatAreNotSubjectIds(): void {
+		$content = new SubjectContent(
+			'{"subjects":{"not an id":{},"' . TestSubject::ZERO_GUID . '":{}}}'
+		);
+
+		$this->assertSame( [ TestSubject::ZERO_GUID ], $content->getSubjectIds() );
+	}
+
+	public function testContentThatIsNotSubjectJsonHoldsNoSubjectIds(): void {
+		$this->assertSame( [], ( new SubjectContent( 'not json at all' ) )->getSubjectIds() );
+	}
+
 }

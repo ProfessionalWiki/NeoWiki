@@ -37,13 +37,6 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 	// A page id far above anything a fresh test database mints, so it resolves to no page.
 	private const int NONEXISTENT_PAGE_ID = 999999;
 
-	protected function setUp(): void {
-		parent::setUp();
-		// Clear the graph so the client-supplied-id tests, which use fixed ids, start from a clean
-		// subject -> page index rather than nodes projected by earlier tests or runs.
-		$this->setUpNeo4j();
-	}
-
 	public function testCreatesSubject(): void {
 		$this->createSchema( 'Employee' );
 
@@ -487,7 +480,7 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$firstResponse = $this->executeCreate( $this->pageIdOfNewPage( 'CreateSubjectApiTestOtherPage' ), $firstBody, isMainSubject: false );
 		$this->assertSame( 201, $firstResponse->getStatusCode() );
 
-		// Reusing it on a different page is rejected via the graph's subject -> page index.
+		// Reusing it on a different page is rejected via the subject -> page index.
 		$secondBody = $this->validBody();
 		$secondBody['id'] = $suppliedId;
 		$secondResponse = $this->executeCreate( $this->getIdOfExistingPage(), $secondBody, isMainSubject: false );

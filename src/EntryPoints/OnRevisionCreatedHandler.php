@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\PagePropertiesSource;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIndex;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -21,23 +22,33 @@ class OnRevisionCreatedHandler {
 
 	public function __construct(
 		private readonly GraphDatabasePlugin $graphDatabasePlugin,
+		private readonly SubjectPageIndex $subjectPageIndex,
 		private readonly PagePropertiesSource $pagePropertiesSource,
 		private readonly LoggerInterface $logger,
 	) {
 	}
 
 	/**
-	 * Projects the page of the given revision, with the Subjects it holds and with none when it holds
-	 * none: every page gets a Page node, so its Page Properties are queryable.
+	 * Indexes which Subjects the page holds, and projects the page with them — and with none when it
+	 * holds none: every page gets a Page node, so its Page Properties are queryable.
 	 */
 	public function onRevisionCreated( RevisionRecord $revisionRecord, ?UserIdentity $user ): PageRefreshOutcome {
 		if ( $revisionRecord->getPageId() === 0 ) {
 			throw new RuntimeException( 'Page ID should not be 0' );
 		}
 
-		$subjects = $this->getPageSubjects( $revisionRecord );
+		if ( !$revisionRecord->hasSlot( MediaWikiSubjectRepository::SLOT_NAME ) ) {
+			return $this->refreshPage( $revisionRecord, $user, null );
+		}
 
-		if ( $subjects === null ) {
+		// The slot exists; a read failure here is a genuine error and must propagate —
+		// the refresh contract treats genuine failures as exceptions, not skips.
+		$content = $revisionRecord->getSlots()->getContent( MediaWikiSubjectRepository::SLOT_NAME );
+
+		// The slot holds something that is not Subject content, which happens when its content model is
+		// not registered, or an import wrote something else into it. Reading such a page as holding no
+		// Subjects would drop the Subjects it does hold, so nothing is written for it at all.
+		if ( !$content instanceof SubjectContent ) {
 			$this->logSkip(
 				$revisionRecord,
 				'its subject slot holds content that is not Subject data, so projecting the page would drop '
@@ -45,6 +56,23 @@ class OnRevisionCreatedHandler {
 			);
 			return PageRefreshOutcome::SkippedUnreadableSubjects;
 		}
+
+		return $this->refreshPage( $revisionRecord, $user, $content );
+	}
+
+	private function refreshPage(
+		RevisionRecord $revisionRecord,
+		?UserIdentity $user,
+		?SubjectContent $content
+	): PageRefreshOutcome {
+		$pageId = new PageId( $revisionRecord->getPageId() );
+
+		// Indexed before the Subjects are read as Subjects, and outside the projection's failure
+		// isolation: the index is authoritative (ADR 32), so it commits with the revision that changes
+		// it or not at all, and a Subject too broken to deserialize is still indexed.
+		$this->subjectPageIndex->setSubjectsOfPage( $pageId, $content?->getSubjectIds() ?? [] );
+
+		$subjects = $content?->getPageSubjects() ?? PageSubjects::newEmpty();
 
 		// Null only from the isolating source the hook path is given, which has already logged the
 		// cause. The rebuild path is given the propagating one, so there the failure surfaces to the
@@ -57,31 +85,13 @@ class OnRevisionCreatedHandler {
 
 		$this->graphDatabasePlugin->savePage(
 			new Page(
-				id: new PageId( $revisionRecord->getPageId() ),
+				id: $pageId,
 				properties: $properties,
 				subjects: $subjects
 			)
 		);
 
 		return PageRefreshOutcome::Refreshed;
-	}
-
-	/**
-	 * The Subjects the revision holds, none for a page without the subject slot, and null when the slot
-	 * is present but does not hold Subject content — which happens when its content model is not
-	 * registered, or an import wrote something else into it. Projecting such a page as holding no
-	 * Subjects would wipe the Subjects it does hold from the graph, so nothing is written for it.
-	 */
-	private function getPageSubjects( RevisionRecord $revisionRecord ): ?PageSubjects {
-		if ( !$revisionRecord->hasSlot( MediaWikiSubjectRepository::SLOT_NAME ) ) {
-			return PageSubjects::newEmpty();
-		}
-
-		// The slot exists; a read failure here is a genuine error and must propagate —
-		// the refresh contract treats genuine failures as exceptions, not skips.
-		$content = $revisionRecord->getSlots()->getContent( MediaWikiSubjectRepository::SLOT_NAME );
-
-		return $content instanceof SubjectContent ? $content->getPageSubjects() : null;
 	}
 
 	private function logSkip( RevisionRecord $revisionRecord, string $reason ): void {
@@ -93,7 +103,14 @@ class OnRevisionCreatedHandler {
 	}
 
 	public function onPageDelete( int $pageId ): void {
-		$this->graphDatabasePlugin->deletePage( new PageId( $pageId ) );
+		$page = new PageId( $pageId );
+
+		// The graph goes first because only the index removal can propagate: the projection write is
+		// failure-isolated, so the other order lets a database fault in the index skip the graph
+		// deletion and leave the deleted page's Subject values queryable. Rows the index keeps when
+		// this order fails are inert, since reads join `page`.
+		$this->graphDatabasePlugin->deletePage( $page );
+		$this->subjectPageIndex->removePage( $page );
 	}
 
 }

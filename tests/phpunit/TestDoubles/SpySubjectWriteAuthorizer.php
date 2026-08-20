@@ -19,7 +19,7 @@ class SpySubjectWriteAuthorizer implements SubjectWriteAuthorizer {
 	) {
 	}
 
-	public function authorize( ?PageId $pageId ): bool {
+	public function authorize( PageId $pageId ): bool {
 		$this->authorizedPageId = $pageId;
 		return $this->allowed;
 	}

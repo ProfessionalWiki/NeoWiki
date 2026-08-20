@@ -115,11 +115,10 @@ readonly class SubjectValidator {
 	 * not the declared targetSchema is a blocking `relation-target-schema-mismatch` error.
 	 *
 	 * The Schema compared is the target's own writer's-schema, read from its revision slot rather
-	 * than from a graph node property. Reaching that slot still resolves the target id through the
-	 * subject -> page index, which lives only in the graph projection (see
-	 * {@see \ProfessionalWiki\NeoWiki\NeoWikiExtension::getPageIdentifiersLookup()}), so an
-	 * unrebuilt or stale graph reports an existing target as not found. That is the same
-	 * degradation the read path has, and the reason not-found is non-blocking.
+	 * than from a graph node property. Reaching that slot resolves the target id through the
+	 * subject -> page index, which a read replica may not carry yet for a target minted moments
+	 * earlier elsewhere, so such a target reports as not found. That is the same degradation the
+	 * read path has, and the reason not-found is non-blocking.
 	 *
 	 * @return Violation[]
 	 */

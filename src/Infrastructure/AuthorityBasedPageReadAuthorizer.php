@@ -23,8 +23,8 @@ class AuthorityBasedPageReadAuthorizer implements PageReadAuthorizer {
 	public function authorizeReadByPageId( PageId $pageId ): bool {
 		$title = $this->titleFactory->newFromID( $pageId->id );
 
-		// Unlike the write side, reads have no global-right fallback: content is only reachable
-		// through a resolved page, so an unresolvable one has nothing to authorize.
+		// Content is only reachable through a resolved page, so a page id this wiki cannot resolve
+		// has nothing to authorize and is denied.
 		return $title !== null && $this->authorizeReadByPageTitle( $title );
 	}
 

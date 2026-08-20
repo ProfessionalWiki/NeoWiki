@@ -13,6 +13,7 @@ use MediaWiki\User\UserIdentityValue;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderContext;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
@@ -22,7 +23,9 @@ use ProfessionalWiki\NeoWiki\PagePropertiesBuilder;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingSubjectPageIndex;
 use Psr\Log\NullLogger;
 use Psr\Log\Test\TestLogger;
 use RuntimeException;
@@ -33,7 +36,10 @@ use RuntimeException;
  */
 class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 
+	private const int DELETED_PAGE_ID = 42;
+
 	private SpyGraphDatabasePlugin $graphStore;
+	private SpySubjectPageIndex $subjectPageIndex;
 	private TestLogger $logger;
 
 	protected function setUp(): void {
@@ -41,6 +47,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->setUpNeo4j();
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
 		$this->graphStore = new SpyGraphDatabasePlugin();
+		$this->subjectPageIndex = new SpySubjectPageIndex();
 		$this->logger = new TestLogger();
 	}
 
@@ -51,6 +58,17 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
 		$this->assertCount( 1, $this->graphStore->savedPages );
+	}
+
+	public function testIndexesTheSubjectsThePageHolds(): void {
+		$revision = $this->createPageWithSubjects( 'Page with indexed subject', TestSubject::build() );
+
+		$this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+
+		$this->assertSame(
+			[ $revision->getPageId() => [ TestSubject::ZERO_GUID ] ],
+			$this->subjectPageIndex->indexedSubjectsByPageId
+		);
 	}
 
 	public function testSavesPageWithoutSubjects(): void {
@@ -115,6 +133,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( PageRefreshOutcome::SkippedUnreadableSubjects, $outcome );
 		$this->assertSame( [], $this->graphStore->savedPages );
 		$this->assertSame( [], $this->graphStore->deletedPageIds );
+		$this->assertSame( [], $this->subjectPageIndex->indexedSubjectsByPageId, 'the index should be left alone' );
 		$this->assertTrue( $this->logger->hasWarningRecords(), 'the skipped page should be logged' );
 	}
 
@@ -148,6 +167,27 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 			$outcome,
 			'a projection write to an unreachable backend must not propagate out of the handler'
 		);
+	}
+
+	public function testDeletingAPageRemovesItFromTheGraph(): void {
+		$this->newHandler()->onPageDelete( self::DELETED_PAGE_ID );
+
+		$this->assertEquals( [ new PageId( self::DELETED_PAGE_ID ) ], $this->graphStore->deletedPageIds );
+	}
+
+	/**
+	 * Only the index removal can propagate — the projection write is failure-isolated — so the graph has
+	 * to be deleted first. The other order lets a database fault in the index skip the graph deletion,
+	 * leaving the deleted page's Subject values queryable through the Cypher surfaces.
+	 */
+	public function testGraphDeletionHappensEvenWhenTheIndexRemovalFails(): void {
+		try {
+			$this->newHandlerWithFailingIndex()->onPageDelete( self::DELETED_PAGE_ID );
+		} catch ( RuntimeException ) {
+			// Propagating is the index's contract; what matters is what already ran.
+		}
+
+		$this->assertEquals( [ new PageId( self::DELETED_PAGE_ID ) ], $this->graphStore->deletedPageIds );
 	}
 
 	private function newFailingProviderRegistry(): PagePropertyProviderRegistry {
@@ -190,21 +230,35 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		?PagePropertyProviderRegistry $providerRegistry = null,
 		bool $isolatePageProperties = false
 	): OnRevisionCreatedHandler {
-		$services = $this->getServiceContainer();
-
-		$pageProperties = new PagePropertiesBuilder(
-			revisionStore: $services->getRevisionStore(),
-			contentHandlerFactory: $services->getContentHandlerFactory(),
-			titleFormatter: $services->getTitleFormatter(),
-			providerRegistry: $providerRegistry ?? new PagePropertyProviderRegistry(),
-		);
+		$pageProperties = $this->newPagePropertiesBuilder( $providerRegistry ?? new PagePropertyProviderRegistry() );
 
 		return new OnRevisionCreatedHandler(
 			$graphStore,
+			$this->subjectPageIndex,
 			$isolatePageProperties
 				? new FailureIsolatingPagePropertiesSource( $pageProperties, $this->logger )
 				: $pageProperties,
 			$this->logger
+		);
+	}
+
+	private function newHandlerWithFailingIndex(): OnRevisionCreatedHandler {
+		return new OnRevisionCreatedHandler(
+			$this->graphStore,
+			new ThrowingSubjectPageIndex(),
+			$this->newPagePropertiesBuilder( new PagePropertyProviderRegistry() ),
+			$this->logger
+		);
+	}
+
+	private function newPagePropertiesBuilder( PagePropertyProviderRegistry $providerRegistry ): PagePropertiesBuilder {
+		$services = $this->getServiceContainer();
+
+		return new PagePropertiesBuilder(
+			revisionStore: $services->getRevisionStore(),
+			contentHandlerFactory: $services->getContentHandlerFactory(),
+			titleFormatter: $services->getTitleFormatter(),
+			providerRegistry: $providerRegistry,
 		);
 	}
 

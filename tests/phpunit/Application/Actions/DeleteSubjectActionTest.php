@@ -6,7 +6,10 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
+use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -25,7 +28,7 @@ class DeleteSubjectActionTest extends TestCase {
 	public function testDeleteSubjectRemovesSubjectFromRepository(): void {
 		$repository = $this->newRepositoryWithSubject();
 
-		$this->newAction( $repository )->deleteSubject( new SubjectId( self::SUBJECT_ID ), null );
+		$this->newAllowingAction( $repository )->deleteSubject( new SubjectId( self::SUBJECT_ID ), null );
 
 		$this->assertNull( $repository->getSubject( new SubjectId( self::SUBJECT_ID ) ) );
 	}
@@ -33,14 +36,15 @@ class DeleteSubjectActionTest extends TestCase {
 	public function testDeleteSubjectPassesCommentThrough(): void {
 		$repository = $this->newRepositoryWithSubject();
 
-		$this->newAction( $repository )->deleteSubject( new SubjectId( self::SUBJECT_ID ), 'Removed by curator' );
+		$this->newAllowingAction( $repository )
+			->deleteSubject( new SubjectId( self::SUBJECT_ID ), 'Removed by curator' );
 
 		$this->assertSame( 'Removed by curator', $repository->comments[self::SUBJECT_ID] );
 	}
 
 	public function testAuthorizesAgainstTheSubjectsResolvedPage(): void {
 		$authorizer = new SpySubjectWriteAuthorizer( allowed: true );
-		$action = new DeleteSubjectAction(
+		$action = $this->newAction(
 			$this->newRepositoryWithSubject(),
 			$authorizer,
 			new InMemoryPageIdentifiersLookup( [
@@ -54,7 +58,7 @@ class DeleteSubjectActionTest extends TestCase {
 	}
 
 	public function testThrowsWhenUserMayNotDeleteSubject(): void {
-		$action = new DeleteSubjectAction(
+		$action = $this->newAction(
 			new InMemorySubjectRepository(),
 			new SpySubjectWriteAuthorizer( allowed: false ),
 			$this->pageIdentifiersLookupWithSubject()
@@ -66,18 +70,46 @@ class DeleteSubjectActionTest extends TestCase {
 		$action->deleteSubject( new SubjectId( self::SUBJECT_ID ), null );
 	}
 
+	/**
+	 * A Subject on no page has no page rights to check, so it is answered as absent rather than as
+	 * forbidden, like the write endpoints keyed by Subject id do.
+	 */
+	public function testUnresolvableSubjectIsReportedAsNotFound(): void {
+		$action = $this->newAction(
+			$this->newRepositoryWithSubject(),
+			new SpySubjectWriteAuthorizer( allowed: true ),
+			new InMemoryPageIdentifiersLookup()
+		);
+
+		$this->expectException( SubjectNotFoundException::class );
+
+		$action->deleteSubject( new SubjectId( self::SUBJECT_ID ), null );
+	}
+
 	private function newRepositoryWithSubject(): InMemorySubjectRepository {
 		$repository = new InMemorySubjectRepository();
 		$repository->updateSubject( TestSubject::build( id: self::SUBJECT_ID ) );
 		return $repository;
 	}
 
-	private function newAction( SubjectRepository $repository ): DeleteSubjectAction {
-		return new DeleteSubjectAction(
+	/**
+	 * For the cases about deletion itself rather than about the checks around it: the caller may write,
+	 * and the Subject resolves to a page.
+	 */
+	private function newAllowingAction( SubjectRepository $repository ): DeleteSubjectAction {
+		return $this->newAction(
 			$repository,
 			new SpySubjectWriteAuthorizer( allowed: true ),
 			$this->pageIdentifiersLookupWithSubject()
 		);
+	}
+
+	private function newAction(
+		SubjectRepository $repository,
+		SubjectWriteAuthorizer $authorizer,
+		PageIdentifiersLookup $pageIdentifiersLookup,
+	): DeleteSubjectAction {
+		return new DeleteSubjectAction( $repository, $authorizer, $pageIdentifiersLookup );
 	}
 
 	private function pageIdentifiersLookupWithSubject(): InMemoryPageIdentifiersLookup {

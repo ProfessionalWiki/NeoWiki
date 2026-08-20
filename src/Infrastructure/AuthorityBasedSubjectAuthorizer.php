@@ -19,49 +19,41 @@ class AuthorityBasedSubjectAuthorizer implements SubjectPermissionHints, Subject
 	) {
 	}
 
-	public function canCreateMainSubject( ?PageId $pageId ): bool {
+	public function canCreateMainSubject( PageId $pageId ): bool {
 		return $this->canEditPage( $pageId );
 	}
 
-	public function canCreateChildSubject( ?PageId $pageId ): bool {
+	public function canCreateChildSubject( PageId $pageId ): bool {
 		return $this->canEditPage( $pageId );
 	}
 
-	public function canEditSubject( ?PageId $pageId ): bool {
+	public function canEditSubject( PageId $pageId ): bool {
 		return $this->canEditPage( $pageId );
 	}
 
-	private function canEditPage( ?PageId $pageId ): bool {
+	private function canEditPage( PageId $pageId ): bool {
 		$title = $this->newTitle( $pageId );
-
-		if ( $title === null ) {
-			return $this->authority->isAllowed( 'edit' );
-		}
 
 		// definitelyCan reads permissions from a replica and only peeks at the edit rate limit.
-		return $this->authority->definitelyCan( 'edit', $title );
+		return $title !== null && $this->authority->definitelyCan( 'edit', $title );
 	}
 
-	public function authorize( ?PageId $pageId ): bool {
+	public function authorize( PageId $pageId ): bool {
 		$title = $this->newTitle( $pageId );
-
-		if ( $title === null ) {
-			return $this->authority->isAllowed( 'edit' );
-		}
 
 		// authorizeWrite enforces page protection and blocks against the primary database, and
 		// counts the write against the edit rate limit.
-		return $this->authority->authorizeWrite( 'edit', $title );
+		return $title !== null && $this->authority->authorizeWrite( 'edit', $title );
 	}
 
 	/**
-	 * Null when there is no page, or when the page could not be resolved (for instance because the
-	 * Subject is not indexed). Callers then fall back to the wiki-global edit right, so that
-	 * authorization never fails open. Such writes are a no-op, so page protection cannot be
-	 * bypassed by suppressing the page.
+	 * Null when the Subject is on no page this wiki has. Every right a Subject write needs is a right on
+	 * the page holding it, so with no page there is nothing to check and nothing to allow — the write is
+	 * refused rather than measured against the wiki-global edit right (ADR 32). Creating a Subject is
+	 * authorized against the page the request names, so it is unaffected.
 	 */
-	private function newTitle( ?PageId $pageId ): ?Title {
-		return $pageId === null ? null : $this->titleFactory->newFromID( $pageId->id );
+	private function newTitle( PageId $pageId ): ?Title {
+		return $this->titleFactory->newFromID( $pageId->id );
 	}
 
 }
