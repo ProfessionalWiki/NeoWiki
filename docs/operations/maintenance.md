@@ -102,11 +102,27 @@ store holding that projection in the background. It is off by default: such a re
 wiki, and it lets anyone who may edit Mapping pages set that going — work `neowiki-admin` otherwise gates. A
 rebuild somebody started by hand is left to finish rather than restarted; the store shows up stale once it ends.
 
+## Rebuilding the subject index
+
+NeoWiki keeps an index of which page holds which Subject. Editing, deletion, undeletion and import all keep it
+current and `update.php` fills it, so this is rarely needed. Run it when Subjects are not found on the pages holding
+them — after merging page histories, or after upgrading through MediaWiki's web updater, which does not fill the
+index:
+
+```sh
+php maintenance/run.php NeoWiki:RebuildSubjectPageIndex --force
+```
+
+`--force` re-runs it after `update.php` has recorded it as done.
+
+Neither [rebuilding the graph](#rebuilding-the-graph) nor a null edit repairs this index.
+
 ## What happens during a Neo4j outage
 
 - **Editing pages works.** Edits, deletions and undeletions all commit. NeoWiki logs the projection failure on the
   `NeoWiki` channel.
-- **Editing and displaying Subjects fails**, along with queries and anything else that reads the graph.
+- **Editing and displaying Subjects works.**
+- **Queries fail**, along with relation-target suggestions and anything else that reads the graph.
 
 Once Neo4j is back, [rebuild the graph](#rebuilding-the-graph): it repairs both a failed save and a failed delete.
 

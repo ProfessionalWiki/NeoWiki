@@ -46,8 +46,8 @@ class AuthorityBasedPageReadAuthorizerTest extends MediaWikiIntegrationTestCase 
 	}
 
 	public function testReadByPageIdDeniesWhenThePageCannotBeResolved(): void {
-		// Unlike the write side there is no global-right fallback: content is only reachable
-		// through a resolved page, so an unresolvable one has nothing to authorize.
+		// Content is only reachable through a resolved page, so an unresolvable page id has nothing
+		// to authorize — denied even for an authority that may read everything.
 		$authorizer = new AuthorityBasedPageReadAuthorizer(
 			$this->authorityThatAllowsEverything(),
 			$this->titleFactoryReturningNull(),

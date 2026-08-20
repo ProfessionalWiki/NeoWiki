@@ -64,7 +64,7 @@ Use this to add NeoWiki to a MediaWiki you already run. You provide the surround
 | MediaWiki 1.43.0 or later | |
 | PHP 8.3 with `ext-json`   | |
 | Composer                  | Installs NeoWiki's runtime dependencies. No `vendor/` is shipped. |
-| Neo4j 5.x over Bolt       | The graph backend. Required to use NeoWiki's structured-data features; the wiki boots without it. |
+| Neo4j 5.x over Bolt       | Optional. The graph backend behind Cypher queries and relation-target suggestions. |
 | Node.js 24 or later       | Needed only to build the frontend bundle in step 2. |
 
 These extensions are recommended. NeoWiki runs without them, but you lose the matching functionality:
@@ -122,8 +122,8 @@ wfLoadExtension( 'CodeEditor' );
 wfLoadExtension( 'ParserFunctions' );
 ```
 
-Without both Neo4j URLs set, the wiki still loads and ordinary pages render, but NeoWiki's structured-data features
-and the query surfaces (`{{#cypher_raw}}`, `nw.query`, `POST /neowiki/v0/query/cypher`) stay disabled.
+Without both Neo4j URLs set, NeoWiki's structured-data features still work. You lose the Cypher query surfaces
+(`{{#cypher_raw}}`, `nw.query`, `POST /neowiki/v0/query/cypher`) and relation-target suggestions.
 
 ### 4. Run the updater
 
@@ -151,14 +151,16 @@ php maintenance/run.php NeoWiki:RebuildGraphDatabases
    {{#view:}}
    ```
 
-4. **Query the graph.** Only this step checks the Neo4j projection. On any page, add a Cypher query that lists the
-   stored pages, independent of your data model:
-   ```
-   {{#cypher_raw: MATCH (p:Page) RETURN p.name }}
-   ```
-   The result renders as JSON. If Neo4j is unreachable, it renders an error instead.
+Your install is complete once those three steps work.
 
-If all four steps work, your install is complete.
+With Neo4j configured, one more step checks its projection. On any page, add a Cypher query that lists the stored
+pages, independent of your data model:
+
+```
+{{#cypher_raw: MATCH (p:Page) RETURN p.name }}
+```
+
+The result renders as JSON. If Neo4j is unreachable, it renders an error instead.
 
 ### Optional: Pretty URLs for the Data tab
 
@@ -175,8 +177,8 @@ These are the settings you are most likely to change. For the full list with des
 
 | Setting | Purpose | Default | Required |
 |---|---|---|---|
-| `$wgNeoWikiNeo4jInternalWriteUrl` | Bolt URL for writing the graph projection | _none_ | For features |
-| `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read and query traffic | _none_ | For features |
+| `$wgNeoWikiNeo4jInternalWriteUrl` | Bolt URL for writing the graph projection | _none_ | For Neo4j features |
+| `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read and query traffic | _none_ | For Neo4j features |
 | `$wgNeoWikiEnableDevelopmentUI` | Enables development-only UIs | `false` | No |
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new `error`-severity violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
@@ -218,12 +220,9 @@ content model, validated, or read.
 
 ## Optional: SPARQL graph stores
 
-Alongside Neo4j, NeoWiki can keep one or more SPARQL 1.1 graph stores in sync with page changes. This works with
+With or without Neo4j, NeoWiki can keep one or more SPARQL 1.1 graph stores in sync with page changes. This works with
 QLever, Oxigraph, Fuseki and any other SPARQL 1.1 store. Each configured store receives the NeoWiki data as RDF:
 every page becomes a named graph, replaced on each edit and dropped on deletion.
-
-A SPARQL store does not yet replace Neo4j: NeoWiki's interactive features (the Subject editing UIs, views, and value
-accessors) still require a configured Neo4j backend.
 
 Configure the stores with `$wgNeoWikiSparqlStores`, a list of objects:
 

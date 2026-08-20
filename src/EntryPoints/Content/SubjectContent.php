@@ -8,6 +8,7 @@ use MediaWiki\Json\FormatJson;
 use MediaWiki\Content\JsonContent;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer;
 
 class SubjectContent extends JsonContent {
@@ -50,6 +51,13 @@ class SubjectContent extends JsonContent {
 	 */
 	public function getPageSubjects(): PageSubjects {
 		return NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer()->deserialize( $this->getText() );
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public function getSubjectIds(): array {
+		return SubjectContentDataDeserializer::deserializeSubjectIds( $this->getText() );
 	}
 
 	/**

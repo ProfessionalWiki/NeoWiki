@@ -30,6 +30,10 @@
 		"ProfessionalWiki\\NeoWiki\\": "src/"
 	},
 
+	"AutoloadClasses": {
+		"ProfessionalWiki\\NeoWiki\\Maintenance\\RebuildSubjectPageIndex": "maintenance/RebuildSubjectPageIndex.php"
+	},
+
 	"TestAutoloadNamespaces": {
 		"ProfessionalWiki\\NeoWiki\\Tests\\": "tests/phpunit",
 		"ProfessionalWiki\\RedHerb\\": "tests/RedHerb/src"

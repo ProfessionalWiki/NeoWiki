@@ -490,7 +490,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 	/**
 	 * The counterpart of GetSubjectQueryTest::testDeniedRequestResolvesNoReferencedSubjects. A
 	 * denied page yields no Subjects to reach targets from, so both batch calls go out empty and
-	 * cost nothing - but only because Neo4jPageIdentifiersLookup and PointInTimeSubjectLookup guard
+	 * cost nothing - but only because DatabasePageIdentifiersLookup and PointInTimeSubjectLookup guard
 	 * the empty list. Asserting zero lookups here pins that rather than leaving it to those guards.
 	 */
 	public function testDeniedPageResolvesNoReferencedSubjects(): void {

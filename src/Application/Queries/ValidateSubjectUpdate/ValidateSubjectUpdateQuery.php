@@ -43,7 +43,7 @@ readonly class ValidateSubjectUpdateQuery {
 		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $id );
 
 		if ( $pageIdentifiers === null ) {
-			// No owning page in the graph means the repository cannot load the Subject either.
+			// No owning page means the repository cannot load the Subject either.
 			throw SubjectNotFoundException::forId( $id );
 		}
 

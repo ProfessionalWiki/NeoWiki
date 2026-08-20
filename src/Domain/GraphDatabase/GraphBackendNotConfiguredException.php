@@ -9,15 +9,15 @@ use RuntimeException;
 /**
  * Thrown when code that needs a graph database backend is reached on a wiki that has none configured.
  *
- * NeoWiki requires a configured graph backend to provide its structured-data features; a wiki with no
- * backend is a misconfiguration, not a supported operating mode (see ADR 019, which defers full
- * no-backend operation). This is a catchable, expected-runtime-state signal (unlike the LogicException
- * guards on genuinely gated surfaces), so degradation boundaries can turn it into a clear notice.
+ * A wiki with no backend is a supported mode: the structured-data features work without one, and the
+ * query surfaces a backend brings are simply not registered (ADR 32). Reaching this means a caller got
+ * past that gating. It is a catchable, expected-runtime-state signal (unlike the LogicException guards
+ * on genuinely gated surfaces), so degradation boundaries can turn it into a clear notice.
  */
 class GraphBackendNotConfiguredException extends RuntimeException {
 
 	public function __construct(
-		string $message = 'NeoWiki requires a configured graph database backend. Configure the Neo4j read and write Bolt URLs.'
+		string $message = 'This feature needs a graph database backend, and this wiki has none configured.'
 	) {
 		parent::__construct( $message );
 	}

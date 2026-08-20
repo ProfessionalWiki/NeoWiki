@@ -131,7 +131,9 @@ use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedPageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseDeletedPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiWikiConfigSource;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
@@ -151,7 +153,6 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageMappingLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
@@ -161,7 +162,9 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\Sparql
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\SparqlRouteRegistration;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin;
 use ProfessionalWiki\NeoWiki\Persistence\DeletedPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\NullSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Persistence\PageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildExecutor;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphStoreStatusLookup;
@@ -348,15 +351,19 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Hook-facing write path (edit/delete/undelete). Both halves of a projection are isolated and
+	 * Hook-facing write path (edit/delete/undelete/import). The projection's two halves are isolated and
 	 * logged, so a failure never aborts the triggering user operation: each backend, so one failing
 	 * backend does not starve the others, and the page-properties build, since it parses the page and
 	 * runs extension-contributed providers. See FailureIsolatingGraphDatabasePlugin and
 	 * FailureIsolatingPagePropertiesSource.
+	 *
+	 * The subject -> page index is deliberately outside that isolation: it is authoritative (ADR 32), so
+	 * it is written on the connection the operation is already using and fails the operation with it.
 	 */
 	public function getStoreContentUC(): OnRevisionCreatedHandler {
 		return $this->newStoreContentHandler(
 			$this->getIsolatingGraphDatabasePlugin(),
+			$this->newSubjectPageIndex(),
 			new FailureIsolatingPagePropertiesSource(
 				$this->getPagePropertiesBuilder(),
 				LoggerFactory::getInstance( 'NeoWiki' )
@@ -372,18 +379,27 @@ class NeoWikiExtension {
 	private function newRebuildStoreContentHandler(): OnRevisionCreatedHandler {
 		return $this->newStoreContentHandler(
 			$this->getGraphDatabasePlugin(),
+			new NullSubjectPageIndex(),
 			$this->getPagePropertiesBuilder()
 		);
 	}
 
 	private function newStoreContentHandler(
 		GraphDatabasePlugin $graphDatabasePlugin,
-		PagePropertiesSource $pagePropertiesSource
+		SubjectPageIndex $subjectPageIndex,
+		PagePropertiesSource $pagePropertiesSource,
 	): OnRevisionCreatedHandler {
 		return new OnRevisionCreatedHandler(
 			$graphDatabasePlugin,
+			$subjectPageIndex,
 			$pagePropertiesSource,
 			LoggerFactory::getInstance( 'NeoWiki' ),
+		);
+	}
+
+	private function newSubjectPageIndex(): SubjectPageIndex {
+		return new DatabaseSubjectPageIndex(
+			MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase()
 		);
 	}
 
@@ -1000,13 +1016,18 @@ class NeoWikiExtension {
 	 */
 	public function newPageRebuilderFor( GraphDatabasePlugin $store ): PageRebuilder {
 		return $this->newPageRebuilderWith(
-			$this->newStoreContentHandler( $store, $this->getPagePropertiesBuilder() )
+			$this->newStoreContentHandler(
+				$store,
+				new NullSubjectPageIndex(),
+				$this->getPagePropertiesBuilder()
+			)
 		);
 	}
 
 	/**
 	 * Import and undelete paths: projects the current revision of a page like the rebuild path, but with
 	 * the hook path's failure isolation, since a projection failure must not abort the user's operation.
+	 * These are revision writes rather than reprojections, so they index the page as an edit does.
 	 */
 	public function newImportPageRebuilder(): PageRebuilder {
 		return $this->newPageRebuilderWith( $this->getStoreContentUC() );
@@ -1198,15 +1219,11 @@ class NeoWikiExtension {
 		);
 	}
 
-	// NeoWiki requires a configured graph backend: the subject -> page reverse index lives only in Neo4j,
-	// so this lookup (and Subject CRUD, {{#view}}, {{#neowiki_value}}, the mw.neowiki.* getters) needs one.
-	// A no-backend wiki is a misconfiguration, surfaced loudly rather than silently degraded:
-	// getReadOnlyNeo4jClient() throws GraphBackendNotConfiguredException, and the content-page render path
-	// (NeoWikiHooks::handleContentPage) short-circuits with a warning instead of failing the page. Making
-	// these work without a graph backend needs a MediaWiki-native reverse index; that is future work
-	// (#586 / #895), only worthwhile if a deliberate storage-only product is chosen (ADR 019 defers it).
 	private function getPageIdentifiersLookup(): PageIdentifiersLookup {
-		return new Neo4jPageIdentifiersLookup( $this->getReadOnlyNeo4jClient() );
+		return new DatabasePageIdentifiersLookup(
+			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
+			MediaWikiServices::getInstance()->getTitleFormatter()
+		);
 	}
 
 	public function newDeleteSubjectAction( Authority $authority ): DeleteSubjectAction {

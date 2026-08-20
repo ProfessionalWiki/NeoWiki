@@ -16,6 +16,6 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
  */
 interface SubjectWriteAuthorizer {
 
-	public function authorize( ?PageId $pageId ): bool;
+	public function authorize( PageId $pageId ): bool;
 
 }

@@ -75,4 +75,30 @@ class SubjectContentDataDeserializer {
 		return new StatementList( $statements );
 	}
 
+	/**
+	 * The ids the JSON holds, read without deserializing, so that a Subject too broken to deserialize
+	 * still has an id. Ids no caller could ask about are left out, since nothing can be answered with
+	 * them.
+	 *
+	 * Static and dependency-free: update.php rebuilds the subject -> page index on wikis whose NeoWiki
+	 * configuration is not readable yet.
+	 *
+	 * @return string[]
+	 */
+	public static function deserializeSubjectIds( string $json ): array {
+		// Cast so that content that is not a JSON object becomes an array without the key, leaving one
+		// thing to check.
+		$subjects = ( (array)json_decode( $json, true ) )['subjects'] ?? null;
+
+		if ( !is_array( $subjects ) ) {
+			return [];
+		}
+
+		// A Subject id that looks like a decimal integer comes back from json_decode as an int key.
+		return array_values( array_filter(
+			array_map( 'strval', array_keys( $subjects ) ),
+			SubjectId::isValid( ... )
+		) );
+	}
+
 }

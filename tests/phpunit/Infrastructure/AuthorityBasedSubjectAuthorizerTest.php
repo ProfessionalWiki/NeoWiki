@@ -46,34 +46,17 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 		$this->assertTrue( $authorizer->canEditSubject( new PageId( self::PAGE_ID ) ) );
 	}
 
-	public function testFallsBackToGlobalEditRightWhenThePageCannotBeResolved(): void {
+	/**
+	 * A Subject on no page this wiki has offers no page rights to check, so it is refused however much
+	 * the caller may edit elsewhere.
+	 */
+	public function testDeniesUnresolvablePageEvenWithTheGlobalEditRight(): void {
 		$authorizer = new AuthorityBasedSubjectAuthorizer(
 			$this->authorityThatCanEditEveryPage(),
 			$this->titleFactoryReturningNull()
 		);
 
-		$this->assertTrue( $authorizer->canEditSubject( new PageId( self::PAGE_ID ) ) );
-	}
-
-	public function testDeniesUnresolvablePageWhenUserLacksGlobalEditRight(): void {
-		$authorizer = new AuthorityBasedSubjectAuthorizer(
-			$this->authorityWithoutAnyPermissions(),
-			$this->titleFactoryReturningNull()
-		);
-
 		$this->assertFalse( $authorizer->canEditSubject( new PageId( self::PAGE_ID ) ) );
-	}
-
-	public function testFallsBackToGlobalEditRightWhenNoPageIsGiven(): void {
-		$authorizer = $this->newAuthorizer( $this->authorityThatCanEditEveryPage() );
-
-		$this->assertTrue( $authorizer->canEditSubject( null ) );
-	}
-
-	public function testDeniesWhenNoPageIsGivenAndUserLacksGlobalEditRight(): void {
-		$authorizer = $this->newAuthorizer( $this->authorityWithoutAnyPermissions() );
-
-		$this->assertFalse( $authorizer->canEditSubject( null ) );
 	}
 
 	public function testAuthorizeIsDeniedWhenThePageCannotBeEdited(): void {
@@ -82,18 +65,9 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $authorizer->authorize( new PageId( self::PAGE_ID ) ) );
 	}
 
-	public function testAuthorizeFallsBackToGlobalEditRightWhenThePageCannotBeResolved(): void {
+	public function testAuthorizeDeniesUnresolvablePageEvenWithTheGlobalEditRight(): void {
 		$authorizer = new AuthorityBasedSubjectAuthorizer(
 			$this->authorityThatCanEditEveryPage(),
-			$this->titleFactoryReturningNull()
-		);
-
-		$this->assertTrue( $authorizer->authorize( new PageId( self::PAGE_ID ) ) );
-	}
-
-	public function testAuthorizeDeniesUnresolvablePageWhenUserLacksGlobalEditRight(): void {
-		$authorizer = new AuthorityBasedSubjectAuthorizer(
-			$this->authorityWithoutAnyPermissions(),
 			$this->titleFactoryReturningNull()
 		);
 
@@ -137,12 +111,6 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 		$allowEverything = static fn ( string $permission, ?PageIdentity $page = null ): bool => true;
 
 		return $this->mockRegisteredAuthority( $allowEverything );
-	}
-
-	private function authorityWithoutAnyPermissions(): Authority {
-		$denyEverything = static fn ( string $permission, ?PageIdentity $page = null ): bool => false;
-
-		return $this->mockRegisteredAuthority( $denyEverything );
 	}
 
 	private function titleFactoryReturningPage(): TitleFactory {

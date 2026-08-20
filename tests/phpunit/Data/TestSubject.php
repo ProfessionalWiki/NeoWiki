@@ -49,6 +49,16 @@ class TestSubject {
 	}
 
 	/**
+	 * Subject slot JSON holding one Subject the deserializer throws on, because the empty string is not
+	 * a usable Schema name. Shared by every test that depends on that, so a change to what makes
+	 * deserialization fail cannot leave one of them passing vacuously.
+	 */
+	public static function jsonThatDoesNotDeserialize( string $subjectId ): string {
+		return '{"mainSubject":"' . $subjectId . '","subjects":{"' . $subjectId
+			. '":{"label":"Broken","schema":"","statements":{}}}}';
+	}
+
+	/**
 	 * Generates a new GUID
 	 */
 	public static function uniqueId(): SubjectId {

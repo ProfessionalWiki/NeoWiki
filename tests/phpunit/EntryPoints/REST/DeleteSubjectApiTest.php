@@ -80,6 +80,20 @@ class DeleteSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 200, $response->getStatusCode() );
 	}
 
+	/**
+	 * A Subject the index does not resolve is answered as absent. Pinned at this layer because
+	 * SubjectNotFoundException is a RuntimeException: catching the two in the other order would answer
+	 * the 403 below instead, which no action-level test can see.
+	 */
+	public function testUnresolvableSubjectIsNotFound(): void {
+		$response = $this->executeHandler(
+			$this->newDeleteSubjectApi(),
+			$this->createValidRequestData()
+		);
+
+		$this->assertSame( 404, $response->getStatusCode() );
+	}
+
 	public function testPermissionDenied(): void {
 		$this->createPages();
 

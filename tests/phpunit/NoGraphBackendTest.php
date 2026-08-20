@@ -9,19 +9,36 @@ use MediaWiki\Content\WikitextContent;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Statement;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
+use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use TestLogger;
 
 /**
+ * A wiki with no graph backend configured is a supported mode: Subjects are stored, found, read and
+ * rendered without one, and only the query surfaces a backend brings are absent (#1040).
+ *
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension
  * @group Database
  */
 class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
+
+	private const SUBJECT_ID = 's1zz1111111azz1';
+	private const PROPERTY = 'Motto';
+	private const VALUE = 'Beyond the graph';
 
 	public function testGetNeo4jPluginIsNullWithoutBackend(): void {
 		$plugin = $this->runWithoutGraphBackend(
@@ -46,6 +63,134 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 
 			$this->assertTrue( $updater->wasRevisionCreated() );
 		} );
+	}
+
+	public function testSubjectIsStoredAndFoundByIdWithoutBackend(): void {
+		$this->runWithoutGraphBackend( function (): void {
+			$this->createPageWithMottoSubject( 'NoBackendSubjectPage' );
+
+			$subject = NeoWikiExtension::getInstance()->getSubjectRepository()
+				->getSubject( new SubjectId( self::SUBJECT_ID ) );
+
+			$this->assertNotNull( $subject );
+			$this->assertSame( self::SUBJECT_ID, $subject->id->text );
+		} );
+	}
+
+	public function testSubjectIsEditedThroughTheRepositoryWithoutBackend(): void {
+		$this->runWithoutGraphBackend( function (): void {
+			$this->createPageWithMottoSubject( 'NoBackendEditedSubjectPage' );
+			$repository = NeoWikiExtension::getInstance()->getSubjectRepository();
+
+			$repository->updateSubject(
+				$this->mottoSubject( 'Rewritten' ),
+				'no-backend subject edit'
+			);
+
+			$this->assertSame( 'Rewritten', $this->mottoOfIndexedSubject() );
+		} );
+	}
+
+	public function testSubjectIsDeletedThroughTheRepositoryWithoutBackend(): void {
+		$this->runWithoutGraphBackend( function (): void {
+			$this->createPageWithMottoSubject( 'NoBackendDeletedSubjectPage' );
+			$repository = NeoWikiExtension::getInstance()->getSubjectRepository();
+
+			$repository->deleteSubject( new SubjectId( self::SUBJECT_ID ), 'no-backend subject delete' );
+
+			$this->assertNull( $repository->getSubject( new SubjectId( self::SUBJECT_ID ) ) );
+		} );
+	}
+
+	public function testValueParserFunctionReadsAValueWithoutBackend(): void {
+		$html = $this->runWithoutGraphBackend( function (): string {
+			$this->createPageWithMottoSubject( 'NoBackendValuePage' );
+
+			return $this->parse(
+				'NoBackendValuePage',
+				'{{#neowiki_value: ' . self::PROPERTY . ' | subject=' . self::SUBJECT_ID . ' }}'
+			);
+		} );
+
+		$this->assertStringContainsString( self::VALUE, $html );
+	}
+
+	/**
+	 * The engine behind the mw.neowiki.* getters, reached by Subject id, which is the path that needed
+	 * the reverse index.
+	 */
+	public function testLuaGetterReadsAValueBySubjectIdWithoutBackend(): void {
+		$value = $this->runWithoutGraphBackend( function (): array {
+			$this->createPageWithMottoSubject( 'NoBackendLuaPage' );
+			$extension = NeoWikiExtension::getInstance();
+
+			return ( new SubjectDataLookup(
+				new SubjectResolver( $extension->newSubjectContentRepository(), $extension->getSubjectRepository() )
+			) )->getValue(
+				Title::newFromText( 'NoBackendLuaPage' ),
+				self::PROPERTY,
+				[ 'subject' => self::SUBJECT_ID ]
+			);
+		} );
+
+		$this->assertSame( [ self::VALUE ], $value );
+	}
+
+	public function testContentPageRenderInjectsTheAppWithoutBackend(): void {
+		$out = $this->newContentPageOutput( 'NoBackendAppPage' );
+
+		$this->runWithoutGraphBackend( static function () use ( $out ): void {
+			NeoWikiHooks::onBeforePageDisplay( $out, $out->getSkin() );
+		} );
+
+		$this->assertStringContainsString( 'ext-neowiki-app', $out->getHTML() );
+	}
+
+	public function testContentPageRenderInjectsTheAppWhenConfigured(): void {
+		$out = $this->newContentPageOutput( 'ConfiguredBackendViewPage' );
+
+		NeoWikiHooks::onBeforePageDisplay( $out, $out->getSkin() );
+
+		$this->assertStringContainsString( 'ext-neowiki-app', $out->getHTML() );
+	}
+
+	public function testContentPageRenderIsSilentWithoutBackend(): void {
+		$out = $this->newContentPageOutput( 'NoBackendQuietPage' );
+		$logger = new TestLogger( true );
+		$this->setLogger( 'NeoWiki', $logger );
+
+		$this->runWithoutGraphBackend( static function () use ( $out ): void {
+			NeoWikiHooks::onBeforePageDisplay( $out, $out->getSkin() );
+		} );
+
+		$this->assertSame( [], $logger->getBuffer() );
+	}
+
+	/**
+	 * Half a Neo4j configuration is not a supported mode but an unfinished one, so it is still reported.
+	 */
+	public function testHalfConfiguredNeo4jIsReported(): void {
+		$out = $this->newContentPageOutput( 'HalfConfiguredPage' );
+		$logger = new TestLogger( true );
+		$this->setLogger( 'NeoWiki', $logger );
+
+		$this->runWithoutGraphBackend( function () use ( $out ): void {
+			$this->overrideConfigValue( 'NeoWikiNeo4jInternalReadUrl', 'bolt://neo:7687' );
+			NeoWikiExtension::resetInstance();
+
+			NeoWikiHooks::onBeforePageDisplay( $out, $out->getSkin() );
+		} );
+
+		$this->assertStringContainsString( 'only one of the Neo4j read/write Bolt URLs', self::loggedText( $logger ) );
+	}
+
+	public function testRelationTargetSuggestionsAreEmptyWithoutBackend(): void {
+		$suggestions = $this->runWithoutGraphBackend(
+			static fn() => NeoWikiExtension::getInstance()->getSubjectLabelLookup()
+				->getSubjectLabelsMatching( 'anything', 10, TestSubject::DEFAULT_SCHEMA_ID )
+		);
+
+		$this->assertSame( [], $suggestions );
 	}
 
 	public function testSubjectLabelLookupIsNullObjectWithoutBackend(): void {
@@ -85,45 +230,38 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testContentPageRenderDoesNotFailWithoutBackend(): void {
-		$out = $this->newContentPageOutput( 'NoBackendViewPage' );
-
-		$this->runWithoutGraphBackend( static function () use ( $out ): void {
-			NeoWikiHooks::onBeforePageDisplay( $out, $out->getSkin() );
-		} );
-
-		// The guard short-circuits before getNeoWikiAppHtml() injects the app div.
-		$this->assertStringNotContainsString( 'ext-neowiki-app', $out->getHTML() );
+	private function createPageWithMottoSubject( string $pageName ): void {
+		$this->assertNotNull( $this->createPageWithSubjects( $pageName, $this->mottoSubject( self::VALUE ) ) );
 	}
 
-	public function testContentPageRenderInjectsAppDivWhenConfigured(): void {
-		$out = $this->newContentPageOutput( 'ConfiguredBackendViewPage' );
-
-		NeoWikiHooks::onBeforePageDisplay( $out, $out->getSkin() );
-
-		$this->assertStringContainsString( 'ext-neowiki-app', $out->getHTML() );
+	private function mottoSubject( string $motto ): Subject {
+		return TestSubject::build(
+			id: self::SUBJECT_ID,
+			statements: new StatementList( [
+				new Statement( new PropertyName( self::PROPERTY ), 'text', new StringValue( $motto ) ),
+			] )
+		);
 	}
 
-	public function testContentPageRenderLogsWarningWithoutBackend(): void {
-		$out = $this->newContentPageOutput( 'NoBackendWarningPage' );
+	private function mottoOfIndexedSubject(): ?string {
+		$subject = NeoWikiExtension::getInstance()->getSubjectRepository()
+			->getSubject( new SubjectId( self::SUBJECT_ID ) );
 
-		$logger = new TestLogger( true );
-		$this->setLogger( 'NeoWiki', $logger );
+		$value = $subject?->getStatements()->getStatement( new PropertyName( self::PROPERTY ) )?->getValue();
 
-		$this->runWithoutGraphBackend( static function () use ( $out ): void {
-			NeoWikiHooks::onBeforePageDisplay( $out, $out->getSkin() );
-		} );
-
-		$buffer = $logger->getBuffer();
-		$this->assertCount( 1, $buffer );
-		$this->assertSame( 'warning', $buffer[0][0] );
-		$this->assertStringContainsString( 'no graph database backend configured', $buffer[0][1] );
+		return $value instanceof StringValue ? $value->toScalars()[0] : null;
 	}
 
-	/**
-	 * An edit-capable user on the latest revision triggers the subject-creator path, which builds the
-	 * SubjectRepository (the Neo4j-backed reverse index) — the exact path that 500s without the guard.
-	 */
+	private function parse( string $pageName, string $wikitext ): string {
+		$parserOptions = ParserOptions::newFromAnon();
+
+		return $this->getServiceContainer()->getParserFactory()->getInstance()->parse(
+			$wikitext,
+			Title::newFromText( $pageName ),
+			$parserOptions
+		)->runOutputPipeline( $parserOptions, [] )->getContentHolderText();
+	}
+
 	private function newContentPageOutput( string $pageName ): OutputPage {
 		$page = $this->getExistingTestPage( $pageName );
 

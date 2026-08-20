@@ -34,6 +34,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
+use ProfessionalWiki\NeoWiki\Maintenance\RebuildSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
@@ -61,14 +62,7 @@ class NeoWikiHooks {
 	}
 
 	private static function handleContentPage( OutputPage $out, Skin $skin ): void {
-		// Skip injection and warn loudly instead of 500ing every content page, so plain content pages
-		// still render on a wiki with no graph backend. Pages whose wikitext uses the graph-backed
-		// surfaces ({{#neowiki_value}}, the mw.neowiki getters) still fail their parse until the
-		// no-backend degradation work (#895); {{#view}} degrades to its client-side placeholder per component.
-		if ( NeoWikiExtension::getInstance()->getNeo4jPlugin() === null ) {
-			self::logMissingGraphBackend();
-			return;
-		}
+		self::warnAboutHalfConfiguredNeo4j();
 
 		NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $out, $skin );
 		$out->addHtml( self::getNeoWikiAppHtml( $out ) );
@@ -87,15 +81,21 @@ class NeoWikiHooks {
 		$out->addHTML( $html );
 	}
 
-	private static function logMissingGraphBackend(): void {
-		$config = NeoWikiExtension::getInstance()->config;
-		$onlyOneUrlSet = ( $config->neo4jInternalReadUrl !== null ) !== ( $config->neo4jInternalWriteUrl !== null );
+	/**
+	 * A wiki with no graph backend is a supported configuration: Subjects, Schemas, Views and the value
+	 * accessors all work without one, and only the query surfaces a backend brings are absent. Half a
+	 * Neo4j configuration is not a configuration, though — it reads as a backend that was meant to be
+	 * there, so it is still reported.
+	 */
+	private static function warnAboutHalfConfiguredNeo4j(): void {
+		if ( !NeoWikiExtension::getInstance()->config->hasHalfConfiguredNeo4j() ) {
+			return;
+		}
 
-		$message = $onlyOneUrlSet
-			? 'NeoWiki: only one of the Neo4j read/write Bolt URLs is configured; both are required. NeoWiki features are disabled.'
-			: 'NeoWiki: no graph database backend configured; NeoWiki features are disabled. Configure the Neo4j read and write Bolt URLs.';
-
-		LoggerFactory::getInstance( 'NeoWiki' )->warning( $message );
+		LoggerFactory::getInstance( 'NeoWiki' )->warning(
+			'NeoWiki: only one of the Neo4j read/write Bolt URLs is configured; both are required. '
+			. 'Neo4j is disabled.'
+		);
 	}
 
 	private static function getNeoWikiAppHtml( OutputPage $out ): string {
@@ -199,6 +199,11 @@ class NeoWikiHooks {
 			'nwrr_phase',
 			$sqlDirectory . '/patch-neowiki_rebuild_runs-nwrr_phase.sql'
 		);
+		$updater->addExtensionTable( 'neowiki_subject_page', $sqlDirectory . '/neowiki_subject_page.sql' );
+
+		// Between creating the table and filling it, no Subject that existed before resolves to its page,
+		// so the backfill runs in the same update.php as the table it fills.
+		$updater->addPostDatabaseUpdateMaintenance( RebuildSubjectPageIndex::class );
 
 		$updater->addExtensionUpdate( [ [ self::class, 'initializeGraphDatabases' ] ] );
 	}
