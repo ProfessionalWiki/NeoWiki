@@ -8,7 +8,6 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
@@ -68,7 +67,11 @@ class SelectType implements PropertyType {
 		}
 
 		if ( !$definition->allowsMultipleValues() && count( $parts ) > 1 ) {
-			$violations[] = new Violation( propertyName: null, code: 'single-value-only', severity: Severity::Error );
+			$violations[] = new Violation(
+				propertyName: null,
+				code: 'single-value-only',
+				severity: $definition->severityOf( 'multiple' ),
+			);
 		}
 
 		return $violations;

@@ -16,6 +16,20 @@
 				}
 			]
 		},
+		"booleanConstraintWithValue": {
+			"oneOf": [
+				{ "type": "boolean" },
+				{
+					"type": "object",
+					"required": [ "severity" ],
+					"additionalProperties": false,
+					"properties": {
+						"value": { "type": "boolean" },
+						"severity": { "$ref": "#/$defs/severity" }
+					}
+				}
+			]
+		},
 		"scalarConstraint": {
 			"if": { "type": "object" },
 			"then": {
@@ -60,9 +74,7 @@
 						},
 						"default": true,
 						"required": { "$ref": "#/$defs/booleanConstraint" },
-						"multiple": {
-							"type": "boolean"
-						},
+						"multiple": { "$ref": "#/$defs/booleanConstraintWithValue" },
 						"uniqueItems": { "$ref": "#/$defs/booleanConstraint" },
 						"minimum": { "$ref": "#/$defs/scalarConstraint" },
 						"maximum": { "$ref": "#/$defs/scalarConstraint" },

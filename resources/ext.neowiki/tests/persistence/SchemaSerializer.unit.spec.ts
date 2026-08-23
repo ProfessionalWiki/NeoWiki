@@ -204,6 +204,28 @@ describe( 'SchemaSerializer', () => {
 			expect( parsed.propertyDefinitions.Name.uniqueItems ).toBe( false );
 		} );
 
+		it( 'round-trips an error-annotated multiple back to the object form', () => {
+			const schema = new SchemaDeserializer().deserialize( 'Test', {
+				description: '',
+				propertyDefinitions: {
+					Author: {
+						type: 'relation',
+						description: '',
+						required: false,
+						relation: 'has author',
+						targetSchema: 'Person',
+						multiple: { value: false, severity: 'error' },
+					},
+				},
+			} );
+
+			const parsed = JSON.parse( serializer.serializeSchema( schema ) );
+
+			expect( parsed.propertyDefinitions.Author.multiple ).toEqual(
+				{ value: false, severity: 'error' },
+			);
+		} );
+
 		it( 'round-trips an annotated key of an unregistered type', () => {
 			const json = {
 				description: '',

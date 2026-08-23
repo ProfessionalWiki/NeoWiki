@@ -48,9 +48,9 @@ Each violation in the response has this shape:
 Severity decides whether a write can be rejected: warnings never block, errors can. Each code in the
 reference below documents its own severity.
 
-Where a violation is backed by a Constraint the schema author writes — `required`, `minimum`,
-`maximum`, `minLength`, `maxLength`, `uniqueItems`, `options` — that author sets its severity in the
-Schema, per Constraint, and the default is `warning`. See
+Where a violation is backed by a Constraint the schema author writes — `required`, `multiple`,
+`minimum`, `maximum`, `minLength`, `maxLength`, `uniqueItems`, `options` — that author sets its
+severity in the Schema, per Constraint, and the default is `warning`. See
 [Constraint severity](schema-format.md#constraint-severity) for the JSON. Because the default is
 `warning`, an unannotated Schema blocks nothing at all: invalid Subjects are a normal, supported
 state, and blocking is what an author opts into. Every other code reports a system condition rather
@@ -135,7 +135,7 @@ Constraint (default `warning`).
 On single-valued (`multiple: false`) `select` and `relation` properties: more than one part
 (`select`) or relation target (`relation`) was supplied.
 
-`args`: `[]`. `severity`: `error` (fixed).
+`args`: `[]`. `severity`: set by the `multiple` Constraint (default `warning`).
 
 ### `invalid-datetime`
 

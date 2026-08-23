@@ -73,6 +73,23 @@ JSON
 		);
 	}
 
+	public function testObjectFormMultipleSeverityIsStable(): void {
+		$this->assertSerializationDoesNotChange(
+			<<<JSON
+{
+	"type": "select",
+	"description": "Document status",
+	"required": false,
+	"default": null,
+	"options": [
+		{ "id": "opt1", "label": "Draft" }
+	],
+	"multiple": { "value": false, "severity": "error" }
+}
+JSON
+		);
+	}
+
 	public function testExceptionOnLegacyStringOption(): void {
 		$this->expectException( InvalidArgumentException::class );
 		$this->fromJson(

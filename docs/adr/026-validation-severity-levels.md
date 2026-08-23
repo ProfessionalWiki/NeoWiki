@@ -2,7 +2,7 @@
 
 Date: 2026-07-07
 
-Status: Accepted (2026-07-19)
+Status: Accepted (2026-07-19; `single-value-only` severity made authorable 2026-08-23)
 
 ## Context
 
@@ -59,7 +59,8 @@ that carries the severity:
 }
 ```
 
-For boolean Constraints (`required`, `uniqueItems`) the object form implies `true`, so it has no `value` key. For
+For boolean Constraints (`required`, `uniqueItems`) the object form implies `true`, so it has no `value` key.
+`multiple` is the one Constraint that applies when it is `false`, so its object form carries `"value": false`. For
 `options` the `value` key carries the options array. Canonical serialization emits the shorthand when the severity is
 the default, so existing Schemas round-trip unchanged. Custom Property Types follow the same pattern for their own
 Constraint fields.
@@ -76,6 +77,7 @@ Severity is configurable exactly where an authorable Constraint field backs the 
 | `min-length` / `max-length` | `minLength` / `maxLength` |
 | `unique` | `uniqueItems` |
 | `invalid-option` | `options` |
+| `single-value-only` | `multiple`, when `false` |
 
 All other codes are system conditions with a fixed severity, generalizing today's hardcoded `schema-not-found`
 carve-out:
@@ -85,7 +87,6 @@ carve-out:
 | `label-required` | the Subject has no label | `error` | a label is Subject identity, not a property Constraint; a labelless Subject cannot be displayed or found |
 | `type-mismatch` | the Statement's Property Type no longer matches the Schema | `error` | shape condition; shape-violating data breaks views and the graph projection |
 | `invalid-url` / `invalid-date` / `invalid-datetime` | the value cannot be interpreted as its type | `error` | type integrity, comparable to a parse error in a linter, which is fatal regardless of rule configuration |
-| `single-value-only` | multiple values on a single-value property | `error` | `multiple` declares the value's shape, like `type` itself, so it is a shape condition rather than a Constraint |
 | `schema-not-found` | the Subject's Schema page is missing | `warning` | severity configuration lives in the Schema and there is none to read from; a warning keeps the Subject editable |
 | `unregistered-type` | the Statement's Property Type is not registered (extension disabled) | `warning` | degraded wiki state, not a bad edit; keeps the Subject editable, like `schema-not-found` |
 | `relation-target-not-found` | a relation value points to a Subject that does not exist | `warning` | red-link philosophy: the target may be minted later (e.g. during import) |

@@ -253,17 +253,65 @@ JSON
 		$this->assertTrue( $valid );
 	}
 
+	public function testMultipleWithSeverityObjectFormPassesValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$valid = $validator->validate(
+			$this->schemaWithProperty(
+				'{ "type": "select", "multiple": { "value": false, "severity": "error" } }'
+			)
+		);
+
+		if ( !$valid ) {
+			$this->assertSame( [], $validator->getErrors() );
+		}
+
+		$this->assertTrue( $valid );
+	}
+
 	/**
-	 * `multiple` declares the value's shape rather than a Constraint, so the object form is
-	 * rejected at authoring time: the normalizer is deliberately key-agnostic and would
-	 * otherwise unwrap it into a severity nothing reads.
+	 * The Constraint applies when `multiple` is false, so the value-less form is inert. It must
+	 * still validate: SeverityNormalizer::apply re-emits an annotated `true` in exactly that
+	 * shape, so rejecting it would make an annotated Schema fail to save its own canonical output.
 	 */
-	public function testShapeKeyWithSeverityObjectFormFailsValidation(): void {
+	public function testValuelessMultipleObjectFormPassesValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$valid = $validator->validate(
+			$this->schemaWithProperty( '{ "type": "select", "multiple": { "severity": "error" } }' )
+		);
+
+		if ( !$valid ) {
+			$this->assertSame( [], $validator->getErrors() );
+		}
+
+		$this->assertTrue( $valid );
+	}
+
+	public function testMultipleObjectFormWithInvalidSeverityFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();
 
 		$this->assertFalse(
 			$validator->validate(
-				$this->schemaWithProperty( '{ "type": "text", "multiple": { "severity": "error" } }' )
+				$this->schemaWithProperty(
+					'{ "type": "select", "multiple": { "value": false, "severity": "eror" } }'
+				)
+			)
+		);
+	}
+
+	/**
+	 * A stray key means a misspelled `severity`, which leaves an object where the parsers read a
+	 * boolean. Rejecting it at authoring time keeps that out of stored Schema JSON.
+	 */
+	public function testMultipleObjectFormWithUnknownKeyFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty(
+					'{ "type": "select", "multiple": { "value": false, "sevrity": "error" } }'
+				)
 			)
 		);
 	}

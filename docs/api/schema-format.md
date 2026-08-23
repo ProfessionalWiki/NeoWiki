@@ -57,13 +57,15 @@ an object carrying the severity:
 ```
 
 Boolean Constraints (`required`, `uniqueItems`) take no `value` in the object form — writing the
-object at all implies `true`. Every other Constraint carries its value under `value`, including
-`options`, whose `value` is the options array.
+object at all implies `true`. `multiple` constrains when it is `false`, so its object form carries
+`"value": false`. Every other Constraint carries its value under `value`, including `options`, whose
+`value` is the options array.
 
-The Constraints that accept a severity are `required`, `minimum`, `maximum`, `minLength`,
-`maxLength`, `uniqueItems`, and `options`. Severity is a Constraint concept, so it does not apply to
-Display Attributes such as `precision`, where it is discarded, nor to the shape-declaring fields
-`type`, `multiple`, `relation`, and `targetSchema`, where it is rejected when the Schema is saved.
+The Constraints that accept a severity are `required`, `multiple`, `minimum`, `maximum`, `minLength`,
+`maxLength`, `uniqueItems`, and `options`. Only `select` and `relation` check `multiple`, so a
+severity on it is inert elsewhere. Severity is a Constraint concept, so it does not apply to Display
+Attributes such as `precision`, where it is discarded, nor to the shape-declaring fields `type`,
+`relation`, and `targetSchema`, where it is rejected when the Schema is saved.
 
 Canonical output emits the bare form whenever the severity is the default, so a Schema that sets no
 severities round-trips unchanged. Which violation each Constraint produces, and the fixed severities
@@ -78,7 +80,7 @@ Plain text values.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `multiple` | boolean | `false` | Allow multiple values |
+| `multiple` | boolean or object | `false` | Allow multiple values |
 | `uniqueItems` | boolean | `false` | Reject duplicate values (only with `multiple`) |
 | `minLength` | number | `null` | Minimum trimmed length of each value |
 | `maxLength` | number | `null` | Maximum trimmed length of each value |
@@ -98,7 +100,7 @@ URL values.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `multiple` | boolean | `false` | Allow multiple values |
+| `multiple` | boolean or object | `false` | Allow multiple values |
 | `uniqueItems` | boolean | `false` | Reject duplicate values (only with `multiple`) |
 
 ### Number (`number`)
@@ -138,7 +140,7 @@ A fixed set of options the user picks from.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `options` | `SelectOption[]` | `[]` | The allowed options to choose from |
-| `multiple` | boolean | `false` | Allow selecting more than one |
+| `multiple` | boolean or object | `false` | Allow selecting more than one |
 
 Each `SelectOption`:
 
@@ -159,7 +161,7 @@ References to other Subjects.
 |-------|------|----------|---------|-------------|
 | `relation` | string | Yes | - | The relation type name |
 | `targetSchema` | string | Yes | - | Name of the Schema that target Subjects must follow |
-| `multiple` | boolean | No | `false` | Allow multiple relations |
+| `multiple` | boolean or object | No | `false` | Allow multiple relations |
 
 ```json
 {
