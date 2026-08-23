@@ -31,6 +31,13 @@ use Throwable;
  */
 class Neo4jQueryServiceTest extends TestCase {
 
+	/**
+	 * How the driver reports an unreachable server: by quoting the Bolt URI it dialed, credentials
+	 * included. The query surfaces hand this message to callers, anonymous ones included.
+	 */
+	private const string UNREACHABLE_SERVER_MESSAGE =
+		"Cannot connect to any server on alias: default with Uris: ('bolt://neowiki_read:S3cr3t@graph.example:7687')";
+
 	public function testReturnsRowsAsListWithColumnsFromProtocolKeys(): void {
 		$service = $this->newService(
 			$this->stubEngineWithRows( [
@@ -205,6 +212,44 @@ class Neo4jQueryServiceTest extends TestCase {
 		$this->expectException( BackendUnavailableException::class );
 
 		$service->execute( $this->newRequest( 'MATCH (n) RETURN n' ) );
+	}
+
+	public function testEngineBackendFailureDoesNotCarryCredentials(): void {
+		$service = $this->newService(
+			$this->stubEngineThrowing( new RuntimeException( self::UNREACHABLE_SERVER_MESSAGE ) )
+		);
+
+		$message = $this->executeAndCatch( $service )->getMessage();
+
+		$this->assertStringNotContainsString( 'S3cr3t', $message );
+		$this->assertStringContainsString( 'graph.example', $message );
+	}
+
+	public function testValidatorBackendFailureDoesNotCarryCredentials(): void {
+		$throwingValidator = new class( self::UNREACHABLE_SERVER_MESSAGE ) implements CypherQueryValidator {
+			public function __construct( private string $message ) {
+			}
+
+			public function queryIsAllowed( string $cypher ): bool {
+				throw new RuntimeException( $this->message );
+			}
+		};
+		$service = $this->newService( $this->stubEngineWithRows( [] ), validator: $throwingValidator );
+
+		$message = $this->executeAndCatch( $service )->getMessage();
+
+		$this->assertStringNotContainsString( 'S3cr3t', $message );
+		$this->assertStringContainsString( 'graph.example', $message );
+	}
+
+	private function executeAndCatch( Neo4jQueryService $service ): BackendUnavailableException {
+		try {
+			$service->execute( $this->newRequest( 'MATCH (n) RETURN n' ) );
+		} catch ( BackendUnavailableException $e ) {
+			return $e;
+		}
+
+		$this->fail( 'Expected a BackendUnavailableException.' );
 	}
 
 	public function testValidatorNeo4jSyntaxErrorBecomesCypherSyntaxException(): void {
