@@ -133,7 +133,35 @@ class SelectTypeValidateTest extends TestCase {
 		$singleViolation = array_values( array_filter( $violations, static fn( $v ) => $v->code === 'single-value-only' ) )[0];
 		$this->assertNull( $singleViolation->valuePartIndex );
 		$this->assertNull( $singleViolation->propertyName );
-		$this->assertSame( Severity::Error, $singleViolation->severity );
+	}
+
+	public function testSingleValueOnlyDefaultsToWarning(): void {
+		$violations = $this->type->validate(
+			new StringValue( 'red', 'green' ),
+			$this->newProperty( required: false, multiple: false ),
+		);
+
+		$this->assertSame( Severity::Warning, $violations[0]->severity );
+	}
+
+	public function testSingleValueOnlyUsesErrorWhenMultipleAnnotated(): void {
+		$definition = PropertyDefinition::fromJson(
+			[
+				'type' => 'select',
+				'multiple' => [ 'value' => false, 'severity' => 'error' ],
+				'options' => [
+					[ 'id' => 'opt_a', 'label' => 'A' ],
+					[ 'id' => 'opt_b', 'label' => 'B' ],
+				],
+			],
+			PropertyTypeRegistry::withCoreTypes(),
+		);
+
+		$violations = $this->type->validate( new StringValue( 'opt_a', 'opt_b' ), $definition );
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'single-value-only', $violations[0]->code );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
 	}
 
 	public function testMultipleTrueAndManyValidPartsReturnsNoViolations(): void {

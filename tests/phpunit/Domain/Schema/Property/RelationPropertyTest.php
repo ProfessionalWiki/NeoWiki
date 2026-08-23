@@ -96,6 +96,22 @@ JSON
 		);
 	}
 
+	public function testObjectFormMultipleSeverityIsStable(): void {
+		$this->assertSerializationDoesNotChange(
+			<<<JSON
+{
+	"type": "relation",
+	"description": "",
+	"required": false,
+	"default": null,
+	"relation": "type",
+	"targetSchema": "schema",
+	"multiple": { "value": false, "severity": "error" }
+}
+JSON
+		);
+	}
+
 	public function testExceptionOnMissingRelationType(): void {
 		$this->expectException( InvalidArgumentException::class );
 		$this->fromJson(
