@@ -1,13 +1,22 @@
 <template>
 	<!-- cdx-field class is used for spacing -->
 	<div class="select-attributes cdx-field">
-		<CdxField :hide-label="true">
+		<CdxField
+			class="select-attributes__multiple ext-neowiki-severity-row"
+			:hide-label="true"
+		>
 			<CdxCheckbox
 				:model-value="property.multiple"
 				@update:model-value="updateMultiple"
 			>
 				{{ $i18n( 'neowiki-property-editor-multiple' ).text() }}
 			</CdxCheckbox>
+			<SeverityInput
+				v-if="!property.multiple"
+				:constraint="$i18n( 'neowiki-property-editor-single-value' ).text()"
+				:model-value="property.constraintSeverities?.multiple"
+				@update:model-value="updateSeverity( 'multiple', $event )"
+			/>
 		</CdxField>
 
 		<CdxField class="select-attributes__options ext-neowiki-severity-field">
@@ -23,7 +32,7 @@
 				v-if="property.options.length > 0"
 				:constraint="$i18n( 'neowiki-property-editor-options' ).text()"
 				:model-value="property.constraintSeverities?.options"
-				@update:model-value="updateSeverity"
+				@update:model-value="updateSeverity( 'options', $event )"
 			/>
 			<template
 				v-if="optionsError !== null"
@@ -72,7 +81,7 @@ const updateMultiple = ( value: boolean ): void => {
 	emit( 'update:property', { multiple: value } );
 };
 
-const updateSeverity = ( severity: Severity ): void => {
-	emit( 'update:property', withConstraintSeverity( props.property, 'options', severity ) );
+const updateSeverity = ( constraint: 'options' | 'multiple', severity: Severity ): void => {
+	emit( 'update:property', withConstraintSeverity( props.property, constraint, severity ) );
 };
 </script>

@@ -102,6 +102,17 @@ describe( 'applySeverities', () => {
 		) ).toEqual( { required: false, uniqueItems: false, maximum: { value: 100, severity: 'error' } } );
 	} );
 
+	it( 'drops the annotation of the single-value rule while multiple values are allowed', () => {
+		// `multiple: true` means the rule does not apply, so the severity annotates nothing.
+		expect( applySeverities( { multiple: true }, { multiple: 'error' } ) ).toEqual( { multiple: true } );
+	} );
+
+	it( 'wraps the single-value rule while it applies', () => {
+		expect( applySeverities( { multiple: false }, { multiple: 'error' } ) ).toEqual(
+			{ multiple: { value: false, severity: 'error' } },
+		);
+	} );
+
 	it( 'round-trips an options-array annotation through extract', () => {
 		const original = { options: { value: [ 'a', 'b' ], severity: 'error' } };
 

@@ -87,6 +87,14 @@ describe( 'withoutSeveritiesOfClearedConstraints', () => {
 		} );
 	} );
 
+	it( 'keeps the severity of the single-value rule when multiple values stop being allowed', () => {
+		const property = { ...newSelectProperty( { multiple: true } ), constraintSeverities: { multiple: 'error' as const } };
+
+		expect( withoutSeveritiesOfClearedConstraints( property, { multiple: false } ) ).toEqual( {
+			constraintSeverities: { multiple: 'error' },
+		} );
+	} );
+
 	it( 'keeps the severity of a Constraint that is being set to a value', () => {
 		const property = { ...newNumberProperty( { minimum: 0 } ), constraintSeverities: { minimum: 'error' as const } };
 

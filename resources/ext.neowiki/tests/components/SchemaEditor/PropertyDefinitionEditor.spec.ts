@@ -76,7 +76,7 @@ describe( 'PropertyDefinitionEditor', () => {
 	it( 'drops Constraint severities when the type changes, like the other Constraint fields', async () => {
 		const wrapper = newWrapper( {
 			...newTextProperty( { name: 'Status' } ),
-			constraintSeverities: { minLength: 'error' },
+			constraintSeverities: { minLength: 'error', multiple: 'error' },
 		} );
 
 		await changeTypeTo( wrapper, 'select' );
@@ -127,6 +127,19 @@ describe( 'PropertyDefinitionEditor', () => {
 			await wrapper.findComponent( SelectAttributesEditor ).vm.$emit( 'update:property', { options: [] } );
 
 			expect( lastEmittedProperty( wrapper ).constraintSeverities ).toBeUndefined();
+		} );
+
+		it( 'keeps the severity of the single-value rule while multiple values are toggled on and off', async () => {
+			const wrapper = newWrapper( {
+				...newSelectProperty( { name: 'Status', multiple: false } ),
+				constraintSeverities: { multiple: 'error' },
+			} );
+			const attributesEditor = wrapper.findComponent( SelectAttributesEditor );
+
+			await attributesEditor.vm.$emit( 'update:property', { multiple: true } );
+			await attributesEditor.vm.$emit( 'update:property', { multiple: false } );
+
+			expect( lastEmittedProperty( wrapper ).constraintSeverities ).toEqual( { multiple: 'error' } );
 		} );
 
 		it( 'drops the severity of required when a value is no longer required', async () => {

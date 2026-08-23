@@ -21,6 +21,13 @@ const RESERVED = [ 'type', 'description', 'default' ];
 const VALUE_LESS_BOOLEAN_CONSTRAINTS = [ 'required', 'uniqueItems' ];
 
 /**
+ * The boolean Constraints whose rule applies while they are `false`: `multiple: false`
+ * is what makes a property single-valued. `true` therefore switches the rule off rather
+ * than on, leaving any severity annotating nothing.
+ */
+const CONSTRAINTS_ACTIVE_WHEN_FALSE = [ 'multiple' ];
+
+/**
  * Returns the property JSON with object-form Constraints unwrapped to their
  * bare values, together with the name-to-severity map extracted from them.
  */
@@ -76,6 +83,13 @@ export function applySeverities(
 		// rejects. The PHP mirror has no such branch: only the editor can create
 		// this state, since authoring-time validation forbids it in stored JSON.
 		if ( result[ key ] === false && VALUE_LESS_BOOLEAN_CONSTRAINTS.includes( key ) ) {
+			continue;
+		}
+
+		// The mirror of the branch above for the Constraints that are active when false:
+		// the editor keeps the severity of a rule the author switched off, so that it
+		// survives switching it back on. Stored JSON never carries the inert annotation.
+		if ( result[ key ] === true && CONSTRAINTS_ACTIVE_WHEN_FALSE.includes( key ) ) {
 			continue;
 		}
 

@@ -517,6 +517,7 @@
 				"neowiki-property-editor-length-whole-number",
 				"neowiki-property-editor-length-min-exceeds-max",
 				"neowiki-property-editor-multiple",
+				"neowiki-property-editor-single-value",
 				"neowiki-property-editor-unique-items",
 				"neowiki-property-editor-relation",
 				"neowiki-property-editor-relation-required",
