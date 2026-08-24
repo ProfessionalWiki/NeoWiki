@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { withConstraintSeverity, withoutSeveritiesOfClearedConstraints } from '@/domain/PropertyDefinition';
+import { typeSpecificAttributesOf, withConstraintSeverity, withoutSeveritiesOfClearedConstraints } from '@/domain/PropertyDefinition';
 import { newNumberProperty } from '@/domain/propertyTypes/Number';
 import { newSelectProperty } from '@/domain/propertyTypes/Select';
 import { newTextProperty } from '@/domain/propertyTypes/Text';
@@ -109,5 +109,45 @@ describe( 'withoutSeveritiesOfClearedConstraints', () => {
 		expect( withoutSeveritiesOfClearedConstraints( property, { description: '' } ) ).toEqual( {
 			constraintSeverities: { minimum: 'error' },
 		} );
+	} );
+} );
+
+describe( 'typeSpecificAttributesOf', () => {
+	it( 'returns the fields that belong to the Property Type', () => {
+		const property = newTextProperty( { name: 'Title', description: 'A title', required: true, minLength: 2, maxLength: 8 } );
+
+		expect( typeSpecificAttributesOf( property ).values ).toEqual( {
+			minLength: 2,
+			maxLength: 8,
+			multiple: false,
+			uniqueItems: true,
+		} );
+	} );
+
+	it( 'keeps the severities of the type-specific Constraints', () => {
+		const property = {
+			...newTextProperty( { minLength: 2 } ),
+			constraintSeverities: { minLength: 'error' as const, uniqueItems: 'error' as const },
+		};
+
+		expect( typeSpecificAttributesOf( property ).severities ).toEqual( {
+			minLength: 'error',
+			uniqueItems: 'error',
+		} );
+	} );
+
+	it( 'leaves the severity of required behind, since required is shared by every type', () => {
+		const property = {
+			...newTextProperty( { required: true, minLength: 2 } ),
+			constraintSeverities: { required: 'error' as const, minLength: 'error' as const },
+		};
+
+		expect( typeSpecificAttributesOf( property ).severities ).toEqual( { minLength: 'error' } );
+	} );
+
+	it( 'returns no severities when only required is annotated', () => {
+		const property = { ...newTextProperty(), constraintSeverities: { required: 'error' as const } };
+
+		expect( typeSpecificAttributesOf( property ).severities ).toEqual( {} );
 	} );
 } );

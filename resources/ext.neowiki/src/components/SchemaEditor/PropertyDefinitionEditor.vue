@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { PropertyDefinition, PropertyName, withConstraintSeverity, withoutSeveritiesOfClearedConstraints } from '@/domain/PropertyDefinition.ts';
+import { PropertyDefinition, PropertyName, type TypeSpecificAttributes, typeSpecificAttributesOf, withConstraintSeverity, withoutSeveritiesOfClearedConstraints } from '@/domain/PropertyDefinition.ts';
 import type { Severity } from '@/domain/Severity.ts';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { CdxCheckbox, CdxField, CdxSelect, CdxTextArea, CdxTextInput, type MenuItemData } from '@wikimedia/codex';
@@ -139,25 +139,43 @@ function updatePropertyAttributes<T extends PropertyDefinition>( attributes: Par
 
 const propertyTypeRegistry = NeoWikiServices.getPropertyTypeRegistry();
 
+// What each type held when the author last left it. The serializer writes whatever the
+// definition carries, so the outgoing type's fields have to come off it on a type change;
+// keeping them here lets switching back restore the author's work instead of resetting it.
+const attributesPerType = ref<Record<string, TypeSpecificAttributes>>( {} );
+
 // Rebuild the property when the type changes so its type-specific fields are
 // initialized (e.g. a Select gets an empty options list). Otherwise the editors
 // for the new type would receive a property missing the fields they expect.
-// The type-specific Constraints go, and their severities with them; required is
-// shared by every type, so it keeps its severity along with its value.
+// required is shared by every type, so it keeps its severity along with its value.
 function changePropertyType( type: string ): void {
-	const requiredSeverity = localProperty.value.constraintSeverities?.required;
+	const previous = localProperty.value as PropertyDefinition;
 
-	localProperty.value = propertyTypeRegistry.getType( type ).createPropertyDefinitionFromJson(
+	attributesPerType.value = {
+		...attributesPerType.value,
+		[ previous.type ]: typeSpecificAttributesOf( previous )
+	};
+
+	const remembered = attributesPerType.value[ type ];
+	const requiredSeverity = previous.constraintSeverities?.required;
+	const constraintSeverities: Record<string, Severity> = {
+		...remembered?.severities,
+		...( requiredSeverity === undefined ? {} : { required: requiredSeverity } )
+	};
+
+	const rebuilt = propertyTypeRegistry.getType( type ).createPropertyDefinitionFromJson(
 		{
-			name: localProperty.value.name,
+			name: previous.name,
 			type: type,
-			description: localProperty.value.description,
-			required: localProperty.value.required,
+			description: previous.description,
+			required: previous.required,
 			default: undefined,
-			...( requiredSeverity === undefined ? {} : { constraintSeverities: { required: requiredSeverity } } )
+			...( Object.keys( constraintSeverities ).length > 0 ? { constraintSeverities } : {} )
 		} as PropertyDefinition,
 		{}
 	);
+
+	localProperty.value = { ...rebuilt, ...remembered?.values } as PropertyDefinition;
 }
 
 const componentRegistry = NeoWikiServices.getComponentRegistry();

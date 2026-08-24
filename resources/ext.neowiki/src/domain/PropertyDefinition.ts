@@ -105,6 +105,39 @@ function constraintIsCleared( value: unknown ): boolean {
 	return value === false || ( Array.isArray( value ) && value.length === 0 );
 }
 
+/**
+ * The fields every Property Type has. Anything else on a definition belongs to a single
+ * type, so it cannot travel to a type that does not declare it.
+ */
+const SHARED_FIELDS = [ 'name', 'type', 'description', 'required', 'default', 'constraintSeverities' ];
+
+export interface TypeSpecificAttributes {
+
+	readonly values: Record<string, unknown>;
+	readonly severities: Record<string, Severity>;
+
+}
+
+/**
+ * The parts of a definition that belong to its Property Type: the type-specific fields and
+ * the severities of the Constraints those fields back. `required` is shared by every type,
+ * so its severity is not part of this and travels with the property instead.
+ */
+export function typeSpecificAttributesOf( property: PropertyDefinition ): TypeSpecificAttributes {
+	const severities: Record<string, Severity> = { ...property.constraintSeverities };
+	delete severities.required;
+
+	const values: Record<string, unknown> = {};
+
+	for ( const [ field, value ] of Object.entries( property ) ) {
+		if ( !SHARED_FIELDS.includes( field ) ) {
+			values[ field ] = value;
+		}
+	}
+
+	return { values, severities };
+}
+
 export interface MultiStringProperty extends PropertyDefinition {
 
 	readonly multiple: boolean;

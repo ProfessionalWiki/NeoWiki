@@ -95,6 +95,39 @@ describe( 'PropertyDefinitionEditor', () => {
 		expect( lastEmittedProperty( wrapper ).constraintSeverities ).toEqual( { required: 'error' } );
 	} );
 
+	it( 'does not carry the type-specific attributes onto the new type', async () => {
+		const wrapper = newWrapper( newTextProperty( { name: 'Status', minLength: 2, maxLength: 8 } ) );
+
+		await changeTypeTo( wrapper, 'url' );
+
+		const property = lastEmittedProperty( wrapper );
+		expect( property ).not.toHaveProperty( 'minLength' );
+		expect( property ).not.toHaveProperty( 'maxLength' );
+	} );
+
+	it( 'restores the type-specific attributes when the type changes back', async () => {
+		const wrapper = newWrapper( newTextProperty( { name: 'Status', minLength: 2, maxLength: 8 } ) );
+
+		await changeTypeTo( wrapper, 'url' );
+		await changeTypeTo( wrapper, 'text' );
+
+		const property = lastEmittedProperty( wrapper ) as TextProperty;
+		expect( property.minLength ).toBe( 2 );
+		expect( property.maxLength ).toBe( 8 );
+	} );
+
+	it( 'restores the severities of the type-specific Constraints when the type changes back', async () => {
+		const wrapper = newWrapper( {
+			...newTextProperty( { name: 'Status', minLength: 2 } ),
+			constraintSeverities: { minLength: 'error' },
+		} );
+
+		await changeTypeTo( wrapper, 'url' );
+		await changeTypeTo( wrapper, 'text' );
+
+		expect( lastEmittedProperty( wrapper ).constraintSeverities ).toEqual( { minLength: 'error' } );
+	} );
+
 	describe( 'unsetting a Constraint', () => {
 		it( 'keeps the severity of a bound that is cleared, since a bound being typed reads as cleared', async () => {
 			const wrapper = newWrapper( {
