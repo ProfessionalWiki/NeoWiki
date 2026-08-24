@@ -61,6 +61,7 @@
 	"neowiki-property-editor-length-whole-number": "Must be a whole number of at least 1.",
 	"neowiki-property-editor-length-min-exceeds-max": "Minimum cannot exceed maximum.",
 	"neowiki-property-editor-multiple": "Allow multiple values",
+	"neowiki-property-editor-single-value": "Single value",
 	"neowiki-property-editor-unique-items": "Values must be unique",
 	"neowiki-property-editor-relation": "Relation type",
 	"neowiki-property-editor-relation-required": "Relation type is required.",
@@ -68,6 +69,12 @@
 	"neowiki-property-editor-target-schema-required": "Target schema is required.",
 	"neowiki-property-editor-options": "Options",
 	"neowiki-property-editor-options-unique": "Each option must be unique.",
+	"neowiki-severity-input-label": "Severity of \"$1\": $2",
+	"neowiki-severity-warning": "Warning",
+	"neowiki-severity-warning-description": "Flags the value as a warning",
+	"neowiki-severity-error": "Error",
+	"neowiki-severity-error-description-enforced": "Flags the value as an error and blocks saving",
+	"neowiki-severity-error-description-not-enforced": "Flags the value as an error",
 
 	"neowiki-schema-label": "Schema: $1",
 

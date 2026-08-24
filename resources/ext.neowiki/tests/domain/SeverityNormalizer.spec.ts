@@ -81,8 +81,8 @@ describe( 'applySeverities', () => {
 	it( 'keeps a false boolean value rather than implying true', () => {
 		// The value-less object form implies true, so emitting it for a `false` value
 		// would read back as `true` and silently enable a Constraint the author
-		// disabled. Core booleans are always true when annotated, but a custom
-		// Property Type's own boolean key carries no such guard.
+		// disabled. The content schema constrains the core booleans; a custom Property
+		// Type's own boolean key carries no such guard.
 		expect( applySeverities( { caseSensitive: false }, { caseSensitive: 'error' } ) ).toEqual(
 			{ caseSensitive: { value: false, severity: 'error' } },
 		);
@@ -100,6 +100,17 @@ describe( 'applySeverities', () => {
 			{ required: false, uniqueItems: false, maximum: 100 },
 			{ required: 'error', uniqueItems: 'error', maximum: 'error' },
 		) ).toEqual( { required: false, uniqueItems: false, maximum: { value: 100, severity: 'error' } } );
+	} );
+
+	it( 'drops the annotation of the single-value rule while multiple values are allowed', () => {
+		// `multiple: true` means the rule does not apply, so the severity annotates nothing.
+		expect( applySeverities( { multiple: true }, { multiple: 'error' } ) ).toEqual( { multiple: true } );
+	} );
+
+	it( 'wraps the single-value rule while it applies', () => {
+		expect( applySeverities( { multiple: false }, { multiple: 'error' } ) ).toEqual(
+			{ multiple: { value: false, severity: 'error' } },
+		);
 	} );
 
 	it( 'round-trips an options-array annotation through extract', () => {

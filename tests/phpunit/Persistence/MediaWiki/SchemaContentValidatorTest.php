@@ -253,17 +253,82 @@ JSON
 		$this->assertTrue( $valid );
 	}
 
+	public function testMultipleWithSeverityObjectFormPassesValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$valid = $validator->validate(
+			$this->schemaWithProperty(
+				'{ "type": "select", "multiple": { "value": false, "severity": "error" } }'
+			)
+		);
+
+		if ( !$valid ) {
+			$this->assertSame( [], $validator->getErrors() );
+		}
+
+		$this->assertTrue( $valid );
+	}
+
 	/**
-	 * `multiple` declares the value's shape rather than a Constraint, so the object form is
-	 * rejected at authoring time: the normalizer is deliberately key-agnostic and would
-	 * otherwise unwrap it into a severity nothing reads.
+	 * SeverityNormalizer::extract reads the value-less form as `true`, which switches the
+	 * single-value rule off rather than on. Accepting it would invert the intent of an author
+	 * who spells the annotation the way `required` and `uniqueItems` are spelled.
 	 */
-	public function testShapeKeyWithSeverityObjectFormFailsValidation(): void {
+	public function testValuelessMultipleObjectFormFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();
 
 		$this->assertFalse(
 			$validator->validate(
-				$this->schemaWithProperty( '{ "type": "text", "multiple": { "severity": "error" } }' )
+				$this->schemaWithProperty( '{ "type": "select", "multiple": { "severity": "error" } }' )
+			)
+		);
+
+		$this->assertSame(
+			[ '/propertyDefinitions/offending/multiple' => 'The required properties (value) are missing' ],
+			$validator->getErrors()
+		);
+	}
+
+	/**
+	 * `{ "severity": … }` and `{ "value": true, … }` decode to the same state, so allowing both
+	 * would give one state two spellings. Pinning the value leaves exactly one.
+	 */
+	public function testMultipleObjectFormWithTrueValueFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty(
+					'{ "type": "select", "multiple": { "value": true, "severity": "error" } }'
+				)
+			)
+		);
+	}
+
+	public function testMultipleObjectFormWithInvalidSeverityFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty(
+					'{ "type": "select", "multiple": { "value": false, "severity": "eror" } }'
+				)
+			)
+		);
+	}
+
+	/**
+	 * The fixture keeps a valid `severity` beside the stray key so the assertion turns on
+	 * `additionalProperties` alone rather than on the missing required key.
+	 */
+	public function testMultipleObjectFormWithUnknownKeyFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty(
+					'{ "type": "select", "multiple": { "value": false, "severity": "error", "sevrity": "warning" } }'
+				)
 			)
 		);
 	}
@@ -327,6 +392,11 @@ JSON
 			$validator->validate(
 				$this->schemaWithProperty( '{ "type": "text", "required": { "value": false, "severity": "error" } }' )
 			)
+		);
+
+		$this->assertSame(
+			[ '/propertyDefinitions/offending/required' => 'Additional object properties are not allowed: value' ],
+			$validator->getErrors()
 		);
 	}
 

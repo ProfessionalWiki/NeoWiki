@@ -9,7 +9,8 @@ use InvalidArgumentException;
 /**
  * Parses and serializes the two Schema-JSON forms a Constraint can take (ADR 26):
  * a bare scalar/array (default `warning` severity) or an object `{ value, severity }`
- * (booleans drop `value` and imply `true`; `options` carries the array in `value`).
+ * (booleans drop `value` and imply `true`, except `multiple`, whose object form carries
+ * `"value": false`; `options` carries the array in `value`).
  *
  * A value is treated as object-form iff it is an array carrying a `severity` key. This is
  * intentionally permissive: being type-agnostic is what lets a custom Property Type's own
@@ -19,7 +20,7 @@ use InvalidArgumentException;
  * inert: apply() would re-emit that key in object form. Two guards keep that from
  * corrupting non-Constraints — PropertyDefinition::fromJson drops severities on declared
  * Display Attributes, and `schemaContentSchema.json` rejects them on the shape-declaring
- * keys (`multiple`, `relation`, `targetSchema`) at authoring time.
+ * keys (`relation`, `targetSchema`) at authoring time.
  */
 final class SeverityNormalizer {
 
@@ -71,9 +72,7 @@ final class SeverityNormalizer {
 			}
 
 			// Only `true` may drop the value key: extract() reads the value-less form as true,
-			// so emitting it for `false` would flip a Constraint the author disabled. Core
-			// booleans are always true here (booleanConstraint forbids a value key), but a
-			// custom Property Type's own boolean key is not constrained that way.
+			// so emitting it for `false` would flip a Constraint the author disabled.
 			$json[$key] = $json[$key] === true
 				? [ 'severity' => $severity->value ]
 				: [ 'value' => $json[$key], 'severity' => $severity->value ];

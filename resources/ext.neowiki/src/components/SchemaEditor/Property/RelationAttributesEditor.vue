@@ -31,13 +31,22 @@
 			/>
 		</CdxField>
 
-		<CdxField :hide-label="true">
+		<CdxField
+			class="relation-attributes__multiple ext-neowiki-severity-row"
+			:hide-label="true"
+		>
 			<CdxCheckbox
 				:model-value="property.multiple ?? false"
 				@update:model-value="updateMultiple"
 			>
 				{{ $i18n( 'neowiki-property-editor-multiple' ).text() }}
 			</CdxCheckbox>
+			<SeverityInput
+				v-if="!property.multiple"
+				:constraint="$i18n( 'neowiki-property-editor-single-value' ).text()"
+				:model-value="property.constraintSeverities?.multiple"
+				@update:model-value="updateSeverity"
+			/>
 		</CdxField>
 	</div>
 </template>
@@ -46,8 +55,11 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { CdxCheckbox, CdxField, CdxTextInput } from '@wikimedia/codex';
 import { RelationProperty } from '@/domain/propertyTypes/Relation.ts';
+import { withConstraintSeverity } from '@/domain/PropertyDefinition.ts';
+import type { Severity } from '@/domain/Severity.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import SchemaPicker from '@/components/common/SchemaPicker.vue';
+import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 
 const props = defineProps<AttributesEditorProps<RelationProperty>>();
 const emit = defineEmits<AttributesEditorEmits<RelationProperty>>();
@@ -89,5 +101,9 @@ const updateTargetSchema = ( schemaName: string ): void => {
 
 const updateMultiple = ( value: boolean ): void => {
 	emit( 'update:property', { multiple: value } );
+};
+
+const updateSeverity = ( severity: Severity ): void => {
+	emit( 'update:property', withConstraintSeverity( props.property, 'multiple', severity ) );
 };
 </script>

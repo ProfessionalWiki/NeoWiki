@@ -12,6 +12,7 @@
 
 		<CdxField
 			v-if="property.multiple"
+			class="text-attributes__unique-items ext-neowiki-severity-row"
 			:hide-label="true"
 		>
 			<CdxCheckbox
@@ -20,6 +21,12 @@
 			>
 				{{ $i18n( 'neowiki-property-editor-unique-items' ).text() }}
 			</CdxCheckbox>
+			<SeverityInput
+				v-if="property.uniqueItems"
+				:constraint="$i18n( 'neowiki-property-editor-unique-items' ).text()"
+				:model-value="property.constraintSeverities?.uniqueItems"
+				@update:model-value="updateSeverity( 'uniqueItems', $event )"
+			/>
 		</CdxField>
 
 		<NeoNestedField :optional="true">
@@ -28,6 +35,7 @@
 			</template>
 
 			<CdxField
+				class="text-attributes__min-length ext-neowiki-severity-field"
 				:status="minLengthError === null ? 'default' : 'error'"
 				:messages="minLengthError === null ? {} : { error: minLengthError }"
 			>
@@ -41,9 +49,16 @@
 					min="1"
 					@update:model-value="updateMinLength"
 				/>
+				<SeverityInput
+					v-if="property.minLength !== undefined"
+					:constraint="$i18n( 'neowiki-property-editor-minimum' ).text()"
+					:model-value="property.constraintSeverities?.minLength"
+					@update:model-value="updateSeverity( 'minLength', $event )"
+				/>
 			</CdxField>
 
 			<CdxField
+				class="text-attributes__max-length ext-neowiki-severity-field"
 				:status="maxLengthError === null ? 'default' : 'error'"
 				:messages="maxLengthError === null ? {} : { error: maxLengthError }"
 			>
@@ -57,6 +72,12 @@
 					min="1"
 					@update:model-value="updateMaxLength"
 				/>
+				<SeverityInput
+					v-if="property.maxLength !== undefined"
+					:constraint="$i18n( 'neowiki-property-editor-maximum' ).text()"
+					:model-value="property.constraintSeverities?.maxLength"
+					@update:model-value="updateSeverity( 'maxLength', $event )"
+				/>
 			</CdxField>
 		</NeoNestedField>
 	</div>
@@ -65,10 +86,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { TextProperty } from '@/domain/propertyTypes/Text.ts';
+import { withConstraintSeverity } from '@/domain/PropertyDefinition.ts';
+import type { Severity } from '@/domain/Severity.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { CdxCheckbox, CdxField, CdxTextInput } from '@wikimedia/codex';
 import { minExceedsMax } from '@/components/SchemaEditor/Property/minExceedsMax.ts';
 import NeoNestedField from '@/components/common/NeoNestedField.vue';
+import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 
 const props = defineProps<AttributesEditorProps<TextProperty>>();
 const emit = defineEmits<AttributesEditorEmits<TextProperty>>();
@@ -145,5 +169,9 @@ const updateMultiple = ( value: boolean ): void => {
 
 const updateUniqueItems = ( value: boolean ): void => {
 	emit( 'update:property', { uniqueItems: value } );
+};
+
+const updateSeverity = ( constraint: 'minLength' | 'maxLength' | 'uniqueItems', severity: Severity ): void => {
+	emit( 'update:property', withConstraintSeverity( props.property, constraint, severity ) );
 };
 </script>

@@ -6,7 +6,7 @@
 			</template>
 
 			<CdxField
-				class="date-attributes__minimum"
+				class="date-attributes__minimum ext-neowiki-severity-field"
 				:status="minimumError === null ? 'default' : 'error'"
 				:messages="minimumError === null ? {} : { error: minimumError }"
 			>
@@ -19,10 +19,16 @@
 					:model-value="minimumInput"
 					@update:model-value="updateMinimum"
 				/>
+				<SeverityInput
+					v-if="property.minimum !== undefined"
+					:constraint="$i18n( 'neowiki-property-editor-minimum' ).text()"
+					:model-value="property.constraintSeverities?.minimum"
+					@update:model-value="updateSeverity( 'minimum', $event )"
+				/>
 			</CdxField>
 
 			<CdxField
-				class="date-attributes__maximum"
+				class="date-attributes__maximum ext-neowiki-severity-field"
 				:status="maximumError === null ? 'default' : 'error'"
 				:messages="maximumError === null ? {} : { error: maximumError }"
 			>
@@ -34,6 +40,12 @@
 					input-type="date"
 					:model-value="maximumInput"
 					@update:model-value="updateMaximum"
+				/>
+				<SeverityInput
+					v-if="property.maximum !== undefined"
+					:constraint="$i18n( 'neowiki-property-editor-maximum' ).text()"
+					:model-value="property.constraintSeverities?.maximum"
+					@update:model-value="updateSeverity( 'maximum', $event )"
 				/>
 			</CdxField>
 		</NeoNestedField>
@@ -47,6 +59,9 @@ import { DateProperty } from '@/domain/propertyTypes/Date.ts';
 import { fromDateInputValue, toDateInputValue } from '@/domain/propertyTypes/dateConversion.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import NeoNestedField from '@/components/common/NeoNestedField.vue';
+import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
+import { withConstraintSeverity } from '@/domain/PropertyDefinition.ts';
+import type { Severity } from '@/domain/Severity.ts';
 
 const props = defineProps<AttributesEditorProps<DateProperty>>();
 const emit = defineEmits<AttributesEditorEmits<DateProperty>>();
@@ -99,5 +114,9 @@ const updateMaximum = ( value: string ): void => {
 	maximumError.value = null;
 	minimumError.value = null;
 	emit( 'update:property', { maximum: fromDateInputValue( value ) } );
+};
+
+const updateSeverity = ( constraint: 'minimum' | 'maximum', severity: Severity ): void => {
+	emit( 'update:property', withConstraintSeverity( props.property, constraint, severity ) );
 };
 </script>

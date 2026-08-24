@@ -3,7 +3,8 @@ import { isSeverity, type Severity } from '@/domain/Severity';
 /**
  * Parses and serializes the two Schema-JSON forms a Constraint can take (ADR 26):
  * a bare scalar/array (default `warning` severity) or an object `{ value, severity }`
- * (booleans drop `value` and imply `true`; `options` carries the array in `value`).
+ * (booleans drop `value` and imply `true`, except `multiple`, whose object form carries
+ * `"value": false`; `options` carries the array in `value`).
  * Mirror of the backend's SeverityNormalizer (src/Domain/Validation/SeverityNormalizer.php).
  *
  * A value is treated as object-form iff it is an object carrying a `severity` key.
@@ -19,6 +20,13 @@ const RESERVED = [ 'type', 'description', 'default' ];
  * docs/api/schema-format.md): `false` is representable only as the bare scalar.
  */
 const VALUE_LESS_BOOLEAN_CONSTRAINTS = [ 'required', 'uniqueItems' ];
+
+/**
+ * The boolean Constraints whose rule applies while they are `false`: `multiple: false`
+ * is what makes a property single-valued. `true` therefore switches the rule off rather
+ * than on, leaving any severity annotating nothing.
+ */
+const CONSTRAINTS_ACTIVE_WHEN_FALSE = [ 'multiple' ];
 
 /**
  * Returns the property JSON with object-form Constraints unwrapped to their
@@ -76,6 +84,14 @@ export function applySeverities(
 		// rejects. The PHP mirror has no such branch: only the editor can create
 		// this state, since authoring-time validation forbids it in stored JSON.
 		if ( result[ key ] === false && VALUE_LESS_BOOLEAN_CONSTRAINTS.includes( key ) ) {
+			continue;
+		}
+
+		// The mirror of the branch above for the Constraints that are active when false:
+		// the editor keeps the severity of a rule the author switched off, so that it
+		// survives switching it back on while the dialog is open. Emitting it would fail
+		// the save: schemaContentSchema.json pins `multiple`'s object form to `false`.
+		if ( result[ key ] === true && CONSTRAINTS_ACTIVE_WHEN_FALSE.includes( key ) ) {
 			continue;
 		}
 

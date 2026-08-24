@@ -2,6 +2,7 @@ import { mount, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CdxTextInput } from '@wikimedia/codex';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
+import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Relation';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
@@ -25,7 +26,7 @@ describe( 'RelationAttributesEditor', () => {
 				'neowiki-property-editor-relation-required': 'Relation type is required.',
 				'neowiki-property-editor-target-schema-required': 'Target schema is required.',
 			},
-			functions: [ 'message' ],
+			functions: [ 'config', 'message' ],
 		} );
 	} );
 
@@ -165,6 +166,57 @@ describe( 'RelationAttributesEditor', () => {
 			await wrapper.find( 'input[type="checkbox"]' ).setValue( true );
 
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { multiple: true } ] );
+		} );
+	} );
+
+	describe( 'Constraint severity', () => {
+		function multipleSeverityInput( wrapper: VueWrapper ): VueWrapper<InstanceType<typeof SeverityInput>> {
+			return ( wrapper.findComponent( '.relation-attributes__multiple' ) as VueWrapper ).findComponent( SeverityInput );
+		}
+
+		it( 'offers a severity for the single-value rule while multiple values are not allowed', () => {
+			const wrapper = newWrapper( { property: relationProperty( { multiple: false } ) } );
+
+			expect( multipleSeverityInput( wrapper ).exists() ).toBe( true );
+		} );
+
+		it( 'offers no severity for the single-value rule once multiple values are allowed', () => {
+			const wrapper = newWrapper( { property: relationProperty( { multiple: true } ) } );
+
+			expect( multipleSeverityInput( wrapper ).exists() ).toBe( false );
+		} );
+
+		it( 'names the single-value rule rather than the checkbox that switches it off', () => {
+			const wrapper = newWrapper( { property: relationProperty( { multiple: false } ) } );
+
+			expect( multipleSeverityInput( wrapper ).props( 'constraint' ) )
+				.toBe( 'neowiki-property-editor-single-value' );
+		} );
+
+		it( 'shows the current severity of the single-value rule', () => {
+			const wrapper = newWrapper( {
+				property: { ...relationProperty( { multiple: false } ), constraintSeverities: { multiple: 'error' } },
+			} );
+
+			expect( multipleSeverityInput( wrapper ).props( 'modelValue' ) ).toBe( 'error' );
+		} );
+
+		it( 'emits the changed severity of the single-value rule', async () => {
+			const wrapper = newWrapper( { property: relationProperty( { multiple: false } ) } );
+
+			await multipleSeverityInput( wrapper ).vm.$emit( 'update:modelValue', 'error' );
+
+			expect( wrapper.emitted( 'update:property' ) ).toEqual( [ [ { constraintSeverities: { multiple: 'error' } } ] ] );
+		} );
+
+		it( 'removes the annotation of the single-value rule when it goes back to warning', async () => {
+			const wrapper = newWrapper( {
+				property: { ...relationProperty( { multiple: false } ), constraintSeverities: { multiple: 'error' } },
+			} );
+
+			await multipleSeverityInput( wrapper ).vm.$emit( 'update:modelValue', 'warning' );
+
+			expect( wrapper.emitted( 'update:property' ) ).toEqual( [ [ { constraintSeverities: undefined } ] ] );
 		} );
 	} );
 

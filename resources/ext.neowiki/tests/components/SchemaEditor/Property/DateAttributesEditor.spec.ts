@@ -2,6 +2,7 @@ import { DOMWrapper, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CdxTextInput } from '@wikimedia/codex';
 import DateAttributesEditor from '@/components/SchemaEditor/Property/DateAttributesEditor.vue';
+import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newDateProperty, DateProperty } from '@/domain/propertyTypes/Date';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { createTestWrapper, FieldProps, setupMwMock } from '../../../VueTestHelpers.ts';
@@ -12,7 +13,7 @@ describe( 'DateAttributesEditor', () => {
 			messages: {
 				'neowiki-property-editor-min-exceeds-max': 'Minimum cannot exceed maximum.',
 			},
-			functions: [ 'message' ],
+			functions: [ 'config', 'message' ],
 		} );
 	} );
 
@@ -183,6 +184,29 @@ describe( 'DateAttributesEditor', () => {
 			await inputs[ 1 ].setValue( '' );
 
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { maximum: undefined } ] );
+		} );
+	} );
+	describe( 'Constraint severity', () => {
+		it( 'offers a severity only for a set bound, showing the current one', () => {
+			const wrapper = newWrapper( {
+				property: { ...newDateProperty( { maximum: '2030-12-31' } ), constraintSeverities: { maximum: 'error' } },
+			} );
+
+			const inputs = wrapper.findAllComponents( SeverityInput );
+			expect( inputs ).toHaveLength( 1 );
+			expect( inputs[ 0 ].props( 'modelValue' ) ).toBe( 'error' );
+		} );
+
+		it( 'emits the changed severity of a bound, keeping the other bound\'s', async () => {
+			const wrapper = newWrapper( {
+				property: { ...newDateProperty( { minimum: '2020-01-01', maximum: '2030-12-31' } ), constraintSeverities: { maximum: 'error' } },
+			} );
+
+			await wrapper.findAllComponents( SeverityInput )[ 0 ].vm.$emit( 'update:modelValue', 'error' );
+
+			expect( wrapper.emitted( 'update:property' ) ).toEqual( [
+				[ { constraintSeverities: { maximum: 'error', minimum: 'error' } } ],
+			] );
 		} );
 	} );
 } );

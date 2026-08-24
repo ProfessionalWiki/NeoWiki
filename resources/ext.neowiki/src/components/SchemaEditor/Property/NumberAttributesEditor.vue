@@ -7,7 +7,7 @@
 			</template>
 
 			<CdxField
-				class="number-attributes__minimum"
+				class="number-attributes__minimum ext-neowiki-severity-field"
 				:status="minimumError === null ? 'default' : 'error'"
 				:messages="minimumError === null ? {} : { error: minimumError }"
 			>
@@ -20,10 +20,16 @@
 					input-type="number"
 					@update:model-value="updateMinimum"
 				/>
+				<SeverityInput
+					v-if="property.minimum !== undefined"
+					:constraint="$i18n( 'neowiki-property-editor-minimum' ).text()"
+					:model-value="property.constraintSeverities?.minimum"
+					@update:model-value="updateSeverity( 'minimum', $event )"
+				/>
 			</CdxField>
 
 			<CdxField
-				class="number-attributes__maximum"
+				class="number-attributes__maximum ext-neowiki-severity-field"
 				:status="maximumError === null ? 'default' : 'error'"
 				:messages="maximumError === null ? {} : { error: maximumError }"
 			>
@@ -35,6 +41,12 @@
 					:model-value="maximumInput"
 					input-type="number"
 					@update:model-value="updateMaximum"
+				/>
+				<SeverityInput
+					v-if="property.maximum !== undefined"
+					:constraint="$i18n( 'neowiki-property-editor-maximum' ).text()"
+					:model-value="property.constraintSeverities?.maximum"
+					@update:model-value="updateSeverity( 'maximum', $event )"
 				/>
 			</CdxField>
 		</NeoNestedField>
@@ -61,9 +73,12 @@
 import { ref, watch } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import { NumberProperty } from '@/domain/propertyTypes/Number.ts';
+import { withConstraintSeverity } from '@/domain/PropertyDefinition.ts';
+import type { Severity } from '@/domain/Severity.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { minExceedsMax } from '@/components/SchemaEditor/Property/minExceedsMax.ts';
 import NeoNestedField from '@/components/common/NeoNestedField.vue';
+import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 
 const props = defineProps<AttributesEditorProps<NumberProperty>>();
 const emit = defineEmits<AttributesEditorEmits<NumberProperty>>();
@@ -117,6 +132,10 @@ const updateMaximum = ( value: string ): void => {
 	maximumError.value = null;
 	minimumError.value = null;
 	emit( 'update:property', { maximum: parseNumber( value ) } );
+};
+
+const updateSeverity = ( constraint: 'minimum' | 'maximum', severity: Severity ): void => {
+	emit( 'update:property', withConstraintSeverity( props.property, constraint, severity ) );
 };
 
 const updatePrecision = ( value: string ): void => {

@@ -297,6 +297,11 @@ export class NeoWikiExtension {
 		return typeof value === 'number' ? value : 300;
 	}
 
+	/** Whether the wiki rejects writes that introduce new error-severity violations (`$wgNeoWikiEnforceValidation`). */
+	public isValidationEnforced(): boolean {
+		return mw.config.get( 'wgNeoWikiEnforceValidation' ) === true;
+	}
+
 	public getPropertyTypeRegistry(): PropertyTypeRegistry {
 		return this.getNeo().getPropertyTypeRegistry();
 	}

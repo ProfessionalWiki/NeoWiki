@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defineStore } from 'pinia';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
+import { setupMwMock } from './VueTestHelpers.ts';
 
 describe( 'NeoWikiExtension registry caching', () => {
 	it( 'returns the same TypeSpecificComponentRegistry instance on repeated calls', () => {
@@ -33,5 +34,22 @@ describe( 'NeoWikiExtension.getPinia', () => {
 		useTestStore( pinia ).count = 7;
 
 		expect( useTestStore( pinia ).count ).toBe( 7 );
+	} );
+} );
+
+describe( 'NeoWikiExtension.isValidationEnforced', () => {
+	it( 'is true only when the wiki says so', () => {
+		setupMwMock( { config: { wgNeoWikiEnforceValidation: true } } );
+		expect( NeoWikiExtension.getInstance().isValidationEnforced() ).toBe( true );
+	} );
+
+	it( 'is false when the wiki does not enforce validation', () => {
+		setupMwMock( { config: { wgNeoWikiEnforceValidation: false } } );
+		expect( NeoWikiExtension.getInstance().isValidationEnforced() ).toBe( false );
+	} );
+
+	it( 'is false when the wiki did not say, since enforcement is opt-in', () => {
+		setupMwMock();
+		expect( NeoWikiExtension.getInstance().isValidationEnforced() ).toBe( false );
 	} );
 } );
