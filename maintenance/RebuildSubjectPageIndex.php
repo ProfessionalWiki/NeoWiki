@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Maintenance;
 
 use MediaWiki\Maintenance\LoggedUpdateMaintenance;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndexRebuilder;
 
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../..';
@@ -37,6 +38,15 @@ class RebuildSubjectPageIndex extends LoggedUpdateMaintenance {
 	}
 
 	protected function doDBUpdates(): bool {
+		// update.php runs its post-update scripts outside doUpdates(), so this one runs even when the
+		// run was told to apply no schema changes: --schema writes the CREATE TABLE to a file and
+		// --noschema skips it entirely, and either way the table this fills is not there. Reported as
+		// not done, so the run that does create the table still fills it.
+		if ( !$this->indexTableExists() ) {
+			$this->output( "The NeoWiki subject -> page index table does not exist yet; nothing to rebuild.\n" );
+			return false;
+		}
+
 		$this->output( "Rebuilding the NeoWiki subject -> page index...\n" );
 
 		// Left at 0 when there is nothing to index, so the closing line is right either way.
@@ -50,6 +60,10 @@ class RebuildSubjectPageIndex extends LoggedUpdateMaintenance {
 		$this->output( "Done. Indexed $indexed pages holding Subjects.\n" );
 
 		return true;
+	}
+
+	private function indexTableExists(): bool {
+		return $this->getDB( DB_PRIMARY )->tableExists( DatabaseSubjectPageIndex::TABLE, __METHOD__ );
 	}
 
 	/**
