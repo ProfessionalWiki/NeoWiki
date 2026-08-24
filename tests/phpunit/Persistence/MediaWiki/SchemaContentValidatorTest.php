@@ -270,22 +270,39 @@ JSON
 	}
 
 	/**
-	 * The Constraint applies when `multiple` is false, so the value-less form is inert. It must
-	 * still validate: SeverityNormalizer::apply re-emits an annotated `true` in exactly that
-	 * shape, so rejecting it would make an annotated Schema fail to save its own canonical output.
+	 * SeverityNormalizer::extract reads the value-less form as `true`, which switches the
+	 * single-value rule off rather than on. Accepting it would invert the intent of an author
+	 * who spells the annotation the way `required` and `uniqueItems` are spelled.
 	 */
-	public function testValuelessMultipleObjectFormPassesValidation(): void {
+	public function testValuelessMultipleObjectFormFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();
 
-		$valid = $validator->validate(
-			$this->schemaWithProperty( '{ "type": "select", "multiple": { "severity": "error" } }' )
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "select", "multiple": { "severity": "error" } }' )
+			)
 		);
 
-		if ( !$valid ) {
-			$this->assertSame( [], $validator->getErrors() );
-		}
+		$this->assertSame(
+			[ '/propertyDefinitions/offending/multiple' => 'The required properties (value) are missing' ],
+			$validator->getErrors()
+		);
+	}
 
-		$this->assertTrue( $valid );
+	/**
+	 * `{ "severity": … }` and `{ "value": true, … }` decode to the same state, so allowing both
+	 * would give one state two spellings. Pinning the value leaves exactly one.
+	 */
+	public function testMultipleObjectFormWithTrueValueFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty(
+					'{ "type": "select", "multiple": { "value": true, "severity": "error" } }'
+				)
+			)
+		);
 	}
 
 	public function testMultipleObjectFormWithInvalidSeverityFailsValidation(): void {
@@ -301,8 +318,8 @@ JSON
 	}
 
 	/**
-	 * A stray key means a misspelled `severity`, which leaves an object where the parsers read a
-	 * boolean. Rejecting it at authoring time keeps that out of stored Schema JSON.
+	 * The fixture keeps a valid `severity` beside the stray key so the assertion turns on
+	 * `additionalProperties` alone rather than on the missing required key.
 	 */
 	public function testMultipleObjectFormWithUnknownKeyFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();
@@ -310,7 +327,7 @@ JSON
 		$this->assertFalse(
 			$validator->validate(
 				$this->schemaWithProperty(
-					'{ "type": "select", "multiple": { "value": false, "sevrity": "error" } }'
+					'{ "type": "select", "multiple": { "value": false, "severity": "error", "sevrity": "warning" } }'
 				)
 			)
 		);
@@ -375,6 +392,11 @@ JSON
 			$validator->validate(
 				$this->schemaWithProperty( '{ "type": "text", "required": { "value": false, "severity": "error" } }' )
 			)
+		);
+
+		$this->assertSame(
+			[ '/propertyDefinitions/offending/required' => 'Additional object properties are not allowed: value' ],
+			$validator->getErrors()
 		);
 	}
 

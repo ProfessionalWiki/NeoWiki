@@ -89,9 +89,8 @@ class SeverityNormalizerTest extends TestCase {
 
 	/**
 	 * The value-less object form implies true, so emitting it for a `false` value would read
-	 * back as `true` and silently enable a Constraint the author disabled. Core booleans are
-	 * always true when annotated — the content schema forbids a `value` key on them — but a
-	 * custom Property Type's own boolean key carries no such guard.
+	 * back as `true` and silently enable a Constraint the author disabled. The content schema
+	 * constrains the core booleans; a custom Property Type's own boolean key carries no such guard.
 	 */
 	public function testApplyKeepsFalseBooleanValueRatherThanImplyingTrue(): void {
 		$this->assertSame(
