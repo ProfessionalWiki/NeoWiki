@@ -81,8 +81,8 @@ describe( 'applySeverities', () => {
 	it( 'keeps a false boolean value rather than implying true', () => {
 		// The value-less object form implies true, so emitting it for a `false` value
 		// would read back as `true` and silently enable a Constraint the author
-		// disabled. Core booleans are always true when annotated, but a custom
-		// Property Type's own boolean key carries no such guard.
+		// disabled. The content schema constrains the core booleans; a custom Property
+		// Type's own boolean key carries no such guard.
 		expect( applySeverities( { caseSensitive: false }, { caseSensitive: 'error' } ) ).toEqual(
 			{ caseSensitive: { value: false, severity: 'error' } },
 		);

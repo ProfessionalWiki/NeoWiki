@@ -6,29 +6,25 @@
 			"enum": [ "error", "warning" ]
 		},
 		"booleanConstraint": {
-			"oneOf": [
-				{ "type": "boolean" },
-				{
-					"type": "object",
-					"required": [ "severity" ],
-					"additionalProperties": false,
-					"properties": { "severity": { "$ref": "#/$defs/severity" } }
-				}
-			]
+			"if": { "type": "object" },
+			"then": {
+				"required": [ "severity" ],
+				"additionalProperties": false,
+				"properties": { "severity": { "$ref": "#/$defs/severity" } }
+			},
+			"else": { "type": "boolean" }
 		},
-		"booleanConstraintWithValue": {
-			"oneOf": [
-				{ "type": "boolean" },
-				{
-					"type": "object",
-					"required": [ "severity" ],
-					"additionalProperties": false,
-					"properties": {
-						"value": { "type": "boolean" },
-						"severity": { "$ref": "#/$defs/severity" }
-					}
+		"booleanConstraintWithFalseValue": {
+			"if": { "type": "object" },
+			"then": {
+				"required": [ "value", "severity" ],
+				"additionalProperties": false,
+				"properties": {
+					"value": { "const": false },
+					"severity": { "$ref": "#/$defs/severity" }
 				}
-			]
+			},
+			"else": { "type": "boolean" }
 		},
 		"scalarConstraint": {
 			"if": { "type": "object" },
@@ -74,7 +70,7 @@
 						},
 						"default": true,
 						"required": { "$ref": "#/$defs/booleanConstraint" },
-						"multiple": { "$ref": "#/$defs/booleanConstraintWithValue" },
+						"multiple": { "$ref": "#/$defs/booleanConstraintWithFalseValue" },
 						"uniqueItems": { "$ref": "#/$defs/booleanConstraint" },
 						"minimum": { "$ref": "#/$defs/scalarConstraint" },
 						"maximum": { "$ref": "#/$defs/scalarConstraint" },

@@ -3,7 +3,8 @@ import { isSeverity, type Severity } from '@/domain/Severity';
 /**
  * Parses and serializes the two Schema-JSON forms a Constraint can take (ADR 26):
  * a bare scalar/array (default `warning` severity) or an object `{ value, severity }`
- * (booleans drop `value` and imply `true`; `options` carries the array in `value`).
+ * (booleans drop `value` and imply `true`, except `multiple`, whose object form carries
+ * `"value": false`; `options` carries the array in `value`).
  * Mirror of the backend's SeverityNormalizer (src/Domain/Validation/SeverityNormalizer.php).
  *
  * A value is treated as object-form iff it is an object carrying a `severity` key.
@@ -88,7 +89,8 @@ export function applySeverities(
 
 		// The mirror of the branch above for the Constraints that are active when false:
 		// the editor keeps the severity of a rule the author switched off, so that it
-		// survives switching it back on. Stored JSON never carries the inert annotation.
+		// survives switching it back on while the dialog is open. Emitting it would fail
+		// the save: schemaContentSchema.json pins `multiple`'s object form to `false`.
 		if ( result[ key ] === true && CONSTRAINTS_ACTIVE_WHEN_FALSE.includes( key ) ) {
 			continue;
 		}
