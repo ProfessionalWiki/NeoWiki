@@ -183,6 +183,24 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
 | `$wgNeoWikiAutoRebuildOnMappingChange` | Rebuilds every store holding a Mapping's projection when that Mapping changes | `false` | No |
 
+## Logging
+
+NeoWiki logs on the `NeoWiki` channel: a graph store failing on save, the pages a rebuild could not project, a store
+entry or name it will not accept, and RDF a projection had to drop. Below `warning` it also records rebuild decisions
+and denied page reads. MediaWiki routes no channel anywhere by default, so none of it reaches you until you route it:
+
+```php
+$wgDebugLogGroups['NeoWiki'] = '/var/log/mediawiki/neowiki.log';
+```
+
+Add a `level` to drop everything below it:
+
+```php
+$wgDebugLogGroups['NeoWiki'] = [ 'destination' => '/var/log/mediawiki/neowiki.log', 'level' => 'warning' ];
+```
+
+The [Docker install](#method-a-docker) routes the channel to container stderr. `make logs` tails it.
+
 ## User rights
 
 `neowiki-admin` allows viewing and rebuilding the wiki's graph stores, through
@@ -246,13 +264,13 @@ $wgNeoWikiSparqlStores = [
 ];
 ```
 
-A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki.
-
 Each store's `name` identifies it when [rebuilding one store](maintenance.md#rebuilding-one-store), so no two entries
 may share one, and none may be `neo4j` in any casing — reserved for the bundled Neo4j backend. Since the name defaults
 to the projection, two entries holding the same projection — mirroring it to a second endpoint, say — collide until
-one of them sets an explicit `name`. An entry whose name cannot identify it is skipped with a warning, so its store
-receives no page changes.
+one of them sets an explicit `name`.
+
+An entry NeoWiki cannot use is skipped rather than failing the wiki; the [`NeoWiki` log channel](#logging) says which
+entry and why.
 
 ### Oxigraph
 

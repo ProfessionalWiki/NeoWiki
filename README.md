@@ -135,6 +135,9 @@ wfLoadExtension( 'SomeExtension' );
 $wgDebugLogGroups['NeoWiki'] = '/tmp/neowiki-debug.log';
 ```
 
+The stack already routes the `NeoWiki` channel ([Logging](docs/operations/installation.md#logging)), so setting
+`$wgDebugLogGroups['NeoWiki']` here replaces that destination rather than adding to it.
+
 ### Try-it-out and server deployment
 
 For the prebuilt try-it-out stack or server deployment with Caddy, see

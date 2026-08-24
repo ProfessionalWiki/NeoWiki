@@ -58,7 +58,7 @@ an `xsd:anyURI` literal, so nothing is lost. The other value types map to `xsd` 
 registered mapper — including an unregistered type — is omitted from the projection.
 
 A Subject whose Schema cannot be loaded (for example, its Schema page was deleted) is omitted from the projection; a
-warning is logged for each.
+warning is logged for each on the [`NeoWiki` channel](../operations/installation.md#logging).
 
 ## Projected triples
 

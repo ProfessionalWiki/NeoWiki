@@ -30,6 +30,13 @@ if ( $mwIsDev ) {
 	$wgDebugComments = false;
 }
 
+// MediaWiki routes no log channel anywhere by default, so every diagnostic NeoWiki emits would reach
+// nobody: a store refusing a page, a store name it will not accept, a projection failing on save.
+// Container stderr is where a Docker install's logs are read. No level floor, in either mode: a rebuild
+// records a skipped page at info, and that is a store left stale. Volume is bounded by the log driver's
+// rotation in docker-compose.yml rather than by dropping entries here.
+$wgDebugLogGroups['NeoWiki'] = 'php://stderr';
+
 ## Uncomment this to disable output compression
 # $wgDisableOutputCompression = true;
 

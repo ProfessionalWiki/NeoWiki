@@ -198,11 +198,9 @@ class MyGraphDatabasePlugin implements GraphDatabasePlugin {
 Register with `NeoWikiRegistrar::addGraphDatabasePlugin( $name, $plugin )`. Example:
 [`src/RedHerbGraphDatabasePlugin.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbGraphDatabasePlugin.php).
 
-The name is what [`--store`](../operations/maintenance.md#rebuilding-one-store) addresses, and what a rebuild files
-its run records under. Pick a stable one and namespace it to your extension. A name is refused with a warning on the
-`NeoWiki` channel when another backend already holds it, when it is `neo4j` in any casing — reserved for the bundled
-Neo4j backend — or when it is longer than 255 bytes, which is all a run record can hold. A refused backend receives
-no page changes and cannot be rebuilt.
+The name is what [`--store`](../operations/maintenance.md#rebuilding-one-store) addresses. Pick a stable one and
+namespace it to your extension. A refused name drops the plugin, which then projects nothing and cannot be rebuilt;
+the [`NeoWiki` log channel](../operations/installation.md#logging) says why and what to change.
 
 `savePage` hands you the page with all of its Subjects and the Page Properties contributed by every
 `PagePropertyProvider`, and runs for every revision, so subject edits, undeletions and page moves all reach you as a
