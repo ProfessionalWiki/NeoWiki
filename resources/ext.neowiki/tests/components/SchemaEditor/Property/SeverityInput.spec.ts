@@ -13,9 +13,9 @@ describe( 'SeverityInput', () => {
 				'neowiki-severity-input-label': ( constraint: string, severity: string ) => 'Severity of ' + constraint + ': ' + severity,
 				'neowiki-severity-warning': 'Warning',
 				'neowiki-severity-error': 'Error',
-				'neowiki-severity-warning-description': 'Flags the value',
-				'neowiki-severity-error-description-enforced': 'Blocks saving',
-				'neowiki-severity-error-description-not-enforced': 'Does not block saving here',
+				'neowiki-severity-warning-description': 'warning meaning',
+				'neowiki-severity-error-description-enforced': 'enforced error meaning',
+				'neowiki-severity-error-description-not-enforced': 'unenforced error meaning',
 			},
 			config: { wgNeoWikiEnforceValidation: validationEnforced },
 		} );
@@ -63,8 +63,8 @@ describe( 'SeverityInput', () => {
 		const wrapper = newWrapper();
 
 		expect( menuButton( wrapper ).props( 'menuItems' ) ).toEqual( [
-			{ value: 'warning', label: 'Warning', description: 'Flags the value', icon: cdxIconAlert },
-			{ value: 'error', label: 'Error', description: 'Does not block saving here', icon: cdxIconError },
+			{ value: 'warning', label: 'Warning', description: 'warning meaning', icon: cdxIconAlert },
+			{ value: 'error', label: 'Error', description: 'unenforced error meaning', icon: cdxIconError },
 		] );
 	} );
 
@@ -72,7 +72,7 @@ describe( 'SeverityInput', () => {
 		mockMw( true );
 		const wrapper = newWrapper();
 
-		expect( menuButton( wrapper ).props( 'menuItems' )[ 1 ].description ).toBe( 'Blocks saving' );
+		expect( menuButton( wrapper ).props( 'menuItems' )[ 1 ].description ).toBe( 'enforced error meaning' );
 	} );
 
 	it( 'emits the picked severity', async () => {
