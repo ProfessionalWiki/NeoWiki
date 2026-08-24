@@ -71,10 +71,10 @@
 	"neowiki-property-editor-options-unique": "Each option must be unique.",
 	"neowiki-severity-input-label": "Severity of \"$1\": $2",
 	"neowiki-severity-warning": "Warning",
-	"neowiki-severity-warning-description": "Flags the value as a warning",
+	"neowiki-severity-warning-description": "Mark constraint violations as warnings",
 	"neowiki-severity-error": "Error",
-	"neowiki-severity-error-description-enforced": "Flags the value as an error and blocks saving",
-	"neowiki-severity-error-description-not-enforced": "Flags the value as an error",
+	"neowiki-severity-error-description-enforced": "Block new constraint violations",
+	"neowiki-severity-error-description-not-enforced": "Mark constraint violations as errors",
 
 	"neowiki-schema-label": "Schema: $1",
 
