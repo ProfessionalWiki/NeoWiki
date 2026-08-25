@@ -28,6 +28,25 @@ Per-type value constraints (`options`, ranges, string formats, `uniqueItems`) ar
 | `description` | string | No | Human-readable description of the schema |
 | `propertyDefinitions` | object | Yes | Map of property names to property definition objects |
 
+## Schema references
+
+Wherever a Schema is named — a Subject's [`schema`](subject-format.md#subject-object) field, a relation property's
+`targetSchema` — the value is a reference.
+
+A string names a Schema of this wiki by its page title in the Schema namespace.
+
+A Schema from another Source ([ADR 023](../adr/023-subject-sources.md)) is an object instead:
+
+```json
+{ "source": "otherwiki", "name": "Company" }
+```
+
+`source` is a source key, written as for a [Subject ID](subject-format.md#ids). Naming this wiki's own Source is the
+same reference as the bare name, and is stored as the bare name.
+
+A reference to a Source this wiki does not have resolves to no Schema, reported as
+[`schema-not-found`](validation-codes.md#schema-not-found).
+
 ## Property Definition
 
 Every property definition carries the common fields below plus the type-specific fields for its `type`.
@@ -160,7 +179,7 @@ References to other Subjects.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `relation` | string | Yes | - | The relation type name |
-| `targetSchema` | string | Yes | - | Name of the Schema that target Subjects must follow |
+| `targetSchema` | string or object | Yes | - | [Reference](#schema-references) to the Schema that target Subjects must follow |
 | `multiple` | boolean or object | No | `false` | Allow multiple relations |
 
 ```json

@@ -65,6 +65,9 @@ raising a Constraint's severity does not make an existing violation count as new
 [ADR 21](../adr/021-add-backend-validation.md) and
 [ADR 26](../adr/026-validation-severity-levels.md).
 
+One code is exempt from the enforcement switch:
+[`relation-target-unresolvable-source`](#relation-target-unresolvable-source) rejects a write either way.
+
 ## Code reference
 
 ### `required`
@@ -158,8 +161,10 @@ so the Subject stays saveable.
 ### `schema-not-found`
 
 The Subject's Schema cannot be loaded — usually deleted or renamed since the Subject
-was created, or the Subject was created or imported referencing a Schema that does not (yet) exist.
-The write proceeds and reports the violation; creating or renaming the Schema page resolves it.
+was created, or the Subject was created or imported referencing a Schema that does not (yet) exist. A
+[reference](schema-format.md#schema-references) to a Source this wiki does not have reports the same.
+The write proceeds and reports the violation; creating or renaming the Schema page, or registering the
+missing Source, resolves it.
 Subject-level: `propertyName` is `null`.
 
 Returned by the update dry-run and both write endpoints. The create dry-run
@@ -185,11 +190,30 @@ behavior, and an import may legitimately mint the target later.
 
 `args`: `[targetId]`. `valuePartIndex`: the offending target. `severity`: `warning` (fixed).
 
+### `relation-target-unresolvable-source`
+
+On `relation` properties. The relation targets a [Subject ID](subject-format.md#ids) whose source key
+names a Source this wiki has not registered, so the target cannot be reached at all. Reported instead of
+[`relation-target-not-found`](#relation-target-not-found), which is about a Source that could answer and
+did not.
+
+This one blocks the write whether or not the wiki enforces validation. Only a violation the edit
+introduces blocks it, so a Subject that already carries such a target stays editable.
+
+It is also the one code that is not Schema-scoped: it is reported for every relation value on the
+Subject, including a Statement the Schema does not declare and a Subject whose Schema cannot be
+loaded at all. Such a target would be unreadable from the moment it is written, which no later
+Schema change fixes.
+
+`args`: `[targetId]`. `valuePartIndex`: the offending target. `severity`: `error` (fixed).
+
 ## Out-of-schema Statements
 
 A Statement whose property is not declared on the current Schema is ignored — no violation. This is
 schema-drift tolerance: a property may have been removed from the Schema while Subjects still carry
-old Statements.
+old Statements. The one exception is
+[`relation-target-unresolvable-source`](#relation-target-unresolvable-source), reported even for
+Statements the Schema does not declare.
 
 ## Adding a new validation code
 

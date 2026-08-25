@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Validation;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
@@ -27,6 +28,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator
@@ -37,13 +39,16 @@ class SubjectValidatorTest extends TestCase {
 	private const string MATCHING_TARGET_ID = 'srt111111111aaa';
 	private const string MISMATCHING_TARGET_ID = 'srt111111111bbb';
 	private const string NONEXISTENT_TARGET_ID = 'srt111111111eee';
+	private const string UNRESOLVABLE_TARGET_ID = 'neverinstalled:Q42';
+	private const string REGISTERED_FOREIGN_TARGET_ID = TestSubjectIds::OTHER_SOURCE_KEY . ':Q42';
 
 	private SubjectValidator $validator;
 
 	protected function setUp(): void {
 		$this->validator = new SubjectValidator(
-			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes(),
+			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
 			subjectLookup: $this->newSubjectLookup(),
+			sourceRegistry: TestSources::newRegistry(),
 		);
 	}
 
@@ -392,6 +397,79 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertFalse( $violations[0]->isBlocking() );
 	}
 
+	/**
+	 * The registry answers for the Source, so the target is looked up rather than refused; the local
+	 * lookup this test runs against holds no foreign Subjects, which is a not-found, not an
+	 * unreachable Source.
+	 */
+	public function testRelationTargetFromARegisteredSourceIsLookedUpRatherThanRefused(): void {
+		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty() ] );
+
+		$violations = $this->validator->validate(
+			new StatementList( [ $this->newRelationStatement( self::REGISTERED_FOREIGN_TARGET_ID ) ] ),
+			$schema,
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'relation-target-not-found', $violations[0]->code );
+		$this->assertSame( [ self::REGISTERED_FOREIGN_TARGET_ID ], $violations[0]->args );
+		$this->assertFalse( $violations[0]->isBlocking() );
+	}
+
+	public function testRelationTargetFromAnUnregisteredSourceIsRejected(): void {
+		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty() ] );
+
+		$violations = $this->validator->validate(
+			new StatementList( [ $this->newRelationStatement( self::UNRESOLVABLE_TARGET_ID ) ] ),
+			$schema,
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'relation-target-unresolvable-source', $violations[0]->code );
+		$this->assertEquals( new PropertyName( 'Links' ), $violations[0]->propertyName );
+		$this->assertSame( [ self::UNRESOLVABLE_TARGET_ID ], $violations[0]->args );
+		$this->assertTrue( $violations[0]->isBlocking() );
+		$this->assertTrue( $violations[0]->alwaysBlocksWrites() );
+	}
+
+	public function testUnresolvableRelationTargetDoesNotAlsoEmitNotFound(): void {
+		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty() ] );
+
+		$violations = $this->validator->validate(
+			new StatementList( [ $this->newRelationStatement( self::UNRESOLVABLE_TARGET_ID ) ] ),
+			$schema,
+		);
+
+		$this->assertSame(
+			[ 'relation-target-unresolvable-source' ],
+			array_map( static fn ( $violation ): string => $violation->code, $violations )
+		);
+	}
+
+	/**
+	 * An out-of-schema Statement is otherwise ignored (schema-drift tolerance), but a target no Source
+	 * can reach is not a Schema rule: it would be written and then be unreadable, whatever the Schema
+	 * says today.
+	 */
+	public function testUnresolvableSourceIsRejectedOnAStatementTheSchemaDoesNotDeclare(): void {
+		$violations = $this->validator->validate(
+			new StatementList( [ $this->newRelationStatement( self::UNRESOLVABLE_TARGET_ID ) ] ),
+			$this->newSchema( [] ),
+		);
+
+		$this->assertCount( 1, $violations );
+		$this->assertSame( 'relation-target-unresolvable-source', $violations[0]->code );
+		$this->assertSame( [ self::UNRESOLVABLE_TARGET_ID ], $violations[0]->args );
+		$this->assertTrue( $violations[0]->alwaysBlocksWrites() );
+	}
+
+	public function testAnOutOfSchemaRelationTargetThatResolvesProducesNoViolation(): void {
+		$this->assertSame( [], $this->validator->validate(
+			new StatementList( [ $this->newRelationStatement( self::MATCHING_TARGET_ID ) ] ),
+			$this->newSchema( [] ),
+		) );
+	}
+
 	public function testNonexistentRelationTargetDoesNotAlsoEmitSchemaMismatch(): void {
 		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty() ] );
 
@@ -479,8 +557,9 @@ class SubjectValidatorTest extends TestCase {
 	public function testResolvesEveryRelationTargetInOneLookup(): void {
 		$subjectLookup = $this->newSubjectLookup();
 		$validator = new SubjectValidator(
-			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes(),
+			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
 			subjectLookup: $subjectLookup,
+			sourceRegistry: TestSources::newRegistry(),
 		);
 
 		$violations = $validator->validate(
@@ -547,6 +626,7 @@ class SubjectValidatorTest extends TestCase {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: false, default: null ),
 			[ 'relation' => 'has', 'targetSchema' => self::TARGET_SCHEMA, 'multiple' => $multiple ],
+			TestSubjectIds::LOCAL_SOURCE_KEY,
 		);
 	}
 

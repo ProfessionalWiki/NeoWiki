@@ -81,7 +81,7 @@ class OntologyMappingProjector implements PageProjector {
 		$quads = [];
 
 		foreach ( $page->getSubjects()->getAllSubjects()->asArray() as $subject ) {
-			$schemaMapping = $this->mapping->forSchema( $subject->getSchemaName() );
+			$schemaMapping = $this->schemaMappingFor( $subject );
 
 			if ( $schemaMapping !== null ) {
 				$quads = array_merge( $quads, $this->subjectQuads( $subject, $schemaMapping, $graph, $page ) );
@@ -105,7 +105,7 @@ class OntologyMappingProjector implements PageProjector {
 			return new QuadList();
 		}
 
-		$schemaMapping = $this->mapping->forSchema( $subject->getSchemaName() );
+		$schemaMapping = $this->schemaMappingFor( $subject );
 
 		if ( $schemaMapping === null ) {
 			return new QuadList();
@@ -114,6 +114,28 @@ class OntologyMappingProjector implements PageProjector {
 		return QuadList::fromArray(
 			$this->subjectQuads( $subject, $schemaMapping, $this->namespaces->graph( $this->target, $page->getId() ), $page )
 		);
+	}
+
+	/**
+	 * This Mapping's entry for the Subject's Schema, or null when it has none.
+	 *
+	 * A Mapping names Schemas of this wiki: its entries are Schema names, with no Source to them. A
+	 * Subject whose Schema comes from elsewhere therefore has no entry, however its name reads —
+	 * matching one by name alone would project it under a mapping written for a different Schema
+	 * that merely shares the name (ADR 23).
+	 */
+	private function schemaMappingFor( Subject $subject ): ?SchemaMapping {
+		$reference = $subject->getSchemaReference();
+
+		if ( !$reference->isLocal() ) {
+			$this->logger->warning(
+				'Not projecting Subject ' . $subject->id->text . ' to ' . $this->target
+				. ': its Schema ' . $reference->getText() . ' comes from another Source'
+			);
+			return null;
+		}
+
+		return $this->mapping->forSchema( $reference->name );
 	}
 
 	/**

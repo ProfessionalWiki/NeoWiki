@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\PropertyType\Types;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
@@ -23,7 +24,7 @@ class RelationTypeValidateTest extends TestCase {
 	private RelationType $type;
 
 	protected function setUp(): void {
-		$this->type = new RelationType();
+		$this->type = new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY );
 	}
 
 	public function testOptionalAndEmptyReturnsNoViolations(): void {
@@ -64,6 +65,7 @@ class RelationTypeValidateTest extends TestCase {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: $required, default: null ),
 			[ 'relation' => 'has', 'targetSchema' => 'Person', 'multiple' => false ],
+			TestSubjectIds::LOCAL_SOURCE_KEY,
 		);
 	}
 

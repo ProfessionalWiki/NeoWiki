@@ -33,7 +33,7 @@ class GetSubjectResponseItemTest extends TestCase {
 
 		$this->assertSame( 's1demo1aaaaaaa1', $item->id );
 		$this->assertSame( 'ACME Corp', $item->label );
-		$this->assertSame( 'Organization', $item->schemaName );
+		$this->assertSame( 'Organization', $item->schema );
 	}
 
 	public function testFromSubjectKeepsTheStoredLabelAbsentAndTakesTheDisplayNameGiven(): void {

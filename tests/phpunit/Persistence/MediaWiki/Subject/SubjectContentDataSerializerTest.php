@@ -299,11 +299,79 @@ JSON;
 	}
 
 	/**
+	 * A Schema from another Source is referenced by an object (ADR 23), which is what keeps it apart
+	 * from a local Schema name that happens to contain a colon.
+	 */
+	public function testASourcedSchemaReferenceSurvivesTheRoundTrip(): void {
+		$contentJson = <<<'JSON'
+{
+    "mainSubject": null,
+    "subjects": {
+        "sTestSCDS111111": {
+            "label": "Berlin",
+            "schema": {
+                "source": "otherwiki",
+                "name": "City"
+            },
+            "statements": {}
+        }
+    }
+}
+JSON;
+
+		$this->assertSame( $contentJson, $this->roundTrip( $contentJson ) );
+	}
+
+	public function testARelationTargetFromAnotherSourceSurvivesTheRoundTrip(): void {
+		$contentJson = <<<'JSON'
+{
+    "mainSubject": null,
+    "subjects": {
+        "sTestSCDS111111": {
+            "label": "Berlin",
+            "schema": "City",
+            "statements": {
+                "Twinned with": {
+                    "propertyType": "relation",
+                    "value": [
+                        {
+                            "id": "rTestSCDS111111",
+                            "target": "otherwiki:Q42"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
+JSON;
+
+		$this->assertSame( $contentJson, $this->roundTrip( $contentJson ) );
+	}
+
+	public function testAColonBearingSchemaNameStaysOneLocalName(): void {
+		$contentJson = <<<'JSON'
+{
+    "mainSubject": null,
+    "subjects": {
+        "sTestSCDS111111": {
+            "label": "Our procedure",
+            "schema": "ISO:9001",
+            "statements": {}
+        }
+    }
+}
+JSON;
+
+		$this->assertSame( $contentJson, $this->roundTrip( $contentJson ) );
+	}
+
+	/**
 	 * Core types only: no extension is loaded, so "color" is an unregistered type.
 	 */
 	private function roundTrip( string $contentJson ): string {
 		$deserializer = new SubjectContentDataDeserializer(
-			new StatementDeserializer( PropertyTypeRegistry::withCoreTypes(), TestSubjectIds::newParser() ),
+			new StatementDeserializer( PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ), TestSubjectIds::newParser() ),
 			TestSubjectIds::newParser()
 		);
 
