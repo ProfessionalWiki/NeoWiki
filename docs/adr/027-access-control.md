@@ -2,7 +2,8 @@
 
 Date: 2026-07-22
 
-Status: Accepted (2026-09-02)
+Status: Accepted (2026-09-02). Amended 2026-09-11, resolving the "Cross-wiki subject display" open decision with a
+fifth read class, source-attested (see Decision).
 
 ## Context
 
@@ -70,15 +71,19 @@ Constraints the model rests on:
 - **Projections and dumps are generated without permission checks.** We may add such support later, enabling a
   public projection (a public store with a public query endpoint, holding no restricted content) alongside a private
   one that includes restricted content.
+- **Source-attested reads are not gated per user.** A Subject or Schema supplied by a registered Source
+  ([ADR 23](023-subject-sources.md)) has no page on this wiki to authorize against. The Source vouches instead:
+  everything it returns is readable by everyone who may read this wiki at all, so the read surfaces serve it without
+  a per-row check, and a Source over data with restrictions of its own serves only the unrestricted part — a
+  question it answers without knowing who is asking. Read surfaces decide by the id's Source, never by whether a
+  page was found; local Subjects keep the page-attributable gate. Denied and absent are the same thing by
+  construction: what a Source does not vouch, it does not return. Sourced data therefore has no per-user
+  granularity; if that is ever demanded, it is an additive optional context on the Source contract, not a redesign.
 
 ## Open decisions
 
 These decisions remain open at acceptance; each is deferred to the tracking issue named with it.
 
-- **Cross-wiki subject display.** Rendering a subject from another wiki goes through REST, not Cypher, so query-side
-  scoping does not cover it. Deferred to [#1341](https://github.com/ProfessionalWiki/NeoWiki/issues/1341): the
-  check and the degradation behavior when the schema or subject is not accessible. Relates to
-  [ADR 23](023-subject-sources.md).
 - **Default grant of `neowiki-query`.** The right is granted to `*` by default. Deferred to
   [#1342](https://github.com/ProfessionalWiki/NeoWiki/issues/1342): whether the default changes, and how deployments
   with restricted content are expected to configure it.
@@ -91,8 +96,9 @@ These decisions remain open at acceptance; each is deferred to the tracking issu
 ## Consequences
 
 - Every new surface that exposes NeoWiki data must be classified: page-attributable (per-row gate), raw query
-  (whole-store semantics), projection/dump (no permission checks), or parse-time (parsing user's authority,
-  output keyed by access class). There is no unclassified option.
+  (whole-store semantics), projection/dump (no permission checks), parse-time (parsing user's authority, output
+  keyed by access class), or source-attested (the Source vouches, no per-row gate). There is no unclassified
+  option.
 - A page that reads Subjects or runs queries at parse time holds one parser-cache entry per access class
   among its viewers. Current-revision views of other pages are unaffected; old-revision views are keyed per
   class wiki-wide, because core's revision-output cache keys on every cache-varying option rather than the
@@ -134,4 +140,6 @@ These decisions remain open at acceptance; each is deferred to the tracking issu
 - [rest-api.md Permissions](../api/rest-api.md), [query-api.md Permissions](../api/query-api.md),
   [graph-model](../api/graph-model.md)
 - Issues: [#1046](https://github.com/ProfessionalWiki/NeoWiki/issues/1046) (per-page read enforcement),
-  [#350](https://github.com/ProfessionalWiki/NeoWiki/issues/350) (slot-level access)
+  [#350](https://github.com/ProfessionalWiki/NeoWiki/issues/350) (slot-level access),
+  [#1341](https://github.com/ProfessionalWiki/NeoWiki/issues/1341) (cross-wiki subject display, resolved by the
+  source-attested class)

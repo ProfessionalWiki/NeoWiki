@@ -114,34 +114,58 @@ readonly class GetPageSubjectsQuery {
 
 			$pageIdentifiers = $hostingPages[$idText] ?? null;
 
-			// An unresolvable page is omitted rather than served ungated. The graph-backed
-			// repository cannot reach one (it returns null first), so this only guards a
-			// future SubjectLookup that bypasses the graph.
-			if ( $pageIdentifiers === null
-				|| !$this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() ) ) {
+			if ( !$this->mayServe( $referencedId, $pageIdentifiers ) ) {
 				continue;
-			}
-
-			// A target lives on a page of its own, so whether it is that page's Main Subject has to
-			// be asked rather than known: one page read per distinct target page, and none for a
-			// target whose stored label makes the question moot.
-			$targetPageId = $pageIdentifiers->getId();
-
-			if ( $referencedSubject->getLabel() === null && !array_key_exists( $targetPageId->id, $mainSubjectIds ) ) {
-				$mainSubjectIds[$targetPageId->id] = $this->subjectRepository
-					->getSubjectsByPageId( $targetPageId )
-					->getMainSubject()
-					?->getId();
 			}
 
 			$referenced[$idText] = $this->buildItem(
 				$referencedSubject,
 				$pageIdentifiers,
-				isMainSubject: ( $mainSubjectIds[$targetPageId->id] ?? null )?->equals( $referencedSubject->getId() ) ?? false
+				isMainSubject: $pageIdentifiers !== null
+					&& $this->isMainSubjectOfItsPage( $referencedSubject, $pageIdentifiers, $mainSubjectIds )
 			);
 		}
 
 		return $referenced;
+	}
+
+	/**
+	 * A local target with no resolvable page is omitted rather than served ungated: nothing authorizes
+	 * it. A sourced target has no page of this wiki to resolve, and its Source vouched for it
+	 * (ADR 23), so it is served without one.
+	 */
+	private function mayServe( SubjectId $id, ?PageIdentifiers $pageIdentifiers ): bool {
+		if ( !$id->isLocal() ) {
+			return true;
+		}
+
+		return $pageIdentifiers !== null
+			&& $this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() );
+	}
+
+	/**
+	 * A target lives on a page of its own, so whether it is that page's Main Subject has to be asked
+	 * rather than known: one page read per distinct target page, and none for a target whose stored
+	 * label makes the question moot.
+	 *
+	 * @param array<int, ?SubjectId> $mainSubjectIds Page ID → that page's Main Subject, filled as pages
+	 *   are reached so that several targets on one page cost one read.
+	 */
+	private function isMainSubjectOfItsPage(
+		Subject $subject,
+		PageIdentifiers $pageIdentifiers,
+		array &$mainSubjectIds
+	): bool {
+		$pageId = $pageIdentifiers->getId();
+
+		if ( $subject->getLabel() === null && !array_key_exists( $pageId->id, $mainSubjectIds ) ) {
+			$mainSubjectIds[$pageId->id] = $this->subjectRepository
+				->getSubjectsByPageId( $pageId )
+				->getMainSubject()
+				?->getId();
+		}
+
+		return ( $mainSubjectIds[$pageId->id] ?? null )?->equals( $subject->getId() ) ?? false;
 	}
 
 	private function buildItem(

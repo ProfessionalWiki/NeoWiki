@@ -30,6 +30,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 
 /**
@@ -98,6 +99,7 @@ class SubjectDataLookupTest extends TestCase {
 
 		return new SubjectResolver(
 			$contentRepository,
+			new InMemorySubjectLookup(),
 			$pageIdentifiersLookup,
 			new StubPageReadAuthorizer( true ),
 			TestSubjectIds::newParser()

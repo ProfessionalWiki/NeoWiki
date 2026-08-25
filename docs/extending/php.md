@@ -1,6 +1,6 @@
 ---
 title: Using NeoWiki from PHP
-order: 8
+order: 9
 ---
 # Using NeoWiki from PHP
 

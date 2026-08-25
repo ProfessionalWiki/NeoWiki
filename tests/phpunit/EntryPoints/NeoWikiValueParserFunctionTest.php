@@ -34,6 +34,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiValueParserFunction;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 
 /**
@@ -74,6 +75,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		return new NeoWikiValueParserFunction(
 			new SubjectResolver(
 				$repo,
+				new InMemorySubjectLookup(),
 				$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
 				$readAuthorizer ?? new StubPageReadAuthorizer( true ),
 				TestSubjectIds::newParser()

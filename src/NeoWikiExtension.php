@@ -88,6 +88,7 @@ use ProfessionalWiki\NeoWiki\Application\FailureIsolatingRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicyRegistry;
 use ProfessionalWiki\NeoWiki\Application\SubjectIdMinter;
+use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
@@ -111,6 +112,9 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportSubjectRdfApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ResolveSubjectIriApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
+use ProfessionalWiki\NeoWiki\Application\Source\LocalSource;
+use ProfessionalWiki\NeoWiki\Application\Source\SourceRoutingSubjectLookup;
+use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
@@ -224,6 +228,7 @@ class NeoWikiExtension {
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
 	private SubjectEditNoticeProviderRegistry $subjectEditNoticeProviderRegistry;
+	private SourceRegistry $sourceRegistry;
 	private Neo4jValueBuilderRegistry $valueBuilderRegistry;
 	private RdfValueMapperRegistry $rdfValueMapperRegistry;
 	private bool $extensionsRegistered = false;
@@ -360,6 +365,7 @@ class NeoWikiExtension {
 				$this->getRdfValueMapperRegistry(),
 				$this->getSubjectEditNoticeProviderRegistry(),
 				$this->getRevisionPolicyRegistry(),
+				$this->getSourceRegistry(),
 			) ]
 		);
 	}
@@ -400,6 +406,52 @@ class NeoWikiExtension {
 		$this->ensureExtensionsRegistered();
 
 		return $this->subjectEditNoticeProviderRegistry;
+	}
+
+	/**
+	 * The Sources this wiki resolves Subjects and Schemas through (ADR 23). The local one is always
+	 * registered, under the MediaWiki Wiki ID; extensions add theirs through
+	 * {@see NeoWikiRegistrar::addSource()}.
+	 */
+	public function getSourceRegistry(): SourceRegistry {
+		if ( !isset( $this->sourceRegistry ) ) {
+			$this->sourceRegistry = new SourceRegistry( $this->config->wikiId );
+			// Registered as a factory: registration runs on every request, and building the Source
+			// wires up the Subject repository and the Schema lookup, which a request that reads no
+			// Subject has no use for.
+			$this->sourceRegistry->registerSource(
+				$this->config->wikiId,
+				fn (): LocalSource => $this->newLocalSource( $this->getSubjectRepository() )
+			);
+		}
+
+		$this->ensureExtensionsRegistered();
+
+		return $this->sourceRegistry;
+	}
+
+	private function newLocalSource( SubjectLookup $subjectLookup ): LocalSource {
+		return new LocalSource(
+			subjectLookup: fn (): SubjectLookup => $subjectLookup,
+			schemaLookup: $this->getSchemaLookup(),
+			baseUri: $this->getRdfNamespaces()->subjectIriBase(),
+		);
+	}
+
+	/**
+	 * Reads every Subject through its own Source. The seam that lets a Subject from elsewhere be
+	 * fetched by id; with only the local Source registered it resolves exactly what $localSubjectLookup does.
+	 *
+	 * The local read strategy is the caller's, because it is the caller that knows which Subjects of this wiki
+	 * it may see: the published revision for a reader (#1398), only readable pages for a validation pass
+	 * (#1046). A Source of somewhere else has no such variants — it vouches for what it returns (ADR 23) — so
+	 * it is reached the same way whoever asks.
+	 */
+	public function getSourceRoutingSubjectLookup( SubjectLookup $localSubjectLookup ): SubjectLookup {
+		return new SourceRoutingSubjectLookup(
+			$this->getSourceRegistry()->withLocalSource( $this->newLocalSource( $localSubjectLookup ) ),
+			LoggerFactory::getInstance( 'NeoWiki' )
+		);
 	}
 
 	public function getPagePropertyProviderRegistry(): PagePropertyProviderRegistry {
@@ -1083,6 +1135,9 @@ class NeoWikiExtension {
 	public function newSubjectResolver( Authority $authority ): SubjectResolver {
 		return new SubjectResolver(
 			subjectContentRepository: $this->newSubjectContentRepository( $authority ),
+			// Latest, deliberately: the parse-time surfaces read what the editor sees, and the page gate
+			// below is what keeps a restricted page out of the parser cache.
+			subjectLookup: $this->getSourceRoutingSubjectLookup( $this->getSubjectRepository() ),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			subjectIdParser: $this->getSubjectIdParser(),
@@ -1537,7 +1592,7 @@ class NeoWikiExtension {
 		return new GetPageSubjectsQuery(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			subjectLookup: $this->getSubjectRepository(),
+			subjectLookup: $this->getSourceRoutingSubjectLookup( $this->getSubjectRepository() ),
 			schemaLookup: $this->getSchemaLookup(),
 			schemaSerializer: $this->getSchemaPresentationSerializer(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
@@ -1548,11 +1603,11 @@ class NeoWikiExtension {
 	public function newGetSubjectQuery( RestGetSubjectPresenter $presenter, Authority $authority ): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
-			subjectLookup: new PublishedSubjectLookup(
+			subjectLookup: $this->getSourceRoutingSubjectLookup( new PublishedSubjectLookup(
 				pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 				revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
 				revisionPolicy: $this->getRevisionPolicy(),
-			),
+			) ),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			pageSubjectsLookup: $this->newPageSubjectsLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
@@ -1616,11 +1671,11 @@ class NeoWikiExtension {
 	public function newSubjectValidator( Authority $authority ): SubjectValidator {
 		return new SubjectValidator(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
-			subjectLookup: new ReadAuthorizedSubjectLookup(
+			subjectLookup: $this->getSourceRoutingSubjectLookup( new ReadAuthorizedSubjectLookup(
 				subjectLookup: $this->getSubjectRepository(),
 				pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 				readAuthorizer: $this->newPageReadAuthorizer( $authority ),
-			),
+			) ),
 		);
 	}
 

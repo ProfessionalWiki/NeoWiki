@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySource;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi
@@ -213,6 +214,67 @@ JSON
 			'GetPageSubjectsApiTest RelationTarget',
 			$body['referencedSubjects']['sTestGPS1111aa1']['pageTitle']
 		);
+	}
+
+	/**
+	 * A relation target from another Source has no page of this wiki to authorize against, and its
+	 * Source vouches for it (ADR 23), so the expansion serves it rather than dropping it.
+	 */
+	public function testReferencedSubjectFromAnotherSourceIsIncluded(): void {
+		$this->createSchema(
+			'GetPageSubjectsApiTestSourcedRelationSchema',
+			<<<JSON
+{
+	"title": "GetPageSubjectsApiTestSourcedRelationSchema",
+	"propertyDefinitions": {
+		"partner": {
+			"type": "relation",
+			"relation": "Partner",
+			"targetSchema": "GetPageSubjectsApiTestSchema"
+		}
+	}
+}
+JSON
+		);
+
+		$this->registerSources( [
+			'catalog' => new InMemorySource(
+				TestSubject::build(
+					id: 'catalog:widget-7',
+					label: new SubjectLabel( 'Widget 7' ),
+					schemaName: new SchemaName( 'GetPageSubjectsApiTestSchema' )
+				)
+			),
+		] );
+
+		$revision = $this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_WithSourcedRelation',
+			mainSubject: TestSubject::build(
+				id: 'sTestGPS1111aa3',
+				label: new SubjectLabel( 'Source' ),
+				schemaName: new SchemaName( 'GetPageSubjectsApiTestSourcedRelationSchema' ),
+				statements: new StatementList( [
+					TestStatement::buildRelation( 'partner', [
+						TestRelation::build( id: 'rTestGPS1111aa3', targetId: 'catalog:widget-7' ),
+					] ),
+				] )
+			),
+		);
+
+		$response = $this->executeHandler(
+			new GetPageSubjectsApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'pageId' => (string)$revision->getPage()->getId() ],
+				'queryParams' => [ 'expand' => 'relations' ],
+			] )
+		);
+
+		$body = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertArrayHasKey( 'catalog:widget-7', $body['referencedSubjects'] );
+		$this->assertSame( 'Widget 7', $body['referencedSubjects']['catalog:widget-7']['label'] );
 	}
 
 	public function testReturnsChildrenWhenMainSubjectIsAbsent(): void {

@@ -103,8 +103,11 @@ readonly class SubjectId implements Stringable {
 	}
 
 	/**
-	 * Whether $text is a well-formed Subject id in either form. Syntax only: whether the Source exists,
-	 * and whether it recognizes the localId, is answered at resolution time by the Source registry.
+	 * Whether $text is a well-formed Subject id in either form. Syntax only, against the grammars here:
+	 * whether the Source exists is answered at resolution time by the Source registry, and whether that
+	 * Source recognizes the localId is answered by nothing today —
+	 * {@see \ProfessionalWiki\NeoWiki\Domain\Source\Source::isValidLocalId()} is the seam for it, and no
+	 * caller consults it.
 	 */
 	public static function isValid( string $text ): bool {
 		return self::split( $text ) !== null;
