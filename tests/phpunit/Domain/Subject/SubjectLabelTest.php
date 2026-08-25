@@ -36,4 +36,21 @@ class SubjectLabelTest extends TestCase {
 		$this->assertSame( "  \t\n  ", $label->text );
 	}
 
+	/**
+	 * @dataProvider textThatMeansNoLabelProvider
+	 */
+	public function testFromTextReadsBlankTextAsNoLabel( ?string $text ): void {
+		$this->assertNull( SubjectLabel::fromText( $text ) );
+	}
+
+	public static function textThatMeansNoLabelProvider(): iterable {
+		yield 'null' => [ null ];
+		yield 'empty' => [ '' ];
+		yield 'whitespace only' => [ "  \t\n  " ];
+	}
+
+	public function testFromTextKeepsALabelVerbatim(): void {
+		$this->assertSame( '  foo  ', SubjectLabel::fromText( '  foo  ' )?->text );
+	}
+
 }

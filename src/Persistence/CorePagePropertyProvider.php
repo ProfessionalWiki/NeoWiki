@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence;
 
 use ProfessionalWiki\NeoWiki\Domain\Page\PageDateTime;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderContext;
 
@@ -12,7 +13,7 @@ class CorePagePropertyProvider implements PagePropertyProvider {
 
 	public function getProperties( PagePropertyProviderContext $context ): array {
 		return [
-			'name' => $context->pageTitle,
+			PageProperties::NAME => $context->pageTitle,
 			'namespaceId' => $context->namespaceId,
 			'creationTime' => new PageDateTime( $context->creationTime ),
 			'lastUpdated' => new PageDateTime( $context->modificationTime ),
