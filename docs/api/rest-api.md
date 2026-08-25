@@ -47,7 +47,8 @@ The graph-store endpoints are gated by the `neowiki-admin` right.
 ### Subjects
 
 Read, change, and validate Subjects. New Subjects are created on a page — see
-[Pages and Subjects](#pages-and-subjects). For the body shape, see [Subject format](subject-format.md).
+[Pages and Subjects](#pages-and-subjects). For the body shape, see [Subject format](subject-format.md); for the form
+of a `{subjectId}`, see [IDs](subject-format.md#ids).
 
 | Endpoint | Description |
 |---|---|

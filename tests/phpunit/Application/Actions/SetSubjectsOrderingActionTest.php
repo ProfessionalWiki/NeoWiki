@@ -16,6 +16,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use RuntimeException;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\SetSubjectsOrdering\SetSubjectsOrderingAction
@@ -110,6 +111,22 @@ class SetSubjectsOrderingActionTest extends TestCase {
 		$this->assertEquals( $before, $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) ) );
 	}
 
+	public function testReportsNoChangeWhenTheOrderingIsSpelledWithExplicitlyLocalIds(): void {
+		$repository = $this->newRepositoryWithMainAndThreeChildren();
+		$presenter = $this->newSpyPresenter();
+		$local = TestSubjectIds::LOCAL_SOURCE_KEY . ':';
+
+		$this->newAction( $presenter, $repository )->setOrdering(
+			new SetSubjectsOrderingRequest(
+				pageId: self::PAGE_ID,
+				mainSubjectId: $local . self::MAIN_ID,
+				childSubjectIds: [ $local . self::FIRST_ID, $local . self::SECOND_ID, $local . self::THIRD_ID ],
+			)
+		);
+
+		$this->assertTrue( $presenter->noChange );
+	}
+
 	public function testReportsInvalidOrderingOnUnknownId(): void {
 		$repository = $this->newRepositoryWithMainAndThreeChildren();
 		$before = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
@@ -192,6 +209,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			subjectRepository: new InMemorySubjectRepository(),
 			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: false ),
+			subjectIdParser: TestSubjectIds::newParser(),
 		);
 
 		$this->expectException( RuntimeException::class );
@@ -216,6 +234,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			subjectRepository: $repository,
 			readAuthorizer: new StubPageReadAuthorizer( allowed: false ),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: true ),
+			subjectIdParser: TestSubjectIds::newParser(),
 		) )->setOrdering(
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
@@ -239,6 +258,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			subjectRepository: $this->newRepositoryWithMainAndThreeChildren(),
 			readAuthorizer: new StubPageReadAuthorizer( allowed: false ),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: false ),
+			subjectIdParser: TestSubjectIds::newParser(),
 		) )->setOrdering(
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
@@ -291,6 +311,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			subjectRepository: $repository,
 			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: true ),
+			subjectIdParser: TestSubjectIds::newParser(),
 		);
 	}
 

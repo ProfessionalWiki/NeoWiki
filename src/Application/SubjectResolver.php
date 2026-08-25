@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 
 class SubjectResolver {
 
@@ -24,16 +25,19 @@ class SubjectResolver {
 		private readonly SubjectContentRepository $subjectContentRepository,
 		private readonly SubjectLookup $subjectLookup,
 		private readonly PageIdentifiersLookup $pageIdentifiersLookup,
+		private readonly SubjectIdParser $subjectIdParser,
 	) {
 	}
 
 	public function resolveById( string $subjectIdText ): ?Subject {
-		if ( !SubjectId::isValid( $subjectIdText ) ) {
+		$subjectId = $this->subjectIdParser->parse( $subjectIdText );
+
+		if ( $subjectId === null ) {
 			return null;
 		}
 
 		try {
-			return $this->subjectLookup->getSubject( new SubjectId( $subjectIdText ) );
+			return $this->subjectLookup->getSubject( $subjectId );
 		} catch ( Exception ) {
 			return null;
 		}

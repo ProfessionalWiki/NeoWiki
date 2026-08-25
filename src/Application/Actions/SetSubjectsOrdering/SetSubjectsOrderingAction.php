@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use RuntimeException;
 
@@ -21,6 +21,7 @@ readonly class SetSubjectsOrderingAction {
 		private SubjectRepository $subjectRepository,
 		private PageReadAuthorizer $readAuthorizer,
 		private SubjectWriteAuthorizer $writeAuthorizer,
+		private SubjectIdParser $subjectIdParser,
 	) {
 	}
 
@@ -48,8 +49,8 @@ readonly class SetSubjectsOrderingAction {
 
 		try {
 			$pageSubjects->setOrdering(
-				$request->mainSubjectId === null ? null : new SubjectId( $request->mainSubjectId ),
-				array_map( fn ( string $id ) => new SubjectId( $id ), $request->childSubjectIds )
+				$request->mainSubjectId === null ? null : $this->subjectIdParser->parseOrThrow( $request->mainSubjectId ),
+				array_map( fn ( string $id ) => $this->subjectIdParser->parseOrThrow( $id ), $request->childSubjectIds )
 			);
 		} catch ( InvalidArgumentException $e ) {
 			$this->presenter->presentInvalidOrdering( $e->getMessage() );
@@ -68,12 +69,26 @@ readonly class SetSubjectsOrderingAction {
 		$this->presenter->presentOrderingChanged();
 	}
 
+	/**
+	 * Ids are parsed before being compared, so asking for the ordering the page already has is a no-op
+	 * however the ids are spelled: an explicitly-local id names the same Subject as its bare form. A
+	 * malformed id compares unequal and falls through to setOrdering(), which reports it.
+	 */
 	private function matchesCurrent( PageSubjects $pageSubjects, SetSubjectsOrderingRequest $request ): bool {
-		$currentMainId = $pageSubjects->getMainSubject()?->id->text;
-		if ( $currentMainId !== $request->mainSubjectId ) {
+		if ( $pageSubjects->getMainSubject()?->id->text !== $this->canonicalize( $request->mainSubjectId ) ) {
 			return false;
 		}
-		return $pageSubjects->getChildSubjects()->getIdsAsTextArray() === $request->childSubjectIds;
+
+		return $pageSubjects->getChildSubjects()->getIdsAsTextArray()
+			=== array_map( $this->canonicalize( ... ), $request->childSubjectIds );
+	}
+
+	/**
+	 * The id's canonical text, or the text as given when it is not a well-formed id — which no stored
+	 * id can equal, so a malformed request never short-circuits as a no-op.
+	 */
+	private function canonicalize( ?string $id ): ?string {
+		return $id === null ? null : ( $this->subjectIdParser->parse( $id )?->text ?? $id );
 	}
 
 }

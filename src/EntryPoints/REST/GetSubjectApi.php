@@ -22,6 +22,13 @@ class GetSubjectApi extends SimpleHandler {
 	private const string EXPAND_RELATIONS = 'relations';
 
 	public function run( string $subjectId ): Response {
+		// Validate the ID shape first, so a malformed value is a clean 400 rather than becoming a 500.
+		if ( NeoWikiExtension::getInstance()->getSubjectIdParser()->parse( $subjectId ) === null ) {
+			return $this->getResponseFactory()->createHttpError( 400, [
+				'message' => 'Invalid Subject ID: ' . $subjectId,
+			] );
+		}
+
 		$presenter = new RestGetSubjectPresenter();
 		$revisionId = $this->getValidatedParams()['revisionId'] ?? null;
 
@@ -73,7 +80,7 @@ class GetSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject. 15 characters, starting with "s".',
+				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject: 15 characters starting with "s" for a Subject of this wiki, or "sourceKey:localId" for one from another Source.',
 			],
 			'revisionId' => [
 				self::PARAM_SOURCE => 'query',

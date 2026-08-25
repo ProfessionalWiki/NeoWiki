@@ -43,6 +43,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use RuntimeException;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction
@@ -89,7 +90,8 @@ class CreateSubjectActionTest extends TestCase {
 			$this->authorizer,
 			new StatementListBuilder(
 				$registry,
-				$this->idGenerator
+				$this->idGenerator,
+				TestSubjectIds::newParser()
 			),
 			$this->schemaLookup,
 			new SelectStatementResolver( new SelectValueResolver() ),
@@ -102,6 +104,7 @@ class CreateSubjectActionTest extends TestCase {
 			),
 			$this->pageIdentifiersLookup,
 			$this->pageIdentifiersResolver,
+			TestSubjectIds::newParser(),
 			$validationEnforced,
 		);
 	}
