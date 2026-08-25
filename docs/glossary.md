@@ -27,7 +27,9 @@ Subjects have
 
 - An `id`: persistent identifier. Subject IDs start with `s` and are always 15 characters long ([ADR 14](adr/014-improved-id-format.md))
 - A `schema`: reference to a Schema by name. Example: Person, Company, Product, etc.
-- A `label`: the name of the subject. Example: "John Doe". This is a string, not a reference to a page.
+- An optional `label`: the name of the subject. Example: "John Doe". This is a string, not a reference to a page.
+  Without one, the Subject is shown under its page name when it is the page's Main Subject, and under its Schema name
+  otherwise ([ADR 31](adr/031-optional-subject-labels.md))
 - `statements`: a list of Statements
 
 *Avoid using these terms as synonyms: "object", "entity", "item"*
@@ -197,5 +199,5 @@ These terms are current but contested; expect them to change:
   ([#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630)).
 - "Allow multiple values", the `multiple` schema field, and multi-part Values name one concept three ways
   ([#712](https://github.com/ProfessionalWiki/NeoWiki/issues/712)).
-- Subjects have a `label` while Schemas, Layouts, and Mappings have a `name`, and a computed "display-name"
-  is proposed as a third term ([#1283](https://github.com/ProfessionalWiki/NeoWiki/issues/1283)).
+- Subjects have a `label` while Schemas, Layouts, and Mappings have a `name`, and a Subject without a label is shown
+  under a computed `displayName` ([#1283](https://github.com/ProfessionalWiki/NeoWiki/issues/1283)).
