@@ -42,6 +42,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction
@@ -71,7 +72,8 @@ class ReplaceSubjectActionTest extends TestCase {
 		$registry = PropertyTypeRegistry::withCoreTypes();
 		$builder = new StatementListBuilder(
 			propertyTypeLookup: $registry,
-			idGenerator: new StubIdGenerator( '11111111111127' )
+			idGenerator: new StubIdGenerator( '11111111111127' ),
+			subjectIdParser: TestSubjectIds::newParser()
 		);
 		return new ReplaceSubjectAction(
 			subjectRepository: $this->subjectRepository,

@@ -28,7 +28,10 @@ class CreateSubjectApi extends SimpleHandler {
 
 		$id = $body['id'] ?? null;
 
-		if ( $id !== null && !SubjectId::isValid( $id ) ) {
+		// A Subject is only ever created in the local Source, so a supplied id must name it: bare, or
+		// qualified with this wiki's own key, which the parser canonicalizes away. The action enforces
+		// the same rule; checking here makes it a 400 rather than a 400 dressed as an exception.
+		if ( $id !== null && $this->localId( $id ) === null ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'status' => 'error',
 				'message' => "Subject ID has the wrong format: '$id'",
@@ -64,6 +67,12 @@ class CreateSubjectApi extends SimpleHandler {
 		$response = $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
 		$response->setStatus( $presenter->getStatusCode() );
 		return $response;
+	}
+
+	private function localId( string $id ): ?SubjectId {
+		$subjectId = NeoWikiExtension::getInstance()->getSubjectIdParser()->parse( $id );
+
+		return $subjectId?->isLocal() === true ? $subjectId : null;
 	}
 
 	public function getParamSettings(): array {

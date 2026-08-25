@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId
@@ -69,6 +70,37 @@ class SubjectIdTest extends TestCase {
 	 */
 	public function testIsValidPasses( string $validGuid ): void {
 		$this->assertTrue( SubjectId::isValid( $validGuid ) );
+	}
+
+	public function testBareIdIsLocal(): void {
+		$id = new SubjectId( 's11111111111111' );
+
+		$this->assertTrue( $id->isLocal() );
+		$this->assertNull( $id->source );
+		$this->assertSame( 's11111111111111', $id->localId );
+	}
+
+	public function testQualifiedIdCarriesItsSource(): void {
+		$id = new SubjectId( 'otherwiki:Q42' );
+
+		$this->assertFalse( $id->isLocal() );
+		$this->assertSame( 'otherwiki', $id->source );
+		$this->assertSame( 'Q42', $id->localId );
+	}
+
+	public function testIdsFromDifferentSourcesAreNotEqual(): void {
+		$this->assertFalse(
+			( new SubjectId( 'otherwiki:Q42' ) )->equals( new SubjectId( 'thirdwiki:Q42' ) )
+		);
+	}
+
+	public function testLocalIdGrammarRejectsQualifiedId(): void {
+		$this->assertTrue( SubjectId::isValidLocalId( 's11111111111111' ) );
+		$this->assertFalse( SubjectId::isValidLocalId( 'otherwiki:s11111111111111' ) );
+	}
+
+	public function testNewlyMintedIdIsLocal(): void {
+		$this->assertTrue( SubjectId::createNew( new StubIdGenerator( '1111111111111z' ) )->isLocal() );
 	}
 
 }

@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
@@ -24,6 +25,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDes
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer
@@ -244,10 +246,67 @@ class SubjectContentDataSerializerTest extends TestCase {
 	}
 
 	/**
+	 * Widening a Subject id to a (Source, localId) pair (ADR 23) must leave the slot of a page whose
+	 * Subjects are all local exactly as it was, down to the byte: every existing revision is such a
+	 * slot, and revision content cannot be migrated.
+	 */
+	public function testLocalOnlySlotIsSerializedByteIdentically(): void {
+		$contentJson = <<<'JSON'
+{
+    "mainSubject": "sTestSCDS111111",
+    "subjects": {
+        "sTestSCDS111111": {
+            "label": "Berlin",
+            "schema": "City",
+            "statements": {
+                "Country": {
+                    "propertyType": "text",
+                    "value": [
+                        "Germany"
+                    ]
+                },
+                "Population": {
+                    "propertyType": "number",
+                    "value": 3677472
+                },
+                "Capital": {
+                    "propertyType": "boolean",
+                    "value": true
+                },
+                "Mayor": {
+                    "propertyType": "relation",
+                    "value": [
+                        {
+                            "id": "rTestSCDS111111",
+                            "target": "sTestSCDS111112",
+                            "properties": {
+                                "since": "2023"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "sTestSCDS111112": {
+            "label": "Kai Wegner",
+            "schema": "Person",
+            "statements": {}
+        }
+    }
+}
+JSON;
+
+		$this->assertSame( $contentJson, $this->roundTrip( $contentJson ) );
+	}
+
+	/**
 	 * Core types only: no extension is loaded, so "color" is an unregistered type.
 	 */
 	private function roundTrip( string $contentJson ): string {
-		$deserializer = new SubjectContentDataDeserializer( new StatementDeserializer( PropertyTypeRegistry::withCoreTypes() ) );
+		$deserializer = new SubjectContentDataDeserializer(
+			new StatementDeserializer( PropertyTypeRegistry::withCoreTypes(), TestSubjectIds::newParser() ),
+			new NullLogger()
+		);
 
 		return ( new SubjectContentDataSerializer() )->serialize( $deserializer->deserialize( $contentJson ) );
 	}

@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 
 readonly class SetMainSubjectAction {
@@ -20,6 +21,7 @@ readonly class SetMainSubjectAction {
 		private SubjectRepository $subjectRepository,
 		private PageReadAuthorizer $readAuthorizer,
 		private SubjectWriteAuthorizer $writeAuthorizer,
+		private SubjectIdParser $subjectIdParser,
 	) {
 	}
 
@@ -46,7 +48,7 @@ readonly class SetMainSubjectAction {
 			return;
 		}
 
-		$this->promoteToMain( $pageSubjects, $previousMain, new SubjectId( $request->subjectId ), $pageId, $request->comment );
+		$this->promoteToMain( $pageSubjects, $previousMain, $this->subjectIdParser->parseOrThrow( $request->subjectId ), $pageId, $request->comment );
 	}
 
 	private function clearMain( PageSubjects $pageSubjects, ?Subject $previousMain, PageId $pageId, ?string $comment ): void {

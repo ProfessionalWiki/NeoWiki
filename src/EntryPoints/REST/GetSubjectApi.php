@@ -23,6 +23,15 @@ class GetSubjectApi extends SimpleHandler {
 	private const string EXPAND_RELATIONS = 'relations';
 
 	public function run( string $subjectId ): Response {
+		// Validate the ID shape first, so a malformed value is a clean 400 rather than becoming a 500.
+		$parsedId = NeoWikiExtension::getInstance()->getSubjectIdParser()->parse( $subjectId );
+
+		if ( $parsedId === null ) {
+			return $this->getResponseFactory()->createHttpError( 400, [
+				'message' => 'Invalid Subject ID: ' . $subjectId,
+			] );
+		}
+
 		$presenter = new RestGetSubjectPresenter();
 		$revisionId = $this->getValidatedParams()['revisionId'] ?? null;
 		$latest = $this->getValidatedParams()['latest'] ?? false;
@@ -35,7 +44,7 @@ class GetSubjectApi extends SimpleHandler {
 			] );
 		}
 
-		$query = $this->newGetSubjectQuery( $presenter, $subjectId, $revisionId, $latest );
+		$query = $this->newGetSubjectQuery( $presenter, $parsedId, $revisionId, $latest );
 
 		if ( $query instanceof Response ) {
 			return $query;
@@ -52,7 +61,7 @@ class GetSubjectApi extends SimpleHandler {
 
 	private function newGetSubjectQuery(
 		RestGetSubjectPresenter $presenter,
-		string $subjectId,
+		SubjectId $subjectId,
 		?int $revisionId,
 		bool $latest
 	): GetSubjectQuery|Response {
@@ -99,7 +108,7 @@ class GetSubjectApi extends SimpleHandler {
 	 * asking for a draft cannot confirm a harvested Subject id exists. The read is the revision-keyed
 	 * one at the revision the gate cleared: with relation expansion refused it reads no other page.
 	 */
-	private function newQueryForLatestRevision( RestGetSubjectPresenter $presenter, string $subjectId ): GetSubjectQuery|Response {
+	private function newQueryForLatestRevision( RestGetSubjectPresenter $presenter, SubjectId $subjectId ): GetSubjectQuery|Response {
 		$revision = $this->getLatestRevisionOfSubjectPage( $subjectId );
 
 		if ( $revision === null || !$this->revisionIsReadable( $revision ) ) {
@@ -111,10 +120,18 @@ class GetSubjectApi extends SimpleHandler {
 		return NeoWikiExtension::getInstance()->newGetSubjectQueryForRevision( $presenter, $revision, $this->getAuthority() );
 	}
 
-	private function getLatestRevisionOfSubjectPage( string $subjectId ): ?RevisionRecord {
+	/**
+	 * A Subject of another Source has no revision of this wiki to ask for, and the subject-to-page index
+	 * holds local ids alone (ADR 32), so it answers as an absent Subject does.
+	 */
+	private function getLatestRevisionOfSubjectPage( SubjectId $subjectId ): ?RevisionRecord {
+		if ( !$subjectId->isLocal() ) {
+			return null;
+		}
+
 		$pageIdentifiers = NeoWikiExtension::getInstance()
 			->getPageIdentifiersLookup()
-			->getPageIdOfSubject( new SubjectId( $subjectId ) );
+			->getPageIdOfSubject( $subjectId );
 
 		if ( $pageIdentifiers === null ) {
 			return null;
@@ -130,7 +147,7 @@ class GetSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject. 15 characters, starting with "s".',
+				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject: 15 characters starting with "s" for a Subject of this wiki, or "sourceKey:localId" for one from another Source.',
 			],
 			'revisionId' => [
 				self::PARAM_SOURCE => 'query',

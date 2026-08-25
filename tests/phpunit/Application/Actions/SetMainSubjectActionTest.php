@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAction
@@ -114,6 +115,7 @@ class SetMainSubjectActionTest extends TestCase {
 			subjectRepository: new InMemorySubjectRepository(),
 			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: false ),
+			subjectIdParser: TestSubjectIds::newParser(),
 		);
 
 		$this->expectException( \RuntimeException::class );
@@ -133,6 +135,7 @@ class SetMainSubjectActionTest extends TestCase {
 			subjectRepository: $repository,
 			readAuthorizer: new StubPageReadAuthorizer( allowed: false ),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: true ),
+			subjectIdParser: TestSubjectIds::newParser(),
 		) )->setMainSubject(
 			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::CHILD_ID )
 		);
@@ -152,6 +155,7 @@ class SetMainSubjectActionTest extends TestCase {
 			subjectRepository: $this->newRepositoryWithMainAndChild(),
 			readAuthorizer: new StubPageReadAuthorizer( allowed: false ),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: false ),
+			subjectIdParser: TestSubjectIds::newParser(),
 		) )->setMainSubject(
 			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::CHILD_ID )
 		);
@@ -192,6 +196,7 @@ class SetMainSubjectActionTest extends TestCase {
 			subjectRepository: $repository,
 			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: true ),
+			subjectIdParser: TestSubjectIds::newParser(),
 		);
 	}
 

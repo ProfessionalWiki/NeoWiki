@@ -24,6 +24,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivePageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use RuntimeException;
@@ -59,7 +60,8 @@ class SubjectResolverTest extends TestCase {
 		return new SubjectResolver(
 			$contentRepository,
 			$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
-			$readAuthorizer ?? new StubPageReadAuthorizer( true )
+			$readAuthorizer ?? new StubPageReadAuthorizer( true ),
+			TestSubjectIds::newParser()
 		);
 	}
 

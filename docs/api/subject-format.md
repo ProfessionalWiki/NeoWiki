@@ -122,6 +122,18 @@ Subject and Relation IDs are 15-character nanoid-style strings, lexicographicall
 Subject IDs start with `s` (`s1demo5sssssss1`), Relation IDs with `r` (`r1demo5rrrrrrr1`). See
 [ADR 014](../adr/014-improved-id-format.md).
 
+A Subject from another Source ([ADR 023](../adr/023-subject-sources.md)) is identified by `sourceKey:localId`, split at the first
+colon — `wikibase:Q42`, `otherwiki:s1demo5sssssss1`. The source key is a letter followed by up to 63 letters,
+digits, underscores or hyphens. The local ID is whatever that Source calls the Subject, up to 256 characters of
+`A-Z a-z 0-9` and `. _ ~ - : @ ! $ ( ) * + , ; =` — further colons included. A Subject of this wiki is always
+written bare, never `thisWikiId:s1demo5sssssss1`, and the two forms name the same Subject wherever both are
+accepted.
+
+The keys of a page's `subjects` map are these bare local IDs: a Subject from another Source is fetched from that
+Source and is never stored in a page's content. An entry keyed otherwise is skipped when the page is read.
+
+The 15-character grammar, and the creation-time sorting that comes with it, hold for this wiki's Subjects only.
+
 ## REST API
 
 ### Reading Subjects

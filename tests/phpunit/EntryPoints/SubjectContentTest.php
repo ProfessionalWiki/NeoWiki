@@ -87,6 +87,27 @@ class SubjectContentTest extends TestCase {
 		$this->assertSame( [ TestSubject::ZERO_GUID ], $content->getSubjectIds() );
 	}
 
+	/**
+	 * The subject-to-page index keys ids bare, as stored (ADR 32), and a Subject from another Source
+	 * is not stored in a local slot: no local page holds it. A qualified key is also longer than the
+	 * index column, so admitting one would truncate rather than record it.
+	 */
+	public function testSubjectIdsLeaveOutAKeyNamingAnotherSource(): void {
+		$content = new SubjectContent(
+			'{"subjects":{"otherwiki:Q42":{},"' . TestSubject::ZERO_GUID . '":{}}}'
+		);
+
+		$this->assertSame( [ TestSubject::ZERO_GUID ], $content->getSubjectIds() );
+	}
+
+	public function testSubjectIdsLeaveOutAKeyLongerThanTheIndexColumn(): void {
+		$content = new SubjectContent(
+			'{"subjects":{"' . str_repeat( 'a', 64 ) . ':' . str_repeat( 'b', 256 ) . '":{}}}'
+		);
+
+		$this->assertSame( [], $content->getSubjectIds() );
+	}
+
 	public function testContentThatIsNotSubjectJsonHoldsNoSubjectIds(): void {
 		$this->assertSame( [], ( new SubjectContent( 'not json at all' ) )->getSubjectIds() );
 	}

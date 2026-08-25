@@ -1,0 +1,224 @@
+{
+ "comment": "Subject id vectors, consumed by both the PHP and the TypeScript suite so the two id grammars are asserted equal rather than assumed so. \"valid\" and \"invalid\" are the context-free grammar, which both implementations answer alike. \"canonicalization\" needs the local Source key and so is the PHP parser's alone. See docs/reference/subject-format.md.",
+ "localSourceKey": "localwiki",
+ "valid": [
+  {
+   "case": "a bare local id stays bare",
+   "input": "s11111111111111",
+   "text": "s11111111111111",
+   "source": null,
+   "localId": "s11111111111111"
+  },
+  {
+   "case": "the full local alphabet is accepted",
+   "input": "s19AZazHJKmnpqr",
+   "text": "s19AZazHJKmnpqr",
+   "source": null,
+   "localId": "s19AZazHJKmnpqr"
+  },
+  {
+   "case": "another wiki's Subject keeps its qualified form",
+   "input": "otherwiki:s11111111111111",
+   "text": "otherwiki:s11111111111111",
+   "source": "otherwiki",
+   "localId": "s11111111111111"
+  },
+  {
+   "case": "a foreign localId follows its own grammar, not the local one",
+   "input": "wikibase:Q42",
+   "text": "wikibase:Q42",
+   "source": "wikibase",
+   "localId": "Q42"
+  },
+  {
+   "case": "a foreign localId may be numeric",
+   "input": "pagemeta:123",
+   "text": "pagemeta:123",
+   "source": "pagemeta",
+   "localId": "123"
+  },
+  {
+   "case": "only the first colon separates, so a localId may contain colons",
+   "input": "remote:urn:example:42",
+   "text": "remote:urn:example:42",
+   "source": "remote",
+   "localId": "urn:example:42"
+  },
+  {
+   "case": "a Source key may hold digits, hyphens and underscores after the first letter",
+   "input": "my-farm_wiki2:abc",
+   "text": "my-farm_wiki2:abc",
+   "source": "my-farm_wiki2",
+   "localId": "abc"
+  },
+  {
+   "case": "a Source key of the maximum length",
+   "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:abc",
+   "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:abc",
+   "source": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "localId": "abc"
+  },
+  {
+   "case": "the remaining permitted localId punctuation",
+   "input": "src:a.b_c~d-e@f!g$h(i)j*k+l,m;n=o",
+   "text": "src:a.b_c~d-e@f!g$h(i)j*k+l,m;n=o",
+   "source": "src",
+   "localId": "a.b_c~d-e@f!g$h(i)j*k+l,m;n=o"
+  },
+  {
+   "case": "a localId of the maximum length",
+   "input": "src:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "text": "src:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "source": "src",
+   "localId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  }
+ ],
+ "invalid": [
+  {
+   "case": "empty",
+   "input": ""
+  },
+  {
+   "case": "a bare id that is not a local id",
+   "input": "notasubjectid"
+  },
+  {
+   "case": "a bare id one character too short",
+   "input": "s1111111111111"
+  },
+  {
+   "case": "a bare id one character too long",
+   "input": "s111111111111111"
+  },
+  {
+   "case": "a bare id using an omitted alphabet character",
+   "input": "s1111111111111O"
+  },
+  {
+   "case": "a bare id with a trailing newline",
+   "input": "s11111111111111\n"
+  },
+  {
+   "case": "a qualified id with a trailing newline",
+   "input": "otherwiki:s11111111111111\n"
+  },
+  {
+   "case": "a Source key holding a newline",
+   "input": "foo\n:abc"
+  },
+  {
+   "case": "an empty Source key",
+   "input": ":s11111111111111"
+  },
+  {
+   "case": "an empty localId",
+   "input": "otherwiki:"
+  },
+  {
+   "case": "a Source key starting with a digit",
+   "input": "2wiki:abc"
+  },
+  {
+   "case": "a Source key holding a dot",
+   "input": "wiki.example:abc"
+  },
+  {
+   "case": "a Source key over 64 characters",
+   "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:abc"
+  },
+  {
+   "case": "a localId over 256 characters",
+   "input": "src:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  {
+   "case": "a localId holding a path separator",
+   "input": "src:a/b"
+  },
+  {
+   "case": "a localId holding a query separator",
+   "input": "src:a?b"
+  },
+  {
+   "case": "a localId holding a fragment separator",
+   "input": "src:a#b"
+  },
+  {
+   "case": "a localId holding a percent sign",
+   "input": "src:a%20b"
+  },
+  {
+   "case": "a localId holding a space",
+   "input": "src:a b"
+  },
+  {
+   "case": "a localId holding a tab",
+   "input": "src:a\tb"
+  },
+  {
+   "case": "a localId holding a newline",
+   "input": "src:a\nb"
+  },
+  {
+   "case": "a localId holding a control character",
+   "input": "src:a\u0001b"
+  },
+  {
+   "case": "a localId holding an ampersand",
+   "input": "src:a&b"
+  },
+  {
+   "case": "a localId holding an apostrophe",
+   "input": "src:a'b"
+  },
+  {
+   "case": "a localId holding a quotation mark",
+   "input": "src:a\"b"
+  },
+  {
+   "case": "a localId holding an angle bracket",
+   "input": "src:a<b>c"
+  },
+  {
+   "case": "a localId holding a backslash",
+   "input": "src:a\\b"
+  },
+  {
+   "case": "a localId holding a square bracket",
+   "input": "src:a[b]c"
+  },
+  {
+   "case": "a localId holding a curly brace",
+   "input": "src:a{b}c"
+  },
+  {
+   "case": "a localId holding a non-ASCII character",
+   "input": "src:caf\u00e9"
+  }
+ ],
+ "canonicalization": {
+  "comment": "Ids that only mean something once the local Source key is known. Canonicalization happens on the write path, which is PHP; the frontend only ever sees ids already in canonical form, so the TypeScript suite skips these.",
+  "valid": [
+   {
+    "case": "an id qualified with the local key canonicalizes to bare",
+    "input": "localwiki:s11111111111111",
+    "text": "s11111111111111",
+    "source": null,
+    "localId": "s11111111111111"
+   }
+  ],
+  "invalid": [
+   {
+    "case": "the local key with a localId the local grammar rejects",
+    "input": "localwiki:Q42"
+   },
+   {
+    "case": "the local key with a localId holding a colon, which is not the local grammar",
+    "input": "localwiki:foo:bar"
+   },
+   {
+    "case": "the local key applied twice",
+    "input": "localwiki:localwiki:s11111111111111"
+   }
+  ]
+ }
+}
