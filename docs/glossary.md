@@ -73,6 +73,14 @@ Each Relation has
 
 
 
+## Source
+
+Where a Subject comes from ([ADR 23](adr/023-subject-sources.md)). A Source produces Subjects and resolves the Schemas
+they use. The wiki itself is the default Source, and the one Subjects are created in; extensions register others, each
+under a source key that prefixes the Subject IDs from it.
+
+Subjects from another Source are read-only.
+
 ## Schema
 
 A Schema ([ADR 6](adr/006-schemas.md)) defines a type of Subject. Examples: Person, Company, Product, etc.
