@@ -117,6 +117,20 @@ php maintenance/run.php NeoWiki:RebuildSubjectPageIndex --force
 
 Neither [rebuilding the graph](#rebuilding-the-graph) nor a null edit repairs this index.
 
+## Clearing default Subject labels
+
+Subjects created before the label became optional ([ADR 31](../adr/031-optional-subject-labels.md)) all carry a
+label, whether or not anyone chose it. Run this once, on a wiki whose Subjects predate that change:
+
+```sh
+php maintenance/run.php NeoWiki:ClearDefaultSubjectLabels
+```
+
+It clears labels that only repeat the name NeoWiki now computes, and leaves every other label alone. A label somebody
+deliberately typed to that same value is cleared too, so pass `--dry-run` first: it reports what would go without
+saving anything, and reporting nothing means there is nothing to do. It walks the
+[subject index](#rebuilding-the-subject-index), so on a wiki whose index is empty, rebuild that first.
+
 ## What happens during a Neo4j outage
 
 - **Editing pages works.** Edits, deletions and undeletions all commit. NeoWiki logs the projection failure on the
