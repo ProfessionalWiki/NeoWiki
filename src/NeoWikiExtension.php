@@ -77,6 +77,7 @@ use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectIdMinter;
+use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
@@ -100,6 +101,9 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportSubjectRdfApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ResolveSubjectIriApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
+use ProfessionalWiki\NeoWiki\Application\Source\LocalSource;
+use ProfessionalWiki\NeoWiki\Application\Source\SourceRoutingSubjectLookup;
+use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
@@ -210,6 +214,7 @@ class NeoWikiExtension {
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
 	private SubjectEditNoticeProviderRegistry $subjectEditNoticeProviderRegistry;
+	private SourceRegistry $sourceRegistry;
 	private Neo4jValueBuilderRegistry $valueBuilderRegistry;
 	private RdfValueMapperRegistry $rdfValueMapperRegistry;
 	private bool $extensionsRegistered = false;
@@ -311,6 +316,7 @@ class NeoWikiExtension {
 				$this->getGraphDatabasePluginRegistry(),
 				$this->getRdfValueMapperRegistry(),
 				$this->getSubjectEditNoticeProviderRegistry(),
+				$this->getSourceRegistry(),
 			) ]
 		);
 	}
@@ -351,6 +357,46 @@ class NeoWikiExtension {
 		$this->ensureExtensionsRegistered();
 
 		return $this->subjectEditNoticeProviderRegistry;
+	}
+
+	/**
+	 * The Sources this wiki resolves Subjects and Schemas through (ADR 23). The local one is always
+	 * registered, under the MediaWiki Wiki ID; extensions add theirs through
+	 * {@see NeoWikiRegistrar::addSource()}.
+	 */
+	public function getSourceRegistry(): SourceRegistry {
+		if ( !isset( $this->sourceRegistry ) ) {
+			$this->sourceRegistry = new SourceRegistry( $this->config->wikiId );
+			// Registered as a factory: building it reaches the subject-to-page index, which lives in
+			// the graph projection, and a wiki without a configured graph backend must still boot.
+			$this->sourceRegistry->registerSource(
+				$this->config->wikiId,
+				fn (): LocalSource => $this->newLocalSource()
+			);
+		}
+
+		$this->ensureExtensionsRegistered();
+
+		return $this->sourceRegistry;
+	}
+
+	private function newLocalSource(): LocalSource {
+		return new LocalSource(
+			subjectLookup: fn (): SubjectLookup => $this->getSubjectRepository(),
+			schemaLookup: $this->getSchemaLookup(),
+			baseUri: $this->getRdfNamespaces()->subjectIriBase(),
+		);
+	}
+
+	/**
+	 * Reads every Subject through its own Source. The seam that lets a Subject from elsewhere be
+	 * fetched by id; with only the local Source registered it resolves exactly what the repository does.
+	 */
+	public function getSourceRoutingSubjectLookup(): SubjectLookup {
+		return new SourceRoutingSubjectLookup(
+			$this->getSourceRegistry(),
+			LoggerFactory::getInstance( 'NeoWiki' )
+		);
 	}
 
 	public function getPagePropertyProviderRegistry(): PagePropertyProviderRegistry {
@@ -1022,7 +1068,7 @@ class NeoWikiExtension {
 	public function newSubjectResolver(): SubjectResolver {
 		return new SubjectResolver(
 			subjectContentRepository: $this->newSubjectContentRepository(),
-			subjectLookup: $this->getSubjectRepository(),
+			subjectLookup: $this->getSourceRoutingSubjectLookup(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			subjectIdParser: $this->getSubjectIdParser(),
 		);
@@ -1427,7 +1473,7 @@ class NeoWikiExtension {
 		return new GetPageSubjectsQuery(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			subjectLookup: $this->getSubjectRepository(),
+			subjectLookup: $this->getSourceRoutingSubjectLookup(),
 			schemaLookup: $this->getSchemaLookup(),
 			schemaSerializer: $this->getSchemaPresentationSerializer(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
@@ -1438,7 +1484,7 @@ class NeoWikiExtension {
 	public function newGetSubjectQuery( RestGetSubjectPresenter $presenter, Authority $authority ): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
-			subjectLookup: $this->getSubjectRepository(),
+			subjectLookup: $this->getSourceRoutingSubjectLookup(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			pageSubjectsLookup: $this->newPageSubjectsLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
@@ -1502,7 +1548,7 @@ class NeoWikiExtension {
 	public function getSubjectValidator(): SubjectValidator {
 		return new SubjectValidator(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
-			subjectLookup: $this->getSubjectRepository(),
+			subjectLookup: $this->getSourceRoutingSubjectLookup(),
 		);
 	}
 

@@ -94,7 +94,7 @@ A Subject id is a flat pair: **`(source, localId)`**.
 
 - **Local Subjects** are editable through the normal editor (subject to access rights) and versioned.
 - **Sourced Subjects** are **read-only** through NeoWiki for now. Writing back to a source (so an edit propagates to
-  the origin) is an **end-of-roadmap** option — kept open via an optional per-Source write capability, not built.
+  the origin) is an **end-of-roadmap** option — kept open, not built.
 
 Querying is independent of source: a Subject is Cypher-queryable once **materialised** in the graph (materialisation
 is mandatory for query). History follows the origin — the local slot is versioned; a sourced Subject's history, if
@@ -225,7 +225,6 @@ id; rich chain-of-production provenance is a separate model.
 
 ### Still open
 
-- **Source interface contract** for by-id and query (per-page being a deterministic by-id).
 - **Federation resolution** (fetch-at-read vs cache/materialise) and **shared-graph instance tagging** (the farm
   deliverable proper).
 - **History-page rendering** for non-history-correct sourced Subjects (show current values, or hide them?).
@@ -236,9 +235,9 @@ id; rich chain-of-production provenance is a separate model.
    mechanism; the refresh-without-edit operation ([#889](https://github.com/ProfessionalWiki/NeoWiki/issues/889));
    and multi-wiki node identity ([#905](https://github.com/ProfessionalWiki/NeoWiki/issues/905)) for per-wiki query
    filtering. Forward-compatible down-payments, not a separate system.
-2. **Source foundation:** the `(source, localId)` identity, the Source registry/interface (by-id + query +
-   capabilities, including an optional write capability), and the local store refactored as the default `LocalSource`.
-   The single system everything else builds on.
+2. **Source foundation:** the `(source, localId)` identity, the Source registry/interface (contract frozen in
+   [ADR 23](../adr/023-subject-sources.md): no query role, no write capability), and the local store refactored as
+   the default `LocalSource`. The single system everything else builds on.
 3. **Source consumers (by demand, on the foundation):** sourced Subjects in Views (read-only); the on-wiki
    SMW/Wikibase source (read-only) — the easiest sourced case and an adoption/migration wedge; remote federation and
    RDF/IRI export (gated on ECHOLOT).

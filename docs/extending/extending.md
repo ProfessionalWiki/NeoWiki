@@ -148,6 +148,35 @@ yourself.
 Namespace your keys to your extension. A key reaches the browser as a styling handle, and the first provider to
 claim one keeps it. See [Edit notices](../authoring/edit-notices.md) for the keys admins use.
 
+### Subject Sources
+
+A Source supplies Subjects and Schemas from somewhere other than this wiki's revision slots — another wiki of a
+farm, an on-wiki SMW or Wikibase store, a remote instance. Implement `Source` and register it with
+`NeoWikiRegistrar::addSource()`:
+
+```php
+$registrar->addSource( 'myext_catalog', new CatalogSource() );
+```
+
+The key is what a Subject id names before its colon (`myext_catalog:widget-7`), so it identifies your Source
+across runs and installs: pick a stable one and namespace it to your extension. It must be a letter followed by up
+to 63 letters, digits, underscores or hyphens; anything else throws. Registering a key already in use replaces that
+Source. This wiki's own Source is registered under its
+[Wiki ID](https://www.mediawiki.org/wiki/Manual:Wiki_ID) — that key is what a bare Subject id resolves to, and it
+cannot be taken over.
+
+Pass a closure returning the Source rather than the Source itself when building it is not free; it is called at
+most once, the first time something resolves that Source.
+
+Your Source answers fetch-by-id (one Subject or a list), Schema-by-name, whether its Subjects are editable, which
+localIds it recognises, and its RDF base URI. It is never asked to run a query: a Subject becomes queryable by
+being materialised in a graph store.
+
+A Source that cannot reach its store answers as though the Subject or Schema is absent, so a page that names it
+degrades rather than breaking. Sourced Subjects are read-only, and rendering them in Views is not built yet, so
+today a Source's Subjects are reachable by id and as relation targets. See
+[ADR 23](../adr/023-subject-sources.md).
+
 ### Refreshing a page's data without an edit
 
 A page's graph data is written on edit and on full rebuild. When data your extension contributes through a
