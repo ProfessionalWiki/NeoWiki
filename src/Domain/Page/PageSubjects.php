@@ -82,7 +82,7 @@ class PageSubjects {
 		throw new OutOfBoundsException( 'Subject not found' );
 	}
 
-	private function isMainSubject( SubjectId $id ): bool {
+	public function isMainSubject( SubjectId $id ): bool {
 		return $this->mainSubject !== null && $this->mainSubject->id->equals( $id );
 	}
 
