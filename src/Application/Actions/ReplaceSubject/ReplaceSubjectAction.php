@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
@@ -31,7 +31,7 @@ readonly class ReplaceSubjectAction {
 		private PageReadAuthorizer $readAuthorizer,
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
-		private SchemaLookup $schemaLookup,
+		private SchemaResolver $schemaResolver,
 		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private ReplaceSubjectPresenter $presenter,
@@ -72,7 +72,7 @@ readonly class ReplaceSubjectAction {
 			throw SubjectNotFoundException::forId( $subjectId );
 		}
 
-		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+		$schema = $this->schemaResolver->getSchema( $subject->getSchemaReference() );
 
 		$priorViolations = $this->proposedSubjectValidator->validate( $subject );
 
@@ -83,6 +83,8 @@ readonly class ReplaceSubjectAction {
 
 		$proposedViolations = $this->proposedSubjectValidator->validate( $subject );
 
+		// Only violations this edit introduces block it, so a Subject that already carries one stays
+		// editable rather than being frozen by it.
 		$newBlockingViolations = array_filter(
 			ViolationDiff::newViolations( $proposedViolations, $priorViolations ),
 			static fn ( Violation $v ): bool => $v->isBlocking()

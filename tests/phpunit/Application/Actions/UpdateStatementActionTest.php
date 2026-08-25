@@ -6,10 +6,12 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement\UpdateStatementAction;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
+use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
@@ -29,17 +31,21 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySource;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
@@ -52,15 +58,29 @@ class UpdateStatementActionTest extends TestCase {
 
 	private const string SUBJECT_ID = 's11111111111127';
 	private const string SCHEMA_NAME = 'TestSchema';
+	private const string OTHER_SOURCE_KEY = 'catalog';
 
 	private InMemorySubjectRepository $subjectRepository;
 	private InMemorySchemaLookup $schemaLookup;
+	private InMemorySource $catalog;
 	private UpdateStatementPresenterSpy $presenterSpy;
 
 	public function setUp(): void {
 		$this->subjectRepository = new InMemorySubjectRepository();
 		$this->schemaLookup = new InMemorySchemaLookup();
+		$this->catalog = new InMemorySource();
 		$this->presenterSpy = new UpdateStatementPresenterSpy();
+	}
+
+	/**
+	 * A wiki with its own Schemas plus the Schemas of one other Source, so that a Subject following a
+	 * Schema of that Source resolves to the Source's Schema rather than a same-named local one.
+	 */
+	private function newSchemaResolver(): SchemaResolver {
+		$registry = TestSources::newRegistryWithLocalSchemas( $this->schemaLookup );
+		$registry->registerSource( self::OTHER_SOURCE_KEY, $this->catalog );
+
+		return new SchemaResolver( $registry, new NullLogger() );
 	}
 
 	private function newAction(
@@ -68,7 +88,8 @@ class UpdateStatementActionTest extends TestCase {
 		bool $validationEnforced = false,
 		?PageReadAuthorizer $readAuthorizer = null,
 	): UpdateStatementAction {
-		$registry = PropertyTypeRegistry::withCoreTypes();
+		$registry = PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY );
+		$schemaResolver = $this->newSchemaResolver();
 
 		return new UpdateStatementAction(
 			subjectRepository: $this->subjectRepository,
@@ -76,15 +97,17 @@ class UpdateStatementActionTest extends TestCase {
 			writeAuthorizer: $authorizer ?? new SpySubjectWriteAuthorizer( allowed: true ),
 			statementListBuilder: new StatementListBuilder(
 				propertyTypeLookup: $registry,
-				idGenerator: new StubIdGenerator( '11111111111127' )
+				idGenerator: new StubIdGenerator( '11111111111127' ),
+				subjectIdParser: TestSubjectIds::newParser()
 			),
-			schemaLookup: $this->schemaLookup,
+			schemaResolver: $schemaResolver,
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
 			proposedSubjectValidator: new ProposedSubjectValidator(
-				schemaLookup: $this->schemaLookup,
+				schemaResolver: $schemaResolver,
 				subjectValidator: new SubjectValidator(
 					propertyTypeLookup: $registry,
 					subjectLookup: new InMemorySubjectLookup(),
+					sourceRegistry: TestSources::newRegistry(),
 				),
 			),
 			presenter: $this->presenterSpy,
@@ -127,7 +150,10 @@ class UpdateStatementActionTest extends TestCase {
 		) );
 	}
 
-	private function storeSubject( ?StatementList $statements = null, ?SchemaName $schemaName = null ): void {
+	private function storeSubject(
+		?StatementList $statements = null,
+		SchemaName|SchemaReference|null $schemaName = null
+	): void {
 		$this->subjectRepository->updateSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			label: new SubjectLabel( 'Original Label' ),
@@ -172,6 +198,33 @@ class UpdateStatementActionTest extends TestCase {
 		$this->setStatement( 'Website', 'url', [ 'https://pro.wiki' ] );
 
 		$this->assertSame( [ 'https://pro.wiki' ], $this->getStoredValue( 'Website' ) );
+	}
+
+	/**
+	 * The type a Statement is written with comes from the Subject's own Schema, which is resolved
+	 * through the Source that Schema is referenced from (ADR 23) — not from a Schema of this wiki
+	 * that happens to share its name.
+	 */
+	public function testSetStatementTakesTheTypeFromTheSubjectsOwnSourcedSchema(): void {
+		$this->registerSchema( new PropertyDefinitions( [ 'Price' => TestProperty::buildText() ] ) );
+
+		$this->catalog->addSchema( new Schema(
+			name: new SchemaName( self::SCHEMA_NAME ),
+			description: '',
+			properties: new PropertyDefinitions( [ 'Price' => TestProperty::buildNumber() ] )
+		) );
+
+		$this->storeSubject( schemaName: SchemaReference::sourced(
+			self::OTHER_SOURCE_KEY,
+			new SchemaName( self::SCHEMA_NAME )
+		) );
+
+		$this->setStatement( 'Price', null, 42 );
+
+		$this->assertSame(
+			'number',
+			$this->getStoredSubject()->getStatements()->getStatement( new PropertyName( 'Price' ) )?->getPropertyType()
+		);
 	}
 
 	public function testSetStatementReplacesTheValueOfAnExistingStatement(): void {

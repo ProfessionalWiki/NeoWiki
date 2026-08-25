@@ -23,6 +23,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer
@@ -41,6 +42,7 @@ class SubjectContentDataDeserializerTest extends TestCase {
 	private function newDeserializer( ?LoggerInterface $logger = null ): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer(
 			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup(), TestSubjectIds::newParser() ),
+			TestSubjectIds::newParser(),
 			$logger ?? new NullLogger()
 		);
 	}
@@ -137,12 +139,12 @@ JSON
 				Subject::newSubject(
 					new SubjectId( 'sTestSCDD111115' ),
 					new SubjectLabel( 'ACME Inc.' ),
-					new SchemaName( "Company" )
+					SchemaReference::local( new SchemaName( "Company" ) )
 				),
 				Subject::newSubject(
 					new SubjectId( 'sTestSCDD111114' ),
 					new SubjectLabel( 'Contoso Ltd.' ),
-					new SchemaName( "Company" )
+					SchemaReference::local( new SchemaName( "Company" ) )
 				),
 			],
 			$data->getAllSubjects()->asArray()
@@ -199,7 +201,7 @@ JSON
 				Subject::newSubject(
 					new SubjectId( 'sTestSCDD111114' ),
 					new SubjectLabel( 'ACME Inc.' ),
-					new SchemaName( 'Company' )
+					SchemaReference::local( new SchemaName( 'Company' ) )
 				),
 			],
 			$data->getAllSubjects()->asArray()

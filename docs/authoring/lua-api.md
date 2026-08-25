@@ -130,7 +130,7 @@ Returns the full data of any Subject by its ID, regardless of which page it live
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `subjectId` | string | Required. A Subject ID. |
+| `subjectId` | string | Required. A Subject ID: 15 characters starting with `s` for a Subject of this wiki, or `sourceKey:localId` for one from another [Source](../api/subject-format.md#ids). |
 
 #### Returns
 
@@ -141,6 +141,7 @@ with that ID, the ID is malformed, or its page is not readable (see [Permissions
 
 ```lua
 local subject = nw.getSubject('s1abc5def6ghi78')
+local sourced = nw.getSubject('otherwiki:s1abc5def6ghi78')
 ```
 
 ### `nw.getChildSubjects(pageName)`
@@ -284,13 +285,14 @@ Returns a Schema as a Lua table so a module can inspect it at runtime.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `name` | string | Required. The Schema name (e.g. `'Company'`). |
+| `name` | string or table | Required. A Schema name (e.g. `'Company'`), or a Subject's `schema` field, which is a table for a Schema from another Source. |
 
 #### Returns
 
 A Schema table, or `nil` if no Schema with that name exists or its page is not readable (see
-[Permissions](#permissions)). An empty or whitespace-only `name` and the reserved names `page` and
-`subject` also return `nil`. Guard with `if schema then`.
+[Permissions](#permissions)). An empty or whitespace-only `name`, a table that is not a Schema
+reference, a reference to a Source this wiki does not have, and the reserved names `page` and
+`subject` all return `nil`. Guard with `if schema then`.
 
 Top-level fields:
 
@@ -395,6 +397,9 @@ Notes:
   name when it is the page's Main Subject, and its Schema name otherwise. `storedLabel` carries the
   stored value and is `nil` when the Subject has none. The REST API splits these the other way:
   `label` is the stored value, `displayName` the display name.
+- `schema` is a Schema name for a Schema of this wiki, and a table `{ source = ..., name = ... }` for
+  one from another Source. [`nw.getSchema`](#nwgetschemaname) takes either, so
+  `nw.getSchema( subject.schema )` works whichever it is.
 - A Subject fetched with [`nw.getSubject`](#nwgetsubjectsubjectid) comes without its page, so a
   label-less Main Subject is named after its Schema there.
 - `statements` is keyed by property name. `values` within each statement is 1-indexed.

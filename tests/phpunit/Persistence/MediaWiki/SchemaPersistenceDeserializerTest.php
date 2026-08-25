@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty;
@@ -108,7 +109,7 @@ class SchemaPersistenceDeserializerTest extends TestCase {
 	}
 
 	private function deserialize( string $json = self::SCHEMA_JSON ): Schema {
-		return ( new SchemaPersistenceDeserializer( PropertyTypeRegistry::withCoreTypes() ) )
+		return ( new SchemaPersistenceDeserializer( PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ) ) )
 			->deserialize( new SchemaName( 'TestSchema' ), $json );
 	}
 

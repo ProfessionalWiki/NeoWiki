@@ -52,7 +52,7 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 interface SubjectPickerProps {
 	selected: string | null;
-	targetSchema: string;
+	targetSchema: string | null;
 	startIcon?: Icon;
 	status?: ValidationStatusType | 'default';
 	ariaLabel?: string;
@@ -84,7 +84,11 @@ const subjectLabelSearch = NeoWikiServices.getSubjectLabelSearch();
 // picker offering only Subjects that already exist.
 const subjectCreation = inject( SubjectCreationKey, undefined );
 
-const creationOffered = computed( (): boolean => subjectCreation !== undefined );
+// A target Schema from another Source is not this wiki's to create a Subject of: what the host
+// would mint is a local Subject under a bare local name, which is not the Schema referenced.
+const creationOffered = computed( (): boolean =>
+	subjectCreation !== undefined && props.targetSchema !== null
+);
 
 const selectedSubject = ref<string | null>( props.selected );
 const inputText = ref<string | number>( '' );
@@ -110,7 +114,9 @@ const selectedName = ref( '' );
 // picking an item writes the string into this field's own text input, where the user can edit it and
 // where it feeds the offer to create a Subject under the text they typed.
 const draftItems = computed( (): MenuItemData[] =>
-	( subjectCreation?.drafts( props.targetSchema ) ?? [] ).map( menuItemFor )
+	props.targetSchema === null ?
+		[] :
+		( subjectCreation?.drafts( props.targetSchema ) ?? [] ).map( menuItemFor )
 );
 
 function menuItemFor( subject: Subject ): MenuItemData {
@@ -130,11 +136,13 @@ const typedText = computed( (): string => {
 	return text === selectedName.value ? '' : text;
 } );
 
+// Read only where creation is offered, which is the only state in which targetSchema names a
+// Schema this wiki can create a Subject of.
 const createItem = computed( (): MenuItemData => ( {
 	value: CREATE_SUBJECT,
 	label: typedText.value === '' ?
-		mw.msg( 'neowiki-subject-picker-create', props.targetSchema ) :
-		mw.msg( 'neowiki-subject-picker-create-named', typedText.value, props.targetSchema ),
+		mw.msg( 'neowiki-subject-picker-create', props.targetSchema ?? '' ) :
+		mw.msg( 'neowiki-subject-picker-create-named', typedText.value, props.targetSchema ?? '' ),
 	icon: cdxIconAdd
 } ) );
 
@@ -260,6 +268,12 @@ async function onLookupInput( value: string ): Promise<void> {
 // replace the search, though: the shape of an id is also the shape of an ordinary fifteen-letter
 // word, so text that names no usable Subject goes on to be searched for as a label.
 async function candidatesFor( value: string ): Promise<MenuItemData[]> {
+	// A target Schema from another Source names nothing here: neither the label search nor the
+	// Schema an id-lookup would be matched against is this wiki's to answer with.
+	if ( props.targetSchema === null ) {
+		return [];
+	}
+
 	const text = value.trim();
 
 	if ( SubjectId.isValid( text ) ) {
@@ -272,12 +286,12 @@ async function candidatesFor( value: string ): Promise<MenuItemData[]> {
 		}
 	}
 
-	return searchLabels( text );
+	return searchLabels( text, props.targetSchema );
 }
 
-async function searchLabels( value: string ): Promise<MenuItemData[]> {
+async function searchLabels( value: string, targetSchema: string ): Promise<MenuItemData[]> {
 	try {
-		const results = await subjectLabelSearch.searchSubjectLabels( value, props.targetSchema );
+		const results = await subjectLabelSearch.searchSubjectLabels( value, targetSchema );
 
 		return results.map( ( result ) => ( {
 			label: result.label,
@@ -322,7 +336,7 @@ function onSubjectSelected( subjectId: string | null ): void {
 }
 
 async function createFromTypedText(): Promise<void> {
-	if ( subjectCreation === undefined ) {
+	if ( subjectCreation === undefined || props.targetSchema === null ) {
 		return;
 	}
 

@@ -172,6 +172,20 @@ local function testGetSchemaNumberPropertyBoundsAndDefault()
 	return 'not-found'
 end
 
+local function testGetSchemaResolvesSourcedReference()
+	local s = nw.getSchema( { source = 'catalog', name = 'Widget' } )
+	if not s then return 'nil' end
+	return s.name
+end
+
+local function testGetSchemaReturnsNilForUnknownSource()
+	return nw.getSchema( { source = 'neverinstalled', name = 'Widget' } )
+end
+
+local function testGetSchemaReturnsNilForMalformedReference()
+	return nw.getSchema( { nope = 'Widget' } )
+end
+
 local function testGetSchemaRelationPropertyTargetSchema()
 	local s = nw.getSchema( 'Employee' )
 	if not s then return 'nil' end
@@ -253,6 +267,12 @@ local tests = {
 	  func = testGetSchemaNumberPropertyBoundsAndDefault, expect = { 'number', 0, 100, 100 } },
 	{ name = 'getSchema relation property exposes relation and targetSchema',
 	  func = testGetSchemaRelationPropertyTargetSchema, expect = { 'relation', 'Works for', 'Company' } },
+	{ name = 'getSchema resolves the reference form a sourced Subject carries',
+	  func = testGetSchemaResolvesSourcedReference, expect = { 'Widget' } },
+	{ name = 'getSchema returns nil for a reference to an unregistered Source',
+	  func = testGetSchemaReturnsNilForUnknownSource, expect = { nil } },
+	{ name = 'getSchema returns nil for a table that is not a reference',
+	  func = testGetSchemaReturnsNilForMalformedReference, expect = { nil } },
 
 }
 

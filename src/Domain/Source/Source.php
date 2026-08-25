@@ -44,6 +44,10 @@ interface Source {
 
 	/**
 	 * Ids that resolve to no Subject are absent from the map, so its size is the number found.
+	 *
+	 * Each Subject is keyed by the exact id text that was asked for: nothing normalizes ids between a
+	 * caller and a Source, so a Subject answered under a spelling of its id other than the requested
+	 * one is a Subject the caller never finds.
 	 */
 	public function getSubjects( SubjectIdList $ids ): SubjectMap;
 

@@ -3,6 +3,7 @@ import { PageIdentifiers } from '@/domain/PageIdentifiers';
 import { StatementList } from '@/domain/StatementList';
 import { StatementDeserializer } from '@/persistence/StatementDeserializer';
 import { SubjectWithContext } from '@/domain/SubjectWithContext';
+import { schemaReferenceName } from '@/domain/SchemaReference';
 
 export class SubjectDeserializer {
 
@@ -16,7 +17,10 @@ export class SubjectDeserializer {
 		const label = json.label ?? null;
 		const displayName = json.displayName;
 		const displayNameIsGenerated = json.displayNameIsGenerated;
-		const schema = json.schema;
+		// Interim: the frontend still carries a bare Schema name, so a reference from another Source
+		// collapses to its name here. It survives until sourced Subjects render, which is what needs
+		// the Source to resolve the Schema through.
+		const schema = schemaReferenceName( json.schema );
 
 		const pageIdentifiers = new PageIdentifiers( json.pageId, json.pageTitle );
 		const statementList = this.deserializeStatements( json.statements );

@@ -104,6 +104,21 @@ class SourceRoutingSubjectLookupTest extends TestCase {
 		$this->assertSame( [ self::LOCAL_ID ], $subjects->getIdsAsTextArray() );
 	}
 
+	/**
+	 * A page's relation targets are read through the batch path on every view, and a target naming a
+	 * Source this wiki lacks is already refused as a violation when it is written — so the batch says
+	 * it once for the record rather than warning about it on every view.
+	 */
+	public function testBatchNotesAnUnknownSourceWithoutWarning(): void {
+		$logger = new LegacyLoggerSpy();
+
+		$this->newLookup( new InMemorySource(), logger: $logger )
+			->getSubjects( new SubjectIdList( [ new SubjectId( 'neverinstalled:Q42' ) ] ) );
+
+		$this->assertSame( LogLevel::DEBUG, $logger->getFirstLogCall()->getLevel() );
+		$this->assertStringContainsString( 'neverinstalled:Q42', $logger->getLogCalls()->getMessages()[0] );
+	}
+
 	private function newLookup(
 		InMemorySource $localSource,
 		?InMemorySource $otherSource = null,

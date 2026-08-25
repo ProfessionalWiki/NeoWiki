@@ -150,6 +150,21 @@ class SourceRegistryTest extends TestCase {
 		$this->assertSame( 0, $constructions );
 	}
 
+	/**
+	 * The local key is the wiki's own id rather than anyone's choice here, so it is exempt from the
+	 * Source-key grammar: a wiki whose id starts with a digit still has to resolve the bare ids of its
+	 * own Subjects.
+	 */
+	public function testAGrammarInvalidLocalKeyStillRegistersAndResolvesBareIds(): void {
+		$local = new InMemorySource();
+		$registry = new SourceRegistry( '2wiki' );
+
+		$registry->registerSource( '2wiki', $local );
+
+		$this->assertSame( $local, $registry->getSourceOf( new SubjectId( self::LOCAL_ID ) ) );
+		$this->assertTrue( $registry->canResolve( new SubjectId( self::LOCAL_ID ) ) );
+	}
+
 	public function testAskingWhetherAnIdResolvesDoesNotBuildItsSource(): void {
 		$constructions = 0;
 		$registry = $this->newRegistry();

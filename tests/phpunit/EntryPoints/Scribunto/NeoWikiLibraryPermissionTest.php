@@ -10,6 +10,7 @@ if ( !class_exists( \MediaWiki\Extension\Scribunto\Tests\Engines\LuaCommon\LuaEn
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -43,7 +44,7 @@ class NeoWikiLibraryPermissionTest extends NeoWikiLibraryTestBase {
 			mainSubject: new Subject(
 				id: new SubjectId( 's1test5eeeeeeee' ),
 				label: new SubjectLabel( 'Restricted Company' ),
-				schemaName: new SchemaName( 'Company' ),
+				schema: SchemaReference::local( new SchemaName( 'Company' ) ),
 				statements: new StatementList( [
 					new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Secret City' ) ),
 				] ),
@@ -52,7 +53,7 @@ class NeoWikiLibraryPermissionTest extends NeoWikiLibraryTestBase {
 				new Subject(
 					id: new SubjectId( 's1test5ffffffff' ),
 					label: new SubjectLabel( 'Restricted Entry' ),
-					schemaName: new SchemaName( 'Entry' ),
+					schema: SchemaReference::local( new SchemaName( 'Entry' ) ),
 					statements: new StatementList(),
 				),
 			),

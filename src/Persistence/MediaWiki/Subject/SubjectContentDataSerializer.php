@@ -35,7 +35,7 @@ class SubjectContentDataSerializer {
 				$serialized['label'] = $subject->label->text;
 			}
 
-			$serialized['schema'] = $subject->getSchemaName()->getText();
+			$serialized['schema'] = $subject->getSchemaReference()->toJson();
 			$serialized['statements'] = $this->serializeStatementList( $subject->getStatements() );
 
 			$serializedSubjects[$subject->id->text] = $serialized;

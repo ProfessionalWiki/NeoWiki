@@ -12,7 +12,8 @@ use ProfessionalWiki\NeoWiki\Tests\Data\SubjectIdVectors;
 
 /**
  * The shared vectors in tests/vectors/subject-ids.json, which the TypeScript suite runs against its
- * own SubjectIdParser, so both implementations answer the same for every case.
+ * own SubjectId, so both implementations answer the same for every case. Canonicalization is this
+ * parser's alone: it needs the local Source key, which the frontend does not hold.
  *
  * @covers \ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser
  * @covers \ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId
@@ -71,6 +72,27 @@ class SubjectIdParserTest extends TestCase {
 		$id = $this->newParser()->parseOrThrow( 'otherwiki:s11111111111111' );
 
 		$this->assertSame( 'otherwiki', $id->source );
+	}
+
+	/**
+	 * A wiki whose id is not a well-formed Source key still reads the bare ids of its own Subjects: the
+	 * local key is exempt from the grammar (see SourceRegistry).
+	 */
+	public function testBareIdParsesUnderAGrammarInvalidLocalKey(): void {
+		$id = ( new SubjectIdParser( '2wiki' ) )->parseOrThrow( 's11111111111111' );
+
+		$this->assertNull( $id->source );
+		$this->assertSame( 's11111111111111', $id->text );
+	}
+
+	/**
+	 * What such a wiki loses: nothing can name it, so its own Subjects are unreachable by the qualified
+	 * form the rest of the model uses.
+	 */
+	public function testExplicitlyLocalIdIsRefusedUnderAGrammarInvalidLocalKey(): void {
+		$this->expectException( InvalidArgumentException::class );
+
+		( new SubjectIdParser( '2wiki' ) )->parseOrThrow( '2wiki:s11111111111111' );
 	}
 
 	private function newParser(): SubjectIdParser {

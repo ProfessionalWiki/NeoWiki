@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Data;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 class TestSchema {
 
@@ -20,6 +21,14 @@ class TestSchema {
 			description: $description,
 			properties: $properties,
 		);
+	}
+
+	public static function reference( SchemaName|SchemaReference|string $schema ): SchemaReference {
+		if ( $schema instanceof SchemaReference ) {
+			return $schema;
+		}
+
+		return SchemaReference::local( $schema instanceof SchemaName ? $schema : new SchemaName( $schema ) );
 	}
 
 }

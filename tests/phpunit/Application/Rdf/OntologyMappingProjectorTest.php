@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Rdf;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
+use ProfessionalWiki\NeoWiki\Application\Rdf\SubjectIriResolver;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\LinkDirection;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
@@ -38,7 +39,9 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Tests\Domain\Rdf\ParsedRdf;
 use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
 
@@ -80,6 +83,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			new Mapping( new MappingName( 'edm' ), $prefixes, $schemas ),
 			$this->ns,
 			RdfValueMapperRegistry::withCoreMappers(),
+			new SubjectIriResolver( $this->ns, TestSources::newRegistry(), $this->logger ),
 			$this->logger,
 		);
 	}
@@ -314,6 +318,65 @@ class OntologyMappingProjectorTest extends TestCase {
 		$this->assertFalse(
 			$this->containsSubjectWithPredicate( $quads, $cityIri, $this->ns->rdfType() ),
 			'The unmapped relation target stays untyped.'
+		);
+	}
+
+	/**
+	 * A relation to a Subject of another Source must be named under that Source's own base IRI. Naming
+	 * it under this wiki's base would assert that this wiki owns an entity it does not.
+	 */
+	public function testRelationTargetFromARegisteredSourceIsNamedUnderThatSourcesBase(): void {
+		$targetId = TestSubjectIds::OTHER_SOURCE_KEY . ':Q42';
+		$page = TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build(
+				id: self::PERSON_ID,
+				label: 'Jane',
+				schemaName: new SchemaName( 'Person' ),
+				statements: new StatementList( [
+					TestStatement::buildRelation( 'BornIn', [ TestRelation::build( targetId: $targetId ) ] ),
+				] )
+			),
+		);
+
+		$quads = $this->newProjector( [ 'Person' => $this->personMapping() ] )->projectPage( $page );
+
+		$this->assertTrue(
+			$quads->contains( new Quad(
+				$this->ns->subject( new SubjectId( self::PERSON_ID ) ),
+				new Iri( self::DC . 'spatial' ),
+				new Iri( 'https://example.org/entity/Q42' ),
+				$this->ns->graph( 'edm', new PageId( 42 ) )
+			) ),
+			'The target is named under its own Source base, not under this wiki\'s.'
+		);
+	}
+
+	public function testRelationTargetFromAnUnregisteredSourceIsNotProjected(): void {
+		$page = TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build(
+				id: self::PERSON_ID,
+				label: 'Jane',
+				schemaName: new SchemaName( 'Person' ),
+				statements: new StatementList( [
+					TestStatement::buildRelation(
+						'BornIn',
+						[ TestRelation::build( targetId: 'neverinstalled:Q42' ) ]
+					),
+				] )
+			),
+		);
+
+		$quads = $this->newProjector( [ 'Person' => $this->personMapping() ] )->projectPage( $page );
+
+		$this->assertFalse(
+			$this->containsSubjectWithPredicate(
+				$quads,
+				$this->ns->subject( new SubjectId( self::PERSON_ID ) ),
+				new Iri( self::DC . 'spatial' )
+			),
+			'Nothing can name the target, so the triple is dropped rather than minted locally.'
 		);
 	}
 
@@ -1097,6 +1160,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			( new MappingPersistenceDeserializer() )->deserialize( new MappingName( 'edm' ), $json ),
 			$this->ns,
 			RdfValueMapperRegistry::withCoreMappers(),
+			new SubjectIriResolver( $this->ns, TestSources::newRegistry(), $this->logger ),
 			$this->logger,
 		);
 	}

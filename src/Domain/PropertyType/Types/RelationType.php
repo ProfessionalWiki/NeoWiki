@@ -17,6 +17,16 @@ class RelationType implements PropertyType {
 
 	public const NAME = 'relation';
 
+	/**
+	 * @param string $localSourceKey This wiki's own Source key. A `targetSchema` in Schema JSON may be
+	 *   an object naming a Source explicitly; when that Source is this wiki itself, deserialization
+	 *   canonicalizes the reference to the plain local form, which requires knowing our own key (ADR 23).
+	 */
+	public function __construct(
+		private readonly string $localSourceKey
+	) {
+	}
+
 	public function getTypeName(): string {
 		return self::NAME;
 	}
@@ -30,7 +40,7 @@ class RelationType implements PropertyType {
 	}
 
 	public function buildPropertyDefinitionFromJson( PropertyCore $core, array $property ): RelationProperty {
-		return RelationProperty::fromPartialJson( $core, $property );
+		return RelationProperty::fromPartialJson( $core, $property, $this->localSourceKey );
 	}
 
 	/**

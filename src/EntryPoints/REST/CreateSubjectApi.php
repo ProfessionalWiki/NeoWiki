@@ -34,7 +34,8 @@ class CreateSubjectApi extends SimpleHandler {
 		if ( $id !== null && $this->localId( $id ) === null ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'status' => 'error',
-				'message' => "Subject ID has the wrong format: '$id'",
+				'message' => "Cannot create Subject '$id': only Subjects of this wiki can be created, "
+					. 'so the ID must be a well-formed local one.',
 			] );
 		}
 

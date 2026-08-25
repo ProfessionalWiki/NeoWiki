@@ -84,7 +84,7 @@ class GetSubjectQueryTest extends TestCase {
 						label: 'expected label',
 						displayName: 'expected label',
 						displayNameIsGenerated: false,
-						schemaName: 'GetSubjectQueryTestSchema',
+						schema: 'GetSubjectQueryTestSchema',
 						statements: [
 							'expected property 1' => [
 								'propertyType' => 'text',

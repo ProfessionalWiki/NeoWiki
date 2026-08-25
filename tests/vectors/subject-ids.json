@@ -1,5 +1,5 @@
 {
- "comment": "Subject id vectors, consumed by both the PHP and the TypeScript suite so the two id grammars are asserted equal rather than assumed so. \"valid\" and \"invalid\" are the context-free grammar, which both implementations answer alike. \"canonicalization\" needs the local Source key and so is the PHP parser's alone. See docs/reference/subject-format.md.",
+ "comment": "Subject id vectors, consumed by both the PHP and the TypeScript suite so the two id grammars are asserted equal rather than assumed so. \"valid\" and \"invalid\" are the context-free grammar, which both implementations answer alike. \"canonicalization\" needs the local Source key and so is the PHP parser's alone. See docs/api/subject-format.md.",
  "localSourceKey": "localwiki",
  "valid": [
   {

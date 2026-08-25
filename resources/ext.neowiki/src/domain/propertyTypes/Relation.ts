@@ -2,11 +2,12 @@ import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newRelation, RelationValue, ValueType } from '@/domain/Value';
 import { BasePropertyType } from '@/domain/PropertyType';
+import type { SchemaReference } from '@/domain/SchemaReference';
 
 export interface RelationProperty extends PropertyDefinition {
 
 	readonly relation: string;
-	readonly targetSchema: string;
+	readonly targetSchema: SchemaReference;
 	readonly multiple?: boolean;
 
 }

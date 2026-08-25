@@ -32,7 +32,7 @@ readonly class SourceRoutingSubjectLookup implements SubjectLookup {
 		$source = $this->sourceRegistry->getSourceOf( $id );
 
 		if ( $source === null ) {
-			$this->logUnknownSources( [ $id->text ] );
+			$this->logger->warning( $this->unknownSourceMessage( [ $id->text ] ) );
 			return null;
 		}
 
@@ -55,7 +55,10 @@ readonly class SourceRoutingSubjectLookup implements SubjectLookup {
 		}
 
 		if ( $unresolvable !== [] ) {
-			$this->logUnknownSources( $unresolvable );
+			// Debug rather than warning: this is the path a page's relation targets take, and a target
+			// naming a Source this wiki lacks is already refused as a violation when it is written, so
+			// warning here would fill the log on every view of a page nobody can fix from the log.
+			$this->logger->debug( $this->unknownSourceMessage( $unresolvable ) );
 		}
 
 		$subjects = new SubjectMap();
@@ -74,10 +77,8 @@ readonly class SourceRoutingSubjectLookup implements SubjectLookup {
 	/**
 	 * @param string[] $idTexts
 	 */
-	private function logUnknownSources( array $idTexts ): void {
-		$this->logger->warning(
-			'NeoWiki: no registered Source for Subject id(s): ' . implode( ', ', $idTexts )
-		);
+	private function unknownSourceMessage( array $idTexts ): string {
+		return 'NeoWiki: no registered Source for Subject id(s): ' . implode( ', ', $idTexts );
 	}
 
 }

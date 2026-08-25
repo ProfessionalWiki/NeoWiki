@@ -2,7 +2,8 @@
 
 Date: 2026-06-22
 
-Status: Accepted (2026-07-06)
+Status: Accepted (2026-07-06). The Source contract section was amended 2026-08-07, resolving the "Source interface
+contract" open question.
 
 Feedback remains welcome on the **Open questions** section below.
 
@@ -26,8 +27,6 @@ Source, which is the authority for its Subjects' capabilities, identity, and sch
 more registered Sources.
 
 #### The Source contract
-
-*Amended 2026-08-07, resolving the "Source interface contract" open question.*
 
 A Source answers for five things and no more:
 

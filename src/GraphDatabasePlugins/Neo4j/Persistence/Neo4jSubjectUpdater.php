@@ -6,10 +6,11 @@ namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
@@ -23,7 +24,7 @@ class Neo4jSubjectUpdater {
 	public function __construct(
 		private readonly TransactionInterface $transaction,
 		private readonly PageId $pageId,
-		private readonly SchemaLookup $schemaRepository,
+		private readonly SchemaResolver $schemaResolver,
 		private readonly Neo4jValueBuilderRegistry $valueBuilderRegistry,
 		private readonly LoggerInterface $logger,
 		private readonly string $wikiId,
@@ -50,7 +51,8 @@ class Neo4jSubjectUpdater {
 
 	/**
 	 * Subjects whose Schema cannot be found are left out of the write: without it their Statements
-	 * cannot be read, and there is nothing to project.
+	 * cannot be read, and there is nothing to project. Resolution goes through the Schema's own Source
+	 * (ADR 23), so a Schema this wiki cannot reach drops its Subjects the same way a deleted one does.
 	 *
 	 * @return Neo4jPageSubject[]
 	 */
@@ -59,10 +61,10 @@ class Neo4jSubjectUpdater {
 		$subjects = [];
 
 		foreach ( $pageSubjects->getAllSubjects()->asArray() as $subject ) {
-			$schema = $this->schemaRepository->getSchema( $subject->getSchemaName() );
+			$schema = $this->schemaResolver->getSchema( $subject->getSchemaReference() );
 
 			if ( $schema === null ) {
-				$this->logger->warning( 'Schema not found: ' . $subject->getSchemaName()->getText() );
+				$this->logger->warning( 'Schema not found: ' . $subject->getSchemaReference()->getText() );
 				continue;
 			}
 
@@ -204,11 +206,40 @@ class Neo4jSubjectUpdater {
 		$relations = [];
 
 		foreach ( $subjects as $pageSubject ) {
-			$relations[$pageSubject->getId()] = $pageSubject->subject->getTypedRelations( $pageSubject->schema );
+			$relations[$pageSubject->getId()] = $this->withoutForeignTargets(
+				$pageSubject->subject->getTypedRelations( $pageSubject->schema )
+			);
 		}
 
 		( new Neo4jPageRelationUpdater( $this->transaction, $this->wikiId, $this->orphanCandidates ) )
 			->updateRelations( $relations );
+	}
+
+	/**
+	 * A relation to a Subject of another Source is not projected. Creating the edge would MERGE a stub
+	 * node for the target and stamp it with this wiki's `wiki_id`, which every node carries and which
+	 * would then be a lie (graph-model.md); the alternative, a node without one, no query scopes
+	 * correctly. Cross-Source querying waits on a design for that (ADR 23). This drops the edge for
+	 * every non-local target, including one whose Source is registered and resolvable, so a Subject
+	 * readable over REST can still be missing this edge in the graph. The RDF projection differs: it
+	 * names a registered Source's target under that Source's own base IRI.
+	 */
+	private function withoutForeignTargets( TypedRelationList $relations ): TypedRelationList {
+		$local = [];
+
+		foreach ( $relations->relations as $relation ) {
+			if ( $relation->targetId->isLocal() ) {
+				$local[] = $relation;
+				continue;
+			}
+
+			$this->logger->warning(
+				'Not projecting relation ' . $relation->id->asString() . ' on page ' . $this->pageId->id
+				. ': its target ' . $relation->targetId->text . ' comes from another Source'
+			);
+		}
+
+		return new TypedRelationList( $local );
 	}
 
 	/**

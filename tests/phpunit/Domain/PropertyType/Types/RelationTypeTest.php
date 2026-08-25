@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\PropertyType\Types;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
@@ -20,11 +21,11 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 class RelationTypeTest extends TestCase {
 
 	public function testDisplayAttributeNamesIsEmpty(): void {
-		$this->assertSame( [], ( new RelationType() )->getDisplayAttributeNames() );
+		$this->assertSame( [], ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->getDisplayAttributeNames() );
 	}
 
 	public function testSingleValuePropertyWithTwoTargetsReturnsSingleValueOnly(): void {
-		$violations = ( new RelationType() )->validate(
+		$violations = ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->validate(
 			new RelationValue(
 				TestRelation::build( targetId: 'srt111111111aaa' ),
 				TestRelation::build( targetId: 'srt111111111bbb' ),
@@ -38,7 +39,7 @@ class RelationTypeTest extends TestCase {
 	}
 
 	public function testSingleValueOnlyDefaultsToWarning(): void {
-		$violations = ( new RelationType() )->validate(
+		$violations = ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->validate(
 			new RelationValue(
 				TestRelation::build( targetId: 'srt111111111aaa' ),
 				TestRelation::build( targetId: 'srt111111111bbb' ),
@@ -50,7 +51,7 @@ class RelationTypeTest extends TestCase {
 	}
 
 	public function testSingleValueOnlyUsesErrorWhenMultipleAnnotated(): void {
-		$violations = ( new RelationType() )->validate(
+		$violations = ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->validate(
 			new RelationValue(
 				TestRelation::build( targetId: 'srt111111111aaa' ),
 				TestRelation::build( targetId: 'srt111111111bbb' ),
@@ -64,7 +65,7 @@ class RelationTypeTest extends TestCase {
 	}
 
 	public function testMultiValuePropertyWithTwoTargetsReturnsNoViolation(): void {
-		$this->assertSame( [], ( new RelationType() )->validate(
+		$this->assertSame( [], ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->validate(
 			new RelationValue(
 				TestRelation::build( targetId: 'srt111111111aaa' ),
 				TestRelation::build( targetId: 'srt111111111bbb' ),
@@ -74,14 +75,14 @@ class RelationTypeTest extends TestCase {
 	}
 
 	public function testSingleValuePropertyWithOneTargetReturnsNoViolation(): void {
-		$this->assertSame( [], ( new RelationType() )->validate(
+		$this->assertSame( [], ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->validate(
 			new RelationValue( TestRelation::build( targetId: 'srt111111111aaa' ) ),
 			$this->newRelationProperty( multiple: false ),
 		) );
 	}
 
 	public function testRequiredPropertyWithoutTargetsReturnsRequired(): void {
-		$violations = ( new RelationType() )->validate(
+		$violations = ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->validate(
 			new RelationValue(),
 			$this->newRelationProperty( multiple: false, required: true ),
 		);
@@ -94,7 +95,7 @@ class RelationTypeTest extends TestCase {
 		// `multiple` is optional in the Schema JSON and defaults to false, so a relation property
 		// authored or imported without the key is single-valued. Pinned here because that default
 		// is what decides whether the violation fires at all, not the validation.
-		$violations = ( new RelationType() )->validate(
+		$violations = ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->validate(
 			new RelationValue(
 				TestRelation::build( targetId: 'srt111111111aaa' ),
 				TestRelation::build( targetId: 'srt111111111bbb' ),
@@ -110,6 +111,7 @@ class RelationTypeTest extends TestCase {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: $required, default: null ),
 			[ 'relation' => 'has', 'targetSchema' => 'Person', 'multiple' => $multiple ],
+			TestSubjectIds::LOCAL_SOURCE_KEY,
 		);
 	}
 
@@ -121,7 +123,7 @@ class RelationTypeTest extends TestCase {
 				'targetSchema' => 'Person',
 				'multiple' => [ 'value' => false, 'severity' => 'error' ],
 			],
-			PropertyTypeRegistry::withCoreTypes(),
+			PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
 		);
 	}
 
@@ -129,6 +131,7 @@ class RelationTypeTest extends TestCase {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: false, default: null ),
 			[ 'relation' => 'has', 'targetSchema' => 'Person' ],
+			TestSubjectIds::LOCAL_SOURCE_KEY,
 		);
 	}
 
