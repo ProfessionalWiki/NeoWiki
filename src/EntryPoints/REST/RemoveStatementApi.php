@@ -11,7 +11,6 @@ use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\RestUpdateStatementPresenter;
@@ -36,8 +35,9 @@ class RemoveStatementApi extends SimpleHandler {
 		$presenter = new RestUpdateStatementPresenter();
 
 		try {
-			NeoWikiExtension::getInstance()->newUpdateStatementAction( $presenter, $this->getAuthority() )->removeStatement(
-				new SubjectId( $subjectId ),
+			$extension = NeoWikiExtension::getInstance();
+			$extension->newUpdateStatementAction( $presenter, $this->getAuthority() )->removeStatement(
+				$extension->getSubjectIdParser()->parseOrThrow( $subjectId ),
 				new PropertyName( $propertyName ),
 				$body['comment'] ?? null
 			);
@@ -69,7 +69,7 @@ class RemoveStatementApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject. 15 characters, starting with "s".',
+				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject: 15 characters starting with "s" for a Subject of this wiki, or "sourceKey:localId" for one from another Source.',
 			],
 			'propertyName' => [
 				self::PARAM_SOURCE => 'path',

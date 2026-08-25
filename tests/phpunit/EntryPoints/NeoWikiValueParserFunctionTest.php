@@ -33,6 +33,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiValueParserFunction;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiValueParserFunction
@@ -84,7 +85,8 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new SubjectResolver(
 				$repo,
 				$lookup ?? $this->createDummyLookup(),
-				$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup()
+				$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
+				TestSubjectIds::newParser()
 			)
 		);
 	}

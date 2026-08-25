@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
@@ -20,6 +21,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
@@ -40,6 +42,7 @@ readonly class CreateSubjectAction {
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
 		private PageIdentifiersResolver $pageIdentifiersResolver,
+		private SubjectIdParser $subjectIdParser,
 		private bool $validationEnforced,
 	) {
 	}
@@ -141,11 +144,26 @@ readonly class CreateSubjectAction {
 		}
 
 		return new Subject(
-			id: new SubjectId( $request->id ),
+			id: $this->localId( $request->id ),
 			label: $label,
 			schemaName: $schemaName,
 			statements: $statements,
 		);
+	}
+
+	/**
+	 * A Subject is only ever created in the local Source, so a caller-supplied id must be a local one.
+	 *
+	 * @throws InvalidArgumentException
+	 */
+	private function localId( string $id ): SubjectId {
+		$subjectId = $this->subjectIdParser->parseOrThrow( $id );
+
+		if ( !$subjectId->isLocal() ) {
+			throw new InvalidArgumentException( "Subjects can only be created in the local Source: '$id'" );
+		}
+
+		return $subjectId;
 	}
 
 	/**

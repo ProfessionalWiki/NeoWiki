@@ -29,15 +29,16 @@ class ExportSubjectRdfApi extends SimpleHandler {
 	use ReadOnlyEndpoint;
 
 	public function run( string $subjectId ): Response {
-		// Validate the ID shape first, so a malformed value is a clean 400 rather than reaching
-		// the SubjectId constructor below and becoming a 500.
-		if ( !SubjectId::isValid( $subjectId ) ) {
+		$extension = NeoWikiExtension::getInstance();
+
+		// Validate the ID shape first, so a malformed value is a clean 400 rather than becoming a 500.
+		$id = $extension->getSubjectIdParser()->parse( $subjectId );
+
+		if ( $id === null ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'message' => 'Invalid Subject ID: ' . $subjectId,
 			] );
 		}
-
-		$extension = NeoWikiExtension::getInstance();
 		$projectionName = $this->getValidatedParams()['projection'] ?? RdfPageProjector::PROJECTION;
 		$resolution = $extension->resolveRdfProjection( $projectionName );
 
@@ -62,7 +63,7 @@ class ExportSubjectRdfApi extends SimpleHandler {
 
 		$document = $extension
 			->newRdfSubjectExporterForProjection( $resolution->projection, $this->getAuthority() )
-			->exportBySubjectId( new SubjectId( $subjectId ), $format );
+			->exportBySubjectId( $id, $format );
 
 		if ( $document === null ) {
 			return $this->noDataResponse( $subjectId );
@@ -83,7 +84,7 @@ class ExportSubjectRdfApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject. 15 characters, starting with "s".',
+				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject: 15 characters starting with "s" for a Subject of this wiki, or "sourceKey:localId" for one from another Source.',
 			],
 			'format' => [
 				self::PARAM_SOURCE => 'query',
