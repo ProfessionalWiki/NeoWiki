@@ -24,6 +24,9 @@ For a stack started with the `server` profile, run `COMPOSE_PROFILES=server make
 
 If the new version can no longer read your evaluation data, start fresh with `make remove && make demo`.
 
+If your Subjects predate the optional Subject label, run
+[clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once.
+
 ### Optional: refresh the demo content
 
 `make import-demo-data` updates the demo pages to the current demo set, the same content as the public demo wiki. It
@@ -51,3 +54,6 @@ php maintenance/run.php NeoWiki:RebuildGraphDatabases
 
 [Rebuild](maintenance.md#rebuilding-the-graph) after every upgrade: with no release notes there is no way to tell
 whether the new version changed the projected shape, and rebuilds are quick at evaluation scale.
+
+If your Subjects predate the optional Subject label, run
+[clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before that rebuild.
