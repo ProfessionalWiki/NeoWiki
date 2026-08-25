@@ -20,7 +20,7 @@ class SubjectPresentationSerializer {
 			'id' => $item->id,
 			'label' => $item->label,
 			'displayName' => $item->displayName,
-			'schema' => $item->schemaName,
+			'schema' => $item->schema,
 		];
 
 		if ( $item->pageId !== null ) {

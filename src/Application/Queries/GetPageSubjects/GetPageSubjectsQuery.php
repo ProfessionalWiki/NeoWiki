@@ -188,12 +188,14 @@ readonly class GetPageSubjectsQuery {
 	 * @return array<string, string> Schema name → JSON-encoded schema
 	 */
 	private function buildSchemaMap( array $pageSubjectItems, ?array $referencedSubjectItems ): array {
+		// The map is keyed by Schema name and served from this wiki's Schema pages, so a Subject whose
+		// Schema comes from another Source contributes nothing to it: there is no local name to key it
+		// under. Consumers read that Subject's Schema reference and resolve it themselves.
 		$schemaNames = [];
-		foreach ( $pageSubjectItems as $item ) {
-			$schemaNames[$item->schemaName] = true;
-		}
-		foreach ( $referencedSubjectItems ?? [] as $item ) {
-			$schemaNames[$item->schemaName] = true;
+		foreach ( array_merge( $pageSubjectItems, $referencedSubjectItems ?? [] ) as $item ) {
+			if ( is_string( $item->schema ) ) {
+				$schemaNames[$item->schema] = true;
+			}
 		}
 
 		$schemas = [];

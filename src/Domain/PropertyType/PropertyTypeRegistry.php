@@ -20,14 +20,18 @@ class PropertyTypeRegistry implements PropertyTypeLookup {
 	 */
 	private array $types = [];
 
-	public static function withCoreTypes(): self {
+	/**
+	 * @param string $localSourceKey The wiki's own Source key, which the relation type needs to read a
+	 *   `targetSchema` naming it (ADR 23).
+	 */
+	public static function withCoreTypes( string $localSourceKey ): self {
 		$registry = new self();
 		$registry->registerType( new TextType() );
 		$registry->registerType( new UrlType() );
 		$registry->registerType( new NumberType() );
 		$registry->registerType( new SelectType() );
 		$registry->registerType( new BooleanType() );
-		$registry->registerType( new RelationType() );
+		$registry->registerType( new RelationType( $localSourceKey ) );
 		$registry->registerType( new DateTimeType() );
 		$registry->registerType( new DateType() );
 		return $registry;

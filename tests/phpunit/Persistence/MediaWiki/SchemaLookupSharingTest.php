@@ -21,6 +21,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use Wikimedia\ObjectCache\EmptyBagOStuff;
 use Wikimedia\ObjectCache\WANObjectCache;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 
 /**
  * The Schema of a Subject is needed by both the validation and the graph projection of every
@@ -60,7 +61,7 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 	public function testValidatingSubjectsResolvesTheirSchemaOnce(): void {
 		$inner = $this->newCountingLookup();
 		$validator = new ProposedSubjectValidator(
-			schemaLookup: $this->newCachingLookup( $inner ),
+			schemaResolver: TestSources::newSchemaResolver( $this->newCachingLookup( $inner ) ),
 			subjectValidator: NeoWikiExtension::getInstance()->getSubjectValidator(),
 		);
 

@@ -44,7 +44,7 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 interface SubjectPickerProps {
 	selected: string | null;
-	targetSchema: string;
+	targetSchema: string | null;
 	startIcon?: Icon;
 	status?: ValidationStatusType | 'default';
 	ariaLabel?: string;
@@ -118,6 +118,12 @@ async function onLookupInput( value: string ): Promise<void> {
 
 	searchActive.value = true;
 	const currentSequence = ++requestSequence;
+
+	if ( props.targetSchema === null ) {
+		menuItems.value = [];
+		searchActive.value = true;
+		return;
+	}
 
 	try {
 		const results = await subjectLabelSearch.searchSubjectLabels( value, props.targetSchema );

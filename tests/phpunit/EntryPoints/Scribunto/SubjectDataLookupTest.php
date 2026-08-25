@@ -31,6 +31,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup
@@ -60,7 +61,7 @@ class SubjectDataLookupTest extends TestCase {
 		return new Subject(
 			id: new SubjectId( self::SUBJECT_ID ),
 			label: new SubjectLabel( 'Test Subject' ),
-			schemaName: new SchemaName( 'TestSchema' ),
+			schema: SchemaReference::local( new SchemaName( 'TestSchema' ) ),
 			statements: new StatementList( $statements ),
 		);
 	}
@@ -205,7 +206,7 @@ class SubjectDataLookupTest extends TestCase {
 		$targetSubject = new Subject(
 			id: new SubjectId( self::TARGET_SUBJECT_ID ),
 			label: new SubjectLabel( 'Sarah Naumann' ),
-			schemaName: new SchemaName( 'Person' ),
+			schema: SchemaReference::local( new SchemaName( 'Person' ) ),
 			statements: new StatementList(),
 		);
 
@@ -237,7 +238,7 @@ class SubjectDataLookupTest extends TestCase {
 		$target1 = new Subject(
 			id: new SubjectId( 's1test5bbbbbbbb' ),
 			label: new SubjectLabel( 'Alice' ),
-			schemaName: new SchemaName( 'Person' ),
+			schema: SchemaReference::local( new SchemaName( 'Person' ) ),
 			statements: new StatementList(),
 		);
 
@@ -329,7 +330,7 @@ class SubjectDataLookupTest extends TestCase {
 		$targetSubject = new Subject(
 			id: new SubjectId( self::TARGET_SUBJECT_ID ),
 			label: new SubjectLabel( 'Other Subject' ),
-			schemaName: new SchemaName( 'TestSchema' ),
+			schema: SchemaReference::local( new SchemaName( 'TestSchema' ) ),
 			statements: new StatementList( [
 				new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Munich' ) ),
 			] ),
@@ -412,13 +413,13 @@ class SubjectDataLookupTest extends TestCase {
 		$target1 = new Subject(
 			id: new SubjectId( 's1test5bbbbbbbb' ),
 			label: new SubjectLabel( 'Alice' ),
-			schemaName: new SchemaName( 'Person' ),
+			schema: SchemaReference::local( new SchemaName( 'Person' ) ),
 			statements: new StatementList(),
 		);
 		$target2 = new Subject(
 			id: new SubjectId( 's1test5cccccccc' ),
 			label: new SubjectLabel( 'Bob' ),
-			schemaName: new SchemaName( 'Person' ),
+			schema: SchemaReference::local( new SchemaName( 'Person' ) ),
 			statements: new StatementList(),
 		);
 
@@ -509,7 +510,7 @@ class SubjectDataLookupTest extends TestCase {
 		$subject = new Subject(
 			id: new SubjectId( self::SUBJECT_ID ),
 			label: null,
-			schemaName: new SchemaName( 'Museum' ),
+			schema: SchemaReference::local( new SchemaName( 'Museum' ) ),
 			statements: new StatementList(),
 		);
 
@@ -541,7 +542,7 @@ class SubjectDataLookupTest extends TestCase {
 		$subject = new Subject(
 			id: new SubjectId( self::TARGET_SUBJECT_ID ),
 			label: new SubjectLabel( 'ACME Corp' ),
-			schemaName: new SchemaName( 'Company' ),
+			schema: SchemaReference::local( new SchemaName( 'Company' ) ),
 			statements: new StatementList( [
 				new Statement( new PropertyName( 'Founded' ), 'number', new NumberValue( 1985 ) ),
 			] ),
@@ -574,14 +575,14 @@ class SubjectDataLookupTest extends TestCase {
 		$targetSubject = new Subject(
 			id: new SubjectId( self::TARGET_SUBJECT_ID ),
 			label: new SubjectLabel( 'Jane Doe' ),
-			schemaName: new SchemaName( 'Person' ),
+			schema: SchemaReference::local( new SchemaName( 'Person' ) ),
 			statements: new StatementList(),
 		);
 
 		$subject = new Subject(
 			id: new SubjectId( self::SUBJECT_ID ),
 			label: new SubjectLabel( 'ACME Corp' ),
-			schemaName: new SchemaName( 'Company' ),
+			schema: SchemaReference::local( new SchemaName( 'Company' ) ),
 			statements: new StatementList( [
 				new Statement(
 					new PropertyName( 'CEO' ),
@@ -617,13 +618,13 @@ class SubjectDataLookupTest extends TestCase {
 		$child1 = new Subject(
 			id: new SubjectId( self::TARGET_SUBJECT_ID ),
 			label: new SubjectLabel( 'Child One' ),
-			schemaName: new SchemaName( 'ChildSchema' ),
+			schema: SchemaReference::local( new SchemaName( 'ChildSchema' ) ),
 			statements: new StatementList(),
 		);
 		$child2 = new Subject(
 			id: new SubjectId( self::CHILD_SUBJECT_ID ),
 			label: new SubjectLabel( 'Child Two' ),
-			schemaName: new SchemaName( 'ChildSchema' ),
+			schema: SchemaReference::local( new SchemaName( 'ChildSchema' ) ),
 			statements: new StatementList(),
 		);
 
@@ -647,7 +648,7 @@ class SubjectDataLookupTest extends TestCase {
 		$child = new Subject(
 			id: new SubjectId( self::CHILD_SUBJECT_ID ),
 			label: null,
-			schemaName: new SchemaName( 'Attendance' ),
+			schema: SchemaReference::local( new SchemaName( 'Attendance' ) ),
 			statements: new StatementList(),
 		);
 

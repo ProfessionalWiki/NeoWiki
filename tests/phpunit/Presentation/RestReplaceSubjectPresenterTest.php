@@ -25,7 +25,7 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 			id: 's1demo1aaaaaaa1',
 			label: 'ACME Corp',
 			displayName: 'ACME Corp',
-			schemaName: 'Organization',
+			schema: 'Organization',
 			statements: [ 'Animal' => [ 'propertyType' => 'text', 'value' => [ 'bunny' ] ] ],
 			pageId: $pageId,
 			pageTitle: $pageId === null ? null : 'ACME Corp',

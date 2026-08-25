@@ -208,6 +208,27 @@ describe( 'RelationInput', () => {
 			expect( field.props( 'status' ) ).toBe( 'error' );
 		} );
 
+		it( 'surfaces an unresolvable-source violation, which only the server can detect', () => {
+			const wrapper = newWrapper( {
+				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				serverViolations: [
+					{
+						propertyName: 'Owner',
+						code: 'relation-target-unresolvable-source',
+						args: [ 'neverinstalled:Q42' ],
+						severity: 'error',
+						valuePartIndex: 0,
+					},
+				],
+			} );
+
+			const field = wrapper.findComponent( CdxField );
+			expect( field.props( 'messages' ) ).toEqual( {
+				error: 'neowiki-field-relation-target-unresolvable-sourceneverinstalled:Q42',
+			} );
+			expect( field.props( 'status' ) ).toBe( 'error' );
+		} );
+
 		it( 'keeps a server violation suppressed while the lookup reports unmatched text', async () => {
 			const wrapper = newWrapper( {
 				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
