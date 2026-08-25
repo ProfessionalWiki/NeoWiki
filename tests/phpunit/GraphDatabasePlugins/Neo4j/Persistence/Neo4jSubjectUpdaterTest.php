@@ -7,7 +7,9 @@ namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Types\Date;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
@@ -70,7 +72,15 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 
 	private function updateSubject(): void {
 		$this->newSubjectUpdater()->updateSubjects(
-			new PageSubjects( null, new SubjectMap( $this->subject ) )
+			$this->newPage( new PageSubjects( null, new SubjectMap( $this->subject ) ) )
+		);
+	}
+
+	private function newPage( PageSubjects $subjects ): Page {
+		return new Page(
+			$this->pageId,
+			new PageProperties( [ PageProperties::NAME => 'Updater test page' ] ),
+			$subjects
 		);
 	}
 

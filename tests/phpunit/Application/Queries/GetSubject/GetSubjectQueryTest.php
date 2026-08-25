@@ -8,14 +8,17 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponse;
+use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
@@ -26,6 +29,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivePageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery
@@ -59,6 +63,7 @@ class GetSubjectQueryTest extends TestCase {
 				),
 			),
 			new InMemoryPageIdentifiersLookup(),
+			$this->emptyPageSubjectsLookup(),
 			new StubPageReadAuthorizer( allowed: true ),
 		);
 
@@ -75,6 +80,7 @@ class GetSubjectQueryTest extends TestCase {
 					's11111111111129' => new GetSubjectResponseItem(
 						id: 's11111111111129',
 						label: 'expected label',
+						displayName: 'expected label',
 						schemaName: 'GetSubjectQueryTestSchema',
 						statements: [
 							'expected property 1' => [
@@ -132,6 +138,7 @@ class GetSubjectQueryTest extends TestCase {
 			$spyPresenter,
 			new InMemorySubjectLookup(),
 			new InMemoryPageIdentifiersLookup(),
+			$this->emptyPageSubjectsLookup(),
 			new StubPageReadAuthorizer( allowed: true ),
 		);
 
@@ -155,6 +162,7 @@ class GetSubjectQueryTest extends TestCase {
 				[ new SubjectId( TestSubject::ZERO_GUID ), new PageIdentifiers( new PageId( 1 ), 'wrong title', 0 ) ],
 				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'right title', 12 ) ],
 			] ),
+			$this->emptyPageSubjectsLookup(),
 			new StubPageReadAuthorizer( allowed: true ),
 		);
 
@@ -169,6 +177,77 @@ class GetSubjectQueryTest extends TestCase {
 		$this->assertSame( 42, $response->subjects[$response->requestedId]->pageId );
 		$this->assertSame( 'right title', $response->subjects[$response->requestedId]->pageTitle );
 		$this->assertSame( 12, $response->subjects[$response->requestedId]->pageNamespaceId );
+	}
+
+	public function testLabellessMainSubjectIsNamedAfterItsPage(): void {
+		$spyPresenter = $this->getSpyPresenter();
+		$subject = TestSubject::build( id: 's11111111111maa', label: null );
+
+		$this->newQueryForLabellessSubject( $spyPresenter, $subject, $subject )->execute(
+			subjectId: 's11111111111maa',
+			includePageIdentifiers: true,
+			includeReferencedSubjects: false
+		);
+
+		$this->assertNull( $spyPresenter->response->subjects['s11111111111maa']->label );
+		$this->assertSame( 'Rijksmuseum', $spyPresenter->response->subjects['s11111111111maa']->displayName );
+	}
+
+	/**
+	 * The page identifiers are withheld from the response unless expand=page asked for them, but the
+	 * display name is built before that trimming: a default read of a label-less Main Subject must
+	 * still be named after its page rather than falling through to its Schema.
+	 */
+	public function testLabellessMainSubjectIsNamedAfterItsPageWithoutThePageExpansion(): void {
+		$spyPresenter = $this->getSpyPresenter();
+		$subject = TestSubject::build( id: 's11111111111maa', label: null );
+
+		$this->newQueryForLabellessSubject( $spyPresenter, $subject, $subject )->execute(
+			subjectId: 's11111111111maa',
+			includePageIdentifiers: false,
+			includeReferencedSubjects: false
+		);
+
+		$this->assertNull( $spyPresenter->response->subjects['s11111111111maa']->pageTitle );
+		$this->assertSame( 'Rijksmuseum', $spyPresenter->response->subjects['s11111111111maa']->displayName );
+	}
+
+	public function testLabellessChildSubjectIsNamedAfterItsSchema(): void {
+		$spyPresenter = $this->getSpyPresenter();
+		$child = TestSubject::build(
+			id: 's11111111111ca1',
+			label: null,
+			schemaName: new SchemaName( 'Attendance' )
+		);
+
+		$this->newQueryForLabellessSubject(
+			$spyPresenter,
+			$child,
+			TestSubject::build( id: 's11111111111maa' )
+		)->execute(
+			subjectId: 's11111111111ca1',
+			includePageIdentifiers: true,
+			includeReferencedSubjects: false
+		);
+
+		$this->assertNull( $spyPresenter->response->subjects['s11111111111ca1']->label );
+		$this->assertSame( 'Attendance', $spyPresenter->response->subjects['s11111111111ca1']->displayName );
+	}
+
+	private function newQueryForLabellessSubject(
+		object $spyPresenter,
+		Subject $requested,
+		Subject $mainSubjectOfPage
+	): GetSubjectQuery {
+		return new GetSubjectQuery(
+			$spyPresenter,
+			new InMemorySubjectLookup( $requested ),
+			new InMemoryPageIdentifiersLookup( [
+				[ $requested->id, new PageIdentifiers( new PageId( 42 ), 'Rijksmuseum', 0 ) ],
+			] ),
+			$this->pageSubjectsLookupWithMainSubject( $mainSubjectOfPage, 42 ),
+			new StubPageReadAuthorizer( allowed: true ),
+		);
 	}
 
 	public function testIncludeReferencedSubjects(): void {
@@ -204,6 +283,7 @@ class GetSubjectQueryTest extends TestCase {
 				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'subject title', 0 ) ],
 				[ $referencedSubject->id, new PageIdentifiers( new PageId( 1337 ), 'referenced title', 12 ) ],
 			] ),
+			$this->emptyPageSubjectsLookup(),
 			new StubPageReadAuthorizer( allowed: true ),
 		);
 
@@ -251,6 +331,7 @@ class GetSubjectQueryTest extends TestCase {
 			$spyPresenter,
 			$subjectLookup,
 			$pageIdentifiersLookup,
+			$this->emptyPageSubjectsLookup(),
 			new StubPageReadAuthorizer( allowed: true ),
 		);
 
@@ -293,6 +374,7 @@ class GetSubjectQueryTest extends TestCase {
 			new InMemoryPageIdentifiersLookup( [
 				[ new SubjectId( 's11111111111aa2' ), new PageIdentifiers( new PageId( 102 ), 'Second', 0 ) ],
 			] ),
+			$this->emptyPageSubjectsLookup(),
 			new StubPageReadAuthorizer( allowed: true ),
 		);
 
@@ -328,6 +410,7 @@ class GetSubjectQueryTest extends TestCase {
 				[ new SubjectId( 's11111111111aa1' ), new PageIdentifiers( new PageId( 101 ), 'Hidden', 0 ) ],
 				[ new SubjectId( 's11111111111aa2' ), new PageIdentifiers( new PageId( 102 ), 'Visible', 0 ) ],
 			] ),
+			$this->emptyPageSubjectsLookup(),
 			new SelectivePageReadAuthorizer( deniedPageIds: [ 101 ] ),
 		);
 
@@ -362,6 +445,7 @@ class GetSubjectQueryTest extends TestCase {
 			new InMemoryPageIdentifiersLookup( [
 				[ new SubjectId( 's11111111111maa' ), new PageIdentifiers( new PageId( 42 ), 'Requested', 0 ) ],
 			] ),
+			$this->emptyPageSubjectsLookup(),
 			new StubPageReadAuthorizer( allowed: true ),
 		);
 
@@ -399,6 +483,7 @@ class GetSubjectQueryTest extends TestCase {
 			$spyPresenter,
 			$subjectLookup,
 			$pageIdentifiersLookup,
+			$this->emptyPageSubjectsLookup(),
 			new SelectivePageReadAuthorizer( deniedPageIds: [ 42 ] ),
 		);
 
@@ -411,6 +496,21 @@ class GetSubjectQueryTest extends TestCase {
 		$this->assertTrue( $spyPresenter->notFound );
 		$this->assertSame( 0, $subjectLookup->getSubjectsCallCount );
 		$this->assertSame( 0, $pageIdentifiersLookup->getPageIdsOfSubjectsCallCount );
+	}
+
+	/**
+	 * For the tests that do not care which Subject a page calls its Main one: every page it is asked
+	 * about answers that it has none.
+	 */
+	private function emptyPageSubjectsLookup(): PageSubjectsLookup {
+		return new PageSubjectsLookup( new InMemorySubjectRepository() );
+	}
+
+	private function pageSubjectsLookupWithMainSubject( Subject $mainSubject, int $pageId ): PageSubjectsLookup {
+		$repository = new InMemorySubjectRepository();
+		$repository->savePageSubjects( new PageSubjects( $mainSubject, new SubjectMap() ), new PageId( $pageId ) );
+
+		return new PageSubjectsLookup( $repository );
 	}
 
 	private function newSubjectReferencing( string ...$targetIds ): Subject {

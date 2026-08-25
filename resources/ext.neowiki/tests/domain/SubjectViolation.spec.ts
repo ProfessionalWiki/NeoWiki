@@ -10,8 +10,10 @@ describe( 'withoutMissingValueViolations', () => {
 		expect( withoutMissingValueViolations( [ violation( 'required' ) ] ) ).toEqual( [] );
 	} );
 
-	it( 'removes the subject-level label-required violation', () => {
-		expect( withoutMissingValueViolations( [ violation( 'label-required', null ) ] ) ).toEqual( [] );
+	it( 'keeps subject-level violations, which no longer include a missing label', () => {
+		const schemaNotFound = violation( 'schema-not-found', null );
+
+		expect( withoutMissingValueViolations( [ schemaNotFound ] ) ).toEqual( [ schemaNotFound ] );
 	} );
 
 	it( 'keeps violations that need a value, dropping missing-value ones in between', () => {
@@ -21,7 +23,6 @@ describe( 'withoutMissingValueViolations', () => {
 		const result = withoutMissingValueViolations( [
 			invalidUrl,
 			violation( 'required' ),
-			violation( 'label-required', null ),
 			maxLength,
 		] );
 

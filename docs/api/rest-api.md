@@ -61,7 +61,7 @@ Read, change, and validate Subjects. New Subjects are created on a page — see
 | `POST /neowiki/v0/subject/validate` | Check whether a new Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject/{subjectId}/validate` | Check whether a change to a Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject-ids` | Mint a batch of unused Subject IDs to assign on create, e.g. to wire relations across an interlinked import. Body `count` (1–1000). |
-| `GET /neowiki/v0/subject-labels` | Find Subjects of a Schema by label; returns `id`/`label` pairs. Query: `schema` (required), `search` (label prefix), `limit`. |
+| `GET /neowiki/v0/subject-labels` | Find Subjects of a Schema by label; returns `id`/`label` pairs. A Child Subject with no label is absent. Query: `schema` (required), `search` (label prefix), `limit`. |
 
 ### Pages and Subjects
 
@@ -161,12 +161,13 @@ On the **Subject read**, the targets are merged into the same `subjects` map as 
     "sEpfwJLnxyQy6vR": {
       "id": "sEpfwJLnxyQy6vR",
       "label": "Rijksmuseum",
+      "displayName": "Rijksmuseum",
       "schema": "Museum",
       "statements": {
         "City": { "propertyType": "relation", "value": [ { "id": "rEpfwJLoEB5UuQS", "target": "sEpfwJLnuwcxvuJ" } ] }
       }
     },
-    "sEpfwJLnuwcxvuJ": { "id": "sEpfwJLnuwcxvuJ", "label": "Amsterdam", "schema": "City", "statements": { ... } }
+    "sEpfwJLnuwcxvuJ": { "id": "sEpfwJLnuwcxvuJ", "label": "Amsterdam", "displayName": "Amsterdam", "schema": "City", "statements": { ... } }
   }
 }
 ```
@@ -179,11 +180,11 @@ top-level `referencedSubjects` map keyed by Subject ID:
   "pageId": 93,
   "mainSubjectId": "sEpfwJLnxyQy6vR",
   "subjects": {
-    "sEpfwJLnxyQy6vR": { "id": "sEpfwJLnxyQy6vR", "label": "Rijksmuseum", "schema": "Museum", "statements": { ... } },
-    "sEpfwJLAtndAaaA": { ... }
+    "sEpfwJLnxyQy6vR": { "id": "sEpfwJLnxyQy6vR", "label": "Rijksmuseum", "displayName": "Rijksmuseum", "schema": "Museum", "statements": { ... } },
+    "sEpfwJLAtndAaaA": { "id": "sEpfwJLAtndAaaA", "label": null, "displayName": "Attendance", "schema": "Attendance", "statements": { ... } }
   },
   "referencedSubjects": {
-    "sEpfwJLnuwcxvuJ": { "id": "sEpfwJLnuwcxvuJ", "label": "Amsterdam", "schema": "City", "statements": { ... } }
+    "sEpfwJLnuwcxvuJ": { "id": "sEpfwJLnuwcxvuJ", "label": "Amsterdam", "displayName": "Amsterdam", "schema": "City", "statements": { ... } }
   }
 }
 ```

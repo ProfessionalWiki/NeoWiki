@@ -35,6 +35,14 @@ describe( 'EditableText', () => {
 		expect( wrapper.find( '.ext-neowiki-editable-text__text' ).text() ).toBe( 'Unnamed' );
 	} );
 
+	it( 'keeps showing the placeholder once the input is open', async () => {
+		const wrapper = mountComponent( { modelValue: '', placeholder: 'Unnamed' } );
+
+		const input = await startEditing( wrapper );
+
+		expect( input.attributes( 'placeholder' ) ).toBe( 'Unnamed' );
+	} );
+
 	it( 'opens an input holding the current value when the edit button is clicked', async () => {
 		const wrapper = mountComponent();
 

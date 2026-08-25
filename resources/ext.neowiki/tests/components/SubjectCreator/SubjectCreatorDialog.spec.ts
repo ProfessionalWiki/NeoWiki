@@ -32,6 +32,8 @@ import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 
 const PAGE_ID = 123;
 const PAGE_TITLE = 'Test Page';
+// wgPageName carries the prefixed title with underscores, which is what the placeholder reads.
+const PAGE_NAME = 'Test_Page';
 const SCHEMA_NAME = 'TestSchema';
 const NEW_SCHEMA_NAME = 'NewSchema';
 
@@ -156,7 +158,7 @@ describe( 'SubjectCreatorDialog', () => {
 						template: '<div class="cdx-field-stub"><slot /><slot name="label" /><slot name="messages" /></div>',
 					},
 					CdxTextInput: {
-						template: '<input class="cdx-text-input-stub" :value="modelValue" @input="$emit( \'update:modelValue\', $event.target.value )" />',
+						template: '<input class="cdx-text-input-stub" :value="modelValue" :placeholder="placeholder" @input="$emit( \'update:modelValue\', $event.target.value )" />',
 						props: [ 'modelValue', 'placeholder', 'status' ],
 						emits: [ 'update:modelValue' ],
 						methods: { focus: vi.fn() },
@@ -204,6 +206,7 @@ describe( 'SubjectCreatorDialog', () => {
 			config: {
 				wgArticleId: PAGE_ID,
 				wgTitle: PAGE_TITLE,
+				wgPageName: PAGE_NAME,
 				// Debounce 0 is blur-only mode: the dry-run fires on blur / pre-save
 				// (via flush()), which runs synchronously in tests.
 				wgNeoWikiValidationDebounceMs: 0,
@@ -362,27 +365,106 @@ describe( 'SubjectCreatorDialog', () => {
 		expect( wrapper.find( '.edit-summary-stub' ).exists() ).toBe( true );
 	} );
 
-	it( 'defaults label to page title', async () => {
+	it( 'offers the page title as the label placeholder, leaving the field empty', async () => {
 		const wrapper = mountComponent();
 
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
 		const labelInput = wrapper.find( '.cdx-text-input-stub' );
-		expect( ( labelInput.element as HTMLInputElement ).value ).toBe( PAGE_TITLE );
+		expect( labelInput.attributes( 'placeholder' ) ).toBe( PAGE_TITLE );
+		expect( ( labelInput.element as HTMLInputElement ).value ).toBe( '' );
 	} );
 
-	it( 'defaults label to the schema name when the page already has a main subject', async () => {
+	it( 'marks the label field as optional', async () => {
+		const wrapper = mountComponent();
+
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+		await flushPromises();
+
+		const labelField = wrapper.find( '.ext-neowiki-subject-creator-label-field' );
+		expect( labelField.attributes( 'optional' ) ).toBe( 'true' );
+	} );
+
+	it( 'keeps the namespace in the placeholder, matching the name the server will show', async () => {
+		setupMwMock( {
+			functions: [ 'msg', 'notify', 'config', 'storage' ],
+			config: {
+				wgArticleId: PAGE_ID,
+				wgTitle: 'Onboarding',
+				wgPageName: 'Handbook:Onboarding',
+				wgNeoWikiValidationDebounceMs: 0,
+			},
+		} );
+
+		const wrapper = mountComponent();
+
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+		await flushPromises();
+
+		expect( wrapper.find( '.cdx-text-input-stub' ).attributes( 'placeholder' ) ).toBe( 'Handbook:Onboarding' );
+	} );
+
+	it( 'offers the schema name as the label placeholder when the page already has a main subject', async () => {
 		const wrapper = mountComponent( {}, { pageHasMainSubject: true } );
 
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
 		const labelInput = wrapper.find( '.cdx-text-input-stub' );
-		expect( ( labelInput.element as HTMLInputElement ).value ).toBe( SCHEMA_NAME );
+		expect( labelInput.attributes( 'placeholder' ) ).toBe( SCHEMA_NAME );
+		expect( ( labelInput.element as HTMLInputElement ).value ).toBe( '' );
+	} );
+
+	it( 'leaves save reachable once a schema is picked, even with the label untouched', async () => {
+		const wrapper = mountComponent();
+
+		expect( wrapper.find( '.edit-summary-stub' ).exists() ).toBe( false );
+
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+	} );
+
+	it( 'keeps continue disabled until the new schema has been given something', async () => {
+		const wrapper = mountComponent();
+
+		await switchToNewSchema( wrapper );
+
+		const continueButton = wrapper.find( '.ext-neowiki-subject-creator-continue cdx-button-stub' );
+		expect( continueButton.attributes( 'disabled' ) ).toBe( 'true' );
+
+		wrapper.findComponent( SchemaCreator ).vm.$emit( 'change' );
+		await flushPromises();
+
+		expect(
+			wrapper.find( '.ext-neowiki-subject-creator-continue cdx-button-stub' ).attributes( 'disabled' ),
+		).toBe( 'false' );
 	} );
 
 	it( 'calls createMainSubject on save with correct arguments', async () => {
+		const wrapper = mountComponent();
+
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+		await flushPromises();
+
+		const labelInput = wrapper.find( '.cdx-text-input-stub' );
+		await labelInput.setValue( 'Typed label' );
+
+		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'test summary' );
+		await flushPromises();
+
+		expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
+			PAGE_ID,
+			'Typed label',
+			SCHEMA_NAME,
+			expect.any( StatementList ),
+			'test summary',
+		);
+	} );
+
+	it( 'sends no label when the field was left empty', async () => {
 		const wrapper = mountComponent();
 
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
@@ -393,10 +475,31 @@ describe( 'SubjectCreatorDialog', () => {
 
 		expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
 			PAGE_ID,
-			PAGE_TITLE,
+			null,
 			SCHEMA_NAME,
 			expect.any( StatementList ),
 			'test summary',
+		);
+	} );
+
+	it( 'sends no label when the field holds only whitespace', async () => {
+		const wrapper = mountComponent();
+
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+		await flushPromises();
+
+		const labelInput = wrapper.find( '.cdx-text-input-stub' );
+		await labelInput.setValue( '   ' );
+
+		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+		await flushPromises();
+
+		expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
+			PAGE_ID,
+			null,
+			SCHEMA_NAME,
+			expect.any( StatementList ),
+			undefined,
 		);
 	} );
 
@@ -411,7 +514,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 		expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
 			PAGE_ID,
-			PAGE_TITLE,
+			null,
 			SCHEMA_NAME,
 			expect.any( StatementList ),
 			undefined,
@@ -424,12 +527,15 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
+		const labelInput = wrapper.find( '.cdx-text-input-stub' );
+		await labelInput.setValue( 'Typed label' );
+
 		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'test summary' );
 		await flushPromises();
 
 		expect( subjectStore.createChildSubject ).toHaveBeenCalledWith(
 			PAGE_ID,
-			SCHEMA_NAME,
+			'Typed label',
 			SCHEMA_NAME,
 			expect.any( StatementList ),
 			'test summary',
@@ -474,7 +580,7 @@ describe( 'SubjectCreatorDialog', () => {
 		expect( dialog.props( 'open' ) ).toBe( true );
 	} );
 
-	it( 'does not save when label is empty', async () => {
+	it( 'saves without a label when the field is emptied', async () => {
 		const wrapper = mountComponent();
 
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
@@ -487,8 +593,14 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 		await flushPromises();
 
-		expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
-		expect( mw.notify ).toHaveBeenCalledWith(
+		expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
+			PAGE_ID,
+			null,
+			SCHEMA_NAME,
+			expect.any( StatementList ),
+			undefined,
+		);
+		expect( mw.notify ).not.toHaveBeenCalledWith(
 			expect.any( String ),
 			expect.objectContaining( { type: 'error' } ),
 		);
@@ -681,7 +793,7 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( wrapper.find( '.schema-creator-stub' ).exists() ).toBe( false );
 		} );
 
-		it( 'defaults label to page title after schema creation', async () => {
+		it( 'offers the page title as the label placeholder after schema creation', async () => {
 			const wrapper = mountComponent();
 
 			await switchToNewSchema( wrapper );
@@ -689,10 +801,11 @@ describe( 'SubjectCreatorDialog', () => {
 			await clickContinue( wrapper );
 
 			const labelInput = wrapper.find( '.cdx-text-input-stub' );
-			expect( ( labelInput.element as HTMLInputElement ).value ).toBe( PAGE_TITLE );
+			expect( labelInput.attributes( 'placeholder' ) ).toBe( PAGE_TITLE );
+			expect( ( labelInput.element as HTMLInputElement ).value ).toBe( '' );
 		} );
 
-		it( 'defaults label to the new schema name after schema creation when the page already has a main subject', async () => {
+		it( 'offers the new schema name as the label placeholder after schema creation when the page already has a main subject', async () => {
 			const wrapper = mountComponent( {}, { pageHasMainSubject: true } );
 
 			await switchToNewSchema( wrapper );
@@ -700,7 +813,8 @@ describe( 'SubjectCreatorDialog', () => {
 			await clickContinue( wrapper );
 
 			const labelInput = wrapper.find( '.cdx-text-input-stub' );
-			expect( ( labelInput.element as HTMLInputElement ).value ).toBe( NEW_SCHEMA_NAME );
+			expect( labelInput.attributes( 'placeholder' ) ).toBe( NEW_SCHEMA_NAME );
+			expect( ( labelInput.element as HTMLInputElement ).value ).toBe( '' );
 		} );
 
 		it( 'saves schema and creates subject on final save', async () => {
@@ -723,7 +837,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
 				PAGE_ID,
-				PAGE_TITLE,
+				null,
 				NEW_SCHEMA_NAME,
 				expect.any( StatementList ),
 				'Created subject',
@@ -1308,7 +1422,7 @@ describe( 'SubjectCreatorDialog', () => {
 			await flushPromises();
 
 			expect( subjectStore.validateSubject ).toHaveBeenCalledWith(
-				PAGE_TITLE,
+				null,
 				SCHEMA_NAME,
 				expect.any( StatementList ),
 			);
@@ -1330,10 +1444,9 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( passed ).toHaveLength( 0 );
 		} );
 
-		it( 'does not surface missing-value violations (required, label-required) from the dry-run; they wait for save', async () => {
+		it( 'does not surface missing-value violations from the dry-run; they wait for save', async () => {
 			subjectStore.validateSubject = vi.fn().mockResolvedValue( [
 				{ propertyName: 'Color', code: 'required', args: [], severity: 'error', valuePartIndex: null },
-				{ propertyName: null, code: 'label-required', args: [], severity: 'error', valuePartIndex: null },
 			] );
 			const wrapper = mountComponent();
 			await selectSchema( wrapper );

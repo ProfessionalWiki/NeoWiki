@@ -53,7 +53,7 @@ The first value of the property, type-converted for Lua:
 | `text`, `url`, `select`, `date`, `dateTime` | string |
 | `number` | number |
 | `boolean` | boolean |
-| `relation` | string (target Subject's label, falls back to target ID if lookup fails) |
+| `relation` | string (the target Subject's display name, or its Subject ID when the target cannot be looked up) |
 
 Returns `nil` when the Subject does not exist, has no value for the property, or the value is
 empty.
@@ -78,7 +78,7 @@ Same parameters and resolution rules as [`nw.getValue()`](#nwgetvaluepropertynam
 #### Returns
 
 A 1-indexed Lua table of values, in the order they are stored on the Subject, type-converted as in
-`getValue`. For relations, each entry is the target Subject's label.
+`getValue`. For relations, each entry is the target Subject's display name.
 
 Returns `nil` under the same conditions as `getValue`.
 
@@ -367,6 +367,7 @@ structure:
 {
     id = 's1abc5def6ghi78',
     label = 'ACME Inc.',
+    storedLabel = 'ACME Inc.',
     schema = 'Company',
     statements = {
         ['Headquarters'] = { propertyType = 'text',     values = { [1] = 'Berlin' } },
@@ -387,12 +388,18 @@ structure:
 
 Notes:
 
+- `label` is the display name and is never `nil`: a Subject without a stored label takes its page
+  name when it is the page's Main Subject, and its Schema name otherwise. `storedLabel` carries the
+  stored value and is `nil` when the Subject has none. The REST API splits these the other way:
+  `label` is the stored value, `displayName` the display name.
+- A Subject fetched with [`nw.getSubject`](#nwgetsubjectsubjectid) comes without its page, so a
+  label-less Main Subject is named after its Schema there.
 - `statements` is keyed by property name. `values` within each statement is 1-indexed.
 - `propertyType` is the property type at the time the Subject was last edited. If the Schema has
   changed since (e.g. a property was changed from `text` to `select`), older Subjects keep their
   original type until they are re-saved.
-- A relation's `label` falls back to the target Subject ID if the label cannot be looked up
-  (e.g. a broken reference).
+- A relation's `label` is the target's display name, and falls back to the target Subject ID when
+  the target cannot be looked up at all (e.g. a broken reference).
 - Per-relation `properties` (qualifiers) are not currently exposed via Lua. Use the REST API if
   you need them.
 

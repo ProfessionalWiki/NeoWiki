@@ -18,6 +18,7 @@ describe( 'SubjectDeserializer', () => {
 		const json = {
 			id: 's13333333333337',
 			label: 'SubjectDeserializer',
+			displayName: 'SubjectDeserializer',
 			schema: 'SDSchema',
 			statements: {},
 			pageId: 42,
@@ -29,16 +30,35 @@ describe( 'SubjectDeserializer', () => {
 		expect( subject ).toEqual( new SubjectWithContext(
 			new SubjectId( 's13333333333337' ),
 			'SubjectDeserializer',
+			'SubjectDeserializer',
 			'SDSchema',
 			new StatementList( [] ),
 			new PageIdentifiers( 42, 'SDPageTitle' ),
 		) );
 	} );
 
+	it( 'deserializes a Subject without a label, keeping the display name the server derived', () => {
+		const json = {
+			id: 's13333333333337',
+			label: null,
+			displayName: 'SDPageTitle',
+			schema: 'SDSchema',
+			statements: {},
+			pageId: 42,
+			pageTitle: 'SDPageTitle',
+		};
+
+		const subject = deserializer.deserialize( json );
+
+		expect( subject.getLabel() ).toBeNull();
+		expect( subject.getDisplayName() ).toBe( 'SDPageTitle' );
+	} );
+
 	it( 'deserializes Subject with Statements', () => {
 		const json = {
 			id: 's13333333333337',
 			label: 'SubjectDeserializer',
+			displayName: 'SubjectDeserializer',
 			schema: 'SDSchema',
 			statements: {
 				Property1: {
@@ -58,6 +78,7 @@ describe( 'SubjectDeserializer', () => {
 
 		expect( subject ).toEqual( new SubjectWithContext(
 			new SubjectId( 's13333333333337' ),
+			'SubjectDeserializer',
 			'SubjectDeserializer',
 			'SDSchema',
 			new StatementList( [

@@ -17,6 +17,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 		return new GetSubjectResponseItem(
 			id: 's1demo1aaaaaaa1',
 			label: 'ACME Corp',
+			displayName: 'ACME Corp',
 			schemaName: 'Organization',
 			statements: [ 'Animal' => [ 'propertyType' => 'text', 'value' => [ 'bunny' ] ] ],
 			pageId: $pageId,
@@ -30,6 +31,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 			[
 				'id' => 's1demo1aaaaaaa1',
 				'label' => 'ACME Corp',
+				'displayName' => 'ACME Corp',
 				'schema' => 'Organization',
 				'pageId' => 42,
 				'pageTitle' => 'Help:Bunnies',
@@ -45,10 +47,35 @@ class SubjectPresentationSerializerTest extends TestCase {
 			[
 				'id' => 's1demo1aaaaaaa1',
 				'label' => 'ACME Corp',
+				'displayName' => 'ACME Corp',
 				'schema' => 'Organization',
 				'statements' => [ 'Animal' => [ 'propertyType' => 'text', 'value' => [ 'bunny' ] ] ],
 			],
 			( new SubjectPresentationSerializer() )->serialize( $this->newItem( null ) )
+		);
+	}
+
+	public function testSerializesAnAbsentLabelAsNullBesideTheDisplayName(): void {
+		$item = new GetSubjectResponseItem(
+			id: 's1demo1aaaaaaa1',
+			label: null,
+			displayName: 'Organization',
+			schemaName: 'Organization',
+			statements: [],
+			pageId: null,
+			pageTitle: null,
+			pageNamespaceId: null,
+		);
+
+		$this->assertSame(
+			[
+				'id' => 's1demo1aaaaaaa1',
+				'label' => null,
+				'displayName' => 'Organization',
+				'schema' => 'Organization',
+				'statements' => [],
+			],
+			( new SubjectPresentationSerializer() )->serialize( $item )
 		);
 	}
 

@@ -27,6 +27,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use Psr\Log\LoggerInterface;
@@ -83,7 +84,7 @@ class OntologyMappingProjector implements PageProjector {
 			$schemaMapping = $this->mapping->forSchema( $subject->getSchemaName() );
 
 			if ( $schemaMapping !== null ) {
-				$quads = array_merge( $quads, $this->subjectQuads( $subject, $schemaMapping, $graph ) );
+				$quads = array_merge( $quads, $this->subjectQuads( $subject, $schemaMapping, $graph, $page ) );
 			}
 		}
 
@@ -111,19 +112,26 @@ class OntologyMappingProjector implements PageProjector {
 		}
 
 		return QuadList::fromArray(
-			$this->subjectQuads( $subject, $schemaMapping, $this->namespaces->graph( $this->target, $page->getId() ) )
+			$this->subjectQuads( $subject, $schemaMapping, $this->namespaces->graph( $this->target, $page->getId() ), $page )
 		);
 	}
 
 	/**
 	 * @return Quad[]
 	 */
-	private function subjectQuads( Subject $subject, SchemaMapping $schemaMapping, Iri $graph ): array {
+	private function subjectQuads( Subject $subject, SchemaMapping $schemaMapping, Iri $graph, Page $page ): array {
 		$schemaName = $subject->getSchemaName()->getText();
 
 		$quads = $schemaMapping->subject === null
 			? []
-			: $this->ownQuads( $subject, $schemaName, $schemaMapping, $schemaMapping->subject, $graph );
+			: $this->ownQuads(
+				$subject,
+				$schemaName,
+				$schemaMapping,
+				$schemaMapping->subject,
+				$graph,
+				SubjectDisplayName::forSubjectOnPage( $subject, $page )
+			);
 
 		foreach ( $schemaMapping->contributions as $relationName => $properties ) {
 			// A numeric relation name becomes an int array key, so it is cast where it is consumed.
@@ -144,7 +152,8 @@ class OntologyMappingProjector implements PageProjector {
 		string $schemaName,
 		SchemaMapping $schemaMapping,
 		SubjectMapping $subjectMapping,
-		Iri $graph
+		Iri $graph,
+		string $displayName
 	): array {
 		$subjectIri = $this->namespaces->subject( $subject->id );
 		$nodes = new SynthesizedNodes(
@@ -155,7 +164,7 @@ class OntologyMappingProjector implements PageProjector {
 			$this->namespaces
 		);
 
-		$quads = $this->headQuads( $subject, $subjectMapping, $subjectIri, $graph );
+		$quads = $this->headQuads( $subject, $subjectMapping, $subjectIri, $graph, $displayName );
 
 		foreach ( $subject->getStatements()->asArray() as $statement ) {
 			$propertyMapping = $schemaMapping->properties->get( $statement->getPropertyName()->text );
@@ -173,12 +182,20 @@ class OntologyMappingProjector implements PageProjector {
 	}
 
 	/**
-	 * The type and label triples. `rdfs:label` is always emitted; a `labelPredicate` adds the target
-	 * ontology's own label term for the same text rather than replacing it.
+	 * The type and label triples. `rdfs:label` is always emitted, falling back to the Subject's display
+	 * name when nobody named it. A `labelPredicate` adds the target ontology's own label term rather
+	 * than replacing it, and only for a stored label: that term states what the thing is called, so a
+	 * Schema name under it would assert a type as a name.
 	 *
 	 * @return Quad[]
 	 */
-	private function headQuads( Subject $subject, SubjectMapping $subjectMapping, Iri $subjectIri, Iri $graph ): array {
+	private function headQuads(
+		Subject $subject,
+		SubjectMapping $subjectMapping,
+		Iri $subjectIri,
+		Iri $graph,
+		string $displayName
+	): array {
 		$quads = [];
 		$class = $this->expander->expand( $subjectMapping->class );
 
@@ -193,10 +210,10 @@ class OntologyMappingProjector implements PageProjector {
 			$quads[] = new Quad( $subjectIri, $this->namespaces->rdfType(), $class, $graph );
 		}
 
-		$label = RdfLiteralFactory::typed( $subject->label->text, 'string' );
+		$label = RdfLiteralFactory::typed( $displayName, 'string' );
 		$quads[] = new Quad( $subjectIri, $this->namespaces->rdfsLabel(), $label, $graph );
 
-		if ( $subjectMapping->labelPredicate !== null ) {
+		if ( $subjectMapping->labelPredicate !== null && $subject->getLabel() !== null ) {
 			$predicate = $this->expander->expand( $subjectMapping->labelPredicate );
 
 			if ( $predicate === null ) {

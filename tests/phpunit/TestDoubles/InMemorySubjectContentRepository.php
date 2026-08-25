@@ -19,6 +19,9 @@ class InMemorySubjectContentRepository implements SubjectContentRepository {
 	private array $contentByPageDbKey = [];
 
 	/** @var array<int, ?SubjectContent> */
+	private array $contentByPageId = [];
+
+	/** @var array<int, ?SubjectContent> */
 	private array $contentByRevisionId = [];
 
 	public function __construct( ?PageSubjects $defaultPageSubjects = null ) {
@@ -33,6 +36,12 @@ class InMemorySubjectContentRepository implements SubjectContentRepository {
 			: new InMemorySubjectContent( $pageSubjects );
 	}
 
+	public function setContentForPageId( int $pageId, ?PageSubjects $pageSubjects ): void {
+		$this->contentByPageId[$pageId] = $pageSubjects === null
+			? null
+			: new InMemorySubjectContent( $pageSubjects );
+	}
+
 	public function setContentForRevision( int $revisionId, ?PageSubjects $pageSubjects ): void {
 		$this->contentByRevisionId[$revisionId] = $pageSubjects === null
 			? null
@@ -40,7 +49,7 @@ class InMemorySubjectContentRepository implements SubjectContentRepository {
 	}
 
 	public function getSubjectContentByPageId( PageId $pageId ): ?SubjectContent {
-		throw new LogicException( 'Not implemented. Wire up per-PageId storage when a test needs it.' );
+		return $this->contentByPageId[$pageId->id] ?? $this->defaultContent;
 	}
 
 	public function getSubjectContentByPageTitle( PageIdentity $pageIdentity ): ?SubjectContent {

@@ -86,6 +86,47 @@ JSON
 			$body['subjects']['sTestGPS1111111']['statements']['population']
 		);
 		$this->assertSame( 'Population 2024', $body['subjects']['sTestGPS1111112']['label'] );
+		$this->assertSame( 'Berlin', $body['subjects']['sTestGPS1111111']['displayName'] );
+	}
+
+	public function testLabellessSubjectsAreNamedAfterThePageAndTheSchema(): void {
+		$revision = $this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_Unnamed',
+			mainSubject: TestSubject::build(
+				id: 'sTestGPS1111131',
+				label: null,
+				schemaName: new SchemaName( 'GetPageSubjectsApiTestSchema' )
+			),
+			childSubjects: new SubjectMap(
+				TestSubject::build(
+					id: 'sTestGPS1111132',
+					label: null,
+					schemaName: new SchemaName( 'GetPageSubjectsApiTestSchema' )
+				),
+			),
+		);
+
+		$response = $this->executeHandler(
+			new GetPageSubjectsApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'pageId' => (string)$revision->getPage()->getId() ]
+			] )
+		);
+
+		$body = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertNull( $body['subjects']['sTestGPS1111131']['label'] );
+		$this->assertSame(
+			'GetPageSubjectsApiTest Unnamed',
+			$body['subjects']['sTestGPS1111131']['displayName']
+		);
+
+		$this->assertNull( $body['subjects']['sTestGPS1111132']['label'] );
+		$this->assertSame(
+			'GetPageSubjectsApiTestSchema',
+			$body['subjects']['sTestGPS1111132']['displayName']
+		);
 	}
 
 	public function testReturnsEmptyResponseForPageWithoutSubjects(): void {

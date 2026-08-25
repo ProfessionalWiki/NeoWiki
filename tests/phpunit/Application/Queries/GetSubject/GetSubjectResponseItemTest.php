@@ -27,12 +27,24 @@ class GetSubjectResponseItemTest extends TestCase {
 				label: new SubjectLabel( 'ACME Corp' ),
 				schemaName: new SchemaName( 'Organization' ),
 			),
-			null
+			null,
+			'ACME Corp'
 		);
 
 		$this->assertSame( 's1demo1aaaaaaa1', $item->id );
 		$this->assertSame( 'ACME Corp', $item->label );
 		$this->assertSame( 'Organization', $item->schemaName );
+	}
+
+	public function testFromSubjectKeepsTheStoredLabelAbsentAndTakesTheDisplayNameGiven(): void {
+		$item = GetSubjectResponseItem::fromSubject(
+			TestSubject::build( label: null, schemaName: new SchemaName( 'Organization' ) ),
+			null,
+			'Organization'
+		);
+
+		$this->assertNull( $item->label );
+		$this->assertSame( 'Organization', $item->displayName );
 	}
 
 	public function testFromSubjectArrayifiesStatementsByPropertyName(): void {
@@ -43,7 +55,8 @@ class GetSubjectResponseItemTest extends TestCase {
 					TestStatement::build( property: 'Fluff', value: new NumberValue( 9001 ), propertyType: 'number' ),
 				] )
 			),
-			null
+			null,
+			'ACME Corp'
 		);
 
 		$this->assertSame(
@@ -56,7 +69,7 @@ class GetSubjectResponseItemTest extends TestCase {
 	}
 
 	public function testFromSubjectWithoutPageIdentifiersLeavesPageFieldsNull(): void {
-		$item = GetSubjectResponseItem::fromSubject( TestSubject::build(), null );
+		$item = GetSubjectResponseItem::fromSubject( TestSubject::build(), null, 'Test subject' );
 
 		$this->assertNull( $item->pageId );
 		$this->assertNull( $item->pageTitle );
@@ -66,7 +79,8 @@ class GetSubjectResponseItemTest extends TestCase {
 	public function testFromSubjectCopiesPageIdentifiers(): void {
 		$item = GetSubjectResponseItem::fromSubject(
 			TestSubject::build(),
-			new PageIdentifiers( new PageId( 42 ), 'Help:Bunnies', 12 )
+			new PageIdentifiers( new PageId( 42 ), 'Help:Bunnies', 12 ),
+			'Test subject'
 		);
 
 		$this->assertSame( 42, $item->pageId );

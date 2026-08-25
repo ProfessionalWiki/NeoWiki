@@ -13,7 +13,7 @@ class Subject {
 
 	public function __construct(
 		public readonly SubjectId $id,
-		public SubjectLabel $label,
+		public ?SubjectLabel $label,
 		private readonly SchemaName $schemaName,
 		private StatementList $statements,
 	) {
@@ -21,7 +21,7 @@ class Subject {
 
 	public static function createNew(
 		IdGenerator $idGenerator,
-		SubjectLabel $label,
+		?SubjectLabel $label,
 		SchemaName $schemaName,
 		?StatementList $statements = null,
 	): self {
@@ -33,7 +33,7 @@ class Subject {
 		);
 	}
 
-	public static function newSubject( SubjectId $id, SubjectLabel $label, SchemaName $schemaName ): self {
+	public static function newSubject( SubjectId $id, ?SubjectLabel $label, SchemaName $schemaName ): self {
 		return new self(
 			id: $id,
 			label: $label,
@@ -50,7 +50,10 @@ class Subject {
 		return $this->id;
 	}
 
-	public function getLabel(): SubjectLabel {
+	/**
+	 * Null when nobody named this Subject. Use {@see SubjectDisplayName} to get something to show.
+	 */
+	public function getLabel(): ?SubjectLabel {
 		return $this->label;
 	}
 
@@ -70,7 +73,7 @@ class Subject {
 		return $this->statements->getReferencedSubjects();
 	}
 
-	public function setLabel( SubjectLabel $newLabel ): void {
+	public function setLabel( ?SubjectLabel $newLabel ): void {
 		$this->label = $newLabel;
 	}
 

@@ -8,12 +8,13 @@ export class SubjectWithContext extends Subject {
 
 	public constructor(
 		id: SubjectId,
-		label: string,
+		label: string | null,
+		displayName: string,
 		schemaName: SchemaName,
 		statements: StatementList,
 		private readonly pageIdentifiers: PageIdentifiers,
 	) {
-		super( id, label, schemaName, statements );
+		super( id, label, displayName, schemaName, statements );
 	}
 
 	public getPageIdentifiers(): PageIdentifiers {

@@ -14,6 +14,7 @@
 				class="ext-neowiki-editable-text__input"
 				:autosize="true"
 				:status="status ?? 'default'"
+				:placeholder="placeholder"
 				:aria-label="inputAriaLabel"
 				:aria-invalid="status === 'error' ? 'true' : undefined"
 				@keydown.enter="commitViaKeyboard"
@@ -26,6 +27,7 @@
 				v-model="draft"
 				class="ext-neowiki-editable-text__input"
 				:status="status ?? 'default'"
+				:placeholder="placeholder"
 				:aria-label="inputAriaLabel"
 				:aria-invalid="status === 'error' ? 'true' : undefined"
 				@keydown.enter="commitViaKeyboard"
@@ -106,7 +108,9 @@ import { useClampedText } from '@/composables/useClampedText.ts';
  * Inline edit-in-place for text: renders the value as plain text (styled by its
  * context - it inherits font properties) with a quiet edit button that swaps in
  * an input. Enter and blur commit the draft, Escape discards it. Committing only
- * emits when the draft differs from the value; persistence is the host's concern.
+ * emits when the draft differs from the value; persistence is the host's concern,
+ * including translating a cleared value — emitted as '' — into whatever the host
+ * stores for "no value". The placeholder stands in for an empty value in both modes.
  * With `required`, a blank draft still emits (so the host's validation can flag
  * it) but the input stays open, keeping the error state anchored to a visible
  * field; Escape still reverts.

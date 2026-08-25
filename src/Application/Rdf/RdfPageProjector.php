@@ -21,6 +21,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelation;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use Psr\Log\LoggerInterface;
 
@@ -47,7 +48,6 @@ class RdfPageProjector implements PageProjector {
 	 */
 	public const string PROJECTION = 'native';
 
-	private const string PROPERTY_NAME = 'name';
 	private const string PROPERTY_CREATION_TIME = 'creationTime';
 	private const string PROPERTY_LAST_UPDATED = 'lastUpdated';
 	private const string PROPERTY_LAST_EDITOR = 'lastEditor';
@@ -69,7 +69,7 @@ class RdfPageProjector implements PageProjector {
 		$quads = $this->projectPageMetadata( $page, $subjects, $graph );
 
 		foreach ( $subjects as [ $subject, $schema ] ) {
-			$quads = array_merge( $quads, $this->subjectQuads( $subject, $schema, $graph, $page->getId() ) );
+			$quads = array_merge( $quads, $this->subjectQuads( $subject, $schema, $graph, $page ) );
 		}
 
 		return QuadList::fromArray( $quads );
@@ -96,7 +96,7 @@ class RdfPageProjector implements PageProjector {
 		}
 
 		return QuadList::fromArray(
-			$this->subjectQuads( $subject, $schema, $this->namespaces->graph( self::PROJECTION, $page->getId() ), $page->getId() )
+			$this->subjectQuads( $subject, $schema, $this->namespaces->graph( self::PROJECTION, $page->getId() ), $page )
 		);
 	}
 
@@ -137,8 +137,8 @@ class RdfPageProjector implements PageProjector {
 
 		$quads = [ new Quad( $pageIri, $this->namespaces->rdfType(), $this->namespaces->term( RdfNamespaces::CLASS_PAGE ), $graph ) ];
 
-		$name = $properties->get( self::PROPERTY_NAME );
-		if ( is_string( $name ) && $name !== '' ) {
+		$name = $properties->getName();
+		if ( $name !== '' ) {
 			$quads[] = new Quad( $pageIri, $this->namespaces->term( RdfNamespaces::TERM_PAGE_NAME ), RdfLiteralFactory::typed( $name, 'string' ), $graph );
 		}
 
@@ -194,15 +194,19 @@ class RdfPageProjector implements PageProjector {
 	/**
 	 * @return Quad[]
 	 */
-	private function subjectQuads( Subject $subject, Schema $schema, Iri $graph, PageId $pageId ): array {
+	private function subjectQuads( Subject $subject, Schema $schema, Iri $graph, Page $page ): array {
 		$subjectIri = $this->namespaces->subject( $subject->id );
+
+		// A Subject without a stored label still gets a label here: RDF consumers key on rdfs:label,
+		// and the Schema shows up as rdf:type rather than as a label.
+		$displayName = SubjectDisplayName::forSubjectOnPage( $subject, $page );
 
 		$quads = [
 			new Quad( $subjectIri, $this->namespaces->rdfType(), $this->namespaces->schemaClass( $subject->getSchemaName() ), $graph ),
-			new Quad( $subjectIri, $this->namespaces->rdfsLabel(), RdfLiteralFactory::typed( $subject->label->text, 'string' ), $graph ),
+			new Quad( $subjectIri, $this->namespaces->rdfsLabel(), RdfLiteralFactory::typed( $displayName, 'string' ), $graph ),
 		];
 
-		$quads = array_merge( $quads, $this->projectStatements( $subject, $subjectIri, $graph, $pageId ) );
+		$quads = array_merge( $quads, $this->projectStatements( $subject, $subjectIri, $graph, $page->getId() ) );
 
 		return array_merge( $quads, $this->projectRelations( $subject, $schema, $subjectIri, $graph ) );
 	}

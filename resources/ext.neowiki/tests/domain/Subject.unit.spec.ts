@@ -114,6 +114,19 @@ describe( 'Subject', () => {
 
 	} );
 
+	describe( 'getDisplayName', () => {
+		it( 'is the stored label when the Subject has one', () => {
+			expect( newSubject( { label: 'I am a tomato' } ).getDisplayName() ).toBe( 'I am a tomato' );
+		} );
+
+		it( 'is the name the server derived when the Subject has no label', () => {
+			const subject = newSubject( { label: null, displayName: 'TestSubjectPage' } );
+
+			expect( subject.getLabel() ).toBeNull();
+			expect( subject.getDisplayName() ).toBe( 'TestSubjectPage' );
+		} );
+	} );
+
 	describe( 'withLabel', () => {
 		it( 'returns a new Subject with the updated label', () => {
 			const originalSubject = newSubject();
@@ -124,6 +137,19 @@ describe( 'Subject', () => {
 			expect( updatedSubject.getSchemaName() ).toBe( originalSubject.getSchemaName() );
 			expect( updatedSubject.getStatements() ).toEqual( originalSubject.getStatements() );
 			expect( updatedSubject ).not.toBe( originalSubject );
+		} );
+
+		it( 'displays the label it was given', () => {
+			expect( newSubject().withLabel( 'Updated Label' ).getDisplayName() ).toBe( 'Updated Label' );
+		} );
+
+		it( 'keeps the previous display name when the label is cleared, since only the server can derive a new one', () => {
+			const original = newSubject( { label: 'Acme Anvil' } );
+
+			const cleared = original.withLabel( null );
+
+			expect( cleared.getLabel() ).toBeNull();
+			expect( cleared.getDisplayName() ).toBe( 'Acme Anvil' );
 		} );
 	} );
 

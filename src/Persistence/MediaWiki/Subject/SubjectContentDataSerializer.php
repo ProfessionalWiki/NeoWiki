@@ -28,11 +28,17 @@ class SubjectContentDataSerializer {
 		$serializedSubjects = [];
 
 		foreach ( $subjectMap->asArray() as $subject ) {
-			$serializedSubjects[$subject->id->text] = [
-				'label' => $subject->label->text,
-				'schema' => $subject->getSchemaName()->getText(),
-				'statements' => $this->serializeStatementList( $subject->getStatements() ),
-			];
+			$serialized = [];
+
+			// A Subject nobody named stores no label.
+			if ( $subject->label !== null ) {
+				$serialized['label'] = $subject->label->text;
+			}
+
+			$serialized['schema'] = $subject->getSchemaName()->getText();
+			$serialized['statements'] = $this->serializeStatementList( $subject->getStatements() );
+
+			$serializedSubjects[$subject->id->text] = $serialized;
 		}
 
 		return (object)$serializedSubjects;

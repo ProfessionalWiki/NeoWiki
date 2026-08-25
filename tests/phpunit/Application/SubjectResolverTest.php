@@ -6,8 +6,12 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application;
 
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
@@ -18,7 +22,9 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use RuntimeException;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\SubjectResolver
@@ -27,6 +33,8 @@ class SubjectResolverTest extends TestCase {
 
 	private const string SUBJECT_ID = 's1test5aaaaaaaa';
 	private const string TARGET_SUBJECT_ID = 's1test5bbbbbbbb';
+	private const int TARGET_PAGE_ID = 42;
+	private const string TARGET_PAGE_NAME = 'Marie Curie';
 
 	private function createSubject( string $id = self::SUBJECT_ID, string $label = 'Test Subject' ): Subject {
 		return new Subject(
@@ -41,19 +49,26 @@ class SubjectResolverTest extends TestCase {
 		return new InMemorySubjectContentRepository( new PageSubjects( $subject, new SubjectMap() ) );
 	}
 
+	private function newResolver(
+		SubjectContentRepository $contentRepository,
+		SubjectLookup $subjectLookup
+	): SubjectResolver {
+		return new SubjectResolver( $contentRepository, $subjectLookup, new InMemoryPageIdentifiersLookup() );
+	}
+
 	public function testResolveByIdReturnsSubject(): void {
 		$subject = $this->createSubject();
 
 		$lookup = $this->createStub( SubjectLookup::class );
 		$lookup->method( 'getSubject' )->willReturn( $subject );
 
-		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup );
+		$resolver = $this->newResolver( new InMemorySubjectContentRepository(), $lookup );
 
 		$this->assertSame( $subject, $resolver->resolveById( self::SUBJECT_ID ) );
 	}
 
 	public function testResolveByIdReturnsNullForInvalidId(): void {
-		$resolver = new SubjectResolver(
+		$resolver = $this->newResolver(
 			new InMemorySubjectContentRepository(),
 			$this->createStub( SubjectLookup::class )
 		);
@@ -65,16 +80,16 @@ class SubjectResolverTest extends TestCase {
 		$lookup = $this->createStub( SubjectLookup::class );
 		$lookup->method( 'getSubject' )->willReturn( null );
 
-		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup );
+		$resolver = $this->newResolver( new InMemorySubjectContentRepository(), $lookup );
 
 		$this->assertNull( $resolver->resolveById( self::SUBJECT_ID ) );
 	}
 
 	public function testResolveByIdReturnsNullWhenLookupThrows(): void {
 		$lookup = $this->createStub( SubjectLookup::class );
-		$lookup->method( 'getSubject' )->willThrowException( new \RuntimeException( 'db error' ) );
+		$lookup->method( 'getSubject' )->willThrowException( new RuntimeException( 'db error' ) );
 
-		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup );
+		$resolver = $this->newResolver( new InMemorySubjectContentRepository(), $lookup );
 
 		$this->assertNull( $resolver->resolveById( self::SUBJECT_ID ) );
 	}
@@ -82,7 +97,7 @@ class SubjectResolverTest extends TestCase {
 	public function testResolveMainByTitleReturnsMainSubject(): void {
 		$subject = $this->createSubject();
 
-		$resolver = new SubjectResolver(
+		$resolver = $this->newResolver(
 			$this->repositoryWithMainSubject( $subject ),
 			$this->createStub( SubjectLookup::class )
 		);
@@ -91,7 +106,7 @@ class SubjectResolverTest extends TestCase {
 	}
 
 	public function testResolveMainByTitleReturnsNullWhenNoContent(): void {
-		$resolver = new SubjectResolver(
+		$resolver = $this->newResolver(
 			new InMemorySubjectContentRepository(),
 			$this->createStub( SubjectLookup::class )
 		);
@@ -102,7 +117,7 @@ class SubjectResolverTest extends TestCase {
 	public function testGetPageSubjectsByTitleReturnsPageSubjects(): void {
 		$subject = $this->createSubject();
 
-		$resolver = new SubjectResolver(
+		$resolver = $this->newResolver(
 			$this->repositoryWithMainSubject( $subject ),
 			$this->createStub( SubjectLookup::class )
 		);
@@ -114,7 +129,7 @@ class SubjectResolverTest extends TestCase {
 	}
 
 	public function testGetPageSubjectsByTitleReturnsNullWhenNoContent(): void {
-		$resolver = new SubjectResolver(
+		$resolver = $this->newResolver(
 			new InMemorySubjectContentRepository(),
 			$this->createStub( SubjectLookup::class )
 		);
@@ -122,51 +137,121 @@ class SubjectResolverTest extends TestCase {
 		$this->assertNull( $resolver->getPageSubjectsByTitle( $this->createStub( Title::class ) ) );
 	}
 
-	public function testResolveRelationLabelReturnsLabelWhenTargetExists(): void {
-		$target = $this->createSubject( self::TARGET_SUBJECT_ID, 'Jane Doe' );
+	/**
+	 * The target Subject as the production lookups see one that exists: hosted by a page, whose
+	 * content holds it either as the Main Subject or as a child.
+	 */
+	private function newResolverWithTargetOnPage( PageSubjects $hostingPageSubjects ): SubjectResolver {
+		$contentRepository = new InMemorySubjectContentRepository();
+		$contentRepository->setContentForPageId( self::TARGET_PAGE_ID, $hostingPageSubjects );
 
-		$lookup = $this->createStub( SubjectLookup::class );
-		$lookup->method( 'getSubject' )->willReturn( $target );
+		return new SubjectResolver(
+			$contentRepository,
+			$this->createStub( SubjectLookup::class ),
+			new InMemoryPageIdentifiersLookup( [
+				[ new SubjectId( self::TARGET_SUBJECT_ID ), $this->newTargetPageIdentifiers() ],
+			] )
+		);
+	}
 
-		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup );
+	private function newTargetPageIdentifiers(): PageIdentifiers {
+		return new PageIdentifiers(
+			id: new PageId( self::TARGET_PAGE_ID ),
+			title: self::TARGET_PAGE_NAME,
+			namespaceId: 0,
+		);
+	}
 
-		$relation = new Relation(
+	private function createTargetSubject( ?string $label ): Subject {
+		return new Subject(
+			id: new SubjectId( self::TARGET_SUBJECT_ID ),
+			label: $label === null ? null : new SubjectLabel( $label ),
+			schemaName: new SchemaName( 'Person' ),
+			statements: new StatementList(),
+		);
+	}
+
+	private function newRelationToTarget(): Relation {
+		return new Relation(
 			id: new RelationId( 'r1test5cccccccc' ),
 			targetId: new SubjectId( self::TARGET_SUBJECT_ID ),
 			properties: new RelationProperties( [] ),
 		);
+	}
 
-		$this->assertSame( 'Jane Doe', $resolver->resolveRelationLabel( $relation ) );
+	public function testResolveRelationLabelReturnsLabelWhenTargetExists(): void {
+		$resolver = $this->newResolverWithTargetOnPage(
+			new PageSubjects( null, new SubjectMap( $this->createTargetSubject( 'Jane Doe' ) ) )
+		);
+
+		$this->assertSame( 'Jane Doe', $resolver->resolveRelationLabel( $this->newRelationToTarget() ) );
+	}
+
+	public function testResolveRelationLabelPrefersAStoredLabelOverThePageNameOfAMainSubjectTarget(): void {
+		$resolver = $this->newResolverWithTargetOnPage(
+			new PageSubjects( $this->createTargetSubject( 'Jane Doe' ), new SubjectMap() )
+		);
+
+		$this->assertSame( 'Jane Doe', $resolver->resolveRelationLabel( $this->newRelationToTarget() ) );
+	}
+
+	public function testResolveRelationLabelFallsBackToThePageNameWhenTheTargetIsALabellessMainSubject(): void {
+		$resolver = $this->newResolverWithTargetOnPage(
+			new PageSubjects( $this->createTargetSubject( null ), new SubjectMap() )
+		);
+
+		$this->assertSame( self::TARGET_PAGE_NAME, $resolver->resolveRelationLabel( $this->newRelationToTarget() ) );
+	}
+
+	public function testResolveRelationLabelFallsBackToTheSchemaNameWhenTheTargetIsALabellessChildSubject(): void {
+		$resolver = $this->newResolverWithTargetOnPage(
+			new PageSubjects(
+				$this->createSubject( self::SUBJECT_ID, 'The Page Topic' ),
+				new SubjectMap( $this->createTargetSubject( null ) )
+			)
+		);
+
+		$this->assertSame( 'Person', $resolver->resolveRelationLabel( $this->newRelationToTarget() ) );
 	}
 
 	public function testResolveRelationLabelFallsBackToIdWhenTargetNotFound(): void {
-		$lookup = $this->createStub( SubjectLookup::class );
-		$lookup->method( 'getSubject' )->willReturn( null );
-
-		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup );
-
-		$relation = new Relation(
-			id: new RelationId( 'r1test5cccccccc' ),
-			targetId: new SubjectId( self::TARGET_SUBJECT_ID ),
-			properties: new RelationProperties( [] ),
+		$resolver = $this->newResolver(
+			new InMemorySubjectContentRepository(),
+			$this->createStub( SubjectLookup::class )
 		);
 
-		$this->assertSame( self::TARGET_SUBJECT_ID, $resolver->resolveRelationLabel( $relation ) );
+		$this->assertSame(
+			self::TARGET_SUBJECT_ID,
+			$resolver->resolveRelationLabel( $this->newRelationToTarget() )
+		);
+	}
+
+	public function testResolveRelationLabelFallsBackToIdWhenTheHostingPageNoLongerHoldsTheTarget(): void {
+		$resolver = $this->newResolverWithTargetOnPage(
+			new PageSubjects( $this->createSubject( self::SUBJECT_ID, 'The Page Topic' ), new SubjectMap() )
+		);
+
+		$this->assertSame(
+			self::TARGET_SUBJECT_ID,
+			$resolver->resolveRelationLabel( $this->newRelationToTarget() )
+		);
 	}
 
 	public function testResolveRelationLabelFallsBackToIdWhenLookupThrows(): void {
-		$lookup = $this->createStub( SubjectLookup::class );
-		$lookup->method( 'getSubject' )->willThrowException( new \RuntimeException( 'db error' ) );
+		$pageIdentifiersLookup = $this->createStub( PageIdentifiersLookup::class );
+		$pageIdentifiersLookup->method( 'getPageIdOfSubject' )
+			->willThrowException( new RuntimeException( 'db error' ) );
 
-		$resolver = new SubjectResolver( new InMemorySubjectContentRepository(), $lookup );
-
-		$relation = new Relation(
-			id: new RelationId( 'r1test5cccccccc' ),
-			targetId: new SubjectId( self::TARGET_SUBJECT_ID ),
-			properties: new RelationProperties( [] ),
+		$resolver = new SubjectResolver(
+			new InMemorySubjectContentRepository(),
+			$this->createStub( SubjectLookup::class ),
+			$pageIdentifiersLookup
 		);
 
-		$this->assertSame( self::TARGET_SUBJECT_ID, $resolver->resolveRelationLabel( $relation ) );
+		$this->assertSame(
+			self::TARGET_SUBJECT_ID,
+			$resolver->resolveRelationLabel( $this->newRelationToTarget() )
+		);
 	}
 
 }

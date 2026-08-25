@@ -5,10 +5,12 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Queries\GetSubject;
 
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 readonly class GetSubjectQuery {
@@ -17,6 +19,7 @@ readonly class GetSubjectQuery {
 		private GetSubjectPresenter $presenter,
 		private SubjectLookup $subjectLookup,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
+		private PageSubjectsLookup $pageSubjectsLookup,
 		private PageReadAuthorizer $readAuthorizer,
 	) {
 	}
@@ -42,9 +45,7 @@ readonly class GetSubjectQuery {
 			return;
 		}
 
-		$response = [
-			$subject->getId()->text => $this->createResponse( $subject, $includePageIdentifiers, $pageIdentifiers )
-		];
+		$placedSubjects = [ $subject->getId()->text => [ $subject, $pageIdentifiers ] ];
 
 		if ( $includeReferencedSubjects ) {
 			$referencedIds = $subject->getReferencedSubjects();
@@ -67,14 +68,14 @@ readonly class GetSubjectQuery {
 					continue;
 				}
 
-				$response[$idText] = $this->createResponse( $referencedSubject, $includePageIdentifiers, $referencedPage );
+				$placedSubjects[$idText] = [ $referencedSubject, $referencedPage ];
 			}
 		}
 
 		$this->presenter->presentSubject(
 			new GetSubjectResponse(
 				requestedId: $subject->getId()->text,
-				subjects: $response
+				subjects: $this->createResponses( $placedSubjects, $includePageIdentifiers )
 			)
 		);
 	}
@@ -89,14 +90,68 @@ readonly class GetSubjectQuery {
 		return $pageIdentifiers === null || $this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() );
 	}
 
-	private function createResponse(
+	/**
+	 * @param array<string, array{Subject, ?PageIdentifiers}> $placedSubjects
+	 * @return array<string, GetSubjectResponseItem>
+	 */
+	private function createResponses( array $placedSubjects, bool $includePageIdentifiers ): array {
+		$mainSubjectIds = $this->getMainSubjectIds( $placedSubjects );
+
+		$items = [];
+
+		foreach ( $placedSubjects as $idText => [ $subject, $pageIdentifiers ] ) {
+			$items[$idText] = GetSubjectResponseItem::fromSubject(
+				$subject,
+				// Withholding the page fields must not withhold the fallback they feed: the display
+				// name is built from the identifiers fetched either way.
+				$includePageIdentifiers ? $pageIdentifiers : null,
+				$this->getDisplayName( $subject, $pageIdentifiers, $mainSubjectIds )
+			);
+		}
+
+		return $items;
+	}
+
+	/**
+	 * One lookup per distinct hosting page, however many of the response's Subjects live on it, and
+	 * none for a page whose Subjects in the response all have a stored label.
+	 *
+	 * @param array<string, array{Subject, ?PageIdentifiers}> $placedSubjects
+	 * @return array<int, ?SubjectId> Page ID → that page's Main Subject
+	 */
+	private function getMainSubjectIds( array $placedSubjects ): array {
+		$mainSubjectIds = [];
+
+		foreach ( $placedSubjects as [ $subject, $pageIdentifiers ] ) {
+			if ( $pageIdentifiers === null || $subject->getLabel() !== null ) {
+				continue;
+			}
+
+			$pageId = $pageIdentifiers->getId();
+
+			if ( !array_key_exists( $pageId->id, $mainSubjectIds ) ) {
+				$mainSubjectIds[$pageId->id] = $this->pageSubjectsLookup->getMainSubjectId( $pageId );
+			}
+		}
+
+		return $mainSubjectIds;
+	}
+
+	/**
+	 * @param array<int, ?SubjectId> $mainSubjectIds
+	 */
+	private function getDisplayName(
 		Subject $subject,
-		bool $includePageIdentifiers,
-		?PageIdentifiers $pageIdentifiers
-	): GetSubjectResponseItem {
-		return GetSubjectResponseItem::fromSubject(
-			$subject,
-			$includePageIdentifiers ? $pageIdentifiers : null
+		?PageIdentifiers $pageIdentifiers,
+		array $mainSubjectIds
+	): string {
+		$mainSubjectId = $pageIdentifiers === null ? null : $mainSubjectIds[$pageIdentifiers->getId()->id] ?? null;
+
+		return SubjectDisplayName::forSubject(
+			label: $subject->getLabel(),
+			isMainSubject: $mainSubjectId !== null && $mainSubjectId->equals( $subject->getId() ),
+			pageName: $pageIdentifiers?->getTitle() ?? '',
+			schemaName: $subject->getSchemaName()
 		);
 	}
 

@@ -49,6 +49,21 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	private function createLabellessSubjectPage(): void {
+		$this->createSchema(
+			'SetStatementSchema',
+			'{"title":"SetStatementSchema","propertyDefinitions":{"Website":{"type":"url"},"Founded at":{"type":"number"}}}'
+		);
+		$this->createPageWithSubjects(
+			'SetStatementApiTest',
+			mainSubject: TestSubject::build(
+				id: self::SUBJECT_ID,
+				label: null,
+				schemaName: new SchemaName( 'SetStatementSchema' ),
+			)
+		);
+	}
+
 	private function newSetStatementApi(): SetStatementApi {
 		$csrfValidatorStub = $this->createStub( CsrfValidator::class );
 		$csrfValidatorStub->method( 'verifyCsrfToken' )->willReturn( true );
@@ -123,6 +138,20 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 			$this->readSubjectEntryFromApi( self::SUBJECT_ID ),
 			$responseData['subject']
 		);
+	}
+
+	public function testUpdatedResponseNamesALabellessMainSubjectAfterItsPage(): void {
+		$this->createLabellessSubjectPage();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Website', [ 'statement' => [ 'propertyType' => 'url', 'value' => [ 'https://pro.wiki' ] ] ] )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertNull( $responseData['subject']['label'] );
+		$this->assertSame( 'SetStatementApiTest', $responseData['subject']['displayName'] );
 	}
 
 	public function testUpdatedResponseCarriesTheSchemaTheSubjectInstantiates(): void {

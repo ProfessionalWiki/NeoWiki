@@ -13,7 +13,8 @@ export const DEFAULT_TEST_SCHEMA_NAME = 'TestSchema';
 
 interface NewTestSubjectOptions {
 	id?: string|SubjectId;
-	label?: string;
+	label?: string|null;
+	displayName?: string;
 	schemaName?: string;
 	statements?: StatementList;
 	pageIdentifiers?: PageIdentifiers;
@@ -22,6 +23,7 @@ interface NewTestSubjectOptions {
 export function newSubject( {
 	id = DEFAULT_SUBJECT_ID,
 	label = DEFAULT_TEST_SUBJECT_LABEL,
+	displayName,
 	schemaName = DEFAULT_TEST_SCHEMA_NAME,
 	statements = new StatementList( [] ),
 	pageIdentifiers = new PageIdentifiers( 0, 'TestSubjectPage' ),
@@ -29,6 +31,8 @@ export function newSubject( {
 	return new SubjectWithContext(
 		id instanceof SubjectId ? id : new SubjectId( id ),
 		label,
+		// Mirrors what the server derives: the stored label, or the Schema name without one.
+		displayName ?? label ?? schemaName,
 		schemaName,
 		statements,
 		pageIdentifiers,

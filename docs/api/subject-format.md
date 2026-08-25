@@ -43,7 +43,7 @@ the main one.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `label` | string | Yes | Human-readable label for the Subject. |
+| `label` | string | No | Human-readable label for the Subject. Omitted when the Subject has none. |
 | `schema` | string | Yes | Name of the Schema the Subject follows (a page in the Schema namespace). |
 | `statements` | object | No | Map of property name to [Statement object](#statement-object). Omitted when the Subject has none. |
 
@@ -127,7 +127,11 @@ Subject IDs start with `s` (`s1demo5sssssss1`), Relation IDs with `r` (`r1demo5r
 ### Reading Subjects
 
 `GET /rest.php/neowiki/v0/subject/{subjectId}` returns a top-level `requestedId` and a `subjects` map; each
-Subject gains an `id` field.
+Subject gains an `id` and a `displayName`, and carries `label` as `null` where the stored JSON omits it. Every
+endpoint that returns a Subject object serves this shape.
+
+`displayName` is the name to show, never null: the label where there is one, otherwise the page name for a main
+Subject and the Schema name for a child Subject ([ADR 31](../adr/031-optional-subject-labels.md)).
 
 - `?expand=page` adds `pageId`, `pageTitle`, and `pageNamespaceId` to each Subject. `pageTitle` is the full page
   title with namespace prefix (e.g. `Help:Installation`); `pageNamespaceId` is the canonical MediaWiki namespace
@@ -139,7 +143,8 @@ Subject gains an `id` field.
 ### Creating Subjects
 
 `POST /rest.php/neowiki/v0/page/{pageId}/mainSubject` and `.../childSubjects` create a Subject on a page. The body
-takes `label`, `schema`, and [`statements`](#statement-object) (all required), plus an optional `comment` edit summary.
+takes `schema` and [`statements`](#statement-object), both required, plus an optional `label` and an optional
+`comment` edit summary. Omitting `label`, or passing only whitespace, creates a Subject with no label.
 
 The server mints the Subject ID unless you pass one:
 
@@ -166,7 +171,7 @@ The server mints the Subject ID unless you pass one:
 
 | Field | Required | Notes |
 |-------|----------|-------|
-| `label` | Yes | Non-empty after `trim`. |
+| `label` | No | Replaces the stored label. Omitted or whitespace-only clears any label the Subject has. |
 | `statements` | Yes | Map of property name to Statement; omitted names are deleted. Pass `{}` to clear all. |
 | `comment` | No | Edit summary. |
 
@@ -217,8 +222,9 @@ the Schema it instantiates, so a client does not have to re-read after a write:
   "status": "updated",
   "subjectId": "s1demo5sssssss1",
   "violations": [],
-  "subject": { "id": "s1demo5sssssss1", "label": "Updated Label", "schema": "Company", "pageId": 42,
-               "pageTitle": "Help:Installation", "pageNamespaceId": 12, "statements": {} },
+  "subject": { "id": "s1demo5sssssss1", "label": "Updated Label", "displayName": "Updated Label",
+               "schema": "Company", "pageId": 42, "pageTitle": "Help:Installation", "pageNamespaceId": 12,
+               "statements": {} },
   "schema": { "description": "A company", "propertyDefinitions": {} }
 }
 ```

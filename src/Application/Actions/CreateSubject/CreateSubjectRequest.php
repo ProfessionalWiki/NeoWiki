@@ -10,7 +10,10 @@ readonly class CreateSubjectRequest {
 		public int $pageId,
 		public bool $isMainSubject,
 
-		public string $label,
+		/**
+		 * Null when the caller named no Subject. Whitespace counts as nothing.
+		 */
+		public ?string $label,
 
 		public string $schemaName,
 

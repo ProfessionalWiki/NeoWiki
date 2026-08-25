@@ -76,6 +76,7 @@ JSON
         "sTestGSA1111114": {
             "id": "sTestGSA1111114",
             "label": "Test subject sTestGSA1111114",
+            "displayName": "Test subject sTestGSA1111114",
             "schema": "GetSubjectApiTestSchema",
             "statements": []
         }
@@ -85,6 +86,60 @@ JSON,
 			$response->getBody()->getContents()
 		);
 		$this->assertSame( 200, $response->getStatusCode() );
+	}
+
+	public function testLabellessMainSubjectIsNamedAfterItsPage(): void {
+		$this->createPageWithSubjects(
+			'GetSubjectApiTest_Unnamed',
+			mainSubject: TestSubject::build(
+				id: 'sTestGSA1111117',
+				label: null,
+				schemaName: new SchemaName( 'GetSubjectApiTestSchema' )
+			)
+		);
+
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => 'sTestGSA1111117' ]
+			] )
+		);
+
+		$body = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertNull( $body['subjects']['sTestGSA1111117']['label'] );
+		$this->assertSame( 'GetSubjectApiTest Unnamed', $body['subjects']['sTestGSA1111117']['displayName'] );
+	}
+
+	public function testLabellessChildSubjectIsNamedAfterItsSchema(): void {
+		$this->createPageWithSubjects(
+			'GetSubjectApiTest_UnnamedChild',
+			mainSubject: TestSubject::build(
+				id: 'sTestGSA1111118',
+				schemaName: new SchemaName( 'GetSubjectApiTestSchema' )
+			),
+			childSubjects: new SubjectMap(
+				TestSubject::build(
+					id: 'sTestGSA1111119',
+					label: null,
+					schemaName: new SchemaName( 'GetSubjectApiTestSchema' )
+				),
+			)
+		);
+
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => 'sTestGSA1111119' ]
+			] )
+		);
+
+		$body = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertNull( $body['subjects']['sTestGSA1111119']['label'] );
+		$this->assertSame( 'GetSubjectApiTestSchema', $body['subjects']['sTestGSA1111119']['displayName'] );
 	}
 
 	public function testSubjectIsNotFound(): void {
@@ -210,6 +265,7 @@ JSON,
         "sTestGSA1111111": {
             "id": "sTestGSA1111111",
             "label": "Test subject",
+            "displayName": "Test subject",
             "schema": "GetSubjectApiTestSchema",
             "pageId": $firstPageId,
             "pageTitle": "GetSubjectApiTest0000",
@@ -233,6 +289,7 @@ JSON,
         "sTestGSA1111112": {
             "id": "sTestGSA1111112",
             "label": "Test subject",
+            "displayName": "Test subject",
             "schema": "GetSubjectApiTestSchema",
             "pageId": $firstPageId,
             "pageTitle": "GetSubjectApiTest0000",
@@ -242,6 +299,7 @@ JSON,
         "sTestGSA1111113": {
             "id": "sTestGSA1111113",
             "label": "Test subject",
+            "displayName": "Test subject",
             "schema": "GetSubjectApiTestSchema",
             "pageId": $secondPageId,
             "pageTitle": "GetSubjectApiTest0002",

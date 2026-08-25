@@ -171,7 +171,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	): void {
 		$this->subjectUpdaterFactory
 			->newSubjectUpdater( $transaction, $page->getId(), $orphanCandidates )
-			->updateSubjects( $page->getSubjects() );
+			->updateSubjects( $page );
 	}
 
 	public function deletePage( PageId $pageId ): void {
@@ -340,10 +340,12 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	 * the complete set of nodes the write can have orphaned. Anchoring on their ids keeps the cost
 	 * proportional to what the write changed rather than to the size of the graph.
 	 *
-	 * A candidate is confirmed to be a stub by the absence of a name, not by the absence of an incoming
-	 * HasSubject relation. Both hold for a stub, but only the first holds for a stub alone: a removed
-	 * subject commonly references normal subjects, and a subject whose schema failed to resolve keeps its
-	 * data while losing its HasSubject relation. One pass then suffices, since a stub has no outgoing
+	 * A candidate is confirmed to be a stub by carrying no node label beyond :Subject, not by the absence
+	 * of an incoming HasSubject relation. Both hold for a stub, but only the first holds for a stub
+	 * alone: a removed subject commonly references normal subjects, and a subject whose schema failed to
+	 * resolve keeps its data while losing its HasSubject relation. The node labels are the oracle rather
+	 * than the absence of a name because a Subject nobody named has no name either, and that
+	 * combination of conditions is reachable. One pass then suffices, since a stub has no outgoing
 	 * relations and so cannot orphan another node when deleted.
 	 *
 	 * A candidate that gained a new incoming relation later in the same transaction has one by the time
@@ -362,7 +364,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		$transaction->run(
 			'UNWIND $candidateIds AS candidateId
 				MATCH (stub:Subject {id: candidateId})
-				WHERE stub.name IS NULL AND NOT (stub)<--()
+				WHERE size(labels(stub)) = 1 AND NOT (stub)<--()
 				DETACH DELETE stub',
 			[ 'candidateIds' => $candidateIds ]
 		);

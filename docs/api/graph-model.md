@@ -54,11 +54,16 @@ Schema (e.g. `:Subject:Person`, `:Subject:Company`). The Schema label changes if
 | Property | Neo4j Type | Description |
 |----------|------------|-------------|
 | `id` | string | Subject ID, 15 characters starting with `s` (unique) |
-| `name` | string | Subject label |
+| `name` | string | Subject label, where it has one (see below) |
 | `wiki_id` | string | [MediaWiki Wiki ID](https://www.mediawiki.org/wiki/Manual:Wiki_ID) of the wiki that owns the Subject |
 
 Unlike page ids, Subject ids are globally unique nanoids ([ADR 14](../adr/014-improved-id-format.md)), so a Subject's
 identity is its `id` alone. The `wiki_id` is carried only for per-wiki query filtering in a shared graph.
+
+A Subject need not have a label ([ADR 31](../adr/031-optional-subject-labels.md)). One with no label carries `name`
+only as its page's Main Subject, where the value is the prefixed page title and a page move keeps it current. A query
+that must name every Subject can fall back to the Schema label:
+`coalesce( s.name, head( [ l IN labels( s ) WHERE l <> 'Subject' ] ) )`.
 
 ### Dynamic properties
 
@@ -88,7 +93,8 @@ The revision slot stays authoritative.
 
 A Subject node can exist as a *stub*: a node stripped down to only its `id` and `wiki_id` properties and the
 `Subject` label — no `name`, no Schema label, and no Statement-derived properties. A stub keeps a Subject's identity
-available for incoming relations while carrying none of its data.
+available for incoming relations while carrying none of its data. Identify a stub by its lack of a Schema label,
+not by a missing `name`: a Subject with no label has none either.
 
 Stubs arise in two ways:
 

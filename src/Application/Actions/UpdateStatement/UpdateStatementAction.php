@@ -22,6 +22,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Validation\ViolationDiff;
@@ -195,9 +196,25 @@ readonly class UpdateStatementAction {
 		// The proposed Subject is the persisted state: the builder and the resolver above already
 		// normalized what the request supplied.
 		$this->presenter->presentUpdated(
-			GetSubjectResponseItem::fromSubject( $proposedSubject, $pageIdentifiers ),
+			GetSubjectResponseItem::fromSubject(
+				$proposedSubject,
+				$pageIdentifiers,
+				$this->getDisplayName( $proposedSubject, $pageIdentifiers )
+			),
 			$schema,
 			$proposedViolations
+		);
+	}
+
+	/**
+	 * Which Subject the page treats as its own topic decides what a Subject without a label is called,
+	 * and only the page knows that. Setting a Statement cannot change it.
+	 */
+	private function getDisplayName( Subject $subject, PageIdentifiers $pageIdentifiers ): string {
+		return SubjectDisplayName::forSubjectIn(
+			$subject,
+			$this->subjectRepository->getSubjectsByPageId( $pageIdentifiers->getId() ),
+			$pageIdentifiers->getTitle()
 		);
 	}
 

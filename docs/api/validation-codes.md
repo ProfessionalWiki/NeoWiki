@@ -76,12 +76,6 @@ or no value at all (`number`, `boolean`).
 
 `args`: `[]`. `severity`: set by the `required` Constraint (default `warning`).
 
-### `label-required`
-
-The Subject's label is empty or whitespace-only. Subject-level: `propertyName` is `null`.
-
-`args`: `[]`. `severity`: `error` (fixed).
-
 ### `type-mismatch`
 
 The type recorded on the Statement when it was written (ADR 11) no longer matches the type the

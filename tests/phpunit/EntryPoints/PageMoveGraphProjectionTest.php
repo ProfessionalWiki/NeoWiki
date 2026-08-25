@@ -50,6 +50,22 @@ class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * A Main Subject nobody named is called after its page, and the graph stores that name instead of
+	 * deriving it on every read. What makes that safe is this: the reprojection a move already triggers
+	 * rewrites the name, so a move cannot leave the graph calling a Subject by a title the wiki lost.
+	 */
+	public function testMovingPageRenamesTheNodeOfItsUnnamedMainSubject(): void {
+		$this->createPageWithSubjects( 'Unnamed subject move source', TestSubject::build( label: null ) );
+
+		$this->movePage( 'Unnamed subject move source', 'Help:Unnamed subject move target' );
+
+		$this->assertSame(
+			'Help:Unnamed subject move target',
+			$this->readSubjectNodeName( TestSubject::ZERO_GUID )
+		);
+	}
+
 	public function testMovingPageToAnotherNamespaceUpdatesNamespaceId(): void {
 		$revision = $this->createPageWithSubjects( 'Namespace move source', TestSubject::build() );
 		$pageId = $revision->getPageId();
@@ -111,6 +127,15 @@ class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
 			'the moved page and the redirect left behind should each be projected exactly once'
 		);
 		$this->assertSame( [], $spy->deletedPageIds );
+	}
+
+	private function readSubjectNodeName( string $subjectId ): ?string {
+		$result = $this->readGraph(
+			'MATCH (subject:Subject {id: $subjectId}) RETURN subject.name AS name',
+			[ 'subjectId' => $subjectId ]
+		);
+
+		return $result->first()->toRecursiveArray()['name'] ?? null;
 	}
 
 	/**

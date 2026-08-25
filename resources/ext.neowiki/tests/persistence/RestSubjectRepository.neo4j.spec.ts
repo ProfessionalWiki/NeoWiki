@@ -27,6 +27,7 @@ function newRepository( apiUrl: string, httpClient: InMemoryHttpClient ): RestSu
 const subjectResponse = {
 	id: 's33333333333333',
 	label: 'John Doe',
+	displayName: 'John Doe',
 	schema: 'Employee',
 	pageId: 42,
 	pageTitle: 'John Doe (Employee)',
@@ -57,6 +58,7 @@ function writeResponseJson( overrides: Record<string, unknown> = {} ): Record<st
 		subject: {
 			id: 's33333333333333',
 			label: 'John Doe',
+			displayName: 'John Doe',
 			schema: 'Employee',
 			pageId: 42,
 			pageTitle: 'Employees',
@@ -99,6 +101,7 @@ describe( 'RestSubjectRepository', () => {
 			expect( subject ).toEqual( new SubjectWithContext(
 				new SubjectId( subjectResponse.id ),
 				subjectResponse.label,
+				subjectResponse.displayName,
 				subjectResponse.schema,
 				new StatementList( [
 					new Statement( new PropertyName( 'label' ), 'text', newStringValue( 'John Doe' ) ),
@@ -136,6 +139,7 @@ describe( 'RestSubjectRepository', () => {
 				[ referencedId1 ]: {
 					id: referencedId1,
 					label: 'Product One',
+					displayName: 'Product One',
 					schema: 'Product',
 					pageId: 2,
 					pageTitle: 'Product One',
@@ -144,6 +148,7 @@ describe( 'RestSubjectRepository', () => {
 				[ requestedId ]: {
 					id: requestedId,
 					label: 'Main',
+					displayName: 'Main',
 					schema: 'Company',
 					pageId: 1,
 					pageTitle: 'Main',
@@ -157,6 +162,7 @@ describe( 'RestSubjectRepository', () => {
 				[ referencedId2 ]: {
 					id: referencedId2,
 					label: 'Product Two',
+					displayName: 'Product Two',
 					schema: 'Product',
 					pageId: 3,
 					pageTitle: 'Product Two',
@@ -219,6 +225,7 @@ describe( 'RestSubjectRepository', () => {
 			return {
 				id: id,
 				label: 'Broken',
+				displayName: 'Broken',
 				schema: 'Product',
 				pageId: 4,
 				pageTitle: 'Broken',
@@ -235,6 +242,7 @@ describe( 'RestSubjectRepository', () => {
 			return {
 				id: id,
 				label: 'Broken',
+				displayName: 'Broken',
 				schema: 'Product',
 				pageId: 4,
 				pageTitle: 'Broken',
@@ -325,6 +333,20 @@ describe( 'RestSubjectRepository', () => {
 			expect( result.schema ).toBeNull();
 		} );
 
+		it( 'sends a null label when the Subject is created without one', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/page/42/mainSubject':
+					new Response( JSON.stringify( writeResponseJson() ), { status: 200 } ),
+			} );
+			const postSpy = vi.spyOn( inMemoryHttpClient, 'post' );
+
+			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
+
+			await repository.createMainSubject( 42, null, 'Employee', new StatementList( [] ) );
+
+			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { label: null } );
+		} );
+
 	} );
 
 	describe( 'updateSubject', () => {
@@ -379,6 +401,20 @@ describe( 'RestSubjectRepository', () => {
 
 			expect( result.subject ).toBeNull();
 			expect( result.subjectId.text ).toEqual( 's33333333333333' );
+		} );
+
+		it( 'sends a null label so the update clears the stored one', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':
+					new Response( JSON.stringify( writeResponseJson() ), { status: 200 } ),
+			} );
+			const putSpy = vi.spyOn( inMemoryHttpClient, 'put' );
+
+			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
+
+			await repository.updateSubject( new SubjectId( 's11111111111111' ), null, new StatementList( [] ) );
+
+			expect( putSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { label: null } );
 		} );
 
 		it( 'sends a PUT request', async () => {

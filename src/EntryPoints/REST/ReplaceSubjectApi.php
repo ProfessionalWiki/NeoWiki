@@ -36,7 +36,7 @@ class ReplaceSubjectApi extends SimpleHandler {
 		try {
 			NeoWikiExtension::getInstance()->newReplaceSubjectAction( $presenter, $this->getAuthority() )->replace(
 				new SubjectId( $subjectId ),
-				$body['label'],
+				$body['label'] ?? null,
 				$body['statements'],
 				$body['comment'] ?? null
 			);
@@ -78,8 +78,10 @@ class ReplaceSubjectApi extends SimpleHandler {
 			'label' => [
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'New display label. Required, must be non-empty.',
+				ParamValidator::PARAM_REQUIRED => false,
+				self::PARAM_DESCRIPTION => 'New display label. Replaces the stored one entirely: omitting it, or '
+					. 'passing an empty string, leaves the Subject with no label, just as an omitted property name '
+					. 'deletes its Statement.',
 			],
 			'statements' => [
 				self::PARAM_SOURCE => 'body',

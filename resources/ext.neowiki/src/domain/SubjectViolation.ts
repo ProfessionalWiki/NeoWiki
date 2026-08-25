@@ -26,11 +26,10 @@ export interface SubjectViolation {
 }
 
 /**
- * Codes for violations that fire only because a field (or the subject label)
- * has not been filled in yet. They are the only violations that can occur on a
- * field the user has not touched.
+ * Codes for violations that fire only because a field has not been filled in yet. They are the
+ * only violations that can occur on a field the user has not touched.
  */
-const MISSING_VALUE_CODES: ReadonlySet<string> = new Set( [ 'required', 'label-required' ] );
+const MISSING_VALUE_CODES: ReadonlySet<string> = new Set( [ 'required' ] );
 
 /**
  * Withholds "you have not filled this in yet" violations from the live dry-run

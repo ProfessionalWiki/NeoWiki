@@ -14,7 +14,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
@@ -31,12 +30,8 @@ readonly class SubjectValidator {
 	/**
 	 * @return Violation[]
 	 */
-	public function validate( SubjectLabel $label, StatementList $statements, Schema $schema ): array {
+	public function validate( StatementList $statements, Schema $schema ): array {
 		$violations = [];
-
-		if ( trim( $label->text ) === '' ) {
-			$violations[] = new Violation( propertyName: null, code: 'label-required', severity: Severity::Error );
-		}
 
 		// Resolved in one lookup ahead of the per-Statement pass: resolving each target where it is
 		// checked costs a round trip apiece, paid serially. Ids absent from the map resolved to no

@@ -10,7 +10,6 @@ use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
 readonly class ValidateSubjectQuery {
@@ -31,7 +30,7 @@ readonly class ValidateSubjectQuery {
 	 * @throws \InvalidArgumentException when the schema name is invalid (empty etc.).
 	 * @throws SchemaNotFoundException when the schema does not exist.
 	 */
-	public function validate( string $schemaName, string $label, array $statements ): array {
+	public function validate( string $schemaName, array $statements ): array {
 		$schema = $this->schemaLookup->getSchema( new SchemaName( $schemaName ) );
 
 		if ( $schema === null ) {
@@ -39,7 +38,6 @@ readonly class ValidateSubjectQuery {
 		}
 
 		return $this->subjectValidator->validate(
-			new SubjectLabel( $label ),
 			$this->statementListBuilder->build(
 				$this->selectStatementResolver->resolveOrLeave( $schema, $statements )
 			),

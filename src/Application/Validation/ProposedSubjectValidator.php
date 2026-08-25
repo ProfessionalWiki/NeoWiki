@@ -48,7 +48,6 @@ readonly class ProposedSubjectValidator {
 		}
 
 		return $this->subjectValidator->validate(
-			$subject->getLabel(),
 			$subject->getStatements(),
 			$schema,
 		);

@@ -71,7 +71,7 @@ function getDisplayedValues( value: Value | undefined ): RelationDisplayValueDat
 
 function getValueDisplay( subject: SubjectWithContext ): RelationDisplayValueData {
 	return {
-		text: subject.getLabel(),
+		text: subject.getDisplayName(),
 		url: mw.util.getUrl( subject.getPageIdentifiers().getPageName() )
 	};
 }

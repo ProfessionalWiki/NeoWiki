@@ -74,6 +74,15 @@ describe( 'SubjectEditorDialog', () => {
 	const mockSubject = new Subject(
 		new SubjectId( 's1demo5sssssss1' ),
 		'Test Subject',
+		'Test Subject',
+		'TestSchema',
+		new StatementList( [] ),
+	);
+
+	const labellessSubject = new Subject(
+		new SubjectId( 's1demo5sssssss2' ),
+		null,
+		'Host Page',
 		'TestSchema',
 		new StatementList( [] ),
 	);
@@ -419,9 +428,8 @@ describe( 'SubjectEditorDialog', () => {
 		} );
 
 		it( 'splits banner violations by severity into an error and a warning message', async () => {
-			// Anchored to a property the schema no longer has, so it lands in the
-			// banner: the other subject-level error, label-required, renders in
-			// the dialog header instead.
+			// Anchored to a property the schema no longer has, so there is no field to
+			// render it against and it lands in the banner.
 			const errorViolation: SubjectViolation = {
 				propertyName: 'name',
 				code: 'type-mismatch',
@@ -730,7 +738,7 @@ describe( 'SubjectEditorDialog', () => {
 			expect( ( onSave.mock.calls[ 0 ][ 0 ] as Subject ).getLabel() ).toBe( 'Renamed Subject' );
 		} );
 
-		it( 'does not save when the label is blank', async () => {
+		it( 'saves without a label when the label is blanked', async () => {
 			const onSave = vi.fn().mockResolvedValue( undefined );
 			const wrapper = mountComponent( false, validationTestStubs, onSave );
 			await flushPromises();
@@ -739,11 +747,73 @@ describe( 'SubjectEditorDialog', () => {
 			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
-			expect( onSave ).not.toHaveBeenCalled();
-			expect( ( mw.notify as Mock ).mock.calls ).toContainEqual( [
-				expect.stringContaining( 'neowiki-field-label-required' ),
-				{ type: 'error' },
-			] );
+			expect( ( onSave.mock.calls[ 0 ][ 0 ] as Subject ).getLabel() ).toBeNull();
+		} );
+
+		// PUT replaces the whole Subject, so an untouched label has to be sent back verbatim.
+		// Sending the placeholder instead, or nothing at all, silently wipes every stored label.
+		it( 'sends the stored label back unchanged when only a statement was edited', async () => {
+			const onSave = vi.fn().mockResolvedValue( undefined );
+			const wrapper = mountComponent( false, validationTestStubs, onSave );
+			await flushPromises();
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( ( onSave.mock.calls[ 0 ][ 0 ] as Subject ).getLabel() ).toBe( 'Test Subject' );
+		} );
+
+		it( 'keeps a label-less subject label-less when only a statement was edited', async () => {
+			const onSave = vi.fn().mockResolvedValue( undefined );
+			const wrapper = mountComponent( false, validationTestStubs, onSave );
+			await wrapper.setProps( { subject: labellessSubject } );
+			await flushPromises();
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( ( onSave.mock.calls[ 0 ][ 0 ] as Subject ).getLabel() ).toBeNull();
+		} );
+
+		it( 'shows the display name as the placeholder for a label-less subject', async () => {
+			const wrapper = mountComponent( false, validationTestStubs );
+			await wrapper.setProps( { subject: labellessSubject } );
+			await flushPromises();
+
+			expect( titleText( wrapper ) ).toBe( 'Host Page' );
+
+			await wrapper.find( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
+
+			const input = wrapper.find( '.ext-neowiki-editable-text input' );
+			expect( input.attributes( 'placeholder' ) ).toBe( 'Host Page' );
+			expect( ( input.element as HTMLInputElement ).value ).toBe( '' );
+		} );
+
+		it( 'does not preview the removed label once a labelled subject is cleared', async () => {
+			const wrapper = mountComponent( false, validationTestStubs );
+			await flushPromises();
+
+			await editLabel( wrapper, '' );
+			await flushPromises();
+
+			// The client cannot compute the name the server will fall back to, and the old label is
+			// the one name it is certain to no longer be.
+			expect( titleText( wrapper ) ).toBe( 'neowiki-subject-editor-label-field' );
+		} );
+
+		it( 'sends no label to the dry-run validation once the label is blanked', async () => {
+			const validate = vi.fn().mockResolvedValue( [] );
+			useSubjectStore().validateSubjectUpdate = validate;
+			const wrapper = mountComponent( false, validationTestStubs );
+			await flushPromises();
+
+			await editLabel( wrapper, '   ' );
+			await flushPromises();
+
+			const lastCall = validate.mock.calls[ validate.mock.calls.length - 1 ];
+			expect( lastCall[ 1 ] ).toBeNull();
 		} );
 
 		it( 'sends the edited label trimmed to the dry-run validation', async () => {
@@ -759,48 +829,14 @@ describe( 'SubjectEditorDialog', () => {
 			expect( lastCall[ 1 ] ).toBe( 'Renamed Subject' );
 		} );
 
-		it( 'points assistive technology at the label error', async () => {
-			const labelRequired: SubjectViolation = {
-				propertyName: null, code: 'label-required', args: [], severity: 'error', valuePartIndex: null,
-			};
-			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ labelRequired ] );
-			const wrapper = mountComponent( false, validationTestStubs );
-			await flushPromises();
-
-			await wrapper.find( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
-
-			const error = wrapper.find( '.ext-neowiki-subject-editor-dialog__label-error' );
-			const input = wrapper.find( '.ext-neowiki-editable-text input' );
-			expect( error.attributes( 'role' ) ).toBe( 'alert' );
-			expect( input.attributes( 'aria-invalid' ) ).toBe( 'true' );
-		} );
-
-		it( 'keeps the rename input open in error state when the label is committed blank', async () => {
-			const labelRequired: SubjectViolation = {
-				propertyName: null, code: 'label-required', args: [], severity: 'error', valuePartIndex: null,
-			};
-			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ labelRequired ] );
+		it( 'closes the rename input on a blank commit, the label being optional', async () => {
 			const wrapper = mountComponent( false, validationTestStubs );
 			await flushPromises();
 
 			await editLabel( wrapper, '' );
 			await flushPromises();
 
-			expect( wrapper.find( '.ext-neowiki-editable-text input' ).exists() ).toBe( true );
-			expect( wrapper.find( '.cdx-text-input--status-error' ).exists() ).toBe( true );
-		} );
-
-		it( 'routes the label-required violation to the title area instead of the banner', async () => {
-			const labelRequired: SubjectViolation = {
-				propertyName: null, code: 'label-required', args: [], severity: 'error', valuePartIndex: null,
-			};
-			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ labelRequired ] );
-			const wrapper = mountComponent( false, validationTestStubs );
-			await flushPromises();
-
-			expect( wrapper.find( '.ext-neowiki-subject-editor-dialog__label-error' ).text() )
-				.toContain( 'neowiki-field-label-required' );
-			expect( wrapper.find( '.ext-neowiki-violation-banners__list' ).exists() ).toBe( false );
+			expect( wrapper.find( '.ext-neowiki-editable-text input' ).exists() ).toBe( false );
 		} );
 
 		it( 'follows the label when the host replaces the subject', async () => {
@@ -810,6 +846,7 @@ describe( 'SubjectEditorDialog', () => {
 			await wrapper.setProps( {
 				subject: new Subject(
 					new SubjectId( 's1demo5sssssss1' ),
+					'Renamed Subject',
 					'Renamed Subject',
 					'TestSchema',
 					new StatementList( [] ),

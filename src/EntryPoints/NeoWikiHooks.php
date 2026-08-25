@@ -31,7 +31,6 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
-use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildSubjectPageIndex;
@@ -269,12 +268,8 @@ class NeoWikiHooks {
 		$parser->setFunctionHook(
 			'neowiki_value',
 			static function ( Parser $parser, string ...$args ): string|array {
-				$extension = NeoWikiExtension::getInstance();
 				$parserFunction = new NeoWikiValueParserFunction(
-					new SubjectResolver(
-						$extension->newSubjectContentRepository(),
-						$extension->getSubjectRepository(),
-					)
+					NeoWikiExtension::getInstance()->newSubjectResolver()
 				);
 				return $parserFunction->handle( $parser, ...$args );
 			}

@@ -68,7 +68,7 @@ module.exports = exports = {
 			subjectRepo.getSubject( subjectId )
 				.then( ( subject ) => {
 					loadedSubject.value = subject;
-					label.value = subject.getLabel();
+					label.value = subject.getLabel() || '';
 					return schemaRepo.getSchema( subject.getSchemaName() ).then( ( schema ) => {
 						loadedSchema.value = schema;
 					} );
@@ -109,8 +109,7 @@ module.exports = exports = {
 		}
 
 		function onSave() {
-			const trimmed = label.value.trim();
-			if ( trimmed === '' || editorRef.value === null || loadedSubject.value === null ) {
+			if ( editorRef.value === null || loadedSubject.value === null ) {
 				return;
 			}
 			const unparseable = editorRef.value.unparseableInput();
@@ -121,7 +120,8 @@ module.exports = exports = {
 			}
 			const newStatements = editorRef.value.getSubjectData();
 			const updatedSubject = loadedSubject.value
-				.withLabel( trimmed )
+				// A blank field stores no label, leaving the Subject to display its page name.
+				.withLabel( nw.enteredSubjectLabel( label.value ) )
 				.withStatements( newStatements );
 
 			subjectStore.updateSubject( updatedSubject )

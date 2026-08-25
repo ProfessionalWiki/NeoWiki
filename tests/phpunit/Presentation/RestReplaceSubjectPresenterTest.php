@@ -24,6 +24,7 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 		return new GetSubjectResponseItem(
 			id: 's1demo1aaaaaaa1',
 			label: 'ACME Corp',
+			displayName: 'ACME Corp',
 			schemaName: 'Organization',
 			statements: [ 'Animal' => [ 'propertyType' => 'text', 'value' => [ 'bunny' ] ] ],
 			pageId: $pageId,
@@ -86,6 +87,7 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 			[
 				'id' => 's1demo1aaaaaaa1',
 				'label' => 'ACME Corp',
+				'displayName' => 'ACME Corp',
 				'schema' => 'Organization',
 				'pageId' => 42,
 				'pageTitle' => 'ACME Corp',
@@ -105,6 +107,7 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 			[
 				'id' => 's1demo1aaaaaaa1',
 				'label' => 'ACME Corp',
+				'displayName' => 'ACME Corp',
 				'schema' => 'Organization',
 				'statements' => [ 'Animal' => [ 'propertyType' => 'text', 'value' => [ 'bunny' ] ] ],
 			],

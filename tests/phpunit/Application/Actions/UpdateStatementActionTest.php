@@ -17,6 +17,8 @@ use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
@@ -201,6 +203,37 @@ class UpdateStatementActionTest extends TestCase {
 		$this->setStatement( 'Website', 'url', [ 'https://pro.wiki' ] );
 
 		$this->assertSame( 'Original Label', $this->getStoredSubject()->getLabel()->text );
+	}
+
+	public function testSetStatementNamesALabellessMainSubjectAfterItsPage(): void {
+		$this->subjectRepository->savePageSubjects(
+			new PageSubjects( $this->labellessSubject(), new SubjectMap() ),
+			new PageId( 7 )
+		);
+
+		$this->setStatement( 'Website', 'url', [ 'https://pro.wiki' ] );
+
+		$this->assertNull( $this->presenterSpy->subject?->label );
+		$this->assertSame( 'Help:Test page', $this->presenterSpy->subject?->displayName );
+	}
+
+	public function testSetStatementNamesALabellessChildSubjectAfterItsSchema(): void {
+		$this->subjectRepository->savePageSubjects(
+			new PageSubjects( null, new SubjectMap( $this->labellessSubject() ) ),
+			new PageId( 7 )
+		);
+
+		$this->setStatement( 'Website', 'url', [ 'https://pro.wiki' ] );
+
+		$this->assertSame( self::SCHEMA_NAME, $this->presenterSpy->subject?->displayName );
+	}
+
+	private function labellessSubject(): Subject {
+		return TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: null,
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		);
 	}
 
 	public function testPropertyTypeFallsBackToTheSchemaType(): void {
