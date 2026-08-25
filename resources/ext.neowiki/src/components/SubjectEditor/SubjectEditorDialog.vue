@@ -3,7 +3,7 @@
 		<CdxDialog
 			:open="open"
 			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog"
-			:title="$i18n( 'neowiki-subject-editor-title', props.subject.getLabel() ).text()"
+			:title="$i18n( 'neowiki-subject-editor-title', props.subject.getDisplayName() ).text()"
 			@update:open="onDialogUpdateOpen"
 		>
 			<template #header>
@@ -13,20 +13,10 @@
 							:model-value="subjectLabel"
 							:edit-button-label="$i18n( 'neowiki-subject-editor-rename' ).text()"
 							:input-aria-label="$i18n( 'neowiki-subject-editor-label-field' ).text()"
-							:placeholder="$i18n( 'neowiki-subject-editor-label-field' ).text()"
-							:status="labelViolation ? 'error' : 'default'"
-							:required="true"
+							:placeholder="labelPlaceholder"
 							@update:model-value="onLabelEdited"
 						/>
 					</div>
-
-					<p
-						v-if="labelViolation"
-						class="ext-neowiki-subject-editor-dialog__label-error"
-						role="alert"
-					>
-						{{ formatViolationMessage( labelViolation ) }}
-					</p>
 
 					<p class="cdx-dialog__header__subtitle">
 						<I18nSlot
@@ -117,6 +107,7 @@ import { cdxIconClose } from '@wikimedia/codex-icons';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
 import { Schema } from '@/domain/Schema.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
@@ -168,7 +159,7 @@ const { violations: serverViolations, revalidate, flush, reset } = useSubjectVal
 			// field the user is still on their way to filling in.
 			return await subjectStore.validateSubjectUpdate(
 				props.subject.getId(),
-				subjectLabel.value.trim(),
+				enteredLabel(),
 				new StatementList( statements )
 			);
 		} catch ( error ) {
@@ -207,9 +198,20 @@ function onLabelEdited( value: string ): void {
 	handleEditorBlur();
 }
 
-const labelViolation = computed<SubjectViolation | null>( () =>
-	serverViolations.value.find( ( v ) => v.code === 'label-required' ) ?? null
+// The rename field previews the name a cleared label leaves behind, which the client knows only
+// for a Subject that already has none: the server holds the inputs, and it is what the display
+// name of such a Subject already is. For a labelled one the generic hint stands in.
+const labelPlaceholder = computed( (): string =>
+	props.subject.getLabel() === null ?
+		props.subject.getDisplayName() :
+		mw.msg( 'neowiki-subject-editor-label-field' )
 );
+
+// An untouched field still carries the stored label, which a full-replacement write has to send
+// back or it would wipe it.
+function enteredLabel(): string | null {
+	return enteredSubjectLabel( subjectLabel.value );
+}
 
 const anchorlessViolations = computed<SubjectViolation[]>( () => {
 	// SubjectEditor renders one field per entry in `statements`, which the
@@ -221,22 +223,12 @@ const anchorlessViolations = computed<SubjectViolation[]>( () => {
 		[ ...statements.value ].map( ( s ) => s.propertyName.toString() )
 	);
 	return serverViolations.value.filter( ( v ) => {
-		// label-required renders at the label itself, in the dialog header.
-		if ( v.code === 'label-required' ) {
-			return false;
-		}
 		if ( v.propertyName === null ) {
 			return true;
 		}
 		return !renderedPropertyNames.has( v.propertyName );
 	} );
 } );
-
-// The label violation renders in the header rather than in a banner, so it is
-// formatted here. It is always an error, so it carries no severity styling.
-function formatViolationMessage( v: SubjectViolation ): string {
-	return mw.message( `neowiki-field-${ v.code }`, ...( v.args as string[] ) ).text();
-}
 
 function handleClearViolation( payload: { propertyName: string; valuePartIndex: number | null } ): void {
 	serverViolations.value = serverViolations.value.filter(
@@ -260,7 +252,7 @@ function onDialogUpdateOpen( value: boolean ): void {
 // deferred watcher would never see the opening that created it.
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
-		subjectLabel.value = props.subject.getLabel();
+		subjectLabel.value = props.subject.getLabel() ?? '';
 		resetChanged();
 		reset();
 		// Fetched per opening: approval state and the viewer's permissions both change without an edit.
@@ -284,7 +276,7 @@ watch( subjectEditorRef, ( editor ) => {
 } );
 
 watch( () => props.subject, ( newSubject ) => {
-	subjectLabel.value = newSubject.getLabel();
+	subjectLabel.value = newSubject.getLabel() ?? '';
 	checkEditPermission( newSubject.getSchemaName() );
 }, { immediate: true } );
 
@@ -298,13 +290,6 @@ const statements = computed( (): StatementList =>
 
 const handleSave = async ( summary: string ): Promise<void> => {
 	await nextTick();
-
-	const label = subjectLabel.value.trim();
-
-	if ( !label ) {
-		mw.notify( mw.msg( 'neowiki-field-label-required' ), { type: 'error' } );
-		return;
-	}
 
 	if ( !subjectEditorRef.value ) {
 		return;
@@ -326,9 +311,9 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	// Filter out statements that don't have a value set.
 	const statementsToSave = [ ...updatedStatements ].filter( ( statement ) => statement.hasValue() );
 	const updatedSubject = props.subject
-		.withLabel( label )
+		.withLabel( enteredLabel() )
 		.withStatements( new StatementList( statementsToSave ) );
-	const subjectName = updatedSubject.getLabel();
+	const subjectName = updatedSubject.getDisplayName();
 	const editSummary = summary || mw.msg( 'neowiki-subject-editor-summary-default' );
 
 	try {
@@ -402,12 +387,6 @@ defineExpose( { hasChanged } );
 	&__title {
 		display: flex;
 		min-width: 0;
-	}
-
-	&__label-error {
-		color: @color-error;
-		font-size: @font-size-small;
-		margin: @spacing-25 0 0;
 	}
 }
 </style>

@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
-use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
@@ -19,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
@@ -45,10 +45,6 @@ readonly class CreateSubjectAction {
 	}
 
 	public function createSubject( CreateSubjectRequest $request ): void {
-		if ( trim( $request->label ) === '' ) {
-			throw new InvalidArgumentException( 'SubjectLabel cannot be empty' );
-		}
-
 		$pageId = new PageId( $request->pageId );
 
 		// Gate on read before write, and before touching any page state: a page the caller may not
@@ -104,10 +100,13 @@ readonly class CreateSubjectAction {
 
 		// The page identifiers come from the page id the request named, not from the subject -> page
 		// index, which is read from a replica that may not carry the revision just written.
+		$pageIdentifiers = $this->pageIdentifiersResolver->getIdentifiersOfPage( $pageId );
+
 		$this->presenter->presentCreated(
 			GetSubjectResponseItem::fromSubject(
 				$subject,
-				$this->pageIdentifiersResolver->getIdentifiersOfPage( $pageId )
+				$pageIdentifiers,
+				SubjectDisplayName::forSubjectIn( $subject, $pageSubjects, $pageIdentifiers?->getTitle() ?? '' )
 			),
 			$schema,
 			$violations
@@ -127,7 +126,7 @@ readonly class CreateSubjectAction {
 
 	private function buildSubject( CreateSubjectRequest $request, ?Schema $schema ): Subject {
 		$schemaName = new SchemaName( $request->schemaName );
-		$label = new SubjectLabel( $request->label );
+		$label = SubjectLabel::fromText( $request->label );
 		$statements = $this->statementListBuilder->build(
 			$this->resolveSelectValues( $schema, $request->statements )
 		);

@@ -19,6 +19,7 @@ class SubjectPresentationSerializer {
 		$entry = [
 			'id' => $item->id,
 			'label' => $item->label,
+			'displayName' => $item->displayName,
 			'schema' => $item->schemaName,
 		];
 

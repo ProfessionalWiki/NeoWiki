@@ -8,7 +8,7 @@
 					role="heading"
 					aria-level="2"
 				>
-					{{ subject.getLabel() }}
+					{{ subject.getDisplayName() }}
 				</div>
 				<div
 					class="ext-neowiki-infobox__schema"

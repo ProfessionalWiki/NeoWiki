@@ -170,6 +170,7 @@ describe( 'SubjectPicker', () => {
 		const subject = new Subject(
 			new SubjectId( 's1demo1aaaaaaa1' ),
 			'ACME Inc.',
+			'ACME Inc.',
 			'Company',
 			new StatementList( [] ),
 		);
@@ -180,6 +181,22 @@ describe( 'SubjectPicker', () => {
 
 		const lookup = wrapper.findComponent( CdxLookup );
 		expect( lookup.props( 'inputValue' ) ).toBe( 'ACME Inc.' );
+	} );
+
+	it( 'displays the derived name for a pre-selected subject that has no label', async () => {
+		const subject = new Subject(
+			new SubjectId( 's1demo1aaaaaaa1' ),
+			null,
+			'Acme Anvil',
+			'Company',
+			new StatementList( [] ),
+		);
+		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue( subject );
+
+		const wrapper = createWrapper( { selected: 's1demo1aaaaaaa1' } );
+		await flushPromises();
+
+		expect( wrapper.findComponent( CdxLookup ).props( 'inputValue' ) ).toBe( 'Acme Anvil' );
 	} );
 
 	it( 'falls back to raw SubjectId when subject lookup fails', async () => {
@@ -225,7 +242,7 @@ describe( 'SubjectPicker', () => {
 
 	it( 'does not propagate null selection to parent when input has text', async () => {
 		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue(
-			new Subject( new SubjectId( 's1demo1aaaaaaa1' ), 'ACME Inc.', 'Company', new StatementList( [] ) ),
+			new Subject( new SubjectId( 's1demo1aaaaaaa1' ), 'ACME Inc.', 'ACME Inc.', 'Company', new StatementList( [] ) ),
 		);
 
 		const wrapper = createWrapperWithVModel( { selected: 's1demo1aaaaaaa1' } );

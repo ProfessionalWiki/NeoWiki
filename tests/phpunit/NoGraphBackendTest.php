@@ -12,7 +12,6 @@ use MediaWiki\Output\OutputPage;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
-use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
@@ -122,11 +121,7 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 	public function testLuaGetterReadsAValueBySubjectIdWithoutBackend(): void {
 		$value = $this->runWithoutGraphBackend( function (): array {
 			$this->createPageWithMottoSubject( 'NoBackendLuaPage' );
-			$extension = NeoWikiExtension::getInstance();
-
-			return ( new SubjectDataLookup(
-				new SubjectResolver( $extension->newSubjectContentRepository(), $extension->getSubjectRepository() )
-			) )->getValue(
+			return ( new SubjectDataLookup( NeoWikiExtension::getInstance()->newSubjectResolver() ) )->getValue(
 				Title::newFromText( 'NoBackendLuaPage' ),
 				self::PROPERTY,
 				[ 'subject' => self::SUBJECT_ID ]

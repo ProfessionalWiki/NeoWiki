@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jConstraintUpdater;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jProjectionStore;
@@ -659,6 +660,34 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectIsNotStub( self::GUID_1 );
 	}
 
+	public function testRemovingASubjectLeavesAnUnlinkedLabellessSubjectAlone(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		// The same shape as the test above, with a Subject nobody named. A sweep that took the absence
+		// of a name for the mark of a stub would delete this one and its Statements with it.
+		$store->savePage( TestPage::build(
+			id: 1,
+			childSubjects: new SubjectMap( TestSubject::build( id: self::GUID_1, label: null ) )
+		) );
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
+		) );
+
+		$store->savePage( TestPage::build(
+			id: 1,
+			childSubjects: new SubjectMap(
+				TestSubject::build( id: self::GUID_1, label: null, schemaName: new SchemaName( self::SCHEMA_ID_A ) )
+			)
+		) );
+
+		$this->assertHasNoIncomingHasSubjectRelation( self::GUID_1 );
+
+		$store->savePage( TestPage::build( id: 2 ) );
+
+		$this->assertSubjectExists( self::GUID_1 );
+	}
+
 	public function testDroppingTheOnlyRelationToAStubDeletesTheStub(): void {
 		$store = $this->newProjectionStoreWithLocationRelation();
 
@@ -859,6 +888,22 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 2, $row['propertyCount'], "Stub {$subjectId} should keep only the id and wiki_id properties" );
 	}
 
+	private function assertSubjectExists( string $subjectId ): void {
+		$result = $this->readGraph( 'MATCH (subject {id: $id}) RETURN subject', [ 'id' => $subjectId ] );
+
+		$this->assertFalse( $result->isEmpty(), "Subject {$subjectId} should exist" );
+	}
+
+	private function assertSubjectName( ?string $expected, string $subjectId ): void {
+		$result = $this->readGraph(
+			'MATCH (subject {id: $id}) RETURN subject.name AS name',
+			[ 'id' => $subjectId ]
+		);
+
+		$this->assertFalse( $result->isEmpty(), "Subject {$subjectId} should exist" );
+		$this->assertSame( $expected, $result->first()->toRecursiveArray()['name'] );
+	}
+
 	private function assertSubjectDoesNotExist( string $subjectId ): void {
 		$result = $this->readGraph( 'MATCH (subject {id: $id}) RETURN subject', [ 'id' => $subjectId ] );
 
@@ -981,6 +1026,70 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			],
 			42
 		);
+	}
+
+	public function testMainSubjectWithoutALabelTakesThePageNameAsItsNodeName(): void {
+		$store = $this->newProjectionStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build( title: 'Help:Unnamed topic' ),
+			mainSubject: TestSubject::build( id: self::GUID_1, label: null ),
+		) );
+
+		$this->assertSubjectName( 'Help:Unnamed topic', self::GUID_1 );
+	}
+
+	public function testChildSubjectWithoutALabelGetsNoNodeName(): void {
+		$store = $this->newProjectionStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			childSubjects: new SubjectMap( TestSubject::build( id: self::GUID_2, label: null ) )
+		) );
+
+		$this->assertSubjectName( null, self::GUID_2 );
+	}
+
+	public function testStoredLabelWinsOverThePageName(): void {
+		$store = $this->newProjectionStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build( title: 'Page name' ),
+			mainSubject: TestSubject::build( id: self::GUID_1, label: 'Chosen label' ),
+		) );
+
+		$this->assertSubjectName( 'Chosen label', self::GUID_1 );
+	}
+
+	public function testClearingALabelRemovesTheNodeNameOfAChildSubject(): void {
+		$store = $this->newProjectionStore();
+
+		$page = fn ( ?string $label ) => TestPage::build(
+			id: 42,
+			childSubjects: new SubjectMap( TestSubject::build( id: self::GUID_2, label: $label ) )
+		);
+
+		$store->savePage( $page( 'Named for now' ) );
+		$store->savePage( $page( null ) );
+
+		$this->assertSubjectName( null, self::GUID_2 );
+	}
+
+	public function testStatementCalledNameDoesNotBecomeTheNodeNameOfALabellessSubject(): void {
+		$store = $this->newProjectionStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			childSubjects: new SubjectMap( TestSubject::build(
+				id: self::GUID_2,
+				label: null,
+				statements: new StatementList( [ TestStatement::build( property: 'name', value: new StringValue( 'Impostor' ) ) ] )
+			) )
+		) );
+
+		$this->assertSubjectName( null, self::GUID_2 );
 	}
 
 	public function testDeletingPagePreservesSubjectReferencedByOtherSubject(): void {

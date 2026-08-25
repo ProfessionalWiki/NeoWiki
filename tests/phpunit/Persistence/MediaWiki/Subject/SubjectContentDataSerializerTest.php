@@ -66,6 +66,28 @@ class SubjectContentDataSerializerTest extends TestCase {
 		);
 	}
 
+	public function testSubjectWithoutLabelIsSerializedWithoutTheKey(): void {
+		$serializer = new SubjectContentDataSerializer();
+
+		$this->assertSame(
+			'{
+    "mainSubject": null,
+    "subjects": {
+        "sTestSCDST11111": {
+            "schema": "TestSubjectSchemaId",
+            "statements": {}
+        }
+    }
+}',
+			$serializer->serialize( new PageSubjects(
+				null,
+				new SubjectMap(
+					TestSubject::build( 'sTestSCDST11111', label: null )
+				)
+			) )
+		);
+	}
+
 	public function testSerializeFullSubject(): void {
 		$serializer = new SubjectContentDataSerializer();
 

@@ -10,7 +10,8 @@ export class Subject {
 
 	public constructor(
 		private readonly id: SubjectId,
-		private readonly label: string,
+		private readonly label: string | null,
+		private readonly displayName: string,
 		private readonly schemaName: SchemaName,
 		private readonly statements: StatementList,
 	) {
@@ -20,8 +21,20 @@ export class Subject {
 		return this.id;
 	}
 
-	public getLabel(): string {
+	/**
+	 * The label as stored, which is null for a Subject that has none. Displays want
+	 * getDisplayName() instead; this is for editors, which must round-trip the stored value.
+	 */
+	public getLabel(): string | null {
 		return this.label;
+	}
+
+	/**
+	 * The name to show for this Subject: its stored label, or the fallback the server derived
+	 * from the page name or the Schema name when there is none.
+	 */
+	public getDisplayName(): string {
+		return this.displayName;
 	}
 
 	public getSchemaName(): SchemaName {
@@ -45,16 +58,20 @@ export class Subject {
 		return this.statements.withNonEmptyValues().getPropertyNames();
 	}
 
-	public withLabel( label: string ): Subject {
-		return new Subject( this.id, label, this.schemaName, this.statements );
+	/**
+	 * A stored label is its own display name, so setting one sets both. Clearing one keeps the
+	 * display name the server last derived, since only the server can derive a new one.
+	 */
+	public withLabel( label: string | null ): Subject {
+		return new Subject( this.id, label, label ?? this.displayName, this.schemaName, this.statements );
 	}
 
 	public withStatements( statements: StatementList ): Subject {
-		return new Subject( this.id, this.label, this.schemaName, statements );
+		return new Subject( this.id, this.label, this.displayName, this.schemaName, statements );
 	}
 
 	public withSchemaName( schemaName: SchemaName ): Subject {
-		return new Subject( this.id, this.label, schemaName, this.statements );
+		return new Subject( this.id, this.label, this.displayName, schemaName, this.statements );
 	}
 
 }

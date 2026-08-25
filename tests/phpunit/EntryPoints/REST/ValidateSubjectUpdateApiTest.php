@@ -40,7 +40,7 @@ class ValidateSubjectUpdateApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $body['violations'] );
 	}
 
-	public function testEmptyLabelReturnsLabelRequiredViolation(): void {
+	public function testEmptyLabelProducesNoViolation(): void {
 		$this->createPages();
 
 		$body = $this->validBody();
@@ -54,9 +54,24 @@ class ValidateSubjectUpdateApiTest extends NeoWikiIntegrationTestCase {
 		$responseBody = json_decode( $response->getBody()->getContents(), true );
 
 		$this->assertSame( 200, $response->getStatusCode() );
-		$this->assertCount( 1, $responseBody['violations'] );
-		$this->assertSame( 'label-required', $responseBody['violations'][0]['code'] );
-		$this->assertNull( $responseBody['violations'][0]['propertyName'] );
+		$this->assertSame( [], $responseBody['violations'] );
+	}
+
+	public function testOmittedLabelProducesNoViolation(): void {
+		$this->createPages();
+
+		$body = $this->validBody();
+		unset( $body['label'] );
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'sTestSU11111111', $body )
+		);
+
+		$responseBody = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( [], $responseBody['violations'] );
 	}
 
 	public function testInvalidConstraintReturnsViolation(): void {

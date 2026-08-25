@@ -88,6 +88,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 					's11111111111maa' => new GetSubjectResponseItem(
 						id: 's11111111111maa',
 						label: 'main label',
+						displayName: 'main label',
 						schemaName: 'TestSchema',
 						statements: [
 							'name' => [
@@ -102,6 +103,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 					's11111111111ca2' => new GetSubjectResponseItem(
 						id: 's11111111111ca2',
 						label: 'child two',
+						displayName: 'child two',
 						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
 						pageId: null,
@@ -111,6 +113,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 					's11111111111ca3' => new GetSubjectResponseItem(
 						id: 's11111111111ca3',
 						label: 'child three',
+						displayName: 'child three',
 						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
 						pageId: null,
@@ -120,6 +123,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 					's11111111111ca1' => new GetSubjectResponseItem(
 						id: 's11111111111ca1',
 						label: 'child one',
+						displayName: 'child one',
 						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
 						pageId: null,
@@ -161,6 +165,40 @@ class GetPageSubjectsQueryTest extends TestCase {
 
 		$this->assertNull( $presenter->response->mainSubjectId );
 		$this->assertSame( [ 's11111111111oa1' ], array_keys( $presenter->response->subjects ) );
+	}
+
+	/**
+	 * The page name names its Main Subject and would misname every other Subject on the page, so a
+	 * label-less Child falls through to its Schema instead.
+	 */
+	public function testLabellessSubjectsAreNamedAfterThePageAndTheSchema(): void {
+		$repository = new InMemorySubjectRepository();
+		$repository->savePageSubjects(
+			new PageSubjects(
+				TestSubject::build( id: 's11111111111maa', label: null, schemaName: new SchemaName( 'Museum' ) ),
+				new SubjectMap(
+					TestSubject::build( id: 's11111111111ca1', label: null, schemaName: new SchemaName( 'Attendance' ) ),
+				)
+			),
+			new PageId( 42 )
+		);
+
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery(
+			$presenter,
+			$repository,
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
+				[ new SubjectId( 's11111111111maa' ), new PageIdentifiers( new PageId( 42 ), 'Rijksmuseum', 0 ) ],
+				[ new SubjectId( 's11111111111ca1' ), new PageIdentifiers( new PageId( 42 ), 'Rijksmuseum', 0 ) ],
+			] )
+		)->execute( 42 );
+
+		$this->assertNull( $presenter->response->subjects['s11111111111maa']->label );
+		$this->assertSame( 'Rijksmuseum', $presenter->response->subjects['s11111111111maa']->displayName );
+
+		$this->assertNull( $presenter->response->subjects['s11111111111ca1']->label );
+		$this->assertSame( 'Attendance', $presenter->response->subjects['s11111111111ca1']->displayName );
 	}
 
 	public function testIncludesSchemasWhenRequested(): void {
@@ -312,6 +350,50 @@ class GetPageSubjectsQueryTest extends TestCase {
 		$this->assertSame( 137, $presenter->response->referencedSubjects['s11111111111tar']->pageId );
 		$this->assertSame( 'Target Page', $presenter->response->referencedSubjects['s11111111111tar']->pageTitle );
 		$this->assertSame( 12, $presenter->response->referencedSubjects['s11111111111tar']->pageNamespaceId );
+	}
+
+	/**
+	 * A target lives on a page of its own, so its main-ness is asked of that page rather than
+	 * inherited from the page being read.
+	 */
+	public function testLabellessReferencedSubjectIsNamedAfterItsOwnPage(): void {
+		$repository = new InMemorySubjectRepository();
+		$repository->savePageSubjects(
+			new PageSubjects(
+				TestSubject::build(
+					id: 's11111111111maa',
+					statements: new StatementList( [
+						TestStatement::build(
+							'partner',
+							new RelationValue( TestRelation::build( id: 'r11111111111maa', targetId: 's11111111111tar' ) ),
+							RelationType::NAME,
+						),
+					] )
+				),
+				new SubjectMap()
+			),
+			new PageId( 42 )
+		);
+
+		$referenced = TestSubject::build( id: 's11111111111tar', label: null );
+		$repository->savePageSubjects( new PageSubjects( $referenced, new SubjectMap() ), new PageId( 137 ) );
+
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery(
+			$presenter,
+			$repository,
+			subjectLookup: new InMemorySubjectLookup( $referenced ),
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
+				[ $referenced->id, new PageIdentifiers( new PageId( 137 ), 'Target Page', 0 ) ],
+			] )
+		)->execute( 42, includeReferencedSubjects: true );
+
+		$this->assertNull( $presenter->response->referencedSubjects['s11111111111tar']->label );
+		$this->assertSame(
+			'Target Page',
+			$presenter->response->referencedSubjects['s11111111111tar']->displayName
+		);
 	}
 
 	public function testReferencedSubjectsAndSchemasAreNullWhenNotRequested(): void {

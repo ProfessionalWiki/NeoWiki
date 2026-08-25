@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
@@ -162,10 +163,13 @@ class SubjectDataLookup {
 			return [ null ];
 		}
 
-		return [ $this->subjectToTable( $subject ) ];
+		return [ $this->subjectToTable( $subject, isMainSubject: true, pageName: $title->getPrefixedText() ) ];
 	}
 
 	/**
+	 * A Subject asked for by ID comes without the page that hosts it, so a label-less one reads as
+	 * its Schema name even where it is a page's Main Subject.
+	 *
 	 * @return array{0: ?array<string, mixed>}
 	 */
 	public function getSubjectData( string $subjectId ): array {
@@ -175,7 +179,7 @@ class SubjectDataLookup {
 			return [ null ];
 		}
 
-		return [ $this->subjectToTable( $subject ) ];
+		return [ $this->subjectToTable( $subject, isMainSubject: false, pageName: '' ) ];
 	}
 
 	/**
@@ -203,7 +207,7 @@ class SubjectDataLookup {
 		$result = [];
 		$index = 1;
 		foreach ( $children as $child ) {
-			$result[$index++] = $this->subjectToTable( $child );
+			$result[$index++] = $this->subjectToTable( $child, isMainSubject: false, pageName: $title->getPrefixedText() );
 		}
 
 		return [ $result ];
@@ -218,12 +222,22 @@ class SubjectDataLookup {
 	}
 
 	/**
+	 * `label` carries the display name rather than the stored one, so a template concatenating it
+	 * cannot meet a nil. The stored label, which a Subject need not have, is `storedLabel`. This is
+	 * the one place the two differ from the REST API, where `label` is the stored value.
+	 *
 	 * @return array<string, mixed>
 	 */
-	private function subjectToTable( Subject $subject ): array {
+	private function subjectToTable( Subject $subject, bool $isMainSubject, string $pageName ): array {
 		return [
 			'id' => $subject->getId()->text,
-			'label' => $subject->getLabel()->text,
+			'label' => SubjectDisplayName::forSubject(
+				label: $subject->getLabel(),
+				isMainSubject: $isMainSubject,
+				pageName: $pageName,
+				schemaName: $subject->getSchemaName()
+			),
+			'storedLabel' => $subject->getLabel()?->text,
 			'schema' => $subject->getSchemaName()->getText(),
 			'statements' => $this->statementsToTable( $subject ),
 		];

@@ -140,8 +140,8 @@ plain literal, and each is logged. The projection degrades rather than aborting 
 
 For each Subject on a page whose Schema has an entry on the requested projection's Mapping page:
 
-- `rdf:type <subject.class>`, and the `labelPredicate` triple when one is set.
-- `rdfs:label "<label>"` — the Subject's label, always.
+- `rdf:type <subject.class>`, and the `labelPredicate` triple when one is set and the Subject has a stored label.
+- `rdfs:label "<label>"` — always, from the Subject's display name (see [RDF export](rdf-export.md#projected-triples)).
 - One triple per mapped property **value**, on the Subject or on the node the entry attaches it to;
   multi-valued properties repeat the predicate. Unmapped properties are absent.
 - A **relation** value becomes a direct triple to the target Subject's IRI. No `neo:Relation` reification node

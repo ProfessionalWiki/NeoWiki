@@ -57,7 +57,7 @@ export interface SubjectRepository extends SubjectLookup {
 
 	createMainSubject(
 		pageId: number,
-		label: string,
+		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
 		comment?: string
@@ -65,7 +65,7 @@ export interface SubjectRepository extends SubjectLookup {
 
 	createChildSubject(
 		pageId: number,
-		label: string,
+		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
 		comment?: string
@@ -73,16 +73,16 @@ export interface SubjectRepository extends SubjectLookup {
 
 	updateSubject(
 		id: SubjectId,
-		label: string,
+		label: string | null,
 		statements: StatementList,
 		comment?: string
 	): Promise<SubjectWriteResult>;
 
 	deleteSubject( id: SubjectId, comment?: string ): Promise<boolean>;
 
-	validateSubject( label: string, schemaName: SchemaName, statements: StatementList ): Promise<SubjectViolation[]>;
+	validateSubject( label: string | null, schemaName: SchemaName, statements: StatementList ): Promise<SubjectViolation[]>;
 
-	validateSubjectUpdate( id: SubjectId, label: string, statements: StatementList ): Promise<SubjectViolation[]>;
+	validateSubjectUpdate( id: SubjectId, label: string | null, statements: StatementList ): Promise<SubjectViolation[]>;
 
 }
 
@@ -118,15 +118,15 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 		return Promise.resolve();
 	}
 
-	public createMainSubject( pageId: number, label: string, schemaName: string, statements: StatementList, _comment?: string ): Promise<SubjectWriteResult> {
+	public createMainSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _comment?: string ): Promise<SubjectWriteResult> {
 		return Promise.resolve( this.newWriteResult( new SubjectId( 's11111111111111' ), pageId, label, schemaName, statements ) );
 	}
 
-	public createChildSubject( pageId: number, label: string, schemaName: string, statements: StatementList, _comment?: string ): Promise<SubjectWriteResult> {
+	public createChildSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _comment?: string ): Promise<SubjectWriteResult> {
 		return Promise.resolve( this.newWriteResult( new SubjectId( 's11111111111112' ), pageId, label, schemaName, statements ) );
 	}
 
-	public async updateSubject( id: SubjectId, label: string, statements: StatementList, _comment?: string ): Promise<SubjectWriteResult> {
+	public async updateSubject( id: SubjectId, label: string | null, statements: StatementList, _comment?: string ): Promise<SubjectWriteResult> {
 		const existing = await this.getSubject( id );
 
 		return this.newWriteResult( id, 0, label, existing.getSchemaName(), statements );
@@ -135,13 +135,13 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 	private newWriteResult(
 		id: SubjectId,
 		pageId: number,
-		label: string,
+		label: string | null,
 		schemaName: string,
 		statements: StatementList,
 	): SubjectWriteResult {
 		return {
 			subjectId: id,
-			subject: new SubjectWithContext( id, label, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ) ),
+			subject: new SubjectWithContext( id, label, label ?? schemaName, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ) ),
 			schema: null,
 		};
 	}
@@ -150,11 +150,11 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 		return Promise.resolve( this.subjects.delete( id.text ) );
 	}
 
-	public validateSubject( _label: string, _schemaName: SchemaName, _statements: StatementList ): Promise<SubjectViolation[]> {
+	public validateSubject( _label: string | null, _schemaName: SchemaName, _statements: StatementList ): Promise<SubjectViolation[]> {
 		return Promise.resolve( [] );
 	}
 
-	public validateSubjectUpdate( _id: SubjectId, _label: string, _statements: StatementList ): Promise<SubjectViolation[]> {
+	public validateSubjectUpdate( _id: SubjectId, _label: string | null, _statements: StatementList ): Promise<SubjectViolation[]> {
 		return Promise.resolve( [] );
 	}
 

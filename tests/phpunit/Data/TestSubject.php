@@ -17,15 +17,18 @@ class TestSubject {
 	public const string ZERO_GUID = 's11111111111111'; // TODO: rename
 	public const string DEFAULT_SCHEMA_ID = 'TestSubjectSchemaId';
 
+	/**
+	 * Pass null as the label to build a Subject nobody named.
+	 */
 	public static function build(
 		string|SubjectId $id = self::ZERO_GUID,
-		SubjectLabel|string $label = 'Test subject',
+		SubjectLabel|string|null $label = 'Test subject',
 		?SchemaName $schemaName = null,
 		?StatementList $statements = null,
 	): Subject {
 		return new Subject(
 			id: $id instanceof SubjectId ? $id : new SubjectId( $id ),
-			label: $label instanceof SubjectLabel ? $label : new SubjectLabel( $label ),
+			label: is_string( $label ) ? new SubjectLabel( $label ) : $label,
 			schemaName: $schemaName ?? new SchemaName( self::DEFAULT_SCHEMA_ID ),
 			statements: $statements ?? new StatementList( [] ),
 		);

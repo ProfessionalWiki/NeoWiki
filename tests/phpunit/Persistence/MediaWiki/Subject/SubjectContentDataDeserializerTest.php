@@ -82,6 +82,35 @@ JSON
 		);
 	}
 
+	/**
+	 * @dataProvider labelJsonThatMeansNoLabelProvider
+	 */
+	public function testLabelJsonThatMeansNoLabelDeserializesToNull( string $labelJson ): void {
+		$data = $this->newDeserializer()->deserialize(
+			'{"subjects":{"sTestSCDD111115":{' . $labelJson . '"schema":"Company","statements":{}}}}'
+		);
+
+		$this->assertNull( $data->getAllSubjects()->getSubject( new SubjectId( 'sTestSCDD111115' ) )?->getLabel() );
+	}
+
+	public static function labelJsonThatMeansNoLabelProvider(): iterable {
+		yield 'key omitted' => [ '' ];
+		yield 'empty string' => [ '"label":"",' ];
+		yield 'whitespace only' => [ '"label":"  \\t ",' ];
+		yield 'null' => [ '"label":null,' ];
+	}
+
+	public function testStoredLabelIsKeptVerbatim(): void {
+		$data = $this->newDeserializer()->deserialize(
+			'{"subjects":{"sTestSCDD111115":{"label":"  ACME Inc.  ","schema":"Company","statements":{}}}}'
+		);
+
+		$this->assertSame(
+			'  ACME Inc.  ',
+			$data->getAllSubjects()->getSubject( new SubjectId( 'sTestSCDD111115' ) )?->getLabel()?->text
+		);
+	}
+
 	public function testEmptyTopLevelSubjectAttributes(): void {
 		$data = $this->newDeserializer()->deserialize(
 			<<<JSON

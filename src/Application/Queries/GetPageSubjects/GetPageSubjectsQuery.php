@@ -11,9 +11,12 @@ use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 
@@ -49,16 +52,18 @@ readonly class GetPageSubjectsQuery {
 		$subjectItems = [];
 
 		if ( $mainSubject !== null ) {
-			$subjectItems[$mainSubject->id->text] = GetSubjectResponseItem::fromSubject(
+			$subjectItems[$mainSubject->id->text] = $this->buildItem(
 				$mainSubject,
-				$hostingPages[$mainSubject->id->text] ?? null
+				$hostingPages[$mainSubject->id->text] ?? null,
+				isMainSubject: true
 			);
 		}
 
 		foreach ( $pageSubjects->getChildSubjects()->asArray() as $childSubject ) {
-			$subjectItems[$childSubject->id->text] = GetSubjectResponseItem::fromSubject(
+			$subjectItems[$childSubject->id->text] = $this->buildItem(
 				$childSubject,
-				$hostingPages[$childSubject->id->text] ?? null
+				$hostingPages[$childSubject->id->text] ?? null,
+				isMainSubject: false
 			);
 		}
 
@@ -95,6 +100,8 @@ readonly class GetPageSubjectsQuery {
 		$hostingPages = $this->pageIdentifiersLookup->getPageIdsOfSubjects( $referencedIds );
 
 		$referenced = [];
+		/** @var array<int, ?SubjectId> $mainSubjectIds */
+		$mainSubjectIds = [];
 
 		// Iterated by the collected ids, not the returned map: the response keeps the order the
 		// Statements reach the targets, and SubjectMap promises no order of its own.
@@ -115,10 +122,43 @@ readonly class GetPageSubjectsQuery {
 				continue;
 			}
 
-			$referenced[$idText] = GetSubjectResponseItem::fromSubject( $referencedSubject, $pageIdentifiers );
+			// A target lives on a page of its own, so whether it is that page's Main Subject has to
+			// be asked rather than known: one page read per distinct target page, and none for a
+			// target whose stored label makes the question moot.
+			$targetPageId = $pageIdentifiers->getId();
+
+			if ( $referencedSubject->getLabel() === null && !array_key_exists( $targetPageId->id, $mainSubjectIds ) ) {
+				$mainSubjectIds[$targetPageId->id] = $this->subjectRepository
+					->getSubjectsByPageId( $targetPageId )
+					->getMainSubject()
+					?->getId();
+			}
+
+			$referenced[$idText] = $this->buildItem(
+				$referencedSubject,
+				$pageIdentifiers,
+				isMainSubject: ( $mainSubjectIds[$targetPageId->id] ?? null )?->equals( $referencedSubject->getId() ) ?? false
+			);
 		}
 
 		return $referenced;
+	}
+
+	private function buildItem(
+		Subject $subject,
+		?PageIdentifiers $pageIdentifiers,
+		bool $isMainSubject
+	): GetSubjectResponseItem {
+		return GetSubjectResponseItem::fromSubject(
+			$subject,
+			$pageIdentifiers,
+			SubjectDisplayName::forSubject(
+				label: $subject->getLabel(),
+				isMainSubject: $isMainSubject,
+				pageName: $pageIdentifiers?->getTitle() ?? '',
+				schemaName: $subject->getSchemaName()
+			)
+		);
 	}
 
 	/**

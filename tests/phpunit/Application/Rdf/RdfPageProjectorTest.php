@@ -266,6 +266,40 @@ class RdfPageProjectorTest extends TestCase {
 		);
 	}
 
+	public function testMainSubjectWithoutALabelIsLabelledWithThePageName(): void {
+		$page = TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build( title: 'Help:ACME Corp' ),
+			mainSubject: TestSubject::build( id: self::ACME_ID, label: null, schemaName: new SchemaName( 'Company' ) ),
+		);
+
+		$quads = $this->newProjector( new InMemorySchemaLookup( $this->companySchema() ) )->projectPage( $page );
+
+		$this->assertTrue( $quads->contains( $this->quad(
+			$this->ns->subject( new SubjectId( self::ACME_ID ) ),
+			$this->ns->rdfsLabel(),
+			RdfLiteralFactory::typed( 'Help:ACME Corp', 'string' )
+		) ) );
+	}
+
+	public function testChildSubjectWithoutALabelIsLabelledWithItsSchemaName(): void {
+		$page = TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build( title: 'Some page' ),
+			childSubjects: new SubjectMap(
+				TestSubject::build( id: self::ACME_ID, label: null, schemaName: new SchemaName( 'Company' ) )
+			),
+		);
+
+		$quads = $this->newProjector( new InMemorySchemaLookup( $this->companySchema() ) )->projectPage( $page );
+
+		$this->assertTrue( $quads->contains( $this->quad(
+			$this->ns->subject( new SubjectId( self::ACME_ID ) ),
+			$this->ns->rdfsLabel(),
+			RdfLiteralFactory::typed( 'Company', 'string' )
+		) ) );
+	}
+
 	public function testDroppingAnInvalidDatePartLogsAWarning(): void {
 		$subject = TestSubject::build(
 			id: self::ACME_ID,

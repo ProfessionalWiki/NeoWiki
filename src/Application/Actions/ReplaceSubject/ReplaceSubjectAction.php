@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject;
 
-use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
@@ -16,7 +15,10 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundExcept
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
@@ -39,13 +41,12 @@ readonly class ReplaceSubjectAction {
 	}
 
 	/**
+	 * Full replacement: a null label clears the stored one, exactly as an omitted property name
+	 * deletes its Statement.
+	 *
 	 * @param array<string, mixed> $statements
 	 */
-	public function replace( SubjectId $subjectId, string $label, array $statements, ?string $comment ): void {
-		if ( trim( $label ) === '' ) {
-			throw new InvalidArgumentException( 'SubjectLabel cannot be empty' );
-		}
-
+	public function replace( SubjectId $subjectId, ?string $label, array $statements, ?string $comment ): void {
 		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId );
 
 		// Gate on read before write: a page the caller may not read answers exactly like a Subject
@@ -75,7 +76,7 @@ readonly class ReplaceSubjectAction {
 
 		$priorViolations = $this->proposedSubjectValidator->validate( $subject );
 
-		$subject->setLabel( new SubjectLabel( $label ) );
+		$subject->setLabel( SubjectLabel::fromText( $label ) );
 		$subject->setStatements(
 			$this->statementListBuilder->build( $this->resolveStatements( $schema, $statements ) )
 		);
@@ -97,9 +98,25 @@ readonly class ReplaceSubjectAction {
 		// The mutated Subject is the persisted state: the builder and the resolver above already
 		// normalized what the request supplied.
 		$this->presenter->presentUpdated(
-			GetSubjectResponseItem::fromSubject( $subject, $pageIdentifiers ),
+			GetSubjectResponseItem::fromSubject(
+				$subject,
+				$pageIdentifiers,
+				$this->getDisplayName( $subject, $pageIdentifiers )
+			),
 			$schema,
 			$proposedViolations
+		);
+	}
+
+	/**
+	 * Which Subject the page treats as its own topic decides what a Subject without a label is called,
+	 * and only the page knows that. A replace cannot change it, so reading it after the write is safe.
+	 */
+	private function getDisplayName( Subject $subject, PageIdentifiers $pageIdentifiers ): string {
+		return SubjectDisplayName::forSubjectIn(
+			$subject,
+			$this->subjectRepository->getSubjectsByPageId( $pageIdentifiers->getId() ),
+			$pageIdentifiers->getTitle()
 		);
 	}
 

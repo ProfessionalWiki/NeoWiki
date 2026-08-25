@@ -56,10 +56,14 @@ class SubjectContentDataDeserializer {
 	private function deserializeSubject( string $id, array $jsonArray ): Subject {
 		return new Subject(
 			id: new SubjectId( $id ),
-			label: new SubjectLabel( $jsonArray['label'] ),
+			label: $this->deserializeLabel( $jsonArray['label'] ?? null ),
 			schemaName: new SchemaName( $jsonArray['schema'] ),
 			statements: $this->buildStatementList( $jsonArray ),
 		);
+	}
+
+	private function deserializeLabel( mixed $label ): ?SubjectLabel {
+		return is_string( $label ) ? SubjectLabel::fromText( $label ) : null;
 	}
 
 	private function buildStatementList( array $jsonArray ): StatementList {

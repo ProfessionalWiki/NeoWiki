@@ -10,10 +10,11 @@ import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 
 vi.mock( '@/stores/SubjectStore.ts' );
 
-function createSubject( id: string, label: string, pageName: string ): SubjectWithContext {
+function createSubject( id: string, label: string | null, pageName: string, displayName?: string ): SubjectWithContext {
 	return new SubjectWithContext(
 		new SubjectId( id ),
 		label,
+		displayName ?? label ?? '',
 		'' as any,
 		{} as any,
 		new PageIdentifiers( 42, pageName ),
@@ -71,6 +72,17 @@ describe( 'RelationDisplay.vue', () => {
 
 		expect( mockGetSubject ).toHaveBeenCalledWith( new SubjectId( 's1111111111111A' ) );
 		expect( mockGetUrl ).toHaveBeenCalledWith( 'Page_Name_1' );
+	} );
+
+	it( 'renders the display name of a target that has no label, rather than its id', async () => {
+		mockGetSubject.mockReturnValue(
+			createSubject( 's1111111111111A', null, 'Page_Name_1', 'Page Name 1' ),
+		);
+		mockGetUrl.mockReturnValue( '/wiki/Page_Name_1' );
+
+		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111A' ) ) );
+
+		expect( wrapper.find( 'a' ).text() ).toBe( 'Page Name 1' );
 	} );
 
 	it( 'renders a span with error info when subject is not found', async () => {

@@ -8,6 +8,8 @@ use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
@@ -26,6 +28,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 
 /**
@@ -38,7 +41,18 @@ class SubjectDataLookupTest extends TestCase {
 	private const string CHILD_SUBJECT_ID = 's1test5cccccccc';
 
 	private function createTitle(): Title {
-		return $this->createStub( Title::class );
+		return $this->createTitleNamed( 'Test Page' );
+	}
+
+	/**
+	 * A bare Title stub answers null where production always has a page name, which the display-name
+	 * rule takes a string of, so every Title double here is given one.
+	 */
+	private function createTitleNamed( string $pageName ): Title {
+		$title = $this->createStub( Title::class );
+		$title->method( 'getPrefixedText' )->willReturn( $pageName );
+
+		return $title;
 	}
 
 	private function createSubject( Statement ...$statements ): Subject {
@@ -55,14 +69,45 @@ class SubjectDataLookupTest extends TestCase {
 	}
 
 	private function resolverWithPageSubjects( ?PageSubjects $pageSubjects, ?SubjectLookup $subjectLookup = null ): SubjectResolver {
-		return new SubjectResolver(
-			new InMemorySubjectContentRepository( $pageSubjects ),
-			$subjectLookup ?? $this->createStub( SubjectLookup::class )
-		);
+		return $this->newResolver( $pageSubjects, $subjectLookup );
 	}
 
 	private function emptyResolver( ?SubjectLookup $subjectLookup = null ): SubjectResolver {
 		return $this->resolverWithPageSubjects( null, $subjectLookup );
+	}
+
+	private function resolverWithMainSubjectAndRelationTargets( Subject $subject, Subject ...$targets ): SubjectResolver {
+		return $this->newResolver( new PageSubjects( $subject, new SubjectMap() ), null, ...$targets );
+	}
+
+	/**
+	 * Relation targets are resolved through the page hosting them, so a target that exists is one
+	 * placed on a page of its own, as that page's Main Subject.
+	 */
+	private function newResolver(
+		?PageSubjects $pageSubjects,
+		?SubjectLookup $subjectLookup,
+		Subject ...$relationTargets
+	): SubjectResolver {
+		$contentRepository = new InMemorySubjectContentRepository( $pageSubjects );
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
+		$pageId = 1000;
+
+		foreach ( $relationTargets as $target ) {
+			$pageId++;
+
+			$contentRepository->setContentForPageId( $pageId, new PageSubjects( $target, new SubjectMap() ) );
+			$pageIdentifiersLookup->addIdentifiers(
+				$target->getId(),
+				new PageIdentifiers( new PageId( $pageId ), 'Page ' . $pageId, 0 )
+			);
+		}
+
+		return new SubjectResolver(
+			$contentRepository,
+			$subjectLookup ?? $this->createStub( SubjectLookup::class ),
+			$pageIdentifiersLookup
+		);
 	}
 
 	private function createSubjectLookupReturning( Subject ...$subjects ): SubjectLookup {
@@ -176,8 +221,9 @@ class SubjectDataLookupTest extends TestCase {
 			)
 		);
 
-		$subjectLookup = $this->createSubjectLookupReturning( $targetSubject );
-		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject, $subjectLookup ) );
+		$lookup = new SubjectDataLookup(
+			$this->resolverWithMainSubjectAndRelationTargets( $subject, $targetSubject )
+		);
 
 		$this->assertSame(
 			[ 'Sarah Naumann' ],
@@ -212,8 +258,9 @@ class SubjectDataLookupTest extends TestCase {
 			)
 		);
 
-		$subjectLookup = $this->createSubjectLookupReturning( $target1 );
-		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject, $subjectLookup ) );
+		$lookup = new SubjectDataLookup(
+			$this->resolverWithMainSubjectAndRelationTargets( $subject, $target1 )
+		);
 
 		$this->assertSame(
 			[ 'Alice' ],
@@ -392,8 +439,9 @@ class SubjectDataLookupTest extends TestCase {
 			)
 		);
 
-		$subjectLookup = $this->createSubjectLookupReturning( $target1, $target2 );
-		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject, $subjectLookup ) );
+		$lookup = new SubjectDataLookup(
+			$this->resolverWithMainSubjectAndRelationTargets( $subject, $target1, $target2 )
+		);
 
 		$this->assertSame(
 			[ [ 1 => 'Alice', 2 => 'Bob' ] ],
@@ -440,6 +488,35 @@ class SubjectDataLookupTest extends TestCase {
 		$this->assertSame( [ 1 => 'Berlin' ], $result[0]['statements']['City']['values'] );
 		$this->assertSame( 'number', $result[0]['statements']['Population']['propertyType'] );
 		$this->assertSame( [ 1 => 3645000 ], $result[0]['statements']['Population']['values'] );
+	}
+
+	public function testSubjectTableRepeatsTheStoredLabelAsTheDisplayedOne(): void {
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $this->createSubject() ) );
+
+		$result = $lookup->getMainSubjectData( $this->createTitle() );
+
+		$this->assertSame( 'Test Subject', $result[0]['label'] );
+		$this->assertSame( 'Test Subject', $result[0]['storedLabel'] );
+	}
+
+	/**
+	 * `label` is the name to show and never nil, so a template concatenating it cannot break on a
+	 * Subject nobody named. `storedLabel` is the one that reports the absence.
+	 */
+	public function testMainSubjectWithoutALabelIsNamedAfterItsPage(): void {
+		$subject = new Subject(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: null,
+			schemaName: new SchemaName( 'Museum' ),
+			statements: new StatementList(),
+		);
+
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
+
+		$result = $lookup->getMainSubjectData( $this->createTitleNamed( 'Rijksmuseum' ) );
+
+		$this->assertSame( 'Rijksmuseum', $result[0]['label'] );
+		$this->assertNull( $result[0]['storedLabel'] );
 	}
 
 	public function testGetMainSubjectReturnsNullWhenNoSubject(): void {
@@ -518,8 +595,9 @@ class SubjectDataLookupTest extends TestCase {
 			] ),
 		);
 
-		$subjectLookup = $this->createSubjectLookupReturning( $subject, $targetSubject );
-		$lookup = new SubjectDataLookup( $this->emptyResolver( $subjectLookup ) );
+		$lookup = new SubjectDataLookup(
+			$this->newResolver( null, $this->createSubjectLookupReturning( $subject ), $targetSubject )
+		);
 
 		$result = $lookup->getSubjectData( self::SUBJECT_ID );
 
@@ -561,6 +639,24 @@ class SubjectDataLookupTest extends TestCase {
 		$this->assertSame( 'Child One', $result[0][1]['label'] );
 		$this->assertSame( self::CHILD_SUBJECT_ID, $result[0][2]['id'] );
 		$this->assertSame( 'Child Two', $result[0][2]['label'] );
+	}
+
+	public function testChildSubjectWithoutALabelIsNamedAfterItsSchema(): void {
+		$child = new Subject(
+			id: new SubjectId( self::CHILD_SUBJECT_ID ),
+			label: null,
+			schemaName: new SchemaName( 'Attendance' ),
+			statements: new StatementList(),
+		);
+
+		$pageSubjects = new PageSubjects( $this->createSubject(), new SubjectMap( $child ) );
+
+		$lookup = new SubjectDataLookup( $this->resolverWithPageSubjects( $pageSubjects ) );
+
+		$result = $lookup->getChildSubjectsData( $this->createTitleNamed( 'Rijksmuseum' ) );
+
+		$this->assertSame( 'Attendance', $result[0][1]['label'] );
+		$this->assertNull( $result[0][1]['storedLabel'] );
 	}
 
 	public function testGetChildSubjectsReturnsEmptyArrayWhenNoChildren(): void {

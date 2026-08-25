@@ -90,7 +90,7 @@ Returns the value of a single property from a Subject, formatted as a string.
 | `text`, `url`, `select`, `date`, `dateTime` | The string value. Multiple values joined with `separator`. |
 | `number` | The number, e.g. `42` or `19.99`. |
 | `boolean` | `true` or `false`. |
-| `relation` | The target Subject's label. Multiple targets joined with `separator`. Falls back to the target Subject ID if the label cannot be looked up. |
+| `relation` | The target Subject's display name. Multiple targets joined with `separator`. Falls back to the target Subject ID when the target cannot be looked up. |
 
 Boolean and number values are always rendered, even for `false` and `0` — these are not treated
 as "empty".

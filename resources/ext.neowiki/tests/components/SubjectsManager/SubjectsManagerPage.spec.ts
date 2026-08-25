@@ -22,7 +22,11 @@ const ID_B = 's1bbbbbbbbbbbb1';
 const PAGE_ID = 42;
 
 function subject( id: string ): Subject {
-	return new Subject( new SubjectId( id ), 'Label ' + id, 'Person', new StatementList( [] ) );
+	return new Subject( new SubjectId( id ), 'Label ' + id, 'Label ' + id, 'Person', new StatementList( [] ) );
+}
+
+function labellessSubject( id: string, displayName: string ): Subject {
+	return new Subject( new SubjectId( id ), null, displayName, 'Person', new StatementList( [] ) );
 }
 
 const loadPageSubjectsMock = vi.fn().mockResolvedValue( undefined );
@@ -240,6 +244,35 @@ describe( 'SubjectsManagerPage deep-link / hash wiring', () => {
 
 } );
 
+describe( 'SubjectsManagerPage rows without a stored label', () => {
+
+	beforeEach( () => {
+		storeSubjects = [
+			labellessSubject( ID_A, 'Host Page' ),
+			labellessSubject( ID_B, 'Person' ),
+		];
+		mainSubjectId = new SubjectId( ID_A );
+		loadPageSubjectsMock.mockClear();
+		window.location.hash = '';
+		Element.prototype.scrollIntoView = vi.fn();
+		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+		window.location.hash = '';
+		vi.restoreAllMocks();
+	} );
+
+	it( 'names the main row after the page and the child row after its schema', async () => {
+		const wrapper = await mountPage();
+
+		const names = wrapper.findAll( '.ext-neowiki-subjects-manager__row-label' ).map( ( el ) => el.text() );
+		expect( names ).toEqual( [ 'Host Page', 'Person' ] );
+	} );
+
+} );
+
 describe( 'SubjectsManagerPage row copy-link action', () => {
 	let writeText: ReturnType<typeof vi.fn>;
 
@@ -363,6 +396,7 @@ describe( 'SubjectsManagerPage edit flow', () => {
 		// handed the repositories' data rather than a registry read.
 		const freshSubject = new Subject(
 			new SubjectId( ID_A ),
+			'Fetched label',
 			'Fetched label',
 			'Person',
 			new StatementList( [] ),

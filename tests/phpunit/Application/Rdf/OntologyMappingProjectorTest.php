@@ -35,6 +35,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -900,6 +901,47 @@ class OntologyMappingProjectorTest extends TestCase {
 			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
 				rdfs:label "Jane" ;
 				rdaGr2:nameOfThePerson "Jane" .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testLabelPredicateIsSkippedForASubjectWithNoStoredLabel(): void {
+		$quads = $this->newCrmProjector( 'Person', new SchemaMapping(
+			subject: new SubjectMapping( class: 'crm:E21_Person', labelPredicate: 'rdaGr2:nameOfThePerson' ),
+		) )->projectPage( TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build( title: 'Jane Doe' ),
+			mainSubject: TestSubject::build(
+				id: self::PERSON_ID,
+				label: null,
+				schemaName: new SchemaName( 'Person' ),
+			)
+		) );
+
+		// rdfs:label falls back so consumers keying on it still find something to show. The target
+		// ontology's own name term does not: it states what the thing is called, and nobody said.
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
+			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
+				rdfs:label "Jane Doe" .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testChildSubjectWithNoStoredLabelIsLabelledWithItsSchemaName(): void {
+		$quads = $this->newCrmProjector( 'Person', new SchemaMapping(
+			subject: new SubjectMapping( class: 'crm:E21_Person' ),
+		) )->projectPage( TestPage::build(
+			id: 42,
+			childSubjects: new SubjectMap( TestSubject::build(
+				id: self::PERSON_ID,
+				label: null,
+				schemaName: new SchemaName( 'Person' ),
+			) )
+		) );
+
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
+			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
+				rdfs:label "Person" .
 			TRIG ), $quads );
 		$this->logger->assertNoLoggingCallsWhereMade();
 	}

@@ -78,6 +78,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectIdMinter;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
 use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageExporter;
@@ -1005,6 +1006,14 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function newSubjectResolver(): SubjectResolver {
+		return new SubjectResolver(
+			subjectContentRepository: $this->newSubjectContentRepository(),
+			subjectLookup: $this->getSubjectRepository(),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+		);
+	}
+
 	public function newPageRebuilder(): PageRebuilder {
 		return $this->newPageRebuilderWith( $this->newRebuildStoreContentHandler() );
 	}
@@ -1413,6 +1422,7 @@ class NeoWikiExtension {
 			presenter: $presenter,
 			subjectLookup: $this->getSubjectRepository(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			pageSubjectsLookup: $this->newPageSubjectsLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 		);
 	}
@@ -1427,6 +1437,7 @@ class NeoWikiExtension {
 				primaryRevision: $revision,
 			),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			pageSubjectsLookup: $this->newPageSubjectsLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 		);
 	}

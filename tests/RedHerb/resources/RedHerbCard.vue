@@ -28,7 +28,7 @@
 			role="heading"
 			aria-level="2"
 		>
-			{{ subject.getLabel() }}
+			{{ subject.getDisplayName() }}
 		</div>
 		<dl
 			v-if="layoutSections.wide.length > 0"

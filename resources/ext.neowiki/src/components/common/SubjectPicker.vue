@@ -68,7 +68,7 @@ async function resolveLabel( id: string | null ): Promise<string> {
 
 	try {
 		const subject = await subjectStore.getOrFetchSubject( new SubjectId( id ) );
-		return subject?.getLabel() ?? id;
+		return subject?.getDisplayName() ?? id;
 	} catch {
 		return id;
 	}

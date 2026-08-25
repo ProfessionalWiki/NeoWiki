@@ -18,7 +18,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
@@ -61,7 +60,6 @@ class SubjectValidatorTest extends TestCase {
 		$schema = $this->newSchema( [ 'Age' => $this->newNumberProperty() ] );
 
 		$this->assertSame( [], $this->validator->validate(
-			new SubjectLabel( 'John Doe' ),
 			new StatementList( [
 				new Statement( new PropertyName( 'Age' ), 'number', new NumberValue( 42 ) ),
 			] ),
@@ -69,38 +67,10 @@ class SubjectValidatorTest extends TestCase {
 		) );
 	}
 
-	public function testEmptyLabelReturnsLabelRequired(): void {
-		$schema = $this->newSchema( [] );
-
-		$violations = $this->validator->validate(
-			new SubjectLabel( '' ),
-			new StatementList( [] ),
-			$schema,
-		);
-
-		$this->assertCount( 1, $violations );
-		$this->assertSame( 'label-required', $violations[0]->code );
-		$this->assertNull( $violations[0]->propertyName );
-		$this->assertSame( Severity::Error, $violations[0]->severity );
-	}
-
-	public function testWhitespaceOnlyLabelReturnsLabelRequired(): void {
-		$schema = $this->newSchema( [] );
-
-		$violations = $this->validator->validate(
-			new SubjectLabel( '   ' ),
-			new StatementList( [] ),
-			$schema,
-		);
-
-		$this->assertSame( 'label-required', $violations[0]->code );
-	}
-
 	public function testStatementWithUnknownPropertyIsSkipped(): void {
 		$schema = $this->newSchema( [ 'Known' => $this->newNumberProperty() ] );
 
 		$this->assertSame( [], $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				new Statement( new PropertyName( 'Unknown' ), 'number', new NumberValue( 1 ) ),
 			] ),
@@ -114,7 +84,6 @@ class SubjectValidatorTest extends TestCase {
 		] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				new Statement( new PropertyName( 'Age' ), 'number', new NumberValue( 999 ) ),
 			] ),
@@ -133,7 +102,6 @@ class SubjectValidatorTest extends TestCase {
 		] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				new Statement( new PropertyName( 'A' ), 'number', new NumberValue( 999 ) ),
 				new Statement( new PropertyName( 'B' ), 'number', new NumberValue( 1 ) ),
@@ -147,30 +115,12 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertContains( 'min-value', $codes );
 	}
 
-	public function testLabelViolationComesBeforeStatementViolations(): void {
-		$schema = $this->newSchema( [
-			'Age' => $this->newNumberProperty( maximum: 100 ),
-		] );
-
-		$violations = $this->validator->validate(
-			new SubjectLabel( '' ),
-			new StatementList( [
-				new Statement( new PropertyName( 'Age' ), 'number', new NumberValue( 999 ) ),
-			] ),
-			$schema,
-		);
-
-		$this->assertSame( 'label-required', $violations[0]->code );
-		$this->assertSame( 'max-value', $violations[1]->code );
-	}
-
 	public function testMissingRequiredPropertyReturnsRequired(): void {
 		$schema = $this->newSchema( [
 			'Age' => $this->newNumberProperty( required: true ),
 		] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [] ),
 			$schema,
 		);
@@ -186,7 +136,6 @@ class SubjectValidatorTest extends TestCase {
 		] );
 
 		$this->assertSame( [], $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [] ),
 			$schema,
 		) );
@@ -198,7 +147,6 @@ class SubjectValidatorTest extends TestCase {
 		] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				new Statement( new PropertyName( 'Age' ), 'number', new NumberValue( 42 ) ),
 			] ),
@@ -217,7 +165,6 @@ class SubjectValidatorTest extends TestCase {
 		] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [] ),
 			$schema,
 		);
@@ -240,7 +187,6 @@ class SubjectValidatorTest extends TestCase {
 		] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				new Statement( new PropertyName( 'Age' ), 'text', new NumberValue( 42 ) ),
 			] ),
@@ -263,7 +209,6 @@ class SubjectValidatorTest extends TestCase {
 		] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				new Statement( new PropertyName( 'Age' ), 'text', new NumberValue( 999 ) ),
 			] ),
@@ -283,7 +228,6 @@ class SubjectValidatorTest extends TestCase {
 		] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				new Statement( new PropertyName( 'Age' ), 'text', new NumberValue( 42 ) ),
 			] ),
@@ -305,7 +249,6 @@ class SubjectValidatorTest extends TestCase {
 		] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				new Statement( new PropertyName( 'Age' ), 'unknown-type', new NumberValue( 42 ) ),
 			] ),
@@ -325,7 +268,6 @@ class SubjectValidatorTest extends TestCase {
 		] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				new Statement( new PropertyName( 'Age' ), 'number', new NumberValue( 999 ) ),
 			] ),
@@ -343,7 +285,6 @@ class SubjectValidatorTest extends TestCase {
 		] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				new Statement( new PropertyName( 'Present' ), 'number', new NumberValue( 999 ) ),
 			] ),
@@ -360,7 +301,6 @@ class SubjectValidatorTest extends TestCase {
 		$schema = $this->newSchema( [ 'Swatch' => $this->newUnregisteredTypeProperty() ] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				new Statement(
 					new PropertyName( 'Swatch' ),
@@ -386,7 +326,6 @@ class SubjectValidatorTest extends TestCase {
 		$schema = $this->newSchema( [ 'Swatch' => $this->newUnregisteredTypeProperty( required: true ) ] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [] ),
 			$schema,
 		);
@@ -404,7 +343,6 @@ class SubjectValidatorTest extends TestCase {
 		] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [] ),
 			$schema,
 		);
@@ -419,7 +357,6 @@ class SubjectValidatorTest extends TestCase {
 		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty() ] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [ $this->newRelationStatement( self::MISMATCHING_TARGET_ID ) ] ),
 			$schema,
 		);
@@ -435,7 +372,6 @@ class SubjectValidatorTest extends TestCase {
 		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty() ] );
 
 		$this->assertSame( [], $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [ $this->newRelationStatement( self::MATCHING_TARGET_ID ) ] ),
 			$schema,
 		) );
@@ -445,7 +381,6 @@ class SubjectValidatorTest extends TestCase {
 		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty() ] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [ $this->newRelationStatement( self::NONEXISTENT_TARGET_ID ) ] ),
 			$schema,
 		);
@@ -461,7 +396,6 @@ class SubjectValidatorTest extends TestCase {
 		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty() ] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [ $this->newRelationStatement( self::NONEXISTENT_TARGET_ID ) ] ),
 			$schema,
 		);
@@ -474,7 +408,6 @@ class SubjectValidatorTest extends TestCase {
 		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty( multiple: false ) ] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [ $this->newRelationStatement( self::MATCHING_TARGET_ID, self::MATCHING_TARGET_ID ) ] ),
 			$schema,
 		);
@@ -488,7 +421,6 @@ class SubjectValidatorTest extends TestCase {
 		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty( multiple: true ) ] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				$this->newRelationStatement( self::MISMATCHING_TARGET_ID, self::MISMATCHING_TARGET_ID ),
 			] ),
@@ -509,7 +441,6 @@ class SubjectValidatorTest extends TestCase {
 		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty( multiple: true ) ] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				$this->newRelationStatement( self::MATCHING_TARGET_ID, self::MISMATCHING_TARGET_ID ),
 			] ),
@@ -530,7 +461,6 @@ class SubjectValidatorTest extends TestCase {
 		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty( multiple: true ) ] );
 
 		$violations = $this->validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				$this->newRelationStatement( self::MATCHING_TARGET_ID, self::NONEXISTENT_TARGET_ID ),
 			] ),
@@ -554,7 +484,6 @@ class SubjectValidatorTest extends TestCase {
 		);
 
 		$violations = $validator->validate(
-			new SubjectLabel( 'X' ),
 			new StatementList( [
 				$this->newRelationStatement( self::MATCHING_TARGET_ID, self::MISMATCHING_TARGET_ID ),
 				new Statement(

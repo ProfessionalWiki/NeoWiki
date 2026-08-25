@@ -40,11 +40,11 @@ class ViolationSerializerTest extends TestCase {
 
 	public function testSerializesSubjectLevelViolationWithNullPropertyName(): void {
 		$serialized = ViolationSerializer::serialize(
-			new Violation( propertyName: null, code: 'label-required' )
+			new Violation( propertyName: null, code: 'schema-not-found' )
 		);
 
 		$this->assertNull( $serialized['propertyName'] );
-		$this->assertSame( 'label-required', $serialized['code'] );
+		$this->assertSame( 'schema-not-found', $serialized['code'] );
 		$this->assertSame( [], $serialized['args'] );
 	}
 
@@ -58,12 +58,12 @@ class ViolationSerializerTest extends TestCase {
 
 	public function testSerializeManyMapsList(): void {
 		$serialized = ViolationSerializer::serializeMany( [
-			new Violation( propertyName: null, code: 'label-required' ),
+			new Violation( propertyName: null, code: 'schema-not-found' ),
 			new Violation( propertyName: new PropertyName( 'Age' ), code: 'max-value', args: [ 100 ] ),
 		] );
 
 		$this->assertCount( 2, $serialized );
-		$this->assertSame( 'label-required', $serialized[0]['code'] );
+		$this->assertSame( 'schema-not-found', $serialized[0]['code'] );
 		$this->assertSame( 'max-value', $serialized[1]['code'] );
 	}
 

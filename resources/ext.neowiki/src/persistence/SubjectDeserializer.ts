@@ -13,13 +13,14 @@ export class SubjectDeserializer {
 
 	public deserialize( json: any ): SubjectWithContext {
 		const id = new SubjectId( json.id );
-		const label = json.label;
+		const label = json.label ?? null;
+		const displayName = json.displayName;
 		const schema = json.schema;
 
 		const pageIdentifiers = new PageIdentifiers( json.pageId, json.pageTitle );
 		const statementList = this.deserializeStatements( json.statements );
 
-		return new SubjectWithContext( id, label, schema, statementList, pageIdentifiers );
+		return new SubjectWithContext( id, label, displayName, schema, statementList, pageIdentifiers );
 	}
 
 	public deserializeStatements( json: any ): StatementList {

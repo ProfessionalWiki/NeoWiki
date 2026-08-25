@@ -7,9 +7,12 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
@@ -28,6 +31,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiValueParserFunction;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 
 /**
@@ -71,10 +75,42 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		return $lookup;
 	}
 
-	private function createPF( SubjectContentRepository $repo, ?SubjectLookup $lookup = null ): NeoWikiValueParserFunction {
+	private function createPF(
+		SubjectContentRepository $repo,
+		?SubjectLookup $lookup = null,
+		?PageIdentifiersLookup $pageIdentifiersLookup = null
+	): NeoWikiValueParserFunction {
 		return new NeoWikiValueParserFunction(
-			new SubjectResolver( $repo, $lookup ?? $this->createDummyLookup() )
+			new SubjectResolver(
+				$repo,
+				$lookup ?? $this->createDummyLookup(),
+				$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup()
+			)
 		);
+	}
+
+	/**
+	 * Relation targets are resolved through the page hosting them, so a target that exists is one
+	 * placed on a page of its own, as its Main Subject.
+	 */
+	private function placeOnOwnPages(
+		InMemorySubjectContentRepository $repo,
+		Subject ...$targets
+	): InMemoryPageIdentifiersLookup {
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
+		$pageId = 1000;
+
+		foreach ( $targets as $target ) {
+			$pageId++;
+
+			$repo->setContentForPageId( $pageId, new PageSubjects( $target, new SubjectMap() ) );
+			$pageIdentifiersLookup->addIdentifiers(
+				$target->getId(),
+				new PageIdentifiers( new PageId( $pageId ), 'Page ' . $pageId, 0 )
+			);
+		}
+
+		return $pageIdentifiersLookup;
 	}
 
 	private function assertNoParseHtml( string $expectedHtml, string|array $result ): void {
@@ -224,10 +260,10 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			)
 		);
 
-		$result = $this->createPF(
-			$this->repositoryWithSubject( $subject ),
-			$this->createLookupReturning( $targetSubject )
-		)->handle( $this->createMockParser(), 'Process owner' );
+		$repo = $this->repositoryWithSubject( $subject );
+
+		$result = $this->createPF( $repo, null, $this->placeOnOwnPages( $repo, $targetSubject ) )
+			->handle( $this->createMockParser(), 'Process owner' );
 
 		$this->assertNoParseHtml( 'Sarah Naumann', $result );
 	}
@@ -267,14 +303,6 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			statements: new StatementList(),
 		);
 
-		$lookup = $this->createMock( SubjectLookup::class );
-		$lookup->method( 'getSubject' )
-			->willReturnCallback( fn( SubjectId $id ) => match ( $id->text ) {
-				's1test5bbbbbbbb' => $target1,
-				's1test5cccccccc' => $target2,
-				default => null,
-			} );
-
 		$subject = $this->createSubject(
 			new Statement(
 				new PropertyName( 'Members' ),
@@ -294,7 +322,9 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			)
 		);
 
-		$result = $this->createPF( $this->repositoryWithSubject( $subject ), $lookup )
+		$repo = $this->repositoryWithSubject( $subject );
+
+		$result = $this->createPF( $repo, null, $this->placeOnOwnPages( $repo, $target1, $target2 ) )
 			->handle( $this->createMockParser(), 'Members' );
 
 		$this->assertNoParseHtml( 'Alice, Bob', $result );

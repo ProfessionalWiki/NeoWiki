@@ -103,7 +103,7 @@
 						/>
 						<span class="ext-neowiki-subjects-manager__row-title">
 							<span class="ext-neowiki-subjects-manager__row-label">
-								{{ mainSubject.getLabel() }}
+								{{ mainSubject.getDisplayName() }}
 							</span>
 							<span class="ext-neowiki-subjects-manager__row-subtitle">
 								<a
@@ -277,7 +277,7 @@
 							/>
 							<span class="ext-neowiki-subjects-manager__row-title">
 								<span class="ext-neowiki-subjects-manager__row-label">
-									{{ subject.getLabel() }}
+									{{ subject.getDisplayName() }}
 								</span>
 								<span class="ext-neowiki-subjects-manager__row-subtitle">
 									<a
@@ -442,7 +442,7 @@
 			@update:open="deleteConfirmOpen = $event"
 		>
 			<I18nSlot message-key="neowiki-managesubjects-delete-confirm-message">
-				<strong>{{ deletingLabel }}</strong>
+				<strong>{{ deletingSubjectName }}</strong>
 			</I18nSlot>
 			<template #footer>
 				<SummaryAction
@@ -586,7 +586,7 @@ const hasMainSubject = computed( () => mainSubject.value !== null );
 const hasChildSubjects = computed( () => otherSubjects.value.length > 0 );
 const isCompletelyEmpty = computed( () => !hasMainSubject.value && !hasChildSubjects.value );
 
-const deletingLabel = computed( () => deletingSubject.value?.getLabel() ?? '' );
+const deletingSubjectName = computed( () => deletingSubject.value?.getDisplayName() ?? '' );
 
 function schemaUrl( name: string ): string {
 	return mw.util.getUrl( `Schema:${ name }` );
@@ -763,7 +763,7 @@ async function dragPromote( newMainId: SubjectId, oldChildIndex: number | undefi
 			childIds.length;
 		childIds.splice( insertAt, 0, previousMainId );
 	}
-	await applyOrdering( newMainId, childIds, mw.msg( 'neowiki-managesubjects-main-subject-set', subjectStore.getSubject( newMainId ).getLabel() ), newMainId.text );
+	await applyOrdering( newMainId, childIds, mw.msg( 'neowiki-managesubjects-main-subject-set', subjectStore.getSubject( newMainId ).getDisplayName() ), newMainId.text );
 }
 
 async function dragDemote( newChildIndex: number | undefined ): Promise<void> {
@@ -815,7 +815,7 @@ function currentChildIds(): SubjectId[] {
 async function promoteToMain( subject: Subject ): Promise<void> {
 	try {
 		await subjectStore.setPageMainSubject( pageId, subject.getId() );
-		mw.notify( mw.msg( 'neowiki-managesubjects-main-subject-set', subject.getLabel() ), { type: 'success' } );
+		mw.notify( mw.msg( 'neowiki-managesubjects-main-subject-set', subject.getDisplayName() ), { type: 'success' } );
 		focusSubject( subject.getId().text );
 	} catch ( error ) {
 		console.error( 'Failed to set main subject:', error );
@@ -879,7 +879,7 @@ async function executeDelete( comment: string ): Promise<void> {
 		return;
 	}
 
-	const label = subject.getLabel();
+	const name = subject.getDisplayName();
 	const summary = comment || mw.msg( 'neowiki-managesubjects-delete-summary-default' );
 
 	try {
@@ -887,7 +887,7 @@ async function executeDelete( comment: string ): Promise<void> {
 		mw.notify( mw.msg( 'neowiki-managesubjects-delete-success' ), { type: 'success' } );
 	} catch ( error ) {
 		console.error( 'Failed to delete subject:', error );
-		mw.notify( mw.msg( 'neowiki-managesubjects-delete-error', label ), { type: 'error' } );
+		mw.notify( mw.msg( 'neowiki-managesubjects-delete-error', name ), { type: 'error' } );
 	} finally {
 		deletingSubject.value = null;
 	}

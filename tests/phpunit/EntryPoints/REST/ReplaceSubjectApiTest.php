@@ -427,20 +427,31 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertArrayNotHasKey( 'violations', $responseData );
 	}
 
-	public function testMissingLabelReturns400(): void {
+	/**
+	 * The endpoint replaces the whole Subject, so an omitted label is a request for no label rather
+	 * than a request to keep the stored one.
+	 */
+	public function testOmittedLabelClearsTheStoredLabel(): void {
+		$this->createPages();
+
 		$body = $this->validBody();
 		unset( $body['label'] );
 
-		$this->expectException( HttpException::class );
-		$this->expectExceptionCode( 400 );
-
-		$this->executeHandler(
+		$response = $this->executeHandler(
 			$this->newReplaceSubjectApi(),
 			$this->createRequestData( $body )
 		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertNull( $this->getSubjectFromRepository( 'sTestSA11111111' )->getLabel() );
+		// The editor shows what comes back until something makes it read again, so the name in the
+		// response has to be the one a Main Subject gets from its page, not the Schema name.
+		$this->assertSame( 'ReplaceSubjectApiTest', $responseData['subject']['displayName'] );
 	}
 
-	public function testEmptyLabelReturns400(): void {
+	public function testWhitespaceOnlyLabelIsStoredAsNoLabel(): void {
 		$this->createPages();
 
 		$body = $this->validBody();
@@ -451,7 +462,8 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 			$this->createRequestData( $body )
 		);
 
-		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertNull( $this->getSubjectFromRepository( 'sTestSA11111111' )->getLabel() );
 	}
 
 	public function testMissingStatementsReturns400(): void {

@@ -39,7 +39,10 @@ async function throwOn422IfPossible( response: Response ): Promise<void> {
 
 export type SubjectJson = {
 	id: string;
-	label: string;
+	/** The stored label, null for a Subject that has none. */
+	label: string | null;
+	/** The stored label, or the fallback name the server derived when there is none. */
+	displayName: string;
 	statements: Record<string, unknown>;
 	schema: string;
 	pageId: number;
@@ -209,7 +212,7 @@ export class RestSubjectRepository implements SubjectRepository {
 
 	public async createMainSubject(
 		pageId: number,
-		label: string,
+		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
 		comment?: string,
@@ -242,7 +245,7 @@ export class RestSubjectRepository implements SubjectRepository {
 
 	public async createChildSubject(
 		pageId: number,
-		label: string,
+		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
 		comment?: string,
@@ -273,7 +276,10 @@ export class RestSubjectRepository implements SubjectRepository {
 		return this.deserializeWriteResult( await response.json() as SubjectWriteResponseJson );
 	}
 
-	public async updateSubject( id: SubjectId, label: string, statements: StatementList, comment?: string ): Promise<SubjectWriteResult> {
+	/**
+	 * A full replacement: a null label clears whatever label the Subject had.
+	 */
+	public async updateSubject( id: SubjectId, label: string | null, statements: StatementList, comment?: string ): Promise<SubjectWriteResult> {
 		const response = await this.httpClient.put(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`,
 			{
@@ -316,7 +322,7 @@ export class RestSubjectRepository implements SubjectRepository {
 	}
 
 	public async validateSubject(
-		label: string,
+		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
 	): Promise<SubjectViolation[]> {
@@ -328,7 +334,7 @@ export class RestSubjectRepository implements SubjectRepository {
 
 	public async validateSubjectUpdate(
 		id: SubjectId,
-		label: string,
+		label: string | null,
 		statements: StatementList,
 	): Promise<SubjectViolation[]> {
 		return this.runValidation(

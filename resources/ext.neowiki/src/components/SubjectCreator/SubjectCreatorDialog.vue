@@ -82,10 +82,10 @@
 		</template>
 
 		<template v-if="selectedSchemaName">
-			<CdxField class="ext-neowiki-subject-creator-label-field">
+			<CdxField class="ext-neowiki-subject-creator-label-field" :optional="true">
 				<CdxTextInput
 					v-model="subjectLabel"
-					:placeholder="$i18n( 'neowiki-subject-creator-label-placeholder' ).text()"
+					:placeholder="placeholderLabel"
 					@input="handleEditorChange"
 					@blur="handleEditorBlur"
 				/>
@@ -160,7 +160,8 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
-import { defaultSubjectLabel } from '@/domain/defaultSubjectLabel.ts';
+import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
+import { placeholderSubjectLabel } from '@/domain/placeholderSubjectLabel.ts';
 import { withoutMissingValueViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
@@ -272,7 +273,7 @@ const { violations: serverViolations, revalidate, flush, reset } = useSubjectVal
 		const statements = [ ...subjectEditorRef.value.getSubjectData() ].filter( ( s ) => s.hasValue() );
 		try {
 			const violations = await subjectStore.validateSubject(
-				subjectLabel.value.trim(),
+				enteredLabel(),
 				selectedSchemaName.value,
 				new StatementList( statements )
 			);
@@ -375,7 +376,6 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 	}
 
 	selectedSchemaName.value = schemaName;
-	subjectLabel.value = defaultSubjectLabel( props.pageHasMainSubject, pageName(), schemaName );
 	markChanged();
 
 	const currentSequence = ++requestSequence;
@@ -426,12 +426,25 @@ async function handleCreateSchema(): Promise<void> {
 	draftSchema.value = schema;
 	selectedSchemaName.value = schema.getName();
 	loadedSchema.value = schema;
-	subjectLabel.value = defaultSubjectLabel( props.pageHasMainSubject, pageName(), schema.getName() );
 	markChanged();
 }
 
+// The prefixed title, because that is what the server falls back to. wgTitle drops the namespace,
+// so it would preview "Onboarding" for a Subject that goes on to display "Handbook:Onboarding".
 function pageName(): string {
-	return String( mw.config.get( 'wgTitle' ) ?? '' );
+	return String( mw.config.get( 'wgPageName' ) ?? '' ).replace( /_/g, ' ' );
+}
+
+// Shown greyed in the label field and sent as no label at all when the user leaves it be. It
+// is what the Subject will display, so the field previews the outcome rather than pre-filling it.
+const placeholderLabel = computed( (): string =>
+	selectedSchemaName.value === null ?
+		'' :
+		placeholderSubjectLabel( props.pageHasMainSubject, pageName(), selectedSchemaName.value )
+);
+
+function enteredLabel(): string | null {
+	return enteredSubjectLabel( subjectLabel.value );
 }
 
 const statements = computed( (): StatementList | null =>
@@ -475,16 +488,11 @@ function goBack(): void {
 const handleSave = async ( summary: string ): Promise<void> => {
 	await nextTick();
 
-	const label = subjectLabel.value.trim();
-
-	if ( !label ) {
-		mw.notify( mw.msg( 'neowiki-subject-creator-error' ), { type: 'error' } );
-		return;
-	}
-
 	if ( !subjectEditorRef.value || !selectedSchemaName.value ) {
 		return;
 	}
+
+	const label = enteredLabel();
 
 	await flush();
 
@@ -535,7 +543,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		if ( error instanceof ValidationFailedError ) {
 			serverViolations.value = [ ...error.violations ];
 			mw.notify(
-				mw.msg( 'neowiki-subject-editor-validation-failed', label ),
+				mw.msg( 'neowiki-subject-editor-validation-failed', label ?? placeholderLabel.value ),
 				{ type: 'error' }
 			);
 			return;

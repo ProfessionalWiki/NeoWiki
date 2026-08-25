@@ -54,6 +54,7 @@ describe( 'Infobox', () => {
 	const mockSubject = new Subject(
 		new SubjectId( 's1demo5sssssss1' ),
 		'Test Subject',
+		'Test Subject',
 		'TestSchema',
 		new StatementList( [
 			new Statement(
@@ -148,6 +149,7 @@ describe( 'Infobox', () => {
 		const emptySubject = new Subject(
 			new SubjectId( 's1demo6sssssss1' ),
 			'Empty Subject',
+			'Empty Subject',
 			'TestSchema',
 			new StatementList( [] ),
 		);
@@ -178,6 +180,7 @@ describe( 'Infobox', () => {
 		// handed the repositories' data rather than a registry read.
 		const freshSubject = new Subject(
 			mockSubject.getId(),
+			'Fetched Subject',
 			'Fetched Subject',
 			'TestSchema',
 			new StatementList( [] ),
@@ -224,10 +227,11 @@ describe( 'Infobox', () => {
 		// What the editor hands to onSave: a plain Subject, without the page context the registry
 		// entry carries, and here also without the statement the server ends up storing.
 		const clientCopy = new Subject(
-			mockSubject.getId(), 'Test Subject', 'TestSchema', new StatementList( [] ),
+			mockSubject.getId(), 'Test Subject', 'Test Subject', 'TestSchema', new StatementList( [] ),
 		);
 		const persistedSubject = new SubjectWithContext(
 			mockSubject.getId(),
+			'Test Subject',
 			'Test Subject',
 			'TestSchema',
 			new StatementList( [
@@ -268,7 +272,7 @@ describe( 'Infobox', () => {
 
 		it( 'renders the Subject the save returned, not the one handed to it', async () => {
 			const canonical = new SubjectWithContext(
-				mockSubject.getId(), 'Server label', 'TestSchema', new StatementList( [] ),
+				mockSubject.getId(), 'Server label', 'Server label', 'TestSchema', new StatementList( [] ),
 				new PageIdentifiers( 7, 'Some page' ),
 			);
 			getSubjectMock.mockResolvedValue( clientCopy );

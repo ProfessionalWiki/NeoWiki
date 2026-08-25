@@ -8,7 +8,6 @@ use Exception;
 use InvalidArgumentException;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
-use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\CypherErrorMessage;
@@ -27,13 +26,8 @@ class ScribuntoLuaLibrary extends LibraryBase {
 
 	private function getSubjectDataLookup(): SubjectDataLookup {
 		if ( $this->subjectDataLookup === null ) {
-			$extension = NeoWikiExtension::getInstance();
-
 			$this->subjectDataLookup = new SubjectDataLookup(
-				new SubjectResolver(
-					$extension->newSubjectContentRepository(),
-					$extension->getSubjectRepository(),
-				),
+				NeoWikiExtension::getInstance()->newSubjectResolver(),
 			);
 		}
 

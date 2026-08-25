@@ -24,6 +24,7 @@ class RestCreateSubjectPresenterTest extends TestCase {
 		return new GetSubjectResponseItem(
 			id: 's1demo1aaaaaaa1',
 			label: 'ACME Corp',
+			displayName: 'ACME Corp',
 			schemaName: 'Organization',
 			statements: [ 'Animal' => [ 'propertyType' => 'text', 'value' => [ 'bunny' ] ] ],
 			pageId: $pageId,
@@ -82,6 +83,7 @@ class RestCreateSubjectPresenterTest extends TestCase {
 			[
 				'id' => 's1demo1aaaaaaa1',
 				'label' => 'ACME Corp',
+				'displayName' => 'ACME Corp',
 				'schema' => 'Organization',
 				'pageId' => 42,
 				'pageTitle' => 'ACME Corp',
@@ -101,6 +103,7 @@ class RestCreateSubjectPresenterTest extends TestCase {
 			[
 				'id' => 's1demo1aaaaaaa1',
 				'label' => 'ACME Corp',
+				'displayName' => 'ACME Corp',
 				'schema' => 'Organization',
 				'statements' => [ 'Animal' => [ 'propertyType' => 'text', 'value' => [ 'bunny' ] ] ],
 			],

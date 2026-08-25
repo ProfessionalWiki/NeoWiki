@@ -117,13 +117,13 @@ export const useSubjectStore = defineStore( 'subject', {
 
 			this.subjects.delete( subjectId.text );
 		},
-		async validateSubject( label: string, schemaName: SchemaName, statements: StatementList ): Promise<SubjectViolation[]> {
+		async validateSubject( label: string | null, schemaName: SchemaName, statements: StatementList ): Promise<SubjectViolation[]> {
 			return NeoWikiExtension.getInstance().getSubjectRepository().validateSubject( label, schemaName, statements );
 		},
-		async validateSubjectUpdate( id: SubjectId, label: string, statements: StatementList ): Promise<SubjectViolation[]> {
+		async validateSubjectUpdate( id: SubjectId, label: string | null, statements: StatementList ): Promise<SubjectViolation[]> {
 			return NeoWikiExtension.getInstance().getSubjectRepository().validateSubjectUpdate( id, label, statements );
 		},
-		async createMainSubject( pageId: number, label: string, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<SubjectId> {
+		async createMainSubject( pageId: number, label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<SubjectId> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createMainSubject(
@@ -142,7 +142,7 @@ export const useSubjectStore = defineStore( 'subject', {
 
 			return result.subjectId;
 		},
-		async createChildSubject( pageId: number, label: string, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<SubjectId> {
+		async createChildSubject( pageId: number, label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<SubjectId> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createChildSubject(

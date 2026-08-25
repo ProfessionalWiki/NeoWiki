@@ -5,12 +5,12 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Response;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -347,20 +347,41 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertArrayNotHasKey( 'violations', $responseData );
 	}
 
-	public function testRejectsBodyMissingLabel(): void {
-		$this->expectException( HttpException::class );
-		$this->expectExceptionCode( 400 );
+	public function testBodyWithoutLabelCreatesSubjectWithoutLabel(): void {
+		$this->createSchema( 'Employee' );
 
 		$body = $this->validBody();
 		unset( $body['label'] );
 
-		$this->executeHandler(
+		$response = $this->executeHandler(
 			$this->newCreateSubjectApi(),
 			$this->createRequestData( $body )
 		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertNull( $this->getStoredSubject( $responseData['subjectId'] )->getLabel() );
+		// The creator shows what comes back, so a Main Subject has to be named after its page here too.
+		$this->assertSame( 'CreateSubjectApiTest', $responseData['subject']['displayName'] );
 	}
 
-	public function testEmptyLabelReturns400(): void {
+	public function testChildSubjectWithoutLabelIsNamedAfterItsSchema(): void {
+		$this->createSchema( 'Employee' );
+
+		$body = $this->validBody();
+		unset( $body['label'] );
+
+		$response = $this->executeCreate( $this->getIdOfExistingPage(), $body, isMainSubject: false );
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertNull( $responseData['subject']['label'] );
+		$this->assertSame( 'Employee', $responseData['subject']['displayName'] );
+	}
+
+	public function testWhitespaceOnlyLabelIsStoredAsNoLabel(): void {
 		$this->createSchema( 'Employee' );
 
 		$body = $this->validBody();
@@ -371,7 +392,19 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 			$this->createRequestData( $body )
 		);
 
-		$this->assertSame( 400, $response->getStatusCode() );
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertNull( $this->getStoredSubject( $responseData['subjectId'] )->getLabel() );
+	}
+
+	private function getStoredSubject( string $subjectId ): Subject {
+		$subject = NeoWikiExtension::getInstance()
+			->newSubjectRepository()
+			->getSubject( new SubjectId( $subjectId ) );
+
+		$this->assertNotNull( $subject );
+		return $subject;
 	}
 
 	public function testEnforcementBlockedReturns422(): void {

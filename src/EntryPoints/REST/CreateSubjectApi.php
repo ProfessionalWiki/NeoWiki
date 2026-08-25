@@ -42,7 +42,7 @@ class CreateSubjectApi extends SimpleHandler {
 				new CreateSubjectRequest(
 					pageId: $pageId,
 					isMainSubject: $this->isMainSubject,
-					label: $body['label'],
+					label: $body['label'] ?? null,
 					schemaName: $body['schema'],
 					statements: $body['statements'],
 					comment: $body['comment'] ?? null,
@@ -82,8 +82,10 @@ class CreateSubjectApi extends SimpleHandler {
 			'label' => [
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Display label for the Subject.',
+				ParamValidator::PARAM_REQUIRED => false,
+				self::PARAM_DESCRIPTION => 'Display label for the Subject. Optional: omit it, or pass an empty '
+					. 'string, to create a Subject nobody named. Such a Subject is displayed under its page name '
+					. 'when it is the page\'s main Subject, and under its Schema name otherwise.',
 			],
 			'schema' => [
 				self::PARAM_SOURCE => 'body',
