@@ -191,7 +191,11 @@
 	"neowiki-subject-editor-success": "Updated $1",
 	"neowiki-subject-editor-error": "Failed to update $1.",
 	"neowiki-subject-editor-validation-failed": "Validation failed for \"$1\". Please fix the highlighted fields.",
+	"neowiki-subject-editor-stored-on": "Stored on $1",
 	"neowiki-subject-editor-unsaved": "Unsaved changes",
+	"neowiki-subject-editor-target-load-error": "Could not load the related subject.",
+	"neowiki-subject-editor-partial-save": "Saved $1 of $2 subjects. The rest still have unsaved changes.",
+	"neowiki-subject-editor-save-scope": "Saving updates $1 {{PLURAL:$1|subject|subjects}} on $2 {{PLURAL:$2|page|pages}}.",
 	"neowiki-subject-tree-label": "Structure",
 	"neowiki-subject-tree-not-linked": "Not linked here",
 
