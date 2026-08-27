@@ -141,7 +141,7 @@ const { violations: serverViolations, revalidate, flush } = useSubjectValidation
 		if ( !subjectEditorRef.value ) {
 			return [];
 		}
-		const current = [ ...subjectEditorRef.value.getSubjectData() ].filter( ( s ) => s.hasValue() );
+		const current = subjectEditorRef.value.getSubjectData().withNonEmptyValues();
 		try {
 			// Unlike subject creation, editing an existing subject surfaces
 			// 'required' live: an empty required field here is a real gap, not a
@@ -149,7 +149,7 @@ const { violations: serverViolations, revalidate, flush } = useSubjectValidation
 			return await subjectStore.validateSubjectUpdate(
 				props.subject.getId(),
 				storedLabel.value,
-				new StatementList( current )
+				current
 			);
 		} catch ( error ) {
 			// The dry-run runs alongside the live validators and must never
@@ -222,10 +222,9 @@ function buildUpdatedSubject(): Subject | null {
 	if ( !subjectEditorRef.value ) {
 		return null;
 	}
-	const updated = [ ...subjectEditorRef.value.getSubjectData() ].filter( ( s ) => s.hasValue() );
 	return props.subject
 		.withLabel( storedLabel.value )
-		.withStatements( new StatementList( updated ) );
+		.withStatements( subjectEditorRef.value.getSubjectData().withNonEmptyValues() );
 }
 
 function unparseableInput(): UnparseableInput | null {
