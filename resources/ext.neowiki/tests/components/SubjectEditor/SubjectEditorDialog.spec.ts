@@ -2230,20 +2230,8 @@ describe( 'SubjectEditorDialog', () => {
 					expect( failing ).toHaveBeenCalledTimes( 1 );
 				} );
 
-				it( 'retries a failed target fetch when the dialog is reopened', async () => {
-					const { wrapper, failing } = await mountWithFailingTarget();
-					expect( failing ).toHaveBeenCalledTimes( 1 );
-
-					await wrapper.setProps( { open: false } );
-					await wrapper.setProps( { open: true } );
-					await flushPromises();
-
-					expect( failing ).toHaveBeenCalledTimes( 2 );
-				} );
-
-				// The retry above passes without our key, because Codex's own v-if unmounts the tree on
-				// close whichever way it is bound. What that retry means to prove is asserted here, on
-				// the binding itself.
+				// Asserted on the binding: Codex's own v-if remounts the tree on a close whichever
+				// way it is keyed, so a reopen-and-retry test would pass without the key.
 				it( 'keys the tree on a fresh epoch each time the dialog opens', async () => {
 					const { wrapper } = mountWithTargetRepos(
 						undefined, { teleport: false }, relationRootSchema, relationRootSubject,

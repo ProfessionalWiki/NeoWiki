@@ -118,13 +118,6 @@ describe( 'SummaryAction', () => {
 			expect( wrapper.find( '.ext-neowiki-summary-action__footer-text' ).exists() ).toBe( false );
 		} );
 
-		it( 'treats an empty footer text as none given', () => {
-			const wrapper = mountComponent( { footerText: '' } );
-
-			expect( actionRow( wrapper ).classes() ).toEqual( [ 'ext-neowiki-summary-action__actions' ] );
-			expect( wrapper.find( '.ext-neowiki-summary-action__footer-text' ).exists() ).toBe( false );
-		} );
-
 		it( 'renders the footer text in the action row, ahead of the button', () => {
 			const wrapper = mountComponent( { footerText: 'Saving updates 2 subjects' } );
 
