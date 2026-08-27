@@ -1025,6 +1025,7 @@ describe( 'SubjectTree', () => {
 
 		it( 'renders an unsaved dot for a subject the walk cannot reach', async () => {
 			const wrapper = mountTree( {
+				openIds: [ ROOT_ID, STRAY_ID ],
 				unsavedIds: [ STRAY_ID ],
 				editedSubjects: new Map( [ [ STRAY_ID, straySubject ] ] ),
 			} );
@@ -1049,6 +1050,7 @@ describe( 'SubjectTree', () => {
 
 		it( 'emits select for an unreachable subject\'s node', async () => {
 			const wrapper = mountTree( {
+				openIds: [ ROOT_ID, STRAY_ID ],
 				unsavedIds: [ STRAY_ID ],
 				editedSubjects: new Map( [ [ STRAY_ID, straySubject ] ] ),
 			} );
