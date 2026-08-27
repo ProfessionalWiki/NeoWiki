@@ -1423,6 +1423,23 @@ describe( 'SubjectEditorDialog', () => {
 				expect( secondPaneEditor.props( 'serverViolations' ) ).toEqual( [ violation ] );
 			} );
 
+			// A refusal names the Subject in a toast that vanishes; the pane it refers to has to
+			// be the one left on screen, whatever the refusal was.
+			it( 'brings a background pane on screen when its write is refused for a reason other than validation', async () => {
+				const onSave = vi.fn()
+					.mockResolvedValueOnce( undefined )
+					.mockRejectedValueOnce( new Error( 'Boom' ) );
+				const { wrapper, target } = await mountWithSecondPaneOpen( { onSave } );
+				await makePaneDirty( wrapper, 0 );
+				await makePaneDirty( wrapper, 1 );
+				await selectInTree( wrapper, mockSubject.getId().text );
+				expect( visibleSubjectId( wrapper ) ).toBe( mockSubject.getId().text );
+
+				await triggerSave( wrapper, '' );
+
+				expect( visibleSubjectId( wrapper ) ).toBe( target.getId().text );
+			} );
+
 			it( 'retry after partial failure only re-saves the still-dirty pane', async () => {
 				const onSave = vi.fn()
 					.mockResolvedValueOnce( undefined )

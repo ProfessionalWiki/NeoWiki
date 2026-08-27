@@ -567,9 +567,10 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 			savedNames.push( subjectName );
 		} catch ( error ) {
 			failed = true;
+			// The toast naming the refused Subject vanishes; its pane is what stays.
+			await showSubject( id );
 
 			if ( error instanceof ValidationFailedError ) {
-				await showSubject( id );
 				paneRefs.get( id )?.setServerViolations( error.violations );
 				mw.notify(
 					mw.msg( 'neowiki-subject-editor-validation-failed', subjectName ),
