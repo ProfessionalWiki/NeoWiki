@@ -189,6 +189,7 @@
 
 	"neowiki-subject-editor-summary-default": "Update subject via NeoWiki UI",
 	"neowiki-subject-editor-success": "Updated $1",
+	"neowiki-subject-editor-success-multiple": "Updated $1 {{PLURAL:$1|subject|subjects}}",
 	"neowiki-subject-editor-error": "Failed to update $1.",
 	"neowiki-subject-editor-validation-failed": "Validation failed for \"$1\". Please fix the highlighted fields.",
 	"neowiki-subject-editor-stored-on": "Stored on $1",

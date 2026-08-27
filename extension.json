@@ -597,6 +597,7 @@
 				"neowiki-schema-editor-error",
 				"neowiki-subject-editor-summary-default",
 				"neowiki-subject-editor-success",
+				"neowiki-subject-editor-success-multiple",
 				"neowiki-subject-editor-error",
 				"neowiki-subject-editor-validation-failed",
 				"neowiki-subject-editor-stored-on",

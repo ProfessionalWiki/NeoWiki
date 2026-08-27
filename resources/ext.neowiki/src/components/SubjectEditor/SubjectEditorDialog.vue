@@ -602,7 +602,9 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 	}
 
 	mw.notify(
-		mw.msg( 'neowiki-subject-editor-success', savedNames.length === 1 ? savedNames[ 0 ] : props.subject.getDisplayName() ),
+		savedNames.length === 1 ?
+			mw.msg( 'neowiki-subject-editor-success', savedNames[ 0 ] ) :
+			mw.msg( 'neowiki-subject-editor-success-multiple', savedNames.length ),
 		{ type: 'success' }
 	);
 	close();

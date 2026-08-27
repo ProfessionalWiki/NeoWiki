@@ -70,6 +70,7 @@
 	"neowiki-subject-editor-edit-target": "Aria-label of the per-target edit button shown beside a selected relation target in the subject editor. Clicking it opens that target subject for editing in a pane.",
 	"neowiki-subject-editor-summary-default": "Default edit summary used when updating a subject via the UI.",
 	"neowiki-subject-editor-success": "Success notification shown after updating a subject. $1 is the subject label.",
+	"neowiki-subject-editor-success-multiple": "Success notification shown after one save updated several subjects. $1 is how many.",
 	"neowiki-subject-editor-error": "Error notification title shown when updating a subject fails. $1 is the subject label.",
 	"neowiki-subject-editor-validation-failed": "Toast title shown when the backend rejects a Subject save under enforcement. $1 is the Subject label.",
 	"neowiki-subject-editor-stored-on": "Line in a subject editing pane saying which wiki page the subject is stored on. Parameters: $1 - the page name, which is rendered as a link to that page. The rest of the message is not part of the link.",

@@ -1386,21 +1386,18 @@ describe( 'SubjectEditorDialog', () => {
 				] );
 			} );
 
-			// Two Subjects have no one name between them, so the message falls back to the root's.
-			it( 'names the root subject by its display name when several panes were saved', async () => {
+			// The root is left clean here, so a toast naming it would name a Subject not written.
+			it( 'counts the subjects written when several panes were saved', async () => {
 				const onSave = vi.fn().mockResolvedValue( undefined );
-				const { wrapper } = await mountWithSecondPaneOpen( {
-					onSave,
-					rootSubject: labellessSubject,
-				} );
+				const { wrapper } = await mountWithThreePanesOpen( { onSave } );
 
-				await makePaneDirty( wrapper, 0 );
 				await makePaneDirty( wrapper, 1 );
+				await makePaneDirty( wrapper, 2 );
 				await triggerSave( wrapper, '' );
 
 				expect( onSave ).toHaveBeenCalledTimes( 2 );
 				expect( ( mw.notify as Mock ).mock.calls ).toContainEqual( [
-					'neowiki-subject-editor-success' + labellessSubject.getDisplayName(),
+					'neowiki-subject-editor-success-multiple2',
 					{ type: 'success' },
 				] );
 			} );
