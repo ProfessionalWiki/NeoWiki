@@ -2113,6 +2113,72 @@ describe( 'SubjectEditorDialog', () => {
 			// The tree remembers which fetches failed for the life of its mount, which is only safe
 			// because the tree is keyed on the dialog's open epoch. The tests below are the two
 			// halves of that one contract.
+			// Both hosts keep the dialog mounted after it closes, so a fetch started in one
+			// opening settles in the next unless it is told which opening it belongs to.
+			describe( 'A target fetch outliving its opening', () => {
+				const TARGET_ID = 's22222222222222';
+
+				function mountWithPendingTargetFetch(): TargetReposMount & { land: () => Promise<void> } {
+					const mounted = mountWithTargetRepos();
+					let resolveTarget!: ( subject: Subject ) => void;
+					mounted.mockSubjectRepository.getSubject.mockImplementation(
+						() => new Promise( ( resolve ) => {
+							resolveTarget = resolve;
+						} ),
+					);
+					return {
+						...mounted,
+						land: async () => {
+							resolveTarget( mounted.target );
+							await flushPromises();
+						},
+					};
+				}
+
+				async function clickEditTarget( wrapper: VueWrapper ): Promise<void> {
+					wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( TARGET_ID ) );
+					await flushPromises();
+				}
+
+				it( 'does not open a pane in the next opening of the dialog', async () => {
+					const { wrapper, land } = mountWithPendingTargetFetch();
+					await flushPromises();
+					await clickEditTarget( wrapper );
+
+					await wrapper.setProps( { open: false } );
+					await wrapper.setProps( { open: true } );
+					await land();
+
+					expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
+					expect( teleportedVisibleSubjectId( wrapper ) ).toBe( mockSubject.getId().text );
+				} );
+
+				it( 'does not open a pane under a root the host replaced', async () => {
+					const { wrapper, land } = mountWithPendingTargetFetch();
+					await flushPromises();
+					await clickEditTarget( wrapper );
+
+					const otherRoot = targetSubject( 's33333333333333', 'Other root' );
+					await wrapper.setProps( { subject: otherRoot } );
+					await land();
+
+					expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
+					expect( teleportedVisibleSubjectId( wrapper ) ).toBe( otherRoot.getId().text );
+				} );
+
+				it( 'does not stand in for the same target clicked in the next opening', async () => {
+					const { wrapper, mockSubjectRepository } = mountWithPendingTargetFetch();
+					await flushPromises();
+					await clickEditTarget( wrapper );
+
+					await wrapper.setProps( { open: false } );
+					await wrapper.setProps( { open: true } );
+					await clickEditTarget( wrapper );
+
+					expect( mockSubjectRepository.getSubject ).toHaveBeenCalledTimes( 2 );
+				} );
+			} );
+
 			describe( 'Failed tree fetches', () => {
 				function failingTreeFetch(): Mock {
 					const failing = vi.fn().mockRejectedValue( new Error( 'Target is gone' ) );

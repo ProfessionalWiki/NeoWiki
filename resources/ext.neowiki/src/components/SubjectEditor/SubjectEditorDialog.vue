@@ -319,8 +319,17 @@ function onLabelEdited( value: string ): void {
 	rootPane.value?.setLabel( value );
 }
 
-// So a double-click on one target's edit button does not fire a second request.
-const pendingTargetIds = new Set<string>();
+// Keys the tree, and nothing else: re-keying the panes would unmount them and destroy
+// unsaved values. The tree remembers which fetches failed for the life of its mount, so
+// without a remount one transient failure would leave that branch empty for the rest of the
+// session. The two watchers further down bump it, an opening and a replaced root alike, and
+// a target fetch that outlives its opening is dropped by it: the hosts keep this dialog
+// mounted after it closes, so the fetch would otherwise land in the next opening.
+const openEpoch = ref( 0 );
+
+// So a double-click on one target's edit button does not fire a second request. Keyed per
+// opening, or a fetch left over from the last one would stand in for a fresh click.
+const pendingTargetKeys = new Set<string>();
 
 async function openRelationTarget( targetId: SubjectId ): Promise<void> {
 	const id = targetId.text;
@@ -328,20 +337,28 @@ async function openRelationTarget( targetId: SubjectId ): Promise<void> {
 		activePaneId.value = id;
 		return;
 	}
-	if ( pendingTargetIds.has( id ) ) {
+	const epoch = openEpoch.value;
+	const pendingKey = `${ epoch }:${ id }`;
+	if ( pendingTargetKeys.has( pendingKey ) ) {
 		return;
 	}
-	pendingTargetIds.add( id );
+	pendingTargetKeys.add( pendingKey );
 	try {
 		const subject = await subjectRepository.getSubject( targetId );
 		const schema = await schemaRepository.getSchema( subject.getSchemaName() );
+		if ( epoch !== openEpoch.value ) {
+			return;
+		}
 		extraPanes.value = [ ...extraPanes.value, { id, subject, schema } ];
 		activePaneId.value = id;
 	} catch ( error ) {
+		if ( epoch !== openEpoch.value ) {
+			return;
+		}
 		console.error( 'Failed to load relation target for editing:', error );
 		mw.notify( mw.msg( 'neowiki-subject-editor-target-load-error' ), { type: 'error' } );
 	} finally {
-		pendingTargetIds.delete( id );
+		pendingTargetKeys.delete( pendingKey );
 	}
 }
 
@@ -381,12 +398,6 @@ function onDialogUpdateOpen( value: boolean ): void {
 		closeRequested();
 	}
 }
-
-// Keys the tree, and nothing else: re-keying the panes would unmount them and destroy
-// unsaved values. The tree remembers which fetches failed for the life of its mount, so
-// without a remount one transient failure would leave that branch empty for the rest of the
-// session. Both watchers below bump it, an opening and a replaced root alike.
-const openEpoch = ref( 0 );
 
 // Immediate, because the hosts render this dialog with v-if: it mounts with open
 // already true, so a deferred watcher would never see the opening that created it.
