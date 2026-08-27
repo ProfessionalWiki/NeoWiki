@@ -1549,23 +1549,6 @@ describe( 'SubjectEditorDialog', () => {
 				expect( rootPaneEditor.props( 'serverViolations' ) ).toEqual( [ violation ] );
 			} );
 
-			// The pane's props.subject is the repository's pre-edit read, so only a recorded copy
-			// can carry what the save wrote.
-			it( 'records what it wrote, so the pane keeps showing it', async () => {
-				const onSave = vi.fn()
-					.mockResolvedValueOnce( undefined )
-					.mockRejectedValueOnce( new ValidationFailedError( [] ) );
-				const { wrapper } = await mountWithThreePanesOpen( { onSave } );
-				( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).setLabel( 'Written child' );
-				await nextTick();
-				await makePaneDirty( wrapper, 2 );
-
-				await triggerSave( wrapper, '' );
-
-				expect( ( paneFor( wrapper, 's22222222222222' ).props( 'editedCopy' ) as Subject ).getLabel() )
-					.toBe( 'Written child' );
-			} );
-
 			it( 'writes nothing when a later pane holds text that cannot be turned into a value', async () => {
 				const onSave = vi.fn().mockResolvedValue( undefined );
 				const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
@@ -1606,21 +1589,23 @@ describe( 'SubjectEditorDialog', () => {
 		} );
 
 		describe( 'Written subjects', () => {
-			// The fetched Subject a written pane would otherwise fall back to is a pre-edit read, so
-			// the form would visibly revert under the user while the dialog is still open.
-			it( 'keeps a written subject\'s values on screen when a later subject\'s save fails', async () => {
+			// A written pane's values live in its inputs, so they survive exactly as long as the
+			// form stays mounted; the label lives beside them.
+			it( 'keeps a written subject\'s form mounted, with its label, when a later subject\'s save fails', async () => {
 				const onSave = vi.fn()
 					.mockResolvedValueOnce( undefined )
 					.mockRejectedValueOnce( new ValidationFailedError( [] ) );
 				const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
 				await editLabel( wrapper, 'Written root' );
 				await makePaneDirty( wrapper, 1 );
+				const formBefore = paneFor( wrapper, rootSubjectId ).findComponent( SubjectEditor ).element;
 
 				await triggerSave( wrapper, '' );
 
 				const root = paneFor( wrapper, rootSubjectId );
+				expect( root.findComponent( SubjectEditor ).element ).toBe( formBefore );
 				expect( ( root.vm as any ).label ).toBe( 'Written root' );
-				expect( ( root.props( 'editedCopy' ) as Subject ).getLabel() ).toBe( 'Written root' );
+				expect( ( root.vm as any ).hasChanged ).toBe( false );
 			} );
 
 			it( 'clears the tree\'s unsaved dot on a written subject and keeps the failed one\'s', async () => {
@@ -1680,15 +1665,14 @@ describe( 'SubjectEditorDialog', () => {
 				expect( ( onSave.mock.calls[ 0 ][ 0 ] as Subject ).getLabel() ).toBeNull();
 			} );
 
-			// Leaves the dialog open holding a written copy: the state each reset below clears.
+			// Leaves the dialog open with one pane written and one still dirty: the state each
+			// reset below must clear.
 			async function partiallySave( onSave: Mock ): Promise<VueWrapper> {
 				const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
 				await editLabel( wrapper, 'Written root' );
 				await makePaneDirty( wrapper, 1 );
 				await triggerSave( wrapper, '' );
 
-				expect( ( paneFor( wrapper, rootSubjectId ).props( 'editedCopy' ) as Subject ).getLabel() )
-					.toBe( 'Written root' );
 				expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
 
 				return wrapper;
@@ -1700,27 +1684,27 @@ describe( 'SubjectEditorDialog', () => {
 					.mockRejectedValueOnce( new ValidationFailedError( [] ) );
 			}
 
-			it( 'discards what it wrote when the host replaces the root subject', async () => {
+			it( 'starts clean when the host replaces the root subject', async () => {
 				const wrapper = await partiallySave( partialSaveHandler() );
 
 				await wrapper.setProps( { subject: targetSubject( 's99999999999999', 'New root' ) } );
-				// A written copy is keyed by Subject id alone, so without the reset it seeds a pane
-				// of a session that never wrote it.
+				// The old root, opened again as a target, is the fetched Subject and not the pane
+				// the last session left behind.
 				wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( rootSubjectId ) );
 				await flushPromises();
 
 				expect( ( wrapper.vm as any ).hasChanged ).toBe( false );
-				expect( paneFor( wrapper, rootSubjectId ).props( 'editedCopy' ) ).toBeUndefined();
+				expect( ( paneFor( wrapper, rootSubjectId ).vm as any ).label ).not.toBe( 'Written root' );
 			} );
 
-			it( 'discards what it wrote when the dialog reopens', async () => {
+			it( 'starts clean when the dialog reopens', async () => {
 				const wrapper = await partiallySave( partialSaveHandler() );
 
 				await wrapper.setProps( { open: false } );
 				await wrapper.setProps( { open: true } );
 
 				expect( ( wrapper.vm as any ).hasChanged ).toBe( false );
-				expect( paneFor( wrapper, rootSubjectId ).props( 'editedCopy' ) ).toBeUndefined();
+				expect( ( paneFor( wrapper, rootSubjectId ).vm as any ).label ).not.toBe( 'Written root' );
 			} );
 		} );
 

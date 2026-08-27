@@ -69,7 +69,6 @@ interface MountPaneOptions {
 	subject?: Subject;
 	schema?: Schema;
 	nested?: boolean;
-	editedCopy?: Subject;
 }
 
 let pinia: ReturnType<typeof createPinia>;
@@ -78,14 +77,12 @@ function mountPane( {
 	subject = defaultSubject,
 	schema = defaultSchema,
 	nested = false,
-	editedCopy,
 }: MountPaneOptions = {} ): VueWrapper {
 	return mount( SubjectEditPane, {
 		props: {
 			subject,
 			schema,
 			nested,
-			editedCopy,
 		},
 		global: {
 			mocks: {
@@ -209,30 +206,18 @@ describe( 'SubjectEditPane', () => {
 		expect( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) ).toHaveLength( 2 );
 	} );
 
-	it( 'starts from the edited copy when one is supplied', () => {
-		const edited = subjectWithOnlyName.withLabel( 'Edited before closing' );
-		const wrapper = mountPane( { editedCopy: edited } );
-
-		expect( ( wrapper.vm as any ).label ).toBe( 'Edited before closing' );
-	} );
-
-	// The pane's own rule, independent of the dialog: a client-held copy outranks the fetched
-	// Subject, and a replacement copy outranks the previous one.
-	it( 'follows each edited copy it is given, over the fetched subject', async () => {
+	// The host replaces the Subject when it opens the editor on another root; the pane starts
+	// over from it, label and fields alike.
+	it( 'starts over from a replaced subject', async () => {
 		const wrapper = mountPane( { subject: subjectWithOnlyName, schema: schemaWithNameAndAge } );
 
 		expect( ( wrapper.vm as any ).label ).toBe( 'Test Subject' );
 		expect( fieldValue( wrapper, 'Name' ) ).toEqual( newStringValue( 'Alice' ) );
 
-		await wrapper.setProps( { editedCopy: namedCopy( 'Edited before closing', 'Bob' ) } );
+		await wrapper.setProps( { subject: namedCopy( 'Replaced', 'Bob' ) } );
 
-		expect( ( wrapper.vm as any ).label ).toBe( 'Edited before closing' );
+		expect( ( wrapper.vm as any ).label ).toBe( 'Replaced' );
 		expect( fieldValue( wrapper, 'Name' ) ).toEqual( newStringValue( 'Bob' ) );
-
-		await wrapper.setProps( { editedCopy: namedCopy( 'Written by the save', 'Carol' ) } );
-
-		expect( ( wrapper.vm as any ).label ).toBe( 'Written by the save' );
-		expect( fieldValue( wrapper, 'Name' ) ).toEqual( newStringValue( 'Carol' ) );
 	} );
 
 	describe( 'The snapshot the tree reads', () => {
@@ -252,13 +237,13 @@ describe( 'SubjectEditPane', () => {
 		} );
 
 		// A reopened pane would otherwise seed the tree with relations the form no longer shows.
-		it( 'follows a replaced edited copy rather than the earlier harvest', async () => {
+		it( 'follows a replaced subject rather than the earlier harvest', async () => {
 			const wrapper = mountPane( { subject: subjectWithOnlyName, schema: schemaWithNameAndAge } );
 			wrapper.findComponent( SubjectEditor ).vm.$emit( 'relation-change' );
 			await nextTick();
 
-			const replacement = namedCopy( 'Written by the save', 'Carol' );
-			await wrapper.setProps( { editedCopy: replacement } );
+			const replacement = namedCopy( 'Replaced', 'Carol' );
+			await wrapper.setProps( { subject: replacement } );
 
 			expect( toRaw( ( wrapper.vm as any ).editedSubject ) ).toBe( replacement );
 		} );
@@ -361,17 +346,6 @@ describe( 'SubjectEditPane', () => {
 			null,
 			expect.any( StatementList ),
 		);
-	} );
-
-	// A stale label here names the whole region after a Subject the form no longer holds.
-	it( 'names the region from the edited copy\'s label, not the fetched one', () => {
-		const wrapper = mountPane( {
-			nested: true,
-			editedCopy: defaultSubject.withLabel( 'Written by the save' ),
-		} );
-
-		expect( wrapper.get( '.ext-neowiki-subject-edit-pane' ).attributes( 'aria-label' ) )
-			.toBe( 'Written by the save' );
 	} );
 
 } );

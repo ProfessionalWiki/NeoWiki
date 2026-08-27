@@ -78,9 +78,6 @@ const props = defineProps<{
 	subject: Subject;
 	schema: Schema;
 	nested?: boolean;
-	// The client's own values for this Subject, written by a save still on screen. Outranks
-	// props.subject, which is a pre-edit read.
-	editedCopy?: Subject;
 }>();
 
 const emit = defineEmits<{
@@ -94,22 +91,20 @@ const subjectStore = useSubjectStore();
 const subjectEditorRef = ref<SubjectEditorExposes | null>( null );
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
-const baseSubject = computed( (): Subject => props.editedCopy ?? props.subject );
-
 // Refreshed when a relation field changes and on nothing else: the tree is its only
 // consumer and reads only relation statements, and harvesting per keystroke would re-walk
 // the tree per character. Its other statements therefore lag; never save or validate from it.
-const editedSubject = shallowRef<Subject>( baseSubject.value );
+const editedSubject = shallowRef<Subject>( props.subject );
 
 function handleRelationChange(): void {
-	editedSubject.value = buildUpdatedSubject() ?? baseSubject.value;
+	editedSubject.value = buildUpdatedSubject() ?? props.subject;
 }
 
-const label = ref( baseSubject.value.getLabel() ?? '' );
+const label = ref( props.subject.getLabel() ?? '' );
 
 const storedLabel = computed( (): string | null => enteredSubjectLabel( label.value ) );
 
-const paneName = computed( (): string => storedLabel.value ?? baseSubject.value.getDisplayName() );
+const paneName = computed( (): string => storedLabel.value ?? props.subject.getDisplayName() );
 
 const pageName = computed( (): string | null =>
 	props.subject instanceof SubjectWithContext ?
@@ -129,11 +124,11 @@ function setLabel( value: string ): void {
 	handleEditorBlur();
 }
 
-// Reads baseSubject, never editedSubject: feeding the harvested snapshot back would re-key
-// SubjectEditor's v-for on every relation pick, remounting every ValueInput and discarding
-// whatever the user was typing elsewhere.
+// Reads the prop, never editedSubject: feeding the harvested snapshot back would hand every
+// ValueInput a fresh Value on each relation pick, and an input resets its text to a Value it
+// did not emit.
 const statements = computed( (): StatementList =>
-	props.schema.statementsFrom( baseSubject.value.getStatements() )
+	props.schema.statementsFrom( props.subject.getStatements() )
 );
 
 const { violations: serverViolations, revalidate, flush } = useSubjectValidation(
@@ -211,11 +206,11 @@ watch( subjectEditorRef, ( editor ) => {
 	}
 } );
 
-watch( baseSubject, ( newBaseSubject ) => {
-	label.value = newBaseSubject.getLabel() ?? '';
-	// Drop the harvest, or a reopened pane seeds the tree with relations the form no
-	// longer displays.
-	editedSubject.value = newBaseSubject;
+// A replaced Subject starts the pane over. Drop the harvest, or a reopened pane seeds the
+// tree with relations the form no longer displays.
+watch( () => props.subject, ( newSubject ) => {
+	label.value = newSubject.getLabel() ?? '';
+	editedSubject.value = newSubject;
 } );
 
 function buildUpdatedSubject(): Subject | null {

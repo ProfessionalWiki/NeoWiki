@@ -101,7 +101,6 @@
 								:ref="( el ) => setPaneRef( pane.id, el )"
 								:subject="pane.subject"
 								:schema="pane.schema"
-								:edited-copy="editedCopyFor( pane.id )"
 								:nested="pane.id !== rootPaneId"
 								@edit-relation-target="openRelationTargetFromForm"
 							/>
@@ -214,18 +213,9 @@ function setPaneRef( id: string, el: unknown ): void {
 const extraPanes = shallowRef<EditPane[]>( [] );
 const activePaneId = ref<string>( rootPaneId.value );
 
-// What the server took, per Subject written in this session, kept because it is newer than
-// the fetched Subject its pane would otherwise fall back to. Cleared only when the dialog
-// reopens or the root Subject is replaced.
-const writtenSubjects = shallowRef<Map<string, Subject>>( new Map() );
-
 // Set when a save wrote some Subjects and then failed: the toast that says so vanishes,
 // and the dialog is still open.
 const partialSave = ref<{ written: number; attempted: number } | null>( null );
-
-function editedCopyFor( id: string ): Subject | undefined {
-	return writtenSubjects.value.get( id );
-}
 
 const panes = computed( (): EditPane[] => [
 	{ id: rootPaneId.value, subject: props.subject, schema: currentSchema.value },
@@ -392,14 +382,13 @@ function onDialogUpdateOpen( value: boolean ): void {
 
 // Immediate, because the hosts render this dialog with v-if: it mounts with open
 // already true, so a deferred watcher would never see the opening that created it.
-// An opening and a replaced root both start over. A dialog only reaches `open: false` with
-// nothing unsaved or after a confirmed discard (see useCloseConfirmation), and written
-// copies are keyed by Subject id alone, so neither may seed the next session's panes.
+// An opening and a replaced root both start over: a dialog only reaches `open: false` with
+// nothing unsaved or after a confirmed discard (see useCloseConfirmation), so nothing an
+// earlier session opened or reported carries into the next.
 function startSession(): void {
 	openEpoch.value += 1;
 	extraPanes.value = [];
 	activePaneId.value = rootPaneId.value;
-	writtenSubjects.value = new Map();
 	partialSave.value = null;
 }
 
@@ -462,15 +451,6 @@ const saveScopeText = computed( (): string => {
 
 	return mw.message( 'neowiki-subject-editor-save-scope', dirty.length, dirtyPageCount.value ).text();
 } );
-
-// A pane whose write succeeded while a later one failed keeps showing the values the server
-// took rather than reverting to its pre-edit read. Non-disruptive to the pane: its own
-// harvest built this Subject out of the Value instances its inputs still hold.
-function recordWrite( id: string, written: Subject ): void {
-	const next = new Map( writtenSubjects.value );
-	next.set( id, written );
-	writtenSubjects.value = next;
-}
 
 const handleSave = async ( summary: string ): Promise<void> => {
 	if ( saving.value ) {
@@ -535,7 +515,6 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 		try {
 			await props.onSave( updatedSubject, editSummary );
 			paneRefs.get( id )?.resetChanged();
-			recordWrite( id, updatedSubject );
 			savedNames.push( subjectName );
 		} catch ( error ) {
 			failed = true;
