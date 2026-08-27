@@ -17,15 +17,23 @@ export interface WalkNode {
 	subjectId: string;
 	label: string;
 	schemaName: string;
+	// The relation property this node hangs under; the root hangs under none. The children
+	// of one property are contiguous, in the Schema's order.
+	propertyName?: string;
 	// Empty for a node that does not expand: a leaf, one closing a cycle, one at the depth cap,
 	// or one still resolving.
-	groups: WalkGroup[];
+	children: WalkNode[];
 }
 
-export interface WalkGroup {
-	// The relation property name.
-	name: string;
-	nodes: WalkNode[];
+// A Subject the caller may not hold yet: an unresolved one shows its raw id.
+export function nodeFor( key: string, subjectId: string, subject: Subject | undefined ): WalkNode {
+	return {
+		key,
+		subjectId,
+		label: subject?.getDisplayName() ?? subjectId,
+		schemaName: subject?.getSchemaName() ?? '',
+		children: [],
+	};
 }
 
 // The lookups answer from what the caller already holds; they resolve nothing themselves.
@@ -60,27 +68,24 @@ export function walkSubjectTree( input: SubjectTreeWalkInput ): SubjectTreeWalkR
 	// converging graph is ordinary, not a cycle — one place referenced from two events — and
 	// keying off the Subject id alone would collide its two occurrences and all their
 	// descendants.
-	function groupsOf(
+	function childrenOf(
 		subject: Subject,
 		schema: Schema,
 		depth: number,
 		visited: ReadonlySet<string>,
 		pathKey: string,
-	): WalkGroup[] {
-		const groups: WalkGroup[] = [];
+	): WalkNode[] {
+		const children: WalkNode[] = [];
 
 		for ( const { propertyName, targetId } of relationTargetsOf( subject, schema ) ) {
 			const targetSubject = subjectFor( targetId );
 			const node: WalkNode = {
-				key: `${ pathKey }:${ propertyName }:${ targetId }`,
-				subjectId: targetId,
-				label: targetSubject?.getDisplayName() ?? targetId,
-				schemaName: targetSubject?.getSchemaName() ?? '',
-				groups: [],
+				...nodeFor( `${ pathKey }:${ propertyName }:${ targetId }`, targetId, targetSubject ),
+				propertyName,
 			};
 
 			reachedIds.add( targetId );
-			addToGroup( groups, propertyName, node );
+			children.push( node );
 
 			if ( targetSubject === undefined ) {
 				missingSubjectIds.add( targetId );
@@ -99,7 +104,7 @@ export function walkSubjectTree( input: SubjectTreeWalkInput ): SubjectTreeWalkR
 				continue;
 			}
 
-			node.groups = groupsOf(
+			node.children = childrenOf(
 				targetSubject,
 				targetSchema,
 				depth + 1,
@@ -108,19 +113,7 @@ export function walkSubjectTree( input: SubjectTreeWalkInput ): SubjectTreeWalkR
 			);
 		}
 
-		return groups;
-	}
-
-	// One relation property's targets are contiguous, so an unchanged name continues the group.
-	function addToGroup( groups: WalkGroup[], name: string, node: WalkNode ): void {
-		const lastGroup = groups[ groups.length - 1 ];
-
-		if ( lastGroup !== undefined && lastGroup.name === name ) {
-			lastGroup.nodes.push( node );
-			return;
-		}
-
-		groups.push( { name, nodes: [ node ] } );
+		return children;
 	}
 
 	// The root as the editor holds it, so a relation picked in the root's own form has a node
@@ -130,11 +123,8 @@ export function walkSubjectTree( input: SubjectTreeWalkInput ): SubjectTreeWalkR
 
 	return {
 		root: {
-			key: `root:${ rootId }`,
-			subjectId: rootId,
-			label: rootSubject.getDisplayName(),
-			schemaName: rootSubject.getSchemaName(),
-			groups: groupsOf( rootSubject, input.rootSchema, 1, new Set( [ rootId ] ), rootId ),
+			...nodeFor( `root:${ rootId }`, rootId, rootSubject ),
+			children: childrenOf( rootSubject, input.rootSchema, 1, new Set( [ rootId ] ), rootId ),
 		},
 		reachedIds,
 		missingSubjectIds: [ ...missingSubjectIds ],

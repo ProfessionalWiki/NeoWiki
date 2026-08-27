@@ -18,7 +18,7 @@ import { computed, ref, watch } from 'vue';
 import NeoTree from '@/components/common/NeoTree/NeoTree.vue';
 import UnsavedDot from '@/components/common/UnsavedDot.vue';
 import type { NeoTreeItem } from '@/components/common/NeoTree/NeoTreeModel.ts';
-import { walkSubjectTree } from './SubjectTreeWalk.ts';
+import { nodeFor, walkSubjectTree } from './SubjectTreeWalk.ts';
 import type { SubjectTreeWalkResult, WalkNode } from './SubjectTreeWalk.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { Schema } from '@/domain/Schema.ts';
@@ -118,17 +118,7 @@ const strayNodes = computed( (): WalkNode[] => {
 
 	return [ ...heldIds ]
 		.filter( ( id ) => id !== rootId && !walk.value.reachedIds.has( id ) )
-		.map( ( id ) => {
-			const subject = props.editedSubjects.get( id ) as Subject | undefined;
-
-			return {
-				key: `stray:${ id }`,
-				subjectId: id,
-				label: subject?.getDisplayName() ?? id,
-				schemaName: subject?.getSchemaName() ?? '',
-				groups: []
-			};
-		} );
+		.map( ( id ) => nodeFor( `stray:${ id }`, id, props.editedSubjects.get( id ) ) );
 } );
 
 const treeShape = computed( (): WalkNode => {
@@ -138,12 +128,14 @@ const treeShape = computed( (): WalkNode => {
 		return root;
 	}
 
+	const caption = mw.message( 'neowiki-subject-tree-not-linked' ).text();
+
 	return {
 		...root,
-		groups: [ ...root.groups, {
-			name: mw.message( 'neowiki-subject-tree-not-linked' ).text(),
-			nodes: strayNodes.value
-		} ]
+		children: [
+			...root.children,
+			...strayNodes.value.map( ( node ) => ( { ...node, propertyName: caption } ) )
+		]
 	};
 } );
 
@@ -166,15 +158,7 @@ function toTreeItem( node: WalkNode ): NeoTreeItem<string> {
 // Each child carries its relation property's name; NeoTree gathers the contiguous run of
 // children sharing one into a single captioned group.
 function childItemsOf( node: WalkNode ): NeoTreeItem<string>[] {
-	const items: NeoTreeItem<string>[] = [];
-
-	for ( const group of node.groups ) {
-		for ( const child of group.nodes ) {
-			items.push( { ...toTreeItem( child ), groupLabel: group.name } );
-		}
-	}
-
-	return items;
+	return node.children.map( ( child ) => ( { ...toTreeItem( child ), groupLabel: child.propertyName } ) );
 }
 
 function isUnsaved( subjectId: string ): boolean {

@@ -76,7 +76,7 @@ function walk(
 }
 
 function childrenOf( node: WalkNode ): WalkNode[] {
-	return node.groups.flatMap( ( group ) => group.nodes );
+	return node.children;
 }
 
 function onlyChildOf( node: WalkNode ): WalkNode {
@@ -105,7 +105,7 @@ describe( 'walkSubjectTree', () => {
 
 			const child = onlyChildOf( result.root );
 			expect( child.subjectId ).toBe( A_ID );
-			expect( child.groups ).toStrictEqual( [] );
+			expect( child.children ).toStrictEqual( [] );
 		} );
 
 		it( 'stops a two-hop cycle inside the depth bound', () => {
@@ -121,7 +121,7 @@ describe( 'walkSubjectTree', () => {
 			const bNode = onlyChildOf( result.root );
 			const closingA = onlyChildOf( bNode );
 			expect( idsOf( result.root ) ).toStrictEqual( [ A_ID, B_ID, A_ID ] );
-			expect( closingA.groups ).toStrictEqual( [] );
+			expect( closingA.children ).toStrictEqual( [] );
 		} );
 
 	} );
@@ -157,7 +157,7 @@ describe( 'walkSubjectTree', () => {
 			// The node at the cap renders, it just does not expand.
 			const atCap = onlyChildOf( onlyChildOf( onlyChildOf( result.root ) ) );
 			expect( atCap.subjectId ).toBe( D_ID );
-			expect( atCap.groups ).toStrictEqual( [] );
+			expect( atCap.children ).toStrictEqual( [] );
 		} );
 
 	} );
