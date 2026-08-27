@@ -197,6 +197,30 @@ describe( 'walkSubjectTree', () => {
 		expect( new Set( keysOf( result.root ) ).size ).toBe( keysOf( result.root ).length );
 	} );
 
+	// The form shows one slot per relation, so the same target can be picked twice under one
+	// property; the tree shows related Subjects, and every key has to be unique tree-wide.
+	describe( 'a target listed twice under one property', () => {
+		const twiceSchema = relationSchema( 'Twice', [ 'Knows', 'Twice' ], [ 'Likes', 'Twice' ] );
+
+		it( 'gets one node', () => {
+			const a = subjectWith( A_ID, 'Twice', 'A', relationsTo( 'Knows', B_ID, B_ID ) );
+			const b = subjectWith( B_ID, 'Twice', 'B' );
+
+			const result = walk( a, twiceSchema, [ a, b ] );
+
+			expect( idsOf( result.root ) ).toStrictEqual( [ A_ID, B_ID ] );
+		} );
+
+		it( 'still gets a node under each property that lists it', () => {
+			const a = subjectWith( A_ID, 'Twice', 'A', relationsTo( 'Knows', B_ID ), relationsTo( 'Likes', B_ID ) );
+			const b = subjectWith( B_ID, 'Twice', 'B' );
+
+			const result = walk( a, twiceSchema, [ a, b ] );
+
+			expect( idsOf( result.root ) ).toStrictEqual( [ A_ID, B_ID, B_ID ] );
+		} );
+	} );
+
 	it( 'prefers the edited copy over the fetched Subject', () => {
 		const root = subjectWith( A_ID, 'Link', 'A', relationsTo( 'Link', B_ID ) );
 		// What the server holds: an older label, and no relation of its own.

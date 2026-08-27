@@ -24,8 +24,15 @@ export function relationTargetsOf( subject: Subject, schema: Schema ): RelationT
 
 		const value = statements.get( property.name ).value;
 		const relations = value instanceof RelationValue ? value.relations : [];
+		// The form has one slot per relation, so a target can be picked twice under one
+		// property; here it is one related Subject, and a second node would share a key.
+		const seen = new Set<string>();
 
 		for ( const relation of relations ) {
+			if ( seen.has( relation.target.text ) ) {
+				continue;
+			}
+			seen.add( relation.target.text );
 			targets.push( {
 				propertyName: property.name.toString(),
 				targetId: relation.target.text,
