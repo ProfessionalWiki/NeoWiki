@@ -6,9 +6,48 @@ import SubjectPicker from '@/components/common/SubjectPicker.vue';
 import NeoMultiLookupInput from '@/components/common/NeoMultiLookupInput.vue';
 import { RelationValue, newRelation } from '@/domain/Value';
 import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Relation';
-import { ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
+import { RelationTargetEditingKey, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
+import { SubjectId } from '@/domain/SubjectId.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers';
+
+const SubjectPickerWithSlots = {
+	props: {
+		selected: { type: String, default: null },
+		targetSchema: { type: String, default: '' },
+		// A Codex icon is a path string, or an object carrying its language and direction variants.
+		startIcon: { type: [ String, Object ], default: undefined },
+		status: { type: String, default: 'default' },
+		ariaLabel: { type: String, default: '' },
+	},
+	template: '<div><slot name="suffix" :selected="selected"></slot></div>',
+};
+
+/**
+ * Renders the real NeoMultiLookupInput's #input scoped slot (value, onUpdate, onBlur, onFocus,
+ * status, ariaLabel) for each modelValue entry, plus a trailing null row — mirroring the always-one-
+ * empty-row behaviour of the real component closely enough to test RelationInput's per-row suffix
+ * wiring without depending on NeoMultiLookupInput's own normalization logic.
+ */
+const NeoMultiLookupInputWithSlots = {
+	props: {
+		modelValue: { type: Array, default: () => [] },
+		label: { type: String, default: '' },
+	},
+	template: '<div>' +
+		'<div v-for="( value, index ) in [ ...modelValue, null ]" :key="index">' +
+			'<slot ' +
+				'name="input" ' +
+				':value="value" ' +
+				':on-update="() => {}" ' +
+				':on-blur="() => {}" ' +
+				':on-focus="() => {}" ' +
+				'status="default" ' +
+				':aria-label="label + \' item \' + ( index + 1 )"' +
+			'></slot>' +
+		'</div>' +
+	'</div>',
+};
 
 describe( 'RelationInput', () => {
 	beforeEach( () => {
@@ -183,6 +222,89 @@ describe( 'RelationInput', () => {
 			const field = wrapper.findComponent( CdxField );
 			expect( field.props( 'messages' ) ).toEqual( {} );
 			expect( field.props( 'status' ) ).toBe( 'default' );
+		} );
+	} );
+
+	describe( 'target editing', () => {
+		function mountSingleWithTarget( targetEditing: boolean ): VueWrapper {
+			return mount( RelationInput, {
+				props: {
+					modelValue: new RelationValue( [ newRelation( undefined, 's11111111111111' ) ] ),
+					property: newRelationProperty( { multiple: false } ),
+					label: 'Author',
+				},
+				global: {
+					provide: {
+						...NeoWikiTestServices.getServices(),
+						[ RelationTargetEditingKey as symbol ]: targetEditing,
+					},
+					directives: { tooltip: {} },
+					mocks: { $i18n: createI18nMock() },
+					stubs: { SubjectPicker: SubjectPickerWithSlots, NeoMultiLookupInput: true },
+				},
+			} );
+		}
+
+		it( 'shows an edit button for the selected target when target editing is enabled', () => {
+			const wrapper = mountSingleWithTarget( true );
+			expect( wrapper.find( '.ext-neowiki-relation-input__edit-target' ).exists() ).toBe( true );
+		} );
+
+		it( 'emits edit-relation-target with the target SubjectId on click', async () => {
+			const wrapper = mountSingleWithTarget( true );
+			await wrapper.find( '.ext-neowiki-relation-input__edit-target' ).trigger( 'click' );
+
+			const emitted = wrapper.emitted( 'edit-relation-target' );
+			expect( emitted ).toHaveLength( 1 );
+			expect( ( emitted![ 0 ][ 0 ] as SubjectId ).text ).toBe( 's11111111111111' );
+		} );
+
+		it( 'shows no edit button when target editing was not enabled by the host', () => {
+			const wrapper = mountSingleWithTarget( false );
+			expect( wrapper.find( '.ext-neowiki-relation-input__edit-target' ).exists() ).toBe( false );
+		} );
+
+		describe( 'multiple mode', () => {
+			function mountMultipleWithTarget( targetEditing: boolean ): VueWrapper {
+				return mount( RelationInput, {
+					props: {
+						modelValue: new RelationValue( [ newRelation( undefined, 's11111111111111' ) ] ),
+						property: newRelationProperty( { multiple: true } ),
+						label: 'Authors',
+					},
+					global: {
+						provide: {
+							...NeoWikiTestServices.getServices(),
+							[ RelationTargetEditingKey as symbol ]: targetEditing,
+						},
+						directives: { tooltip: {} },
+						mocks: { $i18n: createI18nMock() },
+						stubs: { SubjectPicker: SubjectPickerWithSlots, NeoMultiLookupInput: NeoMultiLookupInputWithSlots },
+					},
+				} );
+			}
+
+			it( 'shows an edit button only for the row with a selected target, not the trailing empty row', () => {
+				const wrapper = mountMultipleWithTarget( true );
+
+				// The stub renders one row for the selected target plus a trailing null row, mirroring
+				// NeoMultiLookupInput's always-one-empty-row behaviour.
+				expect( wrapper.findAll( '.ext-neowiki-relation-input__edit-target' ) ).toHaveLength( 1 );
+			} );
+
+			it( 'emits edit-relation-target with that row\'s SubjectId on click', async () => {
+				const wrapper = mountMultipleWithTarget( true );
+				await wrapper.find( '.ext-neowiki-relation-input__edit-target' ).trigger( 'click' );
+
+				const emitted = wrapper.emitted( 'edit-relation-target' );
+				expect( emitted ).toHaveLength( 1 );
+				expect( ( emitted![ 0 ][ 0 ] as SubjectId ).text ).toBe( 's11111111111111' );
+			} );
+
+			it( 'shows no edit button when target editing was not enabled by the host', () => {
+				const wrapper = mountMultipleWithTarget( false );
+				expect( wrapper.find( '.ext-neowiki-relation-input__edit-target' ).exists() ).toBe( false );
+			} );
 		} );
 	} );
 

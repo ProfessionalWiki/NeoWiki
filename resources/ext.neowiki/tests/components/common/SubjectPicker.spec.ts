@@ -389,4 +389,21 @@ describe( 'SubjectPicker', () => {
 		expect( focusSpy ).toHaveBeenCalled();
 	} );
 
+	it( 'renders the suffix slot with the selected id as slot prop', () => {
+		const wrapper = mount( SubjectPicker, {
+			props: { selected: 's11111111111111', targetSchema: 'Person' },
+			global: {
+				plugins: [ pinia ],
+				provide: { [ Service.SubjectLabelSearch ]: mockSubjectLabelSearch },
+				mocks: { $i18n },
+				stubs: { CdxLookup: true },
+			},
+			slots: {
+				suffix: '<template #suffix="{ selected }"><span class="probe">{{ selected }}</span></template>',
+			},
+		} );
+
+		expect( wrapper.find( '.probe' ).text() ).toBe( 's11111111111111' );
+	} );
+
 } );

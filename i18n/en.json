@@ -126,6 +126,7 @@
 	"neowiki-subject-editor-save": "Save changes",
 	"neowiki-subject-editor-label-field": "Subject label",
 	"neowiki-subject-editor-rename": "Rename subject",
+	"neowiki-subject-editor-edit-target": "Edit this subject",
 
 	"neowiki-schema-editor-new-property": "Add property definition",
 	"neowiki-schema-editor-delete-property": "Delete property definition",
@@ -190,6 +191,7 @@
 	"neowiki-subject-editor-success": "Updated $1",
 	"neowiki-subject-editor-error": "Failed to update $1.",
 	"neowiki-subject-editor-validation-failed": "Validation failed for \"$1\". Please fix the highlighted fields.",
+	"neowiki-subject-editor-unsaved": "Unsaved changes",
 
 	"neowiki-subject-picker-placeholder": "Search for a subject",
 	"neowiki-subject-picker-no-results": "No subjects found",

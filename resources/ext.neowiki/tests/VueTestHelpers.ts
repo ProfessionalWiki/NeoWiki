@@ -9,9 +9,14 @@ export interface FieldProps {
 	messages: ValidationMessages;
 }
 
+/**
+ * Stands in for MediaWiki's `$i18n`, rendering a message as its key with the parameters
+ * concatenated — the same shape setupMwMock's `mw.message` produces, so a test can assert
+ * on a rendered parameter instead of the component having to expose it as a data attribute.
+ */
 export function createI18nMock(): ReturnType<typeof vi.fn> {
-	return vi.fn().mockImplementation( ( key ) => ( {
-		text: () => key,
+	return vi.fn().mockImplementation( ( key, ...params: unknown[] ) => ( {
+		text: () => key + params.join( '' ),
 	} ) );
 }
 

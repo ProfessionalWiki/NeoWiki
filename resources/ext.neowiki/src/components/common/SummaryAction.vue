@@ -33,7 +33,17 @@
 			{{ props.helpText }}
 		</div>
 
-		<div class="ext-neowiki-summary-action__actions">
+		<div
+			class="ext-neowiki-summary-action__actions"
+			:class="{ 'ext-neowiki-summary-action__actions--with-text': props.footerText !== '' }"
+		>
+			<p
+				v-if="props.footerText"
+				class="ext-neowiki-summary-action__footer-text"
+			>
+				{{ props.footerText }}
+			</p>
+
 			<CdxButton
 				:action="props.saveButtonAction"
 				weight="primary"
@@ -58,12 +68,16 @@ const props = withDefaults(
 		helpText: string;
 		saveButtonLabel: string;
 		saveDisabled: boolean;
+		// A note about what the save does, shown in the button row. With one, the button
+		// sizes to its label rather than spanning the row.
+		footerText?: string;
 		saveButtonAction?: 'progressive' | 'destructive';
 		saveButtonIcon?: Icon;
 		label?: string;
 		placeholder?: string;
 	}>(),
 	{
+		footerText: '',
 		saveButtonAction: 'progressive',
 		saveButtonIcon: () => cdxIconCheck,
 		// Default to the edit-summary wording; callers such as the delete dialog override these
@@ -150,6 +164,27 @@ defineExpose( { submit: onSaveClick } );
 			width: @size-full;
 			max-width: @max-width-base;
 		}
+
+		&--with-text {
+			align-items: center;
+			justify-content: space-between;
+
+			.cdx-button {
+				width: auto;
+				flex-shrink: 0;
+			}
+		}
+	}
+
+	&__footer-text {
+		flex: 1;
+		/* Without this a flex item refuses to shrink below its content, pushing the button
+			out of the row instead of wrapping the note. */
+		min-width: 0;
+		margin: 0;
+		color: @color-subtle;
+		font-size: @font-size-small;
+		line-height: @line-height-xx-small;
 	}
 }
 </style>
