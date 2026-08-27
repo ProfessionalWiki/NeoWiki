@@ -153,7 +153,9 @@ function toTreeItem( node: WalkNode ): NeoTreeItem<string> {
 	return {
 		key: node.key,
 		label: node.label,
-		secondaryLabel: node.schemaName,
+		// Set apart by Schema unless the name already is the Schema: a Subject with no label is
+		// shown under its Schema name (ADR 31), and one labelled after its Schema reads the same.
+		secondaryLabel: node.schemaName === node.label ? undefined : node.schemaName,
 		active: node.subjectId === props.activeId,
 		attrs: { 'data-mw-neowiki-subject-id': node.subjectId },
 		children: childItemsOf( node ),

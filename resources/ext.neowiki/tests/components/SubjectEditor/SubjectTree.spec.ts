@@ -665,6 +665,20 @@ describe( 'SubjectTree', () => {
 		expect( targetNodeLabels( wrapper ) ).not.toContain( SPOUSE_ID );
 	} );
 
+	// ADR 31 names a label-less child after its Schema, so printing the Schema beside that
+	// name would read "Name  Name".
+	it( 'prints the schema of a label-less target only once', async () => {
+		const wrapper = mountWithServices(
+			rootSubject,
+			personSchema,
+			[ nameSchema, eventSchema, timeSpanSchema, personSchema ],
+			[ labellessSpouse, birthSubject, timeSpanSubject ],
+		);
+		await flushPromises();
+
+		expect( nameRow( wrapper.get( `[data-mw-neowiki-subject-id="${ SPOUSE_ID }"]` ) ).text() ).toBe( 'Name' );
+	} );
+
 	// The only way back to the root once a relation target is being edited.
 	describe( 'Root node', () => {
 		it( 'renders the root subject as the tree\'s first node', async () => {
