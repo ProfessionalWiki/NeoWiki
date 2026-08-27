@@ -38,6 +38,22 @@
 	</section>
 </template>
 
+<script lang="ts">
+export interface SubjectEditPaneExposes {
+	hasChanged: boolean;
+	label: string;
+	// Refreshed on relation changes alone, so its other statements lag: read it for the
+	// tree, never to save or validate from.
+	editedSubject: Subject;
+	setLabel: ( value: string ) => void;
+	resetChanged: () => void;
+	buildUpdatedSubject: () => Subject | null;
+	setServerViolations: ( violations: readonly SubjectViolation[] ) => void;
+	unparseableInput: () => UnparseableInput | null;
+	flushValidation: () => Promise<void>;
+}
+</script>
+
 <script setup lang="ts">
 import { ref, shallowRef, computed, watch, provide } from 'vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';

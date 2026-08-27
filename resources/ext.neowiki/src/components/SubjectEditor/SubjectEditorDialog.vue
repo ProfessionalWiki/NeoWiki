@@ -148,6 +148,7 @@
 <script setup lang="ts">
 import { ref, shallowRef, shallowReactive, nextTick, computed, watch } from 'vue';
 import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
+import type { SubjectEditPaneExposes } from '@/components/SubjectEditor/SubjectEditPane.vue';
 import SubjectTree from '@/components/SubjectEditor/SubjectTree.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
@@ -168,7 +169,6 @@ import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { useEditNotices } from '@/composables/useEditNotices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
-import type { SubjectViolation } from '@/domain/SubjectViolation';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { relationTargetsOf } from '@/components/SubjectEditor/SubjectTreeModel.ts';
@@ -184,20 +184,6 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits( [ 'update:open' ] );
-
-interface SubjectEditPaneInstance {
-	hasChanged: boolean;
-	label: string;
-	// Refreshed on relation changes alone, so its other statements lag: read it for the
-	// tree, never to save or validate from.
-	editedSubject: Subject;
-	setLabel: ( value: string ) => void;
-	resetChanged: () => void;
-	buildUpdatedSubject: () => Subject | null;
-	setServerViolations: ( violations: readonly SubjectViolation[] ) => void;
-	unparseableInput: () => UnparseableInput | null;
-	flushValidation: () => Promise<void>;
-}
 
 interface EditPane {
 	id: string;
@@ -215,11 +201,11 @@ const subjectRepository = NeoWikiServices.getSubjectRepository();
 const schemaRepository = NeoWikiServices.getSchemaRepository();
 
 const rootPaneId = computed( (): string => props.subject.getId().text );
-const paneRefs = shallowReactive( new Map<string, SubjectEditPaneInstance>() );
+const paneRefs = shallowReactive( new Map<string, SubjectEditPaneExposes>() );
 
 function setPaneRef( id: string, el: unknown ): void {
 	if ( el ) {
-		paneRefs.set( id, el as SubjectEditPaneInstance );
+		paneRefs.set( id, el as SubjectEditPaneExposes );
 	} else {
 		paneRefs.delete( id );
 	}
@@ -248,7 +234,7 @@ const panes = computed( (): EditPane[] => [
 
 interface DirtyPane {
 	pane: EditPane;
-	instance: SubjectEditPaneInstance;
+	instance: SubjectEditPaneExposes;
 }
 
 // The whole save set: the gates, the footer's counts and the write loop all read it. A pane
@@ -281,13 +267,13 @@ const editedSubjects = computed( (): Map<string, Subject> => {
 
 // Rebuilt only when the label has moved, so an unrenamed Subject keeps the very object the
 // tree already walked. The field's text is read the way a write reads it.
-function withLiveLabel( instance: SubjectEditPaneInstance ): Subject {
+function withLiveLabel( instance: SubjectEditPaneExposes ): Subject {
 	const edited = instance.editedSubject;
 	const label = enteredSubjectLabel( instance.label );
 	return edited.getLabel() === label ? edited : edited.withLabel( label );
 }
 
-const rootPane = computed( (): SubjectEditPaneInstance | undefined => paneRefs.get( rootPaneId.value ) );
+const rootPane = computed( (): SubjectEditPaneExposes | undefined => paneRefs.get( rootPaneId.value ) );
 
 // The root as the tree will walk it: the root pane's copy once that pane has registered, the
 // prop before. Labels have no bearing on relation targets, so the live label is left off.
