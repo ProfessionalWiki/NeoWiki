@@ -48,7 +48,6 @@ export interface ValueInputExposes {
 export type ValueInputEmitFunction = {
 	( event: 'update:modelValue', value: Value | undefined ): void;
 	( event: 'clear-server-violation', payload: { propertyName: string; valuePartIndex: number | null } ): void;
-	( event: 'edit-relation-target', target: SubjectId ): void;
 };
 
 /**
