@@ -1439,6 +1439,70 @@ describe( 'SubjectEditorDialog', () => {
 				expect( onSave.mock.calls[ 2 ][ 0 ].getId().text ).toBe( 's22222222222222' );
 			} );
 
+			// The loop harvests every dirty pane up front and marks each one clean as its write
+			// lands, so anything typed meanwhile would be reverted and unguarded, and a second
+			// Save would write the not-yet-reset panes again.
+			describe( 'while a save is in flight', () => {
+				function deferredSave(): { onSave: Mock; settle: ( error?: Error ) => void } {
+					let resolveSave!: () => void;
+					let rejectSave!: ( error: Error ) => void;
+					const onSave = vi.fn( () => new Promise<void>( ( resolve, reject ) => {
+						resolveSave = resolve;
+						rejectSave = reject;
+					} ) );
+					return { onSave, settle: ( error?: Error ) => error === undefined ? resolveSave() : rejectSave( error ) };
+				}
+
+				function content( wrapper: VueWrapper ): Omit<DOMWrapper<Element>, 'exists'> {
+					return wrapper.get( '.ext-neowiki-subject-editor-dialog__content' );
+				}
+
+				function headerTitleGroup( wrapper: VueWrapper ): Omit<DOMWrapper<Element>, 'exists'> {
+					return wrapper.get( '.cdx-dialog__header__title-group' );
+				}
+
+				it( 'ignores a second Save', async () => {
+					const { onSave, settle } = deferredSave();
+					const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
+					await makePaneDirty( wrapper, 0 );
+
+					await triggerSave( wrapper, '' );
+					await triggerSave( wrapper, '' );
+					settle();
+					await flushPromises();
+
+					expect( onSave ).toHaveBeenCalledTimes( 1 );
+				} );
+
+				it( 'reports the Save button disabled', async () => {
+					const { onSave, settle } = deferredSave();
+					const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
+					await makePaneDirty( wrapper, 0 );
+
+					await triggerSave( wrapper, '' );
+					expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+
+					settle( new Error( 'Boom' ) );
+					await flushPromises();
+					expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+				} );
+
+				it( 'makes the form and the header inert until the save settles', async () => {
+					const { onSave, settle } = deferredSave();
+					const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
+					await makePaneDirty( wrapper, 0 );
+
+					await triggerSave( wrapper, '' );
+					expect( content( wrapper ).attributes( 'inert' ) ).toBeDefined();
+					expect( headerTitleGroup( wrapper ).attributes( 'inert' ) ).toBeDefined();
+
+					settle( new Error( 'Boom' ) );
+					await flushPromises();
+					expect( content( wrapper ).attributes( 'inert' ) ).toBeUndefined();
+					expect( headerTitleGroup( wrapper ).attributes( 'inert' ) ).toBeUndefined();
+				} );
+			} );
+
 			it( 'asks for close confirmation when the dirty pane is not the one on screen', async () => {
 				const { wrapper } = await mountWithThreePanesOpen();
 				await makePaneDirty( wrapper, 0 );

@@ -11,7 +11,10 @@
 			@update:open="onDialogUpdateOpen"
 		>
 			<template #header>
-				<div class="cdx-dialog__header__title-group">
+				<div
+					class="cdx-dialog__header__title-group"
+					:inert="saving || undefined"
+				>
 					<div class="cdx-dialog__header__title ext-neowiki-subject-editor-dialog__title">
 						<EditableText
 							:model-value="subjectLabel"
@@ -51,7 +54,7 @@
 					weight="quiet"
 					type="button"
 					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
-					@click="requestClose"
+					@click="closeRequested"
 				>
 					<CdxIcon :icon="cdxIconClose" />
 				</CdxButton>
@@ -60,7 +63,10 @@
 			<!-- Only the navigator's surface is ever conditionally rendered, and the panes container
 				is deliberately unkeyed: a pane must never unmount, because its unsaved values live in
 				the ValueInput refs inside it. -->
-			<div class="ext-neowiki-subject-editor-dialog__content">
+			<div
+				class="ext-neowiki-subject-editor-dialog__content"
+				:inert="saving || undefined"
+			>
 				<EditNoticeList :notices="notices" />
 
 				<div
@@ -117,7 +123,7 @@
 					help-text=""
 					:footer-text="saveScopeText"
 					:save-button-label="$i18n( 'neowiki-subject-editor-save' ).text()"
-					:save-disabled="!anyChanged"
+					:save-disabled="!anyChanged || saving"
 					@save="handleSave"
 				/>
 			</template>
@@ -355,9 +361,24 @@ function close(): void {
 
 const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseConfirmation( anyChanged, close );
 
+// Nothing may change or close while the loop below is writing: it harvests every dirty
+// pane up front and marks each one clean as its write lands, so an edit made meanwhile
+// would be reverted by the written copy and left unguarded by the discard confirmation.
+// Bound as `undefined` rather than `false` where it is off. A browser that knows `inert`
+// exposes it as a property, which Vue sets, so `false` would do there; where it is only an
+// attribute, as in jsdom, Vue would write inert="false", which an element reads as present.
+const saving = ref( false );
+
+function closeRequested(): void {
+	if ( saving.value ) {
+		return;
+	}
+	requestClose();
+}
+
 function onDialogUpdateOpen( value: boolean ): void {
 	if ( !value ) {
-		requestClose();
+		closeRequested();
 	}
 }
 
@@ -468,6 +489,18 @@ function recordWrite( id: string, written: Subject ): void {
 }
 
 const handleSave = async ( summary: string ): Promise<void> => {
+	if ( saving.value ) {
+		return;
+	}
+	saving.value = true;
+	try {
+		await writeDirtyPanes( summary );
+	} finally {
+		saving.value = false;
+	}
+};
+
+async function writeDirtyPanes( summary: string ): Promise<void> {
 	await nextTick();
 
 	partialSave.value = null;
@@ -561,7 +594,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		{ type: 'success' }
 	);
 	close();
-};
+}
 
 const onSchemaSaved = ( schema: Schema ): void => {
 	currentSchema.value = schema;
