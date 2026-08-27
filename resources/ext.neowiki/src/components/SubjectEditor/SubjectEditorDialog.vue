@@ -246,21 +246,28 @@ const panes = computed( (): EditPane[] => [
 	...extraPanes.value
 ] );
 
-// A pane never unmounts while the dialog is open, so a dirty pane is the only place an
-// unsaved edit can live. A Subject this save already wrote drops out until its pane is
-// edited again, so it neither keeps Save enabled nor confirms a discard over nothing.
-const unsavedIds = computed( (): string[] => panes.value
-	.map( ( pane ) => pane.id )
-	.filter( ( id ) => paneRefs.get( id )?.hasChanged === true )
+interface DirtyPane {
+	pane: EditPane;
+	instance: SubjectEditPaneInstance;
+}
+
+// The whole save set: the gates, the footer's counts and the write loop all read it. A pane
+// never unmounts while the dialog is open, so a dirty pane is the only place an unsaved edit
+// can live. A Subject this save already wrote drops out until its pane is edited again, so
+// it neither keeps Save enabled nor confirms a discard over nothing.
+const dirtyPanes = computed( (): DirtyPane[] => panes.value
+	.map( ( pane ) => ( { pane, instance: paneRefs.get( pane.id ) } ) )
+	.filter( ( entry ): entry is DirtyPane => entry.instance?.hasChanged === true )
 );
 
-const anyChanged = computed( (): boolean => unsavedIds.value.length > 0 );
+const unsavedIds = computed( (): string[] => dirtyPanes.value.map( ( { pane } ) => pane.id ) );
 
-// The written copies overlaid with the mounted panes, a mounted pane winning because it
-// holds the newer values. A pane's own copy is refreshed on relation changes alone, so the
-// live label is laid over it here and the tree names a Subject the way its form does.
+const anyChanged = computed( (): boolean => dirtyPanes.value.length > 0 );
+
+// One copy per mounted pane. A pane's own copy is refreshed on relation changes alone, so
+// the live label is laid over it here and the tree names a Subject the way its form does.
 const editedSubjects = computed( (): Map<string, Subject> => {
-	const subjects = new Map<string, Subject>( writtenSubjects.value );
+	const subjects = new Map<string, Subject>();
 
 	for ( const pane of panes.value ) {
 		const instance = paneRefs.get( pane.id );
@@ -280,11 +287,11 @@ function withLiveLabel( instance: SubjectEditPaneInstance ): Subject {
 	return edited.getLabel() === label ? edited : edited.withLabel( label );
 }
 
-// The root as the tree will walk it, picked out the same way SubjectTree picks it: were the
-// two to differ, the gate below and the tree would disagree about what the tree holds.
-const treeRootSubject = computed( (): Subject =>
-	editedSubjects.value.get( rootPaneId.value ) ?? props.subject
-);
+const rootPane = computed( (): SubjectEditPaneInstance | undefined => paneRefs.get( rootPaneId.value ) );
+
+// The root as the tree will walk it: the root pane's copy once that pane has registered, the
+// prop before. Labels have no bearing on relation targets, so the live label is left off.
+const treeRootSubject = computed( (): Subject => rootPane.value?.editedSubject ?? props.subject );
 
 // The navigator is rendered only once the tree would draw a row other than its own root.
 // The root's relation statements settle the walk, which starts there. An open pane is the
@@ -299,8 +306,6 @@ const showsNavigator = computed( (): boolean =>
 );
 
 const openIds = computed( (): string[] => panes.value.map( ( pane ) => pane.id ) );
-
-const rootPane = computed( (): SubjectEditPaneInstance | undefined => paneRefs.get( rootPaneId.value ) );
 
 // Owned by the pane that edits the Subject. Falls back to the prop for the first render,
 // before that pane has registered its ref.
@@ -333,7 +338,7 @@ const pendingTargetKeys = new Set<string>();
 
 async function openRelationTarget( targetId: SubjectId ): Promise<void> {
 	const id = targetId.text;
-	if ( panes.value.some( ( pane ) => pane.id === id ) ) {
+	if ( openIds.value.includes( id ) ) {
 		activePaneId.value = id;
 		return;
 	}
@@ -401,34 +406,30 @@ function onDialogUpdateOpen( value: boolean ): void {
 
 // Immediate, because the hosts render this dialog with v-if: it mounts with open
 // already true, so a deferred watcher would never see the opening that created it.
+// An opening and a replaced root both start over. A dialog only reaches `open: false` with
+// nothing unsaved or after a confirmed discard (see useCloseConfirmation), and written
+// copies are keyed by Subject id alone, so neither may seed the next session's panes.
+function startSession(): void {
+	openEpoch.value += 1;
+	extraPanes.value = [];
+	activePaneId.value = rootPaneId.value;
+	writtenSubjects.value = new Map();
+	partialSave.value = null;
+}
+
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
-		openEpoch.value += 1;
+		startSession();
 		// Fetched per opening: approval state and the viewer's permissions both change
 		// without an edit. Keyed on the page being viewed and on the root Subject's Schema.
 		loadNotices( Number( mw.config.get( 'wgArticleId' ) ), props.subject.getSchemaName() );
-		extraPanes.value = [];
-		activePaneId.value = rootPaneId.value;
-		// A dialog only reaches `open: false` with nothing unsaved or after a confirmed
-		// discard (see useCloseConfirmation), so what an earlier session wrote must not
-		// seed this one's panes.
-		writtenSubjects.value = new Map();
-		partialSave.value = null;
 	}
 }, { immediate: true } );
 
 // The host can replace props.subject while the dialog stays open, e.g. saving one subject
 // navigates straight to editing another. Without this, activePaneId keeps naming the old
 // root, no pane in the new `panes` list matches it, and nothing renders at all.
-watch( rootPaneId, ( newRootPaneId ) => {
-	openEpoch.value += 1;
-	extraPanes.value = [];
-	activePaneId.value = newRootPaneId;
-	// Written copies are keyed by Subject id alone, so they would otherwise seed a pane
-	// of an unrelated root.
-	writtenSubjects.value = new Map();
-	partialSave.value = null;
-} );
+watch( rootPaneId, startSession );
 
 watch( () => props.subject, ( newSubject ) => {
 	checkEditPermission( newSubject.getSchemaName() );
@@ -441,18 +442,6 @@ watch( () => props.schema, ( newSchema ) => {
 async function showSubject( id: string ): Promise<void> {
 	await openRelationTarget( new SubjectId( id ) );
 	await nextTick();
-}
-
-interface DirtyPane {
-	id: string;
-	instance: SubjectEditPaneInstance;
-}
-
-// The whole save set: the gates below and the write loop all read it.
-function dirtyPanes(): DirtyPane[] {
-	return panes.value
-		.map( ( pane ) => ( { id: pane.id, instance: paneRefs.get( pane.id ) } ) )
-		.filter( ( entry ): entry is DirtyPane => entry.instance?.hasChanged === true );
 }
 
 const partialSaveMessage = computed( (): string => partialSave.value === null ?
@@ -473,9 +462,7 @@ function pageKeyOf( subject: Subject ): string {
 }
 
 const dirtyPageCount = computed( (): number => new Set(
-	panes.value
-		.filter( ( pane ) => unsavedIds.value.includes( pane.id ) )
-		.map( ( pane ) => pageKeyOf( pane.subject ) )
+	dirtyPanes.value.map( ( { pane } ) => pageKeyOf( pane.subject ) )
 ).size );
 
 // Said only when it tells the user something the screen does not: the Save button plainly
@@ -516,7 +503,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 
 	partialSave.value = null;
 
-	const dirty = dirtyPanes();
+	const dirty = dirtyPanes.value;
 
 	for ( const { instance } of dirty ) {
 		await instance.flushValidation();
@@ -526,7 +513,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 	// dirty Subject before any write, or an unparseable later one would leave the stack
 	// half written.
 	const unparseable = dirty
-		.map( ( entry ) => ( { id: entry.id, input: entry.instance.unparseableInput() } ) )
+		.map( ( entry ) => ( { id: entry.pane.id, input: entry.instance.unparseableInput() } ) )
 		.find( ( entry ): entry is { id: string; input: UnparseableInput } => entry.input !== null );
 
 	if ( unparseable !== undefined ) {
@@ -542,7 +529,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 	// changed flag.
 	const targets = new Map<string, Subject>();
 
-	for ( const { id, instance } of dirty ) {
+	for ( const { pane, instance } of dirty ) {
 		const updated = instance.buildUpdatedSubject();
 		if ( updated === null ) {
 			// A dirty pane with no data to save means it lost its editor ref;
@@ -550,7 +537,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 			mw.notify( mw.msg( 'neowiki-subject-editor-error', props.subject.getDisplayName() ), { type: 'error' } );
 			return;
 		}
-		targets.set( id, updated );
+		targets.set( pane.id, updated );
 	}
 
 	// Carried out of the loop rather than returned from inside it, so a part-way stop is
