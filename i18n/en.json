@@ -192,6 +192,8 @@
 	"neowiki-subject-editor-error": "Failed to update $1.",
 	"neowiki-subject-editor-validation-failed": "Validation failed for \"$1\". Please fix the highlighted fields.",
 	"neowiki-subject-editor-unsaved": "Unsaved changes",
+	"neowiki-subject-tree-label": "Structure",
+	"neowiki-subject-tree-not-linked": "Not linked here",
 
 	"neowiki-subject-picker-placeholder": "Search for a subject",
 	"neowiki-subject-picker-no-results": "No subjects found",
