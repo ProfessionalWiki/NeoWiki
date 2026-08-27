@@ -223,6 +223,18 @@ describe( 'NeoTree', () => {
 			expect( tabStops( wrapper )[ 0 ].element ).toBe( node( wrapper, 'root' ).element );
 		} );
 
+		// Otherwise Shift+Tab back into the tree lands on the row an earlier arrow key left,
+		// not on the one the user last chose.
+		it( 'moves the tab stop to a row selected with the mouse', async () => {
+			const wrapper = mountTree();
+
+			await node( wrapper, 'root' ).trigger( 'keydown', { key: 'ArrowDown' } );
+			await row( node( wrapper, 'second' ) ).trigger( 'click' );
+
+			expect( tabStops( wrapper ).length ).toBe( 1 );
+			expect( tabStops( wrapper )[ 0 ].element ).toBe( node( wrapper, 'second' ).element );
+		} );
+
 		// The tree is always fully expanded, so it claims neither expand key. Pressed from a node
 		// that is neither the first nor the active one: from the root those are the same element,
 		// where a Right wired to Home would look identical to a Right that does nothing.

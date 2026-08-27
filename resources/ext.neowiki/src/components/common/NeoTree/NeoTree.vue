@@ -96,7 +96,10 @@ const rovingKey = computed( (): string | null => {
 	return activeItem?.key ?? flatItems.value[ 0 ]?.key ?? null;
 } );
 
+// A mouse selection moves the tab stop too, or Shift+Tab back into the tree would land on
+// the row an earlier arrow key left.
 function selectItem( item: NeoTreeItem<T> ): void {
+	focusedKey.value = item.key;
 	emit( 'select', item );
 }
 
