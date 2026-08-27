@@ -37,7 +37,6 @@ import type { NeoTreeItem } from './NeoTreeModel.ts';
 const props = defineProps<{
 	items: NeoTreeItem<T>[];
 	label: string;
-	idPrefix?: string;
 }>();
 
 const emit = defineEmits<{
@@ -79,7 +78,7 @@ const elementIds = computed( (): ReadonlyMap<string, string> =>
 	new Map( flatItems.value.map( ( item, index ) => [ item.key, elementId( index ) ] ) ) );
 
 function elementId( index: number ): string {
-	return `${ props.idPrefix ?? 'ext-neowiki-tree' }-node-${ index }`;
+	return `ext-neowiki-tree-node-${ index }`;
 }
 
 // Set by Up/Down/Home/End; null until one is pressed, and again whenever the key it holds

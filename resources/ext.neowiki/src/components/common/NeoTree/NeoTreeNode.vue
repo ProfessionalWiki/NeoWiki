@@ -75,10 +75,7 @@
 import { computed } from 'vue';
 import type { NeoTreeItem } from './NeoTreeModel.ts';
 
-defineOptions( { name: 'NeoTreeNode' } );
-
-// Declared out here: a parenthesis anywhere inside a macro's type argument trips ESLint's
-// func-call-spacing, which reads it as the macro's own call.
+// Declared out here for the reason given in NeoTree.vue.
 type NodeSelect = ( item: NeoTreeItem<T> ) => void;
 type NodeKeydown = ( event: KeyboardEvent, item: NeoTreeItem<T> ) => void;
 type TrailingSlot = ( slotProps: { item: NeoTreeItem<T> } ) => unknown;
