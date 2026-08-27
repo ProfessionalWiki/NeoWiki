@@ -33,16 +33,11 @@
 					@focusin="onFocus"
 				>
 					<template v-if="targetEditingEnabled" #suffix="{ selected }">
-						<CdxButton
+						<RelationTargetEditButton
 							v-if="selected !== null"
-							class="ext-neowiki-relation-input__edit-target"
-							weight="quiet"
-							type="button"
-							:aria-label="$i18n( 'neowiki-subject-editor-edit-target' ).text()"
-							@click="onEditTarget( selected )"
-						>
-							<CdxIcon :icon="cdxIconEdit" />
-						</CdxButton>
+							:target="selected"
+							@edit="emit( 'edit-relation-target', $event )"
+						/>
 					</template>
 				</SubjectPicker>
 			</template>
@@ -57,16 +52,11 @@
 			@blur="onSingleBlur"
 		>
 			<template v-if="targetEditingEnabled" #suffix="{ selected }">
-				<CdxButton
+				<RelationTargetEditButton
 					v-if="selected !== null"
-					class="ext-neowiki-relation-input__edit-target"
-					weight="quiet"
-					type="button"
-					:aria-label="$i18n( 'neowiki-subject-editor-edit-target' ).text()"
-					@click="onEditTarget( selected )"
-				>
-					<CdxIcon :icon="cdxIconEdit" />
-				</CdxButton>
+					:target="selected"
+					@edit="emit( 'edit-relation-target', $event )"
+				/>
 			</template>
 		</SubjectPicker>
 	</CdxField>
@@ -74,14 +64,14 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, toRef, inject } from 'vue';
-import { CdxButton, CdxField, CdxIcon, ValidationMessages } from '@wikimedia/codex';
-import { cdxIconEdit, cdxIconInfo } from '@wikimedia/codex-icons';
+import { CdxField, CdxIcon, ValidationMessages } from '@wikimedia/codex';
+import { cdxIconInfo } from '@wikimedia/codex-icons';
+import RelationTargetEditButton from '@/components/Value/RelationTargetEditButton.vue';
 import NeoMultiLookupInput from '@/components/common/NeoMultiLookupInput.vue';
 import SubjectPicker from '@/components/common/SubjectPicker.vue';
 import { RelationTargetEditingKey, ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/components/Value/ValueInputContract';
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { Value, ValueType, RelationValue, newRelation, relationValuesHaveSameTargets } from '@/domain/Value';
-import { SubjectId } from '@/domain/SubjectId.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useServerViolations, violationStatus } from '@/composables/useServerViolations.ts';
 
@@ -98,12 +88,6 @@ const startIcon = NeoWikiServices.getComponentRegistry().getIcon( RelationType.t
 const emit = defineEmits<ValueInputEmits>();
 
 const targetEditingEnabled = inject( RelationTargetEditingKey, false );
-
-function onEditTarget( selected: string | null ): void {
-	if ( selected !== null ) {
-		emit( 'edit-relation-target', new SubjectId( selected ) );
-	}
-}
 
 const internalValue = ref<RelationValue | undefined>( undefined );
 const singleHasUnmatchedText = ref( false );
