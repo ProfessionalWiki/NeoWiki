@@ -12,7 +12,8 @@ import { Statement } from '@/domain/Statement.ts';
 import { newTextProperty } from '@/domain/propertyTypes/Text.ts';
 import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
-import { newStringValue } from '@/domain/Value.ts';
+import { newRelation, newStringValue, RelationValue } from '@/domain/Value.ts';
+import { newRelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
@@ -117,6 +118,26 @@ function fieldValue( wrapper: VueWrapper, propertyName: string ): unknown {
 	return [ ...statements ].find( ( s ) => s.propertyName.toString() === propertyName )?.value;
 }
 
+// A relation field with a target picked, as the pane shows it for a Subject read from the server.
+const relationSchema = new Schema(
+	'TestSchema',
+	'A test schema',
+	new PropertyDefinitionList( [ newRelationProperty( { name: 'Author' } ) ] ),
+);
+
+const subjectWithAuthor = new SubjectWithContext(
+	new SubjectId( 's11111111111111' ),
+	'Test Subject',
+	'Test Subject',
+	'TestSchema',
+	new StatementList( [ new Statement(
+		new PropertyName( 'Author' ),
+		RelationType.typeName,
+		new RelationValue( [ newRelation( undefined, 's22222222222222' ) ] ),
+	) ] ),
+	new PageIdentifiers( 42, 'Test page' ),
+);
+
 describe( 'SubjectEditPane', () => {
 	beforeEach( () => {
 		setupMwMock( {
@@ -137,6 +158,14 @@ describe( 'SubjectEditPane', () => {
 		// The dry-run validation runs alongside the live validators; stub it so
 		// it does not reach the network and stays out of the way of these tests.
 		useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [] );
+	} );
+
+	// Only a host that can open a target in place turns the per-target edit button on; the
+	// pane is that host, and nothing else on this branch provides the key.
+	it( 'offers to edit a relation target in place', () => {
+		const wrapper = mountPane( { subject: subjectWithAuthor, schema: relationSchema } );
+
+		expect( wrapper.find( '.ext-neowiki-relation-input__edit-target' ).exists() ).toBe( true );
 	} );
 
 	it( 'renders one field per schema property, including properties the subject lacks', () => {
