@@ -732,12 +732,14 @@ defineExpose( { hasChanged: anyChanged } );
 		overflow-y: auto;
 	}
 
-	/* The dialog's 24px gutter less the 6px inset a row already carries, so a node's TEXT
-		lands on that gutter, in line with the notices above and the form beside it, while the
-		row's hover and selected backgrounds keep reaching the 6px further out — a background
-		flush with the text would read as clipped. */
+	/* The tree carries no inset of its own; this dialog gives it the form's, on its padded
+		element rather than on the scroller around it. The gutter is the dialog's 24px less the
+		6px a row already carries, so a node's TEXT lands on that gutter, in line with the
+		notices above and the form beside it, while the row's hover and selected backgrounds
+		keep reaching the 6px further out — a background flush with the text would read as
+		clipped. Nothing on the end side, so the scrollbar sits flush with the divider. */
 	& .ext-neowiki-subject-tree {
-		padding-inline-start: calc( @spacing-150 - @spacing-35 );
+		padding: @spacing-100 0 @spacing-100 calc( @spacing-150 - @spacing-35 );
 	}
 
 	/* Drawn on the boundary rather than owned by either side. A surface only ever follows

@@ -159,10 +159,6 @@ function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 		list-style: none;
 	}
 
-	&__list {
-		padding-block: @spacing-100;
-	}
-
 	/* One guide line per level, running the full height of that level, captions included. */
 	&__relation {
 		margin-inline-start: @spacing-75;
