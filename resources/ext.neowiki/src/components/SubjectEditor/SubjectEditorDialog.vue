@@ -464,8 +464,8 @@ const partialSaveMessage = computed( (): string => partialSave.value === null ?
 	).text()
 );
 
-// Two Subjects on one page are saved as one revision of it, so the scope is counted in pages
-// as well as in Subjects. A Subject with no resolved page counts as a page of its own.
+// Counted in pages as well as in Subjects, since each page written gets revisions of its own.
+// A Subject with no resolved page counts as a page of its own.
 function pageKeyOf( subject: Subject ): string {
 	return subject instanceof SubjectWithContext ?
 		`page:${ subject.getPageIdentifiers().getPageId() }` :
