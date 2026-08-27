@@ -505,9 +505,8 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 
 	const dirty = dirtyPanes.value;
 
-	for ( const { instance } of dirty ) {
-		await instance.flushValidation();
-	}
+	// Each flush writes only its own pane's violations, so none has to wait for another.
+	await Promise.all( dirty.map( ( { instance } ) => instance.flushValidation() ) );
 
 	// Saving now would silently drop text the user can still see. Checked across every
 	// dirty Subject before any write, or an unparseable later one would leave the stack
