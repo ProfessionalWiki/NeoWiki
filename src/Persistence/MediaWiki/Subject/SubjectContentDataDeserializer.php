@@ -103,9 +103,12 @@ class SubjectContentDataDeserializer {
 		}
 
 		// A Subject id that looks like a decimal integer comes back from json_decode as an int key.
+		// The local Source's grammar, not the qualified one: the subject-to-page index keys ids bare
+		// (ADR 32), and a Subject from another Source is not stored in a local slot. A qualified id is
+		// also longer than the index column, so admitting one would truncate rather than record it.
 		return array_values( array_filter(
 			array_map( 'strval', array_keys( $subjects ) ),
-			SubjectId::isValid( ... )
+			SubjectId::isValidLocalId( ... )
 		) );
 	}
 
