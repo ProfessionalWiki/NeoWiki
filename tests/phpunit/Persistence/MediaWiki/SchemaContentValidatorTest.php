@@ -231,6 +231,24 @@ JSON
 		);
 	}
 
+	/**
+	 * The domain anchors its Source-key grammar with \z, so a key with a trailing newline is not a
+	 * Source key. The stored-schema grammar is written with $, which agrees only because the validator
+	 * compiles patterns with PCRE's DOLLAR_ENDONLY: this pins that agreement, so a change of validator
+	 * or of compilation flags cannot quietly let through a key the domain then rejects.
+	 */
+	public function testTargetSchemaSourceWithATrailingNewlineFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty(
+					'{ "type": "relation", "relation": "Likes", "targetSchema": { "source": "otherwiki\n", "name": "Person" } }'
+				)
+			)
+		);
+	}
+
 	public function testTargetSchemaObjectWithoutANameFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();
 
