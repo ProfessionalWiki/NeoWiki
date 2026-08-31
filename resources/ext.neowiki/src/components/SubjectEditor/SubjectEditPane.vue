@@ -197,14 +197,17 @@ function handleClearViolation( payload: { propertyName: string; valuePartIndex: 
 	);
 }
 
-// Existing subjects are expected to be complete, so validate as soon as the
-// editor mounts: pre-existing violations (e.g. a now-empty required field)
-// surface immediately, without the user having to touch a field first.
-watch( subjectEditorRef, ( editor ) => {
+// Existing subjects are expected to be complete, so validate as soon as the editor
+// mounts, and again whenever the Schema it validates against changes: the violations
+// are a snapshot of a server response, so a Schema edit invalidates them until the
+// next run. flush() rather than revalidate(), which a zero debounce turns into a
+// no-op — blur-only wikis need the refresh too. Post-flush, so the validator reads
+// the fields the new Schema produced, not the ones it replaced.
+watch( [ subjectEditorRef, () => props.schema ], ( [ editor ] ) => {
 	if ( editor ) {
 		flush();
 	}
-} );
+}, { flush: 'post' } );
 
 // A replaced Subject starts the pane over. Drop the harvest, or a reopened pane seeds the
 // tree with relations the form no longer displays.
