@@ -31,7 +31,15 @@
 					@update:selected="onUpdate"
 					@blur="onBlur"
 					@focusin="onFocus"
-				/>
+				>
+					<template v-if="targetEditingEnabled" #suffix="{ selected }">
+						<RelationTargetEditButton
+							v-if="selected !== null"
+							:target="selected"
+							@edit="emit( 'edit-relation-target', $event )"
+						/>
+					</template>
+				</SubjectPicker>
 			</template>
 		</NeoMultiLookupInput>
 		<SubjectPicker
@@ -42,17 +50,26 @@
 			:status="fieldStatus"
 			@update:selected="onSingleSelectionChanged"
 			@blur="onSingleBlur"
-		/>
+		>
+			<template v-if="targetEditingEnabled" #suffix="{ selected }">
+				<RelationTargetEditButton
+					v-if="selected !== null"
+					:target="selected"
+					@edit="emit( 'edit-relation-target', $event )"
+				/>
+			</template>
+		</SubjectPicker>
 	</CdxField>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, toRef } from 'vue';
+import { ref, watch, computed, toRef, inject } from 'vue';
 import { CdxField, CdxIcon, ValidationMessages } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
+import RelationTargetEditButton from '@/components/Value/RelationTargetEditButton.vue';
 import NeoMultiLookupInput from '@/components/common/NeoMultiLookupInput.vue';
 import SubjectPicker from '@/components/common/SubjectPicker.vue';
-import { ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/components/Value/ValueInputContract';
+import { RelationTargetEditingKey, ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/components/Value/ValueInputContract';
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { Value, ValueType, RelationValue, newRelation, relationValuesHaveSameTargets } from '@/domain/Value';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -69,6 +86,8 @@ const props = withDefaults(
 const startIcon = NeoWikiServices.getComponentRegistry().getIcon( RelationType.typeName );
 
 const emit = defineEmits<ValueInputEmits>();
+
+const targetEditingEnabled = inject( RelationTargetEditingKey, false );
 
 const internalValue = ref<RelationValue | undefined>( undefined );
 const singleHasUnmatchedText = ref( false );

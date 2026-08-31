@@ -11,8 +11,9 @@
 				:model-value="statement.value"
 				:property="props.schema.getPropertyDefinition( statement.propertyName )"
 				:server-violations="violationsFor( statement.propertyName.toString() )"
-				@update:model-value="emit( 'change' )"
+				@update:model-value="onValueChanged( statement )"
 				@clear-server-violation="emit( 'clear-server-violation', $event )"
+				@edit-relation-target="emit( 'edit-relation-target', $event )"
 			/>
 		</CdxField>
 	</div>
@@ -38,9 +39,11 @@ import { ref, onBeforeUpdate } from 'vue';
 import { CdxField } from '@wikimedia/codex';
 import { Statement } from '@/domain/Statement.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
 import { Schema } from '@/domain/Schema.ts';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
+import type { SubjectId } from '@/domain/SubjectId';
 
 const props = defineProps<{
 	statements: StatementList;
@@ -50,8 +53,22 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	change: [];
+	// Narrower than `change`: a listener can follow the edits that alter the Subject
+	// graph without waking on every keystroke in a text field.
+	'relation-change': [];
 	'clear-server-violation': [ { propertyName: string; valuePartIndex: number | null } ];
+	'edit-relation-target': [ SubjectId ];
 }>();
+
+// Tested on the Statement's own property type, which is what selected the widget above and,
+// unlike schema.getPropertyDefinition(), cannot throw on a name the Schema does not carry.
+function onValueChanged( statement: Statement ): void {
+	emit( 'change' );
+
+	if ( statement.propertyType === RelationType.typeName ) {
+		emit( 'relation-change' );
+	}
+}
 
 function violationsFor( propertyName: string ): readonly SubjectViolation[] {
 	if ( !props.serverViolations ) {

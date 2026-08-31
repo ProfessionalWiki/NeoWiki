@@ -1,13 +1,20 @@
-import { VueWrapper } from '@vue/test-utils';
+import { mount, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import type { SubjectEditorExposes } from '@/components/SubjectEditor/SubjectEditor.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson } from '@/domain/PropertyDefinition.ts';
+import RelationInput from '@/components/Value/RelationInput.vue';
+import TextInput from '@/components/Value/TextInput.vue';
+import { newStringValue, RelationValue } from '@/domain/Value.ts';
 import { NumberType } from '@/domain/propertyTypes/Number.ts';
+import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
+import { SubjectId } from '@/domain/SubjectId.ts';
+import { newSchema } from '@/TestHelpers.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
-import { createTestWrapper, reportUnparseableNumber } from '../../VueTestHelpers.ts';
+import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
+import { createI18nMock, createTestWrapper, reportUnparseableNumber } from '../../VueTestHelpers.ts';
 
 describe( 'SubjectEditor', () => {
 	beforeEach( () => {
@@ -92,5 +99,74 @@ describe( 'SubjectEditor', () => {
 		await wrapper.setProps( { schema: withoutNumber, statements: withoutNumber.blankStatements() } );
 
 		expect( editor( wrapper ).unparseableInput() ).toBeNull();
+	} );
+
+	// A relation edit is the one that changes the Subject graph, so it is the one the tree
+	// listens for; a text edit must not wake it.
+	describe( 'relation-change', () => {
+		const mixedSchema = newSchema( {
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Name', { type: TextType.typeName } ),
+				newRelationProperty( { name: 'Author' } ),
+			] ),
+		} );
+
+		function mountMixed(): VueWrapper {
+			return mount( SubjectEditor, {
+				props: {
+					statements: mixedSchema.blankStatements(),
+					schema: mixedSchema,
+				},
+				global: {
+					provide: NeoWikiTestServices.getServices(),
+					directives: { tooltip: {} },
+					mocks: { $i18n: createI18nMock() },
+					stubs: { SubjectPicker: true, NeoMultiLookupInput: true },
+				},
+			} );
+		}
+
+		it( 'is emitted when a relation field reports a new value', async () => {
+			const wrapper = mountMixed();
+
+			await wrapper.findComponent( RelationInput ).vm.$emit( 'update:modelValue', new RelationValue( [] ) );
+
+			expect( wrapper.emitted( 'relation-change' ) ).toHaveLength( 1 );
+		} );
+
+		it( 'is not emitted when a text field reports a new value', async () => {
+			const wrapper = mountMixed();
+
+			await wrapper.findComponent( TextInput ).vm.$emit( 'update:modelValue', newStringValue( 'x' ) );
+
+			expect( wrapper.emitted( 'change' ) ).toHaveLength( 1 );
+			expect( wrapper.emitted( 'relation-change' ) ).toBeUndefined();
+		} );
+	} );
+
+	// Mounted here rather than through createTestWrapper: the relation field reaches
+	// SubjectPicker, which calls useSubjectStore() at setup, and createTestWrapper
+	// installs neither Pinia nor stubs.
+	it( 'forwards edit-relation-target from a value input', () => {
+		const relationSchema = newSchema( {
+			properties: new PropertyDefinitionList( [ newRelationProperty( { name: 'Author' } ) ] ),
+		} );
+		const wrapper = mount( SubjectEditor, {
+			props: {
+				statements: relationSchema.blankStatements(),
+				schema: relationSchema,
+			},
+			global: {
+				provide: NeoWikiTestServices.getServices(),
+				directives: { tooltip: {} },
+				mocks: { $i18n: createI18nMock() },
+				stubs: { SubjectPicker: true, NeoMultiLookupInput: true },
+			},
+		} );
+
+		const id = new SubjectId( 's11111111111111' );
+		wrapper.findComponent( RelationInput ).vm.$emit( 'edit-relation-target', id );
+
+		expect( wrapper.emitted( 'edit-relation-target' ) ).toEqual( [ [ id ] ] );
 	} );
 } );

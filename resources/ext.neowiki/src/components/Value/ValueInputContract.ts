@@ -1,6 +1,8 @@
+import type { InjectionKey } from 'vue';
 import type { Value } from '@/domain/Value';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
+import type { SubjectId } from '@/domain/SubjectId';
 
 export interface ValueInputProps<T extends PropertyDefinition> {
 	modelValue: Value | undefined;
@@ -22,6 +24,11 @@ export type ValueInputEmits = {
 	 * border clears before the next save.
 	 */
 	'clear-server-violation': [ { propertyName: string; valuePartIndex: number | null } ];
+	/**
+	 * Emitted only by relation inputs, and only where the host provides
+	 * RelationTargetEditingKey.
+	 */
+	'edit-relation-target': [ SubjectId ];
 };
 
 export interface ValueInputExposes {
@@ -42,3 +49,9 @@ export type ValueInputEmitFunction = {
 	( event: 'update:modelValue', value: Value | undefined ): void;
 	( event: 'clear-server-violation', payload: { propertyName: string; valuePartIndex: number | null } ): void;
 };
+
+/**
+ * Provided as true by hosts that can open a relation target for in-place editing.
+ * RelationInput then renders a per-target edit affordance.
+ */
+export const RelationTargetEditingKey: InjectionKey<boolean> = Symbol( 'NeoWikiRelationTargetEditing' );

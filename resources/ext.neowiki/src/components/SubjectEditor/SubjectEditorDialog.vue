@@ -1,13 +1,20 @@
 <template>
 	<div class="ext-neowiki-subject-editor-container">
+		<!-- Codex switches `cdx-dialog--dividers` on by itself only when the dialog body scrolls,
+			which this body never does: the navigator and the form each scroll inside it. The
+			dividers are what the rule between those two surfaces runs into, so ask by name. -->
 		<CdxDialog
 			:open="open"
-			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog"
+			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog cdx-dialog--dividers"
+			:class="{ 'ext-neowiki-subject-editor-dialog--wide': showsNavigator }"
 			:title="$i18n( 'neowiki-subject-editor-title', props.subject.getDisplayName() ).text()"
 			@update:open="onDialogUpdateOpen"
 		>
 			<template #header>
-				<div class="cdx-dialog__header__title-group">
+				<div
+					class="cdx-dialog__header__title-group"
+					:inert="saving || undefined"
+				>
 					<div class="cdx-dialog__header__title ext-neowiki-subject-editor-dialog__title">
 						<EditableText
 							:model-value="subjectLabel"
@@ -47,32 +54,75 @@
 					weight="quiet"
 					type="button"
 					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
-					@click="requestClose"
+					@click="closeRequested"
 				>
 					<CdxIcon :icon="cdxIconClose" />
 				</CdxButton>
 			</template>
 
-			<SubjectViolationBanners :violations="anchorlessViolations" />
+			<!-- Only the navigator's surface is ever conditionally rendered, and the panes container
+				is deliberately unkeyed: a pane must never unmount, because its unsaved values live in
+				the ValueInput refs inside it. -->
+			<div
+				class="ext-neowiki-subject-editor-dialog__content"
+				:inert="saving || undefined"
+			>
+				<EditNoticeList :notices="notices" />
 
-			<EditNoticeList :notices="notices" />
+				<div
+					v-if="showsNavigator"
+					class="ext-neowiki-subject-editor-dialog__surface"
+				>
+					<!-- Load-bearing, and invisible in the rendered output: it starts a new walk, with
+						no memory of which fetches failed, on each opening and each new root. Codex's
+						own v-if on the slot happens to unmount the walk too; do not rely on that. -->
+					<SubjectTree
+						:key="openEpoch"
+						:root-subject="props.subject"
+						:root-schema="currentSchema"
+						:open-ids="openIds"
+						:active-id="activePaneId"
+						:unsaved-ids="unsavedIds"
+						:edited-subjects="editedSubjects"
+						@select="openRelationTarget"
+					/>
+				</div>
 
-			<SubjectEditor
-				ref="subjectEditorRef"
-				:statements="statements"
-				:schema="currentSchema"
-				:server-violations="serverViolations"
-				@change="handleEditorChange"
-				@focusout="handleEditorBlur"
-				@clear-server-violation="handleClearViolation"
-			/>
+				<div class="ext-neowiki-subject-editor-dialog__surface">
+					<div class="ext-neowiki-subject-editor-dialog__panels">
+						<div
+							v-for="pane in panes"
+							v-show="pane.id === activePaneId"
+							:id="`ext-neowiki-panel-${ pane.id }`"
+							:key="pane.id"
+							tabindex="-1"
+						>
+							<SubjectEditPane
+								:ref="( el ) => setPaneRef( pane.id, el )"
+								:subject="pane.subject"
+								:schema="pane.schema"
+								:nested="pane.id !== rootPaneId"
+								@edit-relation-target="openRelationTargetFromForm"
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
 
-			<!-- TODO: We should make this into a component-->
 			<template #footer>
+				<CdxMessage
+					v-if="partialSave !== null"
+					:inline="true"
+					type="warning"
+					class="ext-neowiki-subject-editor-dialog__partial-save"
+				>
+					{{ partialSaveMessage }}
+				</CdxMessage>
 				<SummaryAction
 					help-text=""
+					:footer-text="saveScopeText"
 					:save-button-label="$i18n( 'neowiki-subject-editor-save' ).text()"
-					:save-disabled="!hasChanged"
+					:save-disabled="!anyChanged || saving"
 					@save="handleSave"
 				/>
 			</template>
@@ -95,32 +145,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, nextTick, computed, watch } from 'vue';
-import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
-import type { SubjectEditorExposes } from '@/components/SubjectEditor/SubjectEditor.vue';
-import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
+import { ref, shallowRef, shallowReactive, nextTick, computed, watch } from 'vue';
+import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
+import type { SubjectEditPaneExposes } from '@/components/SubjectEditor/SubjectEditPane.vue';
+import SubjectTree from '@/components/SubjectEditor/SubjectTree.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
-import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
 import EditableText from '@/components/common/EditableText.vue';
+import EditNoticeList from '@/components/common/EditNoticeList.vue';
+import { CdxButton, CdxDialog, CdxIcon, CdxMessage } from '@wikimedia/codex';
 import { cdxIconClose } from '@wikimedia/codex-icons';
-import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
-import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
+import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import { SubjectId } from '@/domain/SubjectId.ts';
 import { Schema } from '@/domain/Schema.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
-import EditNoticeList from '@/components/common/EditNoticeList.vue';
-import { useEditNotices } from '@/composables/useEditNotices.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
-import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
-import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
+import { useEditNotices } from '@/composables/useEditNotices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
-import type { SubjectViolation } from '@/domain/SubjectViolation';
+import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { relationTargetsOf } from '@/components/SubjectEditor/SubjectTreeModel.ts';
 
 type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>;
 
@@ -134,69 +184,108 @@ const props = defineProps<{
 
 const emit = defineEmits( [ 'update:open' ] );
 
-const subjectStore = useSubjectStore();
+interface EditPane {
+	id: string;
+	subject: Subject;
+	schema: Schema;
+}
 
 const isSchemaEditorOpen = ref( false );
-const subjectEditorRef = ref<SubjectEditorExposes | null>( null );
-// Initialized by the immediate props.subject watch below.
-const subjectLabel = ref( '' );
 // Mirrors the prop so a schema saved through the nested SchemaEditorDialog takes effect here
 // without waiting for the host to pass a new one down.
 const currentSchema = shallowRef<Schema>( props.schema );
 const { canEditSchema, checkEditPermission } = useSchemaPermissions();
 const { notices, loadNotices } = useEditNotices( () => NeoWikiExtension.getInstance().getEditNoticeRepository() );
-const { hasChanged, markChanged, resetChanged } = useChangeDetection();
+const subjectRepository = NeoWikiServices.getSubjectRepository();
+const schemaRepository = NeoWikiServices.getSchemaRepository();
 
-const { violations: serverViolations, revalidate, flush, reset } = useSubjectValidation(
-	async () => {
-		if ( !subjectEditorRef.value ) {
-			return [];
-		}
-		const statements = [ ...subjectEditorRef.value.getSubjectData() ].filter( ( s ) => s.hasValue() );
-		try {
-			// Unlike subject creation, editing an existing subject surfaces
-			// 'required' live: an empty required field here is a real gap, not a
-			// field the user is still on their way to filling in.
-			return await subjectStore.validateSubjectUpdate(
-				props.subject.getId(),
-				enteredLabel(),
-				new StatementList( statements )
-			);
-		} catch ( error ) {
-			// The dry-run runs alongside the live validators and must never
-			// break editing or saving; the authoritative result is the save's
-			// own 422 response.
-			console.error( 'Subject validation dry-run failed:', error );
-			return [];
-		}
-	},
-	{ debounceMs: NeoWikiExtension.getInstance().getValidationDebounceMs() }
-);
+const rootPaneId = computed( (): string => props.subject.getId().text );
+const paneRefs = shallowReactive( new Map<string, SubjectEditPaneExposes>() );
 
-let dirtySinceValidation = false;
-
-function handleEditorChange(): void {
-	markChanged();
-	dirtySinceValidation = true;
-	revalidate();
-}
-
-function handleEditorBlur(): void {
-	// focusout bubbles on every field-to-field move; only flush when something
-	// actually changed since the last validation, to avoid redundant requests.
-	if ( dirtySinceValidation ) {
-		dirtySinceValidation = false;
-		flush();
+function setPaneRef( id: string, el: unknown ): void {
+	if ( el ) {
+		paneRefs.set( id, el as SubjectEditPaneExposes );
+	} else {
+		paneRefs.delete( id );
 	}
 }
 
-// EditableText commits once per edit, so a commit is both the change and the
-// end of the interaction: validate immediately rather than waiting for a blur.
-function onLabelEdited( value: string ): void {
-	subjectLabel.value = value;
-	handleEditorChange();
-	handleEditorBlur();
+const extraPanes = shallowRef<EditPane[]>( [] );
+const activePaneId = ref<string>( rootPaneId.value );
+
+// Set when a save wrote some Subjects and then failed: the toast that says so vanishes,
+// and the dialog is still open.
+const partialSave = ref<{ written: number; attempted: number } | null>( null );
+
+const panes = computed( (): EditPane[] => [
+	{ id: rootPaneId.value, subject: props.subject, schema: currentSchema.value },
+	...extraPanes.value
+] );
+
+interface DirtyPane {
+	pane: EditPane;
+	instance: SubjectEditPaneExposes;
 }
+
+// The whole save set: the gates, the footer's counts and the write loop all read it. A pane
+// never unmounts while the dialog is open, so a dirty pane is the only place an unsaved edit
+// can live. A Subject this save already wrote drops out until its pane is edited again, so
+// it neither keeps Save enabled nor confirms a discard over nothing.
+const dirtyPanes = computed( (): DirtyPane[] => panes.value
+	.map( ( pane ) => ( { pane, instance: paneRefs.get( pane.id ) } ) )
+	.filter( ( entry ): entry is DirtyPane => entry.instance?.hasChanged === true )
+);
+
+const unsavedIds = computed( (): string[] => dirtyPanes.value.map( ( { pane } ) => pane.id ) );
+
+const anyChanged = computed( (): boolean => dirtyPanes.value.length > 0 );
+
+// One copy per mounted pane. A pane's own copy is refreshed on relation changes alone, so
+// the live label is laid over it here and the tree names a Subject the way its form does.
+const editedSubjects = computed( (): Map<string, Subject> => {
+	const subjects = new Map<string, Subject>();
+
+	for ( const pane of panes.value ) {
+		const instance = paneRefs.get( pane.id );
+		if ( instance !== undefined ) {
+			subjects.set( pane.id, withLiveLabel( instance ) );
+		}
+	}
+
+	return subjects;
+} );
+
+// Rebuilt only when the label has moved, so an unrenamed Subject keeps the very object the
+// tree already walked. The field's text is read the way a write reads it.
+function withLiveLabel( instance: SubjectEditPaneExposes ): Subject {
+	const edited = instance.editedSubject;
+	const label = enteredSubjectLabel( instance.label );
+	return edited.getLabel() === label ? edited : edited.withLabel( label );
+}
+
+const rootPane = computed( (): SubjectEditPaneExposes | undefined => paneRefs.get( rootPaneId.value ) );
+
+// The root as the tree will walk it: the root pane's copy once that pane has registered, the
+// prop before. Labels have no bearing on relation targets, so the live label is left off.
+const treeRootSubject = computed( (): Subject => rootPane.value?.editedSubject ?? props.subject );
+
+// The navigator is rendered only once the tree would draw a row other than its own root.
+// The root's relation statements settle the walk, which starts there. An open pane is the
+// second case: it is never unmounted, and the tree is the only control that reaches it, so
+// clearing the relation that led to it must not take the navigator away.
+//
+// Both are read synchronously, so a target counts as soon as it is picked and the gate
+// cannot flicker while a label fetch is in flight.
+const showsNavigator = computed( (): boolean =>
+	relationTargetsOf( treeRootSubject.value, currentSchema.value ).length > 0 ||
+	extraPanes.value.length > 0
+);
+
+const openIds = computed( (): string[] => panes.value.map( ( pane ) => pane.id ) );
+
+// Owned by the pane that edits the Subject. Falls back to the prop for the first render,
+// before that pane has registered its ref.
+const subjectLabel = computed( (): string => rootPane.value?.label ?? props.subject.getLabel() ?? '' );
 
 // The rename field previews the name a cleared label leaves behind, which the client knows only
 // for a Subject that already has none: the server holds the inputs, and it is what the display
@@ -207,76 +296,117 @@ const labelPlaceholder = computed( (): string =>
 		mw.msg( 'neowiki-subject-editor-label-field' )
 );
 
-// An untouched field still carries the stored label, which a full-replacement write has to send
-// back or it would wipe it.
-function enteredLabel(): string | null {
-	return enteredSubjectLabel( subjectLabel.value );
+function onLabelEdited( value: string ): void {
+	rootPane.value?.setLabel( value );
 }
 
-const anchorlessViolations = computed<SubjectViolation[]>( () => {
-	// SubjectEditor renders one field per entry in `statements`, which the
-	// schema materialises from its property definitions (so empty/missing
-	// properties still get a field). Anchor against THAT list, not the
-	// raw subject — otherwise a violation on a missing-but-rendered field
-	// would be wrongly banner-routed even though the field is on screen.
-	const renderedPropertyNames = new Set(
-		[ ...statements.value ].map( ( s ) => s.propertyName.toString() )
-	);
-	return serverViolations.value.filter( ( v ) => {
-		if ( v.propertyName === null ) {
-			return true;
-		}
-		return !renderedPropertyNames.has( v.propertyName );
-	} );
-} );
+// Keys the tree, and nothing else: re-keying the panes would unmount them and destroy
+// unsaved values. The tree remembers which fetches failed for the life of its mount, so
+// without a remount one transient failure would leave that branch empty for the rest of the
+// session. The two watchers further down bump it, an opening and a replaced root alike, and
+// a target fetch that outlives its opening is dropped by it: the hosts keep this dialog
+// mounted after it closes, so the fetch would otherwise land in the next opening.
+const openEpoch = ref( 0 );
 
-function handleClearViolation( payload: { propertyName: string; valuePartIndex: number | null } ): void {
-	serverViolations.value = serverViolations.value.filter(
-		( v ) => !( v.propertyName === payload.propertyName && v.valuePartIndex === payload.valuePartIndex )
-	);
+// So a double-click on one target's edit button does not fire a second request. Keyed per
+// opening, or a fetch left over from the last one would stand in for a fresh click.
+const pendingTargetKeys = new Set<string>();
+
+async function openRelationTarget( targetId: SubjectId ): Promise<void> {
+	const id = targetId.text;
+	if ( openIds.value.includes( id ) ) {
+		activePaneId.value = id;
+		return;
+	}
+	const epoch = openEpoch.value;
+	const pendingKey = `${ epoch }:${ id }`;
+	if ( pendingTargetKeys.has( pendingKey ) ) {
+		return;
+	}
+	pendingTargetKeys.add( pendingKey );
+	try {
+		const subject = await subjectRepository.getSubject( targetId );
+		const schema = await schemaRepository.getSchema( subject.getSchemaName() );
+		if ( epoch !== openEpoch.value ) {
+			return;
+		}
+		extraPanes.value = [ ...extraPanes.value, { id, subject, schema } ];
+		activePaneId.value = id;
+	} catch ( error ) {
+		if ( epoch !== openEpoch.value ) {
+			return;
+		}
+		console.error( 'Failed to load relation target for editing:', error );
+		mw.notify( mw.msg( 'neowiki-subject-editor-target-load-error' ), { type: 'error' } );
+	} finally {
+		pendingTargetKeys.delete( pendingKey );
+	}
+}
+
+// Navigating from a control inside a form hides the pane that control lives in, so the
+// browser blurs it to <body> and the next Tab restarts at the top of the dialog. The panel
+// wrapper takes the focus instead, which is what its tabindex="-1" is for. Activation from
+// the tree is left alone: focus belongs on the treeitem there.
+async function openRelationTargetFromForm( targetId: SubjectId ): Promise<void> {
+	await openRelationTarget( targetId );
+	await nextTick();
+	document.getElementById( `ext-neowiki-panel-${ targetId.text }` )?.focus();
 }
 
 function close(): void {
 	emit( 'update:open', false );
 }
 
-const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseConfirmation( hasChanged, close );
+const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseConfirmation( anyChanged, close );
+
+// Nothing may change or close while the loop below is writing: it harvests every dirty
+// pane up front and marks each one clean as its write lands, so an edit made meanwhile
+// would be reverted by the written copy and left unguarded by the discard confirmation.
+// Bound as `undefined` rather than `false` where it is off. A browser that knows `inert`
+// exposes it as a property, which Vue sets, so `false` would do there; where it is only an
+// attribute, as in jsdom, Vue would write inert="false", which an element reads as present.
+const saving = ref( false );
+
+function closeRequested(): void {
+	if ( saving.value ) {
+		return;
+	}
+	requestClose();
+}
 
 function onDialogUpdateOpen( value: boolean ): void {
 	if ( !value ) {
-		requestClose();
+		closeRequested();
 	}
 }
 
-// Immediate, because the host renders this dialog with v-if: it mounts with open already true, so a
-// deferred watcher would never see the opening that created it.
+// Immediate, because the hosts render this dialog with v-if: it mounts with open
+// already true, so a deferred watcher would never see the opening that created it.
+// An opening and a replaced root both start over: a dialog only reaches `open: false` with
+// nothing unsaved or after a confirmed discard (see useCloseConfirmation), so nothing an
+// earlier session opened or reported carries into the next.
+function startSession(): void {
+	openEpoch.value += 1;
+	extraPanes.value = [];
+	activePaneId.value = rootPaneId.value;
+	partialSave.value = null;
+}
+
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
-		subjectLabel.value = props.subject.getLabel() ?? '';
-		resetChanged();
-		reset();
-		// Fetched per opening: approval state and the viewer's permissions both change without an edit.
-		// Keyed on the page being viewed, which is the page storing this Subject except when
-		// {{#view: <subjectId>}} renders a Subject from elsewhere. Then the wrong page's notices are
-		// shown, a v1 limitation documented in docs/authoring/edit-notices.md: the frontend Subject
-		// carries no page id, so fixing it needs the endpoint to resolve the page from a Subject id
-		// and to read-gate on the page it resolved rather than the one asked for.
+		startSession();
+		// Fetched per opening: approval state and the viewer's permissions both change
+		// without an edit. Keyed on the page being viewed and on the root Subject's Schema.
 		loadNotices( Number( mw.config.get( 'wgArticleId' ) ), props.subject.getSchemaName() );
 	}
 }, { immediate: true } );
 
-// Existing subjects are expected to be complete, so validate as soon as the
-// editor mounts for an open dialog: pre-existing violations (e.g. a now-empty
-// required field) surface immediately, without the user having to touch a field
-// first. (Subject creation deliberately does not do this — see the creator.)
-watch( subjectEditorRef, ( editor ) => {
-	if ( editor && props.open ) {
-		flush();
-	}
-} );
+// The host can replace props.subject while the dialog stays open, e.g. saving one subject
+// navigates straight to editing another. Without this, activePaneId keeps naming the old
+// root, no pane in the new `panes` list matches it, and nothing renders at all.
+watch( rootPaneId, startSession );
 
 watch( () => props.subject, ( newSubject ) => {
-	subjectLabel.value = newSubject.getLabel() ?? '';
 	checkEditPermission( newSubject.getSchemaName() );
 }, { immediate: true } );
 
@@ -284,66 +414,158 @@ watch( () => props.schema, ( newSchema ) => {
 	currentSchema.value = newSchema;
 } );
 
-const statements = computed( (): StatementList =>
-	currentSchema.value.statementsFrom( props.subject.getStatements() )
+async function showSubject( id: string ): Promise<void> {
+	await openRelationTarget( new SubjectId( id ) );
+	await nextTick();
+}
+
+const partialSaveMessage = computed( (): string => partialSave.value === null ?
+	'' :
+	mw.message(
+		'neowiki-subject-editor-partial-save',
+		partialSave.value.written,
+		partialSave.value.attempted
+	).text()
 );
 
+// Counted in pages as well as in Subjects, since each page written gets revisions of its own.
+// A Subject with no resolved page counts as a page of its own.
+function pageKeyOf( subject: Subject ): string {
+	return subject instanceof SubjectWithContext ?
+		`page:${ subject.getPageIdentifiers().getPageId() }` :
+		`subject:${ subject.getId().text }`;
+}
+
+const dirtyPageCount = computed( (): number => new Set(
+	dirtyPanes.value.map( ( { pane } ) => pageKeyOf( pane.subject ) )
+).size );
+
+// Said only when it tells the user something the screen does not: the Save button plainly
+// writes the one dirty Subject in front of them.
+const saveScopeText = computed( (): string => {
+	const dirty = unsavedIds.value;
+
+	if ( dirty.length === 0 || ( dirty.length === 1 && dirty[ 0 ] === activePaneId.value ) ) {
+		return '';
+	}
+
+	return mw.message( 'neowiki-subject-editor-save-scope', dirty.length, dirtyPageCount.value ).text();
+} );
+
 const handleSave = async ( summary: string ): Promise<void> => {
-	await nextTick();
-
-	if ( !subjectEditorRef.value ) {
+	if ( saving.value ) {
 		return;
 	}
-
-	await flush();
-
-	const unparseable = subjectEditorRef.value.unparseableInput();
-
-	// Saving now would silently drop the text the user can still see. Held after
-	// the dry-run so the field's own complaint and the server's findings on the
-	// other fields surface in one pass rather than one round at a time.
-	if ( unparseable !== null ) {
-		mw.notify( unparseable.message, { title: unparseable.propertyName, type: 'error' } );
-		return;
-	}
-
-	const updatedStatements = subjectEditorRef.value.getSubjectData();
-	// Filter out statements that don't have a value set.
-	const statementsToSave = [ ...updatedStatements ].filter( ( statement ) => statement.hasValue() );
-	const updatedSubject = props.subject
-		.withLabel( enteredLabel() )
-		.withStatements( new StatementList( statementsToSave ) );
-	const subjectName = updatedSubject.getDisplayName();
-	const editSummary = summary || mw.msg( 'neowiki-subject-editor-summary-default' );
-
+	saving.value = true;
 	try {
-		await props.onSave( updatedSubject, editSummary );
-		mw.notify( mw.msg( 'neowiki-subject-editor-success', subjectName ), { type: 'success' } );
-		close();
-	} catch ( error ) {
-		if ( error instanceof ValidationFailedError ) {
-			serverViolations.value = [ ...error.violations ];
-			mw.notify(
-				mw.msg( 'neowiki-subject-editor-validation-failed', subjectName ),
-				{ type: 'error' }
-			);
-			return;
-		}
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{
-				title: mw.msg( 'neowiki-subject-editor-error', subjectName ),
-				type: 'error'
-			}
-		);
+		await writeDirtyPanes( summary );
+	} finally {
+		saving.value = false;
 	}
 };
+
+async function writeDirtyPanes( summary: string ): Promise<void> {
+	await nextTick();
+
+	partialSave.value = null;
+
+	const dirty = dirtyPanes.value;
+
+	// Each flush writes only its own pane's violations, so none has to wait for another.
+	await Promise.all( dirty.map( ( { instance } ) => instance.flushValidation() ) );
+
+	// Saving now would silently drop text the user can still see. Checked across every
+	// dirty Subject before any write, or an unparseable later one would leave the stack
+	// half written.
+	const unparseable = dirty
+		.map( ( entry ) => ( { id: entry.pane.id, input: entry.instance.unparseableInput() } ) )
+		.find( ( entry ): entry is { id: string; input: UnparseableInput } => entry.input !== null );
+
+	if ( unparseable !== undefined ) {
+		await showSubject( unparseable.id );
+		mw.notify( unparseable.input.message, { title: unparseable.input.propertyName, type: 'error' } );
+		return;
+	}
+
+	const editSummary = summary || mw.msg( 'neowiki-subject-editor-summary-default' );
+	const savedNames: string[] = [];
+
+	// A Subject an earlier attempt already wrote is not in `dirty`: its pane reset its
+	// changed flag.
+	const targets = new Map<string, Subject>();
+
+	for ( const { pane, instance } of dirty ) {
+		const updated = instance.buildUpdatedSubject();
+		if ( updated === null ) {
+			// A dirty pane with no data to save means it lost its editor ref;
+			// surface this as an error instead of silently discarding the edit.
+			mw.notify( mw.msg( 'neowiki-subject-editor-error', props.subject.getDisplayName() ), { type: 'error' } );
+			return;
+		}
+		targets.set( pane.id, updated );
+	}
+
+	// Carried out of the loop rather than returned from inside it, so a part-way stop is
+	// reported once, below.
+	let failed = false;
+
+	for ( const [ id, updatedSubject ] of targets ) {
+		const subjectName = updatedSubject.getDisplayName();
+
+		try {
+			await props.onSave( updatedSubject, editSummary );
+			paneRefs.get( id )?.resetChanged();
+			savedNames.push( subjectName );
+		} catch ( error ) {
+			failed = true;
+			// The toast naming the refused Subject vanishes; its pane is what stays.
+			await showSubject( id );
+
+			if ( error instanceof ValidationFailedError ) {
+				paneRefs.get( id )?.setServerViolations( error.violations );
+				mw.notify(
+					mw.msg( 'neowiki-subject-editor-validation-failed', subjectName ),
+					{ type: 'error' }
+				);
+			} else {
+				mw.notify(
+					error instanceof Error ? error.message : String( error ),
+					{
+						title: mw.msg( 'neowiki-subject-editor-error', subjectName ),
+						type: 'error'
+					}
+				);
+			}
+
+			break;
+		}
+	}
+
+	if ( failed ) {
+		if ( savedNames.length > 0 ) {
+			partialSave.value = { written: savedNames.length, attempted: targets.size };
+		}
+		return;
+	}
+
+	if ( savedNames.length === 0 ) {
+		return;
+	}
+
+	mw.notify(
+		savedNames.length === 1 ?
+			mw.msg( 'neowiki-subject-editor-success', savedNames[ 0 ] ) :
+			mw.msg( 'neowiki-subject-editor-success-multiple', savedNames.length ),
+		{ type: 'success' }
+	);
+	close();
+}
 
 const onSchemaSaved = ( schema: Schema ): void => {
 	currentSchema.value = schema;
 };
 
-defineExpose( { hasChanged } );
+defineExpose( { hasChanged: anyChanged } );
 
 </script>
 
@@ -362,7 +584,9 @@ defineExpose( { hasChanged } );
 		}
 	}
 
-	/* Replicate the Codex default dialog header styles */
+	/* Codex puts these on `.cdx-dialog__header--default`, a class it adds only to the header
+		it builds itself, so a slotted header never receives them and there is nothing here to
+		out-weigh — they are replicated, not overridden. */
 	.cdx-dialog__header {
 		display: flex;
 		align-items: baseline;
@@ -387,6 +611,103 @@ defineExpose( { hasChanged } );
 	&__title {
 		display: flex;
 		min-width: 0;
+	}
+
+	&--wide.cdx-dialog {
+		/* Compounds `.cdx-dialog` because Codex sets `max-width: 32rem` on it, in a sheet the
+			component injects at runtime, after our own linked one — so an equal-specificity tie goes
+			to Codex. Drop the compound and the dialog silently narrows to 512px, which no test sees.
+			A literal because the scale stops short: Codex's largest size token is `@size-5600`. */
+		max-width: 80rem;
+	}
+
+	/* Codex gives this body `flex-grow: 1` and `overflow-y: auto` but no `min-height: 0`, so as
+		a flex item it refuses to shrink below its content and that overflow never engages.
+		`min-height: 0` engages it, and `display: grid` hands the bounded height down: the body
+		holds one child, which as a grid item stretches to the body instead of overflowing it.
+
+		Codex's own 16px/24px padding is dropped here and handed to the regions inside, because
+		the border between the two surfaces is the only rule between the navigator and the form
+		and that padding would hold it short of the header's and the footer's rules. */
+	.cdx-dialog__body {
+		padding: 0;
+		min-height: 0;
+		display: grid;
+	}
+
+	/* Scoped to this dialog: the same list appears in the subject creator, whose body keeps
+		Codex's padding. No inset below, because the list sets its own margin there.
+		Codex zeroes the top and bottom insets of the body's own first and last children; the
+		notices escape that only by being a child of `__content` rather than of the body. */
+	&__content > .ext-neowiki-edit-notices {
+		grid-column: 1 / -1;
+		padding: @spacing-100 @spacing-150 0;
+	}
+
+	/* The notices across the top, the navigator and the form side by side beneath them.
+
+		`minmax( 0, 1fr )` rather than `auto` for the second row: both cells stretch to it and
+		each scrolls itself, which keeps the navigator in view while the form is scrolled. Under
+		`auto` the taller cell sets the row's height, pushing the scrolling up to the dialog body
+		and taking the navigator off-screen with the form.
+
+		No column gap: the rule between the two surfaces is a border, and a gap would leave it
+		floating in empty space instead of terminating an edge.
+
+		jsdom resolves no layout, so the suite cannot see this grid collapse. Measure every change
+		in a browser, at more than one viewport height, with and without an edit notice, and with
+		and without the navigator. */
+	&__content {
+		display: grid;
+		grid-template-columns: 1fr;
+		grid-template-rows: auto minmax( 0, 1fr );
+		/* Otherwise this grid item takes its whole natural length out of the dialog body's
+			scroller instead of dividing the height the body has. */
+		min-height: 0;
+	}
+
+	/* `--wide` is bound to the same condition as the navigator's own `v-if`. Declaring both
+		columns unconditionally would leave a navigator-wide void beside a form with no
+		navigator to fill it. */
+	&--wide &__content {
+		grid-template-columns: @size-2400 1fr;
+	}
+
+	/* Both columns of the second row: a scroll container holding one inner element that
+		carries the padding. Scrolling here rather than at the dialog body is what keeps the
+		navigator in view while the form is scrolled, and `min-height: 0` is what lets a grid
+		item shrink below its content at all. */
+	&__surface {
+		min-width: 0;
+		min-height: 0;
+		overflow-y: auto;
+	}
+
+	/* The tree carries no inset of its own; this dialog gives it the form's, on its padded
+		element rather than on the scroller around it. The gutter is the dialog's 24px less the
+		6px a row already carries, so a node's TEXT lands on that gutter, in line with the
+		notices above and the form beside it, while the row's hover and selected backgrounds
+		keep reaching the 6px further out — a background flush with the text would read as
+		clipped. Nothing on the end side, so the scrollbar sits flush with the divider. */
+	& .ext-neowiki-subject-tree {
+		padding: @spacing-100 0 @spacing-100 calc( @spacing-150 - @spacing-35 );
+	}
+
+	/* Drawn on the boundary rather than owned by either side. A surface only ever follows
+		another when the navigator is rendered. */
+	&__surface + &__surface {
+		border-inline-start: @border-subtle;
+	}
+
+	/* Every inset the form has, on this padded element rather than on the scroller around it:
+		a padding-bottom inside an overflow container is the one browsers have historically
+		dropped. */
+	&__panels {
+		padding: @spacing-100 @spacing-150;
+	}
+
+	&__partial-save {
+		margin: 0 0 @spacing-50;
 	}
 }
 </style>

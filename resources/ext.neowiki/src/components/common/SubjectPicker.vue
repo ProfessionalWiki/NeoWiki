@@ -1,22 +1,28 @@
 <template>
 	<div class="ext-neowiki-subject-picker">
-		<CdxLookup
-			ref="lookupRef"
-			v-model:selected="selectedSubject"
-			v-model:input-value="inputText"
-			:menu-items="menuItems"
-			:start-icon="props.startIcon"
-			:placeholder="$i18n( 'neowiki-subject-picker-placeholder' ).text()"
-			:status="effectiveStatus"
-			:aria-label="props.ariaLabel"
-			@input="onLookupInput"
-			@update:selected="onSubjectSelected"
-			@blur="onBlur"
-		>
-			<template v-if="searchActive" #no-results>
-				{{ $i18n( 'neowiki-subject-picker-no-results' ).text() }}
-			</template>
-		</CdxLookup>
+		<div class="ext-neowiki-subject-picker__row">
+			<CdxLookup
+				ref="lookupRef"
+				v-model:selected="selectedSubject"
+				v-model:input-value="inputText"
+				:menu-items="menuItems"
+				:start-icon="props.startIcon"
+				:placeholder="$i18n( 'neowiki-subject-picker-placeholder' ).text()"
+				:status="effectiveStatus"
+				:aria-label="props.ariaLabel"
+				@input="onLookupInput"
+				@update:selected="onSubjectSelected"
+				@blur="onBlur"
+			>
+				<template v-if="searchActive" #no-results>
+					{{ $i18n( 'neowiki-subject-picker-no-results' ).text() }}
+				</template>
+			</CdxLookup>
+			<slot
+				name="suffix"
+				:selected="selectedSubject"
+			/>
+		</div>
 		<CdxMessage
 			v-if="hasUnmatchedText"
 			type="error"
@@ -155,3 +161,20 @@ function focus(): void {
 
 defineExpose( { focus } );
 </script>
+
+<style lang="less">
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+
+.ext-neowiki-subject-picker {
+	&__row {
+		display: flex;
+		align-items: flex-start;
+		gap: @spacing-25;
+
+		.cdx-lookup {
+			flex: 1;
+			min-width: 0;
+		}
+	}
+}
+</style>

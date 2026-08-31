@@ -1,4 +1,4 @@
-import { mount, VueWrapper } from '@vue/test-utils';
+import { mount, VueWrapper, DOMWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
@@ -101,5 +101,38 @@ describe( 'SummaryAction', () => {
 
 		expect( wrapper.find( 'textarea' ).attributes( 'placeholder' ) )
 			.toBe( 'Why are you deleting this?' );
+	} );
+
+	describe( 'Footer text', () => {
+		function actionRow( wrapper: VueWrapper ): Omit<DOMWrapper<Element>, 'exists'> {
+			return wrapper.get( '.ext-neowiki-summary-action__actions' );
+		}
+
+		// Without a note there is no extra node in the row, and no class the stylesheet keys
+		// the inline layout off.
+		it( 'leaves the action row untouched when no footer text is given', () => {
+			const wrapper = mountComponent();
+
+			expect( actionRow( wrapper ).classes() ).toEqual( [ 'ext-neowiki-summary-action__actions' ] );
+			expect( actionRow( wrapper ).element.children ).toHaveLength( 1 );
+			expect( wrapper.find( '.ext-neowiki-summary-action__footer-text' ).exists() ).toBe( false );
+		} );
+
+		it( 'renders the footer text in the action row, ahead of the button', () => {
+			const wrapper = mountComponent( { footerText: 'Saving updates 2 subjects' } );
+
+			const row = actionRow( wrapper );
+			expect( row.classes() ).toContain( 'ext-neowiki-summary-action__actions--with-text' );
+			expect( row.element.children ).toHaveLength( 2 );
+			expect( row.element.children[ 0 ].textContent?.trim() ).toBe( 'Saving updates 2 subjects' );
+		} );
+
+		// The block above the row keeps its own slot: the two are shown together.
+		it( 'renders the footer text alongside the help text rather than in its place', () => {
+			const wrapper = mountComponent( { helpText: 'Help', footerText: 'Footer' } );
+
+			expect( wrapper.get( '.ext-neowiki-summary-action__help-text' ).text() ).toBe( 'Help' );
+			expect( wrapper.get( '.ext-neowiki-summary-action__footer-text' ).text() ).toBe( 'Footer' );
+		} );
 	} );
 } );
