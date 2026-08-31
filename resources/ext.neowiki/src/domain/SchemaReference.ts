@@ -28,15 +28,3 @@ export function schemaReferenceName( reference: SchemaReference | undefined ): s
 export function isLocalSchemaReference( reference: SchemaReference | undefined ): boolean {
 	return typeof reference === 'string';
 }
-
-/**
- * The reference as a person reads it. A Source-qualified reference shows its Source so it is not
- * silently displayed as a local Schema of the same name.
- */
-export function schemaReferenceText( reference: SchemaReference | undefined ): string {
-	if ( reference === undefined ) {
-		return '';
-	}
-
-	return typeof reference === 'string' ? reference : `${ reference.source }:${ reference.name }`;
-}

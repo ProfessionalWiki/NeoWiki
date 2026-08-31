@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-	isLocalSchemaReference,
-	schemaReferenceName,
-	schemaReferenceText,
-} from '@/domain/SchemaReference';
+import { isLocalSchemaReference, schemaReferenceName } from '@/domain/SchemaReference';
 
 describe( 'schemaReferenceName', () => {
 
@@ -37,18 +33,6 @@ describe( 'isLocalSchemaReference', () => {
 
 	it( 'is false when there is no reference at all', () => {
 		expect( isLocalSchemaReference( undefined ) ).toBe( false );
-	} );
-
-} );
-
-describe( 'schemaReferenceText', () => {
-
-	it( 'shows a local Schema under its plain name', () => {
-		expect( schemaReferenceText( 'Product' ) ).toBe( 'Product' );
-	} );
-
-	it( 'shows the Source, so a foreign Schema is not read as a local one of the same name', () => {
-		expect( schemaReferenceText( { source: 'otherwiki', name: 'Person' } ) ).toBe( 'otherwiki:Person' );
 	} );
 
 } );
