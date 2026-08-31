@@ -1248,7 +1248,7 @@ describe( 'SubjectEditorDialog', () => {
 
 		// The open-panes check above cannot catch this click: its pane does not exist yet.
 		it( 'does not duplicate a pane when a second click lands while the target is still loading', async () => {
-			const { wrapper, mockSubjectRepository } = mountWithTargetRepos();
+			const { wrapper, mockSubjectRepository, target } = mountWithTargetRepos();
 			await flushPromises();
 			let resolveFetch!: ( subject: Subject ) => void;
 			mockSubjectRepository.getSubject.mockImplementationOnce(
@@ -1262,7 +1262,7 @@ describe( 'SubjectEditorDialog', () => {
 			wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
 			await nextTick();
 
-			resolveFetch( targetSubject( 's22222222222222', 'Target subject' ) );
+			resolveFetch( target );
 			await flushPromises();
 
 			expect( mockSubjectRepository.getSubject ).toHaveBeenCalledTimes( 1 );
@@ -1527,8 +1527,8 @@ describe( 'SubjectEditorDialog', () => {
 				// The header's close button sits outside both inert regions, so this early
 				// return is the only thing between a mid-write click and a discard
 				// confirmation raised over Subjects the loop is still writing.
-				it( 'ignores the close button until the save settles', async () => {
-					const { onSave, settle } = deferredSave();
+				it( 'ignores the close button while a save is writing', async () => {
+					const { onSave } = deferredSave();
 					const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
 					await makePaneDirty( wrapper, 0 );
 					await triggerSave( wrapper, '' );
@@ -1537,9 +1537,6 @@ describe( 'SubjectEditorDialog', () => {
 
 					expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
 					expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
-
-					settle( new Error( 'Boom' ) );
-					await flushPromises();
 				} );
 
 				it( 'makes the form and the header inert until the save settles', async () => {

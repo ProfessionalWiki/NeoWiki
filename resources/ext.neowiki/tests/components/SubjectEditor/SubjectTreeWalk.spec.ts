@@ -198,35 +198,18 @@ describe( 'walkSubjectTree', () => {
 	} );
 
 	it( 'expands a Subject reached by a second path even after its first occurrence expanded', () => {
-		// root --Left--> B --Shared--> S --Link--> E and root --Right--> C --Shared--> S: one
-		// converged-upon Subject with a descendant of its own. Convergence is ordinary, not a
-		// cycle, so S expands on both paths; a walk sharing one visited set across branches
-		// would show E under the first S alone.
-		const diamondSchema = relationSchema( 'Diamond', [ 'Left', 'Branch' ], [ 'Right', 'Branch' ] );
-		const branchSchema = relationSchema( 'Branch', [ 'Shared', 'Link' ] );
+		// A --Knows--> B and A --Likes--> B, with B --Knows--> C: one converged-upon Subject
+		// with a descendant of its own. Convergence is ordinary, not a cycle, so B expands on
+		// both paths; a walk sharing one visited set across branches would show C under the
+		// first B alone.
+		const twoWaysSchema = relationSchema( 'TwoWays', [ 'Knows', 'TwoWays' ], [ 'Likes', 'TwoWays' ] );
+		const a = subjectWith( A_ID, 'TwoWays', 'A', relationsTo( 'Knows', B_ID ), relationsTo( 'Likes', B_ID ) );
+		const b = subjectWith( B_ID, 'TwoWays', 'B', relationsTo( 'Knows', C_ID ) );
+		const c = subjectWith( C_ID, 'TwoWays', 'C' );
 
-		const root = subjectWith(
-			A_ID,
-			'Diamond',
-			'Root',
-			relationsTo( 'Left', B_ID ),
-			relationsTo( 'Right', C_ID ),
-		);
-		const left = subjectWith( B_ID, 'Branch', 'Left branch', relationsTo( 'Shared', SHARED_ID ) );
-		const right = subjectWith( C_ID, 'Branch', 'Right branch', relationsTo( 'Shared', SHARED_ID ) );
-		const shared = subjectWith( SHARED_ID, 'Link', 'Shared', relationsTo( 'Link', E_ID ) );
-		const leaf = subjectWith( E_ID, 'Link', 'Leaf' );
+		const result = walk( a, twoWaysSchema, [ a, b, c ] );
 
-		const result = walk(
-			root,
-			diamondSchema,
-			[ root, left, right, shared, leaf ],
-			[ diamondSchema, branchSchema, linkSchema ],
-		);
-
-		expect( idsOf( result.root ) ).toStrictEqual(
-			[ A_ID, B_ID, SHARED_ID, E_ID, C_ID, SHARED_ID, E_ID ],
-		);
+		expect( idsOf( result.root ) ).toStrictEqual( [ A_ID, B_ID, C_ID, B_ID, C_ID ] );
 	} );
 
 	// The form shows one slot per relation, so the same target can be picked twice under one

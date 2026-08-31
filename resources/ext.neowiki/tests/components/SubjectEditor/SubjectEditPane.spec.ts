@@ -195,9 +195,11 @@ describe( 'SubjectEditPane', () => {
 	} );
 
 	it( 'routes anchorless server violations to the banner and anchored ones to the field', async () => {
-		// A schema that declares 'Name', so its violation has a field on screen to anchor to.
-		// 'Ghost' has none, making it anchorless despite naming a property.
-		const wrapper = mountPane( { subject: subjectWithOnlyName, schema: schemaWithNameAndAge } );
+		// A schema that declares 'Name', so its violation has a field on screen to anchor to;
+		// the subject holds no statements, so anchoring against the subject instead of the
+		// schema's rendered fields would misroute it. 'Ghost' is anchorless despite naming
+		// a property.
+		const wrapper = mountPane( { schema: schemaWithNameAndAge } );
 
 		( wrapper.vm as any ).setServerViolations( [
 			{ propertyName: null, code: 'some-subject-level-code', args: [], severity: 'error', valuePartIndex: null },
