@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
+use MediaWiki\WikiMap\WikiMap;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -101,6 +102,29 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 			->getStatement( new PropertyName( $propertyName ) )
 			?->getValue()
 			->toScalars();
+	}
+
+	/**
+	 * An id that names this wiki's own Source is the same Subject as its bare form (ADR 23), so the
+	 * endpoint must resolve it rather than treat the Source key as part of an unknown id.
+	 */
+	public function testAnExplicitlyLocalSubjectIdResolvesToTheSameSubject(): void {
+		$this->createSubjectPage();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest(
+				'Website',
+				[ 'statement' => [ 'propertyType' => 'url', 'value' => [ 'https://pro.wiki' ] ] ],
+				WikiMap::getCurrentWikiId() . ':' . self::SUBJECT_ID
+			)
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( self::SUBJECT_ID, $responseData['subjectId'] );
+		$this->assertSame( [ 'https://pro.wiki' ], $this->getStoredValue( 'Website' ) );
 	}
 
 	public function testHappyPathReturns200WithUpdatedStatus(): void {
