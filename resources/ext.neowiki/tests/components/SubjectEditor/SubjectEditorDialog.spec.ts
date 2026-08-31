@@ -1246,6 +1246,29 @@ describe( 'SubjectEditorDialog', () => {
 			expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 2 );
 		} );
 
+		// The open-panes check above cannot catch this click: its pane does not exist yet.
+		it( 'does not duplicate a pane when a second click lands while the target is still loading', async () => {
+			const { wrapper, mockSubjectRepository } = mountWithTargetRepos();
+			await flushPromises();
+			let resolveFetch!: ( subject: Subject ) => void;
+			mockSubjectRepository.getSubject.mockImplementationOnce(
+				() => new Promise( ( resolve ) => {
+					resolveFetch = resolve;
+				} ),
+			);
+
+			wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
+			await nextTick();
+			wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
+			await nextTick();
+
+			resolveFetch( targetSubject( 's22222222222222', 'Target subject' ) );
+			await flushPromises();
+
+			expect( mockSubjectRepository.getSubject ).toHaveBeenCalledTimes( 1 );
+			expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 2 );
+		} );
+
 		// teleport:false throughout: the teleport stub used elsewhere in this file re-creates
 		// its subtree on every re-render of the teleporting component, where the real Teleport
 		// patches in place. Under the stub these assertions would fail for a reason that cannot
@@ -1499,6 +1522,24 @@ describe( 'SubjectEditorDialog', () => {
 					settle( new Error( 'Boom' ) );
 					await flushPromises();
 					expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+				} );
+
+				// The header's close button sits outside both inert regions, so this early
+				// return is the only thing between a mid-write click and a discard
+				// confirmation raised over Subjects the loop is still writing.
+				it( 'ignores the close button until the save settles', async () => {
+					const { onSave, settle } = deferredSave();
+					const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
+					await makePaneDirty( wrapper, 0 );
+					await triggerSave( wrapper, '' );
+
+					await wrapper.find( '.cdx-dialog__header__close-button' ).trigger( 'click' );
+
+					expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
+					expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+
+					settle( new Error( 'Boom' ) );
+					await flushPromises();
 				} );
 
 				it( 'makes the form and the header inert until the save settles', async () => {
