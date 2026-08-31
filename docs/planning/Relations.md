@@ -29,7 +29,9 @@ server-side — a `relation-target-not-found` warning, a `relation-target-schema
 ([#1084](https://github.com/ProfessionalWiki/NeoWiki/pull/1084)); and the `expand=relations` REST response shape is
 documented ([#1085](https://github.com/ProfessionalWiki/NeoWiki/pull/1085)). Batch ID minting also landed — pre-minted
 and client-supplied Subject IDs on create ([#1101](https://github.com/ProfessionalWiki/NeoWiki/pull/1101)) — so
-interlinked imports can wire relations before their targets exist.
+interlinked imports can wire relations before their targets exist. The statement-level write API landed as well —
+`PUT`/`DELETE` on a single Statement ([#1216](https://github.com/ProfessionalWiki/NeoWiki/pull/1216), closing
+[#591](https://github.com/ProfessionalWiki/NeoWiki/issues/591)).
 
 ## Model decisions
 
@@ -76,9 +78,23 @@ meets the LOD community's expectations, and whether to plan an RDF-star migratio
 
 ### Inverse display configuration
 
-Default-off is decided — relations are stored one-directionally, and the inverse is a display concern. Open: the
-configuration granularity (wiki, schema, or view) and the inverse labels, which cannot be derived from the forward name
-([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)).
+Default-off is decided — relations are stored one-directionally, and showing the inverse is a display concern. Open:
+the configuration granularity (wiki, schema, or view) and the inverse labels, which cannot be derived from the forward
+name ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)).
+
+### Inverse relations while editing
+
+Distinct from inverse display: with CIDOC-CRM-style modelling the meaningful Subjects point *at* the one being edited —
+a birth event references its person — so the subject editor offers nothing to reach or add them from. Open: how a user
+adds an incoming relation from the target's side (the sketched start is a lookup over the Schemas whose relation
+properties can target the current Schema, creating the referencing Subject with its back-reference pre-filled); whether
+a Schema marks which incoming relation types it surfaces by default (a Person surfacing its birth event, but not every
+role Subject that happens to reference a person — where that line sits is unresolved); and feasibility, which needs a
+connections-only query (relation names and targets without Subject bodies — no such endpoint exists today) benchmarked
+against high-fan-in Subjects such as a composer with a thousand compositions. The editor design for
+[#971](https://github.com/ProfessionalWiki/NeoWiki/issues/971) treats relations direction-agnostically — a referenced
+Subject sits one level down whichever way the relation points — so incoming support can later layer onto that editor
+without restructuring it ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)).
 
 ### Autocomplete value sourcing
 
@@ -106,10 +122,6 @@ Unconstrained ("any Subject") targets; cardinality beyond single/multiple; no-va
 - Relation hover card ([#377](https://github.com/ProfessionalWiki/NeoWiki/issues/377)).
 - Target links in the Schema view ([#519](https://github.com/ProfessionalWiki/NeoWiki/issues/519)).
 - Where-used over incoming relations ([#1039](https://github.com/ProfessionalWiki/NeoWiki/issues/1039)).
-
-### APIs and import
-
-- Statement-level write API ([#591](https://github.com/ProfessionalWiki/NeoWiki/issues/591)).
 
 ### Query rendering
 
