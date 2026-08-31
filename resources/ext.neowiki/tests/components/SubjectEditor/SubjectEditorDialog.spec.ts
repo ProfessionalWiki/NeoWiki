@@ -726,6 +726,48 @@ describe( 'SubjectEditorDialog', () => {
 			const passed = wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
 			expect( passed ).toEqual( [ existingViolation ] );
 		} );
+
+		it( 'drops a violation the schema saved through the nested schema editor resolves', async () => {
+			useSubjectStore().validateSubjectUpdate = vi.fn()
+				.mockResolvedValueOnce( [ dryRunViolation ] )
+				.mockResolvedValue( [] );
+			const wrapper = mountComponent( true, validationTestStubs );
+			await flushPromises();
+			expect( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) ).toEqual( [ dryRunViolation ] );
+
+			wrapper.findComponent( SchemaEditorDialog ).vm.$emit( 'saved', schemaWithProperty( 'name' ) );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) ).toEqual( [] );
+		} );
+
+		it( 'surfaces a violation the schema saved through the nested schema editor introduces', async () => {
+			useSubjectStore().validateSubjectUpdate = vi.fn()
+				.mockResolvedValueOnce( [] )
+				.mockResolvedValue( [ dryRunViolation ] );
+			const wrapper = mountComponent( true, validationTestStubs );
+			await flushPromises();
+			expect( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) ).toEqual( [] );
+
+			wrapper.findComponent( SchemaEditorDialog ).vm.$emit( 'saved', schemaWithProperty( 'name' ) );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) ).toEqual( [ dryRunViolation ] );
+		} );
+
+		it( 'leaves a schema change alone while the dialog is closed', async () => {
+			const validate = vi.fn().mockResolvedValue( [] );
+			useSubjectStore().validateSubjectUpdate = validate;
+			const wrapper = mountComponent( true, validationTestStubs );
+			await flushPromises();
+			await wrapper.setProps( { open: false } );
+			validate.mockClear();
+
+			await wrapper.setProps( { schema: schemaWithProperty( 'nickname' ) } );
+			await flushPromises();
+
+			expect( validate ).not.toHaveBeenCalled();
+		} );
 	} );
 
 	describe( 'Unparseable field input', () => {

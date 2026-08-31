@@ -348,4 +348,51 @@ describe( 'SubjectEditPane', () => {
 		);
 	} );
 
+	function schemaWithTextProperty( propertyName: string ): Schema {
+		return new Schema(
+			'TestSchema',
+			'A test schema',
+			new PropertyDefinitionList( [ newTextProperty( { name: propertyName } ) ] ),
+		);
+	}
+
+	function sentPropertyNames( validate: ReturnType<typeof vi.fn>, call: number ): string[] {
+		const statements = validate.mock.calls[ call ][ 2 ] as StatementList;
+		return [ ...statements ].map( ( s ) => s.propertyName.toString() );
+	}
+
+	it( 'revalidates when the schema prop is replaced', async () => {
+		const violation: SubjectViolation = {
+			propertyName: 'Name', code: 'max-length', args: [ 5 ], severity: 'error', valuePartIndex: null,
+		};
+		const validate = vi.fn().mockResolvedValueOnce( [ violation ] ).mockResolvedValue( [] );
+		useSubjectStore().validateSubjectUpdate = validate;
+		const wrapper = mountPane( { subject: subjectWithOnlyName, schema: schemaWithTextProperty( 'Name' ) } );
+		await flushPromises();
+		expect( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) ).toEqual( [ violation ] );
+
+		await wrapper.setProps( { schema: schemaWithTextProperty( 'Name' ) } );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) ).toEqual( [] );
+	} );
+
+	// The schema decides which fields the editor renders, so reading the form any earlier
+	// validates the fields the replaced schema was showing.
+	it( 'reads the form under the new schema, not the one it replaced', async () => {
+		const validate = vi.fn().mockResolvedValue( [] );
+		useSubjectStore().validateSubjectUpdate = validate;
+		const wrapper = mountPane( { subject: subjectWithOnlyName, schema: schemaWithTextProperty( 'Name' ) } );
+		await flushPromises();
+		expect( sentPropertyNames( validate, 0 ) ).toEqual( [ 'Name' ] );
+
+		await wrapper.setProps( { schema: schemaWithTextProperty( 'Nickname' ) } );
+		await flushPromises();
+
+		// The renamed field starts empty, so a read of the new form sends no values; the
+		// old form would still have sent Name.
+		expect( validate ).toHaveBeenCalledTimes( 2 );
+		expect( sentPropertyNames( validate, 1 ) ).toEqual( [] );
+	} );
+
 } );
