@@ -219,9 +219,10 @@ class Neo4jSubjectUpdater {
 	 * A relation to a Subject of another Source is not projected. Creating the edge would MERGE a stub
 	 * node for the target and stamp it with this wiki's `wiki_id`, which every node carries and which
 	 * would then be a lie (graph-model.md); the alternative, a node without one, no query scopes
-	 * correctly. Cross-Source querying waits on a design for that (ADR 23). Only an XML import reaches
-	 * here — the write guard refuses such a target on the API paths — so dropping the edge is the
-	 * degraded read of data that is already stored, not a supported feature going missing.
+	 * correctly. Cross-Source querying waits on a design for that (ADR 23). This drops the edge for
+	 * every non-local target, including one whose Source is registered and resolvable, so a Subject
+	 * readable over REST can still be missing this edge in the graph. The RDF projection differs: it
+	 * names a registered Source's target under that Source's own base IRI.
 	 */
 	private function withoutForeignTargets( TypedRelationList $relations ): TypedRelationList {
 		$local = [];

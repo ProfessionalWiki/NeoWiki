@@ -40,14 +40,4 @@ readonly class Violation {
 		return $this->severity === Severity::Error;
 	}
 
-	/**
-	 * Whether this Violation blocks a write whatever the wiki's validation enforcement is set to.
-	 * Enforcement governs how strictly a wiki holds its data to its Schemas; a Relation into a Source
-	 * this wiki cannot reach is not a Schema question but a reference nothing can resolve, so it is
-	 * refused either way.
-	 */
-	public function alwaysBlocksWrites(): bool {
-		return $this->code === self::UNRESOLVABLE_RELATION_TARGET_SOURCE;
-	}
-
 }

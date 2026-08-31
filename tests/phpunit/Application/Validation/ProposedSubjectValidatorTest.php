@@ -119,7 +119,7 @@ class ProposedSubjectValidatorTest extends TestCase {
 			[ 'schema-not-found', 'relation-target-unresolvable-source' ],
 			array_map( static fn ( $violation ): string => $violation->code, $violations )
 		);
-		$this->assertTrue( $violations[1]->alwaysBlocksWrites() );
+		$this->assertTrue( $violations[1]->isBlocking() );
 	}
 
 }

@@ -429,7 +429,6 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertEquals( new PropertyName( 'Links' ), $violations[0]->propertyName );
 		$this->assertSame( [ self::UNRESOLVABLE_TARGET_ID ], $violations[0]->args );
 		$this->assertTrue( $violations[0]->isBlocking() );
-		$this->assertTrue( $violations[0]->alwaysBlocksWrites() );
 	}
 
 	public function testUnresolvableRelationTargetDoesNotAlsoEmitNotFound(): void {
@@ -460,7 +459,7 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertCount( 1, $violations );
 		$this->assertSame( 'relation-target-unresolvable-source', $violations[0]->code );
 		$this->assertSame( [ self::UNRESOLVABLE_TARGET_ID ], $violations[0]->args );
-		$this->assertTrue( $violations[0]->alwaysBlocksWrites() );
+		$this->assertTrue( $violations[0]->isBlocking() );
 	}
 
 	public function testAnOutOfSchemaRelationTargetThatResolvesProducesNoViolation(): void {

@@ -87,10 +87,10 @@ readonly class ReplaceSubjectAction {
 		// editable rather than being frozen by it.
 		$newBlockingViolations = array_filter(
 			ViolationDiff::newViolations( $proposedViolations, $priorViolations ),
-			fn ( Violation $v ): bool => $v->alwaysBlocksWrites() || ( $this->validationEnforced && $v->isBlocking() )
+			static fn ( Violation $v ): bool => $v->isBlocking()
 		);
 
-		if ( $newBlockingViolations !== [] ) {
+		if ( $this->validationEnforced && $newBlockingViolations !== [] ) {
 			$this->presenter->presentValidationFailed( $proposedViolations );
 			return;
 		}

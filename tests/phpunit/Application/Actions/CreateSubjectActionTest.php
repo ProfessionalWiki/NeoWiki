@@ -555,7 +555,11 @@ class CreateSubjectActionTest extends TestCase {
 		);
 	}
 
-	public function testCreateWithARelationTargetFromAnUnregisteredSourceIsRejectedWithoutEnforcement(): void {
+	/**
+	 * A wiki that does not enforce validation persists the write and reports the violation, as
+	 * $wgNeoWikiEnforceValidation is the master switch for every violation alike (ADR 26).
+	 */
+	public function testCreateWithARelationTargetFromAnUnregisteredSourceIsSavedWithoutEnforcement(): void {
 		$this->registerPersonSchemaWithRelation();
 		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
 
@@ -563,15 +567,31 @@ class CreateSubjectActionTest extends TestCase {
 			$this->newRelationRequest( 'neverinstalled:Q42' )
 		);
 
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+		$this->assertNotNull( $this->subjectRepository->getSubject( new SubjectId( 's' . self::STUB_ID ) ) );
+	}
+
+	public function testCreateWithARelationTargetFromAnUnregisteredSourceIsRejectedUnderEnforcement(): void {
+		$this->registerPersonSchemaWithRelation();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction( validationEnforced: true )->createSubject(
+			$this->newRelationRequest( 'neverinstalled:Q42' )
+		);
+
 		$this->assertTrue( $this->presenterSpy->validationFailed );
 		$this->assertNull( $this->subjectRepository->getSubject( new SubjectId( 's' . self::STUB_ID ) ) );
 	}
 
-	public function testCreateWithABareRelationTargetIsAcceptedWithoutEnforcement(): void {
+	/**
+	 * Under enforcement, where the assertion can fail: an absent local target is a non-blocking
+	 * not-found, not the blocking unreachable-Source violation.
+	 */
+	public function testCreateWithABareRelationTargetIsAcceptedUnderEnforcement(): void {
 		$this->registerPersonSchemaWithRelation();
 		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
 
-		$this->newCreateSubjectAction( validationEnforced: false )->createSubject(
+		$this->newCreateSubjectAction( validationEnforced: true )->createSubject(
 			$this->newRelationRequest( 's11111111111111' )
 		);
 

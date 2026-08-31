@@ -108,7 +108,11 @@ class ReplaceSubjectActionTest extends TestCase {
 		);
 	}
 
-	public function testAddingARelationTargetFromAnUnregisteredSourceIsRejectedWithoutEnforcement(): void {
+	/**
+	 * A wiki that does not enforce validation persists the write and reports the violation, as
+	 * $wgNeoWikiEnforceValidation is the master switch for every violation alike (ADR 26).
+	 */
+	public function testAddingARelationTargetFromAnUnregisteredSourceIsSavedWithoutEnforcement(): void {
 		$this->registerSchemaWithRelation();
 		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
 		$updatesBeforeAction = $this->subjectRepository->updateSubjectCallCount;
@@ -120,15 +124,35 @@ class ReplaceSubjectActionTest extends TestCase {
 			null
 		);
 
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+		$this->assertSame( $updatesBeforeAction + 1, $this->subjectRepository->updateSubjectCallCount );
+	}
+
+	public function testAddingARelationTargetFromAnUnregisteredSourceIsRejectedUnderEnforcement(): void {
+		$this->registerSchemaWithRelation();
+		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+		$updatesBeforeAction = $this->subjectRepository->updateSubjectCallCount;
+
+		$this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'Label',
+			$this->relationStatements( 'neverinstalled:Q42' ),
+			null
+		);
+
 		$this->assertTrue( $this->presenterSpy->validationFailed );
 		$this->assertSame( $updatesBeforeAction, $this->subjectRepository->updateSubjectCallCount );
 	}
 
-	public function testAddingABareRelationTargetIsAcceptedWithoutEnforcement(): void {
+	/**
+	 * Under enforcement, where the assertion can fail: an absent local target is a non-blocking
+	 * not-found, not the blocking unreachable-Source violation.
+	 */
+	public function testAddingABareRelationTargetIsAcceptedUnderEnforcement(): void {
 		$this->registerSchemaWithRelation();
 		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
 
-		$this->newAction()->replace(
+		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'Label',
 			$this->relationStatements( 's11111111111111' ),
@@ -157,7 +181,7 @@ class ReplaceSubjectActionTest extends TestCase {
 			] ),
 		) );
 
-		$this->newAction()->replace(
+		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'Renamed',
 			$this->relationStatements( 'neverinstalled:Q42' ),

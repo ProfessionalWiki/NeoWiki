@@ -65,9 +65,6 @@ raising a Constraint's severity does not make an existing violation count as new
 [ADR 21](../adr/021-add-backend-validation.md) and
 [ADR 26](../adr/026-validation-severity-levels.md).
 
-One code is exempt from the enforcement switch:
-[`relation-target-unresolvable-source`](#relation-target-unresolvable-source) rejects a write either way.
-
 ## Code reference
 
 ### `required`
@@ -197,8 +194,8 @@ names a Source this wiki has not registered, so the target cannot be reached at 
 [`relation-target-not-found`](#relation-target-not-found), which is about a Source that could answer and
 did not.
 
-This one blocks the write whether or not the wiki enforces validation. Only a violation the edit
-introduces blocks it, so a Subject that already carries such a target stays editable.
+Only a violation the edit introduces blocks it, so a Subject that already carries such a target stays
+editable.
 
 It is also the one code that is not Schema-scoped: it is reported for every relation value on the
 Subject, including a Statement the Schema does not declare and a Subject whose Schema cannot be
