@@ -24,7 +24,7 @@
 			<template #input="{ value, onUpdate, onBlur, onFocus, status, ariaLabel }">
 				<SubjectPicker
 					:selected="value"
-					:target-schema="props.property.targetSchema"
+					:target-schema="localTargetSchemaName"
 					:start-icon="startIcon"
 					:status="status"
 					:aria-label="ariaLabel"
@@ -37,7 +37,7 @@
 		<SubjectPicker
 			v-else
 			:selected="selectedId"
-			:target-schema="props.property.targetSchema"
+			:target-schema="localTargetSchemaName"
 			:start-icon="startIcon"
 			:status="fieldStatus"
 			@update:selected="onSingleSelectionChanged"
@@ -47,6 +47,7 @@
 </template>
 
 <script setup lang="ts">
+import { isLocalSchemaReference, schemaReferenceName } from '@/domain/SchemaReference';
 import { ref, watch, computed, toRef } from 'vue';
 import { CdxField, CdxIcon, ValidationMessages } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
@@ -64,6 +65,16 @@ const props = withDefaults(
 		modelValue: undefined,
 		label: ''
 	}
+);
+
+/**
+ * The picker searches this wiki's Subjects, so it can only be given a Schema of this wiki. A
+ * target Schema from another Source names nothing searchable here, and the picker is told so.
+ */
+const localTargetSchemaName = computed<string | null>( () =>
+	isLocalSchemaReference( props.property.targetSchema ) ?
+		schemaReferenceName( props.property.targetSchema ) :
+		null
 );
 
 const startIcon = NeoWikiServices.getComponentRegistry().getIcon( RelationType.typeName );

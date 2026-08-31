@@ -256,6 +256,14 @@ describe( 'RelationAttributesEditor', () => {
 			expect( fieldProps( wrapper, '.relation-attributes__target-schema' ).status ).toBe( 'default' );
 		} );
 
+		it( 'offers no local selection for a target schema from another Source', () => {
+			const wrapper = newWrapper( {
+				property: relationProperty( { targetSchema: { source: 'otherwiki', name: 'Person' } } ),
+			} );
+
+			expect( wrapper.findComponent( SchemaPickerStub ).props( 'selected' ) ).toBeNull();
+		} );
+
 		it( 'shows a required error after the empty target schema field is blurred', async () => {
 			const wrapper = newWrapper( {
 				property: relationProperty( { targetSchema: '' } ),
