@@ -197,6 +197,21 @@ describe( 'walkSubjectTree', () => {
 		expect( new Set( keysOf( result.root ) ).size ).toBe( keysOf( result.root ).length );
 	} );
 
+	it( 'expands a Subject reached by a second path even after its first occurrence expanded', () => {
+		// A --Knows--> B and A --Likes--> B, with B --Knows--> C: one converged-upon Subject
+		// with a descendant of its own. Convergence is ordinary, not a cycle, so B expands on
+		// both paths; a walk sharing one visited set across branches would show C under the
+		// first B alone.
+		const twoWaysSchema = relationSchema( 'TwoWays', [ 'Knows', 'TwoWays' ], [ 'Likes', 'TwoWays' ] );
+		const a = subjectWith( A_ID, 'TwoWays', 'A', relationsTo( 'Knows', B_ID ), relationsTo( 'Likes', B_ID ) );
+		const b = subjectWith( B_ID, 'TwoWays', 'B', relationsTo( 'Knows', C_ID ) );
+		const c = subjectWith( C_ID, 'TwoWays', 'C' );
+
+		const result = walk( a, twoWaysSchema, [ a, b, c ] );
+
+		expect( idsOf( result.root ) ).toStrictEqual( [ A_ID, B_ID, C_ID, B_ID, C_ID ] );
+	} );
+
 	// The form shows one slot per relation, so the same target can be picked twice under one
 	// property; the tree shows related Subjects, and every key has to be unique tree-wide.
 	describe( 'a target listed twice under one property', () => {

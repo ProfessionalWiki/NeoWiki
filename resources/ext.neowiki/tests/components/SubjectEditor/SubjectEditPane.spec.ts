@@ -4,6 +4,7 @@ import { nextTick, toRaw } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
+import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
 import { Subject } from '@/domain/Subject.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
@@ -194,16 +195,25 @@ describe( 'SubjectEditPane', () => {
 	} );
 
 	it( 'routes anchorless server violations to the banner and anchored ones to the field', async () => {
-		const wrapper = mountPane();
+		// A schema that declares 'Name', so its violation has a field on screen to anchor to;
+		// the subject holds no statements, so anchoring against the subject instead of the
+		// schema's rendered fields would misroute it. 'Ghost' is anchorless despite naming
+		// a property.
+		const wrapper = mountPane( { schema: schemaWithNameAndAge } );
 
 		( wrapper.vm as any ).setServerViolations( [
 			{ propertyName: null, code: 'some-subject-level-code', args: [], severity: 'error', valuePartIndex: null },
 			{ propertyName: 'Name', code: 'some-field-code', args: [], severity: 'error', valuePartIndex: null },
+			{ propertyName: 'Ghost', code: 'some-unrendered-code', args: [], severity: 'error', valuePartIndex: null },
 		] as SubjectViolation[] );
 		await nextTick();
 
-		expect( wrapper.find( '.cdx-message--error' ).exists() ).toBe( true );
-		expect( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) ).toHaveLength( 2 );
+		const bannered = wrapper.findComponent( SubjectViolationBanners )
+			.props( 'violations' ) as SubjectViolation[];
+		expect( bannered.map( ( violation ) => violation.code ) )
+			.toStrictEqual( [ 'some-subject-level-code', 'some-unrendered-code' ] );
+		// The field-anchored one still reaches the editor, which renders it at its field.
+		expect( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) ).toHaveLength( 3 );
 	} );
 
 	// The host replaces the Subject when it opens the editor on another root; the pane starts
