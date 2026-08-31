@@ -82,6 +82,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
 use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
+use ProfessionalWiki\NeoWiki\Application\Rdf\SubjectIriResolver;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageExporter;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
@@ -498,8 +499,16 @@ class NeoWikiExtension {
 			$this->getRdfValueMapperRegistry(),
 			$this->getRdfNamespaces(),
 			$this->getSchemaResolver(),
-			$this->getSourceRegistry(),
+			$this->newSubjectIriResolver(),
 			LoggerFactory::getInstance( 'NeoWiki' ),
+		);
+	}
+
+	private function newSubjectIriResolver(): SubjectIriResolver {
+		return new SubjectIriResolver(
+			$this->getRdfNamespaces(),
+			$this->getSourceRegistry(),
+			LoggerFactory::getInstance( 'NeoWiki' )
 		);
 	}
 
@@ -571,6 +580,7 @@ class NeoWikiExtension {
 					$mapping,
 					$this->getRdfNamespaces(),
 					$this->getRdfValueMapperRegistry(),
+					$this->newSubjectIriResolver(),
 					LoggerFactory::getInstance( 'NeoWiki' ),
 				),
 				new HardfRdfSerializer( $this->ontologyPrefixMap( $mapping ) ),

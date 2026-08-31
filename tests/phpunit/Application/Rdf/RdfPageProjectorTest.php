@@ -9,6 +9,7 @@ use Psr\Log\LogLevel;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\Application\Rdf\SubjectIriResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
@@ -63,7 +64,7 @@ class RdfPageProjectorTest extends TestCase {
 			RdfValueMapperRegistry::withCoreMappers(),
 			$this->ns,
 			TestSources::newSchemaResolver( $schemaLookup ),
-			TestSources::newRegistry(),
+			new SubjectIriResolver( $this->ns, TestSources::newRegistry(), $this->logger ),
 			$this->logger,
 		);
 	}

@@ -19,7 +19,6 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelation;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
@@ -58,7 +57,7 @@ class RdfPageProjector implements PageProjector {
 		private readonly RdfValueMapperRegistry $valueMappers,
 		private readonly RdfNamespaces $namespaces,
 		private readonly SchemaResolver $schemaResolver,
-		private readonly SourceRegistry $sourceRegistry,
+		private readonly SubjectIriResolver $subjectIris,
 		private readonly LoggerInterface $logger,
 	) {
 	}
@@ -260,7 +259,7 @@ class RdfPageProjector implements PageProjector {
 	 * @return Quad[]
 	 */
 	private function projectRelation( TypedRelation $relation, Iri $subjectIri, Iri $graph ): array {
-		$targetIri = $this->targetIri( $relation->targetId );
+		$targetIri = $this->subjectIris->targetIri( $relation->targetId );
 
 		if ( $targetIri === null ) {
 			return [];
@@ -286,29 +285,6 @@ class RdfPageProjector implements PageProjector {
 		}
 
 		return $quads;
-	}
-
-	/**
-	 * The IRI naming the Subject a relation points at. A Subject of another Source is named under that
-	 * Source's own base IRI, which is what makes the triple resolvable outside this wiki; a Source this
-	 * wiki does not have leaves nothing to name, so the relation is dropped rather than minted under a
-	 * base that is not its own.
-	 */
-	private function targetIri( SubjectId $id ): ?Iri {
-		if ( $id->isLocal() ) {
-			return $this->namespaces->subject( $id );
-		}
-
-		$source = $this->sourceRegistry->getSourceOf( $id );
-
-		if ( $source === null ) {
-			$this->logger->warning(
-				'Not projecting relation to ' . $id->text . ': its Source is not registered'
-			);
-			return null;
-		}
-
-		return new Iri( $source->getBaseUri() . $id->localId );
 	}
 
 	private function warnOnDroppedValues( Statement $statement, int $producedCount, PageId $pageId ): void {

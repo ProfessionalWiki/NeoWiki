@@ -70,6 +70,7 @@ class OntologyMappingProjector implements PageProjector {
 		private readonly Mapping $mapping,
 		private readonly RdfNamespaces $namespaces,
 		private readonly RdfValueMapperRegistry $valueMappers,
+		private readonly SubjectIriResolver $subjectIris,
 		private readonly LoggerInterface $logger,
 	) {
 		$this->target = $mapping->name->getText();
@@ -312,10 +313,16 @@ class OntologyMappingProjector implements PageProjector {
 
 		if ( $statement->getPropertyType() === RelationType::NAME ) {
 			foreach ( $this->relationsOf( $statement ) as $relation ) {
+				$target = $this->subjectIris->targetIri( $relation->targetId );
+
+				if ( $target === null ) {
+					continue;
+				}
+
 				$quads[] = new Quad(
 					$nodes->relationInstance( $node, $relation->id ),
 					$predicate,
-					$this->namespaces->subject( $relation->targetId ),
+					$target,
 					$graph
 				);
 			}
@@ -363,7 +370,11 @@ class OntologyMappingProjector implements PageProjector {
 		$quads = [];
 
 		foreach ( $this->relationsOf( $relationStatement ) as $relation ) {
-			$target = $this->namespaces->subject( $relation->targetId );
+			$target = $this->subjectIris->targetIri( $relation->targetId );
+
+			if ( $target === null ) {
+				continue;
+			}
 
 			foreach ( $contributed as [ $predicate, $objects ] ) {
 				$quads = array_merge( $quads, $this->quadsOn( $target, $predicate, $objects, $graph ) );
@@ -424,17 +435,18 @@ class OntologyMappingProjector implements PageProjector {
 	}
 
 	/**
-	 * The objects a statement's values become: each relation target's native Subject IRI, or the mapped
-	 * literal (or IRI, for a url value) each value produces.
+	 * The objects a statement's values become: each relation target's Subject IRI, under its own
+	 * Source's base when that is not this wiki, or the mapped literal (or IRI, for a url value) each
+	 * value produces. A target whose Source this wiki does not have names nothing and is left out.
 	 *
 	 * @return list<RdfTerm>
 	 */
 	private function objectTerms( Statement $statement, PropertyMapping $propertyMapping ): array {
 		if ( $statement->getPropertyType() === RelationType::NAME ) {
-			return array_map(
-				fn ( Relation $relation ): Iri => $this->namespaces->subject( $relation->targetId ),
+			return array_values( array_filter( array_map(
+				fn ( Relation $relation ): ?Iri => $this->subjectIris->targetIri( $relation->targetId ),
 				$this->relationsOf( $statement )
-			);
+			) ) );
 		}
 
 		$terms = $this->valueMappers->mapValue( $statement->getPropertyType(), $statement->getValue() );
