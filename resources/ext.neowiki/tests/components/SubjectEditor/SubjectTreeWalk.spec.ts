@@ -197,6 +197,38 @@ describe( 'walkSubjectTree', () => {
 		expect( new Set( keysOf( result.root ) ).size ).toBe( keysOf( result.root ).length );
 	} );
 
+	it( 'expands a Subject reached by a second path even after its first occurrence expanded', () => {
+		// root --Left--> B --Shared--> S --Link--> E and root --Right--> C --Shared--> S: one
+		// converged-upon Subject with a descendant of its own. Convergence is ordinary, not a
+		// cycle, so S expands on both paths; a walk sharing one visited set across branches
+		// would show E under the first S alone.
+		const diamondSchema = relationSchema( 'Diamond', [ 'Left', 'Branch' ], [ 'Right', 'Branch' ] );
+		const branchSchema = relationSchema( 'Branch', [ 'Shared', 'Link' ] );
+
+		const root = subjectWith(
+			A_ID,
+			'Diamond',
+			'Root',
+			relationsTo( 'Left', B_ID ),
+			relationsTo( 'Right', C_ID ),
+		);
+		const left = subjectWith( B_ID, 'Branch', 'Left branch', relationsTo( 'Shared', SHARED_ID ) );
+		const right = subjectWith( C_ID, 'Branch', 'Right branch', relationsTo( 'Shared', SHARED_ID ) );
+		const shared = subjectWith( SHARED_ID, 'Link', 'Shared', relationsTo( 'Link', E_ID ) );
+		const leaf = subjectWith( E_ID, 'Link', 'Leaf' );
+
+		const result = walk(
+			root,
+			diamondSchema,
+			[ root, left, right, shared, leaf ],
+			[ diamondSchema, branchSchema, linkSchema ],
+		);
+
+		expect( idsOf( result.root ) ).toStrictEqual(
+			[ A_ID, B_ID, SHARED_ID, E_ID, C_ID, SHARED_ID, E_ID ],
+		);
+	} );
+
 	// The form shows one slot per relation, so the same target can be picked twice under one
 	// property; the tree shows related Subjects, and every key has to be unique tree-wide.
 	describe( 'a target listed twice under one property', () => {
