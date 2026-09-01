@@ -24,7 +24,7 @@ const SchemaEditorStub = defineComponent( {
 		initialSchema: { type: Object, required: true },
 		description: { type: String, required: true },
 	},
-	emits: [ 'overflow', 'change' ],
+	emits: [ 'change' ],
 	methods: {
 		// Mirrors the real editor, which applies the host-owned description.
 		getSchema(): Schema {
@@ -63,6 +63,8 @@ describe( 'SchemaEditorDialog', () => {
 		SchemaEditor: SchemaEditorStub,
 		SummaryAction: SummaryActionStub,
 		CloseConfirmationDialog: CloseConfirmationDialogStub,
+		// So the dialog renders inside the wrapper rather than at the document body.
+		teleport: true,
 	};
 
 	function mountComponent(): VueWrapper {
@@ -78,6 +80,16 @@ describe( 'SchemaEditorDialog', () => {
 			},
 		} );
 	}
+
+	// Mirrors the subject editor: the body never scrolls once the columns scroll
+	// themselves, so Codex would never add the dividers on its own, and the rule
+	// between the columns needs one to run into at each end.
+	it( 'asks Codex for the dividers variant', async () => {
+		const wrapper = mountComponent();
+		await flushPromises();
+
+		expect( wrapper.find( '.cdx-dialog' ).classes() ).toContain( 'cdx-dialog--dividers' );
+	} );
 
 	describe( 'Save button', () => {
 		it( 'disables save when there are no changes', async () => {

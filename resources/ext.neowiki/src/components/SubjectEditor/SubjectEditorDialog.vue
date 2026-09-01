@@ -621,10 +621,11 @@ defineExpose( { hasChanged: anyChanged } );
 		max-width: 80rem;
 	}
 
-	/* Codex gives this body `flex-grow: 1` and `overflow-y: auto` but no `min-height: 0`, so as
-		a flex item it refuses to shrink below its content and that overflow never engages.
-		`min-height: 0` engages it, and `display: grid` hands the bounded height down: the body
-		holds one child, which as a grid item stretches to the body instead of overflowing it.
+	/* `min-height: 0` lets this flex item shrink below its content whatever its overflow, and
+		`display: grid` hands the bounded height down: the body holds one child, which as a grid
+		item stretches to the body instead of overflowing it. Codex's own `overflow-y: auto`
+		already zeroes the automatic minimum size, so the declaration guards the day that
+		changes rather than being what engages the scrolling.
 
 		Codex's own 16px/24px padding is dropped here and handed to the regions inside, because
 		the border between the two surfaces is the only rule between the navigator and the form

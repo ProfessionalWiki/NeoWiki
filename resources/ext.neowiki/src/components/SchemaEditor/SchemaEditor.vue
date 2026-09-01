@@ -4,7 +4,6 @@
 		:class="{ 'ext-neowiki-schema-editor--has-selected-property': selectedProperty !== undefined }"
 	>
 		<PropertyList
-			ref="propertyList"
 			:properties="currentSchema.getPropertyDefinitions()"
 			:selected-property-name="selectedPropertyName"
 			@property-selected="onPropertySelected"
@@ -25,11 +24,10 @@
 <script setup lang="ts">
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
 import { Schema } from '@/domain/Schema.ts';
-import { ComponentPublicInstance, computed, onUpdated, ref, watch } from 'vue';
+import { ComponentPublicInstance, computed, ref, watch } from 'vue';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
 import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
-import { useOverflowDetection } from '@/composables/useOverflowDetection.ts';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 
 const props = defineProps<{
@@ -44,7 +42,6 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-	overflow: [ hasOverflow: boolean ];
 	change: [];
 }>();
 
@@ -57,14 +54,7 @@ watch( () => props.initialSchema, ( schema ) => {
 	selectedPropertyName.value = firstProperty?.name.toString();
 }, { immediate: true } );
 
-const propertyList = ref<ComponentPublicInstance | null>( null );
 const propertyDefinitionEditor = ref<( ComponentPublicInstance & PropertyDefinitionEditorExposes ) | null>( null );
-
-const { hasOverflow, checkOverflow } = useOverflowDetection( [ propertyList, propertyDefinitionEditor ] );
-
-watch( hasOverflow, ( value ) => {
-	emit( 'overflow', value );
-} );
 
 const selectedProperty = computed( () => {
 	if ( selectedPropertyName.value === undefined ) {
@@ -136,10 +126,6 @@ function replacePropertyDefinition( updatedProperty: PropertyDefinition ): Prope
 		)
 	);
 }
-
-onUpdated( () => {
-	checkOverflow();
-} );
 
 export interface SchemaEditorExposes {
 	getSchema: () => Schema;
