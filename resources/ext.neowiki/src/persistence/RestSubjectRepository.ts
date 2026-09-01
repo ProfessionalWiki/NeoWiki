@@ -249,12 +249,14 @@ export class RestSubjectRepository implements SubjectRepository {
 		schemaName: SchemaName,
 		statements: StatementList,
 		comment?: string,
+		id?: SubjectId,
 	): Promise<SubjectWriteResult> {
 		const payload = {
 			label: label,
 			schema: schemaName,
 			statements: statementsToJson( statements ),
 			comment,
+			id: id?.text,
 		};
 
 		const response = await this.httpClient.post(
@@ -274,6 +276,26 @@ export class RestSubjectRepository implements SubjectRepository {
 		}
 
 		return this.deserializeWriteResult( await response.json() as SubjectWriteResponseJson );
+	}
+
+	public async mintSubjectIds( count: number ): Promise<SubjectId[]> {
+		const response = await this.httpClient.post(
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject-ids`,
+			{ count },
+			{
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			},
+		);
+
+		if ( !response.ok ) {
+			throw new Error( 'Error minting subject ids' );
+		}
+
+		const data = await response.json() as { subjectIds: string[] };
+
+		return data.subjectIds.map( ( id ) => new SubjectId( id ) );
 	}
 
 	/**

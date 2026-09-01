@@ -63,13 +63,25 @@ export interface SubjectRepository extends SubjectLookup {
 		comment?: string
 	): Promise<SubjectWriteResult>;
 
+	/**
+	 * The optional id is a pre-minted, unused Subject ID to assign; omit it to have the server mint
+	 * one. Minting up front (see mintSubjectIds) is what lets relations between Subjects be wired
+	 * before any of them exists.
+	 */
 	createChildSubject(
 		pageId: number,
 		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
-		comment?: string
+		comment?: string,
+		id?: SubjectId
 	): Promise<SubjectWriteResult>;
+
+	/**
+	 * Unused Subject IDs, minted without creating any Subject. Stateless: the IDs are not
+	 * reserved, so a caller that never uses them costs nothing.
+	 */
+	mintSubjectIds( count: number ): Promise<SubjectId[]>;
 
 	updateSubject(
 		id: SubjectId,
@@ -122,8 +134,21 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 		return Promise.resolve( this.newWriteResult( new SubjectId( 's11111111111111' ), pageId, label, schemaName, statements ) );
 	}
 
-	public createChildSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _comment?: string ): Promise<SubjectWriteResult> {
-		return Promise.resolve( this.newWriteResult( new SubjectId( 's11111111111112' ), pageId, label, schemaName, statements ) );
+	public createChildSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _comment?: string, id?: SubjectId ): Promise<SubjectWriteResult> {
+		return Promise.resolve( this.newWriteResult( id ?? new SubjectId( 's11111111111112' ), pageId, label, schemaName, statements ) );
+	}
+
+	public mintSubjectIds( count: number ): Promise<SubjectId[]> {
+		return Promise.resolve( Array.from(
+			{ length: count },
+			( _value, index ) => new SubjectId( 'sminted' + StubSubjectRepository.mintedSuffix( index ) ),
+		) );
+	}
+
+	// Base58 has no zero, so the sequence number's own zeroes are mapped into the alphabet and
+	// the padding uses a letter the digits cannot produce, keeping every suffix distinct.
+	private static mintedSuffix( index: number ): string {
+		return String( index + 1 ).replace( /0/g, 'a' ).padStart( 8, 'A' );
 	}
 
 	public async updateSubject( id: SubjectId, label: string | null, statements: StatementList, _comment?: string ): Promise<SubjectWriteResult> {

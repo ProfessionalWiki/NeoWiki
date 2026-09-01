@@ -142,7 +142,7 @@ export const useSubjectStore = defineStore( 'subject', {
 
 			return result.subjectId;
 		},
-		async createChildSubject( pageId: number, label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<SubjectId> {
+		async createChildSubject( pageId: number, label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string, id?: SubjectId ): Promise<SubjectId> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createChildSubject(
@@ -151,6 +151,7 @@ export const useSubjectStore = defineStore( 'subject', {
 				schemaName,
 				statements,
 				comment,
+				id,
 			);
 
 			this.mutationEpoch++;
