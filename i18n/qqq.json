@@ -76,7 +76,7 @@
 	"neowiki-subject-editor-stored-on": "Line in a subject editing pane saying which wiki page the subject is stored on. Parameters: $1 - the page name, which is rendered as a link to that page. The rest of the message is not part of the link.",
 	"neowiki-subject-editor-unsaved": "Tooltip of the dot indicating a subject editing pane has unsaved changes.",
 	"neowiki-subject-editor-target-load-error": "Error notification when a relation target subject could not be fetched for editing (missing, unreadable, or network failure).",
-
+	"neowiki-subject-editor-create-target-error": "Error notification when a new subject could not be created from a relation field, because its schema or an identifier for it could not be fetched, or because no page could be determined to store it on.",
 	"neowiki-subject-editor-partial-save": "Message shown in the subject editor's footer when a multi-subject save wrote some subjects and then failed. Parameters:\n* $1 - how many subjects were written, at least one\n* $2 - how many the save attempted, at least two",
 	"neowiki-subject-editor-save-scope": "Note shown beside the subject editor's save button, naming what the save writes. Parameters:\n* $1 - how many subjects have unsaved changes\n* $2 - how many wiki pages hold them\nShown only when the user cannot see the whole scope already, so $1 is at least two or the one changed subject is not the one on screen.",
 	"neowiki-subject-tree-label": "Accessible name of the structure tree in the subject editor, listing the subjects reachable from the one being edited.",

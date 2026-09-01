@@ -379,6 +379,10 @@ editing when `canEditSubject` is true. Editing reads go through the repositories
 props. Saving updates the stores on its own: a Subject write answers with the Subject as persisted and the Schema
 it instantiates, and `nw.useSubjectStore()` records both.
 
+Relation fields inside the dialog offer creating the target Subject on the spot, but only when the dialog is given
+an `onCreate` handler alongside `onSave`. Creating a target writes a new Subject to a page, and which page that is
+is the host's to answer, so a dialog without the handler lets relations point only at Subjects that already exist.
+
 Full example: [`resources/init.js`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/init.js)
 with [`RedHerbCard.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/RedHerbCard.vue).
 

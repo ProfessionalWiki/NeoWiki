@@ -4,22 +4,36 @@
 		class="ext-neowiki-subject-edit-pane"
 		:aria-label="props.nested ? paneName : undefined"
 	>
+		<!-- Only a nested pane carries these: the dialog's own header names the root Subject
+			and holds the field that renames it. -->
 		<div
 			v-if="props.nested"
-			class="ext-neowiki-subject-edit-pane__storage"
+			class="ext-neowiki-subject-edit-pane__header"
 		>
-			<I18nSlot
+			<h3 class="ext-neowiki-subject-edit-pane__name">
+				<EditableText
+					:model-value="label"
+					:edit-button-label="$i18n( 'neowiki-subject-editor-rename' ).text()"
+					:input-aria-label="$i18n( 'neowiki-subject-editor-label-field' ).text()"
+					:placeholder="labelPlaceholder"
+					@update:model-value="setLabel"
+				/>
+			</h3>
+
+			<div
 				v-if="pageName !== null"
-				message-key="neowiki-subject-editor-stored-on"
+				class="ext-neowiki-subject-edit-pane__storage"
 			>
-				<!-- A new tab: following the link in this one discards unsaved edits. -->
-				<a
-					class="ext-neowiki-subject-edit-pane__page"
-					:href="pageUrl"
-					target="_blank"
-					rel="noopener"
-				>{{ pageName }}</a>
-			</I18nSlot>
+				<I18nSlot message-key="neowiki-subject-editor-stored-on">
+					<!-- A new tab: following the link in this one discards unsaved edits. -->
+					<a
+						class="ext-neowiki-subject-edit-pane__page"
+						:href="pageUrl"
+						target="_blank"
+						rel="noopener"
+					>{{ pageName }}</a>
+				</I18nSlot>
+			</div>
 		</div>
 
 		<SubjectViolationBanners :violations="anchorlessViolations" />
@@ -60,6 +74,7 @@ import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import type { SubjectEditorExposes } from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
+import EditableText from '@/components/common/EditableText.vue';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
@@ -71,13 +86,16 @@ import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { RelationTargetEditingKey } from '@/components/Value/ValueInputContract.ts';
-import type { SubjectViolation } from '@/domain/SubjectViolation';
+import { withoutMissingValueViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 
 const props = defineProps<{
 	subject: Subject;
 	schema: Schema;
 	nested?: boolean;
+	// A Subject this editing session invented, which the server has never seen. It is validated
+	// as a creation rather than as an update, and the dialog writes it with a create.
+	isNew?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -116,6 +134,14 @@ const pageUrl = computed( (): string =>
 	pageName.value === null ? '' : mw.util.getUrl( pageName.value )
 );
 
+// Previews the name a Subject with no label is shown under, which for one created here is its
+// Schema's name (ADR 31). A labelled Subject gets the generic hint instead.
+const labelPlaceholder = computed( (): string =>
+	props.subject.getLabel() === null ?
+		props.subject.getDisplayName() :
+		mw.msg( 'neowiki-subject-editor-label-field' )
+);
+
 // EditableText commits once per edit, so a commit is both the change and the
 // end of the interaction: validate immediately rather than waiting for a blur.
 function setLabel( value: string ): void {
@@ -138,6 +164,17 @@ const { violations: serverViolations, revalidate, flush } = useSubjectValidation
 		}
 		const current = subjectEditorRef.value.getSubjectData().withNonEmptyValues();
 		try {
+			// A Subject the server has never seen has no update to dry-run against, and its
+			// empty required fields are ones the user is still on their way to filling in
+			// rather than real gaps — the same reading the subject creator takes.
+			if ( props.isNew ) {
+				return withoutMissingValueViolations( await subjectStore.validateSubject(
+					storedLabel.value,
+					props.subject.getSchemaName(),
+					current
+				) );
+			}
+
 			// Unlike subject creation, editing an existing subject surfaces
 			// 'required' live: an empty required field here is a real gap, not a
 			// field the user is still on their way to filling in.
@@ -250,10 +287,26 @@ defineExpose( {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-subject-edit-pane {
-	&__storage {
+	/* The name and where it is stored on one line, the name taking whatever the storage line
+		leaves. Baseline-aligned rather than centred, because the two differ in size. */
+	&__header {
 		display: flex;
-		justify-content: flex-end;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: @spacing-50;
 		margin-bottom: @spacing-75;
+	}
+
+	/* Subordinate to the dialog's own title, which names the root Subject: a heading for
+		screen readers and outline tools, sized like the body around it. */
+	&__name {
+		min-width: 0;
+		margin: 0;
+		font-size: @font-size-medium;
+	}
+
+	&__storage {
+		flex-shrink: 0;
 		color: @color-subtle;
 		font-size: @font-size-small;
 	}

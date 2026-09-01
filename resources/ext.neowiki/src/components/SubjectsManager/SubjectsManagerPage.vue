@@ -431,6 +431,7 @@
 			:subject="editingSubject as Subject"
 			:schema="editingSchema as Schema"
 			:on-save="handleEditSave"
+			:on-create="handleEditCreate"
 			:on-save-schema="handleSchemaSave"
 		/>
 
@@ -859,6 +860,20 @@ async function openEditor( subject: Subject ): Promise<void> {
 
 async function handleEditSave( updatedSubject: Subject, comment: string ): Promise<void> {
 	await subjectStore.updateSubject( updatedSubject, comment );
+	await loadSubjects();
+}
+
+// The Subject carries the id the editor minted for it, so the page gets exactly the Subject the
+// relation pointing at it already names.
+async function handleEditCreate( subject: Subject, targetPageId: number, comment: string ): Promise<void> {
+	await subjectStore.createChildSubject(
+		targetPageId,
+		subject.getLabel(),
+		subject.getSchemaName(),
+		subject.getStatements(),
+		comment,
+		subject.getId()
+	);
 	await loadSubjects();
 }
 

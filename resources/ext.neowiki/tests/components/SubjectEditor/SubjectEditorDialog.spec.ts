@@ -1,5 +1,5 @@
 import { mount, VueWrapper, DOMWrapper, flushPromises } from '@vue/test-utils';
-import { nextTick } from 'vue';
+import { inject, nextTick } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { Subject } from '@/domain/Subject.ts';
@@ -29,6 +29,8 @@ import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 import { newSubject } from '@/TestHelpers.ts';
+import { StubSubjectRepository } from '@/domain/SubjectRepository.ts';
+import { RelationTargetCreationKey, type RelationTargetCreator } from '@/components/Value/ValueInputContract.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import type { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 
@@ -127,6 +129,9 @@ describe( 'SubjectEditorDialog', () => {
 		subject: Subject = mockSubject,
 		// Passed by the focus tests alone: an element must be in the document to hold focus.
 		attachTo: Element | undefined = undefined,
+		// Left out by every host that cannot create Subjects, which is what the dialog reads
+		// to decide whether the relation fields are offered creation at all.
+		onCreate: ( ( subject: any, pageId: number, comment: string ) => Promise<void> ) | undefined = undefined,
 	): VueWrapper => {
 		schemaPermissionHints = {
 			canEditSchema: vi.fn().mockResolvedValue( canEditSchema ),
@@ -139,6 +144,7 @@ describe( 'SubjectEditorDialog', () => {
 				schema,
 				onSave: onSave ?? vi.fn(),
 				onSaveSchema: vi.fn(),
+				onCreate,
 				open: true,
 			},
 			global: {
@@ -1138,7 +1144,7 @@ describe( 'SubjectEditorDialog', () => {
 
 		interface TargetReposMount {
 			wrapper: VueWrapper;
-			mockSubjectRepository: { getSubject: Mock };
+			mockSubjectRepository: { getSubject: Mock; mintSubjectIds: Mock };
 			mockSchemaRepository: { getSchema: Mock };
 			target: SubjectWithContext;
 		}
@@ -1158,9 +1164,17 @@ describe( 'SubjectEditorDialog', () => {
 			rootSchema: Schema = mockSchema,
 			rootSubject: Subject = mockSubject,
 			attachTo: Element | undefined = undefined,
+			onCreate: Mock | undefined = undefined,
 		): TargetReposMount {
 			const target = targetSubject( 's22222222222222', 'Target subject' );
-			const mockSubjectRepository = { getSubject: vi.fn().mockResolvedValue( target ) };
+			const mockSubjectRepository = {
+				getSubject: vi.fn().mockResolvedValue( target ),
+				// The real stub, so the ids these tests expect are the ones a Subject
+				// repository actually mints.
+				mintSubjectIds: vi.fn(
+					( count: number ) => new StubSubjectRepository( [] ).mintSubjectIds( count ),
+				),
+			};
 			const mockSchemaRepository = { getSchema: vi.fn().mockResolvedValue( personSchema ) };
 			const wrapper = mountComponent(
 				true,
@@ -1173,6 +1187,7 @@ describe( 'SubjectEditorDialog', () => {
 				},
 				rootSubject,
 				attachTo,
+				onCreate,
 			);
 			return { wrapper, mockSubjectRepository, mockSchemaRepository, target };
 		}
@@ -2592,6 +2607,297 @@ describe( 'SubjectEditorDialog', () => {
 				await nextTick();
 
 				expect( treeNodeLabel( wrapper, 's22222222222222' ) ).toBe( 'Renamed child' );
+			} );
+		} );
+
+		// The relation field that offers creation is stubbed out of these tests, so the
+		// injection it reads is driven directly: it is the whole contract between this dialog
+		// and RelationInput.
+		describe( 'Creating a relation target', () => {
+			const CreationAwareSubjectEditorStub = {
+				...SubjectEditorStub,
+				setup( props: { schema?: Schema } ) {
+					return {
+						...SubjectEditorStub.setup( props ),
+						createRelationTarget: inject<RelationTargetCreator | null>(
+							RelationTargetCreationKey, null,
+						),
+					};
+				},
+			};
+
+			const hostPage = new PageIdentifiers( 42, 'Host page' );
+			const otherPage = new PageIdentifiers( 77, 'Other page' );
+
+			// What StubSubjectRepository mints for a single id.
+			const mintedId = 'smintedAAAAAAA1';
+
+			// mockSubject is a bare Subject, which is a Subject with nowhere to store one made
+			// beside it. The tests that expect a draft to be created need a page.
+			const rootOnHostPage = newSubject( {
+				id: rootSubjectId,
+				label: mockSubject.getLabel(),
+				pageIdentifiers: hostPage,
+			} );
+
+			interface CreationMountOptions {
+				onSave?: Mock;
+				onCreate?: Mock;
+				rootSubject?: Subject;
+			}
+
+			function mountForCreation( {
+				onSave, onCreate, rootSubject,
+			}: CreationMountOptions = {} ): TargetReposMount {
+				return mountWithTargetRepos(
+					onSave ?? vi.fn().mockResolvedValue( undefined ),
+					{ SubjectEditor: CreationAwareSubjectEditorStub },
+					mockSchema,
+					rootSubject ?? rootOnHostPage,
+					undefined,
+					onCreate ?? vi.fn().mockResolvedValue( undefined ),
+				);
+			}
+
+			async function mountReadyForCreation(
+				options: CreationMountOptions = {},
+			): Promise<TargetReposMount> {
+				const result = mountForCreation( options );
+				await flushPromises();
+				return result;
+			}
+
+			// Null where the host passed no create handler, which is what a field reading the
+			// injection sees.
+			function providedCreator( wrapper: VueWrapper ): RelationTargetCreator | null {
+				return ( wrapper.findComponent( SubjectEditor ).vm as unknown as {
+					createRelationTarget: RelationTargetCreator | null;
+				} ).createRelationTarget;
+			}
+
+			async function createTarget(
+				wrapper: VueWrapper,
+				label: string | null = 'New colleague',
+			): Promise<Subject | null> {
+				const created = await providedCreator( wrapper )?.( 'Person', label );
+				await flushPromises();
+				return created ?? null;
+			}
+
+			function subjectIdsPassedTo( handler: Mock ): string[] {
+				return handler.mock.calls.map( ( call ) => ( call[ 0 ] as Subject ).getId().text );
+			}
+
+			beforeEach( () => {
+				// A Subject the server has never seen is validated as a creation, which the
+				// panes of these tests do on mount; keep it off the network like the update
+				// dry-run the outer setup stubs.
+				useSubjectStore().validateSubject = vi.fn().mockResolvedValue( [] );
+			} );
+
+			it( 'offers no creation to the relation fields when the host cannot create subjects', async () => {
+				const { wrapper } = mountWithTargetRepos(
+					undefined,
+					{ SubjectEditor: CreationAwareSubjectEditorStub },
+					mockSchema,
+					rootOnHostPage,
+				);
+				await flushPromises();
+
+				expect( providedCreator( wrapper ) ).toBeNull();
+			} );
+
+			it( 'offers creation to the relation fields when the host can create subjects', async () => {
+				const { wrapper } = await mountReadyForCreation();
+
+				expect( typeof providedCreator( wrapper ) ).toBe( 'function' );
+			} );
+
+			it( 'answers with a draft carrying the minted id, the typed label and the requested schema', async () => {
+				const { wrapper } = await mountReadyForCreation();
+
+				const created = await createTarget( wrapper, 'Ada Lovelace' );
+
+				expect( created?.getId().text ).toBe( mintedId );
+				expect( created?.getLabel() ).toBe( 'Ada Lovelace' );
+				expect( created?.getSchemaName() ).toBe( 'Person' );
+			} );
+
+			it( 'opens the created draft as a pane of its own', async () => {
+				const { wrapper } = await mountReadyForCreation();
+
+				await createTarget( wrapper );
+
+				expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 2 );
+				expect( wrapper.find( `#ext-neowiki-panel-${ mintedId }` ).exists() ).toBe( true );
+			} );
+
+			it( 'brings the created draft on screen', async () => {
+				const { wrapper } = await mountReadyForCreation();
+
+				await createTarget( wrapper );
+
+				expect( visibleSubjectId( wrapper ) ).toBe( mintedId );
+			} );
+
+			it( 'edits the created draft against the schema it was asked for', async () => {
+				const { wrapper, mockSchemaRepository } = await mountReadyForCreation();
+
+				await createTarget( wrapper );
+
+				expect( mockSchemaRepository.getSchema ).toHaveBeenCalledWith( 'Person' );
+				expect( paneFor( wrapper, mintedId ).props( 'schema' ) ).toBe( personSchema );
+			} );
+
+			it( 'renders the navigator once a target has been created', async () => {
+				const { wrapper } = await mountReadyForCreation();
+				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( false );
+
+				await createTarget( wrapper );
+
+				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( true );
+			} );
+
+			// Nobody has to type into a draft for the relation pointing at it to need something
+			// to point at, so an untouched one still has to be written.
+			it( 'enables Save for an untouched draft', async () => {
+				const { wrapper } = await mountReadyForCreation();
+
+				await createTarget( wrapper );
+
+				expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+			} );
+
+			it( 'marks an untouched draft unsaved in the navigator', async () => {
+				const { wrapper } = await mountReadyForCreation();
+
+				await createTarget( wrapper );
+
+				expect( wrapper.findComponent( SubjectTree ).props( 'unsavedIds' ) ).toContain( mintedId );
+			} );
+
+			it( 'creates the draft with the id minted for it, on the page it was opened against', async () => {
+				const onCreate = vi.fn().mockResolvedValue( undefined );
+				const { wrapper } = await mountReadyForCreation( { onCreate } );
+
+				await createTarget( wrapper );
+				await triggerSave( wrapper, 'my summary' );
+
+				expect( onCreate ).toHaveBeenCalledTimes( 1 );
+				expect( ( onCreate.mock.calls[ 0 ][ 0 ] as Subject ).getId().text ).toBe( mintedId );
+				expect( onCreate.mock.calls[ 0 ][ 1 ] ).toBe( hostPage.getPageId() );
+			} );
+
+			// The Subject whose relation is being filled in is the one the new Subject belongs
+			// beside, and panes routinely span pages.
+			it( 'creates the draft on the page of the subject being edited, not the dialog\'s root', async () => {
+				const onCreate = vi.fn().mockResolvedValue( undefined );
+				const { wrapper, mockSubjectRepository } = await mountReadyForCreation( { onCreate } );
+				mockSubjectRepository.getSubject.mockResolvedValue( newSubject( {
+					id: 's22222222222222',
+					label: 'Target subject',
+					schemaName: 'Person',
+					pageIdentifiers: otherPage,
+				} ) );
+				wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
+				await flushPromises();
+
+				await createTarget( wrapper );
+				await triggerSave( wrapper, '' );
+
+				expect( onCreate.mock.calls[ 0 ][ 1 ] ).toBe( otherPage.getPageId() );
+			} );
+
+			it( 'updates the subject that refers to the draft with the host\'s save handler', async () => {
+				const onSave = vi.fn().mockResolvedValue( undefined );
+				const { wrapper } = await mountReadyForCreation( { onSave } );
+
+				await createTarget( wrapper );
+				await makePaneDirty( wrapper, 0 );
+				await triggerSave( wrapper, '' );
+
+				expect( subjectIdsPassedTo( onSave ) ).toEqual( [ rootSubjectId ] );
+			} );
+
+			// Or the update would name a target the wiki does not have yet.
+			it( 'creates the draft before updating the subject that refers to it', async () => {
+				const onSave = vi.fn().mockResolvedValue( undefined );
+				const onCreate = vi.fn().mockResolvedValue( undefined );
+				const { wrapper } = await mountReadyForCreation( { onSave, onCreate } );
+
+				await createTarget( wrapper );
+				await makePaneDirty( wrapper, 0 );
+				await triggerSave( wrapper, '' );
+
+				expect( onCreate.mock.invocationCallOrder[ 0 ] )
+					.toBeLessThan( onSave.mock.invocationCallOrder[ 0 ] );
+			} );
+
+			// The create landed; only the write after it was refused. Offering the same id a
+			// second time would ask the wiki for a Subject it already has.
+			it( 'updates rather than re-creates a draft the first attempt already wrote', async () => {
+				const onSave = vi.fn()
+					.mockRejectedValueOnce( new Error( 'Boom' ) )
+					.mockResolvedValue( undefined );
+				const onCreate = vi.fn().mockResolvedValue( undefined );
+				const { wrapper } = await mountReadyForCreation( { onSave, onCreate } );
+				await createTarget( wrapper );
+				await makePaneDirty( wrapper, 0 );
+				await triggerSave( wrapper, '' );
+
+				await makePaneDirty( wrapper, 1 );
+				await triggerSave( wrapper, '' );
+
+				expect( onCreate ).toHaveBeenCalledTimes( 1 );
+				expect( subjectIdsPassedTo( onSave ) ).toContain( mintedId );
+			} );
+
+			it( 'notifies and adds no pane when no id can be minted', async () => {
+				const { wrapper, mockSubjectRepository } = await mountReadyForCreation();
+				mockSubjectRepository.mintSubjectIds.mockRejectedValue( new Error( 'Minting failed' ) );
+
+				await createTarget( wrapper );
+
+				expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
+				expect( mw.notify ).toHaveBeenCalledWith(
+					'neowiki-subject-editor-create-target-error', { type: 'error' },
+				);
+			} );
+
+			it( 'notifies and adds no pane when the target schema cannot be fetched', async () => {
+				const { wrapper, mockSchemaRepository } = await mountReadyForCreation();
+				mockSchemaRepository.getSchema.mockRejectedValue( new Error( 'Schema fetch failed' ) );
+
+				await createTarget( wrapper );
+
+				expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
+				expect( mw.notify ).toHaveBeenCalledWith(
+					'neowiki-subject-editor-create-target-error', { type: 'error' },
+				);
+			} );
+
+			it( 'answers with nothing when the subject being edited has no page to store a draft on', async () => {
+				const { wrapper } = await mountReadyForCreation( { rootSubject: mockSubject } );
+
+				const created = await createTarget( wrapper );
+
+				expect( created ).toBeNull();
+				expect( mw.notify ).toHaveBeenCalledWith(
+					'neowiki-subject-editor-create-target-error', { type: 'error' },
+				);
+			} );
+
+			// Nothing was written, so the next opening starts from what the wiki holds.
+			it( 'drops the draft when the dialog is reopened', async () => {
+				const { wrapper } = await mountReadyForCreation();
+				await createTarget( wrapper );
+
+				await wrapper.setProps( { open: false } );
+				await wrapper.setProps( { open: true } );
+				await flushPromises();
+
+				expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
+				expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
 			} );
 		} );
 	} );
