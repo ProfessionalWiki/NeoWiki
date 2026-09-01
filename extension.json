@@ -606,6 +606,8 @@
 				"neowiki-subject-editor-partial-save",
 				"neowiki-subject-editor-save-scope",
 				"neowiki-subject-tree-label",
+				"neowiki-subject-editor-resize-navigator",
+				"neowiki-schema-editor-resize-property-list",
 				"neowiki-subject-tree-not-linked",
 				"neowiki-subject-picker-placeholder",
 				"neowiki-subject-picker-no-results",

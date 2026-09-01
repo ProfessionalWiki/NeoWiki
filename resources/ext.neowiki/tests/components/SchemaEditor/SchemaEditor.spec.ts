@@ -9,6 +9,7 @@ import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { createI18nMock, reportUnparseableNumber } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
+import PaneDivider from '@/components/common/PaneDivider.vue';
 
 function createWrapper( schema: Schema, description = '' ): VueWrapper {
 	return mount( SchemaEditor, {
@@ -385,5 +386,44 @@ describe( 'SchemaEditor', () => {
 
 			expect( unparseableInput( wrapper ) ).toBeNull();
 		} );
+	} );
+} );
+
+describe( 'SchemaEditor pane divider', () => {
+
+	const schemaWithProperty = new Schema( 'Test', '', new PropertyDefinitionList( [
+		createPropertyDefinitionFromJson( 'Name', { type: 'text' } ),
+	] ) );
+
+	const emptySchema = new Schema( 'Test', '', new PropertyDefinitionList( [] ) );
+
+	it( 'sits between the list and the editor', () => {
+		const wrapper = createWrapper( schemaWithProperty );
+
+		const children = [ ...wrapper.element.children ].map( ( child ) => child.tagName.toLowerCase() );
+
+		expect( wrapper.findComponent( PaneDivider ).exists() ).toBe( true );
+		expect( children[ 1 ] ).toBe( 'div' );
+	} );
+
+	// The track list and the divider appear together or not at all: a divider left behind
+	// would hold a track open for a column that is not rendered.
+	it( 'is absent when no property is selected', () => {
+		const wrapper = createWrapper( emptySchema );
+
+		expect( wrapper.findComponent( PaneDivider ).exists() ).toBe( false );
+	} );
+
+	it( 'points at the property list it sizes', () => {
+		const wrapper = createWrapper( schemaWithProperty );
+
+		const listId = wrapper.find( '.ext-neowiki-schema-editor' ).element.children[ 0 ].id;
+
+		expect( listId ).not.toBe( '' );
+		expect( wrapper.findComponent( PaneDivider ).props( 'controls' ) ).toBe( listId );
+	} );
+
+	it( 'renders without MediaWiki storage, which this spec never stubs', () => {
+		expect( () => createWrapper( schemaWithProperty ) ).not.toThrow();
 	} );
 } );

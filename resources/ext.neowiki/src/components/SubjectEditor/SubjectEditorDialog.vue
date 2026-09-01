@@ -64,13 +64,16 @@
 				is deliberately unkeyed: a pane must never unmount, because its unsaved values live in
 				the ValueInput refs inside it. -->
 			<div
+				ref="content"
 				class="ext-neowiki-subject-editor-dialog__content"
+				:style="{ '--ext-neowiki-pane-size': paneSize.cssSize.value }"
 				:inert="saving || undefined"
 			>
 				<EditNoticeList :notices="notices" />
 
 				<div
 					v-if="showsNavigator"
+					:id="navigatorId"
 					class="ext-neowiki-subject-editor-dialog__surface"
 				>
 					<!-- Load-bearing, and invisible in the rendered output: it starts a new walk, with
@@ -87,6 +90,22 @@
 						@select="openRelationTarget"
 					/>
 				</div>
+
+				<!-- On the navigator's own condition: the second track exists only alongside it,
+					and a divider outside that would hold a track open for a column that is
+					not there. -->
+				<PaneDivider
+					v-if="showsNavigator"
+					class="ext-neowiki-subject-editor-dialog__divider"
+					:label="$i18n( 'neowiki-subject-editor-resize-navigator' ).text()"
+					:controls="navigatorId"
+					:size="paneSize.size.value"
+					:min="paneSize.minSize.value"
+					:max="paneSize.maxSize.value"
+					:disabled="!paneSize.resizable.value"
+					@resize="paneSize.resizeTo"
+					@commit="paneSize.persist"
+				/>
 
 				<div class="ext-neowiki-subject-editor-dialog__surface">
 					<div class="ext-neowiki-subject-editor-dialog__panels">
@@ -153,7 +172,7 @@ import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import EditableText from '@/components/common/EditableText.vue';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
-import { CdxButton, CdxDialog, CdxIcon, CdxMessage } from '@wikimedia/codex';
+import { CdxButton, CdxDialog, CdxIcon, CdxMessage, useGeneratedId } from '@wikimedia/codex';
 import { cdxIconClose } from '@wikimedia/codex-icons';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
@@ -163,6 +182,8 @@ import { Schema } from '@/domain/Schema.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
+import PaneDivider, { PANE_DIVIDER_SIZE } from '@/components/common/PaneDivider.vue';
+import { usePaneSize } from '@/composables/usePaneSize.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { useEditNotices } from '@/composables/useEditNotices.ts';
@@ -189,6 +210,22 @@ interface EditPane {
 	subject: Subject;
 	schema: Schema;
 }
+
+const content = ref<HTMLElement | null>( null );
+
+// Named for the divider to point at, and generated because this dialog opens a schema
+// editor with a divider of its own.
+const navigatorId = useGeneratedId( 'ext-neowiki-subject-navigator' );
+
+// Its own key rather than the schema editor's: that editor opens inside this dialog, and
+// this one is the wider of the two, so one shared width would be clamped away here.
+const paneSize = usePaneSize( content, {
+	defaultSize: 384,
+	minSize: 256,
+	minOtherSize: 320,
+	dividerSize: PANE_DIVIDER_SIZE,
+	storageKey: 'neowiki-subject-editor-pane-size'
+} );
 
 const isSchemaEditorOpen = ref( false );
 // Mirrors the prop so a schema saved through the nested SchemaEditorDialog takes effect here
@@ -652,8 +689,8 @@ defineExpose( { hasChanged: anyChanged } );
 		`auto` the taller cell sets the row's height, pushing the scrolling up to the dialog body
 		and taking the navigator off-screen with the form.
 
-		No column gap: the rule between the two surfaces is a border, and a gap would leave it
-		floating in empty space instead of terminating an edge.
+		No column gap: the divider has a track of its own and draws the rule inside it, so the
+		rule still runs into the header's and the footer's rather than floating short of them.
 
 		jsdom resolves no layout, so the suite cannot see this grid collapse. Measure every change
 		in a browser, at more than one viewport height, with and without an edit notice, and with
@@ -670,14 +707,24 @@ defineExpose( { hasChanged: anyChanged } );
 	/* `--wide` is bound to the same condition as the navigator's own `v-if`. Declaring both
 		columns unconditionally would leave a navigator-wide void beside a form with no
 		navigator to fill it. */
+	/* The reader's width, bounded in script rather than here: the observed width this is
+		divided against is a border box, which `100%` in a track is not. This grid takes no
+		inline padding or border of its own, for the same reason. */
 	&--wide &__content {
-		grid-template-columns: @size-2400 1fr;
+		grid-template-columns: var( --ext-neowiki-pane-size, @size-2400 ) @spacing-75 minmax( 0, 1fr );
 	}
 
 	/* Both columns of the second row: a scroll container holding one inner element that
 		carries the padding. Scrolling here rather than at the dialog body is what keeps the
 		navigator in view while the form is scrolled, and `min-height: 0` is what lets a grid
 		item shrink below its content at all. */
+	/* Placed rather than flowed: the notices above are conditional, so auto-placement puts
+		these in the notices' row whenever there is no notice. */
+	&__surface,
+	&__divider {
+		grid-row: 2;
+	}
+
 	&__surface {
 		min-width: 0;
 		min-height: 0;
@@ -692,12 +739,6 @@ defineExpose( { hasChanged: anyChanged } );
 		clipped. Nothing on the end side, so the scrollbar sits flush with the divider. */
 	& .ext-neowiki-subject-tree {
 		padding: @spacing-100 0 @spacing-100 calc( @spacing-150 - @spacing-35 );
-	}
-
-	/* Drawn on the boundary rather than owned by either side. A surface only ever follows
-		another when the navigator is rendered. */
-	&__surface + &__surface {
-		border-inline-start: @border-subtle;
 	}
 
 	/* Every inset the form has, on this padded element rather than on the scroller around it:

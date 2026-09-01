@@ -1,15 +1,33 @@
 <template>
 	<div
+		ref="root"
 		class="ext-neowiki-schema-editor"
 		:class="{ 'ext-neowiki-schema-editor--has-selected-property': selectedProperty !== undefined }"
+		:style="{ '--ext-neowiki-pane-size': paneSize.cssSize.value }"
 	>
 		<PropertyList
+			:id="propertyListId"
 			:properties="currentSchema.getPropertyDefinitions()"
 			:selected-property-name="selectedPropertyName"
 			@property-selected="onPropertySelected"
 			@property-created="onPropertyCreated"
 			@property-deleted="onPropertyDeleted"
 			@property-reordered="onPropertyReordered"
+		/>
+		<!-- Rendered on the same condition as the editor beside it: the three-track list
+			below appears only with a property selected, and a divider outside that condition
+			would leave a track for a column that is not there. -->
+		<PaneDivider
+			v-if="selectedProperty !== undefined"
+			class="ext-neowiki-schema-editor__divider"
+			:label="$i18n( 'neowiki-schema-editor-resize-property-list' ).text()"
+			:controls="propertyListId"
+			:size="paneSize.size.value"
+			:min="paneSize.minSize.value"
+			:max="paneSize.maxSize.value"
+			:disabled="!paneSize.resizable.value"
+			@resize="paneSize.resizeTo"
+			@commit="paneSize.persist"
 		/>
 		<PropertyDefinitionEditor
 			v-if="selectedProperty !== undefined"
@@ -28,6 +46,9 @@ import { ComponentPublicInstance, computed, ref, watch } from 'vue';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
 import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import PaneDivider, { PANE_DIVIDER_SIZE } from '@/components/common/PaneDivider.vue';
+import { usePaneSize } from '@/composables/usePaneSize.ts';
+import { useGeneratedId } from '@wikimedia/codex';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 
 const props = defineProps<{
@@ -44,6 +65,23 @@ const props = defineProps<{
 const emit = defineEmits<{
 	change: [];
 }>();
+
+const root = ref<HTMLElement | null>( null );
+
+// Named for the divider to point at. Generated rather than fixed: a schema editor opens
+// inside the subject editor's dialog, so two of these can be on the page at once.
+const propertyListId = useGeneratedId( 'ext-neowiki-property-list' );
+
+// One preference across all five dialogs this editor appears in: same two columns, and
+// every one of those dialogs is the same width. Its own key, not the subject editor's,
+// whose dialog is wider — sharing one would let a nudge here overwrite a choice there.
+const paneSize = usePaneSize( root, {
+	defaultSize: 320,
+	minSize: 192,
+	minOtherSize: 320,
+	dividerSize: PANE_DIVIDER_SIZE,
+	storageKey: 'neowiki-schema-editor-pane-size'
+} );
 
 const currentSchema = ref<Schema>( props.initialSchema );
 const selectedPropertyName = ref<string | undefined>();
@@ -163,6 +201,13 @@ defineExpose<SchemaEditorExposes>( {
 .ext-neowiki-schema-editor {
 	display: grid;
 
+	/* Shown only where the columns are side by side. Safe as a display toggle only
+		because the three-track list is behind the same query: hiding a grid item inside
+		an explicit track list leaves its track behind and lands the next item in it. */
+	.ext-neowiki-schema-editor__divider {
+		display: none;
+	}
+
 	.ext-neowiki-schema-editor {
 		&__property-editor {
 			padding: @spacing-100;
@@ -225,17 +270,22 @@ defineExpose<SchemaEditorExposes>( {
 
 		@media ( min-width: @min-width-breakpoint-desktop ) {
 			min-height: 0;
-			grid-template-columns: minmax( 0, 20rem ) auto;
+			/* The reader's width, bounded in script rather than here: the observed width
+				this is divided against is a border box, which `100%` in a track is not.
+				`minmax( 0, 1fr )` rather than `auto`, or the editor's min-content would
+				claim space back out of a width the reader set. This grid takes no inline
+				padding or border of its own, for the same reason. */
+			grid-template-columns: var( --ext-neowiki-pane-size, 20rem ) @spacing-75 minmax( 0, 1fr );
 			grid-template-rows: minmax( 0, 1fr );
 
 			.ext-neowiki-schema-editor {
+				&__divider {
+					display: flex;
+				}
+
 				&__property-list,
 				&__property-editor {
 					overflow-y: auto;
-				}
-
-				&__property-editor {
-					border-inline-start: @border-subtle;
 				}
 			}
 		}

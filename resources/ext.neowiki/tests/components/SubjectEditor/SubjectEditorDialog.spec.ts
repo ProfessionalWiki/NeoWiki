@@ -21,6 +21,7 @@ import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
 import SubjectTree from '@/components/SubjectEditor/SubjectTree.vue';
+import PaneDivider from '@/components/common/PaneDivider.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog, CdxMessage } from '@wikimedia/codex';
@@ -2358,7 +2359,7 @@ describe( 'SubjectEditorDialog', () => {
 				} );
 			} );
 
-			// Auto-placement puts the two surfaces in their columns and `__surface + __surface` draws
+			// Auto-placement puts each child in its own column, and the divider between them draws
 			// the rule between them, so both rest on this order. jsdom resolves no layout: this pins
 			// the structure, and the placement itself is verified in the browser.
 			it( 'renders the navigator and the pane region as sibling surfaces, navigator first', async () => {
@@ -2372,6 +2373,7 @@ describe( 'SubjectEditorDialog', () => {
 				expect( Array.from( content.element.children ).map( ( child ) => child.className ) )
 					.toEqual( [
 						'ext-neowiki-subject-editor-dialog__surface',
+						'ext-neowiki-pane-divider ext-neowiki-subject-editor-dialog__divider',
 						'ext-neowiki-subject-editor-dialog__surface',
 					] );
 			} );
@@ -2388,6 +2390,30 @@ describe( 'SubjectEditorDialog', () => {
 
 				expect( surfaces[ 0 ].find( '.ext-neowiki-subject-tree' ).exists() ).toBe( true );
 				expect( surfaces[ 1 ].find( '.ext-neowiki-subject-editor-dialog__panels' ).exists() ).toBe( true );
+			} );
+
+			// The track list and the divider turn on together: a divider left behind would
+			// hold a track open for a column that is not rendered.
+			it( 'renders no divider when there is no navigator', async () => {
+				const wrapper = mountComponent( false, {} );
+				await flushPromises();
+
+				expect( wrapper.findComponent( PaneDivider ).exists() ).toBe( false );
+			} );
+
+			it( 'points the divider at the navigator it sizes', async () => {
+				const { wrapper } = await mountWithSecondPaneOpen( {
+					rootSchema: relationRootSchema,
+					rootSubject: relationRootSubject,
+				} );
+
+				const navigator = wrapper.find(
+					'.ext-neowiki-subject-editor-dialog__content > .ext-neowiki-subject-editor-dialog__surface',
+				);
+
+				expect( navigator.attributes( 'id' ) ).toBeTruthy();
+				expect( wrapper.findComponent( PaneDivider ).props( 'controls' ) )
+					.toBe( navigator.attributes( 'id' ) );
 			} );
 
 			it( 'renders only the form surface when there is no navigator', async () => {
