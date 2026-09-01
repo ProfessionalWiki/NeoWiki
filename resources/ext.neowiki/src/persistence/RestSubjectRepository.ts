@@ -13,6 +13,7 @@ import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { Subject } from '@/domain/Subject';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
+import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import { parseViolations } from '@/persistence/violationParsing';
 
 async function throwOn422IfPossible( response: Response ): Promise<void> {
@@ -271,6 +272,12 @@ export class RestSubjectRepository implements SubjectRepository {
 
 		await throwOn422IfPossible( response );
 
+		// Only a caller that minted the id up front can meet this, and for one it minted for this
+		// very Subject it means the create already landed and its answer was lost.
+		if ( response.status === 409 && id !== undefined ) {
+			throw new SubjectIdInUseError( id.text );
+		}
+
 		if ( !response.ok ) {
 			throw new Error( 'Error creating child subject' );
 		}
@@ -278,10 +285,10 @@ export class RestSubjectRepository implements SubjectRepository {
 		return this.deserializeWriteResult( await response.json() as SubjectWriteResponseJson );
 	}
 
-	public async mintSubjectIds( count: number ): Promise<SubjectId[]> {
+	public async mintSubjectId(): Promise<SubjectId> {
 		const response = await this.httpClient.post(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject-ids`,
-			{ count },
+			{ count: 1 },
 			{
 				headers: {
 					'Content-Type': 'application/json',
@@ -290,12 +297,17 @@ export class RestSubjectRepository implements SubjectRepository {
 		);
 
 		if ( !response.ok ) {
-			throw new Error( 'Error minting subject ids' );
+			throw new Error( 'Error minting a subject id' );
 		}
 
-		const data = await response.json() as { subjectIds: string[] };
+		const data = await response.json() as { subjectIds?: string[] };
+		const id = data.subjectIds?.[ 0 ];
 
-		return data.subjectIds.map( ( id ) => new SubjectId( id ) );
+		if ( id === undefined ) {
+			throw new Error( 'Error minting a subject id: the response carried none' );
+		}
+
+		return new SubjectId( id );
 	}
 
 	/**

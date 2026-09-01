@@ -102,7 +102,8 @@
 								:subject="pane.subject"
 								:schema="pane.schema"
 								:nested="pane.id !== rootPaneId"
-								:is-new="isNewPane( pane.id )"
+								:is-new="pane.isNew"
+								:unsaved-target-ids="draftIds"
 								@edit-relation-target="openRelationTargetFromForm"
 							/>
 						</div>
@@ -163,7 +164,8 @@ import { SubjectId } from '@/domain/SubjectId.ts';
 import type { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Schema } from '@/domain/Schema.ts';
-import { RelationTargetCreationKey } from '@/components/Value/ValueInputContract.ts';
+import { SubjectCreationKey } from '@/components/common/SubjectCreation.ts';
+import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
@@ -199,15 +201,9 @@ interface EditPane {
 	id: string;
 	subject: Subject;
 	schema: Schema;
-}
-
-// Panes holding a Subject the server has never seen. A pane leaves the set as soon as its
-// create lands, so a save that fails further down re-runs as an update rather than trying to
-// create the same id twice.
-const newPaneIds = ref( new Set<string>() );
-
-function isNewPane( id: string ): boolean {
-	return newPaneIds.value.has( id );
+	// Holds a Subject the server has never seen. Cleared as soon as its create lands, so a save
+	// that fails further down re-runs as an update rather than offering the same id twice.
+	isNew: boolean;
 }
 
 const isSchemaEditorOpen = ref( false );
@@ -238,9 +234,51 @@ const activePaneId = ref<string>( rootPaneId.value );
 const partialSave = ref<{ written: number; attempted: number } | null>( null );
 
 const panes = computed( (): EditPane[] => [
-	{ id: rootPaneId.value, subject: props.subject, schema: currentSchema.value },
+	{ id: rootPaneId.value, subject: props.subject, schema: currentSchema.value, isNew: false },
 	...extraPanes.value
 ] );
+
+// Subjects this session invented, as the panes editing them currently hold them, so a draft
+// renamed in its pane is renamed everywhere that names it.
+const draftSubjects = computed( (): Subject[] => panes.value
+	.filter( ( pane ) => pane.isNew )
+	.map( ( pane ) => editedSubjects.value.get( pane.id ) ?? pane.subject )
+);
+
+const draftIds = computed( (): string[] => draftSubjects.value.map( ( subject ) => subject.getId().text ) );
+
+// Drafts something being edited still points at. A draft reached only through another draft counts
+// too, so a chain stands or falls together. One the user has since pointed the relation away from
+// does not: it is not written, and Save neither waits on it nor leaves it behind.
+const referencedDraftIds = computed( (): Set<string> => {
+	const reached = new Set<string>();
+	// Only Subjects the wiki already holds anchor the walk: a draft cannot justify itself.
+	const queue = panes.value.filter( ( pane ) => !pane.isNew ).map( ( pane ) => pane.id );
+
+	while ( queue.length > 0 ) {
+		const id = queue.pop() as string;
+		const pane = panes.value.find( ( candidate ) => candidate.id === id );
+
+		if ( pane === undefined ) {
+			continue;
+		}
+
+		const subject = editedSubjects.value.get( pane.id ) ?? pane.subject;
+
+		for ( const { targetId } of relationTargetsOf( subject, pane.schema ) ) {
+			if ( !reached.has( targetId ) ) {
+				reached.add( targetId );
+				queue.push( targetId );
+			}
+		}
+	}
+
+	return reached;
+} );
+
+function isUnwrittenDraft( pane: EditPane ): boolean {
+	return pane.isNew && referencedDraftIds.value.has( pane.id );
+}
 
 interface DirtyPane {
 	pane: EditPane;
@@ -251,12 +289,17 @@ interface DirtyPane {
 // never unmounts while the dialog is open, so a dirty pane is the only place an unsaved edit
 // can live. A Subject this save already wrote drops out until its pane is edited again, so
 // it neither keeps Save enabled nor confirms a discard over nothing.
-// A Subject this session invented counts as unsaved from the moment it exists: nobody has to
-// type into it for the relation pointing at it to need something to point at.
+// A Subject this session invented counts as unsaved from the moment it exists: nobody has to type
+// into it for the relation pointing at it to need something to point at. It stops counting once
+// nothing points at it any more — an editor that wrote a Subject the user had already turned away
+// from would leave exactly the debris this dialog promises not to.
 const dirtyPanes = computed( (): DirtyPane[] => panes.value
 	.map( ( pane ) => ( { pane, instance: paneRefs.get( pane.id ) } ) )
-	.filter( ( entry ): entry is DirtyPane => entry.instance !== undefined &&
-		( entry.instance.hasChanged || isNewPane( entry.pane.id ) ) )
+	.filter( ( entry ): entry is DirtyPane => entry.instance !== undefined && (
+		entry.pane.isNew ?
+			isUnwrittenDraft( entry.pane ) :
+			entry.instance.hasChanged
+	) )
 );
 
 const unsavedIds = computed( (): string[] => dirtyPanes.value.map( ( { pane } ) => pane.id ) );
@@ -354,7 +397,7 @@ async function openRelationTarget( targetId: SubjectId ): Promise<void> {
 		if ( epoch !== openEpoch.value ) {
 			return;
 		}
-		extraPanes.value = [ ...extraPanes.value, { id, subject, schema } ];
+		extraPanes.value = [ ...extraPanes.value, { id, subject, schema, isNew: false } ];
 		activePaneId.value = id;
 	} catch ( error ) {
 		if ( epoch !== openEpoch.value ) {
@@ -390,7 +433,9 @@ function creationPage(): PageIdentifiers | null {
 async function createRelationTarget( schemaName: string, label: string | null ): Promise<Subject | null> {
 	const page = creationPage();
 
-	if ( page === null ) {
+	// A Subject added while the write loop is running would be referenced by a Subject already
+	// written and yet never written itself, so creation is closed for the duration of a save.
+	if ( page === null || saving.value ) {
 		mw.notify( mw.msg( 'neowiki-subject-editor-create-target-error' ), { type: 'error' } );
 		return null;
 	}
@@ -398,20 +443,15 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 	const epoch = openEpoch.value;
 
 	try {
-		const [ schema, mintedIds ] = await Promise.all( [
+		const [ schema, id ] = await Promise.all( [
 			schemaRepository.getSchema( schemaName ),
-			subjectRepository.mintSubjectIds( 1 )
+			subjectRepository.mintSubjectId()
 		] );
 
-		const id = mintedIds[ 0 ];
-
-		if ( id === undefined ) {
-			throw new Error( 'No Subject id was minted' );
-		}
-
-		// The dialog was reopened or given another root while this was in flight; its panes
-		// are gone and a pane added now would belong to nothing.
-		if ( epoch !== openEpoch.value ) {
+		// The dialog was reopened or given another root while this was in flight, or a save has
+		// started: its panes are gone or already harvested, and a pane added now would belong to
+		// nothing.
+		if ( epoch !== openEpoch.value || saving.value ) {
 			return null;
 		}
 
@@ -425,13 +465,18 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 			page
 		);
 
-		extraPanes.value = [ ...extraPanes.value, { id: id.text, subject, schema } ];
-		newPaneIds.value.add( id.text );
+		extraPanes.value = [ ...extraPanes.value, { id: id.text, subject, schema, isNew: true } ];
 		activePaneId.value = id.text;
 		focusPanel( id.text );
 
 		return subject;
 	} catch ( error ) {
+		// Guarded like openRelationTarget's: a failure that outlives its opening must not report
+		// itself over whatever the dialog is editing now.
+		if ( epoch !== openEpoch.value ) {
+			return null;
+		}
+
 		console.error( 'Failed to create relation target:', error );
 		mw.notify( mw.msg( 'neowiki-subject-editor-create-target-error' ), { type: 'error' } );
 		return null;
@@ -439,7 +484,11 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 }
 
 if ( props.onCreate !== undefined ) {
-	provide( RelationTargetCreationKey, createRelationTarget );
+	provide( SubjectCreationKey, {
+		create: createRelationTarget,
+		drafts: ( schemaName: string ): readonly Subject[] =>
+			draftSubjects.value.filter( ( subject ) => subject.getSchemaName() === schemaName )
+	} );
 }
 
 // Navigating from a control inside a form hides the pane that control lives in, so the
@@ -491,7 +540,6 @@ function onDialogUpdateOpen( value: boolean ): void {
 function startSession(): void {
 	openEpoch.value += 1;
 	extraPanes.value = [];
-	newPaneIds.value = new Set();
 	activePaneId.value = rootPaneId.value;
 	partialSave.value = null;
 }
@@ -568,11 +616,19 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	}
 };
 
+// A pane stops being new the moment its Subject exists on the wiki, so a save that fails further
+// down re-runs as an update rather than offering the same id to the server a second time. The
+// panes are a shallowRef, so the flag is cleared by replacing the entry rather than mutating it.
+function markPaneWritten( id: string ): void {
+	extraPanes.value = extraPanes.value.map(
+		( pane ) => pane.id === id ? { ...pane, isNew: false } : pane
+	);
+}
+
 // A Subject this session invented has to be created rather than replaced, on the page its pane
-// was opened against. It leaves the new set the moment its create lands, so a failure further
-// down the same save does not offer its id to the server a second time.
-async function writeSubject( id: string, pane: EditPane, subject: Subject, comment: string ): Promise<void> {
-	if ( !isNewPane( id ) ) {
+// was opened against.
+async function writeSubject( pane: EditPane, subject: Subject, comment: string ): Promise<void> {
+	if ( !pane.isNew ) {
 		await props.onSave( subject, comment );
 		return;
 	}
@@ -581,8 +637,61 @@ async function writeSubject( id: string, pane: EditPane, subject: Subject, comme
 		throw new Error( 'No page to create this Subject on' );
 	}
 
-	await props.onCreate( subject, pane.subject.getPageIdentifiers().getPageId(), comment );
-	newPaneIds.value.delete( id );
+	try {
+		await props.onCreate( subject, pane.subject.getPageIdentifiers().getPageId(), comment );
+	} catch ( error ) {
+		// The id was minted for this Subject alone, so the server holding it already means this
+		// very create landed and only its answer was lost. Retrying the create would refuse
+		// forever; recording it as written turns the retry into the update it now needs to be.
+		if ( !( error instanceof SubjectIdInUseError ) ) {
+			throw error;
+		}
+	}
+
+	markPaneWritten( pane.id );
+}
+
+type WriteTarget = { pane: EditPane; subject: Subject };
+
+// A Subject is written after every Subject it points at that this save is also creating, so no
+// write ever names a target the server does not have yet. Only the created Subjects need ordering
+// among themselves — the ones the wiki already holds can be written in any order, and go last so a
+// save that stops part way has not yet pointed an existing Subject at a target it failed to create.
+// Depth-first over the drafts, emitting each after its own; a cycle stops at the visited check,
+// which the relation model allows and which no ordering could satisfy anyway.
+function writeOrder( targets: ReadonlyMap<string, WriteTarget> ): [ string, WriteTarget ][] {
+	const ordered: [ string, WriteTarget ][] = [];
+	const visited = new Set<string>();
+
+	function emitDraft( id: string ): void {
+		const target = targets.get( id );
+
+		if ( visited.has( id ) || target === undefined || !target.pane.isNew ) {
+			return;
+		}
+
+		visited.add( id );
+
+		for ( const { targetId } of relationTargetsOf( target.subject, target.pane.schema ) ) {
+			emitDraft( targetId );
+		}
+
+		ordered.push( [ id, target ] );
+	}
+
+	for ( const [ id, target ] of targets ) {
+		if ( target.pane.isNew ) {
+			emitDraft( id );
+		}
+	}
+
+	for ( const entry of targets ) {
+		if ( !entry[ 1 ].pane.isNew ) {
+			ordered.push( entry );
+		}
+	}
+
+	return ordered;
 }
 
 async function writeDirtyPanes( summary: string ): Promise<void> {
@@ -590,10 +699,12 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 
 	partialSave.value = null;
 
-	const dirty = dirtyPanes.value;
+	// Every mounted pane, not just the dirty ones: a validation round trip is awaited here, and a
+	// pane can join the dirty set while it runs. The write set is taken afterwards, or a Subject
+	// created inside that window would go unwritten while the relation naming it was written.
+	await Promise.all( panes.value.map( ( pane ) => paneRefs.get( pane.id )?.flushValidation() ) );
 
-	// Each flush writes only its own pane's violations, so none has to wait for another.
-	await Promise.all( dirty.map( ( { instance } ) => instance.flushValidation() ) );
+	const dirty = dirtyPanes.value;
 
 	// Saving now would silently drop text the user can still see. Checked across every
 	// dirty Subject before any write, or an unparseable later one would leave the stack
@@ -626,12 +737,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 		targets.set( pane.id, { pane, subject: updated } );
 	}
 
-	// The Subjects this session invented are written first, so that by the time the Subjects
-	// referring to them are written their targets resolve and no relation reports a target
-	// that is not there. The sort is stable, so within each group the pane order stands.
-	const orderedTargets = [ ...targets ].sort(
-		( [ leftId ], [ rightId ] ) => Number( isNewPane( rightId ) ) - Number( isNewPane( leftId ) )
-	);
+	const orderedTargets = writeOrder( targets );
 
 	// Carried out of the loop rather than returned from inside it, so a part-way stop is
 	// reported once, below.
@@ -641,7 +747,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 		const subjectName = updatedSubject.getDisplayName();
 
 		try {
-			await writeSubject( id, pane, updatedSubject, editSummary );
+			await writeSubject( pane, updatedSubject, editSummary );
 			paneRefs.get( id )?.resetChanged();
 			savedNames.push( subjectName );
 		} catch ( error ) {

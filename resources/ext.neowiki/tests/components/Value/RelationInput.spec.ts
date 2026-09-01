@@ -1,15 +1,13 @@
-import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
+import { mount, VueWrapper } from '@vue/test-utils';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { CdxField, CdxIcon } from '@wikimedia/codex';
 import RelationInput from '@/components/Value/RelationInput.vue';
 import SubjectPicker from '@/components/common/SubjectPicker.vue';
 import NeoMultiLookupInput from '@/components/common/NeoMultiLookupInput.vue';
 import { RelationValue, newRelation } from '@/domain/Value';
 import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Relation';
-import { RelationTargetCreationKey, RelationTargetCreator, RelationTargetEditingKey, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
-import { Subject } from '@/domain/Subject.ts';
+import { RelationTargetEditingKey, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
 import { SubjectId } from '@/domain/SubjectId.ts';
-import { StatementList } from '@/domain/StatementList.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers';
 
@@ -306,173 +304,6 @@ describe( 'RelationInput', () => {
 			it( 'shows no edit button when target editing was not enabled by the host', () => {
 				const wrapper = mountMultipleWithTarget( false );
 				expect( wrapper.find( '.ext-neowiki-relation-input__edit-target' ).exists() ).toBe( false );
-			} );
-		} );
-	} );
-
-	describe( 'target creation', () => {
-		const createdSubject = new Subject(
-			new SubjectId( 's22222222222222' ),
-			'Acme Inc.',
-			'Acme Inc.',
-			'Person',
-			new StatementList( [] ),
-		);
-
-		function newCreatorReturning( subject: Subject | null ): Mock<RelationTargetCreator> {
-			return vi.fn<RelationTargetCreator>().mockResolvedValue( subject );
-		}
-
-		/**
-		 * Leaves NeoMultiLookupInput real, so the per-row pickers of a multiple relation are the
-		 * ones RelationInput actually renders into its #input slot.
-		 */
-		function mountRelationInput(
-			property: RelationProperty,
-			provide: Record<symbol, unknown>,
-		): VueWrapper {
-			return mount( RelationInput, {
-				props: {
-					modelValue: undefined,
-					property: property,
-					label: 'Author',
-				},
-				global: {
-					provide: { ...NeoWikiTestServices.getServices(), ...provide },
-					directives: { tooltip: {} },
-					mocks: { $i18n: createI18nMock() },
-					stubs: { SubjectPicker: true },
-				},
-			} );
-		}
-
-		function mountSingleWithCreator( creator: RelationTargetCreator ): VueWrapper {
-			return mountRelationInput(
-				newRelationProperty( { targetSchema: 'Person' } ),
-				{ [ RelationTargetCreationKey as symbol ]: creator },
-			);
-		}
-
-		function mountSingleWithoutCreator(): VueWrapper {
-			return mountRelationInput( newRelationProperty( { targetSchema: 'Person' } ), {} );
-		}
-
-		function mountMultipleWithCreator( creator: RelationTargetCreator ): VueWrapper {
-			return mountRelationInput(
-				newRelationProperty( { targetSchema: 'Person', multiple: true } ),
-				{ [ RelationTargetCreationKey as symbol ]: creator },
-			);
-		}
-
-		function mountMultipleWithoutCreator(): VueWrapper {
-			return mountRelationInput(
-				newRelationProperty( { targetSchema: 'Person', multiple: true } ),
-				{},
-			);
-		}
-
-		function createFunctionOfPicker( picker: VueWrapper ): ( label: string | null ) => Promise<Subject | null> {
-			return createSubjectPropOf( picker ) as ( label: string | null ) => Promise<Subject | null>;
-		}
-
-		// The pickers are auto-stubbed, and a stub's props type as `never`; read the prop as the
-		// untyped bag it is rather than pretend the stub carries SubjectPicker's own types.
-		function createSubjectPropOf( picker: VueWrapper ): unknown {
-			return ( picker.props() as Record<string, unknown> ).createSubject;
-		}
-
-		function firstPicker( wrapper: VueWrapper ): VueWrapper {
-			return wrapper.findAllComponents( SubjectPicker )[ 0 ] as unknown as VueWrapper;
-		}
-
-		function targetsOfLastUpdate( wrapper: VueWrapper ): string[] {
-			const emitted = wrapper.emitted( 'update:modelValue' )!;
-			const value = emitted[ emitted.length - 1 ][ 0 ] as RelationValue;
-			return value.relations.map( ( relation ) => relation.target.text );
-		}
-
-		it( 'gives the picker no create function when the host cannot create targets', () => {
-			const wrapper = mountSingleWithoutCreator();
-
-			expect( createSubjectPropOf( wrapper.findComponent( SubjectPicker ) as unknown as VueWrapper ) ).toBeUndefined();
-		} );
-
-		it( 'gives the picker a create function when the host can create targets', () => {
-			const wrapper = mountSingleWithCreator( newCreatorReturning( createdSubject ) );
-
-			expect( typeof createSubjectPropOf( wrapper.findComponent( SubjectPicker ) as unknown as VueWrapper ) ).toBe( 'function' );
-		} );
-
-		it( 'creates a target of the property\'s target schema, labelled with the typed text', async () => {
-			const creator = newCreatorReturning( createdSubject );
-			const wrapper = mountSingleWithCreator( creator );
-
-			await createFunctionOfPicker( wrapper.findComponent( SubjectPicker ) )( 'Acme Inc.' );
-
-			// The picker never learns the schema, so a target of the wrong type would be created
-			// were the property's own targetSchema not the one bound here.
-			expect( creator ).toHaveBeenCalledWith( 'Person', 'Acme Inc.' );
-		} );
-
-		it( 'asks for an unlabelled target when the picker held no text', async () => {
-			const creator = newCreatorReturning( createdSubject );
-			const wrapper = mountSingleWithCreator( creator );
-
-			await createFunctionOfPicker( wrapper.findComponent( SubjectPicker ) )( null );
-
-			expect( creator ).toHaveBeenCalledWith( 'Person', null );
-		} );
-
-		it( 'hands the created Subject back to the picker', async () => {
-			const wrapper = mountSingleWithCreator( newCreatorReturning( createdSubject ) );
-
-			const subject = await createFunctionOfPicker( wrapper.findComponent( SubjectPicker ) )( 'Acme Inc.' );
-
-			// The picker fills its input from this Subject, so anything else leaves the field
-			// naming a target the user cannot see.
-			expect( subject ).toBe( createdSubject );
-		} );
-
-		it( 'reports the host refusing to create by resolving to null', async () => {
-			const wrapper = mountSingleWithCreator( newCreatorReturning( null ) );
-
-			const subject = await createFunctionOfPicker( wrapper.findComponent( SubjectPicker ) )( 'Acme Inc.' );
-
-			expect( subject ).toBeNull();
-		} );
-
-		it( 'emits a RelationValue targeting the Subject the picker created', async () => {
-			const wrapper = mountSingleWithCreator( newCreatorReturning( createdSubject ) );
-
-			wrapper.findComponent( SubjectPicker ).vm.$emit( 'update:selected', 's22222222222222' );
-			await flushPromises();
-
-			expect( targetsOfLastUpdate( wrapper ) ).toEqual( [ 's22222222222222' ] );
-		} );
-
-		describe( 'multiple mode', () => {
-			it( 'gives each row picker no create function when the host cannot create targets', () => {
-				const wrapper = mountMultipleWithoutCreator();
-
-				expect( createSubjectPropOf( firstPicker( wrapper ) ) ).toBeUndefined();
-			} );
-
-			it( 'creates a target of the property\'s target schema from a row', async () => {
-				const creator = newCreatorReturning( createdSubject );
-				const wrapper = mountMultipleWithCreator( creator );
-
-				await createFunctionOfPicker( firstPicker( wrapper ) )( 'Acme Inc.' );
-
-				expect( creator ).toHaveBeenCalledWith( 'Person', 'Acme Inc.' );
-			} );
-
-			it( 'emits a RelationValue targeting the Subject created in a row', async () => {
-				const wrapper = mountMultipleWithCreator( newCreatorReturning( createdSubject ) );
-
-				firstPicker( wrapper ).vm.$emit( 'update:selected', 's22222222222222' );
-				await flushPromises();
-
-				expect( targetsOfLastUpdate( wrapper ) ).toEqual( [ 's22222222222222' ] );
 			} );
 		} );
 	} );

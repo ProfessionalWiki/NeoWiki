@@ -83,6 +83,7 @@ interface MountPaneOptions {
 	schema?: Schema;
 	nested?: boolean;
 	isNew?: boolean;
+	unsavedTargetIds?: readonly string[];
 }
 
 let pinia: ReturnType<typeof createPinia>;
@@ -92,6 +93,7 @@ function mountPane( {
 	schema = defaultSchema,
 	nested = false,
 	isNew = false,
+	unsavedTargetIds = [],
 }: MountPaneOptions = {} ): VueWrapper {
 	return mount( SubjectEditPane, {
 		props: {
@@ -99,6 +101,7 @@ function mountPane( {
 			schema,
 			nested,
 			isNew,
+			unsavedTargetIds,
 		},
 		global: {
 			mocks: {
@@ -493,6 +496,89 @@ describe( 'SubjectEditPane', () => {
 		await flushPromises();
 
 		expect( violationCodes( wrapper ) ).toEqual( [ 'required' ] );
+	} );
+
+	// A relation naming a Subject this session invented resolves for the user, who has that
+	// Subject in front of them, and not for the server, which has never been told about it.
+	describe( 'Complaints about a relation target this session has not written yet', () => {
+		const unwrittenId = 's22222222222222';
+		const otherId = 's99999999999999';
+
+		function targetNotFound( id: string ): SubjectViolation {
+			return {
+				propertyName: 'Author',
+				code: 'relation-target-not-found',
+				args: [ id ],
+				severity: 'warning',
+				valuePartIndex: 0,
+			};
+		}
+
+		function surfacedViolations( wrapper: VueWrapper ): SubjectViolation[] {
+			return wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+		}
+
+		it( 'withholds the dry-run complaint naming an unwritten target, and keeps one naming another', async () => {
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [
+				targetNotFound( unwrittenId ),
+				targetNotFound( otherId ),
+			] );
+
+			const wrapper = mountPane( { schema: relationSchema, unsavedTargetIds: [ unwrittenId ] } );
+			await flushPromises();
+
+			expect( surfacedViolations( wrapper ) ).toEqual( [ targetNotFound( otherId ) ] );
+		} );
+
+		// A Subject the session invented is validated as a creation, and points at the session's
+		// other inventions just as often.
+		it( 'withholds it from the creation dry-run as well', async () => {
+			useSubjectStore().validateSubject = vi.fn().mockResolvedValue( [
+				targetNotFound( unwrittenId ),
+				targetNotFound( otherId ),
+			] );
+
+			const wrapper = mountPane( {
+				schema: relationSchema,
+				isNew: true,
+				unsavedTargetIds: [ unwrittenId ],
+			} );
+			await flushPromises();
+
+			expect( surfacedViolations( wrapper ) ).toEqual( [ targetNotFound( otherId ) ] );
+		} );
+
+		// A rejected save hands its 422 body straight to the pane, bypassing the dry-run.
+		it( 'withholds it from the violations a rejected save pushes in', async () => {
+			const wrapper = mountPane( { schema: relationSchema, unsavedTargetIds: [ unwrittenId ] } );
+			await flushPromises();
+
+			( wrapper.vm as any ).setServerViolations( [
+				targetNotFound( unwrittenId ),
+				targetNotFound( otherId ),
+			] );
+			await nextTick();
+
+			expect( surfacedViolations( wrapper ) ).toEqual( [ targetNotFound( otherId ) ] );
+		} );
+
+		// Only "there is no such Subject" is untrue of what the session is about to save. The id
+		// carries no exemption of its own, so a violation naming it under any other code stands.
+		it( 'leaves a violation of another code naming the same target alone', async () => {
+			const otherCode: SubjectViolation = {
+				propertyName: 'Author',
+				code: 'some-other-code',
+				args: [ unwrittenId ],
+				severity: 'error',
+				valuePartIndex: 0,
+			};
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ otherCode ] );
+
+			const wrapper = mountPane( { schema: relationSchema, unsavedTargetIds: [ unwrittenId ] } );
+			await flushPromises();
+
+			expect( surfacedViolations( wrapper ) ).toEqual( [ otherCode ] );
+		} );
 	} );
 
 	describe( 'Renaming from a nested pane', () => {

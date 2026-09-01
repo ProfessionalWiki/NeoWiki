@@ -65,7 +65,7 @@ export interface SubjectRepository extends SubjectLookup {
 
 	/**
 	 * The optional id is a pre-minted, unused Subject ID to assign; omit it to have the server mint
-	 * one. Minting up front (see mintSubjectIds) is what lets relations between Subjects be wired
+	 * one. Minting up front (see mintSubjectId) is what lets relations between Subjects be wired
 	 * before any of them exists.
 	 */
 	createChildSubject(
@@ -78,10 +78,10 @@ export interface SubjectRepository extends SubjectLookup {
 	): Promise<SubjectWriteResult>;
 
 	/**
-	 * Unused Subject IDs, minted without creating any Subject. Stateless: the IDs are not
-	 * reserved, so a caller that never uses them costs nothing.
+	 * An unused Subject ID, minted without creating any Subject. Stateless: the ID is not
+	 * reserved, so a caller that never uses it costs nothing.
 	 */
-	mintSubjectIds( count: number ): Promise<SubjectId[]>;
+	mintSubjectId(): Promise<SubjectId>;
 
 	updateSubject(
 		id: SubjectId,
@@ -138,17 +138,8 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 		return Promise.resolve( this.newWriteResult( id ?? new SubjectId( 's11111111111112' ), pageId, label, schemaName, statements ) );
 	}
 
-	public mintSubjectIds( count: number ): Promise<SubjectId[]> {
-		return Promise.resolve( Array.from(
-			{ length: count },
-			( _value, index ) => new SubjectId( 'sminted' + StubSubjectRepository.mintedSuffix( index ) ),
-		) );
-	}
-
-	// Base58 has no zero, so the sequence number's own zeroes are mapped into the alphabet and
-	// the padding uses a letter the digits cannot produce, keeping every suffix distinct.
-	private static mintedSuffix( index: number ): string {
-		return String( index + 1 ).replace( /0/g, 'a' ).padStart( 8, 'A' );
+	public mintSubjectId(): Promise<SubjectId> {
+		return Promise.resolve( new SubjectId( 'smintedAAAAAAA1' ) );
 	}
 
 	public async updateSubject( id: SubjectId, label: string | null, statements: StatementList, _comment?: string ): Promise<SubjectWriteResult> {

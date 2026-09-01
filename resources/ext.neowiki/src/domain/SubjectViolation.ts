@@ -45,3 +45,20 @@ export function withoutMissingValueViolations(
 ): SubjectViolation[] {
 	return violations.filter( ( v ) => !MISSING_VALUE_CODES.has( v.code ) );
 }
+
+/**
+ * The server reports a relation target it cannot resolve, which is right for a target nobody has
+ * created and wrong for one this editing session is about to create: it is in front of the user,
+ * in the pane beside the field. Withheld for those, by the id the violation names, so the editor
+ * does not tell the user that the Subject they just made is missing.
+ */
+export function withoutUnsavedTargetViolations(
+	violations: readonly SubjectViolation[],
+	unsavedTargetIds: readonly string[],
+): SubjectViolation[] {
+	return violations.filter( ( v ) => !(
+		v.code === 'relation-target-not-found' &&
+		typeof v.args[ 0 ] === 'string' &&
+		unsavedTargetIds.includes( v.args[ 0 ] )
+	) );
+}

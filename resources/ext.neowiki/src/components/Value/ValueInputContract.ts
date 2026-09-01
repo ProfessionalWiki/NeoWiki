@@ -3,7 +3,6 @@ import type { Value } from '@/domain/Value';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import type { SubjectId } from '@/domain/SubjectId';
-import type { Subject } from '@/domain/Subject';
 
 export interface ValueInputProps<T extends PropertyDefinition> {
 	modelValue: Value | undefined;
@@ -56,19 +55,3 @@ export type ValueInputEmitFunction = {
  * RelationInput then renders a per-target edit affordance.
  */
 export const RelationTargetEditingKey: InjectionKey<boolean> = Symbol( 'NeoWikiRelationTargetEditing' );
-
-/**
- * Creates a Subject of `schemaName` to be the target of the relation being edited, labelled with
- * whatever text the user had typed into the picker, and resolves to it. Resolves to null when the
- * host refused or the creation failed; the host reports the failure itself.
- *
- * Unlike RelationTargetEditingKey this hands over a function rather than a flag, because the
- * relation field cannot fill itself in without the id the host mints.
- */
-export type RelationTargetCreator = ( schemaName: string, label: string | null ) => Promise<Subject | null>;
-
-/**
- * Provided by hosts that can create a relation target on the spot. RelationInput then offers
- * creation from the target picker.
- */
-export const RelationTargetCreationKey: InjectionKey<RelationTargetCreator> = Symbol( 'NeoWikiRelationTargetCreation' );

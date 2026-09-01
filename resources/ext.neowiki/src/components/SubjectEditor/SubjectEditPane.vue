@@ -86,7 +86,7 @@ import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { RelationTargetEditingKey } from '@/components/Value/ValueInputContract.ts';
-import { withoutMissingValueViolations, type SubjectViolation } from '@/domain/SubjectViolation';
+import { withoutMissingValueViolations, withoutUnsavedTargetViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 
 const props = defineProps<{
@@ -96,6 +96,9 @@ const props = defineProps<{
 	// A Subject this editing session invented, which the server has never seen. It is validated
 	// as a creation rather than as an update, and the dialog writes it with a create.
 	isNew?: boolean;
+	// Subjects the session has invented but not yet written. A relation naming one of them is
+	// sound here and unresolvable to the server, so its complaint is withheld.
+	unsavedTargetIds?: readonly string[];
 }>();
 
 const emit = defineEmits<{
@@ -168,21 +171,23 @@ const { violations: serverViolations, revalidate, flush } = useSubjectValidation
 			// empty required fields are ones the user is still on their way to filling in
 			// rather than real gaps — the same reading the subject creator takes.
 			if ( props.isNew ) {
-				return withoutMissingValueViolations( await subjectStore.validateSubject(
-					storedLabel.value,
-					props.subject.getSchemaName(),
-					current
+				return withoutSessionOnlyViolations( withoutMissingValueViolations(
+					await subjectStore.validateSubject(
+						storedLabel.value,
+						props.subject.getSchemaName(),
+						current
+					)
 				) );
 			}
 
 			// Unlike subject creation, editing an existing subject surfaces
 			// 'required' live: an empty required field here is a real gap, not a
 			// field the user is still on their way to filling in.
-			return await subjectStore.validateSubjectUpdate(
+			return withoutSessionOnlyViolations( await subjectStore.validateSubjectUpdate(
 				props.subject.getId(),
 				storedLabel.value,
 				current
-			);
+			) );
 		} catch ( error ) {
 			// The dry-run runs alongside the live validators and must never
 			// break editing or saving; the authoritative result is the save's
@@ -267,7 +272,12 @@ function unparseableInput(): UnparseableInput | null {
 }
 
 function setServerViolations( violations: readonly SubjectViolation[] ): void {
-	serverViolations.value = [ ...violations ];
+	serverViolations.value = withoutSessionOnlyViolations( violations );
+}
+
+// Complaints that are only true of the wiki as it stands, not of what this session is saving.
+function withoutSessionOnlyViolations( violations: readonly SubjectViolation[] ): SubjectViolation[] {
+	return withoutUnsavedTargetViolations( violations, props.unsavedTargetIds ?? [] );
 }
 
 defineExpose( {

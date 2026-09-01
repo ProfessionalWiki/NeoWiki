@@ -19,7 +19,7 @@
 			>
 				<!-- Codex shows this only for an empty menu. With the create option present the
 					menu never is, so that case carries the same message as an unpickable item. -->
-				<template v-if="searchActive && !creationOffered" #no-results>
+				<template v-if="searching && !creationOffered" #no-results>
 					{{ $i18n( 'neowiki-subject-picker-no-results' ).text() }}
 				</template>
 			</CdxLookup>
@@ -39,13 +39,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, inject, watch } from 'vue';
 import { CdxLookup, CdxMessage } from '@wikimedia/codex';
 import type { MenuItemData, ValidationStatusType } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import type { Icon } from '@wikimedia/codex-icons';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import type { Subject } from '@/domain/Subject.ts';
+import { SubjectCreationKey } from '@/components/common/SubjectCreation.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
@@ -55,12 +55,6 @@ interface SubjectPickerProps {
 	startIcon?: Icon;
 	status?: ValidationStatusType | 'default';
 	ariaLabel?: string;
-	/**
-	 * Supplied by a host that can create a Subject of targetSchema on the spot. It is given the
-	 * text the user had typed, or null when they typed none, and resolves to the new Subject —
-	 * or to null when the creation failed or was abandoned. Absent means no create option.
-	 */
-	createSubject?: ( label: string | null ) => Promise<Subject | null>;
 }
 
 const props = withDefaults(
@@ -68,15 +62,14 @@ const props = withDefaults(
 	{
 		startIcon: undefined,
 		status: 'default',
-		ariaLabel: undefined,
-		createSubject: undefined
+		ariaLabel: undefined
 	}
 );
 
-// Codex has no value of its own for "the user picked the create option", so the option is an
-// ordinary menu item carrying a value no Subject id can take (they are 's' plus 14 base58
-// characters). Same idiom as DataExportButton's back item.
+// Codex has no value of its own for either of these, so each is an ordinary menu item carrying a
+// value no Subject id can take: an id is 's' followed by 14 base58 characters.
 const CREATE_SUBJECT = '__create__';
+const NO_RESULTS = '__no_results__';
 
 const emit = defineEmits<{
 	'update:selected': [ value: string | null ];
@@ -86,21 +79,45 @@ const emit = defineEmits<{
 const subjectStore = useSubjectStore();
 const subjectLabelSearch = NeoWikiServices.getSubjectLabelSearch();
 
+// Absent unless the host can carry a Subject the wiki does not hold yet, which is what leaves the
+// picker offering only Subjects that already exist.
+const subjectCreation = inject( SubjectCreationKey, undefined );
+
+const creationOffered = computed( (): boolean => subjectCreation !== undefined );
+
 const selectedSubject = ref<string | null>( props.selected );
 const inputText = ref<string | number>( '' );
 const searchResults = ref<MenuItemData[]>( [] );
 const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
-const searchActive = ref( false );
+// Set once a search has come back holding nothing, so the menu says so only when it is true rather
+// than while the request is still out.
+const searchFoundNothing = ref( false );
+const searching = ref( false );
 const hasUnmatchedText = ref( false );
 let requestSequence = 0;
 
-const creationOffered = computed( (): boolean => props.createSubject !== undefined );
+// The name the field is currently showing for its selection, so text the user typed can be told
+// apart from the label Codex and the watcher below write there themselves.
+const selectedName = ref( '' );
 
-// A Subject created here exists only in the host's editing session, so no lookup can name it.
-// Kept for the life of this picker, since a target picked and then replaced can be picked again.
-const createdDisplayNames = ref( new Map<string, string>() );
+// Subjects this session invented, which no search can return. Read through the host on every
+// evaluation, so a draft renamed in the editor is renamed here too.
+const drafts = computed( (): readonly { id: string; name: string }[] =>
+	( subjectCreation?.drafts( props.targetSchema ) ?? [] )
+		.map( ( subject ) => ( { id: subject.getId().text, name: subject.getDisplayName() } ) )
+);
 
-const typedText = computed( (): string => String( inputText.value ?? '' ).trim() );
+function draftNameOf( id: string ): string | undefined {
+	return drafts.value.find( ( draft ) => draft.id === id )?.name;
+}
+
+// Only what the user actually typed: the field otherwise holds the selected Subject's own name,
+// which would offer to create a second Subject named after the one already chosen.
+const typedText = computed( (): string => {
+	const text = String( inputText.value ?? '' ).trim();
+
+	return text === selectedName.value ? '' : text;
+} );
 
 const createItem = computed( (): MenuItemData => ( {
 	value: CREATE_SUBJECT,
@@ -110,17 +127,13 @@ const createItem = computed( (): MenuItemData => ( {
 	icon: cdxIconAdd
 } ) );
 
-// Codex blanks the input and reports an empty one whenever the selected value names no menu
-// item, so a Subject created here has to be among them while it is the selection. Dropped again
-// as soon as the user searches, which is when the menu belongs to the results.
-const selectedCreatedItems = computed( (): MenuItemData[] => {
-	const selected = props.selected;
+// Matched here rather than by the search: these Subjects exist only in the editor.
+const draftItems = computed( (): MenuItemData[] => {
+	const search = typedText.value.toLowerCase();
 
-	if ( searchActive.value || selected === null || !createdDisplayNames.value.has( selected ) ) {
-		return [];
-	}
-
-	return [ { value: selected, label: createdDisplayNames.value.get( selected ) as string } ];
+	return drafts.value
+		.filter( ( draft ) => search === '' || draft.name.toLowerCase().includes( search ) )
+		.map( ( draft ) => ( { value: draft.id, label: draft.name } ) );
 } );
 
 // The create option is present from the first render and never leaves, which is what opens the
@@ -131,13 +144,13 @@ const menuItems = computed( (): MenuItemData[] => {
 		return searchResults.value;
 	}
 
-	const items = [ ...selectedCreatedItems.value, ...searchResults.value ];
+	const items = [ ...draftItems.value, ...searchResults.value ];
 
-	// Codex's own no-results slot is shown only for an empty menu, which the create option
-	// rules out, so the same message is carried as an item nobody can pick.
-	if ( searchActive.value && items.length === 0 ) {
+	// Codex's own no-results slot is shown only for an empty menu, which the create option rules
+	// out, so that case carries the same message as an item nobody can pick.
+	if ( searchFoundNothing.value && items.length === 0 ) {
 		items.push( {
-			value: '__no_results__',
+			value: NO_RESULTS,
 			label: mw.msg( 'neowiki-subject-picker-no-results' ),
 			disabled: true
 		} );
@@ -152,16 +165,16 @@ const effectiveStatus = computed( (): ValidationStatusType | 'default' =>
 	hasUnmatchedText.value ? 'error' : props.status
 );
 
-// A Subject created here answers from what the picker itself recorded: nothing can fetch a
-// Subject the server has not been told about yet.
-async function resolveLabel( id: string | null ): Promise<string> {
+// A Subject this session invented is named by the host: nothing can fetch one the server has
+// never been told about.
+async function resolveName( id: string | null ): Promise<string> {
 	if ( !id ) {
 		return '';
 	}
 
-	const created = createdDisplayNames.value.get( id );
-	if ( created !== undefined ) {
-		return created;
+	const draft = draftNameOf( id );
+	if ( draft !== undefined ) {
+		return draft;
 	}
 
 	try {
@@ -172,19 +185,30 @@ async function resolveLabel( id: string | null ): Promise<string> {
 	}
 }
 
-resolveLabel( props.selected ).then( ( label ) => {
-	inputText.value = label;
-} );
+function showName( name: string ): void {
+	selectedName.value = name;
+	inputText.value = name;
+}
+
+resolveName( props.selected ).then( showName );
 
 watch( () => props.selected, async ( newSelected ) => {
 	selectedSubject.value = newSelected;
 	hasUnmatchedText.value = false;
 
-	if ( newSelected !== null || !searchActive.value ) {
-		inputText.value = await resolveLabel( newSelected );
+	if ( newSelected !== null || !searching.value ) {
+		showName( await resolveName( newSelected ) );
 	}
 
-	searchActive.value = false;
+	searching.value = false;
+	searchFoundNothing.value = false;
+} );
+
+// A draft renamed in the editor renames the field pointing at it.
+watch( () => props.selected === null ? undefined : draftNameOf( props.selected ), ( name ) => {
+	if ( name !== undefined ) {
+		showName( name );
+	}
 } );
 
 async function onLookupInput( value: string ): Promise<void> {
@@ -192,11 +216,12 @@ async function onLookupInput( value: string ): Promise<void> {
 
 	if ( !value ) {
 		searchResults.value = [];
-		searchActive.value = false;
+		searching.value = false;
+		searchFoundNothing.value = false;
 		return;
 	}
 
-	searchActive.value = true;
+	searching.value = true;
 	const currentSequence = ++requestSequence;
 
 	try {
@@ -216,20 +241,31 @@ async function onLookupInput( value: string ): Promise<void> {
 		}
 
 		searchResults.value = [];
+	} finally {
+		if ( currentSequence === requestSequence ) {
+			searchFoundNothing.value = searchResults.value.length === 0;
+		}
 	}
 }
 
 function onSubjectSelected( subjectId: string | null ): void {
 	if ( subjectId === CREATE_SUBJECT ) {
-		// Before anything awaits: Codex reads the sentinel back as the selection and would
-		// overwrite the input with the create option's own label.
-		selectedSubject.value = null;
+		// Put back what the field already held, before anything awaits: Codex has just reported the
+		// sentinel as the selection, and a creation that fails must leave the old target standing.
+		selectedSubject.value = props.selected;
 		createFromTypedText();
 		return;
 	}
 
+	// Codex refuses to select a disabled item, but the picker does not rely on that to keep its
+	// own sentinel out of a relation.
+	if ( subjectId === NO_RESULTS ) {
+		selectedSubject.value = props.selected;
+		return;
+	}
+
 	if ( subjectId !== null ) {
-		searchActive.value = false;
+		searching.value = false;
 		hasUnmatchedText.value = false;
 		emit( 'update:selected', subjectId );
 	} else if ( !inputText.value ) {
@@ -238,26 +274,38 @@ function onSubjectSelected( subjectId: string | null ): void {
 }
 
 async function createFromTypedText(): Promise<void> {
-	if ( props.createSubject === undefined ) {
+	if ( subjectCreation === undefined ) {
 		return;
 	}
 
-	// What the user typed names the new Subject, which is the only way it becomes findable
-	// again: a Subject with no label is left out of the label search (ADR 31).
-	const subject = await props.createSubject( typedText.value === '' ? null : typedText.value );
+	// Shared with the search, so a search started meanwhile abandons this creation rather than
+	// overwriting whatever the user has picked by the time it lands.
+	const currentSequence = ++requestSequence;
 
-	if ( subject === null ) {
-		return;
+	try {
+		// What the user typed names the new Subject, which is the only way it becomes findable
+		// again once saved: a Subject with no label is left out of the label search (ADR 31).
+		const subject = await subjectCreation.create(
+			props.targetSchema,
+			typedText.value === '' ? null : typedText.value
+		);
+
+		if ( subject === null || currentSequence !== requestSequence ) {
+			return;
+		}
+
+		searching.value = false;
+		searchFoundNothing.value = false;
+		hasUnmatchedText.value = false;
+		showName( subject.getDisplayName() );
+		selectedSubject.value = subject.getId().text;
+		emit( 'update:selected', subject.getId().text );
+	} catch ( error ) {
+		// The host reports its own failures; this only makes sure a throwing one leaves the field
+		// holding the target it held before, rather than an empty selection under a red border.
+		console.error( 'Failed to create a Subject from the picker:', error );
+		selectedSubject.value = props.selected;
 	}
-
-	const id = subject.getId().text;
-
-	createdDisplayNames.value = new Map( createdDisplayNames.value ).set( id, subject.getDisplayName() );
-	searchActive.value = false;
-	hasUnmatchedText.value = false;
-	inputText.value = subject.getDisplayName();
-	selectedSubject.value = id;
-	emit( 'update:selected', id );
 }
 
 function onBlur(): void {

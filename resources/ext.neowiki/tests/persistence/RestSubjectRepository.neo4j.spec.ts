@@ -13,6 +13,7 @@ import { UrlType } from '@/domain/propertyTypes/Url';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
+import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
 
 function newRepository( apiUrl: string, httpClient: InMemoryHttpClient ): RestSubjectRepository {
@@ -497,6 +498,132 @@ describe( 'RestSubjectRepository', () => {
 			const result = await repository.createChildSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
 
 			expect( result.subjectId.text ).toEqual( 's33333333333333' );
+		} );
+
+		const childSubjectsUrl = 'https://example.com/rest.php/neowiki/v0/page/42/childSubjects';
+
+		function clientAnswering( response: Response ): InMemoryHttpClient {
+			return new InMemoryHttpClient( { [ childSubjectsUrl ]: response } );
+		}
+
+		function createdResponse(): Response {
+			return new Response( JSON.stringify( writeResponseJson( { status: 'created' } ) ), { status: 200 } );
+		}
+
+		function conflictResponse(): Response {
+			return new Response( JSON.stringify( { httpCode: 409, httpReason: 'Conflict' } ), { status: 409 } );
+		}
+
+		it( 'sends the id the caller minted, so the created Subject gets it', async () => {
+			const inMemoryHttpClient = clientAnswering( createdResponse() );
+			const postSpy = vi.spyOn( inMemoryHttpClient, 'post' );
+
+			await newRepository( 'https://example.com/rest.php', inMemoryHttpClient ).createChildSubject(
+				42,
+				'John Doe',
+				'Employee',
+				new StatementList( [] ),
+				'Edit comment',
+				new SubjectId( 's44444444444444' ),
+			);
+
+			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { id: 's44444444444444' } );
+		} );
+
+		it( 'sends no id when the caller minted none, leaving the server to assign one', async () => {
+			const inMemoryHttpClient = clientAnswering( createdResponse() );
+			const postSpy = vi.spyOn( inMemoryHttpClient, 'post' );
+
+			await newRepository( 'https://example.com/rest.php', inMemoryHttpClient )
+				.createChildSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
+
+			expect( ( postSpy.mock.calls[ 0 ][ 1 ] as Record<string, unknown> ).id ).toBeUndefined();
+		} );
+
+		it( 'throws SubjectIdInUseError naming the id when the server refuses the minted id as taken', async () => {
+			const repository = newRepository( 'https://example.com/rest.php', clientAnswering( conflictResponse() ) );
+
+			const error = await repository.createChildSubject(
+				42,
+				'John Doe',
+				'Employee',
+				new StatementList( [] ),
+				undefined,
+				new SubjectId( 's44444444444444' ),
+			).catch( ( thrown ) => thrown );
+
+			expect( error ).toBeInstanceOf( SubjectIdInUseError );
+			expect( ( error as SubjectIdInUseError ).subjectId ).toEqual( 's44444444444444' );
+		} );
+
+		it( 'throws the generic error on a conflict for a create that carried no id', async () => {
+			const repository = newRepository( 'https://example.com/rest.php', clientAnswering( conflictResponse() ) );
+
+			const promise = repository.createChildSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
+
+			await expect( promise ).rejects.toThrowError( 'Error creating child subject' );
+			await expect( promise ).rejects.toSatisfy(
+				( err ) => !( err instanceof SubjectIdInUseError ),
+			);
+		} );
+
+	} );
+
+	describe( 'mintSubjectId', () => {
+
+		const mintUrl = 'https://example.com/rest.php/neowiki/v0/subject-ids';
+
+		function repositoryAnswering( response: Response ): RestSubjectRepository {
+			return newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( { [ mintUrl ]: response } ) );
+		}
+
+		function mintedResponse( body: unknown ): Response {
+			return new Response( JSON.stringify( body ), { status: 200 } );
+		}
+
+		it( 'asks the id endpoint for one id as JSON', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				[ mintUrl ]: mintedResponse( { subjectIds: [ 's44444444444444' ] } ),
+			} );
+			const postSpy = vi.spyOn( inMemoryHttpClient, 'post' );
+
+			await newRepository( 'https://example.com/rest.php', inMemoryHttpClient ).mintSubjectId();
+
+			expect( postSpy.mock.calls[ 0 ][ 0 ] ).toEqual( mintUrl );
+			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toEqual( { count: 1 } );
+			expect( postSpy.mock.calls[ 0 ][ 2 ] ).toMatchObject( {
+				headers: { 'Content-Type': 'application/json' },
+			} );
+		} );
+
+		it( 'returns the first of the ids the server minted', async () => {
+			const repository = repositoryAnswering( mintedResponse( {
+				subjectIds: [ 's44444444444444', 's55555555555555' ],
+			} ) );
+
+			const id = await repository.mintSubjectId();
+
+			expect( id ).toEqual( new SubjectId( 's44444444444444' ) );
+		} );
+
+		it( 'throws when the API call fails', async () => {
+			const repository = repositoryAnswering(
+				new Response( JSON.stringify( { httpCode: 500, httpReason: 'Internal Server Error' } ), { status: 500 } ),
+			);
+
+			await expect( repository.mintSubjectId() ).rejects.toThrowError( 'Error minting a subject id' );
+		} );
+
+		it( 'throws when the server minted no ids', async () => {
+			const repository = repositoryAnswering( mintedResponse( { subjectIds: [] } ) );
+
+			await expect( repository.mintSubjectId() ).rejects.toThrowError( 'Error minting a subject id' );
+		} );
+
+		it( 'throws when the response carries no ids at all', async () => {
+			const repository = repositoryAnswering( mintedResponse( { status: 'ok' } ) );
+
+			await expect( repository.mintSubjectId() ).rejects.toThrowError( 'Error minting a subject id' );
 		} );
 
 	} );
