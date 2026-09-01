@@ -14,6 +14,7 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -380,6 +381,76 @@ class SubjectPageIndexTest extends NeoWikiIntegrationTestCase {
 				$this->getTestSysop()->getAuthority()
 			)->undeleteUnsafe( 'test restore' )
 		);
+	}
+
+	public function testIndexRecordsTheSchemaLabelAndMainFlagOfEachSubject(): void {
+		$revision = $this->createPageWithSubjects(
+			'Named subjects',
+			TestSubject::build( id: self::FIRST_ID, label: 'ACME Inc', schemaName: new SchemaName( 'Company' ) ),
+			new SubjectMap(
+				TestSubject::build( id: self::SECOND_ID, label: 'Berlin', schemaName: new SchemaName( 'City' ) )
+			)
+		);
+
+		$this->assertSame(
+			[
+				[ 'id' => self::FIRST_ID, 'schema' => 'Company', 'label' => 'ACME Inc', 'main' => 1 ],
+				[ 'id' => self::SECOND_ID, 'schema' => 'City', 'label' => 'Berlin', 'main' => 0 ],
+			],
+			$this->indexedHeadersOf( $revision->getPageId() )
+		);
+	}
+
+	public function testSubjectWithoutALabelIsIndexedWithoutOne(): void {
+		$revision = $this->createPageWithSubjects(
+			'Unnamed subject',
+			TestSubject::build( id: self::FIRST_ID, label: null ),
+			new SubjectMap()
+		);
+
+		$this->assertNull( $this->indexedHeadersOf( $revision->getPageId() )[0]['label'] );
+	}
+
+	public function testRenamingASubjectUpdatesTheIndex(): void {
+		$this->createPageWithSubjects(
+			'Renamed subject',
+			TestSubject::build( id: self::FIRST_ID, label: 'Before' ),
+			new SubjectMap()
+		);
+
+		$revision = $this->createPageWithSubjects(
+			'Renamed subject',
+			TestSubject::build( id: self::FIRST_ID, label: 'After' ),
+			new SubjectMap()
+		);
+
+		$this->assertSame( 'After', $this->indexedHeadersOf( $revision->getPageId() )[0]['label'] );
+	}
+
+	/**
+	 * @return list<array{id: string, schema: ?string, label: ?string, main: int}>
+	 */
+	private function indexedHeadersOf( int $pageId ): array {
+		$rows = $this->getDb()->newSelectQueryBuilder()
+			->select( [ 'nwsp_subject_id', 'nwsp_schema', 'nwsp_label', 'nwsp_is_main' ] )
+			->from( DatabaseSubjectPageIndex::TABLE )
+			->where( [ 'nwsp_page_id' => $pageId ] )
+			->orderBy( 'nwsp_subject_id' )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+
+		$headers = [];
+
+		foreach ( $rows as $row ) {
+			$headers[] = [
+				'id' => $row->nwsp_subject_id,
+				'schema' => $row->nwsp_schema === null ? null : (string)$row->nwsp_schema,
+				'label' => $row->nwsp_label === null ? null : (string)$row->nwsp_label,
+				'main' => (int)$row->nwsp_is_main,
+			];
+		}
+
+		return $headers;
 	}
 
 }

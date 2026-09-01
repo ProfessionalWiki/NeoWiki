@@ -26,6 +26,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingSubjectPageIndex;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectHeader;
 use Psr\Log\NullLogger;
 use Psr\Log\Test\TestLogger;
 use RuntimeException;
@@ -61,12 +62,24 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testIndexesTheSubjectsThePageHolds(): void {
-		$revision = $this->createPageWithSubjects( 'Page with indexed subject', TestSubject::build() );
+		$revision = $this->createPageWithSubjects(
+			'Page with indexed subject',
+			TestSubject::build( label: 'Indexed subject' )
+		);
 
 		$this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
 
-		$this->assertSame(
-			[ $revision->getPageId() => [ TestSubject::ZERO_GUID ] ],
+		$this->assertEquals(
+			[
+				$revision->getPageId() => [
+					new SubjectHeader(
+						id: TestSubject::ZERO_GUID,
+						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
+						label: 'Indexed subject',
+						isMainSubject: true
+					),
+				],
+			],
 			$this->subjectPageIndex->indexedSubjectsByPageId
 		);
 	}

@@ -8,6 +8,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectHeader;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -103,6 +104,53 @@ class SubjectContentDataDeserializer {
 			array_map( 'strval', array_keys( $subjects ) ),
 			SubjectId::isValid( ... )
 		) );
+	}
+
+	/**
+	 * The headers the JSON holds, read the same way and for the same reasons as
+	 * {@see deserializeSubjectIds}: without deserializing, so a Subject too broken to deserialize is
+	 * still indexed under the name it claims.
+	 *
+	 * Static and dependency-free: update.php fills the subject -> page index on wikis whose NeoWiki
+	 * configuration is not readable yet.
+	 *
+	 * @return SubjectHeader[]
+	 */
+	public static function deserializeSubjectHeaders( string $json ): array {
+		$data = (array)json_decode( $json, true );
+		$subjects = $data['subjects'] ?? null;
+
+		if ( !is_array( $subjects ) ) {
+			return [];
+		}
+
+		$mainSubjectId = self::stringOrNull( $data['mainSubject'] ?? null );
+
+		$headers = [];
+
+		foreach ( $subjects as $id => $subject ) {
+			// A Subject id that looks like a decimal integer comes back from json_decode as an int key.
+			$idText = (string)$id;
+
+			if ( !SubjectId::isValid( $idText ) ) {
+				continue;
+			}
+
+			$fields = is_array( $subject ) ? $subject : [];
+
+			$headers[] = new SubjectHeader(
+				id: $idText,
+				schemaName: self::stringOrNull( $fields['schema'] ?? null ),
+				label: self::stringOrNull( $fields['label'] ?? null ),
+				isMainSubject: $idText === $mainSubjectId,
+			);
+		}
+
+		return $headers;
+	}
+
+	private static function stringOrNull( mixed $value ): ?string {
+		return is_string( $value ) ? $value : null;
 	}
 
 }

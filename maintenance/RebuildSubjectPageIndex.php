@@ -34,7 +34,7 @@ class RebuildSubjectPageIndex extends LoggedUpdateMaintenance {
 	}
 
 	protected function getUpdateKey(): string {
-		return 'neowiki-rebuild-subject-page-index';
+		return 'neowiki-rebuild-subject-page-index-with-headers';
 	}
 
 	protected function doDBUpdates(): bool {

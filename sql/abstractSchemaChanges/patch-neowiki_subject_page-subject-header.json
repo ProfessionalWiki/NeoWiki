@@ -1,5 +1,43 @@
-[
-	{
+{
+	"before": {
+		"name": "neowiki_subject_page",
+		"comment": "Which page holds which Subject. Written with the revision that changes a page's Subjects, so it is never staler than the slot it derives from. Reads join page, so page moves need no maintenance here and rows left by a deleted page resolve to nothing.",
+		"columns": [
+			{
+				"name": "nwsp_subject_id",
+				"comment": "Subject id as stored in the subject slot",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 32
+				}
+			},
+			{
+				"name": "nwsp_page_id",
+				"comment": "Page holding the Subject. Not a foreign key: a row for a page that no longer exists is inert, since reads join page.",
+				"type": "integer",
+				"options": {
+					"notnull": true,
+					"unsigned": true
+				}
+			}
+		],
+		"indexes": [
+			{
+				"name": "nwsp_page_id",
+				"comment": "Index for reading and replacing everything a page holds",
+				"columns": [
+					"nwsp_page_id"
+				],
+				"unique": false
+			}
+		],
+		"pk": [
+			"nwsp_subject_id",
+			"nwsp_page_id"
+		]
+	},
+	"after": {
 		"name": "neowiki_subject_page",
 		"comment": "Which page holds which Subject, with the fields needed to name that Subject in a list. Written with the revision that changes a page's Subjects, so it is never staler than the slot it derives from. Reads join page, so page moves need no maintenance here and rows left by a deleted page resolve to nothing.",
 		"columns": [
@@ -65,4 +103,4 @@
 			"nwsp_page_id"
 		]
 	}
-]
+}

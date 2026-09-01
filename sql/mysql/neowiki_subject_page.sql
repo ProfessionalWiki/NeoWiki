@@ -5,6 +5,9 @@
 CREATE TABLE /*_*/neowiki_subject_page (
   nwsp_subject_id VARBINARY(32) NOT NULL,
   nwsp_page_id INT UNSIGNED NOT NULL,
+  nwsp_schema VARBINARY(255) DEFAULT NULL,
+  nwsp_label BLOB DEFAULT NULL,
+  nwsp_is_main TINYINT UNSIGNED DEFAULT 0 NOT NULL,
   INDEX nwsp_page_id (nwsp_page_id),
   PRIMARY KEY(nwsp_subject_id, nwsp_page_id)
 ) /*$wgDBTableOptions*/;

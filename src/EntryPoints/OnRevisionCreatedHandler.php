@@ -70,7 +70,7 @@ class OnRevisionCreatedHandler {
 		// Indexed before the Subjects are read as Subjects, and outside the projection's failure
 		// isolation: the index is authoritative (ADR 32), so it commits with the revision that changes
 		// it or not at all, and a Subject too broken to deserialize is still indexed.
-		$this->subjectPageIndex->setSubjectsOfPage( $pageId, $content?->getSubjectIds() ?? [] );
+		$this->subjectPageIndex->setSubjectsOfPage( $pageId, $content?->getSubjectHeaders() ?? [] );
 
 		$subjects = $content?->getPageSubjects() ?? PageSubjects::newEmpty();
 

@@ -199,6 +199,11 @@ class NeoWikiHooks {
 			$sqlDirectory . '/patch-neowiki_rebuild_runs-nwrr_phase.sql'
 		);
 		$updater->addExtensionTable( 'neowiki_subject_page', $sqlDirectory . '/neowiki_subject_page.sql' );
+		$updater->addExtensionField(
+			'neowiki_subject_page',
+			'nwsp_schema',
+			$sqlDirectory . '/patch-neowiki_subject_page-subject-header.sql'
+		);
 
 		// Between creating the table and filling it, no Subject that existed before resolves to its page,
 		// so the backfill runs in the same update.php as the table it fills.

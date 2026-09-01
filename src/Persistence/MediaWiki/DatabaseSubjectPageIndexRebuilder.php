@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectHeader;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use Wikimedia\Rdbms\IDatabase;
@@ -53,10 +54,10 @@ class DatabaseSubjectPageIndexRebuilder {
 
 			foreach ( $pageIds as $pageId ) {
 				$lastPageId = $pageId;
-				$subjectIds = $this->subjectIdsOfPage( $pageId );
+				$subjectHeaders = $this->subjectHeadersOfPage( $pageId );
 
-				if ( $subjectIds !== null ) {
-					$this->index->setSubjectsOfPage( new PageId( $pageId ), $subjectIds );
+				if ( $subjectHeaders !== null ) {
+					$this->index->setSubjectsOfPage( new PageId( $pageId ), $subjectHeaders );
 					$indexed++;
 				}
 			}
@@ -104,11 +105,11 @@ class DatabaseSubjectPageIndexRebuilder {
 	}
 
 	/**
-	 * @return string[]|null Null when the page has to be left alone: its subject slot holds content that
+	 * @return SubjectHeader[]|null Null when the page has to be left alone: its subject slot holds content that
 	 *   is not Subject data, so what it holds cannot be read, and reindexing it as holding nothing would
 	 *   drop the Subjects it does hold. The hook path skips such a page for the same reason.
 	 */
-	private function subjectIdsOfPage( int $pageId ): ?array {
+	private function subjectHeadersOfPage( int $pageId ): ?array {
 		// Read from the primary, like the walk that named the page: on a replica the page may not have
 		// its current revision yet, and indexing it from a stale one would file the wrong Subjects.
 		$revision = $this->revisionLookup->getRevisionByPageId( $pageId, 0, IDBAccessObject::READ_LATEST );
@@ -127,7 +128,7 @@ class DatabaseSubjectPageIndexRebuilder {
 			return null;
 		}
 
-		return $content->getSubjectIds();
+		return $content->getSubjectHeaders();
 	}
 
 }
