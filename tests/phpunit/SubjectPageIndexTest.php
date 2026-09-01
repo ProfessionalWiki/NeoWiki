@@ -383,6 +383,32 @@ class SubjectPageIndexTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * The backfill is the whole reason the update key was bumped, so it has to fill the columns and not
+	 * only the mapping: a wiki upgraded without it would name every Subject by its Schema.
+	 */
+	public function testRebuildingRecordsTheSchemaLabelAndMainFlag(): void {
+		$pageId = $this->createPageWithoutTellingNeoWiki(
+			'Unhooked named page',
+			SubjectContent::newFromData( new PageSubjects(
+				TestSubject::build( id: self::FIRST_ID, label: 'ACME Inc', schemaName: new SchemaName( 'Company' ) ),
+				new SubjectMap(
+					TestSubject::build( id: self::SECOND_ID, label: 'Berlin', schemaName: new SchemaName( 'City' ) )
+				)
+			) )->getText()
+		);
+
+		$this->rebuildIndex();
+
+		$this->assertSame(
+			[
+				[ 'id' => self::FIRST_ID, 'schema' => 'Company', 'label' => 'ACME Inc', 'main' => 1 ],
+				[ 'id' => self::SECOND_ID, 'schema' => 'City', 'label' => 'Berlin', 'main' => 0 ],
+			],
+			$this->indexedHeadersOf( $pageId )
+		);
+	}
+
 	public function testIndexRecordsTheSchemaLabelAndMainFlagOfEachSubject(): void {
 		$revision = $this->createPageWithSubjects(
 			'Named subjects',
