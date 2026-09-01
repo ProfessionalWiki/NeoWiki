@@ -81,35 +81,9 @@ class SubjectContentDataDeserializer {
 	}
 
 	/**
-	 * The ids the JSON holds, read without deserializing, so that a Subject too broken to deserialize
-	 * still has an id. Ids no caller could ask about are left out, since nothing can be answered with
-	 * them.
-	 *
-	 * Static and dependency-free: update.php rebuilds the subject -> page index on wikis whose NeoWiki
-	 * configuration is not readable yet.
-	 *
-	 * @return string[]
-	 */
-	public static function deserializeSubjectIds( string $json ): array {
-		// Cast so that content that is not a JSON object becomes an array without the key, leaving one
-		// thing to check.
-		$subjects = ( (array)json_decode( $json, true ) )['subjects'] ?? null;
-
-		if ( !is_array( $subjects ) ) {
-			return [];
-		}
-
-		// A Subject id that looks like a decimal integer comes back from json_decode as an int key.
-		return array_values( array_filter(
-			array_map( 'strval', array_keys( $subjects ) ),
-			SubjectId::isValid( ... )
-		) );
-	}
-
-	/**
-	 * The headers the JSON holds, read the same way and for the same reasons as
-	 * {@see deserializeSubjectIds}: without deserializing, so a Subject too broken to deserialize is
-	 * still indexed under the name it claims.
+	 * The headers the JSON holds, read without deserializing, so a Subject too broken to deserialize is
+	 * still indexed under the name it claims (ADR 32). Ids that are not well-formed are left out, since
+	 * no caller could ask about them.
 	 *
 	 * Static and dependency-free: update.php fills the subject -> page index on wikis whose NeoWiki
 	 * configuration is not readable yet.
@@ -124,7 +98,7 @@ class SubjectContentDataDeserializer {
 			return [];
 		}
 
-		$mainSubjectId = self::stringOrNull( $data['mainSubject'] ?? null );
+		$mainSubjectId = self::presentStringOrNull( $data['mainSubject'] ?? null );
 
 		$headers = [];
 
@@ -140,8 +114,8 @@ class SubjectContentDataDeserializer {
 
 			$headers[] = new SubjectHeader(
 				id: $idText,
-				schemaName: self::stringOrNull( $fields['schema'] ?? null ),
-				label: self::stringOrNull( $fields['label'] ?? null ),
+				schemaName: self::presentStringOrNull( $fields['schema'] ?? null ),
+				label: self::presentStringOrNull( $fields['label'] ?? null ),
 				isMainSubject: $idText === $mainSubjectId,
 			);
 		}
@@ -149,8 +123,13 @@ class SubjectContentDataDeserializer {
 		return $headers;
 	}
 
-	private static function stringOrNull( mixed $value ): ?string {
-		return is_string( $value ) ? $value : null;
+	/**
+	 * Whitespace is absence, as it is for {@see SubjectLabel::fromText} and {@see SchemaName}: both
+	 * come back null, so a reader of the index never has to tell the two apart. The text itself is
+	 * kept as the slot wrote it, again like SubjectLabel.
+	 */
+	private static function presentStringOrNull( mixed $value ): ?string {
+		return is_string( $value ) && trim( $value ) !== '' ? $value : null;
 	}
 
 }

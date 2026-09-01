@@ -251,4 +251,20 @@ JSON
 		$this->assertSame( [], SubjectContentDataDeserializer::deserializeSubjectHeaders( '{}' ) );
 	}
 
+	public function testWhitespaceOnlyLabelIsReadAsNoLabel(): void {
+		$headers = SubjectContentDataDeserializer::deserializeSubjectHeaders(
+			'{ "subjects": { "s1aaaaaaaaaaaa1": { "schema": "Company", "label": "   " } } }'
+		);
+
+		$this->assertNull( $headers[0]->label );
+	}
+
+	public function testEmptySchemaNameIsReadAsNoSchema(): void {
+		$headers = SubjectContentDataDeserializer::deserializeSubjectHeaders(
+			'{ "subjects": { "s1aaaaaaaaaaaa1": { "schema": "" } } }'
+		);
+
+		$this->assertNull( $headers[0]->schemaName );
+	}
+
 }
