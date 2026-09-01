@@ -28,6 +28,7 @@
 					:start-icon="startIcon"
 					:status="status"
 					:aria-label="ariaLabel"
+					:create-subject="createTarget"
 					@update:selected="onUpdate"
 					@blur="onBlur"
 					@focusin="onFocus"
@@ -48,6 +49,7 @@
 			:target-schema="props.property.targetSchema"
 			:start-icon="startIcon"
 			:status="fieldStatus"
+			:create-subject="createTarget"
 			@update:selected="onSingleSelectionChanged"
 			@blur="onSingleBlur"
 		>
@@ -69,7 +71,8 @@ import { cdxIconInfo } from '@wikimedia/codex-icons';
 import RelationTargetEditButton from '@/components/Value/RelationTargetEditButton.vue';
 import NeoMultiLookupInput from '@/components/common/NeoMultiLookupInput.vue';
 import SubjectPicker from '@/components/common/SubjectPicker.vue';
-import { RelationTargetEditingKey, ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/components/Value/ValueInputContract';
+import { RelationTargetCreationKey, RelationTargetEditingKey, ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/components/Value/ValueInputContract';
+import type { Subject } from '@/domain/Subject.ts';
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { Value, ValueType, RelationValue, newRelation, relationValuesHaveSameTargets } from '@/domain/Value';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -88,6 +91,19 @@ const startIcon = NeoWikiServices.getComponentRegistry().getIcon( RelationType.t
 const emit = defineEmits<ValueInputEmits>();
 
 const targetEditingEnabled = inject( RelationTargetEditingKey, false );
+
+// Undefined where the host cannot create, which is what leaves the picker without a create
+// option. Bound rather than passed through, so the picker never learns the target Schema's role.
+const createRelationTarget = inject( RelationTargetCreationKey, undefined );
+
+const createTarget = computed( (): ( ( label: string | null ) => Promise<Subject | null> ) | undefined => {
+	if ( createRelationTarget === undefined ) {
+		return undefined;
+	}
+
+	return ( label: string | null ): Promise<Subject | null> =>
+		createRelationTarget( props.property.targetSchema, label );
+} );
 
 const internalValue = ref<RelationValue | undefined>( undefined );
 const singleHasUnmatchedText = ref( false );

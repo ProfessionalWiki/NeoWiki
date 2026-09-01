@@ -195,6 +195,7 @@
 	"neowiki-subject-editor-stored-on": "Stored on $1",
 	"neowiki-subject-editor-unsaved": "Unsaved changes",
 	"neowiki-subject-editor-target-load-error": "Could not load the related subject.",
+
 	"neowiki-subject-editor-partial-save": "Saved $1 of $2 {{PLURAL:$2|subject|subjects}}. The rest still have unsaved changes.",
 	"neowiki-subject-editor-save-scope": "Saving updates $1 {{PLURAL:$1|subject|subjects}} on $2 {{PLURAL:$2|page|pages}}.",
 	"neowiki-subject-tree-label": "Structure",
@@ -203,6 +204,8 @@
 	"neowiki-subject-picker-placeholder": "Search for a subject",
 	"neowiki-subject-picker-no-results": "No subjects found",
 	"neowiki-subject-picker-no-match": "Please select a subject from the list.",
+	"neowiki-subject-picker-create": "Create a new $1",
+	"neowiki-subject-picker-create-named": "Create \"$1\" as a new $2",
 
 	"neowiki-schema-creator-title": "Create schema",
 	"neowiki-schema-creator-button": "Create",
