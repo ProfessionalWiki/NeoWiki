@@ -1,7 +1,17 @@
 # NeoWiki Documentation
 
-Technical documentation for developers building on, integrating with, or running NeoWiki. New to NeoWiki? Try the
-live sandbox at [neowiki.dev](https://neowiki.dev), or [install it locally](operations/installation.md).
+The user guide is for working with structured data on a wiki that runs NeoWiki. The developer reference covers
+everything else: building on it, integrating with it, and running it. New to NeoWiki? Try the live sandbox at
+[neowiki.dev](https://neowiki.dev), or [install it locally](operations/installation.md).
+
+## Use NeoWiki
+
+Task guides for working on a wiki that runs NeoWiki.
+
+* [Getting started](guide/getting-started.md) — your first Schema, Subject, View, and query
+* [Author an ontology mapping](guide/author-an-ontology-mapping.md) — publish Subjects in EDM, CIDOC-CRM, or another
+  vocabulary
+* [Keep your wiki current](guide/keep-your-wiki-current.md) — upgrade an evaluation wiki
 
 ## Learn the model
 
@@ -10,14 +20,18 @@ live sandbox at [neowiki.dev](https://neowiki.dev), or [install it locally](oper
 * [Qualifiers and References](qualifiers-and-references.md) — how NeoWiki models qualifiers, references,
   and rank (for people coming from Wikibase)
 
-## Build on your wiki
+## Developer reference
+
+Contracts and extension points for building on, integrating with, and running NeoWiki.
+
+### Build on your wiki
 
 Add and display structured data with wikitext and Lua.
 
 * [Parser Functions](authoring/parser-functions.md) — `{{#view}}`, `{{#neowiki_value}}`, and `{{#cypher_raw}}`
 * [Lua API](authoring/lua-api.md) — the `mw.neowiki` Scribunto library, including `nw.query()` for Cypher
 
-## Integrate over HTTP
+### Integrate over HTTP
 
 The REST and query APIs, and the JSON formats they exchange.
 
@@ -28,7 +42,7 @@ The REST and query APIs, and the JSON formats they exchange.
 * [Query API](api/query-api.md) — read-only Cypher endpoint over the graph backend
 * [Graph Model](api/graph-model.md) — Neo4j node and relationship structure
 
-## Publish as RDF
+### Publish as RDF
 
 Project Subjects to RDF, natively or mapped onto standard ontologies.
 
@@ -36,19 +50,19 @@ Project Subjects to RDF, natively or mapped onto standard ontologies.
 * [Ontology Mapping](rdf/ontology-mapping.md) — projecting into EDM, Dublin Core, … via Mapping pages
 * [Worked example: Person to EDM](rdf/person-to-edm.md) — end-to-end mapping walkthrough with findings
 
-## Extend NeoWiki
+### Extend NeoWiki
 
 * [Extending NeoWiki](extending/extending.md) — add property types and view types, contribute graph and RDF data,
   and reuse NeoWiki's UI from another extension (with the RedHerb example extension as a starting point)
 
-## Run NeoWiki
+### Run NeoWiki
 
 * [Installation](operations/installation.md) — the Docker demo, or adding NeoWiki to an existing MediaWiki
 * [Upgrading](operations/upgrading.md) — moving your wiki to the latest NeoWiki
 * [Maintenance](operations/maintenance.md) — rebuilding the graph, Neo4j outage behavior, and backups
 * [Performance](operations/performance.md) — measured write throughput, and how to re-run the measurement
 
-## Understand the architecture
+### Understand the architecture
 
 * [Architecture Decision Records](adr/001-domain-centric-architecture.md) — numbered, dated architectural decisions
 * [Planning docs](https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs/planning) — work-in-progress
@@ -60,6 +74,7 @@ Project Subjects to RDF, natively or mapped onto standard ontologies.
 
 For contributors adding to these docs:
 
+* A task guide for people using the wiki → `guide/`
 * Cross-cutting, and every audience needs it (the Glossary, Qualifiers and References) → the docs root
 * Wikitext or Lua authoring on the wiki → `authoring/`
 * An HTTP API or a JSON data format → `api/`

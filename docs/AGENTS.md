@@ -15,6 +15,7 @@ Every page sits in one genre. Write to that genre's reader and register.
 
 | Where | Reader, and the decision they make | Register, and what to keep out |
 | --- | --- | --- |
+| `guide/` | Wiki users and admins with a task to accomplish, deciding what to do next in the UI | Task steps in UI vocabulary (Special pages, buttons, tabs), linking to reference pages for contracts; no wire formats, no PHP, no restated contracts |
 | `glossary.md`, `qualifiers-and-references.md` | New users and evaluators forming the mental model | Intended design; no dev-state caveats, no mechanism |
 | `api/` | API consumers deciding what a request or response means and what to do next | Wire-format vocabulary; no PHP class names |
 | `authoring/`, `rdf/` | Admins and integrators looking up exact behavior | Contracts, signatures, examples; no narration |
