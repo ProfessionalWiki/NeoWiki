@@ -110,8 +110,8 @@ Unconstrained ("any Subject") targets; cardinality beyond single/multiple; no-va
 
 ### Editing
 
-- In-flow creation and editing of relation targets, and where in-flow-created Subjects live
-  ([#971](https://github.com/ProfessionalWiki/NeoWiki/issues/971)).
+- Moving a Subject to another page ([#1338](https://github.com/ProfessionalWiki/NeoWiki/issues/1338)). In-flow
+  creation stores a target on the page holding the Subject that refers to it, which is often not where it belongs.
 - Red-link create affordance for missing targets ([#1120](https://github.com/ProfessionalWiki/NeoWiki/issues/1120)).
 - Main-Subject prefill as editing sugar (model decision 5).
 
