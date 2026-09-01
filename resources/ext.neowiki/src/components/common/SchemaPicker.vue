@@ -122,7 +122,19 @@ defineExpose( { focus } );
 </script>
 
 <style lang="less">
-.ext-neowiki-schema-picker .cdx-lookup {
-	width: 100%;
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+
+/* The field is withheld until the schemas arrive (see above), and this picker is
+	remounted whenever the property being edited changes, so without a reserved height
+	every remount paints one frame with nothing here. A dialog sized to its content
+	resizes twice per click on that frame. Holding the control's height keeps the box
+	the same before and after the schemas land. The token is the Codex control height, so
+	the reservation tracks the field it stands in for. */
+.ext-neowiki-schema-picker {
+	min-height: @min-size-interactive-pointer;
+
+	.cdx-lookup {
+		width: 100%;
+	}
 }
 </style>
