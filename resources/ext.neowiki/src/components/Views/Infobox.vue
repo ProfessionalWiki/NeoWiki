@@ -113,17 +113,8 @@ const handleSaveSubject = async ( updatedSubject: Subject, comment: string ): Pr
 	await subjectStore.updateSubject( updatedSubject, comment );
 };
 
-// The Subject carries the id the editor minted for it, so the page gets exactly the Subject the
-// relation pointing at it already names.
 const handleCreateSubject = async ( subject: Subject, pageId: number, comment: string ): Promise<void> => {
-	await subjectStore.createChildSubject(
-		pageId,
-		subject.getLabel(),
-		subject.getSchemaName(),
-		subject.getStatements(),
-		comment,
-		subject.getId()
-	);
+	await subjectStore.createSubject( subject, pageId, comment );
 };
 
 const handleSaveSchema = async ( updatedSchema: Schema, comment: string ): Promise<void> => {

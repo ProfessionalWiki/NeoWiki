@@ -74,6 +74,7 @@ import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import type { SubjectEditorExposes } from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
+import { subjectLabelPlaceholder } from '@/presentation/subjectLabelPlaceholder.ts';
 import EditableText from '@/components/common/EditableText.vue';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
@@ -137,13 +138,7 @@ const pageUrl = computed( (): string =>
 	pageName.value === null ? '' : mw.util.getUrl( pageName.value )
 );
 
-// Previews the name a Subject with no label is shown under, which for one created here is its
-// Schema's name (ADR 31). A labelled Subject gets the generic hint instead.
-const labelPlaceholder = computed( (): string =>
-	props.subject.getLabel() === null ?
-		props.subject.getDisplayName() :
-		mw.msg( 'neowiki-subject-editor-label-field' )
-);
+const labelPlaceholder = computed( (): string => subjectLabelPlaceholder( props.subject ) );
 
 // EditableText commits once per edit, so a commit is both the change and the
 // end of the interaction: validate immediately rather than waiting for a blur.
@@ -170,24 +165,22 @@ const { violations: serverViolations, revalidate, flush } = useSubjectValidation
 			// A Subject the server has never seen has no update to dry-run against, and its
 			// empty required fields are ones the user is still on their way to filling in
 			// rather than real gaps — the same reading the subject creator takes.
-			if ( props.isNew ) {
-				return withoutSessionOnlyViolations( withoutMissingValueViolations(
-					await subjectStore.validateSubject(
-						storedLabel.value,
-						props.subject.getSchemaName(),
-						current
-					)
-				) );
-			}
+			// Unlike subject creation, editing an existing subject surfaces 'required' live: an
+			// empty required field here is a real gap, not a field the user is still on their way
+			// to filling in.
+			const violations = props.isNew ?
+				withoutMissingValueViolations( await subjectStore.validateSubject(
+					storedLabel.value,
+					props.subject.getSchemaName(),
+					current
+				) ) :
+				await subjectStore.validateSubjectUpdate(
+					props.subject.getId(),
+					storedLabel.value,
+					current
+				);
 
-			// Unlike subject creation, editing an existing subject surfaces
-			// 'required' live: an empty required field here is a real gap, not a
-			// field the user is still on their way to filling in.
-			return withoutSessionOnlyViolations( await subjectStore.validateSubjectUpdate(
-				props.subject.getId(),
-				storedLabel.value,
-				current
-			) );
+			return withoutSessionOnlyViolations( violations );
 		} catch ( error ) {
 			// The dry-run runs alongside the live validators and must never
 			// break editing or saving; the authoritative result is the save's

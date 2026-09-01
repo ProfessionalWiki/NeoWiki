@@ -177,6 +177,9 @@ import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { relationTargetsOf } from '@/components/SubjectEditor/SubjectTreeModel.ts';
+import { subjectLabelPlaceholder } from '@/presentation/subjectLabelPlaceholder.ts';
+import { reachableTargetIds, writeOrder } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
+import type { HeldSubject } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 
 type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>;
 
@@ -238,46 +241,38 @@ const panes = computed( (): EditPane[] => [
 	...extraPanes.value
 ] );
 
-// Subjects this session invented, as the panes editing them currently hold them, so a draft
-// renamed in its pane is renamed everywhere that names it.
+// Subjects this session invented, as the panes editing them currently hold them, so a draft renamed
+// in its pane is renamed everywhere that names it. Read from the draft panes alone: going through
+// editedSubjects would make every rename and relation pick anywhere in the dialog rebuild the menu
+// of every relation field.
 const draftSubjects = computed( (): Subject[] => panes.value
 	.filter( ( pane ) => pane.isNew )
-	.map( ( pane ) => editedSubjects.value.get( pane.id ) ?? pane.subject )
+	.map( ( pane ) => {
+		const instance = paneRefs.get( pane.id );
+		return instance === undefined ? pane.subject : withLiveLabel( instance );
+	} )
 );
 
 const draftIds = computed( (): string[] => draftSubjects.value.map( ( subject ) => subject.getId().text ) );
 
-// Drafts something being edited still points at. A draft reached only through another draft counts
-// too, so a chain stands or falls together. One the user has since pointed the relation away from
-// does not: it is not written, and Save neither waits on it nor leaves it behind.
-const referencedDraftIds = computed( (): Set<string> => {
-	const reached = new Set<string>();
-	// Only Subjects the wiki already holds anchor the walk: a draft cannot justify itself.
-	const queue = panes.value.filter( ( pane ) => !pane.isNew ).map( ( pane ) => pane.id );
+// What the walks below read: a pane's Subject as its own form currently holds it. editedSubjects
+// carries an entry for every pane, so this never falls back.
+function heldSubjects(): HeldSubject[] {
+	return panes.value.map( ( pane ) => ( {
+		id: pane.id,
+		subject: editedSubjects.value.get( pane.id ) as Subject,
+		schema: pane.schema,
+		isNew: pane.isNew
+	} ) );
+}
 
-	while ( queue.length > 0 ) {
-		const id = queue.pop() as string;
-		const pane = panes.value.find( ( candidate ) => candidate.id === id );
+// Drafts something being edited still points at. One the user has pointed the relation away from is
+// not written, and Save neither waits on it nor leaves it behind.
+const referencedDraftIds = computed( (): Set<string> => reachableTargetIds( heldSubjects() ) );
 
-		if ( pane === undefined ) {
-			continue;
-		}
-
-		const subject = editedSubjects.value.get( pane.id ) ?? pane.subject;
-
-		for ( const { targetId } of relationTargetsOf( subject, pane.schema ) ) {
-			if ( !reached.has( targetId ) ) {
-				reached.add( targetId );
-				queue.push( targetId );
-			}
-		}
-	}
-
-	return reached;
-} );
-
-function isUnwrittenDraft( pane: EditPane ): boolean {
-	return pane.isNew && referencedDraftIds.value.has( pane.id );
+// A Subject about to be written, as the draft graph wants to see it.
+interface WriteTarget extends HeldSubject {
+	pane: EditPane;
 }
 
 interface DirtyPane {
@@ -297,7 +292,7 @@ const dirtyPanes = computed( (): DirtyPane[] => panes.value
 	.map( ( pane ) => ( { pane, instance: paneRefs.get( pane.id ) } ) )
 	.filter( ( entry ): entry is DirtyPane => entry.instance !== undefined && (
 		entry.pane.isNew ?
-			isUnwrittenDraft( entry.pane ) :
+			referencedDraftIds.value.has( entry.pane.id ) :
 			entry.instance.hasChanged
 	) )
 );
@@ -354,14 +349,7 @@ const openIds = computed( (): string[] => panes.value.map( ( pane ) => pane.id )
 // before that pane has registered its ref.
 const subjectLabel = computed( (): string => rootPane.value?.label ?? props.subject.getLabel() ?? '' );
 
-// The rename field previews the name a cleared label leaves behind, which the client knows only
-// for a Subject that already has none: the server holds the inputs, and it is what the display
-// name of such a Subject already is. For a labelled one the generic hint stands in.
-const labelPlaceholder = computed( (): string =>
-	props.subject.getLabel() === null ?
-		props.subject.getDisplayName() :
-		mw.msg( 'neowiki-subject-editor-label-field' )
-);
+const labelPlaceholder = computed( (): string => subjectLabelPlaceholder( props.subject ) );
 
 function onLabelEdited( value: string ): void {
 	rootPane.value?.setLabel( value );
@@ -651,58 +639,16 @@ async function writeSubject( pane: EditPane, subject: Subject, comment: string )
 	markPaneWritten( pane.id );
 }
 
-type WriteTarget = { pane: EditPane; subject: Subject };
-
-// A Subject is written after every Subject it points at that this save is also creating, so no
-// write ever names a target the server does not have yet. Only the created Subjects need ordering
-// among themselves — the ones the wiki already holds can be written in any order, and go last so a
-// save that stops part way has not yet pointed an existing Subject at a target it failed to create.
-// Depth-first over the drafts, emitting each after its own; a cycle stops at the visited check,
-// which the relation model allows and which no ordering could satisfy anyway.
-function writeOrder( targets: ReadonlyMap<string, WriteTarget> ): [ string, WriteTarget ][] {
-	const ordered: [ string, WriteTarget ][] = [];
-	const visited = new Set<string>();
-
-	function emitDraft( id: string ): void {
-		const target = targets.get( id );
-
-		if ( visited.has( id ) || target === undefined || !target.pane.isNew ) {
-			return;
-		}
-
-		visited.add( id );
-
-		for ( const { targetId } of relationTargetsOf( target.subject, target.pane.schema ) ) {
-			emitDraft( targetId );
-		}
-
-		ordered.push( [ id, target ] );
-	}
-
-	for ( const [ id, target ] of targets ) {
-		if ( target.pane.isNew ) {
-			emitDraft( id );
-		}
-	}
-
-	for ( const entry of targets ) {
-		if ( !entry[ 1 ].pane.isNew ) {
-			ordered.push( entry );
-		}
-	}
-
-	return ordered;
-}
-
 async function writeDirtyPanes( summary: string ): Promise<void> {
 	await nextTick();
 
 	partialSave.value = null;
 
-	// Every mounted pane, not just the dirty ones: a validation round trip is awaited here, and a
-	// pane can join the dirty set while it runs. The write set is taken afterwards, or a Subject
-	// created inside that window would go unwritten while the relation naming it was written.
-	await Promise.all( panes.value.map( ( pane ) => paneRefs.get( pane.id )?.flushValidation() ) );
+	// Each flush writes only its own pane's violations, so none has to wait for another. The write
+	// set is read again afterwards rather than before: a validation round trip is awaited here, and
+	// a Subject created inside that window would otherwise go unwritten while the relation naming
+	// it was written.
+	await Promise.all( dirtyPanes.value.map( ( { instance } ) => instance.flushValidation() ) );
 
 	const dirty = dirtyPanes.value;
 
@@ -724,7 +670,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 
 	// A Subject an earlier attempt already wrote is not in `dirty`: its pane reset its
 	// changed flag.
-	const targets = new Map<string, { pane: EditPane; subject: Subject }>();
+	const targets: WriteTarget[] = [];
 
 	for ( const { pane, instance } of dirty ) {
 		const updated = instance.buildUpdatedSubject();
@@ -734,7 +680,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 			mw.notify( mw.msg( 'neowiki-subject-editor-error', props.subject.getDisplayName() ), { type: 'error' } );
 			return;
 		}
-		targets.set( pane.id, { pane, subject: updated } );
+		targets.push( { id: pane.id, pane, subject: updated, schema: pane.schema, isNew: pane.isNew } );
 	}
 
 	const orderedTargets = writeOrder( targets );
@@ -743,7 +689,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 	// reported once, below.
 	let failed = false;
 
-	for ( const [ id, { pane, subject: updatedSubject } ] of orderedTargets ) {
+	for ( const { id, pane, subject: updatedSubject } of orderedTargets ) {
 		const subjectName = updatedSubject.getDisplayName();
 
 		try {
@@ -777,7 +723,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 
 	if ( failed ) {
 		if ( savedNames.length > 0 ) {
-			partialSave.value = { written: savedNames.length, attempted: targets.size };
+			partialSave.value = { written: savedNames.length, attempted: targets.length };
 		}
 		return;
 	}

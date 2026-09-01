@@ -7,6 +7,8 @@ export class SubjectIdInUseError extends Error {
 
 	public constructor( public readonly subjectId: string ) {
 		super( `Subject id already in use: ${ subjectId }` );
+		// Restores the prototype chain, so instanceof holds however this is compiled down.
+		Object.setPrototypeOf( this, SubjectIdInUseError.prototype );
 		this.name = 'SubjectIdInUseError';
 	}
 

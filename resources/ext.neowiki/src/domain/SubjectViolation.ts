@@ -31,6 +31,9 @@ export interface SubjectViolation {
  */
 const MISSING_VALUE_CODES: ReadonlySet<string> = new Set( [ 'required' ] );
 
+/** Raised when a relation names a Subject the server cannot resolve; its first arg is that id. */
+const RELATION_TARGET_NOT_FOUND = 'relation-target-not-found';
+
 /**
  * Withholds "you have not filled this in yet" violations from the live dry-run
  * while *creating* a subject: every field starts empty and the user is on their
@@ -57,7 +60,7 @@ export function withoutUnsavedTargetViolations(
 	unsavedTargetIds: readonly string[],
 ): SubjectViolation[] {
 	return violations.filter( ( v ) => !(
-		v.code === 'relation-target-not-found' &&
+		v.code === RELATION_TARGET_NOT_FOUND &&
 		typeof v.args[ 0 ] === 'string' &&
 		unsavedTargetIds.includes( v.args[ 0 ] )
 	) );

@@ -863,18 +863,10 @@ async function handleEditSave( updatedSubject: Subject, comment: string ): Promi
 	await loadSubjects();
 }
 
-// The Subject carries the id the editor minted for it, so the page gets exactly the Subject the
-// relation pointing at it already names.
+// No listing refresh of its own: a created Subject is always accompanied by the update that points
+// at it, and that goes through handleEditSave, which refreshes once the whole save is through.
 async function handleEditCreate( subject: Subject, targetPageId: number, comment: string ): Promise<void> {
-	await subjectStore.createChildSubject(
-		targetPageId,
-		subject.getLabel(),
-		subject.getSchemaName(),
-		subject.getStatements(),
-		comment,
-		subject.getId()
-	);
-	await loadSubjects();
+	await subjectStore.createSubject( subject, targetPageId, comment );
 }
 
 async function handleSchemaSave( updatedSchema: Schema, comment: string ): Promise<void> {

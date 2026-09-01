@@ -89,10 +89,12 @@ const selectedSubject = ref<string | null>( props.selected );
 const inputText = ref<string | number>( '' );
 const searchResults = ref<MenuItemData[]>( [] );
 const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
-// Set once a search has come back holding nothing, so the menu says so only when it is true rather
-// than while the request is still out.
-const searchFoundNothing = ref( false );
-const searching = ref( false );
+// Idle until the user types, pending while the request is out, done once it has come back — which
+// is what lets the menu say "nothing found" only when a search actually found nothing, rather than
+// while it is still out.
+const searchStatus = ref<'idle' | 'pending' | 'done'>( 'idle' );
+
+const searching = computed( (): boolean => searchStatus.value !== 'idle' );
 const hasUnmatchedText = ref( false );
 let requestSequence = 0;
 
@@ -102,13 +104,14 @@ const selectedName = ref( '' );
 
 // Subjects this session invented, which no search can return. Read through the host on every
 // evaluation, so a draft renamed in the editor is renamed here too.
-const drafts = computed( (): readonly { id: string; name: string }[] =>
+const draftItems = computed( (): MenuItemData[] =>
 	( subjectCreation?.drafts( props.targetSchema ) ?? [] )
-		.map( ( subject ) => ( { id: subject.getId().text, name: subject.getDisplayName() } ) )
+		.map( ( subject ) => ( { value: subject.getId().text, label: subject.getDisplayName() } ) )
 );
 
 function draftNameOf( id: string ): string | undefined {
-	return drafts.value.find( ( draft ) => draft.id === id )?.name;
+	const item = draftItems.value.find( ( candidate ) => candidate.value === id );
+	return item === undefined ? undefined : String( item.label ?? '' );
 }
 
 // Only what the user actually typed: the field otherwise holds the selected Subject's own name,
@@ -128,12 +131,12 @@ const createItem = computed( (): MenuItemData => ( {
 } ) );
 
 // Matched here rather than by the search: these Subjects exist only in the editor.
-const draftItems = computed( (): MenuItemData[] => {
+const matchingDraftItems = computed( (): MenuItemData[] => {
 	const search = typedText.value.toLowerCase();
 
-	return drafts.value
-		.filter( ( draft ) => search === '' || draft.name.toLowerCase().includes( search ) )
-		.map( ( draft ) => ( { value: draft.id, label: draft.name } ) );
+	return draftItems.value.filter(
+		( item ) => search === '' || String( item.label ).toLowerCase().includes( search )
+	);
 } );
 
 // The create option is present from the first render and never leaves, which is what opens the
@@ -144,11 +147,11 @@ const menuItems = computed( (): MenuItemData[] => {
 		return searchResults.value;
 	}
 
-	const items = [ ...draftItems.value, ...searchResults.value ];
+	const items = [ ...matchingDraftItems.value, ...searchResults.value ];
 
 	// Codex's own no-results slot is shown only for an empty menu, which the create option rules
 	// out, so that case carries the same message as an item nobody can pick.
-	if ( searchFoundNothing.value && items.length === 0 ) {
+	if ( searchStatus.value === 'done' && items.length === 0 ) {
 		items.push( {
 			value: NO_RESULTS,
 			label: mw.msg( 'neowiki-subject-picker-no-results' ),
@@ -196,12 +199,11 @@ watch( () => props.selected, async ( newSelected ) => {
 	selectedSubject.value = newSelected;
 	hasUnmatchedText.value = false;
 
-	if ( newSelected !== null || !searching.value ) {
+	if ( newSelected !== null || searchStatus.value === 'idle' ) {
 		showName( await resolveName( newSelected ) );
 	}
 
-	searching.value = false;
-	searchFoundNothing.value = false;
+	searchStatus.value = 'idle';
 } );
 
 // A draft renamed in the editor renames the field pointing at it.
@@ -216,12 +218,11 @@ async function onLookupInput( value: string ): Promise<void> {
 
 	if ( !value ) {
 		searchResults.value = [];
-		searching.value = false;
-		searchFoundNothing.value = false;
+		searchStatus.value = 'idle';
 		return;
 	}
 
-	searching.value = true;
+	searchStatus.value = 'pending';
 	const currentSequence = ++requestSequence;
 
 	try {
@@ -243,7 +244,7 @@ async function onLookupInput( value: string ): Promise<void> {
 		searchResults.value = [];
 	} finally {
 		if ( currentSequence === requestSequence ) {
-			searchFoundNothing.value = searchResults.value.length === 0;
+			searchStatus.value = 'done';
 		}
 	}
 }
@@ -265,7 +266,15 @@ function onSubjectSelected( subjectId: string | null ): void {
 	}
 
 	if ( subjectId !== null ) {
-		searching.value = false;
+		// Recorded before the parent answers with a new props.selected: Codex writes the picked
+		// item's label into the field, and until this catches up that label would read as text the
+		// user had typed — which is what the create option is named after.
+		const picked = menuItems.value.find( ( item ) => item.value === subjectId );
+		if ( picked !== undefined ) {
+			selectedName.value = String( picked.label ?? '' );
+		}
+
+		searchStatus.value = 'idle';
 		hasUnmatchedText.value = false;
 		emit( 'update:selected', subjectId );
 	} else if ( !inputText.value ) {
@@ -294,8 +303,7 @@ async function createFromTypedText(): Promise<void> {
 			return;
 		}
 
-		searching.value = false;
-		searchFoundNothing.value = false;
+		searchStatus.value = 'idle';
 		hasUnmatchedText.value = false;
 		showName( subject.getDisplayName() );
 		selectedSubject.value = subject.getId().text;
