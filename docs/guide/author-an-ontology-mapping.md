@@ -17,8 +17,8 @@ Go to **Special:Mappings** and choose **Create**. The name you give becomes the 
 ## 2. Write the mapping
 
 The fastest start is copying a shipped example and swapping in your own Schema and property names: `Mapping:EDM`
-(flat term substitution) or `Mapping:CIDOC-CRM` (synthesizes intermediate event nodes). Read their raw JSON on the sandbox
-([EDM](https://neowiki.dev/wiki/Mapping:EDM?action=raw),
+(flat term substitution) or `Mapping:CIDOC-CRM` (synthesizes intermediate event nodes). Read their raw JSON on
+the sandbox ([EDM](https://neowiki.dev/wiki/Mapping:EDM?action=raw),
 [CIDOC-CRM](https://neowiki.dev/wiki/Mapping:CIDOC-CRM?action=raw)) or
 [in the repository](https://github.com/ProfessionalWiki/NeoWiki/tree/master/DemoData/Mapping).
 
