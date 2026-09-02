@@ -27,6 +27,7 @@ You don't need these links to reach an export: on any subject page, the Data tab
 
 == Learn more ==
 
+* [https://neowiki.ai/docs/guide/author-an-ontology-mapping How to author an ontology mapping]: write your own Mapping page, step by step
 * [[Special:Mappings]]: every ontology Mapping on this wiki
 * [https://neowiki.ai/docs/rdf/rdf-export RDF export reference]
 * [https://neowiki.ai/docs/rdf/ontology-mapping Ontology mapping reference]

@@ -59,23 +59,6 @@ Project Subjects to RDF, natively or mapped onto standard ontologies.
 
 ### Understand the architecture
 
-* [Architecture Decision Records](adr/001-domain-centric-architecture.md) — numbered, dated architectural decisions
+* [Architecture Decision Records](adr/README.md) — numbered, dated architectural decisions
 * [Planning docs](https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs/planning) — work-in-progress
   exploration (not published to the website)
-
----
-
-## Where each kind of doc lives
-
-For contributors adding to these docs:
-
-* A task guide for people using the wiki → `guide/`
-* Cross-cutting, and every audience needs it (the Glossary, Qualifiers and References) → the docs root
-* Wikitext or Lua authoring on the wiki → `authoring/`
-* An HTTP API or a JSON data format → `api/`
-* RDF projection or ontology mapping → `rdf/`
-* Extending NeoWiki from another extension → `extending/`
-* A worked, end-to-end example → alongside the docs for the surface it walks through
-* A sysadmin install, maintenance, or deployment guide → `operations/`
-* A numbered, dated decision → `adr/`
-* Work-in-progress exploration → `planning/` (not published to the website)
