@@ -62,8 +62,7 @@ Constraints the model rests on:
 
 ## Open decisions
 
-These decisions remain open at acceptance: each is deferred to the tracking issue named with it, and resolving one
-amends this ADR.
+These decisions remain open at acceptance; each is deferred to the tracking issue named with it.
 
 - **Parse-time read semantics.** Today the parse path is inconsistent
   ([#1059](https://github.com/ProfessionalWiki/NeoWiki/issues/1059)): Schema lookups are gated per user but their
