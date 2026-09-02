@@ -660,18 +660,16 @@ defineExpose( { hasChanged: anyChanged } );
 		max-width: 80rem;
 	}
 
-	/* `min-height: 0` lets this flex item shrink below its content whatever its overflow, and
-		`display: grid` hands the bounded height down: the body holds one child, which as a grid
-		item stretches to the body instead of overflowing it. Codex's own `overflow-y: auto`
-		already zeroes the automatic minimum size, so the declaration guards the day that
-		changes rather than being what engages the scrolling.
+	/* `display: grid` hands the bounded height down: the body holds one child, which as a
+		grid item stretches to the body instead of overflowing it. Nothing here has to make the
+		body shrink below its content — Codex's own `overflow-y: auto` already zeroes its
+		automatic minimum size.
 
 		Codex's own 16px/24px padding is dropped here and handed to the regions inside, because
 		the border between the two surfaces is the only rule between the navigator and the form
 		and that padding would hold it short of the header's and the footer's rules. */
 	.cdx-dialog__body {
 		padding: 0;
-		min-height: 0;
 		display: grid;
 	}
 

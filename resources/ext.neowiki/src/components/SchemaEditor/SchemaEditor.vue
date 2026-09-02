@@ -78,10 +78,9 @@ const propertyListId = useGeneratedId( 'ext-neowiki-property-list' );
 const paneSize = usePaneSize( root, {
 	defaultSize: 320,
 	minSize: 192,
-	// What the property editor's own fields need: its bounds row lays out side by side and
-	// measures 552px, and its scrollbar takes another 15. Below this the labels clip and the
-	// pane scrolls sideways, which the old `auto` track could not do.
-	minOtherSize: 576,
+	// What one of the property editor's fields needs, plus its scrollbar. Its bounds row
+	// wraps rather than overflowing, so the pane no longer has to hold the whole row.
+	minOtherSize: 336,
 	dividerSize: PANE_DIVIDER_SIZE,
 	storageKey: 'neowiki-schema-editor-pane-size'
 } );

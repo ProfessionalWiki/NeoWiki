@@ -130,12 +130,11 @@ async function handleSave( summary: string ): Promise<void> {
 		max-width: @size-5600;
 
 		/* Codex's own `overflow-y: auto` is kept, so anything the columns do not scroll
-			themselves stays reachable at the body. `display: grid` hands the bounded height
-			down to the one child. Carries `min-height: 0` to match the subject editor, whose
-			comment records why it is inert here. */
+			themselves stays reachable at the body, and it is what already lets this flex item
+			shrink below its content. `display: grid` hands the bounded height down to the one
+			child. */
 		.cdx-dialog__body {
 			padding: 0;
-			min-height: 0;
 			display: grid;
 		}
 	}
