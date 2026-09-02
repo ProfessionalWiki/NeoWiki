@@ -17,9 +17,9 @@ Go to **Special:Mappings** and choose **Create**. The name you give becomes the 
 ## 2. Write the mapping
 
 The fastest start is copying a shipped example and swapping in your own Schema and property names: `Mapping:EDM`
-(flat term substitution) or `Mapping:CIDOC-CRM` (synthesizes intermediate event nodes). Read their raw JSON on the
-sandbox — [EDM](https://neowiki.dev/wiki/Mapping:EDM?action=raw),
-[CIDOC-CRM](https://neowiki.dev/wiki/Mapping:CIDOC-CRM?action=raw) — or
+(flat term substitution) or `Mapping:CIDOC-CRM` (synthesizes intermediate event nodes). Read their raw JSON on the sandbox
+([EDM](https://neowiki.dev/wiki/Mapping:EDM?action=raw),
+[CIDOC-CRM](https://neowiki.dev/wiki/Mapping:CIDOC-CRM?action=raw)) or
 [in the repository](https://github.com/ProfessionalWiki/NeoWiki/tree/master/DemoData/Mapping).
 
 There is no form-based editor: the content is JSON, edited in the normal page editor. Saving validates the mapping
@@ -27,7 +27,7 @@ and reports errors, and the page's read view shows a summary of the mapped Schem
 
 ## 3. See the projection
 
-Exports are produced on demand from current data, so a saved Mapping — or an edit to one — takes effect right away.
+Exports are produced on demand from current data, so a new or edited Mapping takes effect right away.
 On any page with Subjects, the **Data** tab offers per-projection RDF downloads, as Turtle or TriG. Per-Subject
 exports, the REST endpoint, and the bulk dump are in [RDF Export](../rdf/rdf-export.md).
 
