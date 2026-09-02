@@ -12,6 +12,7 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\Parser;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\Response;
 use MediaWiki\Revision\RevisionRecord;
@@ -50,6 +51,8 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjects
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubject\ValidateSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubjectUpdate\ValidateSubjectUpdateQuery;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\Lua\CypherQueryRunner;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\Lua\SparqlQueryRunner;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
 use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
@@ -223,6 +226,8 @@ class NeoWikiExtension {
 	private ClientInterface $readOnlyNeo4jClient;
 	private ?WikiConfigSource $wikiConfigSource = null;
 	private ?SchemaLookup $schemaLookup = null;
+	/** @var array<string, SchemaLookup> */
+	private array $schemaLookupsByUser = [];
 	private static ?self $instance = null;
 
 	public static function getInstance(): self {
@@ -763,14 +768,18 @@ class NeoWikiExtension {
 		return $plugin;
 	}
 
-	public function newSparqlQueryService(): SparqlQueryService {
-		return $this->requireFirstSparqlPlugin()->newQueryService();
+	public function newSparqlQueryService( Authority $authority ): SparqlQueryService {
+		return $this->requireFirstSparqlPlugin()->newQueryService( $authority );
+	}
+
+	public function newSparqlQueryRunner( Parser $parser ): SparqlQueryRunner {
+		return $this->requireFirstSparqlPlugin()->newLuaQueryRunner( $parser );
 	}
 
 	public static function newSparqlQueryApi(): SparqlQueryApi {
-		return new SparqlQueryApi(
-			self::getInstance()->newSparqlQueryService()
-		);
+		$extension = self::getInstance();
+
+		return new SparqlQueryApi( $extension->newSparqlQueryService( $extension->getRequestAuthority() ) );
 	}
 
 	private function buildSparqlPlugin( SparqlStoreConfig $store ): SparqlPlugin {
@@ -871,14 +880,18 @@ class NeoWikiExtension {
 		return $this->readOnlyNeo4jClient;
 	}
 
-	public function newCypherQueryService(): Neo4jQueryService {
-		return $this->requireNeo4jPlugin()->newQueryService();
+	public function newCypherQueryService( Authority $authority ): Neo4jQueryService {
+		return $this->requireNeo4jPlugin()->newQueryService( $authority );
+	}
+
+	public function newCypherQueryRunner( Parser $parser ): CypherQueryRunner {
+		return $this->requireNeo4jPlugin()->newLuaQueryRunner( $parser );
 	}
 
 	public static function newCypherQueryApi(): CypherQueryApi {
-		return new CypherQueryApi(
-			self::getInstance()->newCypherQueryService()
-		);
+		$extension = self::getInstance();
+
+		return new CypherQueryApi( $extension->newCypherQueryService( $extension->getRequestAuthority() ) );
 	}
 
 	public function getWriteQueryEngine(): Neo4jWriteQueryEngine {
@@ -979,7 +992,7 @@ class NeoWikiExtension {
 
 	public function newViewHtmlBuilder(): ViewHtmlBuilder {
 		return new ViewHtmlBuilder(
-			subjectContentRepository: $this->newSubjectContentRepository()
+			subjectContentRepository: $this->newSubjectContentRepository( $this->getRequestAuthority() )
 		);
 	}
 
@@ -997,20 +1010,20 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newSubjectContentRepository(): SubjectContentRepository {
+	public function newSubjectContentRepository( Authority $authority ): SubjectContentRepository {
 		return new MediaWikiSubjectContentRepository(
 			wikiPageFactory: MediaWikiServices::getInstance()->getWikiPageFactory(),
-			authority: RequestContext::getMain()->getUser(),
+			authority: $authority,
 			pageContentSaver: $this->getPageContentSaver(),
 			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
 		);
 	}
 
-	public function newSubjectResolver(): SubjectResolver {
+	public function newSubjectResolver( Authority $authority ): SubjectResolver {
 		return new SubjectResolver(
-			subjectContentRepository: $this->newSubjectContentRepository(),
-			subjectLookup: $this->getSubjectRepository(),
+			subjectContentRepository: $this->newSubjectContentRepository( $authority ),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 		);
 	}
 
@@ -1309,10 +1322,22 @@ class NeoWikiExtension {
 	// weaker to stronger — a login or account creation mutating the main context — where reusing the
 	// anonymous resolutions can only under-serve. Core's one switch the other way, beginAccountCreation()
 	// dropping a temp account to a fresh anonymous user, moves between two near-anonymous authorities.
+	// Not for parse-time reads: those run as the user the page is parsed for, which the request's user
+	// is not during the canonical parse of an edit; they use getSchemaLookupFor() instead.
 	public function getSchemaLookup(): SchemaLookup {
 		$this->schemaLookup ??= $this->newSchemaLookup( $this->getRequestAuthority() );
 
 		return $this->schemaLookup;
+	}
+
+	/**
+	 * One lookup per authority for the process, so a batch of parses under one canonical user keeps
+	 * the process-local cache tier across pages. The read gate runs per call before that cache.
+	 */
+	public function getSchemaLookupFor( Authority $authority ): SchemaLookup {
+		$this->schemaLookupsByUser[$authority->getUser()->getName()] ??= $this->newSchemaLookup( $authority );
+
+		return $this->schemaLookupsByUser[$authority->getUser()->getName()];
 	}
 
 	private function newSchemaLookup( Authority $authority ): SchemaLookup {

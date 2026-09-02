@@ -17,6 +17,13 @@ For programmatic access from Lua modules, see the [Lua API](lua-api.md).
 
 For definitions of terms like Subject, Schema, and Layout, see the [Glossary](../glossary.md).
 
+## Permissions
+
+Every parser function reads as the user the page is parsed for. Subjects that user cannot read are
+treated as absent. `{{#cypher_raw}}` and `{{#sparql_raw}}` need the `neowiki-query` right.
+`{{#view}}` only places a marker at parse time; the Subject it shows is fetched per viewer over the
+REST API, under that viewer's permissions.
+
 ## `{{#view}}`
 
 Renders a Subject as HTML on the page using a [View Type](../glossary.md#view-type) (currently
@@ -90,7 +97,7 @@ Returns the value of a single property from a Subject, formatted as a string.
 | `text`, `url`, `select`, `date`, `dateTime` | The string value. Multiple values joined with `separator`. |
 | `number` | The number, e.g. `42` or `19.99`. |
 | `boolean` | `true` or `false`. |
-| `relation` | The target Subject's display name. Multiple targets joined with `separator`. Falls back to the target Subject ID when the target cannot be looked up. |
+| `relation` | The target Subject's display name. Multiple targets joined with `separator`. Falls back to the target Subject ID when the target cannot be looked up or its page is not readable. |
 
 Boolean and number values are always rendered, even for `false` and `0` — these are not treated
 as "empty".
@@ -106,6 +113,7 @@ HTML-encoded text — a value of `Engineers & Designers` arrives as `Engineers &
 ### Returns empty when
 
 - The Subject does not exist on the page (or named page), or the Subject ID was not found.
+- The Subject's page is not readable (see [Permissions](#permissions)).
 - The Subject has no value for that property.
 - The value is an empty collection (e.g. a multi-valued text property with no entries).
 
@@ -144,9 +152,10 @@ For formatted result rendering, build it in a template with Lua
 
 - Only read queries are allowed. Anything that creates, modifies, or deletes data is rejected,
   including `CALL` (even for read-only procedures).
-- Results are capped at the `maxRows` limit from `$wgNeoWikiQueryLimits` (higher for users with
-  `apihighlimits`); rows beyond it are dropped silently. Queries also stop at that tier's
-  `timeoutSeconds`.
+- Requires the `neowiki-query` right (see [Permissions](#permissions)).
+- Results are capped at the `maxRows` and stopped at the `timeoutSeconds` of the `default` tier of
+  `$wgNeoWikiQueryLimits` (see [Limits and tiers](../api/query-api.md#limits-and-tiers)); rows beyond
+  the cap are dropped silently.
 - Errors (rejected queries, syntax errors, the database being unavailable, etc.) render as a
   styled error message in place of the result.
 - Output is HTML-escaped, so query results containing `<`, `>`, `&`, etc. display safely.
@@ -180,8 +189,10 @@ document — the standard `head` / `results` structure (or `boolean` for an `ASK
 ### Notes
 
 - Read-only: the query cannot modify the store.
-- No row cap is applied — the full results document is returned. Queries stop at the
-  `timeoutSeconds` from `$wgNeoWikiQueryLimits` (higher for users with `apihighlimits`).
+- Requires the `neowiki-query` right (see [Permissions](#permissions)).
+- No row cap is applied — the full results document is returned. Queries stop at the `timeoutSeconds`
+  of the `default` tier of `$wgNeoWikiQueryLimits` (see
+  [Limits and tiers](../api/query-api.md#limits-and-tiers)).
 - Errors (a query the store rejects, the store being unavailable, etc.) render as a styled error message
   in place of the result.
 - Output is HTML-escaped, so results containing `<`, `>`, `&`, etc. display safely.

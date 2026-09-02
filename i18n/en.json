@@ -164,6 +164,7 @@
 
 	"neowiki-cypher-raw-error-json-encode": "Failed to encode query result as JSON",
 
+	"neowiki-cypher-error-permission-denied": "You do not have permission to run Cypher queries.",
 	"neowiki-cypher-error-empty-query": "The Cypher query must not be empty.",
 	"neowiki-cypher-error-write-query": "Only read-only Cypher queries are allowed.",
 	"neowiki-cypher-error-syntax": "The Cypher query has a syntax error: $1",
@@ -174,6 +175,7 @@
 
 	"neowiki-sparql-raw-error-json-encode": "Failed to encode query result as JSON",
 
+	"neowiki-sparql-error-permission-denied": "You do not have permission to run SPARQL queries.",
 	"neowiki-sparql-error-empty-query": "The SPARQL query must not be empty.",
 	"neowiki-sparql-error-syntax": "The SPARQL query was rejected by the store: $1",
 	"neowiki-sparql-error-store-unavailable": "The SPARQL store is currently unavailable.",

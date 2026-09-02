@@ -259,7 +259,7 @@ class NeoWikiHooks {
 			'view',
 			static function ( Parser $parser, string ...$args ): string|array {
 				$parserFunction = new ViewParserFunction(
-					NeoWikiExtension::getInstance()->newSubjectContentRepository()
+					NeoWikiExtension::getInstance()->newSubjectContentRepository( ParserAuthority::of( $parser ) )
 				);
 				return $parserFunction->handle( $parser, ...$args );
 			}
@@ -269,7 +269,7 @@ class NeoWikiHooks {
 			'neowiki_value',
 			static function ( Parser $parser, string ...$args ): string|array {
 				$parserFunction = new NeoWikiValueParserFunction(
-					NeoWikiExtension::getInstance()->newSubjectResolver()
+					NeoWikiExtension::getInstance()->newSubjectResolver( ParserAuthority::of( $parser ) )
 				);
 				return $parserFunction->handle( $parser, ...$args );
 			}

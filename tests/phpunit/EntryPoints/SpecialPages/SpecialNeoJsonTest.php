@@ -77,7 +77,7 @@ class SpecialNeoJsonTest extends SpecialPageTestBase {
 		}
 
 		$this->assertNull(
-			NeoWikiExtension::getInstance()->newSubjectContentRepository()->getSubjectContentByPageTitle( $title ),
+			NeoWikiExtension::getInstance()->newSubjectContentRepository( $user )->getSubjectContentByPageTitle( $title ),
 			'The rejected POST must not have written any Subject content'
 		);
 	}
@@ -96,7 +96,7 @@ class SpecialNeoJsonTest extends SpecialPageTestBase {
 		$this->executeSpecialPage( $title->getPrefixedText(), $this->newJsonPost(), null, $user );
 
 		$this->assertNotNull(
-			NeoWikiExtension::getInstance()->newSubjectContentRepository()->getSubjectContentByPageTitle( $title ),
+			NeoWikiExtension::getInstance()->newSubjectContentRepository( $user )->getSubjectContentByPageTitle( $title ),
 			'Precondition: the POST wrote Subject content'
 		);
 

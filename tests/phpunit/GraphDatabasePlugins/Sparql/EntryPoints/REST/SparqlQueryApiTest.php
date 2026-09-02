@@ -11,10 +11,13 @@ use MediaWiki\Rest\ResponseInterface;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Application\RawQueryAuthorizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryFailedException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\SparqlQueryApi;
+use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedRawQueryAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FakeSparqlQueryEndpoint;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubRawQueryAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\SparqlQueryApi
@@ -81,10 +84,12 @@ class SparqlQueryApiTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testReturns403WhenUserLacksNeowikiQueryRight(): void {
+		$authority = $this->mockAnonAuthorityWithPermissions( [] );
+
 		$response = $this->executeRequest(
-			$this->serviceReturning( self::RESULTS ),
+			$this->serviceReturning( self::RESULTS, new AuthorityBasedRawQueryAuthorizer( $authority ) ),
 			[ 'query' => 'SELECT * WHERE { ?s ?p ?o }' ],
-			authority: $this->mockAnonAuthorityWithPermissions( [] )
+			authority: $authority
 		);
 		$body = $this->decodeBody( $response );
 
@@ -132,12 +137,15 @@ class SparqlQueryApiTest extends MediaWikiIntegrationTestCase {
 		return json_decode( $response->getBody()->getContents(), true );
 	}
 
-	private function serviceReturning( string $responseBody ): SparqlQueryService {
-		return new SparqlQueryService( FakeSparqlQueryEndpoint::returning( $responseBody ) );
+	private function serviceReturning( string $responseBody, ?RawQueryAuthorizer $authorizer = null ): SparqlQueryService {
+		return new SparqlQueryService(
+			FakeSparqlQueryEndpoint::returning( $responseBody ),
+			$authorizer ?? new StubRawQueryAuthorizer( true )
+		);
 	}
 
 	private function serviceFailingWith( SparqlQueryFailedException $failure ): SparqlQueryService {
-		return new SparqlQueryService( FakeSparqlQueryEndpoint::failingWith( $failure ) );
+		return new SparqlQueryService( FakeSparqlQueryEndpoint::failingWith( $failure ), new StubRawQueryAuthorizer( true ) );
 	}
 
 }

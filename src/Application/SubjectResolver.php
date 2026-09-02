@@ -20,10 +20,16 @@ class SubjectResolver {
 	 */
 	private array $pageSubjectsByPageId = [];
 
+	/**
+	 * Every read goes through the page hosting the Subject, and a page the reader may not read
+	 * answers like a page without Subjects (ADR 27): the parse-time surfaces built on this
+	 * resolver cannot tell a restricted page from an empty one. A Subject no page hosts resolves
+	 * to nothing for the same reason: there is no page to read it off.
+	 */
 	public function __construct(
 		private readonly SubjectContentRepository $subjectContentRepository,
-		private readonly SubjectLookup $subjectLookup,
 		private readonly PageIdentifiersLookup $pageIdentifiersLookup,
+		private readonly PageReadAuthorizer $readAuthorizer,
 	) {
 	}
 
@@ -32,8 +38,12 @@ class SubjectResolver {
 			return null;
 		}
 
+		$subjectId = new SubjectId( $subjectIdText );
+
 		try {
-			return $this->subjectLookup->getSubject( new SubjectId( $subjectIdText ) );
+			$page = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId );
+
+			return $page === null ? null : $this->getPageSubjects( $page->getId() )?->getAllSubjects()->getSubject( $subjectId );
 		} catch ( Exception ) {
 			return null;
 		}
@@ -54,6 +64,10 @@ class SubjectResolver {
 	}
 
 	public function getPageSubjectsByTitle( Title $title ): ?PageSubjects {
+		if ( !$this->readAuthorizer->authorizeReadByPageTitle( $title ) ) {
+			return null;
+		}
+
 		return $this->subjectContentRepository
 			->getSubjectContentByPageTitle( $title )
 			?->getPageSubjects();
@@ -80,10 +94,6 @@ class SubjectResolver {
 		return $relation->targetId->text;
 	}
 
-	/**
-	 * Reading the hosting page costs no more than asking the Subject lookup for the Subject alone:
-	 * that lookup resolves the page and loads all its Subjects too, then drops the placement.
-	 */
 	private function resolveDisplayNameOnHostingPage( SubjectId $subjectId ): ?string {
 		$page = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId );
 
@@ -102,14 +112,16 @@ class SubjectResolver {
 	}
 
 	/**
-	 * One read per page for the resolver's lifetime, which is one parse: the relations a page renders
-	 * mostly point at Subjects of that same page, and each would otherwise load the whole slot again.
+	 * One read, and one read check, per page for the resolver's lifetime: the relations a page
+	 * renders mostly point at Subjects of that same page, and each would otherwise load the whole
+	 * slot again. The Lua library keeps one resolver per parse; {{#neowiki_value}} builds one per
+	 * call, so there the memo only spans that call's relation labels.
 	 */
 	private function getPageSubjects( PageId $pageId ): ?PageSubjects {
 		if ( !array_key_exists( $pageId->id, $this->pageSubjectsByPageId ) ) {
-			$this->pageSubjectsByPageId[$pageId->id] = $this->subjectContentRepository
-				->getSubjectContentByPageId( $pageId )
-				?->getPageSubjects();
+			$this->pageSubjectsByPageId[$pageId->id] = $this->readAuthorizer->authorizeReadByPageId( $pageId )
+				? $this->subjectContentRepository->getSubjectContentByPageId( $pageId )?->getPageSubjects()
+				: null;
 		}
 
 		return $this->pageSubjectsByPageId[$pageId->id];

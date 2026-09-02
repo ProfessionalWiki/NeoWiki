@@ -8,9 +8,11 @@ use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryLimits;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\ParserFunction\SparqlRawParserFunction;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FakeSparqlQueryEndpoint;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubRawQueryAuthorizer;
 
 /**
  * What a reader ends up with, rather than what the parser function returns: the corruption this
@@ -31,7 +33,8 @@ class SparqlRawParserFunctionParsingTest extends MediaWikiIntegrationTestCase {
 			'sparql_raw',
 			static function ( Parser $parser, string $query ) use ( $results ): string|array {
 				return ( new SparqlRawParserFunction(
-					new SparqlQueryService( FakeSparqlQueryEndpoint::returning( $results ) )
+					new SparqlQueryService( FakeSparqlQueryEndpoint::returning( $results ), new StubRawQueryAuthorizer( true ) ),
+					new SparqlQueryLimits( 30 ),
 				) )->handle( $parser, $query );
 			}
 		);

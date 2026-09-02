@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\Lua;
 
-use MediaWiki\Context\RequestContext;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryLimits;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryRequest;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
@@ -13,6 +12,7 @@ class CypherQueryRunner {
 
 	public function __construct(
 		private readonly Neo4jQueryService $queryService,
+		private readonly Neo4jQueryLimits $limits,
 	) {
 	}
 
@@ -21,7 +21,7 @@ class CypherQueryRunner {
 			new Neo4jQueryRequest(
 				cypher: $cypher,
 				parameters: $params,
-				limits: Neo4jQueryLimits::forUser( RequestContext::getMain()->getUser() ),
+				limits: $this->limits,
 			)
 		);
 

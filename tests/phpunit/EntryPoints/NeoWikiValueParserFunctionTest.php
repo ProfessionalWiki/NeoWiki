@@ -8,8 +8,8 @@ use MediaWiki\Parser\Parser;
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
-use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
@@ -33,6 +33,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiValueParserFunction;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiValueParserFunction
@@ -64,27 +65,16 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		return new InMemorySubjectContentRepository( new PageSubjects( $subject, new SubjectMap() ) );
 	}
 
-	private function createDummyLookup(): SubjectLookup {
-		return $this->createStub( SubjectLookup::class );
-	}
-
-	private function createLookupReturning( Subject $subject ): SubjectLookup {
-		$lookup = $this->createStub( SubjectLookup::class );
-		$lookup->method( 'getSubject' )->willReturn( $subject );
-
-		return $lookup;
-	}
-
 	private function createPF(
 		SubjectContentRepository $repo,
-		?SubjectLookup $lookup = null,
-		?PageIdentifiersLookup $pageIdentifiersLookup = null
+		?PageIdentifiersLookup $pageIdentifiersLookup = null,
+		?PageReadAuthorizer $readAuthorizer = null
 	): NeoWikiValueParserFunction {
 		return new NeoWikiValueParserFunction(
 			new SubjectResolver(
 				$repo,
-				$lookup ?? $this->createDummyLookup(),
-				$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup()
+				$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
+				$readAuthorizer ?? new StubPageReadAuthorizer( true )
 			)
 		);
 	}
@@ -131,6 +121,19 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			->handle( $this->createMockParser(), 'City' );
 
 		$this->assertNoParseHtml( 'Berlin', $result );
+	}
+
+	public function testReturnsEmptyWhenTheSubjectsPageIsNotReadable(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
+		);
+
+		$result = $this->createPF(
+			$this->repositoryWithSubject( $subject ),
+			readAuthorizer: new StubPageReadAuthorizer( false )
+		)->handle( $this->createMockParser(), 'City' );
+
+		$this->assertSame( '', $result );
 	}
 
 	public function testReturnsEmptyStringForValueOfUnregisteredType(): void {
@@ -262,7 +265,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 
 		$repo = $this->repositoryWithSubject( $subject );
 
-		$result = $this->createPF( $repo, null, $this->placeOnOwnPages( $repo, $targetSubject ) )
+		$result = $this->createPF( $repo, $this->placeOnOwnPages( $repo, $targetSubject ) )
 			->handle( $this->createMockParser(), 'Process owner' );
 
 		$this->assertNoParseHtml( 'Sarah Naumann', $result );
@@ -324,7 +327,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 
 		$repo = $this->repositoryWithSubject( $subject );
 
-		$result = $this->createPF( $repo, null, $this->placeOnOwnPages( $repo, $target1, $target2 ) )
+		$result = $this->createPF( $repo, $this->placeOnOwnPages( $repo, $target1, $target2 ) )
 			->handle( $this->createMockParser(), 'Members' );
 
 		$this->assertNoParseHtml( 'Alice, Bob', $result );
@@ -417,10 +420,8 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			] ),
 		);
 
-		$pf = $this->createPF(
-			new InMemorySubjectContentRepository(),
-			$this->createLookupReturning( $targetSubject )
-		);
+		$repo = new InMemorySubjectContentRepository();
+		$pf = $this->createPF( $repo, $this->placeOnOwnPages( $repo, $targetSubject ) );
 
 		$result = $pf->handle( $this->createMockParser(), 'City', 'subject=' . self::TARGET_SUBJECT_ID );
 
@@ -462,10 +463,8 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'FromPage' ) )
 		);
 
-		$result = $this->createPF(
-			$this->repositoryWithSubject( $subjectViaPage ),
-			$this->createLookupReturning( $subjectViaId )
-		)->handle(
+		$repo = $this->repositoryWithSubject( $subjectViaPage );
+		$result = $this->createPF( $repo, $this->placeOnOwnPages( $repo, $subjectViaId ) )->handle(
 			$this->createMockParser(),
 			'City',
 			'subject=' . self::TARGET_SUBJECT_ID,

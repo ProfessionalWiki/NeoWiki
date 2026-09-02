@@ -6,7 +6,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\Scribunto;
 
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
@@ -30,6 +29,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup
@@ -64,36 +64,28 @@ class SubjectDataLookupTest extends TestCase {
 		);
 	}
 
-	private function resolverWithMainSubject( Subject $subject, ?SubjectLookup $subjectLookup = null ): SubjectResolver {
-		return $this->resolverWithPageSubjects( new PageSubjects( $subject, new SubjectMap() ), $subjectLookup );
+	private function resolverWithMainSubject( Subject $subject ): SubjectResolver {
+		return $this->newResolver( new PageSubjects( $subject, new SubjectMap() ) );
 	}
 
-	private function resolverWithPageSubjects( ?PageSubjects $pageSubjects, ?SubjectLookup $subjectLookup = null ): SubjectResolver {
-		return $this->newResolver( $pageSubjects, $subjectLookup );
-	}
-
-	private function emptyResolver( ?SubjectLookup $subjectLookup = null ): SubjectResolver {
-		return $this->resolverWithPageSubjects( null, $subjectLookup );
+	private function emptyResolver(): SubjectResolver {
+		return $this->newResolver( null );
 	}
 
 	private function resolverWithMainSubjectAndRelationTargets( Subject $subject, Subject ...$targets ): SubjectResolver {
-		return $this->newResolver( new PageSubjects( $subject, new SubjectMap() ), null, ...$targets );
+		return $this->newResolver( new PageSubjects( $subject, new SubjectMap() ), ...$targets );
 	}
 
 	/**
-	 * Relation targets are resolved through the page hosting them, so a target that exists is one
-	 * placed on a page of its own, as that page's Main Subject.
+	 * Subjects reached by id, relation targets included, are resolved through the page hosting them,
+	 * so each one that exists is placed on a page of its own, as that page's Main Subject.
 	 */
-	private function newResolver(
-		?PageSubjects $pageSubjects,
-		?SubjectLookup $subjectLookup,
-		Subject ...$relationTargets
-	): SubjectResolver {
+	private function newResolver( ?PageSubjects $pageSubjects, Subject ...$hostedSubjects ): SubjectResolver {
 		$contentRepository = new InMemorySubjectContentRepository( $pageSubjects );
 		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
 		$pageId = 1000;
 
-		foreach ( $relationTargets as $target ) {
+		foreach ( $hostedSubjects as $target ) {
 			$pageId++;
 
 			$contentRepository->setContentForPageId( $pageId, new PageSubjects( $target, new SubjectMap() ) );
@@ -105,26 +97,9 @@ class SubjectDataLookupTest extends TestCase {
 
 		return new SubjectResolver(
 			$contentRepository,
-			$subjectLookup ?? $this->createStub( SubjectLookup::class ),
-			$pageIdentifiersLookup
+			$pageIdentifiersLookup,
+			new StubPageReadAuthorizer( true )
 		);
-	}
-
-	private function createSubjectLookupReturning( Subject ...$subjects ): SubjectLookup {
-		$lookup = $this->createStub( SubjectLookup::class );
-
-		if ( count( $subjects ) === 1 ) {
-			$lookup->method( 'getSubject' )->willReturn( $subjects[0] );
-		} else {
-			$map = [];
-			foreach ( $subjects as $subject ) {
-				$map[$subject->getId()->text] = $subject;
-			}
-			$lookup->method( 'getSubject' )
-				->willReturnCallback( fn( SubjectId $id ) => $map[$id->text] ?? null );
-		}
-
-		return $lookup;
 	}
 
 	// === getValue tests ===
@@ -333,8 +308,7 @@ class SubjectDataLookupTest extends TestCase {
 			] ),
 		);
 
-		$subjectLookup = $this->createSubjectLookupReturning( $targetSubject );
-		$lookup = new SubjectDataLookup( $this->emptyResolver( $subjectLookup ) );
+		$lookup = new SubjectDataLookup( $this->newResolver( null, $targetSubject ) );
 
 		$this->assertSame(
 			[ 'Munich' ],
@@ -528,7 +502,7 @@ class SubjectDataLookupTest extends TestCase {
 	public function testGetMainSubjectReturnsNullWhenPageHasNoMainSubject(): void {
 		$pageSubjects = new PageSubjects( null, new SubjectMap() );
 
-		$lookup = new SubjectDataLookup( $this->resolverWithPageSubjects( $pageSubjects ) );
+		$lookup = new SubjectDataLookup( $this->newResolver( $pageSubjects ) );
 
 		$this->assertSame( [ null ], $lookup->getMainSubjectData( $this->createTitle() ) );
 	}
@@ -545,8 +519,7 @@ class SubjectDataLookupTest extends TestCase {
 			] ),
 		);
 
-		$subjectLookup = $this->createSubjectLookupReturning( $subject );
-		$lookup = new SubjectDataLookup( $this->emptyResolver( $subjectLookup ) );
+		$lookup = new SubjectDataLookup( $this->newResolver( null, $subject ) );
 
 		$result = $lookup->getSubjectData( self::TARGET_SUBJECT_ID );
 
@@ -596,7 +569,7 @@ class SubjectDataLookupTest extends TestCase {
 		);
 
 		$lookup = new SubjectDataLookup(
-			$this->newResolver( null, $this->createSubjectLookupReturning( $subject ), $targetSubject )
+			$this->newResolver( null, $targetSubject, $subject )
 		);
 
 		$result = $lookup->getSubjectData( self::SUBJECT_ID );
@@ -630,7 +603,7 @@ class SubjectDataLookupTest extends TestCase {
 			new SubjectMap( $child1, $child2 )
 		);
 
-		$lookup = new SubjectDataLookup( $this->resolverWithPageSubjects( $pageSubjects ) );
+		$lookup = new SubjectDataLookup( $this->newResolver( $pageSubjects ) );
 
 		$result = $lookup->getChildSubjectsData( $this->createTitle() );
 
@@ -651,7 +624,7 @@ class SubjectDataLookupTest extends TestCase {
 
 		$pageSubjects = new PageSubjects( $this->createSubject(), new SubjectMap( $child ) );
 
-		$lookup = new SubjectDataLookup( $this->resolverWithPageSubjects( $pageSubjects ) );
+		$lookup = new SubjectDataLookup( $this->newResolver( $pageSubjects ) );
 
 		$result = $lookup->getChildSubjectsData( $this->createTitleNamed( 'Rijksmuseum' ) );
 
@@ -664,7 +637,7 @@ class SubjectDataLookupTest extends TestCase {
 
 		$pageSubjects = new PageSubjects( $mainSubject, new SubjectMap() );
 
-		$lookup = new SubjectDataLookup( $this->resolverWithPageSubjects( $pageSubjects ) );
+		$lookup = new SubjectDataLookup( $this->newResolver( $pageSubjects ) );
 
 		$this->assertSame( [ [] ], $lookup->getChildSubjectsData( $this->createTitle() ) );
 	}

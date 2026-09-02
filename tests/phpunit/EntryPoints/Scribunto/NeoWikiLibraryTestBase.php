@@ -10,6 +10,7 @@ if ( !class_exists( \MediaWiki\Extension\Scribunto\Tests\Engines\LuaCommon\LuaEn
 
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\TextContent;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\Scribunto\Tests\Engines\LuaCommon\LuaEngineTestBase;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
@@ -28,6 +29,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Tests\ParseTimePermissionFixtures;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary
@@ -38,17 +40,31 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepos
  */
 abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 
+	use ParseTimePermissionFixtures;
+
 	// phpcs:ignore SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingAnyTypeHint -- parent class has no type hint
 	protected static $moduleName = 'NeoWikiLibraryTests';
+
+	/**
+	 * Scribunto 1.46 onwards has each concrete test class name one engine. LuaStandalone is the
+	 * pick because it needs no PHP extension and so is present wherever the suite runs, not
+	 * because the library is specific to it.
+	 */
+	protected function getEngineName(): string {
+		return 'LuaStandalone';
+	}
 
 	protected function setUp(): void {
 		parent::setUp();
 
-		// Configure a SPARQL store so nw.sparqlQuery is registered in the Lua environment. The URL is
-		// never contacted: the only Lua test that calls it (empty query) fails before any HTTP. Resetting
-		// the singleton makes the extension rebuild with the store before the engine loads the library.
-		$this->overrideConfigValue( 'NeoWikiSparqlStores', [ [ 'updateUrl' => 'https://sparql.invalid/store' ] ] );
-		NeoWikiExtension::resetInstance();
+		// Registers nw.sparqlQuery in the Lua environment; the reset makes the extension rebuild with
+		// the store before the engine loads the library.
+		$this->configureAnUnreachableSparqlStore();
+
+		// The Lua engine under test parses as the anonymous user. The request belongs to a sysop, so a
+		// read that wrongly took the request's user or its tier shows up in the tests below.
+		RequestContext::getMain()->setUser( $this->getTestSysop()->getUser() );
+		$this->capTheDefaultTierAtOneRow();
 
 		// Suppress NeoWiki's revision handler during test data creation
 		// to avoid graph DB and property type registration dependencies
@@ -132,7 +148,7 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 		);
 	}
 
-	private function createSchemaPage( string $name, string $json ): void {
+	protected function createSchemaPage( string $name, string $json ): void {
 		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle(
 			Title::newFromText( $name, NeoWikiExtension::NS_SCHEMA )
 		);
@@ -142,7 +158,7 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 		$updater->saveRevision( CommentStoreComment::newUnsavedComment( 'Lua test data' ) );
 	}
 
-	private function createPageWithMainSubject(
+	protected function createPageWithMainSubject(
 		string $pageName,
 		Subject $mainSubject,
 		SubjectMap $childSubjects = new SubjectMap(),

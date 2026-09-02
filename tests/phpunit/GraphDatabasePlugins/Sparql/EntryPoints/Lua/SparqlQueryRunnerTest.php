@@ -8,9 +8,11 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\EmptySparqlQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryFailedException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlStoreUnavailableException;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryLimits;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\Lua\SparqlQueryRunner;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FakeSparqlQueryEndpoint;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubRawQueryAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\Lua\SparqlQueryRunner
@@ -54,10 +56,8 @@ class SparqlQueryRunnerTest extends TestCase {
 	}
 
 	public function testStoreFailurePropagatesAsStoreUnavailableException(): void {
-		$runner = new SparqlQueryRunner(
-			new SparqlQueryService(
-				FakeSparqlQueryEndpoint::failingWith( new SparqlQueryFailedException( 'https://s.example', 500, 'boom' ) )
-			)
+		$runner = $this->newRunner(
+			FakeSparqlQueryEndpoint::failingWith( new SparqlQueryFailedException( 'https://s.example', 500, 'boom' ) )
 		);
 
 		$this->expectException( SparqlStoreUnavailableException::class );
@@ -68,11 +68,22 @@ class SparqlQueryRunnerTest extends TestCase {
 	 * @return array<int|string, mixed>
 	 */
 	private function runViaRunner( string $results, string $query = 'SELECT * WHERE { ?s ?p ?o }' ): array {
-		$runner = new SparqlQueryRunner(
-			new SparqlQueryService( FakeSparqlQueryEndpoint::returning( $results ) )
-		);
+		return $this->newRunner( FakeSparqlQueryEndpoint::returning( $results ) )->run( $query );
+	}
 
-		return $runner->run( $query );
+	private function newRunner( FakeSparqlQueryEndpoint $endpoint, ?SparqlQueryLimits $limits = null ): SparqlQueryRunner {
+		return new SparqlQueryRunner(
+			new SparqlQueryService( $endpoint, new StubRawQueryAuthorizer( true ) ),
+			$limits ?? new SparqlQueryLimits( 30 ),
+		);
+	}
+
+	public function testRunsTheQueryWithTheInjectedLimits(): void {
+		$endpoint = FakeSparqlQueryEndpoint::returning( '{"head":{},"results":{"bindings":[]}}' );
+
+		$this->newRunner( $endpoint, new SparqlQueryLimits( 17 ) )->run( 'SELECT * WHERE { ?s ?p ?o }' );
+
+		$this->assertSame( 17, $endpoint->lastTimeoutSeconds );
 	}
 
 }

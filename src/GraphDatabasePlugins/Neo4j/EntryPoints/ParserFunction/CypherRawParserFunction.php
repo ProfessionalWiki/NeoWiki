@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\ParserFunction;
 
-use MediaWiki\Context\RequestContext;
 use MediaWiki\Parser\Parser;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryLimits;
@@ -16,6 +15,7 @@ class CypherRawParserFunction {
 
 	public function __construct(
 		private readonly Neo4jQueryService $queryService,
+		private readonly Neo4jQueryLimits $limits,
 	) {
 	}
 
@@ -28,7 +28,7 @@ class CypherRawParserFunction {
 				new Neo4jQueryRequest(
 					cypher: $cypherQuery,
 					parameters: [],
-					limits: Neo4jQueryLimits::forUser( RequestContext::getMain()->getUser() ),
+					limits: $this->limits,
 				)
 			);
 		} catch ( QueryException $e ) {

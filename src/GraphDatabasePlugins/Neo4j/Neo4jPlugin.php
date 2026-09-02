@@ -6,13 +6,17 @@ namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j;
 
 use Laudis\Neo4j\Contracts\ClientInterface;
 use MediaWiki\Parser\Parser;
+use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\EntryPoints\ParserAuthority;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CompositeCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\ExplainCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\KeywordCypherQueryValidator;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryLimits;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jReadQueryEngine;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\Lua\CypherQueryRunner;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\ParserFunction\CypherRawParserFunction;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jClientReadQueryEngine;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jConstraintUpdater;
@@ -21,6 +25,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultN
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdaterFactory;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
+use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedRawQueryAuthorizer;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -90,17 +95,31 @@ readonly class Neo4jPlugin {
 	}
 
 	public function registerParserFunctions( Parser $parser ): void {
-		$queryService = $this->newQueryService();
-
 		$parser->setFunctionHook(
 			'cypher_raw',
-			static function ( Parser $parser, string $cypherQuery ) use ( $queryService ): array {
-				return ( new CypherRawParserFunction( $queryService ) )->handle( $parser, $cypherQuery );
+			function ( Parser $parser, string $cypherQuery ): array {
+				return $this->newRawParserFunction( $parser )->handle( $parser, $cypherQuery );
 			}
 		);
 	}
 
-	public function newQueryService(): Neo4jQueryService {
+	public function newRawParserFunction( Parser $parser ): CypherRawParserFunction {
+		return new CypherRawParserFunction( $this->newParseTimeQueryService( $parser ), Neo4jQueryLimits::defaultTier() );
+	}
+
+	public function newLuaQueryRunner( Parser $parser ): CypherQueryRunner {
+		return new CypherQueryRunner( $this->newParseTimeQueryService( $parser ), Neo4jQueryLimits::defaultTier() );
+	}
+
+	/**
+	 * Parse-time queries run as the user the page is parsed for, and always at the default tier: the
+	 * output is parser-cached, so neither may depend on who happened to parse.
+	 */
+	private function newParseTimeQueryService( Parser $parser ): Neo4jQueryService {
+		return $this->newQueryService( ParserAuthority::of( $parser ) );
+	}
+
+	public function newQueryService( Authority $authority ): Neo4jQueryService {
 		return new Neo4jQueryService(
 			$this->readQueryEngine,
 			new CompositeCypherQueryValidator( [
@@ -108,6 +127,7 @@ readonly class Neo4jPlugin {
 				new ExplainCypherQueryValidator( $this->readOnlyClient ),
 			] ),
 			new Neo4jResultNormalizer(),
+			new AuthorityBasedRawQueryAuthorizer( $authority ),
 		);
 	}
 

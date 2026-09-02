@@ -16,13 +16,25 @@ readonly class Neo4jQueryLimits {
 	}
 
 	public static function forUser( User $user ): self {
-		/** @var array<string, array{timeoutSeconds: int, maxRows: int}> $config */
-		$config = MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiQueryLimits' );
-
 		$tier = MediaWikiServices::getInstance()->getPermissionManager()
 			->userHasRight( $user, 'apihighlimits' )
 				? 'expensive'
 				: 'default';
+
+		return self::forTier( $tier );
+	}
+
+	/**
+	 * The tier for parse-time queries. Parse output is shared through the parser cache, so the
+	 * limits it was produced under must not depend on who happened to parse.
+	 */
+	public static function defaultTier(): self {
+		return self::forTier( 'default' );
+	}
+
+	private static function forTier( string $tier ): self {
+		/** @var array<string, array{timeoutSeconds: int, maxRows: int}> $config */
+		$config = MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiQueryLimits' );
 
 		return new self(
 			timeoutSeconds: (int)$config[$tier]['timeoutSeconds'],

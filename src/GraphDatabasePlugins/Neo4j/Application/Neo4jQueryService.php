@@ -6,12 +6,14 @@ namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application;
 
 use Laudis\Neo4j\Databags\SummarizedResult;
 use Laudis\Neo4j\Exception\Neo4jException;
+use ProfessionalWiki\NeoWiki\Application\RawQueryAuthorizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\BackendUnavailableException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\CypherSyntaxException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\EmptyQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\InternalQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\ParameterMissingException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryException;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryPermissionDeniedException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryTimeoutException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\WriteQueryRejectedException;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
@@ -24,10 +26,16 @@ readonly class Neo4jQueryService {
 		private Neo4jReadQueryEngine $queryEngine,
 		private CypherQueryValidator $validator,
 		private Neo4jResultNormalizer $normalizer,
+		private RawQueryAuthorizer $authorizer,
 	) {
 	}
 
 	public function execute( Neo4jQueryRequest $request ): Neo4jQueryResult {
+		// Before the validator: EXPLAIN-based validation reaches the store too.
+		if ( !$this->authorizer->authorizeRawQuery() ) {
+			throw new QueryPermissionDeniedException( 'You do not have permission to run queries.' );
+		}
+
 		$cypher = trim( $request->cypher );
 
 		if ( $cypher === '' ) {

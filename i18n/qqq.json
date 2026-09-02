@@ -20,6 +20,7 @@
 	"neowiki-schema-label": "Label used to identify the schema. $1 is the schema name or link.",
 	"neowiki-cypher-raw-error-json-encode": "Error message shown when JSON encoding of query results fails.",
 
+	"neowiki-cypher-error-permission-denied": "Error shown on the <code>{{#cypher_raw}}</code> parser function and the <code>nw.query()</code> Lua function when the user the page is parsed for lacks the <code>neowiki-query</code> right.",
 	"neowiki-cypher-error-empty-query": "Error shown on the <code>{{#cypher_raw}}</code> parser function and the <code>nw.query()</code> Lua function when the supplied Cypher query is empty or only whitespace.",
 	"neowiki-cypher-error-write-query": "Error shown on the <code>{{#cypher_raw}}</code> parser function and the <code>nw.query()</code> Lua function when the query contains a write operation. Cypher queries from wikitext are restricted to read-only.",
 	"neowiki-cypher-error-syntax": "Error shown when Neo4j reports a syntax error for a Cypher query run from wikitext. $1 is the verbatim Neo4j-supplied syntax detail and is not translatable.",
@@ -30,6 +31,7 @@
 
 	"neowiki-sparql-raw-error-json-encode": "Error message shown when JSON encoding of SPARQL query results fails.",
 
+	"neowiki-sparql-error-permission-denied": "Error shown on the <code>{{#sparql_raw}}</code> parser function and the <code>nw.sparqlQuery()</code> Lua function when the user the page is parsed for lacks the <code>neowiki-query</code> right.",
 	"neowiki-sparql-error-empty-query": "Error shown on the <code>{{#sparql_raw}}</code> parser function and the <code>nw.sparqlQuery()</code> Lua function when the supplied SPARQL query is empty or only whitespace.",
 	"neowiki-sparql-error-syntax": "Error shown when the SPARQL store rejects a query run from wikitext (a 4xx response, most commonly a syntax error). $1 is the verbatim store-supplied detail and is not translatable.",
 	"neowiki-sparql-error-store-unavailable": "Error shown when the SPARQL store cannot be reached for a query run from wikitext (a 5xx response or a transport error). The underlying connection detail is intentionally omitted.",

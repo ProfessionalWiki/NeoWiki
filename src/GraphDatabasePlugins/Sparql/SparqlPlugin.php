@@ -6,14 +6,19 @@ namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql;
 
 use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\Parser\Parser;
+use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
+use ProfessionalWiki\NeoWiki\EntryPoints\ParserAuthority;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\ProjectionResolver;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryLimits;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\Lua\SparqlQueryRunner;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\ParserFunction\SparqlRawParserFunction;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Persistence\HttpSparqlQueryEndpoint;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Persistence\HttpSparqlUpdateEndpoint;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Persistence\SparqlProjectionStore;
+use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedRawQueryAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer;
 use ProfessionalWiki\NeoWiki\SparqlStoreConfig;
 
@@ -57,13 +62,14 @@ readonly class SparqlPlugin {
 		return $this->projectionStore;
 	}
 
-	public function newQueryService(): SparqlQueryService {
+	public function newQueryService( Authority $authority ): SparqlQueryService {
 		return new SparqlQueryService(
 			new HttpSparqlQueryEndpoint(
 				httpRequestFactory: $this->httpRequestFactory,
 				queryUrl: $this->store->queryUrl,
 				accessToken: $this->store->accessToken,
-			)
+			),
+			new AuthorityBasedRawQueryAuthorizer( $authority ),
 		);
 	}
 
@@ -79,14 +85,28 @@ readonly class SparqlPlugin {
 	}
 
 	public function registerParserFunctions( Parser $parser ): void {
-		$queryService = $this->newQueryService();
-
 		$parser->setFunctionHook(
 			'sparql_raw',
-			static function ( Parser $parser, string $query ) use ( $queryService ): array {
-				return ( new SparqlRawParserFunction( $queryService ) )->handle( $parser, $query );
+			function ( Parser $parser, string $query ): array {
+				return $this->newRawParserFunction( $parser )->handle( $parser, $query );
 			}
 		);
+	}
+
+	public function newRawParserFunction( Parser $parser ): SparqlRawParserFunction {
+		return new SparqlRawParserFunction( $this->newParseTimeQueryService( $parser ), SparqlQueryLimits::defaultTier() );
+	}
+
+	public function newLuaQueryRunner( Parser $parser ): SparqlQueryRunner {
+		return new SparqlQueryRunner( $this->newParseTimeQueryService( $parser ), SparqlQueryLimits::defaultTier() );
+	}
+
+	/**
+	 * Parse-time queries run as the user the page is parsed for, and always at the default tier: the
+	 * output is parser-cached, so neither may depend on who happened to parse.
+	 */
+	private function newParseTimeQueryService( Parser $parser ): SparqlQueryService {
+		return $this->newQueryService( ParserAuthority::of( $parser ) );
 	}
 
 }

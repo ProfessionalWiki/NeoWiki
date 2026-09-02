@@ -107,6 +107,10 @@ local function testQueryRejectsWriteQuery()
 	return type( err ) == 'string' and string.find( err, 'read-only Cypher queries are allowed', 1, true ) ~= nil
 end
 
+local function testQueryCapsRowsAtTheDefaultTier()
+	return #nw.query( 'UNWIND [1, 2] AS n RETURN n' )
+end
+
 -- sparqlQuery tests
 
 local function testSparqlQueryRejectsEmptyString()
@@ -225,6 +229,8 @@ local tests = {
 	  func = testQueryRejectsEmptyString, expect = { true } },
 	{ name = 'query rejects write query with localized message',
 	  func = testQueryRejectsWriteQuery, expect = { true } },
+	{ name = 'query caps rows at the default tier, whatever the request user may have',
+	  func = testQueryCapsRowsAtTheDefaultTier, expect = { 1 } },
 
 	-- sparqlQuery
 	{ name = 'sparqlQuery rejects empty string with localized message',
