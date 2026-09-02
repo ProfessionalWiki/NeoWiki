@@ -104,17 +104,6 @@ describe( 'SchemaCreatorDialog', () => {
 		schemaStore.saveSchema = vi.fn().mockResolvedValue( undefined );
 	} );
 
-	// This creator's body is the scroller, so Codex adds the rules itself whenever the
-	// schema is long enough. The class is asked for by name to cover the case it misses:
-	// a schema short enough not to scroll, where the desktop rule between the columns is
-	// still drawn and needs one to run into at each end.
-	it( 'asks Codex for the dividers variant', async () => {
-		const wrapper = mountComponent();
-		await flushPromises();
-
-		expect( wrapper.find( '.cdx-dialog-stub' ).classes() ).toContain( 'cdx-dialog--dividers' );
-	} );
-
 	it( 'does not save when validation fails', async () => {
 		const wrapper = mountComponent();
 

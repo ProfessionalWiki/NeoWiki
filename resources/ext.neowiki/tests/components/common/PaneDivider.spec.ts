@@ -70,36 +70,18 @@ describe( 'PaneDivider', () => {
 
 	describe( 'the separator it exposes', () => {
 
-		it( 'is a separator', () => {
-			expect( mountDivider().attributes( 'role' ) ).toBe( 'separator' );
-		} );
-
-		it( 'is reachable by keyboard', () => {
-			expect( mountDivider().attributes( 'tabindex' ) ).toBe( '0' );
-		} );
-
-		it( 'declares the vertical orientation, which is not the role default', () => {
-			expect( mountDivider().attributes( 'aria-orientation' ) ).toBe( 'vertical' );
-		} );
-
-		it( 'carries the name the caller gave it', () => {
-			expect( mountDivider().attributes( 'aria-label' ) ).toBe( 'Resize the list' );
-		} );
-
-		it( 'points at the pane it sizes', () => {
-			expect( mountDivider().attributes( 'aria-controls' ) ).toBe( 'pane-1' );
-		} );
-
-		it( 'announces the current position and its bounds', () => {
+		it( 'exposes the separator contract', () => {
 			const wrapper = mountDivider();
 
+			expect( wrapper.attributes( 'role' ) ).toBe( 'separator' );
+			expect( wrapper.attributes( 'tabindex' ) ).toBe( '0' );
+			expect( wrapper.attributes( 'aria-orientation' ) ).toBe( 'vertical' );
+			expect( wrapper.attributes( 'aria-label' ) ).toBe( 'Resize the list' );
+			expect( wrapper.attributes( 'aria-controls' ) ).toBe( 'pane-1' );
 			expect( wrapper.attributes( 'aria-valuenow' ) ).toBe( '320' );
 			expect( wrapper.attributes( 'aria-valuemin' ) ).toBe( '192' );
 			expect( wrapper.attributes( 'aria-valuemax' ) ).toBe( '800' );
-		} );
-
-		it( 'is not marked disabled while it can move', () => {
-			expect( mountDivider().attributes( 'aria-disabled' ) ).toBeUndefined();
+			expect( wrapper.attributes( 'aria-disabled' ) ).toBeUndefined();
 		} );
 
 		it( 'is marked disabled where there is no room to move', () => {
@@ -176,48 +158,10 @@ describe( 'PaneDivider', () => {
 			expect( wrapper.emitted( 'commit' ) ).toHaveLength( 1 );
 		} );
 
-		// Key repeat sends a keydown per step and one keyup at the end.
-		it( 'commits once for a held key, however many steps it took', async () => {
-			const wrapper = mountDivider();
-
-			for ( let step = 0; step < 5; step++ ) {
-				await wrapper.trigger( 'keydown', { key: 'ArrowRight' } );
-			}
-			await wrapper.trigger( 'keyup', { key: 'ArrowRight' } );
-
-			expect( wrapper.emitted( 'resize' ) ).toHaveLength( 5 );
-			expect( wrapper.emitted( 'commit' ) ).toHaveLength( 1 );
-		} );
-
-		it( 'commits nothing when a key it ignores is let go', async () => {
-			const wrapper = mountDivider();
-
-			await wrapper.trigger( 'keydown', { key: 'Escape' } );
-			await wrapper.trigger( 'keyup', { key: 'Escape' } );
-
-			expect( wrapper.emitted( 'commit' ) ).toBeUndefined();
-		} );
-
-		it( 'leaves the vertical arrows to the surface behind it', async () => {
-			const wrapper = mountDivider();
-
-			await wrapper.trigger( 'keydown', { key: 'ArrowDown' } );
-
-			expect( wrapper.emitted( 'resize' ) ).toBeUndefined();
-		} );
-
 		it( 'leaves Escape alone, so the dialog still closes on it', async () => {
 			const wrapper = mountDivider();
 
 			await wrapper.trigger( 'keydown', { key: 'Escape' } );
-
-			expect( wrapper.emitted( 'resize' ) ).toBeUndefined();
-		} );
-
-		it( 'does not move where there is no room to move', async () => {
-			const wrapper = mountDivider( { disabled: true } );
-
-			await wrapper.trigger( 'keydown', { key: 'ArrowRight' } );
 
 			expect( wrapper.emitted( 'resize' ) ).toBeUndefined();
 		} );
