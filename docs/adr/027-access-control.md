@@ -2,7 +2,7 @@
 
 Date: 2026-07-22
 
-Status: Draft
+Status: Accepted (2026-09-02)
 
 ## Context
 
@@ -62,17 +62,22 @@ Constraints the model rests on:
 
 ## Open decisions
 
+These decisions remain open at acceptance; each is deferred to the tracking issue named with it.
+
 - **Parse-time read semantics.** Today the parse path is inconsistent
   ([#1059](https://github.com/ProfessionalWiki/NeoWiki/issues/1059)): Schema lookups are gated per user but their
   output is parser-cached user-agnostically; subject accessors (`{{#neowiki_value}}` and the `nw` data accessors)
   check only revision-deletion visibility, not page `read`; `{{#cypher_raw}}`, `{{#sparql_raw}}`, `nw.query` and
   `nw.sparqlQuery` check nothing. `{{#view}}` is the leak-free pattern: a placeholder rendered at parse time, data
-  fetched per user over REST. **TODO:** decide the parse-path rule and what it means for each surface.
+  fetched per user over REST. Deferred to [#1059](https://github.com/ProfessionalWiki/NeoWiki/issues/1059): the
+  parse-path rule and what it means for each surface.
 - **Cross-wiki subject display.** Rendering a subject from another wiki goes through REST, not Cypher, so query-side
-  scoping does not cover it. **TODO:** decide the check and the degradation behavior when the schema or subject is
-  not accessible. Relates to [ADR 23](023-subject-sources.md).
-- **Default grant of `neowiki-query`.** The right is granted to `*` by default. **TODO:** decide whether the default
-  changes, and how deployments with restricted content are expected to configure it.
+  scoping does not cover it. Deferred to [#1341](https://github.com/ProfessionalWiki/NeoWiki/issues/1341): the
+  check and the degradation behavior when the schema or subject is not accessible. Relates to
+  [ADR 23](023-subject-sources.md).
+- **Default grant of `neowiki-query`.** The right is granted to `*` by default. Deferred to
+  [#1342](https://github.com/ProfessionalWiki/NeoWiki/issues/1342): whether the default changes, and how deployments
+  with restricted content are expected to configure it.
 
 ## Out of scope
 
