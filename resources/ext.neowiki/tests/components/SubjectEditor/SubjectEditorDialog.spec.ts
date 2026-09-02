@@ -2424,7 +2424,30 @@ describe( 'SubjectEditorDialog', () => {
 				const divider = wrapper.findComponent( PaneDivider );
 
 				expect( divider.props( 'min' ) ).toBe( 256 );
-				expect( divider.props( 'max' ) ).toBeGreaterThanOrEqual( divider.props( 'min' ) as number );
+				// jsdom measures nothing, so the bound is the current width and the divider still moves.
+				expect( divider.props( 'max' ) ).toBe( 384 );
+				expect( divider.props( 'disabled' ) ).toBe( false );
+			} );
+
+			it( 'remembers the navigator width once the gesture ends, under its own key', async () => {
+				const global = globalThis as unknown as { mw?: Record<string, unknown> };
+				const before = global.mw;
+				const storage = { get: vi.fn( () => null ), set: vi.fn( () => true ) };
+				global.mw = { ...before, storage };
+
+				try {
+					const { wrapper } = await mountWithSecondPaneOpen( {
+						rootSchema: relationRootSchema,
+						rootSubject: relationRootSubject,
+					} );
+					wrapper.findComponent( PaneDivider ).vm.$emit( 'resize', 500 );
+					wrapper.findComponent( PaneDivider ).vm.$emit( 'commit' );
+					await nextTick();
+
+					expect( storage.set ).toHaveBeenCalledWith( 'neowiki-subject-editor-pane-size', '500' );
+				} finally {
+					global.mw = before;
+				}
 			} );
 
 			it( 'points the divider at the navigator it sizes', async () => {
