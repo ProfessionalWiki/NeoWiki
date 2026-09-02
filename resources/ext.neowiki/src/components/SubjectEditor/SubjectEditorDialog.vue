@@ -222,7 +222,9 @@ const navigatorId = useGeneratedId( 'ext-neowiki-subject-navigator' );
 const paneSize = usePaneSize( content, {
 	defaultSize: 384,
 	minSize: 256,
-	minOtherSize: 320,
+	// Wide enough for the form's own fields and its scrollbar; below it the statement rows
+	// scroll sideways instead of wrapping.
+	minOtherSize: 360,
 	dividerSize: PANE_DIVIDER_SIZE,
 	storageKey: 'neowiki-subject-editor-pane-size'
 } );
@@ -729,6 +731,9 @@ defineExpose( { hasChanged: anyChanged } );
 		min-width: 0;
 		min-height: 0;
 		overflow-y: auto;
+		/* Held whether or not it scrolls, so the width the divider's bound was worked out
+			against is the width the content actually gets. */
+		scrollbar-gutter: stable;
 	}
 
 	/* The tree carries no inset of its own; this dialog gives it the form's, on its padded

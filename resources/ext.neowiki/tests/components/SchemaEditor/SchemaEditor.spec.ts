@@ -10,6 +10,7 @@ import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { createI18nMock, reportUnparseableNumber } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import PaneDivider from '@/components/common/PaneDivider.vue';
+import { nextTick } from 'vue';
 
 function createWrapper( schema: Schema, description = '' ): VueWrapper {
 	return mount( SchemaEditor, {
@@ -423,7 +424,39 @@ describe( 'SchemaEditor pane divider', () => {
 		expect( wrapper.findComponent( PaneDivider ).props( 'controls' ) ).toBe( listId );
 	} );
 
-	it( 'renders without MediaWiki storage, which this spec never stubs', () => {
-		expect( () => createWrapper( schemaWithProperty ) ).not.toThrow();
+	it( 'gives the list the width the divider asks for', async () => {
+		const wrapper = createWrapper( schemaWithProperty );
+
+		wrapper.findComponent( PaneDivider ).vm.$emit( 'resize', 500 );
+		await nextTick();
+
+		expect( wrapper.find( '.ext-neowiki-schema-editor' ).attributes( 'style' ) )
+			.toContain( '--ext-neowiki-pane-size: 500px' );
+		expect( wrapper.findComponent( PaneDivider ).props( 'size' ) ).toBe( 500 );
+	} );
+
+	it( 'remembers the width once the gesture ends', async () => {
+		const global = globalThis as unknown as { mw?: Record<string, unknown> };
+		const before = global.mw;
+		const storage = { get: vi.fn( () => null ), set: vi.fn( () => true ) };
+		global.mw = { ...before, storage };
+
+		try {
+			const wrapper = createWrapper( schemaWithProperty );
+			wrapper.findComponent( PaneDivider ).vm.$emit( 'resize', 500 );
+			wrapper.findComponent( PaneDivider ).vm.$emit( 'commit' );
+			await nextTick();
+
+			expect( storage.set ).toHaveBeenCalledWith( 'neowiki-schema-editor-pane-size', '500' );
+		} finally {
+			global.mw = before;
+		}
+	} );
+
+	it( 'tells the divider the bounds it may move between', () => {
+		const divider = createWrapper( schemaWithProperty ).findComponent( PaneDivider );
+
+		expect( divider.props( 'min' ) ).toBe( 192 );
+		expect( divider.props( 'max' ) ).toBeGreaterThanOrEqual( divider.props( 'min' ) as number );
 	} );
 } );

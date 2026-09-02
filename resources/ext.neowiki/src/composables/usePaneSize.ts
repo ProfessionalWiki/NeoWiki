@@ -87,14 +87,25 @@ export function usePaneSize(
 		return Math.round( measured.value === null ? floored : Math.min( floored, maxSize.value ) );
 	}
 
-	// Clamped as it is stored: the reader is looking at the bound they just reached, and a
-	// gesture that overshot must not be kept and replayed on a wider screen.
+	// Clamped as it is stored: a gesture that overshot must not be kept and replayed on a
+	// wider screen.
+	//
+	// Unless the clamp changes nothing on screen, which means the container refused the
+	// request rather than the reader making one. Recording that would put the squeeze where
+	// the reader's own width was — the width they chose on a wider screen would be replaced
+	// by whatever fits here, by a keystroke that moved the divider not one pixel.
 	function resizeTo( value: number ): void {
 		if ( !Number.isFinite( value ) ) {
 			return;
 		}
 
-		requested.value = clamp( value );
+		const clamped = clamp( value );
+
+		if ( clamped === size.value ) {
+			return;
+		}
+
+		requested.value = clamped;
 	}
 
 	// Called once a gesture is over rather than as it moves, so a drag or a held key is

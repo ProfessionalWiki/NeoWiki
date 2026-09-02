@@ -90,7 +90,7 @@ function directionSign(): number {
 }
 
 function onPointerDown( event: PointerEvent ): void {
-	if ( props.disabled === true || event.button !== 0 ) {
+	if ( props.disabled === true || event.button !== 0 || dragPointerId !== null ) {
 		return;
 	}
 
@@ -118,6 +118,14 @@ function onPointerDown( event: PointerEvent ): void {
 
 function onPointerMove( event: PointerEvent ): void {
 	if ( dragPointerId !== event.pointerId ) {
+		return;
+	}
+
+	// Without capture the release can land on another element, leaving the drag with no
+	// end. A move with nothing held is that state, and ending here rather than following
+	// the cursor is what stops the page keeping its resize cursor and its selection lock.
+	if ( event.buttons === 0 ) {
+		endDrag( event );
 		return;
 	}
 
@@ -157,9 +165,21 @@ onBeforeUnmount( () => {
 	if ( dragPointerId !== null ) {
 		setResizingMarker( false );
 	}
+
+	// A dialog closed on Escape takes the focused divider with it, so no keyup and no blur
+	// ever arrive and the width the reader just set would go unremembered.
+	if ( dragPointerId !== null || movedByKey ) {
+		emit( 'commit' );
+	}
 } );
 
 function onKeydown( event: KeyboardEvent ): void {
+	// Modified arrows belong to the browser and the platform — Alt+Left is Back — so they
+	// are left alone rather than resized with and swallowed.
+	if ( event.altKey || event.ctrlKey || event.metaKey || event.shiftKey ) {
+		return;
+	}
+
 	if ( props.disabled === true || !movesTheDivider( event.key ) ) {
 		return;
 	}
@@ -244,10 +264,12 @@ function sizeForKey( key: string, sign: number ): number {
 	touch-action: none;
 	user-select: none;
 
+	/* A border rather than a painted box: forced-colors mode keeps borders and replaces
+		backgrounds with the canvas, which would leave the rule invisible exactly where the
+		12px target is hardest to hit. Printing drops backgrounds too. */
 	&::before {
 		content: '';
-		width: @border-width-base;
-		background-color: @border-color-subtle;
+		border-inline-start: @border-subtle;
 	}
 
 	&:focus-visible {

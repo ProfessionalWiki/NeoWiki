@@ -290,6 +290,78 @@ describe( 'usePaneSize', () => {
 			}
 		} );
 
+		// A gesture that asks for a width the container will not grant is not a new choice.
+		// Recording the refusal would replace the reader's width with the squeeze, which is
+		// the one thing this model exists to prevent.
+		it( 'keeps the chosen width when a gesture asks for more than fits', () => {
+			const storage = stubStorage( '900' );
+			const pane = withPane();
+			observedWidth.value = 666;
+
+			expect( pane.size.value ).toBe( 378 );
+
+			pane.resizeTo( pane.size.value + 16 );
+			pane.persist();
+
+			expect( storage.set ).toHaveBeenCalledWith( KEY, '900' );
+
+			observedWidth.value = 1278;
+			expect( pane.size.value ).toBe( 900 );
+		} );
+
+		it( 'keeps the chosen width when a gesture moves nothing at all', () => {
+			const storage = stubStorage( '900' );
+			const pane = withPane();
+			observedWidth.value = 666;
+
+			pane.resizeTo( pane.size.value );
+			pane.persist();
+
+			expect( storage.set ).toHaveBeenCalledWith( KEY, '900' );
+		} );
+
+		it( 'still records a width the reader genuinely narrows to', () => {
+			const storage = stubStorage( '900' );
+			const pane = withPane();
+			observedWidth.value = 666;
+
+			pane.resizeTo( 300 );
+			pane.persist();
+
+			expect( storage.set ).toHaveBeenCalledWith( KEY, '300' );
+		} );
+
+		// The overshoot the clamp exists for: a wild drag must not be replayed on a wider
+		// screen, so a request beyond the bound is still recorded AT the bound.
+		it( 'records the bound when a gesture overshoots from below it', () => {
+			const storage = stubStorage( '400' );
+			const pane = withPane();
+			observedWidth.value = 1278;
+
+			pane.resizeTo( 5000 );
+			pane.persist();
+
+			expect( storage.set ).toHaveBeenCalledWith( KEY, '990' );
+		} );
+
+		it( 'reports the divider as movable where there is room to move', () => {
+			const pane = withPane();
+			observedWidth.value = 1278;
+
+			expect( pane.resizable.value ).toBe( true );
+			expect( pane.maxSize.value ).toBeGreaterThan( pane.minSize.value );
+		} );
+
+		// A pane inside a dialog that is not displayed is measured as zero, which means
+		// unknown rather than tiny: pinning it to its minimum would be a real change.
+		it( 'treats a zero width as no measurement at all', () => {
+			const pane = withPane();
+			observedWidth.value = 0;
+
+			expect( pane.size.value ).toBe( 320 );
+			expect( pane.maxSize.value ).toBe( 320 );
+		} );
+
 		it( 'reports the divider as unmovable where the two minimums no longer fit', () => {
 			const pane = withPane();
 			observedWidth.value = 400;

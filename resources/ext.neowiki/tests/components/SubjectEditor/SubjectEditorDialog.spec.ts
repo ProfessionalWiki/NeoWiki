@@ -2401,6 +2401,32 @@ describe( 'SubjectEditorDialog', () => {
 				expect( wrapper.findComponent( PaneDivider ).exists() ).toBe( false );
 			} );
 
+			it( 'gives the navigator the width the divider asks for', async () => {
+				const { wrapper } = await mountWithSecondPaneOpen( {
+					rootSchema: relationRootSchema,
+					rootSubject: relationRootSubject,
+				} );
+
+				wrapper.findComponent( PaneDivider ).vm.$emit( 'resize', 500 );
+				await nextTick();
+
+				expect( wrapper.find( '.ext-neowiki-subject-editor-dialog__content' ).attributes( 'style' ) )
+					.toContain( '--ext-neowiki-pane-size: 500px' );
+				expect( wrapper.findComponent( PaneDivider ).props( 'size' ) ).toBe( 500 );
+			} );
+
+			it( 'tells the divider the bounds it may move between', async () => {
+				const { wrapper } = await mountWithSecondPaneOpen( {
+					rootSchema: relationRootSchema,
+					rootSubject: relationRootSubject,
+				} );
+
+				const divider = wrapper.findComponent( PaneDivider );
+
+				expect( divider.props( 'min' ) ).toBe( 256 );
+				expect( divider.props( 'max' ) ).toBeGreaterThanOrEqual( divider.props( 'min' ) as number );
+			} );
+
 			it( 'points the divider at the navigator it sizes', async () => {
 				const { wrapper } = await mountWithSecondPaneOpen( {
 					rootSchema: relationRootSchema,

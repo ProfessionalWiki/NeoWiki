@@ -35,12 +35,14 @@ function lastResize( wrapper: VueWrapper ): number | undefined {
 async function pointer(
 	wrapper: VueWrapper,
 	type: string,
-	init: { button?: number; pointerId?: number; clientX?: number } = {},
+	init: { button?: number; pointerId?: number; clientX?: number; buttons?: number } = {},
 ): Promise<PointerEvent> {
 	const event = new PointerEvent( type, {
 		bubbles: true,
 		cancelable: true,
 		button: init.button ?? 0,
+		// Held for the press and the moves, released by the time the pointer comes up.
+		buttons: init.buttons ?? ( type === 'pointermove' || type === 'pointerdown' ? 1 : 0 ),
 		clientX: init.clientX ?? 0,
 		pointerId: init.pointerId ?? 1,
 		pointerType: 'mouse',
@@ -52,8 +54,8 @@ async function pointer(
 	return event;
 }
 
-function key( wrapper: VueWrapper, name: string ): KeyboardEvent {
-	const event = new KeyboardEvent( 'keydown', { key: name, bubbles: true, cancelable: true } );
+function key( wrapper: VueWrapper, name: string, init: KeyboardEventInit = {} ): KeyboardEvent {
+	const event = new KeyboardEvent( 'keydown', { key: name, bubbles: true, cancelable: true, ...init } );
 	wrapper.element.dispatchEvent( event );
 
 	return event;
@@ -129,6 +131,23 @@ describe( 'PaneDivider', () => {
 			await wrapper.trigger( 'keydown', { key: 'PageUp' } );
 
 			expect( lastResize( wrapper ) ).toBe( 448 );
+		} );
+
+		it( 'takes a larger step back on the other Page key', async () => {
+			const wrapper = mountDivider();
+
+			await wrapper.trigger( 'keydown', { key: 'PageDown' } );
+
+			expect( lastResize( wrapper ) ).toBe( 192 );
+		} );
+
+		it( 'leaves a modified arrow to the browser', async () => {
+			const wrapper = mountDivider();
+
+			const event = key( wrapper, 'ArrowLeft', { altKey: true } );
+
+			expect( event.defaultPrevented ).toBe( false );
+			expect( wrapper.emitted( 'resize' ) ).toBeUndefined();
 		} );
 
 		it( 'goes to the smallest allowed size on Home', async () => {
@@ -244,6 +263,14 @@ describe( 'PaneDivider', () => {
 			expect( wrapper.emitted( 'resize' ) ).toBeUndefined();
 		} );
 
+		it( 'does not drag where there is no room to move', async () => {
+			const wrapper = mountDivider( { disabled: true } );
+
+			await drag( wrapper, 500, 560 );
+
+			expect( wrapper.emitted( 'resize' ) ).toBeUndefined();
+		} );
+
 		it( 'takes the pointer so the drag survives leaving the divider', async () => {
 			const wrapper = mountDivider();
 
@@ -268,6 +295,18 @@ describe( 'PaneDivider', () => {
 			await pointer( wrapper, 'pointercancel' );
 
 			expect( wrapper.emitted( 'commit' ) ).toHaveLength( 1 );
+		} );
+
+		// Without pointer capture the release can land elsewhere, so a move with nothing
+		// held is the only sign the drag is over.
+		it( 'ends a drag the release never reported', async () => {
+			const wrapper = mountDivider();
+
+			await drag( wrapper, 500, 560 );
+			await pointer( wrapper, 'pointermove', { clientX: 600, buttons: 0 } );
+
+			expect( wrapper.emitted( 'commit' ) ).toHaveLength( 1 );
+			expect( lastResize( wrapper ) ).toBe( 380 );
 		} );
 
 		it( 'stops following once the drag has ended', async () => {
