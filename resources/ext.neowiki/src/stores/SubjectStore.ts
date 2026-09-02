@@ -77,6 +77,20 @@ export const useSubjectStore = defineStore( 'subject', {
 			}
 			recordBundledSchema( result.schema, schemaEpoch );
 		},
+		/**
+		 * Writes a Subject the client built, under the id it already carries, as a Subject of the
+		 * given page. The counterpart to updateSubject for one the wiki does not have yet.
+		 */
+		async createSubject( subject: Subject, pageId: number, comment?: string ): Promise<SubjectId> {
+			return this.createChildSubject(
+				pageId,
+				subject.getLabel(),
+				subject.getSchemaName(),
+				subject.getStatements(),
+				comment,
+				subject.getId(),
+			);
+		},
 		async deleteSubject( subjectId: SubjectId, comment?: string ): Promise<void> {
 			await NeoWikiExtension.getInstance().getSubjectRepository().deleteSubject( subjectId, comment );
 			this.mutationEpoch++;
@@ -142,7 +156,7 @@ export const useSubjectStore = defineStore( 'subject', {
 
 			return result.subjectId;
 		},
-		async createChildSubject( pageId: number, label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<SubjectId> {
+		async createChildSubject( pageId: number, label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string, id?: SubjectId ): Promise<SubjectId> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createChildSubject(
@@ -151,6 +165,7 @@ export const useSubjectStore = defineStore( 'subject', {
 				schemaName,
 				statements,
 				comment,
+				id,
 			);
 
 			this.mutationEpoch++;

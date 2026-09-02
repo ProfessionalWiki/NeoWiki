@@ -431,6 +431,7 @@
 			:subject="editingSubject as Subject"
 			:schema="editingSchema as Schema"
 			:on-save="handleEditSave"
+			:on-create="handleEditCreate"
 			:on-save-schema="handleSchemaSave"
 		/>
 
@@ -860,6 +861,12 @@ async function openEditor( subject: Subject ): Promise<void> {
 async function handleEditSave( updatedSubject: Subject, comment: string ): Promise<void> {
 	await subjectStore.updateSubject( updatedSubject, comment );
 	await loadSubjects();
+}
+
+// No listing refresh of its own: a created Subject is always accompanied by the update that points
+// at it, and that goes through handleEditSave, which refreshes once the whole save is through.
+async function handleEditCreate( subject: Subject, targetPageId: number, comment: string ): Promise<void> {
+	await subjectStore.createSubject( subject, targetPageId, comment );
 }
 
 async function handleSchemaSave( updatedSchema: Schema, comment: string ): Promise<void> {

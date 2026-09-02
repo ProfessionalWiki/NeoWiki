@@ -34,6 +34,7 @@
 				:subject="editingSubject as Subject"
 				:schema="editingSchema as Schema"
 				:on-save="handleSaveSubject"
+				:on-create="handleCreateSubject"
 				:on-save-schema="handleSaveSchema"
 			/>
 		</div>
@@ -110,6 +111,10 @@ async function openEditor(): Promise<void> {
 
 const handleSaveSubject = async ( updatedSubject: Subject, comment: string ): Promise<void> => {
 	await subjectStore.updateSubject( updatedSubject, comment );
+};
+
+const handleCreateSubject = async ( subject: Subject, pageId: number, comment: string ): Promise<void> => {
+	await subjectStore.createSubject( subject, pageId, comment );
 };
 
 const handleSaveSchema = async ( updatedSchema: Schema, comment: string ): Promise<void> => {

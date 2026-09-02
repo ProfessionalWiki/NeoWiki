@@ -4,22 +4,36 @@
 		class="ext-neowiki-subject-edit-pane"
 		:aria-label="props.nested ? paneName : undefined"
 	>
+		<!-- Only a nested pane carries these: the dialog's own header names the root Subject
+			and holds the field that renames it. -->
 		<div
 			v-if="props.nested"
-			class="ext-neowiki-subject-edit-pane__storage"
+			class="ext-neowiki-subject-edit-pane__header"
 		>
-			<I18nSlot
+			<h3 class="ext-neowiki-subject-edit-pane__name">
+				<EditableText
+					:model-value="label"
+					:edit-button-label="$i18n( 'neowiki-subject-editor-rename' ).text()"
+					:input-aria-label="$i18n( 'neowiki-subject-editor-label-field' ).text()"
+					:placeholder="labelPlaceholder"
+					@update:model-value="setLabel"
+				/>
+			</h3>
+
+			<div
 				v-if="pageName !== null"
-				message-key="neowiki-subject-editor-stored-on"
+				class="ext-neowiki-subject-edit-pane__storage"
 			>
-				<!-- A new tab: following the link in this one discards unsaved edits. -->
-				<a
-					class="ext-neowiki-subject-edit-pane__page"
-					:href="pageUrl"
-					target="_blank"
-					rel="noopener"
-				>{{ pageName }}</a>
-			</I18nSlot>
+				<I18nSlot message-key="neowiki-subject-editor-stored-on">
+					<!-- A new tab: following the link in this one discards unsaved edits. -->
+					<a
+						class="ext-neowiki-subject-edit-pane__page"
+						:href="pageUrl"
+						target="_blank"
+						rel="noopener"
+					>{{ pageName }}</a>
+				</I18nSlot>
+			</div>
 		</div>
 
 		<SubjectViolationBanners :violations="anchorlessViolations" />
@@ -60,6 +74,8 @@ import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import type { SubjectEditorExposes } from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
+import { subjectLabelPlaceholder } from '@/presentation/subjectLabelPlaceholder.ts';
+import EditableText from '@/components/common/EditableText.vue';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
@@ -71,13 +87,19 @@ import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { RelationTargetEditingKey } from '@/components/Value/ValueInputContract.ts';
-import type { SubjectViolation } from '@/domain/SubjectViolation';
+import { withoutMissingValueViolations, withoutUnsavedTargetViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 
 const props = defineProps<{
 	subject: Subject;
 	schema: Schema;
 	nested?: boolean;
+	// A Subject this editing session invented, which the server has never seen. It is validated
+	// as a creation rather than as an update, and the dialog writes it with a create.
+	isNew?: boolean;
+	// Subjects the session has invented but not yet written. A relation naming one of them is
+	// sound here and unresolvable to the server, so its complaint is withheld.
+	unsavedTargetIds?: readonly string[];
 }>();
 
 const emit = defineEmits<{
@@ -116,6 +138,8 @@ const pageUrl = computed( (): string =>
 	pageName.value === null ? '' : mw.util.getUrl( pageName.value )
 );
 
+const labelPlaceholder = computed( (): string => subjectLabelPlaceholder( props.subject ) );
+
 // EditableText commits once per edit, so a commit is both the change and the
 // end of the interaction: validate immediately rather than waiting for a blur.
 function setLabel( value: string ): void {
@@ -138,14 +162,25 @@ const { violations: serverViolations, revalidate, flush } = useSubjectValidation
 		}
 		const current = subjectEditorRef.value.getSubjectData().withNonEmptyValues();
 		try {
-			// Unlike subject creation, editing an existing subject surfaces
-			// 'required' live: an empty required field here is a real gap, not a
-			// field the user is still on their way to filling in.
-			return await subjectStore.validateSubjectUpdate(
-				props.subject.getId(),
-				storedLabel.value,
-				current
-			);
+			// A Subject the server has never seen has no update to dry-run against, and its
+			// empty required fields are ones the user is still on their way to filling in
+			// rather than real gaps — the same reading the subject creator takes.
+			// Unlike subject creation, editing an existing subject surfaces 'required' live: an
+			// empty required field here is a real gap, not a field the user is still on their way
+			// to filling in.
+			const violations = props.isNew ?
+				withoutMissingValueViolations( await subjectStore.validateSubject(
+					storedLabel.value,
+					props.subject.getSchemaName(),
+					current
+				) ) :
+				await subjectStore.validateSubjectUpdate(
+					props.subject.getId(),
+					storedLabel.value,
+					current
+				);
+
+			return withoutSessionOnlyViolations( violations );
 		} catch ( error ) {
 			// The dry-run runs alongside the live validators and must never
 			// break editing or saving; the authoritative result is the save's
@@ -230,7 +265,12 @@ function unparseableInput(): UnparseableInput | null {
 }
 
 function setServerViolations( violations: readonly SubjectViolation[] ): void {
-	serverViolations.value = [ ...violations ];
+	serverViolations.value = withoutSessionOnlyViolations( violations );
+}
+
+// Complaints that are only true of the wiki as it stands, not of what this session is saving.
+function withoutSessionOnlyViolations( violations: readonly SubjectViolation[] ): SubjectViolation[] {
+	return withoutUnsavedTargetViolations( violations, props.unsavedTargetIds ?? [] );
 }
 
 defineExpose( {
@@ -250,10 +290,26 @@ defineExpose( {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-subject-edit-pane {
-	&__storage {
+	/* The name and where it is stored on one line, the name taking whatever the storage line
+		leaves. Baseline-aligned rather than centred, because the two differ in size. */
+	&__header {
 		display: flex;
-		justify-content: flex-end;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: @spacing-50;
 		margin-bottom: @spacing-75;
+	}
+
+	/* Subordinate to the dialog's own title, which names the root Subject: a heading for
+		screen readers and outline tools, sized like the body around it. */
+	&__name {
+		min-width: 0;
+		margin: 0;
+		font-size: @font-size-medium;
+	}
+
+	&__storage {
+		flex-shrink: 0;
 		color: @color-subtle;
 		font-size: @font-size-small;
 	}

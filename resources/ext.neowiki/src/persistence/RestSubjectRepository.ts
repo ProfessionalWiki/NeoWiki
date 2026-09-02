@@ -13,6 +13,7 @@ import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { Subject } from '@/domain/Subject';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
+import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import { parseViolations } from '@/persistence/violationParsing';
 
 async function throwOn422IfPossible( response: Response ): Promise<void> {
@@ -249,12 +250,14 @@ export class RestSubjectRepository implements SubjectRepository {
 		schemaName: SchemaName,
 		statements: StatementList,
 		comment?: string,
+		id?: SubjectId,
 	): Promise<SubjectWriteResult> {
 		const payload = {
 			label: label,
 			schema: schemaName,
 			statements: statementsToJson( statements ),
 			comment,
+			id: id?.text,
 		};
 
 		const response = await this.httpClient.post(
@@ -269,11 +272,42 @@ export class RestSubjectRepository implements SubjectRepository {
 
 		await throwOn422IfPossible( response );
 
+		// Only a caller that minted the id up front can meet this, and for one it minted for this
+		// very Subject it means the create already landed and its answer was lost.
+		if ( response.status === 409 && id !== undefined ) {
+			throw new SubjectIdInUseError( id.text );
+		}
+
 		if ( !response.ok ) {
 			throw new Error( 'Error creating child subject' );
 		}
 
 		return this.deserializeWriteResult( await response.json() as SubjectWriteResponseJson );
+	}
+
+	public async mintSubjectId(): Promise<SubjectId> {
+		const response = await this.httpClient.post(
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject-ids`,
+			{ count: 1 },
+			{
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			},
+		);
+
+		if ( !response.ok ) {
+			throw new Error( 'Error minting a subject id' );
+		}
+
+		const data = await response.json() as { subjectIds?: string[] };
+		const id = data.subjectIds?.[ 0 ];
+
+		if ( id === undefined ) {
+			throw new Error( 'Error minting a subject id: the response carried none' );
+		}
+
+		return new SubjectId( id );
 	}
 
 	/**

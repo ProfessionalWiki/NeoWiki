@@ -5,6 +5,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
+import EditableText from '@/components/common/EditableText.vue';
 import { Subject } from '@/domain/Subject.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
@@ -57,6 +58,17 @@ const labellessSubject = new SubjectWithContext(
 	new PageIdentifiers( 42, 'Test page' ),
 );
 
+// Stores no label and is not a page's Main Subject, so the name it is shown under is its
+// Schema's (ADR 31) - the shape a Subject invented mid-edit has.
+const schemaNamedSubject = new SubjectWithContext(
+	new SubjectId( 's33333333333333' ),
+	null,
+	'TestSchema',
+	'TestSchema',
+	new StatementList( [] ),
+	new PageIdentifiers( 42, 'Test page' ),
+);
+
 const subjectWithOnlyName = new SubjectWithContext(
 	new SubjectId( 's11111111111111' ),
 	'Test Subject',
@@ -70,6 +82,8 @@ interface MountPaneOptions {
 	subject?: Subject;
 	schema?: Schema;
 	nested?: boolean;
+	isNew?: boolean;
+	unsavedTargetIds?: readonly string[];
 }
 
 let pinia: ReturnType<typeof createPinia>;
@@ -78,12 +92,16 @@ function mountPane( {
 	subject = defaultSubject,
 	schema = defaultSchema,
 	nested = false,
+	isNew = false,
+	unsavedTargetIds = [],
 }: MountPaneOptions = {} ): VueWrapper {
 	return mount( SubjectEditPane, {
 		props: {
 			subject,
 			schema,
 			nested,
+			isNew,
+			unsavedTargetIds,
 		},
 		global: {
 			mocks: {
@@ -403,6 +421,204 @@ describe( 'SubjectEditPane', () => {
 		// old form would still have sent Name.
 		expect( validate ).toHaveBeenCalledTimes( 2 );
 		expect( sentPropertyNames( validate, 1 ) ).toEqual( [] );
+	} );
+
+	function violation( code: string, propertyName: string ): SubjectViolation {
+		return { propertyName, code, args: [], severity: 'error', valuePartIndex: null };
+	}
+
+	function violationCodes( wrapper: VueWrapper ): string[] {
+		return ( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[] )
+			.map( ( v ) => v.code );
+	}
+
+	// A Subject this session invented has no stored version to dry-run an update against, so the
+	// pane validates it the way the subject creator does.
+	describe( 'Validating a subject the server has never seen', () => {
+		function stubCreationValidation( violations: SubjectViolation[] = [] ): ReturnType<typeof vi.fn> {
+			const validate = vi.fn().mockResolvedValue( violations );
+			useSubjectStore().validateSubject = validate;
+			return validate;
+		}
+
+		it( 'validates it under its own label, schema and current values', async () => {
+			const validate = stubCreationValidation();
+
+			mountPane( { subject: subjectWithOnlyName, schema: schemaWithNameAndAge, isNew: true } );
+			await flushPromises();
+
+			expect( validate ).toHaveBeenCalledWith( 'Test Subject', 'TestSchema', expect.any( StatementList ) );
+			expect( sentPropertyNames( validate, 0 ) ).toEqual( [ 'Name' ] );
+		} );
+
+		it( 'never dry-runs it as an update, which has no stored version to run against', async () => {
+			stubCreationValidation();
+			const update = vi.fn().mockResolvedValue( [] );
+			useSubjectStore().validateSubjectUpdate = update;
+
+			mountPane( { subject: subjectWithOnlyName, schema: schemaWithNameAndAge, isNew: true } );
+			await flushPromises();
+
+			expect( update ).not.toHaveBeenCalled();
+		} );
+
+		// Its fields all start empty, so an unfilled required one is a field the user is still on
+		// their way to, not a gap. Anything else needs a value to occur.
+		it( 'withholds an unfilled required field while surfacing every other violation', async () => {
+			stubCreationValidation( [ violation( 'required', 'Name' ), violation( 'max-length', 'Name' ) ] );
+
+			const wrapper = mountPane( { schema: schemaWithNameAndAge, isNew: true } );
+			await flushPromises();
+
+			expect( violationCodes( wrapper ) ).toEqual( [ 'max-length' ] );
+		} );
+	} );
+
+	it( 'validates a subject the server already has as an update', async () => {
+		const update = vi.fn().mockResolvedValue( [] );
+		useSubjectStore().validateSubjectUpdate = update;
+
+		mountPane( { subject: subjectWithOnlyName, schema: schemaWithNameAndAge } );
+		await flushPromises();
+
+		expect( update ).toHaveBeenCalledWith(
+			subjectWithOnlyName.getId(),
+			'Test Subject',
+			expect.any( StatementList ),
+		);
+	} );
+
+	// An existing subject is expected to be complete, so an empty required field is a real gap.
+	it( 'surfaces an unfilled required field on a subject the server already has', async () => {
+		useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ violation( 'required', 'Name' ) ] );
+
+		const wrapper = mountPane( { schema: schemaWithNameAndAge } );
+		await flushPromises();
+
+		expect( violationCodes( wrapper ) ).toEqual( [ 'required' ] );
+	} );
+
+	// A relation naming a Subject this session invented resolves for the user, who has that
+	// Subject in front of them, and not for the server, which has never been told about it.
+	describe( 'Complaints about a relation target this session has not written yet', () => {
+		const unwrittenId = 's22222222222222';
+		const otherId = 's99999999999999';
+
+		function targetNotFound( id: string ): SubjectViolation {
+			return {
+				propertyName: 'Author',
+				code: 'relation-target-not-found',
+				args: [ id ],
+				severity: 'warning',
+				valuePartIndex: 0,
+			};
+		}
+
+		function surfacedViolations( wrapper: VueWrapper ): SubjectViolation[] {
+			return wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[];
+		}
+
+		it( 'withholds the dry-run complaint naming an unwritten target, and keeps one naming another', async () => {
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [
+				targetNotFound( unwrittenId ),
+				targetNotFound( otherId ),
+			] );
+
+			const wrapper = mountPane( { schema: relationSchema, unsavedTargetIds: [ unwrittenId ] } );
+			await flushPromises();
+
+			expect( surfacedViolations( wrapper ) ).toEqual( [ targetNotFound( otherId ) ] );
+		} );
+
+		// A Subject the session invented is validated as a creation, and points at the session's
+		// other inventions just as often.
+		it( 'withholds it from the creation dry-run as well', async () => {
+			useSubjectStore().validateSubject = vi.fn().mockResolvedValue( [
+				targetNotFound( unwrittenId ),
+				targetNotFound( otherId ),
+			] );
+
+			const wrapper = mountPane( {
+				schema: relationSchema,
+				isNew: true,
+				unsavedTargetIds: [ unwrittenId ],
+			} );
+			await flushPromises();
+
+			expect( surfacedViolations( wrapper ) ).toEqual( [ targetNotFound( otherId ) ] );
+		} );
+
+		// A rejected save hands its 422 body straight to the pane, bypassing the dry-run.
+		it( 'withholds it from the violations a rejected save pushes in', async () => {
+			const wrapper = mountPane( { schema: relationSchema, unsavedTargetIds: [ unwrittenId ] } );
+			await flushPromises();
+
+			( wrapper.vm as any ).setServerViolations( [
+				targetNotFound( unwrittenId ),
+				targetNotFound( otherId ),
+			] );
+			await nextTick();
+
+			expect( surfacedViolations( wrapper ) ).toEqual( [ targetNotFound( otherId ) ] );
+		} );
+
+		// Only "there is no such Subject" is untrue of what the session is about to save. The id
+		// carries no exemption of its own, so a violation naming it under any other code stands.
+		it( 'leaves a violation of another code naming the same target alone', async () => {
+			const otherCode: SubjectViolation = {
+				propertyName: 'Author',
+				code: 'some-other-code',
+				args: [ unwrittenId ],
+				severity: 'error',
+				valuePartIndex: 0,
+			};
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ otherCode ] );
+
+			const wrapper = mountPane( { schema: relationSchema, unsavedTargetIds: [ unwrittenId ] } );
+			await flushPromises();
+
+			expect( surfacedViolations( wrapper ) ).toEqual( [ otherCode ] );
+		} );
+	} );
+
+	describe( 'Renaming from a nested pane', () => {
+		async function rename( wrapper: VueWrapper, name: string ): Promise<void> {
+			await wrapper.get( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
+			const input = wrapper.get( '.ext-neowiki-editable-text__input input' );
+			await input.setValue( name );
+			await input.trigger( 'keydown.enter' );
+		}
+
+		it( 'saves the committed name as the subject\'s label', async () => {
+			const wrapper = mountPane( { nested: true } );
+
+			await rename( wrapper, 'Renamed' );
+
+			expect( ( ( wrapper.vm as any ).buildUpdatedSubject() as Subject ).getLabel() ).toBe( 'Renamed' );
+		} );
+
+		// The dialog's own header renames the root Subject; a second field for it would be two
+		// places to type one name.
+		it( 'leaves the root pane without a rename control', () => {
+			const wrapper = mountPane();
+
+			expect( wrapper.findComponent( EditableText ).exists() ).toBe( false );
+		} );
+
+		// The empty field stands for "no label", so it previews the name that choice leaves the
+		// Subject with rather than describing the field.
+		it( 'previews the name a label-less subject is shown under', () => {
+			const wrapper = mountPane( { subject: schemaNamedSubject, nested: true } );
+
+			expect( wrapper.findComponent( EditableText ).props( 'placeholder' ) ).toBe( 'TestSchema' );
+		} );
+
+		it( 'names the field instead for a subject that already has a label', () => {
+			const wrapper = mountPane( { nested: true } );
+
+			expect( wrapper.findComponent( EditableText ).props( 'placeholder' ) )
+				.toBe( 'neowiki-subject-editor-label-field' );
+		} );
 	} );
 
 } );

@@ -121,6 +121,8 @@
 								:subject="pane.subject"
 								:schema="pane.schema"
 								:nested="pane.id !== rootPaneId"
+								:is-new="pane.isNew"
+								:unsaved-target-ids="draftIds"
 								@edit-relation-target="openRelationTargetFromForm"
 							/>
 						</div>
@@ -164,7 +166,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, shallowReactive, nextTick, computed, watch } from 'vue';
+import { ref, shallowRef, shallowReactive, nextTick, computed, provide, watch } from 'vue';
 import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
 import type { SubjectEditPaneExposes } from '@/components/SubjectEditor/SubjectEditPane.vue';
 import SubjectTree from '@/components/SubjectEditor/SubjectTree.vue';
@@ -178,7 +180,11 @@ import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
+import type { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
+import { StatementList } from '@/domain/StatementList.ts';
 import { Schema } from '@/domain/Schema.ts';
+import { SubjectCreationKey } from '@/components/common/SubjectCreation.ts';
+import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
@@ -192,14 +198,24 @@ import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { relationTargetsOf } from '@/components/SubjectEditor/SubjectTreeModel.ts';
+import { subjectLabelPlaceholder } from '@/presentation/subjectLabelPlaceholder.ts';
+import { reachableTargetIds, writeOrder } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
+import type { HeldSubject } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 
 type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>;
+
+/**
+ * Writes a Subject this session invented, carrying the id minted for it, as a Subject of the
+ * given page. Hosts that leave it out get no create affordance in the relation fields.
+ */
+type SubjectCreateHandler = ( subject: Subject, pageId: number, comment: string ) => Promise<void>;
 
 const props = defineProps<{
 	subject: Subject;
 	schema: Schema;
 	onSave: SubjectSaveHandler;
 	onSaveSchema: SchemaSaveHandler;
+	onCreate?: SubjectCreateHandler;
 	open: boolean;
 }>();
 
@@ -209,6 +225,9 @@ interface EditPane {
 	id: string;
 	subject: Subject;
 	schema: Schema;
+	// Holds a Subject the server has never seen. Cleared as soon as its create lands, so a save
+	// that fails further down re-runs as an update rather than offering the same id twice.
+	isNew: boolean;
 }
 
 const content = ref<HTMLElement | null>( null );
@@ -257,9 +276,43 @@ const activePaneId = ref<string>( rootPaneId.value );
 const partialSave = ref<{ written: number; attempted: number } | null>( null );
 
 const panes = computed( (): EditPane[] => [
-	{ id: rootPaneId.value, subject: props.subject, schema: currentSchema.value },
+	{ id: rootPaneId.value, subject: props.subject, schema: currentSchema.value, isNew: false },
 	...extraPanes.value
 ] );
+
+// Subjects this session invented, as the panes editing them currently hold them, so a draft renamed
+// in its pane is renamed everywhere that names it. Read from the draft panes alone: going through
+// editedSubjects would make every rename and relation pick anywhere in the dialog rebuild the menu
+// of every relation field.
+const draftSubjects = computed( (): Subject[] => panes.value
+	.filter( ( pane ) => pane.isNew )
+	.map( ( pane ) => {
+		const instance = paneRefs.get( pane.id );
+		return instance === undefined ? pane.subject : withLiveLabel( instance );
+	} )
+);
+
+const draftIds = computed( (): string[] => draftSubjects.value.map( ( subject ) => subject.getId().text ) );
+
+// What the walks below read: a pane's Subject as its own form currently holds it. editedSubjects
+// carries an entry for every pane, so this never falls back.
+function heldSubjects(): HeldSubject[] {
+	return panes.value.map( ( pane ) => ( {
+		id: pane.id,
+		subject: editedSubjects.value.get( pane.id ) as Subject,
+		schema: pane.schema,
+		isNew: pane.isNew
+	} ) );
+}
+
+// Drafts something being edited still points at. One the user has pointed the relation away from is
+// not written, and Save neither waits on it nor leaves it behind.
+const referencedDraftIds = computed( (): Set<string> => reachableTargetIds( heldSubjects() ) );
+
+// A Subject about to be written, as the draft graph wants to see it.
+interface WriteTarget extends HeldSubject {
+	pane: EditPane;
+}
 
 interface DirtyPane {
 	pane: EditPane;
@@ -270,9 +323,17 @@ interface DirtyPane {
 // never unmounts while the dialog is open, so a dirty pane is the only place an unsaved edit
 // can live. A Subject this save already wrote drops out until its pane is edited again, so
 // it neither keeps Save enabled nor confirms a discard over nothing.
+// A Subject this session invented counts as unsaved from the moment it exists: nobody has to type
+// into it for the relation pointing at it to need something to point at. It stops counting once
+// nothing points at it any more — an editor that wrote a Subject the user had already turned away
+// from would leave exactly the debris this dialog promises not to.
 const dirtyPanes = computed( (): DirtyPane[] => panes.value
 	.map( ( pane ) => ( { pane, instance: paneRefs.get( pane.id ) } ) )
-	.filter( ( entry ): entry is DirtyPane => entry.instance?.hasChanged === true )
+	.filter( ( entry ): entry is DirtyPane => entry.instance !== undefined && (
+		entry.pane.isNew ?
+			referencedDraftIds.value.has( entry.pane.id ) :
+			entry.instance.hasChanged
+	) )
 );
 
 const unsavedIds = computed( (): string[] => dirtyPanes.value.map( ( { pane } ) => pane.id ) );
@@ -286,9 +347,10 @@ const editedSubjects = computed( (): Map<string, Subject> => {
 
 	for ( const pane of panes.value ) {
 		const instance = paneRefs.get( pane.id );
-		if ( instance !== undefined ) {
-			subjects.set( pane.id, withLiveLabel( instance ) );
-		}
+		// The pane's own copy until its ref registers, one tick behind the pane being added.
+		// Without it the tree would take a Subject it already holds for one still to fetch,
+		// and a Subject created here has nothing to fetch.
+		subjects.set( pane.id, instance === undefined ? pane.subject : withLiveLabel( instance ) );
 	}
 
 	return subjects;
@@ -326,14 +388,7 @@ const openIds = computed( (): string[] => panes.value.map( ( pane ) => pane.id )
 // before that pane has registered its ref.
 const subjectLabel = computed( (): string => rootPane.value?.label ?? props.subject.getLabel() ?? '' );
 
-// The rename field previews the name a cleared label leaves behind, which the client knows only
-// for a Subject that already has none: the server holds the inputs, and it is what the display
-// name of such a Subject already is. For a labelled one the generic hint stands in.
-const labelPlaceholder = computed( (): string =>
-	props.subject.getLabel() === null ?
-		props.subject.getDisplayName() :
-		mw.msg( 'neowiki-subject-editor-label-field' )
-);
+const labelPlaceholder = computed( (): string => subjectLabelPlaceholder( props.subject ) );
 
 function onLabelEdited( value: string ): void {
 	rootPane.value?.setLabel( value );
@@ -369,7 +424,7 @@ async function openRelationTarget( targetId: SubjectId ): Promise<void> {
 		if ( epoch !== openEpoch.value ) {
 			return;
 		}
-		extraPanes.value = [ ...extraPanes.value, { id, subject, schema } ];
+		extraPanes.value = [ ...extraPanes.value, { id, subject, schema, isNew: false } ];
 		activePaneId.value = id;
 	} catch ( error ) {
 		if ( epoch !== openEpoch.value ) {
@@ -382,14 +437,99 @@ async function openRelationTarget( targetId: SubjectId ): Promise<void> {
 	}
 }
 
+// The page a Subject created here is stored on: the one holding the Subject whose relation is
+// being filled in, since that is the Subject the new one belongs beside. Panes routinely span
+// pages, so the dialog's own page would be the wrong answer as soon as the user has drilled in.
+// The root stands in for a pane whose Subject arrived without page context.
+function creationPage(): PageIdentifiers | null {
+	const activePane = panes.value.find( ( pane ) => pane.id === activePaneId.value );
+
+	for ( const subject of [ activePane?.subject, props.subject ] ) {
+		if ( subject instanceof SubjectWithContext && Number.isInteger( subject.getPageIdentifiers().getPageId() ) ) {
+			return subject.getPageIdentifiers();
+		}
+	}
+
+	return null;
+}
+
+// Creates the Subject a relation field is about to point at, and opens it for editing. Nothing
+// is written: the id is minted, which reserves nothing, and the Subject itself reaches the wiki
+// only when this dialog is saved. The pane is added and made active before this returns, so the
+// relation the caller then records lands in the same render as the pane and the tree node.
+async function createRelationTarget( schemaName: string, label: string | null ): Promise<Subject | null> {
+	const page = creationPage();
+
+	// A Subject added while the write loop is running would be referenced by a Subject already
+	// written and yet never written itself, so creation is closed for the duration of a save.
+	if ( page === null || saving.value ) {
+		mw.notify( mw.msg( 'neowiki-subject-editor-create-target-error' ), { type: 'error' } );
+		return null;
+	}
+
+	const epoch = openEpoch.value;
+
+	try {
+		const [ schema, id ] = await Promise.all( [
+			schemaRepository.getSchema( schemaName ),
+			subjectRepository.mintSubjectId()
+		] );
+
+		// The dialog was reopened or given another root while this was in flight, or a save has
+		// started: its panes are gone or already harvested, and a pane added now would belong to
+		// nothing.
+		if ( epoch !== openEpoch.value || saving.value ) {
+			return null;
+		}
+
+		const subject = new SubjectWithContext(
+			id,
+			label,
+			// What the server would derive for a Subject with no label of its own (ADR 31).
+			label ?? schemaName,
+			schemaName,
+			new StatementList( [] ),
+			page
+		);
+
+		extraPanes.value = [ ...extraPanes.value, { id: id.text, subject, schema, isNew: true } ];
+		activePaneId.value = id.text;
+		focusPanel( id.text );
+
+		return subject;
+	} catch ( error ) {
+		// Guarded like openRelationTarget's: a failure that outlives its opening must not report
+		// itself over whatever the dialog is editing now.
+		if ( epoch !== openEpoch.value ) {
+			return null;
+		}
+
+		console.error( 'Failed to create relation target:', error );
+		mw.notify( mw.msg( 'neowiki-subject-editor-create-target-error' ), { type: 'error' } );
+		return null;
+	}
+}
+
+if ( props.onCreate !== undefined ) {
+	provide( SubjectCreationKey, {
+		create: createRelationTarget,
+		drafts: ( schemaName: string ): readonly Subject[] =>
+			draftSubjects.value.filter( ( subject ) => subject.getSchemaName() === schemaName )
+	} );
+}
+
 // Navigating from a control inside a form hides the pane that control lives in, so the
 // browser blurs it to <body> and the next Tab restarts at the top of the dialog. The panel
 // wrapper takes the focus instead, which is what its tabindex="-1" is for. Activation from
 // the tree is left alone: focus belongs on the treeitem there.
 async function openRelationTargetFromForm( targetId: SubjectId ): Promise<void> {
 	await openRelationTarget( targetId );
+	await focusPanel( targetId.text );
+}
+
+async function focusPanel( paneId: string ): Promise<void> {
 	await nextTick();
-	document.getElementById( `ext-neowiki-panel-${ targetId.text }` )?.focus();
+	document.getElementById( `ext-neowiki-panel-${ paneId }` )?.focus();
 }
 
 function close(): void {
@@ -503,15 +643,53 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	}
 };
 
+// A pane stops being new the moment its Subject exists on the wiki, so a save that fails further
+// down re-runs as an update rather than offering the same id to the server a second time. The
+// panes are a shallowRef, so the flag is cleared by replacing the entry rather than mutating it.
+function markPaneWritten( id: string ): void {
+	extraPanes.value = extraPanes.value.map(
+		( pane ) => pane.id === id ? { ...pane, isNew: false } : pane
+	);
+}
+
+// A Subject this session invented has to be created rather than replaced, on the page its pane
+// was opened against.
+async function writeSubject( pane: EditPane, subject: Subject, comment: string ): Promise<void> {
+	if ( !pane.isNew ) {
+		await props.onSave( subject, comment );
+		return;
+	}
+
+	if ( props.onCreate === undefined || !( pane.subject instanceof SubjectWithContext ) ) {
+		throw new Error( 'No page to create this Subject on' );
+	}
+
+	try {
+		await props.onCreate( subject, pane.subject.getPageIdentifiers().getPageId(), comment );
+	} catch ( error ) {
+		// The id was minted for this Subject alone, so the server holding it already means this
+		// very create landed and only its answer was lost. Retrying the create would refuse
+		// forever; recording it as written turns the retry into the update it now needs to be.
+		if ( !( error instanceof SubjectIdInUseError ) ) {
+			throw error;
+		}
+	}
+
+	markPaneWritten( pane.id );
+}
+
 async function writeDirtyPanes( summary: string ): Promise<void> {
 	await nextTick();
 
 	partialSave.value = null;
 
-	const dirty = dirtyPanes.value;
+	// Each flush writes only its own pane's violations, so none has to wait for another. The write
+	// set is read again afterwards rather than before: a validation round trip is awaited here, and
+	// a Subject created inside that window would otherwise go unwritten while the relation naming
+	// it was written.
+	await Promise.all( dirtyPanes.value.map( ( { instance } ) => instance.flushValidation() ) );
 
-	// Each flush writes only its own pane's violations, so none has to wait for another.
-	await Promise.all( dirty.map( ( { instance } ) => instance.flushValidation() ) );
+	const dirty = dirtyPanes.value;
 
 	// Saving now would silently drop text the user can still see. Checked across every
 	// dirty Subject before any write, or an unparseable later one would leave the stack
@@ -531,7 +709,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 
 	// A Subject an earlier attempt already wrote is not in `dirty`: its pane reset its
 	// changed flag.
-	const targets = new Map<string, Subject>();
+	const targets: WriteTarget[] = [];
 
 	for ( const { pane, instance } of dirty ) {
 		const updated = instance.buildUpdatedSubject();
@@ -541,18 +719,20 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 			mw.notify( mw.msg( 'neowiki-subject-editor-error', props.subject.getDisplayName() ), { type: 'error' } );
 			return;
 		}
-		targets.set( pane.id, updated );
+		targets.push( { id: pane.id, pane, subject: updated, schema: pane.schema, isNew: pane.isNew } );
 	}
+
+	const orderedTargets = writeOrder( targets );
 
 	// Carried out of the loop rather than returned from inside it, so a part-way stop is
 	// reported once, below.
 	let failed = false;
 
-	for ( const [ id, updatedSubject ] of targets ) {
+	for ( const { id, pane, subject: updatedSubject } of orderedTargets ) {
 		const subjectName = updatedSubject.getDisplayName();
 
 		try {
-			await props.onSave( updatedSubject, editSummary );
+			await writeSubject( pane, updatedSubject, editSummary );
 			paneRefs.get( id )?.resetChanged();
 			savedNames.push( subjectName );
 		} catch ( error ) {
@@ -582,7 +762,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 
 	if ( failed ) {
 		if ( savedNames.length > 0 ) {
-			partialSave.value = { written: savedNames.length, attempted: targets.size };
+			partialSave.value = { written: savedNames.length, attempted: targets.length };
 		}
 		return;
 	}

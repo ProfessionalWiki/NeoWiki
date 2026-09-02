@@ -31,6 +31,9 @@ export interface SubjectViolation {
  */
 const MISSING_VALUE_CODES: ReadonlySet<string> = new Set( [ 'required' ] );
 
+/** Raised when a relation names a Subject the server cannot resolve; its first arg is that id. */
+const RELATION_TARGET_NOT_FOUND = 'relation-target-not-found';
+
 /**
  * Withholds "you have not filled this in yet" violations from the live dry-run
  * while *creating* a subject: every field starts empty and the user is on their
@@ -44,4 +47,21 @@ export function withoutMissingValueViolations(
 	violations: readonly SubjectViolation[],
 ): SubjectViolation[] {
 	return violations.filter( ( v ) => !MISSING_VALUE_CODES.has( v.code ) );
+}
+
+/**
+ * The server reports a relation target it cannot resolve, which is right for a target nobody has
+ * created and wrong for one this editing session is about to create: it is in front of the user,
+ * in the pane beside the field. Withheld for those, by the id the violation names, so the editor
+ * does not tell the user that the Subject they just made is missing.
+ */
+export function withoutUnsavedTargetViolations(
+	violations: readonly SubjectViolation[],
+	unsavedTargetIds: readonly string[],
+): SubjectViolation[] {
+	return violations.filter( ( v ) => !(
+		v.code === RELATION_TARGET_NOT_FOUND &&
+		typeof v.args[ 0 ] === 'string' &&
+		unsavedTargetIds.includes( v.args[ 0 ] )
+	) );
 }

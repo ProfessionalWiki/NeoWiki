@@ -63,13 +63,25 @@ export interface SubjectRepository extends SubjectLookup {
 		comment?: string
 	): Promise<SubjectWriteResult>;
 
+	/**
+	 * The optional id is a pre-minted, unused Subject ID to assign; omit it to have the server mint
+	 * one. Minting up front (see mintSubjectId) is what lets relations between Subjects be wired
+	 * before any of them exists.
+	 */
 	createChildSubject(
 		pageId: number,
 		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
-		comment?: string
+		comment?: string,
+		id?: SubjectId
 	): Promise<SubjectWriteResult>;
+
+	/**
+	 * An unused Subject ID, minted without creating any Subject. Stateless: the ID is not
+	 * reserved, so a caller that never uses it costs nothing.
+	 */
+	mintSubjectId(): Promise<SubjectId>;
 
 	updateSubject(
 		id: SubjectId,
@@ -122,8 +134,12 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 		return Promise.resolve( this.newWriteResult( new SubjectId( 's11111111111111' ), pageId, label, schemaName, statements ) );
 	}
 
-	public createChildSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _comment?: string ): Promise<SubjectWriteResult> {
-		return Promise.resolve( this.newWriteResult( new SubjectId( 's11111111111112' ), pageId, label, schemaName, statements ) );
+	public createChildSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _comment?: string, id?: SubjectId ): Promise<SubjectWriteResult> {
+		return Promise.resolve( this.newWriteResult( id ?? new SubjectId( 's11111111111112' ), pageId, label, schemaName, statements ) );
+	}
+
+	public mintSubjectId(): Promise<SubjectId> {
+		return Promise.resolve( new SubjectId( 'smintedAAAAAAA1' ) );
 	}
 
 	public async updateSubject( id: SubjectId, label: string | null, statements: StatementList, _comment?: string ): Promise<SubjectWriteResult> {
