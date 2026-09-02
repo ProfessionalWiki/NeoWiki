@@ -143,15 +143,7 @@ php maintenance/run.php NeoWiki:RebuildGraphDatabases
 
 ### 5. Verify your install
 
-1. **Create a Schema.** Go to Special:Schemas and create your first Schema
-2. **Add a Subject.** On an ordinary wiki page, use "Create subject" or "Manage subjects" to create your first Subject
-3. **Render a View.** On that same page, source edit the wikitext and add the following. With no id it renders the
-   page's Main Subject:
-   ```
-   {{#view:}}
-   ```
-
-Your install is complete once those three steps work.
+Your install is complete once you can walk through [Getting started](../guide/getting-started.md) on it.
 
 With Neo4j configured, one more step checks its projection. On any page, add a Cypher query that lists the stored
 pages, independent of your data model:

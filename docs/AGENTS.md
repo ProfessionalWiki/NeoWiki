@@ -24,6 +24,15 @@ Every page sits in one genre. Write to that genre's reader and register.
 | `adr/` | Maintainers recording a decision | A dated record: context, decision, consequences; not retro-edited apart from status links |
 | `planning/` | Collaborators exploring an open question | A work-in-progress register, marked as such; not published to the site |
 
+## Where a new page goes
+
+The genre table picks the directory. Two placements it does not cover:
+
+- A page every audience needs, cutting across genres (the Glossary, Qualifiers and References) → the docs root.
+- A worked, end-to-end example → alongside the docs for the surface it walks through.
+
+Link the new page from `README.md`, under the section for its genre.
+
 ## Never write
 
 - The justification register: "note that", "importantly", "this ensures", "in order to", or restating the ask.
