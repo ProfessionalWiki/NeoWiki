@@ -132,6 +132,7 @@
 	"neowiki-schema-editor-delete-property": "Delete property definition",
 	"neowiki-schema-editor-optional": "Optional",
 	"neowiki-schema-editor-description": "Description",
+	"neowiki-schema-editor-resize-property-list": "Resize property list",
 	"neowiki-schema-editor-description-placeholder": "Enter a description for the schema",
 	"neowiki-schema-editor-description-edit": "Edit description",
 	"neowiki-schema-editor-description-expand": "Show the full description",
@@ -198,6 +199,7 @@
 	"neowiki-subject-editor-partial-save": "Saved $1 of $2 {{PLURAL:$2|subject|subjects}}. The rest still have unsaved changes.",
 	"neowiki-subject-editor-save-scope": "Saving updates $1 {{PLURAL:$1|subject|subjects}} on $2 {{PLURAL:$2|page|pages}}.",
 	"neowiki-subject-tree-label": "Structure",
+	"neowiki-subject-editor-resize-navigator": "Resize structure panel",
 	"neowiki-subject-tree-not-linked": "Not linked here",
 
 	"neowiki-subject-picker-placeholder": "Search for a subject",

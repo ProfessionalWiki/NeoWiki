@@ -1,9 +1,11 @@
 <template>
 	<div>
+		<!-- Codex adds the dividers only for a dialog whose own body scrolls, which leaves the
+			rule between the columns running into nothing whenever it does not, so the variant is
+			asked for by name. Same reasoning as the subject editor. -->
 		<CdxDialog
 			:open="props.open"
-			class="ext-neowiki-ui ext-neowiki-schema-editor-dialog"
-			:class="{ 'cdx-dialog--dividers': hasOverflow }"
+			class="ext-neowiki-ui ext-neowiki-schema-editor-dialog cdx-dialog--dividers"
 			:title="dialogTitle"
 			@update:open="onDialogUpdateOpen"
 		>
@@ -43,7 +45,6 @@
 				ref="schemaEditor"
 				:initial-schema="initialSchema"
 				:description="description"
-				@overflow="onOverflow"
 				@change="markChanged"
 			/>
 
@@ -91,7 +92,6 @@ const emit = defineEmits<{
 }>();
 
 const schemaEditor = ref<SchemaEditorExposes | null>( null );
-const hasOverflow = ref( false );
 const description = ref( props.initialSchema.getDescription() );
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
@@ -125,10 +125,6 @@ watch( () => props.open, ( isOpen ) => {
 		resetChanged();
 	}
 } );
-
-function onOverflow( overflow: boolean ): void {
-	hasOverflow.value = overflow;
-}
 
 const handleSave = async ( summary: string ): Promise<void> => {
 	if ( !schemaEditor.value ) {
@@ -173,10 +169,13 @@ defineExpose( { hasChanged } );
 	&.cdx-dialog {
 		max-width: @size-5600;
 
+		/* Codex's own `overflow-y: auto` is kept, so anything the columns do not scroll
+			themselves stays reachable at the body, and it is what already lets this flex item
+			shrink below its content. `display: grid` hands the bounded height down to the one
+			child. */
 		.cdx-dialog__body {
 			padding: 0;
 			display: grid;
-			overflow: hidden;
 		}
 
 		/* Replicate the Codex default dialog header styles, which a custom

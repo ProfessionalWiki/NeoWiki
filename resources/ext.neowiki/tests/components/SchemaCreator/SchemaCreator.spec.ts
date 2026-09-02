@@ -25,7 +25,7 @@ const SchemaEditorStub = defineComponent( {
 	props: {
 		initialSchema: { type: Object, required: true },
 	},
-	emits: [ 'change', 'overflow' ],
+	emits: [ 'change' ],
 	methods: {
 		getSchema(): Schema {
 			return new Schema( '', '', new PropertyDefinitionList( [] ) );

@@ -35,8 +35,11 @@ withDefaults( defineProps<{
 		// crowd the next bound's label.
 		gap: @spacing-100;
 
+		// The viewport is only a guess at how much room this row has: it sits in a pane whose
+		// width the reader sets. Wrapping is what makes the guess safe — a row that no longer
+		// fits stacks instead of pushing its labels out of the pane.
 		@media screen and ( min-width: @min-width-breakpoint-desktop ) {
-			flex-direction: row;
+			flex-flow: row wrap;
 		}
 
 		// Disable margin-top on all nested fields.

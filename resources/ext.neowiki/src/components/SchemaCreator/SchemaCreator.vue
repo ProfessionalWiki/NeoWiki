@@ -31,7 +31,6 @@
 		<SchemaEditor
 			ref="schemaEditorRef"
 			:initial-schema="baseSchema"
-			@overflow="onOverflow"
 			@change="onChange"
 		/>
 	</div>
@@ -55,7 +54,6 @@ const props = withDefaults( defineProps<{
 } );
 
 const emit = defineEmits<{
-	overflow: [ hasOverflow: boolean ];
 	change: [];
 }>();
 
@@ -75,10 +73,6 @@ const nameInputRef = ref<InstanceType<typeof CdxTextInput> | null>( null );
 const schemaEditorRef = ref<SchemaEditorExposes | null>( null );
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let requestSequence = 0;
-
-function onOverflow( hasOverflow: boolean ): void {
-	emit( 'overflow', hasOverflow );
-}
 
 function onChange(): void {
 	emit( 'change' );

@@ -20,7 +20,7 @@ let creatorUnparseableInput: UnparseableInput | null = null;
 
 const SchemaCreatorStub = {
 	template: '<div class="schema-creator-stub"></div>',
-	emits: [ 'change', 'overflow' ],
+	emits: [ 'change' ],
 	setup() {
 		let valid = true;
 		const schema: Schema | null = new Schema( NEW_SCHEMA_NAME, 'A description', new PropertyDefinitionList( [] ) );

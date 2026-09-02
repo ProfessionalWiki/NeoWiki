@@ -9,6 +9,8 @@ import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { createI18nMock, reportUnparseableNumber } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
+import PaneDivider from '@/components/common/PaneDivider.vue';
+import { nextTick } from 'vue';
 
 function createWrapper( schema: Schema, description = '' ): VueWrapper {
 	return mount( SchemaEditor, {
@@ -385,5 +387,78 @@ describe( 'SchemaEditor', () => {
 
 			expect( unparseableInput( wrapper ) ).toBeNull();
 		} );
+	} );
+} );
+
+describe( 'SchemaEditor pane divider', () => {
+
+	const schemaWithProperty = new Schema( 'Test', '', new PropertyDefinitionList( [
+		createPropertyDefinitionFromJson( 'Name', { type: 'text' } ),
+	] ) );
+
+	const emptySchema = new Schema( 'Test', '', new PropertyDefinitionList( [] ) );
+
+	it( 'sits between the list and the editor', () => {
+		const wrapper = createWrapper( schemaWithProperty );
+
+		const children = [ ...wrapper.element.children ].map( ( child ) => child.className );
+
+		expect( wrapper.findComponent( PaneDivider ).exists() ).toBe( true );
+		expect( children[ 1 ] ).toContain( 'ext-neowiki-pane-divider' );
+	} );
+
+	// The track list and the divider appear together or not at all: a divider left behind
+	// would hold a track open for a column that is not rendered.
+	it( 'is absent when no property is selected', () => {
+		const wrapper = createWrapper( emptySchema );
+
+		expect( wrapper.findComponent( PaneDivider ).exists() ).toBe( false );
+	} );
+
+	it( 'points at the property list it sizes', () => {
+		const wrapper = createWrapper( schemaWithProperty );
+
+		const listId = wrapper.find( '.ext-neowiki-schema-editor' ).element.children[ 0 ].id;
+
+		expect( listId ).not.toBe( '' );
+		expect( wrapper.findComponent( PaneDivider ).props( 'controls' ) ).toBe( listId );
+	} );
+
+	it( 'gives the list the width the divider asks for', async () => {
+		const wrapper = createWrapper( schemaWithProperty );
+
+		wrapper.findComponent( PaneDivider ).vm.$emit( 'resize', 500 );
+		await nextTick();
+
+		expect( wrapper.find( '.ext-neowiki-schema-editor' ).attributes( 'style' ) )
+			.toContain( '--ext-neowiki-pane-size: 500px' );
+		expect( wrapper.findComponent( PaneDivider ).props( 'size' ) ).toBe( 500 );
+	} );
+
+	it( 'remembers the width once the gesture ends', async () => {
+		const global = globalThis as unknown as { mw?: Record<string, unknown> };
+		const before = global.mw;
+		const storage = { get: vi.fn( () => null ), set: vi.fn( () => true ) };
+		global.mw = { ...before, storage };
+
+		try {
+			const wrapper = createWrapper( schemaWithProperty );
+			wrapper.findComponent( PaneDivider ).vm.$emit( 'resize', 500 );
+			wrapper.findComponent( PaneDivider ).vm.$emit( 'commit' );
+			await nextTick();
+
+			expect( storage.set ).toHaveBeenCalledWith( 'neowiki-schema-editor-pane-size', '500' );
+		} finally {
+			global.mw = before;
+		}
+	} );
+
+	it( 'tells the divider the bounds it may move between', () => {
+		const divider = createWrapper( schemaWithProperty ).findComponent( PaneDivider );
+
+		expect( divider.props( 'min' ) ).toBe( 192 );
+		// jsdom measures nothing, so the bound is the current width and the divider still moves.
+		expect( divider.props( 'max' ) ).toBe( 320 );
+		expect( divider.props( 'disabled' ) ).toBe( false );
 	} );
 } );

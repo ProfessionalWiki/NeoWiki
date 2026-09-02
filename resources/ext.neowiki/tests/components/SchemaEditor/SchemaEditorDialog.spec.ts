@@ -24,7 +24,7 @@ const SchemaEditorStub = defineComponent( {
 		initialSchema: { type: Object, required: true },
 		description: { type: String, required: true },
 	},
-	emits: [ 'overflow', 'change' ],
+	emits: [ 'change' ],
 	methods: {
 		// Mirrors the real editor, which applies the host-owned description.
 		getSchema(): Schema {

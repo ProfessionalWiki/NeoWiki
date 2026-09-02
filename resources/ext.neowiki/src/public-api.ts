@@ -30,7 +30,6 @@ export * from './composables/useChangeDetection';
 export * from './composables/useCloseConfirmation';
 export * from './composables/useFieldServerViolation';
 export * from './composables/useLayoutPermissions';
-export * from './composables/useOverflowDetection';
 export * from './composables/useSchemaPermissions';
 export * from './composables/useSortable';
 export * from './composables/useStringValueInput';

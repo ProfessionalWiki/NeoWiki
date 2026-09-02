@@ -73,7 +73,7 @@ const SchemaCreatorStub = {
 	props: {
 		initialSchema: { type: Object, default: undefined },
 	},
-	emits: [ 'change', 'overflow' ],
+	emits: [ 'change' ],
 	setup() {
 		let valid = true;
 		const schema = new Schema( NEW_SCHEMA_NAME, 'A description', new PropertyDefinitionList( [] ) );
