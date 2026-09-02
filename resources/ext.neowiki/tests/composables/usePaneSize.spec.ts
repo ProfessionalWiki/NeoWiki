@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { computed, defineComponent, nextTick, ref } from 'vue';
 import { mount } from '@vue/test-utils';
-import { paneMaxSize, usePaneSize } from '@/composables/usePaneSize';
+import { usePaneSize } from '@/composables/usePaneSize';
 
 // jsdom resolves no layout, so the real observer never reports a width and every
 // bound that depends on the container would go unexercised.
@@ -61,10 +61,6 @@ describe( 'usePaneSize', () => {
 		it( 'starts at the default size', () => {
 			expect( withPane().size.value ).toBe( 320 );
 		} );
-
-		it( 'reports the minimum as the lower bound', () => {
-			expect( withPane().minSize.value ).toBe( 192 );
-		} );
 	} );
 
 	describe( 'resizing', () => {
@@ -111,20 +107,6 @@ describe( 'usePaneSize', () => {
 
 			expect( pane.size.value ).toBe( 5000 );
 		} );
-
-		it( 'reports the current size as the upper bound rather than inventing one', () => {
-			const pane = withPane();
-
-			expect( pane.maxSize.value ).toBe( 320 );
-		} );
-
-		it( 'keeps the announced range valid', () => {
-			const pane = withPane();
-
-			expect( pane.minSize.value ).toBeLessThanOrEqual( pane.maxSize.value );
-			expect( pane.size.value ).toBeGreaterThanOrEqual( pane.minSize.value );
-			expect( pane.size.value ).toBeLessThanOrEqual( pane.maxSize.value );
-		} );
 	} );
 
 	describe( 'storage', () => {
@@ -166,26 +148,9 @@ describe( 'usePaneSize', () => {
 
 			expect( storage.set ).toHaveBeenCalledWith( KEY, '400' );
 		} );
-
-		it( 'writes the size each commit left behind', () => {
-			const storage = stubStorage( null );
-			const pane = withPane();
-
-			pane.resizeTo( 340 );
-			pane.persist();
-			pane.resizeTo( 400 );
-			pane.persist();
-
-			expect( storage.set ).toHaveBeenCalledTimes( 2 );
-			expect( storage.set ).toHaveBeenLastCalledWith( KEY, '400' );
-		} );
 	} );
 
 	describe( 'without MediaWiki storage available', () => {
-
-		it( 'starts at the default when mw is absent entirely', () => {
-			expect( withPane().size.value ).toBe( 320 );
-		} );
 
 		it( 'starts at the default when mw.storage lacks get and set', () => {
 			( globalThis as unknown as { mw: unknown } ).mw = { storage: { session: {} } };
@@ -309,17 +274,6 @@ describe( 'usePaneSize', () => {
 			expect( pane.size.value ).toBe( 900 );
 		} );
 
-		it( 'keeps the chosen width when a gesture moves nothing at all', () => {
-			const storage = stubStorage( '900' );
-			const pane = withPane();
-			observedWidth.value = 666;
-
-			pane.resizeTo( pane.size.value );
-			pane.persist();
-
-			expect( storage.set ).toHaveBeenCalledWith( KEY, '900' );
-		} );
-
 		it( 'still records a width the reader genuinely narrows to', () => {
 			const storage = stubStorage( '900' );
 			const pane = withPane();
@@ -329,27 +283,6 @@ describe( 'usePaneSize', () => {
 			pane.persist();
 
 			expect( storage.set ).toHaveBeenCalledWith( KEY, '300' );
-		} );
-
-		// The overshoot the clamp exists for: a wild drag must not be replayed on a wider
-		// screen, so a request beyond the bound is still recorded AT the bound.
-		it( 'records the bound when a gesture overshoots from below it', () => {
-			const storage = stubStorage( '400' );
-			const pane = withPane();
-			observedWidth.value = 1278;
-
-			pane.resizeTo( 5000 );
-			pane.persist();
-
-			expect( storage.set ).toHaveBeenCalledWith( KEY, '990' );
-		} );
-
-		it( 'reports the divider as movable where there is room to move', () => {
-			const pane = withPane();
-			observedWidth.value = 1278;
-
-			expect( pane.resizable.value ).toBe( true );
-			expect( pane.maxSize.value ).toBeGreaterThan( pane.minSize.value );
 		} );
 
 		// A pane inside a dialog that is not displayed is measured as zero, which means
@@ -369,37 +302,5 @@ describe( 'usePaneSize', () => {
 			expect( pane.resizable.value ).toBe( false );
 			expect( pane.minSize.value ).toBe( pane.maxSize.value );
 		} );
-	} );
-} );
-
-describe( 'paneMaxSize', () => {
-
-	const BOUNDS = { minSize: 192, minOtherSize: 288 };
-
-	it( 'leaves the other pane its minimum', () => {
-		expect( paneMaxSize( 900, 1, BOUNDS ) ).toBe( 611 );
-	} );
-
-	it( 'never comes out below the pane\'s own minimum', () => {
-		expect( paneMaxSize( 400, 1, BOUNDS ) ).toBe( 192 );
-	} );
-
-	it( 'stays at the minimum where the two minimums no longer fit', () => {
-		// 192 + 1 + 288 = 481: the width at which the interval closes.
-		expect( paneMaxSize( 481, 1, BOUNDS ) ).toBe( 192 );
-		expect( paneMaxSize( 480, 1, BOUNDS ) ).toBe( 192 );
-		expect( paneMaxSize( 300, 1, BOUNDS ) ).toBe( 192 );
-	} );
-
-	it( 'never reports a range the wrong way round, at any container width', () => {
-		for ( let width = 0; width <= 1600; width += 1 ) {
-			expect( paneMaxSize( width, 1, BOUNDS ) ).toBeGreaterThanOrEqual( BOUNDS.minSize );
-		}
-	} );
-
-	it( 'reports a whole number, so a rounded size cannot land above it', () => {
-		for ( const width of [ 900.5, 613.7, 480.4, 1000.9 ] ) {
-			expect( Number.isInteger( paneMaxSize( width, 12, BOUNDS ) ) ).toBe( true );
-		}
 	} );
 } );

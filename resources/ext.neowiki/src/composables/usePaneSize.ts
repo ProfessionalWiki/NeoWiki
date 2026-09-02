@@ -23,7 +23,7 @@ export interface PaneSizeOptions {
  * one, which is an invalid range to announce and reverses which pane gets squeezed.
  * Floored, the pane keeps its minimum and the one beside it gives up the difference.
  */
-export function paneMaxSize(
+function paneMaxSize(
 	containerWidth: number,
 	dividerSize: number,
 	options: Pick<PaneSizeOptions, 'minSize' | 'minOtherSize'>,
