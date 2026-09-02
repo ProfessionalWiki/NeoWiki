@@ -401,10 +401,10 @@ describe( 'SchemaEditor pane divider', () => {
 	it( 'sits between the list and the editor', () => {
 		const wrapper = createWrapper( schemaWithProperty );
 
-		const children = [ ...wrapper.element.children ].map( ( child ) => child.tagName.toLowerCase() );
+		const children = [ ...wrapper.element.children ].map( ( child ) => child.className );
 
 		expect( wrapper.findComponent( PaneDivider ).exists() ).toBe( true );
-		expect( children[ 1 ] ).toBe( 'div' );
+		expect( children[ 1 ] ).toContain( 'ext-neowiki-pane-divider' );
 	} );
 
 	// The track list and the divider appear together or not at all: a divider left behind
@@ -457,6 +457,8 @@ describe( 'SchemaEditor pane divider', () => {
 		const divider = createWrapper( schemaWithProperty ).findComponent( PaneDivider );
 
 		expect( divider.props( 'min' ) ).toBe( 192 );
-		expect( divider.props( 'max' ) ).toBeGreaterThanOrEqual( divider.props( 'min' ) as number );
+		// jsdom measures nothing, so the bound is the current width and the divider still moves.
+		expect( divider.props( 'max' ) ).toBe( 320 );
+		expect( divider.props( 'disabled' ) ).toBe( false );
 	} );
 } );

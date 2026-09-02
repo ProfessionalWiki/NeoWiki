@@ -240,7 +240,7 @@ describe( 'PaneDivider', () => {
 			const wrapper = mountDivider();
 
 			await drag( wrapper, 500, 560 );
-			await wrapper.setProps( { size: 380 } );
+			await wrapper.setProps( { size: 350 } );
 			await pointer( wrapper, 'pointermove', { clientX: 520 } );
 
 			expect( lastResize( wrapper ) ).toBe( 340 );
@@ -412,6 +412,16 @@ describe( 'PaneDivider', () => {
 			wrapper.unmount();
 
 			expect( document.documentElement.classList.contains( 'ext-neowiki-pane-resizing' ) ).toBe( false );
+		} );
+
+		// A dialog closed on Escape mid-drag takes the divider with it before any pointerup.
+		it( 'commits a drag cut short by its own teardown', async () => {
+			const wrapper = mountDivider();
+
+			await drag( wrapper, 500, 560 );
+			wrapper.unmount();
+
+			expect( wrapper.emitted( 'commit' ) ).toHaveLength( 1 );
 		} );
 	} );
 
