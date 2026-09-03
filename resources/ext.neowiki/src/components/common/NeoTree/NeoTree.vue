@@ -18,6 +18,13 @@
 				:select="selectItem"
 				:keydown="onKeydown"
 			>
+				<template #secondary="slotProps">
+					<slot
+						name="secondary"
+						v-bind="slotProps"
+					/>
+				</template>
+
 				<template #trailing="slotProps">
 					<slot
 						name="trailing"
@@ -45,10 +52,13 @@ const emit = defineEmits<{
 
 // Declared out here: a parenthesis anywhere inside a macro's type argument trips ESLint's
 // func-call-spacing, which reads it as the macro's own call.
-type TrailingSlot = ( slotProps: { item: NeoTreeItem<T> } ) => unknown;
+type NodeSlot = ( slotProps: { item: NeoTreeItem<T> } ) => unknown;
 
 defineSlots<{
-	trailing?: TrailingSlot;
+	// Replaces a node's plain `secondaryLabel` text, inside the same element, so a consumer
+	// can treat it without the tree knowing what it means.
+	secondary?: NodeSlot;
+	trailing?: NodeSlot;
 }>();
 
 // Printed order, which is both the order Up/Down move through and the order the element ids
@@ -226,9 +236,12 @@ function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 		white-space: nowrap;
 	}
 
-	/* Set apart by colour rather than size: the row already sits a step below body text. */
+	/* Set apart by colour rather than size: the row already sits a step below body text.
+		`min-width: 0` lets it shrink below its content, so a long label gives way to the
+		node's own name instead of squeezing it to nothing. */
 	&__node-secondary {
-		flex: none;
+		flex: 0 1 auto;
+		min-width: 0;
 		color: @color-subtle;
 	}
 }
