@@ -56,6 +56,7 @@ Read, change, and validate Subjects. New Subjects are created on a page — see
 | `GET /neowiki/v0/entity/{subjectId}` | Dereference a Subject's concept URI. `303` to the Subject's RDF (`Accept: application/trig` or `text/turtle`) or to the hosting page (otherwise). See [Dereferencing subject IRIs](../rdf/rdf-export.md#dereferencing-subject-iris). |
 | `PUT /neowiki/v0/subject/{subjectId}` | Replace a Subject's label and statements. |
 | `DELETE /neowiki/v0/subject/{subjectId}` | Delete a Subject. |
+| `POST /neowiki/v0/subject/{subjectId}/move` | Move a Subject to another page, keeping its ID so relations targeting it keep resolving. Body `targetPageId`, optional `makeMainSubject` and `comment`. Edits both pages. |
 | `PUT /neowiki/v0/subject/{subjectId}/statements/{propertyName}` | Set one Statement, leaving the Subject's label and other Statements as they are. |
 | `DELETE /neowiki/v0/subject/{subjectId}/statements/{propertyName}` | Remove one Statement. |
 | `POST /neowiki/v0/subject/validate` | Check whether a new Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |

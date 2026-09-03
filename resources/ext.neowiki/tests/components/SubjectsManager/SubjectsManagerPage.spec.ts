@@ -13,6 +13,7 @@ import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { subjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vue';
 import { Service } from '@/NeoWikiServices.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
@@ -430,6 +431,133 @@ describe( 'SubjectsManagerPage edit flow', () => {
 		expect( wrapper.findComponent( SubjectEditorDialog ).exists() ).toBe( false );
 		expect( mw.notify ).toHaveBeenCalledWith( 'Unknown subject', { type: 'error' } );
 	} );
+} );
+
+describe( 'SubjectsManagerPage move action', () => {
+
+	beforeEach( () => {
+		storeSubjects = [ subject( ID_A ), subject( ID_B ) ];
+		mainSubjectId = new SubjectId( ID_A );
+		canEditSubjectRef.value = true;
+		canDeleteSubjectRef.value = true;
+		window.location.hash = '';
+		Element.prototype.scrollIntoView = vi.fn();
+		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+		window.location.hash = '';
+		canEditSubjectRef.value = false;
+		canDeleteSubjectRef.value = false;
+		vi.restoreAllMocks();
+	} );
+
+	it( 'offers the move on both the main row and the other rows', async () => {
+		const wrapper = await mountPage();
+
+		// One per row: the main subject and the child. Offering it on the main row is deliberate -
+		// moving a page's topic elsewhere is allowed, and the dialog warns what the page loses.
+		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 2 );
+	} );
+
+	it( 'puts the move before the delete on every row', async () => {
+		const wrapper = await mountPage();
+
+		const labels = wrapper.findAll( '.ext-neowiki-subjects-manager__row-actions [aria-label]' )
+			.map( ( element ) => element.attributes( 'aria-label' ) )
+			.filter( ( label ) => label === 'neowiki-managesubjects-row-move' || label === 'neowiki-managesubjects-row-delete' );
+
+		expect( labels ).toEqual( [
+			'neowiki-managesubjects-row-move',
+			'neowiki-managesubjects-row-delete',
+			'neowiki-managesubjects-row-move',
+			'neowiki-managesubjects-row-delete',
+		] );
+	} );
+
+	it( 'offers the move in the overflow menu too, which is the only surface on mobile', async () => {
+		const wrapper = await mountPage();
+
+		const menus = wrapper.findAllComponents( CdxMenuButton );
+		expect( menus ).toHaveLength( 2 );
+		for ( const menu of menus ) {
+			const values = menu.props( 'menuItems' ).map( ( item ) => item.value );
+			expect( values ).toContain( 'move' );
+			expect( values.indexOf( 'move' ) ).toBeLessThan( values.indexOf( 'delete' ) );
+		}
+	} );
+
+	it( 'offers no move to a user who cannot edit', async () => {
+		canEditSubjectRef.value = false;
+		canDeleteSubjectRef.value = false;
+
+		const wrapper = await mountPage();
+
+		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 0 );
+		for ( const menu of wrapper.findAllComponents( CdxMenuButton ) ) {
+			expect( menu.props( 'menuItems' ).map( ( item ) => item.value ) ).not.toContain( 'move' );
+		}
+	} );
+
+	it( 'opens the move dialog on the row that asked for it', async () => {
+		const wrapper = await mountPage();
+
+		await wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' )[ 1 ].trigger( 'click' );
+		await flushPromises();
+
+		const dialog = wrapper.findComponent( MoveSubjectDialog );
+		expect( dialog.props( 'open' ) ).toBe( true );
+		expect( dialog.props( 'subjectId' ) ).toBe( ID_B );
+		expect( dialog.props( 'currentPageId' ) ).toBe( PAGE_ID );
+	} );
+
+	it( 'tells the dialog when the subject being moved is the page\'s main subject', async () => {
+		const wrapper = await mountPage();
+
+		await wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' )[ 0 ].trigger( 'click' );
+		await flushPromises();
+
+		expect( wrapper.findComponent( MoveSubjectDialog ).props( 'subjectIsMainSubject' ) ).toBe( true );
+	} );
+
+	it( 'tells the dialog when a child subject is being moved', async () => {
+		const wrapper = await mountPage();
+
+		await wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' )[ 1 ].trigger( 'click' );
+		await flushPromises();
+
+		expect( wrapper.findComponent( MoveSubjectDialog ).props( 'subjectIsMainSubject' ) ).toBe( false );
+	} );
+
+	it( 'opens the move dialog from the overflow menu as well', async () => {
+		const wrapper = await mountPage();
+
+		wrapper.findComponent( CdxMenuButton ).vm.$emit( 'update:selected', 'move' );
+		await flushPromises();
+
+		expect( wrapper.findComponent( MoveSubjectDialog ).props( 'open' ) ).toBe( true );
+	} );
+
+	it( 'reports the move once the dialog says it landed, naming the subject and its new page', async () => {
+		const wrapper = await mountPage();
+		await wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' )[ 1 ].trigger( 'click' );
+		await flushPromises();
+		loadPageSubjectsMock.mockClear();
+
+		wrapper.findComponent( MoveSubjectDialog ).vm.$emit( 'moved', 'Rembrandt van Rijn' );
+		await flushPromises();
+
+		const [ message, options ] = ( mw.notify as ReturnType<typeof vi.fn> ).mock.calls[ 0 ];
+		expect( message ).toContain( 'neowiki-managesubjects-move-success' );
+		expect( message ).toContain( 'Rembrandt van Rijn' );
+		expect( options ).toEqual( { type: 'success' } );
+
+		// The listing refresh belongs to the store's move action; refreshing here too would fetch
+		// the same page twice for one move.
+		expect( loadPageSubjectsMock ).not.toHaveBeenCalled();
+	} );
+
 } );
 
 describe( 'SubjectsManagerPage delete flow', () => {

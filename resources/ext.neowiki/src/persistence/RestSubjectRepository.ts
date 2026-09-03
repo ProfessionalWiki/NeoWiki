@@ -355,6 +355,56 @@ export class RestSubjectRepository implements SubjectRepository {
 		return true;
 	}
 
+	public async moveSubject(
+		id: SubjectId,
+		targetPageId: number,
+		makeMainSubject: boolean,
+		comment?: string,
+	): Promise<void> {
+		let response: Response;
+
+		// A move can fail for reasons the user can act on - the target page is protected, the Subject
+		// is already there - so the server's own message is carried through rather than collapsed into
+		// a status code. The production client rejects on every non-2xx but 422, so that message
+		// arrives on the rejection rather than on a response.
+		try {
+			response = await this.httpClient.post(
+				`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }/move`,
+				{
+					targetPageId,
+					makeMainSubject,
+					comment,
+				},
+				{
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				},
+			);
+		} catch ( error ) {
+			throw new Error( this.rejectedMessageOf( error ) ?? 'Error moving subject' );
+		}
+
+		if ( !response.ok ) {
+			throw new Error( await this.errorMessageOf( response ) ?? 'Error moving subject' );
+		}
+	}
+
+	private rejectedMessageOf( error: unknown ): string | null {
+		const message = ( error as { response?: { data?: { message?: unknown } } } )?.response?.data?.message;
+
+		return typeof message === 'string' ? message : null;
+	}
+
+	private async errorMessageOf( response: Response ): Promise<string | null> {
+		try {
+			const body = await response.json();
+			return typeof body?.message === 'string' ? body.message : null;
+		} catch {
+			return null;
+		}
+	}
+
 	public async validateSubject(
 		label: string | null,
 		schemaName: SchemaName,

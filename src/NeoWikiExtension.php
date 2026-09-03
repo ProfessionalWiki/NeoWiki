@@ -22,6 +22,8 @@ use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectActi
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
+use ProfessionalWiki\NeoWiki\Application\Actions\MoveSubject\MoveSubjectAction;
+use ProfessionalWiki\NeoWiki\Application\Actions\MoveSubject\MoveSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject\SetMainSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetSubjectsOrdering\SetSubjectsOrderingAction;
@@ -122,6 +124,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQ
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\Neo4jRouteRegistration;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\RemoveStatementApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\MoveSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetStatementApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\StartGraphStoreRebuildApi;
@@ -1253,6 +1256,16 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function newMoveSubjectAction( MoveSubjectPresenter $presenter, Authority $authority ): MoveSubjectAction {
+		return new MoveSubjectAction(
+			presenter: $presenter,
+			subjectRepository: $this->getSubjectRepository(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+		);
+	}
+
 	public function newSetSubjectsOrderingAction( SetSubjectsOrderingPresenter $presenter, Authority $authority ): SetSubjectsOrderingAction {
 		return new SetSubjectsOrderingAction(
 			presenter: $presenter,
@@ -1574,6 +1587,10 @@ class NeoWikiExtension {
 
 	public static function newSetMainSubjectApi(): SetMainSubjectApi {
 		return new SetMainSubjectApi( csrfValidator: self::getCsrfValidator() );
+	}
+
+	public static function newMoveSubjectApi(): MoveSubjectApi {
+		return new MoveSubjectApi( csrfValidator: self::getCsrfValidator() );
 	}
 
 	public static function newSetSubjectsOrderingApi(): SetSubjectsOrderingApi {

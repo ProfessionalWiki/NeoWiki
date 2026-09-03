@@ -45,7 +45,9 @@ import { SchemaPermissionHints } from '@/application/SchemaPermissionHints.ts';
 import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
+import type { PageTitleSearch } from '@/domain/PageTitleSearch.ts';
 import { RestSubjectLabelSearch } from '@/persistence/RestSubjectLabelSearch.ts';
+import { RestPageTitleSearch } from '@/persistence/RestPageTitleSearch.ts';
 import TextInput from '@/components/Value/TextInput.vue';
 import UrlInput from '@/components/Value/UrlInput.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
@@ -259,6 +261,13 @@ export class NeoWikiExtension {
 
 	public getSubjectLabelSearch(): SubjectLabelSearch {
 		return new RestSubjectLabelSearch(
+			this.getMediaWiki().util.wikiScript( 'rest' ),
+			this.newHttpClient(),
+		);
+	}
+
+	public getPageTitleSearch(): PageTitleSearch {
+		return new RestPageTitleSearch(
 			this.getMediaWiki().util.wikiScript( 'rest' ),
 			this.newHttpClient(),
 		);

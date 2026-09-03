@@ -180,8 +180,9 @@ dropped without error. A value whose shape does not match its `propertyType` (se
 [Value formats](#value-formats)) is rejected with `400`. For schema/value validation outcomes see
 [Validation Codes](validation-codes.md).
 
-A relation may omit `id`; the server generates one. The Subject's `id`, `schema`, and page fields are immutable
-and ignored if sent.
+A relation may omit `id`; the server generates one. The Subject's `id` and `schema` are immutable and ignored if
+sent, as are its page fields on these endpoints: the page a Subject is on changes only through
+[the move endpoint](rest-api.md).
 
 ### Writing one Statement
 

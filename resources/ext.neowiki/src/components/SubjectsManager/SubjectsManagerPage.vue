@@ -137,6 +137,15 @@
 								<CdxIcon :icon="cdxIconLink" />
 							</CdxButton>
 							<CdxButton
+								v-if="canEdit"
+								weight="quiet"
+								:aria-label="$i18n( 'neowiki-managesubjects-row-move' ).text()"
+								:title="$i18n( 'neowiki-managesubjects-row-move' ).text()"
+								@click.stop="openMoveDialog( mainSubject )"
+							>
+								<CdxIcon :icon="cdxIconMove" />
+							</CdxButton>
+							<CdxButton
 								v-if="canDelete"
 								weight="quiet"
 								action="destructive"
@@ -320,6 +329,15 @@
 									<CdxIcon :icon="cdxIconLink" />
 								</CdxButton>
 								<CdxButton
+									v-if="canEdit"
+									weight="quiet"
+									:aria-label="$i18n( 'neowiki-managesubjects-row-move' ).text()"
+									:title="$i18n( 'neowiki-managesubjects-row-move' ).text()"
+									@click.stop="openMoveDialog( subject )"
+								>
+									<CdxIcon :icon="cdxIconMove" />
+								</CdxButton>
+								<CdxButton
 									v-if="canDelete"
 									weight="quiet"
 									action="destructive"
@@ -435,6 +453,17 @@
 			:on-save-schema="handleSchemaSave"
 		/>
 
+		<MoveSubjectDialog
+			v-if="movingSubject !== null"
+			v-model:open="moveDialogOpen"
+			:subject-id="movingSubject.getId().text"
+			:subject-name="movingSubject.getDisplayName()"
+			:current-page-id="pageId"
+			:current-page-title="currentPageTitle"
+			:subject-is-main-subject="isMainSubject( movingSubject as Subject )"
+			@moved="onSubjectMoved"
+		/>
+
 		<CdxDialog
 			:open="deleteConfirmOpen"
 			class="ext-neowiki-ui"
@@ -476,6 +505,7 @@ import {
 	cdxIconEllipsis,
 	cdxIconExpand,
 	cdxIconLink,
+	cdxIconMove,
 	cdxIconPushPin,
 	cdxIconTrash
 } from '@wikimedia/codex-icons';
@@ -491,6 +521,7 @@ import { SubjectId } from '@/domain/SubjectId';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
+import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import SubjectStatementsView from '@/components/SubjectsManager/SubjectStatementsView.vue';
 import DataExportButton from '@/components/SubjectsManager/DataExportButton.vue';
@@ -557,6 +588,12 @@ const editorOpen = ref( false );
 const deleteConfirmOpen = ref( false );
 const deletingSubject = ref<Subject | null>( null );
 
+const moveDialogOpen = ref( false );
+const movingSubject = ref<Subject | null>( null );
+
+// The page the Data tab is showing, named for the warning a move of the Main Subject carries.
+const currentPageTitle = String( mw.config.get( 'wgPageName' ) ?? '' ).replace( /_/g, ' ' );
+
 // Read subjects through the reactive store so the session's own writes flow into the list.
 const subjects = computed<Subject[]>( () =>
 	subjectStore.pageSubjects?.getSubjects()
@@ -620,6 +657,12 @@ const copyLinkMenuItem = computed<MenuButtonItemData>( () => ( {
 	icon: cdxIconLink
 } ) );
 
+const moveMenuItem = computed<MenuButtonItemData>( () => ( {
+	value: 'move',
+	label: mw.msg( 'neowiki-managesubjects-row-move' ),
+	icon: cdxIconMove
+} ) );
+
 const deleteMenuItem = computed<MenuButtonItemData>( () => ( {
 	value: 'delete',
 	label: mw.msg( 'neowiki-managesubjects-row-delete' ),
@@ -633,6 +676,9 @@ const mainRowMenuItems = computed<MenuButtonItemData[]>( () => {
 		items.push( editMenuItem.value );
 	}
 	items.push( copyLinkMenuItem.value );
+	if ( canEdit.value ) {
+		items.push( moveMenuItem.value );
+	}
 	if ( canDelete.value ) {
 		items.push( deleteMenuItem.value );
 	}
@@ -645,6 +691,9 @@ const otherRowMenuItems = computed<MenuButtonItemData[]>( () => {
 		items.push( promoteMenuItem.value, editMenuItem.value );
 	}
 	items.push( copyLinkMenuItem.value );
+	if ( canEdit.value ) {
+		items.push( moveMenuItem.value );
+	}
 	if ( canDelete.value ) {
 		items.push( deleteMenuItem.value );
 	}
@@ -661,6 +710,8 @@ function dispatchRowAction( value: string | number | null, subject: Subject ): v
 		openEditor( subject );
 	} else if ( value === 'copy-link' ) {
 		copySubjectLink( subject );
+	} else if ( value === 'move' ) {
+		openMoveDialog( subject );
 	} else if ( value === 'delete' ) {
 		confirmDelete( subject );
 	}
@@ -871,6 +922,24 @@ async function handleEditCreate( subject: Subject, targetPageId: number, comment
 
 async function handleSchemaSave( updatedSchema: Schema, comment: string ): Promise<void> {
 	await schemaStore.saveSchema( updatedSchema, comment );
+}
+
+function isMainSubject( subject: Subject ): boolean {
+	return mainSubject.value?.getId().text === subject.getId().text;
+}
+
+function openMoveDialog( subject: Subject ): void {
+	movingSubject.value = subject;
+	moveDialogOpen.value = true;
+}
+
+// The listing needs no refresh here: moveSubject re-syncs it as part of the move, because dropping
+// the Subject from the registry before the listing stops naming it is what crashes the render.
+function onSubjectMoved( targetTitle: string ): void {
+	const subjectName = movingSubject.value?.getDisplayName() ?? '';
+	movingSubject.value = null;
+
+	mw.notify( mw.msg( 'neowiki-managesubjects-move-success', subjectName, targetTitle ), { type: 'success' } );
 }
 
 function confirmDelete( subject: Subject ): void {
