@@ -13,6 +13,7 @@ import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { subjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { Service } from '@/NeoWikiServices.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
@@ -269,6 +270,20 @@ describe( 'SubjectsManagerPage rows without a stored label', () => {
 
 		const names = wrapper.findAll( '.ext-neowiki-subjects-manager__row-label' ).map( ( el ) => el.text() );
 		expect( names ).toEqual( [ 'Host Page', 'Person' ] );
+	} );
+
+	it( 'hands the badge each row\'s displayed name', async () => {
+		const wrapper = await mountPage();
+
+		// The main row is named after its page, so 'Person' still tells the reader something.
+		// The child row is already named 'Person' (ADR 31), so saying it again says nothing.
+		// Child components are stubbed here, so this asserts the wiring rather than the badge:
+		// each row hands over the name it displays, which is what lets the badge withhold
+		// itself on the child row that ADR 31 already names after its schema.
+		const badges = wrapper.findAllComponents( SchemaNameDisplay );
+
+		expect( badges.map( ( badge ) => [ badge.props( 'schemaName' ), badge.props( 'displayName' ) ] ) )
+			.toEqual( [ [ 'Person', 'Host Page' ], [ 'Person', 'Person' ] ] );
 	} );
 
 } );

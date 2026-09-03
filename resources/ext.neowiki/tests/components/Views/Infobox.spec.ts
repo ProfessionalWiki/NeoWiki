@@ -127,7 +127,9 @@ describe( 'Infobox', () => {
 	it( 'renders statements correctly', () => {
 		const wrapper = mountComponent( mockSubject, false );
 
-		const schema = wrapper.find( '.ext-neowiki-infobox__schema' );
+		// The badge's visible text, not the wrapper's: the wrapper also holds the
+		// visually-hidden noun that names the concept for a screen reader.
+		const schema = wrapper.find( '.ext-neowiki-schema-name__text' );
 		expect( schema.text() ).toBe( 'TestSchema' );
 
 		const statementElements = wrapper.findAll( '.ext-neowiki-infobox__item' );
@@ -205,12 +207,38 @@ describe( 'Infobox', () => {
 		expect( dialog.props( 'schema' ) ).toStrictEqual( freshSchema );
 	} );
 
+	it( 'shows no schema badge for a subject already displayed under its schema name', () => {
+		// ADR 31: a Subject with no label of its own is displayed under its Schema name, and the
+		// infobox used to print that name in the title and again underneath.
+		const labelless = new Subject(
+			new SubjectId( 's1demo5sssssss2' ),
+			null,
+			'TestSchema',
+			'TestSchema',
+			new StatementList( [] ),
+		);
+		subjectStore.setSubject( labelless );
+
+		const wrapper = mountComponent( labelless, false );
+
+		expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( 'TestSchema' );
+		expect( wrapper.find( '.ext-neowiki-schema-name' ).exists() ).toBe( false );
+		// And the heading around it goes too: a wrapper left behind is an empty
+		// `role="heading"`, which assistive technology announces as an unnamed level 3.
+		expect( wrapper.find( '.ext-neowiki-infobox__schema' ).exists() ).toBe( false );
+	} );
+
 	it( 'renders schema name as a link to the Schema page', () => {
 		const wrapper = mountComponent( mockSubject, false );
 
 		const schemaLink = wrapper.find( '.ext-neowiki-infobox__schema a' );
-		expect( schemaLink.text() ).toBe( 'TestSchema' );
+		// Asserted before the attribute checks below: a missed find() yields an empty wrapper
+		// whose attributes() are all undefined, which would satisfy them silently.
+		expect( schemaLink.exists() ).toBe( true );
+		expect( schemaLink.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'TestSchema' );
 		expect( schemaLink.attributes( 'href' ) ).toBe( '/wiki/Schema:TestSchema' );
+		// Same tab: nothing on an article is at risk of being lost by navigating.
+		expect( schemaLink.attributes( 'target' ) ).toBeUndefined();
 	} );
 
 	describe( 'rendering a Subject saved against an out-of-band Schema change', () => {

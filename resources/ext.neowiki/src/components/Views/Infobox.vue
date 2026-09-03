@@ -10,14 +10,15 @@
 				>
 					{{ subject.getDisplayName() }}
 				</div>
+				<!-- Conditional on the badge, not the reverse: a wrapper left behind when the
+					badge withholds itself announces as an unnamed level-3 heading. -->
 				<div
+					v-if="schemaNameBadge !== null"
 					class="ext-neowiki-infobox__schema"
 					role="heading"
 					aria-level="3"
 				>
-					<a :href="schemaUrl">
-						{{ schema?.getName() }}
-					</a>
+					<SchemaNameDisplay :schema-name="schemaNameBadge" />
 				</div>
 			</div>
 			<CdxButton
@@ -68,6 +69,8 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
+import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconEdit } from '@wikimedia/codex-icons';
@@ -125,12 +128,11 @@ function getComponent( propertyType: string ): Component {
 	return NeoWikiServices.getComponentRegistry().getValueDisplayComponent( propertyType );
 }
 
-const schemaUrl = computed( () => {
-	if ( !schema.value ) {
-		return '';
-	}
-	return mw.util.getUrl( `Schema:${ schema.value.getName() }` );
-} );
+// Null when the Subject is already displayed under its Schema name (ADR 31), so the heading
+// above goes with the badge. An unknown Schema throws while `schema` resolves, per its TODO.
+const schemaNameBadge = computed( (): string | null =>
+	schemaNameToShow( schema.value.getName(), subject.value.getDisplayName() )
+);
 
 const layout = computed( () => {
 	if ( !props.layoutName ) {
@@ -173,19 +175,18 @@ const resolvedProperties = computed( (): ResolvedProperty[] => {
 		display: flex;
 		align-items: flex-start;
 
+		/* A flex item's automatic minimum size is its max-content width, so without this the
+			badge's un-wrappable name floors the column and the header grows past the infobox
+			border. The badge ellipsises once allowed to be narrower than its text. */
 		&__text {
 			flex-grow: 1;
+			min-width: 0;
 		}
 	}
 
 	&__title {
 		font-size: @font-size-x-large;
 		font-weight: @font-weight-bold;
-	}
-
-	&__schema {
-		color: @color-subtle;
-		font-size: @font-size-small;
 	}
 
 	&__content {
