@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests;
 
+use PHPUnit\Framework\AssertionFailedError;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPagePropertyProvider;
 
@@ -30,6 +32,37 @@ class NeoWikiIntegrationTestCaseTest extends NeoWikiIntegrationTestCase {
 			$spy->savedPages[0]->getProperties()->get( 'marker' ),
 			'the provider registered second still contributes its properties'
 		);
+	}
+
+	public function testSetUpNeo4jRefusesToWipeWithoutTestInstanceOverride(): void {
+		$originalWriteOverride = getenv( 'NEO4J_URL_OVERRIDE' );
+		$originalReadOverride = getenv( 'NEO4J_URL_READ_OVERRIDE' );
+		putenv( 'NEO4J_URL_OVERRIDE' );
+		putenv( 'NEO4J_URL_READ_OVERRIDE' );
+
+		// An unroutable sentinel as the wiki-configured URL: the guard must fire on configuration
+		// alone, and a regressed guard fails to connect instead of wiping a real graph.
+		$this->overrideConfigValue( 'NeoWikiNeo4jInternalWriteUrl', 'bolt://neo4j:password@sentinel.invalid:7687' );
+		NeoWikiExtension::resetInstance();
+
+		try {
+			$this->setUpNeo4j();
+			$guardFired = false;
+			$message = '';
+		} catch ( AssertionFailedError $error ) {
+			$guardFired = true;
+			$message = $error->getMessage();
+		} finally {
+			putenv( $originalWriteOverride === false ? 'NEO4J_URL_OVERRIDE' : "NEO4J_URL_OVERRIDE=$originalWriteOverride" );
+			putenv( $originalReadOverride === false ? 'NEO4J_URL_READ_OVERRIDE' : "NEO4J_URL_READ_OVERRIDE=$originalReadOverride" );
+			NeoWikiExtension::resetInstance();
+		}
+
+		$this->assertTrue(
+			$guardFired,
+			'setUpNeo4j must refuse to touch the Neo4j database the wiki itself is configured against'
+		);
+		$this->assertStringContainsString( 'NEO4J_URL_OVERRIDE', $message );
 	}
 
 }
