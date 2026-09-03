@@ -59,6 +59,7 @@ Project Subjects to RDF, natively or mapped onto standard ontologies.
 
 ### Understand the architecture
 
-* [Architecture Decision Records](adr/README.md) — numbered, dated architectural decisions
+* [Architecture](architecture.md) — how the parts fit together, followed by the numbered list of Architecture
+  Decision Records
 * [Planning docs](https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs/planning) — work-in-progress
   exploration (not published to the website)
