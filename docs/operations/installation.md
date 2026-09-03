@@ -195,6 +195,10 @@ default.
 `neowiki-schema-edit`, `neowiki-layout-edit` and `neowiki-mapping-edit` — gate editing in NeoWiki's own namespaces and
 are granted to logged-in users.
 
+Parser functions and Lua read as the user the page is parsed for, and their output is parser-cached per combination
+of user groups and wiki-level rights. A permission extension that grants page access per user rather than per group
+is not followed by that cache key: run such a wiki with the parser cache off (`$wgParserCacheType = CACHE_NONE`).
+
 ## On-wiki configuration
 
 A wiki administrator without server access can set part of NeoWiki's configuration on the `MediaWiki:NeoWiki`

@@ -53,6 +53,17 @@ Constraints the model rests on:
   by the wiki-level `neowiki-query` right; granting that right gives read access to everything the wiki projects into
   the store. Exposing a store directly (which ADR 19 allows for SPARQL) is a different surface: see the projection
   decision below.
+- **Parse-time reads run as the user the page is parsed for, and their output is cached per access class.**
+  The parser functions and the Lua library read as the user recorded in the parser options: the viewer on a
+  page view, or the anonymous user for the save-time parse, the job queue, and Parsoid renders. They are gated
+  like the REST endpoints: page `read` for page-attributable reads, `neowiki-query` for raw queries. Query
+  limits use the default tier regardless of user. Output that depends on such a read is parser-cached under
+  the parsing user's access class, derived from the user's effective groups and the wiki-level `read` and
+  `neowiki-query` grants, so a cached copy is shared only within one class. The class is a proxy for the
+  permission hooks: exact wherever page access follows group membership, wrong for hooks that grant per
+  user (the revision-deletion rights included), so wikis with such hooks must run without a parser cache.
+  `{{#view}}` needs no class: it emits a marker at parse time, and the Subject behind it is fetched per
+  viewer over REST, under that viewer's permissions.
 - **Raw queries will support server-side filter injection.** A deployment can register scoping predicates (such as
   restricting to the current wiki) that core applies to every caller-supplied query, so scoping is enforced rather
   than left to each caller.
@@ -64,13 +75,6 @@ Constraints the model rests on:
 
 These decisions remain open at acceptance; each is deferred to the tracking issue named with it.
 
-- **Parse-time read semantics.** Today the parse path is inconsistent
-  ([#1059](https://github.com/ProfessionalWiki/NeoWiki/issues/1059)): Schema lookups are gated per user but their
-  output is parser-cached user-agnostically; subject accessors (`{{#neowiki_value}}` and the `nw` data accessors)
-  check only revision-deletion visibility, not page `read`; `{{#cypher_raw}}`, `{{#sparql_raw}}`, `nw.query` and
-  `nw.sparqlQuery` check nothing. `{{#view}}` is the leak-free pattern: a placeholder rendered at parse time, data
-  fetched per user over REST. Deferred to [#1059](https://github.com/ProfessionalWiki/NeoWiki/issues/1059): the
-  parse-path rule and what it means for each surface.
 - **Cross-wiki subject display.** Rendering a subject from another wiki goes through REST, not Cypher, so query-side
   scoping does not cover it. Deferred to [#1341](https://github.com/ProfessionalWiki/NeoWiki/issues/1341): the
   check and the degradation behavior when the schema or subject is not accessible. Relates to
@@ -87,8 +91,22 @@ These decisions remain open at acceptance; each is deferred to the tracking issu
 ## Consequences
 
 - Every new surface that exposes NeoWiki data must be classified: page-attributable (per-row gate), raw query
-  (whole-store semantics), projection/dump (no permission checks), or parse-time (pending above). There is no
-  unclassified option.
+  (whole-store semantics), projection/dump (no permission checks), or parse-time (parsing user's authority,
+  output keyed by access class). There is no unclassified option.
+- A page that reads Subjects or runs queries at parse time holds one parser-cache entry per access class
+  among its viewers. Current-revision views of other pages are unaffected; old-revision views are keyed per
+  class wiki-wide, because core's revision-output cache keys on every cache-varying option rather than the
+  ones a page used. Saving such a page parses it twice when the editor is logged in: once canonically, once
+  for the editor's class, as pages using `{{int:}}` already do for editors with a non-default interface
+  language.
+- Restricting content does not invalidate what is already cached: the class describes the reader, not the
+  page, so a page that embeds newly restricted data keeps serving it to its class until the page is edited
+  or purged, or `$wgParserCacheExpireTime` elapses.
+- Data derived from the canonical parse is computed as the anonymous user: the categories, page properties and
+  links tables written on save and by jobs, and the categories and parser properties of the Page node in graph
+  projections. On a wiki where anonymous users cannot read, a category or page property derived from a
+  parse-time read is therefore never set. A designated reader for canonical parses would lift this; it is not
+  decided.
 - Restricting a page does not remove its data from stores; it changes what the backend returns.
 - The filter-injection extension point must be designed and implemented for farms like BlueSpice Galaxy.
 - Dumps and projections contain restricted content (unless it is omitted via a non-permission mechanism such as the
@@ -100,6 +118,13 @@ These decisions remain open at acceptance; each is deferred to the tracking issu
   QLever, and unable to express hook-based MediaWiki permissions. Rejected, consistent with ADR 13.
 - **Project ACL state into the graph for pre-query trimming** (user groups, restriction markers): re-implements an
   open set of permission hooks as data and goes stale, because permission changes produce no revision to sync on.
+- **Evaluate parse-time reads as a fixed anonymous authority**: user-independent output by construction, but
+  every privileged reader sees less than they may read, and on a private wiki the functions show nothing.
+- **Cache the superset and trim per viewer after the cache**, as core does for section edit links: sound for opaque
+  display fragments, but the cache then holds restricted data for every consumer that bypasses the output pipeline,
+  and an ungated parse leaks through categories, page properties and Lua control flow, which no HTML trim retracts.
+- **Leave the cache alone and require wikis with restricted content to disable it**: no machinery, but nothing
+  detects a violation, and a privileged first parse silently caches restricted values for everyone.
 
 ## Related
 
