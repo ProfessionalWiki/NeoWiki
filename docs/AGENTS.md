@@ -28,7 +28,7 @@ Every page sits in one genre. Write to that genre's reader and register.
 
 The genre table picks the directory. Two placements it does not cover:
 
-- A page every audience needs, cutting across genres (the Glossary, Qualifiers and References) → the docs root.
+- A page every audience needs, cutting across genres (the Glossary, Qualifiers and References, Architecture) → the docs root.
 - A worked, end-to-end example → alongside the docs for the surface it walks through.
 
 Link the new page from `README.md`, under the section for its genre.
