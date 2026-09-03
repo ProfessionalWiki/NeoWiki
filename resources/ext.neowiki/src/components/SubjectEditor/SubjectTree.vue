@@ -5,6 +5,16 @@
 		:label="$i18n( 'neowiki-subject-tree-label' ).text()"
 		@select="selectItem"
 	>
+		<!-- Unlinked: the row is itself the click target. The dialog's own header still shows
+			the older "Schema: X" text until that header is converted. -->
+		<template #secondary="{ item }">
+			<SchemaNameDisplay
+				v-if="item.secondaryLabel"
+				:schema-name="item.secondaryLabel"
+				link="none"
+			/>
+		</template>
+
 		<!-- Rendered here rather than inside NeoTree: the dot carries an i18n message of its
 			own, and it belongs in the row a treeitem takes its accessible name from. -->
 		<template #trailing="{ item }">
@@ -17,6 +27,7 @@
 import { computed, shallowReactive, watch } from 'vue';
 import NeoTree from '@/components/common/NeoTree/NeoTree.vue';
 import UnsavedDot from '@/components/common/UnsavedDot.vue';
+import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import type { NeoTreeItem } from '@/components/common/NeoTree/NeoTreeModel.ts';
 import { nodeFor, walkSubjectTree } from './SubjectTreeWalk.ts';
 import type { SubjectTreeWalkResult, WalkNode } from './SubjectTreeWalk.ts';
@@ -25,6 +36,7 @@ import { Schema } from '@/domain/Schema.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
 
 const props = defineProps<{
 	rootSubject: Subject;
@@ -139,9 +151,9 @@ function toTreeItem( node: WalkNode ): NeoTreeItem<string> {
 	return {
 		key: node.key,
 		label: node.label,
-		// Set apart by Schema unless the name already is the Schema: a Subject with no label is
-		// shown under its Schema name (ADR 31), and one labelled after its Schema reads the same.
-		secondaryLabel: node.schemaName === node.label ? undefined : node.schemaName,
+		// A Subject with no label is shown under its Schema name (ADR 31), and one labelled after
+		// its Schema reads the same, so the badge is withheld rather than saying it twice.
+		secondaryLabel: schemaNameToShow( node.schemaName, node.label ) ?? undefined,
 		active: node.subjectId === props.activeId,
 		attrs: { 'data-mw-neowiki-subject-id': node.subjectId },
 		children: childItemsOf( node ),

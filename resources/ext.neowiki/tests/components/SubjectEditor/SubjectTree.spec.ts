@@ -2,6 +2,7 @@ import { mount, flushPromises, DOMWrapper, VueWrapper } from '@vue/test-utils';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createPinia, setActivePinia, type Pinia } from 'pinia';
 import SubjectTree from '@/components/SubjectEditor/SubjectTree.vue';
+import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
@@ -565,7 +566,10 @@ describe( 'SubjectTree', () => {
 		activePinia = createPinia();
 		setActivePinia( activePinia );
 		setupMwMock( {
-			functions: [ 'message', 'msg' ],
+			// `util` is stubbed although the tree's badge is unlinked and so never reaches
+			// mw.util.getUrl: without it, linking the badge fails as a TypeError in all 40
+			// tests here instead of in the one that checks it is unlinked.
+			functions: [ 'message', 'msg', 'util' ],
 			messages: {
 				'neowiki-subject-tree-not-linked': 'Not linked here',
 			},
@@ -822,6 +826,25 @@ describe( 'SubjectTree', () => {
 					row.get( '.ext-neowiki-tree__node-secondary' ).text(),
 				);
 			}
+		} );
+
+		it( 'shows a node\'s schema as the shared badge', async () => {
+			const wrapper = mountTree();
+			await flushPromises();
+
+			const badges = wrapper.findAllComponents( SchemaNameDisplay );
+
+			expect( badges.length ).toBe( 4 );
+			expect( badges.map( ( badge ) => badge.props( 'schemaName' ) ) )
+				.toEqual( [ 'Person', 'Name', 'Event', 'TimeSpan' ] );
+		} );
+
+		it( 'leaves the badge unlinked, so it cannot compete with the row it sits in', async () => {
+			const wrapper = mountTree();
+			await flushPromises();
+
+			expect( wrapper.findAll( '.ext-neowiki-tree__node-secondary a' ) ).toHaveLength( 0 );
+			expect( wrapper.findComponent( SchemaNameDisplay ).props( 'link' ) ).toBe( 'none' );
 		} );
 
 		it( 'marks the active node as selected', async () => {

@@ -78,7 +78,6 @@
 
 	"neowiki-schema-label": "Schema: $1",
 
-	"neowiki-infobox-type": "Type",
 	"neowiki-infobox-edit-link": "Edit",
 	"neowiki-field-required": "Please provide a value.",
 	"neowiki-field-unique": "All values must be unique.",

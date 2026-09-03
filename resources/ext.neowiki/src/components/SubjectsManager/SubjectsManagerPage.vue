@@ -106,13 +106,12 @@
 								{{ mainSubject.getDisplayName() }}
 							</span>
 							<span class="ext-neowiki-subjects-manager__row-subtitle">
-								<a
+								<SchemaNameDisplay
 									class="ext-neowiki-subjects-manager__row-schema"
-									:href="schemaUrl( mainSubject.getSchemaName() )"
+									:schema-name="mainSubject.getSchemaName()"
+									:display-name="mainSubject.getDisplayName()"
 									@click.stop
-								>
-									{{ mainSubject.getSchemaName() }}
-								</a>
+								/>
 								<span class="ext-neowiki-subjects-manager__row-count">
 									{{ $i18n( 'neowiki-managesubjects-statement-count', statementCount( mainSubject ) ).text() }}
 								</span>
@@ -280,13 +279,12 @@
 									{{ subject.getDisplayName() }}
 								</span>
 								<span class="ext-neowiki-subjects-manager__row-subtitle">
-									<a
+									<SchemaNameDisplay
 										class="ext-neowiki-subjects-manager__row-schema"
-										:href="schemaUrl( subject.getSchemaName() )"
+										:schema-name="subject.getSchemaName()"
+										:display-name="subject.getDisplayName()"
 										@click.stop
-									>
-										{{ subject.getSchemaName() }}
-									</a>
+									/>
 									<span class="ext-neowiki-subjects-manager__row-count">
 										{{ $i18n( 'neowiki-managesubjects-statement-count', statementCount( subject ) ).text() }}
 									</span>
@@ -492,6 +490,7 @@ import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDial
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
+import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import SubjectStatementsView from '@/components/SubjectsManager/SubjectStatementsView.vue';
 import DataExportButton from '@/components/SubjectsManager/DataExportButton.vue';
 import { subjectExportUrls, pageExportUrls } from '@/presentation/DataExportMenu.ts';
@@ -588,10 +587,6 @@ const hasChildSubjects = computed( () => otherSubjects.value.length > 0 );
 const isCompletelyEmpty = computed( () => !hasMainSubject.value && !hasChildSubjects.value );
 
 const deletingSubjectName = computed( () => deletingSubject.value?.getDisplayName() ?? '' );
-
-function schemaUrl( name: string ): string {
-	return mw.util.getUrl( `Schema:${ name }` );
-}
 
 function subjectIri( id: string ): string {
 	return subjectIriBase + id;
@@ -1150,11 +1145,9 @@ onUnmounted( () => {
 		color: @color-subtle;
 	}
 
+	/* The badge ellipsises its own text; the row only has to let it shrink. */
 	&__row-schema {
 		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
 	&__row-count {

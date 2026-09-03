@@ -269,6 +269,7 @@ function onFocusOut( event: FocusEvent ): void {
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-data-export {
 	position: relative;
@@ -309,15 +310,7 @@ function onFocusOut( event: FocusEvent ): void {
 	}
 
 	&__sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		margin: -1px;
-		padding: 0;
-		overflow: hidden;
-		clip-path: inset( 50% );
-		white-space: nowrap;
-		border: 0;
+		.ext-neowiki-visually-hidden();
 	}
 }
 </style>

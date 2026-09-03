@@ -1,0 +1,21 @@
+/**
+ * Shared LESS mixins. Imported with `@import ( reference )`, so nothing here emits CSS on
+ * its own — only where a rule calls it.
+ */
+
+/**
+ * Removes an element from the visual layout while leaving it in the accessibility tree.
+ * `clip-path` rather than `display: none` or `visibility: hidden`, which would take it out of
+ * both; `nowrap` stops a long string being collapsed into the 1px box and read back wrapped.
+ */
+.ext-neowiki-visually-hidden() {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset( 50% );
+	white-space: nowrap;
+	border: 0;
+}

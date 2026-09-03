@@ -391,6 +391,49 @@ describe( 'NeoTree', () => {
 		} );
 	} );
 
+	describe( 'The secondary slot', () => {
+		// Every item carries a secondary label: the slot decorates that label rather than
+		// replacing the decision to show one — see the last test in this block.
+		const labelled: NeoTreeItem<string> = item( 'root', 'Root', {
+			secondaryLabel: 'Person',
+			children: [ item( 'child', 'Child', { groupLabel: 'Born', secondaryLabel: 'Birth' } ) ],
+		} );
+
+		it( 'renders the slot for every item, nested ones included', () => {
+			const wrapper = mountTree( [ labelled ], {
+				slots: { secondary: '<i class="mark">{{ params.item.key }}</i>' },
+			} );
+
+			expect( wrapper.findAll( '.mark' ).map( ( mark ) => mark.text() ) )
+				.toEqual( [ 'root', 'child' ] );
+		} );
+
+		it( 'renders the slot inside the element the plain secondary label would occupy', () => {
+			const wrapper = mountTree(
+				[ item( 'root', 'Root', { secondaryLabel: 'Person' } ) ],
+				{ slots: { secondary: '<i class="mark">badge</i>' } },
+			);
+
+			const secondary = row( node( wrapper, 'root' ) ).get( '.ext-neowiki-tree__node-secondary' );
+
+			// The slot replaces the text rather than joining it, so nothing says "Person" twice.
+			expect( secondary.get( '.mark' ).text() ).toBe( 'badge' );
+			expect( secondary.text() ).toBe( 'badge' );
+		} );
+
+		// Pinning a real limit of the slot rather than an accident: the row shows a secondary
+		// element only when the item has a secondary label, so slot content alone cannot put
+		// one there. A consumer that wants to decorate must still supply the label.
+		it( 'renders nothing for an item with no secondary label, slot or not', () => {
+			const wrapper = mountTree(
+				[ item( 'root', 'Root' ) ],
+				{ slots: { secondary: '<i class="mark">badge</i>' } },
+			);
+
+			expect( wrapper.find( '.mark' ).exists() ).toBe( false );
+		} );
+	} );
+
 	describe( 'Item labels', () => {
 		it( 'prints the secondary label after the label, set apart from it', () => {
 			const wrapper = mountTree( [ item( 'root', 'Root', { secondaryLabel: 'Person' } ) ] );
