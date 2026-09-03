@@ -4,6 +4,7 @@ import { InMemorySchemaRepository } from '@/application/SchemaRepository.ts';
 import { InMemoryLayoutLookup } from '@/application/LayoutLookup.ts';
 import { StubSubjectRepository } from '@/domain/SubjectRepository.ts';
 import type { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
+import type { PageTitleSearch } from '@/domain/PageTitleSearch.ts';
 
 export class NeoWikiTestServices extends NeoWikiServices {
 
@@ -18,6 +19,7 @@ export class NeoWikiTestServices extends NeoWikiServices {
 			[ Service.SchemaRepository ]: new InMemorySchemaRepository( [] ),
 			[ Service.SubjectRepository ]: new StubSubjectRepository( [] ),
 			[ Service.SubjectLabelSearch ]: { searchSubjectLabels: () => Promise.resolve( [] ) } as SubjectLabelSearch,
+			[ Service.PageTitleSearch ]: { searchPageTitles: () => Promise.resolve( [] ) } as PageTitleSearch,
 			[ Service.ViewTypeRegistry ]: neoWiki.getViewTypeRegistry(),
 			[ Service.LayoutPermissionHints ]: neoWiki.newLayoutPermissionHints(),
 			[ Service.LayoutRepository ]: new InMemoryLayoutLookup( [] ),
