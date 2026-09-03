@@ -103,7 +103,7 @@ readonly class SparqlPlugin {
 
 	/**
 	 * Parse-time queries run as the user the page is parsed for, and always at the default tier: the
-	 * output is parser-cached, so neither may depend on who happened to parse.
+	 * output is parser-cached under that user's access class, and may vary by nothing else.
 	 */
 	private function newParseTimeQueryService( Parser $parser ): SparqlQueryService {
 		return $this->newQueryService( ParserAuthority::of( $parser ) );

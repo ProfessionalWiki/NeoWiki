@@ -63,7 +63,8 @@ class ScribuntoLuaLibrary extends LibraryBase {
 
 	/**
 	 * Every read this library performs runs against the user the page is parsed for
-	 * ({@see ParserAuthority}), so a module cannot read more than the reader may.
+	 * ({@see ParserAuthority}), so a module cannot read more than the reader may, and the parse
+	 * is keyed by that user's access class in the parser cache.
 	 */
 	private function getParserAuthority(): Authority {
 		return ParserAuthority::of( $this->getParser() );

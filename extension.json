@@ -44,6 +44,8 @@
 
 		"LoadExtensionSchemaUpdates": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onLoadExtensionSchemaUpdates",
 
+		"ParserOptionsRegister": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserOptionsRegister",
+		"PageRenderingHash": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageRenderingHash",
 		"ParserFirstCallInit": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserFirstCallInit",
 
 		"RevisionFromEditComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionFromEditComplete",

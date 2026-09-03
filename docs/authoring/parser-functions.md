@@ -22,7 +22,9 @@ For definitions of terms like Subject, Schema, and Layout, see the [Glossary](..
 Every parser function reads as the user the page is parsed for. Subjects that user cannot read are
 treated as absent. `{{#cypher_raw}}` and `{{#sparql_raw}}` need the `neowiki-query` right.
 `{{#view}}` only places a marker at parse time; the Subject it shows is fetched per viewer over the
-REST API, under that viewer's permissions.
+REST API, under that viewer's permissions. Output of the other functions is cached separately for
+readers with different groups or rights, so what one reader may see does not reach another through
+the parser cache.
 
 ## `{{#view}}`
 
