@@ -5,6 +5,16 @@
 		:label="$i18n( 'neowiki-subject-tree-label' ).text()"
 		@select="selectItem"
 	>
+		<!-- Unlinked: the row is itself the click target. The dialog's own header still shows
+			the older "Schema: X" text until that header is converted. -->
+		<template #secondary="{ item }">
+			<SchemaNameDisplay
+				v-if="item.secondaryLabel"
+				:schema-name="item.secondaryLabel"
+				link="none"
+			/>
+		</template>
+
 		<!-- Rendered here rather than inside NeoTree: the dot carries an i18n message of its
 			own, and it belongs in the row a treeitem takes its accessible name from. -->
 		<template #trailing="{ item }">
@@ -17,6 +27,7 @@
 import { computed, shallowReactive, watch } from 'vue';
 import NeoTree from '@/components/common/NeoTree/NeoTree.vue';
 import UnsavedDot from '@/components/common/UnsavedDot.vue';
+import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import type { NeoTreeItem } from '@/components/common/NeoTree/NeoTreeModel.ts';
 import { nodeFor, walkSubjectTree } from './SubjectTreeWalk.ts';
 import type { SubjectTreeWalkResult, WalkNode } from './SubjectTreeWalk.ts';
@@ -139,9 +150,8 @@ function toTreeItem( node: WalkNode ): NeoTreeItem<string> {
 	return {
 		key: node.key,
 		label: node.label,
-		// Set apart by Schema unless the name already names it: a Subject nobody named is shown as
-		// "(unnamed <Schema>)", and one labelled after its Schema reads the same as its Schema.
-		secondaryLabel: node.nameIsGenerated || node.schemaName === node.label ? undefined : node.schemaName,
+		// Withheld where the name already names the Schema; the walk decides that per node.
+		secondaryLabel: node.schemaLabel ?? undefined,
 		active: node.subjectId === props.activeId,
 		attrs: { 'data-mw-neowiki-subject-id': node.subjectId },
 		children: childItemsOf( node ),

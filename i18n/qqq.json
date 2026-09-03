@@ -17,7 +17,7 @@
 	"action-neowiki-admin": "{{doc-action|neowiki-admin}}",
 	"specialpages-group-neowiki": "Group heading for NeoWiki special pages on [[Special:SpecialPages]].",
 	"neowiki-special-schemas": "Title and description of the [[Special:Schemas]] page.",
-	"neowiki-schema-label": "Label used to identify the schema. $1 is the schema name or link.",
+	"neowiki-schema-label": "Names a subject's schema. $1 is the schema name or a link to it. Also used as the accessible name of the schema badge, whose visible text is the bare name.",
 	"neowiki-cypher-raw-error-json-encode": "Error message shown when JSON encoding of query results fails.",
 
 	"neowiki-cypher-error-empty-query": "Error shown on the <code>{{#cypher_raw}}</code> parser function and the <code>nw.query()</code> Lua function when the supplied Cypher query is empty or only whitespace.",
