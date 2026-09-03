@@ -42,6 +42,12 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction
@@ -68,23 +74,25 @@ class ReplaceSubjectActionTest extends TestCase {
 		bool $validationEnforced = false,
 		?PageReadAuthorizer $readAuthorizer = null,
 	): ReplaceSubjectAction {
-		$registry = PropertyTypeRegistry::withCoreTypes();
+		$registry = PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY );
 		$builder = new StatementListBuilder(
 			propertyTypeLookup: $registry,
-			idGenerator: new StubIdGenerator( '11111111111127' )
+			idGenerator: new StubIdGenerator( '11111111111127' ),
+			subjectIdParser: TestSubjectIds::newParser()
 		);
 		return new ReplaceSubjectAction(
 			subjectRepository: $this->subjectRepository,
 			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
 			writeAuthorizer: $authorizer ?? new SpySubjectWriteAuthorizer( allowed: true ),
 			statementListBuilder: $builder,
-			schemaLookup: $this->schemaLookup,
+			schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
 			proposedSubjectValidator: new ProposedSubjectValidator(
-				schemaLookup: $this->schemaLookup,
+				schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
 				subjectValidator: new SubjectValidator(
 					propertyTypeLookup: $registry,
 					subjectLookup: new InMemorySubjectLookup(),
+					sourceRegistry: TestSources::newRegistry(),
 				),
 			),
 			presenter: $this->presenterSpy,
@@ -98,6 +106,123 @@ class ReplaceSubjectActionTest extends TestCase {
 				[ new SubjectId( self::SUBJECT_ID_ON_LATER_PAGE ), new PageIdentifiers( new PageId( 8 ), 'Talk:Later page', 1 ) ],
 			] ),
 		);
+	}
+
+	/**
+	 * A wiki that does not enforce validation persists the write and reports the violation, as
+	 * $wgNeoWikiEnforceValidation is the master switch for every violation alike (ADR 26).
+	 */
+	public function testAddingARelationTargetFromAnUnregisteredSourceIsSavedWithoutEnforcement(): void {
+		$this->registerSchemaWithRelation();
+		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+		$updatesBeforeAction = $this->subjectRepository->updateSubjectCallCount;
+
+		$this->newAction()->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'Label',
+			$this->relationStatements( 'neverinstalled:Q42' ),
+			null
+		);
+
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+		$this->assertSame( $updatesBeforeAction + 1, $this->subjectRepository->updateSubjectCallCount );
+	}
+
+	public function testAddingARelationTargetFromAnUnregisteredSourceIsRejectedUnderEnforcement(): void {
+		$this->registerSchemaWithRelation();
+		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+		$updatesBeforeAction = $this->subjectRepository->updateSubjectCallCount;
+
+		$this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'Label',
+			$this->relationStatements( 'neverinstalled:Q42' ),
+			null
+		);
+
+		$this->assertTrue( $this->presenterSpy->validationFailed );
+		$this->assertSame( $updatesBeforeAction, $this->subjectRepository->updateSubjectCallCount );
+	}
+
+	/**
+	 * Under enforcement, where the assertion can fail: an absent local target is a non-blocking
+	 * not-found, not the blocking unreachable-Source violation.
+	 */
+	public function testAddingABareRelationTargetIsAcceptedUnderEnforcement(): void {
+		$this->registerSchemaWithRelation();
+		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+
+		$this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'Label',
+			$this->relationStatements( 's11111111111111' ),
+			null
+		);
+
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+	}
+
+	/**
+	 * A Subject that already carries an unresolvable target stays editable: only a violation this edit
+	 * introduces blocks it.
+	 */
+	public function testAPreExistingUnresolvableTargetDoesNotBlockAnUnrelatedEdit(): void {
+		$this->registerSchemaWithRelation();
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: new SubjectLabel( 'Original' ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+			statements: new StatementList( [
+				TestStatement::build(
+					property: 'Knows',
+					value: new RelationValue( TestRelation::build( targetId: 'neverinstalled:Q42' ) ),
+					propertyType: 'relation'
+				),
+			] ),
+		) );
+
+		$this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'Renamed',
+			$this->relationStatements( 'neverinstalled:Q42' ),
+			null
+		);
+
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+		$this->assertSame(
+			'Renamed',
+			$this->subjectRepository->getSubject( new SubjectId( self::SUBJECT_ID ) )->getLabel()->text
+		);
+	}
+
+	private function newSubjectWithRelationSchema(): Subject {
+		return TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: new SubjectLabel( 'Original' ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function relationStatements( string $targetId ): array {
+		return [
+			'Knows' => [
+				'propertyType' => 'relation',
+				'value' => [ [ 'target' => $targetId ] ],
+			],
+		];
+	}
+
+	private function registerSchemaWithRelation(): void {
+		$this->schemaLookup->updateSchema( new Schema(
+			name: new SchemaName( self::SCHEMA_NAME ),
+			description: '',
+			properties: new PropertyDefinitions( [
+				'Knows' => TestProperty::buildRelation( targetSchema: TestSubject::DEFAULT_SCHEMA_ID ),
+			] )
+		) );
 	}
 
 	private function registerSchemaWithSelect(): void {
@@ -506,7 +631,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 		$this->assertSame( self::SUBJECT_ID, $this->presenterSpy->subject?->id );
 		$this->assertSame( 'New Label', $this->presenterSpy->subject?->label );
-		$this->assertSame( self::SCHEMA_NAME, $this->presenterSpy->subject?->schemaName );
+		$this->assertSame( self::SCHEMA_NAME, $this->presenterSpy->subject?->schema );
 		$this->assertSame(
 			// The label the request supplied was resolved to the option id.
 			[ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'opt_approved' ] ] ],

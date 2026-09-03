@@ -4,8 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Rdf;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use Psr\Log\LogLevel;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\Application\Rdf\SubjectIriResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
@@ -59,7 +63,8 @@ class RdfPageProjectorTest extends TestCase {
 		return new RdfPageProjector(
 			RdfValueMapperRegistry::withCoreMappers(),
 			$this->ns,
-			$schemaLookup,
+			TestSources::newSchemaResolver( $schemaLookup ),
+			new SubjectIriResolver( $this->ns, TestSources::newRegistry(), $this->logger ),
 			$this->logger,
 		);
 	}
@@ -381,7 +386,41 @@ class RdfPageProjectorTest extends TestCase {
 		);
 	}
 
-	private function acmeWithCeo(): Subject {
+	/**
+	 * The point of an IRI is that it names the same thing everywhere, so a Subject of another Source is
+	 * named under that Source's own base rather than minted under this wiki's.
+	 */
+	public function testRelationToARegisteredForeignSourceIsNamedUnderThatSourcesBaseUri(): void {
+		$quads = $this->newProjector( new InMemorySchemaLookup( $this->companySchema() ) )
+			->projectSubject(
+				TestPage::build( id: 42, mainSubject: $this->acmeWithCeo( TestSubjectIds::OTHER_SOURCE_KEY . ':Q42' ) ),
+				new SubjectId( self::ACME_ID )
+			);
+
+		$this->assertStringContainsString( '<https://example.org/entity/Q42>', $this->serialize( $quads ) );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
+	public function testRelationToAnUnregisteredSourceIsSkippedAndLogged(): void {
+		$quads = $this->newProjector( new InMemorySchemaLookup( $this->companySchema() ) )
+			->projectSubject(
+				TestPage::build( id: 42, mainSubject: $this->acmeWithCeo( 'neverinstalled:Q42' ) ),
+				new SubjectId( self::ACME_ID )
+			);
+
+		$serialized = $this->serialize( $quads );
+
+		$this->assertStringNotContainsString( 'neverinstalled', $serialized );
+		$this->assertStringNotContainsString( self::CEO_RELATION_ID, $serialized );
+		$this->assertStringContainsString( 'ACME Corp', $serialized, 'The rest of the Subject still projects' );
+		$this->assertSame(
+			[ 'Not projecting relation to neverinstalled:Q42: its Source is not registered' ],
+			$this->logger->getLogCalls()->getMessages()
+		);
+		$this->assertSame( LogLevel::WARNING, $this->logger->getFirstLogCall()->getLevel() );
+	}
+
+	private function acmeWithCeo( string $ceoId = self::JANE_ID ): Subject {
 		return TestSubject::build(
 			id: self::ACME_ID,
 			label: 'ACME Corp',
@@ -391,7 +430,7 @@ class RdfPageProjectorTest extends TestCase {
 				TestStatement::buildRelation( 'CEO', [
 					TestRelation::build(
 						id: self::CEO_RELATION_ID,
-						targetId: self::JANE_ID,
+						targetId: $ceoId,
 						properties: [ 'Since' => 2022 ],
 					),
 				] ),

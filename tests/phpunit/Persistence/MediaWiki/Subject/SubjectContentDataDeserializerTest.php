@@ -19,6 +19,8 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer
@@ -36,7 +38,8 @@ class SubjectContentDataDeserializerTest extends TestCase {
 
 	private function newDeserializer(): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer(
-			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup() )
+			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup(), TestSubjectIds::newParser() ),
+			TestSubjectIds::newParser()
 		);
 	}
 
@@ -45,6 +48,25 @@ class SubjectContentDataDeserializerTest extends TestCase {
 
 		$this->assertSame( [], $data->getAllSubjects()->asArray() );
 		$this->assertNull( $data->getMainSubject() );
+	}
+
+	/**
+	 * A `mainSubject` that is not a string is treated as absent rather than parsed. Only hand-edited or
+	 * corrupt slot content reaches this, and a page must render regardless.
+	 *
+	 * @dataProvider nonStringMainSubjectProvider
+	 */
+	public function testNonStringMainSubjectLeavesThePageWithoutOne( string $mainSubjectJson ): void {
+		$data = $this->newDeserializer()->deserialize( '{"mainSubject": ' . $mainSubjectJson . ', "subjects": {}}' );
+
+		$this->assertNull( $data->getMainSubject() );
+	}
+
+	public static function nonStringMainSubjectProvider(): iterable {
+		yield 'null' => [ 'null' ];
+		yield 'a number' => [ '42' ];
+		yield 'an array' => [ '["sTestSCDD111115"]' ];
+		yield 'an object' => [ '{"id": "sTestSCDD111115"}' ];
 	}
 
 	public function testMinimalSubjects(): void {
@@ -70,12 +92,12 @@ JSON
 				Subject::newSubject(
 					new SubjectId( 'sTestSCDD111115' ),
 					new SubjectLabel( 'ACME Inc.' ),
-					new SchemaName( "Company" )
+					SchemaReference::local( new SchemaName( "Company" ) )
 				),
 				Subject::newSubject(
 					new SubjectId( 'sTestSCDD111114' ),
 					new SubjectLabel( 'Contoso Ltd.' ),
-					new SchemaName( "Company" )
+					SchemaReference::local( new SchemaName( "Company" ) )
 				),
 			],
 			$data->getAllSubjects()->asArray()
@@ -132,7 +154,7 @@ JSON
 				Subject::newSubject(
 					new SubjectId( 'sTestSCDD111114' ),
 					new SubjectLabel( 'ACME Inc.' ),
-					new SchemaName( 'Company' )
+					SchemaReference::local( new SchemaName( 'Company' ) )
 				),
 			],
 			$data->getAllSubjects()->asArray()

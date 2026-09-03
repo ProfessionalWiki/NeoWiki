@@ -25,7 +25,7 @@
 				{{ $i18n( 'neowiki-property-editor-target-schema' ).text() }}
 			</template>
 			<SchemaPicker
-				:selected="property.targetSchema || null"
+				:selected="localTargetSchemaName || null"
 				@select="updateTargetSchema"
 				@blur="targetSchemaTouched = true"
 			/>
@@ -52,6 +52,7 @@
 </template>
 
 <script setup lang="ts">
+import { isLocalSchemaReference, schemaReferenceName } from '@/domain/SchemaReference';
 import { computed, onMounted, ref, watch } from 'vue';
 import { CdxCheckbox, CdxField, CdxTextInput } from '@wikimedia/codex';
 import { RelationProperty } from '@/domain/propertyTypes/Relation.ts';
@@ -84,8 +85,14 @@ const relationError = computed<string | null>( () =>
 
 const targetSchemaTouched = ref( false );
 
+const localTargetSchemaName = computed<string>( () =>
+	isLocalSchemaReference( props.property.targetSchema ) ?
+		schemaReferenceName( props.property.targetSchema ) :
+		''
+);
+
 const targetSchemaError = computed<string | null>( () =>
-	targetSchemaTouched.value && ( props.property.targetSchema ?? '' ).trim() === '' ?
+	targetSchemaTouched.value && schemaReferenceName( props.property.targetSchema ).trim() === '' ?
 		mw.message( 'neowiki-property-editor-target-schema-required' ).text() :
 		null
 );

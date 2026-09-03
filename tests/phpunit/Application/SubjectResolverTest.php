@@ -24,6 +24,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use RuntimeException;
 
 /**
@@ -40,7 +42,7 @@ class SubjectResolverTest extends TestCase {
 		return new Subject(
 			id: new SubjectId( $id ),
 			label: new SubjectLabel( $label ),
-			schemaName: new SchemaName( 'TestSchema' ),
+			schema: SchemaReference::local( new SchemaName( 'TestSchema' ) ),
 			statements: new StatementList(),
 		);
 	}
@@ -53,7 +55,12 @@ class SubjectResolverTest extends TestCase {
 		SubjectContentRepository $contentRepository,
 		SubjectLookup $subjectLookup
 	): SubjectResolver {
-		return new SubjectResolver( $contentRepository, $subjectLookup, new InMemoryPageIdentifiersLookup() );
+		return new SubjectResolver(
+			$contentRepository,
+			$subjectLookup,
+			new InMemoryPageIdentifiersLookup(),
+			TestSubjectIds::newParser()
+		);
 	}
 
 	public function testResolveByIdReturnsSubject(): void {
@@ -150,7 +157,8 @@ class SubjectResolverTest extends TestCase {
 			$this->createStub( SubjectLookup::class ),
 			new InMemoryPageIdentifiersLookup( [
 				[ new SubjectId( self::TARGET_SUBJECT_ID ), $this->newTargetPageIdentifiers() ],
-			] )
+			] ),
+			TestSubjectIds::newParser()
 		);
 	}
 
@@ -166,7 +174,7 @@ class SubjectResolverTest extends TestCase {
 		return new Subject(
 			id: new SubjectId( self::TARGET_SUBJECT_ID ),
 			label: $label === null ? null : new SubjectLabel( $label ),
-			schemaName: new SchemaName( 'Person' ),
+			schema: SchemaReference::local( new SchemaName( 'Person' ) ),
 			statements: new StatementList(),
 		);
 	}
@@ -245,7 +253,8 @@ class SubjectResolverTest extends TestCase {
 		$resolver = new SubjectResolver(
 			new InMemorySubjectContentRepository(),
 			$this->createStub( SubjectLookup::class ),
-			$pageIdentifiersLookup
+			$pageIdentifiersLookup,
+			TestSubjectIds::newParser()
 		);
 
 		$this->assertSame(

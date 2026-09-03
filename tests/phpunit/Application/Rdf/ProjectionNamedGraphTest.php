@@ -4,9 +4,11 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Rdf;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\Application\Rdf\SubjectIriResolver;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\SchemaMapping;
@@ -87,9 +89,10 @@ class ProjectionNamedGraphTest extends TestCase {
 		return new RdfPageProjector(
 			RdfValueMapperRegistry::withCoreMappers(),
 			$this->ns,
-			new InMemorySchemaLookup(
+			TestSources::newSchemaResolver( new InMemorySchemaLookup(
 				TestSchema::build( name: 'Person', properties: new PropertyDefinitions( [] ) )
-			),
+			) ),
+			new SubjectIriResolver( $this->ns, TestSources::newRegistry(), new LegacyLoggerSpy() ),
 			new LegacyLoggerSpy(),
 		);
 	}
@@ -99,6 +102,7 @@ class ProjectionNamedGraphTest extends TestCase {
 			$this->personToEdmMapping(),
 			$this->ns,
 			RdfValueMapperRegistry::withCoreMappers(),
+			new SubjectIriResolver( $this->ns, TestSources::newRegistry(), new LegacyLoggerSpy() ),
 			new LegacyLoggerSpy(),
 		);
 	}

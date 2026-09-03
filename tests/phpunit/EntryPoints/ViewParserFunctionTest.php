@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\ViewParserFunction;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\ViewParserFunction
@@ -138,7 +139,7 @@ class ViewParserFunctionTest extends TestCase {
 		$mainSubject = new Subject(
 			id: new SubjectId( self::MAIN_SUBJECT_ID ),
 			label: new SubjectLabel( 'Main' ),
-			schemaName: new SchemaName( 'TestSchema' ),
+			schema: SchemaReference::local( new SchemaName( 'TestSchema' ) ),
 			statements: new StatementList(),
 		);
 

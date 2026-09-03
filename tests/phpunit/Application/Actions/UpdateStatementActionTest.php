@@ -35,8 +35,10 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
@@ -68,7 +70,7 @@ class UpdateStatementActionTest extends TestCase {
 		bool $validationEnforced = false,
 		?PageReadAuthorizer $readAuthorizer = null,
 	): UpdateStatementAction {
-		$registry = PropertyTypeRegistry::withCoreTypes();
+		$registry = PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY );
 
 		return new UpdateStatementAction(
 			subjectRepository: $this->subjectRepository,
@@ -76,15 +78,17 @@ class UpdateStatementActionTest extends TestCase {
 			writeAuthorizer: $authorizer ?? new SpySubjectWriteAuthorizer( allowed: true ),
 			statementListBuilder: new StatementListBuilder(
 				propertyTypeLookup: $registry,
-				idGenerator: new StubIdGenerator( '11111111111127' )
+				idGenerator: new StubIdGenerator( '11111111111127' ),
+				subjectIdParser: TestSubjectIds::newParser()
 			),
 			schemaLookup: $this->schemaLookup,
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
 			proposedSubjectValidator: new ProposedSubjectValidator(
-				schemaLookup: $this->schemaLookup,
+				schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
 				subjectValidator: new SubjectValidator(
 					propertyTypeLookup: $registry,
 					subjectLookup: new InMemorySubjectLookup(),
+					sourceRegistry: TestSources::newRegistry(),
 				),
 			),
 			presenter: $this->presenterSpy,

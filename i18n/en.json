@@ -97,6 +97,7 @@
 	"neowiki-field-unregistered-type": "The type \"$1\" is not available on this wiki.",
 	"neowiki-field-relation-target-schema-mismatch": "This relation must point to a subject using the \"$1\" schema, but the selected subject uses \"$2\".",
 	"neowiki-field-relation-target-not-found": "The subject \"$1\" this relation points to does not exist yet.",
+	"neowiki-field-relation-target-unresolvable-source": "The subject \"$1\" this relation points to comes from a source this wiki does not have.",
 	"neowiki-select-placeholder": "Select an option",
 	"neowiki-select-no-results": "No matching options.",
 	"neowiki-select-unknown-option": "(unknown option)",

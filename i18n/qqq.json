@@ -247,6 +247,7 @@
 	"neowiki-field-max-length": "Validation error shown when a text value is longer than the property's maximum length. $1 is the maximum number of characters.",
 	"neowiki-field-relation-target-schema-mismatch": "Validation error shown when a relation points to a subject whose schema is not the relation's declared target schema. $1 is the required target schema; $2 is the schema the target subject actually uses.",
 	"neowiki-field-relation-target-not-found": "Validation warning shown when a relation points to a subject ID that does not resolve to an existing subject. $1 is the target subject ID. Non-blocking: the target may be created later (for example during import), mirroring wiki red links.",
+	"neowiki-field-relation-target-unresolvable-source": "Validation error shown when a relation points to a subject ID whose source key names a subject source this wiki has not registered. $1 is the target subject ID, in its \"sourceKey:localId\" form. Blocking: the reference cannot be resolved at all, so it is refused whether or not the wiki enforces validation.",
 	"neowiki-select-placeholder": "Placeholder text shown in the select dropdown before any option is chosen.",
 	"neowiki-select-no-results": "Message shown in the multi-select dropdown when the typed text does not match any available option.",
 	"neowiki-field-invalid-number": "Validation error shown under a number field whose text cannot be interpreted as a number. Also shown as an error notification, titled with the property name, when an action is held because a number field holds such text.",

@@ -238,7 +238,7 @@ class SubjectDataLookup {
 				schemaName: $subject->getSchemaName()
 			),
 			'storedLabel' => $subject->getLabel()?->text,
-			'schema' => $subject->getSchemaName()->getText(),
+			'schema' => $subject->getSchemaReference()->toJson(),
 			'statements' => $this->statementsToTable( $subject ),
 		];
 	}

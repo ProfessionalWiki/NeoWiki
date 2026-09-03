@@ -17,7 +17,13 @@ readonly class GetSubjectResponseItem {
 		 */
 		public ?string $label,
 		public string $displayName,
-		public string $schemaName,
+		/**
+		 * The Schema reference in its stored shape: the bare name for a Schema of this wiki, a
+		 * {source, name} object for one from elsewhere, so read and write name a Schema alike.
+		 *
+		 * @var string|array{source: string, name: string}
+		 */
+		public string|array $schema,
 		/**
 		 * @var array<string, mixed>
 		 */
@@ -44,7 +50,7 @@ readonly class GetSubjectResponseItem {
 			id: $subject->id->text,
 			label: $subject->getLabel()?->text,
 			displayName: $displayName,
-			schemaName: $subject->getSchemaName()->getText(),
+			schema: $subject->getSchemaReference()->toJson(),
 			statements: self::arrayifyStatements( $subject->getStatements() ),
 			pageId: $pageIdentifiers?->getId()->id,
 			pageTitle: $pageIdentifiers?->getTitle(),

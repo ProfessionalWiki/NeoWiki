@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Rdf;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageValue;
@@ -56,7 +56,8 @@ class RdfPageProjector implements PageProjector {
 	public function __construct(
 		private readonly RdfValueMapperRegistry $valueMappers,
 		private readonly RdfNamespaces $namespaces,
-		private readonly SchemaLookup $schemaLookup,
+		private readonly SchemaResolver $schemaResolver,
+		private readonly SubjectIriResolver $subjectIris,
 		private readonly LoggerInterface $logger,
 	) {
 	}
@@ -88,10 +89,10 @@ class RdfPageProjector implements PageProjector {
 			return new QuadList();
 		}
 
-		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+		$schema = $this->schemaResolver->getSchema( $subject->getSchemaReference() );
 
 		if ( $schema === null ) {
-			$this->logger->warning( 'Schema not found: ' . $subject->getSchemaName()->getText() );
+			$this->logger->warning( 'Schema not found: ' . $subject->getSchemaReference()->getText() );
 			return new QuadList();
 		}
 
@@ -114,10 +115,10 @@ class RdfPageProjector implements PageProjector {
 		$resolved = [];
 
 		foreach ( $subjects as $subject ) {
-			$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+			$schema = $this->schemaResolver->getSchema( $subject->getSchemaReference() );
 
 			if ( $schema === null ) {
-				$this->logger->warning( 'Schema not found: ' . $subject->getSchemaName()->getText() );
+				$this->logger->warning( 'Schema not found: ' . $subject->getSchemaReference()->getText() );
 				continue;
 			}
 
@@ -258,8 +259,13 @@ class RdfPageProjector implements PageProjector {
 	 * @return Quad[]
 	 */
 	private function projectRelation( TypedRelation $relation, Iri $subjectIri, Iri $graph ): array {
+		$targetIri = $this->subjectIris->targetIri( $relation->targetId );
+
+		if ( $targetIri === null ) {
+			return [];
+		}
+
 		$predicate = $this->namespaces->property( $relation->type->text );
-		$targetIri = $this->namespaces->subject( $relation->targetId );
 		$relationIri = $this->namespaces->relationNode( $relation->id );
 
 		$quads = [

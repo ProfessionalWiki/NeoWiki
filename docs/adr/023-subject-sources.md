@@ -25,6 +25,30 @@ store, another NeoWiki, or an external system, can also supply Subjects. A **Sou
 Source, which is the authority for its Subjects' capabilities, identity, and schema resolution. A wiki farm is simply
 more registered Sources.
 
+#### The Source contract
+
+*Amended 2026-08-07, resolving the "Source interface contract" open question.*
+
+A Source guarantees five things and no more:
+
+- **Fetch by id**, one Subject or a whole list. A list is one call, so a Source that can answer it in one round trip does.
+- **Schema resolution by name**, because a Subject's Schema is resolved through the Schema's own Source.
+- **Editability**, the one capability the model varies.
+- **localId validation**, so the global id-format check becomes source-delegated: the nanoid grammar is the local
+  Source's rule, not a rule about ids.
+- **A base URI**, the IRI prefix its Subjects are named under, which is also its RDF prefix entry.
+
+Two absences are deliberate. There is **no write method**: write-back is end-of-roadmap (below), and a stub for it
+would be a contract nobody can implement against, so it arrives with the feature. And **Sources take no part at query
+time** — materialisation is the only gate on queryability, so a query never consults a Source.
+
+Editability is likewise stated ahead of its use: nothing reads it until sourced Subjects render. It belongs in the
+frozen contract because a Source author must answer it from the start.
+
+Availability is not part of the contract either: a Source that cannot reach its store answers as though the Subject or
+Schema is absent. Together with an unregistered source key resolving to nothing, a Subject from a Source this wiki
+lacks degrades wherever it is read rather than breaking the page.
+
 ### A source decides editability
 
 The distinction:
@@ -70,6 +94,12 @@ and a schema's source is independent of the subject's source. Rendering a source
 schema through *its* Source, which may differ from the subject's. When a schema cannot be resolved — a foreign,
 offline, or removed schema — rendering degrades gracefully rather than breaking the page.
 
+Unlike a Subject id, a schema reference is not written as one string. A local schema name is a page title and may
+itself contain a colon (`ISO:9001`), so a qualified string would be ambiguous with names that were legal before
+Sources existed, and would read them back wrongly. A stored reference is therefore either a plain name, always
+local, or an object carrying source and name ([Schema format](../api/schema-format.md#schema-references)). A
+qualified `source:name` string survives only as a one-way rendering for people.
+
 ## Consequences
 
 - One model spans local data, on-wiki SMW/Wikibase adoption, cross-wiki farm metadata, and external/federated data,
@@ -89,7 +119,6 @@ Deferred and/or still being designed; consortium feedback is expected here.
   and [planning/OntologyMapping.md](../planning/OntologyMapping.md).
 - **Editing sourced Subjects (write-back)** — end-of-roadmap. How useful? Things like editing Wikibase Items
   via NeoWiki UI, or editing data from a remote NeoWiki
-- **The Source interface contract** for by-id and query resolution.
 
 ## Alternatives Considered
 
