@@ -329,13 +329,13 @@ describe( 'SubjectEditPane', () => {
 			.toBe( 'Test Subject' );
 	} );
 
-	// The dialog already carries that name; a second region repeating it is one more boundary
-	// to cross on the way to the form.
-	it( 'leaves the root pane\'s region unnamed', () => {
+	// The dialog's own header no longer names any Subject, so the root's region carries the
+	// name like every other pane's.
+	it( 'names the root pane\'s region after its subject too', () => {
 		const wrapper = mountPane();
 
 		expect( wrapper.get( '.ext-neowiki-subject-edit-pane' ).attributes( 'aria-label' ) )
-			.toBeUndefined();
+			.toBe( 'Test Subject' );
 	} );
 
 	it( 'names the region of a label-less subject by its display name', () => {
@@ -581,7 +581,7 @@ describe( 'SubjectEditPane', () => {
 		} );
 	} );
 
-	describe( 'Renaming from a nested pane', () => {
+	describe( 'Renaming from a pane', () => {
 		async function rename( wrapper: VueWrapper, name: string ): Promise<void> {
 			await wrapper.get( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
 			const input = wrapper.get( '.ext-neowiki-editable-text__input input' );
@@ -597,12 +597,12 @@ describe( 'SubjectEditPane', () => {
 			expect( ( ( wrapper.vm as any ).buildUpdatedSubject() as Subject ).getLabel() ).toBe( 'Renamed' );
 		} );
 
-		// The dialog's own header renames the root Subject; a second field for it would be two
-		// places to type one name.
-		it( 'leaves the root pane without a rename control', () => {
+		// The dialog's header names no Subject now, so the root is renamed where every other
+		// pane is renamed: in the pane itself.
+		it( 'gives the root pane a rename control, like every other pane', () => {
 			const wrapper = mountPane();
 
-			expect( wrapper.findComponent( EditableText ).exists() ).toBe( false );
+			expect( wrapper.findComponent( EditableText ).exists() ).toBe( true );
 		} );
 
 		// The empty field stands for "no label", so it previews the name that choice leaves the
