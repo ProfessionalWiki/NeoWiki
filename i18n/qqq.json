@@ -66,6 +66,7 @@
 	"neowiki-schema-editor-description-collapse": "Accessibility label and tooltip for the button that collapses an expanded schema description back to two lines.",
 	"neowiki-schema-editor-description-add": "Label of the button that starts writing a description for a schema that has none, shown in the schema editor dialog header.",
 
+	"neowiki-subject-editor-title": "Title of the subject editor dialog, and its accessible name. Names the task rather than a subject: the dialog can edit several at once, and each one is named by the pane that edits it.",
 	"neowiki-subject-editor-label-field": "Accessibility label for the input shown in place of the dialog title while renaming a subject in the subject editor dialog.",
 	"neowiki-subject-editor-rename": "Accessibility label for the button next to the subject editor dialog title that starts renaming the subject.",
 	"neowiki-subject-editor-edit-target": "Aria-label of the per-target edit button shown beside a selected relation target in the subject editor. Clicking it opens that target subject for editing in a pane.",

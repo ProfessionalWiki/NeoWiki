@@ -226,37 +226,101 @@ describe( 'SubjectEditorDialog', () => {
 		expect( editedPropertyNames( wrapper ) ).toEqual( [ 'nickname' ] );
 	} );
 
-	it( 'renders schema as a link when user has edit permissions', async () => {
+	// The Schema is shown by the pane that uses it, not by a header that names the root's
+	// whichever pane is on screen.
+	it( 'shows the schema in the pane rather than the dialog header', async () => {
 		const wrapper = mountComponent( true, {} );
 		await flushPromises();
 
-		const schemaLink = wrapper.find( '.ext-neowiki-subject-editor-dialog-schema__link' );
-		expect( schemaLink.exists() ).toBe( true );
-		expect( schemaLink.text() ).toBe( 'TestSchema' );
+		expect( wrapper.find( '.cdx-dialog__header__subtitle' ).exists() ).toBe( false );
+		expect( wrapper.get( '.ext-neowiki-subject-edit-pane__meta .ext-neowiki-schema-name__text' ).text() )
+			.toBe( 'TestSchema' );
 	} );
 
-	it( 'renders schema as plain text when user lacks edit permissions', async () => {
+	// The badge is a link to the Schema page whoever is looking, so it carries its own
+	// interactive styling; only the click is taken over, and only for someone who may edit.
+	it( 'lets the schema link navigate for a user who cannot edit it', async () => {
 		const wrapper = mountComponent( false, {} );
 		await flushPromises();
 
-		const schemaLink = wrapper.find( '.ext-neowiki-subject-editor-dialog-schema__link' );
-		expect( schemaLink.exists() ).toBe( false );
+		const badge = wrapper.get( '.ext-neowiki-subject-edit-pane__meta a.ext-neowiki-schema-name' );
+		const event = new MouseEvent( 'click', { button: 0, bubbles: true, cancelable: true } );
+		badge.element.dispatchEvent( event );
+		await flushPromises();
 
-		const schemaName = wrapper.find( '.ext-neowiki-subject-editor-dialog-schema__name' );
-		expect( schemaName.exists() ).toBe( true );
-		expect( schemaName.text() ).toBe( 'TestSchema' );
+		expect( event.defaultPrevented ).toBe( false );
+		expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( false );
 	} );
 
-	it( 'opens SchemaEditorDialog when schema link is clicked', async () => {
+	it( 'leaves a modified click to the browser, so the Schema page stays reachable', async () => {
 		const wrapper = mountComponent( true, {} );
 		await flushPromises();
 
-		const schemaLink = wrapper.find( 'a.ext-neowiki-subject-editor-dialog-schema__link' );
-		await schemaLink.trigger( 'click' );
+		const badge = wrapper.get( '.ext-neowiki-subject-edit-pane__meta a.ext-neowiki-schema-name' );
+		const event = new MouseEvent( 'click', { button: 0, ctrlKey: true, bubbles: true, cancelable: true } );
+		badge.element.dispatchEvent( event );
+		await flushPromises();
+
+		expect( event.defaultPrevented ).toBe( false );
+		expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( false );
+	} );
+
+	it( 'opens SchemaEditorDialog from the pane\'s schema badge', async () => {
+		const wrapper = mountComponent( true, {} );
+		await flushPromises();
+
+		const schemaBadge = wrapper.get( '.ext-neowiki-subject-edit-pane__meta a.ext-neowiki-schema-name' );
+		const event = new MouseEvent( 'click', { button: 0, bubbles: true, cancelable: true } );
+		schemaBadge.element.dispatchEvent( event );
+		await flushPromises();
 
 		const schemaEditorDialog = wrapper.findComponent( SchemaEditorDialog );
 		expect( schemaEditorDialog.exists() ).toBe( true );
 		expect( schemaEditorDialog.props( 'open' ) ).toBe( true );
+		// Asserted with the opening: without it the editor opens AND the link is followed,
+		// which in a dialog holding unsaved panes is the worse half of the pair.
+		expect( event.defaultPrevented ).toBe( true );
+	} );
+
+	// Every gesture a browser uses to open a link somewhere of the reader's choosing. Cmd is
+	// the one that matters most and the one a ctrl-only guard would silently drop on macOS.
+	it.each( [
+		[ 'a middle click', { button: 1 } ],
+		[ 'a ctrl click', { button: 0, ctrlKey: true } ],
+		[ 'a cmd click', { button: 0, metaKey: true } ],
+		[ 'a shift click', { button: 0, shiftKey: true } ],
+		[ 'an alt click', { button: 0, altKey: true } ],
+	] )( 'leaves %s to the browser rather than opening the schema editor', async ( _name, init ) => {
+		const wrapper = mountComponent( true, {} );
+		await flushPromises();
+
+		const schemaBadge = wrapper.get( '.ext-neowiki-subject-edit-pane__meta a.ext-neowiki-schema-name' );
+		const event = new MouseEvent( 'click', { bubbles: true, cancelable: true, ...init } );
+		schemaBadge.element.dispatchEvent( event );
+		await flushPromises();
+
+		expect( event.defaultPrevented ).toBe( false );
+		expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( false );
+	} );
+
+	// The dialog holds unsaved edits for every open pane and nothing guards a navigation away
+	// from it, so following this link must never replace the page the dialog is on.
+	it( 'opens the schema page in a new tab', async () => {
+		const wrapper = mountComponent( true, {} );
+		await flushPromises();
+
+		const badge = wrapper.get( '.ext-neowiki-subject-edit-pane__meta a.ext-neowiki-schema-name' );
+
+		expect( badge.attributes( 'target' ) ).toBe( '_blank' );
+		expect( badge.attributes( 'rel' ) ).toBe( 'noopener' );
+	} );
+
+	it( 'renders the dialog title as a visible heading', async () => {
+		const wrapper = mountComponent( true, {} );
+		await flushPromises();
+
+		expect( wrapper.get( '.cdx-dialog__header__title' ).text() )
+			.toBe( 'neowiki-subject-editor-title' );
 	} );
 
 	const saveButtonTestStubs = {
@@ -972,15 +1036,20 @@ describe( 'SubjectEditorDialog', () => {
 		} );
 
 		// Codex takes the dialog's accessible name from the title prop whenever a header slot
-		// replaces the rendered title.
-		it( 'names a label-less subject by its display name in the dialog\'s accessible name', async () => {
+		// replaces the rendered title. It names the task, not a Subject: the dialog edits
+		// several, and a name fixed at open would be wrong the moment another pane is shown.
+		it( 'names the dialog after the task rather than after a subject', async () => {
 			const wrapper = mountComponent(
 				false, validationTestStubs, undefined, mockSchema, {}, labellessSubject,
 			);
 			await flushPromises();
 
-			expect( wrapper.find( '.cdx-dialog' ).attributes( 'aria-label' ) )
-				.toBe( 'neowiki-subject-editor-title' + labellessSubject.getDisplayName() );
+			// Codex points the dialog at its own heading when nothing slots a header over it,
+			// so the announced name is the visible one rather than a parallel string.
+			const heading = wrapper.get( '.cdx-dialog__header__title' );
+			expect( wrapper.get( '.cdx-dialog' ).attributes( 'aria-labelledby' ) )
+				.toBe( heading.attributes( 'id' ) );
+			expect( heading.text() ).toBe( 'neowiki-subject-editor-title' );
 		} );
 
 		it( 'does not preview the removed label once a labelled subject is cleared', async () => {
@@ -1551,10 +1620,6 @@ describe( 'SubjectEditorDialog', () => {
 					return wrapper.get( '.ext-neowiki-subject-editor-dialog__content' );
 				}
 
-				function headerTitleGroup( wrapper: VueWrapper ): Omit<DOMWrapper<Element>, 'exists'> {
-					return wrapper.get( '.cdx-dialog__header__title-group' );
-				}
-
 				it( 'ignores a second Save', async () => {
 					const { onSave, settle } = deferredSave();
 					const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
@@ -1596,19 +1661,35 @@ describe( 'SubjectEditorDialog', () => {
 					expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
 				} );
 
-				it( 'makes the form and the header inert until the save settles', async () => {
+				// The Schema editor is handed the root's Schema, so a nested pane's badge must
+				// not open it or it would edit a Schema the reader did not point at.
+				it( 'does not open the schema editor from a nested pane', async () => {
+					const { wrapper } = await mountWithSecondPaneOpen();
+
+					const badges = wrapper.findAll(
+						'.ext-neowiki-subject-edit-pane__meta a.ext-neowiki-schema-name',
+					);
+					expect( badges.length ).toBeGreaterThan( 1 );
+
+					const event = new MouseEvent( 'click', { button: 0, bubbles: true, cancelable: true } );
+					badges[ badges.length - 1 ].element.dispatchEvent( event );
+					await flushPromises();
+
+					expect( event.defaultPrevented ).toBe( false );
+					expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( false );
+				} );
+
+				it( 'makes the form inert until the save settles', async () => {
 					const { onSave, settle } = deferredSave();
 					const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
 					await makePaneDirty( wrapper, 0 );
 
 					await triggerSave( wrapper, '' );
 					expect( content( wrapper ).attributes( 'inert' ) ).toBeDefined();
-					expect( headerTitleGroup( wrapper ).attributes( 'inert' ) ).toBeDefined();
 
 					settle( new Error( 'Boom' ) );
 					await flushPromises();
 					expect( content( wrapper ).attributes( 'inert' ) ).toBeUndefined();
-					expect( headerTitleGroup( wrapper ).attributes( 'inert' ) ).toBeUndefined();
 				} );
 			} );
 

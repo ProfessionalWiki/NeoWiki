@@ -121,7 +121,7 @@
 	"neowiki-delete-success": "Deleted $1",
 	"neowiki-delete-error": "Failed to delete $1",
 
-	"neowiki-subject-editor-title": "Editing $1",
+	"neowiki-subject-editor-title": "Edit subject",
 	"neowiki-subject-editor-save": "Save changes",
 	"neowiki-subject-editor-label-field": "Subject label",
 	"neowiki-subject-editor-rename": "Rename subject",

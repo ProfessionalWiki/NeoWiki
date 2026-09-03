@@ -7,59 +7,10 @@
 			:open="open"
 			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog cdx-dialog--dividers"
 			:class="{ 'ext-neowiki-subject-editor-dialog--wide': showsNavigator }"
-			:title="$i18n( 'neowiki-subject-editor-title', props.subject.getDisplayName() ).text()"
+			:title="$i18n( 'neowiki-subject-editor-title' ).text()"
+			:use-close-button="true"
 			@update:open="onDialogUpdateOpen"
 		>
-			<template #header>
-				<div
-					class="cdx-dialog__header__title-group"
-					:inert="saving || undefined"
-				>
-					<div class="cdx-dialog__header__title ext-neowiki-subject-editor-dialog__title">
-						<EditableText
-							:model-value="subjectLabel"
-							:edit-button-label="$i18n( 'neowiki-subject-editor-rename' ).text()"
-							:input-aria-label="$i18n( 'neowiki-subject-editor-label-field' ).text()"
-							:placeholder="labelPlaceholder"
-							@update:model-value="onLabelEdited"
-						/>
-					</div>
-
-					<p class="cdx-dialog__header__subtitle">
-						<I18nSlot
-							message-key="neowiki-schema-label"
-							class="ext-neowiki-subject-editor-dialog-schema"
-							text-class="ext-neowiki-subject-editor-dialog-schema__label"
-						>
-							<a
-								v-if="canEditSchema"
-								class="ext-neowiki-subject-editor-dialog-schema__link"
-								href="#"
-								@click.prevent="isSchemaEditorOpen = true"
-							>
-								{{ props.subject.getSchemaName() }}
-							</a>
-							<span
-								v-else
-								class="ext-neowiki-subject-editor-dialog-schema__name"
-							>
-								{{ props.subject.getSchemaName() }}
-							</span>
-						</I18nSlot>
-					</p>
-				</div>
-
-				<CdxButton
-					class="cdx-dialog__header__close-button"
-					weight="quiet"
-					type="button"
-					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
-					@click="closeRequested"
-				>
-					<CdxIcon :icon="cdxIconClose" />
-				</CdxButton>
-			</template>
-
 			<!-- Only the navigator's surface is ever conditionally rendered, and the panes container
 				is deliberately unkeyed: a pane must never unmount, because its unsaved values live in
 				the ValueInput refs inside it. -->
@@ -123,7 +74,9 @@
 								:nested="pane.id !== rootPaneId"
 								:is-new="pane.isNew"
 								:unsaved-target-ids="draftIds"
+								:can-edit-schema="pane.id === rootPaneId && canEditSchema"
 								@edit-relation-target="openRelationTargetFromForm"
+								@edit-schema="openSchemaEditor( pane.id )"
 							/>
 						</div>
 					</div>
@@ -171,11 +124,8 @@ import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
 import type { SubjectEditPaneExposes } from '@/components/SubjectEditor/SubjectEditPane.vue';
 import SubjectTree from '@/components/SubjectEditor/SubjectTree.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
-import I18nSlot from '@/components/common/I18nSlot.vue';
-import EditableText from '@/components/common/EditableText.vue';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
-import { CdxButton, CdxDialog, CdxIcon, CdxMessage, useGeneratedId } from '@wikimedia/codex';
-import { cdxIconClose } from '@wikimedia/codex-icons';
+import { CdxDialog, CdxMessage, useGeneratedId } from '@wikimedia/codex';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
@@ -198,7 +148,6 @@ import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { relationTargetsOf } from '@/components/SubjectEditor/SubjectTreeModel.ts';
-import { subjectLabelPlaceholder } from '@/presentation/subjectLabelPlaceholder.ts';
 import { reachableTargetIds, writeOrder } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 import type { HeldSubject } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 
@@ -384,22 +333,25 @@ const showsNavigator = computed( (): boolean =>
 
 const openIds = computed( (): string[] => panes.value.map( ( pane ) => pane.id ) );
 
-// Owned by the pane that edits the Subject. Falls back to the prop for the first render,
-// before that pane has registered its ref.
-const subjectLabel = computed( (): string => rootPane.value?.label ?? props.subject.getLabel() ?? '' );
-
-const labelPlaceholder = computed( (): string => subjectLabelPlaceholder( props.subject ) );
-
-function onLabelEdited( value: string ): void {
-	rootPane.value?.setLabel( value );
-}
-
 // Keys the tree, and nothing else: re-keying the panes would unmount them and destroy
 // unsaved values. The tree remembers which fetches failed for the life of its mount, so
 // without a remount one transient failure would leave that branch empty for the rest of the
 // session. The two watchers further down bump it, an opening and a replaced root alike, and
 // a target fetch that outlives its opening is dropped by it: the hosts keep this dialog
 // mounted after it closes, so the fetch would otherwise land in the next opening.
+/**
+ * `SchemaEditorDialog` below is bound to the root's Schema, so only the root pane may open it —
+ * a nested pane would put the reader in front of a Schema they did not point at. The pane has a
+ * guard of its own; this one is where the consequence lives.
+ */
+function openSchemaEditor( paneId: string ): void {
+	if ( paneId !== rootPaneId.value ) {
+		return;
+	}
+
+	isSchemaEditorOpen.value = true;
+}
+
 const openEpoch = ref( 0 );
 
 // So a double-click on one target's edit button does not fire a second request. Keyed per
@@ -790,46 +742,15 @@ defineExpose( { hasChanged: anyChanged } );
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
-@import ( reference ) '@wikimedia/codex/mixins/link.less';
 
 .ext-neowiki-subject-editor-dialog {
-	&-schema {
-		&__link {
-			.cdx-mixin-link-base();
-		}
-
-		&__name {
-			color: @color-base;
-		}
-	}
-
-	/* Codex puts these on `.cdx-dialog__header--default`, a class it adds only to the header
-		it builds itself, so a slotted header never receives them and there is nothing here to
-		out-weigh — they are replicated, not overridden. */
+	/* Overrides, not replications: `.cdx-dialog__header`'s padding is unconditional in Codex,
+		and `align-items: baseline` comes from `--default`, which this header now carries again.
+		Both are deliberate departures — the header is one row of static text beside a 32px
+		close button, so the button sets the height and baseline sits the title high in it. */
 	.cdx-dialog__header {
-		display: flex;
-		align-items: baseline;
-		justify-content: flex-end;
-		box-sizing: @box-sizing-base;
-		width: @size-full;
-
-		/* Secondary to the title, like the statement-field labels below.
-			Nested under the header to out-rank Codex's runtime-injected
-			two-class subtitle rule. */
-		.cdx-dialog__header__subtitle {
-			font-size: @font-size-small;
-		}
-	}
-
-	/* The title row's edit button already provides vertical air; Codex's
-		default gap on top of it reads too wide. */
-	.cdx-dialog__header__title-group {
-		gap: 0;
-	}
-
-	&__title {
-		display: flex;
-		min-width: 0;
+		align-items: center;
+		padding-block: @spacing-50;
 	}
 
 	&--wide.cdx-dialog {
