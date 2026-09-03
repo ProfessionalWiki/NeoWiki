@@ -66,7 +66,7 @@ class QueryCypherEndToEndTest extends NeoWikiIntegrationTestCase {
 	public function testAdminQueryRejectedByProductionQueryService(): void {
 		// STOP DATABASE passes the keyword validator but the Explain layer rejects it, so this fails
 		// unless the production service composes the Explain validator, not just the keyword one.
-		$service = NeoWikiExtension::getInstance()->newCypherQueryService();
+		$service = NeoWikiExtension::getInstance()->newCypherQueryService( $this->getTestSysop()->getUser() );
 		$request = new Neo4jQueryRequest( 'STOP DATABASE neo4j', [], new Neo4jQueryLimits( 30, 5000 ) );
 
 		$this->expectException( WriteQueryRejectedException::class );

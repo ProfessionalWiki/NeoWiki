@@ -392,7 +392,7 @@ abstract class QuerySparqlEndToEndTestCase extends NeoWikiIntegrationTestCase {
 	 * @return list<array<string, array<string, string>>> The query's solution bindings.
 	 */
 	private function runQuery( string $sparql ): array {
-		return NeoWikiExtension::getInstance()->newSparqlQueryService()->execute(
+		return NeoWikiExtension::getInstance()->newSparqlQueryService( $this->getTestSysop()->getUser() )->execute(
 			new SparqlQueryRequest(
 				sparql: $sparql,
 				limits: new SparqlQueryLimits( 30 ),

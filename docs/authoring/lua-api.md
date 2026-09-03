@@ -55,8 +55,8 @@ The first value of the property, type-converted for Lua:
 | `boolean` | boolean |
 | `relation` | string (the target Subject's display name, or its Subject ID when the target cannot be looked up) |
 
-Returns `nil` when the Subject does not exist, has no value for the property, or the value is
-empty.
+Returns `nil` when the Subject does not exist or its page is not readable (see
+[Permissions](#permissions)), has no value for the property, or the value is empty.
 
 #### Examples
 
@@ -110,7 +110,7 @@ Returns the full data of a page's Main Subject as a Lua table.
 #### Returns
 
 A Subject table (see [Subject table format](#subject-table-format)) or `nil` if the page does not
-exist or has no Main Subject.
+exist, is not readable (see [Permissions](#permissions)), or has no Main Subject.
 
 #### Examples
 
@@ -135,7 +135,7 @@ Returns the full data of any Subject by its ID, regardless of which page it live
 #### Returns
 
 A Subject table (see [Subject table format](#subject-table-format)) or `nil` if no Subject exists
-with that ID (or the ID is malformed).
+with that ID, the ID is malformed, or its page is not readable (see [Permissions](#permissions)).
 
 #### Examples
 
@@ -154,8 +154,8 @@ Returns every Child Subject on a page as a 1-indexed Lua table.
 #### Returns
 
 A 1-indexed Lua table of Subject tables (see [Subject table format](#subject-table-format)).
-Returns an empty table `{}` (not `nil`) if the page has no Child Subjects, so it's safe to
-iterate the result directly with `ipairs`.
+Returns an empty table `{}` (not `nil`) if the page has no Child Subjects or is not readable (see
+[Permissions](#permissions)), so it's safe to iterate the result directly with `ipairs`.
 
 #### Examples
 
@@ -202,6 +202,7 @@ Scalar values come back as strings, numbers, booleans, or `nil`. Nested Cypher l
 
 Always throws on failure; wrap in `pcall` if you need graceful degradation.
 
+- A missing `neowiki-query` right (see [Permissions](#permissions)).
 - Empty or whitespace-only `cypher`.
 - Write or non-read-only queries.
 - Cypher syntax errors, missing parameters, or database errors.
@@ -252,6 +253,7 @@ each binding is a string-keyed table of RDF terms (`{ type, value, datatype?, ['
 
 Always throws on failure; wrap in `pcall` if you need graceful degradation.
 
+- A missing `neowiki-query` right (see [Permissions](#permissions)).
 - Empty or whitespace-only `sparql`.
 - A query the store rejects (e.g. a SPARQL syntax error), or the store being unavailable.
 
@@ -286,8 +288,9 @@ Returns a Schema as a Lua table so a module can inspect it at runtime.
 
 #### Returns
 
-A Schema table, or `nil` if no Schema with that name exists. An empty or whitespace-only `name`
-and the reserved names `page` and `subject` also return `nil`. Guard with `if schema then`.
+A Schema table, or `nil` if no Schema with that name exists or its page is not readable (see
+[Permissions](#permissions)). An empty or whitespace-only `name` and the reserved names `page` and
+`subject` also return `nil`. Guard with `if schema then`.
 
 Top-level fields:
 
@@ -402,6 +405,13 @@ Notes:
   the target cannot be looked up at all (e.g. a broken reference).
 - Per-relation `properties` (qualifiers) are not currently exposed via Lua. Use the REST API if
   you need them.
+
+## Permissions
+
+The [parser function rules](parser-functions.md#permissions) apply: every function reads as the user
+the page is parsed for. In Lua, Subjects and Schemas that user cannot read come back as `nil` or an
+empty table, a relation to such a Subject shows the Subject ID as its label, and `nw.query` and
+`nw.sparqlQuery` throw without the `neowiki-query` right.
 
 ## Performance
 

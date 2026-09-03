@@ -11,6 +11,7 @@ use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\TextContent;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
@@ -77,6 +78,20 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		catch ( \Exception ) {
 			$this->markTestSkipped( 'Neo4j not available' );
 		}
+	}
+
+	/**
+	 * What a reader of $pageName ends up with, as the parser options' user: the parser functions run
+	 * for real, and the output pipeline applies, as on a page view.
+	 */
+	protected function parseWikitextOn( string $pageName, string $wikitext, ?ParserOptions $parserOptions = null ): string {
+		$parserOptions ??= ParserOptions::newFromAnon();
+
+		return $this->getServiceContainer()->getParserFactory()->create()->parse(
+			$wikitext,
+			Title::newFromText( $pageName ),
+			$parserOptions
+		)->runOutputPipeline( $parserOptions, [] )->getContentHolderText();
 	}
 
 	protected function createPageWithSubjects(

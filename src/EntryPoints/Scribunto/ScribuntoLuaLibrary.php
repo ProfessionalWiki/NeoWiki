@@ -8,7 +8,10 @@ use Exception;
 use InvalidArgumentException;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
+use MediaWiki\Permissions\Authority;
+use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\EntryPoints\ParserAuthority;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\CypherErrorMessage;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\Lua\CypherQueryRunner;
@@ -23,15 +26,24 @@ class ScribuntoLuaLibrary extends LibraryBase {
 	private ?SchemaLuaSerializer $schemaLuaSerializer = null;
 	private ?CypherQueryRunner $cypherQueryRunner = null;
 	private ?SparqlQueryRunner $sparqlQueryRunner = null;
+	private ?SchemaLookup $schemaLookup = null;
 
 	private function getSubjectDataLookup(): SubjectDataLookup {
 		if ( $this->subjectDataLookup === null ) {
 			$this->subjectDataLookup = new SubjectDataLookup(
-				NeoWikiExtension::getInstance()->newSubjectResolver(),
+				NeoWikiExtension::getInstance()->newSubjectResolver( $this->getParserAuthority() ),
 			);
 		}
 
 		return $this->subjectDataLookup;
+	}
+
+	private function getSchemaLookup(): SchemaLookup {
+		if ( $this->schemaLookup === null ) {
+			$this->schemaLookup = NeoWikiExtension::getInstance()->getSchemaLookupFor( $this->getParserAuthority() );
+		}
+
+		return $this->schemaLookup;
 	}
 
 	private function getSchemaLuaSerializer(): SchemaLuaSerializer {
@@ -43,19 +55,23 @@ class ScribuntoLuaLibrary extends LibraryBase {
 
 	private function getCypherQueryRunner(): CypherQueryRunner {
 		if ( $this->cypherQueryRunner === null ) {
-			$this->cypherQueryRunner = new CypherQueryRunner(
-				NeoWikiExtension::getInstance()->newCypherQueryService()
-			);
+			$this->cypherQueryRunner = NeoWikiExtension::getInstance()->newCypherQueryRunner( $this->getParser() );
 		}
 
 		return $this->cypherQueryRunner;
 	}
 
+	/**
+	 * Every read this library performs runs against the user the page is parsed for
+	 * ({@see ParserAuthority}), so a module cannot read more than the reader may.
+	 */
+	private function getParserAuthority(): Authority {
+		return ParserAuthority::of( $this->getParser() );
+	}
+
 	private function getSparqlQueryRunner(): SparqlQueryRunner {
 		if ( $this->sparqlQueryRunner === null ) {
-			$this->sparqlQueryRunner = new SparqlQueryRunner(
-				NeoWikiExtension::getInstance()->newSparqlQueryService()
-			);
+			$this->sparqlQueryRunner = NeoWikiExtension::getInstance()->newSparqlQueryRunner( $this->getParser() );
 		}
 
 		return $this->sparqlQueryRunner;
@@ -176,7 +192,7 @@ class ScribuntoLuaLibrary extends LibraryBase {
 			return [ null ];
 		}
 
-		$schema = NeoWikiExtension::getInstance()->getSchemaLookup()->getSchema( $name );
+		$schema = $this->getSchemaLookup()->getSchema( $name );
 
 		if ( $schema === null ) {
 			return [ null ];

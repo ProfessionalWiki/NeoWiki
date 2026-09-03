@@ -62,7 +62,8 @@ class SpecialNeoJson extends SpecialPage {
 	}
 
 	private function getNeoJson( Title $title ): string {
-		$content = NeoWikiExtension::getInstance()->newSubjectContentRepository()->getSubjectContentByPageTitle( $title );
+		$content = NeoWikiExtension::getInstance()->newSubjectContentRepository( $this->getAuthority() )
+			->getSubjectContentByPageTitle( $title );
 		return $content?->getText() ?? '';
 	}
 
@@ -100,7 +101,7 @@ class SpecialNeoJson extends SpecialPage {
 			NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer()->deserialize( $formData['json'] )
 		);
 
-		NeoWikiExtension::getInstance()->newSubjectContentRepository()->editSubjectContent(
+		NeoWikiExtension::getInstance()->newSubjectContentRepository( $this->getAuthority() )->editSubjectContent(
 			$content,
 			new PageId( $title->getId() ),
 			'Update Subject'

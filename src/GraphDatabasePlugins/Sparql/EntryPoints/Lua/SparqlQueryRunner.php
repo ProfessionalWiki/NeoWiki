@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\Lua;
 
-use MediaWiki\Context\RequestContext;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryLimits;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryRequest;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService;
@@ -18,6 +17,7 @@ class SparqlQueryRunner {
 
 	public function __construct(
 		private readonly SparqlQueryService $queryService,
+		private readonly SparqlQueryLimits $limits,
 	) {
 	}
 
@@ -28,7 +28,7 @@ class SparqlQueryRunner {
 		$result = $this->queryService->execute(
 			new SparqlQueryRequest(
 				sparql: $sparql,
-				limits: SparqlQueryLimits::forUser( RequestContext::getMain()->getUser() ),
+				limits: $this->limits,
 			)
 		);
 
