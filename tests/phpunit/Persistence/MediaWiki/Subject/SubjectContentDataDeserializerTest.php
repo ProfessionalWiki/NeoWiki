@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectHeader;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
@@ -190,6 +191,80 @@ JSON
 			],
 			$subjects->getMainSubject()->getStatements()->asArray()
 		);
+	}
+
+	public function testHeadersCarryIdSchemaLabelAndMainFlag(): void {
+		$headers = SubjectContentDataDeserializer::deserializeSubjectHeaders( '{
+			"mainSubject": "s1aaaaaaaaaaaa1",
+			"subjects": {
+				"s1aaaaaaaaaaaa1": { "label": "ACME Inc", "schema": "Company" },
+				"s1bbbbbbbbbbbb2": { "label": "Berlin", "schema": "City" }
+			}
+		}' );
+
+		$this->assertEquals(
+			[
+				new SubjectHeader( 's1aaaaaaaaaaaa1', 'Company', 'ACME Inc', true ),
+				new SubjectHeader( 's1bbbbbbbbbbbb2', 'City', 'Berlin', false ),
+			],
+			$headers
+		);
+	}
+
+	public function testSubjectWithoutLabelHasNullLabel(): void {
+		$headers = SubjectContentDataDeserializer::deserializeSubjectHeaders(
+			'{ "subjects": { "s1aaaaaaaaaaaa1": { "schema": "Company" } } }'
+		);
+
+		$this->assertNull( $headers[0]->label );
+	}
+
+	public function testSubjectTooBrokenToDeserializeStillHasAHeader(): void {
+		$headers = SubjectContentDataDeserializer::deserializeSubjectHeaders(
+			'{ "subjects": { "s1aaaaaaaaaaaa1": { "statements": "not an object" } } }'
+		);
+
+		$this->assertEquals( [ new SubjectHeader( 's1aaaaaaaaaaaa1', null, null, false ) ], $headers );
+	}
+
+	public function testMainSubjectIdNamingNoSubjectMarksNoneAsMain(): void {
+		$headers = SubjectContentDataDeserializer::deserializeSubjectHeaders( '{
+			"mainSubject": "s1zzzzzzzzzzzz9",
+			"subjects": { "s1aaaaaaaaaaaa1": { "schema": "Company" } }
+		}' );
+
+		$this->assertFalse( $headers[0]->isMainSubject );
+	}
+
+	public function testHeadersSkipIdsThatAreNotSubjectIds(): void {
+		$headers = SubjectContentDataDeserializer::deserializeSubjectHeaders( '{
+			"subjects": {
+				"not-a-subject-id": { "schema": "Company" },
+				"s1bbbbbbbbbbbb2": { "schema": "City" }
+			}
+		}' );
+
+		$this->assertSame( [ 's1bbbbbbbbbbbb2' ], array_map( static fn ( $h ) => $h->id, $headers ) );
+	}
+
+	public function testHeadersOfContentWithoutSubjectsAreEmpty(): void {
+		$this->assertSame( [], SubjectContentDataDeserializer::deserializeSubjectHeaders( '{}' ) );
+	}
+
+	public function testWhitespaceOnlyLabelIsReadAsNoLabel(): void {
+		$headers = SubjectContentDataDeserializer::deserializeSubjectHeaders(
+			'{ "subjects": { "s1aaaaaaaaaaaa1": { "schema": "Company", "label": "   " } } }'
+		);
+
+		$this->assertNull( $headers[0]->label );
+	}
+
+	public function testEmptySchemaNameIsReadAsNoSchema(): void {
+		$headers = SubjectContentDataDeserializer::deserializeSubjectHeaders(
+			'{ "subjects": { "s1aaaaaaaaaaaa1": { "schema": "" } } }'
+		);
+
+		$this->assertNull( $headers[0]->schemaName );
 	}
 
 }

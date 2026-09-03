@@ -8,6 +8,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectHeader;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -80,29 +81,55 @@ class SubjectContentDataDeserializer {
 	}
 
 	/**
-	 * The ids the JSON holds, read without deserializing, so that a Subject too broken to deserialize
-	 * still has an id. Ids no caller could ask about are left out, since nothing can be answered with
-	 * them.
+	 * The headers the JSON holds, read without deserializing, so a Subject too broken to deserialize is
+	 * still indexed under the name it claims (ADR 32). Ids that are not well-formed are left out, since
+	 * no caller could ask about them.
 	 *
-	 * Static and dependency-free: update.php rebuilds the subject -> page index on wikis whose NeoWiki
+	 * Static and dependency-free: update.php fills the subject -> page index on wikis whose NeoWiki
 	 * configuration is not readable yet.
 	 *
-	 * @return string[]
+	 * @return SubjectHeader[]
 	 */
-	public static function deserializeSubjectIds( string $json ): array {
-		// Cast so that content that is not a JSON object becomes an array without the key, leaving one
-		// thing to check.
-		$subjects = ( (array)json_decode( $json, true ) )['subjects'] ?? null;
+	public static function deserializeSubjectHeaders( string $json ): array {
+		$data = (array)json_decode( $json, true );
+		$subjects = $data['subjects'] ?? null;
 
 		if ( !is_array( $subjects ) ) {
 			return [];
 		}
 
-		// A Subject id that looks like a decimal integer comes back from json_decode as an int key.
-		return array_values( array_filter(
-			array_map( 'strval', array_keys( $subjects ) ),
-			SubjectId::isValid( ... )
-		) );
+		$mainSubjectId = self::presentStringOrNull( $data['mainSubject'] ?? null );
+
+		$headers = [];
+
+		foreach ( $subjects as $id => $subject ) {
+			// A Subject id that looks like a decimal integer comes back from json_decode as an int key.
+			$idText = (string)$id;
+
+			if ( !SubjectId::isValid( $idText ) ) {
+				continue;
+			}
+
+			$fields = is_array( $subject ) ? $subject : [];
+
+			$headers[] = new SubjectHeader(
+				id: $idText,
+				schemaName: self::presentStringOrNull( $fields['schema'] ?? null ),
+				label: self::presentStringOrNull( $fields['label'] ?? null ),
+				isMainSubject: $idText === $mainSubjectId,
+			);
+		}
+
+		return $headers;
+	}
+
+	/**
+	 * Whitespace is absence, as it is for {@see SubjectLabel::fromText} and {@see SchemaName}: both
+	 * come back null, so a reader of the index never has to tell the two apart. The text itself is
+	 * kept as the slot wrote it, again like SubjectLabel.
+	 */
+	private static function presentStringOrNull( mixed $value ): ?string {
+		return is_string( $value ) && trim( $value ) !== '' ? $value : null;
 	}
 
 }

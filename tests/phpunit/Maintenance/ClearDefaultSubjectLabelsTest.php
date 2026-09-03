@@ -16,6 +16,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Maintenance\ClearDefaultSubjectLabels;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectHeader;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -316,7 +317,10 @@ class ClearDefaultSubjectLabelsTest extends NeoWikiIntegrationTestCase {
 	 * never visited.
 	 */
 	private function indexPage( int $pageId, string $subjectId ): void {
-		( new DatabaseSubjectPageIndex( $this->getDb() ) )->setSubjectsOfPage( new PageId( $pageId ), [ $subjectId ] );
+		( new DatabaseSubjectPageIndex( $this->getDb() ) )->setSubjectsOfPage(
+			new PageId( $pageId ),
+			[ new SubjectHeader( id: $subjectId, schemaName: null, label: null, isMainSubject: false ) ]
+		);
 	}
 
 	public function testAWikiWithNoSubjectsHasNothingToScan(): void {
