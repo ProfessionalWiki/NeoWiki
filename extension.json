@@ -299,6 +299,11 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newDeleteSubjectApi"
 		},
 		{
+			"path": "/neowiki/v0/subject/{subjectId}/move",
+			"method": [ "POST" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newMoveSubjectApi"
+		},
+		{
 			"path": "/neowiki/v0/subject/{subjectId}/statements/{propertyName}",
 			"method": [ "PUT" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newSetStatementApi"
@@ -444,6 +449,7 @@
 						"cdxIconEdit",
 						"cdxIconDownload",
 						"cdxIconLink",
+						"cdxIconMove",
 						"cdxIconCheck",
 						"cdxIconSearchCaseSensitive",
 						"cdxIconArticles",
@@ -615,6 +621,23 @@
 				"neowiki-subject-picker-no-match",
 				"neowiki-subject-picker-create",
 				"neowiki-subject-picker-create-named",
+				"neowiki-page-picker-placeholder",
+				"neowiki-page-picker-no-results",
+				"neowiki-page-picker-create-hint",
+				"neowiki-page-picker-create-named",
+				"neowiki-managesubjects-row-move",
+				"neowiki-managesubjects-move-title",
+				"neowiki-managesubjects-move-target-label",
+				"neowiki-managesubjects-move-creates-page",
+				"neowiki-managesubjects-move-make-main",
+				"neowiki-managesubjects-move-demotes",
+				"neowiki-managesubjects-move-source-loses-main",
+				"neowiki-managesubjects-move-confirm-button",
+				"neowiki-managesubjects-move-success",
+				"neowiki-managesubjects-move-error",
+				"neowiki-managesubjects-move-page-taken",
+				"neowiki-managesubjects-move-create-page-summary-default",
+				"neowiki-managesubjects-move-create-page-error",
 				"neowiki-schema-creator-title",
 				"neowiki-schema-creator-button",
 				"neowiki-schema-creator-name-field",

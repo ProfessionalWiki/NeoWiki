@@ -92,6 +92,13 @@ export interface SubjectRepository extends SubjectLookup {
 
 	deleteSubject( id: SubjectId, comment?: string ): Promise<boolean>;
 
+	/**
+	 * Moves a Subject to another page, keeping its id so relations targeting it keep resolving.
+	 * Edits both pages. With makeMainSubject the target page's current Main Subject is demoted to
+	 * a child Subject.
+	 */
+	moveSubject( id: SubjectId, targetPageId: number, makeMainSubject: boolean, comment?: string ): Promise<void>;
+
 	validateSubject( label: string | null, schemaName: SchemaName, statements: StatementList ): Promise<SubjectViolation[]>;
 
 	validateSubjectUpdate( id: SubjectId, label: string | null, statements: StatementList ): Promise<SubjectViolation[]>;
@@ -164,6 +171,10 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 
 	public deleteSubject( id: SubjectId, _comment?: string ): Promise<boolean> {
 		return Promise.resolve( this.subjects.delete( id.text ) );
+	}
+
+	public moveSubject( _id: SubjectId, _targetPageId: number, _makeMainSubject: boolean, _comment?: string ): Promise<void> {
+		return Promise.resolve();
 	}
 
 	public validateSubject( _label: string | null, _schemaName: SchemaName, _statements: StatementList ): Promise<SubjectViolation[]> {

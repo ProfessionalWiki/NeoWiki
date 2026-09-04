@@ -25,6 +25,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
@@ -34,6 +35,7 @@ use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
@@ -77,6 +79,10 @@ class CreateSubjectActionTest extends TestCase {
 			new PageIdentifiers( new PageId( 1 ), 'Help:Bunnies', 12 ),
 			new PageIdentifiers( new PageId( 3 ), 'Talk:Hutches', 1 ),
 		] );
+	}
+
+	private function newPageSubjectsWithMain(): PageSubjects {
+		return new PageSubjects( TestSubject::build( id: 's11111111111maa' ), new SubjectMap() );
 	}
 
 	private function newCreateSubjectAction( bool $validationEnforced = false ): CreateSubjectAction {
@@ -155,11 +161,9 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	public function testSubjectAlreadyExists(): void {
-		$pageSubjects = $this->createMock( PageSubjects::class );
-		$pageSubjects->method( 'createMainSubject' )->willThrowException(
-			new RuntimeException( 'Subject already exists' )
-		);
-		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( 1 ) );
+		// A page that already has a main Subject is what makes createMainSubject throw; seeding that
+		// state exercises the domain rule the branch exists for.
+		$this->subjectRepository->savePageSubjects( $this->newPageSubjectsWithMain(), new PageId( 1 ) );
 
 		$this->newCreateSubjectAction()->createSubject(
 			new CreateSubjectRequest(
@@ -677,11 +681,7 @@ class CreateSubjectActionTest extends TestCase {
 
 	public function testEnforcementOnDoesNotInterceptAlreadyExistsBranch(): void {
 		$this->registerPersonSchemaWithRequiredName();
-		$pageSubjects = $this->createMock( PageSubjects::class );
-		$pageSubjects->method( 'createMainSubject' )->willThrowException(
-			new RuntimeException( 'Subject already exists' )
-		);
-		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( 1 ) );
+		$this->subjectRepository->savePageSubjects( $this->newPageSubjectsWithMain(), new PageId( 1 ) );
 
 		$this->newCreateSubjectAction( validationEnforced: true )->createSubject(
 			new CreateSubjectRequest(
