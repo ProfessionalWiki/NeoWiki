@@ -47,6 +47,7 @@ import type { Icon } from '@wikimedia/codex-icons';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectCreationKey } from '@/components/common/SubjectCreation.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
+import type { Subject } from '@/domain/Subject.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 interface SubjectPickerProps {
@@ -105,9 +106,12 @@ const selectedName = ref( '' );
 // Subjects this session invented, which no search can return. Read through the host on every
 // evaluation, so a draft renamed in the editor is renamed here too.
 const draftItems = computed( (): MenuItemData[] =>
-	( subjectCreation?.drafts( props.targetSchema ) ?? [] )
-		.map( ( subject ) => ( { value: subject.getId().text, label: subject.getDisplayName() } ) )
+	( subjectCreation?.drafts( props.targetSchema ) ?? [] ).map( menuItemFor )
 );
+
+function menuItemFor( subject: Subject ): MenuItemData {
+	return { value: subject.getId().text, label: subject.getDisplayName() };
+}
 
 function draftNameOf( id: string ): string | undefined {
 	const item = draftItems.value.find( ( candidate ) => candidate.value === id );
@@ -180,11 +184,16 @@ async function resolveName( id: string | null ): Promise<string> {
 		return draft;
 	}
 
+	return ( await fetchSubject( id ) )?.getDisplayName() ?? id;
+}
+
+// Answers with nothing rather than throwing for an id the wiki does not hold, or holds on a page
+// this user may not read.
+async function fetchSubject( id: string ): Promise<Subject | null> {
 	try {
-		const subject = await subjectStore.getOrFetchSubject( new SubjectId( id ) );
-		return subject?.getDisplayName() ?? id;
+		return await subjectStore.getOrFetchSubject( new SubjectId( id ) );
 	} catch {
-		return id;
+		return null;
 	}
 }
 
@@ -217,6 +226,13 @@ async function onLookupInput( value: string ): Promise<void> {
 	hasUnmatchedText.value = false;
 
 	if ( !value ) {
+		// Abandons a lookup still in flight, whose answer would otherwise fill the menu of a field
+		// the user has since emptied. Only then: the sequence is shared with createFromTypedText,
+		// and clearing the field is no reason to abandon a Subject the host is busy creating.
+		if ( searchStatus.value === 'pending' ) {
+			++requestSequence;
+		}
+
 		searchResults.value = [];
 		searchStatus.value = 'idle';
 		return;
@@ -225,27 +241,46 @@ async function onLookupInput( value: string ): Promise<void> {
 	searchStatus.value = 'pending';
 	const currentSequence = ++requestSequence;
 
+	const candidates = await candidatesFor( value );
+
+	if ( currentSequence !== requestSequence ) {
+		return;
+	}
+
+	searchResults.value = candidates;
+	searchStatus.value = 'done';
+}
+
+// An id names one Subject, so it is read rather than searched for. That read is how a Subject with
+// no label is reached at all, ADR 31 leaving such a Subject out of the label search. It does not
+// replace the search, though: the shape of an id is also the shape of an ordinary fifteen-letter
+// word, so text that names no usable Subject goes on to be searched for as a label.
+async function candidatesFor( value: string ): Promise<MenuItemData[]> {
+	const text = value.trim();
+
+	if ( SubjectId.isValid( text ) ) {
+		const subject = await fetchSubject( text );
+
+		// A Subject of another Schema cannot be this relation's target. One the user may not read
+		// never reaches here at all: the read fails instead of answering.
+		if ( subject !== null && subject.getSchemaName() === props.targetSchema ) {
+			return [ menuItemFor( subject ) ];
+		}
+	}
+
+	return searchLabels( text );
+}
+
+async function searchLabels( value: string ): Promise<MenuItemData[]> {
 	try {
 		const results = await subjectLabelSearch.searchSubjectLabels( value, props.targetSchema );
 
-		if ( currentSequence !== requestSequence ) {
-			return;
-		}
-
-		searchResults.value = results.map( ( result ) => ( {
+		return results.map( ( result ) => ( {
 			label: result.label,
 			value: result.id
 		} ) );
 	} catch {
-		if ( currentSequence !== requestSequence ) {
-			return;
-		}
-
-		searchResults.value = [];
-	} finally {
-		if ( currentSequence === requestSequence ) {
-			searchStatus.value = 'done';
-		}
+		return [];
 	}
 }
 

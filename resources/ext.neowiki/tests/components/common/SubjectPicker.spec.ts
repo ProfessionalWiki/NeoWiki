@@ -83,6 +83,33 @@ describe( 'SubjectPicker', () => {
 		} );
 	}
 
+	function labellessSubject( id: string, displayName: string, schemaName: string ): Subject {
+		return new Subject( new SubjectId( id ), null, displayName, schemaName, new StatementList( [] ) );
+	}
+
+	function wikiHolds( subject: Subject ): void {
+		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue( subject );
+	}
+
+	function searchReturns( results: { id: string; label: string }[] ): void {
+		( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockResolvedValue( results );
+	}
+
+	function menuItemsOf( wrapper: VueWrapper ): MenuItemData[] {
+		return wrapper.findComponent( CdxLookupWithVModel ).props( 'menuItems' ) as MenuItemData[];
+	}
+
+	function menuLabelsOf( wrapper: VueWrapper ): string[] {
+		return menuItemsOf( wrapper ).map( ( item ) => String( item.label ) );
+	}
+
+	async function type( wrapper: VueWrapper, text: string ): Promise<void> {
+		const lookup = wrapper.findComponent( CdxLookupWithVModel );
+		lookup.vm.$emit( 'update:input-value', text );
+		lookup.vm.$emit( 'input', text );
+		await flushPromises();
+	}
+
 	beforeEach( () => {
 		pinia = createPinia();
 		setActivePinia( pinia );
@@ -420,6 +447,95 @@ describe( 'SubjectPicker', () => {
 		expect( wrapper.find( '.probe' ).text() ).toBe( 's11111111111111' );
 	} );
 
+	describe( 'finding the target by its id', () => {
+		const TARGET_ID = 's1demo1aaaaaaa1';
+		const OTHER_ID = 's1demo5sssssss1';
+
+		it( 'offers the Subject an entered id names, under its display name', async () => {
+			wikiHolds( labellessSubject( TARGET_ID, 'ACME Inc.', 'Company' ) );
+			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+
+			await type( wrapper, TARGET_ID );
+
+			expect( menuItemsOf( wrapper ) ).toEqual( [ { label: 'ACME Inc.', value: TARGET_ID } ] );
+		} );
+
+		it( 'searches no labels once an id has named a usable Subject', async () => {
+			wikiHolds( labellessSubject( TARGET_ID, 'ACME Inc.', 'Company' ) );
+			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+
+			await type( wrapper, TARGET_ID );
+
+			expect( mockSubjectLabelSearch.searchSubjectLabels ).not.toHaveBeenCalled();
+		} );
+
+		// An id is fifteen base58 characters, which is also the shape of an ordinary word: typing
+		// one must still search labels, or a Subject named after such a word becomes unfindable.
+		it( 'searches labels for an id-shaped word that names no Subject', async () => {
+			searchReturns( [ { id: TARGET_ID, label: 'Straightforward Solutions' } ] );
+			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+
+			await type( wrapper, 'straightforward' );
+
+			expect( menuItemsOf( wrapper ) ).toEqual( [
+				{ label: 'Straightforward Solutions', value: TARGET_ID },
+			] );
+		} );
+
+		it( 'searches labels for an id naming a Subject of another Schema', async () => {
+			wikiHolds( labellessSubject( TARGET_ID, 'Ada Lovelace', 'Person' ) );
+			searchReturns( [ { id: OTHER_ID, label: 'Acme Anvils' } ] );
+			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+
+			await type( wrapper, TARGET_ID );
+
+			expect( menuItemsOf( wrapper ) ).toEqual( [ { label: 'Acme Anvils', value: OTHER_ID } ] );
+		} );
+
+		it( 'offers nothing for an id naming a Subject of another Schema', async () => {
+			wikiHolds( labellessSubject( TARGET_ID, 'Ada Lovelace', 'Person' ) );
+			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+
+			await type( wrapper, TARGET_ID );
+
+			expect( menuItemsOf( wrapper ) ).toEqual( [] );
+		} );
+
+		it( 'searches labels for a padded name without its padding', async () => {
+			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+
+			await type( wrapper, '  Acme  ' );
+
+			expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenCalledWith( 'Acme', 'Company' );
+		} );
+
+		it( 'reads the Subject named by a pasted id despite the whitespace around it', async () => {
+			wikiHolds( labellessSubject( TARGET_ID, 'ACME Inc.', 'Company' ) );
+			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+
+			await type( wrapper, `  ${ TARGET_ID }\n` );
+
+			expect( menuItemsOf( wrapper ) ).toEqual( [ { label: 'ACME Inc.', value: TARGET_ID } ] );
+		} );
+
+		it( 'ignores an id lookup that lands after the field was cleared', async () => {
+			let answerLookup: ( subject: Subject ) => void;
+			subjectStore.getOrFetchSubject = vi.fn().mockReturnValue(
+				new Promise<Subject>( ( resolve ) => {
+					answerLookup = resolve;
+				} ),
+			);
+			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+
+			await type( wrapper, TARGET_ID );
+			await type( wrapper, '' );
+			answerLookup!( labellessSubject( TARGET_ID, 'ACME Inc.', 'Company' ) );
+			await flushPromises();
+
+			expect( menuItemsOf( wrapper ) ).toEqual( [] );
+		} );
+	} );
+
 	describe( 'creating the target on the spot', () => {
 		const attachedWrappers: VueWrapper[] = [];
 
@@ -507,14 +623,6 @@ describe( 'SubjectPicker', () => {
 			return createWrapperOffering( subjectCreation, { selected: EXISTING_TARGET_ID, targetSchema: 'Company' } );
 		}
 
-		function menuItemsOf( wrapper: VueWrapper ): MenuItemData[] {
-			return wrapper.findComponent( CdxLookupWithVModel ).props( 'menuItems' ) as MenuItemData[];
-		}
-
-		function menuLabelsOf( wrapper: VueWrapper ): string[] {
-			return menuItemsOf( wrapper ).map( ( item ) => String( item.label ) );
-		}
-
 		function lastMenuLabelOf( wrapper: VueWrapper ): string {
 			const labels = menuLabelsOf( wrapper );
 			return labels[ labels.length - 1 ];
@@ -526,13 +634,6 @@ describe( 'SubjectPicker', () => {
 
 		function statusOf( wrapper: VueWrapper ): string {
 			return String( wrapper.findComponent( CdxLookupWithVModel ).props( 'status' ) );
-		}
-
-		async function type( wrapper: VueWrapper, text: string ): Promise<void> {
-			const lookup = wrapper.findComponent( CdxLookupWithVModel );
-			lookup.vm.$emit( 'update:input-value', text );
-			lookup.vm.$emit( 'input', text );
-			await flushPromises();
 		}
 
 		async function leaveField( wrapper: VueWrapper ): Promise<void> {
@@ -551,10 +652,6 @@ describe( 'SubjectPicker', () => {
 		async function chooseFirstMenuItem( wrapper: VueWrapper ): Promise<void> {
 			wrapper.findComponent( CdxLookupWithVModel ).vm.$emit( 'update:selected', menuItemsOf( wrapper )[ 0 ].value );
 			await flushPromises();
-		}
-
-		function searchReturns( results: { id: string; label: string }[] ): void {
-			( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockResolvedValue( results );
 		}
 
 		function searchNeverAnswers(): void {
@@ -613,6 +710,18 @@ describe( 'SubjectPicker', () => {
 			] );
 		} );
 
+		it( 'lists the Subject an id names above the create option, in place of the fruitless search', async () => {
+			wikiHolds( subjectNamed( EXISTING_TARGET_ID, 'Acme Anvil', 'Product' ) );
+			const wrapper = await createWrapperOffering( hostOffering( creatorReturning( null ) ) );
+
+			await type( wrapper, EXISTING_TARGET_ID );
+
+			expect( menuLabelsOf( wrapper ) ).toEqual( [
+				'Acme Anvil',
+				`Create "${ EXISTING_TARGET_ID }" as a new Product`,
+			] );
+		} );
+
 		it( 'names the typed text and the schema in the create option once the user has typed', async () => {
 			const wrapper = await createWrapperOffering(
 				hostOffering( creatorReturning( null ) ),
@@ -634,6 +743,18 @@ describe( 'SubjectPicker', () => {
 				label: 'No matches found',
 				disabled: true,
 			} );
+		} );
+
+		it( 'reports a fruitless search for an id no readable Subject has', async () => {
+			subjectStore.getOrFetchSubject = vi.fn().mockRejectedValue( new Error( 'not found' ) );
+			const wrapper = await createWrapperOffering( hostOffering( creatorReturning( null ) ) );
+
+			await type( wrapper, EXISTING_TARGET_ID );
+
+			expect( menuLabelsOf( wrapper ) ).toEqual( [
+				'No matches found',
+				`Create "${ EXISTING_TARGET_ID }" as a new Product`,
+			] );
 		} );
 
 		it( 'leaves the fruitless search to its own entry rather than the Codex slot', async () => {
@@ -764,6 +885,24 @@ describe( 'SubjectPicker', () => {
 
 			expect( inputTextOf( wrapper ) ).toBe( 'Widget X' );
 			expect( subjectStore.getOrFetchSubject ).not.toHaveBeenCalled();
+		} );
+
+		it( 'keeps a creation that lands after the field was cleared', async () => {
+			let finishCreating: ( subject: Subject ) => void;
+			const create = vi.fn<SubjectCreator>().mockReturnValue(
+				new Promise<Subject | null>( ( resolve ) => {
+					finishCreating = resolve as ( subject: Subject ) => void;
+				} ),
+			);
+			const wrapper = await createWrapperOffering( hostOffering( create ) );
+			await type( wrapper, 'Widget Co' );
+			await chooseLastMenuItem( wrapper );
+
+			await type( wrapper, '' );
+			finishCreating!( createdSubject( 'Widget Co', 'Widget Co' ) );
+			await flushPromises();
+
+			expect( wrapper.emitted( 'update:selected' ) ).toEqual( [ [ 's1demo1aaaaaaa1' ] ] );
 		} );
 
 		it( 'abandons a creation that lands after another Subject has been selected', async () => {
