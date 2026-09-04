@@ -83,7 +83,7 @@
 	"neowiki-subject-tree-label": "Accessible name of the structure tree in the subject editor, listing the subjects reachable from the one being edited.",
 	"neowiki-subject-editor-resize-navigator": "Accessible name of the divider between the structure tree and the edit form in the subject editor. Dragging it, or moving it with the arrow keys, changes how wide the structure panel is. The panel itself is named by {{msg-mw|neowiki-subject-tree-label}}.",
 	"neowiki-subject-tree-not-linked": "Caption of the structure tree group holding subjects that are open or have unsaved changes but are not reachable through the relations of the subject being edited.",
-	"neowiki-subject-picker-placeholder": "Placeholder text shown in the subject search input field.",
+	"neowiki-subject-picker-placeholder": "Placeholder text shown in the subject picker input field, which matches typed text against subject names and accepts a complete subject ID.",
 	"neowiki-schema-picker-placeholder": "Placeholder text shown in the schema picker input field.",
 	"neowiki-subject-picker-no-results": "Message shown in the subject picker dropdown when no subjects match the search query.",
 	"neowiki-subject-picker-no-match": "Error message shown in the subject picker when the user types text but does not select a subject from the dropdown results.",

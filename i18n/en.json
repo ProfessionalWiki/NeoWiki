@@ -203,7 +203,7 @@
 	"neowiki-subject-editor-resize-navigator": "Resize structure panel",
 	"neowiki-subject-tree-not-linked": "Not linked here",
 
-	"neowiki-subject-picker-placeholder": "Search for a subject",
+	"neowiki-subject-picker-placeholder": "Search by name or subject ID",
 	"neowiki-subject-picker-no-results": "No subjects found",
 	"neowiki-subject-picker-no-match": "Please select a subject from the list.",
 	"neowiki-subject-picker-create": "Create a new $1",
