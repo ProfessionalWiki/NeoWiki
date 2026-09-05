@@ -151,6 +151,22 @@ describe( 'Subject', () => {
 			expect( cleared.getLabel() ).toBeNull();
 			expect( cleared.getDisplayName() ).toBe( 'Acme Anvil' );
 		} );
+
+		it( 'stops calling the name generated once someone types one', () => {
+			const unnamed = newSubject( { label: null, displayNameIsGenerated: true } );
+
+			expect( unnamed.withLabel( 'Acme Anvil' ).hasGeneratedDisplayName() ).toBe( false );
+		} );
+
+		/**
+		 * The retained name is the label just deleted, which nobody generated, so marking it would
+		 * name the Subject after a string the user typed.
+		 */
+		it( 'leaves a retained label unmarked when the label is cleared', () => {
+			const named = newSubject( { label: 'Acme Anvil' } );
+
+			expect( named.withLabel( null ).hasGeneratedDisplayName() ).toBe( false );
+		} );
 	} );
 
 	describe( 'withStatements', () => {

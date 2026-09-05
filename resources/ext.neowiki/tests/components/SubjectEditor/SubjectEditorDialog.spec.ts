@@ -108,6 +108,7 @@ describe( 'SubjectEditorDialog', () => {
 		new SubjectId( 's1demo5sssssss1' ),
 		'Test Subject',
 		'Test Subject',
+		false,
 		'TestSchema',
 		new StatementList( [] ),
 	);
@@ -116,6 +117,7 @@ describe( 'SubjectEditorDialog', () => {
 		new SubjectId( 's1demo5sssssss2' ),
 		null,
 		'Host Page',
+		false,
 		'TestSchema',
 		new StatementList( [] ),
 	);
@@ -1040,6 +1042,7 @@ describe( 'SubjectEditorDialog', () => {
 					new SubjectId( 's1demo5sssssss1' ),
 					'Renamed Subject',
 					'Renamed Subject',
+					false,
 					'TestSchema',
 					new StatementList( [] ),
 				),
@@ -1091,6 +1094,7 @@ describe( 'SubjectEditorDialog', () => {
 				mockSubject.getId(),
 				mockSubject.getLabel(),
 				mockSubject.getDisplayName(),
+				false,
 				'TestSchema',
 				new StatementList( [ colleagueStatement( ...targetIds ) ] ),
 			);
@@ -2338,6 +2342,7 @@ describe( 'SubjectEditorDialog', () => {
 							new SubjectId( 's99999999999999' ),
 							'New root',
 							'New root',
+							false,
 							'TestSchema',
 							new StatementList( [ colleagueStatement( 's22222222222222' ) ] ),
 						),
@@ -2363,6 +2368,7 @@ describe( 'SubjectEditorDialog', () => {
 							new SubjectId( 's99999999999999' ),
 							'New root',
 							'New root',
+							false,
 							'TestSchema',
 							new StatementList( [ colleagueStatement( 's22222222222222' ) ] ),
 						),
@@ -3193,6 +3199,7 @@ describe( 'SubjectEditorDialog', () => {
 			mockSubject.getId(),
 			mockSubject.getLabel(),
 			mockSubject.getDisplayName(),
+			false,
 			'TestSchema',
 			new StatementList( [ new Statement(
 				new PropertyName( 'Birth event' ),

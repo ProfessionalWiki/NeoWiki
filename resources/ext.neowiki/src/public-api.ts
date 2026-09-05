@@ -97,6 +97,7 @@ export * from './persistence/ValueDeserializer';
 export * from './presentation/FrontendRegistrar';
 export * from './presentation/PendingNotification';
 export * from './presentation/PropertyTypeAdapter';
+export * from './presentation/subjectDisplayName';
 export * from './stores/LayoutStore';
 export * from './stores/SchemaStore';
 export * from './stores/SubjectStore';

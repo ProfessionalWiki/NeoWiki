@@ -10,11 +10,12 @@ import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 
 vi.mock( '@/stores/SubjectStore.ts' );
 
-function createSubject( id: string, label: string | null, pageName: string, displayName?: string ): SubjectWithContext {
+function createSubject( id: string, label: string | null, pageName: string, displayName?: string, generated = false ): SubjectWithContext {
 	return new SubjectWithContext(
 		new SubjectId( id ),
 		label,
 		displayName ?? label ?? '',
+		generated,
 		'' as any,
 		{} as any,
 		new PageIdentifiers( 42, pageName ),
@@ -55,6 +56,8 @@ describe( 'RelationDisplay.vue', () => {
 				text: () => str,
 				parse: () => str,
 			} ) ),
+			msg: vi.fn( ( key: string, ...params: string[] ) =>
+				key === 'neowiki-subject-generated-name' ? `(unnamed ${ params[ 0 ] })` : key + params.join( '' ) ),
 		} );
 	} );
 
@@ -83,6 +86,27 @@ describe( 'RelationDisplay.vue', () => {
 		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111A' ) ) );
 
 		expect( wrapper.find( 'a' ).text() ).toBe( 'Page Name 1' );
+	} );
+
+	// A relation link is article content a reader sees, so a target nobody named must say so there
+	// too, not only in the editing UI.
+	it( 'marks a target whose name the server generated', async () => {
+		mockGetSubject.mockReturnValue(
+			new SubjectWithContext(
+				new SubjectId( 's1111111111111B' ),
+				null,
+				'Attendance',
+				true,
+				'Attendance' as any,
+				{} as any,
+				new PageIdentifiers( 42, 'Rijksmuseum' ),
+			),
+		);
+		mockGetUrl.mockReturnValue( '/wiki/Rijksmuseum' );
+
+		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111B' ) ) );
+
+		expect( wrapper.find( 'a' ).text() ).toBe( '(unnamed Attendance)' );
 	} );
 
 	it( 'renders a span with error info when subject is not found', async () => {

@@ -105,7 +105,11 @@ readonly class GetSubjectQuery {
 				// Withholding the page fields must not withhold the fallback they feed: the display
 				// name is built from the identifiers fetched either way.
 				$includePageIdentifiers ? $pageIdentifiers : null,
-				$this->getDisplayName( $subject, $pageIdentifiers, $mainSubjectIds )
+				SubjectDisplayName::labelOrPageName(
+					label: $subject->getLabel(),
+					isMainSubject: $this->isMainSubject( $subject, $pageIdentifiers, $mainSubjectIds ),
+					pageName: $pageIdentifiers?->getTitle() ?? ''
+				)
 			);
 		}
 
@@ -140,19 +144,14 @@ readonly class GetSubjectQuery {
 	/**
 	 * @param array<int, ?SubjectId> $mainSubjectIds
 	 */
-	private function getDisplayName(
+	private function isMainSubject(
 		Subject $subject,
 		?PageIdentifiers $pageIdentifiers,
 		array $mainSubjectIds
-	): string {
+	): bool {
 		$mainSubjectId = $pageIdentifiers === null ? null : $mainSubjectIds[$pageIdentifiers->getId()->id] ?? null;
 
-		return SubjectDisplayName::forSubject(
-			label: $subject->getLabel(),
-			isMainSubject: $mainSubjectId !== null && $mainSubjectId->equals( $subject->getId() ),
-			pageName: $pageIdentifiers?->getTitle() ?? '',
-			schemaName: $subject->getSchemaName()
-		);
+		return $mainSubjectId !== null && $mainSubjectId->equals( $subject->getId() );
 	}
 
 }

@@ -168,6 +168,7 @@ const labellessSpouse = newSubject( {
 	id: SPOUSE_ID,
 	label: null,
 	displayName: 'Name',
+	displayNameIsGenerated: true,
 	schemaName: 'Name',
 } );
 
@@ -652,7 +653,7 @@ describe( 'SubjectTree', () => {
 
 	// Naming from the stored label alone leaves a blank row; falling back to the id prints an
 	// ADR 14 identifier at the user.
-	it( 'names a label-less target by its display name', async () => {
+	it( 'names a label-less target by its marked display name', async () => {
 		const wrapper = mountWithServices(
 			rootSubject,
 			personSchema,
@@ -661,12 +662,12 @@ describe( 'SubjectTree', () => {
 		);
 		await flushPromises();
 
-		expect( targetNodeLabels( wrapper ) ).toContain( 'Name' );
+		expect( targetNodeLabels( wrapper ) ).toContain( '(unnamed Name)' );
 		expect( targetNodeLabels( wrapper ) ).not.toContain( SPOUSE_ID );
 	} );
 
-	// ADR 31 names a label-less child after its Schema, so printing the Schema beside that
-	// name would read "Name  Name".
+	// A label-less child is shown as "(unnamed Name)", which already carries its Schema, so
+	// printing the Schema beside it would read "(unnamed Name)  Name".
 	it( 'prints the schema of a label-less target only once', async () => {
 		const wrapper = mountWithServices(
 			rootSubject,
@@ -676,7 +677,7 @@ describe( 'SubjectTree', () => {
 		);
 		await flushPromises();
 
-		expect( nameRow( wrapper.get( `[data-mw-neowiki-subject-id="${ SPOUSE_ID }"]` ) ).text() ).toBe( 'Name' );
+		expect( nameRow( wrapper.get( `[data-mw-neowiki-subject-id="${ SPOUSE_ID }"]` ) ).text() ).toBe( '(unnamed Name)' );
 	} );
 
 	// The only way back to the root once a relation target is being edited.

@@ -132,6 +132,7 @@ endpoint that returns a Subject object serves this shape.
 
 `displayName` is the name to show, never null: the label where there is one, otherwise the page name for a main
 Subject and the Schema name for a child Subject ([ADR 31](../adr/031-optional-subject-labels.md)).
+`displayNameIsGenerated` is true in that last case.
 
 - `?expand=page` adds `pageId`, `pageTitle`, and `pageNamespaceId` to each Subject. `pageTitle` is the full page
   title with namespace prefix (e.g. `Help:Installation`); `pageNamespaceId` is the canonical MediaWiki namespace
@@ -223,8 +224,8 @@ the Schema it instantiates, so a client does not have to re-read after a write:
   "subjectId": "s1demo5sssssss1",
   "violations": [],
   "subject": { "id": "s1demo5sssssss1", "label": "Updated Label", "displayName": "Updated Label",
-               "schema": "Company", "pageId": 42, "pageTitle": "Help:Installation", "pageNamespaceId": 12,
-               "statements": {} },
+               "displayNameIsGenerated": false, "schema": "Company", "pageId": 42,
+               "pageTitle": "Help:Installation", "pageNamespaceId": 12, "statements": {} },
   "schema": { "description": "A company", "propertyDefinitions": {} }
 }
 ```

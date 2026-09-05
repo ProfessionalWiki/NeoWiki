@@ -1,4 +1,5 @@
 import type { Subject } from '@/domain/Subject';
+import { subjectDisplayName } from '@/presentation/subjectDisplayName';
 
 /**
  * The placeholder a rename field shows for an existing Subject. One with no label of its own is
@@ -8,6 +9,6 @@ import type { Subject } from '@/domain/Subject';
  */
 export function subjectLabelPlaceholder( subject: Subject ): string {
 	return subject.getLabel() === null ?
-		subject.getDisplayName() :
+		subjectDisplayName( subject ) :
 		mw.msg( 'neowiki-subject-editor-label-field' );
 }

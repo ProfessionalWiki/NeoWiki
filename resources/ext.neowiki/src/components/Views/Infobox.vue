@@ -8,7 +8,7 @@
 					role="heading"
 					aria-level="2"
 				>
-					{{ subject.getDisplayName() }}
+					{{ subjectDisplayName( subject ) }}
 				</div>
 				<div
 					class="ext-neowiki-infobox__schema"
@@ -68,6 +68,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconEdit } from '@wikimedia/codex-icons';
