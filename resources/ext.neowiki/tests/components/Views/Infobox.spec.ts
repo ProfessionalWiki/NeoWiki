@@ -28,7 +28,9 @@ const $i18n = createI18nMock();
 
 describe( 'Infobox', () => {
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'message', 'msg', 'config' ] } );
+		setupMwMock( {
+			functions: [ 'message', 'msg', 'config' ],
+		} );
 		( globalThis as any ).mw.util = {
 			getUrl: vi.fn( ( title: string ) => `/wiki/${ title }` ),
 		};
@@ -55,6 +57,7 @@ describe( 'Infobox', () => {
 		new SubjectId( 's1demo5sssssss1' ),
 		'Test Subject',
 		'Test Subject',
+		false,
 		'TestSchema',
 		new StatementList( [
 			new Statement(
@@ -124,6 +127,25 @@ describe( 'Infobox', () => {
 		expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( 'Test Subject' );
 	} );
 
+	// The infobox heading is article content a reader sees, and is ADR 31's own example of a name
+	// nobody chose.
+	it( 'marks a title the server generated', () => {
+		const generated = new Subject(
+			new SubjectId( 's1demo5sssssss2' ),
+			null,
+			'TestSchema',
+			true,
+			'TestSchema',
+			new StatementList( [] ),
+		);
+
+		subjectStore.setSubject( generated );
+
+		const wrapper = mountComponent( generated, false );
+
+		expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( '(unnamed TestSchema)' );
+	} );
+
 	it( 'renders statements correctly', () => {
 		const wrapper = mountComponent( mockSubject, false );
 
@@ -150,6 +172,7 @@ describe( 'Infobox', () => {
 			new SubjectId( 's1demo6sssssss1' ),
 			'Empty Subject',
 			'Empty Subject',
+			false,
 			'TestSchema',
 			new StatementList( [] ),
 		);
@@ -182,6 +205,7 @@ describe( 'Infobox', () => {
 			mockSubject.getId(),
 			'Fetched Subject',
 			'Fetched Subject',
+			false,
 			'TestSchema',
 			new StatementList( [] ),
 		);
@@ -227,12 +251,13 @@ describe( 'Infobox', () => {
 		// What the editor hands to onSave: a plain Subject, without the page context the registry
 		// entry carries, and here also without the statement the server ends up storing.
 		const clientCopy = new Subject(
-			mockSubject.getId(), 'Test Subject', 'Test Subject', 'TestSchema', new StatementList( [] ),
+			mockSubject.getId(), 'Test Subject', 'Test Subject', false, 'TestSchema', new StatementList( [] ),
 		);
 		const persistedSubject = new SubjectWithContext(
 			mockSubject.getId(),
 			'Test Subject',
 			'Test Subject',
+			false,
 			'TestSchema',
 			new StatementList( [
 				new Statement( new PropertyName( 'Cost centre' ), TextType.typeName, newStringValue( 'CC-42' ) ),
@@ -272,7 +297,7 @@ describe( 'Infobox', () => {
 
 		it( 'renders the Subject the save returned, not the one handed to it', async () => {
 			const canonical = new SubjectWithContext(
-				mockSubject.getId(), 'Server label', 'Server label', 'TestSchema', new StatementList( [] ),
+				mockSubject.getId(), 'Server label', 'Server label', false, 'TestSchema', new StatementList( [] ),
 				new PageIdentifiers( 7, 'Some page' ),
 			);
 			getSubjectMock.mockResolvedValue( clientCopy );

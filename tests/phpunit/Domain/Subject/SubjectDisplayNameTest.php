@@ -65,4 +65,52 @@ class SubjectDisplayNameTest extends TestCase {
 		);
 	}
 
+	private function chosenName( ?SubjectLabel $label, bool $isMainSubject, string $pageName = 'Page name' ): ?string {
+		return SubjectDisplayName::labelOrPageName(
+			label: $label,
+			isMainSubject: $isMainSubject,
+			pageName: $pageName
+		);
+	}
+
+	public function testStoredLabelIsTheChosenNameForMainSubject(): void {
+		$this->assertSame( 'Stored', $this->chosenName( new SubjectLabel( 'Stored' ), true ) );
+	}
+
+	public function testStoredLabelIsTheChosenNameForChildSubject(): void {
+		$this->assertSame( 'Stored', $this->chosenName( new SubjectLabel( 'Stored' ), false ) );
+	}
+
+	public function testTheMainSubjectTakesThePageNameAsItsChosenName(): void {
+		$this->assertSame( 'Page name', $this->chosenName( null, true ) );
+	}
+
+	/**
+	 * Null is what makes the Schema tier the one nobody chose, and it is the whole answer a caller
+	 * needs: the name it produces and the verdict on that name come from this one value.
+	 */
+	public function testAChildWithoutALabelHasNoChosenName(): void {
+		$this->assertNull( $this->chosenName( null, false ) );
+	}
+
+	public function testAMainSubjectWithoutAPageNameHasNoChosenName(): void {
+		$this->assertNull( $this->chosenName( null, true, '' ) );
+	}
+
+	/**
+	 * A label someone typed is chosen even when they typed the Schema name. This and the case below
+	 * are why the tier cannot be recovered by comparing the name against the Schema name.
+	 */
+	public function testAStoredLabelEqualToTheSchemaNameIsStillChosen(): void {
+		$this->assertSame( 'Schema name', $this->chosenName( new SubjectLabel( 'Schema name' ), false ) );
+	}
+
+	/**
+	 * The one case a client comparing the two strings gets wrong: the page title was chosen by
+	 * whoever created the page, yet it equals the Schema name.
+	 */
+	public function testAPageTitledAfterItsSchemaIsStillAChosenName(): void {
+		$this->assertSame( 'Schema name', $this->chosenName( null, true, 'Schema name' ) );
+	}
+
 }

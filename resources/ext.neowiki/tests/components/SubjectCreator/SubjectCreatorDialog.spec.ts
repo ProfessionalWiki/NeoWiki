@@ -405,14 +405,16 @@ describe( 'SubjectCreatorDialog', () => {
 		expect( wrapper.find( '.cdx-text-input-stub' ).attributes( 'placeholder' ) ).toBe( 'Handbook:Onboarding' );
 	} );
 
-	it( 'offers the schema name as the label placeholder when the page already has a main subject', async () => {
+	// A further Subject on the page becomes a Child, so the server will name it after its Schema -
+	// a name nobody chose, and the preview says so.
+	it( 'marks the schema name as a stand-in in the label placeholder when the page already has a main subject', async () => {
 		const wrapper = mountComponent( {}, { pageHasMainSubject: true } );
 
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
 		const labelInput = wrapper.find( '.cdx-text-input-stub' );
-		expect( labelInput.attributes( 'placeholder' ) ).toBe( SCHEMA_NAME );
+		expect( labelInput.attributes( 'placeholder' ) ).toBe( `(unnamed ${ SCHEMA_NAME })` );
 		expect( ( labelInput.element as HTMLInputElement ).value ).toBe( '' );
 	} );
 
@@ -813,7 +815,7 @@ describe( 'SubjectCreatorDialog', () => {
 			await clickContinue( wrapper );
 
 			const labelInput = wrapper.find( '.cdx-text-input-stub' );
-			expect( labelInput.attributes( 'placeholder' ) ).toBe( NEW_SCHEMA_NAME );
+			expect( labelInput.attributes( 'placeholder' ) ).toBe( `(unnamed ${ NEW_SCHEMA_NAME })` );
 			expect( ( labelInput.element as HTMLInputElement ).value ).toBe( '' );
 		} );
 

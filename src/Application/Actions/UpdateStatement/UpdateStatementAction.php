@@ -196,25 +196,23 @@ readonly class UpdateStatementAction {
 		// The proposed Subject is the persisted state: the builder and the resolver above already
 		// normalized what the request supplied.
 		$this->presenter->presentUpdated(
-			GetSubjectResponseItem::fromSubject(
-				$proposedSubject,
-				$pageIdentifiers,
-				$this->getDisplayName( $proposedSubject, $pageIdentifiers )
-			),
+			$this->newResponseItem( $proposedSubject, $pageIdentifiers ),
 			$schema,
 			$proposedViolations
 		);
 	}
 
 	/**
-	 * Which Subject the page treats as its own topic decides what a Subject without a label is called,
-	 * and only the page knows that. Setting a Statement cannot change it.
+	 * Which Subject the page treats as its own topic decides what a Subject without a label is called.
+	 * Only the page knows that. Setting a Statement cannot change it.
 	 */
-	private function getDisplayName( Subject $subject, PageIdentifiers $pageIdentifiers ): string {
-		return SubjectDisplayName::forSubjectIn(
+	private function newResponseItem( Subject $subject, PageIdentifiers $pageIdentifiers ): GetSubjectResponseItem {
+		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $pageIdentifiers->getId() );
+
+		return GetSubjectResponseItem::fromSubject(
 			$subject,
-			$this->subjectRepository->getSubjectsByPageId( $pageIdentifiers->getId() ),
-			$pageIdentifiers->getTitle()
+			$pageIdentifiers,
+			SubjectDisplayName::labelOrPageNameIn( $subject, $pageSubjects, $pageIdentifiers->getTitle() )
 		);
 	}
 

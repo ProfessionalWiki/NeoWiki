@@ -81,6 +81,7 @@ class GetSubjectQueryTest extends TestCase {
 						id: 's11111111111129',
 						label: 'expected label',
 						displayName: 'expected label',
+						displayNameIsGenerated: false,
 						schemaName: 'GetSubjectQueryTestSchema',
 						statements: [
 							'expected property 1' => [
@@ -191,6 +192,7 @@ class GetSubjectQueryTest extends TestCase {
 
 		$this->assertNull( $spyPresenter->response->subjects['s11111111111maa']->label );
 		$this->assertSame( 'Rijksmuseum', $spyPresenter->response->subjects['s11111111111maa']->displayName );
+		$this->assertFalse( $spyPresenter->response->subjects['s11111111111maa']->displayNameIsGenerated );
 	}
 
 	/**
@@ -210,6 +212,7 @@ class GetSubjectQueryTest extends TestCase {
 
 		$this->assertNull( $spyPresenter->response->subjects['s11111111111maa']->pageTitle );
 		$this->assertSame( 'Rijksmuseum', $spyPresenter->response->subjects['s11111111111maa']->displayName );
+		$this->assertFalse( $spyPresenter->response->subjects['s11111111111maa']->displayNameIsGenerated );
 	}
 
 	public function testLabellessChildSubjectIsNamedAfterItsSchema(): void {
@@ -232,6 +235,7 @@ class GetSubjectQueryTest extends TestCase {
 
 		$this->assertNull( $spyPresenter->response->subjects['s11111111111ca1']->label );
 		$this->assertSame( 'Attendance', $spyPresenter->response->subjects['s11111111111ca1']->displayName );
+		$this->assertTrue( $spyPresenter->response->subjects['s11111111111ca1']->displayNameIsGenerated );
 	}
 
 	private function newQueryForLabellessSubject(

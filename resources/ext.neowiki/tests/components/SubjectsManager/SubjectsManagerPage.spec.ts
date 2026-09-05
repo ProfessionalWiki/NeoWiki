@@ -22,11 +22,11 @@ const ID_B = 's1bbbbbbbbbbbb1';
 const PAGE_ID = 42;
 
 function subject( id: string ): Subject {
-	return new Subject( new SubjectId( id ), 'Label ' + id, 'Label ' + id, 'Person', new StatementList( [] ) );
+	return new Subject( new SubjectId( id ), 'Label ' + id, 'Label ' + id, false, 'Person', new StatementList( [] ) );
 }
 
-function labellessSubject( id: string, displayName: string ): Subject {
-	return new Subject( new SubjectId( id ), null, displayName, 'Person', new StatementList( [] ) );
+function labellessSubject( id: string, displayName: string, generated: boolean ): Subject {
+	return new Subject( new SubjectId( id ), null, displayName, generated, 'Person', new StatementList( [] ) );
 }
 
 const loadPageSubjectsMock = vi.fn().mockResolvedValue( undefined );
@@ -248,8 +248,8 @@ describe( 'SubjectsManagerPage rows without a stored label', () => {
 
 	beforeEach( () => {
 		storeSubjects = [
-			labellessSubject( ID_A, 'Host Page' ),
-			labellessSubject( ID_B, 'Person' ),
+			labellessSubject( ID_A, 'Host Page', false ),
+			labellessSubject( ID_B, 'Person', true ),
 		];
 		mainSubjectId = new SubjectId( ID_A );
 		loadPageSubjectsMock.mockClear();
@@ -264,11 +264,13 @@ describe( 'SubjectsManagerPage rows without a stored label', () => {
 		vi.restoreAllMocks();
 	} );
 
-	it( 'names the main row after the page and the child row after its schema', async () => {
+	// The main row took its page's title, which someone chose; only the child row is named after
+	// something nobody picked, and it says so.
+	it( 'names the main row after the page and marks the child row as unnamed', async () => {
 		const wrapper = await mountPage();
 
 		const names = wrapper.findAll( '.ext-neowiki-subjects-manager__row-label' ).map( ( el ) => el.text() );
-		expect( names ).toEqual( [ 'Host Page', 'Person' ] );
+		expect( names ).toEqual( [ 'Host Page', '(unnamed Person)' ] );
 	} );
 
 } );
@@ -398,6 +400,7 @@ describe( 'SubjectsManagerPage edit flow', () => {
 			new SubjectId( ID_A ),
 			'Fetched label',
 			'Fetched label',
+			false,
 			'Person',
 			new StatementList( [] ),
 		);

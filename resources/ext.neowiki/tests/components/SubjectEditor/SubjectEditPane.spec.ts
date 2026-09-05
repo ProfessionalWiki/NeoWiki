@@ -34,6 +34,7 @@ const defaultSubject = new SubjectWithContext(
 	new SubjectId( 's11111111111111' ),
 	'Test Subject',
 	'Test Subject',
+	false,
 	'TestSchema',
 	new StatementList( [] ),
 	new PageIdentifiers( 42, 'Test page' ),
@@ -53,6 +54,7 @@ const labellessSubject = new SubjectWithContext(
 	new SubjectId( 's11111111111111' ),
 	null,
 	'Test page',
+	false,
 	'TestSchema',
 	new StatementList( [] ),
 	new PageIdentifiers( 42, 'Test page' ),
@@ -64,6 +66,7 @@ const schemaNamedSubject = new SubjectWithContext(
 	new SubjectId( 's33333333333333' ),
 	null,
 	'TestSchema',
+	true,
 	'TestSchema',
 	new StatementList( [] ),
 	new PageIdentifiers( 42, 'Test page' ),
@@ -73,6 +76,7 @@ const subjectWithOnlyName = new SubjectWithContext(
 	new SubjectId( 's11111111111111' ),
 	'Test Subject',
 	'Test Subject',
+	false,
 	'TestSchema',
 	new StatementList( [ new Statement( new PropertyName( 'Name' ), TextType.typeName, newStringValue( 'Alice' ) ) ] ),
 	new PageIdentifiers( 42, 'Test page' ),
@@ -145,6 +149,7 @@ const subjectWithAuthor = new SubjectWithContext(
 	new SubjectId( 's11111111111111' ),
 	'Test Subject',
 	'Test Subject',
+	false,
 	'TestSchema',
 	new StatementList( [ new Statement(
 		new PropertyName( 'Author' ),
@@ -606,11 +611,11 @@ describe( 'SubjectEditPane', () => {
 		} );
 
 		// The empty field stands for "no label", so it previews the name that choice leaves the
-		// Subject with rather than describing the field.
+		// Subject with rather than describing the field - marked, exactly as the header shows it.
 		it( 'previews the name a label-less subject is shown under', () => {
 			const wrapper = mountPane( { subject: schemaNamedSubject, nested: true } );
 
-			expect( wrapper.findComponent( EditableText ).props( 'placeholder' ) ).toBe( 'TestSchema' );
+			expect( wrapper.findComponent( EditableText ).props( 'placeholder' ) ).toBe( '(unnamed TestSchema)' );
 		} );
 
 		it( 'names the field instead for a subject that already has a label', () => {

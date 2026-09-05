@@ -15,12 +15,21 @@ export class SubjectDeserializer {
 		const id = new SubjectId( json.id );
 		const label = json.label ?? null;
 		const displayName = json.displayName;
+		const displayNameIsGenerated = json.displayNameIsGenerated;
 		const schema = json.schema;
 
 		const pageIdentifiers = new PageIdentifiers( json.pageId, json.pageTitle );
 		const statementList = this.deserializeStatements( json.statements );
 
-		return new SubjectWithContext( id, label, displayName, schema, statementList, pageIdentifiers );
+		return new SubjectWithContext(
+			id,
+			label,
+			displayName,
+			displayNameIsGenerated,
+			schema,
+			statementList,
+			pageIdentifiers,
+		);
 	}
 
 	public deserializeStatements( json: any ): StatementList {

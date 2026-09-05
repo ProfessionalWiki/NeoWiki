@@ -185,6 +185,7 @@ describe( 'SubjectPicker', () => {
 			new SubjectId( 's1demo1aaaaaaa1' ),
 			'ACME Inc.',
 			'ACME Inc.',
+			false,
 			'Company',
 			new StatementList( [] ),
 		);
@@ -202,6 +203,7 @@ describe( 'SubjectPicker', () => {
 			new SubjectId( 's1demo1aaaaaaa1' ),
 			null,
 			'Acme Anvil',
+			false,
 			'Company',
 			new StatementList( [] ),
 		);
@@ -256,7 +258,7 @@ describe( 'SubjectPicker', () => {
 
 	it( 'does not propagate null selection to parent when input has text', async () => {
 		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue(
-			new Subject( new SubjectId( 's1demo1aaaaaaa1' ), 'ACME Inc.', 'ACME Inc.', 'Company', new StatementList( [] ) ),
+			new Subject( new SubjectId( 's1demo1aaaaaaa1' ), 'ACME Inc.', 'ACME Inc.', false, 'Company', new StatementList( [] ) ),
 		);
 
 		const wrapper = createWrapperWithVModel( { selected: 's1demo1aaaaaaa1' } );
@@ -444,7 +446,7 @@ describe( 'SubjectPicker', () => {
 		} );
 
 		function subjectNamed( id: string, name: string, schemaName: string ): Subject {
-			return new Subject( new SubjectId( id ), name, name, schemaName, new StatementList( [] ) );
+			return new Subject( new SubjectId( id ), name, name, false, schemaName, new StatementList( [] ) );
 		}
 
 		function createdSubject( label: string | null, displayName: string ): Subject {
@@ -452,6 +454,7 @@ describe( 'SubjectPicker', () => {
 				new SubjectId( 's1demo1aaaaaaa1' ),
 				label,
 				displayName,
+				false,
 				'Product',
 				new StatementList( [] ),
 			);
@@ -884,6 +887,21 @@ describe( 'SubjectPicker', () => {
 				await type( wrapper, 'a' );
 
 				expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Anvil Co', 'ACME Inc.', 'Create "a" as a new Company' ] );
+			} );
+
+			// The picker names Subjects bare on purpose: a menu label becomes the field's own text,
+			// which the user can edit and which feeds the offer to create under what they typed.
+			// Marking it would put "(unnamed Company)" on the way into a stored label.
+			it( 'names a label-less draft bare, without the generated-name marker', async () => {
+				const drafts = draftsHolding(
+					new Subject( new SubjectId( DRAFT_ID ), null, 'Company', true, 'Company', new StatementList( [] ) ),
+				);
+				const wrapper = await createWrapperOffering(
+					hostOffering( creatorReturning( null ), drafts ),
+					{ targetSchema: 'Company' },
+				);
+
+				expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Company', 'Create a new Company' ] );
 			} );
 
 			it( 'leaves out the session drafts of another Schema', async () => {

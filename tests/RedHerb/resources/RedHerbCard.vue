@@ -28,7 +28,7 @@
 			role="heading"
 			aria-level="2"
 		>
-			{{ subject.getDisplayName() }}
+			{{ subjectDisplayName( subject ) }}
 		</div>
 		<dl
 			v-if="layoutSections.wide.length > 0"
@@ -211,6 +211,8 @@ module.exports = exports = {
 
 		return {
 			subject: subject,
+			// A Subject nobody named is shown as a marked stand-in, not under a bare Schema name.
+			subjectDisplayName: nw.subjectDisplayName,
 			layoutUrl: layoutUrl,
 			schemaUrl: schemaUrl,
 			layoutSections: layoutSections,

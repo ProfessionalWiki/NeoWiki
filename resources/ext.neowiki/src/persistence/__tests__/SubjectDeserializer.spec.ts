@@ -19,6 +19,7 @@ describe( 'SubjectDeserializer', () => {
 			id: 's13333333333337',
 			label: 'SubjectDeserializer',
 			displayName: 'SubjectDeserializer',
+			displayNameIsGenerated: false,
 			schema: 'SDSchema',
 			statements: {},
 			pageId: 42,
@@ -31,10 +32,43 @@ describe( 'SubjectDeserializer', () => {
 			new SubjectId( 's13333333333337' ),
 			'SubjectDeserializer',
 			'SubjectDeserializer',
+			false,
 			'SDSchema',
 			new StatementList( [] ),
 			new PageIdentifiers( 42, 'SDPageTitle' ),
 		) );
+	} );
+
+	it( 'carries the server\'s generated-name verdict through to the Subject', () => {
+		const json = {
+			id: 's13333333333337',
+			label: null,
+			displayName: 'SDSchema',
+			displayNameIsGenerated: true,
+			schema: 'SDSchema',
+			statements: {},
+			pageId: 42,
+			pageTitle: 'SDPageTitle',
+		};
+
+		expect( deserializer.deserialize( json ).hasGeneratedDisplayName() ).toBe( true );
+	} );
+
+	// A name the server reports as chosen must not be marked, even where it equals the Schema name:
+	// a Main Subject on a page titled after its Schema is the case a client cannot work out alone.
+	it( 'does not invent a generated verdict for a name equal to the schema name', () => {
+		const json = {
+			id: 's13333333333337',
+			label: null,
+			displayName: 'SDSchema',
+			displayNameIsGenerated: false,
+			schema: 'SDSchema',
+			statements: {},
+			pageId: 42,
+			pageTitle: 'SDSchema',
+		};
+
+		expect( deserializer.deserialize( json ).hasGeneratedDisplayName() ).toBe( false );
 	} );
 
 	it( 'deserializes a Subject without a label, keeping the display name the server derived', () => {
@@ -42,6 +76,7 @@ describe( 'SubjectDeserializer', () => {
 			id: 's13333333333337',
 			label: null,
 			displayName: 'SDPageTitle',
+			displayNameIsGenerated: false,
 			schema: 'SDSchema',
 			statements: {},
 			pageId: 42,
@@ -59,6 +94,7 @@ describe( 'SubjectDeserializer', () => {
 			id: 's13333333333337',
 			label: 'SubjectDeserializer',
 			displayName: 'SubjectDeserializer',
+			displayNameIsGenerated: false,
 			schema: 'SDSchema',
 			statements: {
 				Property1: {
@@ -80,6 +116,7 @@ describe( 'SubjectDeserializer', () => {
 			new SubjectId( 's13333333333337' ),
 			'SubjectDeserializer',
 			'SubjectDeserializer',
+			false,
 			'SDSchema',
 			new StatementList( [
 				new Statement( new PropertyName( 'Property1' ), TextType.typeName, newStringValue( 'foo' ) ),

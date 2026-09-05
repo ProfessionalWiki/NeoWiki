@@ -44,6 +44,8 @@ export type SubjectJson = {
 	label: string | null;
 	/** The stored label, or the fallback name the server derived when there is none. */
 	displayName: string;
+	/** Whether displayName fell back to the Schema name, the one tier nobody chose. */
+	displayNameIsGenerated: boolean;
 	statements: Record<string, unknown>;
 	schema: string;
 	pageId: number;

@@ -19,6 +19,13 @@ A Subject may have no label. Every surface then shows a computed name: the page 
 name otherwise. The contract is in the [glossary](../glossary.md#subject) and
 [subject-format.md](../api/subject-format.md); the choices worth recording are where the surfaces differ.
 
+**The Schema tier says so, in the string.** Such a Subject is shown as `(unnamed Attendance)`, from the
+`neowiki-subject-generated-name` message — the bracketing MediaWiki documents on `blanknamespace`, "(Main)". A Main
+Subject's page name is left unmarked, having been chosen by whoever titled the page. The marker is composed in the
+frontend, so `rdfs:label`, Lua and `{{#neowiki_value}}` keep the bare Schema name; REST carries
+`displayNameIsGenerated`, which a client cannot derive, since a Main Subject on a page titled after its Schema is
+named its Schema name without anyone having generated it.
+
 **The graph materializes the fallback for Main Subjects only.** A Child Subject without a label gets no `name`
 property: the Schema name there would make every unnamed Subject of a Schema indistinguishable in query results, and
 the Schema is already on the node as its other label. Should a consumer ever need it, materializing the Child tier too
@@ -43,4 +50,5 @@ by a missing name, and such a Subject is not findable by name in label search. S
 Schema display identically; the computation can gain discriminators later, which stored defaults could not.
 
 Clearing costs a revision per page, and a Child Subject that carried the older page-name default is renamed to its
-Schema name by it. `Subject.getLabel()` in the frontend bundle can return null; display code uses `getDisplayName()`.
+Schema name by it. `Subject.getLabel()` in the frontend bundle can return null; display code goes through
+`presentation/subjectDisplayName.ts`, which marks the Schema tier.

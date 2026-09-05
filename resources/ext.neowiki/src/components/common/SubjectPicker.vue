@@ -104,6 +104,10 @@ const selectedName = ref( '' );
 
 // Subjects this session invented, which no search can return. Read through the host on every
 // evaluation, so a draft renamed in the editor is renamed here too.
+//
+// Named bare here and at the two sites below, without the generated-name marker every display uses:
+// picking an item writes the string into this field's own text input, where the user can edit it and
+// where it feeds the offer to create a Subject under the text they typed.
 const draftItems = computed( (): MenuItemData[] =>
 	( subjectCreation?.drafts( props.targetSchema ) ?? [] )
 		.map( ( subject ) => ( { value: subject.getId().text, label: subject.getDisplayName() } ) )

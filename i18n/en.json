@@ -122,6 +122,8 @@
 	"neowiki-delete-success": "Deleted $1",
 	"neowiki-delete-error": "Failed to delete $1",
 
+	"neowiki-subject-generated-name": "(unnamed $1)",
+
 	"neowiki-subject-editor-title": "Editing $1",
 	"neowiki-subject-editor-save": "Save changes",
 	"neowiki-subject-editor-label-field": "Subject label",
@@ -358,7 +360,7 @@
 	"neowiki-managesubjects-no-statements": "This subject has no statements.",
 	"neowiki-managesubjects-delete-summary-default": "Delete subject via NeoWiki UI",
 	"neowiki-managesubjects-delete-confirm-title": "Delete subject?",
-	"neowiki-managesubjects-delete-confirm-message": "The subject \"$1\" will be permanently deleted.",
+	"neowiki-managesubjects-delete-confirm-message": "The subject $1 will be permanently deleted.",
 	"neowiki-managesubjects-delete-confirm-button": "Delete",
 	"neowiki-managesubjects-delete-success": "Subject deleted.",
 	"neowiki-managesubjects-delete-error": "Couldn't delete \"$1\".",

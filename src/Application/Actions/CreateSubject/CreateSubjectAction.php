@@ -102,11 +102,13 @@ readonly class CreateSubjectAction {
 		// index, which is read from a replica that may not carry the revision just written.
 		$pageIdentifiers = $this->pageIdentifiersResolver->getIdentifiersOfPage( $pageId );
 
+		$pageName = $pageIdentifiers?->getTitle() ?? '';
+
 		$this->presenter->presentCreated(
 			GetSubjectResponseItem::fromSubject(
 				$subject,
 				$pageIdentifiers,
-				SubjectDisplayName::forSubjectIn( $subject, $pageSubjects, $pageIdentifiers?->getTitle() ?? '' )
+				SubjectDisplayName::labelOrPageNameIn( $subject, $pageSubjects, $pageName )
 			),
 			$schema,
 			$violations

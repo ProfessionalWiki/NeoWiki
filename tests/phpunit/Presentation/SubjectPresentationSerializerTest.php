@@ -18,6 +18,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 			id: 's1demo1aaaaaaa1',
 			label: 'ACME Corp',
 			displayName: 'ACME Corp',
+			displayNameIsGenerated: false,
 			schemaName: 'Organization',
 			statements: [ 'Animal' => [ 'propertyType' => 'text', 'value' => [ 'bunny' ] ] ],
 			pageId: $pageId,
@@ -32,6 +33,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 				'id' => 's1demo1aaaaaaa1',
 				'label' => 'ACME Corp',
 				'displayName' => 'ACME Corp',
+				'displayNameIsGenerated' => false,
 				'schema' => 'Organization',
 				'pageId' => 42,
 				'pageTitle' => 'Help:Bunnies',
@@ -48,6 +50,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 				'id' => 's1demo1aaaaaaa1',
 				'label' => 'ACME Corp',
 				'displayName' => 'ACME Corp',
+				'displayNameIsGenerated' => false,
 				'schema' => 'Organization',
 				'statements' => [ 'Animal' => [ 'propertyType' => 'text', 'value' => [ 'bunny' ] ] ],
 			],
@@ -55,11 +58,16 @@ class SubjectPresentationSerializerTest extends TestCase {
 		);
 	}
 
+	/**
+	 * A display name that fell back to the Schema name is reported as generated, so a client can say
+	 * so instead of presenting it as a name someone wrote. It cannot tell from the name itself.
+	 */
 	public function testSerializesAnAbsentLabelAsNullBesideTheDisplayName(): void {
 		$item = new GetSubjectResponseItem(
 			id: 's1demo1aaaaaaa1',
 			label: null,
 			displayName: 'Organization',
+			displayNameIsGenerated: true,
 			schemaName: 'Organization',
 			statements: [],
 			pageId: null,
@@ -72,6 +80,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 				'id' => 's1demo1aaaaaaa1',
 				'label' => null,
 				'displayName' => 'Organization',
+				'displayNameIsGenerated' => true,
 				'schema' => 'Organization',
 				'statements' => [],
 			],

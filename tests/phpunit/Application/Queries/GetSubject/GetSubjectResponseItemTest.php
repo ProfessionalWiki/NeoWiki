@@ -40,11 +40,23 @@ class GetSubjectResponseItemTest extends TestCase {
 		$item = GetSubjectResponseItem::fromSubject(
 			TestSubject::build( label: null, schemaName: new SchemaName( 'Organization' ) ),
 			null,
-			'Organization'
+			// Nobody chose a name, so the Schema supplies one and the item says so.
+			null
 		);
 
 		$this->assertNull( $item->label );
 		$this->assertSame( 'Organization', $item->displayName );
+		$this->assertTrue( $item->displayNameIsGenerated );
+	}
+
+	public function testFromSubjectTakesTheGeneratedFlagGiven(): void {
+		$item = GetSubjectResponseItem::fromSubject(
+			TestSubject::build( label: new SubjectLabel( 'ACME Corp' ) ),
+			null,
+			'ACME Corp'
+		);
+
+		$this->assertFalse( $item->displayNameIsGenerated );
 	}
 
 	public function testFromSubjectArrayifiesStatementsByPropertyName(): void {

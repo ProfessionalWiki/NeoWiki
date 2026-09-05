@@ -154,6 +154,42 @@ class CreateSubjectActionTest extends TestCase {
 		);
 	}
 
+	/**
+	 * Creating without a label is the ordinary way into the Schema tier, and the response the UI
+	 * renders immediately afterwards is this one.
+	 */
+	public function testCreatingAChildWithoutALabelReportsTheNameAsGenerated(): void {
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: false,
+				label: null,
+				schemaName: 'some-schema-id',
+				statements: []
+			)
+		);
+
+		$this->assertTrue( $this->presenterSpy->subject?->displayNameIsGenerated );
+	}
+
+	public function testCreatingAMainSubjectWithoutALabelReportsTheNameAsChosen(): void {
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: null,
+				schemaName: 'some-schema-id',
+				statements: []
+			)
+		);
+
+		$this->assertFalse( $this->presenterSpy->subject?->displayNameIsGenerated );
+	}
+
 	public function testSubjectAlreadyExists(): void {
 		$pageSubjects = $this->createMock( PageSubjects::class );
 		$pageSubjects->method( 'createMainSubject' )->willThrowException(

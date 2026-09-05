@@ -506,6 +506,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 		$this->assertSame( self::SUBJECT_ID, $this->presenterSpy->subject?->id );
 		$this->assertSame( 'New Label', $this->presenterSpy->subject?->label );
+		$this->assertFalse( $this->presenterSpy->subject?->displayNameIsGenerated );
 		$this->assertSame( self::SCHEMA_NAME, $this->presenterSpy->subject?->schemaName );
 		$this->assertSame(
 			// The label the request supplied was resolved to the option id.
@@ -813,6 +814,23 @@ class ReplaceSubjectActionTest extends TestCase {
 		);
 
 		$this->assertTrue( $this->presenterSpy->validationFailed );
+	}
+
+	/**
+	 * Clearing a stored label is how an existing Subject enters the Schema tier.
+	 */
+	public function testClearingTheLabelReportsTheNameAsGenerated(): void {
+		$this->registerSchemaWithSelect();
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: new SubjectLabel( 'Original Label' ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		) );
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), null, [], null );
+
+		$this->assertNull( $this->presenterSpy->subject?->label );
+		$this->assertTrue( $this->presenterSpy->subject?->displayNameIsGenerated );
 	}
 
 }

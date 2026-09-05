@@ -157,7 +157,7 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 	): SubjectWriteResult {
 		return {
 			subjectId: id,
-			subject: new SubjectWithContext( id, label, label ?? schemaName, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ) ),
+			subject: new SubjectWithContext( id, label, label ?? schemaName, label === null, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ) ),
 			schema: null,
 		};
 	}

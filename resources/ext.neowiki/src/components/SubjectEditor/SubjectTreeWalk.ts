@@ -5,6 +5,7 @@
 
 import { relationTargetsOf } from './SubjectTreeModel.ts';
 import type { Subject } from '@/domain/Subject.ts';
+import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import type { Schema, SchemaName } from '@/domain/Schema.ts';
 
 // Levels of relation targets to walk from the root: person -> birth event -> time span is 2.
@@ -17,6 +18,9 @@ export interface WalkNode {
 	subjectId: string;
 	label: string;
 	schemaName: string;
+	// Whether `label` is the marked stand-in rather than a name anyone chose, which already names
+	// the Schema and so makes a second Schema label on the row a repeat.
+	nameIsGenerated: boolean;
 	// The relation property this node hangs under; the root hangs under none. The children
 	// of one property are contiguous, in the Schema's order.
 	propertyName?: string;
@@ -30,8 +34,9 @@ export function nodeFor( key: string, subjectId: string, subject: Subject | unde
 	return {
 		key,
 		subjectId,
-		label: subject?.getDisplayName() ?? subjectId,
+		label: subject === undefined ? subjectId : subjectDisplayName( subject ),
 		schemaName: subject?.getSchemaName() ?? '',
+		nameIsGenerated: subject?.hasGeneratedDisplayName() ?? false,
 		children: [],
 	};
 }

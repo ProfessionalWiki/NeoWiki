@@ -53,11 +53,18 @@ class SubjectDisplayName {
 	 * whether it is the Main Subject.
 	 */
 	public static function forSubjectIn( Subject $subject, PageSubjects $pageSubjects, string $pageName ): string {
-		return self::forSubject(
+		return self::labelOrPageNameIn( $subject, $pageSubjects, $pageName ) ?? $subject->getSchemaName()->getText();
+	}
+
+	/**
+	 * labelOrPageName() for a Subject read alongside the other Subjects of its page, which is what
+	 * knows whether it is the Main Subject.
+	 */
+	public static function labelOrPageNameIn( Subject $subject, PageSubjects $pageSubjects, string $pageName ): ?string {
+		return self::labelOrPageName(
 			label: $subject->getLabel(),
 			isMainSubject: $pageSubjects->isMainSubject( $subject->getId() ),
-			pageName: $pageName,
-			schemaName: $subject->getSchemaName()
+			pageName: $pageName
 		);
 	}
 
