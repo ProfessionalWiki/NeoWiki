@@ -161,7 +161,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
-import { placeholderSubjectLabel } from '@/domain/placeholderSubjectLabel.ts';
+import { newSubjectNamePreview } from '@/presentation/subjectDisplayName.ts';
 import { withoutMissingValueViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
@@ -436,11 +436,12 @@ function pageName(): string {
 }
 
 // Shown greyed in the label field and sent as no label at all when the user leaves it be. It
-// is what the Subject will display, so the field previews the outcome rather than pre-filling it.
+// is what the Subject will display, so the field previews the outcome rather than pre-filling it -
+// marker included, since that is what the Subject will be shown under.
 const placeholderLabel = computed( (): string =>
 	selectedSchemaName.value === null ?
 		'' :
-		placeholderSubjectLabel( props.pageHasMainSubject, pageName(), selectedSchemaName.value )
+		newSubjectNamePreview( props.pageHasMainSubject, pageName(), selectedSchemaName.value )
 );
 
 function enteredLabel(): string | null {

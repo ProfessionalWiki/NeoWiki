@@ -10,11 +10,12 @@ export class SubjectWithContext extends Subject {
 		id: SubjectId,
 		label: string | null,
 		displayName: string,
+		displayNameIsGenerated: boolean,
 		schemaName: SchemaName,
 		statements: StatementList,
 		private readonly pageIdentifiers: PageIdentifiers,
 	) {
-		super( id, label, displayName, schemaName, statements );
+		super( id, label, displayName, displayNameIsGenerated, schemaName, statements );
 	}
 
 	public getPageIdentifiers(): PageIdentifiers {

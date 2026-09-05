@@ -103,7 +103,7 @@
 						/>
 						<span class="ext-neowiki-subjects-manager__row-title">
 							<span class="ext-neowiki-subjects-manager__row-label">
-								{{ mainSubject.getDisplayName() }}
+								{{ subjectDisplayName( mainSubject ) }}
 							</span>
 							<span class="ext-neowiki-subjects-manager__row-subtitle">
 								<a
@@ -277,7 +277,7 @@
 							/>
 							<span class="ext-neowiki-subjects-manager__row-title">
 								<span class="ext-neowiki-subjects-manager__row-label">
-									{{ subject.getDisplayName() }}
+									{{ subjectDisplayName( subject ) }}
 								</span>
 								<span class="ext-neowiki-subjects-manager__row-subtitle">
 									<a
@@ -485,6 +485,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { useSubjectDrag } from '@/composables/useSubjectDrag.ts';
 import { subjectRowDomId, subjectIdFromHash } from '@/presentation/subjectRowAnchor.ts';
+import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { Subject } from '@/domain/Subject';
 import { Schema } from '@/domain/Schema';
 import { SubjectId } from '@/domain/SubjectId';
@@ -555,7 +556,7 @@ const editingSchema = shallowRef<Schema | null>( null );
 const editorOpen = ref( false );
 
 const deleteConfirmOpen = ref( false );
-const deletingSubject = ref<Subject | null>( null );
+const deletingSubject = shallowRef<Subject | null>( null );
 
 // Read subjects through the reactive store so the session's own writes flow into the list.
 const subjects = computed<Subject[]>( () =>
@@ -587,7 +588,7 @@ const hasMainSubject = computed( () => mainSubject.value !== null );
 const hasChildSubjects = computed( () => otherSubjects.value.length > 0 );
 const isCompletelyEmpty = computed( () => !hasMainSubject.value && !hasChildSubjects.value );
 
-const deletingSubjectName = computed( () => deletingSubject.value?.getDisplayName() ?? '' );
+const deletingSubjectName = computed( () => deletingSubject.value === null ? '' : subjectDisplayName( deletingSubject.value ) );
 
 function schemaUrl( name: string ): string {
 	return mw.util.getUrl( `Schema:${ name }` );
@@ -764,7 +765,7 @@ async function dragPromote( newMainId: SubjectId, oldChildIndex: number | undefi
 			childIds.length;
 		childIds.splice( insertAt, 0, previousMainId );
 	}
-	await applyOrdering( newMainId, childIds, mw.msg( 'neowiki-managesubjects-main-subject-set', subjectStore.getSubject( newMainId ).getDisplayName() ), newMainId.text );
+	await applyOrdering( newMainId, childIds, () => mainSubjectSetMessage( newMainId ), newMainId.text );
 }
 
 async function dragDemote( newChildIndex: number | undefined ): Promise<void> {
@@ -777,7 +778,7 @@ async function dragDemote( newChildIndex: number | undefined ): Promise<void> {
 		newChildIndex :
 		childIds.length;
 	childIds.splice( insertAt, 0, previousMain.getId() );
-	await applyOrdering( null, childIds, mw.msg( 'neowiki-managesubjects-main-subject-cleared' ), previousMain.getId().text );
+	await applyOrdering( null, childIds, () => mw.msg( 'neowiki-managesubjects-main-subject-cleared' ), previousMain.getId().text );
 }
 
 async function dragReorderChildren( oldIndex: number, newIndex: number ): Promise<void> {
@@ -788,24 +789,35 @@ async function dragReorderChildren( oldIndex: number, newIndex: number ): Promis
 	}
 	childIds.splice( newIndex, 0, moved );
 	const mainId = mainSubject.value?.getId() ?? null;
-	await applyOrdering( mainId, childIds, mw.msg( 'neowiki-managesubjects-reordered' ), moved.text );
+	await applyOrdering( mainId, childIds, () => mw.msg( 'neowiki-managesubjects-reordered' ), moved.text );
+}
+
+// Read after the write: promotion moves a Subject to the page-name tier, so a name read before it
+// is one the Subject no longer has.
+function mainSubjectSetMessage( id: SubjectId ): string {
+	return mw.msg( 'neowiki-managesubjects-main-subject-set', subjectDisplayName( subjectStore.getSubject( id ) ) );
 }
 
 async function applyOrdering(
 	mainId: SubjectId | null,
 	childIds: SubjectId[],
-	successMessage: string,
+	successMessage: () => string,
 	focusId: string | null
 ): Promise<void> {
+	// Only the write is guarded: naming the Subject afterwards reads the store, and reporting a
+	// committed write as failed because that read threw would be worse than the read's own error.
 	try {
 		await subjectStore.setPageSubjectsOrdering( pageId, mainId, childIds );
-		mw.notify( successMessage, { type: 'success' } );
-		if ( focusId !== null ) {
-			focusSubject( focusId );
-		}
 	} catch ( error ) {
 		console.error( 'Failed to update subjects ordering:', error );
 		mw.notify( mw.msg( 'neowiki-managesubjects-ordering-error' ), { type: 'error' } );
+		return;
+	}
+
+	mw.notify( successMessage(), { type: 'success' } );
+
+	if ( focusId !== null ) {
+		focusSubject( focusId );
 	}
 }
 
@@ -814,14 +826,17 @@ function currentChildIds(): SubjectId[] {
 }
 
 async function promoteToMain( subject: Subject ): Promise<void> {
+	// As in applyOrdering, only the write is guarded: naming the Subject afterwards reads the store.
 	try {
 		await subjectStore.setPageMainSubject( pageId, subject.getId() );
-		mw.notify( mw.msg( 'neowiki-managesubjects-main-subject-set', subject.getDisplayName() ), { type: 'success' } );
-		focusSubject( subject.getId().text );
 	} catch ( error ) {
 		console.error( 'Failed to set main subject:', error );
 		mw.notify( mw.msg( 'neowiki-managesubjects-main-subject-error' ), { type: 'error' } );
+		return;
 	}
+
+	mw.notify( mainSubjectSetMessage( subject.getId() ), { type: 'success' } );
+	focusSubject( subject.getId().text );
 }
 
 async function demoteFromMain(): Promise<void> {
@@ -886,7 +901,7 @@ async function executeDelete( comment: string ): Promise<void> {
 		return;
 	}
 
-	const name = subject.getDisplayName();
+	const name = subjectDisplayName( subject );
 	const summary = comment || mw.msg( 'neowiki-managesubjects-delete-summary-default' );
 
 	try {

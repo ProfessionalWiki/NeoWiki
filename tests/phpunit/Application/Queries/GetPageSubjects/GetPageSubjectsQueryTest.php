@@ -89,6 +89,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						id: 's11111111111maa',
 						label: 'main label',
 						displayName: 'main label',
+						displayNameIsGenerated: false,
 						schemaName: 'TestSchema',
 						statements: [
 							'name' => [
@@ -104,6 +105,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						id: 's11111111111ca2',
 						label: 'child two',
 						displayName: 'child two',
+						displayNameIsGenerated: false,
 						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
 						pageId: null,
@@ -114,6 +116,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						id: 's11111111111ca3',
 						label: 'child three',
 						displayName: 'child three',
+						displayNameIsGenerated: false,
 						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
 						pageId: null,
@@ -124,6 +127,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						id: 's11111111111ca1',
 						label: 'child one',
 						displayName: 'child one',
+						displayNameIsGenerated: false,
 						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
 						pageId: null,
@@ -199,6 +203,69 @@ class GetPageSubjectsQueryTest extends TestCase {
 
 		$this->assertNull( $presenter->response->subjects['s11111111111ca1']->label );
 		$this->assertSame( 'Attendance', $presenter->response->subjects['s11111111111ca1']->displayName );
+	}
+
+	/**
+	 * Both Subjects lack a label, but only the Child is named after something nobody chose: the Main
+	 * Subject took the page title, which an editor wrote.
+	 */
+	public function testOnlyTheSchemaTierFallbackIsReportedAsGenerated(): void {
+		$repository = new InMemorySubjectRepository();
+		$repository->savePageSubjects(
+			new PageSubjects(
+				TestSubject::build( id: 's11111111111maa', label: null, schemaName: new SchemaName( 'Museum' ) ),
+				new SubjectMap(
+					TestSubject::build( id: 's11111111111ca1', label: null, schemaName: new SchemaName( 'Attendance' ) ),
+				)
+			),
+			new PageId( 42 )
+		);
+
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery(
+			$presenter,
+			$repository,
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
+				[ new SubjectId( 's11111111111maa' ), new PageIdentifiers( new PageId( 42 ), 'Rijksmuseum', 0 ) ],
+				[ new SubjectId( 's11111111111ca1' ), new PageIdentifiers( new PageId( 42 ), 'Rijksmuseum', 0 ) ],
+			] )
+		)->execute( 42 );
+
+		$this->assertFalse( $presenter->response->subjects['s11111111111maa']->displayNameIsGenerated );
+		$this->assertTrue( $presenter->response->subjects['s11111111111ca1']->displayNameIsGenerated );
+	}
+
+	/**
+	 * A stored label that happens to equal the Schema name is still a name someone typed. This is the
+	 * case a client comparing the two strings would get wrong, which is why the server reports it.
+	 */
+	public function testAStoredLabelMatchingTheSchemaNameIsNotGenerated(): void {
+		$repository = new InMemorySubjectRepository();
+		$repository->savePageSubjects(
+			new PageSubjects(
+				TestSubject::build(
+					id: 's11111111111maa',
+					label: new SubjectLabel( 'Attendance' ),
+					schemaName: new SchemaName( 'Attendance' )
+				),
+				new SubjectMap(
+					TestSubject::build(
+						id: 's11111111111ca1',
+						label: new SubjectLabel( 'Attendance' ),
+						schemaName: new SchemaName( 'Attendance' )
+					),
+				)
+			),
+			new PageId( 42 )
+		);
+
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery( $presenter, $repository )->execute( 42 );
+
+		$this->assertFalse( $presenter->response->subjects['s11111111111maa']->displayNameIsGenerated );
+		$this->assertFalse( $presenter->response->subjects['s11111111111ca1']->displayNameIsGenerated );
 	}
 
 	public function testIncludesSchemasWhenRequested(): void {

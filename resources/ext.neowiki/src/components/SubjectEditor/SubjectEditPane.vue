@@ -75,6 +75,7 @@ import type { SubjectEditorExposes } from '@/components/SubjectEditor/SubjectEdi
 import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import { subjectLabelPlaceholder } from '@/presentation/subjectLabelPlaceholder.ts';
+import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import EditableText from '@/components/common/EditableText.vue';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
@@ -126,7 +127,7 @@ const label = ref( props.subject.getLabel() ?? '' );
 
 const storedLabel = computed( (): string | null => enteredSubjectLabel( label.value ) );
 
-const paneName = computed( (): string => storedLabel.value ?? props.subject.getDisplayName() );
+const paneName = computed( (): string => storedLabel.value ?? subjectDisplayName( props.subject ) );
 
 const pageName = computed( (): string | null =>
 	props.subject instanceof SubjectWithContext ?

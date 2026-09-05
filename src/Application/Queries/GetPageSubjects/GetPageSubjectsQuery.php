@@ -152,11 +152,10 @@ readonly class GetPageSubjectsQuery {
 		return GetSubjectResponseItem::fromSubject(
 			$subject,
 			$pageIdentifiers,
-			SubjectDisplayName::forSubject(
+			SubjectDisplayName::labelOrPageName(
 				label: $subject->getLabel(),
 				isMainSubject: $isMainSubject,
-				pageName: $pageIdentifiers?->getTitle() ?? '',
-				schemaName: $subject->getSchemaName()
+				pageName: $pageIdentifiers?->getTitle() ?? ''
 			)
 		);
 	}

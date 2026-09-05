@@ -28,6 +28,7 @@ import { ref, watch } from 'vue';
 import { Value, RelationValue, Relation } from '@/domain/Value.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 
 interface RelationDisplayValueData {
 	text: string;
@@ -71,7 +72,7 @@ function getDisplayedValues( value: Value | undefined ): RelationDisplayValueDat
 
 function getValueDisplay( subject: SubjectWithContext ): RelationDisplayValueData {
 	return {
-		text: subject.getDisplayName(),
+		text: subjectDisplayName( subject ),
 		url: mw.util.getUrl( subject.getPageIdentifiers().getPageName() )
 	};
 }

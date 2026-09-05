@@ -549,6 +549,7 @@
 				"neowiki-delete-summary-default",
 				"neowiki-delete-success",
 				"neowiki-delete-error",
+				"neowiki-subject-generated-name",
 				"neowiki-subject-editor-title",
 				"neowiki-subject-editor-save",
 				"neowiki-subject-editor-label-field",

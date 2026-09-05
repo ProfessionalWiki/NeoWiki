@@ -7,7 +7,7 @@
 			:open="open"
 			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog cdx-dialog--dividers"
 			:class="{ 'ext-neowiki-subject-editor-dialog--wide': showsNavigator }"
-			:title="$i18n( 'neowiki-subject-editor-title', props.subject.getDisplayName() ).text()"
+			:title="$i18n( 'neowiki-subject-editor-title', subjectDisplayName( props.subject ) ).text()"
 			@update:open="onDialogUpdateOpen"
 		>
 			<template #header>
@@ -199,6 +199,7 @@ import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { relationTargetsOf } from '@/components/SubjectEditor/SubjectTreeModel.ts';
 import { subjectLabelPlaceholder } from '@/presentation/subjectLabelPlaceholder.ts';
+import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { reachableTargetIds, writeOrder } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 import type { HeldSubject } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 
@@ -487,6 +488,7 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 			label,
 			// What the server would derive for a Subject with no label of its own (ADR 31).
 			label ?? schemaName,
+			label === null,
 			schemaName,
 			new StatementList( [] ),
 			page
@@ -715,8 +717,9 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 		const updated = instance.buildUpdatedSubject();
 		if ( updated === null ) {
 			// A dirty pane with no data to save means it lost its editor ref;
-			// surface this as an error instead of silently discarding the edit.
-			mw.notify( mw.msg( 'neowiki-subject-editor-error', props.subject.getDisplayName() ), { type: 'error' } );
+			// surface this as an error instead of silently discarding the edit. Named after the pane
+			// that failed, which in a nested edit is not the dialog's root Subject.
+			mw.notify( mw.msg( 'neowiki-subject-editor-error', subjectDisplayName( pane.subject ) ), { type: 'error' } );
 			return;
 		}
 		targets.push( { id: pane.id, pane, subject: updated, schema: pane.schema, isNew: pane.isNew } );
@@ -729,7 +732,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 	let failed = false;
 
 	for ( const { id, pane, subject: updatedSubject } of orderedTargets ) {
-		const subjectName = updatedSubject.getDisplayName();
+		const subjectName = subjectDisplayName( updatedSubject );
 
 		try {
 			await writeSubject( pane, updatedSubject, editSummary );

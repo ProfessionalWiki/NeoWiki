@@ -29,6 +29,7 @@ const subjectResponse = {
 	id: 's33333333333333',
 	label: 'John Doe',
 	displayName: 'John Doe',
+	displayNameIsGenerated: false,
 	schema: 'Employee',
 	pageId: 42,
 	pageTitle: 'John Doe (Employee)',
@@ -103,6 +104,7 @@ describe( 'RestSubjectRepository', () => {
 				new SubjectId( subjectResponse.id ),
 				subjectResponse.label,
 				subjectResponse.displayName,
+				false,
 				subjectResponse.schema,
 				new StatementList( [
 					new Statement( new PropertyName( 'label' ), 'text', newStringValue( 'John Doe' ) ),

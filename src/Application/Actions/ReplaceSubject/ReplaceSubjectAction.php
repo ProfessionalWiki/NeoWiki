@@ -98,25 +98,23 @@ readonly class ReplaceSubjectAction {
 		// The mutated Subject is the persisted state: the builder and the resolver above already
 		// normalized what the request supplied.
 		$this->presenter->presentUpdated(
-			GetSubjectResponseItem::fromSubject(
-				$subject,
-				$pageIdentifiers,
-				$this->getDisplayName( $subject, $pageIdentifiers )
-			),
+			$this->newResponseItem( $subject, $pageIdentifiers ),
 			$schema,
 			$proposedViolations
 		);
 	}
 
 	/**
-	 * Which Subject the page treats as its own topic decides what a Subject without a label is called,
-	 * and only the page knows that. A replace cannot change it, so reading it after the write is safe.
+	 * Which Subject the page treats as its own topic decides what a Subject without a label is called.
+	 * Only the page knows that. A replace cannot change it, so reading it after the write is safe.
 	 */
-	private function getDisplayName( Subject $subject, PageIdentifiers $pageIdentifiers ): string {
-		return SubjectDisplayName::forSubjectIn(
+	private function newResponseItem( Subject $subject, PageIdentifiers $pageIdentifiers ): GetSubjectResponseItem {
+		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $pageIdentifiers->getId() );
+
+		return GetSubjectResponseItem::fromSubject(
 			$subject,
-			$this->subjectRepository->getSubjectsByPageId( $pageIdentifiers->getId() ),
-			$pageIdentifiers->getTitle()
+			$pageIdentifiers,
+			SubjectDisplayName::labelOrPageNameIn( $subject, $pageSubjects, $pageIdentifiers->getTitle() )
 		);
 	}
 
