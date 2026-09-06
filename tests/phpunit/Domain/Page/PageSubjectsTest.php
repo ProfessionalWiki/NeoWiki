@@ -63,6 +63,61 @@ class PageSubjectsTest extends TestCase {
 		);
 	}
 
+	public function testWithoutChildSubjectAnswersACopyLackingIt(): void {
+		$mainSubject = TestSubject::build( TestSubject::uniqueId() );
+		$firstChild = TestSubject::build( TestSubject::uniqueId() );
+		$secondChild = TestSubject::build( TestSubject::uniqueId() );
+		$thirdChild = TestSubject::build( TestSubject::uniqueId() );
+
+		$data = new PageSubjects( $mainSubject, new SubjectMap( $firstChild, $secondChild, $thirdChild ) );
+
+		$remaining = $data->without( $secondChild->id );
+
+		$this->assertSame( $mainSubject, $remaining->getMainSubject() );
+		$this->assertEquals(
+			new SubjectMap( $firstChild, $thirdChild ),
+			$remaining->getChildSubjects()
+		);
+	}
+
+	public function testWithoutMainSubjectAnswersACopyWithoutOne(): void {
+		$firstChild = TestSubject::build( TestSubject::uniqueId() );
+		$secondChild = TestSubject::build( TestSubject::uniqueId() );
+		$mainSubject = TestSubject::build( TestSubject::uniqueId() );
+
+		$data = new PageSubjects( $mainSubject, new SubjectMap( $firstChild, $secondChild ) );
+
+		$remaining = $data->without( $mainSubject->id );
+
+		$this->assertNull( $remaining->getMainSubject() );
+		$this->assertEquals(
+			new SubjectMap( $firstChild, $secondChild ),
+			$remaining->getChildSubjects()
+		);
+	}
+
+	public function testWithoutLeavesTheSubjectsItWasCalledOnAlone(): void {
+		// Moving a Subject keeps the page as it was read, so a failed move can write it back.
+		$mainSubject = TestSubject::build( TestSubject::uniqueId() );
+		$child = TestSubject::build( TestSubject::uniqueId() );
+
+		$data = new PageSubjects( $mainSubject, new SubjectMap( $child ) );
+
+		$data->without( $mainSubject->id );
+
+		$this->assertSame( $mainSubject, $data->getMainSubject() );
+		$this->assertEquals( new SubjectMap( $child ), $data->getChildSubjects() );
+	}
+
+	public function testWithoutAnIdThatIsNotOnThePageAnswersAnEqualCopy(): void {
+		$data = new PageSubjects(
+			TestSubject::build( TestSubject::uniqueId() ),
+			new SubjectMap( TestSubject::build( TestSubject::uniqueId() ) )
+		);
+
+		$this->assertEquals( $data, $data->without( TestSubject::uniqueId() ) );
+	}
+
 	public function testUpdateSubjectUpdatesTheMainSubject(): void {
 		$mainSubject = TestSubject::build( TestSubject::uniqueId(), new SubjectLabel( 'original' ) );
 		$updatedSubject = TestSubject::build( $mainSubject->id->text, new SubjectLabel( 'updated' ) );
