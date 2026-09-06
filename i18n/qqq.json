@@ -68,6 +68,7 @@
 
 	"neowiki-subject-generated-name": "The name shown for a subject that has no label of its own, so its name was derived from its schema rather than chosen by anyone. $1 is the schema name: a noun the wiki's own users invented, in an unknown language and grammatical gender, so do not inflect it, do not change its case, and make no word agree with it. The round brackets mark the whole string as a stand-in the system supplied rather than a name someone typed, as in {{msg-mw|Blanknamespace}}; use whichever brackets your language uses for that.",
 
+	"neowiki-subject-editor-title": "Title of the subject editor dialog, and its accessible name. Names the task rather than a subject: the dialog can edit several at once, and each one is named by the pane that edits it.",
 	"neowiki-subject-editor-label-field": "Accessibility label for the input shown in place of the dialog title while renaming a subject in the subject editor dialog.",
 	"neowiki-subject-editor-rename": "Accessibility label for the button next to the subject editor dialog title that starts renaming the subject.",
 	"neowiki-subject-editor-edit-target": "Aria-label of the per-target edit button shown beside a selected relation target in the subject editor. Clicking it opens that target subject for editing in a pane.",
