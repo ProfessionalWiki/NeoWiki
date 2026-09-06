@@ -39,11 +39,6 @@ class RestMoveSubjectPresenter implements MoveSubjectPresenter {
 		$this->statusCode = 404;
 	}
 
-	public function presentSourcePageNotFound(): void {
-		$this->apiResponse = [ 'status' => 'error', 'message' => 'Page not found' ];
-		$this->statusCode = 404;
-	}
-
 	public function presentSubjectAlreadyOnTargetPage(): void {
 		$this->apiResponse = [ 'status' => 'error', 'message' => 'Subject is already on the target page' ];
 		$this->statusCode = 409;
