@@ -65,6 +65,16 @@ class PageSubjects {
 	}
 
 	/**
+	 * A copy without the given Subject, leaving this instance untouched.
+	 */
+	public function without( SubjectId $id ): self {
+		return new self(
+			$this->isMainSubject( $id ) ? null : $this->mainSubject,
+			$this->childSubjects->without( $id )
+		);
+	}
+
+	/**
 	 * Updates the subject with the ID of the provided subject.
 	 * @throws OutOfBoundsException if the subject is not found
 	 */

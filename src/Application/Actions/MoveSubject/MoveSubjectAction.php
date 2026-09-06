@@ -96,14 +96,19 @@ readonly class MoveSubjectAction {
 			throw new RuntimeException( 'You do not have the necessary permissions to move this subject' );
 		}
 
-		// The source page as it stands, kept aside untouched: reading it again is how the rollback
-		// below restores the page exactly, ordering included, rather than reconstructing it.
-		$sourceSubjectsBeforeMove = $this->subjectRepository->getSubjectsByPageId( $sourcePageId );
-
-		$sourceSubjects->removeSubject( $subjectId );
+		// without() answers a copy, so $sourceSubjects stays the page as it was read - which is what
+		// the rollback below writes back, ordering included, rather than reconstructing it.
+		$sourceSubjectsAfterMove = $sourceSubjects->without( $subjectId );
 		$this->addToTarget( $targetSubjects, $subject, $request->makeMainSubject );
 
-		$this->write( $request, $sourceSubjects, $sourceSubjectsBeforeMove, $sourcePageId, $targetSubjects, $targetPageId );
+		$this->write(
+			request: $request,
+			sourcePageId: $sourcePageId,
+			sourceSubjectsAfterMove: $sourceSubjectsAfterMove,
+			sourceSubjectsBeforeMove: $sourceSubjects,
+			targetPageId: $targetPageId,
+			targetSubjects: $targetSubjects
+		);
 	}
 
 	private function addToTarget( PageSubjects $targetSubjects, Subject $subject, bool $makeMainSubject ): void {
@@ -124,15 +129,15 @@ readonly class MoveSubjectAction {
 
 	private function write(
 		MoveSubjectRequest $request,
-		PageSubjects $sourceSubjects,
-		PageSubjects $sourceSubjectsBeforeMove,
 		PageId $sourcePageId,
-		PageSubjects $targetSubjects,
-		PageId $targetPageId
+		PageSubjects $sourceSubjectsAfterMove,
+		PageSubjects $sourceSubjectsBeforeMove,
+		PageId $targetPageId,
+		PageSubjects $targetSubjects
 	): void {
 		// Source first, for the projection reason in the class docblock: the target write has to be
 		// the last word on the moved Subject's node.
-		$sourceStatus = $this->subjectRepository->savePageSubjects( $sourceSubjects, $sourcePageId, $request->comment );
+		$sourceStatus = $this->subjectRepository->savePageSubjects( $sourceSubjectsAfterMove, $sourcePageId, $request->comment );
 
 		if ( $sourceStatus->status === PageContentSavingStatus::ERROR ) {
 			$this->presenter->presentSourcePageNotFound();
