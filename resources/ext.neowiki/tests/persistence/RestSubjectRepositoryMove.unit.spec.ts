@@ -72,14 +72,11 @@ describe( 'RestSubjectRepository.moveSubject', () => {
 			.rejects.toThrow( 'Error moving subject' );
 	} );
 
-	it( 'reads the message off a non-ok response too, for clients that do not reject', async () => {
-		const post = vi.fn().mockResolvedValue( {
-			ok: false,
-			json: async () => ( { status: 'error', message: 'Target page not found' } ),
-		} as unknown as Response );
+	it( 'reports a non-ok response as a failed move', async () => {
+		const post = vi.fn().mockResolvedValue( { ok: false } as Response );
 
 		await expect( newRepository( { post } ).moveSubject( SUBJECT_ID, 12, false ) )
-			.rejects.toThrow( 'Target page not found' );
+			.rejects.toThrow( 'Error moving subject' );
 	} );
 
 	it( 'resolves when the move lands', async () => {

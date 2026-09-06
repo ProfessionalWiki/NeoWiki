@@ -368,7 +368,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		// A move can fail for reasons the user can act on - the target page is protected, the Subject
 		// is already there - so the server's own message is carried through rather than collapsed into
 		// a status code. The production client rejects on every non-2xx but 422, so that message
-		// arrives on the rejection rather than on a response.
+		// arrives on the rejection.
 		try {
 			response = await this.httpClient.post(
 				`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }/move`,
@@ -388,7 +388,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		}
 
 		if ( !response.ok ) {
-			throw new Error( await this.errorMessageOf( response ) ?? 'Error moving subject' );
+			throw new Error( 'Error moving subject' );
 		}
 	}
 
@@ -396,15 +396,6 @@ export class RestSubjectRepository implements SubjectRepository {
 		const message = ( error as { response?: { data?: { message?: unknown } } } )?.response?.data?.message;
 
 		return typeof message === 'string' ? message : null;
-	}
-
-	private async errorMessageOf( response: Response ): Promise<string | null> {
-		try {
-			const body = await response.json();
-			return typeof body?.message === 'string' ? body.message : null;
-		} catch {
-			return null;
-		}
 	}
 
 	public async validateSubject(
