@@ -1300,7 +1300,8 @@ onUnmounted( () => {
 		}
 	}
 
-	&__row-count::before {
+	/* The separator belongs to the pair: a row whose badge is withheld draws none. */
+	&__row-schema + &__row-count::before {
 		content: '•';
 		margin-inline-end: @spacing-50;
 	}
