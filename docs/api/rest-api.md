@@ -163,13 +163,13 @@ On the **Subject read**, the targets are merged into the same `subjects` map as 
       "id": "sEpfwJLnxyQy6vR",
       "label": "Rijksmuseum",
       "displayName": "Rijksmuseum",
-      "displayNameIsGenerated": false,
+      "isMainSubject": true,
       "schema": "Museum",
       "statements": {
         "City": { "propertyType": "relation", "value": [ { "id": "rEpfwJLoEB5UuQS", "target": "sEpfwJLnuwcxvuJ" } ] }
       }
     },
-    "sEpfwJLnuwcxvuJ": { "id": "sEpfwJLnuwcxvuJ", "label": "Amsterdam", "displayName": "Amsterdam", "displayNameIsGenerated": false, "schema": "City", "statements": { ... } }
+    "sEpfwJLnuwcxvuJ": { "id": "sEpfwJLnuwcxvuJ", "label": "Amsterdam", "displayName": "Amsterdam", "isMainSubject": true, "schema": "City", "statements": { ... } }
   }
 }
 ```
@@ -182,11 +182,11 @@ top-level `referencedSubjects` map keyed by Subject ID:
   "pageId": 93,
   "mainSubjectId": "sEpfwJLnxyQy6vR",
   "subjects": {
-    "sEpfwJLnxyQy6vR": { "id": "sEpfwJLnxyQy6vR", "label": "Rijksmuseum", "displayName": "Rijksmuseum", "displayNameIsGenerated": false, "schema": "Museum", "statements": { ... } },
-    "sEpfwJLAtndAaaA": { "id": "sEpfwJLAtndAaaA", "label": null, "displayName": "Attendance", "displayNameIsGenerated": true, "schema": "Attendance", "statements": { ... } }
+    "sEpfwJLnxyQy6vR": { "id": "sEpfwJLnxyQy6vR", "label": "Rijksmuseum", "displayName": "Rijksmuseum", "isMainSubject": true, "schema": "Museum", "statements": { ... } },
+    "sEpfwJLAtndAaaA": { "id": "sEpfwJLAtndAaaA", "label": null, "displayName": "Attendance", "isMainSubject": false, "schema": "Attendance", "statements": { ... } }
   },
   "referencedSubjects": {
-    "sEpfwJLnuwcxvuJ": { "id": "sEpfwJLnuwcxvuJ", "label": "Amsterdam", "displayName": "Amsterdam", "displayNameIsGenerated": false, "schema": "City", "statements": { ... } }
+    "sEpfwJLnuwcxvuJ": { "id": "sEpfwJLnuwcxvuJ", "label": "Amsterdam", "displayName": "Amsterdam", "isMainSubject": true, "schema": "City", "statements": { ... } }
   }
 }
 ```

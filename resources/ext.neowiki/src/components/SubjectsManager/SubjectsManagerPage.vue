@@ -176,7 +176,7 @@
 								:menu-items="mainRowMenuItems"
 								:aria-label="$i18n( 'neowiki-managesubjects-row-more' ).text()"
 								:title="$i18n( 'neowiki-managesubjects-row-more' ).text()"
-								@update:selected="( value ) => dispatchRowAction( value, mainSubject as Subject )"
+								@update:selected="( value ) => dispatchRowAction( value, mainSubject as SubjectWithContext )"
 							>
 								<CdxIcon :icon="cdxIconEllipsis" />
 							</CdxMenuButton>
@@ -446,7 +446,7 @@
 		<SubjectEditorDialog
 			v-if="editingSubject !== null && editingSchema !== null"
 			v-model:open="editorOpen"
-			:subject="editingSubject as Subject"
+			:subject="editingSubject as SubjectWithContext"
 			:schema="editingSchema as Schema"
 			:on-save="handleEditSave"
 			:on-create="handleEditCreate"
@@ -457,10 +457,10 @@
 			v-if="movingSubject !== null"
 			v-model:open="moveDialogOpen"
 			:subject-id="movingSubject.getId().text"
-			:subject-name="movingSubject.getDisplayName()"
+			:subject-name="subjectDisplayName( movingSubject )"
 			:current-page-id="pageId"
 			:current-page-title="currentPageTitle"
-			:subject-is-main-subject="isMainSubject( movingSubject as Subject )"
+			:subject-is-main-subject="isMainSubject( movingSubject )"
 			@moved="onSubjectMoved"
 		/>
 
@@ -517,6 +517,7 @@ import { useSubjectDrag } from '@/composables/useSubjectDrag.ts';
 import { subjectRowDomId, subjectIdFromHash } from '@/presentation/subjectRowAnchor.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { Subject } from '@/domain/Subject';
+import { SubjectWithContext } from '@/domain/SubjectWithContext';
 import { Schema } from '@/domain/Schema';
 import { SubjectId } from '@/domain/SubjectId';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
@@ -582,21 +583,21 @@ function scrollBehavior(): 'auto' | 'smooth' {
 
 // Editor state is component-local (ADR 16): the dialog opens on data fetched straight from the
 // repositories, not on the store the list below renders from.
-const editingSubject = shallowRef<Subject | null>( null );
+const editingSubject = shallowRef<SubjectWithContext | null>( null );
 const editingSchema = shallowRef<Schema | null>( null );
 const editorOpen = ref( false );
 
 const deleteConfirmOpen = ref( false );
-const deletingSubject = shallowRef<Subject | null>( null );
+const deletingSubject = shallowRef<SubjectWithContext | null>( null );
 
 const moveDialogOpen = ref( false );
-const movingSubject = ref<Subject | null>( null );
+const movingSubject = shallowRef<SubjectWithContext | null>( null );
 
 // The page the Data tab is showing, named for the warning a move of the Main Subject carries.
 const currentPageTitle = String( mw.config.get( 'wgPageName' ) ?? '' ).replace( /_/g, ' ' );
 
 // Read subjects through the reactive store so the session's own writes flow into the list.
-const subjects = computed<Subject[]>( () =>
+const subjects = computed<SubjectWithContext[]>( () =>
 	subjectStore.pageSubjects?.getSubjects()
 		.map( ( s ) => subjectStore.getSubject( s.getId() ) ) ?? []
 );
@@ -605,7 +606,7 @@ const canCreate = computed( () => canCreateMainSubject.value || canCreateChildSu
 const canEdit = computed( () => canEditSubject.value );
 const canDelete = computed( () => canDeleteSubject.value );
 
-const mainSubject = computed<Subject | null>( () => {
+const mainSubject = computed<SubjectWithContext | null>( () => {
 	const mainId = subjectStore.pageSubjects?.getMainSubjectId();
 	if ( !mainId ) {
 		return null;
@@ -613,7 +614,7 @@ const mainSubject = computed<Subject | null>( () => {
 	return subjects.value.find( ( s ) => s.getId().text === mainId.text ) ?? null;
 } );
 
-const otherSubjects = computed<Subject[]>( () => {
+const otherSubjects = computed<SubjectWithContext[]>( () => {
 	const mainId = subjectStore.pageSubjects?.getMainSubjectId();
 	if ( !mainId ) {
 		return subjects.value;
@@ -695,7 +696,7 @@ const otherRowMenuItems = computed<MenuButtonItemData[]>( () => {
 
 const rowMenuSelection = ref<string | number | null>( null );
 
-function dispatchRowAction( value: string | number | null, subject: Subject ): void {
+function dispatchRowAction( value: string | number | null, subject: SubjectWithContext ): void {
 	rowMenuSelection.value = null;
 	if ( value === 'promote' ) {
 		promoteToMain( subject );
@@ -754,7 +755,7 @@ async function copySubjectIri( iri: string ): Promise<void> {
 	}
 }
 
-async function copySubjectLink( subject: Subject ): Promise<void> {
+async function copySubjectLink( subject: SubjectWithContext ): Promise<void> {
 	// Build the deep link from the live address bar rather than mw.util.getUrl, so it inherits the
 	// wiki's URL style (short URLs, action paths, query strings) as-served. The fragment is the bare
 	// Subject id — the same anchor the deep-link mount handler resolves to this row.
@@ -868,7 +869,7 @@ function currentChildIds(): SubjectId[] {
 	return otherSubjects.value.map( ( s ) => s.getId() );
 }
 
-async function promoteToMain( subject: Subject ): Promise<void> {
+async function promoteToMain( subject: SubjectWithContext ): Promise<void> {
 	// As in applyOrdering, only the write is guarded: naming the Subject afterwards reads the store.
 	try {
 		await subjectStore.setPageMainSubject( pageId, subject.getId() );
@@ -896,7 +897,7 @@ async function demoteFromMain(): Promise<void> {
 	}
 }
 
-async function openEditor( subject: Subject ): Promise<void> {
+async function openEditor( subject: SubjectWithContext ): Promise<void> {
 	try {
 		// Fetch both subject and schema so the editor never opens against stale data
 		// (e.g. after the subject or its schema was edited in another tab).
@@ -931,11 +932,11 @@ async function handleSchemaSave( updatedSchema: Schema, comment: string ): Promi
 	await schemaStore.saveSchema( updatedSchema, comment );
 }
 
-function isMainSubject( subject: Subject ): boolean {
+function isMainSubject( subject: SubjectWithContext ): boolean {
 	return mainSubject.value?.getId().text === subject.getId().text;
 }
 
-function openMoveDialog( subject: Subject ): void {
+function openMoveDialog( subject: SubjectWithContext ): void {
 	movingSubject.value = subject;
 	moveDialogOpen.value = true;
 }
@@ -943,7 +944,7 @@ function openMoveDialog( subject: Subject ): void {
 // The listing needs no refresh here: moveSubject re-syncs it as part of the move, because dropping
 // the Subject from the registry before the listing stops naming it is what crashes the render.
 function onSubjectMoved( targetTitle: string ): void {
-	const subjectName = movingSubject.value?.getDisplayName() ?? '';
+	const subjectName = movingSubject.value === null ? '' : subjectDisplayName( movingSubject.value );
 	movingSubject.value = null;
 
 	const link = document.createElement( 'a' );
@@ -958,7 +959,7 @@ function onSubjectMoved( targetTitle: string ): void {
 	);
 }
 
-function confirmDelete( subject: Subject ): void {
+function confirmDelete( subject: SubjectWithContext ): void {
 	deletingSubject.value = subject;
 	deleteConfirmOpen.value = true;
 }

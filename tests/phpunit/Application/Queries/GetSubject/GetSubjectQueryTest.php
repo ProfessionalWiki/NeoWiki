@@ -81,7 +81,7 @@ class GetSubjectQueryTest extends TestCase {
 						id: 's11111111111129',
 						label: 'expected label',
 						displayName: 'expected label',
-						displayNameIsGenerated: false,
+						isMainSubject: false,
 						schemaName: 'GetSubjectQueryTestSchema',
 						statements: [
 							'expected property 1' => [
@@ -184,7 +184,7 @@ class GetSubjectQueryTest extends TestCase {
 		$spyPresenter = $this->getSpyPresenter();
 		$subject = TestSubject::build( id: 's11111111111maa', label: null );
 
-		$this->newQueryForLabellessSubject( $spyPresenter, $subject, $subject )->execute(
+		$this->newQueryForSubjectOnRijksmuseum( $spyPresenter, $subject, $subject )->execute(
 			subjectId: 's11111111111maa',
 			includePageIdentifiers: true,
 			includeReferencedSubjects: false
@@ -192,7 +192,6 @@ class GetSubjectQueryTest extends TestCase {
 
 		$this->assertNull( $spyPresenter->response->subjects['s11111111111maa']->label );
 		$this->assertSame( 'Rijksmuseum', $spyPresenter->response->subjects['s11111111111maa']->displayName );
-		$this->assertFalse( $spyPresenter->response->subjects['s11111111111maa']->displayNameIsGenerated );
 	}
 
 	/**
@@ -204,7 +203,7 @@ class GetSubjectQueryTest extends TestCase {
 		$spyPresenter = $this->getSpyPresenter();
 		$subject = TestSubject::build( id: 's11111111111maa', label: null );
 
-		$this->newQueryForLabellessSubject( $spyPresenter, $subject, $subject )->execute(
+		$this->newQueryForSubjectOnRijksmuseum( $spyPresenter, $subject, $subject )->execute(
 			subjectId: 's11111111111maa',
 			includePageIdentifiers: false,
 			includeReferencedSubjects: false
@@ -212,7 +211,6 @@ class GetSubjectQueryTest extends TestCase {
 
 		$this->assertNull( $spyPresenter->response->subjects['s11111111111maa']->pageTitle );
 		$this->assertSame( 'Rijksmuseum', $spyPresenter->response->subjects['s11111111111maa']->displayName );
-		$this->assertFalse( $spyPresenter->response->subjects['s11111111111maa']->displayNameIsGenerated );
 	}
 
 	public function testLabellessChildSubjectIsNamedAfterItsSchema(): void {
@@ -223,7 +221,7 @@ class GetSubjectQueryTest extends TestCase {
 			schemaName: new SchemaName( 'Attendance' )
 		);
 
-		$this->newQueryForLabellessSubject(
+		$this->newQueryForSubjectOnRijksmuseum(
 			$spyPresenter,
 			$child,
 			TestSubject::build( id: 's11111111111maa' )
@@ -235,10 +233,43 @@ class GetSubjectQueryTest extends TestCase {
 
 		$this->assertNull( $spyPresenter->response->subjects['s11111111111ca1']->label );
 		$this->assertSame( 'Attendance', $spyPresenter->response->subjects['s11111111111ca1']->displayName );
-		$this->assertTrue( $spyPresenter->response->subjects['s11111111111ca1']->displayNameIsGenerated );
 	}
 
-	private function newQueryForLabellessSubject(
+	/**
+	 * A stored label settles the Subject's name, but not whether its page treats it as its own
+	 * topic, which the response reports either way.
+	 */
+	public function testLabelledMainSubjectIsReportedAsItsPagesTopic(): void {
+		$spyPresenter = $this->getSpyPresenter();
+		$subject = TestSubject::build( id: 's11111111111maa', label: new SubjectLabel( 'Rijksmuseum' ) );
+
+		$this->newQueryForSubjectOnRijksmuseum( $spyPresenter, $subject, $subject )->execute(
+			subjectId: 's11111111111maa',
+			includePageIdentifiers: true,
+			includeReferencedSubjects: false
+		);
+
+		$this->assertTrue( $spyPresenter->response->subjects['s11111111111maa']->isMainSubject );
+	}
+
+	public function testChildSubjectIsNotReportedAsItsPagesTopic(): void {
+		$spyPresenter = $this->getSpyPresenter();
+		$child = TestSubject::build( id: 's11111111111ca1' );
+
+		$this->newQueryForSubjectOnRijksmuseum(
+			$spyPresenter,
+			$child,
+			TestSubject::build( id: 's11111111111maa' )
+		)->execute(
+			subjectId: 's11111111111ca1',
+			includePageIdentifiers: true,
+			includeReferencedSubjects: false
+		);
+
+		$this->assertFalse( $spyPresenter->response->subjects['s11111111111ca1']->isMainSubject );
+	}
+
+	private function newQueryForSubjectOnRijksmuseum(
 		object $spyPresenter,
 		Subject $requested,
 		Subject $mainSubjectOfPage

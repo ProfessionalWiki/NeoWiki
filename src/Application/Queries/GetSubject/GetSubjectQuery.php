@@ -10,7 +10,6 @@ use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 readonly class GetSubjectQuery {
@@ -105,11 +104,8 @@ readonly class GetSubjectQuery {
 				// Withholding the page fields must not withhold the fallback they feed: the display
 				// name is built from the identifiers fetched either way.
 				$includePageIdentifiers ? $pageIdentifiers : null,
-				SubjectDisplayName::labelOrPageName(
-					label: $subject->getLabel(),
-					isMainSubject: $this->isMainSubject( $subject, $pageIdentifiers, $mainSubjectIds ),
-					pageName: $pageIdentifiers?->getTitle() ?? ''
-				)
+				$this->isMainSubject( $subject, $pageIdentifiers, $mainSubjectIds ),
+				$pageIdentifiers?->getTitle() ?? ''
 			);
 		}
 
@@ -117,8 +113,9 @@ readonly class GetSubjectQuery {
 	}
 
 	/**
-	 * One lookup per distinct hosting page, however many of the response's Subjects live on it, and
-	 * none for a page whose Subjects in the response all have a stored label.
+	 * One lookup per distinct hosting page, however many of the response's Subjects live on it.
+	 * Asked for every Subject, labelled ones included: the answer is reported as a fact of its own,
+	 * not only consumed by the name a label would settle anyway.
 	 *
 	 * @param array<string, array{Subject, ?PageIdentifiers}> $placedSubjects
 	 * @return array<int, ?SubjectId> Page ID → that page's Main Subject
@@ -126,8 +123,8 @@ readonly class GetSubjectQuery {
 	private function getMainSubjectIds( array $placedSubjects ): array {
 		$mainSubjectIds = [];
 
-		foreach ( $placedSubjects as [ $subject, $pageIdentifiers ] ) {
-			if ( $pageIdentifiers === null || $subject->getLabel() !== null ) {
+		foreach ( $placedSubjects as [ , $pageIdentifiers ] ) {
+			if ( $pageIdentifiers === null ) {
 				continue;
 			}
 

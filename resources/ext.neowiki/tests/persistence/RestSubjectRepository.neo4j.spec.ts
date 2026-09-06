@@ -29,7 +29,7 @@ const subjectResponse = {
 	id: 's33333333333333',
 	label: 'John Doe',
 	displayName: 'John Doe',
-	displayNameIsGenerated: false,
+	isMainSubject: true,
 	schema: 'Employee',
 	pageId: 42,
 	pageTitle: 'John Doe (Employee)',
@@ -103,14 +103,13 @@ describe( 'RestSubjectRepository', () => {
 			expect( subject ).toEqual( new SubjectWithContext(
 				new SubjectId( subjectResponse.id ),
 				subjectResponse.label,
-				subjectResponse.displayName,
-				false,
 				subjectResponse.schema,
 				new StatementList( [
 					new Statement( new PropertyName( 'label' ), 'text', newStringValue( 'John Doe' ) ),
 					new Statement( new PropertyName( 'WorkUrl' ), 'url', newStringValue( 'https://pro.wiki' ) ),
 				] ),
 				new PageIdentifiers( subjectResponse.pageId, subjectResponse.pageTitle ),
+				subjectResponse.isMainSubject,
 			) );
 			expect( subject.getLabel() ).toEqual( 'John Doe' );
 		} );

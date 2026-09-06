@@ -14,7 +14,8 @@ import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/Propert
 import { Statement } from '@/domain/Statement.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { newRelation, RelationValue } from '@/domain/Value.ts';
-import type { Subject } from '@/domain/Subject.ts';
+import type { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import type { Schema } from '@/domain/Schema.ts';
 
 // SubjectId's format (ADR 14) excludes '0', 'O', 'I' and 'l', hence the runs of '1's.
@@ -163,19 +164,18 @@ const birthWithoutTimeSpan = newSubject( {
 	schemaName: 'Event',
 } );
 
-// Two Subjects that store no label (ADR 31): the server's derived name is all the tree has.
+// Two Subjects that store no label (ADR 31): a derived name is all the tree has.
 const labellessSpouse = newSubject( {
 	id: SPOUSE_ID,
 	label: null,
-	displayName: 'Name',
-	displayNameIsGenerated: true,
 	schemaName: 'Name',
 } );
 
 const labellessRoot = newSubject( {
 	id: ROOT_ID,
 	label: null,
-	displayName: 'Bach, Johann Sebastian',
+	isMainSubject: true,
+	pageIdentifiers: new PageIdentifiers( 7, 'Bach, Johann Sebastian' ),
 	schemaName: 'Person',
 	statements: new StatementList( [
 		new Statement(
@@ -439,7 +439,7 @@ const chainSchema = newSchema( {
 	] ),
 } );
 
-function newChainLink( id: string, label: string, nextId?: string ): Subject {
+function newChainLink( id: string, label: string, nextId?: string ): SubjectWithContext {
 	return newSubject( {
 		id,
 		label,
@@ -467,14 +467,14 @@ interface MountOverrides {
 	unsavedIds?: string[];
 	openIds?: string[];
 	activeId?: string;
-	editedSubjects?: Map<string, Subject>;
+	editedSubjects?: Map<string, SubjectWithContext>;
 }
 
 function mountWithServices(
-	rootSubjectProp: Subject,
+	rootSubjectProp: SubjectWithContext,
 	rootSchemaProp: Schema,
 	schemas: Schema[],
-	seedSubjects: Subject[],
+	seedSubjects: SubjectWithContext[],
 	overrides: MountOverrides = {},
 ): VueWrapper {
 	const subjectStore = useSubjectStore();
@@ -492,7 +492,7 @@ function mountWithServices(
 			openIds: overrides.openIds ?? [ rootSubjectProp.getId().text ],
 			activeId: overrides.activeId ?? rootSubjectProp.getId().text,
 			unsavedIds: overrides.unsavedIds ?? [],
-			editedSubjects: overrides.editedSubjects ?? new Map<string, Subject>(),
+			editedSubjects: overrides.editedSubjects ?? new Map<string, SubjectWithContext>(),
 		},
 		global: {
 			plugins: [ activePinia ],
@@ -954,8 +954,8 @@ describe( 'SubjectTree', () => {
 	// the stored data alone leaves it, and its unsaved dot, off the tree.
 	describe( 'Edited copies', () => {
 		function mountPersonTree(
-			root: Subject,
-			seeded: Subject[],
+			root: SubjectWithContext,
+			seeded: SubjectWithContext[],
 			overrides: MountOverrides,
 		): VueWrapper {
 			return mountWithServices(
@@ -1078,7 +1078,7 @@ describe( 'SubjectTree', () => {
 				openIds: [ MEMO_ROOT_ID ],
 				activeId: MEMO_ROOT_ID,
 				unsavedIds: [],
-				editedSubjects: new Map<string, Subject>(),
+				editedSubjects: new Map<string, SubjectWithContext>(),
 			},
 			global: {
 				plugins: [ activePinia ],

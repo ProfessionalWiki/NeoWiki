@@ -18,7 +18,6 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
@@ -108,7 +107,8 @@ readonly class CreateSubjectAction {
 			GetSubjectResponseItem::fromSubject(
 				$subject,
 				$pageIdentifiers,
-				SubjectDisplayName::labelOrPageNameIn( $subject, $pageSubjects, $pageName )
+				$pageSubjects->isMainSubject( $subject->getId() ),
+				$pageName
 			),
 			$schema,
 			$violations

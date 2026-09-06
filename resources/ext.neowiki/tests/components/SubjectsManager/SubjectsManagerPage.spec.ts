@@ -6,7 +6,8 @@ import { CdxMenuButton } from '@wikimedia/codex';
 import SubjectsManagerPage from '@/components/SubjectsManager/SubjectsManagerPage.vue';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
-import { Subject } from '@/domain/Subject.ts';
+import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { PageSubjects } from '@/domain/PageSubjects.ts';
@@ -22,17 +23,23 @@ const ID_A = 's1aaaaaaaaaaaa1';
 const ID_B = 's1bbbbbbbbbbbb1';
 const PAGE_ID = 42;
 
-function subject( id: string ): Subject {
-	return new Subject( new SubjectId( id ), 'Label ' + id, 'Label ' + id, false, 'Person', new StatementList( [] ) );
+function subject( id: string ): SubjectWithContext {
+	return new SubjectWithContext(
+		new SubjectId( id ), 'Label ' + id, 'Person', new StatementList( [] ), hostPage(), false );
 }
 
-function labellessSubject( id: string, displayName: string, generated: boolean ): Subject {
-	return new Subject( new SubjectId( id ), null, displayName, generated, 'Person', new StatementList( [] ) );
+function labellessSubject( id: string, isMainSubject: boolean ): SubjectWithContext {
+	return new SubjectWithContext(
+		new SubjectId( id ), null, 'Person', new StatementList( [] ), hostPage(), isMainSubject );
+}
+
+function hostPage(): PageIdentifiers {
+	return new PageIdentifiers( PAGE_ID, 'Host Page' );
 }
 
 const loadPageSubjectsMock = vi.fn().mockResolvedValue( undefined );
 const deleteSubjectMock = vi.fn().mockResolvedValue( undefined );
-let storeSubjects: Subject[] = [];
+let storeSubjects: SubjectWithContext[] = [];
 let mainSubjectId: SubjectId | null = null;
 
 // Every describe below except 'delete flow' runs against this plain-object stub: fast,
@@ -249,8 +256,8 @@ describe( 'SubjectsManagerPage rows without a stored label', () => {
 
 	beforeEach( () => {
 		storeSubjects = [
-			labellessSubject( ID_A, 'Host Page', false ),
-			labellessSubject( ID_B, 'Person', true ),
+			labellessSubject( ID_A, true ),
+			labellessSubject( ID_B, false ),
 		];
 		mainSubjectId = new SubjectId( ID_A );
 		loadPageSubjectsMock.mockClear();
@@ -397,13 +404,13 @@ describe( 'SubjectsManagerPage edit flow', () => {
 	it( 'opens the editor on the subject and schema fetched from the repositories', async () => {
 		// Values the store stub does not hold, so the assertions can only pass if the dialog was
 		// handed the repositories' data rather than a registry read.
-		const freshSubject = new Subject(
+		const freshSubject = new SubjectWithContext(
 			new SubjectId( ID_A ),
 			'Fetched label',
-			'Fetched label',
-			false,
 			'Person',
 			new StatementList( [] ),
+			hostPage(),
+			false,
 		);
 		const freshSchema = newSchema( { title: 'Person' } );
 		getSubjectRepoMock.mockResolvedValue( freshSubject );

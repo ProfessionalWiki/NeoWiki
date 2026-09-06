@@ -11,7 +11,7 @@ import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/Propert
 import { Statement } from '@/domain/Statement.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { newRelation, RelationValue } from '@/domain/Value.ts';
-import type { Subject } from '@/domain/Subject.ts';
+import type { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import type { Schema } from '@/domain/Schema.ts';
 
 // SubjectId's format (ADR 14) excludes '0'/'O'/'I'/'l', so these stand in for readable literals.
@@ -35,7 +35,7 @@ function subjectWith(
 	schemaName: string,
 	label: string,
 	...statements: Statement[]
-): Subject {
+): SubjectWithContext {
 	return newSubject( { id, label, schemaName, statements: new StatementList( statements ) } );
 }
 
@@ -56,11 +56,11 @@ function relationSchema( name: string, ...properties: [ string, string ][] ): Sc
 const linkSchema = relationSchema( 'Link', [ 'Link', 'Link' ] );
 
 function walk(
-	rootSubject: Subject,
+	rootSubject: SubjectWithContext,
 	rootSchema: Schema,
-	fetched: Subject[],
+	fetched: SubjectWithContext[],
 	schemas: Schema[] = [ rootSchema ],
-	edited: Subject[] = [],
+	edited: SubjectWithContext[] = [],
 ): SubjectTreeWalkResult {
 	const editedSubjects = new Map( edited.map( ( subject ) => [ subject.getId().text, subject ] ) );
 	const fetchedSubjects = new Map( fetched.map( ( subject ) => [ subject.getId().text, subject ] ) );
@@ -129,7 +129,7 @@ describe( 'walkSubjectTree', () => {
 	describe( 'depth cap', () => {
 
 		// A chain of five: root --> 1 --> 2 --> 3 --> 4, one link longer than the cap allows.
-		function chain(): Subject[] {
+		function chain(): SubjectWithContext[] {
 			return [
 				subjectWith( A_ID, 'Link', 'A', relationsTo( 'Link', B_ID ) ),
 				subjectWith( B_ID, 'Link', 'B', relationsTo( 'Link', C_ID ) ),

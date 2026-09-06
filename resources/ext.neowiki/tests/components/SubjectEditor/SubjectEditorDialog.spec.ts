@@ -104,23 +104,24 @@ describe( 'SubjectEditorDialog', () => {
 		new PropertyDefinitionList( [] ),
 	);
 
-	const mockSubject = new Subject(
-		new SubjectId( 's1demo5sssssss1' ),
-		'Test Subject',
-		'Test Subject',
-		false,
-		'TestSchema',
-		new StatementList( [] ),
-	);
+	const HOST_PAGE_NAME = 'Host Page';
+	const hostPageIdentifiers = new PageIdentifiers( 42, HOST_PAGE_NAME );
 
-	const labellessSubject = new Subject(
-		new SubjectId( 's1demo5sssssss2' ),
-		null,
-		'Host Page',
-		false,
-		'TestSchema',
-		new StatementList( [] ),
-	);
+	const mockSubject = newSubject( {
+		id: 's1demo5sssssss1',
+		label: 'Test Subject',
+		schemaName: 'TestSchema',
+		pageIdentifiers: hostPageIdentifiers,
+	} );
+
+	// Stores no label and is its page's Main Subject, so it is shown under the page's name.
+	const labellessSubject = newSubject( {
+		id: 's1demo5sssssss2',
+		label: null,
+		schemaName: 'TestSchema',
+		pageIdentifiers: hostPageIdentifiers,
+		isMainSubject: true,
+	} );
 
 	const rootSubjectId = mockSubject.getId().text;
 
@@ -130,7 +131,7 @@ describe( 'SubjectEditorDialog', () => {
 		onSave?: ( subject: any, comment: string ) => Promise<void>,
 		schema: Schema = mockSchema,
 		provide: Record<string, unknown> = {},
-		subject: Subject = mockSubject,
+		subject: SubjectWithContext = mockSubject,
 		// Passed by the focus tests alone: an element must be in the document to hold focus.
 		attachTo: Element | undefined = undefined,
 		// Left out by every host that cannot create Subjects, which is what the dialog reads
@@ -954,7 +955,7 @@ describe( 'SubjectEditorDialog', () => {
 			await flushPromises();
 
 			expect( mw.notify ).toHaveBeenCalledWith(
-				'neowiki-subject-editor-success' + labellessSubject.getDisplayName(),
+				'neowiki-subject-editor-success' + HOST_PAGE_NAME,
 				{ type: 'success' },
 			);
 		} );
@@ -982,7 +983,7 @@ describe( 'SubjectEditorDialog', () => {
 			await flushPromises();
 
 			expect( wrapper.find( '.cdx-dialog' ).attributes( 'aria-label' ) )
-				.toBe( 'neowiki-subject-editor-title' + labellessSubject.getDisplayName() );
+				.toBe( 'neowiki-subject-editor-title' + HOST_PAGE_NAME );
 		} );
 
 		it( 'does not preview the removed label once a labelled subject is cleared', async () => {
@@ -1038,14 +1039,12 @@ describe( 'SubjectEditorDialog', () => {
 			await flushPromises();
 
 			await wrapper.setProps( {
-				subject: new Subject(
-					new SubjectId( 's1demo5sssssss1' ),
-					'Renamed Subject',
-					'Renamed Subject',
-					false,
-					'TestSchema',
-					new StatementList( [] ),
-				),
+				subject: newSubject( {
+					id: 's1demo5sssssss1',
+					label: 'Renamed Subject',
+					schemaName: 'TestSchema',
+					pageIdentifiers: hostPageIdentifiers,
+				} ),
 			} );
 
 			expect( titleText( wrapper ) ).toBe( 'Renamed Subject' );
@@ -1089,15 +1088,8 @@ describe( 'SubjectEditorDialog', () => {
 		}
 
 		// mockSubject with the given Colleague targets stored, so the tree has a node for each.
-		function rootSubjectWithTargets( ...targetIds: string[] ): Subject {
-			return new Subject(
-				mockSubject.getId(),
-				mockSubject.getLabel(),
-				mockSubject.getDisplayName(),
-				false,
-				'TestSchema',
-				new StatementList( [ colleagueStatement( ...targetIds ) ] ),
-			);
+		function rootSubjectWithTargets( ...targetIds: string[] ): SubjectWithContext {
+			return mockSubject.withStatements( new StatementList( [ colleagueStatement( ...targetIds ) ] ) );
 		}
 
 		const relationRootSubject = rootSubjectWithTargets( 's22222222222222' );
@@ -1160,7 +1152,7 @@ describe( 'SubjectEditorDialog', () => {
 		interface PaneStackOptions {
 			onSave?: SaveHandler;
 			rootSchema?: Schema;
-			rootSubject?: Subject;
+			rootSubject?: SubjectWithContext;
 			stubs?: Record<string, any>;
 		}
 
@@ -1168,7 +1160,7 @@ describe( 'SubjectEditorDialog', () => {
 			onSave?: SaveHandler,
 			stubOverrides: Record<string, any> = {},
 			rootSchema: Schema = mockSchema,
-			rootSubject: Subject = mockSubject,
+			rootSubject: SubjectWithContext = mockSubject,
 			attachTo: Element | undefined = undefined,
 			onCreate: Mock | undefined = undefined,
 		): TargetReposMount {
@@ -1465,7 +1457,7 @@ describe( 'SubjectEditorDialog', () => {
 				await triggerSave( wrapper, '' );
 
 				expect( ( mw.notify as Mock ).mock.calls ).toContainEqual( [
-					'neowiki-subject-editor-success' + target.getDisplayName(),
+					'neowiki-subject-editor-success' + target.getLabel(),
 					{ type: 'success' },
 				] );
 			} );
@@ -1976,7 +1968,7 @@ describe( 'SubjectEditorDialog', () => {
 
 			async function mountAttached(
 				rootSchema: Schema = mockSchema,
-				rootSubject: Subject = mockSubject,
+				rootSubject: SubjectWithContext = mockSubject,
 			): Promise<VueWrapper> {
 				const { wrapper } = mountWithTargetRepos(
 					undefined, {}, rootSchema, rootSubject, document.body,
@@ -2338,14 +2330,13 @@ describe( 'SubjectEditorDialog', () => {
 					const firstKey = treeKey( wrapper );
 
 					await wrapper.setProps( {
-						subject: new Subject(
-							new SubjectId( 's99999999999999' ),
-							'New root',
-							'New root',
-							false,
-							'TestSchema',
-							new StatementList( [ colleagueStatement( 's22222222222222' ) ] ),
-						),
+						subject: newSubject( {
+							id: 's99999999999999',
+							label: 'New root',
+							schemaName: 'TestSchema',
+							pageIdentifiers: hostPageIdentifiers,
+							statements: new StatementList( [ colleagueStatement( 's22222222222222' ) ] ),
+						} ),
 					} );
 					await flushPromises();
 
@@ -2364,14 +2355,13 @@ describe( 'SubjectEditorDialog', () => {
 					failing.mockResolvedValue( targetSubject( 's22222222222222', 'Target subject' ) );
 
 					await wrapper.setProps( {
-						subject: new Subject(
-							new SubjectId( 's99999999999999' ),
-							'New root',
-							'New root',
-							false,
-							'TestSchema',
-							new StatementList( [ colleagueStatement( 's22222222222222' ) ] ),
-						),
+						subject: newSubject( {
+							id: 's99999999999999',
+							label: 'New root',
+							schemaName: 'TestSchema',
+							pageIdentifiers: hostPageIdentifiers,
+							statements: new StatementList( [ colleagueStatement( 's22222222222222' ) ] ),
+						} ),
 					} );
 					await flushPromises();
 
@@ -2670,7 +2660,7 @@ describe( 'SubjectEditorDialog', () => {
 
 				await editLabel( wrapper, '' );
 
-				expect( treeNodeLabel( wrapper, rootSubjectId ) ).toBe( 'Test Subject' );
+				expect( treeNodeLabel( wrapper, rootSubjectId ) ).toBe( '(unnamed TestSchema)' );
 			} );
 
 			// A child Subject has no rename control of its own, but the pane that edits it already
@@ -2724,18 +2714,25 @@ describe( 'SubjectEditorDialog', () => {
 				Employer: employerSchema,
 			};
 
-			// mockSubject is a bare Subject, which is a Subject with nowhere to store one made
-			// beside it. The tests that expect a draft to be created need a page.
+			// The tests that expect a draft to be created need a root with a page to store it on.
 			const rootOnHostPage = newSubject( {
 				id: rootSubjectId,
 				label: mockSubject.getLabel(),
 				pageIdentifiers: hostPage,
 			} );
 
+			// A root whose hosting page the server could not resolve, which is what a page id that is
+			// no page id at all stands for: there is nowhere to store a Subject made beside it.
+			const rootWithoutPage = newSubject( {
+				id: rootSubjectId,
+				label: mockSubject.getLabel(),
+				pageIdentifiers: new PageIdentifiers( NaN, '' ),
+			} );
+
 			interface CreationMountOptions {
 				onSave?: Mock;
 				onCreate?: Mock;
-				rootSubject?: Subject;
+				rootSubject?: SubjectWithContext;
 			}
 
 			function mountForCreation( {
@@ -3133,7 +3130,7 @@ describe( 'SubjectEditorDialog', () => {
 			} );
 
 			it( 'answers with nothing when the subject being edited has no page to store a draft on', async () => {
-				const { wrapper } = await mountReadyForCreation( { rootSubject: mockSubject } );
+				const { wrapper } = await mountReadyForCreation( { rootSubject: rootWithoutPage } );
 
 				const created = await createTarget( wrapper );
 
@@ -3195,18 +3192,11 @@ describe( 'SubjectEditorDialog', () => {
 		] ) );
 
 		// One Birth event target stored, so the tree has a node beyond the root to show.
-		const relatedSubject = new Subject(
-			mockSubject.getId(),
-			mockSubject.getLabel(),
-			mockSubject.getDisplayName(),
-			false,
-			'TestSchema',
-			new StatementList( [ new Statement(
-				new PropertyName( 'Birth event' ),
-				'relation',
-				new RelationValue( [ newRelation( undefined, 's44444444444444' ) ] ),
-			) ] ),
-		);
+		const relatedSubject = mockSubject.withStatements( new StatementList( [ new Statement(
+			new PropertyName( 'Birth event' ),
+			'relation',
+			new RelationValue( [ newRelation( undefined, 's44444444444444' ) ] ),
+		) ] ) );
 
 		function navigatorRendered( wrapper: VueWrapper ): boolean {
 			return wrapper.findComponent( SubjectTree ).exists();

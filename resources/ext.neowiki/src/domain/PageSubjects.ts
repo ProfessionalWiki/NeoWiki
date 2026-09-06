@@ -1,4 +1,4 @@
-import { Subject } from '@/domain/Subject';
+import { SubjectWithContext } from '@/domain/SubjectWithContext';
 import { SubjectId } from '@/domain/SubjectId';
 
 export class PageSubjects {
@@ -6,7 +6,7 @@ export class PageSubjects {
 	public constructor(
 		private readonly pageId: number,
 		private readonly mainSubjectId: SubjectId | null,
-		private readonly subjects: Subject[],
+		private readonly subjects: SubjectWithContext[],
 	) {
 	}
 
@@ -18,7 +18,7 @@ export class PageSubjects {
 		return this.mainSubjectId;
 	}
 
-	public getSubjects(): Subject[] {
+	public getSubjects(): SubjectWithContext[] {
 		return this.subjects;
 	}
 
@@ -26,7 +26,7 @@ export class PageSubjects {
 		return this.subjects.length > 0;
 	}
 
-	public getSubject( id: SubjectId ): Subject | undefined {
+	public getSubject( id: SubjectId ): SubjectWithContext | undefined {
 		return this.subjects.find( ( s ) => s.getId().text === id.text );
 	}
 

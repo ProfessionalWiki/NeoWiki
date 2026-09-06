@@ -89,7 +89,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						id: 's11111111111maa',
 						label: 'main label',
 						displayName: 'main label',
-						displayNameIsGenerated: false,
+						isMainSubject: true,
 						schemaName: 'TestSchema',
 						statements: [
 							'name' => [
@@ -105,7 +105,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						id: 's11111111111ca2',
 						label: 'child two',
 						displayName: 'child two',
-						displayNameIsGenerated: false,
+						isMainSubject: false,
 						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
 						pageId: null,
@@ -116,7 +116,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						id: 's11111111111ca3',
 						label: 'child three',
 						displayName: 'child three',
-						displayNameIsGenerated: false,
+						isMainSubject: false,
 						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
 						pageId: null,
@@ -127,7 +127,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						id: 's11111111111ca1',
 						label: 'child one',
 						displayName: 'child one',
-						displayNameIsGenerated: false,
+						isMainSubject: false,
 						schemaName: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
 						pageId: null,
@@ -206,10 +206,10 @@ class GetPageSubjectsQueryTest extends TestCase {
 	}
 
 	/**
-	 * Both Subjects lack a label, but only the Child is named after something nobody chose: the Main
-	 * Subject took the page title, which an editor wrote.
+	 * Which Subject the page treats as its own topic travels as a fact of its own, so a client can
+	 * derive the name it would otherwise have to be told.
 	 */
-	public function testOnlyTheSchemaTierFallbackIsReportedAsGenerated(): void {
+	public function testReportsWhichSubjectThePageTreatsAsItsTopic(): void {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects(
 			new PageSubjects(
@@ -232,40 +232,39 @@ class GetPageSubjectsQueryTest extends TestCase {
 			] )
 		)->execute( 42 );
 
-		$this->assertFalse( $presenter->response->subjects['s11111111111maa']->displayNameIsGenerated );
-		$this->assertTrue( $presenter->response->subjects['s11111111111ca1']->displayNameIsGenerated );
+		$this->assertTrue( $presenter->response->subjects['s11111111111maa']->isMainSubject );
+		$this->assertFalse( $presenter->response->subjects['s11111111111ca1']->isMainSubject );
 	}
 
 	/**
-	 * A stored label that happens to equal the Schema name is still a name someone typed. This is the
-	 * case a client comparing the two strings would get wrong, which is why the server reports it.
+	 * A stored label settles the target's name, but not whether it is its page's topic, which the
+	 * response reports either way.
 	 */
-	public function testAStoredLabelMatchingTheSchemaNameIsNotGenerated(): void {
+	public function testLabelledReferencedSubjectStillReportsThatItIsItsPagesTopic(): void {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects(
 			new PageSubjects(
-				TestSubject::build(
-					id: 's11111111111maa',
-					label: new SubjectLabel( 'Attendance' ),
-					schemaName: new SchemaName( 'Attendance' )
-				),
-				new SubjectMap(
-					TestSubject::build(
-						id: 's11111111111ca1',
-						label: new SubjectLabel( 'Attendance' ),
-						schemaName: new SchemaName( 'Attendance' )
-					),
-				)
+				$this->newSubjectReferencing( 's11111111111maa', 's11111111111tar' ),
+				new SubjectMap()
 			),
 			new PageId( 42 )
 		);
 
+		$referenced = TestSubject::build( id: 's11111111111tar', label: new SubjectLabel( 'Amsterdam' ) );
+		$repository->savePageSubjects( new PageSubjects( $referenced, new SubjectMap() ), new PageId( 137 ) );
+
 		$presenter = $this->newSpyPresenter();
 
-		$this->newQuery( $presenter, $repository )->execute( 42 );
+		$this->newQuery(
+			$presenter,
+			$repository,
+			subjectLookup: new InMemorySubjectLookup( $referenced ),
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
+				[ $referenced->id, new PageIdentifiers( new PageId( 137 ), 'Amsterdam', 0 ) ],
+			] )
+		)->execute( 42, includeReferencedSubjects: true );
 
-		$this->assertFalse( $presenter->response->subjects['s11111111111maa']->displayNameIsGenerated );
-		$this->assertFalse( $presenter->response->subjects['s11111111111ca1']->displayNameIsGenerated );
+		$this->assertTrue( $presenter->response->referencedSubjects['s11111111111tar']->isMainSubject );
 	}
 
 	public function testIncludesSchemasWhenRequested(): void {

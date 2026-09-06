@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_SUBJECT_ID, newSubject } from '@/TestHelpers';
 import { SubjectMap } from '@/domain/SubjectMap';
 import { InMemorySubjectLookup } from '@/domain/SubjectLookup';
-import { PageIdentifiers } from '@/domain/PageIdentifiers';
 import { StatementList } from '@/domain/StatementList';
 import { Neo } from '@/Neo';
 import { PropertyName } from '@/domain/PropertyDefinition';
@@ -22,17 +21,6 @@ describe( 'Subject', () => {
 		expect( subject.getId().text ).toBe( DEFAULT_SUBJECT_ID );
 		expect( subject.getLabel() ).toBe( 'I am a tomato' );
 		expect( subject.getSchemaName() ).toBe( 'Tomato' );
-		expect( subject.getPageIdentifiers().getPageName() ).toBe( 'TestSubjectPage' );
-	} );
-
-	it( 'should store page identifiers', () => {
-		const identifiers = new PageIdentifiers( 123, 'TestPage' );
-
-		const subject = newSubject( {
-			pageIdentifiers: identifiers,
-		} );
-
-		expect( subject.getPageIdentifiers() ).toEqual( identifiers );
 	} );
 
 	describe( 'getReferencedSubjects', () => {
@@ -114,21 +102,8 @@ describe( 'Subject', () => {
 
 	} );
 
-	describe( 'getDisplayName', () => {
-		it( 'is the stored label when the Subject has one', () => {
-			expect( newSubject( { label: 'I am a tomato' } ).getDisplayName() ).toBe( 'I am a tomato' );
-		} );
-
-		it( 'is the name the server derived when the Subject has no label', () => {
-			const subject = newSubject( { label: null, displayName: 'TestSubjectPage' } );
-
-			expect( subject.getLabel() ).toBeNull();
-			expect( subject.getDisplayName() ).toBe( 'TestSubjectPage' );
-		} );
-	} );
-
 	describe( 'withLabel', () => {
-		it( 'returns a new Subject with the updated label', () => {
+		it( 'returns a copy with the new label', () => {
 			const originalSubject = newSubject();
 
 			const updatedSubject = originalSubject.withLabel( 'Updated Label' );
@@ -139,33 +114,8 @@ describe( 'Subject', () => {
 			expect( updatedSubject ).not.toBe( originalSubject );
 		} );
 
-		it( 'displays the label it was given', () => {
-			expect( newSubject().withLabel( 'Updated Label' ).getDisplayName() ).toBe( 'Updated Label' );
-		} );
-
-		it( 'keeps the previous display name when the label is cleared, since only the server can derive a new one', () => {
-			const original = newSubject( { label: 'Acme Anvil' } );
-
-			const cleared = original.withLabel( null );
-
-			expect( cleared.getLabel() ).toBeNull();
-			expect( cleared.getDisplayName() ).toBe( 'Acme Anvil' );
-		} );
-
-		it( 'stops calling the name generated once someone types one', () => {
-			const unnamed = newSubject( { label: null, displayNameIsGenerated: true } );
-
-			expect( unnamed.withLabel( 'Acme Anvil' ).hasGeneratedDisplayName() ).toBe( false );
-		} );
-
-		/**
-		 * The retained name is the label just deleted, which nobody generated, so marking it would
-		 * name the Subject after a string the user typed.
-		 */
-		it( 'leaves a retained label unmarked when the label is cleared', () => {
-			const named = newSubject( { label: 'Acme Anvil' } );
-
-			expect( named.withLabel( null ).hasGeneratedDisplayName() ).toBe( false );
+		it( 'clears the label to null', () => {
+			expect( newSubject( { label: 'Acme Anvil' } ).withLabel( null ).getLabel() ).toBeNull();
 		} );
 	} );
 

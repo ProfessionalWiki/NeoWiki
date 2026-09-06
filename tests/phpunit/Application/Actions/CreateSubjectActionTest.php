@@ -164,7 +164,7 @@ class CreateSubjectActionTest extends TestCase {
 	 * Creating without a label is the ordinary way into the Schema tier, and the response the UI
 	 * renders immediately afterwards is this one.
 	 */
-	public function testCreatingAChildWithoutALabelReportsTheNameAsGenerated(): void {
+	public function testCreatingAChildWithoutALabelNamesItAfterItsSchema(): void {
 		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
 
 		$this->newCreateSubjectAction()->createSubject(
@@ -177,10 +177,11 @@ class CreateSubjectActionTest extends TestCase {
 			)
 		);
 
-		$this->assertTrue( $this->presenterSpy->subject?->displayNameIsGenerated );
+		$this->assertSame( 'some-schema-id', $this->presenterSpy->subject?->displayName );
+		$this->assertFalse( $this->presenterSpy->subject?->isMainSubject );
 	}
 
-	public function testCreatingAMainSubjectWithoutALabelReportsTheNameAsChosen(): void {
+	public function testCreatingAMainSubjectWithoutALabelNamesItAfterItsPage(): void {
 		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
 
 		$this->newCreateSubjectAction()->createSubject(
@@ -193,7 +194,8 @@ class CreateSubjectActionTest extends TestCase {
 			)
 		);
 
-		$this->assertFalse( $this->presenterSpy->subject?->displayNameIsGenerated );
+		$this->assertSame( 'Help:Bunnies', $this->presenterSpy->subject?->displayName );
+		$this->assertTrue( $this->presenterSpy->subject?->isMainSubject );
 	}
 
 	public function testSubjectAlreadyExists(): void {

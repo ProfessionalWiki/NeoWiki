@@ -10,15 +10,14 @@ import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 
 vi.mock( '@/stores/SubjectStore.ts' );
 
-function createSubject( id: string, label: string | null, pageName: string, displayName?: string, generated = false ): SubjectWithContext {
+function createSubject( id: string, label: string | null, pageName: string, isMainSubject = false ): SubjectWithContext {
 	return new SubjectWithContext(
 		new SubjectId( id ),
 		label,
-		displayName ?? label ?? '',
-		generated,
 		'' as any,
 		{} as any,
 		new PageIdentifiers( 42, pageName ),
+		isMainSubject,
 	);
 }
 
@@ -79,7 +78,7 @@ describe( 'RelationDisplay.vue', () => {
 
 	it( 'renders the display name of a target that has no label, rather than its id', async () => {
 		mockGetSubject.mockReturnValue(
-			createSubject( 's1111111111111A', null, 'Page_Name_1', 'Page Name 1' ),
+			createSubject( 's1111111111111A', null, 'Page Name 1', true ),
 		);
 		mockGetUrl.mockReturnValue( '/wiki/Page_Name_1' );
 
@@ -90,16 +89,15 @@ describe( 'RelationDisplay.vue', () => {
 
 	// A relation link is article content a reader sees, so a target nobody named must say so there
 	// too, not only in the editing UI.
-	it( 'marks a target whose name the server generated', async () => {
+	it( 'marks a target nobody named', async () => {
 		mockGetSubject.mockReturnValue(
 			new SubjectWithContext(
 				new SubjectId( 's1111111111111B' ),
 				null,
-				'Attendance',
-				true,
 				'Attendance' as any,
 				{} as any,
 				new PageIdentifiers( 42, 'Rijksmuseum' ),
+				false,
 			),
 		);
 		mockGetUrl.mockReturnValue( '/wiki/Rijksmuseum' );

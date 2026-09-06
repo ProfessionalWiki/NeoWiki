@@ -22,9 +22,10 @@ name otherwise. The contract is in the [glossary](../glossary.md#subject) and
 **The Schema tier says so, in the string.** Such a Subject is shown as `(unnamed Attendance)`, from the
 `neowiki-subject-generated-name` message — the bracketing MediaWiki documents on `blanknamespace`, "(Main)". A Main
 Subject's page name is left unmarked, having been chosen by whoever titled the page. The marker is composed in the
-frontend, so `rdfs:label`, Lua and `{{#neowiki_value}}` keep the bare Schema name; REST carries
-`displayNameIsGenerated`, which a client cannot derive, since a Main Subject on a page titled after its Schema is
-named its Schema name without anyone having generated it.
+frontend, so `rdfs:label`, Lua and `{{#neowiki_value}}` keep the bare Schema name. The frontend derives the name from
+the facts REST returns beside the stored `label`, `isMainSubject` and `pageTitle`, and never reads the `displayName`
+REST also returns for clients that would rather not derive it: nothing the frontend edits is then named by a value
+only the server could refresh.
 
 **The graph materializes the fallback for Main Subjects only.** A Child Subject without a label gets no `name`
 property: the Schema name there would make every unnamed Subject of a Schema indistinguishable in query results, and
@@ -51,4 +52,5 @@ Schema display identically; the computation can gain discriminators later, which
 
 Clearing costs a revision per page, and a Child Subject that carried the older page-name default is renamed to its
 Schema name by it. `Subject.getLabel()` in the frontend bundle can return null; display code goes through
-`presentation/subjectDisplayName.ts`, which marks the Schema tier.
+`presentation/subjectDisplayName.ts`, which derives the name from the Subject's label and page context and marks the
+Schema tier.

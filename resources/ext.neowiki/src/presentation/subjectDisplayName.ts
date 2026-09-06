@@ -1,5 +1,5 @@
-import type { Subject } from '@/domain/Subject';
-import { placeholderSubjectLabel } from '@/domain/placeholderSubjectLabel';
+import type { SubjectWithContext } from '@/domain/SubjectWithContext';
+import { chosenSubjectName } from '@/domain/chosenSubjectName';
 
 /**
  * The name to show for a Subject.
@@ -12,12 +12,17 @@ import { placeholderSubjectLabel } from '@/domain/placeholderSubjectLabel';
  * It has to be in the string rather than in styling: several surfaces interpolate a display name
  * into plain text no CSS reaches, and colour alone would carry the meaning nowhere for anyone using
  * a screen reader.
- *
- * Not for the relation picker, whose selection becomes the value of a text input the user can then
- * edit and submit.
  */
-export function subjectDisplayName( subject: Subject ): string {
-	return subject.hasGeneratedDisplayName() ? generatedName( subject.getDisplayName() ) : subject.getDisplayName();
+export function subjectDisplayName( subject: SubjectWithContext ): string {
+	return subject.getChosenName() ?? generatedName( subject.getSchemaName() );
+}
+
+/**
+ * The same name without the marker, for the relation picker: its selection becomes the value of a
+ * text input the user can then edit and submit.
+ */
+export function unmarkedSubjectName( subject: SubjectWithContext ): string {
+	return subject.getChosenName() ?? subject.getSchemaName();
 }
 
 /**
@@ -33,7 +38,5 @@ function generatedName( schemaName: string ): string {
  * name, which is the tier nobody chose.
  */
 export function newSubjectNamePreview( pageHasMainSubject: boolean, pageName: string, schemaName: string ): string {
-	const name = placeholderSubjectLabel( pageHasMainSubject, pageName, schemaName );
-
-	return pageHasMainSubject ? generatedName( name ) : name;
+	return chosenSubjectName( null, !pageHasMainSubject, pageName ) ?? generatedName( schemaName );
 }

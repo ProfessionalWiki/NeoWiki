@@ -8,7 +8,7 @@ import type { SchemaRepository } from '@/application/SchemaRepository';
 import { InMemoryLayoutLookup } from '@/application/LayoutLookup';
 import type { LayoutLookup } from '@/application/LayoutLookup';
 import { SubjectId } from '@/domain/SubjectId';
-import { Subject } from '@/domain/Subject';
+import { SubjectWithContext } from '@/domain/SubjectWithContext';
 import { Layout } from '@/domain/Layout';
 import { newSchema, newSubject } from '@/TestHelpers';
 import { useSubjectStore } from '@/stores/SubjectStore';
@@ -35,7 +35,7 @@ class RecordingSubjectRepository extends StubSubjectRepository {
 		super( [ bundle.requestedSubject, ...bundle.referencedSubjects ] );
 	}
 
-	public override async getSubject( id: SubjectId ): Promise<Subject> {
+	public override async getSubject( id: SubjectId ): Promise<SubjectWithContext> {
 		this.getSubjectCallCount++;
 		return super.getSubject( id );
 	}
@@ -47,7 +47,7 @@ class RecordingSubjectRepository extends StubSubjectRepository {
 
 }
 
-function newMainSubjectWithRelationsTo( ...targets: SubjectId[] ): Subject {
+function newMainSubjectWithRelationsTo( ...targets: SubjectId[] ): SubjectWithContext {
 	return newSubject( {
 		id: mainId,
 		schemaName: 'Company',

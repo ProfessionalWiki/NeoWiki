@@ -212,7 +212,7 @@ type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>
 type SubjectCreateHandler = ( subject: Subject, pageId: number, comment: string ) => Promise<void>;
 
 const props = defineProps<{
-	subject: Subject;
+	subject: SubjectWithContext;
 	schema: Schema;
 	onSave: SubjectSaveHandler;
 	onSaveSchema: SchemaSaveHandler;
@@ -224,7 +224,7 @@ const emit = defineEmits( [ 'update:open' ] );
 
 interface EditPane {
 	id: string;
-	subject: Subject;
+	subject: SubjectWithContext;
 	schema: Schema;
 	// Holds a Subject the server has never seen. Cleared as soon as its create lands, so a save
 	// that fails further down re-runs as an update rather than offering the same id twice.
@@ -285,7 +285,7 @@ const panes = computed( (): EditPane[] => [
 // in its pane is renamed everywhere that names it. Read from the draft panes alone: going through
 // editedSubjects would make every rename and relation pick anywhere in the dialog rebuild the menu
 // of every relation field.
-const draftSubjects = computed( (): Subject[] => panes.value
+const draftSubjects = computed( (): SubjectWithContext[] => panes.value
 	.filter( ( pane ) => pane.isNew )
 	.map( ( pane ) => {
 		const instance = paneRefs.get( pane.id );
@@ -300,7 +300,7 @@ const draftIds = computed( (): string[] => draftSubjects.value.map( ( subject ) 
 function heldSubjects(): HeldSubject[] {
 	return panes.value.map( ( pane ) => ( {
 		id: pane.id,
-		subject: editedSubjects.value.get( pane.id ) as Subject,
+		subject: editedSubjects.value.get( pane.id ) as SubjectWithContext,
 		schema: pane.schema,
 		isNew: pane.isNew
 	} ) );
@@ -343,8 +343,8 @@ const anyChanged = computed( (): boolean => dirtyPanes.value.length > 0 );
 
 // One copy per mounted pane. A pane's own copy is refreshed on relation changes alone, so
 // the live label is laid over it here and the tree names a Subject the way its form does.
-const editedSubjects = computed( (): Map<string, Subject> => {
-	const subjects = new Map<string, Subject>();
+const editedSubjects = computed( (): Map<string, SubjectWithContext> => {
+	const subjects = new Map<string, SubjectWithContext>();
 
 	for ( const pane of panes.value ) {
 		const instance = paneRefs.get( pane.id );
@@ -359,7 +359,7 @@ const editedSubjects = computed( (): Map<string, Subject> => {
 
 // Rebuilt only when the label has moved, so an unrenamed Subject keeps the very object the
 // tree already walked. The field's text is read the way a write reads it.
-function withLiveLabel( instance: SubjectEditPaneExposes ): Subject {
+function withLiveLabel( instance: SubjectEditPaneExposes ): SubjectWithContext {
 	const edited = instance.editedSubject;
 	const label = enteredSubjectLabel( instance.label );
 	return edited.getLabel() === label ? edited : edited.withLabel( label );
@@ -369,7 +369,7 @@ const rootPane = computed( (): SubjectEditPaneExposes | undefined => paneRefs.ge
 
 // The root as the tree will walk it: the root pane's copy once that pane has registered, the
 // prop before. Labels have no bearing on relation targets, so the live label is left off.
-const treeRootSubject = computed( (): Subject => rootPane.value?.editedSubject ?? props.subject );
+const treeRootSubject = computed( (): SubjectWithContext => rootPane.value?.editedSubject ?? props.subject );
 
 // The navigator is rendered only once the tree would draw a row other than its own root.
 // The root's relation statements settle the walk, which starts there. An open pane is the
@@ -446,7 +446,7 @@ function creationPage(): PageIdentifiers | null {
 	const activePane = panes.value.find( ( pane ) => pane.id === activePaneId.value );
 
 	for ( const subject of [ activePane?.subject, props.subject ] ) {
-		if ( subject instanceof SubjectWithContext && Number.isInteger( subject.getPageIdentifiers().getPageId() ) ) {
+		if ( subject !== undefined && Number.isInteger( subject.getPageIdentifiers().getPageId() ) ) {
 			return subject.getPageIdentifiers();
 		}
 	}
@@ -458,7 +458,7 @@ function creationPage(): PageIdentifiers | null {
 // is written: the id is minted, which reserves nothing, and the Subject itself reaches the wiki
 // only when this dialog is saved. The pane is added and made active before this returns, so the
 // relation the caller then records lands in the same render as the pane and the tree node.
-async function createRelationTarget( schemaName: string, label: string | null ): Promise<Subject | null> {
+async function createRelationTarget( schemaName: string, label: string | null ): Promise<SubjectWithContext | null> {
 	const page = creationPage();
 
 	// A Subject added while the write loop is running would be referenced by a Subject already
@@ -483,16 +483,8 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 			return null;
 		}
 
-		const subject = new SubjectWithContext(
-			id,
-			label,
-			// What the server would derive for a Subject with no label of its own (ADR 31).
-			label ?? schemaName,
-			label === null,
-			schemaName,
-			new StatementList( [] ),
-			page
-		);
+		// A Subject created beside another is a Child Subject of that page.
+		const subject = new SubjectWithContext( id, label, schemaName, new StatementList( [] ), page, false );
 
 		extraPanes.value = [ ...extraPanes.value, { id: id.text, subject, schema, isNew: true } ];
 		activePaneId.value = id.text;
@@ -515,7 +507,7 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 if ( props.onCreate !== undefined ) {
 	provide( SubjectCreationKey, {
 		create: createRelationTarget,
-		drafts: ( schemaName: string ): readonly Subject[] =>
+		drafts: ( schemaName: string ): readonly SubjectWithContext[] =>
 			draftSubjects.value.filter( ( subject ) => subject.getSchemaName() === schemaName )
 	} );
 }
@@ -611,8 +603,8 @@ const partialSaveMessage = computed( (): string => partialSave.value === null ?
 
 // Counted in pages as well as in Subjects, since each page written gets revisions of its own.
 // A Subject with no resolved page counts as a page of its own.
-function pageKeyOf( subject: Subject ): string {
-	return subject instanceof SubjectWithContext ?
+function pageKeyOf( subject: SubjectWithContext ): string {
+	return Number.isInteger( subject.getPageIdentifiers().getPageId() ) ?
 		`page:${ subject.getPageIdentifiers().getPageId() }` :
 		`subject:${ subject.getId().text }`;
 }
@@ -662,7 +654,7 @@ async function writeSubject( pane: EditPane, subject: Subject, comment: string )
 		return;
 	}
 
-	if ( props.onCreate === undefined || !( pane.subject instanceof SubjectWithContext ) ) {
+	if ( props.onCreate === undefined || !Number.isInteger( pane.subject.getPageIdentifiers().getPageId() ) ) {
 		throw new Error( 'No page to create this Subject on' );
 	}
 

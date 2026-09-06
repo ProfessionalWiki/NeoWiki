@@ -53,11 +53,9 @@ describe( 'Infobox', () => {
 		] ),
 	);
 
-	const mockSubject = new Subject(
+	const mockSubject = new SubjectWithContext(
 		new SubjectId( 's1demo5sssssss1' ),
 		'Test Subject',
-		'Test Subject',
-		false,
 		'TestSchema',
 		new StatementList( [
 			new Statement(
@@ -70,6 +68,8 @@ describe( 'Infobox', () => {
 				new PropertyName( 'website' ), UrlType.typeName, newStringValue( 'https://example.com' ),
 			),
 		] ),
+		new PageIdentifiers( 7, 'Some page' ),
+		false,
 	);
 
 	const mountComponent = ( subject: Subject, canEditSubject: boolean ): VueWrapper => mount( Infobox, {
@@ -129,14 +129,14 @@ describe( 'Infobox', () => {
 
 	// The infobox heading is article content a reader sees, and is ADR 31's own example of a name
 	// nobody chose.
-	it( 'marks a title the server generated', () => {
-		const generated = new Subject(
+	it( 'marks a title nobody chose', () => {
+		const generated = new SubjectWithContext(
 			new SubjectId( 's1demo5sssssss2' ),
 			null,
 			'TestSchema',
-			true,
-			'TestSchema',
 			new StatementList( [] ),
+			new PageIdentifiers( 7, 'Some page' ),
+			false,
 		);
 
 		subjectStore.setSubject( generated );
@@ -168,13 +168,13 @@ describe( 'Infobox', () => {
 	} );
 
 	it( 'renders without statements when subject has no statements', () => {
-		const emptySubject = new Subject(
+		const emptySubject = new SubjectWithContext(
 			new SubjectId( 's1demo6sssssss1' ),
 			'Empty Subject',
-			'Empty Subject',
-			false,
 			'TestSchema',
 			new StatementList( [] ),
+			new PageIdentifiers( 7, 'Some page' ),
+			false,
 		);
 
 		subjectStore.setSubject( emptySubject );
@@ -201,13 +201,13 @@ describe( 'Infobox', () => {
 	it( 'opens the dialog on the subject and schema fetched from the repositories', async () => {
 		// Values the stores do not hold, so the assertions can only pass if the dialog was
 		// handed the repositories' data rather than a registry read.
-		const freshSubject = new Subject(
+		const freshSubject = new SubjectWithContext(
 			mockSubject.getId(),
 			'Fetched Subject',
-			'Fetched Subject',
-			false,
 			'TestSchema',
 			new StatementList( [] ),
+			new PageIdentifiers( 7, 'Some page' ),
+			false,
 		);
 		const freshSchema = new Schema( 'TestSchema', 'Fetched schema', new PropertyDefinitionList( [] ) );
 		getSubjectMock.mockResolvedValue( freshSubject );
@@ -251,18 +251,26 @@ describe( 'Infobox', () => {
 		// What the editor hands to onSave: a plain Subject, without the page context the registry
 		// entry carries, and here also without the statement the server ends up storing.
 		const clientCopy = new Subject(
-			mockSubject.getId(), 'Test Subject', 'Test Subject', false, 'TestSchema', new StatementList( [] ),
+			mockSubject.getId(), 'Test Subject', 'TestSchema', new StatementList( [] ),
+		);
+		// The same Subject as the repository answers with, which is what the editor opens on.
+		const fetchedCopy = new SubjectWithContext(
+			mockSubject.getId(),
+			'Test Subject',
+			'TestSchema',
+			new StatementList( [] ),
+			new PageIdentifiers( 7, 'Some page' ),
+			false,
 		);
 		const persistedSubject = new SubjectWithContext(
 			mockSubject.getId(),
 			'Test Subject',
-			'Test Subject',
-			false,
 			'TestSchema',
 			new StatementList( [
 				new Statement( new PropertyName( 'Cost centre' ), TextType.typeName, newStringValue( 'CC-42' ) ),
 			] ),
 			new PageIdentifiers( 7, 'Some page' ),
+			false,
 		);
 
 		async function openEditorAndSave( wrapper: VueWrapper ): Promise<void> {
@@ -280,7 +288,7 @@ describe( 'Infobox', () => {
 		it( 'renders the value once the save answers with the Subject and its Schema', async () => {
 			// Both halves of the response are load-bearing here: the value lives only on the
 			// response Subject, and only the response Schema defines the property it sits under.
-			getSubjectMock.mockResolvedValue( clientCopy );
+			getSubjectMock.mockResolvedValue( fetchedCopy );
 			getSchemaMock.mockResolvedValue( schemaWithCostCentre );
 			updateSubjectMock.mockResolvedValue( {
 				subjectId: mockSubject.getId(),
@@ -297,10 +305,10 @@ describe( 'Infobox', () => {
 
 		it( 'renders the Subject the save returned, not the one handed to it', async () => {
 			const canonical = new SubjectWithContext(
-				mockSubject.getId(), 'Server label', 'Server label', false, 'TestSchema', new StatementList( [] ),
-				new PageIdentifiers( 7, 'Some page' ),
+				mockSubject.getId(), 'Server label', 'TestSchema', new StatementList( [] ),
+				new PageIdentifiers( 7, 'Some page' ), false,
 			);
-			getSubjectMock.mockResolvedValue( clientCopy );
+			getSubjectMock.mockResolvedValue( fetchedCopy );
 			getSchemaMock.mockResolvedValue( mockSchema );
 			updateSubjectMock.mockResolvedValue( {
 				subjectId: mockSubject.getId(),
@@ -315,7 +323,7 @@ describe( 'Infobox', () => {
 		} );
 
 		it( 'leaves the display alone when the save answers without page context', async () => {
-			getSubjectMock.mockResolvedValue( clientCopy );
+			getSubjectMock.mockResolvedValue( fetchedCopy );
 			getSchemaMock.mockResolvedValue( mockSchema );
 			updateSubjectMock.mockResolvedValue( {
 				subjectId: mockSubject.getId(),

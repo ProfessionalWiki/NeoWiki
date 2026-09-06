@@ -1,5 +1,5 @@
 import { PageSubjects } from '@/domain/PageSubjects';
-import { Subject } from '@/domain/Subject';
+import { SubjectWithContext } from '@/domain/SubjectWithContext';
 import { SubjectId } from '@/domain/SubjectId';
 import { Schema } from '@/domain/Schema';
 import type { SubjectDeserializer } from '@/persistence/SubjectDeserializer';
@@ -16,7 +16,7 @@ export interface PageSubjectsJson {
 
 export interface DeserializedPageSubjects {
 	pageSubjects: PageSubjects;
-	referencedSubjects: Subject[];
+	referencedSubjects: SubjectWithContext[];
 	schemas: Schema[];
 }
 
@@ -39,7 +39,7 @@ export class PageSubjectsDeserializer {
 		};
 	}
 
-	private deserializeSubjects( map: Record<string, SubjectJson>, fallbackPageId: number ): Subject[] {
+	private deserializeSubjects( map: Record<string, SubjectJson>, fallbackPageId: number ): SubjectWithContext[] {
 		return Object.values( map ).map( ( subjectJson ) => this.subjectDeserializer.deserialize( {
 			...subjectJson,
 			pageId: subjectJson.pageId ?? fallbackPageId,

@@ -14,8 +14,6 @@ export class SubjectDeserializer {
 	public deserialize( json: any ): SubjectWithContext {
 		const id = new SubjectId( json.id );
 		const label = json.label ?? null;
-		const displayName = json.displayName;
-		const displayNameIsGenerated = json.displayNameIsGenerated;
 		const schema = json.schema;
 
 		const pageIdentifiers = new PageIdentifiers( json.pageId, json.pageTitle );
@@ -24,11 +22,10 @@ export class SubjectDeserializer {
 		return new SubjectWithContext(
 			id,
 			label,
-			displayName,
-			displayNameIsGenerated,
 			schema,
 			statementList,
 			pageIdentifiers,
+			json.isMainSubject,
 		);
 	}
 

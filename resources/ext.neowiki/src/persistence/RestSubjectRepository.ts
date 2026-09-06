@@ -10,7 +10,7 @@ import { StatementList, statementsToJson } from '@/domain/StatementList';
 import { type SchemaName } from '@/domain/Schema';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
-import type { Subject } from '@/domain/Subject';
+import type { SubjectWithContext } from '@/domain/SubjectWithContext';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
@@ -44,8 +44,8 @@ export type SubjectJson = {
 	label: string | null;
 	/** The stored label, or the fallback name the server derived when there is none. */
 	displayName: string;
-	/** Whether displayName fell back to the Schema name, the one tier nobody chose. */
-	displayNameIsGenerated: boolean;
+	/** Whether the hosting page treats the Subject as its own topic. */
+	isMainSubject: boolean;
 	statements: Record<string, unknown>;
 	schema: string;
 	pageId: number;
@@ -153,7 +153,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		}
 	}
 
-	public async getSubject( id: SubjectId ): Promise<Subject> {
+	public async getSubject( id: SubjectId ): Promise<SubjectWithContext> {
 		const bundle = await this.fetchSubjectBundle( id );
 
 		return this.subjectDeserializer.deserialize( bundle.subjects[ bundle.requestedId ] );
@@ -176,14 +176,14 @@ export class RestSubjectRepository implements SubjectRepository {
 		};
 	}
 
-	private deserializeReferencedSubjects( bundle: SubjectBundleJson ): Subject[] {
+	private deserializeReferencedSubjects( bundle: SubjectBundleJson ): SubjectWithContext[] {
 		return Object.entries( bundle.subjects )
 			.filter( ( [ id ] ) => id !== bundle.requestedId )
 			.map( ( [ , subjectData ] ) => this.deserializeOrNull( subjectData ) )
-			.filter( ( subject ): subject is Subject => subject !== null );
+			.filter( ( subject ): subject is SubjectWithContext => subject !== null );
 	}
 
-	private deserializeOrNull( subjectData: SubjectJson ): Subject|null {
+	private deserializeOrNull( subjectData: SubjectJson ): SubjectWithContext|null {
 		try {
 			return this.subjectDeserializer.deserialize( subjectData );
 		} catch ( _error ) {

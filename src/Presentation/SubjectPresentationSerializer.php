@@ -20,7 +20,7 @@ class SubjectPresentationSerializer {
 			'id' => $item->id,
 			'label' => $item->label,
 			'displayName' => $item->displayName,
-			'displayNameIsGenerated' => $item->displayNameIsGenerated,
+			'isMainSubject' => $item->isMainSubject,
 			'schema' => $item->schemaName,
 		];
 

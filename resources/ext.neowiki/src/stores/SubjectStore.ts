@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { SubjectId } from '@/domain/SubjectId';
 import { Subject } from '@/domain/Subject';
+import { SubjectWithContext } from '@/domain/SubjectWithContext';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { Schema, SchemaName } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
@@ -24,31 +25,31 @@ function recordBundledSchema( schema: Schema | null, epochBeforeRequest: number 
 
 export const useSubjectStore = defineStore( 'subject', {
 	state: () => ( {
-		subjects: new Map<string, Subject>(),
+		subjects: new Map<string, SubjectWithContext>(),
 		subjectCreatorOpen: false,
 		pageSubjects: null as PageSubjects | null,
 		mutationEpoch: 0, // See SchemaStore.mutationEpoch — same guard contract.
 	} ),
 	getters: {
-		getSubject: ( state ) => function ( id: SubjectId ): Subject {
+		getSubject: ( state ) => function ( id: SubjectId ): SubjectWithContext {
 			const subject = state.subjects.get( id.text );
 
 			if ( subject === undefined ) {
 				throw new Error( 'Unknown subject: ' + id.text );
 			}
 
-			return subject as Subject;
+			return subject as SubjectWithContext;
 		},
 	},
 	actions: {
-		setSubject( subject: Subject ): void { // TODO: just take Subject
+		setSubject( subject: SubjectWithContext ): void {
 			this.subjects.set( subject.getId().text, subject );
 		},
 		// Display-only read over the seeded registry: returns the page-payload /
 		// own-write value when present and fetches only on a genuine miss (e.g. a
 		// Subject picked from search that the page does not reference). Editors must
 		// not use this — they read through the repositories (see ADR 30).
-		async getOrFetchSubject( id: SubjectId ): Promise<Subject> {
+		async getOrFetchSubject( id: SubjectId ): Promise<SubjectWithContext> {
 			if ( !this.subjects.has( id.text ) ) {
 				const epoch = this.mutationEpoch;
 				const subject = await NeoWikiExtension.getInstance().getSubjectRepository().getSubject( id );

@@ -4,7 +4,7 @@
 // and remembering which of those fetches failed is the caller's job too.
 
 import { relationTargetsOf } from './SubjectTreeModel.ts';
-import type { Subject } from '@/domain/Subject.ts';
+import type { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import type { Schema, SchemaName } from '@/domain/Schema.ts';
 
@@ -30,24 +30,24 @@ export interface WalkNode {
 }
 
 // A Subject the caller may not hold yet: an unresolved one shows its raw id.
-export function nodeFor( key: string, subjectId: string, subject: Subject | undefined ): WalkNode {
+export function nodeFor( key: string, subjectId: string, subject: SubjectWithContext | undefined ): WalkNode {
 	return {
 		key,
 		subjectId,
 		label: subject === undefined ? subjectId : subjectDisplayName( subject ),
 		schemaName: subject?.getSchemaName() ?? '',
-		nameIsGenerated: subject?.hasGeneratedDisplayName() ?? false,
+		nameIsGenerated: subject !== undefined && subject.getChosenName() === null,
 		children: [],
 	};
 }
 
 // The lookups answer from what the caller already holds; they resolve nothing themselves.
 export interface SubjectTreeWalkInput {
-	rootSubject: Subject;
+	rootSubject: SubjectWithContext;
 	rootSchema: Schema;
 	// Preferred over the fetched Subject, so a relation picked but not yet saved has a node.
-	editedSubject: ( id: string ) => Subject | undefined;
-	fetchedSubject: ( id: string ) => Subject | undefined;
+	editedSubject: ( id: string ) => SubjectWithContext | undefined;
+	fetchedSubject: ( id: string ) => SubjectWithContext | undefined;
 	fetchedSchema: ( name: SchemaName ) => Schema | undefined;
 }
 
@@ -65,7 +65,7 @@ export function walkSubjectTree( input: SubjectTreeWalkInput ): SubjectTreeWalkR
 	const missingSubjectIds = new Set<string>();
 	const missingSchemaNames = new Set<SchemaName>();
 
-	function subjectFor( id: string ): Subject | undefined {
+	function subjectFor( id: string ): SubjectWithContext | undefined {
 		return input.editedSubject( id ) ?? input.fetchedSubject( id );
 	}
 
@@ -74,7 +74,7 @@ export function walkSubjectTree( input: SubjectTreeWalkInput ): SubjectTreeWalkR
 	// keying off the Subject id alone would collide its two occurrences and all their
 	// descendants.
 	function childrenOf(
-		subject: Subject,
+		subject: SubjectWithContext,
 		schema: Schema,
 		depth: number,
 		visited: ReadonlySet<string>,

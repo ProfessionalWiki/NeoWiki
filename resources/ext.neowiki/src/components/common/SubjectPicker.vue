@@ -47,7 +47,8 @@ import type { Icon } from '@wikimedia/codex-icons';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectCreationKey } from '@/components/common/SubjectCreation.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
-import type { Subject } from '@/domain/Subject.ts';
+import type { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import { unmarkedSubjectName } from '@/presentation/subjectDisplayName.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 interface SubjectPickerProps {
@@ -113,8 +114,8 @@ const draftItems = computed( (): MenuItemData[] =>
 	( subjectCreation?.drafts( props.targetSchema ) ?? [] ).map( menuItemFor )
 );
 
-function menuItemFor( subject: Subject ): MenuItemData {
-	return { value: subject.getId().text, label: subject.getDisplayName() };
+function menuItemFor( subject: SubjectWithContext ): MenuItemData {
+	return { value: subject.getId().text, label: unmarkedSubjectName( subject ) };
 }
 
 function draftNameOf( id: string ): string | undefined {
@@ -188,12 +189,14 @@ async function resolveName( id: string | null ): Promise<string> {
 		return draft;
 	}
 
-	return ( await fetchSubject( id ) )?.getDisplayName() ?? id;
+	const subject = await fetchSubject( id );
+
+	return subject === null ? id : unmarkedSubjectName( subject );
 }
 
 // Answers with nothing rather than throwing for an id the wiki does not hold, or holds on a page
 // this user may not read.
-async function fetchSubject( id: string ): Promise<Subject | null> {
+async function fetchSubject( id: string ): Promise<SubjectWithContext | null> {
 	try {
 		return await subjectStore.getOrFetchSubject( new SubjectId( id ) );
 	} catch {
@@ -344,7 +347,7 @@ async function createFromTypedText(): Promise<void> {
 
 		searchStatus.value = 'idle';
 		hasUnmatchedText.value = false;
-		showName( subject.getDisplayName() );
+		showName( unmarkedSubjectName( subject ) );
 		selectedSubject.value = subject.getId().text;
 		emit( 'update:selected', subject.getId().text );
 	} catch ( error ) {

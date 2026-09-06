@@ -7,7 +7,8 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { CdxLookup, CdxMessage } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
-import { Subject } from '@/domain/Subject.ts';
+import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Service } from '@/NeoWikiServices.ts';
@@ -83,11 +84,19 @@ describe( 'SubjectPicker', () => {
 		} );
 	}
 
-	function labellessSubject( id: string, displayName: string, schemaName: string ): Subject {
-		return new Subject( new SubjectId( id ), null, displayName, false, schemaName, new StatementList( [] ) );
+	// Stores no label and is its page's Main Subject, so the name it is shown under is the page's.
+	function labellessSubject( id: string, pageName: string, schemaName: string ): SubjectWithContext {
+		return new SubjectWithContext(
+			new SubjectId( id ), null, schemaName, new StatementList( [] ), new PageIdentifiers( 42, pageName ), true );
 	}
 
-	function wikiHolds( subject: Subject ): void {
+	// Stores no label and is not a page's Main Subject, so nobody named it at all.
+	function unnamedSubject( id: string, schemaName: string ): SubjectWithContext {
+		return new SubjectWithContext(
+			new SubjectId( id ), null, schemaName, new StatementList( [] ), new PageIdentifiers( 42, 'Host page' ), false );
+	}
+
+	function wikiHolds( subject: SubjectWithContext ): void {
 		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue( subject );
 	}
 
@@ -208,13 +217,13 @@ describe( 'SubjectPicker', () => {
 	} );
 
 	it( 'displays label for a pre-selected subject', async () => {
-		const subject = new Subject(
+		const subject = new SubjectWithContext(
 			new SubjectId( 's1demo1aaaaaaa1' ),
 			'ACME Inc.',
-			'ACME Inc.',
-			false,
 			'Company',
 			new StatementList( [] ),
+			new PageIdentifiers( 42, 'Host page' ),
+			false,
 		);
 		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue( subject );
 
@@ -226,14 +235,7 @@ describe( 'SubjectPicker', () => {
 	} );
 
 	it( 'displays the derived name for a pre-selected subject that has no label', async () => {
-		const subject = new Subject(
-			new SubjectId( 's1demo1aaaaaaa1' ),
-			null,
-			'Acme Anvil',
-			false,
-			'Company',
-			new StatementList( [] ),
-		);
+		const subject = labellessSubject( 's1demo1aaaaaaa1', 'Acme Anvil', 'Company' );
 		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue( subject );
 
 		const wrapper = createWrapper( { selected: 's1demo1aaaaaaa1' } );
@@ -285,7 +287,9 @@ describe( 'SubjectPicker', () => {
 
 	it( 'does not propagate null selection to parent when input has text', async () => {
 		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue(
-			new Subject( new SubjectId( 's1demo1aaaaaaa1' ), 'ACME Inc.', 'ACME Inc.', false, 'Company', new StatementList( [] ) ),
+			new SubjectWithContext(
+				new SubjectId( 's1demo1aaaaaaa1' ), 'ACME Inc.', 'Company', new StatementList( [] ),
+				new PageIdentifiers( 42, 'Host page' ), false ),
 		);
 
 		const wrapper = createWrapperWithVModel( { selected: 's1demo1aaaaaaa1' } );
@@ -521,9 +525,9 @@ describe( 'SubjectPicker', () => {
 		} );
 
 		it( 'ignores an id lookup that lands after the field was cleared', async () => {
-			let answerLookup: ( subject: Subject ) => void;
+			let answerLookup: ( subject: SubjectWithContext ) => void;
 			subjectStore.getOrFetchSubject = vi.fn().mockReturnValue(
-				new Promise<Subject>( ( resolve ) => {
+				new Promise<SubjectWithContext>( ( resolve ) => {
 					answerLookup = resolve;
 				} ),
 			);
@@ -561,24 +565,21 @@ describe( 'SubjectPicker', () => {
 			vi.restoreAllMocks();
 		} );
 
-		function subjectNamed( id: string, name: string, schemaName: string ): Subject {
-			return new Subject( new SubjectId( id ), name, name, false, schemaName, new StatementList( [] ) );
+		function subjectNamed( id: string, name: string, schemaName: string ): SubjectWithContext {
+			return new SubjectWithContext(
+				new SubjectId( id ), name, schemaName, new StatementList( [] ),
+				new PageIdentifiers( 42, 'Host page' ), false );
 		}
 
-		function createdSubject( label: string | null, displayName: string ): Subject {
-			return new Subject(
-				new SubjectId( 's1demo1aaaaaaa1' ),
-				label,
-				displayName,
-				false,
-				'Product',
-				new StatementList( [] ),
-			);
+		function createdSubject( label: string | null ): SubjectWithContext {
+			return label === null ?
+				unnamedSubject( 's1demo1aaaaaaa1', 'Product' ) :
+				subjectNamed( 's1demo1aaaaaaa1', label, 'Product' );
 		}
 
-		type SubjectCreator = ( schemaName: string, label: string | null ) => Promise<Subject | null>;
+		type SubjectCreator = ( schemaName: string, label: string | null ) => Promise<SubjectWithContext | null>;
 
-		function creatorReturning( subject: Subject | null ): Mock<SubjectCreator> {
+		function creatorReturning( subject: SubjectWithContext | null ): Mock<SubjectCreator> {
 			return vi.fn<SubjectCreator>().mockResolvedValue( subject );
 		}
 
@@ -591,7 +592,7 @@ describe( 'SubjectPicker', () => {
 		// answers only for the Schema it was asked about, as the editor does.
 		function hostOffering(
 			create: Mock<SubjectCreator>,
-			drafts: Ref<readonly Subject[]> = shallowRef( [] ),
+			drafts: Ref<readonly SubjectWithContext[]> = shallowRef( [] ),
 		): SubjectCreation {
 			return {
 				// What the editor creates joins its drafts, which is the only place a name for such a
@@ -787,7 +788,7 @@ describe( 'SubjectPicker', () => {
 		} );
 
 		it( 'creates a Subject of the target Schema named after the typed text', async () => {
-			const create = creatorReturning( createdSubject( 'Widget X', 'Widget X' ) );
+			const create = creatorReturning( createdSubject( 'Widget X' ) );
 			const wrapper = await createWrapperOffering( hostOffering( create ), { targetSchema: 'Company' } );
 
 			await type( wrapper, 'Widget X' );
@@ -797,7 +798,7 @@ describe( 'SubjectPicker', () => {
 		} );
 
 		it( 'trims the typed text before naming the new Subject', async () => {
-			const create = creatorReturning( createdSubject( 'Widget X', 'Widget X' ) );
+			const create = creatorReturning( createdSubject( 'Widget X' ) );
 			const wrapper = await createWrapperOffering( hostOffering( create ) );
 
 			await type( wrapper, '  Widget X  ' );
@@ -807,7 +808,7 @@ describe( 'SubjectPicker', () => {
 		} );
 
 		it( 'leaves the new Subject unnamed when nothing was typed', async () => {
-			const create = creatorReturning( createdSubject( null, 'Product' ) );
+			const create = creatorReturning( createdSubject( null ) );
 			const wrapper = await createWrapperOffering( hostOffering( create ) );
 
 			await chooseLastMenuItem( wrapper );
@@ -816,7 +817,7 @@ describe( 'SubjectPicker', () => {
 		} );
 
 		it( 'leaves the new Subject unnamed when only whitespace was typed', async () => {
-			const create = creatorReturning( createdSubject( null, 'Product' ) );
+			const create = creatorReturning( createdSubject( null ) );
 			const wrapper = await createWrapperOffering( hostOffering( create ) );
 
 			await type( wrapper, '   ' );
@@ -826,7 +827,7 @@ describe( 'SubjectPicker', () => {
 		} );
 
 		it( 'reports no selection while the Subject is still being created', async () => {
-			const neverSettles = vi.fn<SubjectCreator>().mockReturnValue( new Promise<Subject | null>( () => {
+			const neverSettles = vi.fn<SubjectCreator>().mockReturnValue( new Promise<SubjectWithContext | null>( () => {
 				// Left in flight, so the picker is observed while the creation is still running.
 			} ) );
 			const wrapper = await createWrapperOffering( hostOffering( neverSettles ) );
@@ -838,7 +839,7 @@ describe( 'SubjectPicker', () => {
 
 		it( 'reports the created Subject as the selection', async () => {
 			const wrapper = await createWrapperOffering(
-				hostOffering( creatorReturning( createdSubject( 'Widget X', 'Widget X' ) ) ),
+				hostOffering( creatorReturning( createdSubject( 'Widget X' ) ) ),
 			);
 
 			await type( wrapper, 'Widget X' );
@@ -849,7 +850,7 @@ describe( 'SubjectPicker', () => {
 
 		it( 'shows the display name of the created Subject in the field', async () => {
 			const wrapper = await createWrapperOffering(
-				hostOffering( creatorReturning( createdSubject( null, 'Product' ) ) ),
+				hostOffering( creatorReturning( createdSubject( null ) ) ),
 			);
 
 			await chooseLastMenuItem( wrapper );
@@ -878,7 +879,7 @@ describe( 'SubjectPicker', () => {
 		// A Subject created here has not been written yet, so nothing can look it up.
 		it( 'keeps showing the created Subject once the host commits it, without looking it up', async () => {
 			const wrapper = await createWrapperOffering(
-				hostOffering( creatorReturning( createdSubject( 'Widget X', 'Widget X' ) ) ),
+				hostOffering( creatorReturning( createdSubject( 'Widget X' ) ) ),
 			);
 
 			await type( wrapper, 'Widget X' );
@@ -891,10 +892,10 @@ describe( 'SubjectPicker', () => {
 		} );
 
 		it( 'keeps a creation that lands after the field was cleared', async () => {
-			let finishCreating: ( subject: Subject ) => void;
+			let finishCreating: ( subject: SubjectWithContext ) => void;
 			const create = vi.fn<SubjectCreator>().mockReturnValue(
-				new Promise<Subject | null>( ( resolve ) => {
-					finishCreating = resolve as ( subject: Subject ) => void;
+				new Promise<SubjectWithContext | null>( ( resolve ) => {
+					finishCreating = resolve as ( subject: SubjectWithContext ) => void;
 				} ),
 			);
 			const wrapper = await createWrapperOffering( hostOffering( create ) );
@@ -902,16 +903,16 @@ describe( 'SubjectPicker', () => {
 			await chooseLastMenuItem( wrapper );
 
 			await type( wrapper, '' );
-			finishCreating!( createdSubject( 'Widget Co', 'Widget Co' ) );
+			finishCreating!( createdSubject( 'Widget Co' ) );
 			await flushPromises();
 
 			expect( wrapper.emitted( 'update:selected' ) ).toEqual( [ [ 's1demo1aaaaaaa1' ] ] );
 		} );
 
 		it( 'abandons a creation that lands after another Subject has been selected', async () => {
-			let finishCreation: ( subject: Subject | null ) => void;
+			let finishCreation: ( subject: SubjectWithContext | null ) => void;
 			const create = vi.fn<SubjectCreator>().mockReturnValue(
-				new Promise<Subject | null>( ( resolve ) => {
+				new Promise<SubjectWithContext | null>( ( resolve ) => {
 					finishCreation = resolve;
 				} ),
 			);
@@ -922,7 +923,7 @@ describe( 'SubjectPicker', () => {
 
 			await type( wrapper, 'acme' );
 			await chooseFirstMenuItem( wrapper );
-			finishCreation!( createdSubject( 'Widget X', 'Widget X' ) );
+			finishCreation!( createdSubject( 'Widget X' ) );
 			await flushPromises();
 
 			expect( wrapper.emitted( 'update:selected' ) ).toEqual( [ [ 's1demo5sssssss1' ] ] );
@@ -1011,8 +1012,8 @@ describe( 'SubjectPicker', () => {
 
 		describe( 'with Subjects invented earlier in the session', () => {
 			// Shallow, so the Subjects keep their type: ref() unwraps a class into a bare object.
-			function draftsHolding( ...drafts: Subject[] ): Ref<readonly Subject[]> {
-				return shallowRef<readonly Subject[]>( drafts );
+			function draftsHolding( ...drafts: SubjectWithContext[] ): Ref<readonly SubjectWithContext[]> {
+				return shallowRef<readonly SubjectWithContext[]>( drafts );
 			}
 
 			it( 'lists the session drafts of its own Schema above the search results', async () => {
@@ -1032,9 +1033,7 @@ describe( 'SubjectPicker', () => {
 			// which the user can edit and which feeds the offer to create under what they typed.
 			// Marking it would put "(unnamed Company)" on the way into a stored label.
 			it( 'names a label-less draft bare, without the generated-name marker', async () => {
-				const drafts = draftsHolding(
-					new Subject( new SubjectId( DRAFT_ID ), null, 'Company', true, 'Company', new StatementList( [] ) ),
-				);
+				const drafts = draftsHolding( unnamedSubject( DRAFT_ID, 'Company' ) );
 				const wrapper = await createWrapperOffering(
 					hostOffering( creatorReturning( null ), drafts ),
 					{ targetSchema: 'Company' },

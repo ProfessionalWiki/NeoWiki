@@ -20,14 +20,14 @@ import UnsavedDot from '@/components/common/UnsavedDot.vue';
 import type { NeoTreeItem } from '@/components/common/NeoTree/NeoTreeModel.ts';
 import { nodeFor, walkSubjectTree } from './SubjectTreeWalk.ts';
 import type { SubjectTreeWalkResult, WalkNode } from './SubjectTreeWalk.ts';
-import { Subject } from '@/domain/Subject.ts';
+import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 const props = defineProps<{
-	rootSubject: Subject;
+	rootSubject: SubjectWithContext;
 	rootSchema: Schema;
 	openIds: readonly string[];
 	activeId: string;
@@ -35,7 +35,7 @@ const props = defineProps<{
 	// The editor's client copies, preferred by the walk over rootSubject and over anything
 	// fetched, so a relation picked but not yet saved has a node. Only their relation
 	// statements are current; nothing here may be saved or validated from.
-	editedSubjects: ReadonlyMap<string, Subject>;
+	editedSubjects: ReadonlyMap<string, SubjectWithContext>;
 }>();
 
 const emit = defineEmits<{
@@ -47,7 +47,7 @@ const schemaRepository = NeoWikiServices.getSchemaRepository();
 
 // Shallow, so a .set() from a landing fetch re-triggers the `walk` computed below without
 // proxying what the Maps hold.
-const resolvedSubjects = shallowReactive( new Map<string, Subject>() );
+const resolvedSubjects = shallowReactive( new Map<string, SubjectWithContext>() );
 const resolvedSchemas = shallowReactive( new Map<string, Schema>() );
 
 // Non-reactive: an in-flight guard must not re-trigger the walk.
@@ -94,8 +94,8 @@ async function resolveSchema( name: string ): Promise<void> {
 const walk = computed( (): SubjectTreeWalkResult => walkSubjectTree( {
 	rootSubject: props.rootSubject,
 	rootSchema: props.rootSchema,
-	editedSubject: ( id: string ): Subject | undefined => props.editedSubjects.get( id ),
-	fetchedSubject: ( id: string ): Subject | undefined => resolvedSubjects.get( id ),
+	editedSubject: ( id: string ): SubjectWithContext | undefined => props.editedSubjects.get( id ),
+	fetchedSubject: ( id: string ): SubjectWithContext | undefined => resolvedSubjects.get( id ),
 	fetchedSchema: ( name: string ): Schema | undefined => resolvedSchemas.get( name )
 } ) );
 

@@ -33,11 +33,10 @@ const $i18n = createI18nMock();
 const defaultSubject = new SubjectWithContext(
 	new SubjectId( 's11111111111111' ),
 	'Test Subject',
-	'Test Subject',
-	false,
 	'TestSchema',
 	new StatementList( [] ),
 	new PageIdentifiers( 42, 'Test page' ),
+	false,
 );
 
 const defaultSchema = newSchema();
@@ -48,16 +47,15 @@ const schemaWithNameAndAge = new Schema(
 	new PropertyDefinitionList( [ newTextProperty( { name: 'Name' } ), newNumberProperty( { name: 'Age' } ) ] ),
 );
 
-// Stores no label (ADR 31), so its name on screen is the server's derived one: here the
-// page it is the Main Subject of.
+// Stores no label (ADR 31), so its name on screen is derived: here the page it is the Main
+// Subject of.
 const labellessSubject = new SubjectWithContext(
 	new SubjectId( 's11111111111111' ),
 	null,
-	'Test page',
-	false,
 	'TestSchema',
 	new StatementList( [] ),
 	new PageIdentifiers( 42, 'Test page' ),
+	true,
 );
 
 // Stores no label and is not a page's Main Subject, so the name it is shown under is its
@@ -66,24 +64,22 @@ const schemaNamedSubject = new SubjectWithContext(
 	new SubjectId( 's33333333333333' ),
 	null,
 	'TestSchema',
-	true,
-	'TestSchema',
 	new StatementList( [] ),
 	new PageIdentifiers( 42, 'Test page' ),
+	false,
 );
 
 const subjectWithOnlyName = new SubjectWithContext(
 	new SubjectId( 's11111111111111' ),
 	'Test Subject',
-	'Test Subject',
-	false,
 	'TestSchema',
 	new StatementList( [ new Statement( new PropertyName( 'Name' ), TextType.typeName, newStringValue( 'Alice' ) ) ] ),
 	new PageIdentifiers( 42, 'Test page' ),
+	false,
 );
 
 interface MountPaneOptions {
-	subject?: Subject;
+	subject?: SubjectWithContext;
 	schema?: Schema;
 	nested?: boolean;
 	isNew?: boolean;
@@ -125,7 +121,7 @@ function mountPane( {
 
 // A client-held copy of subjectWithOnlyName with its own label and Name value, so an
 // assertion can tell which copy the form is showing.
-function namedCopy( label: string, name: string ): Subject {
+function namedCopy( label: string, name: string ): SubjectWithContext {
 	return subjectWithOnlyName
 		.withLabel( label )
 		.withStatements( new StatementList( [
@@ -148,8 +144,6 @@ const relationSchema = new Schema(
 const subjectWithAuthor = new SubjectWithContext(
 	new SubjectId( 's11111111111111' ),
 	'Test Subject',
-	'Test Subject',
-	false,
 	'TestSchema',
 	new StatementList( [ new Statement(
 		new PropertyName( 'Author' ),
@@ -157,6 +151,7 @@ const subjectWithAuthor = new SubjectWithContext(
 		new RelationValue( [ newRelation( undefined, 's22222222222222' ) ] ),
 	) ] ),
 	new PageIdentifiers( 42, 'Test page' ),
+	false,
 );
 
 describe( 'SubjectEditPane', () => {

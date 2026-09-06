@@ -3,7 +3,7 @@
 // relation statements, kept out of the dialog so they can be answered without mounting it.
 
 import { relationTargetsOf } from './SubjectTreeModel.ts';
-import type { Subject } from '@/domain/Subject.ts';
+import type { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import type { Schema } from '@/domain/Schema.ts';
 
 /**
@@ -12,7 +12,7 @@ import type { Schema } from '@/domain/Schema.ts';
  */
 export interface HeldSubject {
 	id: string;
-	subject: Subject;
+	subject: SubjectWithContext;
 	schema: Schema;
 	isNew: boolean;
 }

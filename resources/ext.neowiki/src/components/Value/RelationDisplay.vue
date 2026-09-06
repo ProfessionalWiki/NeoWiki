@@ -53,7 +53,7 @@ function getDisplayedValues( value: Value | undefined ): RelationDisplayValueDat
 	return value.relations.map( ( relation: Relation ): RelationDisplayValueData => {
 		let subject: SubjectWithContext | undefined;
 		try {
-			subject = subjectStore.getSubject( relation.target ) as SubjectWithContext;
+			subject = subjectStore.getSubject( relation.target );
 			if ( !subject ) {
 				return getInvalidValueDisplay(
 					relation.target.text,

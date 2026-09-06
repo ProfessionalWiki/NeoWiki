@@ -15,7 +15,6 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
@@ -123,11 +122,10 @@ readonly class GetPageSubjectsQuery {
 			}
 
 			// A target lives on a page of its own, so whether it is that page's Main Subject has to
-			// be asked rather than known: one page read per distinct target page, and none for a
-			// target whose stored label makes the question moot.
+			// be asked rather than known: one page read per distinct target page.
 			$targetPageId = $pageIdentifiers->getId();
 
-			if ( $referencedSubject->getLabel() === null && !array_key_exists( $targetPageId->id, $mainSubjectIds ) ) {
+			if ( !array_key_exists( $targetPageId->id, $mainSubjectIds ) ) {
 				$mainSubjectIds[$targetPageId->id] = $this->subjectRepository
 					->getSubjectsByPageId( $targetPageId )
 					->getMainSubject()
@@ -152,11 +150,8 @@ readonly class GetPageSubjectsQuery {
 		return GetSubjectResponseItem::fromSubject(
 			$subject,
 			$pageIdentifiers,
-			SubjectDisplayName::labelOrPageName(
-				label: $subject->getLabel(),
-				isMainSubject: $isMainSubject,
-				pageName: $pageIdentifiers?->getTitle() ?? ''
-			)
+			$isMainSubject,
+			$pageIdentifiers?->getTitle() ?? ''
 		);
 	}
 

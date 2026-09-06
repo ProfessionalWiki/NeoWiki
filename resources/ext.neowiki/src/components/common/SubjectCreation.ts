@@ -1,5 +1,5 @@
 import type { InjectionKey } from 'vue';
-import type { Subject } from '@/domain/Subject';
+import type { SubjectWithContext } from '@/domain/SubjectWithContext';
 
 /**
  * How a host lets a picker invent a Subject the wiki does not hold yet, and reach the ones it has
@@ -13,14 +13,14 @@ export interface SubjectCreation {
 	 * when they typed none. Resolves to null when the host refused or the creation failed; the host
 	 * reports that failure itself.
 	 */
-	create( schemaName: string, label: string | null ): Promise<Subject | null>;
+	create( schemaName: string, label: string | null ): Promise<SubjectWithContext | null>;
 
 	/**
 	 * The Subjects of the given Schema this editing session has invented, as they currently stand:
 	 * no search can return them, because the server has never been told they exist, and their names
 	 * follow the editor rather than any stored value. Read inside a computed to track renames.
 	 */
-	drafts( schemaName: string ): readonly Subject[];
+	drafts( schemaName: string ): readonly SubjectWithContext[];
 
 }
 

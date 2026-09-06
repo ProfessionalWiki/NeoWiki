@@ -21,7 +21,7 @@
 			</h3>
 
 			<div
-				v-if="pageName !== null"
+				v-if="pageName !== ''"
 				class="ext-neowiki-subject-edit-pane__storage"
 			>
 				<I18nSlot message-key="neowiki-subject-editor-stored-on">
@@ -53,15 +53,17 @@
 </template>
 
 <script lang="ts">
+import type { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+
 export interface SubjectEditPaneExposes {
 	hasChanged: boolean;
 	label: string;
 	// Refreshed on relation changes alone, so its other statements lag: read it for the
 	// tree, never to save or validate from.
-	editedSubject: Subject;
+	editedSubject: SubjectWithContext;
 	setLabel: ( value: string ) => void;
 	resetChanged: () => void;
-	buildUpdatedSubject: () => Subject | null;
+	buildUpdatedSubject: () => SubjectWithContext | null;
 	setServerViolations: ( violations: readonly SubjectViolation[] ) => void;
 	unparseableInput: () => UnparseableInput | null;
 	flushValidation: () => Promise<void>;
@@ -78,9 +80,7 @@ import { subjectLabelPlaceholder } from '@/presentation/subjectLabelPlaceholder.
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import EditableText from '@/components/common/EditableText.vue';
 import { StatementList } from '@/domain/StatementList.ts';
-import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
-import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
@@ -92,7 +92,7 @@ import { withoutMissingValueViolations, withoutUnsavedTargetViolations, type Sub
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 
 const props = defineProps<{
-	subject: Subject;
+	subject: SubjectWithContext;
 	schema: Schema;
 	nested?: boolean;
 	// A Subject this editing session invented, which the server has never seen. It is validated
@@ -117,7 +117,7 @@ const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 // Refreshed when a relation field changes and on nothing else: the tree is its only
 // consumer and reads only relation statements, and harvesting per keystroke would re-walk
 // the tree per character. Its other statements therefore lag; never save or validate from it.
-const editedSubject = shallowRef<Subject>( props.subject );
+const editedSubject = shallowRef<SubjectWithContext>( props.subject );
 
 function handleRelationChange(): void {
 	editedSubject.value = buildUpdatedSubject() ?? props.subject;
@@ -129,14 +129,11 @@ const storedLabel = computed( (): string | null => enteredSubjectLabel( label.va
 
 const paneName = computed( (): string => storedLabel.value ?? subjectDisplayName( props.subject ) );
 
-const pageName = computed( (): string | null =>
-	props.subject instanceof SubjectWithContext ?
-		props.subject.getPageIdentifiers().getPageName() :
-		null
-);
+// Empty when the Subject's hosting page could not be resolved, which leaves nothing to name.
+const pageName = computed( (): string => props.subject.getPageIdentifiers().getPageName() );
 
 const pageUrl = computed( (): string =>
-	pageName.value === null ? '' : mw.util.getUrl( pageName.value )
+	pageName.value === '' ? '' : mw.util.getUrl( pageName.value )
 );
 
 const labelPlaceholder = computed( (): string => subjectLabelPlaceholder( props.subject ) );
@@ -252,7 +249,7 @@ watch( () => props.subject, ( newSubject ) => {
 	editedSubject.value = newSubject;
 } );
 
-function buildUpdatedSubject(): Subject | null {
+function buildUpdatedSubject(): SubjectWithContext | null {
 	if ( !subjectEditorRef.value ) {
 		return null;
 	}

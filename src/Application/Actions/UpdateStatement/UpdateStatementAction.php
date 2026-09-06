@@ -22,7 +22,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Validation\ViolationDiff;
@@ -212,7 +211,8 @@ readonly class UpdateStatementAction {
 		return GetSubjectResponseItem::fromSubject(
 			$subject,
 			$pageIdentifiers,
-			SubjectDisplayName::labelOrPageNameIn( $subject, $pageSubjects, $pageIdentifiers->getTitle() )
+			$pageSubjects->isMainSubject( $subject->getId() ),
+			$pageIdentifiers->getTitle()
 		);
 	}
 

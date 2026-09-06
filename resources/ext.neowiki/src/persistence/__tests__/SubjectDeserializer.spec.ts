@@ -19,7 +19,7 @@ describe( 'SubjectDeserializer', () => {
 			id: 's13333333333337',
 			label: 'SubjectDeserializer',
 			displayName: 'SubjectDeserializer',
-			displayNameIsGenerated: false,
+			isMainSubject: true,
 			schema: 'SDSchema',
 			statements: {},
 			pageId: 42,
@@ -31,52 +31,34 @@ describe( 'SubjectDeserializer', () => {
 		expect( subject ).toEqual( new SubjectWithContext(
 			new SubjectId( 's13333333333337' ),
 			'SubjectDeserializer',
-			'SubjectDeserializer',
-			false,
 			'SDSchema',
 			new StatementList( [] ),
 			new PageIdentifiers( 42, 'SDPageTitle' ),
+			true,
 		) );
 	} );
 
-	it( 'carries the server\'s generated-name verdict through to the Subject', () => {
+	it( 'takes the main-subject fact from the response', () => {
 		const json = {
 			id: 's13333333333337',
 			label: null,
-			displayName: 'SDSchema',
-			displayNameIsGenerated: true,
+			displayName: 'SDPageTitle',
+			isMainSubject: true,
 			schema: 'SDSchema',
 			statements: {},
 			pageId: 42,
 			pageTitle: 'SDPageTitle',
 		};
 
-		expect( deserializer.deserialize( json ).hasGeneratedDisplayName() ).toBe( true );
+		expect( deserializer.deserialize( json ).getChosenName() ).toBe( 'SDPageTitle' );
 	} );
 
-	// A name the server reports as chosen must not be marked, even where it equals the Schema name:
-	// a Main Subject on a page titled after its Schema is the case a client cannot work out alone.
-	it( 'does not invent a generated verdict for a name equal to the schema name', () => {
+	it( 'deserializes a Subject without a label', () => {
 		const json = {
 			id: 's13333333333337',
 			label: null,
 			displayName: 'SDSchema',
-			displayNameIsGenerated: false,
-			schema: 'SDSchema',
-			statements: {},
-			pageId: 42,
-			pageTitle: 'SDSchema',
-		};
-
-		expect( deserializer.deserialize( json ).hasGeneratedDisplayName() ).toBe( false );
-	} );
-
-	it( 'deserializes a Subject without a label, keeping the display name the server derived', () => {
-		const json = {
-			id: 's13333333333337',
-			label: null,
-			displayName: 'SDPageTitle',
-			displayNameIsGenerated: false,
+			isMainSubject: false,
 			schema: 'SDSchema',
 			statements: {},
 			pageId: 42,
@@ -86,7 +68,7 @@ describe( 'SubjectDeserializer', () => {
 		const subject = deserializer.deserialize( json );
 
 		expect( subject.getLabel() ).toBeNull();
-		expect( subject.getDisplayName() ).toBe( 'SDPageTitle' );
+		expect( subject.getChosenName() ).toBeNull();
 	} );
 
 	it( 'deserializes Subject with Statements', () => {
@@ -94,7 +76,7 @@ describe( 'SubjectDeserializer', () => {
 			id: 's13333333333337',
 			label: 'SubjectDeserializer',
 			displayName: 'SubjectDeserializer',
-			displayNameIsGenerated: false,
+			isMainSubject: true,
 			schema: 'SDSchema',
 			statements: {
 				Property1: {
@@ -115,14 +97,13 @@ describe( 'SubjectDeserializer', () => {
 		expect( subject ).toEqual( new SubjectWithContext(
 			new SubjectId( 's13333333333337' ),
 			'SubjectDeserializer',
-			'SubjectDeserializer',
-			false,
 			'SDSchema',
 			new StatementList( [
 				new Statement( new PropertyName( 'Property1' ), TextType.typeName, newStringValue( 'foo' ) ),
 				new Statement( new PropertyName( 'Property2' ), NumberType.typeName, newNumberValue( 1337 ) ),
 			] ),
 			new PageIdentifiers( 42, 'SDPageTitle' ),
+			true,
 		) );
 	} );
 

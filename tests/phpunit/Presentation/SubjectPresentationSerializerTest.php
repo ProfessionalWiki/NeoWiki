@@ -18,7 +18,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 			id: 's1demo1aaaaaaa1',
 			label: 'ACME Corp',
 			displayName: 'ACME Corp',
-			displayNameIsGenerated: false,
+			isMainSubject: true,
 			schemaName: 'Organization',
 			statements: [ 'Animal' => [ 'propertyType' => 'text', 'value' => [ 'bunny' ] ] ],
 			pageId: $pageId,
@@ -33,7 +33,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 				'id' => 's1demo1aaaaaaa1',
 				'label' => 'ACME Corp',
 				'displayName' => 'ACME Corp',
-				'displayNameIsGenerated' => false,
+				'isMainSubject' => true,
 				'schema' => 'Organization',
 				'pageId' => 42,
 				'pageTitle' => 'Help:Bunnies',
@@ -50,7 +50,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 				'id' => 's1demo1aaaaaaa1',
 				'label' => 'ACME Corp',
 				'displayName' => 'ACME Corp',
-				'displayNameIsGenerated' => false,
+				'isMainSubject' => true,
 				'schema' => 'Organization',
 				'statements' => [ 'Animal' => [ 'propertyType' => 'text', 'value' => [ 'bunny' ] ] ],
 			],
@@ -59,15 +59,15 @@ class SubjectPresentationSerializerTest extends TestCase {
 	}
 
 	/**
-	 * A display name that fell back to the Schema name is reported as generated, so a client can say
-	 * so instead of presenting it as a name someone wrote. It cannot tell from the name itself.
+	 * The stored label travels as null beside the name a client would otherwise have to derive, and
+	 * beside the main-subject fact it would derive that name from.
 	 */
 	public function testSerializesAnAbsentLabelAsNullBesideTheDisplayName(): void {
 		$item = new GetSubjectResponseItem(
 			id: 's1demo1aaaaaaa1',
 			label: null,
 			displayName: 'Organization',
-			displayNameIsGenerated: true,
+			isMainSubject: false,
 			schemaName: 'Organization',
 			statements: [],
 			pageId: null,
@@ -80,7 +80,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 				'id' => 's1demo1aaaaaaa1',
 				'label' => null,
 				'displayName' => 'Organization',
-				'displayNameIsGenerated' => true,
+				'isMainSubject' => false,
 				'schema' => 'Organization',
 				'statements' => [],
 			],

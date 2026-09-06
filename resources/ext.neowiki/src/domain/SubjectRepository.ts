@@ -1,18 +1,16 @@
 import { SubjectId } from '@/domain/SubjectId';
 import type { SubjectLookup } from '@/domain/SubjectLookup';
-import { InMemorySubjectLookup } from '@/domain/SubjectLookup';
 import type { StatementList } from '@/domain/StatementList';
 import type { Schema, SchemaName } from '@/domain/Schema';
 import { PageSubjects } from '@/domain/PageSubjects';
-import type { Subject } from '@/domain/Subject';
 import { SubjectWithContext } from '@/domain/SubjectWithContext';
 import { PageIdentifiers } from '@/domain/PageIdentifiers';
 import type { DeserializedPageSubjects } from '@/persistence/PageSubjectsDeserializer';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 
 export interface SubjectWithReferencedSubjects {
-	requestedSubject: Subject;
-	referencedSubjects: Subject[];
+	requestedSubject: SubjectWithContext;
+	referencedSubjects: SubjectWithContext[];
 }
 
 /**
@@ -36,6 +34,12 @@ export interface SubjectWriteResult {
 }
 
 export interface SubjectRepository extends SubjectLookup {
+
+	/**
+	 * Everything a repository answers with carries the page context the server resolved, which is
+	 * what names a Subject with no label of its own.
+	 */
+	getSubject( id: SubjectId ): Promise<SubjectWithContext>;
 
 	/**
 	 * Returns the Subject together with the Subjects its relations target,
@@ -105,14 +109,39 @@ export interface SubjectRepository extends SubjectLookup {
 
 }
 
-export class StubSubjectRepository extends InMemorySubjectLookup implements SubjectRepository {
+export class StubSubjectRepository implements SubjectRepository {
+
+	protected readonly subjects: Map<string, SubjectWithContext> = new Map();
+
+	public constructor( subjects: SubjectWithContext[] ) {
+		for ( const subject of subjects ) {
+			this.subjects.set( subject.getId().text, subject );
+		}
+	}
+
+	public async getSubject( id: SubjectId ): Promise<SubjectWithContext> {
+		const subject = this.subjects.get( id.text );
+
+		if ( subject === undefined ) {
+			throw new Error( `Subject with id ${ id.text } not found` );
+		}
+
+		return subject;
+	}
+
+	public clearSubjects(): void {
+		this.subjects.clear();
+	}
 
 	public async getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectWithReferencedSubjects> {
 		const subject = await this.getSubject( id );
+		const referenced = await subject.getReferencedSubjects( this );
 
 		return {
 			requestedSubject: subject,
-			referencedSubjects: [ ...await subject.getReferencedSubjects( this ) ],
+			// Re-read rather than taken from the map the lookup built, which is typed as the
+			// interface promises rather than as this class stores them.
+			referencedSubjects: await Promise.all( [ ...referenced ].map( ( target ) => this.getSubject( target.getId() ) ) ),
 		};
 	}
 
@@ -164,7 +193,7 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 	): SubjectWriteResult {
 		return {
 			subjectId: id,
-			subject: new SubjectWithContext( id, label, label ?? schemaName, label === null, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ) ),
+			subject: new SubjectWithContext( id, label, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ), false ),
 			schema: null,
 		};
 	}

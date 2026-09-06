@@ -7,22 +7,27 @@ namespace ProfessionalWiki\NeoWiki\Application\Queries\GetSubject;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 
 readonly class GetSubjectResponseItem {
 
 	public function __construct(
 		public string $id,
 		/**
-		 * The stored label, absent on a Subject that has none. Read $displayName to show a Subject.
+		 * The stored label, absent on a Subject that has none.
 		 */
 		public ?string $label,
+		/**
+		 * The name to show, for clients that would rather not derive it.
+		 */
 		public string $displayName,
 		/**
-		 * Whether $displayName fell back to the Schema name, which is the one name nobody chose. A
-		 * client cannot derive it by comparing $displayName with the Schema name: a Main Subject on a
-		 * page titled after its Schema matches too, and that name was chosen.
+		 * Whether the hosting page treats this Subject as its own topic, which is what decides
+		 * the name of a Subject without a label. Together with $label and $pageTitle it is what a
+		 * client needs to derive that name itself. It cannot be read off $displayName: a Main
+		 * Subject on a page titled after its Schema is named its Schema name too.
 		 */
-		public bool $displayNameIsGenerated,
+		public bool $isMainSubject,
 		public string $schemaName,
 		/**
 		 * @var array<string, mixed>
@@ -38,20 +43,25 @@ readonly class GetSubjectResponseItem {
 	 * Null page identifiers leave the page fields unset, which is how a Subject whose hosting page
 	 * cannot be resolved, or whose identifiers were not requested, is represented.
 	 *
-	 * The name someone chose is passed in rather than derived here, because only the caller holding
-	 * the page knows whether the Subject is its Main Subject. Null means nobody chose one, which is
-	 * what makes the name and the verdict on it one answer rather than two that could disagree.
+	 * $pageName is a parameter of its own because a caller that withholds the identifiers from the
+	 * response still names the Subject from them.
 	 */
 	public static function fromSubject(
 		Subject $subject,
 		?PageIdentifiers $pageIdentifiers,
-		?string $chosenName
+		bool $isMainSubject,
+		string $pageName
 	): self {
 		return new self(
 			id: $subject->id->text,
 			label: $subject->getLabel()?->text,
-			displayName: $chosenName ?? $subject->getSchemaName()->getText(),
-			displayNameIsGenerated: $chosenName === null,
+			displayName: SubjectDisplayName::forSubject(
+				$subject->getLabel(),
+				$isMainSubject,
+				$pageName,
+				$subject->getSchemaName()
+			),
+			isMainSubject: $isMainSubject,
 			schemaName: $subject->getSchemaName()->getText(),
 			statements: self::arrayifyStatements( $subject->getStatements() ),
 			pageId: $pageIdentifiers?->getId()->id,
