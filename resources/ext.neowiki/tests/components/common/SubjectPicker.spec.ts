@@ -84,7 +84,7 @@ describe( 'SubjectPicker', () => {
 	}
 
 	function labellessSubject( id: string, displayName: string, schemaName: string ): Subject {
-		return new Subject( new SubjectId( id ), null, displayName, schemaName, new StatementList( [] ) );
+		return new Subject( new SubjectId( id ), null, displayName, false, schemaName, new StatementList( [] ) );
 	}
 
 	function wikiHolds( subject: Subject ): void {
