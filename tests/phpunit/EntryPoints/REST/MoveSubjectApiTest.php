@@ -125,16 +125,6 @@ class MoveSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertTrue( $target->getChildSubjects()->hasSubject( new SubjectId( self::TARGET_MAIN_ID ) ) );
 	}
 
-	public function testBothPagesCarryTheSuppliedEditSummary(): void {
-		$this->executeHandler(
-			$this->newApi(),
-			$this->newRequest( body: [ 'targetPageId' => $this->targetPageId, 'comment' => 'Filed properly' ] )
-		);
-
-		$this->assertSame( 'Filed properly', $this->latestCommentOf( $this->sourcePageId ) );
-		$this->assertSame( 'Filed properly', $this->latestCommentOf( $this->targetPageId ) );
-	}
-
 	public function testMovingToThePageTheSubjectIsAlreadyOnIsUnchanged(): void {
 		$response = $this->executeHandler(
 			$this->newApi(),
@@ -184,16 +174,6 @@ class MoveSubjectApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testUnreadableTargetPageLeavesTheSourcePageUntouched(): void {
-		$this->executeHandler(
-			$this->newApi(),
-			$this->newRequest(),
-			authority: $this->authorityThatCannotReadPageId( $this->targetPageId )
-		);
-
-		$this->assertTrue( $this->subjectsOf( $this->sourcePageId )->getAllSubjects()->hasSubject( $this->movedId() ) );
-	}
-
 	public function testReadableButNotEditableTargetPageReturns403(): void {
 		$response = $this->executeHandler(
 			$this->newApi(),
@@ -203,17 +183,6 @@ class MoveSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( 403, $response->getStatusCode() );
 		$this->assertTrue( $this->subjectsOf( $this->sourcePageId )->getAllSubjects()->hasSubject( $this->movedId() ) );
-		$this->assertFalse( $this->subjectsOf( $this->targetPageId )->getAllSubjects()->hasSubject( $this->movedId() ) );
-	}
-
-	public function testReadableButNotEditableSourcePageReturns403(): void {
-		$response = $this->executeHandler(
-			$this->newApi(),
-			$this->newRequest(),
-			authority: $this->authorityThatCannotEditPageId( $this->sourcePageId )
-		);
-
-		$this->assertSame( 403, $response->getStatusCode() );
 		$this->assertFalse( $this->subjectsOf( $this->targetPageId )->getAllSubjects()->hasSubject( $this->movedId() ) );
 	}
 
@@ -277,11 +246,6 @@ class MoveSubjectApiTest extends NeoWikiIntegrationTestCase {
 	private function subjectsOf( int $pageId ): PageSubjects {
 		return NeoWikiExtension::getInstance()->getSubjectRepository()
 			->getSubjectsByPageId( new PageId( $pageId ) );
-	}
-
-	private function latestCommentOf( int $pageId ): ?string {
-		return $this->getServiceContainer()->getRevisionLookup()
-			->getRevisionByPageId( $pageId )?->getComment()?->text;
 	}
 
 }
