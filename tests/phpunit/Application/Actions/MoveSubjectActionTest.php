@@ -280,7 +280,7 @@ class MoveSubjectActionTest extends TestCase {
 		$presenter = $this->newSpyPresenter();
 		$this->newAction( $presenter, $repository )->moveSubject( $this->newRequest() );
 
-		$this->assertTrue( $presenter->sourcePageNotFound );
+		$this->assertTrue( $presenter->subjectNotFound );
 		$this->assertFalse( $presenter->moved );
 
 		$source = $repository->getSubjectsByPageId( new PageId( self::SOURCE_PAGE_ID ) );
@@ -476,7 +476,6 @@ class MoveSubjectActionTest extends TestCase {
 			public bool $noChange = false;
 			public bool $subjectNotFound = false;
 			public bool $targetPageNotFound = false;
-			public bool $sourcePageNotFound = false;
 			public bool $alreadyOnTargetPage = false;
 			public bool $moveIncomplete = false;
 
@@ -494,10 +493,6 @@ class MoveSubjectActionTest extends TestCase {
 
 			public function presentTargetPageNotFound(): void {
 				$this->targetPageNotFound = true;
-			}
-
-			public function presentSourcePageNotFound(): void {
-				$this->sourcePageNotFound = true;
 			}
 
 			public function presentSubjectAlreadyOnTargetPage(): void {

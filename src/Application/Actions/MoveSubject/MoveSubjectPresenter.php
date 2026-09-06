@@ -14,9 +14,11 @@ interface MoveSubjectPresenter {
 	public function presentNoChange(): void;
 
 	/**
-	 * Called when no page hosts the Subject, when the page that does no longer holds it, and when
-	 * the caller may not read that page. All three take this one shape so a Subject on a hidden page
-	 * cannot be told apart from one that does not exist.
+	 * Called when no page hosts the Subject, when the page that does no longer holds it, when the
+	 * caller may not read that page, and when that page went away between the read check and its
+	 * write - by which point nothing has been written, since the source page is written first. All
+	 * four take this one shape so a Subject on a hidden page cannot be told apart from one that does
+	 * not exist.
 	 */
 	public function presentSubjectNotFound(): void;
 
@@ -27,12 +29,6 @@ interface MoveSubjectPresenter {
 	 * revisions richer.
 	 */
 	public function presentTargetPageNotFound(): void;
-
-	/**
-	 * Called when the source page went away between the read check and its write. Nothing changed:
-	 * it is the first page written, so the target page has not been touched.
-	 */
-	public function presentSourcePageNotFound(): void;
 
 	public function presentSubjectAlreadyOnTargetPage(): void;
 

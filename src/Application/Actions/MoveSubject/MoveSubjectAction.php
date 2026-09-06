@@ -139,8 +139,10 @@ readonly class MoveSubjectAction {
 		// the last word on the moved Subject's node.
 		$sourceStatus = $this->subjectRepository->savePageSubjects( $sourceSubjectsAfterMove, $sourcePageId, $request->comment );
 
+		// The source page went away under the write, which from the caller's side is the Subject
+		// going away. Nothing has been written, as the source page is written first.
 		if ( $sourceStatus->status === PageContentSavingStatus::ERROR ) {
-			$this->presenter->presentSourcePageNotFound();
+			$this->presenter->presentSubjectNotFound();
 			return;
 		}
 
