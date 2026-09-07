@@ -366,3 +366,123 @@ describe( 'SubjectStore write results', () => {
 	} );
 
 } );
+
+describe( 'SubjectStore moveSubject', () => {
+
+	const pageId = 7;
+	const targetPageId = 12;
+	const kept = newSubject( { id: 's11111111111111', pageIdentifiers: new PageIdentifiers( pageId, 'Page' ) } );
+	const moved = newSubject( { id: 's22222222222222', pageIdentifiers: new PageIdentifiers( pageId, 'Page' ) } );
+
+	beforeEach( () => {
+		setActivePinia( createPinia() );
+	} );
+
+	afterEach( () => {
+		vi.restoreAllMocks();
+	} );
+
+	it( 'passes the target page and the promotion choice to the repository', async () => {
+		const moveSubject = vi.fn().mockResolvedValue( undefined );
+		withSubjectRepository( { moveSubject, getPageSubjects: vi.fn().mockResolvedValue( {
+			pageSubjects: new PageSubjects( pageId, null, [ kept ] ),
+			referencedSubjects: [],
+			schemas: [],
+		} ) } );
+		const store = useSubjectStore();
+		store.setSubject( moved );
+		store.pageSubjects = new PageSubjects( pageId, null, [ kept, moved ] );
+
+		await store.moveSubject( moved.getId(), targetPageId, true, 'Filed properly' );
+
+		expect( moveSubject ).toHaveBeenCalledWith( moved.getId(), targetPageId, true, 'Filed properly' );
+	} );
+
+	it( 're-syncs the page listing so the moved subject leaves it', async () => {
+		const getPageSubjects = vi.fn().mockResolvedValue( {
+			pageSubjects: new PageSubjects( pageId, null, [ kept ] ),
+			referencedSubjects: [],
+			schemas: [],
+		} );
+		withSubjectRepository( { moveSubject: vi.fn().mockResolvedValue( undefined ), getPageSubjects } );
+		const store = useSubjectStore();
+		store.setSubject( kept );
+		store.setSubject( moved );
+		store.pageSubjects = new PageSubjects( pageId, null, [ kept, moved ] );
+
+		await store.moveSubject( moved.getId(), targetPageId, false );
+
+		expect( getPageSubjects ).toHaveBeenCalledWith( pageId );
+		expect( store.pageSubjects?.getSubjects() ).toEqual( [ kept ] );
+	} );
+
+	it( 'drops the registry copy, whose page context the move has just changed', async () => {
+		withSubjectRepository( {
+			moveSubject: vi.fn().mockResolvedValue( undefined ),
+			getPageSubjects: vi.fn().mockResolvedValue( {
+				pageSubjects: new PageSubjects( pageId, null, [ kept ] ),
+				referencedSubjects: [],
+				schemas: [],
+			} ),
+		} );
+		const store = useSubjectStore();
+		store.setSubject( kept );
+		store.setSubject( moved );
+		store.pageSubjects = new PageSubjects( pageId, null, [ kept, moved ] );
+
+		await store.moveSubject( moved.getId(), targetPageId, false );
+
+		expect( store.subjects.has( moved.getId().text ) ).toBe( false );
+	} );
+
+	it( 'does not refetch the page listing for a subject that page does not list', async () => {
+		const getPageSubjects = vi.fn();
+		withSubjectRepository( { moveSubject: vi.fn().mockResolvedValue( undefined ), getPageSubjects } );
+		const store = useSubjectStore();
+		store.setSubject( moved );
+		store.pageSubjects = new PageSubjects( pageId, null, [ kept ] );
+
+		await store.moveSubject( moved.getId(), targetPageId, false );
+
+		expect( getPageSubjects ).not.toHaveBeenCalled();
+	} );
+
+	it( 'keeps the registry entry when the post-move re-sync fails, so the listing stays renderable', async () => {
+		const consoleError = vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+		withSubjectRepository( {
+			moveSubject: vi.fn().mockResolvedValue( undefined ),
+			getPageSubjects: vi.fn().mockRejectedValue( new Error( 'sync failed' ) ),
+		} );
+		const store = useSubjectStore();
+		store.setSubject( kept );
+		store.setSubject( moved );
+		store.pageSubjects = new PageSubjects( pageId, null, [ kept, moved ] );
+
+		await expect( store.moveSubject( moved.getId(), targetPageId, false ) ).resolves.toBeUndefined();
+
+		// The registry invariant: every id pageSubjects lists must resolve through the throwing
+		// getSubject getter, and the failed re-sync left this one listed.
+		expect( store.subjects.has( moved.getId().text ) ).toBe( true );
+		expect( () => store.getSubject( moved.getId() ) ).not.toThrow();
+
+		consoleError.mockRestore();
+	} );
+
+	it( 'rejects without touching the listing when the move itself fails', async () => {
+		const getPageSubjects = vi.fn();
+		withSubjectRepository( {
+			moveSubject: vi.fn().mockRejectedValue( new Error( 'Subject is already on the target page' ) ),
+			getPageSubjects,
+		} );
+		const store = useSubjectStore();
+		store.setSubject( moved );
+		store.pageSubjects = new PageSubjects( pageId, null, [ kept, moved ] );
+
+		await expect( store.moveSubject( moved.getId(), targetPageId, false ) )
+			.rejects.toThrow( 'Subject is already on the target page' );
+
+		expect( getPageSubjects ).not.toHaveBeenCalled();
+		expect( store.subjects.has( moved.getId().text ) ).toBe( true );
+	} );
+
+} );

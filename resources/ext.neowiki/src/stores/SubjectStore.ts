@@ -95,35 +95,49 @@ export const useSubjectStore = defineStore( 'subject', {
 			await NeoWikiExtension.getInstance().getSubjectRepository().deleteSubject( subjectId, comment );
 			this.mutationEpoch++;
 
-			// Registry invariant: every id listed in pageSubjects must resolve via getSubject at
-			// every synchronous point, since SubjectsManagerPage's `subjects` computed maps the
-			// listing through that (throwing) getter on every render. The registry removal below
-			// must therefore wait until pageSubjects itself no longer names this id; deleting
-			// eagerly here (before the re-sync below lands) is what produced the live
-			// "Unknown subject" crash.
-			//
-			// Deletion can cascade server-side (orphaned relation stubs are swept), so re-sync the
-			// page listing from the backend rather than patching it locally.
+			// Deletion can cascade server-side (orphaned relation stubs are swept), so the listing is
+			// re-read rather than patched locally.
+			await this.dropFromRegistryOnceUnlisted( subjectId, 'deletion' );
+		},
+		/**
+		 * Moves a Subject to another page. The Subject keeps its id and goes on existing, so unlike
+		 * a deletion this only takes it out of the current page's listing. Its registry copy still
+		 * goes: that copy carries the page it used to be on, and the next read fetches it with its
+		 * new page context.
+		 */
+		async moveSubject( subjectId: SubjectId, targetPageId: number, makeMainSubject: boolean, comment?: string ): Promise<void> {
+			await NeoWikiExtension.getInstance().getSubjectRepository()
+				.moveSubject( subjectId, targetPageId, makeMainSubject, comment );
+			this.mutationEpoch++;
+
+			await this.dropFromRegistryOnceUnlisted( subjectId, 'a move' );
+		},
+		/**
+		 * Takes a Subject the backend has already removed from the current page out of the registry,
+		 * re-syncing the page listing first.
+		 *
+		 * Registry invariant: every id listed in pageSubjects must resolve via getSubject at every
+		 * synchronous point, since SubjectsManagerPage's `subjects` computed maps the listing through
+		 * that (throwing) getter on every render. So the registry entry may only go once pageSubjects
+		 * no longer names the id; dropping it eagerly is what produced the live "Unknown subject"
+		 * crash.
+		 *
+		 * The write it follows is already acknowledged, so a failed re-sync must not reject: that
+		 * would raise an error for a write that committed. The row survives instead, rendering
+		 * consistently against the stale listing, until the next successful refresh.
+		 */
+		async dropFromRegistryOnceUnlisted( subjectId: SubjectId, operation: string ): Promise<void> {
 			if ( this.pageSubjects?.getSubject( subjectId ) !== undefined ) {
 				try {
-					// The DELETE above is already acknowledged by the backend, so a failure
-					// here must not reject this action — that would surface a delete-error
-					// toast for a delete that already committed. Instead we return without
-					// touching the registry: the ghost row survives (rendering consistently
-					// against the still-stale pageSubjects) until the next successful refresh.
-					// A retry-delete will then fail against the already-missing subject with an
-					// error toast — an accepted trade-off over a broken render.
 					await this.loadPageSubjects( this.pageSubjects.getPageId() );
 				} catch ( error ) {
-					console.error( 'Failed to refresh page subjects after deletion:', error );
+					console.error( `Failed to refresh page subjects after ${ operation }:`, error );
 					return;
 				}
 
-				// loadPageSubjects has its own epoch guard (ADR 30 rule 3): if another mutation
-				// landed while the re-sync was in flight, its write-back was discarded and
-				// pageSubjects is still the stale, pre-delete listing that names this id. Leave
-				// the registry alone in that case too, for the same invariant reason as the
-				// catch above; the next successful refresh catches up.
+				// loadPageSubjects has its own epoch guard (ADR 30 rule 3): a mutation landing while
+				// the re-sync was in flight discards its write-back, leaving the stale listing that
+				// still names this id. Leave the registry alone then too.
 				if ( this.pageSubjects?.getSubject( subjectId ) !== undefined ) {
 					return;
 				}
