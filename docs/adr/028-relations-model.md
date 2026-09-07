@@ -19,7 +19,7 @@ current wiki ([#1084](https://github.com/ProfessionalWiki/NeoWiki/pull/1084)). W
 the model questions as one coherent set.
 
 Two earlier decisions left threads this one closes. [ADR 7](007-multiple-subjects-per-page.md) allowed multiple
-Subjects per page but left an automatic relation between the Main and Child Subjects open.
+Subjects per page but left an automatic relation between the Main Subject and the page's other Subjects open.
 [ADR 10](010-add-guids-to-relations.md) gave Relations stable IDs and named edge properties as roadmap.
 
 ## Decision
@@ -75,15 +75,15 @@ styling.
 
 ### Same-page relationships are schema-defined
 
-No Relation is created automatically between Subjects that share a page. A Child Subject relates to the page's Main
+No Relation is created automatically between Subjects that share a page. A Subject relates to the page's Main
 Subject only through an explicit relation property in its Schema. An unstated co-location link would carry no defined
 meaning, and the same relationship expressed across pages would then diverge from the same-page shortcut (positions in
 [#959](https://github.com/ProfessionalWiki/NeoWiki/issues/959)).
 
 The Main Subject designation stays: it anchors the automatic display and the page-topic semantics, and the
 page/document-type pattern builds on it ([#959](https://github.com/ProfessionalWiki/NeoWiki/issues/959)). Pre-filling a
-Child Subject's relation to the Main Subject during creation is editing convenience layered on this rule, not a model
-relation. This resolves the open question in [ADR 7](007-multiple-subjects-per-page.md).
+new Subject's relation to the page's Main Subject during creation is editing convenience layered on this rule, not a
+model relation. This resolves the open question in [ADR 7](007-multiple-subjects-per-page.md).
 
 ### Name a relation once, on the property
 
