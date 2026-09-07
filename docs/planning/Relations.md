@@ -1,170 +1,134 @@
 # Relations
 
-Written 2026-07-21 by Jeroen De Dauw with help from Claude Opus 4.8.
+Written 2026-07-21 by Jeroen De Dauw with help from Claude Opus 4.8; revised 2026-09-07 with help from Claude Fable 5.1.
 
-Status: Proposal for team and ECHOLOT-partner review. We are after disagreement and additions: if an open question
-below is framed wrong, or work is missing, say so.
+Status: Proposal for team and ECHOLOT-partner review. The model in ADR 28 awaits ratification, which gates the work
+marked below.
 
-Discussion: _to be opened; a maintainer will create the GitHub Discussion thread and link it here._
+Discussion: the Relations epic, [#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630).
 
-This is a proposal-stage map of the remaining work on NeoWiki Relations. The model itself — what a Relation is and the
-rules governing it — is proposed in [ADR 28: Relations Model](../adr/028-relations-model.md); this doc carries the
-landed groundwork, the open questions, and the forward map. For the concepts
-(Subject, Statement, Relation, Schema) see the [glossary](../glossary.md); for modeling qualifiers and references, see
-[Qualifiers and References](../qualifiers-and-references.md).
+The model is proposed in [ADR 28](../adr/028-relations-model.md). This doc is the work map: what exists, what is open,
+and what to build next. Concepts are in the [glossary](../glossary.md).
 
-## Where Relations stand
+## What exists
 
-A Relation is the value of a `relation`-typed Statement: `{id, target}`, where `target` is another Subject's id and
-`id` gives the edge a stable identity ([subject format](../api/subject-format.md#relation-relation),
-[graph model](../api/graph-model.md#typed-relations)). At the Schema level a relation Property Definition carries
-`relation` (the graph edge-type name), `targetSchema` (the Schema the target must use), and `multiple` (whether more
-than one target is allowed). A per-relation edge-`properties` bag also exists today; model decision 1 below removes it.
+A Relation is `{id, target}`: another Subject's id plus a stable edge identity
+([subject format](../api/subject-format.md#relations), [graph model](../api/graph-model.md#typed-relations)). A
+relation Property Definition carries `relation` (the edge-type name), `targetSchema`, and `multiple`
+([schema format](../api/schema-format.md)). An edge-`properties` bag also exists; decision 1 removes it.
 
-An integrity pass landed ahead of the model decisions: referenced-but-absent Subjects are kept as stub nodes rather
-than dropped ([#1080](https://github.com/ProfessionalWiki/NeoWiki/pull/1080)); relation targets are validated
-server-side — a `relation-target-not-found` warning, a `relation-target-schema-mismatch` error, and `single-value-only`
-([#1082](https://github.com/ProfessionalWiki/NeoWiki/pull/1082)); Neo4j uniqueness constraints are created on rebuild
-([#1083](https://github.com/ProfessionalWiki/NeoWiki/pull/1083)); target autocomplete is scoped to the current wiki
-([#1084](https://github.com/ProfessionalWiki/NeoWiki/pull/1084)); and the `expand=relations` REST response shape is
-documented ([#1085](https://github.com/ProfessionalWiki/NeoWiki/pull/1085)). Batch ID minting also landed — pre-minted
-and client-supplied Subject IDs on create ([#1101](https://github.com/ProfessionalWiki/NeoWiki/pull/1101)) — so
-interlinked imports can wire relations before their targets exist. The statement-level write API landed as well —
-`PUT`/`DELETE` on a single Statement ([#1216](https://github.com/ProfessionalWiki/NeoWiki/pull/1216), closing
-[#591](https://github.com/ProfessionalWiki/NeoWiki/issues/591)).
+- **Integrity.** Referenced-but-absent targets persist as stub nodes. Targets are validated server-side —
+  `relation-target-not-found`, `relation-target-schema-mismatch`, `single-value-only`
+  ([validation codes](../api/validation-codes.md)). Graph uniqueness constraints exist for Subjects; target
+  autocomplete is scoped to the current wiki.
+- **Editing.** The subject editor edits related Subjects in a tree and creates relation targets in place
+  ([#1323](https://github.com/ProfessionalWiki/NeoWiki/pull/1323),
+  [#1339](https://github.com/ProfessionalWiki/NeoWiki/pull/1339)). A Subject created in flow lands on the page being
+  edited and moves elsewhere keeping its id ([#1356](https://github.com/ProfessionalWiki/NeoWiki/pull/1356)). IDs can
+  be pre-minted for interlinked imports ([#1101](https://github.com/ProfessionalWiki/NeoWiki/pull/1101)); single
+  Statements are writable over REST ([#1216](https://github.com/ProfessionalWiki/NeoWiki/pull/1216)).
+- **Projection.** The ontology mapping synthesizes intermediate nodes from flat Subjects at projection time
+  ([#1229](https://github.com/ProfessionalWiki/NeoWiki/pull/1229),
+  [#1263](https://github.com/ProfessionalWiki/NeoWiki/pull/1263)). The native RDF projection reifies each Relation
+  beside its direct triple ([RDF export](../rdf/rdf-export.md)); the reification shape is decided
+  ([NativeRdfProjection.md](NativeRdfProjection.md)), the predicate name follows decision 6.
 
-## Model decisions
+## Decisions
 
-[ADR 28](../adr/028-relations-model.md) settles six questions; rationale lives there.
+[ADR 28](../adr/028-relations-model.md) proposes six answers; rationale lives there.
 
 1. **Qualify with typed Subjects, not edge properties** — the edge-`properties` bag is removed
    ([#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119)).
-2. **Keep per-relation IDs** — multiple same-type edges to one target stay legal and individually addressable
+2. **Keep per-relation IDs** — their uniqueness is not graph-enforceable over dynamic edge types
    ([#351](https://github.com/ProfessionalWiki/NeoWiki/issues/351)).
 3. **Constrain targets to one or more Schemas** — `targetSchema` widens to a list
    ([#991](https://github.com/ProfessionalWiki/NeoWiki/issues/991)).
-4. **Missing targets are red links** — legitimate forward references; a warning, not an error
+4. **Missing targets are red links** — a warning, never blocking; the UI follows
    ([#1120](https://github.com/ProfessionalWiki/NeoWiki/issues/1120)).
-5. **Same-page relationships are schema-defined** — no automatic relation between the Subjects on a page
-   ([#959](https://github.com/ProfessionalWiki/NeoWiki/issues/959)).
-6. **Name a relation once, on the property** — proposed, least settled and the item most open to feedback: key edges
-   and predicates on the property name, dropping the separate relation-type name (the status-quo case for keeping both
-   names is recorded in the epic, [#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630)).
+5. **Same-page relationships are schema-defined** — no automatic relation between the Subjects on a page; the Main
+   Subject designation stays.
+6. **Name a relation once, on the property** — the least settled decision. The naming inventory is on
+   [#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630); the outcome determines `neo:relationType` and the
+   direct RDF predicate.
+
+Ratification gates decisions 1, 3, and 6. Nothing else waits for it.
 
 ## Open questions
 
-### Nested vs flat authoring of intermediate structures
+### Where structure lives
 
-CIDOC-CRM-style intermediate nodes — a birth event; a dimension with unit, upper and lower bound, source — can be
-expressed today as Subjects of their own, on the same page or another. The open question is how they are *authored*:
+Intermediate nodes — a birth event; a dimension with unit, bounds, and source — can be flat fields that the mapping
+assembles into nodes at projection time, or Subjects of their own edited in the tree. Both paths are built; flat puts
+the coordination in the mapping, nested puts it in the editor. Open is what to recommend: which path the standard
+Schema bundles default to, and how much editor investment the nested path gets
+([OntologyMapping.md](OntologyMapping.md)).
 
-- **Route A — flat schemas, mapping synthesizes.** Schemas stay flat; the ontology mapping assembles the intermediate
-  node at RDF-projection time. Cost: the mapping must coordinate several flat fields into one shared node.
-- **Route B — Subjects as the native representation.** The intermediate nodes are real Subjects, with inline editing
-  UX that projects the structure down into a form. Cost: editor complexity and lazy-loading performance.
+### Reaching the Subjects that point here
 
-Public positions lean toward Route B ([discussion #996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996),
-[#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999)). The decision follows the neutral-person → EDM
-end-to-end projection exercise ([Person to EDM](../examples/person-to-edm.md)) rather than preceding it.
+With CIDOC-CRM-style modelling the meaningful Subjects point *at* the one being edited — a birth event references its
+person — and nothing shows or adds them from that side. For display, default-off is decided; open are the
+configuration granularity (wiki, Schema, or view) and the inverse labels, which cannot be derived from the forward name
+([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)). For editing, open are how a user adds an incoming
+relation from the target, and whether a Schema declares which incoming relation types it surfaces. Both need the
+relations endpoint ([#1324](https://github.com/ProfessionalWiki/NeoWiki/issues/1324), specified and measured; the graph
+store cannot serve it, since edges carry Relation Types that a Schema may reuse), and the where-used view
+([#1039](https://github.com/ProfessionalWiki/NeoWiki/issues/1039)) also needs
+[#1135](https://github.com/ProfessionalWiki/NeoWiki/issues/1135) fixed.
 
-### Relations in RDF
+### Page-scoped vs free-standing Subjects
 
-The native projection reifies a Relation: a direct triple plus a `neo:Relation` node preserving the relation's identity
-([RDF export](../rdf/rdf-export.md),
-[Qualifiers and References](../qualifiers-and-references.md#in-the-graph-and-in-rdf)). With edge properties removed
-(model decision 1), the reification node's only remaining job is stable relation identity. Open: whether reification
-meets the LOD community's expectations, and whether to plan an RDF-star migration
-([#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999)).
-
-### Inverse display configuration
-
-Default-off is decided — relations are stored one-directionally, and showing the inverse is a display concern. Open:
-the configuration granularity (wiki, schema, or view) and the inverse labels, which cannot be derived from the forward
-name ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)).
-
-### Inverse relations while editing
-
-Distinct from inverse display: with CIDOC-CRM-style modelling the meaningful Subjects point *at* the one being edited —
-a birth event references its person — so the subject editor offers nothing to reach or add them from. Open: how a user
-adds an incoming relation from the target's side (the sketched start is a lookup over the Schemas whose relation
-properties can target the current Schema, creating the referencing Subject with its back-reference pre-filled); whether
-a Schema marks which incoming relation types it surfaces by default (a Person surfacing its birth event, but not every
-role Subject that happens to reference a person — where that line sits is unresolved); and feasibility, which needs a
-connections-only query (relation names and targets without Subject bodies — no such endpoint exists today) benchmarked
-against high-fan-in Subjects such as a composer with a thousand compositions. The editor design for
-[#971](https://github.com/ProfessionalWiki/NeoWiki/issues/971) treats relations direction-agnostically — a referenced
-Subject sits one level down whichever way the relation points — so incoming support can later layer onto that editor
-without restructuring it ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)).
+Page-scoped dependents that live and die with their host page differ from free-standing Subjects merely stored
+there, which must outlive the page and whose home should stay knowable. Nothing
+marks which is which: deleting a page removes its Subjects (referenced ones survive as stubs), and a Subject can be
+moved on its own. Open: whether the distinction needs a mechanism — a Schema-level flag, a per-Subject flag, or
+derivation from the Subject's relations — and what deleting a page should then do to each.
 
 ### Autocomplete value sourcing
 
 With Property Definitions local to their Schema, where relation-target autocomplete draws candidates beyond
 target-Schema filtering is open ([#1122](https://github.com/ProfessionalWiki/NeoWiki/issues/1122)).
 
-### Page-scoped vs free-standing Subjects
-
-Early external feedback distinguished two kinds of Subject sharing a page: page-scoped dependents that live and die
-with their host page, and free-standing Subjects merely stored there, which must outlive the page and whose home should
-stay knowable. Nothing marks which is which: today both go with their page — deleting it removes them (referenced
-ones survive as stubs), moving it carries them along. Open: whether the distinction needs a mechanism — a Schema-level
-flag, a per-Subject flag, or derivation from the Subject's relations — and what deleting or moving a page should then
-do to each ([#959](https://github.com/ProfessionalWiki/NeoWiki/issues/959)).
-
 ### Parked
 
 Unconstrained ("any Subject") targets; cardinality beyond single/multiple; no-value / some-value markers
 ([#937](https://github.com/ProfessionalWiki/NeoWiki/issues/937)).
 
-## Forward work
+## Work
 
-### Editing
+Now:
 
-- In-flow creation and editing of relation targets ([#971](https://github.com/ProfessionalWiki/NeoWiki/issues/971)).
-  A Subject created in flow lands on the page being edited; since it keeps its id when moved
-  ([#1356](https://github.com/ProfessionalWiki/NeoWiki/pull/1356)), a wrong home is cheap to fix.
-- Red-link create affordance for missing targets ([#1120](https://github.com/ProfessionalWiki/NeoWiki/issues/1120)).
-- Main-Subject prefill as editing sugar (model decision 5).
-
-### Display
-
-- Incoming / inverse relations ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)).
-- A built-in incoming-relations section — the smallest non-Lua path to reach the Subjects that point at this one.
-- Relation hover card ([#377](https://github.com/ProfessionalWiki/NeoWiki/issues/377)).
-- Target links in the Schema view ([#519](https://github.com/ProfessionalWiki/NeoWiki/issues/519)).
-- Where-used over incoming relations ([#1039](https://github.com/ProfessionalWiki/NeoWiki/issues/1039)).
-
-### Query rendering
-
+- Renaming a relation leaves the old edge in Neo4j ([#1135](https://github.com/ProfessionalWiki/NeoWiki/issues/1135));
+  blocks the incoming-relation and where-used views.
+- Red-link rendering and create affordance for missing targets
+  ([#1120](https://github.com/ProfessionalWiki/NeoWiki/issues/1120)).
+- The relations endpoint ([#1324](https://github.com/ProfessionalWiki/NeoWiki/issues/1324)), then inverse display
+  ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)) and where-used
+  ([#1039](https://github.com/ProfessionalWiki/NeoWiki/issues/1039)).
+- Tree editor follow-ups: collapse and depth cap ([#1327](https://github.com/ProfessionalWiki/NeoWiki/issues/1327)),
+  replacing a target loses the new one ([#1358](https://github.com/ProfessionalWiki/NeoWiki/issues/1358)).
 - Relation columns in `{{#cypher}}` result tables ([#809](https://github.com/ProfessionalWiki/NeoWiki/issues/809);
-  prior analysis [LegacyNeoWiki #625](https://github.com/ProfessionalWiki/LegacyNeoWiki/issues/625)).
+  prior analysis in [LegacyNeoWiki #625](https://github.com/ProfessionalWiki/LegacyNeoWiki/issues/625)).
 
-### Cross-Source targets
+After the Subject Sources foundation ([#1265](https://github.com/ProfessionalWiki/NeoWiki/pull/1265)) lands:
 
-- v1 restricts relation targets to resolvable Sources
-  ([#1043](https://github.com/ProfessionalWiki/NeoWiki/pull/1043)); opening cross-Source relations — remote display,
-  graceful degradation — follows the [Subject Sources](SubjectSources.md) track
-  ([#993](https://github.com/ProfessionalWiki/NeoWiki/issues/993), [ADR 23](../adr/023-subject-sources.md)).
+- Rename the identifiers that still say "child subject"
+  ([#1367](https://github.com/ProfessionalWiki/NeoWiki/issues/1367)); BlueSpice needs notice first.
+- Cross-Source relation targets: #1265 restricts them to registered Sources; opening them — remote display, graceful
+  degradation — follows [Subject Sources](SubjectSources.md).
 
-### Naming
+After ADR 28 is ratified:
 
-- Rename the API and code identifiers that still say "child subject"
-  ([#1367](https://github.com/ProfessionalWiki/NeoWiki/issues/1367)).
+- Remove edge properties ([#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119)); widen `targetSchema` to a
+  list ([#991](https://github.com/ProfessionalWiki/NeoWiki/issues/991)); the decision 6 rename.
 
-## Track coordination
-
-Relations intersect three tracks in flight. [Subject Sources](SubjectSources.md)
-([ADR 23](../adr/023-subject-sources.md)) makes `(source, localId)` the reference form a relation target resolves
-through. [Ontology mapping](OntologyMapping.md) and the QLever projection synthesize intermediate nodes from relations
-in their structural tier — the nested-vs-flat question above.
-[Validation severity levels](../adr/026-validation-severity-levels.md) (ADR 26) govern the error and warning tiers of
-the new relation codes.
+Smaller, any time: pre-fill a new Subject's relation to the page's Main Subject (decision 5); relation hover card
+([#377](https://github.com/ProfessionalWiki/NeoWiki/issues/377)); target links in the Schema view
+([#519](https://github.com/ProfessionalWiki/NeoWiki/issues/519)).
 
 ## Related
 
-- ADRs: [028 relations model](../adr/028-relations-model.md) (the decisions),
+- ADRs: [028 relations model](../adr/028-relations-model.md),
   [007 multiple subjects per page](../adr/007-multiple-subjects-per-page.md),
   [010 relation IDs](../adr/010-add-guids-to-relations.md), [023 subject sources](../adr/023-subject-sources.md),
   [026 validation severity](../adr/026-validation-severity-levels.md).
-- Reference: [Qualifiers and References](../qualifiers-and-references.md), [Graph Model](../api/graph-model.md),
-  [Subject Format](../api/subject-format.md), [Validation Codes](../api/validation-codes.md).
-- Epic: [#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630).
+- [Qualifiers and References](../qualifiers-and-references.md).
