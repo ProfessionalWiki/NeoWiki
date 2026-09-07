@@ -76,6 +76,10 @@ describe( 'MoveSubjectDialog', () => {
 		return wrapper.text();
 	}
 
+	function promotionChecked( wrapper: VueWrapper ): boolean {
+		return ( wrapper.find( 'input[type="checkbox"]' ).element as HTMLInputElement ).checked;
+	}
+
 	beforeEach( () => {
 		// One pinia, shared by the test and the mounted component: two instances would leave the
 		// component using a store this test never stubbed.
@@ -159,11 +163,51 @@ describe( 'MoveSubjectDialog', () => {
 		);
 	} );
 
-	it( 'leaves the promotion unchecked by default', async () => {
+	it( 'leaves the promotion unchecked for a target page that already exists', async () => {
 		const wrapper = mountDialog();
 		await pick( wrapper, { pageId: TARGET_PAGE_ID, title: 'Rembrandt van Rijn' } );
 
-		expect( ( wrapper.find( 'input[type="checkbox"]' ).element as HTMLInputElement ).checked ).toBe( false );
+		expect( promotionChecked( wrapper ) ).toBe( false );
+	} );
+
+	it( 'promotes by default for a target page that does not exist yet', async () => {
+		const wrapper = mountDialog();
+		await pick( wrapper, { pageId: null, title: 'Rembrandt van Rijn' } );
+
+		expect( promotionChecked( wrapper ) ).toBe( true );
+	} );
+
+	it( 'drops the promotion when the target changes to a page that already exists', async () => {
+		const wrapper = mountDialog();
+		await pick( wrapper, { pageId: null, title: 'Rembrandt van Rijn' } );
+
+		await pick( wrapper, { pageId: TARGET_PAGE_ID, title: 'Rembrandt Harmenszoon van Rijn' } );
+
+		expect( promotionChecked( wrapper ) ).toBe( false );
+	} );
+
+	it( 'promotes when the target changes to a page that does not exist yet', async () => {
+		const wrapper = mountDialog();
+		await pick( wrapper, { pageId: TARGET_PAGE_ID, title: 'Rembrandt van Rijn' } );
+
+		await pick( wrapper, { pageId: null, title: 'Rembrandt Harmenszoon van Rijn' } );
+
+		expect( promotionChecked( wrapper ) ).toBe( true );
+	} );
+
+	it( 'keeps the user\'s untick over the new page\'s default', async () => {
+		const wrapper = mountDialog();
+		await pick( wrapper, { pageId: null, title: 'Rembrandt van Rijn' } );
+
+		await wrapper.find( 'input[type="checkbox"]' ).setValue( false );
+		await clickMove( wrapper );
+
+		expect( subjectStore.moveSubject ).toHaveBeenCalledWith(
+			new SubjectId( SUBJECT_ID ),
+			99,
+			false,
+			undefined,
+		);
 	} );
 
 	it( 'names the main subject that promoting would demote', async () => {
@@ -238,7 +282,7 @@ describe( 'MoveSubjectDialog', () => {
 		expect( subjectStore.moveSubject ).toHaveBeenCalledWith(
 			new SubjectId( SUBJECT_ID ),
 			99,
-			false,
+			true,
 			undefined,
 		);
 	} );
@@ -336,7 +380,7 @@ describe( 'MoveSubjectDialog', () => {
 		await wrapper.setProps( { open: true, subjectId: 's11111111111bbb', subjectName: 'Another' } );
 
 		expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
-		expect( ( wrapper.find( 'input[type="checkbox"]' ).element as HTMLInputElement ).checked ).toBe( false );
+		expect( promotionChecked( wrapper ) ).toBe( false );
 	} );
 
 	it( 'clears a previous failure when it is reopened', async () => {
