@@ -542,7 +542,7 @@ describe( 'SubjectsManagerPage move action', () => {
 		expect( wrapper.findComponent( MoveSubjectDialog ).props( 'open' ) ).toBe( true );
 	} );
 
-	it( 'reports the move once the dialog says it landed, naming the subject and its new page', async () => {
+	it( 'reports the move once the dialog says it landed, naming the subject and linking its new page', async () => {
 		const wrapper = await mountPage();
 		await wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' )[ 1 ].trigger( 'click' );
 		await flushPromises();
@@ -551,9 +551,11 @@ describe( 'SubjectsManagerPage move action', () => {
 		wrapper.findComponent( MoveSubjectDialog ).vm.$emit( 'moved', 'Rembrandt van Rijn' );
 		await flushPromises();
 
-		const [ message, options ] = ( mw.notify as ReturnType<typeof vi.fn> ).mock.calls[ 0 ];
-		expect( message ).toContain( 'neowiki-managesubjects-move-success' );
-		expect( message ).toContain( 'Rembrandt van Rijn' );
+		const [ content, options ] = ( mw.notify as ReturnType<typeof vi.fn> ).mock.calls[ 0 ];
+		const link = ( content as HTMLElement ).querySelector( 'a' );
+		expect( ( content as HTMLElement ).textContent ).toContain( 'neowiki-managesubjects-move-success' );
+		expect( link?.getAttribute( 'href' ) ).toBe( '/wiki/Rembrandt van Rijn?action=subjects' );
+		expect( link?.textContent ).toBe( 'Rembrandt van Rijn' );
 		expect( options ).toEqual( { type: 'success' } );
 
 		// The listing refresh belongs to the store's move action; refreshing here too would fetch

@@ -954,7 +954,16 @@ function onSubjectMoved( targetTitle: string ): void {
 	const subjectName = movingSubject.value?.getDisplayName() ?? '';
 	movingSubject.value = null;
 
-	mw.notify( mw.msg( 'neowiki-managesubjects-move-success', subjectName, targetTitle ), { type: 'success' } );
+	const link = document.createElement( 'a' );
+	link.href = mw.util.getUrl( targetTitle, { action: 'subjects' } );
+	link.textContent = targetTitle;
+
+	// parseDom rather than a message string: it takes the link as a node, which leaves the subject
+	// name beside it escaped.
+	mw.notify(
+		mw.message( 'neowiki-managesubjects-move-success', subjectName, link ).parseDom(),
+		{ type: 'success' }
+	);
 }
 
 function confirmDelete( subject: Subject ): void {
