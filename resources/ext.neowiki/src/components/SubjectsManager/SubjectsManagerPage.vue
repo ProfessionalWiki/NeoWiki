@@ -120,6 +120,14 @@
 						</span>
 						<span class="ext-neowiki-subjects-manager__row-actions">
 							<CdxButton
+								weight="quiet"
+								:aria-label="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
+								:title="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
+								@click.stop="copySubjectLink( mainSubject )"
+							>
+								<CdxIcon :icon="cdxIconLink" />
+							</CdxButton>
+							<CdxButton
 								v-if="canEdit"
 								weight="quiet"
 								:aria-label="$i18n( 'neowiki-managesubjects-row-edit' ).text()"
@@ -127,14 +135,6 @@
 								@click.stop="openEditor( mainSubject )"
 							>
 								<CdxIcon :icon="cdxIconEdit" />
-							</CdxButton>
-							<CdxButton
-								weight="quiet"
-								:aria-label="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
-								:title="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
-								@click.stop="copySubjectLink( mainSubject )"
-							>
-								<CdxIcon :icon="cdxIconLink" />
 							</CdxButton>
 							<CdxButton
 								v-if="canEdit"
@@ -303,13 +303,12 @@
 							</span>
 							<span class="ext-neowiki-subjects-manager__row-actions">
 								<CdxButton
-									v-if="canEdit"
 									weight="quiet"
-									:aria-label="$i18n( 'neowiki-managesubjects-row-promote' ).text()"
-									:title="$i18n( 'neowiki-managesubjects-row-promote' ).text()"
-									@click.stop="promoteToMain( subject )"
+									:aria-label="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
+									:title="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
+									@click.stop="copySubjectLink( subject )"
 								>
-									<CdxIcon :icon="cdxIconPushPin" />
+									<CdxIcon :icon="cdxIconLink" />
 								</CdxButton>
 								<CdxButton
 									v-if="canEdit"
@@ -321,12 +320,13 @@
 									<CdxIcon :icon="cdxIconEdit" />
 								</CdxButton>
 								<CdxButton
+									v-if="canEdit"
 									weight="quiet"
-									:aria-label="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
-									:title="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
-									@click.stop="copySubjectLink( subject )"
+									:aria-label="$i18n( 'neowiki-managesubjects-row-promote' ).text()"
+									:title="$i18n( 'neowiki-managesubjects-row-promote' ).text()"
+									@click.stop="promoteToMain( subject )"
 								>
-									<CdxIcon :icon="cdxIconLink" />
+									<CdxIcon :icon="cdxIconPushPin" />
 								</CdxButton>
 								<CdxButton
 									v-if="canEdit"
@@ -672,13 +672,9 @@ const deleteMenuItem = computed<MenuButtonItemData>( () => ( {
 } ) );
 
 const mainRowMenuItems = computed<MenuButtonItemData[]>( () => {
-	const items: MenuButtonItemData[] = [];
+	const items: MenuButtonItemData[] = [ copyLinkMenuItem.value ];
 	if ( canEdit.value ) {
-		items.push( editMenuItem.value );
-	}
-	items.push( copyLinkMenuItem.value );
-	if ( canEdit.value ) {
-		items.push( moveMenuItem.value );
+		items.push( editMenuItem.value, moveMenuItem.value );
 	}
 	if ( canDelete.value ) {
 		items.push( deleteMenuItem.value );
@@ -687,13 +683,9 @@ const mainRowMenuItems = computed<MenuButtonItemData[]>( () => {
 } );
 
 const otherRowMenuItems = computed<MenuButtonItemData[]>( () => {
-	const items: MenuButtonItemData[] = [];
+	const items: MenuButtonItemData[] = [ copyLinkMenuItem.value ];
 	if ( canEdit.value ) {
-		items.push( promoteMenuItem.value, editMenuItem.value );
-	}
-	items.push( copyLinkMenuItem.value );
-	if ( canEdit.value ) {
-		items.push( moveMenuItem.value );
+		items.push( editMenuItem.value, promoteMenuItem.value, moveMenuItem.value );
 	}
 	if ( canDelete.value ) {
 		items.push( deleteMenuItem.value );
@@ -1348,6 +1340,8 @@ onUnmounted( () => {
 	}
 
 	&__row-drag-handle {
+		// Set off from the buttons: this is grabbed, not clicked, and delete sits right before it.
+		margin-inline-start: @spacing-50;
 		min-width: @min-size-interactive-pointer;
 		min-height: @min-size-interactive-pointer;
 		padding-inline: @spacing-30;

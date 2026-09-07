@@ -464,31 +464,42 @@ describe( 'SubjectsManagerPage move action', () => {
 		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 2 );
 	} );
 
-	it( 'puts the move before the delete on every row', async () => {
+	// Copy-link changes nothing, so it leads; edit and promote change the row in place; move and
+	// delete take the row out of the listing, with delete last. The main row's pin is its
+	// indicator, outside the strip.
+	it( 'orders each row\'s inline actions copy-link, edit, promote, move, delete', async () => {
 		const wrapper = await mountPage();
 
-		const labels = wrapper.findAll( '.ext-neowiki-subjects-manager__row-actions [aria-label]' )
-			.map( ( element ) => element.attributes( 'aria-label' ) )
-			.filter( ( label ) => label === 'neowiki-managesubjects-row-move' || label === 'neowiki-managesubjects-row-delete' );
+		const strips = wrapper.findAll( '.ext-neowiki-subjects-manager__row-actions' )
+			.map( ( strip ) => strip.findAll( '[aria-label]' ).map( ( element ) => element.attributes( 'aria-label' ) ) );
 
-		expect( labels ).toEqual( [
-			'neowiki-managesubjects-row-move',
-			'neowiki-managesubjects-row-delete',
-			'neowiki-managesubjects-row-move',
-			'neowiki-managesubjects-row-delete',
+		expect( strips ).toEqual( [
+			[
+				'neowiki-managesubjects-row-copy-link',
+				'neowiki-managesubjects-row-edit',
+				'neowiki-managesubjects-row-move',
+				'neowiki-managesubjects-row-delete',
+			],
+			[
+				'neowiki-managesubjects-row-copy-link',
+				'neowiki-managesubjects-row-edit',
+				'neowiki-managesubjects-row-promote',
+				'neowiki-managesubjects-row-move',
+				'neowiki-managesubjects-row-delete',
+			],
 		] );
 	} );
 
-	it( 'offers the move in the overflow menu too, which is the only surface on mobile', async () => {
+	it( 'orders the overflow menu the same way as the inline actions', async () => {
 		const wrapper = await mountPage();
 
-		const menus = wrapper.findAllComponents( CdxMenuButton );
-		expect( menus ).toHaveLength( 2 );
-		for ( const menu of menus ) {
-			const values = menu.props( 'menuItems' ).map( ( item ) => item.value );
-			expect( values ).toContain( 'move' );
-			expect( values.indexOf( 'move' ) ).toBeLessThan( values.indexOf( 'delete' ) );
-		}
+		const menus = wrapper.findAllComponents( CdxMenuButton )
+			.map( ( menu ) => menu.props( 'menuItems' ).map( ( item ) => item.value ) );
+
+		expect( menus ).toEqual( [
+			[ 'copy-link', 'edit', 'move', 'delete' ],
+			[ 'copy-link', 'edit', 'promote', 'move', 'delete' ],
+		] );
 	} );
 
 	it( 'offers no move to a user who cannot edit', async () => {
