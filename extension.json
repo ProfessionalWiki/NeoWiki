@@ -402,7 +402,8 @@
 				"vue",
 				"pinia",
 				"mediawiki.user",
-				"mediawiki.storage"
+				"mediawiki.storage",
+				"mediawiki.jqueryMsg"
 			],
 			"codexComponents": [
 				"CdxAccordion",

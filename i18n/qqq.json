@@ -296,7 +296,7 @@
 	"neowiki-managesubjects-move-demotes": "Note shown under the main-subject checkbox when the target page already has a main subject, which the move would demote to a child subject. Parameters:\n* $1 - the display name of the target page's current main subject",
 	"neowiki-managesubjects-move-source-loses-main": "Warning shown when the subject being moved is the main subject of the page it is moved away from. Parameters:\n* $1 - the title of the page the subject is moved away from",
 	"neowiki-managesubjects-move-confirm-button": "Label of the button that performs the move.",
-	"neowiki-managesubjects-move-success": "Notification shown after a subject was moved. Parameters:\n* $1 - the display name of the moved subject\n* $2 - the title of the page it was moved to",
+	"neowiki-managesubjects-move-success": "Notification shown after a subject was moved. Parameters:\n* $1 - the display name of the moved subject\n* $2 - a link to the page it was moved to, labelled with that page's title",
 	"neowiki-managesubjects-move-error": "Notification shown when moving a subject failed for an unrecognised reason. Parameters:\n* $1 - the display name of the subject that could not be moved",
 	"neowiki-managesubjects-move-page-taken": "Error shown when the page the move was going to create already exists.",
 	"neowiki-managesubjects-move-create-page-summary-default": "Default edit summary for the empty page created to hold a moved subject.",

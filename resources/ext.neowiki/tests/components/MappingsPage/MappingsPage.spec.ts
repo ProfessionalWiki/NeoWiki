@@ -310,6 +310,6 @@ describe( 'MappingsPage', () => {
 
 		await findEditButtons( wrapper )[ 0 ].trigger( 'click' );
 
-		expect( hrefSetter ).toHaveBeenCalledWith( '/wiki/Mapping:EDM' );
+		expect( hrefSetter ).toHaveBeenCalledWith( '/wiki/Mapping:EDM?action=edit' );
 	} );
 } );

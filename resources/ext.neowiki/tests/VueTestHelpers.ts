@@ -92,7 +92,7 @@ export function setupMwMock(
 
 	const mwMock: any = {};
 
-	const resolveMessage = ( key: string, params: string[] ): string => {
+	const resolveMessage = ( key: string, params: any[] ): string => {
 		// Rendered by real MediaWiki everywhere a Subject nobody named is shown, so the fake carries
 		// it rather than each spec restating the marker's shape.
 		if ( key === 'neowiki-subject-generated-name' && customMessages[ key ] === undefined ) {
@@ -113,9 +113,20 @@ export function setupMwMock(
 		config: () => ( {
 			get: vi.fn( ( key: string ) => customConfig[ key ] ),
 		} ),
-		message: () => vi.fn( ( key: string, ...params: string[] ) => ( {
+		message: () => vi.fn( ( key: string, ...params: any[] ) => ( {
 			text: () => resolveMessage( key, params ),
 			parse: () => resolveMessage( key, params ),
+			// jqueryMsg's parseDom yields nodes rather than a string, which is what lets a message
+			// carry a link. The fake keeps that: a node parameter stays a node, everything else
+			// reads as the key-plus-parameters text the other formats produce.
+			parseDom: () => {
+				const container = document.createElement( 'span' );
+				container.append(
+					key,
+					...params.map( ( param ) => param instanceof Node ? param : String( param ) ),
+				);
+				return container;
+			},
 		} ) ),
 		msg: () => vi.fn( ( key: string, ...params: string[] ) => resolveMessage( key, params ) ),
 		notify: () => vi.fn(),
@@ -128,7 +139,10 @@ export function setupMwMock(
 		} ),
 		util: () => ( {
 			wikiScript: vi.fn( () => '/rest.php' ),
-			getUrl: vi.fn( ( title: string ) => `/wiki/${ title }` ),
+			// Query parameters are part of the URL a caller asked for - a Data tab is the page's own
+			// URL plus action=subjects - so the fake carries them rather than dropping them.
+			getUrl: vi.fn( ( title: string, params?: Record<string, string> ) =>
+				`/wiki/${ title }` + ( params === undefined ? '' : `?${ new URLSearchParams( params ) }` ) ),
 		} ),
 	};
 

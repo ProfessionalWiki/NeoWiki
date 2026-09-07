@@ -126,6 +126,11 @@ async function onTargetSelected( choice: PageChoice | null ): Promise<void> {
 	target.value = choice;
 	errorMessage.value = null;
 	demotedMainSubjectName.value = null;
+	// A page created for this Subject is about that Subject and has no main Subject to demote, so
+	// promoting is what the user means. A page that already exists keeps the main Subject it has
+	// unless the user says otherwise. Either way this is only the default: a manual choice stands
+	// until the target changes again.
+	makeMainSubject.value = targetIsNewPage.value;
 
 	if ( choice === null || choice.pageId === null ) {
 		return;
