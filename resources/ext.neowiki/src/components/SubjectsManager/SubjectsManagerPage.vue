@@ -106,13 +106,12 @@
 								{{ subjectDisplayName( mainSubject ) }}
 							</span>
 							<span class="ext-neowiki-subjects-manager__row-subtitle">
-								<a
+								<SchemaNameDisplay
+									v-if="schemaNameToShow( mainSubject ) !== null"
 									class="ext-neowiki-subjects-manager__row-schema"
-									:href="schemaUrl( mainSubject.getSchemaName() )"
+									:schema-name="mainSubject.getSchemaName()"
 									@click.stop
-								>
-									{{ mainSubject.getSchemaName() }}
-								</a>
+								/>
 								<span class="ext-neowiki-subjects-manager__row-count">
 									{{ $i18n( 'neowiki-managesubjects-statement-count', statementCount( mainSubject ) ).text() }}
 								</span>
@@ -289,13 +288,12 @@
 									{{ subjectDisplayName( subject ) }}
 								</span>
 								<span class="ext-neowiki-subjects-manager__row-subtitle">
-									<a
+									<SchemaNameDisplay
+										v-if="schemaNameToShow( subject ) !== null"
 										class="ext-neowiki-subjects-manager__row-schema"
-										:href="schemaUrl( subject.getSchemaName() )"
+										:schema-name="subject.getSchemaName()"
 										@click.stop
-									>
-										{{ subject.getSchemaName() }}
-									</a>
+									/>
 									<span class="ext-neowiki-subjects-manager__row-count">
 										{{ $i18n( 'neowiki-managesubjects-statement-count', statementCount( subject ) ).text() }}
 									</span>
@@ -516,6 +514,7 @@ import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { useSubjectDrag } from '@/composables/useSubjectDrag.ts';
 import { subjectRowDomId, subjectIdFromHash } from '@/presentation/subjectRowAnchor.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
+import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
 import { Subject } from '@/domain/Subject';
 import { Schema } from '@/domain/Schema';
 import { SubjectId } from '@/domain/SubjectId';
@@ -524,6 +523,7 @@ import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
+import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import SubjectStatementsView from '@/components/SubjectsManager/SubjectStatementsView.vue';
 import DataExportButton from '@/components/SubjectsManager/DataExportButton.vue';
 import { subjectExportUrls, pageExportUrls } from '@/presentation/DataExportMenu.ts';
@@ -626,10 +626,6 @@ const hasChildSubjects = computed( () => otherSubjects.value.length > 0 );
 const isCompletelyEmpty = computed( () => !hasMainSubject.value && !hasChildSubjects.value );
 
 const deletingSubjectName = computed( () => deletingSubject.value === null ? '' : subjectDisplayName( deletingSubject.value ) );
-
-function schemaUrl( name: string ): string {
-	return mw.util.getUrl( `Schema:${ name }` );
-}
 
 function subjectIri( id: string ): string {
 	return subjectIriBase + id;
@@ -1235,11 +1231,9 @@ onUnmounted( () => {
 		color: @color-subtle;
 	}
 
+	/* The badge ellipsises its own text; the row only has to let it shrink. */
 	&__row-schema {
 		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
 	&__row-count {
@@ -1306,7 +1300,8 @@ onUnmounted( () => {
 		}
 	}
 
-	&__row-count::before {
+	/* The separator belongs to the pair: a row whose badge is withheld draws none. */
+	&__row-schema + &__row-count::before {
 		content: '•';
 		margin-inline-end: @spacing-50;
 	}

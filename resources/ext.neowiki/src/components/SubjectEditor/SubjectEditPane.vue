@@ -1,15 +1,12 @@
 <template>
-	<!-- The root pane goes unnamed: the dialog around it already names that same Subject. -->
 	<section
 		class="ext-neowiki-subject-edit-pane"
-		:aria-label="props.nested ? paneName : undefined"
+		:aria-label="paneName"
 	>
-		<!-- Only a nested pane carries these: the dialog's own header names the root Subject
-			and holds the field that renames it. -->
-		<div
-			v-if="props.nested"
-			class="ext-neowiki-subject-edit-pane__header"
-		>
+		<!-- Named here rather than in the dialog's header, for the root as well as a nested
+			pane: a header naming the root goes stale the moment another pane is opened, and
+			cannot follow without re-rendering CdxDialog. -->
+		<div class="ext-neowiki-subject-edit-pane__header">
 			<h3 class="ext-neowiki-subject-edit-pane__name">
 				<EditableText
 					:model-value="label"
@@ -20,19 +17,37 @@
 				/>
 			</h3>
 
-			<div
-				v-if="pageName !== null"
-				class="ext-neowiki-subject-edit-pane__storage"
-			>
-				<I18nSlot message-key="neowiki-subject-editor-stored-on">
-					<!-- A new tab: following the link in this one discards unsaved edits. -->
-					<a
-						class="ext-neowiki-subject-edit-pane__page"
-						:href="pageUrl"
-						target="_blank"
-						rel="noopener"
-					>{{ pageName }}</a>
-				</I18nSlot>
+			<div class="ext-neowiki-subject-edit-pane__meta">
+				<!-- The Schema the pane's Subject uses, beside the name it belongs to rather
+					than in a dialog header that cannot follow the pane. A real link, so it
+					carries the badge's own interactive styling and a destination; a plain
+					click opens the Schema editor instead, as the old header link did.
+
+					A new tab, for the reason the storage link below gives: this dialog holds
+					unsaved edits for every open pane and nothing guards a navigation away
+					from it. Withheld while the Subject is named after its Schema, so it is
+					not named twice. -->
+				<SchemaNameDisplay
+					v-if="schemaBadge !== null"
+					:schema-name="schemaBadge"
+					link="new-tab"
+					@click="openSchemaEditor"
+				/>
+
+				<div
+					v-if="props.nested && pageName !== null"
+					class="ext-neowiki-subject-edit-pane__storage"
+				>
+					<I18nSlot message-key="neowiki-subject-editor-stored-on">
+						<!-- A new tab: following the link in this one discards unsaved edits. -->
+						<a
+							class="ext-neowiki-subject-edit-pane__page"
+							:href="pageUrl"
+							target="_blank"
+							rel="noopener"
+						>{{ pageName }}</a>
+					</I18nSlot>
+				</div>
 			</div>
 		</div>
 
@@ -76,7 +91,9 @@ import SubjectViolationBanners from '@/components/common/SubjectViolationBanners
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import { subjectLabelPlaceholder } from '@/presentation/subjectLabelPlaceholder.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
+import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
 import EditableText from '@/components/common/EditableText.vue';
+import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
@@ -95,6 +112,8 @@ const props = defineProps<{
 	subject: Subject;
 	schema: Schema;
 	nested?: boolean;
+	// Whether this pane's Schema may be edited, so its name can offer the editor.
+	canEditSchema?: boolean;
 	// A Subject this editing session invented, which the server has never seen. It is validated
 	// as a creation rather than as an update, and the dialog writes it with a create.
 	isNew?: boolean;
@@ -105,6 +124,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	'edit-relation-target': [ SubjectId ];
+	'edit-schema': [];
 }>();
 
 provide( RelationTargetEditingKey, true );
@@ -129,6 +149,11 @@ const storedLabel = computed( (): string | null => enteredSubjectLabel( label.va
 
 const paneName = computed( (): string => storedLabel.value ?? subjectDisplayName( props.subject ) );
 
+// A label typed here counts before it is saved, as it does for `paneName`.
+const schemaBadge = computed( (): string | null =>
+	schemaNameToShow( props.subject.withLabel( storedLabel.value ) )
+);
+
 const pageName = computed( (): string | null =>
 	props.subject instanceof SubjectWithContext ?
 		props.subject.getPageIdentifiers().getPageName() :
@@ -140,6 +165,24 @@ const pageUrl = computed( (): string =>
 );
 
 const labelPlaceholder = computed( (): string => subjectLabelPlaceholder( props.subject ) );
+
+/**
+ * Opens the Schema editor in place of following the link, for a plain left click by someone
+ * who may edit it. Anything else — a modifier, the middle button, no edit right — is left to
+ * the browser, so the Schema page stays reachable and nothing here is a dead end.
+ */
+function openSchemaEditor( event: MouseEvent ): void {
+	if ( !props.canEditSchema || event.button !== 0 ) {
+		return;
+	}
+
+	if ( event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ) {
+		return;
+	}
+
+	event.preventDefault();
+	emit( 'edit-schema' );
+}
 
 // EditableText commits once per edit, so a commit is both the change and the
 // end of the interaction: validate immediately rather than waiting for a blur.
@@ -291,26 +334,40 @@ defineExpose( {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-subject-edit-pane {
-	/* The name and where it is stored on one line, the name taking whatever the storage line
-		leaves. Baseline-aligned rather than centred, because the two differ in size. */
+	/* The name at the start, the Schema and where it is stored flush to the end. Baseline
+		rather than centre, because the three differ in size. Wrapping is the last resort: the
+		badge truncates first, and the row only breaks when even that leaves no room. */
 	&__header {
 		display: flex;
 		align-items: baseline;
-		justify-content: space-between;
-		gap: @spacing-50;
+		flex-wrap: wrap;
+		gap: @spacing-25 @spacing-50;
 		margin-bottom: @spacing-75;
 	}
 
-	/* Subordinate to the dialog's own title, which names the root Subject: a heading for
-		screen readers and outline tools, sized like the body around it. */
+	/* A heading for screen readers and outline tools, sized like the body around it. The
+		skin gives headings block padding of their own, which would push the row open.
+		It takes the free space, which is what puts the meta at the end of the row. */
 	&__name {
+		flex-grow: 1;
 		min-width: 0;
 		margin: 0;
+		padding-block: 0;
 		font-size: @font-size-medium;
 	}
 
+	/* Shrinkable, with `min-width: 0` so it may go below its content: the badge ellipsises
+		itself, but only once its parent is allowed to be narrower than the name inside it.
+		Under `flex-shrink: 0` a long Schema name pushed the row wider than the pane and the
+		whole form picked up a horizontal scrollbar. */
+	&__meta {
+		display: flex;
+		align-items: baseline;
+		gap: @spacing-50;
+		min-width: 0;
+	}
+
 	&__storage {
-		flex-shrink: 0;
 		color: @color-subtle;
 		font-size: @font-size-small;
 	}

@@ -14,6 +14,7 @@ import { subjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vue';
+import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { Service } from '@/NeoWikiServices.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
@@ -272,6 +273,15 @@ describe( 'SubjectsManagerPage rows without a stored label', () => {
 
 		const names = wrapper.findAll( '.ext-neowiki-subjects-manager__row-label' ).map( ( el ) => el.text() );
 		expect( names ).toEqual( [ 'Host Page', '(unnamed Person)' ] );
+	} );
+
+	// The main row is named after its page, so 'Person' still tells the reader something. The
+	// child row already reads "(unnamed Person)", so saying it again says nothing.
+	it( 'shows the schema beside the main row only', async () => {
+		const wrapper = await mountPage();
+
+		expect( rowFor( wrapper, ID_A ).findComponent( SchemaNameDisplay ).props( 'schemaName' ) ).toBe( 'Person' );
+		expect( rowFor( wrapper, ID_B ).findComponent( SchemaNameDisplay ).exists() ).toBe( false );
 	} );
 
 } );

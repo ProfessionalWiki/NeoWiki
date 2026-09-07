@@ -24,7 +24,10 @@
 			<span
 				v-if="item.secondaryLabel"
 				class="ext-neowiki-tree__node-secondary"
-			>{{ item.secondaryLabel }}</span>
+			><slot
+				name="secondary"
+				:item="item"
+			>{{ item.secondaryLabel }}</slot></span>
 			<slot
 				name="trailing"
 				:item="item"
@@ -59,6 +62,13 @@
 					:select="select"
 					:keydown="keydown"
 				>
+					<template #secondary="slotProps">
+						<slot
+							name="secondary"
+							v-bind="slotProps"
+						/>
+					</template>
+
 					<template #trailing="slotProps">
 						<slot
 							name="trailing"
@@ -78,7 +88,7 @@ import type { NeoTreeItem } from './NeoTreeModel.ts';
 // Declared out here for the reason given in NeoTree.vue.
 type NodeSelect = ( item: NeoTreeItem<T> ) => void;
 type NodeKeydown = ( event: KeyboardEvent, item: NeoTreeItem<T> ) => void;
-type TrailingSlot = ( slotProps: { item: NeoTreeItem<T> } ) => unknown;
+type NodeSlot = ( slotProps: { item: NeoTreeItem<T> } ) => unknown;
 
 const props = defineProps<{
 	item: NeoTreeItem<T>;
@@ -90,7 +100,8 @@ const props = defineProps<{
 }>();
 
 defineSlots<{
-	trailing?: TrailingSlot;
+	secondary?: NodeSlot;
+	trailing?: NodeSlot;
 }>();
 
 const elementId = computed( (): string => props.elementIds.get( props.item.key ) ?? '' );
