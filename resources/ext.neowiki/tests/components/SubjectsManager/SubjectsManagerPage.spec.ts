@@ -690,3 +690,62 @@ describe( 'SubjectsManagerPage delete flow', () => {
 	} );
 
 } );
+
+describe( 'SubjectsManagerPage row action order', () => {
+
+	beforeEach( () => {
+		storeSubjects = [ subject( ID_A ), subject( ID_B ) ];
+		mainSubjectId = new SubjectId( ID_A );
+		canEditSubjectRef.value = true;
+		canDeleteSubjectRef.value = true;
+		window.location.hash = '';
+		Element.prototype.scrollIntoView = vi.fn();
+		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+		window.location.hash = '';
+		canEditSubjectRef.value = false;
+		canDeleteSubjectRef.value = false;
+		vi.restoreAllMocks();
+	} );
+
+	// Copy-link changes nothing, so it leads; edit and promote change the row in place; move and
+	// delete take the row out of the listing, with delete last. The main row's pin is its
+	// indicator, outside the strip.
+	it( 'orders each row\'s inline actions copy-link, edit, promote, move, delete', async () => {
+		const wrapper = await mountPage();
+
+		const strips = wrapper.findAll( '.ext-neowiki-subjects-manager__row-actions' )
+			.map( ( strip ) => strip.findAll( '[aria-label]' ).map( ( element ) => element.attributes( 'aria-label' ) ) );
+
+		expect( strips ).toEqual( [
+			[
+				'neowiki-managesubjects-row-copy-link',
+				'neowiki-managesubjects-row-edit',
+				'neowiki-managesubjects-row-move',
+				'neowiki-managesubjects-row-delete',
+			],
+			[
+				'neowiki-managesubjects-row-copy-link',
+				'neowiki-managesubjects-row-edit',
+				'neowiki-managesubjects-row-promote',
+				'neowiki-managesubjects-row-move',
+				'neowiki-managesubjects-row-delete',
+			],
+		] );
+	} );
+
+	it( 'orders the overflow menu the same way as the inline actions', async () => {
+		const wrapper = await mountPage();
+
+		const menus = wrapper.findAllComponents( CdxMenuButton )
+			.map( ( menu ) => menu.props( 'menuItems' ).map( ( item ) => item.value ) );
+
+		expect( menus ).toEqual( [
+			[ 'copy-link', 'edit', 'move', 'delete' ],
+			[ 'copy-link', 'edit', 'promote', 'move', 'delete' ],
+		] );
+	} );
+} );
