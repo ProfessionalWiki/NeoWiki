@@ -62,7 +62,7 @@
 				help-text=""
 				:save-button-label="$i18n( 'neowiki-managesubjects-move-confirm-button' ).text()"
 				:save-disabled="target === null || moving"
-				:save-button-icon="cdxIconMove"
+				:save-button-icon="cdxIconArticleRedirect"
 				@save="onMove"
 			/>
 		</template>
@@ -73,7 +73,7 @@
 import { ref, computed, watch } from 'vue';
 import { CdxCheckbox, CdxDialog, CdxField, CdxMessage } from '@wikimedia/codex';
 import type { ValidationStatusType } from '@wikimedia/codex';
-import { cdxIconMove } from '@wikimedia/codex-icons';
+import { cdxIconArticleRedirect } from '@wikimedia/codex-icons';
 import PagePicker from '@/components/common/PagePicker.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
