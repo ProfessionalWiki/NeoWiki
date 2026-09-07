@@ -26,10 +26,10 @@ frontend, so `rdfs:label`, Lua and `{{#neowiki_value}}` keep the bare Schema nam
 `displayNameIsGenerated`, which a client cannot derive, since a Main Subject on a page titled after its Schema is
 named its Schema name without anyone having generated it.
 
-**The graph materializes the fallback for Main Subjects only.** A Child Subject without a label gets no `name`
+**The graph materializes the fallback for Main Subjects only.** Any other label-less Subject gets no `name`
 property: the Schema name there would make every unnamed Subject of a Schema indistinguishable in query results, and
-the Schema is already on the node as its other label. Should a consumer ever need it, materializing the Child tier too
-is the escape hatch.
+the Schema is already on the node as its other label. Should a consumer ever need it, materializing them too is the
+escape hatch.
 
 **RDF emits `rdfs:label` for every Subject.** Consumers key on it, and the Schema appears there as `rdf:type` rather
 than as a label, so the argument above does not carry over. A Mapping's `labelPredicate` is emitted only from a stored
@@ -45,10 +45,11 @@ that have no stored label, so without it every existing Subject keeps the bug.
 
 ## Consequences
 
-A Subject node's `name` is null for a label-less Child Subject, so a stub is identified by its node labels rather than
-by a missing name, and such a Subject is not findable by name in label search. Several label-less Child Subjects of one
-Schema display identically; the computation can gain discriminators later, which stored defaults could not.
+A Subject node's `name` is null for a label-less Subject that is not the Main Subject, so a stub is identified by its
+node labels rather than by a missing name, and such a Subject is not findable by name in label search. Several such
+Subjects of one Schema display identically; the computation can gain discriminators later, which stored defaults could
+not.
 
-Clearing costs a revision per page, and a Child Subject that carried the older page-name default is renamed to its
-Schema name by it. `Subject.getLabel()` in the frontend bundle can return null; display code goes through
-`presentation/subjectDisplayName.ts`, which marks the Schema tier.
+Clearing costs a revision per page, and a Subject that is not the Main Subject and carried the older page-name default
+is renamed to its Schema name by it. `Subject.getLabel()` in the frontend bundle can return null; display code goes
+through `presentation/subjectDisplayName.ts`, which marks the Schema tier.

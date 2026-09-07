@@ -17,7 +17,9 @@ Pages have
 * An **id**: persistent numeric ID.
 * **Content**: wikitext
 * **Subjects**: list of Subjects, can be empty ([ADR 7](adr/007-multiple-subjects-per-page.md))
-* **Main Subject**: optional identifier of a Subject in the page's Subjects list. Indicates which Subject represents the same entity as the page itself. All other Subjects stored on a page are called **Child Subjects**.
+* **Main Subject**: optional identifier of a Subject in the page's Subjects list. Indicates which Subject represents the same entity as the page itself. Sharing a page is storage, not a relationship ([ADR 28](adr/028-relations-model.md)).
+
+*Avoid: "Child Subject" — former term for a page's other Subjects.*
 
 ## Subject
 

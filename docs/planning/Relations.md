@@ -45,7 +45,7 @@ interlinked imports can wire relations before their targets exist. The statement
    ([#991](https://github.com/ProfessionalWiki/NeoWiki/issues/991)).
 4. **Missing targets are red links** — legitimate forward references; a warning, not an error
    ([#1120](https://github.com/ProfessionalWiki/NeoWiki/issues/1120)).
-5. **Same-page relationships are schema-defined** — no automatic Main/Child relation
+5. **Same-page relationships are schema-defined** — no automatic relation between the Subjects on a page
    ([#959](https://github.com/ProfessionalWiki/NeoWiki/issues/959)).
 6. **Name a relation once, on the property** — proposed, least settled and the item most open to feedback: key edges
    and predicates on the property name, dropping the separate relation-type name (the status-quo case for keeping both
@@ -56,12 +56,12 @@ interlinked imports can wire relations before their targets exist. The statement
 ### Nested vs flat authoring of intermediate structures
 
 CIDOC-CRM-style intermediate nodes — a birth event; a dimension with unit, upper and lower bound, source — can be
-expressed today as Child Subjects or a separately linked Subject. The open question is how they are *authored*:
+expressed today as Subjects of their own, on the same page or another. The open question is how they are *authored*:
 
 - **Route A — flat schemas, mapping synthesizes.** Schemas stay flat; the ontology mapping assembles the intermediate
   node at RDF-projection time. Cost: the mapping must coordinate several flat fields into one shared node.
-- **Route B — Child Subjects as the native representation.** The nesting is real Subjects, with inline editing UX that
-  projects the structure down into a form. Cost: editor complexity and lazy-loading performance.
+- **Route B — Subjects as the native representation.** The intermediate nodes are real Subjects, with inline editing
+  UX that projects the structure down into a form. Cost: editor complexity and lazy-loading performance.
 
 Public positions lean toward Route B ([discussion #996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996),
 [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999)). The decision follows the neutral-person → EDM
@@ -101,6 +101,15 @@ without restructuring it ([#904](https://github.com/ProfessionalWiki/NeoWiki/iss
 With Property Definitions local to their Schema, where relation-target autocomplete draws candidates beyond
 target-Schema filtering is open ([#1122](https://github.com/ProfessionalWiki/NeoWiki/issues/1122)).
 
+### Page-scoped vs free-standing Subjects
+
+Early external feedback distinguished two kinds of Subject sharing a page: page-scoped dependents that live and die
+with their host page, and free-standing Subjects merely stored there, which must outlive the page and whose home should
+stay knowable. Nothing marks which is which: today both go with their page — deleting it removes them (referenced
+ones survive as stubs), moving it carries them along. Open: whether the distinction needs a mechanism — a Schema-level
+flag, a per-Subject flag, or derivation from the Subject's relations — and what deleting or moving a page should then
+do to each ([#959](https://github.com/ProfessionalWiki/NeoWiki/issues/959)).
+
 ### Parked
 
 Unconstrained ("any Subject") targets; cardinality beyond single/multiple; no-value / some-value markers
@@ -110,13 +119,16 @@ Unconstrained ("any Subject") targets; cardinality beyond single/multiple; no-va
 
 ### Editing
 
+- In-flow creation and editing of relation targets ([#971](https://github.com/ProfessionalWiki/NeoWiki/issues/971)).
+  A Subject created in flow lands on the page being edited; since it keeps its id when moved
+  ([#1356](https://github.com/ProfessionalWiki/NeoWiki/pull/1356)), a wrong home is cheap to fix.
 - Red-link create affordance for missing targets ([#1120](https://github.com/ProfessionalWiki/NeoWiki/issues/1120)).
 - Main-Subject prefill as editing sugar (model decision 5).
 
 ### Display
 
 - Incoming / inverse relations ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)).
-- A built-in incoming-relations section — the smallest non-Lua path to reach related and Child Subjects.
+- A built-in incoming-relations section — the smallest non-Lua path to reach the Subjects that point at this one.
 - Relation hover card ([#377](https://github.com/ProfessionalWiki/NeoWiki/issues/377)).
 - Target links in the Schema view ([#519](https://github.com/ProfessionalWiki/NeoWiki/issues/519)).
 - Where-used over incoming relations ([#1039](https://github.com/ProfessionalWiki/NeoWiki/issues/1039)).
@@ -132,6 +144,11 @@ Unconstrained ("any Subject") targets; cardinality beyond single/multiple; no-va
   ([#1043](https://github.com/ProfessionalWiki/NeoWiki/pull/1043)); opening cross-Source relations — remote display,
   graceful degradation — follows the [Subject Sources](SubjectSources.md) track
   ([#993](https://github.com/ProfessionalWiki/NeoWiki/issues/993), [ADR 23](../adr/023-subject-sources.md)).
+
+### Naming
+
+- Rename the API and code identifiers that still say "child subject"
+  ([#1367](https://github.com/ProfessionalWiki/NeoWiki/issues/1367)).
 
 ## Track coordination
 
