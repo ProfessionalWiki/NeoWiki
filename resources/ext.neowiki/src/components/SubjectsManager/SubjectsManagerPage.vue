@@ -143,7 +143,7 @@
 								:title="$i18n( 'neowiki-managesubjects-row-move' ).text()"
 								@click.stop="openMoveDialog( mainSubject )"
 							>
-								<CdxIcon :icon="cdxIconMove" />
+								<CdxIcon :icon="cdxIconArticleRedirect" />
 							</CdxButton>
 							<CdxButton
 								v-if="canDelete"
@@ -335,7 +335,7 @@
 									:title="$i18n( 'neowiki-managesubjects-row-move' ).text()"
 									@click.stop="openMoveDialog( subject )"
 								>
-									<CdxIcon :icon="cdxIconMove" />
+									<CdxIcon :icon="cdxIconArticleRedirect" />
 								</CdxButton>
 								<CdxButton
 									v-if="canDelete"
@@ -499,13 +499,13 @@ import {
 import type { MenuButtonItemData } from '@wikimedia/codex';
 import {
 	cdxIconAdd,
+	cdxIconArticleRedirect,
 	cdxIconCollapse,
 	cdxIconDraggable,
 	cdxIconEdit,
 	cdxIconEllipsis,
 	cdxIconExpand,
 	cdxIconLink,
-	cdxIconMove,
 	cdxIconPushPin,
 	cdxIconTrash
 } from '@wikimedia/codex-icons';
@@ -661,7 +661,7 @@ const copyLinkMenuItem = computed<MenuButtonItemData>( () => ( {
 const moveMenuItem = computed<MenuButtonItemData>( () => ( {
 	value: 'move',
 	label: mw.msg( 'neowiki-managesubjects-row-move' ),
-	icon: cdxIconMove
+	icon: cdxIconArticleRedirect
 } ) );
 
 const deleteMenuItem = computed<MenuButtonItemData>( () => ( {
