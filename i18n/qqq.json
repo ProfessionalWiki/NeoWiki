@@ -58,6 +58,7 @@
 	"neowiki-subject-creator-create-page-summary": "Edit summary of the empty page created to hold a Subject, used when the user entered none.",
 	"neowiki-subject-creator-create-page-error": "Error shown at the page field of the 'create subject' dialog when the page could not be created. Parameters:\n* $1 - the page title",
 	"neowiki-subject-creator-page-taken": "Error shown at the page field of the 'create subject' dialog when the title to create was taken between choosing it and saving. Parameters:\n* $1 - the page title",
+	"neowiki-createsubject-button": "Label of the button on [[Special:CreateSubject]] that opens the 'create subject' dialog again after it was closed.",
 
 	"neowiki-schema-editor-summary-default": "Default edit summary used when updating a schema via the UI.",
 	"neowiki-schema-editor-success": "Success notification shown after updating a schema. $1 is the schema name.",
