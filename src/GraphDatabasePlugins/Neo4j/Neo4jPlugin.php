@@ -113,7 +113,7 @@ readonly class Neo4jPlugin {
 
 	/**
 	 * Parse-time queries run as the user the page is parsed for, and always at the default tier: the
-	 * output is parser-cached, so neither may depend on who happened to parse.
+	 * output is parser-cached under that user's access class, and may vary by nothing else.
 	 */
 	private function newParseTimeQueryService( Parser $parser ): Neo4jQueryService {
 		return $this->newQueryService( ParserAuthority::of( $parser ) );

@@ -21,6 +21,7 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\Title\ForeignTitle;
 use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 use MessageLocalizer;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
@@ -251,6 +252,22 @@ class NeoWikiHooks {
 		);
 	}
 
+	/**
+	 * @param array<string, mixed> $defaults
+	 * @param array<string, bool> $inCacheKey
+	 * @param array<string, callable> $lazyOptions
+	 */
+	public static function onParserOptionsRegister( array &$defaults, array &$inCacheKey, array &$lazyOptions ): void {
+		ParserAuthority::registerAccessClassOption( $defaults, $inCacheKey );
+	}
+
+	/**
+	 * @param string[] $forOptions
+	 */
+	public static function onPageRenderingHash( string &$confstr, User $user, array &$forOptions ): void {
+		ParserAuthority::appendAccessClassToRenderingHash( $confstr, $user, $forOptions );
+	}
+
 	public static function onParserFirstCallInit( Parser $parser ): void {
 		NeoWikiExtension::getInstance()->getNeo4jPlugin()?->registerParserFunctions( $parser );
 		NeoWikiExtension::getInstance()->getFirstSparqlPlugin()?->registerParserFunctions( $parser );
@@ -258,9 +275,7 @@ class NeoWikiHooks {
 		$parser->setFunctionHook(
 			'view',
 			static function ( Parser $parser, string ...$args ): string|array {
-				$parserFunction = new ViewParserFunction(
-					NeoWikiExtension::getInstance()->newSubjectContentRepository( ParserAuthority::of( $parser ) )
-				);
+				$parserFunction = new ViewParserFunction( NeoWikiExtension::getInstance()->newPageSubjectsLookup() );
 				return $parserFunction->handle( $parser, ...$args );
 			}
 		);

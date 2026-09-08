@@ -55,6 +55,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\Lua\CypherQu
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\Lua\SparqlQueryRunner;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
+use ProfessionalWiki\NeoWiki\Infrastructure\UserAccessClass;
 use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Application\EditNotice\InterfaceMessageNoticeProvider;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubjectEditNotices\GetSubjectEditNoticesPresenter;
@@ -1281,6 +1282,13 @@ class NeoWikiExtension {
 
 	public function newSubjectWriteAuthorizer( Authority $authority ): SubjectWriteAuthorizer {
 		return $this->newAuthorityBasedSubjectAuthorizer( $authority );
+	}
+
+	public function newUserAccessClass(): UserAccessClass {
+		return new UserAccessClass(
+			userGroupManager: MediaWikiServices::getInstance()->getUserGroupManager(),
+			permissionManager: MediaWikiServices::getInstance()->getPermissionManager(),
+		);
 	}
 
 	public function newPageReadAuthorizer( Authority $authority ): PageReadAuthorizer {
