@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages;
 
 use MediaWiki\Html\Html;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
 use PermissionsError;
@@ -24,8 +25,7 @@ class SpecialCreateSubject extends SpecialPage {
 	public function execute( $subPage ): void {
 		parent::execute( $subPage );
 
-		// A special page names one restriction; the Subject write needs edit, and the page it goes on
-		// needs this as well.
+		// getRestriction() names one right; the page the Subject goes on needs createpage as well.
 		if ( !$this->getAuthority()->isAllowed( 'createpage' ) ) {
 			throw new PermissionsError( 'createpage' );
 		}
@@ -34,8 +34,11 @@ class SpecialCreateSubject extends SpecialPage {
 
 		$attributes = [ 'id' => 'ext-neowiki-create-subject' ];
 
-		if ( $subPage !== null && $subPage !== '' ) {
-			$attributes['data-mw-neowiki-schema'] = $subPage;
+		$schemaTitle = MediaWikiServices::getInstance()->getTitleFactory()
+			->newFromText( $subPage ?? '', NeoWikiExtension::NS_SCHEMA );
+
+		if ( $schemaTitle !== null ) {
+			$attributes['data-mw-neowiki-schema'] = $schemaTitle->getText();
 		}
 
 		$this->getOutput()->addHTML( Html::element( 'div', $attributes ) );

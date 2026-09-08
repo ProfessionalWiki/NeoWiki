@@ -29,6 +29,7 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  * what that message happens to say in English.
  *
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialGraphStores
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\EnforcesRestriction
  * @group Database
  */
 class SpecialGraphStoresTest extends SpecialPageTestBase {

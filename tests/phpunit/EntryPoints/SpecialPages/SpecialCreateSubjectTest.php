@@ -34,6 +34,20 @@ class SpecialCreateSubjectTest extends SpecialPageTestBase {
 		$this->assertStringContainsString( 'data-mw-neowiki-schema="Person"', $output );
 	}
 
+	public function testSubpageUnderscoresBecomeSpacesInTheSchemaName(): void {
+		/** @var string $output */
+		[ $output ] = $this->executeSpecialPage( 'Legal_Entity', null, null, $this->getTestUser()->getUser() );
+
+		$this->assertStringContainsString( 'data-mw-neowiki-schema="Legal Entity"', $output );
+	}
+
+	public function testAnUnparseableSubpagePinsNoSchema(): void {
+		/** @var string $output */
+		[ $output ] = $this->executeSpecialPage( '<', null, null, $this->getTestUser()->getUser() );
+
+		$this->assertStringNotContainsString( 'data-mw-neowiki-schema', $output );
+	}
+
 	public function testAUserWithoutTheEditRightIsRefused(): void {
 		$this->setGroupPermissions( '*', 'edit', false );
 		$this->setGroupPermissions( 'user', 'edit', false );
