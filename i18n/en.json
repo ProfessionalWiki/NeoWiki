@@ -40,7 +40,7 @@
 	"neowiki-neojson-description": "Editing neo slot of \"$1\"",
 
 	"neowiki-page-tools-label": "NeoWiki",
-	"neowiki-page-tools-create-subject": "Create subject",
+	"neowiki-page-tools-create-subject": "Add subject to this page",
 	"neowiki-page-tools-manage-subjects": "Manage subjects",
 	"neowiki-page-tools-view-subjects": "View subjects",
 	"neowiki-page-tools-edit-json": "View or edit JSON",
@@ -231,6 +231,7 @@
 	"neowiki-schemas-column-properties": "Properties",
 	"neowiki-schemas-empty": "No schemas have been created yet.",
 	"neowiki-schema-sidebar-all-schemas": "All schemas",
+	"neowiki-sidebar-create-subject": "Create subject",
 
 	"neowiki-schema-delete": "Delete schema",
 

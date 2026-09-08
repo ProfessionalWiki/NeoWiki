@@ -41,7 +41,7 @@
 	"neowiki-view-error-unknown-arg": "Error shown when {{#view}} receives an unrecognized named argument. $1 is the offending argument name.",
 
 	"neowiki-page-tools-label": "Heading for the NeoWiki section in the MediaWiki sidebar (shown as a group label in legacy skins and inside the page tools menu in modern Vector).",
-	"neowiki-page-tools-create-subject": "Label for the sidebar link that opens the 'create subject' dialog. The dialog creates a main subject if the page has none, or a child subject otherwise.",
+	"neowiki-page-tools-create-subject": "Label for the sidebar link on a content page that opens the 'create subject' dialog for that page. The dialog creates the page's Main Subject if it has none, or another Subject otherwise.",
 	"neowiki-page-tools-manage-subjects": "Label for the sidebar link to the Subject management page, shown to users who may edit. See neowiki-page-tools-view-subjects for the read-only variant.",
 	"neowiki-page-tools-view-subjects": "Read-only counterpart of neowiki-page-tools-manage-subjects: label for the sidebar link to the Subject management page, shown to users who lack edit permission.",
 	"neowiki-page-tools-edit-json": "Label for the sidebar link that navigates to Special:NeoJson for the current page. Only visible when development UIs are enabled.",
@@ -114,6 +114,7 @@
 	"neowiki-schemas-column-properties": "Column header for the number of property definitions in the schemas list table on [[Special:Schemas]].",
 	"neowiki-schemas-empty": "Message shown when no schemas exist yet on [[Special:Schemas]].",
 	"neowiki-schema-sidebar-all-schemas": "Label for the link in the NeoWiki section of the sidebar on Schema pages that navigates to [[Special:Schemas]].",
+	"neowiki-sidebar-create-subject": "Label for the link in the NeoWiki section of the sidebar that navigates to [[Special:CreateSubject]], where a Subject is created together with the page it lives on.",
 
 	"neowiki-schema-delete": "Aria label for the delete button on a Schema row in the schemas list.",
 
