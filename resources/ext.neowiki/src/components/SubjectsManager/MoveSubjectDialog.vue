@@ -81,6 +81,7 @@ import type { PageChoice } from '@/components/common/PageChoice.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
+import { createEmptyPage, PageCreationError } from '@/persistence/createEmptyPage.ts';
 
 const props = defineProps<{
 	open: boolean;
@@ -174,7 +175,10 @@ async function onMove( summary: string ): Promise<void> {
 		let targetPageId = chosen.pageId;
 
 		if ( targetPageId === null ) {
-			targetPageId = await createTargetPage( chosen.title, summary );
+			targetPageId = await createEmptyPage(
+				chosen.title,
+				summary || mw.msg( 'neowiki-managesubjects-move-create-page-summary-default' )
+			);
 			// Recorded on the choice as well: if the move then fails, a retry has to move onto the
 			// page just created rather than try to create it a second time.
 			target.value = { pageId: targetPageId, title: chosen.title };
@@ -196,45 +200,11 @@ async function onMove( summary: string ): Promise<void> {
 	}
 }
 
-/**
- * The page is created through MediaWiki's own API rather than by the move, which has no page
- * creation of its own and would bypass the createpage right if it did. It is created only once the
- * user confirms, so an abandoned dialog leaves no empty page behind.
- */
-async function createTargetPage( title: string, summary: string ): Promise<number> {
-	let response;
-
-	try {
-		response = await new mw.Api().create(
-			title,
-			{ summary: summary || mw.msg( 'neowiki-managesubjects-move-create-page-summary-default' ) },
-			''
-		);
-	} catch ( error ) {
-		// Everything that goes wrong here is about the page - an invalid title, a namespace the user
-		// may not create in, a filter - so it is reported as such rather than as a failed move. The
-		// title already being taken has its own message.
-		if ( codeOf( error ) === 'articleexists' ) {
-			throw error;
-		}
-
-		throw new Error( mw.msg( 'neowiki-managesubjects-move-create-page-error', title ) );
-	}
-
-	if ( response.result !== 'Success' ) {
-		throw new Error( mw.msg( 'neowiki-managesubjects-move-create-page-error', title ) );
-	}
-
-	return response.pageid;
-}
-
-function codeOf( error: unknown ): string | undefined {
-	return typeof error === 'string' ? error : ( error as { code?: string } )?.code;
-}
-
 function messageFor( error: unknown ): string {
-	if ( codeOf( error ) === 'articleexists' ) {
-		return mw.msg( 'neowiki-managesubjects-move-page-taken' );
+	if ( error instanceof PageCreationError ) {
+		return error.titleTaken() ?
+			mw.msg( 'neowiki-managesubjects-move-page-taken' ) :
+			mw.msg( 'neowiki-managesubjects-move-create-page-error', error.title );
 	}
 
 	if ( error instanceof Error ) {
