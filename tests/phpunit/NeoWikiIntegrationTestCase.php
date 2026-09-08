@@ -67,6 +67,16 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	}
 
 	protected function setUpNeo4j(): void {
+		// Outside the try: the catch below would turn the refusal into a skip. A wiki without a
+		// configured backend has nothing to wipe, so it keeps the skip path instead of failing.
+		if ( !$this->hasNeo4jTestOverrides() && $this->wikiHasNeo4jBackend() ) {
+			$this->fail(
+				'NEO4J_URL_OVERRIDE and NEO4J_URL_READ_OVERRIDE are not both set: refusing to touch'
+				. ' the Neo4j database the wiki itself is configured against. Graph tests only run'
+				. ' against a dedicated test instance (phpunit.xml.dist points at test_neo).'
+			);
+		}
+
 		try {
 			$client = NeoWikiExtension::getInstance()->getNeo4jClient();
 			$client->run( 'MATCH (n) DETACH DELETE n' );
@@ -77,6 +87,21 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		catch ( \Exception ) {
 			$this->markTestSkipped( 'Neo4j not available' );
 		}
+	}
+
+	private function hasNeo4jTestOverrides(): bool {
+		return $this->overrideIsUsable( getenv( 'NEO4J_URL_OVERRIDE' ) )
+			&& $this->overrideIsUsable( getenv( 'NEO4J_URL_READ_OVERRIDE' ) );
+	}
+
+	private function overrideIsUsable( string|false $override ): bool {
+		return $override !== false && $override !== '';
+	}
+
+	private function wikiHasNeo4jBackend(): bool {
+		$writeUrl = $this->getServiceContainer()->getMainConfig()->get( 'NeoWikiNeo4jInternalWriteUrl' );
+
+		return is_string( $writeUrl ) && $writeUrl !== '';
 	}
 
 	protected function createPageWithSubjects(
