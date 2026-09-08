@@ -608,6 +608,39 @@ describe( 'SubjectCreatorDialog', () => {
 		);
 	} );
 
+	describe( 'with an initial schema', () => {
+		it( 'opens on the second step with the initial schema loaded', async () => {
+			const wrapper = mountComponent( {}, { initialSchemaName: SCHEMA_NAME } );
+
+			subjectStore.openSubjectCreator();
+			await flushPromises();
+
+			expect( getSchemaMock ).toHaveBeenCalledWith( SCHEMA_NAME );
+			expect( wrapper.findComponent( SchemaPicker ).exists() ).toBe( false );
+			expect( wrapper.findComponent( SubjectEditor ).exists() ).toBe( true );
+		} );
+
+		it( 'falls back to the picker when the initial schema cannot be loaded', async () => {
+			getSchemaMock.mockRejectedValue( new Error( 'No such schema' ) );
+			const wrapper = mountComponent( {}, { initialSchemaName: 'Missing' } );
+
+			subjectStore.openSubjectCreator();
+			await flushPromises();
+
+			expect( wrapper.findComponent( SchemaPicker ).exists() ).toBe( true );
+			expect( wrapper.findComponent( SubjectEditor ).exists() ).toBe( false );
+		} );
+
+		it( 'leaves save unavailable until something is entered', async () => {
+			const wrapper = mountComponent( {}, { initialSchemaName: SCHEMA_NAME } );
+
+			subjectStore.openSubjectCreator();
+			await flushPromises();
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+		} );
+	} );
+
 	describe( 'Unparseable field input', () => {
 		async function pickSchema( wrapper: VueWrapper ): Promise<void> {
 			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );

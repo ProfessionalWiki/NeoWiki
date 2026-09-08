@@ -183,9 +183,12 @@ import { setPendingNotification } from '@/presentation/PendingNotification.ts';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
 import { useEditNotices } from '@/composables/useEditNotices.ts';
 
-const props = defineProps<{
+const props = withDefaults( defineProps<{
 	pageHasMainSubject: boolean;
-}>();
+	initialSchemaName?: string;
+}>(), {
+	initialSchemaName: undefined
+} );
 
 const selectedSchemaOption = ref( 'existing' );
 const selectedSchemaName = ref<string | null>( null );
@@ -375,8 +378,12 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 		return;
 	}
 
-	selectedSchemaName.value = schemaName;
 	markChanged();
+	await loadSchema( schemaName );
+}
+
+async function loadSchema( schemaName: string ): Promise<void> {
+	selectedSchemaName.value = schemaName;
 
 	const currentSequence = ++requestSequence;
 
@@ -455,12 +462,27 @@ const statements = computed( (): StatementList | null =>
 watch( () => subjectStore.subjectCreatorOpen, async ( isOpen ) => {
 	if ( isOpen ) {
 		reset();
+		await pinInitialSchema();
 		await nextTick();
 		focusInitialInput( selectedSchemaOption.value );
 	} else {
 		resetForm();
 	}
 } );
+
+// A Schema that cannot be loaded leaves the picker to do its job rather than a second step with
+// nothing to edit.
+async function pinInitialSchema(): Promise<void> {
+	if ( props.initialSchemaName === undefined ) {
+		return;
+	}
+
+	await loadSchema( props.initialSchemaName );
+
+	if ( loadedSchema.value === null ) {
+		goBack();
+	}
+}
 
 function resetForm(): void {
 	requestSequence++;
