@@ -155,6 +155,11 @@
 	"neowiki-subject-creator-continue": "Continue",
 	"neowiki-subject-creator-schema-created": "Schema created successfully",
 	"neowiki-subject-creator-back": "Back",
+	"neowiki-subject-creator-page-field": "Page",
+	"neowiki-subject-creator-page-has-main-subject": "This page already has a Main Subject, $1. The new Subject will be added alongside it.",
+	"neowiki-subject-creator-create-page-summary": "Page created for a new Subject",
+	"neowiki-subject-creator-create-page-error": "The page \"$1\" could not be created.",
+	"neowiki-subject-creator-page-taken": "The page \"$1\" was created in the meantime. Pick it to add the Subject to it.",
 
 	"neowiki-schema-display-property-name": "Property",
 	"neowiki-schema-display-property-type": "Type",

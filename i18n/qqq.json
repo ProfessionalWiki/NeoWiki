@@ -53,6 +53,11 @@
 	"neowiki-subject-creator-continue": "Label for the button that continues from schema creation to subject editing in the subject creator dialog.",
 	"neowiki-subject-creator-schema-created": "Success notification shown after creating a schema.",
 	"neowiki-subject-creator-back": "Aria label for the back button in the subject creator dialog, used to return to schema selection.",
+	"neowiki-subject-creator-page-field": "Label of the field in the 'create subject' dialog, when opened from [[Special:CreateSubject]], that picks the page the Subject will be stored on: an existing page or a title to create.",
+	"neowiki-subject-creator-page-has-main-subject": "Note in the 'create subject' dialog when the chosen page already has a Main Subject. Parameters:\n* $1 - the display name of that Main Subject",
+	"neowiki-subject-creator-create-page-summary": "Edit summary of the empty page created to hold a Subject, used when the user entered none.",
+	"neowiki-subject-creator-create-page-error": "Error shown at the page field of the 'create subject' dialog when the page could not be created. Parameters:\n* $1 - the page title",
+	"neowiki-subject-creator-page-taken": "Error shown at the page field of the 'create subject' dialog when the title to create was taken between choosing it and saving. Parameters:\n* $1 - the page title",
 
 	"neowiki-schema-editor-summary-default": "Default edit summary used when updating a schema via the UI.",
 	"neowiki-schema-editor-success": "Success notification shown after updating a schema. $1 is the schema name.",
