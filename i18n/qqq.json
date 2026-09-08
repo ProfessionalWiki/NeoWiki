@@ -17,6 +17,7 @@
 	"action-neowiki-admin": "{{doc-action|neowiki-admin}}",
 	"specialpages-group-neowiki": "Group heading for NeoWiki special pages on [[Special:SpecialPages]].",
 	"neowiki-special-schemas": "Title and description of the [[Special:Schemas]] page.",
+	"neowiki-special-createsubject": "Title and description of the [[Special:CreateSubject]] page, which creates a page together with its Main Subject. A subpage names the Schema to use, e.g. Special:CreateSubject/Person.",
 	"neowiki-schema-label": "Names a subject's schema. $1 is the schema name or a link to it. Also used as the accessible name of the schema badge, whose visible text is the bare name.",
 	"neowiki-cypher-raw-error-json-encode": "Error message shown when JSON encoding of query results fails.",
 

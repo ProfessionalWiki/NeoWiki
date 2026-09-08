@@ -19,6 +19,7 @@
 
 	"specialpages-group-neowiki": "NeoWiki",
 	"neowiki-special-schemas": "Schemas",
+	"neowiki-special-createsubject": "Create subject",
 
 	"neowiki-property-type-text": "Text",
 	"neowiki-property-type-url": "URL",
