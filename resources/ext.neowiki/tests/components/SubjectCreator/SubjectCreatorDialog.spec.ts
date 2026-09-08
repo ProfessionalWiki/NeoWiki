@@ -42,6 +42,12 @@ const NEW_SCHEMA_NAME = 'NewSchema';
 
 vi.mock( '@/composables/useSchemaPermissions.ts' );
 
+interface Deferred<T> {
+	promise: Promise<T>;
+	resolve: ( value: T ) => void;
+	reject: ( error: unknown ) => void;
+}
+
 const SchemaPickerStub = {
 	template: '<div class="schema-lookup-stub"></div>',
 	emits: [ 'select' ],
@@ -202,10 +208,10 @@ describe( 'SubjectCreatorDialog', () => {
 		editorUnparseableInput = null;
 		schemaCreatorUnparseableInput = null;
 		reloadMock = vi.fn();
-		vi.stubGlobal( 'location', { ...window.location, reload: reloadMock } );
+		vi.stubGlobal( 'location', { href: '', reload: reloadMock } );
 
 		setupMwMock( {
-			functions: [ 'msg', 'notify', 'config', 'storage' ],
+			functions: [ 'msg', 'notify', 'config', 'storage', 'util' ],
 			config: {
 				wgArticleId: PAGE_ID,
 				wgTitle: PAGE_TITLE,
@@ -237,6 +243,10 @@ describe( 'SubjectCreatorDialog', () => {
 			canCreateSchemas,
 			checkCreatePermission: vi.fn(),
 		} );
+	} );
+
+	afterEach( () => {
+		vi.unstubAllGlobals();
 	} );
 
 	it( 'renders the dialog closed by default', () => {
@@ -647,6 +657,7 @@ describe( 'SubjectCreatorDialog', () => {
 	describe( 'in page-first mode', () => {
 		const NEW_PAGE_ID = 99;
 		const EXISTING_PAGE_ID = 12;
+		const OTHER_PAGE_ID = 13;
 		const MAIN_ID = 's11111111111taa';
 		let createMock: ReturnType<typeof vi.fn>;
 		let getPageSubjectsMock: ReturnType<typeof vi.fn>;
@@ -693,13 +704,15 @@ describe( 'SubjectCreatorDialog', () => {
 			await flushPromises();
 		}
 
-		function deferred<T>(): { promise: Promise<T>; resolve: ( value: T ) => void } {
+		function deferred<T>(): Deferred<T> {
 			let resolve!: ( value: T ) => void;
-			const promise = new Promise<T>( ( r ) => {
-				resolve = r;
+			let reject!: ( error: unknown ) => void;
+			const promise = new Promise<T>( ( resolvePromise, rejectPromise ) => {
+				resolve = resolvePromise;
+				reject = rejectPromise;
 			} );
 
-			return { promise, resolve };
+			return { promise, resolve, reject };
 		}
 
 		function pageWithMainSubject( name: string ): unknown {
@@ -717,7 +730,6 @@ describe( 'SubjectCreatorDialog', () => {
 			( mw as any ).Api = vi.fn( function ( this: { create: typeof createMock } ) {
 				this.create = createMock;
 			} );
-			( mw as any ).util = { getUrl: vi.fn( ( title: string ) => `/wiki/${ title }` ) };
 
 			getPageSubjectsMock = vi.fn().mockResolvedValue( {
 				pageSubjects: new PageSubjects( EXISTING_PAGE_ID, null, [] ),
@@ -758,7 +770,7 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
 		} );
 
-		it( 'creates the page, makes the subject its main subject, and goes there', async () => {
+		it( 'creates the page and makes the subject its main subject', async () => {
 			const wrapper = mountPageFirst();
 			await pickSchema( wrapper );
 			await pickPage( wrapper, { pageId: null, title: 'New Person' } );
@@ -769,6 +781,15 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
 				NEW_PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), 'why',
 			);
+		} );
+
+		it( 'navigates to the created page rather than reloading', async () => {
+			const wrapper = mountPageFirst();
+			await pickSchema( wrapper );
+			await pickPage( wrapper, { pageId: null, title: 'New Person' } );
+
+			await save( wrapper );
+
 			expect( mw.storage.session.set ).toHaveBeenCalledWith( 'neowiki-subject-creator-success', '1' );
 			expect( location.href ).toBe( '/wiki/New Person' );
 			expect( reloadMock ).not.toHaveBeenCalled();
@@ -864,7 +885,27 @@ describe( 'SubjectCreatorDialog', () => {
 			await flushPromises();
 
 			expect( location.href ).toBe( '/wiki/New Person' );
+			expect( reloadMock ).not.toHaveBeenCalled();
 			expect( mw.notify ).not.toHaveBeenCalled();
+		} );
+
+		it( 'creates the subject on the page that was chosen when the save started', async () => {
+			// The pre-save dry-run is the round trip that leaves the picker live between the save
+			// starting and the page it writes to being settled.
+			const dryRun = deferred<SubjectViolation[]>();
+			( subjectStore.validateSubject as any ).mockReturnValue( dryRun.promise );
+			const wrapper = mountPageFirst();
+			await pickSchema( wrapper );
+			await pickPage( wrapper, { pageId: null, title: 'New Person' } );
+
+			await save( wrapper );
+			await pickPage( wrapper, null );
+			dryRun.resolve( [] );
+			await flushPromises();
+
+			expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
+				NEW_PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), undefined,
+			);
 		} );
 
 		it( 'keeps the tier decided when the save started if the picker changes mid-save', async () => {
@@ -906,7 +947,67 @@ describe( 'SubjectCreatorDialog', () => {
 			await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
 			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+
+			await save( wrapper );
+
+			expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
+		} );
+
+		it( 'says the chosen page could not be read', async () => {
+			getPageSubjectsMock.mockRejectedValue( new Error( 'Graph store unavailable' ) );
+			const wrapper = mountPageFirst();
+			await pickSchema( wrapper );
+			await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
+
 			expect( wrapper.text() ).toContain( 'neowiki-subject-creator-page-read-error' );
+		} );
+
+		it( 'ignores the main-subject answer for a page the user has moved off', async () => {
+			const slowRead = deferred<unknown>();
+			getPageSubjectsMock.mockReturnValueOnce( slowRead.promise );
+			const wrapper = mountPageFirst();
+			await pickSchema( wrapper );
+			await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
+
+			await pickPage( wrapper, { pageId: OTHER_PAGE_ID, title: 'Other Page' } );
+			slowRead.resolve( pageWithMainSubject( 'ACME Inc' ) );
+			await flushPromises();
+
+			expect( wrapper.text() ).not.toContain( 'ACME Inc' );
+
+			await save( wrapper );
+
+			expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
+				OTHER_PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), undefined,
+			);
+		} );
+
+		it( 'ignores a read failure for a page the user has moved off', async () => {
+			const slowRead = deferred<unknown>();
+			getPageSubjectsMock.mockReturnValueOnce( slowRead.promise );
+			const wrapper = mountPageFirst();
+			await pickSchema( wrapper );
+			await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
+
+			await pickPage( wrapper, { pageId: null, title: 'New Person' } );
+			slowRead.reject( new Error( 'Graph store unavailable' ) );
+			await flushPromises();
+
+			expect( wrapper.text() ).not.toContain( 'neowiki-subject-creator-page-read-error' );
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+		} );
+
+		it( 'requests no edit notices in page-first mode', async () => {
+			const getNotices = vi.fn().mockResolvedValue( [] );
+			const noticeRepositorySpy = vi.spyOn( NeoWikiExtension.getInstance(), 'getEditNoticeRepository' )
+				.mockReturnValue( { getNotices } as never );
+
+			const wrapper = mountPageFirst();
+			await pickSchema( wrapper );
+
+			expect( getNotices ).not.toHaveBeenCalled();
+
+			noticeRepositorySpy.mockRestore();
 		} );
 	} );
 

@@ -65,7 +65,7 @@ class NeoWikiSidebarLinkTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'CreateSubject', $link['href'] );
 	}
 
-	public function testCreateSubjectLinkIsTheLastItemOfTheNeoWikiSection(): void {
+	public function testCreateSubjectLinkIsListedAfterThePageTools(): void {
 		$section = $this->neoWikiSectionOnAnOrdinaryPage();
 
 		$this->assertSame( 't-neowiki-create-subject-page', end( $section )['id'] );
@@ -74,6 +74,15 @@ class NeoWikiSidebarLinkTest extends NeoWikiIntegrationTestCase {
 	public function testCreateSubjectLinkIsAbsentForAUserWhoMayNotCreatePages(): void {
 		$this->setGroupPermissions( '*', 'createpage', false );
 		$this->setGroupPermissions( 'user', 'createpage', false );
+
+		$this->assertNull(
+			$this->findLinkById( $this->neoWikiSectionOnAnOrdinaryPage(), 't-neowiki-create-subject-page' )
+		);
+	}
+
+	public function testCreateSubjectLinkIsAbsentForAUserWhoMayNotEdit(): void {
+		$this->setGroupPermissions( '*', 'edit', false );
+		$this->setGroupPermissions( 'user', 'edit', false );
 
 		$this->assertNull(
 			$this->findLinkById( $this->neoWikiSectionOnAnOrdinaryPage(), 't-neowiki-create-subject-page' )

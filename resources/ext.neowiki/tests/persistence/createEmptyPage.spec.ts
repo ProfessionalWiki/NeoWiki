@@ -30,6 +30,12 @@ describe( 'createEmptyPage', () => {
 		);
 	} );
 
+	it( 'refuses a response that did not report success', async () => {
+		createMock.mockResolvedValue( { result: 'Failure' } );
+
+		await expect( createEmptyPage( 'New Page', '' ) ).rejects.toThrow( PageCreationError );
+	} );
+
 	it( 'reports any other refusal without calling the title taken', async () => {
 		createMock.mockRejectedValue( 'invalidtitle' );
 

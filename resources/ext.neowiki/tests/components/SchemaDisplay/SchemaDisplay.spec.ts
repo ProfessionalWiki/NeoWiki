@@ -25,8 +25,11 @@ vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
 	} ),
 } ) );
 
+let grantedRight = false;
 const canCreateSubjectPageRef = ref( false );
-const checkCreateSubjectPagePermissionMock = vi.fn();
+const checkCreateSubjectPagePermissionMock = vi.fn( async (): Promise<void> => {
+	canCreateSubjectPageRef.value = grantedRight;
+} );
 
 vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 	useSubjectPermissions: () => ( {
@@ -64,6 +67,7 @@ describe( 'SchemaDisplay', () => {
 		setActivePinia( createPinia() );
 		canEditSchemaRef.value = false;
 		checkEditPermissionMock.mockClear();
+		grantedRight = false;
 		canCreateSubjectPageRef.value = false;
 		checkCreateSubjectPagePermissionMock.mockClear();
 		getSchemaMock.mockReset();
@@ -79,13 +83,12 @@ describe( 'SchemaDisplay', () => {
 		expect( header.props( 'canEditSchema' ) ).toBe( false );
 	} );
 
-	it( 'asks whether the user may create a subject page and tells the header', async () => {
-		canCreateSubjectPageRef.value = true;
+	it( 'tells the header the user may create a subject page', async () => {
+		grantedRight = true;
 
 		const wrapper = mountComponent( newSchema() );
 		await flushPromises();
 
-		expect( checkCreateSubjectPagePermissionMock ).toHaveBeenCalled();
 		expect( wrapper.findComponent( SchemaDisplayHeader ).props( 'canCreateSubject' ) ).toBe( true );
 	} );
 
