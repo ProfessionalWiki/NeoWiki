@@ -160,6 +160,7 @@
 	"neowiki-subject-creator-create-page-summary": "Page created for a new Subject",
 	"neowiki-subject-creator-create-page-error": "The page \"$1\" could not be created.",
 	"neowiki-subject-creator-page-taken": "The page \"$1\" was created in the meantime. Pick it to add the Subject to it.",
+	"neowiki-subject-creator-page-read-error": "The page \"$1\" could not be read. Pick it again to retry.",
 	"neowiki-createsubject-button": "Create subject",
 
 	"neowiki-schema-display-property-name": "Property",

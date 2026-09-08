@@ -603,6 +603,7 @@
 				"neowiki-subject-creator-create-page-summary",
 				"neowiki-subject-creator-create-page-error",
 				"neowiki-subject-creator-page-taken",
+				"neowiki-subject-creator-page-read-error",
 				"neowiki-createsubject-button",
 				"neowiki-edit-schema",
 				"neowiki-schema-create-subject",

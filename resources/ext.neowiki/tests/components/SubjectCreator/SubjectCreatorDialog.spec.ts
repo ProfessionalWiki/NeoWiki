@@ -693,6 +693,15 @@ describe( 'SubjectCreatorDialog', () => {
 			await flushPromises();
 		}
 
+		function deferred<T>(): { promise: Promise<T>; resolve: ( value: T ) => void } {
+			let resolve!: ( value: T ) => void;
+			const promise = new Promise<T>( ( r ) => {
+				resolve = r;
+			} );
+
+			return { promise, resolve };
+		}
+
 		function pageWithMainSubject( name: string ): unknown {
 			return {
 				pageSubjects: new PageSubjects( EXISTING_PAGE_ID, new SubjectId( MAIN_ID ), [
@@ -840,6 +849,44 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( subjectStore.createMainSubject ).toHaveBeenLastCalledWith(
 				NEW_PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), undefined,
 			);
+		} );
+
+		it( 'keeps the page it was saving onto when the picker changes mid-save', async () => {
+			const subjectWrite = deferred<SubjectId>();
+			( subjectStore.createMainSubject as any ).mockReturnValue( subjectWrite.promise );
+			const wrapper = mountPageFirst();
+			await pickSchema( wrapper );
+			await pickPage( wrapper, { pageId: null, title: 'New Person' } );
+
+			await save( wrapper );
+			await pickPage( wrapper, null );
+			subjectWrite.resolve( new SubjectId( MAIN_ID ) );
+			await flushPromises();
+
+			expect( location.href ).toBe( '/wiki/New Person' );
+			expect( mw.notify ).not.toHaveBeenCalled();
+		} );
+
+		it( 'ignores a second save while one is in flight', async () => {
+			createMock.mockReturnValue( deferred<unknown>().promise );
+			const wrapper = mountPageFirst();
+			await pickSchema( wrapper );
+			await pickPage( wrapper, { pageId: null, title: 'New Person' } );
+
+			await save( wrapper );
+			await save( wrapper );
+
+			expect( createMock ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		it( 'blocks saving when the chosen page could not be read', async () => {
+			getPageSubjectsMock.mockRejectedValue( new Error( 'Graph store unavailable' ) );
+			const wrapper = mountPageFirst();
+			await pickSchema( wrapper );
+			await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+			expect( wrapper.text() ).toContain( 'neowiki-subject-creator-page-read-error' );
 		} );
 	} );
 

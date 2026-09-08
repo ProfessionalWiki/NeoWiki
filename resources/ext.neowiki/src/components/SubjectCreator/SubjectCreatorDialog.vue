@@ -155,7 +155,7 @@
 			<SummaryAction
 				help-text=""
 				:save-button-label="$i18n( 'neowiki-subject-creator-save' ).text()"
-				:save-disabled="!hasChanged || !pageChosen"
+				:save-disabled="!hasChanged || !pageChosen || saving"
 				@save="handleSave"
 			/>
 		</template>
@@ -185,7 +185,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
-import { newSubjectNamePreview } from '@/presentation/subjectDisplayName.ts';
+import { newSubjectNamePreview, subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { withoutMissingValueViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
@@ -239,10 +239,14 @@ let requestSequence = 0;
 const subjectStore = useSubjectStore();
 
 const chosenPage = ref<PageChoice | null>( null );
+const chosenPageHasMainSubject = ref( false );
 const chosenPageMainSubjectName = ref<string | null>( null );
 const pageError = ref<string | null>( null );
 
-const pageChosen = computed( (): boolean => !props.choosePage || chosenPage.value !== null );
+// A page-field error is cleared by picking again, so the choice behind one is not a page to save
+// onto.
+const pageChosen = computed( (): boolean =>
+	!props.choosePage || ( chosenPage.value !== null && pageError.value === null ) );
 
 const pageFieldStatus = computed( (): ValidationStatusType =>
 	pageError.value === null ? 'default' : 'error' );
@@ -252,12 +256,11 @@ const pageFieldMessages = computed( (): ValidationMessages =>
 
 // In page-first mode the chosen page decides; a page that does not exist yet has no Main Subject.
 const targetHasMainSubject = computed( (): boolean =>
-	props.choosePage ? chosenPageMainSubjectName.value !== null : props.pageHasMainSubject );
+	props.choosePage ? chosenPageHasMainSubject.value : props.pageHasMainSubject );
 
 async function onPageSelected( choice: PageChoice | null ): Promise<void> {
+	resetPageChoice();
 	chosenPage.value = choice;
-	chosenPageMainSubjectName.value = null;
-	pageError.value = null;
 
 	if ( choice === null ) {
 		return;
@@ -278,17 +281,23 @@ async function onPageSelected( choice: PageChoice | null ): Promise<void> {
 		const mainSubject = mainSubjectId === null ? undefined : pageSubjects.getSubject( mainSubjectId );
 
 		if ( chosenPage.value?.pageId === choice.pageId ) {
-			chosenPageMainSubjectName.value = mainSubject?.getDisplayName() ?? null;
+			chosenPageHasMainSubject.value = mainSubjectId !== null;
+			chosenPageMainSubjectName.value = mainSubject === undefined ? null : subjectDisplayName( mainSubject );
 		}
 	} catch ( error ) {
-		// The write still lands correctly: the server refuses a second Main Subject, and the
-		// dialog shows that refusal.
 		console.error( 'Failed to read the chosen page\'s main subject:', error );
+
+		// Whether the page has a Main Subject decides which tier the Subject is created at, so an
+		// unread page goes back to the user rather than being guessed at.
+		if ( chosenPage.value?.pageId === choice.pageId ) {
+			pageError.value = mw.msg( 'neowiki-subject-creator-page-read-error', choice.title );
+		}
 	}
 }
 
 function resetPageChoice(): void {
 	chosenPage.value = null;
+	chosenPageHasMainSubject.value = false;
 	chosenPageMainSubjectName.value = null;
 	pageError.value = null;
 }
@@ -528,13 +537,13 @@ function pageName(): string {
 	return String( mw.config.get( 'wgPageName' ) ?? '' ).replace( /_/g, ' ' );
 }
 
-// Shown greyed in the label field and sent as no label at all when the user leaves it be. It
-// is what the Subject will display, so the field previews the outcome rather than pre-filling it -
-// marker included, since that is what the Subject will be shown under.
 function targetPageName(): string {
 	return props.choosePage ? ( chosenPage.value?.title ?? '' ) : pageName();
 }
 
+// Shown greyed in the label field and sent as no label at all when the user leaves it be. It
+// is what the Subject will display, so the field previews the outcome rather than pre-filling it -
+// marker included, since that is what the Subject will be shown under.
 const placeholderLabel = computed( (): string =>
 	selectedSchemaName.value === null ?
 		'' :
@@ -600,29 +609,38 @@ function goBack(): void {
 	}
 }
 
+const saving = ref( false );
+
 const handleSave = async ( summary: string ): Promise<void> => {
 	await nextTick();
 
-	if ( !subjectEditorRef.value || !selectedSchemaName.value || !pageChosen.value ) {
+	if ( !subjectEditorRef.value || !selectedSchemaName.value || !pageChosen.value || saving.value ) {
 		return;
 	}
+
+	// Taken once, up front: the picker stays live while the writes below are out, so a keystroke in
+	// it would otherwise null this ref out from under them once they had landed. Null is the dialog
+	// belonging to a page, whose Subject goes on the page being viewed.
+	const chosen = chosenPage.value;
 
 	const label = enteredLabel();
 
-	await flush();
-
-	const unparseable = subjectEditorRef.value.unparseableInput();
-
-	// Saving now would silently drop the text the user can still see. Held after
-	// the dry-run so the field's own complaint and the server's findings on the
-	// other fields surface in one pass rather than one round at a time, and above
-	// the writes below so no draft schema is created for a subject that is not saved.
-	if ( unparseable !== null ) {
-		mw.notify( unparseable.message, { title: unparseable.propertyName, type: 'error' } );
-		return;
-	}
+	saving.value = true;
 
 	try {
+		await flush();
+
+		const unparseable = subjectEditorRef.value.unparseableInput();
+
+		// Saving now would silently drop the text the user can still see. Held after
+		// the dry-run so the field's own complaint and the server's findings on the
+		// other fields surface in one pass rather than one round at a time, and above
+		// the writes below so no draft schema is created for a subject that is not saved.
+		if ( unparseable !== null ) {
+			mw.notify( unparseable.message, { title: unparseable.propertyName, type: 'error' } );
+			return;
+		}
+
 		if ( draftSchema.value ) {
 			await schemaStore.saveSchema( draftSchema.value, summary || undefined );
 			draftSchema.value = null;
@@ -631,7 +649,9 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		const updatedStatements = subjectEditorRef.value.getSubjectData();
 		const statementsToSave = [ ...updatedStatements ].filter( ( statement ) => statement.hasValue() );
 
-		const pageId = props.choosePage ? await targetPageId( summary ) : mw.config.get( 'wgArticleId' );
+		const pageId = chosen === null ?
+			mw.config.get( 'wgArticleId' ) :
+			await createTargetPageIfMissing( chosen, summary );
 		const statementList = new StatementList( statementsToSave );
 		const commentOrUndefined = summary || undefined;
 
@@ -653,7 +673,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 			);
 		}
 		setPendingNotification( 'neowiki-subject-creator-success' );
-		leaveForCreatedSubject();
+		leaveForCreatedSubject( chosen );
 	} catch ( error ) {
 		if ( error instanceof PageCreationError ) {
 			pageError.value = error.titleTaken() ?
@@ -676,15 +696,15 @@ const handleSave = async ( summary: string ): Promise<void> => {
 				type: 'error'
 			}
 		);
+	} finally {
+		saving.value = false;
 	}
 };
 
 // The page is created only now, so an abandoned dialog leaves nothing behind. Its id is recorded on
 // the choice: a Subject write that then fails is retried onto the page just created rather than
 // creating it twice.
-async function targetPageId( summary: string ): Promise<number> {
-	const chosen = chosenPage.value as PageChoice;
-
+async function createTargetPageIfMissing( chosen: PageChoice, summary: string ): Promise<number> {
 	if ( chosen.pageId !== null ) {
 		return chosen.pageId;
 	}
@@ -698,13 +718,13 @@ async function targetPageId( summary: string ): Promise<number> {
 	return pageId;
 }
 
-function leaveForCreatedSubject(): void {
-	if ( props.choosePage ) {
-		window.location.href = mw.util.getUrl( ( chosenPage.value as PageChoice ).title );
+function leaveForCreatedSubject( chosen: PageChoice | null ): void {
+	if ( chosen === null ) {
+		window.location.reload();
 		return;
 	}
 
-	window.location.reload();
+	window.location.href = mw.util.getUrl( chosen.title );
 }
 
 defineExpose( { hasChanged } );
