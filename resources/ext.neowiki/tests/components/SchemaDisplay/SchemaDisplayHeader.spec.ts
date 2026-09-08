@@ -5,11 +5,11 @@ import { Schema } from '@/domain/Schema.ts';
 import { setupMwMock, createI18nMock } from '../../VueTestHelpers.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
-function mountComponent( schema: Schema, canEditSchema: boolean = false ): VueWrapper {
-	setupMwMock( { functions: [ 'msg' ] } );
+function mountComponent( schema: Schema, canEditSchema: boolean = false, canCreateSubject: boolean = false ): VueWrapper {
+	setupMwMock( { functions: [ 'msg', 'util' ] } );
 
 	return mount( SchemaDisplayHeader, {
-		props: { schema, canEditSchema },
+		props: { schema, canEditSchema, canCreateSubject },
 		global: {
 			mocks: { $i18n: createI18nMock() },
 			stubs: {
@@ -54,5 +54,19 @@ describe( 'SchemaDisplayHeader', () => {
 		await wrapper.find( '.ext-neowiki-schema-display-header__actions button' ).trigger( 'click' );
 
 		expect( wrapper.emitted( 'edit' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'links to the page-first creator for this schema when the user may create subjects', () => {
+		const wrapper = mountComponent( newSchema( { title: 'Company' } ), false, true );
+		const link = wrapper.find( '.ext-neowiki-schema-display-header__create-subject' );
+
+		expect( link.attributes( 'href' ) ).toBe( '/wiki/Special:CreateSubject/Company' );
+		expect( link.text() ).toContain( 'neowiki-schema-create-subjectCompany' );
+	} );
+
+	it( 'offers no creation link when the user may not create subjects', () => {
+		const wrapper = mountComponent( newSchema(), false, false );
+
+		expect( wrapper.find( '.ext-neowiki-schema-display-header__create-subject' ).exists() ).toBe( false );
 	} );
 } );

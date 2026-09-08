@@ -75,4 +75,16 @@ describe( 'Rights Based Subject Permission Hints', async () => {
 		expect( await hints.canCreateMainSubject() ).toBe( true );
 	} );
 
+	it( 'can create a subject page with the createpage and edit rights', async () => {
+		expect( await newHints( [ 'createpage', 'edit' ] ).canCreateSubjectPage() ).toBe( true );
+	} );
+
+	it( 'cannot create a subject page without the createpage right', async () => {
+		expect( await newHints( [ 'edit' ] ).canCreateSubjectPage() ).toBe( false );
+	} );
+
+	it( 'cannot create a subject page without the edit right', async () => {
+		expect( await newHints( [ 'createpage' ] ).canCreateSubjectPage() ).toBe( false );
+	} );
+
 } );

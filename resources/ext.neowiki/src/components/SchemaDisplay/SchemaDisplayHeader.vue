@@ -12,6 +12,14 @@
 			</div>
 		</div>
 		<div class="ext-neowiki-schema-display-header__actions">
+			<a
+				v-if="canCreateSubject"
+				class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled ext-neowiki-schema-display-header__create-subject"
+				:href="createSubjectUrl"
+			>
+				<CdxIcon :icon="cdxIconAdd" />
+				{{ $i18n( 'neowiki-schema-create-subject', schema.getName() ).text() }}
+			</a>
 			<CdxButton
 				v-if="canEditSchema"
 				weight="quiet"
@@ -25,11 +33,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { Schema } from '@/domain/Schema.ts';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
-import { cdxIconEdit } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconEdit } from '@wikimedia/codex-icons';
 
-defineProps( {
+const props = defineProps( {
 	schema: {
 		type: Schema,
 		required: true
@@ -37,8 +46,15 @@ defineProps( {
 	canEditSchema: {
 		type: Boolean,
 		required: true
+	},
+	canCreateSubject: {
+		type: Boolean,
+		required: true
 	}
 } );
+
+const createSubjectUrl = computed( (): string =>
+	mw.util.getUrl( `Special:CreateSubject/${ props.schema.getName() }` ) );
 
 const emit = defineEmits<{
 	edit: [];
@@ -64,6 +80,12 @@ const emit = defineEmits<{
 
 	&__description {
 		color: @color-subtle;
+	}
+
+	&__actions {
+		display: flex;
+		align-items: center;
+		gap: @spacing-50;
 	}
 }
 </style>

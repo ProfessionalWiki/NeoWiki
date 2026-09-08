@@ -25,6 +25,16 @@ vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
 	} ),
 } ) );
 
+const canCreateSubjectPageRef = ref( false );
+const checkCreateSubjectPagePermissionMock = vi.fn();
+
+vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
+	useSubjectPermissions: () => ( {
+		canCreateSubjectPage: canCreateSubjectPageRef,
+		checkCreateSubjectPagePermission: checkCreateSubjectPagePermissionMock,
+	} ),
+} ) );
+
 const getSchemaMock = vi.fn();
 
 function mountComponent( schema: Schema ): VueWrapper {
@@ -54,6 +64,8 @@ describe( 'SchemaDisplay', () => {
 		setActivePinia( createPinia() );
 		canEditSchemaRef.value = false;
 		checkEditPermissionMock.mockClear();
+		canCreateSubjectPageRef.value = false;
+		checkCreateSubjectPagePermissionMock.mockClear();
 		getSchemaMock.mockReset();
 	} );
 
@@ -65,6 +77,16 @@ describe( 'SchemaDisplay', () => {
 
 		expect( header.props( 'schema' ) ).toStrictEqual( schema );
 		expect( header.props( 'canEditSchema' ) ).toBe( false );
+	} );
+
+	it( 'asks whether the user may create a subject page and tells the header', async () => {
+		canCreateSubjectPageRef.value = true;
+
+		const wrapper = mountComponent( newSchema() );
+		await flushPromises();
+
+		expect( checkCreateSubjectPagePermissionMock ).toHaveBeenCalled();
+		expect( wrapper.findComponent( SchemaDisplayHeader ).props( 'canCreateSubject' ) ).toBe( true );
 	} );
 
 	it( 'renders property names, types, and required status', () => {

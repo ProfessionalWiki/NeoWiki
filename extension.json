@@ -605,6 +605,7 @@
 				"neowiki-subject-creator-page-taken",
 				"neowiki-createsubject-button",
 				"neowiki-edit-schema",
+				"neowiki-schema-create-subject",
 				"neowiki-schema-delete",
 				"neowiki-schema-editor-summary-default",
 				"neowiki-schema-editor-success",

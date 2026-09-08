@@ -11,6 +11,7 @@
 				<SchemaDisplayHeader
 					:schema="currentSchema"
 					:can-edit-schema="canEditSchema"
+					:can-create-subject="canCreateSubjectPage"
 					@edit="openEditor"
 				/>
 			</template>
@@ -72,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef, watch } from 'vue';
+import { computed, onMounted, shallowRef, watch } from 'vue';
 import { Schema } from '@/domain/Schema.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { CdxTable, CdxInfoChip } from '@wikimedia/codex';
@@ -82,6 +83,7 @@ import SchemaDisplayHeader from './SchemaDisplayHeader.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
+import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 
 const props = defineProps( {
 	schema: {
@@ -93,6 +95,11 @@ const props = defineProps( {
 const schemaStore = useSchemaStore();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 const { canEditSchema, checkEditPermission } = useSchemaPermissions();
+const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
+
+onMounted( () => {
+	checkCreateSubjectPagePermission();
+} );
 
 const isEditorOpen = shallowRef( false );
 const currentSchema = shallowRef<Schema>( props.schema );
