@@ -619,9 +619,10 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	}
 
 	// Taken once, up front: the picker stays live while the writes below are out, so a keystroke in
-	// it would otherwise null this ref out from under them once they had landed. Null is the dialog
-	// belonging to a page, whose Subject goes on the page being viewed.
+	// it would otherwise change these out from under them once they had landed. A null page is the
+	// dialog belonging to a page, whose Subject goes on the page being viewed.
 	const chosen = chosenPage.value;
+	const addAlongsideMainSubject = targetHasMainSubject.value;
 
 	const label = enteredLabel();
 
@@ -655,7 +656,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		const statementList = new StatementList( statementsToSave );
 		const commentOrUndefined = summary || undefined;
 
-		if ( targetHasMainSubject.value ) {
+		if ( addAlongsideMainSubject ) {
 			await subjectStore.createChildSubject(
 				pageId,
 				label,

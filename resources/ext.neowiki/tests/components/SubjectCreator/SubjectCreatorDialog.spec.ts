@@ -867,6 +867,26 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( mw.notify ).not.toHaveBeenCalled();
 		} );
 
+		it( 'keeps the tier decided when the save started if the picker changes mid-save', async () => {
+			const pageCreation = deferred<{ result: string; pageid: number }>();
+			createMock.mockReturnValue( pageCreation.promise );
+			const wrapper = mountPageFirst();
+			await pickSchema( wrapper );
+			await pickPage( wrapper, { pageId: null, title: 'New Person' } );
+
+			await save( wrapper );
+
+			getPageSubjectsMock.mockResolvedValue( pageWithMainSubject( 'ACME Inc' ) );
+			await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
+			pageCreation.resolve( { result: 'Success', pageid: NEW_PAGE_ID } );
+			await flushPromises();
+
+			expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
+				NEW_PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), undefined,
+			);
+			expect( subjectStore.createChildSubject ).not.toHaveBeenCalled();
+		} );
+
 		it( 'ignores a second save while one is in flight', async () => {
 			createMock.mockReturnValue( deferred<unknown>().promise );
 			const wrapper = mountPageFirst();
