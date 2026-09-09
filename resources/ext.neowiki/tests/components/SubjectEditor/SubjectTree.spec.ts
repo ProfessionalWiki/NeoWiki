@@ -2,7 +2,6 @@ import { mount, flushPromises, DOMWrapper, VueWrapper } from '@vue/test-utils';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createPinia, setActivePinia, type Pinia } from 'pinia';
 import SubjectTree from '@/components/SubjectEditor/SubjectTree.vue';
-import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
@@ -596,14 +595,24 @@ describe( 'SubjectTree', () => {
 		return node.get( '.ext-neowiki-tree__node-name' );
 	}
 
+	function childClassNames( row: Omit<DOMWrapper<Element>, 'exists'> ): string[] {
+		return [ ...row.element.children ].map( ( child ) => child.className );
+	}
+
+	// A relation is named on its own caption line when it heads several rows and on the row
+	// itself when it heads one. These tests care that it is named, not which of the two.
+	function relationNames( wrapper: VueWrapper ): string[] {
+		return wrapper.findAll( '.ext-neowiki-tree__edge, .ext-neowiki-tree__node-caption' )
+			.map( ( named ) => named.text() );
+	}
+
 	it( 'renders a node per relation target, labelled with the relation property', async () => {
 		// person --Birth event--> birth --Time span--> timespan
 		const wrapper = mountTree();
 		await flushPromises();
 
 		expect( targetNodeLabels( wrapper ) ).toContain( 'Birth of J. S. Bach' );
-		expect( wrapper.findAll( '.ext-neowiki-tree__edge' ).map( ( n ) => n.text() ) )
-			.toContain( 'Birth event' );
+		expect( relationNames( wrapper ) ).toContain( 'Birth event' );
 	} );
 
 	it( 'names a relation once per group, not once per sibling node', async () => {
@@ -616,6 +625,8 @@ describe( 'SubjectTree', () => {
 			.map( ( n ) => n.text() )
 			.filter( ( text ) => text === 'Sibling' );
 		expect( siblingLabels.length ).toBe( 1 );
+		// Named on the caption line or on the rows, never on both.
+		expect( wrapper.findAll( '.ext-neowiki-tree__node-caption' ) ).toHaveLength( 0 );
 	} );
 
 	// A declared relation earns a place in the navigator only once data fills it.
@@ -623,8 +634,7 @@ describe( 'SubjectTree', () => {
 		const wrapper = mountTree();
 		await flushPromises();
 
-		expect( wrapper.findAll( '.ext-neowiki-tree__edge' ).map( ( n ) => n.text() ) )
-			.toEqual( [ 'Spouse', 'Birth event', 'Time span' ] );
+		expect( relationNames( wrapper ) ).toEqual( [ 'Spouse', 'Birth event', 'Time span' ] );
 		expect( targetNodes( wrapper ) ).toHaveLength( 3 );
 	} );
 
@@ -670,9 +680,9 @@ describe( 'SubjectTree', () => {
 		expect( targetNodeLabels( wrapper ) ).not.toContain( SPOUSE_ID );
 	} );
 
-	// A label-less child is shown as "(unnamed Name)", which already carries its Schema, so
-	// printing the Schema beside it would read "(unnamed Name)  Name".
-	it( 'prints the schema of a label-less target only once', async () => {
+	// A label-less child is shown as "(unnamed Name)", the Schema in the name, ahead of which
+	// the row prints the relation that reaches it.
+	it( 'names a label-less target by its relation and its marked name', async () => {
 		const wrapper = mountWithServices(
 			rootSubject,
 			personSchema,
@@ -681,7 +691,7 @@ describe( 'SubjectTree', () => {
 		);
 		await flushPromises();
 
-		expect( nameRow( wrapper.get( `[data-mw-neowiki-subject-id="${ SPOUSE_ID }"]` ) ).text() ).toBe( '(unnamed Name)' );
+		expect( nameRow( wrapper.get( `[data-mw-neowiki-subject-id="${ SPOUSE_ID }"]` ) ).text() ).toBe( 'Spouse(unnamed Name)' );
 	} );
 
 	// The only way back to the root once a relation target is being edited.
@@ -811,41 +821,35 @@ describe( 'SubjectTree', () => {
 		// The tree is eagerly expanded and offers no per-node toggle, so it draws no disclosure
 		// glyph. Asserted as the row's whole content rather than as the absence of one class or
 		// character, so a re-introduced glyph is caught whatever it is made of.
-		it( 'renders nothing in a node\'s row but its name and its schema', async () => {
+		// The root is reached by no relation, so it carries a name and nothing else.
+		it( 'renders nothing in the root\'s row but its name', async () => {
 			const wrapper = mountTree();
 			await flushPromises();
 
-			const rows = wrapper.findAll( '.ext-neowiki-tree__node-name' );
-			expect( rows.length ).toBe( 4 );
+			const root = nameRow( rootTreeNode( wrapper ) );
+
+			expect( childClassNames( root ) ).toEqual( [ 'ext-neowiki-tree__node-line' ] );
+			// Text as well as elements: a bare glyph beside the spans lands here.
+			expect( root.text() ).toBe( 'Johann Sebastian Bach' );
+		} );
+
+		it( 'renders nothing in a child\'s row but its relation and its name', async () => {
+			const wrapper = mountTree();
+			await flushPromises();
+
+			const rows = targetNodes( wrapper ).map( ( node ) => nameRow( node ) );
+			expect( rows.length ).toBe( 3 );
 
 			for ( const row of rows ) {
-				expect( [ ...row.element.children ].map( ( child ) => child.className ) )
-					.toEqual( [ 'ext-neowiki-tree__node-label', 'ext-neowiki-tree__node-secondary' ] );
-				// Text as well as elements: a bare glyph beside the two spans lands here.
+				expect( childClassNames( row ) ).toEqual( [
+					'ext-neowiki-tree__node-caption',
+					'ext-neowiki-tree__node-line',
+				] );
 				expect( row.text() ).toBe(
-					row.get( '.ext-neowiki-tree__node-label' ).text() +
-					row.get( '.ext-neowiki-tree__node-secondary' ).text(),
+					row.get( '.ext-neowiki-tree__node-caption' ).text() +
+					row.get( '.ext-neowiki-tree__node-label' ).text(),
 				);
 			}
-		} );
-
-		it( 'shows a node\'s schema as the shared badge', async () => {
-			const wrapper = mountTree();
-			await flushPromises();
-
-			const badges = wrapper.findAllComponents( SchemaNameDisplay );
-
-			expect( badges.length ).toBe( 4 );
-			expect( badges.map( ( badge ) => badge.props( 'schemaName' ) ) )
-				.toEqual( [ 'Person', 'Name', 'Event', 'TimeSpan' ] );
-		} );
-
-		it( 'leaves the badge unlinked, so it cannot compete with the row it sits in', async () => {
-			const wrapper = mountTree();
-			await flushPromises();
-
-			expect( wrapper.findAll( '.ext-neowiki-tree__node-secondary a' ) ).toHaveLength( 0 );
-			expect( wrapper.findComponent( SchemaNameDisplay ).props( 'link' ) ).toBe( 'none' );
 		} );
 
 		it( 'marks the active node as selected', async () => {
@@ -1068,8 +1072,8 @@ describe( 'SubjectTree', () => {
 			await flushPromises();
 
 			expect( wrapper.findAll( `[data-mw-neowiki-subject-id="${ ROOT_ID }"]` ) ).toHaveLength( 1 );
-			expect( wrapper.findAll( '.ext-neowiki-tree__edge' ).map( ( n ) => n.text() ) )
-				.not.toContain( 'Not linked here' );
+			// A lone stray is named on its row rather than by a caption, so both are checked.
+			expect( relationNames( wrapper ) ).not.toContain( 'Not linked here' );
 		} );
 
 		it( 'emits select for an unreachable subject\'s node', async () => {

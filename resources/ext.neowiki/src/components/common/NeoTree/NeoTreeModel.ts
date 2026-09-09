@@ -3,10 +3,11 @@ export interface NeoTreeItem<T> {
 	// by two paths is two items, and a shared key collapses them into one focus target.
 	key: string;
 	label: string;
-	secondaryLabel?: string;
 	active?: boolean;
-	// Caption printed once above this item and the contiguous siblings sharing it. One caption
-	// repeated after an interruption prints twice, as two groups.
+	// Caption for this item and the contiguous siblings sharing it: printed above them where
+	// there are several, and on the item's own row where it is alone, joining that row's
+	// accessible name. Repeated after an interruption it prints twice, as two groups. Dropped
+	// on a top-level item, which the tree renders without grouping.
 	groupLabel?: string;
 	attrs?: Record<string, string>;
 	children?: NeoTreeItem<T>[];

@@ -1178,9 +1178,12 @@ describe( 'SubjectEditorDialog', () => {
 			return tree.exists() && tree.find( `[data-mw-neowiki-subject-id="${ id }"]` ).exists();
 		}
 
-		function edgeCaptions( wrapper: VueWrapper ): string[] {
+		// A relation is named by a caption line when it heads several rows and by the row itself
+		// when it heads one. Both are collected: these tests are about which relations the
+		// navigator shows, not about where each one is printed.
+		function relationNames( wrapper: VueWrapper ): string[] {
 			return wrapper.findComponent( SubjectTree )
-				.findAll( '.ext-neowiki-tree__edge' )
+				.findAll( '.ext-neowiki-tree__edge, .ext-neowiki-tree__node-caption' )
 				.map( ( caption ) => caption.text() );
 		}
 
@@ -2670,11 +2673,11 @@ describe( 'SubjectEditorDialog', () => {
 					stubs: { teleport: false },
 				} );
 				// The stored root reaches nothing, so the open Subject starts outside the walk.
-				expect( edgeCaptions( wrapper ) ).toEqual( [ 'Not linked here' ] );
+				expect( relationNames( wrapper ) ).toEqual( [ 'Not linked here' ] );
 
 				await setRootFormTargets( wrapper, 's22222222222222' );
 
-				expect( edgeCaptions( wrapper ) ).toEqual( [ 'Colleague' ] );
+				expect( relationNames( wrapper ) ).toEqual( [ 'Colleague' ] );
 				expect( treeHasNode( wrapper, 's22222222222222' ) ).toBe( true );
 
 				await makePaneDirty( wrapper, 1 );
