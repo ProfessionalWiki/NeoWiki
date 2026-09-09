@@ -34,8 +34,8 @@ class RebuildProgress {
 	}
 
 	/**
-	 * The page held no Subject to project after all — it has no current revision, or its latest one
-	 * dropped the subject slot. Nothing failed, and nothing was projected.
+	 * The page was not projected, and nothing failed: it has no current revision, its subject slot
+	 * does not hold Subject data, or the registered revision policy publishes no revision of it.
 	 */
 	public function pageSkipped( int $pageId ): void {
 		$this->cursor = $pageId;

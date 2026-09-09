@@ -6,17 +6,20 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Rest\RequestData;
+use MediaWiki\Rest\Response;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi
@@ -203,6 +206,58 @@ JSON,
 		);
 
 		$this->assertSame( 404, $response->getStatusCode() );
+	}
+
+	/**
+	 * A revision the registered policy hides answers exactly like one that does not exist, so the
+	 * sequential revision ids cannot be swept to find out which drafts a page has.
+	 */
+	public function testRevisionHiddenByTheRevisionPolicyIsIndistinguishableFromAnAbsentRevision(): void {
+		$revisionId = $this->createPageWithSubjects(
+			'GetSubjectApiTest_HiddenRevision',
+			mainSubject: TestSubject::build(
+				id: 'sTestGSA1111251',
+				schemaName: new SchemaName( 'GetSubjectApiTestSchema' )
+			)
+		)->getId();
+
+		[ $hiddenResponse, $absentResponse ] = $this->runWithRevisionPolicyHidingEveryRevision(
+			fn (): array => [
+				$this->getSubjectAtRevision( 'sTestGSA1111251', (string)$revisionId ),
+				$this->getSubjectAtRevision( 'sTestGSA1111251', '999999999' ),
+			]
+		);
+
+		$this->assertSame( 404, $hiddenResponse->getStatusCode() );
+		$this->assertSame( $absentResponse->getStatusCode(), $hiddenResponse->getStatusCode() );
+
+		$hidden = json_decode( $hiddenResponse->getBody()->getContents(), true );
+		$absent = json_decode( $absentResponse->getBody()->getContents(), true );
+
+		// Only the revision id embedded in the message may differ between "hidden" and "nonexistent".
+		$absent['message'] = str_replace( '999999999', (string)$revisionId, $absent['message'] );
+		$this->assertSame( $absent, $hidden );
+	}
+
+	private function getSubjectAtRevision( string $subjectId, string $revisionId ): Response {
+		return $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => $subjectId ],
+				'queryParams' => [ 'revisionId' => $revisionId ],
+			] )
+		);
+	}
+
+	private function runWithRevisionPolicyHidingEveryRevision( callable $fn ): mixed {
+		$this->registerRevisionPolicy( FixedRevisionPolicy::hidingEveryRevision() );
+
+		try {
+			return $fn();
+		} finally {
+			NeoWikiExtension::resetInstance();
+		}
 	}
 
 	public function testFullExpansion(): void {

@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
+use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
+use ProfessionalWiki\NeoWiki\Application\RevisionPolicyRegistry;
 use ProfessionalWiki\NeoWiki\Domain\EditNotice\SubjectEditNoticeProvider;
 use ProfessionalWiki\NeoWiki\Domain\EditNotice\SubjectEditNoticeProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
@@ -26,6 +28,7 @@ readonly class NeoWikiRegistrar {
 		private GraphDatabasePluginRegistry $graphDatabasePluginRegistry,
 		private RdfValueMapperRegistry $rdfValueMapperRegistry,
 		private SubjectEditNoticeProviderRegistry $subjectEditNoticeProviderRegistry,
+		private RevisionPolicyRegistry $revisionPolicyRegistry,
 	) {
 	}
 
@@ -56,6 +59,18 @@ readonly class NeoWikiRegistrar {
 	 */
 	public function addSubjectEditNoticeProvider( SubjectEditNoticeProvider $provider ): void {
 		$this->subjectEditNoticeProviderRegistry->addProvider( $provider );
+	}
+
+	/**
+	 * Registers which revision of a page NeoWiki publishes: projects to the graph stores and exports
+	 * as RDF. For approval extensions, which show readers an approved revision rather than the newest
+	 * one.
+	 *
+	 * Only one extension can decide this, so unlike the other registrations this is a single slot: a
+	 * second policy is refused with a warning and the first one keeps deciding.
+	 */
+	public function setRevisionPolicy( RevisionPolicy $policy ): void {
+		$this->revisionPolicyRegistry->setPolicy( $policy );
 	}
 
 	public function addPagePropertyProvider( PagePropertyProvider $provider ): void {

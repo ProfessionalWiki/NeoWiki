@@ -49,16 +49,27 @@ class GetSubjectApi extends SimpleHandler {
 
 		$revision = MediaWikiServices::getInstance()->getRevisionLookup()->getRevisionById( $revisionId );
 
-		// A revision on an unreadable page answers exactly like a nonexistent revision:
-		// revision ids are sequential, so any distinguishable answer is a sweepable
-		// existence oracle over restricted pages (#1046).
-		if ( $revision === null || !$this->revisionPageIsReadable( $revision->getPageId() ) ) {
+		// A revision the viewer may not see answers exactly like a nonexistent one: revision ids are
+		// sequential, so any distinguishable answer is a sweepable existence oracle over restricted
+		// pages (#1046), and over the unapproved revisions an approval extension hides.
+		if ( $revision === null || !$this->revisionIsReadable( $revision ) ) {
 			return $this->getResponseFactory()->createHttpError( 404, [
 				'message' => 'Revision not found: ' . $revisionId,
 			] );
 		}
 
 		return NeoWikiExtension::getInstance()->newGetSubjectQueryForRevision( $presenter, $revision, $this->getAuthority() );
+	}
+
+	/**
+	 * A caller who names a revision is asking to see that one, so the registered revision policy is
+	 * asked directly whether this viewer may. Without one registered every revision of a readable page
+	 * is readable, as before.
+	 */
+	private function revisionIsReadable( RevisionRecord $revision ): bool {
+		return $this->revisionPageIsReadable( $revision->getPageId() )
+			&& NeoWikiExtension::getInstance()->getRevisionPolicy()
+				->revisionIsReadableBy( $revision, $this->getAuthority() );
 	}
 
 	private function revisionPageIsReadable( int $pageId ): bool {

@@ -14,11 +14,20 @@ class PageRebuilder {
 	public function __construct(
 		private readonly OnRevisionCreatedHandler $handler,
 		private readonly WikiPageFactory $wikiPageFactory,
+		private readonly RevisionPolicy $revisionPolicy,
 	) {
 	}
 
+	/**
+	 * Reprojects the page from the revision the registered policy publishes. This is the path an
+	 * approval extension calls when its answer changes. A page save takes the other path: it already
+	 * knows its revision and is only asked whether to publish it.
+	 *
+	 * The handler this hands the substituted revision to must not index, since it would index the
+	 * published revision's Subjects in place of the latest one's. See NeoWikiExtension.
+	 */
 	public function rebuild( Title $title ): PageRefreshOutcome {
-		return $this->rebuildWithReadFlags( $title, IDBAccessObject::READ_NORMAL );
+		return $this->rebuildWithReadFlags( $title, IDBAccessObject::READ_NORMAL, substitute: true );
 	}
 
 	/**
@@ -27,10 +36,10 @@ class PageRebuilder {
 	 * replaced, which would project outdated content.
 	 */
 	public function rebuildFromPrimary( Title $title ): PageRefreshOutcome {
-		return $this->rebuildWithReadFlags( $title, IDBAccessObject::READ_LATEST );
+		return $this->rebuildWithReadFlags( $title, IDBAccessObject::READ_LATEST, substitute: false );
 	}
 
-	private function rebuildWithReadFlags( Title $title, int $readFlags ): PageRefreshOutcome {
+	private function rebuildWithReadFlags( Title $title, int $readFlags, bool $substitute ): PageRefreshOutcome {
 		$wikiPage = $this->wikiPageFactory->newFromTitle( $title );
 		$wikiPage->loadPageData( $readFlags );
 
@@ -38,6 +47,16 @@ class PageRebuilder {
 
 		if ( $revision === null ) {
 			return PageRefreshOutcome::SkippedMissingRevision;
+		}
+
+		if ( $substitute ) {
+			$published = $this->revisionPolicy->publishedRevision( $revision );
+
+			if ( $published === null ) {
+				return PageRefreshOutcome::SkippedUnpublishableRevision;
+			}
+
+			$revision = $published;
 		}
 
 		return $this->handler->onRevisionCreated( $revision );

@@ -168,9 +168,70 @@ the Page node. No new revision is created. `rebuild()` returns a `PageRefreshOut
 - `SkippedUnreadableSubjects` — the page's subject slot holds content NeoWiki cannot read as Subjects.
 - `SkippedUnreadablePageProperties` — the page's properties could not be built, for instance because a provider or the
   page's own parse threw.
+- `SkippedUnpublishableRevision` — a registered revision policy publishes no revision of the page.
 
 A graph store that fails is logged and skipped, exactly as on a normal page save; only request timeouts and
 wiki-database errors throw.
+
+### Choosing which revision NeoWiki publishes
+
+By default NeoWiki publishes each page's latest revision: that is the revision it projects to the graph stores and
+exports as RDF. An approval extension shows readers an approved revision instead, and registers a `RevisionPolicy` so
+NeoWiki publishes the same one.
+
+```php
+public function onNeoWikiRegistration( NeoWikiRegistrar $registrar ): void {
+	$registrar->setRevisionPolicy( new MyApprovalPolicy( $this->approvalLookup ) );
+}
+```
+
+```php
+class MyApprovalPolicy implements RevisionPolicy {
+
+	public function publishesRevision( RevisionRecord $revision ): bool {
+		return $this->approvalLookup->isApproved( $revision );
+	}
+
+	public function publishedRevision( RevisionRecord $revision ): ?RevisionRecord {
+		return $this->approvalLookup->lastApprovedRevisionOf( $revision->getPage() );
+	}
+
+	public function revisionIsReadableBy( RevisionRecord $revision, Authority $viewer ): bool {
+		return $this->approvalLookup->isApproved( $revision )
+			|| $viewer->isAllowed( 'my-extension-see-drafts' );
+	}
+
+}
+```
+
+`publishesRevision()` is asked as a revision is written; return false and the graph keeps whatever it published
+before. `publishedRevision()` is asked when a page is reprojected; return the argument to leave the projection alone,
+or `null` when the page has nothing publishable. `revisionIsReadableBy()` is asked only when a caller names a revision
+itself, which neither publishing method can intercept — a revision it refuses answers exactly like one that does not
+exist.
+
+- **A policy answers for the wiki, not for a viewer.** The graph and the RDF export are one state every reader sees.
+- **Only one extension can decide this.** A second policy is refused with a warning in the `NeoWiki` log channel; the
+  first one keeps deciding.
+- **Subject writes read the latest revision**, so a contributor still edits what they last saved. Schemas are the
+  exception: a Subject is validated against the Schema revision the policy publishes, while the Schema editor shows
+  the latest one ([#1392](https://github.com/ProfessionalWiki/NeoWiki/issues/1392)).
+
+Call [`newPageRebuilder()->rebuild( $title )`](#refreshing-a-pages-data-without-an-edit) whenever your extension
+changes which revision it approves; nothing else tells NeoWiki the answer has changed. `publishedRevision()` is also
+asked on every Schema, Layout and Mapping read and every RDF export, so keep it cheap.
+
+Two gaps:
+
+- Schemas and Mappings are read through a cache keyed on the page's latest revision id, so an approval change with
+  no accompanying page edit does not take effect until that page is edited or the cache entry expires
+  ([#1392](https://github.com/ProfessionalWiki/NeoWiki/issues/1392)).
+- The RDF export stops answering for a page once approval is withdrawn, but what was published stays in the graph
+  stores until the page is deleted; a rebuild does not remove it
+  ([#1391](https://github.com/ProfessionalWiki/NeoWiki/issues/1391)). Revocation is not a retraction mechanism.
+
+Subject reads over REST, and the parse-time accessors, are not yet covered
+([#1390](https://github.com/ProfessionalWiki/NeoWiki/issues/1390)).
 
 ### Graph Database Backends
 

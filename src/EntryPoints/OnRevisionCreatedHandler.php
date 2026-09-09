@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
+use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -23,6 +24,7 @@ class OnRevisionCreatedHandler {
 		private readonly GraphDatabasePlugin $graphDatabasePlugin,
 		private readonly SubjectPageIndex $subjectPageIndex,
 		private readonly PagePropertiesSource $pagePropertiesSource,
+		private readonly RevisionPolicy $revisionPolicy,
 		private readonly LoggerInterface $logger,
 	) {
 	}
@@ -30,6 +32,11 @@ class OnRevisionCreatedHandler {
 	/**
 	 * Indexes which Subjects the page holds, and projects the page with them — and with none when it
 	 * holds none: every page gets a Page node, so its Page Properties are queryable.
+	 *
+	 * The index records where a Subject lives and is written for every revision, published or not:
+	 * every id-keyed read and write addresses its page through it, so a Subject missing from it cannot
+	 * be edited, moved or deleted, and its id reads as free. Publishing is decided separately, and only
+	 * for the graph, which is the surface readers query.
 	 */
 	public function onRevisionCreated( RevisionRecord $revisionRecord ): PageRefreshOutcome {
 		if ( $revisionRecord->getPageId() === 0 ) {
@@ -66,6 +73,13 @@ class OnRevisionCreatedHandler {
 		// isolation: the index is authoritative (ADR 32), so it commits with the revision that changes
 		// it or not at all, and a Subject too broken to deserialize is still indexed.
 		$this->subjectPageIndex->setSubjectsOfPage( $pageId, $content?->getSubjectIds() ?? [] );
+
+		// Indexed either way, projected only when published: what the graph already holds is what the
+		// policy last published, and leaving it there is the point. Withdrawing it belongs to page
+		// deletion, not to somebody saving a draft on a page that has nothing published yet.
+		if ( !$this->revisionPolicy->publishesRevision( $revisionRecord ) ) {
+			return PageRefreshOutcome::SkippedUnpublishableRevision;
+		}
 
 		$subjects = $content?->getPageSubjects() ?? PageSubjects::newEmpty();
 
