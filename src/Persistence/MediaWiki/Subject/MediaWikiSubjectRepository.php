@@ -105,24 +105,32 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		);
 	}
 
-	public function deleteSubject( SubjectId $id, ?string $comment ): void {
+	public function deleteSubject( SubjectId $id, ?string $comment ): PageContentSavingStatus {
 		$pageId = $this->getPageIdForSubject( $id );
 
 		if ( $pageId === null ) {
-			return;
+			return new PageContentSavingStatus( PageContentSavingStatus::NO_CHANGES );
 		}
 
 		$content = $this->getContentByPageId( $pageId );
 
 		if ( $content === null ) {
-			return;
+			return new PageContentSavingStatus( PageContentSavingStatus::NO_CHANGES );
+		}
+
+		// Asked of the slot rather than inferred from the save: mutatePageSubjects re-serializes the
+		// slot whatever the mutation did, so a slot written by anything other than the serializer -
+		// an import, or Special:NeoJson - yields new bytes and a real revision even when the removal
+		// removed nothing.
+		if ( $content->getPageSubjects()->getAllSubjects()->getSubject( $id ) === null ) {
+			return new PageContentSavingStatus( PageContentSavingStatus::NO_CHANGES );
 		}
 
 		$content->mutatePageSubjects( function( PageSubjects $pageSubjects ) use ( $id ): void {
 			$pageSubjects->removeSubject( $id );
 		} );
 
-		$this->saveContent( $content, $pageId, $comment );
+		return $this->saveContent( $content, $pageId, $comment );
 	}
 
 	public function getMainSubject( PageId $pageId ): ?Subject {

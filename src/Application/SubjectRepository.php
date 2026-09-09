@@ -21,8 +21,12 @@ interface SubjectRepository extends SubjectLookup {
 
 	/**
 	 * TODO: document exceptions
+	 *
+	 * Answers REVISION_CREATED only when the Subject was actually removed. The index can name a page
+	 * whose slot no longer holds it, and the page can go away under the write; both answer
+	 * NO_CHANGES or ERROR rather than reporting a deletion that did not happen.
 	 */
-	public function deleteSubject( SubjectId $id, ?string $comment ): void;
+	public function deleteSubject( SubjectId $id, ?string $comment ): PageContentSavingStatus;
 
 	/**
 	 * TODO: document exceptions

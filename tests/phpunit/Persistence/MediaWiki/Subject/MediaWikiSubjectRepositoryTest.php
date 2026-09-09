@@ -13,6 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -91,19 +92,69 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testDeleteSubjectForUnknownSubject(): void {
+	public function testDeleteSubjectReportsTheRevisionItCreated(): void {
 		$this->createPages();
 
-		$this->newRepository()->deleteSubject(
-			new SubjectId( 'sTestMSR1111113' ),
-			null
+		$status = $this->newRepository()->deleteSubject( new SubjectId( 'sTestMSR1111113' ), null );
+
+		$this->assertSame( PageContentSavingStatus::REVISION_CREATED, $status->status );
+	}
+
+	public function testDeleteSubjectForUnknownSubjectReportsNoChanges(): void {
+		$this->createPages();
+
+		$status = $this->newRepository()->deleteSubject( new SubjectId( 'sTestMSR1111119' ), null );
+
+		$this->assertSame( PageContentSavingStatus::NO_CHANGES, $status->status );
+	}
+
+	/**
+	 * The index names a page that carries no Subject slot at all - a page deleted and recreated, or
+	 * one whose latest revision dropped the slot. Nothing is there to remove.
+	 */
+	public function testDeleteSubjectOnAPageWithoutSubjectContentReportsNoChanges(): void {
+		$this->createPages();
+
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
+		$pageIdentifiersLookup->addIdentifiers(
+			new SubjectId( 'sTestMSR1111119' ),
+			new PageIdentifiers( new PageId( 999999 ), 'NoSuchPage', 0 )
 		);
 
-		$this->assertNull(
-			$this->newRepository()->getSubject(
-				new SubjectId( 'sTestMSR1111113' )
-			)
+		$repository = new MediaWikiSubjectRepository(
+			pageIdentifiersLookup: $pageIdentifiersLookup,
+			revisionLookup: $this->getServiceContainer()->getRevisionLookup(),
+			pageContentSaver: NeoWikiExtension::getInstance()->getPageContentSaver(),
 		);
+
+		$status = $repository->deleteSubject( new SubjectId( 'sTestMSR1111119' ), null );
+
+		$this->assertSame( PageContentSavingStatus::NO_CHANGES, $status->status );
+	}
+
+	/**
+	 * The index names a page whose slot does not hold the Subject. The delete then rewrites the slot
+	 * unchanged, and only the saved status says nothing was removed - which is what the API turns
+	 * into its not-found answer.
+	 */
+	public function testDeleteSubjectMissingFromTheIndexedPageReportsNoChanges(): void {
+		$this->createPages();
+
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
+		$pageIdentifiersLookup->addIdentifiers(
+			new SubjectId( 'sTestMSR1111119' ),
+			new PageIdentifiers( $this->getPageId( 'SubjectRepoTestOne' ), 'SubjectRepoTestOne', 0 )
+		);
+
+		$repository = new MediaWikiSubjectRepository(
+			pageIdentifiersLookup: $pageIdentifiersLookup,
+			revisionLookup: $this->getServiceContainer()->getRevisionLookup(),
+			pageContentSaver: NeoWikiExtension::getInstance()->getPageContentSaver(),
+		);
+
+		$status = $repository->deleteSubject( new SubjectId( 'sTestMSR1111119' ), null );
+
+		$this->assertSame( PageContentSavingStatus::NO_CHANGES, $status->status );
 	}
 
 	public function testGetMainSubjectReturnsNullForUnknownPage(): void {
