@@ -21,7 +21,7 @@ A Subject is one thing described with a Schema. Pick **Create subject** in the s
 the Schema's own page (it names the Schema, so **Create Person** on `Schema:Person`), name the page the Subject will
 live on, fill in the values, and save. The new page's Main Subject renders automatically as an infobox, and the
 **Data** tab lets you view and edit all its Subjects. To attach a Subject to a page that already exists, open that
-page and pick **Add subject to this page** from the page tools.
+page and pick **Create subject here** from the page tools.
 
 ## 3. Render a View in wikitext
 

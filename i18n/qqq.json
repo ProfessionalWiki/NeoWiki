@@ -41,7 +41,7 @@
 	"neowiki-view-error-unknown-arg": "Error shown when {{#view}} receives an unrecognized named argument. $1 is the offending argument name.",
 
 	"neowiki-page-tools-label": "Heading for the NeoWiki section in the MediaWiki sidebar (shown as a group label in legacy skins and inside the page tools menu in modern Vector).",
-	"neowiki-page-tools-create-subject": "Label for the sidebar link on a content page that opens the 'create subject' dialog for that page. The dialog creates the page's Main Subject if it has none, or another Subject otherwise.",
+	"neowiki-page-tools-create-subject": "Label for the page tool that creates a Subject on the page being viewed, as opposed to [[Special:CreateSubject]], which creates the page too. The dialog it opens creates the page's Main Subject if it has none, or another Subject otherwise.",
 	"neowiki-page-tools-manage-subjects": "Label for the sidebar link to the Subject management page, shown to users who may edit. See neowiki-page-tools-view-subjects for the read-only variant.",
 	"neowiki-page-tools-view-subjects": "Read-only counterpart of neowiki-page-tools-manage-subjects: label for the sidebar link to the Subject management page, shown to users who lack edit permission.",
 	"neowiki-page-tools-edit-json": "Label for the sidebar link that navigates to Special:NeoJson for the current page. Only visible when development UIs are enabled.",

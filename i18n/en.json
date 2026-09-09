@@ -40,7 +40,7 @@
 	"neowiki-neojson-description": "Editing neo slot of \"$1\"",
 
 	"neowiki-page-tools-label": "NeoWiki",
-	"neowiki-page-tools-create-subject": "Add subject to this page",
+	"neowiki-page-tools-create-subject": "Create subject here",
 	"neowiki-page-tools-manage-subjects": "Manage subjects",
 	"neowiki-page-tools-view-subjects": "View subjects",
 	"neowiki-page-tools-edit-json": "View or edit JSON",
@@ -349,7 +349,7 @@
 	"neowiki-managesubjects-tab": "Data",
 	"neowiki-managesubjects-title": "Subjects on $1",
 	"neowiki-managesubjects-not-applicable": "Subject management is not available on this page.",
-	"neowiki-managesubjects-add-button": "Add subject",
+	"neowiki-managesubjects-add-button": "Create subject",
 	"neowiki-managesubjects-empty-title": "No subjects yet",
 	"neowiki-managesubjects-empty-description": "A subject describes one thing with structured data.",
 	"neowiki-managesubjects-no-main-title": "No main subject set",
