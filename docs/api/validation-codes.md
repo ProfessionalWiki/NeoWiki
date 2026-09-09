@@ -183,6 +183,9 @@ On `relation` properties. The relation targets a Subject ID that does not resolv
 Subject. Deliberately a warning: pointing at a not-yet-created Subject is wiki-native red-link
 behavior, and an import may legitimately mint the target later.
 
+A target on a page you may not [read](rest-api.md#permissions) reports the same way, so a Subject
+you cannot reach stays indistinguishable from one nobody has created.
+
 `args`: `[targetId]`. `valuePartIndex`: the offending target. `severity`: `warning` (fixed).
 
 ## Out-of-schema Statements

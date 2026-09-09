@@ -61,7 +61,7 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 		$inner = $this->newCountingLookup();
 		$validator = new ProposedSubjectValidator(
 			schemaLookup: $this->newCachingLookup( $inner ),
-			subjectValidator: NeoWikiExtension::getInstance()->getSubjectValidator(),
+			subjectValidator: NeoWikiExtension::getInstance()->getSubjectValidator( $this->getTestUser()->getAuthority() ),
 		);
 
 		$validator->validate( $this->newSubject( 'sShrdLookup1115' ) );

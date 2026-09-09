@@ -7,23 +7,19 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use InvalidArgumentException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
-use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubject\ValidateSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Schema\Exception\SchemaNotFoundException;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\ViolationSerializer;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ValidateSubjectApi extends SimpleHandler {
 
-	public function __construct(
-		private readonly ValidateSubjectQuery $query,
-	) {
-	}
-
 	public function run(): Response {
+		$query = NeoWikiExtension::getInstance()->newValidateSubjectQuery( $this->getAuthority() );
 		$body = $this->getValidatedBody();
 
 		try {
-			$violations = $this->query->validate(
+			$violations = $query->validate(
 				$body['schema'],
 				$body['statements'],
 			);

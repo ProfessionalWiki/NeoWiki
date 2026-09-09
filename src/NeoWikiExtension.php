@@ -76,6 +76,7 @@ use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\ReadAuthorizedSubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectIdMinter;
@@ -1183,7 +1184,7 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
-			proposedSubjectValidator: $this->getProposedSubjectValidator(),
+			proposedSubjectValidator: $this->getProposedSubjectValidator( $authority ),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			validationEnforced: $this->isValidationEnforced(),
@@ -1463,7 +1464,7 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
-			proposedSubjectValidator: $this->getProposedSubjectValidator(),
+			proposedSubjectValidator: $this->getProposedSubjectValidator( $authority ),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
@@ -1478,7 +1479,7 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
-			proposedSubjectValidator: $this->getProposedSubjectValidator(),
+			proposedSubjectValidator: $this->getProposedSubjectValidator( $authority ),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
@@ -1492,24 +1493,28 @@ class NeoWikiExtension {
 		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiEnforceValidation' ) === true;
 	}
 
-	public function getSubjectValidator(): SubjectValidator {
+	public function getSubjectValidator( Authority $authority ): SubjectValidator {
 		return new SubjectValidator(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
-			subjectLookup: $this->getSubjectRepository(),
+			subjectLookup: new ReadAuthorizedSubjectLookup(
+				subjectLookup: $this->getSubjectRepository(),
+				pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+				readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			),
 		);
 	}
 
-	public function getProposedSubjectValidator(): ProposedSubjectValidator {
+	public function getProposedSubjectValidator( Authority $authority ): ProposedSubjectValidator {
 		return new ProposedSubjectValidator(
 			schemaLookup: $this->getSchemaLookup(),
-			subjectValidator: $this->getSubjectValidator(),
+			subjectValidator: $this->getSubjectValidator( $authority ),
 		);
 	}
 
-	public function newValidateSubjectQuery(): ValidateSubjectQuery {
+	public function newValidateSubjectQuery( Authority $authority ): ValidateSubjectQuery {
 		return new ValidateSubjectQuery(
 			schemaLookup: $this->getSchemaLookup(),
-			subjectValidator: $this->getSubjectValidator(),
+			subjectValidator: $this->getSubjectValidator( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 		);
@@ -1519,7 +1524,7 @@ class NeoWikiExtension {
 		return new ValidateSubjectUpdateQuery(
 			subjectRepository: $this->getSubjectRepository(),
 			schemaLookup: $this->getSchemaLookup(),
-			subjectValidator: $this->getSubjectValidator(),
+			subjectValidator: $this->getSubjectValidator( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
@@ -1528,9 +1533,7 @@ class NeoWikiExtension {
 	}
 
 	public static function newValidateSubjectApi(): ValidateSubjectApi {
-		return new ValidateSubjectApi(
-			query: self::getInstance()->newValidateSubjectQuery(),
-		);
+		return new ValidateSubjectApi();
 	}
 
 	public static function newMintSubjectIdsApi(): MintSubjectIdsApi {

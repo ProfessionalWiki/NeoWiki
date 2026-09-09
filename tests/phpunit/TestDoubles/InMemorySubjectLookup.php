@@ -21,6 +21,14 @@ class InMemorySubjectLookup implements SubjectLookup {
 
 	public int $getSubjectCallCount = 0;
 
+	/**
+	 * The id lists getSubjects() was called with, in call order, as text arrays. Lets a caller that
+	 * narrows the ids it asks for prove the narrowing, which a call count alone cannot show.
+	 *
+	 * @var array<int, string[]>
+	 */
+	public array $requestedIdBatches = [];
+
 	public function __construct( Subject ...$subjects ) {
 		foreach ( $subjects as $subject ) {
 			$this->subjects[$subject->id->text] = $subject;
@@ -44,6 +52,7 @@ class InMemorySubjectLookup implements SubjectLookup {
 	 */
 	public function getSubjects( SubjectIdList $subjectIds ): SubjectMap {
 		$this->getSubjectsCallCount++;
+		$this->requestedIdBatches[] = $subjectIds->asStringArray();
 
 		$requested = $subjectIds->asArray();
 		$found = new SubjectMap();
