@@ -7,10 +7,13 @@ namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Sparql\EntryPoints
 use MediaWiki\Message\Message;
 use MediaWiki\Parser\Parser;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Application\RawQueryAuthorizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryFailedException;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryLimits;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\ParserFunction\SparqlRawParserFunction;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FakeSparqlQueryEndpoint;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubRawQueryAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\ParserFunction\SparqlRawParserFunction
@@ -36,8 +39,14 @@ class SparqlRawParserFunctionTest extends TestCase {
 		return $parser;
 	}
 
-	private function parserFunction( FakeSparqlQueryEndpoint $endpoint ): SparqlRawParserFunction {
-		return new SparqlRawParserFunction( new SparqlQueryService( $endpoint ) );
+	private function parserFunction(
+		FakeSparqlQueryEndpoint $endpoint,
+		?RawQueryAuthorizer $authorizer = null
+	): SparqlRawParserFunction {
+		return new SparqlRawParserFunction(
+			new SparqlQueryService( $endpoint, $authorizer ?? new StubRawQueryAuthorizer( true ) ),
+			new SparqlQueryLimits( 30 ),
+		);
 	}
 
 	/**
@@ -47,6 +56,14 @@ class SparqlRawParserFunctionTest extends TestCase {
 	 */
 	private function html( string|array $result ): string {
 		return is_array( $result ) ? $result[0] : $result;
+	}
+
+	public function testDeniedQueryRightShowsLocalizedErrorInsteadOfResults(): void {
+		$result = $this->parserFunction( FakeSparqlQueryEndpoint::returning( self::RESULTS ), new StubRawQueryAuthorizer( false ) )
+			->handle( $this->createParser(), 'SELECT * WHERE { ?s ?p ?o }' );
+
+		$this->assertStringContainsString( '[neowiki-sparql-error-permission-denied]', $this->html( $result ) );
+		$this->assertStringNotContainsString( 'Bach', $this->html( $result ) );
 	}
 
 	public function testEmptyQueryShowsLocalizedError(): void {

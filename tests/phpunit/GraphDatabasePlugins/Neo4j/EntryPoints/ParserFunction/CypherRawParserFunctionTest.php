@@ -12,12 +12,15 @@ use Laudis\Neo4j\Types\CypherMap;
 use MediaWiki\Message\Message;
 use MediaWiki\Parser\Parser;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Application\RawQueryAuthorizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CypherQueryValidator;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryLimits;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\ParserFunction\CypherRawParserFunction;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\KeywordCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jReadQueryEngine;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubRawQueryAuthorizer;
 use RuntimeException;
 
 /**
@@ -76,6 +79,7 @@ class CypherRawParserFunctionTest extends TestCase {
 	private function createParserFunction(
 		Neo4jReadQueryEngine $engine,
 		?CypherQueryValidator $validator = null,
+		?RawQueryAuthorizer $authorizer = null,
 	): CypherRawParserFunction {
 		$validator ??= new KeywordCypherQueryValidator();
 
@@ -84,7 +88,9 @@ class CypherRawParserFunctionTest extends TestCase {
 				$engine,
 				$validator,
 				new Neo4jResultNormalizer(),
-			)
+				$authorizer ?? new StubRawQueryAuthorizer( true ),
+			),
+			new Neo4jQueryLimits( 30, 5000 ),
 		);
 	}
 
@@ -103,6 +109,18 @@ class CypherRawParserFunctionTest extends TestCase {
 		$result = $parserFunction->handle( $this->createParser(), '' );
 
 		$this->assertStringContainsString( '[neowiki-cypher-error-empty-query]', $this->html( $result ) );
+	}
+
+	public function testDeniedQueryRightShowsLocalizedErrorInsteadOfRows(): void {
+		$parserFunction = $this->createParserFunction(
+			$this->createQueryEngineWithData( [ [ 'name' => 'Alice' ] ] ),
+			authorizer: new StubRawQueryAuthorizer( false )
+		);
+
+		$result = $parserFunction->handle( $this->createParser(), 'MATCH (n:Person) RETURN n' );
+
+		$this->assertStringContainsString( '[neowiki-cypher-error-permission-denied]', $this->html( $result ) );
+		$this->assertStringNotContainsString( 'Alice', $this->html( $result ) );
 	}
 
 	public function testWriteQueryShowsLocalizedError(): void {

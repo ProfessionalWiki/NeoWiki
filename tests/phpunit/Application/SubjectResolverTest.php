@@ -7,8 +7,8 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application;
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
-use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
@@ -24,6 +24,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivePageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use RuntimeException;
 
 /**
@@ -51,47 +53,103 @@ class SubjectResolverTest extends TestCase {
 
 	private function newResolver(
 		SubjectContentRepository $contentRepository,
-		SubjectLookup $subjectLookup
+		?PageIdentifiersLookup $pageIdentifiersLookup = null,
+		?PageReadAuthorizer $readAuthorizer = null
 	): SubjectResolver {
-		return new SubjectResolver( $contentRepository, $subjectLookup, new InMemoryPageIdentifiersLookup() );
+		return new SubjectResolver(
+			$contentRepository,
+			$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
+			$readAuthorizer ?? new StubPageReadAuthorizer( true )
+		);
+	}
+
+	/**
+	 * The production lookups find a Subject through the page hosting it, so a Subject that exists
+	 * is one the page index maps to a page.
+	 */
+	private function hostedOnTargetPage( string $subjectId ): InMemoryPageIdentifiersLookup {
+		return new InMemoryPageIdentifiersLookup( [
+			[ new SubjectId( $subjectId ), $this->newTargetPageIdentifiers() ],
+		] );
+	}
+
+	private function repositoryHostingOnTargetPage( PageSubjects $pageSubjects ): InMemorySubjectContentRepository {
+		$repository = new InMemorySubjectContentRepository();
+		$repository->setContentForPageId( self::TARGET_PAGE_ID, $pageSubjects );
+
+		return $repository;
 	}
 
 	public function testResolveByIdReturnsSubject(): void {
 		$subject = $this->createSubject();
 
-		$lookup = $this->createStub( SubjectLookup::class );
-		$lookup->method( 'getSubject' )->willReturn( $subject );
-
-		$resolver = $this->newResolver( new InMemorySubjectContentRepository(), $lookup );
+		$resolver = $this->newResolver(
+			$this->repositoryHostingOnTargetPage( new PageSubjects( null, new SubjectMap( $subject ) ) ),
+			$this->hostedOnTargetPage( self::SUBJECT_ID )
+		);
 
 		$this->assertSame( $subject, $resolver->resolveById( self::SUBJECT_ID ) );
 	}
 
-	public function testResolveByIdReturnsNullForInvalidId(): void {
+	public function testResolveByIdReturnsNullWhenTheHostingPageIsNotReadable(): void {
 		$resolver = $this->newResolver(
-			new InMemorySubjectContentRepository(),
-			$this->createStub( SubjectLookup::class )
+			$this->repositoryHostingOnTargetPage( new PageSubjects( $this->createSubject(), new SubjectMap() ) ),
+			$this->hostedOnTargetPage( self::SUBJECT_ID ),
+			new SelectivePageReadAuthorizer( [ self::TARGET_PAGE_ID ] )
 		);
+
+		$this->assertNull( $resolver->resolveById( self::SUBJECT_ID ) );
+	}
+
+	public function testResolveByIdReturnsNullWhenNoPageHostsTheSubject(): void {
+		$resolver = $this->newResolver(
+			$this->repositoryHostingOnTargetPage( new PageSubjects( $this->createSubject(), new SubjectMap() ) )
+		);
+
+		$this->assertNull( $resolver->resolveById( self::SUBJECT_ID ) );
+	}
+
+	public function testResolveByIdReturnsNullWhenTheHostingPageNoLongerHoldsTheSubject(): void {
+		$resolver = $this->newResolver(
+			$this->repositoryHostingOnTargetPage( new PageSubjects( $this->createTargetSubject( 'Someone else' ), new SubjectMap() ) ),
+			$this->hostedOnTargetPage( self::SUBJECT_ID )
+		);
+
+		$this->assertNull( $resolver->resolveById( self::SUBJECT_ID ) );
+	}
+
+	public function testResolveByIdReturnsNullForInvalidId(): void {
+		$resolver = $this->newResolver( new InMemorySubjectContentRepository() );
 
 		$this->assertNull( $resolver->resolveById( 'invalid' ) );
 	}
 
-	public function testResolveByIdReturnsNullWhenLookupReturnsNull(): void {
-		$lookup = $this->createStub( SubjectLookup::class );
-		$lookup->method( 'getSubject' )->willReturn( null );
+	public function testResolveByIdReturnsNullWhenThePageLookupThrows(): void {
+		$pageIdentifiersLookup = $this->createStub( PageIdentifiersLookup::class );
+		$pageIdentifiersLookup->method( 'getPageIdOfSubject' )
+			->willThrowException( new RuntimeException( 'db error' ) );
 
-		$resolver = $this->newResolver( new InMemorySubjectContentRepository(), $lookup );
+		$resolver = $this->newResolver( new InMemorySubjectContentRepository(), $pageIdentifiersLookup );
 
 		$this->assertNull( $resolver->resolveById( self::SUBJECT_ID ) );
 	}
 
-	public function testResolveByIdReturnsNullWhenLookupThrows(): void {
-		$lookup = $this->createStub( SubjectLookup::class );
-		$lookup->method( 'getSubject' )->willThrowException( new RuntimeException( 'db error' ) );
+	public function testResolveMainByTitleReturnsNullWhenThePageIsNotReadable(): void {
+		$resolver = $this->newResolver(
+			$this->repositoryWithMainSubject( $this->createSubject() ),
+			readAuthorizer: new StubPageReadAuthorizer( false )
+		);
 
-		$resolver = $this->newResolver( new InMemorySubjectContentRepository(), $lookup );
+		$this->assertNull( $resolver->resolveMainByTitle( $this->createStub( Title::class ) ) );
+	}
 
-		$this->assertNull( $resolver->resolveById( self::SUBJECT_ID ) );
+	public function testGetPageSubjectsByTitleReturnsNullWhenThePageIsNotReadable(): void {
+		$resolver = $this->newResolver(
+			$this->repositoryWithMainSubject( $this->createSubject() ),
+			readAuthorizer: new StubPageReadAuthorizer( false )
+		);
+
+		$this->assertNull( $resolver->getPageSubjectsByTitle( $this->createStub( Title::class ) ) );
 	}
 
 	public function testResolveMainByTitleReturnsMainSubject(): void {
@@ -99,7 +157,6 @@ class SubjectResolverTest extends TestCase {
 
 		$resolver = $this->newResolver(
 			$this->repositoryWithMainSubject( $subject ),
-			$this->createStub( SubjectLookup::class )
 		);
 
 		$this->assertSame( $subject, $resolver->resolveMainByTitle( $this->createStub( Title::class ) ) );
@@ -108,7 +165,6 @@ class SubjectResolverTest extends TestCase {
 	public function testResolveMainByTitleReturnsNullWhenNoContent(): void {
 		$resolver = $this->newResolver(
 			new InMemorySubjectContentRepository(),
-			$this->createStub( SubjectLookup::class )
 		);
 
 		$this->assertNull( $resolver->resolveMainByTitle( $this->createStub( Title::class ) ) );
@@ -119,7 +175,6 @@ class SubjectResolverTest extends TestCase {
 
 		$resolver = $this->newResolver(
 			$this->repositoryWithMainSubject( $subject ),
-			$this->createStub( SubjectLookup::class )
 		);
 
 		$pageSubjects = $resolver->getPageSubjectsByTitle( $this->createStub( Title::class ) );
@@ -131,26 +186,19 @@ class SubjectResolverTest extends TestCase {
 	public function testGetPageSubjectsByTitleReturnsNullWhenNoContent(): void {
 		$resolver = $this->newResolver(
 			new InMemorySubjectContentRepository(),
-			$this->createStub( SubjectLookup::class )
 		);
 
 		$this->assertNull( $resolver->getPageSubjectsByTitle( $this->createStub( Title::class ) ) );
 	}
 
-	/**
-	 * The target Subject as the production lookups see one that exists: hosted by a page, whose
-	 * content holds it either as the Main Subject or as a child.
-	 */
-	private function newResolverWithTargetOnPage( PageSubjects $hostingPageSubjects ): SubjectResolver {
-		$contentRepository = new InMemorySubjectContentRepository();
-		$contentRepository->setContentForPageId( self::TARGET_PAGE_ID, $hostingPageSubjects );
-
-		return new SubjectResolver(
-			$contentRepository,
-			$this->createStub( SubjectLookup::class ),
-			new InMemoryPageIdentifiersLookup( [
-				[ new SubjectId( self::TARGET_SUBJECT_ID ), $this->newTargetPageIdentifiers() ],
-			] )
+	private function newResolverWithTargetOnPage(
+		PageSubjects $hostingPageSubjects,
+		?PageReadAuthorizer $readAuthorizer = null
+	): SubjectResolver {
+		return $this->newResolver(
+			$this->repositoryHostingOnTargetPage( $hostingPageSubjects ),
+			$this->hostedOnTargetPage( self::TARGET_SUBJECT_ID ),
+			$readAuthorizer
 		);
 	}
 
@@ -214,10 +262,21 @@ class SubjectResolverTest extends TestCase {
 		$this->assertSame( 'Person', $resolver->resolveRelationLabel( $this->newRelationToTarget() ) );
 	}
 
+	public function testResolveRelationLabelFallsBackToIdWhenTheHostingPageIsNotReadable(): void {
+		$resolver = $this->newResolverWithTargetOnPage(
+			new PageSubjects( $this->createTargetSubject( 'Jane Doe' ), new SubjectMap() ),
+			new SelectivePageReadAuthorizer( [ self::TARGET_PAGE_ID ] )
+		);
+
+		$this->assertSame(
+			self::TARGET_SUBJECT_ID,
+			$resolver->resolveRelationLabel( $this->newRelationToTarget() )
+		);
+	}
+
 	public function testResolveRelationLabelFallsBackToIdWhenTargetNotFound(): void {
 		$resolver = $this->newResolver(
 			new InMemorySubjectContentRepository(),
-			$this->createStub( SubjectLookup::class )
 		);
 
 		$this->assertSame(
@@ -242,9 +301,8 @@ class SubjectResolverTest extends TestCase {
 		$pageIdentifiersLookup->method( 'getPageIdOfSubject' )
 			->willThrowException( new RuntimeException( 'db error' ) );
 
-		$resolver = new SubjectResolver(
+		$resolver = $this->newResolver(
 			new InMemorySubjectContentRepository(),
-			$this->createStub( SubjectLookup::class ),
 			$pageIdentifiersLookup
 		);
 

@@ -9,7 +9,6 @@ use MediaWiki\Content\WikitextContent;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
-use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
@@ -105,7 +104,7 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 		$html = $this->runWithoutGraphBackend( function (): string {
 			$this->createPageWithMottoSubject( 'NoBackendValuePage' );
 
-			return $this->parse(
+			return $this->parseWikitextOn(
 				'NoBackendValuePage',
 				'{{#neowiki_value: ' . self::PROPERTY . ' | subject=' . self::SUBJECT_ID . ' }}'
 			);
@@ -121,7 +120,8 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 	public function testLuaGetterReadsAValueBySubjectIdWithoutBackend(): void {
 		$value = $this->runWithoutGraphBackend( function (): array {
 			$this->createPageWithMottoSubject( 'NoBackendLuaPage' );
-			return ( new SubjectDataLookup( NeoWikiExtension::getInstance()->newSubjectResolver() ) )->getValue(
+			$resolver = NeoWikiExtension::getInstance()->newSubjectResolver( $this->getTestSysop()->getUser() );
+			return ( new SubjectDataLookup( $resolver ) )->getValue(
 				Title::newFromText( 'NoBackendLuaPage' ),
 				self::PROPERTY,
 				[ 'subject' => self::SUBJECT_ID ]
@@ -245,16 +245,6 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 		$value = $subject?->getStatements()->getStatement( new PropertyName( self::PROPERTY ) )?->getValue();
 
 		return $value instanceof StringValue ? $value->toScalars()[0] : null;
-	}
-
-	private function parse( string $pageName, string $wikitext ): string {
-		$parserOptions = ParserOptions::newFromAnon();
-
-		return $this->getServiceContainer()->getParserFactory()->getInstance()->parse(
-			$wikitext,
-			Title::newFromText( $pageName ),
-			$parserOptions
-		)->runOutputPipeline( $parserOptions, [] )->getContentHolderText();
 	}
 
 	private function newContentPageOutput( string $pageName ): OutputPage {

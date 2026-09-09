@@ -26,7 +26,7 @@ class SpecialRedHerbContentPageCount extends SpecialPage {
 		$out = $this->getOutput();
 
 		try {
-			$result = NeoWikiExtension::getInstance()->newCypherQueryService()->execute( new Neo4jQueryRequest(
+			$result = NeoWikiExtension::getInstance()->newCypherQueryService( $this->getAuthority() )->execute( new Neo4jQueryRequest(
 				cypher: 'MATCH (page:Page) WHERE page.namespaceId = $namespaceId RETURN count(page) AS pageCount',
 				parameters: [ 'namespaceId' => NS_MAIN ],
 				limits: Neo4jQueryLimits::forUser( $this->getUser() ),

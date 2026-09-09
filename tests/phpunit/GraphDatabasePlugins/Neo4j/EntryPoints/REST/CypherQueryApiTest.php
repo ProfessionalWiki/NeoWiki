@@ -11,6 +11,10 @@ use MediaWiki\Rest\ResponseInterface;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\KeywordCypherQueryValidator;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jReadQueryEngine;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
+use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedRawQueryAuthorizer;
 use Throwable;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\BackendUnavailableException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\CypherSyntaxException;
@@ -131,10 +135,17 @@ class CypherQueryApiTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testReturns403WhenUserLacksNeowikiQueryRight(): void {
+		$authority = $this->mockAnonAuthorityWithPermissions( [] );
+
 		$response = $this->executeRequest(
-			$this->stubServiceReturning( $this->emptyResult() ),
+			new Neo4jQueryService(
+				$this->createStub( Neo4jReadQueryEngine::class ),
+				new KeywordCypherQueryValidator(),
+				new Neo4jResultNormalizer(),
+				new AuthorityBasedRawQueryAuthorizer( $authority ),
+			),
 			[ 'cypher' => 'MATCH (n) RETURN n' ],
-			authority: $this->mockAnonAuthorityWithPermissions( [] )
+			authority: $authority
 		);
 		$body = $this->decodeBody( $response );
 

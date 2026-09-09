@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\EmptySparqlQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\InternalSparqlQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryFailedException;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryPermissionDeniedException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlStoreUnavailableException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlSyntaxException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryLimits;
@@ -15,6 +16,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQuery
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryResult;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FakeSparqlQueryEndpoint;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubRawQueryAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService
@@ -79,7 +81,7 @@ class SparqlQueryServiceTest extends TestCase {
 	public function testAppliesTierTimeoutToTheEndpoint(): void {
 		$endpoint = FakeSparqlQueryEndpoint::returning( self::RESULTS );
 
-		( new SparqlQueryService( $endpoint ) )->execute(
+		( new SparqlQueryService( $endpoint, new StubRawQueryAuthorizer( true ) ) )->execute(
 			new SparqlQueryRequest( 'SELECT * WHERE { ?s ?p ?o }', new SparqlQueryLimits( 17 ) )
 		);
 
@@ -94,8 +96,18 @@ class SparqlQueryServiceTest extends TestCase {
 		$this->assertSame( 'SELECT * WHERE { ?s ?p ?o }', $endpoint->lastQuery );
 	}
 
+	public function testDeniedRawQueryIsRejectedBeforeTheStoreIsAsked(): void {
+		$endpoint = FakeSparqlQueryEndpoint::failingWith( new SparqlQueryFailedException( 'https://s.example', 500, 'reached the store' ) );
+
+		$this->expectException( SparqlQueryPermissionDeniedException::class );
+
+		( new SparqlQueryService( $endpoint, new StubRawQueryAuthorizer( false ) ) )->execute(
+			new SparqlQueryRequest( 'SELECT * WHERE { ?s ?p ?o }', new SparqlQueryLimits( 30 ) )
+		);
+	}
+
 	private function execute( FakeSparqlQueryEndpoint $endpoint, string $sparql ): SparqlQueryResult {
-		return ( new SparqlQueryService( $endpoint ) )->execute(
+		return ( new SparqlQueryService( $endpoint, new StubRawQueryAuthorizer( true ) ) )->execute(
 			new SparqlQueryRequest( $sparql, new SparqlQueryLimits( 30 ) )
 		);
 	}

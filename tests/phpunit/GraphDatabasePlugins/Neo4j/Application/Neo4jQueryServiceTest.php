@@ -10,12 +10,14 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Application\RawQueryAuthorizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CypherQueryValidator;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\BackendUnavailableException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\CypherSyntaxException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\EmptyQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\InternalQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\ParameterMissingException;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryPermissionDeniedException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryTimeoutException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\WriteQueryRejectedException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryLimits;
@@ -23,6 +25,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryRe
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jReadQueryEngine;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubRawQueryAuthorizer;
 use RuntimeException;
 use Throwable;
 
@@ -295,14 +298,33 @@ class Neo4jQueryServiceTest extends TestCase {
 		$this->assertSame( [ 'x' => 'subject-42' ], $capturedParameters );
 	}
 
+	public function testDeniedRawQueryIsRejectedBeforeTheStoreIsAsked(): void {
+		$validatorReachingTheStore = new class implements CypherQueryValidator {
+			public function queryIsAllowed( string $cypher ): bool {
+				throw new RuntimeException( 'EXPLAIN reached the store' );
+			}
+		};
+		$service = $this->newService(
+			$this->stubEngineThrowing( new RuntimeException( 'the query reached the store' ) ),
+			validator: $validatorReachingTheStore,
+			authorizer: new StubRawQueryAuthorizer( false )
+		);
+
+		$this->expectException( QueryPermissionDeniedException::class );
+
+		$service->execute( $this->newRequest( 'MATCH (n) RETURN n' ) );
+	}
+
 	private function newService(
 		Neo4jReadQueryEngine $engine,
 		?CypherQueryValidator $validator = null,
+		?RawQueryAuthorizer $authorizer = null,
 	): Neo4jQueryService {
 		return new Neo4jQueryService(
 			$engine,
 			$validator ?? $this->fixedValidator( true ),
 			new Neo4jResultNormalizer(),
+			$authorizer ?? new StubRawQueryAuthorizer( true ),
 		);
 	}
 

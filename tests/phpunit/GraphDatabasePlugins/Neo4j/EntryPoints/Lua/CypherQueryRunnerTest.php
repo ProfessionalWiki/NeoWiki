@@ -12,10 +12,12 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CypherQueryV
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\BackendUnavailableException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\EmptyQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\WriteQueryRejectedException;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryLimits;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\Lua\CypherQueryRunner;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jReadQueryEngine;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubRawQueryAuthorizer;
 use RuntimeException;
 
 /**
@@ -25,7 +27,8 @@ class CypherQueryRunnerTest extends TestCase {
 
 	private function newRunner(
 		Neo4jReadQueryEngine $engine,
-		?CypherQueryValidator $validator = null
+		?CypherQueryValidator $validator = null,
+		?Neo4jQueryLimits $limits = null
 	): CypherQueryRunner {
 		$validator ??= new class implements CypherQueryValidator {
 
@@ -40,14 +43,26 @@ class CypherQueryRunnerTest extends TestCase {
 				$engine,
 				$validator,
 				new Neo4jResultNormalizer(),
-			)
+				new StubRawQueryAuthorizer( true ),
+			),
+			$limits ?? new Neo4jQueryLimits( 30, 5000 ),
 		);
+	}
+
+	public function testRunsTheQueryWithTheInjectedLimits(): void {
+		$engine = $this->stubEngine( $this->emptyResult() );
+
+		$this->newRunner( $engine, limits: new Neo4jQueryLimits( timeoutSeconds: 17, maxRows: 5000 ) )
+			->run( 'MATCH (n) RETURN n', [] );
+
+		$this->assertSame( 17, $engine->lastTimeoutSeconds );
 	}
 
 	private function stubEngine( SummarizedResult $result ): Neo4jReadQueryEngine {
 		return new class( $result ) implements Neo4jReadQueryEngine {
 			public string $lastCypher = '';
 			public array $lastParams = [];
+			public ?int $lastTimeoutSeconds = null;
 
 			public function __construct( private readonly SummarizedResult $result ) {
 			}
@@ -55,6 +70,7 @@ class CypherQueryRunnerTest extends TestCase {
 			public function runReadQuery( string $cypher, array $parameters = [], ?int $timeoutSeconds = null ): SummarizedResult {
 				$this->lastCypher = $cypher;
 				$this->lastParams = $parameters;
+				$this->lastTimeoutSeconds = $timeoutSeconds;
 				return $this->result;
 			}
 		};
@@ -104,19 +120,12 @@ class CypherQueryRunnerTest extends TestCase {
 				throw new \LogicException( 'engine must not be called for a rejected query' );
 			}
 		};
-		$runner = new CypherQueryRunner(
-			new Neo4jQueryService(
-				$engine,
-				new class implements CypherQueryValidator {
-
-					public function queryIsAllowed( string $cypher ): bool {
-						return false;
-					}
-
-				},
-				new Neo4jResultNormalizer(),
-			)
-		);
+		$rejectingValidator = new class implements CypherQueryValidator {
+			public function queryIsAllowed( string $cypher ): bool {
+				return false;
+			}
+		};
+		$runner = $this->newRunner( $engine, $rejectingValidator );
 
 		$this->expectException( WriteQueryRejectedException::class );
 		$runner->run( 'CREATE (n)', [] );

@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\ParserFunction;
 
-use MediaWiki\Context\RequestContext;
 use MediaWiki\Parser\Parser;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryLimits;
@@ -21,6 +20,7 @@ class SparqlRawParserFunction {
 
 	public function __construct(
 		private readonly SparqlQueryService $queryService,
+		private readonly SparqlQueryLimits $limits,
 	) {
 	}
 
@@ -32,7 +32,7 @@ class SparqlRawParserFunction {
 			$result = $this->queryService->execute(
 				new SparqlQueryRequest(
 					sparql: $query,
-					limits: SparqlQueryLimits::forUser( RequestContext::getMain()->getUser() ),
+					limits: $this->limits,
 				)
 			);
 		} catch ( SparqlQueryException $e ) {

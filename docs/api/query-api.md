@@ -125,7 +125,8 @@ Two resource tiers control per-query timeout and row cap:
 | `default` | Any user with `neowiki-query` | 30 s | 5,000 rows |
 | `expensive` | Any user with the core `apihighlimits` right | 300 s | 50,000 rows |
 
-The tier is selected automatically from the caller's rights; it cannot be requested per call.
+The tier is selected automatically from the caller's rights; it cannot be requested per call. Queries run from
+wikitext or Lua always use the `default` tier.
 
 ### Rate limits
 
@@ -143,7 +144,7 @@ Defaults shipped by NeoWiki:
 
 | Right | Default groups | Purpose |
 |---|---|---|
-| `neowiki-query` | `*` (everyone, including anonymous visitors) | Required to call the query endpoint. |
+| `neowiki-query` | `*` (everyone, including anonymous visitors) | Required to call the query endpoints and to run queries from wikitext or Lua. |
 | `apihighlimits` | `bot`, `sysop` (core defaults) | Grants the `expensive` resource tier. |
 
 ## SPARQL query endpoint

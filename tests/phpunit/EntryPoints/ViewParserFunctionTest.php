@@ -8,6 +8,8 @@ use MediaWiki\Language\RawMessage;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
@@ -16,7 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\ViewParserFunction;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\ViewParserFunction
@@ -26,6 +28,7 @@ class ViewParserFunctionTest extends TestCase {
 	private const string MAIN_SUBJECT_ID = 's11111111111111';
 	private const string EXPLICIT_SUBJECT_ID = 's22222222222222';
 	private const string OTHER_SUBJECT_ID = 's33333333333333';
+	private const int PAGE_ID = 7;
 
 	public function testEmitsPlaceholderWithExplicitPositionalSubject(): void {
 		$result = $this->callView( self::EXPLICIT_SUBJECT_ID );
@@ -82,17 +85,26 @@ class ViewParserFunctionTest extends TestCase {
 	}
 
 	public function testReturnsEmptyStringWhenNoSubjectAvailable(): void {
-		$parserFunction = new ViewParserFunction( new InMemorySubjectContentRepository() );
+		$parserFunction = new ViewParserFunction( new PageSubjectsLookup( new InMemorySubjectRepository() ) );
 
 		$result = $parserFunction->handle( $this->createMockParser() );
 
 		$this->assertSame( '', $result );
 	}
 
+	public function testReturnsEmptyStringWhileThePageIsBeingCreated(): void {
+		$unsavedPage = $this->createStub( Title::class );
+		$unsavedPage->method( 'getArticleID' )->willReturn( 0 );
+		$parser = $this->createStub( Parser::class );
+		$parser->method( 'getTitle' )->willReturn( $unsavedPage );
+
+		$result = ( new ViewParserFunction( $this->lookupWithMainSubject() ) )->handle( $parser );
+
+		$this->assertSame( '', $result );
+	}
+
 	public function testReturnsEmptyStringWhenPageHasNoMainSubject(): void {
-		$parserFunction = new ViewParserFunction(
-			new InMemorySubjectContentRepository( new PageSubjects( null, new SubjectMap() ) )
-		);
+		$parserFunction = new ViewParserFunction( $this->lookupWithPageSubjects( new PageSubjects( null, new SubjectMap() ) ) );
 
 		$result = $parserFunction->handle( $this->createMockParser() );
 
@@ -130,11 +142,18 @@ class ViewParserFunctionTest extends TestCase {
 	}
 
 	private function callView( string ...$args ): string|array {
-		return ( new ViewParserFunction( $this->repositoryWithMainSubject() ) )
+		return ( new ViewParserFunction( $this->lookupWithMainSubject() ) )
 			->handle( $this->createMockParser(), ...$args );
 	}
 
-	private function repositoryWithMainSubject(): InMemorySubjectContentRepository {
+	private function lookupWithPageSubjects( PageSubjects $pageSubjects ): PageSubjectsLookup {
+		$repository = new InMemorySubjectRepository();
+		$repository->savePageSubjects( $pageSubjects, new PageId( self::PAGE_ID ) );
+
+		return new PageSubjectsLookup( $repository );
+	}
+
+	private function lookupWithMainSubject(): PageSubjectsLookup {
 		$mainSubject = new Subject(
 			id: new SubjectId( self::MAIN_SUBJECT_ID ),
 			label: new SubjectLabel( 'Main' ),
@@ -142,11 +161,12 @@ class ViewParserFunctionTest extends TestCase {
 			statements: new StatementList(),
 		);
 
-		return new InMemorySubjectContentRepository( new PageSubjects( $mainSubject, new SubjectMap() ) );
+		return $this->lookupWithPageSubjects( new PageSubjects( $mainSubject, new SubjectMap() ) );
 	}
 
 	private function createMockParser(): Parser {
 		$title = $this->createStub( Title::class );
+		$title->method( 'getArticleID' )->willReturn( self::PAGE_ID );
 
 		$parser = $this->createStub( Parser::class );
 		$parser->method( 'getTitle' )->willReturn( $title );

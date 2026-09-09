@@ -13,6 +13,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\Em
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\InternalQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\ParameterMissingException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryException;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryPermissionDeniedException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryTimeoutException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\WriteQueryRejectedException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryLimits;
@@ -29,13 +30,7 @@ class CypherQueryApi extends SimpleHandler {
 	}
 
 	public function run(): Response {
-		$authority = $this->getAuthority();
-
-		if ( !$authority->isAllowed( 'neowiki-query' ) ) {
-			return $this->errorResponse( 403, 'permissionDenied', 'You do not have permission to run queries.' );
-		}
-
-		$user = MediaWikiServices::getInstance()->getUserFactory()->newFromAuthority( $authority );
+		$user = MediaWikiServices::getInstance()->getUserFactory()->newFromAuthority( $this->getAuthority() );
 
 		if ( $user->pingLimiter( 'neowiki-query' ) ) {
 			return $this->errorResponse( 429, 'rateLimitExceeded', 'Query rate limit exceeded.' );
@@ -72,6 +67,7 @@ class CypherQueryApi extends SimpleHandler {
 
 	private function mapException( QueryException $e ): Response {
 		$status = match ( true ) {
+			$e instanceof QueryPermissionDeniedException => 403,
 			$e instanceof EmptyQueryException         => 400,
 			$e instanceof ParameterMissingException   => 400,
 			$e instanceof CypherSyntaxException       => 400,

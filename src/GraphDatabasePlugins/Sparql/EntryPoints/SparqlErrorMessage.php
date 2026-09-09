@@ -25,6 +25,7 @@ readonly class SparqlErrorMessage {
 
 	public static function for( SparqlQueryException $error ): self {
 		return match ( $error->errorType() ) {
+			'permissionDenied' => new self( 'neowiki-sparql-error-permission-denied', [] ),
 			'emptyQuery' => new self( 'neowiki-sparql-error-empty-query', [] ),
 			'sparqlSyntaxError' => new self( 'neowiki-sparql-error-syntax', [ $error->getMessage() ] ),
 			'sparqlStoreUnavailable' => new self( 'neowiki-sparql-error-store-unavailable', [] ),

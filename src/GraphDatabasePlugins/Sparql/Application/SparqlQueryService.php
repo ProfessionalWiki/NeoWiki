@@ -4,10 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application;
 
+use ProfessionalWiki\NeoWiki\Application\RawQueryAuthorizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\EmptySparqlQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\InternalSparqlQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryFailedException;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryPermissionDeniedException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlStoreUnavailableException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlSyntaxException;
 
@@ -30,10 +32,15 @@ readonly class SparqlQueryService {
 
 	public function __construct(
 		private SparqlQueryEndpoint $endpoint,
+		private RawQueryAuthorizer $authorizer,
 	) {
 	}
 
 	public function execute( SparqlQueryRequest $request ): SparqlQueryResult {
+		if ( !$this->authorizer->authorizeRawQuery() ) {
+			throw new SparqlQueryPermissionDeniedException( 'You do not have permission to run queries.' );
+		}
+
 		$sparql = trim( $request->sparql );
 
 		if ( $sparql === '' ) {

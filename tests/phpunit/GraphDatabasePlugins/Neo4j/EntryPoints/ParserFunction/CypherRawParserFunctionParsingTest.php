@@ -11,10 +11,12 @@ use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\KeywordCypherQueryValidator;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryLimits;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jReadQueryEngine;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\ParserFunction\CypherRawParserFunction;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jResultNormalizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubRawQueryAuthorizer;
 
 /**
  * What a reader ends up with, rather than what the parser function returns: the corruption this
@@ -35,7 +37,8 @@ class CypherRawParserFunctionParsingTest extends MediaWikiIntegrationTestCase {
 		$parser->setFunctionHook(
 			'cypher_raw',
 			static function ( Parser $parser, string $cypherQuery ) use ( $queryService ): string|array {
-				return ( new CypherRawParserFunction( $queryService ) )->handle( $parser, $cypherQuery );
+				return ( new CypherRawParserFunction( $queryService, new Neo4jQueryLimits( 30, 5000 ) ) )
+					->handle( $parser, $cypherQuery );
 			}
 		);
 
@@ -61,6 +64,7 @@ class CypherRawParserFunctionParsingTest extends MediaWikiIntegrationTestCase {
 			$queryEngine,
 			new KeywordCypherQueryValidator(),
 			new Neo4jResultNormalizer(),
+			new StubRawQueryAuthorizer( true ),
 		);
 	}
 

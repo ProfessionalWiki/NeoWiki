@@ -25,6 +25,7 @@ readonly class CypherErrorMessage {
 
 	public static function for( QueryException $error ): self {
 		return match ( $error->errorType() ) {
+			'permissionDenied' => new self( 'neowiki-cypher-error-permission-denied', [] ),
 			'emptyQuery' => new self( 'neowiki-cypher-error-empty-query', [] ),
 			'writeQueryRejected' => new self( 'neowiki-cypher-error-write-query', [] ),
 			'backendUnavailable' => new self( 'neowiki-cypher-error-backend-unavailable', [] ),

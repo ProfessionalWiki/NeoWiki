@@ -5,7 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use MediaWiki\Parser\Parser;
-use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder;
 
 class ViewParserFunction {
@@ -13,8 +14,13 @@ class ViewParserFunction {
 	private const string ARG_SUBJECT = 'subject';
 	private const string ARG_LAYOUT = 'layout';
 
+	/**
+	 * Emits a marker that the frontend fills per viewer over the REST API, so the parse-time work is
+	 * the same for every reader: the page's Main Subject id is read publicly, not as a parsing
+	 * authority ({@see ParserAuthority}), and the output stays out of the per-class cache keying.
+	 */
 	public function __construct(
-		private readonly SubjectContentRepository $subjectContentRepository
+		private readonly PageSubjectsLookup $pageSubjectsLookup
 	) {
 	}
 
@@ -138,12 +144,13 @@ class ViewParserFunction {
 			return null;
 		}
 
-		$subject = $this->subjectContentRepository
-			->getSubjectContentByPageTitle( $title )
-			?->getPageSubjects()
-			->getMainSubject();
+		$pageId = $title->getArticleID();
 
-		return $subject?->getId()->text;
+		if ( $pageId === 0 ) {
+			return null;
+		}
+
+		return $this->pageSubjectsLookup->getMainSubjectId( new PageId( $pageId ) )?->text;
 	}
 
 }

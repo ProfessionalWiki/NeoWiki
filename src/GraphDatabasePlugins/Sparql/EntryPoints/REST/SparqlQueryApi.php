@@ -10,6 +10,7 @@ use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\EmptySparqlQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\InternalSparqlQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryException;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryPermissionDeniedException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlStoreUnavailableException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlSyntaxException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryLimits;
@@ -32,13 +33,7 @@ class SparqlQueryApi extends SimpleHandler {
 	}
 
 	public function run(): Response {
-		$authority = $this->getAuthority();
-
-		if ( !$authority->isAllowed( 'neowiki-query' ) ) {
-			return $this->errorResponse( 403, 'permissionDenied', 'You do not have permission to run queries.' );
-		}
-
-		$user = MediaWikiServices::getInstance()->getUserFactory()->newFromAuthority( $authority );
+		$user = MediaWikiServices::getInstance()->getUserFactory()->newFromAuthority( $this->getAuthority() );
 
 		if ( $user->pingLimiter( 'neowiki-query' ) ) {
 			return $this->errorResponse( 429, 'rateLimitExceeded', 'Query rate limit exceeded.' );
@@ -69,6 +64,7 @@ class SparqlQueryApi extends SimpleHandler {
 
 	private function mapException( SparqlQueryException $e ): Response {
 		$status = match ( true ) {
+			$e instanceof SparqlQueryPermissionDeniedException => 403,
 			$e instanceof EmptySparqlQueryException => 400,
 			$e instanceof SparqlSyntaxException => 400,
 			$e instanceof SparqlStoreUnavailableException => 503,

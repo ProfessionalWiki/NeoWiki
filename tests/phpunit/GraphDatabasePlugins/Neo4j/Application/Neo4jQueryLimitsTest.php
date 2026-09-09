@@ -45,11 +45,24 @@ class Neo4jQueryLimitsTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( 50000, $limits->maxRows );
 	}
 
-	public function testRespectsConfigOverridesForDefaultTier(): void {
+	private function overrideTiers(): void {
 		$this->overrideConfigValue( 'NeoWikiQueryLimits', [
 			'default'   => [ 'timeoutSeconds' => 5, 'maxRows' => 100 ],
 			'expensive' => [ 'timeoutSeconds' => 99, 'maxRows' => 999 ],
 		] );
+	}
+
+	public function testDefaultTierReadsTheDefaultTierConfig(): void {
+		$this->overrideTiers();
+
+		$limits = Neo4jQueryLimits::defaultTier();
+
+		$this->assertSame( 5, $limits->timeoutSeconds );
+		$this->assertSame( 100, $limits->maxRows );
+	}
+
+	public function testRespectsConfigOverridesForDefaultTier(): void {
+		$this->overrideTiers();
 
 		$user = $this->getServiceContainer()->getUserFactory()->newAnonymous();
 

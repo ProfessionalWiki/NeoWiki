@@ -231,7 +231,8 @@ you to remove pages that are already gone from your store.
 - `newSubjectPermissionHints( Authority )` — side-effect-free subject permission checks, for showing or
   hiding affordances. A positive answer is a hint, not authorization to write.
 - `newPageSubjectsLookup()` — look up the subjects on a page.
-- `newSubjectContentRepository()` — read Subject data by id.
+- `newSubjectContentRepository( Authority )` — read and write a page's Subject slot; the authority sets the
+  revision-deletion audience, it does not gate the read on the page's `read` permission.
 - `newFrontendModuleLoader()` — mount NeoWiki's UI on any page.
 
 Examples: [`src/RedHerbSidebarHook.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbSidebarHook.php)
@@ -239,13 +240,13 @@ and [`src/Specials/SpecialRedHerbSubjectFinder.php`](https://github.com/Professi
 
 ### Running Cypher queries
 
-To run a read-only Cypher query from PHP, use `NeoWikiExtension::getInstance()->newCypherQueryService()`.
-It rejects write queries, enforces the timeout against the backend, and truncates results to the row cap;
-resolve the limits configured in [`$wgNeoWikiQueryLimits`](../api/query-api.md) with
-`Neo4jQueryLimits::forUser()`:
+To run a read-only Cypher query from PHP, use `NeoWikiExtension::getInstance()->newCypherQueryService( $authority )`
+with the `Authority` the query runs for. The service checks that authority's `neowiki-query` right, rejects write
+queries, enforces the timeout against the backend, and truncates results to the row cap; resolve the limits
+configured in [`$wgNeoWikiQueryLimits`](../api/query-api.md) with `Neo4jQueryLimits::forUser()`:
 
 ```php
-$result = NeoWikiExtension::getInstance()->newCypherQueryService()->execute( new Neo4jQueryRequest(
+$result = NeoWikiExtension::getInstance()->newCypherQueryService( $this->getAuthority() )->execute( new Neo4jQueryRequest(
 	cypher: 'MATCH (s:Subject:Person) WHERE s.`Birth year` > $minYear RETURN s.name AS name',
 	parameters: [ 'minYear' => 2000 ],
 	limits: Neo4jQueryLimits::forUser( $this->getUser() ),
@@ -253,12 +254,11 @@ $result = NeoWikiExtension::getInstance()->newCypherQueryService()->execute( new
 ```
 
 `execute()` returns a `Neo4jQueryResult` (columns, rows, truncation flag) and throws a `QueryException`
-subclass on failure; `newCypherQueryService()` itself throws a `LogicException` on a wiki with no Neo4j
-backend configured.
+subclass on failure, `QueryPermissionDeniedException` when the authority lacks the right;
+`newCypherQueryService()` itself throws a `LogicException` on a wiki with no Neo4j backend configured.
 
-The `User` in `forUser()` only sizes the limits: how heavy a single query may be, not whether the user may
-query at all or how often. When running user-supplied queries, check the `neowiki-query` right and rate
-limit yourself, as the [Query API](../api/query-api.md) endpoint does.
+The `User` in `forUser()` only sizes the limits: how heavy a single query may be, not how often. When running
+user-supplied queries, rate limit yourself, as the [Query API](../api/query-api.md) endpoint does.
 
 Two sharp edges: the write check is a keyword check plus `EXPLAIN`, and the keyword check also rejects `CALL` and
 `SHOW`, even for read-only procedures (see the [parser function notes](../authoring/parser-functions.md)). And the
