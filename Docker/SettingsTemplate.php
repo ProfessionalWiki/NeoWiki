@@ -268,7 +268,6 @@ $wgCrossSiteAJAXdomains = [
 	'*'
 ];
 
-// Links to the project's own sites are meant to pass link equity.
 $wgNoFollowDomainExceptions = [
 	'neowiki.ai',
 	'neowiki.dev',
