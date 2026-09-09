@@ -9,7 +9,6 @@ use MediaWiki\Content\FallbackContent;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionSlots;
-use MediaWiki\User\UserIdentityValue;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
@@ -54,7 +53,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 	public function testSavesPageWithSubjects(): void {
 		$revision = $this->createPageWithSubjects( 'Page with subject', TestSubject::build() );
 
-		$outcome = $this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+		$outcome = $this->newHandler()->onRevisionCreated( $revision );
 
 		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
 		$this->assertCount( 1, $this->graphStore->savedPages );
@@ -63,7 +62,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 	public function testIndexesTheSubjectsThePageHolds(): void {
 		$revision = $this->createPageWithSubjects( 'Page with indexed subject', TestSubject::build() );
 
-		$this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+		$this->newHandler()->onRevisionCreated( $revision );
 
 		$this->assertSame(
 			[ $revision->getPageId() => [ TestSubject::ZERO_GUID ] ],
@@ -74,7 +73,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 	public function testSavesPageWithoutSubjects(): void {
 		$revision = $this->newPlainPageRevision( 'Plain page' );
 
-		$outcome = $this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+		$outcome = $this->newHandler()->onRevisionCreated( $revision );
 
 		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
 		$this->assertCount( 1, $this->graphStore->savedPages );
@@ -84,7 +83,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 	public function testSavesPageWhoseSubjectsWereAllDeleted(): void {
 		$revision = $this->createPageWithSubjects( 'Page that lost its subjects' );
 
-		$outcome = $this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+		$outcome = $this->newHandler()->onRevisionCreated( $revision );
 
 		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
 		$this->assertCount( 1, $this->graphStore->savedPages );
@@ -101,7 +100,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 			$this->graphStore,
 			$this->newFailingProviderRegistry(),
 			isolatePageProperties: true
-		)->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+		)->onRevisionCreated( $revision );
 
 		$this->assertSame( PageRefreshOutcome::SkippedUnreadablePageProperties, $outcome );
 		$this->assertSame( [], $this->graphStore->savedPages );
@@ -120,7 +119,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->expectExceptionMessage( 'unknown content model' );
 
 		$this->newHandlerWith( $this->graphStore, $this->newFailingProviderRegistry() )
-			->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+			->onRevisionCreated( $revision );
 	}
 
 	public function testWritesNothingWhenTheSubjectSlotDoesNotHoldSubjectContent(): void {
@@ -128,7 +127,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		// the page as holding no Subjects would wipe the ones it does hold, so nothing is written.
 		$revision = $this->newRevisionWithSlotContent( new FallbackContent( '{"subjects":{}}', 'unregistered-model' ) );
 
-		$outcome = $this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+		$outcome = $this->newHandler()->onRevisionCreated( $revision );
 
 		$this->assertSame( PageRefreshOutcome::SkippedUnreadableSubjects, $outcome );
 		$this->assertSame( [], $this->graphStore->savedPages );
@@ -148,7 +147,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 
 		$this->expectException( RevisionAccessException::class );
 
-		$this->newHandler()->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+		$this->newHandler()->onRevisionCreated( $revision );
 	}
 
 	public function testUnreachableBackendDoesNotHardFailRevisionHandling(): void {
@@ -160,7 +159,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 			new FailureIsolatingGraphDatabasePlugin( new ThrowingGraphDatabasePlugin(), new NullLogger() )
 		);
 
-		$outcome = $handler->onRevisionCreated( $revision, new UserIdentityValue( 1, 'Tester' ) );
+		$outcome = $handler->onRevisionCreated( $revision );
 
 		$this->assertSame(
 			PageRefreshOutcome::Refreshed,

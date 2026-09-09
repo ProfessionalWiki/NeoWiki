@@ -8,8 +8,6 @@ use LogicException;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
-use MediaWiki\User\UserIdentity;
-use MediaWiki\User\UserIdentityValue;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
@@ -65,7 +63,7 @@ class PageRebuilderTest extends TestCase {
 	public function testReturnsRefreshedWhenHandlerWritesPage(): void {
 		$this->handler->outcome = PageRefreshOutcome::Refreshed;
 
-		$outcome = $this->newRebuilder( $this->newRevisionByUser( new UserIdentityValue( 42, 'RevisionAuthor' ) ) )
+		$outcome = $this->newRebuilder( $this->newRevision() )
 			->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
 
 		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
@@ -74,7 +72,7 @@ class PageRebuilderTest extends TestCase {
 	public function testReturnsTheOutcomeOfTheHandlerForAnExistingPage(): void {
 		$this->handler->outcome = PageRefreshOutcome::SkippedUnreadableSubjects;
 
-		$outcome = $this->newRebuilder( $this->newRevisionByUser( new UserIdentityValue( 42, 'RevisionAuthor' ) ) )
+		$outcome = $this->newRebuilder( $this->newRevision() )
 			->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
 
 		$this->assertSame( PageRefreshOutcome::SkippedUnreadableSubjects, $outcome );
@@ -87,32 +85,23 @@ class PageRebuilderTest extends TestCase {
 		$this->assertSame( [], $this->handler->calls );
 	}
 
-	public function testRefreshesWithNullAuthorWhenRevisionHasNoVisibleAuthor(): void {
-		$outcome = $this->newRebuilder( $this->newRevisionWithoutAuthor() )
-			->rebuild( Title::makeTitle( NS_MAIN, 'AuthorlessPage' ) );
+	public function testPassesTheCurrentRevisionToTheHandler(): void {
+		$revision = $this->newRevision();
 
-		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
-		$this->assertNull( $this->handler->calls[0]['user'] );
-	}
+		$this->newRebuilder( $revision )->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
 
-	public function testPassesRevisionAuthorToHandler(): void {
-		$author = new UserIdentityValue( 42, 'RevisionAuthor' );
-
-		$this->newRebuilder( $this->newRevisionByUser( $author ) )
-			->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
-
-		$this->assertSame( $author, $this->handler->calls[0]['user'] );
+		$this->assertSame( [ $revision ], $this->handler->calls );
 	}
 
 	public function testRebuildReadsPageStateFromReplica(): void {
-		$this->newRebuilder( $this->newRevisionByUser( new UserIdentityValue( 42, 'RevisionAuthor' ) ) )
+		$this->newRebuilder( $this->newRevision() )
 			->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
 
 		$this->assertSame( [ IDBAccessObject::READ_NORMAL ], $this->pageDataReads );
 	}
 
 	public function testRebuildFromPrimaryReadsPageStateFromPrimary(): void {
-		$this->newRebuilder( $this->newRevisionByUser( new UserIdentityValue( 42, 'RevisionAuthor' ) ) )
+		$this->newRebuilder( $this->newRevision() )
 			->rebuildFromPrimary( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
 
 		$this->assertSame(
@@ -137,16 +126,8 @@ class PageRebuilderTest extends TestCase {
 		return new PageRebuilder( $this->handler, $factory );
 	}
 
-	private function newRevisionByUser( UserIdentity $user ): RevisionRecord {
-		$revision = $this->createStub( RevisionRecord::class );
-		$revision->method( 'getUser' )->willReturn( $user );
-		return $revision;
-	}
-
-	private function newRevisionWithoutAuthor(): RevisionRecord {
-		$revision = $this->createStub( RevisionRecord::class );
-		$revision->method( 'getUser' )->willReturn( null );
-		return $revision;
+	private function newRevision(): RevisionRecord {
+		return $this->createStub( RevisionRecord::class );
 	}
 
 }

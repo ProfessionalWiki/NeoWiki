@@ -9,6 +9,7 @@ use ImportStringSource;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\TextContent;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
@@ -32,6 +33,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
+use RevisionDeleter;
 use TestLogger;
 use WikiExporter;
 
@@ -122,6 +124,37 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		);
 
 		$this->assertStatusGood( $deletePage->deleteUnsafe( 'test deletion' ) );
+	}
+
+	/**
+	 * Hides who made a revision, as Special:RevisionDelete does. MediaWiki refuses to hide the *content*
+	 * of a page's current revision, so the author is the only part of the revision a page is projected
+	 * from that can be hidden after the fact.
+	 */
+	protected function hideRevisionAuthor( Title $title, int $revisionId ): void {
+		$this->setRevisionAuthorVisibility( $title, $revisionId, 1 );
+	}
+
+	protected function showRevisionAuthor( Title $title, int $revisionId ): void {
+		$this->setRevisionAuthorVisibility( $title, $revisionId, 0 );
+	}
+
+	/**
+	 * @param int $value 1 hides the author, 0 shows them again (RevisionDeleter::extractBitfield)
+	 */
+	private function setRevisionAuthorVisibility( Title $title, int $revisionId, int $value ): void {
+		// The change is logged, and a log entry needs an actor to attribute it to.
+		RequestContext::getMain()->setUser( $this->getTestSysop()->getUser() );
+
+		$list = RevisionDeleter::createList( 'revision', RequestContext::getMain(), $title, [ $revisionId ] );
+
+		$this->assertStatusGood( $list->setVisibility( [
+			'value' => [ RevisionRecord::DELETED_USER => $value ],
+			'comment' => 'Changing revision visibility in a test',
+		] ) );
+
+		// The hooks a visibility change fires are queued rather than run inline.
+		DeferredUpdates::doUpdates();
 	}
 
 	/**

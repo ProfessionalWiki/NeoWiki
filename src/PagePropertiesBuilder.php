@@ -12,7 +12,6 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\TitleFormatter;
-use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderContext;
@@ -28,8 +27,8 @@ readonly class PagePropertiesBuilder implements PagePropertiesSource {
 	) {
 	}
 
-	public function getPagePropertiesFor( RevisionRecord $revision, ?UserIdentity $user ): PageProperties {
-		$context = $this->buildContext( $revision, $user );
+	public function getPagePropertiesFor( RevisionRecord $revision ): PageProperties {
+		$context = $this->buildContext( $revision );
 
 		$properties = [];
 
@@ -40,7 +39,7 @@ readonly class PagePropertiesBuilder implements PagePropertiesSource {
 		return new PageProperties( $properties );
 	}
 
-	private function buildContext( RevisionRecord $revision, ?UserIdentity $user ): PagePropertyProviderContext {
+	private function buildContext( RevisionRecord $revision ): PagePropertyProviderContext {
 		$linkTarget = $revision->getPageAsLinkTarget();
 		$content = $revision->getContent( SlotRecord::MAIN );
 		$parserOutput = $content === null ? null : $this->parse( $content, $revision );
@@ -52,7 +51,9 @@ readonly class PagePropertiesBuilder implements PagePropertiesSource {
 			creationTime: $this->getCreationTime( $revision ),
 			modificationTime: $this->getModificationTime( $revision ),
 			categories: $parserOutput === null ? [] : $parserOutput->getCategoryNames(),
-			lastEditor: $user?->getName() ?? '',
+			// The revision's author as the wiki shows them: RevisionRecord answers its default audience
+			// with nobody once RevisionDelete has hidden the name, so a hidden name is never projected.
+			lastEditor: $revision->getUser()?->getName() ?? '',
 			content: $content === null ? '' : $content->serialize(),
 			contentModel: $content === null ? '' : $content->getModel(),
 			parserProperties: $parserOutput === null ? [] : $parserOutput->getPageProperties(),

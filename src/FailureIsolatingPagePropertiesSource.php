@@ -6,7 +6,6 @@ namespace ProfessionalWiki\NeoWiki;
 
 use Exception;
 use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
 use Psr\Log\LoggerInterface;
 use Wikimedia\Rdbms\DBError;
@@ -32,9 +31,9 @@ class FailureIsolatingPagePropertiesSource implements PagePropertiesSource {
 	) {
 	}
 
-	public function getPagePropertiesFor( RevisionRecord $revision, ?UserIdentity $user ): ?PageProperties {
+	public function getPagePropertiesFor( RevisionRecord $revision ): ?PageProperties {
 		try {
-			return $this->source->getPagePropertiesFor( $revision, $user );
+			return $this->source->getPagePropertiesFor( $revision );
 		} catch ( TimeoutException | DBError $e ) {
 			throw $e;
 		} catch ( Exception $e ) {

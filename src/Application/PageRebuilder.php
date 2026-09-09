@@ -40,7 +40,7 @@ class PageRebuilder {
 			return PageRefreshOutcome::SkippedMissingRevision;
 		}
 
-		return $this->handler->onRevisionCreated( $revision, $revision->getUser() );
+		return $this->handler->onRevisionCreated( $revision );
 	}
 
 }
