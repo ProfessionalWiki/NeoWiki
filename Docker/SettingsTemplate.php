@@ -268,6 +268,13 @@ $wgCrossSiteAJAXdomains = [
 	'*'
 ];
 
+$wgNoFollowDomainExceptions = [
+	'neowiki.ai',
+	'neowiki.dev',
+	'professional.wiki',
+	'pro.wiki',
+];
+
 // Expose MediaWiki core's OpenAPI spec endpoints (T365753) so the
 // auto-generated NeoWiki REST spec is reachable at
 // /rest.php/specs/v0/module/- and /rest.php/specs/v0/discovery.
