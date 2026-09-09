@@ -1277,6 +1277,7 @@ class NeoWikiExtension {
 	public function newDeleteSubjectAction( Authority $authority ): DeleteSubjectAction {
 		return new DeleteSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup()
 		);

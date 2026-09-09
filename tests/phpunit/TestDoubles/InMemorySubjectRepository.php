@@ -90,9 +90,22 @@ class InMemorySubjectRepository implements SubjectRepository {
 		$this->updateSubjectCallCount++;
 	}
 
-	public function deleteSubject( SubjectId $id, ?string $comment ): void {
-		unset( $this->subjects[$id->text] );
+	public function deleteSubject( SubjectId $id, ?string $comment ): PageContentSavingStatus {
 		$this->comments[$id->text] = $comment;
+
+		if ( $this->failNextSave ) {
+			return new PageContentSavingStatus( PageContentSavingStatus::ERROR, 'Page not found' );
+		}
+
+		// Nothing to remove is nothing changed, as it is in production when the page's slot does not
+		// hold the Subject the index named.
+		if ( !array_key_exists( $id->text, $this->subjects ) ) {
+			return new PageContentSavingStatus( PageContentSavingStatus::NO_CHANGES );
+		}
+
+		unset( $this->subjects[$id->text] );
+
+		return new PageContentSavingStatus( PageContentSavingStatus::REVISION_CREATED );
 	}
 
 	/**
