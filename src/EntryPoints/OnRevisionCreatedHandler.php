@@ -74,9 +74,7 @@ class OnRevisionCreatedHandler {
 		// it or not at all, and a Subject too broken to deserialize is still indexed.
 		$this->subjectPageIndex->setSubjectsOfPage( $pageId, $content?->getSubjectIds() ?? [] );
 
-		// Indexed either way, projected only when published: what the graph already holds is what the
-		// policy last published, and leaving it there is the point. Withdrawing it belongs to page
-		// deletion, not to somebody saving a draft on a page that has nothing published yet.
+		// An unpublished revision leaves the graph holding what the policy last published.
 		if ( !$this->revisionPolicy->publishesRevision( $revisionRecord ) ) {
 			return PageRefreshOutcome::SkippedUnpublishableRevision;
 		}

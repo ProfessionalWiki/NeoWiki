@@ -203,11 +203,6 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $this->graphStore->deletedPageIds, 'what was published stays published' );
 	}
 
-	/**
-	 * The index says where a Subject lives, not whether it is published. Every id-keyed read and write
-	 * addresses its page through it, so a Subject left out of it cannot be edited, moved or deleted,
-	 * and its id reads as free.
-	 */
 	public function testIndexesASubjectEvenWhenItsRevisionIsNotPublished(): void {
 		$revision = $this->createPageWithSubjects( 'Page whose draft adds a subject', TestSubject::build() );
 

@@ -19,12 +19,11 @@ class PageRebuilder {
 	}
 
 	/**
-	 * Reprojects the page from the revision the registered policy publishes. This is the path an
-	 * approval extension calls when its answer changes. A page save takes the other path: it already
-	 * knows its revision and is only asked whether to publish it.
+	 * Reprojects the page from the revision the registered policy publishes, which is what an approval
+	 * extension calls when its answer changes.
 	 *
-	 * The handler this hands the substituted revision to must not index, since it would index the
-	 * published revision's Subjects in place of the latest one's. See NeoWikiExtension.
+	 * The handler must not index: it would record the published revision's Subjects in place of the
+	 * latest one's. NeoWikiExtension wires it with a NullSubjectPageIndex for that reason.
 	 */
 	public function rebuild( Title $title ): PageRefreshOutcome {
 		return $this->rebuildWithReadFlags( $title, IDBAccessObject::READ_NORMAL, substitute: true );

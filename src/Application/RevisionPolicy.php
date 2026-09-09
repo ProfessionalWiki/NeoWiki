@@ -11,22 +11,18 @@ use MediaWiki\Revision\RevisionRecord;
  * Which revision of a page NeoWiki publishes: projects to the graph stores, exports as RDF, and reads
  * Schemas, Layouts, Mappings and the on-wiki configuration from. Registered by an approval extension
  * such as ContentStabilization, which shows readers an approved revision rather than the newest one.
- * With no policy registered every page publishes its latest revision, as NeoWiki has always done.
+ * With no policy registered every page publishes its latest revision.
  *
  * A page save knows its revision and only needs to be told whether to publish it. A reprojection, a
- * configuration read and an RDF export are told nothing beyond the page, so they ask which revision
- * to publish. publishedRevision() therefore runs on every Schema, Layout and Mapping read and every
- * RDF export, not only on a rebuild, and an implementation must be cheap enough for that.
+ * configuration read and an RDF export know only the page, so they ask which revision to publish.
+ * publishedRevision() therefore runs on every Schema, Layout and Mapping read and every RDF export,
+ * and must be cheap.
  *
  * The answers must agree: publishesRevision() is true for whatever publishedRevision() names, since a
  * reprojection hands the named revision back to the save path's check.
  *
  * A policy answers for the wiki, not for a viewer: the graph and the RDF export are one state that
  * every reader sees. Only revisionIsReadableBy(), which serves a single request, takes a viewer.
- *
- * The subject-to-page index is deliberately not governed by any of this. It records where a Subject
- * lives, not whether it is published, and every read of it is re-checked against the revision the
- * caller actually reads ([[ADR 32]]).
  */
 interface RevisionPolicy {
 

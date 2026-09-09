@@ -62,12 +62,8 @@ readonly class NeoWikiRegistrar {
 	}
 
 	/**
-	 * Registers which revision of a page NeoWiki publishes: projects to the graph stores and exports
-	 * as RDF. For approval extensions, which show readers an approved revision rather than the newest
-	 * one.
-	 *
-	 * Only one extension can decide this, so unlike the other registrations this is a single slot: a
-	 * second policy is refused with a warning and the first one keeps deciding.
+	 * A single slot, unlike the add* registrations: a second policy is refused with a warning and the
+	 * first one keeps deciding.
 	 */
 	public function setRevisionPolicy( RevisionPolicy $policy ): void {
 		$this->revisionPolicyRegistry->setPolicy( $policy );

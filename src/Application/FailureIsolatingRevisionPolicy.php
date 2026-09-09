@@ -17,11 +17,11 @@ use Throwable;
  * back, and a throw on a read would take every Schema, Layout and Mapping read down with it. The other
  * extension-contributed plugins are wrapped the same way; see FailureIsolatingGraphDatabasePlugin.
  *
- * Two answers are refused as well as caught. A revision from another page: every caller keys its write
+ * Two answers are refused as well as caught. A revision of another page: every caller keys its write
  * or its export on the returned revision's page id, so accepting one would publish page B under page
- * A's name, behind A's read gate. And a revision whose text is suppressed: only the current revision
- * was ever published before this policy existed, and core refuses to suppress that one, so nothing
- * read a suppressed revision's Subjects — a policy naming an older one must not start to.
+ * A's name, behind A's read gate. And a revision whose text is suppressed: core refuses to suppress a
+ * page's current revision, so only a policy naming an older one could publish suppressed Subjects, and
+ * this refuses to.
  */
 class FailureIsolatingRevisionPolicy implements RevisionPolicy {
 

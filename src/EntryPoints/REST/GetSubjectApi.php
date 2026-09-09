@@ -61,11 +61,6 @@ class GetSubjectApi extends SimpleHandler {
 		return NeoWikiExtension::getInstance()->newGetSubjectQueryForRevision( $presenter, $revision, $this->getAuthority() );
 	}
 
-	/**
-	 * A caller who names a revision is asking to see that one, so the registered revision policy is
-	 * asked directly whether this viewer may. Without one registered every revision of a readable page
-	 * is readable, as before.
-	 */
 	private function revisionIsReadable( RevisionRecord $revision ): bool {
 		return $this->revisionPageIsReadable( $revision->getPageId() )
 			&& NeoWikiExtension::getInstance()->getRevisionPolicy()
