@@ -4,7 +4,9 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application;
 
+use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\ReadAuthorizedSubjectLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
@@ -13,7 +15,6 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivePageReadAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\ReadAuthorizedSubjectLookup
@@ -21,6 +22,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivePageReadAuthorizer;
 class ReadAuthorizedSubjectLookupTest extends TestCase {
 
 	private const string READABLE_ID = 'srt111111111aaa';
+	private const string SHARES_READABLE_PAGE_ID = 'srt111111111ddd';
 	private const string RESTRICTED_ID = 'srt111111111bbb';
 	private const string UNHOSTED_ID = 'srt111111111ccc';
 
@@ -28,23 +30,31 @@ class ReadAuthorizedSubjectLookupTest extends TestCase {
 	private const int RESTRICTED_PAGE_ID = 2;
 
 	private InMemorySubjectLookup $innerLookup;
+	private InMemoryPageIdentifiersLookup $pageIdentifiersLookup;
+	private CountingPageReadAuthorizer $readAuthorizer;
 
 	protected function setUp(): void {
 		$this->innerLookup = new InMemorySubjectLookup(
 			TestSubject::build( id: self::READABLE_ID ),
+			TestSubject::build( id: self::SHARES_READABLE_PAGE_ID ),
 			TestSubject::build( id: self::RESTRICTED_ID ),
 			TestSubject::build( id: self::UNHOSTED_ID ),
 		);
+
+		$this->pageIdentifiersLookup = new InMemoryPageIdentifiersLookup( [
+			[ new SubjectId( self::READABLE_ID ), $this->newPageIdentifiers( self::READABLE_PAGE_ID ) ],
+			[ new SubjectId( self::SHARES_READABLE_PAGE_ID ), $this->newPageIdentifiers( self::READABLE_PAGE_ID ) ],
+			[ new SubjectId( self::RESTRICTED_ID ), $this->newPageIdentifiers( self::RESTRICTED_PAGE_ID ) ],
+		] );
+
+		$this->readAuthorizer = new CountingPageReadAuthorizer( deniedPageId: self::RESTRICTED_PAGE_ID );
 	}
 
 	private function newLookup(): ReadAuthorizedSubjectLookup {
 		return new ReadAuthorizedSubjectLookup(
 			subjectLookup: $this->innerLookup,
-			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
-				[ new SubjectId( self::READABLE_ID ), $this->newPageIdentifiers( self::READABLE_PAGE_ID ) ],
-				[ new SubjectId( self::RESTRICTED_ID ), $this->newPageIdentifiers( self::RESTRICTED_PAGE_ID ) ],
-			] ),
-			readAuthorizer: new SelectivePageReadAuthorizer( [ self::RESTRICTED_PAGE_ID ] ),
+			pageIdentifiersLookup: $this->pageIdentifiersLookup,
+			readAuthorizer: $this->readAuthorizer,
 		);
 	}
 
@@ -85,42 +95,81 @@ class ReadAuthorizedSubjectLookupTest extends TestCase {
 	}
 
 	/**
-	 * A Subject no page hosts is what a caller reading an old revision sees, and what the
-	 * repository-backed lookups report as absent anyway. Denying it here would hide Subjects the
-	 * caller may read, so the inner lookup decides, exactly as GetSubjectQuery lets it.
+	 * Withheld rather than served ungated: nothing says a wrapped lookup reaches Subjects only
+	 * through the index this gate reads, and an id that index does not carry has no page whose
+	 * permissions were checked.
 	 */
-	public function testSubjectHostedByNoPageIsLeftToTheInnerLookup(): void {
+	public function testSubjectHostedByNoPageIsWithheld(): void {
 		$subjects = $this->newLookup()->getSubjects( $this->idList( self::UNHOSTED_ID ) );
 
-		$this->assertSame( [ self::UNHOSTED_ID ], $subjects->getIdsAsTextArray() );
+		$this->assertTrue( $subjects->isEmpty() );
+	}
+
+	public function testEveryRequestedIdIsStillReturnedWhenAllArePermitted(): void {
+		$subjects = $this->newLookup()->getSubjects(
+			$this->idList( self::READABLE_ID, self::SHARES_READABLE_PAGE_ID )
+		);
+
+		$this->assertSame(
+			[ self::READABLE_ID, self::SHARES_READABLE_PAGE_ID ],
+			$subjects->getIdsAsTextArray()
+		);
+	}
+
+	public function testHostingPagesAreResolvedInOneLookup(): void {
+		$this->newLookup()->getSubjects(
+			$this->idList( self::READABLE_ID, self::RESTRICTED_ID, self::UNHOSTED_ID )
+		);
+
+		$this->assertSame( 1, $this->pageIdentifiersLookup->getPageIdsOfSubjectsCallCount );
+		$this->assertSame( 0, $this->pageIdentifiersLookup->getPageIdOfSubjectCallCount );
 	}
 
 	/**
-	 * Filtering before the fetch rather than after it means no revision is loaded and no slot
-	 * deserialized for a page the caller may not read.
+	 * Each check loads the page row and runs the full permission hook, so Subjects sharing a
+	 * hosting page must not each pay for it.
 	 */
-	public function testUnreadableIdsNeverReachTheInnerLookup(): void {
-		$this->newLookup()->getSubjects( $this->idList( self::READABLE_ID, self::RESTRICTED_ID ) );
-
-		$this->assertSame( [ [ self::READABLE_ID ] ], $this->innerLookup->requestedIdBatches );
-	}
-
-	public function testEveryIdIsAuthorizedInOneLookup(): void {
-		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup( [
-			[ new SubjectId( self::READABLE_ID ), $this->newPageIdentifiers( self::READABLE_PAGE_ID ) ],
-			[ new SubjectId( self::RESTRICTED_ID ), $this->newPageIdentifiers( self::RESTRICTED_PAGE_ID ) ],
-		] );
-
-		$lookup = new ReadAuthorizedSubjectLookup(
-			subjectLookup: $this->innerLookup,
-			pageIdentifiersLookup: $pageIdentifiersLookup,
-			readAuthorizer: new SelectivePageReadAuthorizer( [ self::RESTRICTED_PAGE_ID ] ),
+	public function testPermissionOfAPageSharedByTwoSubjectsIsAskedOnce(): void {
+		$this->newLookup()->getSubjects(
+			$this->idList( self::READABLE_ID, self::SHARES_READABLE_PAGE_ID )
 		);
 
-		$lookup->getSubjects( $this->idList( self::READABLE_ID, self::RESTRICTED_ID, self::UNHOSTED_ID ) );
+		$this->assertSame( [ self::READABLE_PAGE_ID ], $this->readAuthorizer->checkedPageIds );
+	}
 
-		$this->assertSame( 1, $pageIdentifiersLookup->getPageIdsOfSubjectsCallCount );
-		$this->assertSame( 0, $pageIdentifiersLookup->getPageIdOfSubjectCallCount );
+	public function testNoPageIsAuthorizedForAnEmptyIdList(): void {
+		$subjects = $this->newLookup()->getSubjects( new SubjectIdList( [] ) );
+
+		$this->assertTrue( $subjects->isEmpty() );
+		$this->assertSame( [], $this->readAuthorizer->checkedPageIds );
+	}
+
+}
+
+/**
+ * Denies one page id and records every page it was asked about, so a caller that asks per Subject
+ * rather than per page is visible.
+ */
+class CountingPageReadAuthorizer implements PageReadAuthorizer {
+
+	/**
+	 * @var int[]
+	 */
+	public array $checkedPageIds = [];
+
+	public function __construct(
+		private readonly int $deniedPageId
+	) {
+	}
+
+	public function authorizeReadByPageId( PageId $pageId ): bool {
+		$this->checkedPageIds[] = $pageId->id;
+
+		return $pageId->id !== $this->deniedPageId;
+	}
+
+	public function authorizeReadByPageTitle( Title $title ): bool {
+		return $this->authorizeReadByPageId( new PageId( $title->getId() ) );
 	}
 
 }

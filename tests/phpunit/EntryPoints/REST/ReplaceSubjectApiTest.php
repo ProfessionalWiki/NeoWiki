@@ -33,6 +33,8 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 	use NeoWikiMockAuthorityTrait;
 
 	private const string NAMESPACED_PAGE_SUBJECT_ID = 'sTestSA11111177';
+	private const string RELATION_SUBJECT_ID = 'sTestSA11111188';
+	private const string RELATION_TARGET_ID = 'sTestSA11111199';
 
 	public function testHappyPathReturns200WithUpdatedStatus(): void {
 		$this->createPages();
@@ -633,6 +635,87 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'Required', $responseData['violations'][0]['propertyName'] );
 		$this->assertSame( 'required', $responseData['violations'][0]['code'] );
 		$this->assertSame( 'error', $responseData['violations'][0]['severity'] );
+	}
+
+	/**
+	 * The write path shares the validator with the validate endpoints, so it inherits the read gate
+	 * on relation targets (#1266): a target the writer cannot read reports as not found, which is a
+	 * warning, and enforcement therefore lets the write through. The companion test below runs the
+	 * same request as a caller who may read that page, where the mismatch still blocks - so what
+	 * changes the outcome is the caller, not a check that stopped running.
+	 */
+	public function testEnforcementLetsThroughASchemaMismatchOnATargetTheWriterCannotRead(): void {
+		$targetPageId = $this->createRelationSubjectAndItsMismatchingTarget();
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestDataFor( self::RELATION_SUBJECT_ID, $this->bodyRelatingToTheTarget() ),
+			authority: $this->authorityThatCannotReadPageId( $targetPageId )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( [ 'relation-target-not-found' ], array_column( $responseData['violations'], 'code' ) );
+	}
+
+	public function testEnforcementBlocksTheSameMismatchForACallerWhoMayReadTheTargetPage(): void {
+		$this->createRelationSubjectAndItsMismatchingTarget();
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestDataFor( self::RELATION_SUBJECT_ID, $this->bodyRelatingToTheTarget() )
+		);
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 422, $response->getStatusCode() );
+		$this->assertSame( [ 'relation-target-schema-mismatch' ], array_column( $responseData['violations'], 'code' ) );
+	}
+
+	/**
+	 * @return int The page id of the target's page
+	 */
+	private function createRelationSubjectAndItsMismatchingTarget(): int {
+		$this->setMwGlobals( 'wgNeoWikiEnforceValidation', true );
+
+		$this->createSchema(
+			'RelationEnforcementSchema',
+			'{"title":"RelationEnforcementSchema","propertyDefinitions":'
+				. '{"Owner":{"type":"relation","relation":"ownedBy","targetSchema":"Person"}}}'
+		);
+
+		$this->createPageWithSubjects(
+			'ReplaceSubjectApiRelationTest',
+			mainSubject: TestSubject::build(
+				id: self::RELATION_SUBJECT_ID,
+				schemaName: new SchemaName( 'RelationEnforcementSchema' )
+			)
+		);
+
+		$targetRevision = $this->createPageWithSubjects(
+			'ReplaceSubjectApiRelationTarget',
+			mainSubject: TestSubject::build(
+				id: self::RELATION_TARGET_ID,
+				schemaName: new SchemaName( 'Whereabouts' )
+			)
+		);
+
+		$this->assertNotNull( $targetRevision );
+
+		return $targetRevision->getPageId();
+	}
+
+	private function bodyRelatingToTheTarget(): array {
+		return [
+			'label' => 'Relating',
+			'statements' => [
+				'Owner' => [
+					'propertyType' => 'relation',
+					'value' => [ [ 'target' => self::RELATION_TARGET_ID ] ],
+				],
+			],
+		];
 	}
 
 	private function createPages(): void {

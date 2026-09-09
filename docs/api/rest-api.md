@@ -27,6 +27,10 @@ may read (see [Cursor pagination](#cursor-pagination)): a restricted Schema, Lay
 one that does not exist, and no total count is reported, so nothing about restricted rows can be inferred from the
 pagination.
 
+The validate endpoints resolve a relation's target through the same read enforcement: a target on a page you may not
+read is reported as [`relation-target-not-found`](validation-codes.md#relation-target-not-found), the code an
+unminted id produces, and `POST /subject/{subjectId}/validate` answers `404` for a Subject on such a page.
+
 Subject write endpoints require per-page `edit` permission and answer `403` when you may read the page but not edit it.
 Denial of `read` answers `404` instead, so that a page you may not read stays indistinguishable from one that is absent.
 The write endpoints keyed by page id ([Pages and Subjects](#pages-and-subjects)) return that `404` for a page you may

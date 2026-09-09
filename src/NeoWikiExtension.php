@@ -1184,7 +1184,7 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
-			proposedSubjectValidator: $this->getProposedSubjectValidator( $authority ),
+			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			validationEnforced: $this->isValidationEnforced(),
@@ -1464,7 +1464,7 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
-			proposedSubjectValidator: $this->getProposedSubjectValidator( $authority ),
+			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
@@ -1479,7 +1479,7 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaLookup: $this->getSchemaLookup(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
-			proposedSubjectValidator: $this->getProposedSubjectValidator( $authority ),
+			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
@@ -1493,7 +1493,7 @@ class NeoWikiExtension {
 		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiEnforceValidation' ) === true;
 	}
 
-	public function getSubjectValidator( Authority $authority ): SubjectValidator {
+	public function newSubjectValidator( Authority $authority ): SubjectValidator {
 		return new SubjectValidator(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
 			subjectLookup: new ReadAuthorizedSubjectLookup(
@@ -1504,17 +1504,17 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function getProposedSubjectValidator( Authority $authority ): ProposedSubjectValidator {
+	public function newProposedSubjectValidator( Authority $authority ): ProposedSubjectValidator {
 		return new ProposedSubjectValidator(
 			schemaLookup: $this->getSchemaLookup(),
-			subjectValidator: $this->getSubjectValidator( $authority ),
+			subjectValidator: $this->newSubjectValidator( $authority ),
 		);
 	}
 
 	public function newValidateSubjectQuery( Authority $authority ): ValidateSubjectQuery {
 		return new ValidateSubjectQuery(
 			schemaLookup: $this->getSchemaLookup(),
-			subjectValidator: $this->getSubjectValidator( $authority ),
+			subjectValidator: $this->newSubjectValidator( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 		);
@@ -1524,7 +1524,7 @@ class NeoWikiExtension {
 		return new ValidateSubjectUpdateQuery(
 			subjectRepository: $this->getSubjectRepository(),
 			schemaLookup: $this->getSchemaLookup(),
-			subjectValidator: $this->getSubjectValidator( $authority ),
+			subjectValidator: $this->newSubjectValidator( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),

@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application;
 
-use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
@@ -16,7 +15,9 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
  * difference (#1046).
  *
  * Ids are filtered before the fetch, so no revision is loaded and no slot deserialized for a page
- * the caller may not read.
+ * the caller may not read. A Subject whose hosting page does not resolve is withheld rather than
+ * served ungated, as in GetPageSubjectsQuery: the wrapped lookup reaches Subjects through that same
+ * index, so today the two agree, and a lookup that later bypasses the index cannot escape the gate.
  */
 readonly class ReadAuthorizedSubjectLookup implements SubjectLookup {
 
@@ -37,20 +38,27 @@ readonly class ReadAuthorizedSubjectLookup implements SubjectLookup {
 
 	private function readableIds( SubjectIdList $subjectIds ): SubjectIdList {
 		$hostingPages = $this->pageIdentifiersLookup->getPageIdsOfSubjects( $subjectIds );
+		$pageIsReadable = [];
+		$readableIds = [];
 
-		return new SubjectIdList( array_filter(
-			$subjectIds->asArray(),
-			fn ( SubjectId $subjectId ): bool
-				=> $this->pageIsReadableOrUnresolved( $hostingPages[$subjectId->text] ?? null )
-		) );
-	}
+		foreach ( $subjectIds->asArray() as $idText => $subjectId ) {
+			$pageId = ( $hostingPages[$idText] ?? null )?->getId();
 
-	/**
-	 * Unresolved is allowed, as in GetSubjectQuery: a Subject read out of a caller-supplied revision
-	 * has no current hosting page, and one no page hosts is absent from the wrapped lookup anyway.
-	 */
-	private function pageIsReadableOrUnresolved( ?PageIdentifiers $pageIdentifiers ): bool {
-		return $pageIdentifiers === null || $this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() );
+			if ( $pageId === null ) {
+				continue;
+			}
+
+			// Several Subjects share a hosting page often enough to matter here: each check loads
+			// the page row and runs the full permission hook, and a Subject being saved is
+			// validated twice.
+			$pageIsReadable[$pageId->id] ??= $this->readAuthorizer->authorizeReadByPageId( $pageId );
+
+			if ( $pageIsReadable[$pageId->id] ) {
+				$readableIds[] = $subjectId;
+			}
+		}
+
+		return new SubjectIdList( $readableIds );
 	}
 
 }

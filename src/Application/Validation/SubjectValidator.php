@@ -35,10 +35,10 @@ readonly class SubjectValidator {
 
 		// Resolved in one lookup ahead of the per-Statement pass: resolving each target where it is
 		// checked costs a round trip apiece, paid serially. Ids absent from the map resolved to no
-		// Subject. Where the Schema has drifted this reaches targets the pass below never checks:
-		// they cannot produce a violation, but they are not free either - the graph query stays one
-		// query however long the id list, while a target on a page no other target shares still
-		// costs that page's revision load and slot deserialization.
+		// Subject this caller may read. Where the Schema has drifted this reaches targets the pass
+		// below never checks: they cannot produce a violation, but they are not free either - a
+		// target on a page no other target shares costs that page's revision load and slot
+		// deserialization.
 		$relationTargets = $this->subjectLookup->getSubjects( $statements->getReferencedSubjects() );
 
 		foreach ( $statements->asArray() as $statement ) {
@@ -114,6 +114,9 @@ readonly class SubjectValidator {
 	 * subject -> page index, which a read replica may not carry yet for a target minted moments
 	 * earlier elsewhere, so such a target reports as not found. That is the same degradation the
 	 * read path has, and the reason not-found is non-blocking.
+	 *
+	 * Not-found also covers a target the caller may not read: the injected lookup withholds those,
+	 * so nothing about a restricted Subject reaches the caller through the pair of codes (#1266).
 	 *
 	 * @return Violation[]
 	 */

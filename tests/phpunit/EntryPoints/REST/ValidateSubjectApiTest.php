@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
-use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -20,11 +20,11 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 	use HandlerTestTrait;
-	use MockAuthorityTrait;
+	use NeoWikiMockAuthorityTrait;
 
 	private const string TARGET_ID = 'srt111111111aaa';
 	private const string TARGET_SCHEMA = 'Whereabouts';
-	private const string RESTRICTED_PAGE = 'RestrictedPage';
+	private const string TARGET_PAGE = 'TargetPage';
 
 	public function testHappyPathReturns200WithEmptyViolations(): void {
 		$this->createPages();
@@ -165,39 +165,47 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 	 */
 	public function testTargetOnAnUnreadablePageIsReportedAsNotFoundRatherThanASchemaMismatch(): void {
 		$this->createSchemaWithRelationProperty();
-		$this->createPageWithMismatchingTarget( self::RESTRICTED_PAGE );
+		$targetPageId = $this->createPageWithMismatchingTarget();
 
-		$violations = $this->validateRelationToTheTarget();
+		$violations = $this->validateRelationToTheTarget( $this->authorityThatCannotReadPageId( $targetPageId ) );
 
 		$this->assertSame( [ 'relation-target-not-found' ], array_column( $violations, 'code' ) );
 		$this->assertStringNotContainsString( self::TARGET_SCHEMA, json_encode( $violations ) );
 	}
 
 	/**
-	 * The counterpart of the test above, differing only in which page hosts the target: the check
-	 * itself still runs, so hiding the mismatch is the read gate rather than a disabled check.
+	 * The same target on the same page, differing only in who asks. Without this the test above
+	 * would pass on any Authority - the request's or another - and on a target the subject-page
+	 * index never carried, since both of those also report not-found.
 	 */
-	public function testTargetOnAReadablePageStillReportsItsSchemaMismatch(): void {
+	public function testTheSameTargetReportsItsSchemaMismatchToACallerWhoMayReadItsPage(): void {
 		$this->createSchemaWithRelationProperty();
-		$this->createPageWithMismatchingTarget( 'ReadablePage' );
+		$this->createPageWithMismatchingTarget();
 
-		$violations = $this->validateRelationToTheTarget();
+		$violations = $this->validateRelationToTheTarget( $this->mockRegisteredUltimateAuthority() );
 
 		$this->assertSame( [ 'relation-target-schema-mismatch' ], array_column( $violations, 'code' ) );
 		$this->assertSame( [ 'Person', self::TARGET_SCHEMA ], $violations[0]['args'] );
 	}
 
-	private function createPageWithMismatchingTarget( string $pageName ): void {
-		$this->createPageWithSubjects(
-			$pageName,
+	/**
+	 * @return int The page id of the target's page
+	 */
+	private function createPageWithMismatchingTarget(): int {
+		$revision = $this->createPageWithSubjects(
+			self::TARGET_PAGE,
 			TestSubject::build( id: self::TARGET_ID, schemaName: new SchemaName( self::TARGET_SCHEMA ) )
 		);
+
+		$this->assertNotNull( $revision );
+
+		return $revision->getPageId();
 	}
 
 	/**
 	 * @return array<int, array<string, mixed>>
 	 */
-	private function validateRelationToTheTarget(): array {
+	private function validateRelationToTheTarget( Authority $authority ): array {
 		$body = $this->validBody();
 		$body['statements'] = [
 			'Owner' => [ 'propertyType' => 'relation', 'value' => [ [ 'target' => self::TARGET_ID ] ] ],
@@ -206,31 +214,12 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$response = $this->executeHandler(
 			$this->newValidateSubjectApi(),
 			$this->createRequestData( $body ),
-			[],
-			[],
-			[],
-			[],
-			$this->newUserWhoCannotRead( self::RESTRICTED_PAGE )
+			authority: $authority
 		);
 
 		$this->assertSame( 200, $response->getStatusCode() );
 
 		return json_decode( $response->getBody()->getContents(), true )['violations'];
-	}
-
-	private function newUserWhoCannotRead( string $pageName ): Authority {
-		$this->setTemporaryHook(
-			'getUserPermissionsErrors',
-			static function ( $title, $user, $action, &$result ) use ( $pageName ): bool {
-				if ( $action === 'read' && $title->getPrefixedText() === $pageName ) {
-					$result = [ 'badaccess-group0' ];
-					return false;
-				}
-				return true;
-			}
-		);
-
-		return $this->getTestUser()->getAuthority();
 	}
 
 	private function createSchemaWithRelationProperty(): void {
