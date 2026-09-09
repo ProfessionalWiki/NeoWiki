@@ -64,6 +64,13 @@ describe( 'SchemaDisplayHeader', () => {
 		expect( link.text() ).toContain( 'neowiki-schema-create-subjectCompany' );
 	} );
 
+	it( 'places the creation link in the header content, not among the actions', () => {
+		const wrapper = mountComponent( newSchema( { title: 'Company' } ), true, true );
+
+		expect( wrapper.find( '.ext-neowiki-schema-display-header__content .ext-neowiki-schema-display-header__create-subject' ).exists() ).toBe( true );
+		expect( wrapper.find( '.ext-neowiki-schema-display-header__actions .ext-neowiki-schema-display-header__create-subject' ).exists() ).toBe( false );
+	} );
+
 	it( 'offers no creation link when the user may not create subjects', () => {
 		const wrapper = mountComponent( newSchema(), false, false );
 

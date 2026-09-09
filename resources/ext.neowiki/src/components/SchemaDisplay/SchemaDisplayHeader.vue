@@ -10,16 +10,16 @@
 			>
 				{{ schema.getDescription() }}
 			</div>
-		</div>
-		<div class="ext-neowiki-schema-display-header__actions">
 			<a
 				v-if="canCreateSubject"
-				class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled ext-neowiki-schema-display-header__create-subject"
+				class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--action-progressive cdx-button--weight-primary ext-neowiki-schema-display-header__create-subject"
 				:href="createSubjectUrl"
 			>
 				<CdxIcon :icon="cdxIconAdd" />
 				{{ $i18n( 'neowiki-schema-create-subject', schema.getName() ).text() }}
 			</a>
+		</div>
+		<div class="ext-neowiki-schema-display-header__actions">
 			<CdxButton
 				v-if="canEditSchema"
 				weight="quiet"
@@ -82,10 +82,8 @@ const emit = defineEmits<{
 		color: @color-subtle;
 	}
 
-	&__actions {
-		display: flex;
-		align-items: center;
-		gap: @spacing-50;
+	&__create-subject {
+		margin-top: @spacing-75;
 	}
 }
 </style>
