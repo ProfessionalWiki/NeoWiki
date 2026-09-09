@@ -60,26 +60,12 @@ class PageRefreshWithoutEditTest extends NeoWikiIntegrationTestCase {
 	 */
 	public function testRefreshProjectsTheRevisionTheRegisteredPolicyPublishes(): void {
 		$approved = $this->createPageWithSubjects( self::PAGE_NAME, TestSubject::build() );
-		$afterFirstSave = $this->readGraph( 'MATCH (s:Subject) RETURN count(s) AS n', [] )->first()->toRecursiveArray()['n'];
 		$this->createPageWithSubjects( self::PAGE_NAME );
-		$afterDraft = $this->readGraph( 'MATCH (s:Subject) RETURN count(s) AS n', [] )->first()->toRecursiveArray()['n'];
 		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $approved ) );
-		$contentHasSubjects = $approved->getSlots()->getContent( 'neo' )->getPageSubjects()->hasSubjects();
-		fwrite( STDERR, "\nDEBUG2 afterFirstSave=$afterFirstSave afterDraft=$afterDraft approvedContentHasSubjects=" . var_export( $contentHasSubjects, true ) . "\n" );
 
 		$outcome = $this->refreshPage();
 
 		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
-		// DEBUG
-		$dump = $this->readGraph(
-			'MATCH (page:Page {id: $pageId}) OPTIONAL MATCH (page)-[r]->(n) RETURN page.id AS id, page.wiki_id AS wiki, collect(type(r)) AS rels, collect(labels(n)) AS targets',
-			[ 'pageId' => $approved->getPageId() ]
-		);
-		$all = $this->readGraph( 'MATCH (s:Subject) RETURN s.id AS id, labels(s) AS labels', [] );
-		fwrite( STDERR, "\nDEBUG approvedRev=" . $approved->getId() . " page=" . $approved->getPageId()
-			. " hasSlot=" . var_export( $approved->hasSlot( 'neo' ), true )
-			. " dump=" . json_encode( $dump->first()?->toRecursiveArray() )
-			. " subjects=" . json_encode( array_map( static fn ( $r ) => $r->toRecursiveArray(), iterator_to_array( $all ) ) ) . "\n" );
 		$this->assertTrue(
 			$this->pageHoldsSubjectInGraph( $approved->getPageId() ),
 			'the approved revision holds a Subject the draft removed'
