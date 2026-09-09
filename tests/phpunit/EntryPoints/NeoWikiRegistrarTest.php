@@ -11,6 +11,8 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
+use ProfessionalWiki\NeoWiki\Application\RevisionPolicyRegistry;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
@@ -79,6 +81,16 @@ class NeoWikiRegistrarTest extends TestCase {
 		$this->assertSame( [ $provider ], $noticeRegistry->getProviders() );
 	}
 
+	public function testRegistersTheRevisionPolicy(): void {
+		$policyRegistry = new RevisionPolicyRegistry();
+		$registrar = $this->newRegistrar( revisionPolicyRegistry: $policyRegistry );
+		$policy = FixedRevisionPolicy::publishingNothing();
+
+		$registrar->setRevisionPolicy( $policy );
+
+		$this->assertSame( $policy, $policyRegistry->getPolicy() );
+	}
+
 	private function newRegistrar(
 		?PropertyTypeRegistry $propertyTypeRegistry = null,
 		?Neo4jValueBuilderRegistry $valueBuilderRegistry = null,
@@ -86,6 +98,7 @@ class NeoWikiRegistrarTest extends TestCase {
 		?GraphDatabasePluginRegistry $graphDatabasePluginRegistry = null,
 		?RdfValueMapperRegistry $rdfValueMapperRegistry = null,
 		?SubjectEditNoticeProviderRegistry $subjectEditNoticeProviderRegistry = null,
+		?RevisionPolicyRegistry $revisionPolicyRegistry = null,
 	): NeoWikiRegistrar {
 		return new NeoWikiRegistrar(
 			propertyTypeRegistry: $propertyTypeRegistry ?? new PropertyTypeRegistry(),
@@ -94,6 +107,7 @@ class NeoWikiRegistrarTest extends TestCase {
 			graphDatabasePluginRegistry: $graphDatabasePluginRegistry ?? new GraphDatabasePluginRegistry(),
 			rdfValueMapperRegistry: $rdfValueMapperRegistry ?? new RdfValueMapperRegistry(),
 			subjectEditNoticeProviderRegistry: $subjectEditNoticeProviderRegistry ?? new SubjectEditNoticeProviderRegistry(),
+			revisionPolicyRegistry: $revisionPolicyRegistry ?? new RevisionPolicyRegistry(),
 		);
 	}
 

@@ -102,7 +102,7 @@ class DumpRdf extends Maintenance {
 		}
 
 		if ( $page === null ) {
-			$this->error( "Skipped page $pageId: it no longer exists or its subject slot does not hold Subject data" );
+			$this->error( "Skipped page $pageId: it no longer exists, its subject slot does not hold Subject data, or the registered revision policy publishes no revision of it" );
 			return false;
 		}
 

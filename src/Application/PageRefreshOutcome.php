@@ -15,6 +15,7 @@ enum PageRefreshOutcome: string {
 	case SkippedMissingRevision = 'skippedMissingRevision';
 	case SkippedUnreadableSubjects = 'skippedUnreadableSubjects';
 	case SkippedUnreadablePageProperties = 'skippedUnreadablePageProperties';
+	case SkippedUnpublishableRevision = 'skippedUnpublishableRevision';
 
 	/**
 	 * Why the page was not written, phrased to complete "Skipped <page>: ...".
@@ -26,6 +27,7 @@ enum PageRefreshOutcome: string {
 			self::SkippedMissingRevision => 'no current revision',
 			self::SkippedUnreadableSubjects => 'its subject slot does not hold Subject data',
 			self::SkippedUnreadablePageProperties => 'its page properties could not be built',
+			self::SkippedUnpublishableRevision => 'the registered revision policy does not publish it',
 			self::Refreshed => throw new LogicException( 'Refreshed is not a skip' ),
 		};
 	}

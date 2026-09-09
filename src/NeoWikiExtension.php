@@ -83,6 +83,9 @@ use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\LastEditorPagesRebuilder;
 use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
+use ProfessionalWiki\NeoWiki\Application\FailureIsolatingRevisionPolicy;
+use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
+use ProfessionalWiki\NeoWiki\Application\RevisionPolicyRegistry;
 use ProfessionalWiki\NeoWiki\Application\SubjectIdMinter;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
@@ -225,6 +228,7 @@ class NeoWikiExtension {
 	private CompositeGraphDatabasePlugin $graphDatabasePlugin;
 	private CompositeGraphDatabasePlugin $isolatingGraphDatabasePlugin;
 	private GraphDatabasePluginRegistry $graphDatabasePluginRegistry;
+	private RevisionPolicyRegistry $revisionPolicyRegistry;
 	private ?Neo4jPlugin $neo4jPlugin = null;
 	/** @var array<string, SparqlPlugin>|null Keys are store names */
 	private ?array $sparqlPlugins = null;
@@ -305,6 +309,23 @@ class NeoWikiExtension {
 		return $this->rdfValueMapperRegistry;
 	}
 
+	public function getRevisionPolicyRegistry(): RevisionPolicyRegistry {
+		if ( !isset( $this->revisionPolicyRegistry ) ) {
+			$this->revisionPolicyRegistry = new RevisionPolicyRegistry( LoggerFactory::getInstance( 'NeoWiki' ) );
+		}
+
+		$this->ensureExtensionsRegistered();
+
+		return $this->revisionPolicyRegistry;
+	}
+
+	public function getRevisionPolicy(): RevisionPolicy {
+		return new FailureIsolatingRevisionPolicy(
+			$this->getRevisionPolicyRegistry()->getPolicy(),
+			LoggerFactory::getInstance( 'NeoWiki' )
+		);
+	}
+
 	private function ensureExtensionsRegistered(): void {
 		if ( $this->extensionsRegistered ) {
 			return;
@@ -321,6 +342,7 @@ class NeoWikiExtension {
 				$this->getGraphDatabasePluginRegistry(),
 				$this->getRdfValueMapperRegistry(),
 				$this->getSubjectEditNoticeProviderRegistry(),
+				$this->getRevisionPolicyRegistry(),
 			) ]
 		);
 	}
@@ -390,6 +412,11 @@ class NeoWikiExtension {
 	 * on.
 	 */
 	private function newRebuildStoreContentHandler(): OnRevisionCreatedHandler {
+		// The null index is load-bearing, not merely unneeded: PageRebuilder::rebuild() hands this handler
+		// the revision the policy publishes, and the handler indexes whatever it is given. A real index
+		// here would replace the latest revision's Subject set with the published one, making every
+		// Subject a draft added unaddressable — the exact failure keeping the index out of the policy
+		// exists to prevent. Only rebuildFromPrimary(), which does not substitute, may index.
 		return $this->newStoreContentHandler(
 			$this->getGraphDatabasePlugin(),
 			new NullSubjectPageIndex(),
@@ -406,6 +433,7 @@ class NeoWikiExtension {
 			$graphDatabasePlugin,
 			$subjectPageIndex,
 			$pagePropertiesSource,
+			$this->getRevisionPolicy(),
 			LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
@@ -446,6 +474,7 @@ class NeoWikiExtension {
 		return new RdfPageLoader(
 			MediaWikiServices::getInstance()->getWikiPageFactory(),
 			$this->getPagePropertiesBuilder(),
+			$this->getRevisionPolicy(),
 		);
 	}
 
@@ -982,7 +1011,8 @@ class NeoWikiExtension {
 	public function getPageContentFetcher(): PageContentFetcher {
 		return new PageContentFetcher(
 			MediaWikiServices::getInstance()->getTitleParser(),
-			MediaWikiServices::getInstance()->getRevisionLookup()
+			MediaWikiServices::getInstance()->getRevisionLookup(),
+			$this->getRevisionPolicy()
 		);
 	}
 
@@ -1084,7 +1114,8 @@ class NeoWikiExtension {
 	private function newPageRebuilderWith( OnRevisionCreatedHandler $handler ): PageRebuilder {
 		return new PageRebuilder(
 			$handler,
-			MediaWikiServices::getInstance()->getWikiPageFactory()
+			MediaWikiServices::getInstance()->getWikiPageFactory(),
+			$this->getRevisionPolicy()
 		);
 	}
 

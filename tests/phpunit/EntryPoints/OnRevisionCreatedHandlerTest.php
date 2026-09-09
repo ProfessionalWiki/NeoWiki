@@ -9,7 +9,9 @@ use MediaWiki\Content\FallbackContent;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionSlots;
+use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
+use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -21,6 +23,7 @@ use ProfessionalWiki\NeoWiki\FailureIsolatingPagePropertiesSource;
 use ProfessionalWiki\NeoWiki\PagePropertiesBuilder;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
@@ -189,6 +192,34 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->assertEquals( [ new PageId( self::DELETED_PAGE_ID ) ], $this->graphStore->deletedPageIds );
 	}
 
+	public function testDoesNotProjectARevisionThePolicyDoesNotPublish(): void {
+		$revision = $this->createPageWithSubjects( 'Page with an unpublished revision', TestSubject::build() );
+
+		$outcome = $this->newHandlerWithPolicy( FixedRevisionPolicy::publishingNothing() )
+			->onRevisionCreated( $revision );
+
+		$this->assertSame( PageRefreshOutcome::SkippedUnpublishableRevision, $outcome );
+		$this->assertSame( [], $this->graphStore->savedPages );
+		$this->assertSame( [], $this->graphStore->deletedPageIds, 'what was published stays published' );
+	}
+
+	/**
+	 * The index says where a Subject lives, not whether it is published. Every id-keyed read and write
+	 * addresses its page through it, so a Subject left out of it cannot be edited, moved or deleted,
+	 * and its id reads as free.
+	 */
+	public function testIndexesASubjectEvenWhenItsRevisionIsNotPublished(): void {
+		$revision = $this->createPageWithSubjects( 'Page whose draft adds a subject', TestSubject::build() );
+
+		$this->newHandlerWithPolicy( FixedRevisionPolicy::publishingNothing() )
+			->onRevisionCreated( $revision );
+
+		$this->assertSame(
+			[ $revision->getPageId() => [ TestSubject::ZERO_GUID ] ],
+			$this->subjectPageIndex->indexedSubjectsByPageId
+		);
+	}
+
 	private function newFailingProviderRegistry(): PagePropertyProviderRegistry {
 		$registry = new PagePropertyProviderRegistry();
 		$registry->addProvider( new class implements PagePropertyProvider {
@@ -224,10 +255,15 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		return $this->newHandlerWith( $this->graphStore );
 	}
 
+	private function newHandlerWithPolicy( RevisionPolicy $policy ): OnRevisionCreatedHandler {
+		return $this->newHandlerWith( $this->graphStore, revisionPolicy: $policy );
+	}
+
 	private function newHandlerWith(
 		GraphDatabasePlugin $graphStore,
 		?PagePropertyProviderRegistry $providerRegistry = null,
-		bool $isolatePageProperties = false
+		bool $isolatePageProperties = false,
+		?RevisionPolicy $revisionPolicy = null
 	): OnRevisionCreatedHandler {
 		$pageProperties = $this->newPagePropertiesBuilder( $providerRegistry ?? new PagePropertyProviderRegistry() );
 
@@ -237,6 +273,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 			$isolatePageProperties
 				? new FailureIsolatingPagePropertiesSource( $pageProperties, $this->logger )
 				: $pageProperties,
+			$revisionPolicy ?? new NullRevisionPolicy(),
 			$this->logger
 		);
 	}
@@ -246,6 +283,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 			$this->graphStore,
 			new ThrowingSubjectPageIndex(),
 			$this->newPagePropertiesBuilder( new PagePropertyProviderRegistry() ),
+			new NullRevisionPolicy(),
 			$this->logger
 		);
 	}

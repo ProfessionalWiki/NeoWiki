@@ -9,10 +9,14 @@ use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionSlots;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
+use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 use WikiPage;
 
 /**
@@ -37,6 +41,36 @@ class RdfPageLoaderTest extends NeoWikiIntegrationTestCase {
 		$this->assertNull( $loader->loadByTitle( Title::makeTitle( NS_MAIN, 'Page that does not exist' ) ) );
 	}
 
+	public function testExportsTheRevisionTheRevisionPolicyPublishes(): void {
+		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
+		$approved = $this->createPageWithSubjects( 'Exported from its approved revision', TestSubject::build() );
+		$draft = $this->createPageWithSubjects( 'Exported from its approved revision' );
+
+		$page = $this->newLoaderFor( $draft, FixedRevisionPolicy::publishing( $approved ) )
+			->loadByTitle( Title::makeTitle( NS_MAIN, 'Exported from its approved revision' ) );
+
+		$this->assertNotNull( $page );
+		$this->assertTrue(
+			$page->getSubjects()->hasSubjects(),
+			'the approved revision holds a Subject the draft removed'
+		);
+	}
+
+	public function testPageWithNoPublishableRevisionIsNotLoaded(): void {
+		// The revision must be one that would otherwise load, or the null proves nothing: a slot that
+		// does not hold Subject data already yields null through the pass-through path.
+		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
+		$revision = $this->createPageWithSubjects( 'Page with nothing published', TestSubject::build() );
+
+		$loader = $this->newLoaderFor( $revision, FixedRevisionPolicy::publishingNothing() );
+
+		$this->assertNull( $loader->loadByTitle( Title::makeTitle( NS_MAIN, 'Page with nothing published' ) ) );
+		$this->assertNotNull(
+			$this->newLoaderFor( $revision )->loadByTitle( Title::makeTitle( NS_MAIN, 'Page with nothing published' ) ),
+			'the same revision loads when the policy publishes it'
+		);
+	}
+
 	private function newRevisionWithSubjectSlotContent(): RevisionRecord {
 		$slots = $this->createStub( RevisionSlots::class );
 		$slots->method( 'getContent' )->willReturn( new WikitextContent( 'Not Subject data.' ) );
@@ -50,14 +84,18 @@ class RdfPageLoaderTest extends NeoWikiIntegrationTestCase {
 		return $revision;
 	}
 
-	private function newLoaderFor( ?RevisionRecord $revision ): RdfPageLoader {
+	private function newLoaderFor( ?RevisionRecord $revision, ?RevisionPolicy $policy = null ): RdfPageLoader {
 		$page = $this->createStub( WikiPage::class );
 		$page->method( 'getRevisionRecord' )->willReturn( $revision );
 
 		$factory = $this->createStub( WikiPageFactory::class );
 		$factory->method( 'newFromTitle' )->willReturn( $page );
 
-		return new RdfPageLoader( $factory, NeoWikiExtension::getInstance()->getPagePropertiesBuilder() );
+		return new RdfPageLoader(
+			$factory,
+			NeoWikiExtension::getInstance()->getPagePropertiesBuilder(),
+			$policy ?? new NullRevisionPolicy()
+		);
 	}
 
 }

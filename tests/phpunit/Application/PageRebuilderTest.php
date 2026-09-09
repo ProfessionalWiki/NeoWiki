@@ -10,7 +10,10 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
+use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
+use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyOnRevisionCreatedHandler;
 use Wikimedia\Rdbms\IDBAccessObject;
 use WikiPage;
@@ -111,7 +114,38 @@ class PageRebuilderTest extends TestCase {
 		);
 	}
 
-	private function newRebuilder( ?RevisionRecord $revision ): PageRebuilder {
+	public function testRebuildProjectsTheRevisionThePolicyPublishes(): void {
+		$latest = $this->newRevision();
+		$published = $this->newRevision();
+
+		$this->newRebuilder( $latest, FixedRevisionPolicy::publishing( $published ) )
+			->rebuild( Title::makeTitle( NS_MAIN, 'Reprojected page' ) );
+
+		$this->assertSame( [ $published ], $this->handler->calls );
+	}
+
+	public function testRebuildWritesNothingWhenThePolicyPublishesNoRevision(): void {
+		$outcome = $this->newRebuilder( $this->newRevision(), FixedRevisionPolicy::publishingNothing() )
+			->rebuild( Title::makeTitle( NS_MAIN, 'Page with nothing published' ) );
+
+		$this->assertSame( PageRefreshOutcome::SkippedUnpublishableRevision, $outcome );
+		$this->assertSame( [], $this->handler->calls );
+	}
+
+	/**
+	 * An import or undelete writes a revision rather than reprojecting a page, so it takes the same
+	 * path a save does: the handler is handed what was written and decides whether to publish it.
+	 */
+	public function testRebuildFromPrimaryDoesNotSubstitute(): void {
+		$written = $this->newRevision();
+
+		$this->newRebuilder( $written, FixedRevisionPolicy::publishing( $this->newRevision() ) )
+			->rebuildFromPrimary( Title::makeTitle( NS_MAIN, 'Imported page' ) );
+
+		$this->assertSame( [ $written ], $this->handler->calls );
+	}
+
+	private function newRebuilder( ?RevisionRecord $revision, ?RevisionPolicy $policy = null ): PageRebuilder {
 		$page = $this->createStub( WikiPage::class );
 		$page->method( 'getRevisionRecord' )->willReturn( $revision );
 		$page->method( 'loadPageData' )->willReturnCallback(
@@ -123,7 +157,7 @@ class PageRebuilderTest extends TestCase {
 		$factory = $this->createStub( WikiPageFactory::class );
 		$factory->method( 'newFromTitle' )->willReturn( $page );
 
-		return new PageRebuilder( $this->handler, $factory );
+		return new PageRebuilder( $this->handler, $factory, $policy ?? new NullRevisionPolicy() );
 	}
 
 	private function newRevision(): RevisionRecord {

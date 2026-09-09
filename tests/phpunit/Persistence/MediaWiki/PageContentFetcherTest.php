@@ -12,7 +12,10 @@ use MediaWiki\Title\MalformedTitleException;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleParser;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
+use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher
@@ -33,7 +36,37 @@ class PageContentFetcherTest extends TestCase {
 		$this->revisionRecord = $this->createMock( RevisionRecord::class );
 		$this->content = $this->createMock( Content::class );
 
-		$this->pageContentFetcher = new PageContentFetcher( $this->titleParser, $this->revisionLookup );
+		$this->pageContentFetcher = $this->newFetcherWith( new NullRevisionPolicy() );
+	}
+
+	public function testReadsTheRevisionTheRevisionPolicyPublishes(): void {
+		$approved = $this->createMock( RevisionRecord::class );
+		$approvedContent = $this->createMock( Content::class );
+		$approved->method( 'getContent' )->willReturn( $approvedContent );
+
+		$this->titleParser->method( 'parseTitle' )->willReturn( Title::newFromText( 'test title' )->getTitleValue() );
+		$this->revisionLookup->method( 'getRevisionByTitle' )->willReturn( $this->revisionRecord );
+		$this->revisionRecord->method( 'getContent' )->willReturn( $this->content );
+
+		$content = $this->newFetcherWith( FixedRevisionPolicy::publishing( $approved ) )
+			->getPageContent( 'test title', $this->authority );
+
+		$this->assertSame( $approvedContent, $content );
+	}
+
+	public function testReadsNothingWhenThePolicyPublishesNoRevisionOfThePage(): void {
+		$this->titleParser->method( 'parseTitle' )->willReturn( Title::newFromText( 'test title' )->getTitleValue() );
+		$this->revisionLookup->method( 'getRevisionByTitle' )->willReturn( $this->revisionRecord );
+		$this->revisionRecord->method( 'getContent' )->willReturn( $this->content );
+
+		$content = $this->newFetcherWith( FixedRevisionPolicy::publishingNothing() )
+			->getPageContent( 'test title', $this->authority );
+
+		$this->assertNull( $content );
+	}
+
+	private function newFetcherWith( RevisionPolicy $policy ): PageContentFetcher {
+		return new PageContentFetcher( $this->titleParser, $this->revisionLookup, $policy );
 	}
 
 	public function testGetPageContentWithGivenAuthority(): void {

@@ -28,6 +28,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
+use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
@@ -50,6 +51,7 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 
 	/** @var PagePropertyProvider[] */
 	private array $registeredPagePropertyProviders = [];
+	private ?RevisionPolicy $registeredRevisionPolicy = null;
 
 	/**
 	 * The singleton pins a SchemaLookup whose cache is keyed by page and revision id, and those ids
@@ -373,6 +375,16 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
+	 * Registers the revision policy through the NeoWikiRegistration hook and rebuilds the singleton, so
+	 * the real wiring hands it to every path that publishes.
+	 */
+	protected function registerRevisionPolicy( RevisionPolicy $policy ): void {
+		$this->registeredRevisionPolicy = $policy;
+
+		$this->registerWithNeoWiki();
+	}
+
+	/**
 	 * Everything registered so far goes through one hook handler, replacing the previous one.
 	 * setTemporaryHook clears the hook before adding its handler, so registering plugins and providers
 	 * as two handlers would silently leave only whichever was registered last — with the test still
@@ -381,16 +393,21 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	private function registerWithNeoWiki(): void {
 		$plugins = $this->registeredGraphDatabasePlugins;
 		$providers = $this->registeredPagePropertyProviders;
+		$policy = $this->registeredRevisionPolicy;
 
 		$this->setTemporaryHook(
 			'NeoWikiRegistration',
-			static function ( NeoWikiRegistrar $registrar ) use ( $plugins, $providers ): void {
+			static function ( NeoWikiRegistrar $registrar ) use ( $plugins, $providers, $policy ): void {
 				foreach ( $plugins as $name => $plugin ) {
 					$registrar->addGraphDatabasePlugin( $name, $plugin );
 				}
 
 				foreach ( $providers as $provider ) {
 					$registrar->addPagePropertyProvider( $provider );
+				}
+
+				if ( $policy !== null ) {
+					$registrar->setRevisionPolicy( $policy );
 				}
 			}
 		);
