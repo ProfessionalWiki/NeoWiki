@@ -81,6 +81,7 @@ use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\LastEditorPagesRebuilder;
 use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectIdMinter;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
@@ -170,6 +171,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\Sparql
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\SparqlRouteRegistration;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin;
 use ProfessionalWiki\NeoWiki\Persistence\DeletedPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLastEditorPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\NullSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Persistence\PageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIndex;
@@ -382,9 +384,10 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Maintenance rebuild path (RebuildGraphDatabases). Failures propagate so the script reports which
-	 * pages failed to reconcile and why, rather than the hook path's isolation swallowing them and
-	 * leaving the operator a skip they cannot act on.
+	 * Rebuild path (RebuildGraphDatabases, and the jobs that reproject pages in bulk). Failures
+	 * propagate so the script reports which pages failed to reconcile and why, and so a job fails and is
+	 * retried, rather than the hook path's isolation swallowing them and leaving a skip nobody can act
+	 * on.
 	 */
 	private function newRebuildStoreContentHandler(): OnRevisionCreatedHandler {
 		return $this->newStoreContentHandler(
@@ -1036,6 +1039,22 @@ class NeoWikiExtension {
 	}
 
 	/**
+	 * Reprojects the pages one user is the last editor of, after a block hid their name or an unblock
+	 * showed it again (#1246). Failures propagate, as on the rebuild path it is built from: this runs in
+	 * a job, where a failure is what makes the queue try again.
+	 */
+	public function newLastEditorPagesRebuilder(): LastEditorPagesRebuilder {
+		return new LastEditorPagesRebuilder(
+			new DatabaseLastEditorPageIdsLookup(
+				MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase(),
+				MediaWikiServices::getInstance()->getActorNormalization()
+			),
+			$this->newPageRebuilder(),
+			MediaWikiServices::getInstance()->getTitleFactory()
+		);
+	}
+
+	/**
 	 * Maintenance rebuild path: projects into the one store the run is scoped to, and no other. The
 	 * plugin is used unwrapped, so a projection failure escapes to the rebuild, which decides whether it
 	 * costs a page or the whole run — the hook path's isolation would swallow it and report every page
@@ -1052,11 +1071,13 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Import and undelete paths: projects the current revision of a page like the rebuild path, but with
+	 * Hook paths that project a page they did not themselves write a revision for: import, undeletion,
+	 * and a revision-visibility change. Projects the current revision like the rebuild path, but with
 	 * the hook path's failure isolation, since a projection failure must not abort the user's operation.
-	 * These are revision writes rather than reprojections, so they index the page as an edit does.
+	 * The page is indexed as an edit does it, which costs one read and no write where, as on the
+	 * visibility path, no Subject changed.
 	 */
-	public function newImportPageRebuilder(): PageRebuilder {
+	public function newHookPageRebuilder(): PageRebuilder {
 		return $this->newPageRebuilderWith( $this->getStoreContentUC() );
 	}
 

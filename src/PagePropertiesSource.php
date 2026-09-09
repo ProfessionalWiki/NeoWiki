@@ -5,7 +5,6 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki;
 
 use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
 
 /**
@@ -23,6 +22,6 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
  */
 interface PagePropertiesSource {
 
-	public function getPagePropertiesFor( RevisionRecord $revision, ?UserIdentity $user ): ?PageProperties;
+	public function getPagePropertiesFor( RevisionRecord $revision ): ?PageProperties;
 
 }

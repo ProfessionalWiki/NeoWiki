@@ -37,7 +37,7 @@ A single-wiki install has just one `wiki_id`.
 | `namespaceId` | integer | MediaWiki namespace ID of the page (e.g. `0` for the main namespace, `12` for Help) |
 | `creationTime` | datetime | When the page was created |
 | `lastUpdated` | datetime | When the page was last modified |
-| `lastEditor` | string | Username of the last editor |
+| `lastEditor` | string | Username of the last editor, empty where the wiki hides it |
 | `categories` | string[] | MediaWiki categories the page belongs to |
 
 Built-in namespaces have the same ID on every wiki, so `namespaceId` filters consistently across a shared graph.

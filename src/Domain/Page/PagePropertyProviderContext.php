@@ -12,7 +12,8 @@ readonly class PagePropertyProviderContext {
 	 * @param string $creationTime In the standard MediaWiki format, ie 20230726163439
 	 * @param string $modificationTime In the standard MediaWiki format, ie 20230726163439
 	 * @param string[] $categories
-	 * @param string $lastEditor Plain username of the last editor, e.g. "JohnDoe". Empty string if unknown.
+	 * @param string $lastEditor Plain username of the last editor, e.g. "JohnDoe". Empty string when the wiki
+	 *   names none, which includes a revision whose author RevisionDelete has hidden.
 	 * @param string $content Serialized main slot content of the revision, e.g. the wikitext.
 	 *   Empty string if the content is unavailable.
 	 * @param string $contentModel Content model of the main slot, e.g. "wikitext".

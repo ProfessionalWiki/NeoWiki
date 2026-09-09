@@ -5,7 +5,6 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\User\UserIdentity;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
@@ -32,13 +31,13 @@ class OnRevisionCreatedHandler {
 	 * Indexes which Subjects the page holds, and projects the page with them — and with none when it
 	 * holds none: every page gets a Page node, so its Page Properties are queryable.
 	 */
-	public function onRevisionCreated( RevisionRecord $revisionRecord, ?UserIdentity $user ): PageRefreshOutcome {
+	public function onRevisionCreated( RevisionRecord $revisionRecord ): PageRefreshOutcome {
 		if ( $revisionRecord->getPageId() === 0 ) {
 			throw new RuntimeException( 'Page ID should not be 0' );
 		}
 
 		if ( !$revisionRecord->hasSlot( MediaWikiSubjectRepository::SLOT_NAME ) ) {
-			return $this->refreshPage( $revisionRecord, $user, null );
+			return $this->refreshPage( $revisionRecord, null );
 		}
 
 		// The slot exists; a read failure here is a genuine error and must propagate —
@@ -57,14 +56,10 @@ class OnRevisionCreatedHandler {
 			return PageRefreshOutcome::SkippedUnreadableSubjects;
 		}
 
-		return $this->refreshPage( $revisionRecord, $user, $content );
+		return $this->refreshPage( $revisionRecord, $content );
 	}
 
-	private function refreshPage(
-		RevisionRecord $revisionRecord,
-		?UserIdentity $user,
-		?SubjectContent $content
-	): PageRefreshOutcome {
+	private function refreshPage( RevisionRecord $revisionRecord, ?SubjectContent $content ): PageRefreshOutcome {
 		$pageId = new PageId( $revisionRecord->getPageId() );
 
 		// Indexed before the Subjects are read as Subjects, and outside the projection's failure
@@ -77,7 +72,7 @@ class OnRevisionCreatedHandler {
 		// Null only from the isolating source the hook path is given, which has already logged the
 		// cause. The rebuild path is given the propagating one, so there the failure surfaces to the
 		// maintenance script instead, which reports it against the page.
-		$properties = $this->pagePropertiesSource->getPagePropertiesFor( $revisionRecord, $user );
+		$properties = $this->pagePropertiesSource->getPagePropertiesFor( $revisionRecord );
 
 		if ( $properties === null ) {
 			return PageRefreshOutcome::SkippedUnreadablePageProperties;

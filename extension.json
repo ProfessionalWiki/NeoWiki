@@ -52,6 +52,9 @@
 		"PageDeleteComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageDeleteComplete",
 		"PageUndeleteComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageUndeleteComplete",
 		"AfterImportPage": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onAfterImportPage",
+		"ArticleRevisionVisibilitySet": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onArticleRevisionVisibilitySet",
+		"BlockIpComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onBlockIpComplete",
+		"UnblockUserComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onUnblockUserComplete",
 
 		"CodeEditorGetPageLanguage": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onCodeEditorGetPageLanguage",
 
@@ -77,6 +80,10 @@
 	"JobClasses": {
 		"neowikiGraphRebuild": {
 			"class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Jobs\\GraphRebuildJob",
+			"needsPage": false
+		},
+		"neowikiRebuildLastEditorPages": {
+			"class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Jobs\\RebuildLastEditorPagesJob",
 			"needsPage": false
 		}
 	},

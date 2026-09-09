@@ -61,7 +61,7 @@ class RdfPageLoader {
 
 		return new Page(
 			id: new PageId( $revision->getPageId() ),
-			properties: $this->pagePropertiesBuilder->getPagePropertiesFor( $revision, $revision->getUser() ),
+			properties: $this->pagePropertiesBuilder->getPagePropertiesFor( $revision ),
 			subjects: $subjects
 		);
 	}

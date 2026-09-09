@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use Exception;
 use ManualLogEntry;
+use MediaWiki\Block\DatabaseBlock;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
@@ -33,6 +34,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
+use ProfessionalWiki\NeoWiki\EntryPoints\Jobs\RebuildLastEditorPagesJob;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -301,7 +303,7 @@ class NeoWikiHooks {
 		UserIdentity $user,
 		array &$tags
 	): void {
-		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision, $user );
+		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision );
 		$wikiPage->doPurge(); // clear cache
 
 		if ( self::changedTheContent( $revision ) ) {
@@ -397,7 +399,7 @@ class NeoWikiHooks {
 		int $sRevCount,
 		array $pageInfo
 	): void {
-		NeoWikiExtension::getInstance()->newImportPageRebuilder()->rebuildFromPrimary( $title );
+		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuildFromPrimary( $title );
 	}
 
 	public static function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, ?string $model, ?string $format ): void {
@@ -439,11 +441,76 @@ class NeoWikiHooks {
 	): void {
 		$title = Title::newFromPageIdentity( $page );
 
-		NeoWikiExtension::getInstance()->newImportPageRebuilder()->rebuildFromPrimary( $title );
+		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuildFromPrimary( $title );
 
 		// Restoring a Mapping page puts a projection back that the stores holding it were rebuilt
 		// without, so it changes what their graphs should contain exactly as deleting it did.
 		self::rebuildStoresHoldingChangedMapping( $title );
+	}
+
+	/**
+	 * Reprojects a page whose revision visibility changed. RevisionDelete hides who made a revision, or
+	 * shows them again, without creating a revision, so no other entry point fires and the graph would
+	 * go on serving a name MediaWiki no longer shows (#1246).
+	 *
+	 * Which revisions changed is not examined: a page is projected from whichever revision is current, so
+	 * reprojecting it agrees with the wiki when that revision was one of them, and rewrites what the graph
+	 * already holds when it was not — a redundant write at the frequency RevisionDelete is used. The
+	 * current revision is read from the primary database, since the change has only just committed.
+	 *
+	 * @see ArticleRevisionVisibilitySetHook
+	 *
+	 * @param int[] $ids
+	 * @param array<int, array{oldBits: int, newBits: int}> $visibilityChangeMap
+	 */
+	public static function onArticleRevisionVisibilitySet( Title $title, array $ids, array $visibilityChangeMap ): void {
+		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuildFromPrimary( $title );
+	}
+
+	/**
+	 * Reprojects the pages of a user a block has just hidden. Hiding a user hides the name on every
+	 * revision they made, by a direct write that fires no revision hook of its own, so nothing else
+	 * would take those names out of the graph (#1246).
+	 *
+	 * @see BlockIpCompleteHook
+	 */
+	public static function onBlockIpComplete( DatabaseBlock $block, User $blocker, ?DatabaseBlock $priorBlock ): void {
+		self::rebuildPagesOfHiddenUser( $block );
+	}
+
+	/**
+	 * The counterpart for an unblock, which shows a hidden user's name again.
+	 *
+	 * This hook runs *before* MediaWiki clears the hidden flags, so the work has to be queued rather
+	 * than done here: reading the revisions now would still find the name hidden and change nothing.
+	 *
+	 * @see UnblockUserCompleteHook
+	 */
+	public static function onUnblockUserComplete( DatabaseBlock $block, User $unblocker ): void {
+		self::rebuildPagesOfHiddenUser( $block );
+	}
+
+	/**
+	 * Queued rather than done in the request: a block changes every page the user last edited at once,
+	 * where the write path this reuses handles one page at a time. Nothing is queued for a block that
+	 * does not hide the user, which leaves the graph as it was.
+	 *
+	 * The queueing is itself deferred, because the unblock hook runs before the flags are cleared and
+	 * lazyPush is not lazy under the command line — it pushes there and then, where a runner could
+	 * claim the job while the revisions still read as hidden and reproject the name straight back out.
+	 */
+	private static function rebuildPagesOfHiddenUser( DatabaseBlock $block ): void {
+		$user = $block->getTargetUserIdentity();
+
+		if ( !$block->getHideName() || $user === null ) {
+			return;
+		}
+
+		DeferredUpdates::addCallableUpdate( static function () use ( $user ): void {
+			MediaWikiServices::getInstance()->getJobQueueGroup()->lazyPush(
+				RebuildLastEditorPagesJob::newSpecification( $user )
+			);
+		} );
 	}
 
 	public static function onSpecialPageInitList( array &$specialPages ): void {
