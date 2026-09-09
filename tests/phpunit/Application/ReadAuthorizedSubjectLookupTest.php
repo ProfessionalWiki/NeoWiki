@@ -4,9 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application;
 
-use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\ReadAuthorizedSubjectLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
@@ -15,6 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivePageReadAuthorizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\ReadAuthorizedSubjectLookup
@@ -31,7 +30,7 @@ class ReadAuthorizedSubjectLookupTest extends TestCase {
 
 	private InMemorySubjectLookup $innerLookup;
 	private InMemoryPageIdentifiersLookup $pageIdentifiersLookup;
-	private CountingPageReadAuthorizer $readAuthorizer;
+	private SelectivePageReadAuthorizer $readAuthorizer;
 
 	protected function setUp(): void {
 		$this->innerLookup = new InMemorySubjectLookup(
@@ -47,7 +46,7 @@ class ReadAuthorizedSubjectLookupTest extends TestCase {
 			[ new SubjectId( self::RESTRICTED_ID ), $this->newPageIdentifiers( self::RESTRICTED_PAGE_ID ) ],
 		] );
 
-		$this->readAuthorizer = new CountingPageReadAuthorizer( deniedPageId: self::RESTRICTED_PAGE_ID );
+		$this->readAuthorizer = new SelectivePageReadAuthorizer( deniedPageIds: [ self::RESTRICTED_PAGE_ID ] );
 	}
 
 	private function newLookup(): ReadAuthorizedSubjectLookup {
@@ -142,34 +141,6 @@ class ReadAuthorizedSubjectLookupTest extends TestCase {
 
 		$this->assertTrue( $subjects->isEmpty() );
 		$this->assertSame( [], $this->readAuthorizer->checkedPageIds );
-	}
-
-}
-
-/**
- * Denies one page id and records every page it was asked about, so a caller that asks per Subject
- * rather than per page is visible.
- */
-class CountingPageReadAuthorizer implements PageReadAuthorizer {
-
-	/**
-	 * @var int[]
-	 */
-	public array $checkedPageIds = [];
-
-	public function __construct(
-		private readonly int $deniedPageId
-	) {
-	}
-
-	public function authorizeReadByPageId( PageId $pageId ): bool {
-		$this->checkedPageIds[] = $pageId->id;
-
-		return $pageId->id !== $this->deniedPageId;
-	}
-
-	public function authorizeReadByPageTitle( Title $title ): bool {
-		return $this->authorizeReadByPageId( new PageId( $title->getId() ) );
 	}
 
 }

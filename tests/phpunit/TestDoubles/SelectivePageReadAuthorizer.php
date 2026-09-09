@@ -16,6 +16,15 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 class SelectivePageReadAuthorizer implements PageReadAuthorizer {
 
 	/**
+	 * Every page it was asked about, in order and with repeats, so a caller that asks once per row
+	 * where it could ask once per page is visible. Each ask costs a page-row load and the full
+	 * permission hook in production.
+	 *
+	 * @var int[]
+	 */
+	public array $checkedPageIds = [];
+
+	/**
 	 * @param int[] $deniedPageIds
 	 */
 	public function __construct(
@@ -24,11 +33,13 @@ class SelectivePageReadAuthorizer implements PageReadAuthorizer {
 	}
 
 	public function authorizeReadByPageId( PageId $pageId ): bool {
+		$this->checkedPageIds[] = $pageId->id;
+
 		return !in_array( $pageId->id, $this->deniedPageIds, true );
 	}
 
 	public function authorizeReadByPageTitle( Title $title ): bool {
-		return !in_array( $title->getId(), $this->deniedPageIds, true );
+		return $this->authorizeReadByPageId( new PageId( $title->getId() ) );
 	}
 
 }
