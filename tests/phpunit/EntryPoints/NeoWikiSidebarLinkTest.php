@@ -65,19 +65,6 @@ class NeoWikiSidebarLinkTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'CreateSubject', $link['href'] );
 	}
 
-	public function testCreateSubjectLinkNamesTheSchemaOnASchemaPage(): void {
-		$sidebar = $this->buildSidebar(
-			Title::makeTitle( NeoWikiExtension::NS_SCHEMA, 'Example' ),
-			$this->getTestUser()->getUser()
-		);
-
-		$link = $this->findLinkById( $sidebar[self::NEOWIKI_SECTION] ?? [], 't-neowiki-create-subject-page' );
-
-		$this->assertNotNull( $link, 'Expected the create-subject link on a Schema page.' );
-		$this->assertSame( 'Create Example', $link['text'] );
-		$this->assertStringContainsString( 'CreateSubject/Example', $link['href'] );
-	}
-
 	public function testCreateSubjectLinkIsListedAfterThePageTools(): void {
 		$section = $this->neoWikiSectionOnAnOrdinaryPage();
 

@@ -523,7 +523,12 @@ class NeoWikiHooks {
 		}
 
 		if ( $skin->getAuthority()->isAllowedAll( 'createpage', 'edit' ) ) {
-			$neoWikiTools[] = self::createSubjectLink( $skin, $title );
+			$neoWikiTools[] = self::specialPageLink(
+				$skin,
+				specialPage: 'CreateSubject',
+				message: 'neowiki-sidebar-create-subject',
+				linkId: 't-neowiki-create-subject-page'
+			);
 		}
 
 		if ( $neoWikiTools !== [] ) {
@@ -536,41 +541,15 @@ class NeoWikiHooks {
 	/**
 	 * @return array<string, mixed>
 	 */
-	private static function createSubjectLink( Skin $skin, Title $title ): array {
-		if ( $title->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
-			return self::specialPageLink(
-				$skin,
-				specialPage: 'CreateSubject',
-				message: 'neowiki-schema-sidebar-create-subject',
-				linkId: 't-neowiki-create-subject-page',
-				subpage: $title->getText(),
-				messageParams: [ $title->getText() ]
-			);
-		}
-
-		return self::specialPageLink(
-			$skin,
-			specialPage: 'CreateSubject',
-			message: 'neowiki-sidebar-create-subject',
-			linkId: 't-neowiki-create-subject-page'
-		);
-	}
-
-	/**
-	 * @param string[] $messageParams
-	 * @return array<string, mixed>
-	 */
 	private static function specialPageLink(
 		Skin $skin,
 		string $specialPage,
 		string $message,
-		string $linkId,
-		?string $subpage = null,
-		array $messageParams = []
+		string $linkId
 	): array {
 		return [
-			'text' => $skin->msg( $message, ...$messageParams )->text(),
-			'href' => SpecialPage::getTitleFor( $specialPage, $subpage )->getLocalURL(),
+			'text' => $skin->msg( $message )->text(),
+			'href' => SpecialPage::getTitleFor( $specialPage )->getLocalURL(),
 			'id' => $linkId,
 		];
 	}

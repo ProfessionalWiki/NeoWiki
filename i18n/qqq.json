@@ -121,7 +121,6 @@
 	"neowiki-schemas-column-properties": "Column header for the number of property definitions in the schemas list table on [[Special:Schemas]].",
 	"neowiki-schemas-empty": "Message shown when no schemas exist yet on [[Special:Schemas]].",
 	"neowiki-schema-sidebar-all-schemas": "Label for the link in the NeoWiki section of the sidebar on Schema pages that navigates to [[Special:Schemas]].",
-	"neowiki-schema-sidebar-create-subject": "Label for the link in the NeoWiki section of the sidebar on a Schema page that navigates to [[Special:CreateSubject]] with that Schema chosen. Parameters:\n* $1 - the Schema name",
 	"neowiki-sidebar-create-subject": "Label for the link in the NeoWiki section of the sidebar that navigates to [[Special:CreateSubject]], where a Subject is created together with the page it lives on.",
 	"neowiki-schema-create-subject": "Label of the button on a Schema page that opens [[Special:CreateSubject]] with that Schema chosen. Parameters:\n* $1 - the Schema name",
 
