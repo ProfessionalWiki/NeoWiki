@@ -119,25 +119,25 @@ class OnExtensionRegistrationTest extends TestCase {
 				'url' => 'https://neowiki.ai/',
 				'alt' => 'Powered by NeoWiki',
 			],
-			$GLOBALS['wgFooterIcons']['poweredby']['neowiki']
+			$GLOBALS['wgFooterIcons']['poweredbyneowiki']['neowiki']
 		);
 	}
 
-	public function testKeepsTheMediaWikiBadgeFirst(): void {
+	public function testAddsTheBadgeAsItsOwnBlockAfterTheMediaWikiOne(): void {
 		$this->givenOnlyTheMediaWikiBadge();
 
 		NeoWikiExtension::onExtensionRegistration();
 
-		$this->assertSame( [ 'mediawiki', 'neowiki' ], array_keys( $GLOBALS['wgFooterIcons']['poweredby'] ) );
+		$this->assertSame( [ 'poweredby', 'poweredbyneowiki' ], array_keys( $GLOBALS['wgFooterIcons'] ) );
 	}
 
 	public function testKeepsAPreconfiguredPoweredByBadge(): void {
 		$this->givenOnlyTheMediaWikiBadge();
-		$GLOBALS['wgFooterIcons']['poweredby']['neowiki'] = false;
+		$GLOBALS['wgFooterIcons']['poweredbyneowiki']['neowiki'] = false;
 
 		NeoWikiExtension::onExtensionRegistration();
 
-		$this->assertFalse( $GLOBALS['wgFooterIcons']['poweredby']['neowiki'] );
+		$this->assertFalse( $GLOBALS['wgFooterIcons']['poweredbyneowiki']['neowiki'] );
 	}
 
 	public function testPoweredByBadgeImageExistsWhereItIsRegistered(): void {
@@ -148,7 +148,7 @@ class OnExtensionRegistrationTest extends TestCase {
 		$imagePath = str_replace(
 			'/w/extensions/NeoWiki',
 			'',
-			$GLOBALS['wgFooterIcons']['poweredby']['neowiki']['src']
+			$GLOBALS['wgFooterIcons']['poweredbyneowiki']['neowiki']['src']
 		);
 
 		$this->assertFileExists( dirname( __DIR__, 2 ) . $imagePath );

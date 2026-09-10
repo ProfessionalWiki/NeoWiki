@@ -275,11 +275,11 @@ class NeoWikiExtension {
 	}
 
 	private static function registerPoweredByBadge(): void {
-		if ( isset( $GLOBALS['wgFooterIcons']['poweredby']['neowiki'] ) ) {
+		if ( isset( $GLOBALS['wgFooterIcons']['poweredbyneowiki']['neowiki'] ) ) {
 			return;
 		}
 
-		$GLOBALS['wgFooterIcons']['poweredby']['neowiki'] = [
+		$GLOBALS['wgFooterIcons']['poweredbyneowiki']['neowiki'] = [
 			'src' => $GLOBALS['wgExtensionAssetsPath'] . '/NeoWiki/resources/images/poweredby_neowiki.svg',
 			'url' => 'https://neowiki.ai/',
 			'alt' => 'Powered by NeoWiki',
