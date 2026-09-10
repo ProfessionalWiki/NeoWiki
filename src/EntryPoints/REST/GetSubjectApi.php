@@ -107,7 +107,8 @@ class GetSubjectApi extends SimpleHandler {
 			return $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
 		}
 
-		return NeoWikiExtension::getInstance()->newGetLatestSubjectQuery( $presenter, $this->getAuthority() );
+		return NeoWikiExtension::getInstance()
+			->newGetLatestSubjectQuery( $presenter, $this->getAuthority(), $revision );
 	}
 
 	private function getLatestRevisionOfSubjectPage( string $subjectId ): ?RevisionRecord {
