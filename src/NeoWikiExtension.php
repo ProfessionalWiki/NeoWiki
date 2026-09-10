@@ -272,6 +272,20 @@ class NeoWikiExtension {
 			Neo4jRouteRegistration::routeFiles( $readUrl, $writeUrl ),
 			SparqlRouteRegistration::routeFiles( $GLOBALS['wgNeoWikiSparqlStores'] ?? null )
 		);
+
+		self::registerPoweredByBadge();
+	}
+
+	private static function registerPoweredByBadge(): void {
+		if ( isset( $GLOBALS['wgFooterIcons']['poweredbyneowiki']['neowiki'] ) ) {
+			return;
+		}
+
+		$GLOBALS['wgFooterIcons']['poweredbyneowiki']['neowiki'] = [
+			'src' => $GLOBALS['wgExtensionAssetsPath'] . '/NeoWiki/resources/images/poweredby_neowiki.svg',
+			'url' => 'https://neowiki.ai/',
+			'alt' => 'Powered by NeoWiki',
+		];
 	}
 
 	private function __construct(
