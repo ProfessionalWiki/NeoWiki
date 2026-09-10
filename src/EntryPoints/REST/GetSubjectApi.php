@@ -61,7 +61,7 @@ class GetSubjectApi extends SimpleHandler {
 		}
 
 		if ( $latest ) {
-			return $this->newQueryForCurrentRevision( $presenter, $subjectId );
+			return $this->newQueryForLatestRevision( $presenter, $subjectId );
 		}
 
 		return NeoWikiExtension::getInstance()->newGetSubjectQuery( $presenter, $this->getAuthority() );
@@ -95,18 +95,13 @@ class GetSubjectApi extends SimpleHandler {
 	}
 
 	/**
-	 * A viewer the policy does not let see the current revision is answered as an absent Subject is,
-	 * so that asking for a draft cannot confirm a harvested Subject id exists. A Subject that
-	 * resolves to no page falls through to the published read, which answers not-found for it.
+	 * A viewer who may not see the latest revision is answered as an absent Subject is, so that
+	 * asking for a draft cannot confirm a harvested Subject id exists.
 	 */
-	private function newQueryForCurrentRevision( RestGetSubjectPresenter $presenter, string $subjectId ): GetSubjectQuery|Response {
-		$revision = $this->getCurrentRevisionOfSubjectPage( $subjectId );
+	private function newQueryForLatestRevision( RestGetSubjectPresenter $presenter, string $subjectId ): GetSubjectQuery|Response {
+		$revision = $this->getLatestRevisionOfSubjectPage( $subjectId );
 
-		if ( $revision === null ) {
-			return NeoWikiExtension::getInstance()->newGetSubjectQuery( $presenter, $this->getAuthority() );
-		}
-
-		if ( !NeoWikiExtension::getInstance()->getRevisionPolicy()->revisionIsReadableBy( $revision, $this->getAuthority() ) ) {
+		if ( $revision === null || !$this->revisionIsReadable( $revision ) ) {
 			$presenter->presentSubjectNotFound();
 
 			return $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
@@ -115,7 +110,7 @@ class GetSubjectApi extends SimpleHandler {
 		return NeoWikiExtension::getInstance()->newGetLatestSubjectQuery( $presenter, $this->getAuthority() );
 	}
 
-	private function getCurrentRevisionOfSubjectPage( string $subjectId ): ?RevisionRecord {
+	private function getLatestRevisionOfSubjectPage( string $subjectId ): ?RevisionRecord {
 		$pageIdentifiers = NeoWikiExtension::getInstance()
 			->getPageIdentifiersLookup()
 			->getPageIdOfSubject( new SubjectId( $subjectId ) );
