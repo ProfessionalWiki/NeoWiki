@@ -60,6 +60,7 @@ function labelOf( key: string ): string {
 		first: 'First sonata',
 		second: 'Second sonata',
 		allegro: 'Allegro',
+		third: 'Third fugue',
 	};
 	return labels[ key ];
 }
@@ -341,11 +342,41 @@ describe( 'NeoTree', () => {
 			],
 		} ) ];
 
-		it( 'prints a caption once above a contiguous run of siblings sharing it', () => {
+		it( 'prints a caption once above a run of more than one sibling', () => {
 			const wrapper = mountTree( captioned );
 
 			expect( wrapper.findAll( '.ext-neowiki-tree__edge' ).map( ( edge ) => edge.text() ) )
-				.toEqual( [ 'Sonatas', 'Fugues' ] );
+				.toEqual( [ 'Sonatas' ] );
+		} );
+
+		// A caption over a single row is a line of chrome introducing a line of content, so it
+		// moves onto the row it introduces. A caption over several still heads them.
+		it( 'folds a caption heading a single row onto that row', () => {
+			const wrapper = mountTree( captioned );
+
+			expect( row( node( wrapper, 'third' ) ).get( '.ext-neowiki-tree__node-caption' ).text() )
+				.toBe( 'Fugues' );
+			expect( row( node( wrapper, 'first' ) ).find( '.ext-neowiki-tree__node-caption' ).exists() )
+				.toBe( false );
+		} );
+
+		// Folding moves the caption from naming the group to naming the row, which is the more
+		// reliable carrier: a group name is announced on entry and inconsistently across AT.
+		it( 'puts a folded caption inside the name the treeitem takes', () => {
+			const wrapper = mountTree( captioned );
+
+			const treeitem = node( wrapper, 'third' );
+			const named = wrapper.get( `#${ treeitem.attributes( 'aria-labelledby' ) }` );
+			expect( named.text() ).toBe( 'FuguesThird fugue' );
+		} );
+
+		// Otherwise the property is announced twice: once entering the group, once on the row.
+		it( 'leaves a group whose caption folded without a name of its own', () => {
+			const wrapper = mountTree( captioned );
+
+			const groups = wrapper.findAll( '[role="group"]' );
+			expect( groups[ 0 ].attributes( 'aria-labelledby' ) ).toBeDefined();
+			expect( groups[ 1 ].attributes( 'aria-labelledby' ) ).toBeUndefined();
 		} );
 
 		it( 'gathers the siblings sharing a caption into that caption\'s own group', () => {
@@ -375,6 +406,8 @@ describe( 'NeoTree', () => {
 			} ) ] );
 
 			expect( wrapper.findAll( '.ext-neowiki-tree__edge' ) ).toHaveLength( 0 );
+			// Nor folded onto the row, where an empty caption would still indent the name.
+			expect( wrapper.findAll( '.ext-neowiki-tree__node-caption' ) ).toHaveLength( 0 );
 			expect( wrapper.get( '[role="group"]' ).attributes( 'aria-labelledby' ) ).toBeUndefined();
 		} );
 	} );
@@ -391,64 +424,7 @@ describe( 'NeoTree', () => {
 		} );
 	} );
 
-	describe( 'The secondary slot', () => {
-		// Every item carries a secondary label: the slot decorates that label rather than
-		// replacing the decision to show one — see the last test in this block.
-		const labelled: NeoTreeItem<string> = item( 'root', 'Root', {
-			secondaryLabel: 'Person',
-			children: [ item( 'child', 'Child', { groupLabel: 'Born', secondaryLabel: 'Birth' } ) ],
-		} );
-
-		it( 'renders the slot for every item, nested ones included', () => {
-			const wrapper = mountTree( [ labelled ], {
-				slots: { secondary: '<i class="mark">{{ params.item.key }}</i>' },
-			} );
-
-			expect( wrapper.findAll( '.mark' ).map( ( mark ) => mark.text() ) )
-				.toEqual( [ 'root', 'child' ] );
-		} );
-
-		it( 'renders the slot inside the element the plain secondary label would occupy', () => {
-			const wrapper = mountTree(
-				[ item( 'root', 'Root', { secondaryLabel: 'Person' } ) ],
-				{ slots: { secondary: '<i class="mark">badge</i>' } },
-			);
-
-			const secondary = row( node( wrapper, 'root' ) ).get( '.ext-neowiki-tree__node-secondary' );
-
-			// The slot replaces the text rather than joining it, so nothing says "Person" twice.
-			expect( secondary.get( '.mark' ).text() ).toBe( 'badge' );
-			expect( secondary.text() ).toBe( 'badge' );
-		} );
-
-		// Pinning a real limit of the slot rather than an accident: the row shows a secondary
-		// element only when the item has a secondary label, so slot content alone cannot put
-		// one there. A consumer that wants to decorate must still supply the label.
-		it( 'renders nothing for an item with no secondary label, slot or not', () => {
-			const wrapper = mountTree(
-				[ item( 'root', 'Root' ) ],
-				{ slots: { secondary: '<i class="mark">badge</i>' } },
-			);
-
-			expect( wrapper.find( '.mark' ).exists() ).toBe( false );
-		} );
-	} );
-
 	describe( 'Item labels', () => {
-		it( 'prints the secondary label after the label, set apart from it', () => {
-			const wrapper = mountTree( [ item( 'root', 'Root', { secondaryLabel: 'Person' } ) ] );
-
-			expect( row( node( wrapper, 'root' ) ).get( '.ext-neowiki-tree__node-secondary' ).text() )
-				.toBe( 'Person' );
-		} );
-
-		it( 'prints nothing in place of an absent secondary label', () => {
-			const wrapper = mountTree( [ item( 'root', 'Root' ) ] );
-
-			expect( row( node( wrapper, 'root' ) ).find( '.ext-neowiki-tree__node-secondary' ).exists() )
-				.toBe( false );
-		} );
-
 		it( 'marks the active item as selected and highlighted', () => {
 			const wrapper = mountTree();
 

@@ -5,16 +5,6 @@
 		:label="$i18n( 'neowiki-subject-tree-label' ).text()"
 		@select="selectItem"
 	>
-		<!-- Unlinked: the row is itself the click target. The dialog's own header still shows
-			the older "Schema: X" text until that header is converted. -->
-		<template #secondary="{ item }">
-			<SchemaNameDisplay
-				v-if="item.secondaryLabel"
-				:schema-name="item.secondaryLabel"
-				link="none"
-			/>
-		</template>
-
 		<!-- Rendered here rather than inside NeoTree: the dot carries an i18n message of its
 			own, and it belongs in the row a treeitem takes its accessible name from. -->
 		<template #trailing="{ item }">
@@ -27,7 +17,6 @@
 import { computed, shallowReactive, watch } from 'vue';
 import NeoTree from '@/components/common/NeoTree/NeoTree.vue';
 import UnsavedDot from '@/components/common/UnsavedDot.vue';
-import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import type { NeoTreeItem } from '@/components/common/NeoTree/NeoTreeModel.ts';
 import { nodeFor, walkSubjectTree } from './SubjectTreeWalk.ts';
 import type { SubjectTreeWalkResult, WalkNode } from './SubjectTreeWalk.ts';
@@ -126,8 +115,9 @@ const strayNodes = computed( (): WalkNode[] => {
 		.map( ( id ) => nodeFor( `stray:${ id }`, id, props.editedSubjects.get( id ) ) );
 } );
 
-const treeShape = computed( (): WalkNode => {
-	const root = walk.value.root;
+// Captioned rather than given a relation they do not have.
+const treeItem = computed( (): NeoTreeItem<string> => {
+	const root = toTreeItem( walk.value.root );
 
 	if ( strayNodes.value.length === 0 ) {
 		return root;
@@ -138,31 +128,22 @@ const treeShape = computed( (): WalkNode => {
 	return {
 		...root,
 		children: [
-			...root.children,
-			...strayNodes.value.map( ( node ) => ( { ...node, propertyName: caption } ) )
+			...root.children ?? [],
+			...strayNodes.value.map( ( node ) => toTreeItem( node, caption ) )
 		]
 	};
 } );
 
-const treeItem = computed( (): NeoTreeItem<string> => toTreeItem( treeShape.value ) );
-
-function toTreeItem( node: WalkNode ): NeoTreeItem<string> {
+function toTreeItem( node: WalkNode, groupLabel?: string ): NeoTreeItem<string> {
 	return {
 		key: node.key,
 		label: node.label,
-		// Withheld where the name already names the Schema; the walk decides that per node.
-		secondaryLabel: node.schemaLabel ?? undefined,
+		groupLabel,
 		active: node.subjectId === props.activeId,
 		attrs: { 'data-mw-neowiki-subject-id': node.subjectId },
-		children: childItemsOf( node ),
+		children: node.children.map( ( child ) => toTreeItem( child, child.propertyName ) ),
 		data: node.subjectId
 	};
-}
-
-// Each child carries its relation property's name; NeoTree gathers the contiguous run of
-// children sharing one into a single captioned group.
-function childItemsOf( node: WalkNode ): NeoTreeItem<string>[] {
-	return node.children.map( ( child ) => ( { ...toTreeItem( child ), groupLabel: child.propertyName } ) );
 }
 
 function isUnsaved( subjectId: string ): boolean {

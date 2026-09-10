@@ -18,13 +18,6 @@
 				:select="selectItem"
 				:keydown="onKeydown"
 			>
-				<template #secondary="slotProps">
-					<slot
-						name="secondary"
-						v-bind="slotProps"
-					/>
-				</template>
-
 				<template #trailing="slotProps">
 					<slot
 						name="trailing"
@@ -55,15 +48,12 @@ const emit = defineEmits<{
 type NodeSlot = ( slotProps: { item: NeoTreeItem<T> } ) => unknown;
 
 defineSlots<{
-	// Replaces a node's plain `secondaryLabel` text, inside the same element, so a consumer
-	// can treat it without the tree knowing what it means.
-	secondary?: NodeSlot;
 	trailing?: NodeSlot;
 }>();
 
 // Printed order, which is both the order Up/Down move through and the order the element ids
-// are numbered in. A top-level item's `groupLabel` has nowhere to print: a caption may not sit
-// inside the tree container itself.
+// are numbered in. A top-level item's `groupLabel` is dropped: the tree renders its items
+// without grouping them, so nothing decides whether that caption takes a line or a row.
 const flatItems = computed( (): NeoTreeItem<T>[] => {
 	const items: NeoTreeItem<T>[] = [];
 
@@ -174,12 +164,19 @@ function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 		border-inline-start: @border-subtle;
 	}
 
+	/* The line-height is set rather than inherited: left to the skin it is whatever that
+		skin says. */
+	&__edge,
+	&__node-caption {
+		font-size: @font-size-x-small;
+		line-height: @line-height-xx-small;
+		color: @color-subtle;
+	}
+
 	/* The inline padding matches a row's, so a caption starts where the node labels start. */
 	&__edge {
 		display: block;
 		padding: @spacing-30 @spacing-35 @spacing-12;
-		font-size: @font-size-x-small;
-		color: @color-subtle;
 	}
 
 	&__node {
@@ -189,14 +186,19 @@ function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 		}
 	}
 
-	&__node-name {
+	&__node-name,
+	&__node-line {
 		display: flex;
 		align-items: center;
 		gap: @spacing-25;
+	}
+
+	&__node-name {
 		box-sizing: @box-sizing-base;
 		width: @size-full;
 		min-height: @size-200;
-		padding: 0 @spacing-35;
+		/* The block padding is absorbed by min-height until a row's content takes two lines. */
+		padding: @spacing-12 @spacing-35;
 		background-color: @background-color-transparent;
 		border-radius: @border-radius-base;
 		/* Only the row selects; the rest of the <li> is the subtree, which is not clickable. */
@@ -228,6 +230,7 @@ function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 		color: @color-emphasized;
 	}
 
+	/* Rows keep a common height, so a name gives way at its end. */
 	&__node-label {
 		min-width: 0;
 		font-weight: @font-weight-bold;
@@ -236,13 +239,33 @@ function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 		white-space: nowrap;
 	}
 
-	/* Set apart by colour rather than size: the row already sits a step below body text.
-		`min-width: 0` lets it shrink below its content, so a long label gives way to the
-		node's own name instead of squeezing it to nothing. */
-	&__node-secondary {
-		flex: 0 1 auto;
+	/* Never abbreviated, as on its own line it never was: property names are authored on-wiki. */
+	&__node-caption {
 		min-width: 0;
-		color: @color-subtle;
+	}
+
+	/* Transparent until a row folds, where it becomes the one item a wrap may move: otherwise
+		the trailing slot is left on a line of its own once the name has taken one. */
+	&__node-line {
+		display: contents;
+	}
+
+	/* The basis is the name's own `max-content` width, so the line breaks exactly when the
+		caption and the whole name cannot share it. A proportional basis gets both ends wrong. */
+	&__node-name--folded {
+		flex-wrap: wrap;
+		/* The boxes differ in height, so centring them leaves the text off by half of it. */
+		align-items: baseline;
+		align-content: center;
+		gap: 0 @spacing-50;
+	}
+
+	&__node-name--folded > &__node-line {
+		display: flex;
+		align-items: center;
+		gap: @spacing-25;
+		min-width: 0;
+		flex-basis: max-content;
 	}
 }
 </style>
