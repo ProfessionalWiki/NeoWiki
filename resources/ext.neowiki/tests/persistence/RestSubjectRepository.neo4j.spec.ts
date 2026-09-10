@@ -172,20 +172,33 @@ describe( 'RestSubjectRepository', () => {
 			expect( get ).toHaveBeenCalledWith( subjectUrl() );
 		} );
 
-		it( 'asks for the revision it was built for rather than the current one', async () => {
+		it( 'asks for the revision it was built for when reading for display', async () => {
 			const httpClient = newHttpClient( subjectUrl( '&revisionId=7' ) );
 			const get = vi.spyOn( httpClient, 'get' );
 
-			await new RestSubjectRepository(
+			await newRepositoryForRevision( httpClient, 7 ).getSubject( subjectId );
+
+			expect( get ).toHaveBeenCalledWith( subjectUrl( '&revisionId=7' ) );
+		} );
+
+		it( 'asks for the current revision when reading for editing, pinned revision or not', async () => {
+			const httpClient = newHttpClient( subjectUrl( '&latest=1' ) );
+			const get = vi.spyOn( httpClient, 'get' );
+
+			await newRepositoryForRevision( httpClient, 7 ).getSubjectForEditing( subjectId );
+
+			expect( get ).toHaveBeenCalledWith( subjectUrl( '&latest=1' ) );
+		} );
+
+		function newRepositoryForRevision( httpClient: InMemoryHttpClient, revisionId: number ): RestSubjectRepository {
+			return new RestSubjectRepository(
 				'https://example.com/rest.php',
 				httpClient,
 				NeoWikiExtension.getInstance().getSubjectDeserializer(),
 				new SchemaDeserializer(),
-				7,
-			).getSubjectForEditing( subjectId );
-
-			expect( get ).toHaveBeenCalledWith( subjectUrl( '&revisionId=7' ) );
-		} );
+				revisionId,
+			);
+		}
 
 	} );
 

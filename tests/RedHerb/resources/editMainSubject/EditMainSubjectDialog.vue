@@ -65,7 +65,9 @@ module.exports = exports = {
 			// Editing UIs read through the repositories rather than the stores
 			// (NeoWiki ADR 30 / ADR 16), so the editor always opens on freshly
 			// fetched data instead of the page-load payload the stores hold.
-			subjectRepo.getSubject( subjectId )
+			// getSubjectForEditing, not getSubject: a save replaces the current
+			// revision, not the published one.
+			subjectRepo.getSubjectForEditing( subjectId )
 				.then( ( subject ) => {
 					loadedSubject.value = subject;
 					label.value = subject.getLabel() || '';

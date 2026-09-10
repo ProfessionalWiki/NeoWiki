@@ -155,6 +155,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectConte
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PointInTimeSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PublishedSubjectLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\LatestRevisionSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingMappingLookup;
@@ -1517,24 +1518,32 @@ class NeoWikiExtension {
 	public function newGetSubjectQuery( RestGetSubjectPresenter $presenter, Authority $authority ): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
-			subjectLookup: new PublishedSubjectLookup(
-				pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
-				revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
-				revisionPolicy: $this->getRevisionPolicy(),
-			),
+			subjectLookup: $this->newPublishedSubjectLookup(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			pageSubjectsLookup: $this->newPageSubjectsLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 		);
 	}
 
-	public function newGetLatestSubjectQuery( RestGetSubjectPresenter $presenter, Authority $authority ): GetSubjectQuery {
+	public function newGetLatestSubjectQuery(
+		RestGetSubjectPresenter $presenter,
+		Authority $authority,
+		RevisionRecord $currentRevision
+	): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
-			subjectLookup: $this->getSubjectRepository(),
+			subjectLookup: new LatestRevisionSubjectLookup( $currentRevision, $this->newPublishedSubjectLookup() ),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			pageSubjectsLookup: $this->newPageSubjectsLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+		);
+	}
+
+	private function newPublishedSubjectLookup(): PublishedSubjectLookup {
+		return new PublishedSubjectLookup(
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
+			revisionPolicy: $this->getRevisionPolicy(),
 		);
 	}
 

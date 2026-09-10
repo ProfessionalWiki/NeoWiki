@@ -437,8 +437,9 @@ schema, and layout stores for display; `nw.resolveDisplayProperties` together wi
 registry to render each value through its Property Type's component; and the shared `nw.SubjectEditorDialog` for
 editing when `canEditSubject` is true. Editing reads go through the repositories your component injects
 (`nw.NeoWikiServices.getSubjectRepository()`, `getSchemaRepository()`), not the stores, and reach the dialog as
-props. Saving updates the stores on its own: a Subject write answers with the Subject as persisted and the Schema
-it instantiates, and `nw.useSubjectStore()` records both.
+props. Seed the editor with `getSubjectForEditing()`: `getSubject()` answers with the revision the wiki publishes,
+which a save would overwrite. Saving updates the stores on its own: a Subject write answers with the Subject as
+persisted and the Schema it instantiates, and `nw.useSubjectStore()` records both.
 
 Relation fields inside the dialog offer creating the target Subject on the spot, but only when the dialog is given
 an `onCreate` handler alongside `onSave`. Creating a target writes a new Subject to a page, and which page that is

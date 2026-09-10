@@ -198,16 +198,17 @@ export class RestSubjectRepository implements SubjectRepository {
 	}
 
 	/**
-	 * A repository built for a revision of the page reads that revision, whoever is asking: the
-	 * user is looking at an old revision, and the current one is not what they came for.
+	 * A write targets the page's current revision whatever revision was read, so an editing read is
+	 * never pinned. NeoWikiApp offers no editing on a pinned view, but a host that mounts an editor
+	 * itself has nothing stopping it.
 	 */
 	private async fetchSubjectBundle( id: SubjectId, latest: boolean ): Promise<SubjectBundleJson> {
 		let url = `${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }?expand=page|relations`;
 
-		if ( this.revisionId !== undefined ) {
-			url += `&revisionId=${ this.revisionId }`;
-		} else if ( latest ) {
+		if ( latest ) {
 			url += '&latest=1';
+		} else if ( this.revisionId !== undefined ) {
+			url += `&revisionId=${ this.revisionId }`;
 		}
 
 		const response = await this.httpClient.get( url );
