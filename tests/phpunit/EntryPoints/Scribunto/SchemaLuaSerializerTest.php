@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UrlProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SchemaLuaSerializer;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SchemaLuaSerializer
@@ -181,7 +182,7 @@ class SchemaLuaSerializerTest extends TestCase {
 			'Employer' => new RelationProperty(
 				$this->coreOptional(),
 				new RelationType( 'Works for' ),
-				new SchemaName( 'Company' ),
+				SchemaReference::local( new SchemaName( 'Company' ) ),
 				multiple: false
 			),
 		] );

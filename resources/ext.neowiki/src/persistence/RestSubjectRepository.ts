@@ -8,6 +8,7 @@ import {
 } from '@/persistence/PageSubjectsDeserializer';
 import { StatementList, statementsToJson } from '@/domain/StatementList';
 import { type SchemaName } from '@/domain/Schema';
+import { type SchemaReference, schemaReferenceName } from '@/domain/SchemaReference';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { Subject } from '@/domain/Subject';
@@ -47,7 +48,8 @@ export type SubjectJson = {
 	/** Whether displayName fell back to the Schema name, the one tier nobody chose. */
 	displayNameIsGenerated: boolean;
 	statements: Record<string, unknown>;
-	schema: string;
+	/** A name for a Schema of this wiki, the `{source, name}` object for one from elsewhere (ADR 23). */
+	schema: SchemaReference;
 	pageId: number;
 	pageTitle: string;
 	requestedId: string;
@@ -92,7 +94,7 @@ export class RestSubjectRepository implements SubjectRepository {
 			subject: hasPageContext ? this.subjectDeserializer.deserialize( json.subject ) : null,
 			schema: json.schema === undefined ?
 				null :
-				this.schemaDeserializer.deserialize( json.subject.schema, json.schema ),
+				this.schemaDeserializer.deserialize( schemaReferenceName( json.subject.schema ), json.schema ),
 		};
 	}
 

@@ -33,6 +33,9 @@ use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiValueParserFunction;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 
 /**
@@ -56,7 +59,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		return new Subject(
 			id: new SubjectId( self::SUBJECT_ID ),
 			label: new SubjectLabel( 'Test Subject' ),
-			schemaName: new SchemaName( 'TestSchema' ),
+			schema: SchemaReference::local( new SchemaName( 'TestSchema' ) ),
 			statements: new StatementList( $statements ),
 		);
 	}
@@ -73,8 +76,10 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		return new NeoWikiValueParserFunction(
 			new SubjectResolver(
 				$repo,
+				new InMemorySubjectLookup(),
 				$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
-				$readAuthorizer ?? new StubPageReadAuthorizer( true )
+				$readAuthorizer ?? new StubPageReadAuthorizer( true ),
+				TestSubjectIds::newParser()
 			)
 		);
 	}
@@ -245,7 +250,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		$targetSubject = new Subject(
 			id: new SubjectId( self::TARGET_SUBJECT_ID ),
 			label: new SubjectLabel( 'Sarah Naumann' ),
-			schemaName: new SchemaName( 'Person' ),
+			schema: SchemaReference::local( new SchemaName( 'Person' ) ),
 			statements: new StatementList(),
 		);
 
@@ -296,13 +301,13 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		$target1 = new Subject(
 			id: new SubjectId( 's1test5bbbbbbbb' ),
 			label: new SubjectLabel( 'Alice' ),
-			schemaName: new SchemaName( 'Person' ),
+			schema: SchemaReference::local( new SchemaName( 'Person' ) ),
 			statements: new StatementList(),
 		);
 		$target2 = new Subject(
 			id: new SubjectId( 's1test5cccccccc' ),
 			label: new SubjectLabel( 'Bob' ),
-			schemaName: new SchemaName( 'Person' ),
+			schema: SchemaReference::local( new SchemaName( 'Person' ) ),
 			statements: new StatementList(),
 		);
 
@@ -414,7 +419,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		$targetSubject = new Subject(
 			id: new SubjectId( self::TARGET_SUBJECT_ID ),
 			label: new SubjectLabel( 'Other Subject' ),
-			schemaName: new SchemaName( 'TestSchema' ),
+			schema: SchemaReference::local( new SchemaName( 'TestSchema' ) ),
 			statements: new StatementList( [
 				new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Munich' ) ),
 			] ),
@@ -453,7 +458,7 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 		$subjectViaId = new Subject(
 			id: new SubjectId( self::TARGET_SUBJECT_ID ),
 			label: new SubjectLabel( 'Via ID' ),
-			schemaName: new SchemaName( 'TestSchema' ),
+			schema: SchemaReference::local( new SchemaName( 'TestSchema' ) ),
 			statements: new StatementList( [
 				new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'FromSubject' ) ),
 			] ),

@@ -16,6 +16,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer
@@ -108,7 +109,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 					required: false,
 					default: null,
 					relationType: new RelationType( 'testRelationType' ),
-					targetSchema: new SchemaName( 'targetSchema' ),
+					targetSchema: SchemaReference::local( new SchemaName( 'targetSchema' ) ),
 					multiple: false
 				)
 			] )

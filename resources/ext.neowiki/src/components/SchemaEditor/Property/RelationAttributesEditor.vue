@@ -25,9 +25,16 @@
 				{{ $i18n( 'neowiki-property-editor-target-schema' ).text() }}
 			</template>
 			<SchemaPicker
-				:selected="property.targetSchema || null"
+				v-if="targetSchemaIsLocal"
+				:selected="localTargetSchemaName || null"
 				@select="updateTargetSchema"
 				@blur="targetSchemaTouched = true"
+			/>
+			<CdxTextInput
+				v-else
+				:model-value="schemaReferenceName( property.targetSchema )"
+				:disabled="true"
+				input-type="text"
 			/>
 		</CdxField>
 
@@ -52,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import { isLocalSchemaReference, schemaReferenceName } from '@/domain/SchemaReference';
 import { computed, onMounted, ref, watch } from 'vue';
 import { CdxCheckbox, CdxField, CdxTextInput } from '@wikimedia/codex';
 import { RelationProperty } from '@/domain/propertyTypes/Relation.ts';
@@ -84,8 +92,18 @@ const relationError = computed<string | null>( () =>
 
 const targetSchemaTouched = ref( false );
 
+// A Schema of another Source is shown but not edited here: the picker offers this wiki's Schemas
+// alone, and selecting one from it would replace a reference the editor cannot express (ADR 23).
+const targetSchemaIsLocal = computed<boolean>( () =>
+	isLocalSchemaReference( props.property.targetSchema )
+);
+
+const localTargetSchemaName = computed<string>( () =>
+	targetSchemaIsLocal.value ? schemaReferenceName( props.property.targetSchema ) : ''
+);
+
 const targetSchemaError = computed<string | null>( () =>
-	targetSchemaTouched.value && ( props.property.targetSchema ?? '' ).trim() === '' ?
+	targetSchemaTouched.value && schemaReferenceName( props.property.targetSchema ).trim() === '' ?
 		mw.message( 'neowiki-property-editor-target-schema-required' ).text() :
 		null
 );

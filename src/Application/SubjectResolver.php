@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 
 class SubjectResolver {
 
@@ -21,26 +22,35 @@ class SubjectResolver {
 	private array $pageSubjectsByPageId = [];
 
 	/**
-	 * Every read goes through the page hosting the Subject, and a page the reader may not read
-	 * answers like a page without Subjects (ADR 27): the parse-time surfaces built on this
-	 * resolver cannot tell a restricted page from an empty one. A Subject no page hosts resolves
+	 * Every read of a local Subject goes through the page hosting it, and a page the reader may not
+	 * read answers like a page without Subjects (ADR 27): the parse-time surfaces built on this
+	 * resolver cannot tell a restricted page from an empty one. A local Subject no page hosts resolves
 	 * to nothing for the same reason: there is no page to read it off.
+	 *
+	 * A sourced Subject has no page of this wiki at all, so it is read through its Source and served on
+	 * that Source's vouch (ADR 23).
 	 */
 	public function __construct(
 		private readonly SubjectContentRepository $subjectContentRepository,
+		private readonly SubjectLookup $subjectLookup,
 		private readonly PageIdentifiersLookup $pageIdentifiersLookup,
 		private readonly PageReadAuthorizer $readAuthorizer,
+		private readonly SubjectIdParser $subjectIdParser,
 	) {
 	}
 
 	public function resolveById( string $subjectIdText ): ?Subject {
-		if ( !SubjectId::isValid( $subjectIdText ) ) {
+		$subjectId = $this->subjectIdParser->parse( $subjectIdText );
+
+		if ( $subjectId === null ) {
 			return null;
 		}
 
-		$subjectId = new SubjectId( $subjectIdText );
-
 		try {
+			if ( !$subjectId->isLocal() ) {
+				return $this->subjectLookup->getSubject( $subjectId );
+			}
+
 			$page = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId );
 
 			return $page === null ? null : $this->getPageSubjects( $page->getId() )?->getAllSubjects()->getSubject( $subjectId );

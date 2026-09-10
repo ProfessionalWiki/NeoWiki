@@ -100,7 +100,7 @@ class SetSubjectsOrderingApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => false,
-				self::PARAM_DESCRIPTION => 'Subject ID (15 characters, starting with "s") to be the Main Subject, or null to clear it.',
+				self::PARAM_DESCRIPTION => 'Subject ID (15 characters starting with "s") of a Subject on this page to be the Main Subject, or null to clear it.',
 			],
 			'childSubjectIds' => [
 				self::PARAM_SOURCE => 'body',

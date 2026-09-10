@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Data;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -23,15 +24,23 @@ class TestSubject {
 	public static function build(
 		string|SubjectId $id = self::ZERO_GUID,
 		SubjectLabel|string|null $label = 'Test subject',
-		?SchemaName $schemaName = null,
+		SchemaName|SchemaReference|null $schemaName = null,
 		?StatementList $statements = null,
 	): Subject {
 		return new Subject(
 			id: $id instanceof SubjectId ? $id : new SubjectId( $id ),
 			label: is_string( $label ) ? new SubjectLabel( $label ) : $label,
-			schemaName: $schemaName ?? new SchemaName( self::DEFAULT_SCHEMA_ID ),
+			schema: self::schemaReference( $schemaName ),
 			statements: $statements ?? new StatementList( [] ),
 		);
+	}
+
+	public static function schemaReference( SchemaName|SchemaReference|null $schema ): SchemaReference {
+		if ( $schema instanceof SchemaReference ) {
+			return $schema;
+		}
+
+		return SchemaReference::local( $schema ?? new SchemaName( self::DEFAULT_SCHEMA_ID ) );
 	}
 
 	public static function newMap(): SubjectMap {

@@ -71,6 +71,23 @@ describe( 'SubjectDeserializer', () => {
 		expect( deserializer.deserialize( json ).hasGeneratedDisplayName() ).toBe( false );
 	} );
 
+	it( 'collapses a Schema reference from another Source to its name', () => {
+		const json = {
+			id: 's13333333333337',
+			label: 'SubjectDeserializer',
+			displayName: 'SubjectDeserializer',
+			displayNameIsGenerated: false,
+			schema: { source: 'otherwiki', name: 'SDSchema' },
+			statements: {},
+			pageId: 42,
+			pageTitle: 'SDPageTitle',
+		};
+
+		const subject = deserializer.deserialize( json );
+
+		expect( subject.getSchemaName() ).toBe( 'SDSchema' );
+	} );
+
 	it( 'deserializes a Subject without a label, keeping the display name the server derived', () => {
 		const json = {
 			id: 's13333333333337',

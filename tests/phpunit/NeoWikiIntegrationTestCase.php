@@ -21,6 +21,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Source\Source;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
@@ -52,6 +53,11 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	/** @var PagePropertyProvider[] */
 	private array $registeredPagePropertyProviders = [];
 	private ?RevisionPolicy $registeredRevisionPolicy = null;
+
+	/**
+	 * @var array<string, Source> Keys are Source keys
+	 */
+	private array $registeredSources = [];
 
 	/**
 	 * The singleton pins a SchemaLookup whose cache is keyed by page and revision id, and those ids
@@ -385,6 +391,18 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
+	 * Registers extra Sources through the NeoWikiRegistration hook and rebuilds the singleton, so the
+	 * Subjects and Schemas they serve are reachable by id everywhere the real wiring reaches them.
+	 *
+	 * @param array<string, Source> $sources Keys are Source keys
+	 */
+	protected function registerSources( array $sources ): void {
+		$this->registeredSources = $sources + $this->registeredSources;
+
+		$this->registerWithNeoWiki();
+	}
+
+	/**
 	 * Everything registered so far goes through one hook handler, replacing the previous one.
 	 * setTemporaryHook clears the hook before adding its handler, so registering plugins and providers
 	 * as two handlers would silently leave only whichever was registered last — with the test still
@@ -394,16 +412,21 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		$plugins = $this->registeredGraphDatabasePlugins;
 		$providers = $this->registeredPagePropertyProviders;
 		$policy = $this->registeredRevisionPolicy;
+		$sources = $this->registeredSources;
 
 		$this->setTemporaryHook(
 			'NeoWikiRegistration',
-			static function ( NeoWikiRegistrar $registrar ) use ( $plugins, $providers, $policy ): void {
+			static function ( NeoWikiRegistrar $registrar ) use ( $plugins, $providers, $policy, $sources ): void {
 				foreach ( $plugins as $name => $plugin ) {
 					$registrar->addGraphDatabasePlugin( $name, $plugin );
 				}
 
 				foreach ( $providers as $provider ) {
 					$registrar->addPagePropertyProvider( $provider );
+				}
+
+				foreach ( $sources as $key => $source ) {
+					$registrar->addSource( $key, $source );
 				}
 
 				if ( $policy !== null ) {

@@ -47,7 +47,7 @@ and how.
 
 | Parameter | Description |
 |-----------|-------------|
-| `<subjectId>` (positional) | Subject ID to render. Defaults to the current page's Main Subject. |
+| `<subjectId>` (positional) | Subject ID to render: 15 characters starting with `s` for a Subject of this wiki, or `sourceKey:localId` for one from another [Source](../api/subject-format.md#ids). Defaults to the current page's Main Subject. |
 | `subject=<subjectId>` | Named alternative to the positional form. Cannot be combined with the positional form. |
 | `layout=<layoutName>` | Layout to apply. Without one, all properties are shown in schema order. |
 
@@ -89,7 +89,7 @@ Returns the value of a single property from a Subject, formatted as a string.
 |-----------|-------------|
 | `propertyName` (positional) | The name of the property to read. Required. |
 | `page` | Read from the Main Subject of the named page. Defaults to the current page. Ignored when `subject` is also passed. |
-| `subject` | Read from the Subject with the given ID. Takes precedence over `page`. |
+| `subject` | Read from the Subject with the given ID, bare or `sourceKey:localId` (see [`{{#view}}`](#view)). Takes precedence over `page`. |
 | `separator` | Separator for multi-valued properties. Defaults to `, `. |
 
 ### Output by property type

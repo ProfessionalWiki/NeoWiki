@@ -21,7 +21,7 @@ class SubjectPresentationSerializer {
 			'label' => $item->label,
 			'displayName' => $item->displayName,
 			'displayNameIsGenerated' => $item->displayNameIsGenerated,
-			'schema' => $item->schemaName,
+			'schema' => $item->schema,
 		];
 
 		if ( $item->pageId !== null ) {

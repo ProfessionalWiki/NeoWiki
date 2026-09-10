@@ -203,7 +203,10 @@
 										</button>
 									</dd>
 								</div>
-								<div class="ext-neowiki-subjects-manager__row-iri">
+								<div
+									v-if="subjectIri( mainSubject.getId().text )"
+									class="ext-neowiki-subjects-manager__row-iri"
+								>
 									<dt class="ext-neowiki-subjects-manager__row-iri-label">
 										{{ $i18n( 'neowiki-managesubjects-iri-label' ).text() }}
 									</dt>
@@ -394,7 +397,10 @@
 											</button>
 										</dd>
 									</div>
-									<div class="ext-neowiki-subjects-manager__row-iri">
+									<div
+										v-if="subjectIri( subject.getId().text )"
+										class="ext-neowiki-subjects-manager__row-iri"
+									>
 										<dt class="ext-neowiki-subjects-manager__row-iri-label">
 											{{ $i18n( 'neowiki-managesubjects-iri-label' ).text() }}
 										</dt>
@@ -627,8 +633,11 @@ const isCompletelyEmpty = computed( () => !hasMainSubject.value && !hasChildSubj
 
 const deletingSubjectName = computed( () => deletingSubject.value === null ? '' : subjectDisplayName( deletingSubject.value ) );
 
+// A Subject of another Source is named under that Source's own base, which this wiki does not hold,
+// so none is derived for one — minting under this wiki's base would assert ownership of an entity
+// elsewhere, the same refusal SubjectIriResolver makes on the export side.
 function subjectIri( id: string ): string {
-	return subjectIriBase + id;
+	return SubjectId.isValidLocalId( id ) ? subjectIriBase + id : '';
 }
 
 function statementCount( subject: Subject ): number {

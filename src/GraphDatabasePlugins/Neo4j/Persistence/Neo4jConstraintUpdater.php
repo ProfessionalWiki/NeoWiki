@@ -16,7 +16,9 @@ class Neo4jConstraintUpdater {
 		// in a shared graph, so uniqueness is on the (wiki_id, id) pair rather than id alone.
 		$this->createNodePropertyUniquenessConstraint( 'Page', [ 'wiki_id', 'id' ] );
 
-		// Subject ids are bare nanoids that are globally unique; namespacing is deferred.
+		// Every projected Subject id is a bare nanoid, globally unique on its own: a page's slot holds
+		// local Subjects only (ADR 23), and a relation to another Source gets no edge and no stub node.
+		// Namespacing is deferred until something puts a qualified id in the graph.
 		$this->createNodePropertyUniquenessConstraint( 'Subject', [ 'id' ] );
 	}
 

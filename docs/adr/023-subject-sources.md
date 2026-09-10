@@ -2,7 +2,8 @@
 
 Date: 2026-06-22
 
-Status: Accepted (2026-07-06)
+Status: Accepted (2026-07-06). The Source contract section was amended 2026-08-07, resolving the "Source interface
+contract" open question.
 
 Feedback remains welcome on the **Open questions** section below.
 
@@ -24,6 +25,35 @@ A Subject is produced by a **Source**. The local revision slot is the default So
 store, another NeoWiki, or an external system, can also supply Subjects. A **Source registry** maps a source key to its
 Source, which is the authority for its Subjects' capabilities, identity, and schema resolution. A wiki farm is simply
 more registered Sources.
+
+#### The Source contract
+
+A Source answers for five things and no more:
+
+- **Fetch by id**, one Subject or a whole list. A list is one call, so a Source that can answer it in one round trip does.
+- **Schema resolution by name**, because a Subject's Schema is resolved through the Schema's own Source.
+- **Editability**, the one capability the model varies.
+- **localId validation**, so the global id-format check can be source-delegated: the nanoid grammar is the local
+  Source's rule, not a rule about ids. Unconsulted so far — see Identity below.
+- **A base URI**, the IRI prefix its Subjects are named under, which is also its RDF prefix entry.
+
+On top of those five it carries one obligation rather than a capability: **a Source vouches for what it returns**.
+Everything it hands back is readable by every reader of this wiki, because a sourced Subject has no page here to
+authorize against and NeoWiki performs no per-user authorization on it. A Source over data with restrictions of
+its own must serve only the unrestricted part — a question it answers without knowing who is asking. The accepted
+limitation: sourced data has no per-user granularity — [ADR 27](027-access-control.md) records this as its
+source-attested read class; lifting it would be an additive context on this contract, not a redesign.
+
+Two absences are deliberate. There is **no write method**: write-back is end-of-roadmap (below), and a stub for it
+would be a contract nobody can implement against, so it arrives with the feature. And **Sources take no part at query
+time** — materialisation is the only gate on queryability, so a query never consults a Source.
+
+Editability is likewise stated ahead of its use: nothing reads it until sourced Subjects render. It belongs in the
+frozen contract because a Source author must answer it from the start.
+
+Availability is not part of the contract either: a Source that cannot reach its store answers as though the Subject or
+Schema is absent. Together with an unregistered source key resolving to nothing, a Subject from a Source this wiki
+lacks degrades wherever it is read rather than breaking the page.
 
 ### A source decides editability
 
@@ -52,8 +82,10 @@ they stay Page Properties.
 
 A Subject's id is a pair `(source, localId)`. The existing `SubjectId` ([ADR 14](014-improved-id-format.md)) is widened
 to carry a source, defaulting to local — a bare nanoid still means a local Subject. `localId` is opaque outside its
-Source (a nanoid locally; a page id or a remote id / URI elsewhere); each Source owns its grammar, validation, and
-minting. The pair is the canonical **reference** form (relation targets, view ids, fetch); IRI and CURIE forms are
+Source (a nanoid locally; a page id or a remote id / URI elsewhere), and each Source owns its grammar and minting.
+Validation is meant to follow: `Source::isValidLocalId()` is the seam for it, but nothing consults it yet — a
+foreign localId is checked only against the shared serialization grammar, so a Source with a narrower rule of its
+own is not yet held to it. The pair is the canonical **reference** form (relation targets, view ids, fetch); IRI and CURIE forms are
 projections of it, with the source-to-base-URI map doubling as the RDF prefix map. ADR 14's fixed-length and
 time-sortable guarantees hold only for local nanoids, not for arbitrary `localId`s.
 
@@ -69,6 +101,12 @@ writeable (an ordinary local schema). A schema reference is `(source, name)` ([A
 and a schema's source is independent of the subject's source. Rendering a sourced Subject therefore resolves the
 schema through *its* Source, which may differ from the subject's. When a schema cannot be resolved — a foreign,
 offline, or removed schema — rendering degrades gracefully rather than breaking the page.
+
+Unlike a Subject id, a schema reference is not written as one string. A local schema name is a page title and may
+itself contain a colon (`ISO:9001`), so a qualified string would be ambiguous with names that were legal before
+Sources existed, and would read them back wrongly. A stored reference is therefore either a plain name, always
+local, or an object carrying source and name ([Schema format](../api/schema-format.md#schema-references)). A
+qualified `source:name` string survives only as a one-way rendering for people.
 
 ## Consequences
 
@@ -89,7 +127,6 @@ Deferred and/or still being designed; consortium feedback is expected here.
   and [planning/OntologyMapping.md](../planning/OntologyMapping.md).
 - **Editing sourced Subjects (write-back)** — end-of-roadmap. How useful? Things like editing Wikibase Items
   via NeoWiki UI, or editing data from a remote NeoWiki
-- **The Source interface contract** for by-id and query resolution.
 
 ## Alternatives Considered
 

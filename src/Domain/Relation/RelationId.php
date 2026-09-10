@@ -27,7 +27,7 @@ readonly class RelationId {
 	}
 
 	public static function isValid( string $text ): bool {
-		return preg_match( '/^r[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{14}$/', $text ) === 1;
+		return preg_match( '/^r[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{14}\z/', $text ) === 1;
 	}
 
 	public function asString(): string {

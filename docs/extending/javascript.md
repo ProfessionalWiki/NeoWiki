@@ -1,6 +1,6 @@
 ---
 title: Using NeoWiki from JavaScript
-order: 9
+order: 10
 ---
 # Using NeoWiki from JavaScript
 

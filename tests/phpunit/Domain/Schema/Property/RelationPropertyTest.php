@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Relation\RelationType
@@ -27,7 +28,7 @@ class RelationPropertyTest extends PropertyTestCase {
 				default: null
 			),
 			relationType: new RelationType( 'Type' ),
-			targetSchema: new SchemaName( 'Schema' ),
+			targetSchema: SchemaReference::local( new SchemaName( 'Schema' ) ),
 			multiple: true
 		);
 
@@ -37,6 +38,22 @@ class RelationPropertyTest extends PropertyTestCase {
 		$this->assertSame( 'Type', $property->getRelationType()->getText() );
 		$this->assertSame( 'Schema', $property->getTargetSchema()->getText() );
 		$this->assertTrue( $property->allowsMultipleValues() );
+	}
+
+	public function testTargetSchemaFromAnotherSourceRoundTrips(): void {
+		$this->assertSerializationDoesNotChange(
+			<<<JSON
+{
+	"type": "relation",
+	"description": "",
+	"required": false,
+	"default": null,
+	"relation": "type",
+	"targetSchema": "otherwiki:Company",
+	"multiple": false
+}
+JSON
+		);
 	}
 
 	public function testMinimalSerialization(): void {

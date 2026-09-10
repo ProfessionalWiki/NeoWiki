@@ -24,6 +24,10 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivePageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use RuntimeException;
@@ -34,6 +38,7 @@ use RuntimeException;
 class SubjectResolverTest extends TestCase {
 
 	private const string SUBJECT_ID = 's1test5aaaaaaaa';
+	private const string SOURCED_SUBJECT_ID = TestSubjectIds::OTHER_SOURCE_KEY . ':Q42';
 	private const string TARGET_SUBJECT_ID = 's1test5bbbbbbbb';
 	private const int TARGET_PAGE_ID = 42;
 	private const string TARGET_PAGE_NAME = 'Marie Curie';
@@ -42,7 +47,7 @@ class SubjectResolverTest extends TestCase {
 		return new Subject(
 			id: new SubjectId( $id ),
 			label: new SubjectLabel( $label ),
-			schemaName: new SchemaName( 'TestSchema' ),
+			schema: SchemaReference::local( new SchemaName( 'TestSchema' ) ),
 			statements: new StatementList(),
 		);
 	}
@@ -54,12 +59,15 @@ class SubjectResolverTest extends TestCase {
 	private function newResolver(
 		SubjectContentRepository $contentRepository,
 		?PageIdentifiersLookup $pageIdentifiersLookup = null,
-		?PageReadAuthorizer $readAuthorizer = null
+		?PageReadAuthorizer $readAuthorizer = null,
+		?SubjectLookup $subjectLookup = null
 	): SubjectResolver {
 		return new SubjectResolver(
 			$contentRepository,
+			$subjectLookup ?? new InMemorySubjectLookup(),
 			$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
-			$readAuthorizer ?? new StubPageReadAuthorizer( true )
+			$readAuthorizer ?? new StubPageReadAuthorizer( true ),
+			TestSubjectIds::newParser()
 		);
 	}
 
@@ -116,6 +124,23 @@ class SubjectResolverTest extends TestCase {
 		);
 
 		$this->assertNull( $resolver->resolveById( self::SUBJECT_ID ) );
+	}
+
+	/**
+	 * A Subject of another Source has no page of this wiki to read it off, so it is served on its
+	 * Source's vouch rather than through the page gate (ADR 23).
+	 */
+	public function testResolveByIdServesASourcedSubjectWithoutAHostingPage(): void {
+		$sourced = $this->createSubject( self::SOURCED_SUBJECT_ID );
+
+		$resolver = $this->newResolver(
+			new InMemorySubjectContentRepository(),
+			null,
+			new SelectivePageReadAuthorizer( [] ),
+			new InMemorySubjectLookup( $sourced )
+		);
+
+		$this->assertSame( $sourced, $resolver->resolveById( self::SOURCED_SUBJECT_ID ) );
 	}
 
 	public function testResolveByIdReturnsNullForInvalidId(): void {
@@ -214,7 +239,7 @@ class SubjectResolverTest extends TestCase {
 		return new Subject(
 			id: new SubjectId( self::TARGET_SUBJECT_ID ),
 			label: $label === null ? null : new SubjectLabel( $label ),
-			schemaName: new SchemaName( 'Person' ),
+			schema: SchemaReference::local( new SchemaName( 'Person' ) ),
 			statements: new StatementList(),
 		);
 	}

@@ -61,6 +61,8 @@ For developers of MediaWiki extensions that build on NeoWiki.
   an edit
 * [Revision policy](extending/revision-policy.md) — which revision NeoWiki publishes, for approval extensions
 * [Edit notices](extending/edit-notices.md) — a message before a user edits a Subject
+* [Subject Sources](extending/subject-sources.md) — Subjects and Schemas supplied from outside this wiki's
+  revision slots
 * [Graph Database Backends](extending/graph-database-backends.md) — a store of your own that NeoWiki keeps in sync
 * [Using NeoWiki from PHP](extending/php.md) — read Subjects and run Cypher from hooks and special pages
 * [Using NeoWiki from JavaScript](extending/javascript.md) — the public JS API, displaying values, mounting Vue

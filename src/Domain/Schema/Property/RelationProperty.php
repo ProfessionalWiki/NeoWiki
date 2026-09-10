@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType as RelationPropertyType;
 
 class RelationProperty extends PropertyDefinition {
@@ -15,7 +15,7 @@ class RelationProperty extends PropertyDefinition {
 	public function __construct(
 		PropertyCore $core,
 		private readonly RelationType $relationType,
-		private readonly SchemaName $targetSchema,
+		private readonly SchemaReference $targetSchema,
 		private readonly bool $multiple
 
 	) {
@@ -30,7 +30,7 @@ class RelationProperty extends PropertyDefinition {
 		return $this->relationType;
 	}
 
-	public function getTargetSchema(): SchemaName {
+	public function getTargetSchema(): SchemaReference {
 		return $this->targetSchema;
 	}
 
@@ -38,11 +38,11 @@ class RelationProperty extends PropertyDefinition {
 		return $this->multiple;
 	}
 
-	public static function fromPartialJson( PropertyCore $core, array $property ): self {
+	public static function fromPartialJson( PropertyCore $core, array $property, string $localSourceKey ): self {
 		return new self(
 			core: $core,
 			relationType: new RelationType( $property['relation'] ?? null ), // Required field, constructor throws on null
-			targetSchema: new SchemaName( $property['targetSchema'] ?? null ), // Required field, constructor throws on null
+			targetSchema: SchemaReference::fromJson( $property['targetSchema'] ?? '', $localSourceKey ), // Required field, SchemaName throws on empty
 			multiple: $property['multiple'] ?? false,
 		);
 	}
@@ -50,7 +50,7 @@ class RelationProperty extends PropertyDefinition {
 	public function nonCoreToJson(): array {
 		return [
 			'relation' => $this->relationType->getText(),
-			'targetSchema' => $this->targetSchema->getText(),
+			'targetSchema' => $this->targetSchema->toJson(),
 			'multiple' => $this->multiple,
 		];
 	}

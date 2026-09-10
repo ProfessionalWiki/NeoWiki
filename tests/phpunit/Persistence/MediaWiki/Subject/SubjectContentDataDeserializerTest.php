@@ -5,6 +5,9 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
+use Psr\Log\Test\TestLogger;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
@@ -19,6 +22,8 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer
@@ -34,9 +39,11 @@ class SubjectContentDataDeserializerTest extends TestCase {
 		);
 	}
 
-	private function newDeserializer(): SubjectContentDataDeserializer {
+	private function newDeserializer( ?LoggerInterface $logger = null ): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer(
-			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup() )
+			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup(), TestSubjectIds::newParser() ),
+			TestSubjectIds::newParser(),
+			$logger ?? new NullLogger()
 		);
 	}
 
@@ -45,6 +52,68 @@ class SubjectContentDataDeserializerTest extends TestCase {
 
 		$this->assertSame( [], $data->getAllSubjects()->asArray() );
 		$this->assertNull( $data->getMainSubject() );
+	}
+
+	/**
+	 * A `mainSubject` that is not a string is treated as absent rather than parsed. Only hand-edited or
+	 * corrupt slot content reaches this, and a page must render regardless.
+	 *
+	 * @dataProvider nonStringMainSubjectProvider
+	 */
+	public function testNonStringMainSubjectLeavesThePageWithoutOne( string $mainSubjectJson ): void {
+		$data = $this->newDeserializer()->deserialize( '{"mainSubject": ' . $mainSubjectJson . ', "subjects": {}}' );
+
+		$this->assertNull( $data->getMainSubject() );
+	}
+
+	public static function nonStringMainSubjectProvider(): iterable {
+		yield 'null' => [ 'null' ];
+		yield 'a number' => [ '42' ];
+		yield 'an array' => [ '["sTestSCDD111115"]' ];
+		yield 'an object' => [ '{"id": "sTestSCDD111115"}' ];
+	}
+
+	/**
+	 * A local slot holds local Subjects only: the subject-to-page index reads its keys as local ids
+	 * (ADR 32), so an entry keyed otherwise would be projected while never being indexed. Imported or
+	 * hand-edited content is the only way one gets there, and a page must render regardless.
+	 *
+	 * @dataProvider nonLocalSubjectKeyProvider
+	 */
+	public function testSubjectKeyThatIsNotALocalIdIsSkipped( string $key ): void {
+		$logger = new TestLogger();
+
+		$data = $this->newDeserializer( $logger )->deserialize(
+			'{"subjects":{"' . $key . '":{"label":"Foreign","schema":"Company"},'
+				. '"sTestSCDD111115":{"label":"Local","schema":"Company"}}}'
+		);
+
+		$this->assertSame(
+			[ 'sTestSCDD111115' ],
+			array_map(
+				static fn ( Subject $subject ): string => $subject->getId()->text,
+				$data->getAllSubjects()->asArray()
+			)
+		);
+		$this->assertTrue( $logger->hasWarningRecords() );
+	}
+
+	public static function nonLocalSubjectKeyProvider(): iterable {
+		yield 'another Source' => [ 'catalog:widget-7' ];
+		yield 'this wiki named explicitly' => [ TestSubjectIds::LOCAL_SOURCE_KEY . ':sTestSCDD111116' ];
+		yield 'not an id at all' => [ 'nonsense' ];
+	}
+
+	public function testQualifiedMainSubjectLeavesThePageWithoutOne(): void {
+		$logger = new TestLogger();
+
+		$data = $this->newDeserializer( $logger )->deserialize(
+			'{"mainSubject":"catalog:widget-7","subjects":{"sTestSCDD111115":{"label":"Local","schema":"Company"}}}'
+		);
+
+		$this->assertNull( $data->getMainSubject() );
+		$this->assertCount( 1, $data->getAllSubjects()->asArray() );
+		$this->assertTrue( $logger->hasWarningRecords() );
 	}
 
 	public function testMinimalSubjects(): void {
@@ -70,12 +139,12 @@ JSON
 				Subject::newSubject(
 					new SubjectId( 'sTestSCDD111115' ),
 					new SubjectLabel( 'ACME Inc.' ),
-					new SchemaName( "Company" )
+					SchemaReference::local( new SchemaName( "Company" ) )
 				),
 				Subject::newSubject(
 					new SubjectId( 'sTestSCDD111114' ),
 					new SubjectLabel( 'Contoso Ltd.' ),
-					new SchemaName( "Company" )
+					SchemaReference::local( new SchemaName( "Company" ) )
 				),
 			],
 			$data->getAllSubjects()->asArray()
@@ -132,7 +201,7 @@ JSON
 				Subject::newSubject(
 					new SubjectId( 'sTestSCDD111114' ),
 					new SubjectLabel( 'ACME Inc.' ),
-					new SchemaName( 'Company' )
+					SchemaReference::local( new SchemaName( 'Company' ) )
 				),
 			],
 			$data->getAllSubjects()->asArray()

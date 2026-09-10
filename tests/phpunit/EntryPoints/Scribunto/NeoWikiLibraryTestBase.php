@@ -27,9 +27,13 @@ use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\ParseTimePermissionFixtures;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySource;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary
@@ -57,8 +61,18 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 	protected function setUp(): void {
 		parent::setUp();
 
+		$catalog = new InMemorySource();
+		$catalog->addSchema( TestSchema::build( name: 'Widget' ) );
+
+		$this->setTemporaryHook(
+			'NeoWikiRegistration',
+			static function ( NeoWikiRegistrar $registrar ) use ( $catalog ): void {
+				$registrar->addSource( 'catalog', $catalog );
+			}
+		);
+
 		// Registers nw.sparqlQuery in the Lua environment; the reset makes the extension rebuild with
-		// the store before the engine loads the library.
+		// the store, and with the Source above, before the engine loads the library.
 		$this->configureAnUnreachableSparqlStore();
 
 		// The Lua engine under test parses as the anonymous user. The request belongs to a sysop, so a
@@ -118,7 +132,7 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 			mainSubject: new Subject(
 				id: new SubjectId( 's1test5aaaaaaaa' ),
 				label: new SubjectLabel( 'Test Company' ),
-				schemaName: new SchemaName( 'Company' ),
+				schema: SchemaReference::local( new SchemaName( 'Company' ) ),
 				statements: new StatementList( [
 					new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) ),
 					new Statement( new PropertyName( 'Tags' ), 'text', new StringValue( 'alpha', 'beta', 'gamma' ) ),
@@ -132,14 +146,14 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 			mainSubject: new Subject(
 				id: new SubjectId( 's1test5cccccccc' ),
 				label: new SubjectLabel( 'Parent' ),
-				schemaName: new SchemaName( 'Company' ),
+				schema: SchemaReference::local( new SchemaName( 'Company' ) ),
 				statements: new StatementList(),
 			),
 			childSubjects: new SubjectMap(
 				new Subject(
 					id: new SubjectId( 's1test5dddddddd' ),
 					label: new SubjectLabel( 'Child Entry' ),
-					schemaName: new SchemaName( 'Entry' ),
+					schema: SchemaReference::local( new SchemaName( 'Entry' ) ),
 					statements: new StatementList( [
 						new Statement( new PropertyName( 'Note' ), 'text', new StringValue( 'A child subject' ) ),
 					] ),

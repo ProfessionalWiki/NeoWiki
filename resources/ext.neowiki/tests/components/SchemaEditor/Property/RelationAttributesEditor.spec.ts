@@ -72,6 +72,19 @@ describe( 'RelationAttributesEditor', () => {
 			expect( wrapper.findComponent( SchemaPickerStub ).props( 'selected' ) ).toBe( null );
 		} );
 
+		it( 'shows a target schema from another Source read-only', () => {
+			const wrapper = newWrapper( {
+				property: relationProperty( { targetSchema: { source: 'otherwiki', name: 'Person' } } ),
+			} );
+
+			const input = wrapper.findComponent( '.relation-attributes__target-schema' )
+				.findComponent( CdxTextInput );
+
+			expect( wrapper.findComponent( SchemaPickerStub ).exists() ).toBe( false );
+			expect( input.props( 'modelValue' ) ).toBe( 'Person' );
+			expect( input.props( 'disabled' ) ).toBe( true );
+		} );
+
 		it( 'displays the stored relation in the input', () => {
 			const wrapper = newWrapper( {
 				property: relationProperty( { relation: 'Has gadget' } ),
@@ -158,6 +171,14 @@ describe( 'RelationAttributesEditor', () => {
 			await wrapper.findComponent( SchemaPickerStub ).vm.$emit( 'select', 'Office' );
 
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { targetSchema: 'Office' } ] );
+		} );
+
+		it( 'leaves a target schema from another Source alone', () => {
+			const wrapper = newWrapper( {
+				property: relationProperty( { targetSchema: { source: 'otherwiki', name: 'Person' } } ),
+			} );
+
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 
 		it( 'emits multiple when the checkbox is toggled', async () => {

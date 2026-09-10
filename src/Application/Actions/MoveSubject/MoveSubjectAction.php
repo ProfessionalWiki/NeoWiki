@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use RuntimeException;
 
@@ -38,11 +39,12 @@ readonly class MoveSubjectAction {
 		private PageReadAuthorizer $readAuthorizer,
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
+		private SubjectIdParser $subjectIdParser,
 	) {
 	}
 
 	public function moveSubject( MoveSubjectRequest $request ): void {
-		$subjectId = new SubjectId( $request->subjectId );
+		$subjectId = $this->subjectIdParser->parseOrThrow( $request->subjectId );
 		$targetPageId = new PageId( $request->targetPageId );
 
 		$sourcePageId = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId )?->getId();

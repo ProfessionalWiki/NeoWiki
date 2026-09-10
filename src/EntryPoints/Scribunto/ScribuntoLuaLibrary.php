@@ -9,8 +9,7 @@ use InvalidArgumentException;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
 use MediaWiki\Permissions\Authority;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\EntryPoints\ParserAuthority;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\CypherErrorMessage;
@@ -26,7 +25,6 @@ class ScribuntoLuaLibrary extends LibraryBase {
 	private ?SchemaLuaSerializer $schemaLuaSerializer = null;
 	private ?CypherQueryRunner $cypherQueryRunner = null;
 	private ?SparqlQueryRunner $sparqlQueryRunner = null;
-	private ?SchemaLookup $schemaLookup = null;
 
 	private function getSubjectDataLookup(): SubjectDataLookup {
 		if ( $this->subjectDataLookup === null ) {
@@ -36,14 +34,6 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		}
 
 		return $this->subjectDataLookup;
-	}
-
-	private function getSchemaLookup(): SchemaLookup {
-		if ( $this->schemaLookup === null ) {
-			$this->schemaLookup = NeoWikiExtension::getInstance()->getSchemaLookupFor( $this->getParserAuthority() );
-		}
-
-		return $this->schemaLookup;
 	}
 
 	private function getSchemaLuaSerializer(): SchemaLuaSerializer {
@@ -183,17 +173,30 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		return [ $document ];
 	}
 
-	public function getSchema( ?string $schemaName = null ): array {
-		$this->checkType( 'mw.neowiki.getSchema', 1, $schemaName, 'string' );
+	/**
+	 * @param string|mixed[]|null $schemaReference A Schema name, or the `{source, name}` table a
+	 *  sourced Subject's `schema` field holds, so that `nw.getSchema( subject.schema )` works for
+	 *  either (ADR 23).
+	 */
+	public function getSchema( string|array|null $schemaReference = null ): array {
+		if ( !is_array( $schemaReference ) ) {
+			$this->checkType( 'mw.neowiki.getSchema', 1, $schemaReference, 'string' );
+		}
+
 		$this->incrementExpensiveFunctionCount();
 
+		$extension = NeoWikiExtension::getInstance();
+
 		try {
-			$name = new SchemaName( $schemaName );
+			$reference = SchemaReference::fromJson(
+				$schemaReference,
+				$extension->getSubjectIdParser()->getLocalSourceKey()
+			);
 		} catch ( InvalidArgumentException ) {
 			return [ null ];
 		}
 
-		$schema = $this->getSchemaLookup()->getSchema( $name );
+		$schema = $extension->getSchemaResolverFor( $this->getParserAuthority() )->getSchema( $reference );
 
 		if ( $schema === null ) {
 			return [ null ];

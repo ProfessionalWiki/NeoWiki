@@ -25,6 +25,8 @@ Contribute to NeoWiki:
 - [Revision policy](revision-policy.md) — which revision of a page NeoWiki publishes, when your extension decides
   what readers see.
 - [Edit notices](edit-notices.md) — a message shown before a user edits a Subject.
+- [Subject Sources](subject-sources.md) — Subjects and Schemas from somewhere other than this wiki's revision
+  slots; they are read-only.
 - [Graph Database Backends](graph-database-backends.md) — a store of your own that NeoWiki keeps in sync; it gets
   no query surface of its own yet.
 

@@ -30,6 +30,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery
@@ -65,6 +66,7 @@ class GetSubjectQueryTest extends TestCase {
 			new InMemoryPageIdentifiersLookup(),
 			$this->emptyPageSubjectsLookup(),
 			new StubPageReadAuthorizer( allowed: true ),
+			TestSubjectIds::newParser(),
 		);
 
 		$query->execute(
@@ -82,7 +84,7 @@ class GetSubjectQueryTest extends TestCase {
 						label: 'expected label',
 						displayName: 'expected label',
 						displayNameIsGenerated: false,
-						schemaName: 'GetSubjectQueryTestSchema',
+						schema: 'GetSubjectQueryTestSchema',
 						statements: [
 							'expected property 1' => [
 								'propertyType' => 'text',
@@ -141,6 +143,7 @@ class GetSubjectQueryTest extends TestCase {
 			new InMemoryPageIdentifiersLookup(),
 			$this->emptyPageSubjectsLookup(),
 			new StubPageReadAuthorizer( allowed: true ),
+			TestSubjectIds::newParser(),
 		);
 
 		$query->execute(
@@ -165,6 +168,7 @@ class GetSubjectQueryTest extends TestCase {
 			] ),
 			$this->emptyPageSubjectsLookup(),
 			new StubPageReadAuthorizer( allowed: true ),
+			TestSubjectIds::newParser(),
 		);
 
 		$query->execute(
@@ -251,6 +255,7 @@ class GetSubjectQueryTest extends TestCase {
 			] ),
 			$this->pageSubjectsLookupWithMainSubject( $mainSubjectOfPage, 42 ),
 			new StubPageReadAuthorizer( allowed: true ),
+			TestSubjectIds::newParser(),
 		);
 	}
 
@@ -289,6 +294,7 @@ class GetSubjectQueryTest extends TestCase {
 			] ),
 			$this->emptyPageSubjectsLookup(),
 			new StubPageReadAuthorizer( allowed: true ),
+			TestSubjectIds::newParser(),
 		);
 
 		$query->execute(
@@ -337,6 +343,7 @@ class GetSubjectQueryTest extends TestCase {
 			$pageIdentifiersLookup,
 			$this->emptyPageSubjectsLookup(),
 			new StubPageReadAuthorizer( allowed: true ),
+			TestSubjectIds::newParser(),
 		);
 
 		$query->execute(
@@ -380,6 +387,7 @@ class GetSubjectQueryTest extends TestCase {
 			] ),
 			$this->emptyPageSubjectsLookup(),
 			new StubPageReadAuthorizer( allowed: true ),
+			TestSubjectIds::newParser(),
 		);
 
 		$query->execute(
@@ -416,6 +424,7 @@ class GetSubjectQueryTest extends TestCase {
 			] ),
 			$this->emptyPageSubjectsLookup(),
 			new SelectivePageReadAuthorizer( deniedPageIds: [ 101 ] ),
+			TestSubjectIds::newParser(),
 		);
 
 		$query->execute(
@@ -451,6 +460,7 @@ class GetSubjectQueryTest extends TestCase {
 			] ),
 			$this->emptyPageSubjectsLookup(),
 			new StubPageReadAuthorizer( allowed: true ),
+			TestSubjectIds::newParser(),
 		);
 
 		$query->execute(
@@ -489,6 +499,7 @@ class GetSubjectQueryTest extends TestCase {
 			$pageIdentifiersLookup,
 			$this->emptyPageSubjectsLookup(),
 			new SelectivePageReadAuthorizer( deniedPageIds: [ 42 ] ),
+			TestSubjectIds::newParser(),
 		);
 
 		$query->execute(

@@ -22,6 +22,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySource;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi
@@ -163,6 +164,66 @@ JSON,
 			'{"subject":null}',
 			$response->getBody()->getContents()
 		);
+		$this->assertSame( 200, $response->getStatusCode() );
+	}
+
+	public function testMalformedSubjectIdReturns400(): void {
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => 'not-a-subject-id' ]
+			] )
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
+	/**
+	 * Everything a Source returns is vouched by it as readable by every reader of this wiki (ADR 23),
+	 * so a sourced Subject is served without a page to authorize against — here even to an authority
+	 * that may read no page at all.
+	 */
+	public function testSubjectFromARegisteredSourceIsServedWithoutPageAuthorization(): void {
+		$this->registerSources( [
+			'catalog' => new InMemorySource(
+				TestSubject::build(
+					id: 'catalog:widget-7',
+					label: new SubjectLabel( 'Widget 7' ),
+					schemaName: new SchemaName( 'GetSubjectApiTestSchema' )
+				)
+			),
+		] );
+
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => 'catalog:widget-7' ]
+			] ),
+			authority: $this->authorityWithGlobalReadButNoPageRead()
+		);
+
+		$body = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( 'Widget 7', $body['subjects']['catalog:widget-7']['label'] );
+	}
+
+	/**
+	 * A Source this wiki does not have is a well-formed id that resolves to nothing, which is the
+	 * absent-Subject answer rather than a client error (ADR 23).
+	 */
+	public function testSubjectFromAnUnregisteredSourceIsReportedAsAbsent(): void {
+		$response = $this->executeHandler(
+			new GetSubjectApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'subjectId' => 'neverinstalled:sTestGSA1111115' ]
+			] )
+		);
+
+		$this->assertSame( '{"subject":null}', $response->getBody()->getContents() );
 		$this->assertSame( 200, $response->getStatusCode() );
 	}
 

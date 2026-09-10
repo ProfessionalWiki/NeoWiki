@@ -29,6 +29,11 @@ class NeoWikiConfigFactory {
 			enableDevelopmentUIs: $config->get( 'NeoWikiEnableDevelopmentUI' ) === true,
 			neo4jInternalWriteUrl: self::resolveWriteUrl( $this->configString( $config, 'NeoWikiNeo4jInternalWriteUrl' ) ),
 			neo4jInternalReadUrl: self::resolveReadUrl( $this->configString( $config, 'NeoWikiNeo4jInternalReadUrl' ) ),
+			// Also the local Source key (ADR 23). A Wiki ID that is not a well-formed Source key — a
+			// digit-leading database name, say — degrades rather than failing: bare Subject ids still
+			// resolve to the local Source, while the explicit `<wikiId>:<localId>` spelling of a local
+			// id is unusable, because the id grammar rejects that key before anything can canonicalize
+			// it away.
 			wikiId: WikiMap::getCurrentWikiId(),
 			rdfBaseUri: $this->buildRdfBaseUri( $config ),
 			sparqlStores: $this->buildSparqlStores( $config ),

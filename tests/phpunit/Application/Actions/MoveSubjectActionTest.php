@@ -16,6 +16,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use RuntimeException;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivePageReadAuthorizer;
@@ -466,6 +467,7 @@ class MoveSubjectActionTest extends TestCase {
 				[ new SubjectId( self::SOURCE_MAIN_ID ), new PageIdentifiers( new PageId( self::SOURCE_PAGE_ID ), 'Source page', 0 ) ],
 				[ new SubjectId( self::TARGET_MAIN_ID ), new PageIdentifiers( new PageId( self::TARGET_PAGE_ID ), 'Target page', 0 ) ],
 			] ),
+			subjectIdParser: TestSubjectIds::newParser(),
 		);
 	}
 

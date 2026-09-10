@@ -10,7 +10,6 @@ use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -32,9 +31,19 @@ class DeleteSubjectApi extends SimpleHandler {
 		$body = $this->getValidatedBody() ?? [];
 		$comment = $body['comment'] ?? null;
 
+		$extension = NeoWikiExtension::getInstance();
+		$id = $extension->getSubjectIdParser()->parse( $subjectId );
+
+		if ( $id === null ) {
+			return $this->getResponseFactory()->createHttpError( 400, [
+				'status' => 'error',
+				'message' => "Subject ID has the wrong format: '$subjectId'",
+			] );
+		}
+
 		try {
-			NeoWikiExtension::getInstance()->newDeleteSubjectAction( $this->getAuthority() )->deleteSubject(
-				new SubjectId( $subjectId ),
+			$extension->newDeleteSubjectAction( $this->getAuthority() )->deleteSubject(
+				$id,
 				$comment
 			);
 		} catch ( InvalidArgumentException $e ) {
@@ -63,7 +72,7 @@ class DeleteSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject. 15 characters, starting with "s".',
+				self::PARAM_DESCRIPTION => 'Persistent identifier of the Subject: 15 characters starting with "s" for a Subject of this wiki, or "sourceKey:localId" for one from another Source.',
 			],
 		];
 	}

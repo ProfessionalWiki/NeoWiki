@@ -8,8 +8,8 @@ use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
+use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
@@ -37,7 +37,7 @@ readonly class UpdateStatementAction {
 		private PageReadAuthorizer $readAuthorizer,
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
-		private SchemaLookup $schemaLookup,
+		private SchemaResolver $schemaResolver,
 		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private UpdateStatementPresenter $presenter,
@@ -66,7 +66,7 @@ readonly class UpdateStatementAction {
 	): void {
 		$pageIdentifiers = $this->getPageOfSubjectToEdit( $subjectId );
 		$subject = $this->getSubject( $subjectId );
-		$schema = $this->schemaLookup->getSchema( $subject->getSchemaName() );
+		$schema = $this->schemaResolver->getSchema( $subject->getSchemaReference() );
 
 		$statement = $this->buildStatement( $schema, $propertyName, $propertyType, $value );
 
@@ -92,7 +92,7 @@ readonly class UpdateStatementAction {
 		$this->save(
 			$subject,
 			$subject->getStatements()->withoutStatement( $propertyName ),
-			$this->schemaLookup->getSchema( $subject->getSchemaName() ),
+			$this->schemaResolver->getSchema( $subject->getSchemaReference() ),
 			$pageIdentifiers,
 			$comment
 		);
