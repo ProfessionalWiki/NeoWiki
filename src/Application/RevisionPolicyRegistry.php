@@ -8,13 +8,10 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
- * The one revision policy an extension may contribute. Unlike the other extension points this holds a
- * single entry rather than a list: two policies cannot both decide which revision a page publishes,
- * and composing their answers would mean inventing a precedence nobody asked for.
- *
- * A second registration is refused with a warning, the way a graph database plugin repeating a name
- * is: keeping the first leaves the wiki publishing what it was already publishing, where dropping it
- * would silently hand the decision to whichever extension happened to load last.
+ * Holds the one revision policy an extension may contribute: two policies cannot both decide which
+ * revision a page publishes, and composing their answers would mean inventing a precedence nobody asked
+ * for. A second registration is refused with a warning and the first keeps deciding, so the outcome
+ * does not depend on which extension happened to load last.
  */
 class RevisionPolicyRegistry {
 

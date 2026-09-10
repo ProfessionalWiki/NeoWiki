@@ -17,13 +17,10 @@ use MediaWiki\Title\TitleValue;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 
 /**
- * The content a page publishes, which is its latest revision unless a registered revision policy
- * substitutes another. Everything read through here is configuration the whole wiki reads — Schemas,
- * Layouts, Mappings and the on-wiki configuration page — so on a wiki running an approval extension
- * an unapproved edit to one does not take effect until it is approved.
- *
- * Editing surfaces do not read through here: the Schema editor loads the page source from core's own
- * REST endpoint, so it still shows and saves over the latest revision.
+ * The content a page publishes: its latest revision, unless a registered revision policy substitutes
+ * another. Everything read through here — Schemas, Layouts, Mappings and the on-wiki configuration
+ * page — is configuration the whole wiki reads, so on a wiki running an approval extension an
+ * unapproved edit to one takes effect only once approved.
  */
 class PageContentFetcher {
 

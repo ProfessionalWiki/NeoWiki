@@ -412,11 +412,8 @@ class NeoWikiExtension {
 	 * on.
 	 */
 	private function newRebuildStoreContentHandler(): OnRevisionCreatedHandler {
-		// The null index is load-bearing, not merely unneeded: PageRebuilder::rebuild() hands this handler
-		// the revision the policy publishes, and the handler indexes whatever it is given. A real index
-		// here would replace the latest revision's Subject set with the published one, making every
-		// Subject a draft added unaddressable — the exact failure keeping the index out of the policy
-		// exists to prevent. Only rebuildFromPrimary(), which does not substitute, may index.
+		// The null index is load-bearing: PageRebuilder::rebuild() hands this handler the revision the
+		// policy publishes, and indexing that would drop the Subjects a draft added. See PageRebuilder.
 		return $this->newStoreContentHandler(
 			$this->getGraphDatabasePlugin(),
 			new NullSubjectPageIndex(),

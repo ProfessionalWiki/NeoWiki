@@ -208,10 +208,6 @@ JSON,
 		$this->assertSame( 404, $response->getStatusCode() );
 	}
 
-	/**
-	 * A revision the registered policy hides answers exactly like one that does not exist, so the
-	 * sequential revision ids cannot be swept to find out which drafts a page has.
-	 */
 	public function testRevisionHiddenByTheRevisionPolicyIsIndistinguishableFromAnAbsentRevision(): void {
 		$revisionId = $this->createPageWithSubjects(
 			'GetSubjectApiTest_HiddenRevision',
