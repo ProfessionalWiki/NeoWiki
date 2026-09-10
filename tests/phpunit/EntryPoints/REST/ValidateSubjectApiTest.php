@@ -4,11 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
-use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
@@ -19,7 +20,11 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 	use HandlerTestTrait;
-	use MockAuthorityTrait;
+	use NeoWikiMockAuthorityTrait;
+
+	private const string TARGET_ID = 'srt111111111aaa';
+	private const string TARGET_SCHEMA = 'Whereabouts';
+	private const string TARGET_PAGE = 'TargetPage';
 
 	public function testHappyPathReturns200WithEmptyViolations(): void {
 		$this->createPages();
@@ -153,6 +158,82 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $responseBody['violations'] );
 	}
 
+	/**
+	 * A relation target the caller may not read must be indistinguishable from one that was never
+	 * minted: reporting the schema mismatch tells the caller the Subject exists and which Schema it
+	 * uses, on a page they cannot open (#1266).
+	 */
+	public function testTargetOnAnUnreadablePageIsReportedAsNotFoundRatherThanASchemaMismatch(): void {
+		$this->createSchemaWithRelationProperty();
+		$targetPageId = $this->createPageWithMismatchingTarget();
+
+		$violations = $this->validateRelationToTheTarget( $this->authorityThatCannotReadPageId( $targetPageId ) );
+
+		$this->assertSame( [ 'relation-target-not-found' ], array_column( $violations, 'code' ) );
+		$this->assertStringNotContainsString( self::TARGET_SCHEMA, json_encode( $violations ) );
+	}
+
+	/**
+	 * The same target on the same page, differing only in who asks. Without this the test above
+	 * would pass on any Authority - the request's or another - and on a target the subject-page
+	 * index never carried, since both of those also report not-found.
+	 */
+	public function testTheSameTargetReportsItsSchemaMismatchToACallerWhoMayReadItsPage(): void {
+		$this->createSchemaWithRelationProperty();
+		$this->createPageWithMismatchingTarget();
+
+		$violations = $this->validateRelationToTheTarget( $this->mockRegisteredUltimateAuthority() );
+
+		$this->assertSame( [ 'relation-target-schema-mismatch' ], array_column( $violations, 'code' ) );
+		$this->assertSame( [ 'Person', self::TARGET_SCHEMA ], $violations[0]['args'] );
+	}
+
+	/**
+	 * @return int The page id of the target's page
+	 */
+	private function createPageWithMismatchingTarget(): int {
+		$revision = $this->createPageWithSubjects(
+			self::TARGET_PAGE,
+			TestSubject::build( id: self::TARGET_ID, schemaName: new SchemaName( self::TARGET_SCHEMA ) )
+		);
+
+		$this->assertNotNull( $revision );
+
+		return $revision->getPageId();
+	}
+
+	/**
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function validateRelationToTheTarget( Authority $authority ): array {
+		$body = $this->validBody();
+		$body['statements'] = [
+			'Owner' => [ 'propertyType' => 'relation', 'value' => [ [ 'target' => self::TARGET_ID ] ] ],
+		];
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectApi(),
+			$this->createRequestData( $body ),
+			authority: $authority
+		);
+
+		$this->assertSame( 200, $response->getStatusCode() );
+
+		return json_decode( $response->getBody()->getContents(), true )['violations'];
+	}
+
+	private function createSchemaWithRelationProperty(): void {
+		$this->createSchema(
+			TestSubject::DEFAULT_SCHEMA_ID,
+			json_encode( [
+				'title' => TestSubject::DEFAULT_SCHEMA_ID,
+				'propertyDefinitions' => [
+					'Owner' => [ 'type' => 'relation', 'relation' => 'ownedBy', 'targetSchema' => 'Person' ],
+				],
+			] )
+		);
+	}
+
 	private function createPages(): void {
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
 	}
@@ -203,9 +284,7 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function newValidateSubjectApi(): ValidateSubjectApi {
-		return new ValidateSubjectApi(
-			query: NeoWikiExtension::getInstance()->newValidateSubjectQuery(),
-		);
+		return new ValidateSubjectApi();
 	}
 
 }

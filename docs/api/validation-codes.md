@@ -179,9 +179,10 @@ property's declared `targetSchema`. A target that cannot be resolved is reported
 
 ### `relation-target-not-found`
 
-On `relation` properties. The relation targets a Subject ID that does not resolve to any existing
-Subject. Deliberately a warning: pointing at a not-yet-created Subject is wiki-native red-link
-behavior, and an import may legitimately mint the target later.
+On `relation` properties. The relation targets a Subject ID that resolves to no Subject you may
+read: either none exists, or the one that does is on a page you cannot read. Deliberately a warning:
+pointing at a not-yet-created Subject is wiki-native red-link behavior, and an import may
+legitimately mint the target later.
 
 `args`: `[targetId]`. `valuePartIndex`: the offending target. `severity`: `warning` (fixed).
 
