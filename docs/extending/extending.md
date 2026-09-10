@@ -174,55 +174,45 @@ the Page node. No new revision is created. `rebuild()` returns a `PageRefreshOut
 A graph store that fails is logged and skipped, exactly as on a normal page save; only request timeouts and
 wiki-database errors throw.
 
-### Choosing which revision NeoWiki publishes
+### Revision policy
 
-By default NeoWiki publishes each page's latest revision: that is the revision it projects to the graph stores and
-exports as RDF. An approval extension shows readers an approved revision instead, and registers a `RevisionPolicy` so
-NeoWiki publishes the same one.
-
-```php
-public function onNeoWikiRegistration( NeoWikiRegistrar $registrar ): void {
-	$registrar->setRevisionPolicy( new MyApprovalPolicy( $this->approvalLookup ) );
-}
-```
+Choose which revision of a page NeoWiki publishes: to the graph stores, the RDF export, the Subject read
+`GET /neowiki/v0/subject/{subjectId}`, and its own Schema, Layout, Mapping and configuration reads. Without a policy
+every page publishes its latest revision.
 
 ```php
-class MyApprovalPolicy implements RevisionPolicy {
+class ApprovalRevisionPolicy implements RevisionPolicy {
 
 	public function publishedRevision( RevisionRecord $revision ): ?RevisionRecord {
 		return $this->approvalLookup->lastApprovedRevisionOf( $revision->getPage() );
 	}
 
 	public function revisionIsReadableBy( RevisionRecord $revision, Authority $viewer ): bool {
-		return $this->approvalLookup->isApproved( $revision )
-			|| $viewer->isAllowed( 'my-extension-see-drafts' );
+		return $this->approvalLookup->isApproved( $revision ) || $viewer->isAllowed( 'myext-see-drafts' );
 	}
 
 }
 ```
 
-`publishedRevision()` is asked whenever a page is written or reprojected: return the revision to publish, the argument
-to publish what was written, or `null` to publish nothing, which withdraws the page from the graph stores and the RDF
-export. `revisionIsReadableBy()` is asked only when a caller names a revision itself, which `publishedRevision()`
-cannot intercept — a revision it refuses answers exactly like one that does not exist.
+Register with `NeoWikiRegistrar::setRevisionPolicy()`; a second policy is refused with a warning on the `NeoWiki`
+log channel.
 
-- **A policy answers for the wiki, not for a viewer.** The graph and the RDF export are one state every reader sees.
-- **Only one extension can decide this.** A second policy is refused with a warning in the `NeoWiki` log channel; the
-  first one keeps deciding.
-- **Subject writes read the latest revision**, so a contributor still edits what they last saved. Schemas are the
-  exception: a Subject is validated against the Schema revision the policy publishes, while the Schema editor shows
-  the latest one ([#1392](https://github.com/ProfessionalWiki/NeoWiki/issues/1392)).
+- `publishedRevision()` receives the page's current revision and returns the one to publish, of the same page, or
+  `null`, which deletes the page's Page node and Subjects from the graph stores and makes the RDF export and the
+  Subject read answer not-found for it. A policy that throws counts as returning `null`, with the error logged. It
+  runs on every page save and rebuild and on every read above, so keep it cheap.
+- `revisionIsReadableBy()` is asked when a REST caller names a `revisionId` or asks for `latest`
+  ([REST API](../api/rest-api.md)); a refusal answers exactly like a revision that does not exist.
 
-Call [`newPageRebuilder()->rebuild( $title )`](#refreshing-a-pages-data-without-an-edit) whenever your extension
-changes which revision it approves; nothing else tells NeoWiki the answer has changed. `publishedRevision()` is also
-asked on every Schema, Layout and Mapping read and every RDF export, so keep it cheap.
+Approval changes outside an edit reach NeoWiki only through [`rebuild()`](#refreshing-a-pages-data-without-an-edit),
+and a newly registered policy reaches the graph stores only through a
+[full rebuild](../operations/maintenance.md#rebuilding-the-graph).
 
-One gap: Schemas and Mappings are read through a cache keyed on the page's latest revision id, so an approval change
-with no accompanying page edit does not take effect until that page is edited or the cache entry expires
+Editing reads the latest revision. So do `?action=subjects`, `GET /neowiki/v0/page/{pageId}/subjects` and the
+referenced Subjects on a `revisionId` read ([#1390](https://github.com/ProfessionalWiki/NeoWiki/issues/1390)), and
+the parse-time accessors. Schema and Mapping reads are cached under the latest revision id, so an approval change
+without an edit to that Schema or Mapping page takes effect on its next edit or when the entry expires
 ([#1392](https://github.com/ProfessionalWiki/NeoWiki/issues/1392)).
-
-Subject reads over REST, and the parse-time accessors, are not yet covered
-([#1390](https://github.com/ProfessionalWiki/NeoWiki/issues/1390)).
 
 ### Graph Database Backends
 
