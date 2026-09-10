@@ -11,7 +11,6 @@ use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 class FixedRevisionPolicy implements RevisionPolicy {
 
 	private function __construct(
-		private readonly bool $publishes,
 		private readonly bool $substitutes,
 		private readonly ?RevisionRecord $published,
 		private readonly bool $readable,
@@ -19,19 +18,15 @@ class FixedRevisionPolicy implements RevisionPolicy {
 	}
 
 	public static function publishing( RevisionRecord $revision ): self {
-		return new self( publishes: true, substitutes: true, published: $revision, readable: true );
+		return new self( substitutes: true, published: $revision, readable: true );
 	}
 
 	public static function publishingNothing(): self {
-		return new self( publishes: false, substitutes: true, published: null, readable: true );
+		return new self( substitutes: true, published: null, readable: true );
 	}
 
 	public static function hidingEveryRevision(): self {
-		return new self( publishes: true, substitutes: false, published: null, readable: false );
-	}
-
-	public function publishesRevision( RevisionRecord $revision ): bool {
-		return $this->publishes;
+		return new self( substitutes: false, published: null, readable: false );
 	}
 
 	/**

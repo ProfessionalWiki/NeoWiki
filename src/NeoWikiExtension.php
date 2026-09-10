@@ -412,8 +412,6 @@ class NeoWikiExtension {
 	 * on.
 	 */
 	private function newRebuildStoreContentHandler(): OnRevisionCreatedHandler {
-		// The null index is load-bearing: PageRebuilder::rebuild() hands this handler the revision the
-		// policy publishes, and indexing that would drop the Subjects a draft added. See PageRebuilder.
 		return $this->newStoreContentHandler(
 			$this->getGraphDatabasePlugin(),
 			new NullSubjectPageIndex(),
@@ -1111,8 +1109,7 @@ class NeoWikiExtension {
 	private function newPageRebuilderWith( OnRevisionCreatedHandler $handler ): PageRebuilder {
 		return new PageRebuilder(
 			$handler,
-			MediaWikiServices::getInstance()->getWikiPageFactory(),
-			$this->getRevisionPolicy()
+			MediaWikiServices::getInstance()->getWikiPageFactory()
 		);
 	}
 

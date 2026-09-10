@@ -14,19 +14,15 @@ class PageRebuilder {
 	public function __construct(
 		private readonly OnRevisionCreatedHandler $handler,
 		private readonly WikiPageFactory $wikiPageFactory,
-		private readonly RevisionPolicy $revisionPolicy,
 	) {
 	}
 
 	/**
-	 * Reprojects the page from the revision the registered policy publishes, which is what an approval
-	 * extension calls when its answer changes.
-	 *
-	 * The handler must not index: it would record the published revision's Subjects in place of the
-	 * latest one's. NeoWikiExtension wires it with a NullSubjectPageIndex for that reason.
+	 * Reprojects the page from its current revision, which is what an approval extension calls when its
+	 * answer changes. What that revision publishes is the handler's decision.
 	 */
 	public function rebuild( Title $title ): PageRefreshOutcome {
-		return $this->rebuildWithReadFlags( $title, IDBAccessObject::READ_NORMAL, substitute: true );
+		return $this->rebuildWithReadFlags( $title, IDBAccessObject::READ_NORMAL );
 	}
 
 	/**
@@ -35,10 +31,10 @@ class PageRebuilder {
 	 * replaced, which would project outdated content.
 	 */
 	public function rebuildFromPrimary( Title $title ): PageRefreshOutcome {
-		return $this->rebuildWithReadFlags( $title, IDBAccessObject::READ_LATEST, substitute: false );
+		return $this->rebuildWithReadFlags( $title, IDBAccessObject::READ_LATEST );
 	}
 
-	private function rebuildWithReadFlags( Title $title, int $readFlags, bool $substitute ): PageRefreshOutcome {
+	private function rebuildWithReadFlags( Title $title, int $readFlags ): PageRefreshOutcome {
 		$wikiPage = $this->wikiPageFactory->newFromTitle( $title );
 		$wikiPage->loadPageData( $readFlags );
 
@@ -46,16 +42,6 @@ class PageRebuilder {
 
 		if ( $revision === null ) {
 			return PageRefreshOutcome::SkippedMissingRevision;
-		}
-
-		if ( $substitute ) {
-			$published = $this->revisionPolicy->publishedRevision( $revision );
-
-			if ( $published === null ) {
-				return PageRefreshOutcome::SkippedUnpublishableRevision;
-			}
-
-			$revision = $published;
 		}
 
 		return $this->handler->onRevisionCreated( $revision );

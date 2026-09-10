@@ -353,10 +353,28 @@ class GraphRebuildExecutor {
 			return ProjectedPageOutcome::projected();
 		}
 
+		if ( $outcome === PageRefreshOutcome::Unpublished ) {
+			$this->logWithdrawnPage( $pageId );
+			$progress->pageProjected( $pageId );
+			return ProjectedPageOutcome::projected();
+		}
+
 		$this->logSkippedPage( $pageId, $outcome->skipReason() );
 		$progress->pageSkipped( $pageId );
 
 		return ProjectedPageOutcome::skipped();
+	}
+
+	/**
+	 * A withdrawn page is reconciled rather than skipped, so it is counted with the pages that were
+	 * projected — and an operator reading the log has to be able to tell the two apart.
+	 */
+	private function logWithdrawnPage( int $pageId ): void {
+		$this->logger->info(
+			'NeoWiki graph rebuild reconciled page ' . $pageId . ': the registered revision policy '
+			. 'publishes no revision of it, so it was withdrawn from the store.',
+			[ 'pageId' => $pageId ]
+		);
 	}
 
 	/**

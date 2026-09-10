@@ -21,6 +21,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\FailureIsolatingPagePropertiesSource;
 use ProfessionalWiki\NeoWiki\PagePropertiesBuilder;
+use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
@@ -39,6 +40,8 @@ use RuntimeException;
 class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 
 	private const int DELETED_PAGE_ID = 42;
+	private const int STUB_PAGE_ID = 43;
+	private const string APPROVED_PAGE = 'Page with an approved revision';
 
 	private SpyGraphDatabasePlugin $graphStore;
 	private SpySubjectPageIndex $subjectPageIndex;
@@ -128,7 +131,10 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 	public function testWritesNothingWhenTheSubjectSlotDoesNotHoldSubjectContent(): void {
 		// An unregistered content model hands back FallbackContent rather than SubjectContent. Projecting
 		// the page as holding no Subjects would wipe the ones it does hold, so nothing is written.
-		$revision = $this->newRevisionWithSlotContent( new FallbackContent( '{"subjects":{}}', 'unregistered-model' ) );
+		$revision = $this->newRevisionWithSlotContent(
+			self::STUB_PAGE_ID,
+			new FallbackContent( '{"subjects":{}}', 'unregistered-model' )
+		);
 
 		$outcome = $this->newHandler()->onRevisionCreated( $revision );
 
@@ -192,18 +198,69 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->assertEquals( [ new PageId( self::DELETED_PAGE_ID ) ], $this->graphStore->deletedPageIds );
 	}
 
-	public function testDoesNotProjectARevisionThePolicyDoesNotPublish(): void {
-		$revision = $this->createPageWithSubjects( 'Page with an unpublished revision', TestSubject::build() );
+	public function testProjectsTheSubjectsOfTheRevisionThePolicyPublishes(): void {
+		$approved = $this->createPageWithSubjects( self::APPROVED_PAGE, TestSubject::build() );
+		$draft = $this->createPageWithSubjects( self::APPROVED_PAGE );
+
+		$outcome = $this->newHandlerWithPolicy( FixedRevisionPolicy::publishing( $approved ) )
+			->onRevisionCreated( $draft );
+
+		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
+		$this->assertTrue(
+			$this->graphStore->savedPages[0]->getSubjects()->hasSubjects(),
+			'the approved revision holds a Subject the draft removed'
+		);
+	}
+
+	public function testProjectsThePagePropertiesOfTheRevisionThePolicyPublishes(): void {
+		$approved = $this->createPageWithSubjects( self::APPROVED_PAGE, TestSubject::build() );
+		$draft = $this->editPage(
+			self::APPROVED_PAGE,
+			'A draft nobody approved',
+			'',
+			NS_MAIN,
+			$this->getTestUser()->getUser()
+		)->getNewRevision();
+
+		$this->newHandlerWith(
+			$this->graphStore,
+			$this->newCorePropertyRegistry(),
+			revisionPolicy: FixedRevisionPolicy::publishing( $approved )
+		)->onRevisionCreated( $draft );
+
+		$this->assertSame(
+			$this->getTestSysop()->getUser()->getName(),
+			$this->graphStore->savedPages[0]->getProperties()->get( 'lastEditor' ),
+			'the properties describe the approved revision, whose author is not the drafter'
+		);
+	}
+
+	public function testIndexesTheSubjectsOfTheGivenRevisionWhenAnotherIsPublished(): void {
+		$approved = $this->createPageWithSubjects( self::APPROVED_PAGE, TestSubject::build() );
+		$draft = $this->createPageWithSubjects( self::APPROVED_PAGE );
+
+		$this->newHandlerWithPolicy( FixedRevisionPolicy::publishing( $approved ) )
+			->onRevisionCreated( $draft );
+
+		$this->assertSame(
+			[ $draft->getPageId() => [] ],
+			$this->subjectPageIndex->indexedSubjectsByPageId,
+			'the index addresses the Subjects the page now holds, not the ones it publishes'
+		);
+	}
+
+	public function testWithdrawsThePageFromTheGraphWhenThePolicyPublishesNothing(): void {
+		$revision = $this->createPageWithSubjects( 'Page whose approval was revoked', TestSubject::build() );
 
 		$outcome = $this->newHandlerWithPolicy( FixedRevisionPolicy::publishingNothing() )
 			->onRevisionCreated( $revision );
 
-		$this->assertSame( PageRefreshOutcome::SkippedUnpublishableRevision, $outcome );
+		$this->assertSame( PageRefreshOutcome::Unpublished, $outcome );
+		$this->assertEquals( [ new PageId( $revision->getPageId() ) ], $this->graphStore->deletedPageIds );
 		$this->assertSame( [], $this->graphStore->savedPages );
-		$this->assertSame( [], $this->graphStore->deletedPageIds, 'what was published stays published' );
 	}
 
-	public function testIndexesASubjectEvenWhenItsRevisionIsNotPublished(): void {
+	public function testIndexesTheSubjectsOfAPageThatPublishesNothing(): void {
 		$revision = $this->createPageWithSubjects( 'Page whose draft adds a subject', TestSubject::build() );
 
 		$this->newHandlerWithPolicy( FixedRevisionPolicy::publishingNothing() )
@@ -211,8 +268,31 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame(
 			[ $revision->getPageId() => [ TestSubject::ZERO_GUID ] ],
-			$this->subjectPageIndex->indexedSubjectsByPageId
+			$this->subjectPageIndex->indexedSubjectsByPageId,
+			'a withdrawn page is still on the wiki, so its Subjects stay editable'
 		);
+	}
+
+	public function testWritesNothingWhenThePublishedRevisionHoldsNoSubjectContent(): void {
+		$revision = $this->createPageWithSubjects( 'Page with an unreadable approved revision', TestSubject::build() );
+		$published = $this->newRevisionWithSlotContent(
+			$revision->getPageId(),
+			new FallbackContent( '{"subjects":{}}', 'unregistered-model' )
+		);
+
+		$outcome = $this->newHandlerWithPolicy( FixedRevisionPolicy::publishing( $published ) )
+			->onRevisionCreated( $revision );
+
+		$this->assertSame( PageRefreshOutcome::SkippedUnreadableSubjects, $outcome );
+		$this->assertSame( [], $this->graphStore->savedPages );
+		$this->assertSame( [], $this->graphStore->deletedPageIds );
+	}
+
+	private function newCorePropertyRegistry(): PagePropertyProviderRegistry {
+		$registry = new PagePropertyProviderRegistry();
+		$registry->addProvider( new CorePagePropertyProvider() );
+
+		return $registry;
 	}
 
 	private function newFailingProviderRegistry(): PagePropertyProviderRegistry {
@@ -226,12 +306,12 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		return $registry;
 	}
 
-	private function newRevisionWithSlotContent( Content $content ): RevisionRecord {
+	private function newRevisionWithSlotContent( int $pageId, Content $content ): RevisionRecord {
 		$slots = $this->createStub( RevisionSlots::class );
 		$slots->method( 'getContent' )->willReturn( $content );
 
 		$revision = $this->createStub( RevisionRecord::class );
-		$revision->method( 'getPageId' )->willReturn( 42 );
+		$revision->method( 'getPageId' )->willReturn( $pageId );
 		$revision->method( 'hasSlot' )->willReturn( true );
 		$revision->method( 'getSlots' )->willReturn( $slots );
 

@@ -1026,6 +1026,34 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
+	 * A page the registered revision policy publishes nothing for is withdrawn from the store rather
+	 * than left alone, which is a write like any other: the rebuild reconciled that page.
+	 */
+	public function testAWithdrawnPageCountsAsProjected(): void {
+		$pageId = $this->getExistingTestPage( 'Withdrawn page' )->getId();
+		$logger = new TestLogger( true );
+
+		$rebuilder = $this->createStub( PageRebuilder::class );
+		$rebuilder->method( 'rebuild' )->willReturn( PageRefreshOutcome::Unpublished );
+
+		$run = $this->newExecutor( new InMemoryPageIdsLookup( $pageId ), $logger )->execute(
+			run: $this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running ),
+			store: new SpyGraphDatabasePlugin(),
+			pageRebuilder: $rebuilder,
+			batchSize: 200,
+			observer: new NullRebuildBatchObserver()
+		);
+
+		$this->assertSame( 1, $run->processed );
+		$this->assertSame( 0, $run->failed );
+		$this->assertStringContainsString(
+			'withdrawn from the store',
+			$this->loggedText( $logger ),
+			'the operator can tell a withdrawn page from a projected one'
+		);
+	}
+
+	/**
 	 * Rebuilds $store over exactly the pages $pageIds walks, rather than over what the wiki holds.
 	 */
 	private function executeOver(

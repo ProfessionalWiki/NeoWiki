@@ -28,17 +28,14 @@ class FailureIsolatingRevisionPolicyTest extends TestCase {
 		$published = $this->newRevision( pageId: self::PAGE_ID, id: 9 );
 		$policy = $this->isolate( FixedRevisionPolicy::publishing( $published ) );
 
-		$this->assertTrue( $policy->publishesRevision( $revision ) );
 		$this->assertSame( $published, $policy->publishedRevision( $revision ) );
 		$this->assertTrue( $policy->revisionIsReadableBy( $revision, $this->createStub( Authority::class ) ) );
 	}
 
 	public function testAThrowingPolicyPublishesNothing(): void {
 		$policy = $this->isolate( $this->newThrowingPolicy() );
-		$revision = $this->newRevision( pageId: self::PAGE_ID, id: 10 );
 
-		$this->assertFalse( $policy->publishesRevision( $revision ) );
-		$this->assertNull( $policy->publishedRevision( $revision ) );
+		$this->assertNull( $policy->publishedRevision( $this->newRevision( pageId: self::PAGE_ID, id: 10 ) ) );
 	}
 
 	public function testAThrowingPolicyHidesEveryRevision(): void {
@@ -54,7 +51,7 @@ class FailureIsolatingRevisionPolicyTest extends TestCase {
 		$logger = new TestLogger();
 
 		( new FailureIsolatingRevisionPolicy( $this->newThrowingPolicy(), $logger ) )
-			->publishesRevision( $this->newRevision( pageId: self::PAGE_ID, id: 10 ) );
+			->publishedRevision( $this->newRevision( pageId: self::PAGE_ID, id: 10 ) );
 
 		$this->assertTrue( $logger->hasErrorRecords() );
 	}
@@ -77,7 +74,6 @@ class FailureIsolatingRevisionPolicyTest extends TestCase {
 		$policy = $this->isolate( FixedRevisionPolicy::publishing( $suppressed ) );
 
 		$this->assertNull( $policy->publishedRevision( $this->newRevision( pageId: self::PAGE_ID, id: 10 ) ) );
-		$this->assertFalse( $policy->publishesRevision( $suppressed ) );
 	}
 
 	public function testANullAnswerStaysNull(): void {
@@ -107,10 +103,6 @@ class FailureIsolatingRevisionPolicyTest extends TestCase {
 
 	private function newThrowingPolicy(): RevisionPolicy {
 		return new class extends NullRevisionPolicy {
-			public function publishesRevision( RevisionRecord $revision ): bool {
-				throw new RuntimeException( 'approval table missing' );
-			}
-
 			public function publishedRevision( RevisionRecord $revision ): ?RevisionRecord {
 				throw new RuntimeException( 'approval table missing' );
 			}
