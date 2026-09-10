@@ -10,6 +10,7 @@ use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\RestGetSubjectPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -24,8 +25,15 @@ class GetSubjectApi extends SimpleHandler {
 	public function run( string $subjectId ): Response {
 		$presenter = new RestGetSubjectPresenter();
 		$revisionId = $this->getValidatedParams()['revisionId'] ?? null;
+		$latest = $this->getValidatedParams()['latest'] ?? false;
 
-		$query = $this->newGetSubjectQuery( $presenter, $revisionId );
+		if ( $latest && $revisionId !== null ) {
+			return $this->getResponseFactory()->createHttpError( 400, [
+				'message' => 'The latest and revisionId parameters are mutually exclusive.',
+			] );
+		}
+
+		$query = $this->newGetSubjectQuery( $presenter, $subjectId, $revisionId, $latest );
 
 		if ( $query instanceof Response ) {
 			return $query;
@@ -42,11 +50,24 @@ class GetSubjectApi extends SimpleHandler {
 		return $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
 	}
 
-	private function newGetSubjectQuery( RestGetSubjectPresenter $presenter, ?int $revisionId ): GetSubjectQuery|Response {
-		if ( $revisionId === null ) {
-			return NeoWikiExtension::getInstance()->newGetSubjectQuery( $presenter, $this->getAuthority() );
+	private function newGetSubjectQuery(
+		RestGetSubjectPresenter $presenter,
+		string $subjectId,
+		?int $revisionId,
+		bool $latest
+	): GetSubjectQuery|Response {
+		if ( $revisionId !== null ) {
+			return $this->newQueryForRevisionId( $presenter, $revisionId );
 		}
 
+		if ( $latest ) {
+			return $this->newQueryForCurrentRevision( $presenter, $subjectId );
+		}
+
+		return NeoWikiExtension::getInstance()->newGetSubjectQuery( $presenter, $this->getAuthority() );
+	}
+
+	private function newQueryForRevisionId( RestGetSubjectPresenter $presenter, int $revisionId ): GetSubjectQuery|Response {
 		$revision = MediaWikiServices::getInstance()->getRevisionLookup()->getRevisionById( $revisionId );
 
 		// A revision the viewer may not see answers exactly like a nonexistent one: revision ids are
@@ -73,6 +94,40 @@ class GetSubjectApi extends SimpleHandler {
 			->authorizeReadByPageId( new PageId( $pageId ) );
 	}
 
+	/**
+	 * A viewer the policy does not let see the current revision is answered as an absent Subject is,
+	 * so that asking for a draft cannot confirm a harvested Subject id exists. A Subject that
+	 * resolves to no page falls through to the published read, which answers not-found for it.
+	 */
+	private function newQueryForCurrentRevision( RestGetSubjectPresenter $presenter, string $subjectId ): GetSubjectQuery|Response {
+		$revision = $this->getCurrentRevisionOfSubjectPage( $subjectId );
+
+		if ( $revision === null ) {
+			return NeoWikiExtension::getInstance()->newGetSubjectQuery( $presenter, $this->getAuthority() );
+		}
+
+		if ( !NeoWikiExtension::getInstance()->getRevisionPolicy()->revisionIsReadableBy( $revision, $this->getAuthority() ) ) {
+			$presenter->presentSubjectNotFound();
+
+			return $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
+		}
+
+		return NeoWikiExtension::getInstance()->newGetLatestSubjectQuery( $presenter, $this->getAuthority() );
+	}
+
+	private function getCurrentRevisionOfSubjectPage( string $subjectId ): ?RevisionRecord {
+		$pageIdentifiers = NeoWikiExtension::getInstance()
+			->getPageIdentifiersLookup()
+			->getPageIdOfSubject( new SubjectId( $subjectId ) );
+
+		if ( $pageIdentifiers === null ) {
+			return null;
+		}
+
+		return MediaWikiServices::getInstance()->getRevisionLookup()
+			->getRevisionByPageId( $pageIdentifiers->getId()->id );
+	}
+
 	public function getParamSettings(): array {
 		return [
 			'subjectId' => [
@@ -85,7 +140,14 @@ class GetSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'query',
 				ParamValidator::PARAM_TYPE => 'integer',
 				ParamValidator::PARAM_REQUIRED => false,
-				self::PARAM_DESCRIPTION => 'Revision ID to fetch the Subject at. Defaults to the latest revision.',
+				self::PARAM_DESCRIPTION => 'Revision ID to fetch the Subject at. Defaults to the revision the wiki publishes.',
+			],
+			'latest' => [
+				self::PARAM_SOURCE => 'query',
+				ParamValidator::PARAM_TYPE => 'boolean',
+				ParamValidator::PARAM_REQUIRED => false,
+				ParamValidator::PARAM_DEFAULT => false,
+				self::PARAM_DESCRIPTION => 'Return the hosting page\'s current revision, for editing, rather than the revision the wiki publishes. Requires the viewer to be allowed to see that revision. Cannot be combined with revisionId.',
 			],
 			'expand' => [
 				self::PARAM_SOURCE => 'query',

@@ -8,8 +8,10 @@ use MediaWiki\Page\PageIdentity;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Response;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
@@ -217,7 +219,8 @@ JSON,
 			)
 		)->getId();
 
-		[ $hiddenResponse, $absentResponse ] = $this->runWithRevisionPolicyHidingEveryRevision(
+		[ $hiddenResponse, $absentResponse ] = $this->runWithRevisionPolicy(
+			FixedRevisionPolicy::hidingEveryRevision(),
 			fn (): array => [
 				$this->getSubjectAtRevision( 'sTestGSA1111251', (string)$revisionId ),
 				$this->getSubjectAtRevision( 'sTestGSA1111251', '999999999' ),
@@ -235,25 +238,192 @@ JSON,
 		$this->assertSame( $absent, $hidden );
 	}
 
-	private function getSubjectAtRevision( string $subjectId, string $revisionId ): Response {
+	/**
+	 * @param array<string, string> $queryParams
+	 */
+	private function requestSubject( string $subjectId, array $queryParams = [] ): Response {
 		return $this->executeHandler(
 			new GetSubjectApi(),
 			new RequestData( [
 				'method' => 'GET',
 				'pathParams' => [ 'subjectId' => $subjectId ],
-				'queryParams' => [ 'revisionId' => $revisionId ],
+				'queryParams' => $queryParams,
 			] )
 		);
 	}
 
-	private function runWithRevisionPolicyHidingEveryRevision( callable $fn ): mixed {
-		$this->registerRevisionPolicy( FixedRevisionPolicy::hidingEveryRevision() );
+	private function getSubjectAtRevision( string $subjectId, string $revisionId ): Response {
+		return $this->requestSubject( $subjectId, [ 'revisionId' => $revisionId ] );
+	}
+
+	private function runWithRevisionPolicy( RevisionPolicy $policy, callable $fn ): mixed {
+		$this->registerRevisionPolicy( $policy );
 
 		try {
 			return $fn();
 		} finally {
 			NeoWikiExtension::resetInstance();
 		}
+	}
+
+	private function labelOf( Response $response, string $subjectId ): ?string {
+		return json_decode( $response->getBody()->getContents(), true )['subjects'][$subjectId]['label'];
+	}
+
+	private function newTestSubject( string $id, ?string $label = 'Test subject' ): Subject {
+		return TestSubject::build(
+			id: $id,
+			label: $label === null ? null : new SubjectLabel( $label ),
+			schemaName: new SchemaName( 'GetSubjectApiTestSchema' )
+		);
+	}
+
+	public function testDefaultReadServesTheRevisionThePolicyPublishes(): void {
+		$published = $this->createPageWithSubjects(
+			'GetSubjectApiTest_Published',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111252', 'published label' )
+		);
+
+		$this->createPageWithSubjects(
+			'GetSubjectApiTest_Published',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111252', 'draft label' )
+		);
+
+		$response = $this->runWithRevisionPolicy(
+			FixedRevisionPolicy::publishing( $published ),
+			fn (): Response => $this->requestSubject( 'sTestGSA1111252' )
+		);
+
+		$this->assertSame( 'published label', $this->labelOf( $response, 'sTestGSA1111252' ) );
+	}
+
+	public function testSubjectAddedOnlyInAnUnpublishedDraftIsNotFound(): void {
+		$published = $this->createPageWithSubjects(
+			'GetSubjectApiTest_DraftOnly',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111253' )
+		);
+
+		$this->createPageWithSubjects(
+			'GetSubjectApiTest_DraftOnly',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111253' ),
+			childSubjects: new SubjectMap( $this->newTestSubject( 'sTestGSA1111254' ) )
+		);
+
+		$response = $this->runWithRevisionPolicy(
+			FixedRevisionPolicy::publishing( $published ),
+			fn (): Response => $this->requestSubject( 'sTestGSA1111254' )
+		);
+
+		$this->assertSame( '{"subject":null}', $response->getBody()->getContents() );
+	}
+
+	public function testSubjectOnAPageThatPublishesNothingIsNotFound(): void {
+		$this->createPageWithSubjects(
+			'GetSubjectApiTest_PublishesNothing',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111255' )
+		);
+
+		$response = $this->runWithRevisionPolicy(
+			FixedRevisionPolicy::publishingNothing(),
+			fn (): Response => $this->requestSubject( 'sTestGSA1111255' )
+		);
+
+		$this->assertSame( '{"subject":null}', $response->getBody()->getContents() );
+	}
+
+	public function testReferencedSubjectComesFromItsOwnPagesPublishedRevision(): void {
+		$publishedTarget = $this->createPageWithSubjects(
+			'GetSubjectApiTest_PublishedTarget',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111256', 'published target' )
+		);
+
+		$this->createPageWithSubjects(
+			'GetSubjectApiTest_PublishedTarget',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111256', 'draft target' )
+		);
+
+		$this->createPageWithSubjects(
+			'GetSubjectApiTest_RelationSource',
+			mainSubject: TestSubject::build(
+				id: 'sTestGSA1111257',
+				schemaName: new SchemaName( 'GetSubjectApiTestSchema' ),
+				statements: new StatementList( [
+					TestStatement::buildRelation( 'MyRelation', [
+						TestRelation::build( id: 'rTestGSA1111rr8', targetId: 'sTestGSA1111256' ),
+					] ),
+				] )
+			)
+		);
+
+		$response = $this->runWithRevisionPolicy(
+			FixedRevisionPolicy::publishing( $publishedTarget ),
+			fn (): Response => $this->requestSubject( 'sTestGSA1111257', [ 'expand' => 'relations' ] )
+		);
+
+		$this->assertSame( 'published target', $this->labelOf( $response, 'sTestGSA1111256' ) );
+	}
+
+	public function testLatestServesTheDraftToAViewerThePolicyLetsSeeIt(): void {
+		$published = $this->createPageWithSubjects(
+			'GetSubjectApiTest_LatestDraft',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111258', 'published label' )
+		);
+
+		$this->createPageWithSubjects(
+			'GetSubjectApiTest_LatestDraft',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111258', 'draft label' )
+		);
+
+		$response = $this->runWithRevisionPolicy(
+			FixedRevisionPolicy::publishing( $published ),
+			fn (): Response => $this->requestSubject( 'sTestGSA1111258', [ 'latest' => '1' ] )
+		);
+
+		$this->assertSame( 'draft label', $this->labelOf( $response, 'sTestGSA1111258' ) );
+	}
+
+	public function testLatestRefusedByTheRevisionPolicyIsIndistinguishableFromAnAbsentSubject(): void {
+		$this->createPageWithSubjects(
+			'GetSubjectApiTest_LatestHidden',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111259' )
+		);
+
+		[ $hiddenResponse, $absentResponse ] = $this->runWithRevisionPolicy(
+			FixedRevisionPolicy::hidingEveryRevision(),
+			fn (): array => [
+				$this->requestSubject( 'sTestGSA1111259', [ 'latest' => '1' ] ),
+				$this->requestSubject( 'sTestGSA9999998', [ 'latest' => '1' ] ),
+			]
+		);
+
+		$this->assertSame( $absentResponse->getStatusCode(), $hiddenResponse->getStatusCode() );
+		$this->assertSame( $absentResponse->getBody()->getContents(), $hiddenResponse->getBody()->getContents() );
+	}
+
+	public function testLatestCannotBeCombinedWithARevisionId(): void {
+		$revisionId = $this->createPageWithSubjects(
+			'GetSubjectApiTest_LatestAndRevision',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111261' )
+		)->getId();
+
+		$response = $this->requestSubject(
+			'sTestGSA1111261',
+			[ 'latest' => '1', 'revisionId' => (string)$revisionId ]
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
+	public function testWithoutARevisionPolicyLatestAnswersLikeTheDefaultRead(): void {
+		$this->createPageWithSubjects(
+			'GetSubjectApiTest_NoPolicy',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111262', 'only label' )
+		);
+
+		$this->assertSame(
+			$this->requestSubject( 'sTestGSA1111262' )->getBody()->getContents(),
+			$this->requestSubject( 'sTestGSA1111262', [ 'latest' => '1' ] )->getBody()->getContents()
+		);
 	}
 
 	public function testFullExpansion(): void {

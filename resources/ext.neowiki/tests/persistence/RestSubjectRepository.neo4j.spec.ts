@@ -130,6 +130,65 @@ describe( 'RestSubjectRepository', () => {
 
 	} );
 
+	describe( 'which revision a by-id read asks for', () => {
+
+		const subjectId = new SubjectId( 's33333333333333' );
+
+		function subjectUrl( extraQuery: string = '' ): string {
+			return 'https://example.com/rest.php/neowiki/v0/subject/s33333333333333?expand=page|relations' + extraQuery;
+		}
+
+		function newHttpClient( url: string ): InMemoryHttpClient {
+			return new InMemoryHttpClient( {
+				[ url ]: new Response( JSON.stringify( mockResponse ), { status: 200 } ),
+			} );
+		}
+
+		it( 'asks for the published Subject when reading for display', async () => {
+			const httpClient = newHttpClient( subjectUrl() );
+			const get = vi.spyOn( httpClient, 'get' );
+
+			await newRepository( 'https://example.com/rest.php', httpClient ).getSubject( subjectId );
+
+			expect( get ).toHaveBeenCalledWith( subjectUrl() );
+		} );
+
+		it( 'asks for the current revision when reading for editing', async () => {
+			const httpClient = newHttpClient( subjectUrl( '&latest=1' ) );
+			const get = vi.spyOn( httpClient, 'get' );
+
+			await newRepository( 'https://example.com/rest.php', httpClient ).getSubjectForEditing( subjectId );
+
+			expect( get ).toHaveBeenCalledWith( subjectUrl( '&latest=1' ) );
+		} );
+
+		it( 'asks for the published Subject when reading a Subject with its referenced Subjects', async () => {
+			const httpClient = newHttpClient( subjectUrl() );
+			const get = vi.spyOn( httpClient, 'get' );
+
+			await newRepository( 'https://example.com/rest.php', httpClient )
+				.getSubjectWithReferencedSubjects( subjectId );
+
+			expect( get ).toHaveBeenCalledWith( subjectUrl() );
+		} );
+
+		it( 'asks for the revision it was built for rather than the current one', async () => {
+			const httpClient = newHttpClient( subjectUrl( '&revisionId=7' ) );
+			const get = vi.spyOn( httpClient, 'get' );
+
+			await new RestSubjectRepository(
+				'https://example.com/rest.php',
+				httpClient,
+				NeoWikiExtension.getInstance().getSubjectDeserializer(),
+				new SchemaDeserializer(),
+				7,
+			).getSubjectForEditing( subjectId );
+
+			expect( get ).toHaveBeenCalledWith( subjectUrl( '&revisionId=7' ) );
+		} );
+
+	} );
+
 	describe( 'getSubjectWithReferencedSubjects', () => {
 
 		const requestedId = 's11111111111111';

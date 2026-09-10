@@ -29,6 +29,8 @@ class RecordingSubjectRepository extends StubSubjectRepository {
 
 	public getSubjectCallCount = 0;
 
+	public getSubjectForEditingCallCount = 0;
+
 	public getSubjectWithReferencedSubjectsCallCount = 0;
 
 	public constructor( private readonly bundle: SubjectWithReferencedSubjects ) {
@@ -38,6 +40,11 @@ class RecordingSubjectRepository extends StubSubjectRepository {
 	public override async getSubject( id: SubjectId ): Promise<Subject> {
 		this.getSubjectCallCount++;
 		return super.getSubject( id );
+	}
+
+	public override async getSubjectForEditing( id: SubjectId ): Promise<Subject> {
+		this.getSubjectForEditingCallCount++;
+		return super.getSubjectForEditing( id );
 	}
 
 	public override async getSubjectWithReferencedSubjects( _id: SubjectId ): Promise<SubjectWithReferencedSubjects> {
@@ -102,6 +109,18 @@ describe( 'StoreStateLoader', () => {
 
 		expect( repository.getSubjectWithReferencedSubjectsCallCount ).toBe( 1 );
 		expect( repository.getSubjectCallCount ).toBe( 0 );
+	} );
+
+	it( 'reads the Subject as published rather than as an editor would', async () => {
+		const main = newMainSubjectWithRelationsTo( referencedId1 );
+		const repository = new RecordingSubjectRepository( {
+			requestedSubject: main,
+			referencedSubjects: [ newSubject( { id: referencedId1, label: 'Product One', schemaName: 'Product' } ) ],
+		} );
+
+		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
+
+		expect( repository.getSubjectForEditingCallCount ).toBe( 0 );
 	} );
 
 	it( 'stores the schema of the requested Subject', async () => {

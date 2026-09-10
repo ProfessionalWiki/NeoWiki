@@ -38,6 +38,13 @@ export interface SubjectWriteResult {
 export interface SubjectRepository extends SubjectLookup {
 
 	/**
+	 * The Subject as an editor must see it: the hosting page's current revision, rather than the
+	 * revision the wiki publishes, which on a wiki with an approval extension is an older one.
+	 * Saving what getSubject returns there would overwrite the draft with approved values.
+	 */
+	getSubjectForEditing( id: SubjectId ): Promise<Subject>;
+
+	/**
 	 * Returns the Subject together with the Subjects its relations target,
 	 * so relation labels can be shown without fetching each target individually.
 	 * Referenced Subjects that cannot be loaded are omitted rather than failing the whole call.
@@ -106,6 +113,10 @@ export interface SubjectRepository extends SubjectLookup {
 }
 
 export class StubSubjectRepository extends InMemorySubjectLookup implements SubjectRepository {
+
+	public getSubjectForEditing( id: SubjectId ): Promise<Subject> {
+		return this.getSubject( id );
+	}
 
 	public async getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectWithReferencedSubjects> {
 		const subject = await this.getSubject( id );

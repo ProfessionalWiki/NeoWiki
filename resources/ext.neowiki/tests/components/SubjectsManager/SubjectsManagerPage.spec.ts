@@ -81,7 +81,7 @@ const canDeleteSubjectRef = ref( false );
 const canEditSubjectRef = ref( false );
 
 // openEditor reads through the injected repositories; the edit-flow describe below arms these.
-const getSubjectRepoMock = vi.fn();
+const getSubjectForEditingRepoMock = vi.fn();
 const getSchemaRepoMock = vi.fn();
 
 vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
@@ -136,7 +136,7 @@ async function mountPage(): Promise<VueWrapper> {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
 			provide: {
-				[ Service.SubjectRepository ]: { getSubject: getSubjectRepoMock },
+				[ Service.SubjectRepository ]: { getSubjectForEditing: getSubjectForEditingRepoMock },
 				[ Service.SchemaRepository ]: { getSchema: getSchemaRepoMock },
 			},
 			stubs: { CdxIcon: true, CdxDialog: CdxDialogStub },
@@ -393,7 +393,7 @@ describe( 'SubjectsManagerPage edit flow', () => {
 		Element.prototype.scrollIntoView = vi.fn();
 		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
 
-		getSubjectRepoMock.mockReset();
+		getSubjectForEditingRepoMock.mockReset();
 		getSchemaRepoMock.mockReset();
 	} );
 
@@ -416,7 +416,7 @@ describe( 'SubjectsManagerPage edit flow', () => {
 			new StatementList( [] ),
 		);
 		const freshSchema = newSchema( { title: 'Person' } );
-		getSubjectRepoMock.mockResolvedValue( freshSubject );
+		getSubjectForEditingRepoMock.mockResolvedValue( freshSubject );
 		getSchemaRepoMock.mockResolvedValue( freshSchema );
 
 		const wrapper = await mountPage();
@@ -424,7 +424,7 @@ describe( 'SubjectsManagerPage edit flow', () => {
 		await wrapper.find( '[aria-label="neowiki-managesubjects-row-edit"]' ).trigger( 'click' );
 		await flushPromises();
 
-		expect( getSubjectRepoMock ).toHaveBeenCalledWith( expect.objectContaining( { text: ID_A } ) );
+		expect( getSubjectForEditingRepoMock ).toHaveBeenCalledWith( expect.objectContaining( { text: ID_A } ) );
 		expect( getSchemaRepoMock ).toHaveBeenCalledWith( 'Person' );
 		const dialog = wrapper.findComponent( SubjectEditorDialog );
 		expect( dialog.props( 'open' ) ).toBe( true );
@@ -433,7 +433,7 @@ describe( 'SubjectsManagerPage edit flow', () => {
 	} );
 
 	it( 'reports a failed fetch instead of opening the editor', async () => {
-		getSubjectRepoMock.mockRejectedValue( new Error( 'Unknown subject' ) );
+		getSubjectForEditingRepoMock.mockRejectedValue( new Error( 'Unknown subject' ) );
 		getSchemaRepoMock.mockResolvedValue( newSchema( { title: 'Person' } ) );
 
 		const wrapper = await mountPage();

@@ -230,8 +230,9 @@ Two gaps:
   stores until the page is deleted; a rebuild does not remove it
   ([#1391](https://github.com/ProfessionalWiki/NeoWiki/issues/1391)). Revocation is not a retraction mechanism.
 
-Subject reads over REST, and the parse-time accessors, are not yet covered
-([#1390](https://github.com/ProfessionalWiki/NeoWiki/issues/1390)).
+The by-id Subject read over REST serves the published Subject, and editors ask for the page's current revision with
+`latest`. `?action=subjects`, the page-keyed read and the referenced Subjects on a revision-keyed read still serve the
+latest revision ([#1390](https://github.com/ProfessionalWiki/NeoWiki/issues/1390)), as do the parse-time accessors.
 
 ### Graph Database Backends
 

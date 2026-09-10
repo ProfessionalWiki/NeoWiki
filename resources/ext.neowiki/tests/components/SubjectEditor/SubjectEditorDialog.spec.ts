@@ -1222,7 +1222,7 @@ describe( 'SubjectEditorDialog', () => {
 
 		interface TargetReposMount {
 			wrapper: VueWrapper;
-			mockSubjectRepository: { getSubject: Mock; mintSubjectId: Mock };
+			mockSubjectRepository: { getSubjectForEditing: Mock; mintSubjectId: Mock };
 			mockSchemaRepository: { getSchema: Mock };
 			target: SubjectWithContext;
 		}
@@ -1246,7 +1246,7 @@ describe( 'SubjectEditorDialog', () => {
 		): TargetReposMount {
 			const target = targetSubject( 's22222222222222', 'Target subject' );
 			const mockSubjectRepository = {
-				getSubject: vi.fn().mockResolvedValue( target ),
+				getSubjectForEditing: vi.fn().mockResolvedValue( target ),
 				// The real stub, so the ids these tests expect are the ones a Subject
 				// repository actually mints.
 				mintSubjectId: vi.fn( () => new StubSubjectRepository( [] ).mintSubjectId() ),
@@ -1363,7 +1363,7 @@ describe( 'SubjectEditorDialog', () => {
 			wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
 			await flushPromises();
 
-			expect( mockSubjectRepository.getSubject ).toHaveBeenCalledTimes( 1 );
+			expect( mockSubjectRepository.getSubjectForEditing ).toHaveBeenCalledTimes( 1 );
 			expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 2 );
 		} );
 
@@ -1384,7 +1384,7 @@ describe( 'SubjectEditorDialog', () => {
 			const { wrapper, mockSubjectRepository, target } = mountWithTargetRepos();
 			await flushPromises();
 			let resolveFetch!: ( subject: Subject ) => void;
-			mockSubjectRepository.getSubject.mockImplementationOnce(
+			mockSubjectRepository.getSubjectForEditing.mockImplementationOnce(
 				() => new Promise( ( resolve ) => {
 					resolveFetch = resolve;
 				} ),
@@ -1398,7 +1398,7 @@ describe( 'SubjectEditorDialog', () => {
 			resolveFetch( target );
 			await flushPromises();
 
-			expect( mockSubjectRepository.getSubject ).toHaveBeenCalledTimes( 1 );
+			expect( mockSubjectRepository.getSubjectForEditing ).toHaveBeenCalledTimes( 1 );
 			expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 2 );
 		} );
 
@@ -1495,7 +1495,7 @@ describe( 'SubjectEditorDialog', () => {
 		it( 'notifies and adds no pane when the target cannot be loaded', async () => {
 			const { wrapper, mockSubjectRepository } = mountWithTargetRepos();
 			await flushPromises();
-			mockSubjectRepository.getSubject.mockRejectedValue( new Error( 'Error fetching subject' ) );
+			mockSubjectRepository.getSubjectForEditing.mockRejectedValue( new Error( 'Error fetching subject' ) );
 
 			wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
 			await flushPromises();
@@ -2302,7 +2302,7 @@ describe( 'SubjectEditorDialog', () => {
 				function mountWithPendingTargetFetch(): TargetReposMount & { land: () => Promise<void> } {
 					const mounted = mountWithTargetRepos();
 					let resolveTarget!: ( subject: Subject ) => void;
-					mounted.mockSubjectRepository.getSubject.mockImplementation(
+					mounted.mockSubjectRepository.getSubjectForEditing.mockImplementation(
 						() => new Promise( ( resolve ) => {
 							resolveTarget = resolve;
 						} ),
@@ -2356,7 +2356,7 @@ describe( 'SubjectEditorDialog', () => {
 					await wrapper.setProps( { open: true } );
 					await clickEditTarget( wrapper );
 
-					expect( mockSubjectRepository.getSubject ).toHaveBeenCalledTimes( 2 );
+					expect( mockSubjectRepository.getSubjectForEditing ).toHaveBeenCalledTimes( 2 );
 				} );
 			} );
 
@@ -2587,12 +2587,12 @@ describe( 'SubjectEditorDialog', () => {
 					rootSchema: relationRootSchema,
 					rootSubject: relationRootSubject,
 				} );
-				mockSubjectRepository.getSubject.mockClear();
+				mockSubjectRepository.getSubjectForEditing.mockClear();
 
 				wrapper.findComponent( SubjectTree ).vm.$emit( 'select', new SubjectId( 's33333333333333' ) );
 				await flushPromises();
 
-				expect( mockSubjectRepository.getSubject ).toHaveBeenCalledTimes( 1 );
+				expect( mockSubjectRepository.getSubjectForEditing ).toHaveBeenCalledTimes( 1 );
 				expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 3 );
 			} );
 
@@ -3013,7 +3013,7 @@ describe( 'SubjectEditorDialog', () => {
 			it( 'creates the draft on the page of the subject being edited, not the dialog\'s root', async () => {
 				const onCreate = vi.fn().mockResolvedValue( undefined );
 				const { wrapper, mockSubjectRepository } = await mountReadyForCreation( { onCreate } );
-				mockSubjectRepository.getSubject.mockResolvedValue( newSubject( {
+				mockSubjectRepository.getSubjectForEditing.mockResolvedValue( newSubject( {
 					id: 's22222222222222',
 					label: 'Target subject',
 					schemaName: 'Person',

@@ -39,7 +39,7 @@ describe( 'Infobox', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let schemaStore: any;
 	let subjectStore: any;
-	const getSubjectMock = vi.fn();
+	const getSubjectForEditingMock = vi.fn();
 	const getSchemaMock = vi.fn();
 	const updateSubjectMock = vi.fn();
 
@@ -89,7 +89,7 @@ describe( 'Infobox', () => {
 				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
 				[ Service.SchemaPermissionHints ]: NeoWikiExtension.getInstance().newSchemaPermissionHints(),
 				[ Service.PropertyTypeRegistry ]: NeoWikiExtension.getInstance().getPropertyTypeRegistry(),
-				[ Service.SubjectRepository ]: { getSubject: getSubjectMock },
+				[ Service.SubjectRepository ]: { getSubjectForEditing: getSubjectForEditingMock },
 				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
 			},
 		},
@@ -107,7 +107,7 @@ describe( 'Infobox', () => {
 		subjectStore.validateSubjectUpdate = vi.fn().mockResolvedValue( [] );
 
 		// openEditor reads through the injected repositories, not the stores the display renders from.
-		getSubjectMock.mockReset();
+		getSubjectForEditingMock.mockReset();
 		getSchemaMock.mockReset();
 
 		// Saving goes through SubjectStore, which reaches its repository off the extension
@@ -212,7 +212,7 @@ describe( 'Infobox', () => {
 			new StatementList( [] ),
 		);
 		const freshSchema = new Schema( 'TestSchema', 'Fetched schema', new PropertyDefinitionList( [] ) );
-		getSubjectMock.mockResolvedValue( freshSubject );
+		getSubjectForEditingMock.mockResolvedValue( freshSubject );
 		getSchemaMock.mockResolvedValue( freshSchema );
 
 		const wrapper = mountComponent( mockSubject, true );
@@ -223,7 +223,7 @@ describe( 'Infobox', () => {
 		await editButton.trigger( 'click' );
 		await flushPromises();
 
-		expect( getSubjectMock ).toHaveBeenCalledWith( mockSubject.getId() );
+		expect( getSubjectForEditingMock ).toHaveBeenCalledWith( mockSubject.getId() );
 		expect( getSchemaMock ).toHaveBeenCalledWith( 'TestSchema' );
 		const dialog = wrapper.findComponent( SubjectEditorDialog );
 		expect( dialog.props( 'open' ) ).toBe( true );
@@ -309,7 +309,7 @@ describe( 'Infobox', () => {
 		it( 'renders the value once the save answers with the Subject and its Schema', async () => {
 			// Both halves of the response are load-bearing here: the value lives only on the
 			// response Subject, and only the response Schema defines the property it sits under.
-			getSubjectMock.mockResolvedValue( clientCopy );
+			getSubjectForEditingMock.mockResolvedValue( clientCopy );
 			getSchemaMock.mockResolvedValue( schemaWithCostCentre );
 			updateSubjectMock.mockResolvedValue( {
 				subjectId: mockSubject.getId(),
@@ -329,7 +329,7 @@ describe( 'Infobox', () => {
 				mockSubject.getId(), 'Server label', 'Server label', false, 'TestSchema', new StatementList( [] ),
 				new PageIdentifiers( 7, 'Some page' ),
 			);
-			getSubjectMock.mockResolvedValue( clientCopy );
+			getSubjectForEditingMock.mockResolvedValue( clientCopy );
 			getSchemaMock.mockResolvedValue( mockSchema );
 			updateSubjectMock.mockResolvedValue( {
 				subjectId: mockSubject.getId(),
@@ -344,7 +344,7 @@ describe( 'Infobox', () => {
 		} );
 
 		it( 'leaves the display alone when the save answers without page context', async () => {
-			getSubjectMock.mockResolvedValue( clientCopy );
+			getSubjectForEditingMock.mockResolvedValue( clientCopy );
 			getSchemaMock.mockResolvedValue( mockSchema );
 			updateSubjectMock.mockResolvedValue( {
 				subjectId: mockSubject.getId(),

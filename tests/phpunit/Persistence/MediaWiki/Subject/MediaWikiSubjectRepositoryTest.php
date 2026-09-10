@@ -4,6 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 
+use MediaWiki\Content\Content;
+use MediaWiki\Content\FallbackContent;
+use MediaWiki\Revision\RevisionLookup;
+use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
@@ -13,11 +17,13 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
+use RuntimeException;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository
@@ -302,6 +308,45 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		// above at one while costing a graph round trip per id, since the production lookup answers
 		// getPageIdOfSubject by running the batch query.
 		$this->assertSame( 0, $pageIdentifiersLookup->getPageIdOfSubjectCallCount );
+	}
+
+	/**
+	 * The slot holds content of another model, which happens when its content model is not
+	 * registered and when an import writes something else into it. Reading it as no Subjects would
+	 * turn every write into a silent no-op, and savePageSubjects() into an overwrite of whatever the
+	 * slot does hold.
+	 */
+	public function testWriteToAPageWhoseSlotHoldsOtherContentThrowsAndSavesNothing(): void {
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
+		$pageIdentifiersLookup->addIdentifiers(
+			new SubjectId( 'sTestMSR1111121' ),
+			new PageIdentifiers( new PageId( 42 ), 'PageWithForeignSlotContent', 0 )
+		);
+
+		$pageContentSaver = $this->createMock( PageContentSaver::class );
+		$pageContentSaver->expects( $this->never() )->method( 'saveContent' );
+
+		$repository = new MediaWikiSubjectRepository(
+			pageIdentifiersLookup: $pageIdentifiersLookup,
+			revisionLookup: $this->revisionLookupWithSlotContent(
+				new FallbackContent( '{"subjects":{}}', 'unregistered-model' )
+			),
+			pageContentSaver: $pageContentSaver,
+		);
+
+		$this->expectException( RuntimeException::class );
+
+		$repository->updateSubject( TestSubject::build( id: 'sTestMSR1111121' ) );
+	}
+
+	private function revisionLookupWithSlotContent( Content $content ): RevisionLookup {
+		$revision = $this->createStub( RevisionRecord::class );
+		$revision->method( 'getContent' )->willReturn( $content );
+
+		$revisionLookup = $this->createStub( RevisionLookup::class );
+		$revisionLookup->method( 'getRevisionByPageId' )->willReturn( $revision );
+
+		return $revisionLookup;
 	}
 
 	private function getPageId( string $pageName ): PageId {

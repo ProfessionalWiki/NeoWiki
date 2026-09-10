@@ -154,8 +154,14 @@ export class RestSubjectRepository implements SubjectRepository {
 	}
 
 	public async getSubject( id: SubjectId ): Promise<Subject> {
-		const bundle = await this.fetchSubjectBundle( id );
+		return this.deserializeRequested( await this.fetchSubjectBundle( id, false ) );
+	}
 
+	public async getSubjectForEditing( id: SubjectId ): Promise<Subject> {
+		return this.deserializeRequested( await this.fetchSubjectBundle( id, true ) );
+	}
+
+	private deserializeRequested( bundle: SubjectBundleJson ): Subject {
 		return this.subjectDeserializer.deserialize( bundle.subjects[ bundle.requestedId ] );
 	}
 
@@ -168,10 +174,10 @@ export class RestSubjectRepository implements SubjectRepository {
 	 * target should not prevent the requested Subject from loading.
 	 */
 	public async getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectWithReferencedSubjects> {
-		const bundle = await this.fetchSubjectBundle( id );
+		const bundle = await this.fetchSubjectBundle( id, false );
 
 		return {
-			requestedSubject: this.subjectDeserializer.deserialize( bundle.subjects[ bundle.requestedId ] ),
+			requestedSubject: this.deserializeRequested( bundle ),
 			referencedSubjects: this.deserializeReferencedSubjects( bundle ),
 		};
 	}
@@ -191,11 +197,17 @@ export class RestSubjectRepository implements SubjectRepository {
 		}
 	}
 
-	private async fetchSubjectBundle( id: SubjectId ): Promise<SubjectBundleJson> {
+	/**
+	 * A repository built for a revision of the page reads that revision, whoever is asking: the
+	 * user is looking at an old revision, and the current one is not what they came for.
+	 */
+	private async fetchSubjectBundle( id: SubjectId, latest: boolean ): Promise<SubjectBundleJson> {
 		let url = `${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }?expand=page|relations`;
 
 		if ( this.revisionId !== undefined ) {
 			url += `&revisionId=${ this.revisionId }`;
+		} else if ( latest ) {
+			url += '&latest=1';
 		}
 
 		const response = await this.httpClient.get( url );

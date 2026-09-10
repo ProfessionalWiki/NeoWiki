@@ -897,7 +897,7 @@ async function openEditor( subject: Subject ): Promise<void> {
 		// Fetch both subject and schema so the editor never opens against stale data
 		// (e.g. after the subject or its schema was edited in another tab).
 		const [ freshSubject, schema ] = await Promise.all( [
-			subjectRepo.getSubject( subject.getId() ),
+			subjectRepo.getSubjectForEditing( subject.getId() ),
 			schemaRepo.getSchema( subject.getSchemaName() )
 		] );
 

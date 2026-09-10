@@ -372,7 +372,7 @@ async function openRelationTarget( targetId: SubjectId ): Promise<void> {
 	}
 	pendingTargetKeys.add( pendingKey );
 	try {
-		const subject = await subjectRepository.getSubject( targetId );
+		const subject = await subjectRepository.getSubjectForEditing( targetId );
 		const schema = await schemaRepository.getSchema( subject.getSchemaName() );
 		if ( epoch !== openEpoch.value ) {
 			return;

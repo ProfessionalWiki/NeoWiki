@@ -98,7 +98,7 @@ const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaNam
 async function openEditor(): Promise<void> {
 	try {
 		const [ freshSubject, freshSchema ] = await Promise.all( [
-			subjectRepo.getSubject( props.subjectId ),
+			subjectRepo.getSubjectForEditing( props.subjectId ),
 			schemaRepo.getSchema( subject.value.getSchemaName() )
 		] );
 
