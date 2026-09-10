@@ -185,7 +185,7 @@ surfaces select a Projection by name.
 ## Mapping
 
 A Mapping defines how Subjects that follow native Schemas are expressed in an established ontology such as EDM
-or CIDOC-CRM ([Ontology Mapping](rdf/ontology-mapping.md)). Each Mapping is a page in the `Mapping:` namespace
+or CIDOC-CRM ([Mapping Format](authoring/mapping-format.md)). Each Mapping is a page in the `Mapping:` namespace
 and defines one ontology projection; the Mapping page's title is the projection name.
 
 

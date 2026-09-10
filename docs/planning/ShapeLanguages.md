@@ -37,7 +37,7 @@ validator behind REST endpoints returns structured violations ([ADR 21](../adr/0
 amended by [ADR 25](../adr/025-backend-driven-frontend-validation.md); [codes reference](../api/validation-codes.md)),
 and the editing UI renders what the server returns. For RDF, the wiki's data is *projected*: a native projection
 ([NativeRdfProjection](NativeRdfProjection.md)) and per-store ontology projections
-([OntologyMapping](OntologyMapping.md); shipped, see the [reference](../rdf/ontology-mapping.md)).
+([OntologyMapping](OntologyMapping.md); shipped, see the [reference](../authoring/mapping-format.md)).
 
 ## Why not as the internal format or engine
 

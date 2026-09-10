@@ -15,8 +15,8 @@ Discussion: [#996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996).
 > selectable alongside the native one on the RDF export endpoint and `DumpRdf`.
 > The near-1:1 term-substitution tier shipped first (2026-07); the **structural tier** followed as an optional
 > addition to the same format: node synthesis with deterministic IRIs, and contraction as source-side
-> contributions. See the [Ontology Mapping reference](../rdf/ontology-mapping.md) and the worked
-> [Person → EDM example](../rdf/person-to-edm.md). The rule format is NeoWiki-native, so the
+> contributions. See the [Ontology Mapping reference](../authoring/mapping-format.md) and the worked
+> [Person → EDM example](../guide/person-to-edm.md). The rule format is NeoWiki-native, so the
 > mapping-formalism question (Q1, [#995](https://github.com/ProfessionalWiki/NeoWiki/issues/995)) stays open
 > at the authoring level; the stored format is provisional. The questions it answered are listed under
 > [Decided](#decided).
@@ -56,7 +56,7 @@ graph-to-graph transformation governed by reusable patterns.
 
 > Terminology note: ECHOLOT partners often say "RDF mapping" for ontology alignment — that is *this* document. The
 > native vocabulary and the infrastructure shared by all projections (IRIs, named graphs, sync) are specified in the
-> [RDF Export reference](../rdf/rdf-export.md).
+> [RDF Export reference](../api/rdf-export.md).
 
 ## Projections, not layers
 
@@ -114,7 +114,7 @@ are needed because a wiki serves several targets at once ([sibling projections](
 disagree about shape, so at least one mismatches whichever style the data is modelled in.
 
 Expressing both in one declarative form is what the mapping format had to solve, and does. The
-[Person → EDM example](../rdf/person-to-edm.md) walks a real projection, including the `E67_Birth` synthesis.
+[Person → EDM example](../guide/person-to-edm.md) walks a real projection, including the `E67_Birth` synthesis.
 
 ### Flat vs nested native modelling (open fork)
 
@@ -160,7 +160,7 @@ remove the requirement (Q10).
 
 A Mapping is a JSON page in the `Mapping:` namespace that defines one projection, declaring per Schema how the Subject,
 its properties, its synthesized nodes, and its contributions project. It is specified in the
-[Ontology Mapping reference](../rdf/ontology-mapping.md).
+[Ontology Mapping reference](../authoring/mapping-format.md).
 
 ## Import
 
@@ -199,7 +199,7 @@ Proposed division of labour: shape engines run in external quality tooling (T4.5
 NeoWiki's job is to keep projections checkable and findings traceable:
 
 - Export of projected RDF for a given mapping (per page and in bulk), so external validators have input.
-- Per-page named graphs ([RDF Export reference](../rdf/rdf-export.md#iri-scheme)) make re-validation incremental:
+- Per-page named graphs ([RDF Export reference](../api/rdf-export.md#iri-scheme)) make re-validation incremental:
   only pages whose graphs changed since the last run need re-checking.
 - **Traceability requirement.** A validation report references ontology-projection nodes, but the people acting on it
   work in the wiki. Reports must be translatable back to the originating page, Subject, and property. The anchors
@@ -220,7 +220,7 @@ native projection as the default target; the Mapping as a bidirectional definiti
 
 - The native projection and the shared projection infrastructure (IRIs, named graphs, sync) —
   [NativeRdfProjection.md](NativeRdfProjection.md) for the rationale, the
-  [RDF Export reference](../rdf/rdf-export.md) for what it emits.
+  [RDF Export reference](../api/rdf-export.md) for what it emits.
 - The import *pipeline* mechanics and orchestration — T4.1.
 - Reconciliation / entity linking / `owl:sameAs` minting — WP4 (T4.2); mapped IRIs are its input.
 - Rich chain-of-production provenance and rights — T2.4 model and a T3.4 plug-in (see [ECHOLOT.md](ECHOLOT.md)).
@@ -298,16 +298,16 @@ Answered by the shipped implementation. Numbers are the original question number
 
 - **Q2 — expressiveness for node synthesis.** The format expresses both directions natively: synthesized nodes for
   expansion, contributions for contraction. Neither SHACL Advanced Features nor `CONSTRUCT` became the substrate
-  ([reference](../rdf/ontology-mapping.md)).
+  ([reference](../authoring/mapping-format.md)).
 - **Q6 — one mapping per target vs combined.** One Mapping page per projection, holding an entry for every mapped
   Schema ([#1086](https://github.com/ProfessionalWiki/NeoWiki/pull/1086),
   [discussion #1065](https://github.com/ProfessionalWiki/NeoWiki/discussions/1065)). A projection is not an ontology:
   two Mapping pages can both use CIDOC-CRM terms, each defining its own shape
   ([#996 comment](https://github.com/ProfessionalWiki/NeoWiki/discussions/996#discussioncomment-17920073), 2026-08-06).
 - **Q7 — where Mappings live.** Pages in the `Mapping:` namespace, listed on `Special:Mappings` and gated by the
-  `neowiki-mapping-edit` right ([reference](../rdf/ontology-mapping.md#ontology-mappings-are-wiki-pages)).
+  `neowiki-mapping-edit` right ([reference](../authoring/mapping-format.md#ontology-mappings-are-wiki-pages)).
 - **Q8 — language tags in a mapping.** A mapped property or contribution takes a `lang` tag, applied to the plain-string
-  literals it produces ([reference](../rdf/ontology-mapping.md#format-version-1)); the native projection mints none.
+  literals it produces ([reference](../authoring/mapping-format.md#format-version-1)); the native projection mints none.
 - **Q9 — multiple projections per wiki.** A wiki serves several sibling projections at once, selected per request, with
   `native` always the baseline; named graphs are qualified by projection so one store can hold several
   ([#1055](https://github.com/ProfessionalWiki/NeoWiki/pull/1055),
@@ -315,7 +315,7 @@ Answered by the shipped implementation. Numbers are the original question number
 - **Identity for synthesized nodes.** Node IRIs are derived deterministically from the data — from the Relation's
   persistent ID where one exists ([ADR 10](../adr/010-add-guids-to-relations.md)), otherwise from the Subject IRI and
   the node key — so re-projecting a page is idempotent
-  ([reference](../rdf/ontology-mapping.md#synthesized-node-iris)).
+  ([reference](../authoring/mapping-format.md#synthesized-node-iris)).
 
 ## Related
 

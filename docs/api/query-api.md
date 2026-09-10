@@ -154,8 +154,8 @@ Defaults shipped by NeoWiki:
 endpoint, it exists only when a store is configured; otherwise the route is absent and does not appear in the OpenAPI
 spec.
 
-For the RDF vocabulary (predicates, graph shape) to query, see [RDF Export](../rdf/rdf-export.md) and
-[Ontology Mapping](../rdf/ontology-mapping.md).
+For the RDF vocabulary (predicates, graph shape) to query, see [RDF Export](rdf-export.md) and
+[Mapping Format](../authoring/mapping-format.md).
 
 ### Request
 
