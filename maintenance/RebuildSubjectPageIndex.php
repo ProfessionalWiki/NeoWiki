@@ -34,16 +34,16 @@ class RebuildSubjectPageIndex extends LoggedUpdateMaintenance {
 	}
 
 	protected function getUpdateKey(): string {
-		return 'neowiki-rebuild-subject-page-index';
+		return 'neowiki-rebuild-subject-page-index-with-headers';
 	}
 
 	protected function doDBUpdates(): bool {
 		// update.php runs its post-update scripts outside doUpdates(), so this one runs even when the
-		// run was told to apply no schema changes: --schema writes the CREATE TABLE to a file and
-		// --noschema skips it entirely, and either way the table this fills is not there. Reported as
-		// not done, so the run that does create the table still fills it.
-		if ( !$this->indexTableExists() ) {
-			$this->output( "The NeoWiki subject -> page index table does not exist yet; nothing to rebuild.\n" );
+		// run was told to apply no schema changes: --schema writes the DDL to a file and --noschema
+		// skips it entirely. Reported as not done, so the run that does apply the schema still fills
+		// the index.
+		if ( !$this->indexIsUpToDateWithTheSchema() ) {
+			$this->output( "The NeoWiki subject -> page index is not up to date with the schema yet; nothing to rebuild.\n" );
 			return false;
 		}
 
@@ -62,8 +62,19 @@ class RebuildSubjectPageIndex extends LoggedUpdateMaintenance {
 		return true;
 	}
 
-	private function indexTableExists(): bool {
-		return $this->getDB( DB_PRIMARY )->tableExists( DatabaseSubjectPageIndex::TABLE, __METHOD__ );
+	/**
+	 * Both the table and the columns the rebuild writes. Asking only whether the table exists was the
+	 * right question while the table was the only schema object here: a skipped CREATE TABLE leaves
+	 * nothing to write to. A skipped ALTER does not — the table is there, and writing to it fails on
+	 * the first page — so an upgraded wiki has to be recognised too. `nwsp_schema` stands for the
+	 * columns the header patch adds, which it adds together, and which the updater registers under
+	 * that same column.
+	 */
+	private function indexIsUpToDateWithTheSchema(): bool {
+		$database = $this->getDB( DB_PRIMARY );
+
+		return $database->tableExists( DatabaseSubjectPageIndex::TABLE, __METHOD__ )
+			&& $database->fieldExists( DatabaseSubjectPageIndex::TABLE, 'nwsp_schema', __METHOD__ );
 	}
 
 	/**

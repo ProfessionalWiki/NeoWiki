@@ -5,7 +5,9 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectHeader;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIndex;
+use stdClass;
 use Wikimedia\Rdbms\IDatabase;
 
 /**
@@ -22,23 +24,30 @@ class DatabaseSubjectPageIndex implements SubjectPageIndex {
 
 	public const string TABLE = 'neowiki_subject_page';
 
+	private const array COLUMNS = [
+		'nwsp_subject_id',
+		'nwsp_page_id',
+		'nwsp_schema',
+		'nwsp_label',
+		'nwsp_is_main',
+	];
+
 	public function __construct(
 		private readonly IDatabase $db,
 	) {
 	}
 
 	/**
-	 * @param string[] $subjectIds
+	 * @param SubjectHeader[] $subjectHeaders
 	 */
-	public function setSubjectsOfPage( PageId $pageId, array $subjectIds ): void {
-		$wanted = $subjectIds;
-		sort( $wanted );
-
-		$stored = $this->subjectsOfPage( $pageId );
+	public function setSubjectsOfPage( PageId $pageId, array $subjectHeaders ): void {
+		$wanted = $this->rowsFor( $pageId, $subjectHeaders );
+		$stored = $this->rowsOfPage( $pageId );
 
 		// Most pages hold no Subjects and most edits change none, and this runs inside the transaction
 		// that writes the revision. A page whose rows already say this is left alone, so the common edit
-		// touches the index not at all.
+		// touches the index not at all. The comparison covers every column, so renaming a Subject or
+		// making it the Main one is a change the index sees.
 		//
 		// Reading them takes no lock, which is safe because PageUpdater derives the parent revision from
 		// an equally unlocked READ_LATEST read taken first, then CAS-compares it against
@@ -55,11 +64,11 @@ class DatabaseSubjectPageIndex implements SubjectPageIndex {
 		$this->db->startAtomic( __METHOD__ );
 
 		if ( $stored !== [] ) {
-			$this->removeSubjectsOfPage( $pageId, $stored );
+			$this->removeSubjectsOfPage( $pageId, array_column( $stored, 'nwsp_subject_id' ) );
 		}
 
 		if ( $wanted !== [] ) {
-			$this->insertSubjectsOfPage( $pageId, $wanted );
+			$this->insertRows( $wanted );
 		}
 
 		$this->db->endAtomic( __METHOD__ );
@@ -84,37 +93,77 @@ class DatabaseSubjectPageIndex implements SubjectPageIndex {
 	}
 
 	/**
-	 * @param string[] $subjectIds
+	 * @param list<array{nwsp_subject_id: string, nwsp_page_id: int, nwsp_schema: ?string, nwsp_label: ?string, nwsp_is_main: int}> $rows
 	 */
-	private function insertSubjectsOfPage( PageId $pageId, array $subjectIds ): void {
+	private function insertRows( array $rows ): void {
 		$this->db->newInsertQueryBuilder()
 			->insertInto( self::TABLE )
-			->rows( array_map(
-				static fn ( string $subjectId ): array => [
-					'nwsp_subject_id' => $subjectId,
-					'nwsp_page_id' => $pageId->id,
-				],
-				$subjectIds
-			) )
+			->rows( $rows )
 			->caller( __METHOD__ )
 			->execute();
 	}
 
 	/**
-	 * @return string[] Sorted here rather than by the database, so the comparison does not depend on
-	 *   the column's collation.
+	 * @param SubjectHeader[] $subjectHeaders
+	 * @return list<array{nwsp_subject_id: string, nwsp_page_id: int, nwsp_schema: ?string, nwsp_label: ?string, nwsp_is_main: int}>
 	 */
-	private function subjectsOfPage( PageId $pageId ): array {
-		$stored = $this->db->newSelectQueryBuilder()
-			->select( 'nwsp_subject_id' )
+	private function rowsFor( PageId $pageId, array $subjectHeaders ): array {
+		return self::sortedBySubjectId( array_map(
+			static fn ( SubjectHeader $header ): array => [
+				'nwsp_subject_id' => $header->id,
+				'nwsp_page_id' => $pageId->id,
+				'nwsp_schema' => $header->schemaName,
+				'nwsp_label' => $header->label,
+				'nwsp_is_main' => $header->isMainSubject ? 1 : 0,
+			],
+			$subjectHeaders
+		) );
+	}
+
+	/**
+	 * @return list<array{nwsp_subject_id: string, nwsp_page_id: int, nwsp_schema: ?string, nwsp_label: ?string, nwsp_is_main: int}>
+	 */
+	private function rowsOfPage( PageId $pageId ): array {
+		$result = $this->db->newSelectQueryBuilder()
+			->select( self::COLUMNS )
 			->from( self::TABLE )
 			->where( [ 'nwsp_page_id' => $pageId->id ] )
 			->caller( __METHOD__ )
-			->fetchFieldValues();
+			->fetchResultSet();
 
-		sort( $stored );
+		$rows = [];
 
-		return $stored;
+		/** @var stdClass $row */
+		foreach ( $result as $row ) {
+			$rows[] = [
+				'nwsp_subject_id' => (string)$row->nwsp_subject_id,
+				'nwsp_page_id' => (int)$row->nwsp_page_id,
+				// The database answers with strings, and a column it holds as NULL stays null, which is
+				// what the header side offers for a Subject whose slot named neither.
+				'nwsp_schema' => $row->nwsp_schema === null ? null : (string)$row->nwsp_schema,
+				'nwsp_label' => $row->nwsp_label === null ? null : (string)$row->nwsp_label,
+				'nwsp_is_main' => (int)$row->nwsp_is_main,
+			];
+		}
+
+		return self::sortedBySubjectId( $rows );
+	}
+
+	/**
+	 * Sorted here rather than by the database, so the comparison does not depend on the column's
+	 * collation.
+	 *
+	 * @param list<array{nwsp_subject_id: string, nwsp_page_id: int, nwsp_schema: ?string, nwsp_label: ?string, nwsp_is_main: int}> $rows
+	 * @return list<array{nwsp_subject_id: string, nwsp_page_id: int, nwsp_schema: ?string, nwsp_label: ?string, nwsp_is_main: int}>
+	 */
+	private static function sortedBySubjectId( array $rows ): array {
+		usort(
+			$rows,
+			static fn ( array $first, array $second ): int
+				=> strcmp( $first['nwsp_subject_id'], $second['nwsp_subject_id'] )
+		);
+
+		return $rows;
 	}
 
 	public function removePage( PageId $pageId ): void {

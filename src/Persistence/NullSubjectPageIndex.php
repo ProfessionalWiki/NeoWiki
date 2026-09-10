@@ -15,7 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
  */
 class NullSubjectPageIndex implements SubjectPageIndex {
 
-	public function setSubjectsOfPage( PageId $pageId, array $subjectIds ): void {
+	public function setSubjectsOfPage( PageId $pageId, array $subjectHeaders ): void {
 	}
 
 	public function removePage( PageId $pageId ): void {

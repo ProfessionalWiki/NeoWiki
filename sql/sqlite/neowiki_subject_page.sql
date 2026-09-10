@@ -5,6 +5,9 @@
 CREATE TABLE /*_*/neowiki_subject_page (
   nwsp_subject_id BLOB NOT NULL,
   nwsp_page_id INTEGER UNSIGNED NOT NULL,
+  nwsp_schema BLOB DEFAULT NULL,
+  nwsp_label BLOB DEFAULT NULL,
+  nwsp_is_main SMALLINT UNSIGNED DEFAULT 0 NOT NULL,
   PRIMARY KEY(nwsp_subject_id, nwsp_page_id)
 );
 

@@ -14,7 +14,7 @@ use RuntimeException;
  */
 class ThrowingSubjectPageIndex implements SubjectPageIndex {
 
-	public function setSubjectsOfPage( PageId $pageId, array $subjectIds ): void {
+	public function setSubjectsOfPage( PageId $pageId, array $subjectHeaders ): void {
 		throw new RuntimeException( 'index write failed' );
 	}
 

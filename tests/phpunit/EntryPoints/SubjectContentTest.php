@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectHeader;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
@@ -73,22 +74,32 @@ class SubjectContentTest extends TestCase {
 		$this->assertNull( $content->getPageSubjects()->getMainSubject() );
 	}
 
-	public function testSubjectIdsAreReadWithoutDeserializing(): void {
+	public function testSubjectHeadersAreReadWithoutDeserializing(): void {
 		$content = new SubjectContent( TestSubject::jsonThatDoesNotDeserialize( TestSubject::ZERO_GUID ) );
 
-		$this->assertSame( [ TestSubject::ZERO_GUID ], $content->getSubjectIds() );
+		$this->assertSame( [ TestSubject::ZERO_GUID ], $this->idsOf( $content ) );
 	}
 
-	public function testSubjectIdsLeaveOutKeysThatAreNotSubjectIds(): void {
+	public function testSubjectHeadersLeaveOutKeysThatAreNotSubjectIds(): void {
 		$content = new SubjectContent(
 			'{"subjects":{"not an id":{},"' . TestSubject::ZERO_GUID . '":{}}}'
 		);
 
-		$this->assertSame( [ TestSubject::ZERO_GUID ], $content->getSubjectIds() );
+		$this->assertSame( [ TestSubject::ZERO_GUID ], $this->idsOf( $content ) );
 	}
 
-	public function testContentThatIsNotSubjectJsonHoldsNoSubjectIds(): void {
-		$this->assertSame( [], ( new SubjectContent( 'not json at all' ) )->getSubjectIds() );
+	public function testContentThatIsNotSubjectJsonHoldsNoSubjectHeaders(): void {
+		$this->assertSame( [], ( new SubjectContent( 'not json at all' ) )->getSubjectHeaders() );
+	}
+
+	/**
+	 * @return string[]
+	 */
+	private function idsOf( SubjectContent $content ): array {
+		return array_map(
+			static fn ( SubjectHeader $header ): string => $header->id,
+			$content->getSubjectHeaders()
+		);
 	}
 
 }
