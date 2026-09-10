@@ -3,32 +3,38 @@
 New to NeoWiki? Try the live sandbox at [neowiki.dev](https://neowiki.dev), or
 [install it locally](operations/installation.md).
 
-## Use NeoWiki
+## User guide
+
+For people working in a wiki that runs NeoWiki.
 
 * [Getting started](guide/getting-started.md) — your first Schema, Subject, View, and query
 * [Author an ontology mapping](guide/author-an-ontology-mapping.md) — publish Subjects in EDM, CIDOC-CRM, or another
   vocabulary
 * [Keep your wiki current](guide/keep-your-wiki-current.md) — upgrade an evaluation wiki
 
-## Learn the model
+Reference for wikitext and Lua authors:
+
+* [Parser Functions](authoring/parser-functions.md) — `{{#view}}`, `{{#neowiki_value}}`, and `{{#cypher_raw}}`
+* [Lua API](authoring/lua-api.md) — the `mw.neowiki` Scribunto library, including `nw.query()` for Cypher
+* [Edit Notices](authoring/edit-notices.md) — messages shown in the Subject editor, the Subject creator, and Manage
+  subjects
+
+## Concepts
 
 * [Glossary](glossary.md) — the concepts (Subject, Schema, Statement, View, Layout, Page Property) used
   across the UI, the code, and these docs. Start here.
 * [Qualifiers and References](qualifiers-and-references.md) — how NeoWiki models qualifiers, references,
   and rank (for people coming from Wikibase)
+* [Architecture](architecture.md) — how the parts fit together, followed by the numbered list of Architecture
+  Decision Records
+* [Planning docs](https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs/planning) — work-in-progress
+  exploration (not published to the website)
 
-## Developer reference
+## Integration
 
-### Build on your wiki
+For developers building on NeoWiki from outside the wiki.
 
-Add and display structured data with wikitext and Lua.
-
-* [Parser Functions](authoring/parser-functions.md) — `{{#view}}`, `{{#neowiki_value}}`, and `{{#cypher_raw}}`
-* [Lua API](authoring/lua-api.md) — the `mw.neowiki` Scribunto library, including `nw.query()` for Cypher
-
-### Integrate over HTTP
-
-The REST and query APIs, and the JSON formats they exchange.
+Over HTTP:
 
 * [REST API](api/rest-api.md) — the `/neowiki/v0/*` endpoints, plus the generated OpenAPI spec
 * [Schema Format](api/schema-format.md) — JSON format for Schema definitions
@@ -37,15 +43,15 @@ The REST and query APIs, and the JSON formats they exchange.
 * [Query API](api/query-api.md) — read-only Cypher endpoint over the graph backend
 * [Graph Model](api/graph-model.md) — Neo4j node and relationship structure
 
-### Publish as RDF
-
-Project Subjects to RDF, natively or mapped onto standard ontologies.
+As RDF:
 
 * [RDF Export](rdf/rdf-export.md) — native RDF projection: config, IRI scheme, endpoint, bulk dump
 * [Ontology Mapping](rdf/ontology-mapping.md) — projecting into EDM, Dublin Core, … via Mapping pages
 * [Worked example: Person to EDM](rdf/person-to-edm.md) — end-to-end mapping walkthrough
 
-### Extend NeoWiki
+## Extending
+
+For developers of MediaWiki extensions that build on NeoWiki.
 
 * [Extending NeoWiki](extending/extending.md) — the extension points, how to hook in, and the RedHerb example
   extension to start from
@@ -60,16 +66,11 @@ Project Subjects to RDF, natively or mapped onto standard ontologies.
 * [Using NeoWiki from JavaScript](extending/javascript.md) — the public JS API, displaying values, mounting Vue
   features
 
-### Run NeoWiki
+## Install & run
+
+For the people who operate the server.
 
 * [Installation](operations/installation.md) — the Docker demo, or adding NeoWiki to an existing MediaWiki
 * [Upgrading](operations/upgrading.md) — moving your wiki to the latest NeoWiki
 * [Maintenance](operations/maintenance.md) — rebuilding the graph, Neo4j outage behavior, and backups
 * [Performance](operations/performance.md) — measured write throughput
-
-### Understand the architecture
-
-* [Architecture](architecture.md) — how the parts fit together, followed by the numbered list of Architecture
-  Decision Records
-* [Planning docs](https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs/planning) — work-in-progress
-  exploration (not published to the website)
