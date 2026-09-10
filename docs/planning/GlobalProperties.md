@@ -70,6 +70,19 @@ terms during import/export. ECHOLOT T2.3 talks about "model-model mappings" betw
 system to adopt the same model. A mapping configuration like "Person.Name maps to `foaf:name`" and "City.Name
 maps to `dcterms:title`" achieves interoperability without changing the data model.
 
+**Sub-property declarations can anchor local properties to ontology terms without a global registry.** A mapping
+can declare a native predicate a sub-property of an ontology term — `neo-prop:Name rdfs:subPropertyOf foaf:name` —
+and a `foaf:name` query then finds the local data: the ontology term becomes the shared anchor across Schemas and
+NeoWiki instances that a global property registry would otherwise provide. How far this reaches depends on the
+projection's [predicate scope](NativeRdfProjection.md): with the current flat per-name predicates the declaration
+above covers every "Name" property alike — Person's and City's — while per-Schema anchoring (`Person.Name` under
+`foaf:name`, `City.Name` under `dcterms:title`) needs Schema-scoped predicates, so this mechanism is also an
+argument in that open question. The stores NeoWiki ships with (QLever, Oxigraph) apply no RDFS entailment, so a
+query follows the declarations explicitly: `?p rdfs:subPropertyOf* foaf:name . ?s ?p ?o`. Consumers needing the
+ontology's own shape — `foaf:name` as the predicate — use an ontology projection
+([OntologyMapping.md](OntologyMapping.md)); the declarations serve native-projection consumers. Not built; an
+option for the mapping design (related: [#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163)).
+
 ## Summary
 
 The main argument for global properties is direct alignment with RDF ontologies. The main argument against is
