@@ -12,14 +12,7 @@ For people working in a wiki that runs NeoWiki.
   vocabulary
 * [Keep your wiki current](guide/keep-your-wiki-current.md) — upgrade an evaluation wiki
 
-Reference for wikitext and Lua authors:
-
-* [Parser Functions](authoring/parser-functions.md) — `{{#view}}`, `{{#neowiki_value}}`, and `{{#cypher_raw}}`
-* [Lua API](authoring/lua-api.md) — the `mw.neowiki` Scribunto library, including `nw.query()` for Cypher
-* [Edit Notices](authoring/edit-notices.md) — messages shown in the Subject editor, the Subject creator, and Manage
-  subjects
-
-## Concepts
+Concepts:
 
 * [Glossary](glossary.md) — the concepts (Subject, Schema, Statement, View, Layout, Page Property) used
   across the UI, the code, and these docs. Start here.
@@ -29,6 +22,13 @@ Reference for wikitext and Lua authors:
   Decision Records
 * [Planning docs](https://github.com/ProfessionalWiki/NeoWiki/tree/master/docs/planning) — work-in-progress
   exploration (not published to the website)
+
+Reference for wikitext and Lua authors:
+
+* [Parser Functions](authoring/parser-functions.md) — `{{#view}}`, `{{#neowiki_value}}`, and `{{#cypher_raw}}`
+* [Lua API](authoring/lua-api.md) — the `mw.neowiki` Scribunto library, including `nw.query()` for Cypher
+* [Edit Notices](authoring/edit-notices.md) — messages shown in the Subject editor, the Subject creator, and Manage
+  subjects
 
 ## Integration
 
