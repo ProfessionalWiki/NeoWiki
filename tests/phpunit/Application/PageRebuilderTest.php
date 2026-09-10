@@ -10,10 +10,7 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
-use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
-use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyOnRevisionCreatedHandler;
 use Wikimedia\Rdbms\IDBAccessObject;
 use WikiPage;
@@ -22,6 +19,11 @@ use WikiPage;
  * @covers \ProfessionalWiki\NeoWiki\Application\PageRebuilder
  */
 class PageRebuilderTest extends TestCase {
+
+	/**
+	 * The outcomes of a page that was written rather than skipped.
+	 */
+	private const array WRITE_OUTCOMES = [ PageRefreshOutcome::Refreshed, PageRefreshOutcome::Unpublished ];
 
 	private SpyOnRevisionCreatedHandler $handler;
 
@@ -48,19 +50,29 @@ class PageRebuilderTest extends TestCase {
 	 */
 	public static function skipOutcomeProvider(): iterable {
 		foreach ( PageRefreshOutcome::cases() as $outcome ) {
-			if ( $outcome !== PageRefreshOutcome::Refreshed ) {
+			if ( !in_array( $outcome, self::WRITE_OUTCOMES, true ) ) {
 				yield $outcome->value => [ $outcome ];
 			}
 		}
 	}
 
 	/**
+	 * @dataProvider writeOutcomeProvider
 	 * @covers \ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome::skipReason
 	 */
-	public function testRefreshedHasNoSkipReason(): void {
+	public function testAnOutcomeThatWroteHasNoSkipReason( PageRefreshOutcome $outcome ): void {
 		$this->expectException( LogicException::class );
 
-		PageRefreshOutcome::Refreshed->skipReason();
+		$outcome->skipReason();
+	}
+
+	/**
+	 * @return iterable<array{PageRefreshOutcome}>
+	 */
+	public static function writeOutcomeProvider(): iterable {
+		foreach ( self::WRITE_OUTCOMES as $outcome ) {
+			yield $outcome->value => [ $outcome ];
+		}
 	}
 
 	public function testReturnsRefreshedWhenHandlerWritesPage(): void {
@@ -88,7 +100,7 @@ class PageRebuilderTest extends TestCase {
 		$this->assertSame( [], $this->handler->calls );
 	}
 
-	public function testPassesTheCurrentRevisionToTheHandler(): void {
+	public function testRebuildPassesTheCurrentRevisionToTheHandler(): void {
 		$revision = $this->newRevision();
 
 		$this->newRebuilder( $revision )->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
@@ -114,38 +126,15 @@ class PageRebuilderTest extends TestCase {
 		);
 	}
 
-	public function testRebuildProjectsTheRevisionThePolicyPublishes(): void {
-		$latest = $this->newRevision();
-		$published = $this->newRevision();
+	public function testRebuildFromPrimaryPassesTheCurrentRevisionToTheHandler(): void {
+		$revision = $this->newRevision();
 
-		$this->newRebuilder( $latest, FixedRevisionPolicy::publishing( $published ) )
-			->rebuild( Title::makeTitle( NS_MAIN, 'Reprojected page' ) );
+		$this->newRebuilder( $revision )->rebuildFromPrimary( Title::makeTitle( NS_MAIN, 'Imported page' ) );
 
-		$this->assertSame( [ $published ], $this->handler->calls );
+		$this->assertSame( [ $revision ], $this->handler->calls );
 	}
 
-	public function testRebuildWritesNothingWhenThePolicyPublishesNoRevision(): void {
-		$outcome = $this->newRebuilder( $this->newRevision(), FixedRevisionPolicy::publishingNothing() )
-			->rebuild( Title::makeTitle( NS_MAIN, 'Page with nothing published' ) );
-
-		$this->assertSame( PageRefreshOutcome::SkippedUnpublishableRevision, $outcome );
-		$this->assertSame( [], $this->handler->calls );
-	}
-
-	/**
-	 * An import or undelete writes a revision rather than reprojecting a page, so it takes the same
-	 * path a save does: the handler is handed what was written and decides whether to publish it.
-	 */
-	public function testRebuildFromPrimaryDoesNotSubstitute(): void {
-		$written = $this->newRevision();
-
-		$this->newRebuilder( $written, FixedRevisionPolicy::publishing( $this->newRevision() ) )
-			->rebuildFromPrimary( Title::makeTitle( NS_MAIN, 'Imported page' ) );
-
-		$this->assertSame( [ $written ], $this->handler->calls );
-	}
-
-	private function newRebuilder( ?RevisionRecord $revision, ?RevisionPolicy $policy = null ): PageRebuilder {
+	private function newRebuilder( ?RevisionRecord $revision ): PageRebuilder {
 		$page = $this->createStub( WikiPage::class );
 		$page->method( 'getRevisionRecord' )->willReturn( $revision );
 		$page->method( 'loadPageData' )->willReturnCallback(
@@ -157,7 +146,7 @@ class PageRebuilderTest extends TestCase {
 		$factory = $this->createStub( WikiPageFactory::class );
 		$factory->method( 'newFromTitle' )->willReturn( $page );
 
-		return new PageRebuilder( $this->handler, $factory, $policy ?? new NullRevisionPolicy() );
+		return new PageRebuilder( $this->handler, $factory );
 	}
 
 	private function newRevision(): RevisionRecord {

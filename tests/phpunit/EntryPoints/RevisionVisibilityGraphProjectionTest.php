@@ -7,7 +7,11 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 
 /**
  * Hiding who made a revision creates no revision of its own, so none of the hooks the projection is
@@ -21,10 +25,18 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class RevisionVisibilityGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 	private const string PAGE_NAME = 'Page whose author gets hidden';
+	private const string APPROVED_PAGE_NAME = 'Page with an approved revision and a draft';
 
 	protected function setUp(): void {
 		parent::setUp();
 		$this->setUpNeo4j();
+	}
+
+	protected function tearDown(): void {
+		parent::tearDown();
+		// A test that registers a revision policy rebuilds the singleton with it; reset it so later
+		// tests get a clean instance rebuilt without the temporary hook.
+		NeoWikiExtension::resetInstance();
 	}
 
 	public function testHidingTheAuthorOfTheCurrentRevisionTakesTheirNameOutOfTheGraph(): void {
@@ -70,6 +82,27 @@ class RevisionVisibilityGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		$this->hideRevisionAuthor( $this->pageTitle(), $firstRevision->getId() );
 
 		$this->assertSame( $lastAuthor->getName(), $this->readLastEditor( $lastRevision->getPageId() ) );
+	}
+
+	/**
+	 * The reprojection publishes what the registered policy names, not the revision whose visibility
+	 * changed: on a wiki with an approval extension, hiding an author must not publish a draft.
+	 */
+	public function testHidingAnAuthorReprojectsTheRevisionThePolicyPublishes(): void {
+		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
+		$approved = $this->createPageWithSubjects( self::APPROVED_PAGE_NAME, TestSubject::build() );
+		$draft = $this->createPageWithSubjects( self::APPROVED_PAGE_NAME );
+
+		$store = new SpyGraphDatabasePlugin();
+		$this->registerGraphDatabasePlugins( $store );
+		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $approved ) );
+
+		$this->hideRevisionAuthor( Title::newFromText( self::APPROVED_PAGE_NAME ), $draft->getId() );
+
+		$this->assertTrue(
+			$store->savedPages[0]->getSubjects()->hasSubjects(),
+			'the approved revision holds a Subject the draft removed'
+		);
 	}
 
 	private function editPageAs( User $author ): RevisionRecord {

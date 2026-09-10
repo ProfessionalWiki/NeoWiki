@@ -72,11 +72,15 @@ class PageRefreshWithoutEditTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testRefreshWritesNothingWhenTheRegisteredPolicyPublishesNoRevision(): void {
-		$this->createPageWithSubjects( self::PAGE_NAME, TestSubject::build() );
+	public function testRefreshWithdrawsThePageWhenTheRegisteredPolicyPublishesNoRevision(): void {
+		$pageId = $this->createPageWithSubjects( self::PAGE_NAME, TestSubject::build() )->getPageId();
+		$this->assertTrue( $this->graphHoldsPage( $pageId ), 'precondition: saving the page projected it' );
 		$this->registerRevisionPolicy( FixedRevisionPolicy::publishingNothing() );
 
-		$this->assertSame( PageRefreshOutcome::SkippedUnpublishableRevision, $this->refreshPage() );
+		$outcome = $this->refreshPage();
+
+		$this->assertSame( PageRefreshOutcome::Unpublished, $outcome );
+		$this->assertFalse( $this->graphHoldsPage( $pageId ) );
 	}
 
 	public function testRefreshOfAMissingPageWritesNothing(): void {
@@ -98,6 +102,15 @@ class PageRefreshWithoutEditTest extends NeoWikiIntegrationTestCase {
 		);
 
 		return ( $result->first()->toRecursiveArray()['subjects'] ?? 0 ) > 0;
+	}
+
+	private function graphHoldsPage( int $pageId ): bool {
+		$result = $this->readGraph(
+			'MATCH (page:Page {id: $pageId}) RETURN count(page) AS pages',
+			[ 'pageId' => $pageId ]
+		);
+
+		return ( $result->first()->toRecursiveArray()['pages'] ?? 0 ) > 0;
 	}
 
 	private function readApprovalState( int $pageId ): ?string {

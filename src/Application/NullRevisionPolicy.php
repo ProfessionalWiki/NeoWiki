@@ -9,10 +9,6 @@ use MediaWiki\Revision\RevisionRecord;
 
 class NullRevisionPolicy implements RevisionPolicy {
 
-	public function publishesRevision( RevisionRecord $revision ): bool {
-		return true;
-	}
-
 	public function publishedRevision( RevisionRecord $revision ): ?RevisionRecord {
 		return $revision;
 	}
