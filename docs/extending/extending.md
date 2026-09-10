@@ -4,24 +4,39 @@ order: 1
 ---
 # Extending NeoWiki
 
-NeoWiki exposes extension points so other MediaWiki extensions can add custom Property Types, contribute
-page metadata to the graph, and reuse NeoWiki's UI.
+Other MediaWiki extensions can add Property Types and View Types, contribute page metadata and revision choices,
+keep a graph store of their own in sync, and use NeoWiki's PHP services and Vue components. The concepts used here —
+Subject, Schema, Property Type, Page Property — are defined in the [Glossary](../glossary.md).
 
-NeoWiki concepts referenced here — Subject, Schema, Property Type, Page Property — are defined in the
-[Glossary](../glossary.md).
+[RedHerb](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb) is a minimal example extension in the NeoWiki repository; the fastest start is to copy
+the file it uses for your extension point and adapt it.
 
-[RedHerb](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb) is a minimal, test-backed
-example extension shipped in the NeoWiki repository. NeoWiki's own tests exercise it, so its examples stay
-working. Each extension point below links to the RedHerb file that demonstrates it, so the fastest start is to
-copy the relevant RedHerb file and adapt it.
+NeoWiki is pre-1.0. Every extension point may change without notice until 1.0.
 
-## Stability
+## What you can build
 
-NeoWiki is pre-1.0. Every extension point on this page is alpha and may change without notice until 1.0.
+Contribute to NeoWiki:
+
+- [Property Types](property-types.md) — a new kind of value: its validation, projection, and editing and display
+  components.
+- [View Types](view-types.md) — a new visual format for rendering a Subject.
+- [Page Property Providers](page-properties.md) — key/value metadata on the Page node in the graph, and refreshing
+  it without an edit.
+- [Revision policy](revision-policy.md) — which revision of a page NeoWiki publishes, when your extension decides
+  what readers see.
+- [Edit notices](edit-notices.md) — a message shown before a user edits a Subject.
+- [Graph Database Backends](graph-database-backends.md) — a store of your own that NeoWiki keeps in sync; it gets
+  no query surface of its own yet.
+
+Use NeoWiki from your own code:
+
+- [Using NeoWiki from PHP](php.md) — Subjects and Cypher from hooks and special pages.
+- [Using NeoWiki from JavaScript](javascript.md) — the public JS API, displaying values, mounting Vue features,
+  TypeScript.
 
 ## Getting started
 
-An extension that builds on NeoWiki declares the dependency in its `extension.json`:
+Declare the dependency in your `extension.json`:
 
 ```json
 "requires": {
@@ -31,8 +46,9 @@ An extension that builds on NeoWiki declares the dependency in its `extension.js
 }
 ```
 
-Most backend extension points are registered through the `NeoWikiRegistration` hook, which hands you a
-`NeoWikiRegistrar`:
+### Backend registration
+
+Backend extension points are registered through the `NeoWikiRegistration` hook:
 
 ```json
 "Hooks": {
@@ -47,277 +63,14 @@ public static function onNeoWikiRegistration( NeoWikiRegistrar $registrar ): voi
 }
 ```
 
-Full example: [`src/RedHerbHooks.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbHooks.php).
+Example: [`src/RedHerbHooks.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbHooks.php). Registering a Property Type or View Type under a name
+already in use — a built-in's or another extension's — replaces it: the later registration wins, in the backend
+and frontend registries independently.
 
-Registering a Property Type or View Type under a name already in use — a built-in's or another extension's —
-replaces the earlier registration; the last registration wins, on both the backend and the frontend.
+### Frontend module
 
-## Backend extension points (PHP)
-
-### Property Types
-
-A Property Type defines a kind of structured value — its Value Type, validation, and Display Attributes. Implement
-the `PropertyType` interface, paired with a class extending `PropertyDefinition` that holds the type-specific
-definition fields, and register it with `NeoWikiRegistrar::addPropertyType()` (see "Getting started" above). The
-linked example shows the methods to implement.
-
-Example: [`src/ColorType.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/ColorType.php)
-(`implements PropertyType`) and
-[`src/ColorProperty.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/ColorProperty.php)
-(`extends PropertyDefinition`).
-
-To project your Property Type's values into Neo4j, register a builder that converts the Value to Neo4j scalars,
-keyed by the Property Type name:
-
-```php
-$registrar->addNeo4jValueBuilder( ColorType::NAME, static fn ( $value ) => $value->toScalars() );
-```
-
-#### Contributing RDF value mappers
-
-For the [RDF export](../rdf/rdf-export.md), register a mapper keyed by the Property Type name with
-`NeoWikiRegistrar::addRdfValueMapper()`. It receives the Statement's `NeoValue` and returns a list of RDF terms —
-`Literal`s, or `Iri`s for values that denote a resource, as the built-in `url` mapper does — one per value part.
-Guard the value shape, since the mapper is called for whatever a Statement holds. RedHerb's
-[`RedHerbHooks.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbHooks.php)
-registers a guarded mapper for its color type.
-
-Without a mapper, a Property Type's Statements are omitted from the RDF export, just as they are from the
-Neo4j projection.
-
-### Page Property Providers
-
-Page Property Providers contribute key/value metadata to the Page node in the graph (queryable via Cypher;
-Neo4j is currently the only graph backend). Providers run for every page that is saved or rebuilt, whether or
-not it holds Subjects. Implement `PagePropertyProvider`:
-
-```php
-class StaticPagePropertyProvider implements PagePropertyProvider {
-
-	public function getProperties( PagePropertyProviderContext $context ): array {
-		return [ 'myext_reviewState' => 'approved' ];
-	}
-
-}
-```
-
-Register with `NeoWikiRegistrar::addPagePropertyProvider()`. Keys are merged across all providers into one
-key/value map, with the last-registered provider winning on a key collision, so namespace your keys (e.g. with an
-extension prefix). The context exposes the page id, title and namespace, creation and modification times,
-categories, and last editor, plus the revision's main slot content, so providers can derive Page Properties from
-the content without re-fetching or re-parsing it.
-
-To derive Page Properties from the content, prefer the parse products: `categories`, and `parserProperties` — the
-MediaWiki page properties recorded during parsing (e.g. those a parser hook sets via
-`ParserOutput::setPageProperty`). These are template-expansion-safe and robust. (Note that `parserProperties` are
-an input from MediaWiki's parse; they are not the NeoWiki Page Properties this provider returns.) The raw main
-slot `content` and its `contentModel` are also exposed, but scraping raw wikitext is fragile — reach for them
-mainly when handling a custom, non-wikitext content model that the parse products do not cover. Example:
-[`src/StaticPagePropertyProvider.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/StaticPagePropertyProvider.php).
-
-### Edit notices
-
-Show a message before a user edits a Subject.
-
-```php
-class ApprovalEditNoticeProvider implements SubjectEditNoticeProvider {
-
-	public function __construct(
-		private readonly MessageLocalizer $messageLocalizer
-	) {
-	}
-
-	public function getNotices( SubjectEditNoticeContext $context ): array {
-		return [ new SubjectEditNotice(
-			key: 'myext-approval',
-			html: $this->messageLocalizer->msg( 'myext-approval-notice' )->parse()
-		) ];
-	}
-
-}
-```
-
-Register with `NeoWikiRegistrar::addSubjectEditNoticeProvider()`. Providers run in registration order, after the
-notices wiki admins write as interface messages, and only for pages the requesting user may read.
-`SubjectEditNoticeContext` exposes `$pageId`, `$pageDbKey`, `$namespaceId`, and `$schemaName` when a Schema is
-known.
-
-Unlike an admin's wikitext, which MediaWiki's parser sanitizes, provider `html` is inserted as given: escape it
-yourself.
-
-Namespace your keys to your extension. A key reaches the browser as a styling handle, and the first provider to
-claim one keeps it. See [Edit notices](../authoring/edit-notices.md) for the keys admins use.
-
-### Refreshing a page's data without an edit
-
-A page's graph data is written on edit and on full rebuild. When data your extension contributes through a
-`PagePropertyProvider` changes *outside* an edit — for example an approval extension marking a revision approved —
-the graph keeps the old value until the page is next saved. Trigger a refresh on demand:
-
-```php
-$outcome = NeoWikiExtension::getInstance()
-	->newPageRebuilder()
-	->rebuild( $title );
-```
-
-NeoWiki re-runs every registered `PagePropertyProvider` for the page (and re-reads its subject slot) and updates
-the Page node. No new revision is created. `rebuild()` returns a `PageRefreshOutcome`:
-
-- `Refreshed` — the Page node was updated.
-- `Unpublished` — a registered revision policy publishes no revision of the page, so it was withdrawn from the graph
-  stores.
-- `SkippedMissingRevision` — the page has no current revision.
-- `SkippedUnreadableSubjects` — the page's subject slot holds content NeoWiki cannot read as Subjects.
-- `SkippedUnreadablePageProperties` — the page's properties could not be built, for instance because a provider or the
-  page's own parse threw.
-
-A graph store that fails is logged and skipped, exactly as on a normal page save; only request timeouts and
-wiki-database errors throw.
-
-### Revision policy
-
-Choose which revision of a page NeoWiki publishes: to the graph stores, the RDF export, the Subject read
-`GET /neowiki/v0/subject/{subjectId}`, and its own Schema, Layout, Mapping and configuration reads. Without a policy
-every page publishes its latest revision.
-
-```php
-class ApprovalRevisionPolicy implements RevisionPolicy {
-
-	public function publishedRevision( RevisionRecord $revision ): ?RevisionRecord {
-		return $this->approvalLookup->lastApprovedRevisionOf( $revision->getPage() );
-	}
-
-	public function revisionIsReadableBy( RevisionRecord $revision, Authority $viewer ): bool {
-		return $this->approvalLookup->isApproved( $revision ) || $viewer->isAllowed( 'myext-see-drafts' );
-	}
-
-}
-```
-
-Register with `NeoWikiRegistrar::setRevisionPolicy()`; a second policy is refused with a warning on the `NeoWiki`
-log channel.
-
-- `publishedRevision()` receives the page's current revision and returns the one to publish, of the same page, or
-  `null`, which deletes the page's Page node and Subjects from the graph stores and makes the RDF export and the
-  Subject read answer not-found for it. A policy that throws counts as returning `null`, with the error logged. It
-  runs on every page save and rebuild and on every read above, so keep it cheap.
-- `revisionIsReadableBy()` is asked when a REST caller names a `revisionId` or asks for `latest`
-  ([REST API](../api/rest-api.md)); a refusal answers exactly like a revision that does not exist.
-
-Approval changes outside an edit reach NeoWiki only through [`rebuild()`](#refreshing-a-pages-data-without-an-edit),
-and a newly registered policy reaches the graph stores only through a
-[full rebuild](../operations/maintenance.md#rebuilding-the-graph).
-
-Editing reads the latest revision. So do `?action=subjects`, `GET /neowiki/v0/page/{pageId}/subjects` and the
-referenced Subjects on a `revisionId` read ([#1390](https://github.com/ProfessionalWiki/NeoWiki/issues/1390)), and
-the parse-time accessors. Schema and Mapping reads are cached under the latest revision id, so an approval change
-without an edit to that Schema or Mapping page takes effect on its next edit or when the entry expires
-([#1392](https://github.com/ProfessionalWiki/NeoWiki/issues/1392)).
-
-### Graph Database Backends
-
-NeoWiki currently supports Neo4j only, but the graph projection is an extension point: implement
-`GraphDatabasePlugin` and NeoWiki keeps your store in sync alongside Neo4j.
-
-```php
-class MyGraphDatabasePlugin implements GraphDatabasePlugin {
-
-	public function initialize(): void {
-		// Create any store-level structures your backend needs (e.g. constraints or indexes).
-	}
-
-	public function savePage( Page $page ): void {
-		// Project the page and its subjects into your store.
-	}
-
-	public function deletePage( PageId $pageId ): void {
-		// Remove the page from your store.
-	}
-
-}
-```
-
-Register with `NeoWikiRegistrar::addGraphDatabasePlugin( $name, $plugin )`. Example:
-[`src/RedHerbGraphDatabasePlugin.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbGraphDatabasePlugin.php).
-
-The name is what [`--store`](../operations/maintenance.md#rebuilding-one-store) addresses, and what a rebuild files
-its run records under. Pick a stable one and namespace it to your extension. A name is refused with a warning on the
-`NeoWiki` channel when another backend already holds it, when it is `neo4j` in any casing — reserved for the bundled
-Neo4j backend — or when it is longer than 255 bytes, which is all a run record can hold. A refused backend receives
-no page changes and cannot be rebuilt.
-
-`savePage` hands you the page with all of its Subjects and the Page Properties contributed by every
-`PagePropertyProvider`, and runs for every revision, so subject edits, undeletions and page moves all reach you as a
-save. `deletePage` gets only the page id.
-
-`initialize` runs on `update.php`, at the start of a `RebuildGraphDatabases` run of your store before any page is
-projected, and once per batch of a rebuild started from the wiki — create the store-level structures a fresh store
-needs there. Make it idempotent and cheap, since every path calls it every time; it never runs on an individual edit.
-A rebuild also calls it to ask whether your store is still there when a whole batch of pages has failed.
-
-**Signal failure by throwing.** On an edit, delete or undelete, NeoWiki logs the failure and lets the user's
-operation commit, so a backend being down never blocks the wiki or starves the other backends — your projection is
-simply out of sync until the store is rebuilt. During a rebuild, failures reach the rebuild instead: a page you refuse
-is logged and counted and the rebuild carries on, while an `initialize` throw ends the run — before a page is read
-when it opens the store for the run, and at whichever batch it happens on otherwise. On `update.php` a failing `initialize` is reported and the update carries on, though the backends
-registered after yours do not initialize on that run.
-
-Make `deletePage` idempotent: the rebuild re-issues a delete for every page MediaWiki no longer has, so it will ask
-you to remove pages that are already gone from your store.
-
-### Reading NeoWiki data and authorization
-
-`NeoWikiExtension::getInstance()` exposes read-side services usable from any MediaWiki extension point
-(hooks, special pages):
-
-- `newSubjectPermissionHints( Authority )` — side-effect-free subject permission checks, for showing or
-  hiding affordances. A positive answer is a hint, not authorization to write.
-- `newPageSubjectsLookup()` — look up the subjects on a page.
-- `newSubjectContentRepository( Authority )` — read and write a page's Subject slot; the authority sets the
-  revision-deletion audience, it does not gate the read on the page's `read` permission.
-- `newFrontendModuleLoader()` — mount NeoWiki's UI on any page.
-
-Examples: [`src/RedHerbSidebarHook.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbSidebarHook.php)
-and [`src/Specials/SpecialRedHerbSubjectFinder.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/Specials/SpecialRedHerbSubjectFinder.php).
-
-### Running Cypher queries
-
-To run a read-only Cypher query from PHP, use `NeoWikiExtension::getInstance()->newCypherQueryService( $authority )`
-with the `Authority` the query runs for. The service checks that authority's `neowiki-query` right, rejects write
-queries, enforces the timeout against the backend, and truncates results to the row cap; resolve the limits
-configured in [`$wgNeoWikiQueryLimits`](../api/query-api.md) with `Neo4jQueryLimits::forUser()`:
-
-```php
-$result = NeoWikiExtension::getInstance()->newCypherQueryService( $this->getAuthority() )->execute( new Neo4jQueryRequest(
-	cypher: 'MATCH (s:Subject:Person) WHERE s.`Birth year` > $minYear RETURN s.name AS name',
-	parameters: [ 'minYear' => 2000 ],
-	limits: Neo4jQueryLimits::forUser( $this->getUser() ),
-) );
-```
-
-`execute()` returns a `Neo4jQueryResult` (columns, rows, truncation flag) and throws a `QueryException`
-subclass on failure, `QueryPermissionDeniedException` when the authority lacks the right;
-`newCypherQueryService()` itself throws a `LogicException` on a wiki with no Neo4j backend configured.
-
-The `User` in `forUser()` only sizes the limits: how heavy a single query may be, not how often. When running
-user-supplied queries, rate limit yourself, as the [Query API](../api/query-api.md) endpoint does.
-
-Two sharp edges: the write check is a keyword check plus `EXPLAIN`, and the keyword check also rejects `CALL` and
-`SHOW`, even for read-only procedures (see the [parser function notes](../authoring/parser-functions.md)). And the
-row cap truncates the result only after the query has run in full, so bound expensive queries with `LIMIT` in the
-Cypher itself.
-
-Example: [`src/Specials/SpecialRedHerbContentPageCount.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/Specials/SpecialRedHerbContentPageCount.php).
-
-## Frontend extension points (JS/Vue)
-
-NeoWiki's frontend is built with TypeScript and Vue. Extensions consume it as plain JavaScript and need no build step.
-You can also author in TypeScript with types; see "Authoring in TypeScript" below.
-
-### Loading your frontend
-
-Getting your JavaScript onto NeoWiki pages takes two steps. First, declare a ResourceLoader module that depends
-on `ext.neowiki`, which makes `require( 'ext.neowiki' )` available:
+Frontend extension points are registered from a ResourceLoader module that depends on `ext.neowiki`. The
+`NeoWikiGetFrontendModules` hook loads it wherever NeoWiki's UI loads; on pages of your own, load it as any module.
 
 ```json
 "ResourceModules": {
@@ -329,8 +82,6 @@ on `ext.neowiki`, which makes `require( 'ext.neowiki' )` available:
 }
 ```
 
-Then load that module alongside NeoWiki's UI by handling the `NeoWikiGetFrontendModules` hook:
-
 ```php
 class MyExtFrontendModulesHook implements NeoWikiGetFrontendModulesHook {
 
@@ -341,223 +92,21 @@ class MyExtFrontendModulesHook implements NeoWikiGetFrontendModulesHook {
 }
 ```
 
-Example: [`src/RedHerbFrontendModulesHook.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbFrontendModulesHook.php).
-
-### Registering a Property Type frontend
-
-A backend Property Type needs a matching frontend: a display component, an input component, and an
-attributes editor. Register them through the `neowiki.registration` JS hook:
-
-```javascript
-const nw = require( 'ext.neowiki' );
-
-mw.hook( 'neowiki.registration' ).add( ( registrar ) => {
-	registrar.registerPropertyType( {
-		typeName: 'color',
-		valueType: nw.ValueType.String,
-		displayAttributeNames: [],
-		createPropertyDefinitionFromJson: function ( base, json ) {
-			return Object.assign( {}, base, {
-				allowedColors: Array.isArray( json.allowedColors ) ? json.allowedColors : []
-			} );
-		},
-		getExampleValue: function () {
-			return nw.newStringValue( '#ff5733' );
-		},
-		displayComponent: ColorDisplay,
-		inputComponent: ColorInput,
-		attributesEditor: ColorAttributesEditor,
-		label: 'myext-property-type-color',
-		icon: icons.cdxIconHighlight
-	} );
-} );
-```
-
-The registration object's shape is defined by
-[`PropertyTypeRegistration.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/domain/PropertyTypeRegistration.ts);
-every field is required, including `attributesEditor` even for a type with no configurable attributes. The
-`typeName` must equal the backend `PropertyType::getTypeName()`. The display, input, and attributes-editor
-components conform to NeoWiki's component prop shapes — see
-[`ValueDisplayContract.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/components/Value/ValueDisplayContract.ts),
-[`ValueInputContract.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/components/Value/ValueInputContract.ts),
-and [`AttributesEditorContract.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/components/SchemaEditor/Property/AttributesEditorContract.ts).
-
-Full example: [`resources/init.js`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/init.js)
-with [`ColorDisplay.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/ColorDisplay.vue),
-[`ColorInput.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/ColorInput.vue),
-and [`ColorAttributesEditor.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/ColorAttributesEditor.vue).
-
-### Registering a View Type frontend
-
-A View Type renders a Subject in a particular visual format; `infobox` is the only built-in one. Register a Vue
-component for a new View Type through the same `neowiki.registration` hook, at parity with Property Types:
-
-```javascript
-const nw = require( 'ext.neowiki' );
-const RedHerbCard = require( './RedHerbCard.vue' );
-
-mw.hook( 'neowiki.registration' ).add( ( registrar ) => {
-	registrar.registerViewType( {
-		typeName: 'redherb-card',
-		component: RedHerbCard
-	} );
-} );
-```
-
-The registration object's shape is defined by
-[`ViewTypeRegistration.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/domain/ViewTypeRegistration.ts):
-a `typeName` and the Vue `component` that renders it. The component conforms to the `ViewProps` prop shape
-([`ViewContract.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/components/Views/ViewContract.ts)):
-the `subjectId` to render, a `canEditSubject` flag, and an optional `layoutName`. Resolve any Layout-specific
-configuration (Display Rules and Settings) from the layout store using `layoutName`. Once registered, the
-`typeName` becomes selectable as a Layout's View Type, and a `{{#view}}` (or Main Subject) placeholder that
-references it renders through your component instead of the built-in infobox.
-
-The `redherb-card` example reuses NeoWiki's own building blocks rather than rendering values by hand: the subject,
-schema, and layout stores for display; `nw.resolveDisplayProperties` together with the value-display component
-registry to render each value through its Property Type's component; and the shared `nw.SubjectEditorDialog` for
-editing when `canEditSubject` is true. Editing reads go through the repositories your component injects
-(`nw.NeoWikiServices.getSubjectRepository()`, `getSchemaRepository()`), not the stores, and reach the dialog as
-props. Seed the editor with `getSubjectForEditing()`: `getSubject()` answers with the revision the wiki publishes,
-which a save would overwrite. Saving updates the stores on its own: a Subject write answers with the Subject as
-persisted and the Schema it instantiates, and `nw.useSubjectStore()` records both.
-
-Relation fields inside the dialog offer creating the target Subject on the spot, but only when the dialog is given
-an `onCreate` handler alongside `onSave`. Creating a target writes a new Subject to a page, and which page that is
-is the host's to answer, so a dialog without the handler lets relations point only at Subjects that already exist.
-
-Full example: [`resources/init.js`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/init.js)
-with [`RedHerbCard.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/RedHerbCard.vue).
-
-### Using NeoWiki's public JS API
-
-`require( 'ext.neowiki' )` returns NeoWiki's public API barrel; its exports are listed in
-[`public-api.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/public-api.ts).
-The value model and factories (`newStringValue`, `newNumberValue`) live in
-[`domain/Value.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/domain/Value.ts);
-value shape varies by `valueType`.
-
-### Mounting standalone Vue features
-
-To build a Vue feature wired to NeoWiki's services, obtain NeoWiki's Pinia instance and register its
-services on your app:
-
-```javascript
-const nw = require( 'ext.neowiki' );
-const app = Vue.createMwApp( MyComponent );
-
-app.use( nw.NeoWikiExtension.getInstance().getPinia() );
-nw.NeoWikiServices.registerServices( app );
-app.mount( '#my-mount-point' );
-```
-
-Examples: [`resources/createChild/`](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb/resources/createChild),
-[`resources/editMainSubject/`](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb/resources/editMainSubject),
-and [`resources/subjectFinder/`](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb/resources/subjectFinder).
-
-`nw.SubjectEditor` reads back through two calls, not one. `unparseableInput()` returns the first field showing text
-the widget cannot turn into a Value — its property name and the message the field is displaying — or `null`.
-`getSubjectData()` cannot represent that text, so it returns the statement with no value and the text is lost on save.
-Check `unparseableInput()` before you read, hold the save while it is non-null, and show the message it hands you.
-`nw.SubjectEditorDialog` does this for you.
-
-### Authoring in TypeScript
-
-You can write your extension in TypeScript and get types for NeoWiki's API. This is configuration on your side;
-NeoWiki ships nothing extra for it. See [ADR 24](../adr/024-frontend-extension-mechanism.md) for the reasoning.
-
-Point your `tsconfig.json` `paths` at NeoWiki's barrel source, which sits next to your extension in `extensions/`:
-
-```json
-"paths": {
-	"ext.neowiki": [ "../NeoWiki/resources/ext.neowiki/src/public-api" ]
-}
-```
-
-You then get types on the same specifier you load at runtime, for example
-`import { ValueType, newStringValue } from 'ext.neowiki';` and
-`import type { PropertyTypeRegistration } from 'ext.neowiki';`. Mark the modules NeoWiki already provides as external
-in your bundler, so you do not ship a second copy and break the shared store: `ext.neowiki`, `vue`, `@wikimedia/codex`,
-`@wikimedia/codex-icons` and `pinia`. At runtime your built JavaScript loads the same `ext.neowiki` module as the rest
-of the page.
-
-## Conventions
-
-### i18n and validation codes
-
-A Property Type is validated on the backend by `PropertyType::validate()` (returns `Violation[]`). The
-frontend does not validate; it surfaces the violations the server returns. NeoWiki resolves each violation
-`code` as the message key `neowiki-field-<code>`, so your extension must define those messages. For example,
-a backend validator that returns the code `invalid-hex` requires a `neowiki-field-invalid-hex` message (see
-RedHerb's [`i18n/en.json`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/i18n/en.json)).
-
-### Icons
-
-The frontend registration's `icon` is a Codex `Icon`. RedHerb uses stock Codex icons (browse the
-[icon gallery](https://doc.wikimedia.org/codex/latest/icons/all-icons.html)) declared via
-`CodexModule::getIcons` in its
-[`extension.json`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/extension.json).
-Custom SVG icons are also supported — pass an SVG string as the `icon`.
-
-## Not yet extensible
-
-These extension points are designed or partially present but not yet open to extensions:
-
-- **Query surfaces for a graph database backend.** The projection side is extensible (see
-  "Graph Database Backends"), but a backend cannot yet contribute its own parser function, REST route, or
-  `mw.neowiki` Lua function; Neo4j's are wired in core.
-- **A published TypeScript types package.** TypeScript authors get types today by pointing their `tsconfig` at
-  NeoWiki's source (see "Authoring in TypeScript" and [ADR 24](../adr/024-frontend-extension-mechanism.md)). A
-  published, versioned package is deferred until a consumer needs types without a NeoWiki checkout.
+Example: [`src/RedHerbFrontendModulesHook.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbFrontendModulesHook.php). The module is plain
+JavaScript with no build step; [TypeScript](javascript.md#authoring-in-typescript) is optional.
 
 ## Internal surfaces
 
-Everything on this page is alpha, but the surfaces below are internal even by that standard: they are
-implementation details that happen to be reachable, and they can change in any release without notice.
+Not for extensions to build on, however reachable:
 
-### NeoWiki's rendered HTML
-
-The `.ext-neowiki-view` placeholder elements and `data-mw-neowiki-*` attributes are the private contract
-between NeoWiki's backend and its frontend for mounting Views. They are not an integration surface: do not
-select these elements, read Subject IDs out of them, restyle their internals, or remove and replace them
-with your own rendering.
-
-To control where and how a Subject renders:
-
-- To place a Subject rendering in page content, use the
-  [`{{#view}}` parser function](../authoring/parser-functions.md), optionally with a Layout to control which
-  properties are shown.
-- To render Subjects in your own visual format, register a custom View Type
-  (see [Registering a View Type frontend](#registering-a-view-type-frontend)).
-- For fully custom UI outside the View system, fetch the data through the [REST API](../api/rest-api.md) or
-  the [public JS API](#using-neowikis-public-js-api) and render your own components, mounted as described in
-  [Mounting standalone Vue features](#mounting-standalone-vue-features). RedHerb's
-  [`editMainSubject`](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb/resources/editMainSubject)
-  resolves the page's Main Subject through the public JS API.
-
-### The internal Neo4j client
-
-`NeoWikiExtension::getInstance()->getNeo4jClient()` and `getReadOnlyNeo4jClient()` return the Laudis client
-NeoWiki itself uses. Neo4j access is treated as an implementation detail of NeoWiki's persistence layer
-([ADR 13](../adr/013-restrict-neo4j-access.md)). Nothing stops an extension from querying through the raw
-client, but compare what the documented query interfaces
-([`{{#cypher_raw}}`](../authoring/parser-functions.md), [`nw.query`](../authoring/lua-api.md), the
-[Query API](../api/query-api.md), and the [PHP query service](#running-cypher-queries)) provide over it:
-
-- **Read-only enforcement.** The query interfaces reject write queries (a keyword check plus `EXPLAIN`;
-  the keyword check also rejects read-only `CALL` and `SHOW`); with the raw client, a bug in calling code
-  can corrupt the graph projection, which is what ADR 13 exists to prevent.
-- **Resource limits.** The query interfaces enforce a configured timeout against the backend and cap the
-  rows returned; the raw client has neither. The row cap does not bound the work a query does, so use
-  `LIMIT` in the Cypher either way.
-- **Result handling.** The query interfaces return normalized rows and columns; the raw client returns
-  Laudis driver types that you convert yourself.
-
-Writing to the graph directly deserves particular caution: the graph is a projection of wiki content that
-NeoWiki rewrites at will. Saving a page re-projects that page's nodes, and the `RebuildGraphDatabases`
-maintenance script rebuilds the projection from scratch, so anything a third party writes into the graph
-can be overwritten, orphaned, or deleted at any time. For page-level key/value metadata there is a durable
-path: [Page Property Providers](#page-property-providers), which NeoWiki re-runs whenever a page is saved
-or rebuilt. For arbitrary nodes and relationships there is
-currently no durable third-party write path into NeoWiki's graph; a
-[Graph Database Backend](#graph-database-backends) projects durably, but into its own store.
+- **NeoWiki's rendered HTML.** The `.ext-neowiki-view` placeholders and `data-mw-neowiki-*` attributes are the
+  private contract between NeoWiki's backend and frontend for mounting Views: do not select, scrape, restyle or
+  replace them. To place a Subject rendering in page content use [`{{#view}}`](../authoring/parser-functions.md);
+  for your own format register a [View Type](view-types.md); for fully custom UI fetch the data through the
+  [REST API](../api/rest-api.md) or the [JS API](javascript.md) and render it yourself.
+- **The internal Neo4j client.** `NeoWikiExtension::getInstance()->getNeo4jClient()` and `getReadOnlyNeo4jClient()`
+  return the Laudis client NeoWiki itself uses ([ADR 13](../adr/013-restrict-neo4j-access.md)). Query through the
+  [query service](php.md#running-cypher-queries), which rejects writes and enforces limits; anything written to the
+  graph directly is overwritten by the next save or rebuild of the pages involved. Page-level metadata has a durable
+  path in [Page Property Providers](page-properties.md); other nodes and relationships have none short of a
+  [Graph Database Backend](graph-database-backends.md) of your own.

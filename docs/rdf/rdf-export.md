@@ -54,7 +54,7 @@ A `url` value projects as an **IRI object** (`<https://…>`); a value that is n
 an `xsd:anyURI` literal, so nothing is lost. The other value types map to `xsd` datatypes: `text`/`select` →
 `xsd:string`, `number` → `xsd:decimal` (or `xsd:integer` when fractionless), `boolean` → `xsd:boolean`, `date` →
 `xsd:date`, `dateTime` → `xsd:dateTime`. Extensions map their own property types via
-[`addRdfValueMapper`](../extending/extending.md#contributing-rdf-value-mappers). A Statement whose property type has no
+[`addRdfValueMapper`](../extending/property-types.md#projection). A Statement whose property type has no
 registered mapper — including an unregistered type — is omitted from the projection.
 
 A Subject whose Schema cannot be loaded (for example, its Schema page was deleted) is omitted from the projection; a
@@ -91,7 +91,7 @@ Page metadata describes the `neo-page:` resource, in the same named graph as the
 | `neo:hasSubject` | one per projected Subject, the Main Subject included |
 
 That list is exhaustive. Page Properties contributed by extensions through
-[`PagePropertyProvider`](../extending/extending.md#page-property-providers) reach the Neo4j projection only, and
+[`PagePropertyProvider`](../extending/page-properties.md) reach the Neo4j projection only, and
 nothing carries a page's namespace or wiki id.
 
 ## Endpoint
