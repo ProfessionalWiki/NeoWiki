@@ -19,7 +19,7 @@ php maintenance/run.php NeoWiki:RebuildGraphDatabases
 ```
 
 It re-projects every page on the wiki from its latest revision, or from the one a registered
-[revision policy](../extending/extending.md#revision-policy) publishes, into every backend, and removes the pages
+[revision policy](../extending/revision-policy.md) publishes, into every backend, and removes the pages
 MediaWiki no longer has. Run it to:
 
 - Recover after a graph store wipe or restore.

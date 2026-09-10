@@ -51,4 +51,4 @@ notices.
 
 ## From an extension
 
-Extensions can add notices of their own — see [Extending NeoWiki](../extending/extending.md#edit-notices).
+Extensions can add notices of their own — see [Extending NeoWiki](../extending/edit-notices.md).

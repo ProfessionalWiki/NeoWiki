@@ -47,8 +47,18 @@ Project Subjects to RDF, natively or mapped onto standard ontologies.
 
 ### Extend NeoWiki
 
-* [Extending NeoWiki](extending/extending.md) — add property types and view types, contribute graph and RDF data,
-  and reuse NeoWiki's UI from another extension (with the RedHerb example extension as a starting point)
+* [Extending NeoWiki](extending/extending.md) — the extension points, how to hook in, and the RedHerb example
+  extension to start from
+* [Property Types](extending/property-types.md) — a new kind of value, from PHP validation to Vue components
+* [View Types](extending/view-types.md) — a new visual format for rendering a Subject
+* [Page Property Providers](extending/page-properties.md) — page metadata in the graph, and refreshing it without
+  an edit
+* [Revision policy](extending/revision-policy.md) — which revision NeoWiki publishes, for approval extensions
+* [Edit notices](extending/edit-notices.md) — a message before a user edits a Subject
+* [Graph Database Backends](extending/graph-database-backends.md) — a store of your own that NeoWiki keeps in sync
+* [Using NeoWiki from PHP](extending/php.md) — read Subjects and run Cypher from hooks and special pages
+* [Using NeoWiki from JavaScript](extending/javascript.md) — the public JS API, displaying values, mounting Vue
+  features
 
 ### Run NeoWiki
 
