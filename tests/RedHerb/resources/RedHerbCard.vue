@@ -183,11 +183,13 @@ module.exports = exports = {
 
 		// Editing UIs read through the repositories rather than the stores
 		// (NeoWiki ADR 30 / ADR 16): the stores hold page state, not editor state.
+		// getSubjectForEditing, not getSubject: a save replaces the current
+		// revision, not the published one.
 		// Saving updates the stores, because the write answers with the Subject and
 		// Schema as the server has them.
 		function openEditor() {
 			Promise.all( [
-				subjectRepo.getSubject( props.subjectId ),
+				subjectRepo.getSubjectForEditing( props.subjectId ),
 				schemaRepo.getSchema( subject.value.getSchemaName() )
 			] ).then( ( [ freshSubject, freshSchema ] ) => {
 				editingSubject.value = freshSubject;
