@@ -18,6 +18,8 @@ class OnExtensionRegistrationTest extends TestCase {
 	private mixed $writeUrl;
 	private mixed $readUrl;
 	private mixed $sparqlStores;
+	private mixed $footerIcons;
+	private mixed $extensionAssetsPath;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -25,6 +27,8 @@ class OnExtensionRegistrationTest extends TestCase {
 		$this->writeUrl = $GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] ?? null;
 		$this->readUrl = $GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] ?? null;
 		$this->sparqlStores = $GLOBALS['wgNeoWikiSparqlStores'] ?? null;
+		$this->footerIcons = $GLOBALS['wgFooterIcons'] ?? null;
+		$this->extensionAssetsPath = $GLOBALS['wgExtensionAssetsPath'] ?? null;
 
 		// Clear the CI env overrides so the config-value path is exercised deterministically.
 		$this->snapshotAndClearNeo4jEnvOverrides();
@@ -38,6 +42,8 @@ class OnExtensionRegistrationTest extends TestCase {
 		$GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] = $this->writeUrl;
 		$GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] = $this->readUrl;
 		$GLOBALS['wgNeoWikiSparqlStores'] = $this->sparqlStores;
+		$GLOBALS['wgFooterIcons'] = $this->footerIcons;
+		$GLOBALS['wgExtensionAssetsPath'] = $this->extensionAssetsPath;
 		parent::tearDown();
 	}
 
@@ -100,6 +106,65 @@ class OnExtensionRegistrationTest extends TestCase {
 		NeoWikiExtension::onExtensionRegistration();
 
 		$this->assertCount( 2, $GLOBALS['wgRestAPIAdditionalRouteFiles'] );
+	}
+
+	public function testAddsPoweredByBadgeAfterTheMediaWikiOne(): void {
+		$this->givenOnlyTheMediaWikiBadge();
+
+		NeoWikiExtension::onExtensionRegistration();
+
+		$this->assertSame(
+			[
+				'src' => '/w/extensions/NeoWiki/resources/images/poweredby_neowiki.svg',
+				'url' => 'https://neowiki.ai/',
+				'alt' => 'Powered by NeoWiki',
+			],
+			$GLOBALS['wgFooterIcons']['poweredby']['neowiki']
+		);
+	}
+
+	public function testKeepsTheMediaWikiBadgeFirst(): void {
+		$this->givenOnlyTheMediaWikiBadge();
+
+		NeoWikiExtension::onExtensionRegistration();
+
+		$this->assertSame( [ 'mediawiki', 'neowiki' ], array_keys( $GLOBALS['wgFooterIcons']['poweredby'] ) );
+	}
+
+	public function testKeepsAPreconfiguredPoweredByBadge(): void {
+		$this->givenOnlyTheMediaWikiBadge();
+		$GLOBALS['wgFooterIcons']['poweredby']['neowiki'] = false;
+
+		NeoWikiExtension::onExtensionRegistration();
+
+		$this->assertFalse( $GLOBALS['wgFooterIcons']['poweredby']['neowiki'] );
+	}
+
+	public function testPoweredByBadgeImageExistsWhereItIsRegistered(): void {
+		$this->givenOnlyTheMediaWikiBadge();
+
+		NeoWikiExtension::onExtensionRegistration();
+
+		$imagePath = str_replace(
+			'/w/extensions/NeoWiki',
+			'',
+			$GLOBALS['wgFooterIcons']['poweredby']['neowiki']['src']
+		);
+
+		$this->assertFileExists( dirname( __DIR__, 2 ) . $imagePath );
+	}
+
+	private function givenOnlyTheMediaWikiBadge(): void {
+		$GLOBALS['wgExtensionAssetsPath'] = '/w/extensions';
+		$GLOBALS['wgFooterIcons'] = [
+			'poweredby' => [
+				'mediawiki' => [
+					'src' => null,
+					'url' => 'https://www.mediawiki.org/',
+					'alt' => 'Powered by MediaWiki',
+				],
+			],
+		];
 	}
 
 }
