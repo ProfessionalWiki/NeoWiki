@@ -82,8 +82,8 @@ vs. historical values, or a status property for deprecated ones.
 ## In RDF
 
 A qualified value round-trips without loss: a linked Subject is its own resource, and a Relation keeps its ID and its
-properties ([Graph Model](api/graph-model.md)). See [RDF Export](rdf/rdf-export.md) for the native projection and
-[Ontology Mapping](rdf/ontology-mapping.md) for projecting into standard ontologies such as EDM.
+properties ([Graph Model](api/graph-model.md)). See [RDF Export](api/rdf-export.md) for the native projection and
+[Mapping Format](authoring/mapping-format.md) for projecting into standard ontologies such as EDM.
 
 ## Presentation
 
@@ -93,5 +93,5 @@ How a property renders is set by Display Attributes and [Layouts](glossary.md#la
 
 - [Glossary](glossary.md) — Subject, Statement, Relation, Schema, Layout
 - [Subject Format](api/subject-format.md) and [Graph Model](api/graph-model.md)
-- [Worked example: Person to EDM](rdf/person-to-edm.md) — ontology mapping end to end; its CIDOC-CRM tier
+- [Project a Person to EDM](guide/person-to-edm.md) — ontology mapping end to end; its CIDOC-CRM tier
   revisits intermediate-node modelling at the RDF level

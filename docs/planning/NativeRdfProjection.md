@@ -10,9 +10,9 @@ Discussion: [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999).
 > IRI/namespace regime — wiki-level, so subject IRIs are identical across stores — reused by every
 > sibling projection, and the per-page named graphs it defines, qualified by projection
 > ([#1053](https://github.com/ProfessionalWiki/NeoWiki/issues/1053)) so sibling projections can share one store. See
-> the [RDF Export reference](../rdf/rdf-export.md). Ontology (sibling) projections build on this shared
+> the [RDF Export reference](../api/rdf-export.md). Ontology (sibling) projections build on this shared
 > infrastructure — see [OntologyMapping.md](OntologyMapping.md) and the worked
-> [Person → EDM example](../rdf/person-to-edm.md). The sync into a configured SPARQL 1.1 store (e.g. QLever) has
+> [Person → EDM example](../guide/person-to-edm.md). The sync into a configured SPARQL 1.1 store (e.g. QLever) has
 > shipped too, as the per-page graph replacement this document specifies.
 
 ## Still open (2026-08)
@@ -54,7 +54,7 @@ this document.
 
 This design has shipped. What NeoWiki actually emits — the IRI and namespace regime, the triples
 for Subjects, Statements, Relations and page metadata, the per-page named graphs, and the export endpoints — is
-the [RDF Export reference](../rdf/rdf-export.md); the [Person → EDM example](../rdf/person-to-edm.md) shows a real
+the [RDF Export reference](../api/rdf-export.md); the [Person → EDM example](../guide/person-to-edm.md) shows a real
 page projected. A configured SPARQL store receives each save as a replace of that page's graph and each deletion as
 a drop ([store configuration](../operations/installation.md#optional-sparql-graph-stores)); the measured cost of
 that write path, and the targets it is held to, are in the
@@ -70,7 +70,7 @@ that write path, and the targets it is held to, are in the
   intermediate nodes that don't exist in NeoWiki's data. That node synthesis has shipped
   ([#1229](https://github.com/ProfessionalWiki/NeoWiki/pull/1229),
   [#1263](https://github.com/ProfessionalWiki/NeoWiki/pull/1263)); the
-  [Person → EDM example](../rdf/person-to-edm.md) walks a worked case.
+  [Person → EDM example](../guide/person-to-edm.md) walks a worked case.
   At the ECHOLOT meeting in Bilbao (March 2026), the consortium agreed that wiki admins should be able to define
   mappings between ontologies they care about and the NeoWiki Schemas of their wiki. This confirmed the
   separate-mapping approach, and is why Q1, Q2 and Q4 resolved toward keeping the native projection minimal (see
@@ -103,7 +103,7 @@ should mint URIs?
 followed up on.*
 
 *As built: the base URI is configurable — `$wgNeoWikiRdfBaseUri`, defaulting to the wiki's canonical URL
-(`$wgCanonicalServer`); see the [RDF Export reference](../rdf/rdf-export.md). What stays open is which value an
+(`$wgCanonicalServer`); see the [RDF Export reference](../api/rdf-export.md). What stays open is which value an
 ECCCH-integrated deployment should be given.*
 
 ### Q8: Writer's schema in RDF
@@ -133,7 +133,7 @@ Answered by shipping or by partner feedback. Numbers are the original question n
 - **Q2 — standard vocabulary.** The native projection stays minimal — `rdf:type`, `rdfs:label`, and
   `dcterms:created`/`dcterms:modified`. Further standard-vocabulary alignment belongs to an ontology mapping.
 - **Q3 — relation representation.** Wikibase-style reification alongside the direct triple, as specified
-  ([reference](../rdf/rdf-export.md#projected-triples)); George Bruseker (takin) confirmed having both
+  ([reference](../api/rdf-export.md#projected-triples)); George Bruseker (takin) confirmed having both
   representations is handy. Residue: `relationType` was flagged as a confusing term
   ([#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999)) and renaming it rides with the relations
   design pass ([#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630)), which may reshape the Relation node.

@@ -21,7 +21,7 @@ vocabulary, which the UI and the code share.
 A wiki can connect to one or more graph stores: Neo4j, and any SPARQL 1.1 store. Each holds a Projection, a derived,
 query-optimized copy of the wiki's data, written on every save and rebuildable from page content at any time
 ([ADR 19](adr/019-graph-database-architecture.md)). A Projection is either the built-in native one or an ontology
-projection defined by a [Mapping](rdf/ontology-mapping.md), which expresses Subjects in a vocabulary such as EDM or
+projection defined by a [Mapping](authoring/mapping-format.md), which expresses Subjects in a vocabulary such as EDM or
 CIDOC-CRM.
 
 Queries are written in each backend's own language, Cypher for Neo4j and SPARQL for SPARQL stores, and run from

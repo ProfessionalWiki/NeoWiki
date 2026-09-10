@@ -1,6 +1,6 @@
 ---
 title: Keep your wiki current
-order: 3
+order: 4
 ---
 
 # Keep your wiki current

@@ -10,6 +10,7 @@ For people working in a wiki that runs NeoWiki.
 * [Getting started](guide/getting-started.md) — your first Schema, Subject, View, and query
 * [Author an ontology mapping](guide/author-an-ontology-mapping.md) — publish Subjects in EDM, CIDOC-CRM, or another
   vocabulary
+* [Project a Person to EDM](guide/person-to-edm.md) — an ontology mapping walked end to end
 * [Keep your wiki current](guide/keep-your-wiki-current.md) — upgrade an evaluation wiki
 
 Concepts:
@@ -27,14 +28,14 @@ Reference for wikitext and Lua authors:
 
 * [Parser Functions](authoring/parser-functions.md) — `{{#view}}`, `{{#neowiki_value}}`, and `{{#cypher_raw}}`
 * [Lua API](authoring/lua-api.md) — the `mw.neowiki` Scribunto library, including `nw.query()` for Cypher
+* [Mapping Format](authoring/mapping-format.md) — the JSON of a Mapping page: projecting Schemas into EDM,
+  CIDOC-CRM, or another vocabulary
 * [Edit Notices](authoring/edit-notices.md) — messages shown in the Subject editor, the Subject creator, and Manage
   subjects
 
-## Integration
+## API
 
 For developers building on NeoWiki from outside the wiki.
-
-Over HTTP:
 
 * [REST API](api/rest-api.md) — the `/neowiki/v0/*` endpoints, plus the generated OpenAPI spec
 * [Schema Format](api/schema-format.md) — JSON format for Schema definitions
@@ -42,12 +43,7 @@ Over HTTP:
 * [Validation Codes](api/validation-codes.md) — stable `code` strings returned by backend validation
 * [Query API](api/query-api.md) — read-only Cypher endpoint over the graph backend
 * [Graph Model](api/graph-model.md) — Neo4j node and relationship structure
-
-As RDF:
-
-* [RDF Export](rdf/rdf-export.md) — native RDF projection: config, IRI scheme, endpoint, bulk dump
-* [Ontology Mapping](rdf/ontology-mapping.md) — projecting into EDM, Dublin Core, … via Mapping pages
-* [Worked example: Person to EDM](rdf/person-to-edm.md) — end-to-end mapping walkthrough
+* [RDF Export](api/rdf-export.md) — RDF per page, per Subject and in bulk: IRI scheme, endpoint, projections
 
 ## Extending
 

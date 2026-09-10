@@ -265,7 +265,7 @@ Every call counts as an expensive parser function.
 #### Named graphs
 
 Pages are projected into named graphs, so which of them an unscoped query reaches depends on the store — see
-[RDF Export](../rdf/rdf-export.md#iri-scheme).
+[RDF Export](../api/rdf-export.md#iri-scheme).
 
 #### Examples
 

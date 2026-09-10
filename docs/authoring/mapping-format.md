@@ -1,20 +1,22 @@
 ---
-title: Ontology Mapping
-order: 2
+title: Mapping Format
+order: 3
 ---
-# Ontology Mapping
+# Mapping JSON Format
 
-Alongside the built-in [native projection](rdf-export.md), which needs no mapping, you can project to an
-established ontology such as EDM or CIDOC-CRM by defining an **ontology mapping**.
+Alongside the built-in [native projection](../api/rdf-export.md), which needs no mapping, you can project to an
+established ontology such as EDM or CIDOC-CRM by defining an **ontology mapping**: a Mapping page holding the JSON
+this page specifies.
 
 The native projection and each ontology mapping are sibling projections of the same source data. Several can
 run at once: an export request selects one by name, and a SPARQL store can hold
 [several side by side](../operations/installation.md#several-projections-in-one-store).
 
 The design and its open questions live in [planning/OntologyMapping.md](../planning/OntologyMapping.md); this
-page is the as-built reference for the shipped format. The
-[Person-to-EDM worked example](person-to-edm.md) walks through a Person Schema projected to EDM, with native
-and mapped output side by side.
+page is the as-built reference for the shipped format.
+[Author an ontology mapping](../guide/author-an-ontology-mapping.md) gives the steps, and
+[Project a Person to EDM](../guide/person-to-edm.md) walks through a Person Schema projected to EDM, with native and
+mapped output side by side.
 
 > **Scope.** A mapping reshapes the data as well as the vocabulary: it can **synthesize** the intermediate
 > nodes a target like CIDOC-CRM routes its paths through, and it can **contract** structure a flat
@@ -33,7 +35,7 @@ A single page holds an entry for **every mapped Schema** — map a Schema by add
 projection's page, not by creating a page. A Schema can take part in several projections, through one entry on
 each page.
 
-The name **`native`** is reserved for the built-in [native projection](rdf-export.md), so a `Mapping:Native`
+The name **`native`** is reserved for the built-in [native projection](../api/rdf-export.md), so a `Mapping:Native`
 page is rejected on save.
 
 ## Format (version 1)
@@ -129,8 +131,8 @@ rejected; non-authority schemes (`urn:`, `mailto:`, …) are out of scope.
 
 Terms are reproduced verbatim, never percent-encoded. A term or a declared prefix namespace that would expand
 to an IRI containing an IRIREF-illegal character (`< > " { } | ^ \` backtick, space, control characters) is
-**rejected at save time**, as is a `lang` tag that is not BCP-47-shaped and a property entry that sets both
-`lang` and `datatype`.
+**rejected at save time**, as is a `lang` tag that is not BCP-47-shaped, a property entry that sets both
+`lang` and `datatype`, a structural error, and a `node` or `parent` reference that does not resolve.
 
 The same checks re-run at **projection time**: a class, predicate, datatype, or prefix that does not re-expand
 safely is dropped, an unusable node takes everything below it with it, an invalid language tag falls back to a
@@ -141,7 +143,7 @@ plain literal, and each is logged. The projection degrades rather than aborting 
 For each Subject on a page whose Schema has an entry on the requested projection's Mapping page:
 
 - `rdf:type <subject.class>`, and the `labelPredicate` triple when one is set and the Subject has a stored label.
-- `rdfs:label "<label>"` — always, from the Subject's display name (see [RDF export](rdf-export.md#projected-triples)).
+- `rdfs:label "<label>"` — always, from the Subject's display name (see [RDF Export](../api/rdf-export.md#projected-triples)).
 - One triple per mapped property **value**, on the Subject or on the node the entry attaches it to;
   multi-valued properties repeat the predicate. Unmapped properties are absent.
 - A **relation** value becomes a direct triple to the target Subject's IRI. No `neo:Relation` reification node
@@ -158,7 +160,7 @@ Boundaries:
   bare IRI — no type, no label — as the target of a relation from a mapped Subject.
 - **Contributed triples live in the contributing page's graph**, not the target's, so a per-page export of the
   target does not carry them; a SPARQL store or a bulk dump holding both graphs does. Same rule as a relation
-  target's own type and label — see [Per-page vs bulk](person-to-edm.md#per-page-vs-bulk-the-relation-targets-type).
+  target's own type and label — see [Per-page vs bulk](../guide/person-to-edm.md#per-page-vs-bulk-the-relation-targets-type).
 - **No page-metadata triples** are emitted (no page node, `neo:hasSubject`, etc.).
 - Quads go in the per-page named graph for this target (`$base/graph/{target}/page/{id}`), where `{target}` is
   the projection name.
@@ -179,22 +181,5 @@ They are emitted in full rather than abbreviated: they have no `neo-` prefix of 
 The position-based case is stable only for unchanged data: reordering or removing a property's values
 renumbers the instances after the change.
 
-## Selecting a projection
-
-The RDF export surfaces — the per-page and per-Subject endpoints and the `DumpRdf` bulk dump — take a
-`projection` parameter whose value is a projection name — a Mapping page title without the `Mapping:`
-prefix (`EDM`), or `native` for the built-in projection. See
-[RDF Export](rdf-export.md#endpoint) for the contract.
-
-## Authoring a Mapping
-
-1. Create a page in the `Mapping:` namespace whose title is the projection name (`Mapping:EDM`), or edit an
-   existing one.
-2. Declare the page-level `prefixes` you will use.
-3. Add an entry under `schemas` for each Schema to project: give the Subject a `subject.class` and map the
-   properties to publish. Where the target routes a property through an intermediate node, declare the node
-   and point the property at it. Where the target wants a related Subject's structure flattened onto it, add a
-   contribution to the Schema that holds the structure.
-4. Save. Structural errors, unresolvable or unsafe terms, and node references that do not resolve are reported
-   on save.
-5. Export a page of a mapped Schema with `?projection=EDM` (the page title without the `Mapping:` prefix).
+The export surfaces select a projection by the Mapping page's title without the `Mapping:` prefix, or `native`;
+see [RDF Export](../api/rdf-export.md#endpoint).

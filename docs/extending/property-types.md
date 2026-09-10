@@ -28,7 +28,7 @@ For Neo4j, register a builder that converts the Value to Neo4j scalars under the
 $registrar->addNeo4jValueBuilder( ColorType::NAME, static fn ( $value ) => $value->toScalars() );
 ```
 
-For the [RDF export](../rdf/rdf-export.md), register a mapper under the Property Type name with
+For the [RDF export](../api/rdf-export.md), register a mapper under the Property Type name with
 `NeoWikiRegistrar::addRdfValueMapper()`. It receives the Statement's `NeoValue` and returns a list of RDF terms —
 `Literal`s, or `Iri`s for values that denote a resource, as the built-in `url` mapper does — one per value part.
 Guard the value shape: the mapper receives whatever a Statement holds. RedHerb's

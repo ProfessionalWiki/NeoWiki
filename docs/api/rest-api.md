@@ -53,8 +53,8 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 | Endpoint | Description |
 |---|---|
 | `GET /neowiki/v0/subject/{subjectId}` | Fetch a Subject as the wiki publishes it. `latest=1` returns the hosting page's current revision instead, for editing, when the viewer may see it; it takes no `revisionId` and no `expand=relations`. Optional `revisionId`; `expand` with `page` or `relations`. |
-| `GET /neowiki/v0/subject/{subjectId}/rdf` | Export one Subject as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or an ontology target. See [RDF export](../rdf/rdf-export.md). |
-| `GET /neowiki/v0/entity/{subjectId}` | Dereference a Subject's concept URI. `303` to the Subject's RDF (`Accept: application/trig` or `text/turtle`) or to the hosting page (otherwise). See [Dereferencing subject IRIs](../rdf/rdf-export.md#dereferencing-subject-iris). |
+| `GET /neowiki/v0/subject/{subjectId}/rdf` | Export one Subject as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or an ontology target. See [RDF export](rdf-export.md). |
+| `GET /neowiki/v0/entity/{subjectId}` | Dereference a Subject's concept URI. `303` to the Subject's RDF (`Accept: application/trig` or `text/turtle`) or to the hosting page (otherwise). See [Dereferencing subject IRIs](rdf-export.md#dereferencing-subject-iris). |
 | `PUT /neowiki/v0/subject/{subjectId}` | Replace a Subject's label and statements. |
 | `DELETE /neowiki/v0/subject/{subjectId}` | Delete a Subject. |
 | `POST /neowiki/v0/subject/{subjectId}/move` | Move a Subject to another page, keeping its ID so relations targeting it keep resolving. Body `targetPageId`, optional `makeMainSubject` and `comment`. Edits both pages. |
@@ -74,7 +74,7 @@ Subjects and arrange them.
 |---|---|
 | `GET /neowiki/v0/page/{pageId}/subjects` | List a page's main and child Subjects. `expand` with `schemas` or `relations`. |
 | `GET /neowiki/v0/page/{pageId}/editNotices` | List the notices to show before editing the page's Subjects, in display order. Optional `schema` adds notices scoped to that Schema. Returns `{notices: [{key, html}]}`. See [Edit notices](../authoring/edit-notices.md). |
-| `GET /neowiki/v0/page/{pageId}/rdf` | Export the page's Subjects and metadata as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or the name of a Mapping page. See [RDF export](../rdf/rdf-export.md) and [Ontology Mapping](../rdf/ontology-mapping.md). |
+| `GET /neowiki/v0/page/{pageId}/rdf` | Export the page's Subjects and metadata as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or the name of a Mapping page. See [RDF export](rdf-export.md) and [Mapping Format](../authoring/mapping-format.md). |
 | `POST /neowiki/v0/page/{pageId}/mainSubject` | Create the page's main Subject. |
 | `PUT /neowiki/v0/page/{pageId}/mainSubject` | Promote a child Subject to main, or clear it. |
 | `POST /neowiki/v0/page/{pageId}/childSubjects` | Create a child Subject on the page. |
@@ -103,7 +103,7 @@ A Layout defines how a Subject is displayed.
 ### Mappings
 
 An ontology Mapping defines one projection: it projects native Schemas into a target ontology. For the format
-and concepts, see [Ontology Mapping](../rdf/ontology-mapping.md).
+and concepts, see [Mapping Format](../authoring/mapping-format.md).
 
 | Endpoint | Description |
 |---|---|

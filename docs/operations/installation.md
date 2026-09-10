@@ -288,7 +288,7 @@ reverse proxy, and see [Restricting federation](#restricting-federation).
 ### Several projections in one store
 
 Each entry carries one projection, so a store that should hold several gets one entry per projection, all with
-the same `updateUrl`. Each projection writes its own [named graphs](../rdf/rdf-export.md#iri-scheme), so they never
+the same `updateUrl`. Each projection writes its own [named graphs](../api/rdf-export.md#iri-scheme), so they never
 overwrite one another:
 
 ```php
@@ -308,7 +308,7 @@ $wgNeoWikiSparqlStores = [
 
 Sibling projections mint the same entity IRIs, so one query can combine data from both — the target ontology's terms
 alongside a property that ontology does not model. The
-[Person-to-EDM example](../rdf/person-to-edm.md#querying-via-sparql) shows such a query.
+[Person-to-EDM example](../guide/person-to-edm.md#querying-via-sparql) shows such a query.
 
 A newly added entry only receives pages saved from then on. Backfill it, and only it, by
 [rebuilding that one store](maintenance.md#rebuilding-one-store).
@@ -331,7 +331,7 @@ Each is read-only: the query is sent as a SPARQL 1.1 *query* operation, posted o
 A projection configured on a different endpoint is therefore not reachable from these surfaces.
 
 NeoWiki writes pages into named graphs and nothing into the default graph, so whether an unscoped query finds them is
-the store's choice; see [RDF Export](../rdf/rdf-export.md#iri-scheme).
+the store's choice; see [RDF Export](../api/rdf-export.md#iri-scheme).
 
 Both bundled Docker stacks, demo and dev, ship working QLever and Oxigraph examples wired up this way — see
 [`Docker/README.md`](../../Docker/README.md#qlever-sparql-store) for the services, QLever's `--persist-updates`

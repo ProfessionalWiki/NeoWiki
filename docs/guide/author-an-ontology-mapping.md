@@ -6,8 +6,8 @@ order: 2
 # Author an ontology mapping
 
 A Mapping page defines an ontology projection of your wiki's Subjects: the same data expressed in EDM, CIDOC-CRM, or
-another vocabulary. The format is specified in [Ontology Mapping](../rdf/ontology-mapping.md), and
-[Person to EDM](../rdf/person-to-edm.md) walks one end to end.
+another vocabulary. The format is specified in [Mapping Format](../authoring/mapping-format.md), and
+[Project a Person to EDM](person-to-edm.md) walks one end to end.
 
 ## 1. Create the Mapping
 
@@ -29,7 +29,7 @@ and reports errors, and the page's read view shows a summary of the mapped Schem
 
 Exports are produced on demand from current data, so a new or edited Mapping takes effect right away.
 On any page with Subjects, the **Data** tab offers per-projection RDF downloads, as Turtle or TriG. Per-Subject
-exports, the REST endpoint, and the bulk dump are in [RDF Export](../rdf/rdf-export.md).
+exports, the REST endpoint, and the bulk dump are in [RDF Export](../api/rdf-export.md).
 
 ## 4. Query the projection over SPARQL
 

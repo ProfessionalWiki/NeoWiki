@@ -33,7 +33,7 @@ carries millions of them, and the wiki behind it held 4 000 pages rather than 10
 ## With a SPARQL store
 
 A [SPARQL store](installation.md#optional-sparql-graph-stores) adds the
-[RDF projection and its SPARQL query surface](../rdf/rdf-export.md) alongside Neo4j, and every write then pays for
+[RDF projection and its SPARQL query surface](../api/rdf-export.md) alongside Neo4j, and every write then pays for
 it — how much depends on the engine. Measured 2026-08-09 on `adbdd656`: a fresh wiki grown to 20 000 Subjects /
 590 000 triples (~30 triples per Subject), two projections per page into one store, whole-run means of two imports
 per engine. These rates are not comparable to the million-node table above; this corpus is fifty times smaller and

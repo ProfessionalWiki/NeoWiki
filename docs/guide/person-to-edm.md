@@ -1,10 +1,10 @@
 ---
-title: Person to EDM example
+title: Project a Person to EDM
 order: 3
 ---
 # Worked example: projecting a Person to EDM
 
-End-to-end walkthrough of an [Ontology Mapping](ontology-mapping.md) projection: a NeoWiki-native `Person`
+End-to-end walkthrough of an [ontology mapping](../authoring/mapping-format.md) projection: a NeoWiki-native `Person`
 Schema, an EDM Mapping, and a demo page projected into
 [Europeana Data Model](https://pro.europeana.eu/page/edm-documentation) (EDM) RDF, shown against the native projection.
 
@@ -52,7 +52,7 @@ The demo `City` Schema ([`DemoData/Schema/City.json`](../../DemoData/Schema/City
 ## 2. The Mapping
 
 One Mapping page, **[`Mapping:EDM`](../../DemoData/Mapping/EDM.json)**, holds an entry per mapped Schema; its title
-(`EDM`) is the projection name (see [Ontology Mapping](ontology-mapping.md) for the format). Abbreviated to the
+(`EDM`) is the projection name (see [Mapping Format](../authoring/mapping-format.md) for the format). Abbreviated to the
 two entries this walkthrough uses — the shipped file also maps `Birth`, `Place`, `Artwork` and `Artist` and declares
 the `dc`/`dcterms`/`xsd`/`ore` prefixes those need:
 
@@ -91,7 +91,7 @@ its `Birth place` relation pointing at [`Málaga`](../../DemoData/Subject/Málag
 
 ## 4. Running the projection
 
-Per page, via the [RDF export endpoint](rdf-export.md#endpoint) — the `projection` query parameter selects the
+Per page, via the [RDF export endpoint](../api/rdf-export.md#endpoint) — the `projection` query parameter selects the
 vocabulary:
 
 ```sh
@@ -110,7 +110,7 @@ php maintenance/run.php NeoWiki:DumpRdf --projection=EDM > dump-edm.trig
 ## 5. Native vs EDM output
 
 Real output from the demo wiki (Turtle; shared prefix header trimmed — the `neo*` CURIEs are the
-[IRI scheme](rdf-export.md#iri-scheme)). The **native** projection of `Pablo_Picasso` —
+[IRI scheme](../api/rdf-export.md#iri-scheme)). The **native** projection of `Pablo_Picasso` —
 NeoWiki's own vocabulary, lossless, with page metadata and the two-layer relation:
 
 ```turtle
@@ -229,7 +229,7 @@ For an ad-hoc load instead, feed the `DumpRdf --projection=EDM` output into any 
 
 The toy model's CIDOC-CRM column mediates birth through an `E67_Birth` event node and an `E52_Time-Span`, neither of
 which exists in NeoWiki's flat data. `Mapping:CIDOC-CRM`, also shipped as demo data, declares both as
-[synthesized nodes](ontology-mapping.md#synthesized-node-iris) and attaches `Birth place` and `Birth date` to them, so
+[synthesized nodes](../authoring/mapping-format.md#synthesized-node-iris) and attaches `Birth place` and `Birth date` to them, so
 the same `Pablo_Picasso` page exports as an `E21_Person` whose birth hangs off minted event nodes. Which formalism
 authors should ultimately write such mappings in stays open
 ([OntologyMapping.md Q1](../planning/OntologyMapping.md#open-questions),

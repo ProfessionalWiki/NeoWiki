@@ -30,7 +30,7 @@ relation Property Definition carries `relation` (the edge-type name), `targetSch
 - **Projection.** The ontology mapping synthesizes intermediate nodes from flat Subjects at projection time
   ([#1229](https://github.com/ProfessionalWiki/NeoWiki/pull/1229),
   [#1263](https://github.com/ProfessionalWiki/NeoWiki/pull/1263)). The native RDF projection reifies each Relation
-  beside its direct triple ([RDF export](../rdf/rdf-export.md)); the reification shape is decided
+  beside its direct triple ([RDF export](../api/rdf-export.md)); the reification shape is decided
   ([NativeRdfProjection.md](NativeRdfProjection.md)), the predicate name follows decision 6.
 
 ## Decisions

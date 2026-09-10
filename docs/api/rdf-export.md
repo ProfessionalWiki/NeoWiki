@@ -1,6 +1,6 @@
 ---
 title: RDF Export
-order: 1
+order: 7
 ---
 # RDF Export
 
@@ -11,7 +11,7 @@ This page is the reference for what NeoWiki emits. Why the projection is shaped 
 about it, is in [NativeRdfProjection.md](../planning/NativeRdfProjection.md).
 
 For an end-to-end example comparing the native and ontology-mapped output, see the
-[Person-to-EDM worked example](person-to-edm.md).
+[Person-to-EDM worked example](../guide/person-to-edm.md).
 
 ## Configuration
 
@@ -35,7 +35,7 @@ All NeoWiki IRIs live under `$base` (`$wgNeoWikiRdfBaseUri`). Standard vocabular
 | `neo-page:` | `$base/page/` | Page resource IRIs (`neo-page:42`) — the subject of the page-metadata triples |
 
 Each page's named-graph IRI is `$base/graph/{projection}/page/{id}`. The `{projection}` segment is `native` or a
-Mapping page name (e.g. `EDM`), encoded like the names below — see [Ontology Mapping](ontology-mapping.md). The page
+Mapping page name (e.g. `EDM`), encoded like the names below — see [Mapping Format](../authoring/mapping-format.md). The page
 *resource* IRI (`neo-page:42`)
 stays projection-independent and appears inside the triples.
 
@@ -98,7 +98,7 @@ nothing carries a page's namespace or wiki id.
 
 RDF is served per page or per Subject. Both take the same `projection` and `format` query parameters. `projection`
 selects the vocabulary: `native` (the default, described here) or the name of a Mapping page — see
-[Ontology Mapping](ontology-mapping.md); an unknown projection returns `400`. `format` picks the serialization,
+[Mapping Format](../authoring/mapping-format.md); an unknown projection returns `400`. `format` picks the serialization,
 falling back to the `Accept` header, then to TriG; a value other than `trig` or `turtle` returns `400`:
 
 | `format` | `Accept` | Content-Type | Named graph |
@@ -190,7 +190,7 @@ projection) in the HTML head, on a wiki with a graph database configured.
 
 `maintenance/DumpRdf.php` streams the projection of **every** page on the wiki to stdout as TriG, one named graph
 per page. Progress goes to stderr. It defaults to the native projection; `--projection=<name>` selects an ontology
-projection by its Mapping page name (see [Ontology Mapping](ontology-mapping.md)).
+projection by its Mapping page name (see [Ontology Mapping](../authoring/mapping-format.md)).
 
 ```sh
 php maintenance/run.php NeoWiki:DumpRdf > dump.trig
