@@ -26,10 +26,12 @@ class GetSubjectApi extends SimpleHandler {
 		$presenter = new RestGetSubjectPresenter();
 		$revisionId = $this->getValidatedParams()['revisionId'] ?? null;
 		$latest = $this->getValidatedParams()['latest'] ?? false;
+		$expandOptions = explode( '|', $this->getRequest()->getQueryParams()['expand'] ?? '' );
+		$includeReferencedSubjects = in_array( self::EXPAND_RELATIONS, $expandOptions );
 
-		if ( $latest && $revisionId !== null ) {
+		if ( $latest && ( $revisionId !== null || $includeReferencedSubjects ) ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
-				'message' => 'The latest and revisionId parameters are mutually exclusive.',
+				'message' => 'The latest parameter cannot be combined with revisionId or with expand=relations.',
 			] );
 		}
 
@@ -39,12 +41,10 @@ class GetSubjectApi extends SimpleHandler {
 			return $query;
 		}
 
-		$expendOptions = explode( '|', $this->getRequest()->getQueryParams()['expand'] ?? '' );
-
 		$query->execute(
 			subjectId: $subjectId,
-			includePageIdentifiers: in_array( self::EXPAND_PAGE, $expendOptions ),
-			includeReferencedSubjects: in_array( self::EXPAND_RELATIONS, $expendOptions )
+			includePageIdentifiers: in_array( self::EXPAND_PAGE, $expandOptions ),
+			includeReferencedSubjects: $includeReferencedSubjects
 		);
 
 		return $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
@@ -96,7 +96,8 @@ class GetSubjectApi extends SimpleHandler {
 
 	/**
 	 * A viewer who may not see the latest revision is answered as an absent Subject is, so that
-	 * asking for a draft cannot confirm a harvested Subject id exists.
+	 * asking for a draft cannot confirm a harvested Subject id exists. The read is the revision-keyed
+	 * one at the revision the gate cleared: with relation expansion refused it reads no other page.
 	 */
 	private function newQueryForLatestRevision( RestGetSubjectPresenter $presenter, string $subjectId ): GetSubjectQuery|Response {
 		$revision = $this->getLatestRevisionOfSubjectPage( $subjectId );
@@ -107,8 +108,7 @@ class GetSubjectApi extends SimpleHandler {
 			return $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
 		}
 
-		return NeoWikiExtension::getInstance()
-			->newGetLatestSubjectQuery( $presenter, $this->getAuthority(), $revision );
+		return NeoWikiExtension::getInstance()->newGetSubjectQueryForRevision( $presenter, $revision, $this->getAuthority() );
 	}
 
 	private function getLatestRevisionOfSubjectPage( string $subjectId ): ?RevisionRecord {
@@ -143,7 +143,7 @@ class GetSubjectApi extends SimpleHandler {
 				ParamValidator::PARAM_TYPE => 'boolean',
 				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_DEFAULT => false,
-				self::PARAM_DESCRIPTION => 'Return the hosting page\'s current revision, for editing, rather than the revision the wiki publishes. Requires the viewer to be allowed to see that revision. Cannot be combined with revisionId.',
+				self::PARAM_DESCRIPTION => 'Return the hosting page\'s current revision, for editing, rather than the revision the wiki publishes. Requires the viewer to be allowed to see that revision. Cannot be combined with revisionId or with expand=relations.',
 			],
 			'expand' => [
 				self::PARAM_SOURCE => 'query',

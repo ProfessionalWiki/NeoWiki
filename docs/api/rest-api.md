@@ -51,7 +51,7 @@ Read, change, and validate Subjects. New Subjects are created on a page — see
 
 | Endpoint | Description |
 |---|---|
-| `GET /neowiki/v0/subject/{subjectId}` | Fetch a Subject as the wiki publishes it. `latest=1` returns the hosting page's current revision instead, for editing, when the viewer may see it. Optional `revisionId`; `expand` with `page` or `relations`. |
+| `GET /neowiki/v0/subject/{subjectId}` | Fetch a Subject as the wiki publishes it. `latest=1` returns the hosting page's current revision instead, for editing, when the viewer may see it; it takes no `revisionId` and no `expand=relations`. Optional `revisionId`; `expand` with `page` or `relations`. |
 | `GET /neowiki/v0/subject/{subjectId}/rdf` | Export one Subject as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or an ontology target. See [RDF export](../rdf/rdf-export.md). |
 | `GET /neowiki/v0/entity/{subjectId}` | Dereference a Subject's concept URI. `303` to the Subject's RDF (`Accept: application/trig` or `text/turtle`) or to the hosting page (otherwise). See [Dereferencing subject IRIs](../rdf/rdf-export.md#dereferencing-subject-iris). |
 | `PUT /neowiki/v0/subject/{subjectId}` | Replace a Subject's label and statements. |

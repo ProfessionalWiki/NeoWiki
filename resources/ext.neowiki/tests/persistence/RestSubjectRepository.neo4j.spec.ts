@@ -138,6 +138,10 @@ describe( 'RestSubjectRepository', () => {
 			return 'https://example.com/rest.php/neowiki/v0/subject/s33333333333333?expand=page|relations' + extraQuery;
 		}
 
+		function editingUrl(): string {
+			return 'https://example.com/rest.php/neowiki/v0/subject/s33333333333333?expand=page&latest=1';
+		}
+
 		function newHttpClient( url: string ): InMemoryHttpClient {
 			return new InMemoryHttpClient( {
 				[ url ]: new Response( JSON.stringify( mockResponse ), { status: 200 } ),
@@ -153,13 +157,13 @@ describe( 'RestSubjectRepository', () => {
 			expect( get ).toHaveBeenCalledWith( subjectUrl() );
 		} );
 
-		it( 'asks for the current revision when reading for editing', async () => {
-			const httpClient = newHttpClient( subjectUrl( '&latest=1' ) );
+		it( 'asks for the current revision, and no relations, when reading for editing', async () => {
+			const httpClient = newHttpClient( editingUrl() );
 			const get = vi.spyOn( httpClient, 'get' );
 
 			await newRepository( 'https://example.com/rest.php', httpClient ).getSubjectForEditing( subjectId );
 
-			expect( get ).toHaveBeenCalledWith( subjectUrl( '&latest=1' ) );
+			expect( get ).toHaveBeenCalledWith( editingUrl() );
 		} );
 
 		it( 'asks for the published Subject when reading a Subject with its referenced Subjects', async () => {
@@ -182,12 +186,12 @@ describe( 'RestSubjectRepository', () => {
 		} );
 
 		it( 'asks for the current revision when reading for editing, pinned revision or not', async () => {
-			const httpClient = newHttpClient( subjectUrl( '&latest=1' ) );
+			const httpClient = newHttpClient( editingUrl() );
 			const get = vi.spyOn( httpClient, 'get' );
 
 			await newRepositoryForRevision( httpClient, 7 ).getSubjectForEditing( subjectId );
 
-			expect( get ).toHaveBeenCalledWith( subjectUrl( '&latest=1' ) );
+			expect( get ).toHaveBeenCalledWith( editingUrl() );
 		} );
 
 		function newRepositoryForRevision( httpClient: InMemoryHttpClient, revisionId: number ): RestSubjectRepository {

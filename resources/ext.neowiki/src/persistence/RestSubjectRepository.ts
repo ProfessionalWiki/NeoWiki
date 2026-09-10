@@ -200,15 +200,18 @@ export class RestSubjectRepository implements SubjectRepository {
 	/**
 	 * A write targets the page's current revision whatever revision was read, so an editing read is
 	 * never pinned. NeoWikiApp offers no editing on a pinned view, but a host that mounts an editor
-	 * itself has nothing stopping it.
+	 * itself has nothing stopping it. An editing read also asks for the requested Subject alone:
+	 * `latest` refuses `expand=relations`, and the editor uses nothing else from the bundle.
 	 */
 	private async fetchSubjectBundle( id: SubjectId, latest: boolean ): Promise<SubjectBundleJson> {
-		let url = `${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }?expand=page|relations`;
+		let url = `${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`;
 
 		if ( latest ) {
-			url += '&latest=1';
+			url += '?expand=page&latest=1';
 		} else if ( this.revisionId !== undefined ) {
-			url += `&revisionId=${ this.revisionId }`;
+			url += `?expand=page|relations&revisionId=${ this.revisionId }`;
+		} else {
+			url += '?expand=page|relations';
 		}
 
 		const response = await this.httpClient.get( url );

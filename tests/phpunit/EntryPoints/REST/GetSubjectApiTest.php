@@ -363,85 +363,8 @@ JSON,
 		$this->assertSame( 'published target', $this->labelOf( $response, 'sTestGSA1111256' ) );
 	}
 
-	public function testLatestServesReferencedSubjectsFromTheirOwnPagesPublishedRevision(): void {
-		$publishedTarget = $this->createPageWithSubjects(
-			'GetSubjectApiTest_LatestPublishedTarget',
-			mainSubject: $this->newTestSubject( 'sTestGSA1111263', 'published target' )
-		);
-
-		$this->createPageWithSubjects(
-			'GetSubjectApiTest_LatestPublishedTarget',
-			mainSubject: $this->newTestSubject( 'sTestGSA1111263', 'draft target' )
-		);
-
-		$this->createPageWithSubjects(
-			'GetSubjectApiTest_LatestRelationSource',
-			mainSubject: TestSubject::build(
-				id: 'sTestGSA1111264',
-				schemaName: new SchemaName( 'GetSubjectApiTestSchema' ),
-				statements: new StatementList( [
-					TestStatement::buildRelation( 'MyRelation', [
-						TestRelation::build( id: 'rTestGSA1111rr9', targetId: 'sTestGSA1111263' ),
-					] ),
-				] )
-			)
-		);
-
-		$response = $this->runWithRevisionPolicy(
-			FixedRevisionPolicy::publishing( $publishedTarget ),
-			fn (): Response => $this->requestSubject( 'sTestGSA1111264', [ 'latest' => '1', 'expand' => 'relations' ] )
-		);
-
-		$this->assertSame( 'published target', $this->labelOf( $response, 'sTestGSA1111263' ) );
-	}
-
 	/**
-	 * The gate cleared this page's current revision for this viewer, so a target sitting in that
-	 * same revision comes from it. Only the pages the caller said nothing about fall back to what
-	 * they publish.
-	 */
-	public function testLatestServesASamePageTargetFromTheRevisionItCleared(): void {
-		$published = $this->createPageWithSubjects(
-			'GetSubjectApiTest_LatestSamePage',
-			mainSubject: TestSubject::build(
-				id: 'sTestGSA1111266',
-				schemaName: new SchemaName( 'GetSubjectApiTestSchema' ),
-				statements: new StatementList( [
-					TestStatement::buildRelation( 'MyRelation', [
-						TestRelation::build( id: 'rTestGSA1111ra2', targetId: 'sTestGSA1111267' ),
-					] ),
-				] )
-			)
-		);
-
-		$this->createPageWithSubjects(
-			'GetSubjectApiTest_LatestSamePage',
-			mainSubject: TestSubject::build(
-				id: 'sTestGSA1111266',
-				schemaName: new SchemaName( 'GetSubjectApiTestSchema' ),
-				statements: new StatementList( [
-					TestStatement::buildRelation( 'MyRelation', [
-						TestRelation::build( id: 'rTestGSA1111ra2', targetId: 'sTestGSA1111267' ),
-					] ),
-				] )
-			),
-			childSubjects: new SubjectMap( $this->newTestSubject( 'sTestGSA1111267', 'draft sibling' ) )
-		);
-
-		$response = $this->runWithRevisionPolicy(
-			FixedRevisionPolicy::publishing( $published ),
-			fn (): Response => $this->requestSubject(
-				'sTestGSA1111266',
-				[ 'latest' => '1', 'expand' => 'relations' ]
-			)
-		);
-
-		$this->assertSame( 'draft sibling', $this->labelOf( $response, 'sTestGSA1111267' ) );
-	}
-
-	/**
-	 * Unlike the revisionId path, the latest path has no page gate in the handler: the read
-	 * authorizer inside GetSubjectQuery is all there is, and nothing pinned it.
+	 * A page the viewer may not read answers as an absent Subject does, as on the revisionId path.
 	 */
 	public function testLatestOnAnUnreadablePageIsIndistinguishableFromAnAbsentSubject(): void {
 		$this->createPageWithSubjects(
@@ -512,6 +435,17 @@ JSON,
 			'sTestGSA1111261',
 			[ 'latest' => '1', 'revisionId' => (string)$revisionId ]
 		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
+	public function testLatestCannotExpandRelations(): void {
+		$this->createPageWithSubjects(
+			'GetSubjectApiTest_LatestAndRelations',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111263' )
+		);
+
+		$response = $this->requestSubject( 'sTestGSA1111263', [ 'latest' => '1', 'expand' => 'relations' ] );
 
 		$this->assertSame( 400, $response->getStatusCode() );
 	}
