@@ -155,6 +155,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PointInTimeSubjectLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PublishedSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingMappingLookup;
@@ -1293,7 +1294,7 @@ class NeoWikiExtension {
 		);
 	}
 
-	private function getPageIdentifiersLookup(): PageIdentifiersLookup {
+	public function getPageIdentifiersLookup(): PageIdentifiersLookup {
 		return new DatabasePageIdentifiersLookup(
 			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
 			MediaWikiServices::getInstance()->getTitleFormatter()
@@ -1514,7 +1515,11 @@ class NeoWikiExtension {
 	public function newGetSubjectQuery( RestGetSubjectPresenter $presenter, Authority $authority ): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
-			subjectLookup: $this->getSubjectRepository(),
+			subjectLookup: new PublishedSubjectLookup(
+				pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+				revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
+				revisionPolicy: $this->getRevisionPolicy(),
+			),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			pageSubjectsLookup: $this->newPageSubjectsLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),

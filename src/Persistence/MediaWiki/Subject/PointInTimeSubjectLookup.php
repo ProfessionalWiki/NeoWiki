@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
-use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
@@ -14,7 +13,6 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 class PointInTimeSubjectLookup implements SubjectLookup {
@@ -54,7 +52,7 @@ class PointInTimeSubjectLookup implements SubjectLookup {
 	}
 
 	private function getSubjectsFromRevision( RevisionRecord $revision, SubjectIdList $subjectIds ): SubjectMap {
-		$content = $this->getSubjectContent( $revision );
+		$content = SubjectSlotReader::read( $revision );
 
 		if ( $content === null ) {
 			return new SubjectMap();
@@ -100,20 +98,6 @@ class PointInTimeSubjectLookup implements SubjectLookup {
 		}
 
 		return (int)$row->rev_id;
-	}
-
-	private function getSubjectContent( RevisionRecord $revision ): ?SubjectContent {
-		try {
-			$content = $revision->getContent( MediaWikiSubjectRepository::SLOT_NAME );
-		} catch ( RevisionAccessException ) {
-			return null;
-		}
-
-		if ( $content instanceof SubjectContent ) {
-			return $content;
-		}
-
-		return null;
 	}
 
 }

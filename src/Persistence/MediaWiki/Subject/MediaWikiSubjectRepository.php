@@ -53,6 +53,11 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		return $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId )?->getId();
 	}
 
+	/**
+	 * Strict where the read-only lookups are lenient: this content is what the write methods mutate
+	 * and save back, so a slot holding another content model has to stop the write rather than read
+	 * as no Subjects and be saved over.
+	 */
 	private function getContentByPageId( PageId $pageId ): ?SubjectContent {
 		$revision = $this->revisionLookup->getRevisionByPageId( $pageId->id );
 

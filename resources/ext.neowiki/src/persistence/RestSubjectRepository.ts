@@ -154,8 +154,14 @@ export class RestSubjectRepository implements SubjectRepository {
 	}
 
 	public async getSubject( id: SubjectId ): Promise<Subject> {
-		const bundle = await this.fetchSubjectBundle( id );
+		return this.deserializeRequested( await this.fetchSubjectBundle( id, false ) );
+	}
 
+	public async getSubjectForEditing( id: SubjectId ): Promise<Subject> {
+		return this.deserializeRequested( await this.fetchSubjectBundle( id, true ) );
+	}
+
+	private deserializeRequested( bundle: SubjectBundleJson ): Subject {
 		return this.subjectDeserializer.deserialize( bundle.subjects[ bundle.requestedId ] );
 	}
 
@@ -168,10 +174,10 @@ export class RestSubjectRepository implements SubjectRepository {
 	 * target should not prevent the requested Subject from loading.
 	 */
 	public async getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectWithReferencedSubjects> {
-		const bundle = await this.fetchSubjectBundle( id );
+		const bundle = await this.fetchSubjectBundle( id, false );
 
 		return {
-			requestedSubject: this.subjectDeserializer.deserialize( bundle.subjects[ bundle.requestedId ] ),
+			requestedSubject: this.deserializeRequested( bundle ),
 			referencedSubjects: this.deserializeReferencedSubjects( bundle ),
 		};
 	}
@@ -191,11 +197,21 @@ export class RestSubjectRepository implements SubjectRepository {
 		}
 	}
 
-	private async fetchSubjectBundle( id: SubjectId ): Promise<SubjectBundleJson> {
-		let url = `${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }?expand=page|relations`;
+	/**
+	 * A write targets the page's current revision whatever revision was read, so an editing read is
+	 * never pinned. NeoWikiApp offers no editing on a pinned view, but a host that mounts an editor
+	 * itself has nothing stopping it. An editing read also asks for the requested Subject alone:
+	 * `latest` refuses `expand=relations`, and the editor uses nothing else from the bundle.
+	 */
+	private async fetchSubjectBundle( id: SubjectId, latest: boolean ): Promise<SubjectBundleJson> {
+		let url = `${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`;
 
-		if ( this.revisionId !== undefined ) {
-			url += `&revisionId=${ this.revisionId }`;
+		if ( latest ) {
+			url += '?expand=page&latest=1';
+		} else if ( this.revisionId !== undefined ) {
+			url += `?expand=page|relations&revisionId=${ this.revisionId }`;
+		} else {
+			url += '?expand=page|relations';
 		}
 
 		const response = await this.httpClient.get( url );
