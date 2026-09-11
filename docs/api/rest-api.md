@@ -8,35 +8,10 @@ order: 1
 NeoWiki's REST API lives under `/rest.php/neowiki/v0/*`. Requests and responses are JSON; the RDF export endpoints
 return TriG or Turtle instead.
 
-By default, reads are public and writes require a logged-in user with `edit` rights and a CSRF token; wiki
-configuration may require more.
+**Pre-1.0.** Endpoints and payloads may change without notice; do not build third-party integrations on
+`/neowiki/v0/*` yet.
 
 Every endpoint is also published as a complete [OpenAPI 3.0 description](#full-specification).
-
-## Permissions
-
-The Subject, page-subjects, edit-notices, subject-labels, Schema, Layout, Mapping, RDF export, and entity-dereference
-read endpoints
-enforce the caller's per-page `read` permission; page protection and `$wgNamespaceProtection` do not restrict them,
-because MediaWiki's `read` action ignores both. When you may not read a page they respond as if the data were absent — a
-`null` value, an empty list, or a `404` — never a `403`. `GET /subject-labels` omits the labels of Subjects whose page
-you cannot read; because that filter runs per result, it caps `limit` at 50.
-
-The `GET /schemas`, `GET /layouts`, and `GET /mappings` list endpoints paginate with an opaque cursor over the rows you
-may read (see [Cursor pagination](#cursor-pagination)): a restricted Schema, Layout, or Mapping is skipped exactly like
-one that does not exist, and no total count is reported, so nothing about restricted rows can be inferred from the
-pagination.
-
-Subject write endpoints require per-page `edit` permission and answer `403` when you may read the page but not edit it.
-Denial of `read` answers `404` instead, so that a page you may not read stays indistinguishable from one that is absent.
-The write endpoints keyed by page id ([Pages and Subjects](#pages-and-subjects)) return that `404` for a page you may
-not read and for a page id that does not exist; the write endpoints keyed by Subject id return it for a Subject on a
-page you may not read and for a Subject id that does not exist.
-
-The Cypher query endpoint is gated only by the `neowiki-query` right, with no per-page filtering (see
-[Query API](query-api.md)).
-
-The graph-store endpoints are gated by the `neowiki-admin` right.
 
 ## Endpoints
 
@@ -128,6 +103,31 @@ Report and rebuild the graph stores this wiki projects into. A rebuild's `202` m
 
 <!-- REST-ENDPOINTS:END -->
 
+## Permissions
+
+The Subject, page-subjects, edit-notices, subject-labels, Schema, Layout, Mapping, RDF export, and entity-dereference
+read endpoints
+enforce the caller's per-page `read` permission; page protection and `$wgNamespaceProtection` do not restrict them,
+because MediaWiki's `read` action ignores both. When you may not read a page they respond as if the data were absent — a
+`null` value, an empty list, or a `404` — never a `403`. `GET /subject-labels` omits the labels of Subjects whose page
+you cannot read; because that filter runs per result, it caps `limit` at 50.
+
+The `GET /schemas`, `GET /layouts`, and `GET /mappings` list endpoints paginate with an opaque cursor over the rows you
+may read (see [Cursor pagination](#cursor-pagination)): a restricted Schema, Layout, or Mapping is skipped exactly like
+one that does not exist, and no total count is reported, so nothing about restricted rows can be inferred from the
+pagination.
+
+Subject write endpoints require per-page `edit` permission and answer `403` when you may read the page but not edit it.
+Denial of `read` answers `404` instead, so that a page you may not read stays indistinguishable from one that is absent.
+The write endpoints keyed by page id ([Pages and Subjects](#pages-and-subjects)) return that `404` for a page you may
+not read and for a page id that does not exist; the write endpoints keyed by Subject id return it for a Subject on a
+page you may not read and for a Subject id that does not exist.
+
+The Cypher query endpoint is gated only by the `neowiki-query` right, with no per-page filtering (see
+[Query API](query-api.md)).
+
+The graph-store endpoints are gated by the `neowiki-admin` right.
+
 ## Cursor pagination
 
 The Schema, Layout, and Mapping list endpoints paginate with an opaque cursor. Request up to `limit` items (1–50,
@@ -195,11 +195,6 @@ top-level `referencedSubjects` map keyed by Subject ID:
 A target already among the page's own Subjects (a relation to another Subject on the same page) is not repeated in
 `referencedSubjects`. When `relations` is requested but nothing resolves, `referencedSubjects` is an empty array
 (`[]`).
-
-## Stability
-
-**Pre-1.0.** Endpoints and payloads may change without notice. Don't build third-party integrations on
-`/neowiki/v0/*` yet.
 
 ## Full specification
 
