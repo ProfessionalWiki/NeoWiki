@@ -67,6 +67,6 @@ Whether or not you narrow it:
 
 Restricting a page removes nothing from a store, and a rebuild reprojects it, so a store that has once held
 restricted content keeps holding it. Do not expose a SPARQL store directly on a wiki with restricted content, and
-treat a [bulk dump](../rdf/rdf-export.md#bulk-dump) and any store backup as readable by whoever can reach it.
+treat a [bulk dump](../api/rdf-export.md#bulk-dump) and any store backup as readable by whoever can reach it.
 
 The model behind all of this is [ADR 27: Access Control](../adr/027-access-control.md).
