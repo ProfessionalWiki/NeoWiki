@@ -317,12 +317,10 @@ const menuItems = computed<MenuButtonItemData[]>( () => {
 	const items: MenuButtonItemData[] = [];
 
 	if ( props.subjectPageUrl !== null ) {
-		// A url makes Codex render the item as a link, so choosing it navigates by itself.
 		items.push( {
 			value: 'open',
 			label: mw.msg( 'neowiki-managesubjects-row-open' ),
-			icon: cdxIconNext,
-			url: props.subjectPageUrl
+			icon: cdxIconNext
 		} );
 	}
 
@@ -370,11 +368,13 @@ const menuItems = computed<MenuButtonItemData[]>( () => {
 
 const menuSelection = ref<string | number | null>( null );
 
-// 'open' is absent: that item carries a url, so Codex navigates without this being asked.
+// Codex selects an item chosen with the keyboard but never follows a url, so 'open' navigates here.
 function dispatchMenuAction( value: string | number | null ): void {
 	menuSelection.value = null;
 
-	if ( value === 'copy-link' ) {
+	if ( value === 'open' && props.subjectPageUrl !== null ) {
+		window.location.href = props.subjectPageUrl;
+	} else if ( value === 'copy-link' ) {
 		emit( 'copy-link', props.subject );
 	} else if ( value === 'edit' ) {
 		emit( 'edit', props.subject );

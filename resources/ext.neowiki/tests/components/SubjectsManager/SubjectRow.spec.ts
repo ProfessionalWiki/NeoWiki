@@ -220,6 +220,10 @@ describe( 'SubjectRow', () => {
 		const OPEN = '[aria-label="neowiki-managesubjects-row-open"]';
 		const URL = '/wiki/Special:Subject/' + SUBJECT_ID;
 
+		afterEach( () => {
+			vi.unstubAllGlobals();
+		} );
+
 		it( 'is a link to the page the surface named', () => {
 			const wrapper = mountRow( { subjectPageUrl: URL } );
 
@@ -228,11 +232,15 @@ describe( 'SubjectRow', () => {
 			expect( open.attributes( 'href' ) ).toBe( URL );
 		} );
 
-		it( 'is in the overflow menu as a link too', () => {
+		// Codex selects a menu item chosen with the keyboard but does not follow its url.
+		it( 'goes there when chosen from the overflow menu', async () => {
+			vi.stubGlobal( 'location', { href: '' } );
 			const wrapper = mountRow( { subjectPageUrl: URL } );
 
-			const items = wrapper.findComponent( CdxMenuButton ).props( 'menuItems' );
-			expect( items[ 0 ] ).toMatchObject( { value: 'open', url: URL } );
+			wrapper.findComponent( CdxMenuButton ).vm.$emit( 'update:selected', 'open' );
+			await wrapper.vm.$nextTick();
+
+			expect( location.href ).toBe( URL );
 		} );
 
 		it( 'is absent on a row the reader is already on', () => {
