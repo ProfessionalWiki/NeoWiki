@@ -289,11 +289,44 @@ class NeoWikiExtension {
 			return;
 		}
 
-		$GLOBALS['wgFooterIcons']['poweredbyneowiki']['neowiki'] = [
-			'src' => $GLOBALS['wgExtensionAssetsPath'] . '/NeoWiki/resources/images/poweredby_neowiki.svg',
+		$GLOBALS['wgFooterIcons']['poweredbyneowiki']['neowiki'] = self::poweredByBadge(
+			$GLOBALS['wgExtensionAssetsPath'],
+			MW_VERSION
+		);
+	}
+
+	/**
+	 * MediaWiki 1.43 throws on the 'sources' key, so the compact icon for narrow screens starts at 1.44,
+	 * where core shows its own badge the same way.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function poweredByBadge( string $extensionAssetsPath, string $mediaWikiVersion ): array {
+		$images = $extensionAssetsPath . '/NeoWiki/resources/images';
+		$badge = [
+			'src' => $images . '/poweredby_neowiki.svg',
 			'url' => 'https://neowiki.ai/',
 			'alt' => 'Powered by NeoWiki',
+			'lang' => 'en',
 		];
+
+		if ( version_compare( $mediaWikiVersion, '1.44', '<' ) ) {
+			return $badge;
+		}
+
+		return array_merge( $badge, [
+			'src' => $images . '/poweredby_neowiki_compact.svg',
+			'width' => 25,
+			'height' => 25,
+			'sources' => [
+				[
+					'media' => '(min-width: 500px)',
+					'srcset' => $images . '/poweredby_neowiki.svg',
+					'width' => 88,
+					'height' => 31,
+				],
+			],
+		] );
 	}
 
 	private function __construct(
