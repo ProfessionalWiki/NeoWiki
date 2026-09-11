@@ -486,3 +486,25 @@ describe( 'SubjectStore moveSubject', () => {
 	} );
 
 } );
+
+describe( 'SubjectStore findSubject', () => {
+
+	beforeEach( () => {
+		setActivePinia( createPinia() );
+	} );
+
+	it( 'answers the Subject it holds', () => {
+		const store = useSubjectStore();
+		const subject = newSubject( { id: 's11111111111111' } );
+		store.setSubject( subject );
+
+		expect( store.findSubject( subject.getId() ) ).toEqual( subject );
+	} );
+
+	// A Subject the viewer may not read is loaded as an absent one, so the Views that read the
+	// registry go through this rather than through the throwing getSubject.
+	it( 'answers null for a Subject it does not hold', () => {
+		expect( useSubjectStore().findSubject( new SubjectId( 's22222222222222' ) ) ).toBeNull();
+	} );
+
+} );
