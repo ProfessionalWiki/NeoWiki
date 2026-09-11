@@ -8,6 +8,10 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 
+/**
+ * The subject-to-page index, keyed by bare local id (ADR 32). A Subject id from another Source is never
+ * indexed, so it resolves to nothing.
+ */
 interface PageIdentifiersLookup {
 
 	public function getPageIdOfSubject( SubjectId $subjectId ): ?PageIdentifiers;

@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Rdf\PageProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfSubjectExporter;
+use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
@@ -104,11 +105,10 @@ class RdfSubjectExporterTest extends TestCase {
 		?PageProjector $projector = null
 	): RdfSubjectExporter {
 		return new RdfSubjectExporter(
-			$lookup,
+			new SubjectHostingPageResolver( $lookup, new StubPageReadAuthorizer( $authorized ) ),
 			$this->fixedLoader( $loadedPage ),
 			$projector ?? new FixedPageProjector( new QuadList() ),
 			new HardfRdfSerializer( [] ),
-			new StubPageReadAuthorizer( $authorized ),
 		);
 	}
 

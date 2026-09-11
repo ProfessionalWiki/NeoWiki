@@ -15,7 +15,6 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundExcept
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
@@ -35,7 +34,6 @@ use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
@@ -43,6 +41,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestHostingPages;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
@@ -54,9 +53,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
  */
 class ReplaceSubjectActionTest extends TestCase {
 
-	private const string SUBJECT_ID = 's11111111111127';
-	private const string SUBJECT_ID_ON_EARLIER_PAGE = 's11111111111126';
-	private const string SUBJECT_ID_ON_LATER_PAGE = 's11111111111128';
+	private const string SUBJECT_ID = TestHostingPages::SUBJECT_ID;
 	private const string SCHEMA_NAME = 'TestSchema';
 
 	private InMemorySubjectRepository $subjectRepository;
@@ -82,7 +79,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		);
 		return new ReplaceSubjectAction(
 			subjectRepository: $this->subjectRepository,
-			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
+			hostingPageResolver: TestHostingPages::newResolverForSubjectOnNamespacedPage( $readAuthorizer ),
 			writeAuthorizer: $authorizer ?? new SpySubjectWriteAuthorizer( allowed: true ),
 			statementListBuilder: $builder,
 			schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
@@ -97,14 +94,6 @@ class ReplaceSubjectActionTest extends TestCase {
 			),
 			presenter: $this->presenterSpy,
 			validationEnforced: $validationEnforced,
-			// The Subject under test sits on a namespaced page between two others, so neither a
-			// hardcoded main-namespace id nor an implementation answering with some other seeded
-			// page passes.
-			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
-				[ new SubjectId( self::SUBJECT_ID_ON_EARLIER_PAGE ), new PageIdentifiers( new PageId( 6 ), 'Earlier page', 0 ) ],
-				[ new SubjectId( self::SUBJECT_ID ), new PageIdentifiers( new PageId( 7 ), 'Help:Test page', 12 ) ],
-				[ new SubjectId( self::SUBJECT_ID_ON_LATER_PAGE ), new PageIdentifiers( new PageId( 8 ), 'Talk:Later page', 1 ) ],
-			] ),
 		);
 	}
 

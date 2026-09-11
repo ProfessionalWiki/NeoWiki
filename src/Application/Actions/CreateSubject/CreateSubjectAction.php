@@ -180,6 +180,10 @@ readonly class CreateSubjectAction {
 	 * Best-effort global uniqueness check: the subject -> page index is read from a replica, so this
 	 * can miss a Subject another request just created; ID entropy carries the rest (same posture as
 	 * relation IDs).
+	 *
+	 * Reads the unfiltered index on purpose, not SubjectHostingPageResolver: a collision with a Subject
+	 * on a page the caller cannot read is still a collision, and a read-gated check would let a client
+	 * mint an id that shadows a hidden Subject.
 	 */
 	private function subjectIdIsInUse( SubjectId $id ): bool {
 		return $this->pageIdentifiersLookup->getPageIdOfSubject( $id ) !== null;

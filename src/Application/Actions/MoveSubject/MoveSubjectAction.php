@@ -4,8 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\MoveSubject;
 
-use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -38,7 +38,7 @@ readonly class MoveSubjectAction {
 		private SubjectRepository $subjectRepository,
 		private PageReadAuthorizer $readAuthorizer,
 		private SubjectWriteAuthorizer $writeAuthorizer,
-		private PageIdentifiersLookup $pageIdentifiersLookup,
+		private SubjectHostingPageResolver $hostingPageResolver,
 		private SubjectIdParser $subjectIdParser,
 	) {
 	}
@@ -47,18 +47,9 @@ readonly class MoveSubjectAction {
 		$subjectId = $this->subjectIdParser->parseOrThrow( $request->subjectId );
 		$targetPageId = new PageId( $request->targetPageId );
 
-		$sourcePageId = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId )?->getId();
+		$sourcePageId = $this->hostingPageResolver->resolveReadableHostingPage( $subjectId )?->getId();
 
-		// A Subject on no page has no page rights to check, so it is answered as absent.
 		if ( $sourcePageId === null ) {
-			$this->presenter->presentSubjectNotFound();
-			return;
-		}
-
-		// Gate on read before write, for both pages, and before the no-op short-circuit below: a page
-		// the caller may not read and a page that does not exist answer the same shape, so neither
-		// page id can be swept for hidden pages.
-		if ( !$this->readAuthorizer->authorizeReadByPageId( $sourcePageId ) ) {
 			$this->presenter->presentSubjectNotFound();
 			return;
 		}

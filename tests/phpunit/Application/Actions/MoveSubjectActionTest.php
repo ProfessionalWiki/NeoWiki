@@ -9,6 +9,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\MoveSubject\MoveSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\MoveSubject\MoveSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\MoveSubject\MoveSubjectRequest;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -457,16 +458,21 @@ class MoveSubjectActionTest extends TestCase {
 		?PageReadAuthorizer $readAuthorizer = null,
 		?SpySubjectWriteAuthorizer $writeAuthorizer = null
 	): MoveSubjectAction {
+		$readAuthorizer ??= new StubPageReadAuthorizer( allowed: true );
+
 		return new MoveSubjectAction(
 			presenter: $presenter,
 			subjectRepository: $repository,
-			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
+			readAuthorizer: $readAuthorizer,
 			writeAuthorizer: $writeAuthorizer ?? new SpySubjectWriteAuthorizer( allowed: true ),
-			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
-				[ new SubjectId( self::MOVED_ID ), new PageIdentifiers( new PageId( self::SOURCE_PAGE_ID ), 'Source page', 0 ) ],
-				[ new SubjectId( self::SOURCE_MAIN_ID ), new PageIdentifiers( new PageId( self::SOURCE_PAGE_ID ), 'Source page', 0 ) ],
-				[ new SubjectId( self::TARGET_MAIN_ID ), new PageIdentifiers( new PageId( self::TARGET_PAGE_ID ), 'Target page', 0 ) ],
-			] ),
+			hostingPageResolver: new SubjectHostingPageResolver(
+				new InMemoryPageIdentifiersLookup( [
+					[ new SubjectId( self::MOVED_ID ), new PageIdentifiers( new PageId( self::SOURCE_PAGE_ID ), 'Source page', 0 ) ],
+					[ new SubjectId( self::SOURCE_MAIN_ID ), new PageIdentifiers( new PageId( self::SOURCE_PAGE_ID ), 'Source page', 0 ) ],
+					[ new SubjectId( self::TARGET_MAIN_ID ), new PageIdentifiers( new PageId( self::TARGET_PAGE_ID ), 'Target page', 0 ) ],
+				] ),
+				$readAuthorizer
+			),
 			subjectIdParser: TestSubjectIds::newParser(),
 		);
 	}
