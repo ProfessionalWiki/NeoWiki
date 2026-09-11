@@ -9,6 +9,7 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::onExtensionRegistration
+ * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::poweredByBadge
  */
 class OnExtensionRegistrationTest extends TestCase {
 
@@ -108,19 +109,53 @@ class OnExtensionRegistrationTest extends TestCase {
 		$this->assertCount( 2, $GLOBALS['wgRestAPIAdditionalRouteFiles'] );
 	}
 
-	public function testAddsPoweredByBadgeAfterTheMediaWikiOne(): void {
+	public function testRegistersThePoweredByBadgeForTheRunningMediaWiki(): void {
 		$this->givenOnlyTheMediaWikiBadge();
 
 		NeoWikiExtension::onExtensionRegistration();
 
 		$this->assertSame(
+			NeoWikiExtension::poweredByBadge( '/w/extensions', MW_VERSION ),
+			$GLOBALS['wgFooterIcons']['poweredbyneowiki']['neowiki']
+		);
+	}
+
+	public function testBadgeBeforeMediaWiki144IsTheFullBadgeOnly(): void {
+		$this->assertSame(
 			[
 				'src' => '/w/extensions/NeoWiki/resources/images/poweredby_neowiki.svg',
 				'url' => 'https://neowiki.ai/',
 				'alt' => 'Powered by NeoWiki',
+				'lang' => 'en',
 			],
-			$GLOBALS['wgFooterIcons']['poweredbyneowiki']['neowiki']
+			NeoWikiExtension::poweredByBadge( '/w/extensions', '1.43.8' )
 		);
+	}
+
+	public function testBadgeFromMediaWiki144ShowsTheCompactIconOnNarrowScreens(): void {
+		$this->assertSame(
+			[
+				'src' => '/w/extensions/NeoWiki/resources/images/poweredby_neowiki_compact.svg',
+				'url' => 'https://neowiki.ai/',
+				'alt' => 'Powered by NeoWiki',
+				'lang' => 'en',
+				'width' => 25,
+				'height' => 25,
+				'sources' => [
+					[
+						'media' => '(min-width: 500px)',
+						'srcset' => '/w/extensions/NeoWiki/resources/images/poweredby_neowiki.svg',
+						'width' => 88,
+						'height' => 31,
+					],
+				],
+			],
+			NeoWikiExtension::poweredByBadge( '/w/extensions', '1.44.0' )
+		);
+	}
+
+	public function testMediaWiki144DevelopmentBuildsGetTheCompactIcon(): void {
+		$this->assertArrayHasKey( 'sources', NeoWikiExtension::poweredByBadge( '/w/extensions', '1.44.0-alpha' ) );
 	}
 
 	public function testAddsTheBadgeAsItsOwnBlockAfterTheMediaWikiOne(): void {
@@ -140,18 +175,15 @@ class OnExtensionRegistrationTest extends TestCase {
 		$this->assertFalse( $GLOBALS['wgFooterIcons']['poweredbyneowiki']['neowiki'] );
 	}
 
-	public function testPoweredByBadgeImageExistsWhereItIsRegistered(): void {
-		$this->givenOnlyTheMediaWikiBadge();
+	public function testBadgeImagesExistWhereTheyAreRegistered(): void {
+		$badge = NeoWikiExtension::poweredByBadge( '/w/extensions', '1.44.0' );
 
-		NeoWikiExtension::onExtensionRegistration();
+		$this->assertFileExists( $this->fileBehind( $badge['src'] ) );
+		$this->assertFileExists( $this->fileBehind( $badge['sources'][0]['srcset'] ) );
+	}
 
-		$imagePath = str_replace(
-			'/w/extensions/NeoWiki',
-			'',
-			$GLOBALS['wgFooterIcons']['poweredbyneowiki']['neowiki']['src']
-		);
-
-		$this->assertFileExists( dirname( __DIR__, 2 ) . $imagePath );
+	private function fileBehind( string $url ): string {
+		return dirname( __DIR__, 2 ) . str_replace( '/w/extensions/NeoWiki', '', $url );
 	}
 
 	private function givenOnlyTheMediaWikiBadge(): void {
