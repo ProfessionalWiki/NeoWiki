@@ -72,3 +72,5 @@ For the people who operate the server.
 * [Upgrading](operations/upgrading.md) — moving your wiki to the latest NeoWiki
 * [Maintenance](operations/maintenance.md) — rebuilding the graph, Neo4j outage behavior, and backups
 * [Performance](operations/performance.md) — measured write throughput
+* [Restricted content](operations/restricted-content.md) — wikis where some content is readable only by certain
+  users or groups

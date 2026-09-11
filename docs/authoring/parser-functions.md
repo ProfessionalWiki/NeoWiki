@@ -23,8 +23,9 @@ Every parser function reads as the user the page is parsed for. Subjects that us
 treated as absent. `{{#cypher_raw}}` and `{{#sparql_raw}}` need the `neowiki-query` right.
 `{{#view}}` only places a marker at parse time; the Subject it shows is fetched per viewer over the
 REST API, under that viewer's permissions. Output of the other functions is cached separately for
-readers with different groups or rights, so what one reader may see does not reach another through
-the parser cache.
+readers with different groups or rights, so it tracks page access only where page access follows
+those; where a hook grants it per account, per IP or per session, see
+[Restricted content](../operations/restricted-content.md).
 
 ## `{{#view}}`
 

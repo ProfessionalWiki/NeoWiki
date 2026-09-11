@@ -105,6 +105,9 @@ Report and rebuild the graph stores this wiki projects into. A rebuild's `202` m
 
 ## Permissions
 
+Where the wiki itself requires login to read, every endpoint answers an anonymous request with `403` and
+`"error": "rest-read-denied"`, before any of the per-page rules below apply.
+
 The Subject, page-subjects, edit-notices, subject-labels, Schema, Layout, Mapping, RDF export, and entity-dereference
 read endpoints
 enforce the caller's per-page `read` permission; page protection and `$wgNamespaceProtection` do not restrict them,
