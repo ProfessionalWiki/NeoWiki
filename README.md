@@ -2,6 +2,8 @@
 
 [NeoWiki](https://neowiki.ai) is a collaborative knowledge management system on top of MediaWiki and graph databases.
 
+[Website](https://neowiki.ai) · [Documentation](https://neowiki.ai/docs/) · [Try it at neowiki.dev](https://neowiki.dev) · [Get a demo](https://neowiki.ai/demo)
+
 [![Mastodon](https://img.shields.io/mastodon/follow/116122313808578574)](https://mastodon.social/@NeoWiki)
 [![Bluesky](https://img.shields.io/bluesky/followers/neowiki.ai)](https://bsky.app/profile/neowiki.ai)
 [![X](https://img.shields.io/twitter/follow/NeoWikiAI)](https://x.com/NeoWikiAI)
@@ -139,3 +141,14 @@ $wgDebugLogGroups['NeoWiki'] = '/tmp/neowiki-debug.log';
 
 For the prebuilt try-it-out stack or server deployment with Caddy, see
 [Installation](docs/operations/installation.md).
+
+## Behind NeoWiki
+
+NeoWiki is made by [Professional Wiki](https://professional.wiki), a Berlin company building sovereign knowledge infrastructure with MediaWiki, knowledge graphs, and AI, and the maintainer of Semantic MediaWiki. It is free software under the [GPL-2.0-or-later](COPYING).
+
+Two key partners back NeoWiki's development:
+
+- **[ECHOLOT](https://echolot-eccch.eu/)**, the EU Horizon Europe consortium for cultural heritage data, uses NeoWiki as its core system. <img src="https://neowiki.ai/images/logos/eu-emblem.svg" alt="Flag of the European Union" width="24" height="16" /> ECHOLOT is funded by the European Union under grant agreement Nº 101233096. [More on ECHOLOT and EU funding](https://neowiki.ai/partners/echolot).<br>
+  <sub>Views and opinions expressed are those of the author(s) only and do not necessarily reflect those of the European Union or the European Research Executive Agency. Neither the European Union nor the granting authority can be held responsible for them.</sub>
+- **[Hallo Welt!](https://neowiki.ai/partners/bluespice)**, creators of BlueSpice, are integrating NeoWiki into BlueSpice Galaxy, the next major version of the enterprise MediaWiki distribution.
+
