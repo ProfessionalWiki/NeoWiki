@@ -371,18 +371,22 @@ onMounted( async () => {
 		font-style: italic;
 	}
 
-	&__subject,
+	// The spacing between the sections sits on the lists, as on the Data tab: the heading between
+	// them is the skin's, margins included.
+	// One row, so a plain block, like the Data tab's main slot.
+	&__subject {
+		list-style: none;
+		padding: 0;
+		margin: 0 0 @spacing-150;
+	}
+
 	&__referenced {
 		list-style: none;
 		padding: 0;
-		margin: 0;
+		margin: @spacing-100 0 0 0;
 		display: flex;
 		flex-direction: column;
 		gap: @spacing-50;
-	}
-
-	&__referenced-heading {
-		margin: @spacing-150 0 @spacing-75;
 	}
 }
 </style>

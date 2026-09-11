@@ -663,10 +663,6 @@ onUnmounted( () => {
 		color: @color-subtle;
 	}
 
-	&__section-heading {
-		margin: @spacing-150 0 @spacing-75;
-	}
-
 	&__main-slot {
 		list-style: none;
 		padding: 0;
