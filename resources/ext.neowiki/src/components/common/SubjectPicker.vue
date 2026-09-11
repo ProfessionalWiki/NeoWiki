@@ -13,7 +13,6 @@
 				:placeholder="$i18n( 'neowiki-subject-picker-placeholder' ).text()"
 				:status="effectiveStatus"
 				:aria-label="props.ariaLabel"
-				@input="onLookupInput"
 				@update:selected="onSubjectSelected"
 				@blur="onBlur"
 			>
@@ -102,6 +101,9 @@ const searchStatus = ref<'idle' | 'pending' | 'done'>( 'idle' );
 const searching = computed( (): boolean => searchStatus.value !== 'idle' );
 const hasUnmatchedText = ref( false );
 let requestSequence = 0;
+// Moved by each creation and by a real pick, and by nothing else: a creation that lands after either
+// is abandoned, since it would otherwise overwrite what the user chose meanwhile.
+let creationSequence = 0;
 
 // The name the field is currently showing for its selection, so text the user typed can be told
 // apart from the label Codex and the watcher below write there themselves.
@@ -234,19 +236,39 @@ watch( () => props.selected === null ? undefined : draftNameOf( props.selected )
 	}
 } );
 
-async function onLookupInput( value: string ): Promise<void> {
+// The field's value rather than CdxLookup's `input` event, as in PagePicker: Codex also emits that
+// event for text it writes itself, such as the label of an item just picked.
+watch( inputText, ( value ) => {
+	onFieldTextChanged( String( value ?? '' ) );
+} );
+
+async function onFieldTextChanged( value: string ): Promise<void> {
 	hasUnmatchedText.value = false;
 
-	if ( !value ) {
-		// Abandons a lookup still in flight, whose answer would otherwise fill the menu of a field
-		// the user has since emptied. Only then: the sequence is shared with createFromTypedText,
-		// and clearing the field is no reason to abandon a Subject the host is busy creating.
-		if ( searchStatus.value === 'pending' ) {
-			++requestSequence;
-		}
+	// The selection's own name, written by Codex on a pick or by showName, is not the user typing.
+	// An emptied field never is that name, and has its own answer below.
+	if ( value !== '' && value.trim() === selectedName.value ) {
+		return;
+	}
 
+	// What the field shows is the user's now, so the name it held excuses no later text of theirs:
+	// typing the target's own name back has to search for it like any other.
+	selectedName.value = '';
+
+	if ( value === '' ) {
+		// Abandons a lookup still in flight, whose answer would otherwise fill the menu of a field
+		// the user has since emptied.
+		++requestSequence;
 		searchResults.value = [];
 		searchStatus.value = 'idle';
+
+		// Emptying a field the user typed over empties the relation, which Codex reports itself only
+		// while it still holds a selection. Codex also blanks the field for a target its menu does
+		// not list, such as one the host has just set; that target stands.
+		if ( selectedSubject.value === null && props.selected !== null ) {
+			emit( 'update:selected', null );
+		}
+
 		return;
 	}
 
@@ -303,9 +325,9 @@ async function searchLabels( value: string, targetSchema: string ): Promise<Menu
 }
 
 // Codex's selection is bound one way so that neither sentinel ever becomes it. Codex writes the
-// label of whatever it selects into the field, or nothing for an item its menu does not list, and
-// then emits input: the create option's label would replace the typed name, and putting back a
-// target the user typed over would blank the field and abandon the creation as a new search.
+// label of whatever it selects into the field, or nothing for an item its menu does not list: the
+// create option's label would replace the typed name, and putting back a target the user typed
+// over would blank the field.
 function onSubjectSelected( subjectId: string | null ): void {
 	if ( subjectId === CREATE_SUBJECT ) {
 		createFromTypedText();
@@ -320,21 +342,26 @@ function onSubjectSelected( subjectId: string | null ): void {
 
 	selectedSubject.value = subjectId;
 
-	if ( subjectId !== null ) {
-		// Recorded before the parent answers with a new props.selected: Codex writes the picked
-		// item's label into the field, and until this catches up that label would read as text the
-		// user had typed — which is what the create option is named after.
-		const picked = menuItems.value.find( ( item ) => item.value === subjectId );
-		if ( picked !== undefined ) {
-			selectedName.value = String( picked.label ?? '' );
-		}
-
-		searchStatus.value = 'idle';
-		hasUnmatchedText.value = false;
-		emit( 'update:selected', subjectId );
-	} else if ( !inputText.value ) {
-		emit( 'update:selected', null );
+	// Codex drops its selection whenever the text changes. The relation keeps its target while the
+	// user types over it, and the field watcher empties it once the field is empty.
+	if ( subjectId === null ) {
+		return;
 	}
+
+	// A pick outranks a creation still in flight.
+	++creationSequence;
+
+	// Recorded before the parent answers with a new props.selected: Codex writes the picked item's
+	// label into the field, and until this catches up that label would read as text the user had
+	// typed — which is what the create option is named after, and what starts a search.
+	const picked = menuItems.value.find( ( item ) => item.value === subjectId );
+	if ( picked !== undefined ) {
+		selectedName.value = String( picked.label ?? '' );
+	}
+
+	searchStatus.value = 'idle';
+	hasUnmatchedText.value = false;
+	emit( 'update:selected', subjectId );
 }
 
 async function createFromTypedText(): Promise<void> {
@@ -342,9 +369,7 @@ async function createFromTypedText(): Promise<void> {
 		return;
 	}
 
-	// Shared with the search, so a search started meanwhile abandons this creation rather than
-	// overwriting whatever the user has picked by the time it lands.
-	const currentSequence = ++requestSequence;
+	const currentCreation = ++creationSequence;
 
 	try {
 		// What the user typed names the new Subject, which is the only way it becomes findable
@@ -354,10 +379,12 @@ async function createFromTypedText(): Promise<void> {
 			typedText.value === '' ? null : typedText.value
 		);
 
-		if ( subject === null || currentSequence !== requestSequence ) {
+		if ( subject === null || currentCreation !== creationSequence ) {
 			return;
 		}
 
+		// A search still out would answer for text the new Subject's name now replaces.
+		++requestSequence;
 		searchStatus.value = 'idle';
 		hasUnmatchedText.value = false;
 		showName( subject.getDisplayName() );

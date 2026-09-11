@@ -103,10 +103,12 @@ describe( 'SubjectPicker', () => {
 		return menuItemsOf( wrapper ).map( ( item ) => String( item.label ) );
 	}
 
+	// Only the field's value: the picker ignores CdxLookup's `input` event, which Codex also emits for
+	// text it writes itself. Typing waits for the name the picker writes into the field on mount, as
+	// anyone typing in the browser does.
 	async function type( wrapper: VueWrapper, text: string ): Promise<void> {
-		const lookup = wrapper.findComponent( CdxLookupWithVModel );
-		lookup.vm.$emit( 'update:input-value', text );
-		lookup.vm.$emit( 'input', text );
+		await flushPromises();
+		wrapper.findComponent( CdxLookup ).vm.$emit( 'update:input-value', text );
 		await flushPromises();
 	}
 
@@ -124,10 +126,8 @@ describe( 'SubjectPicker', () => {
 
 	it( 'calls searchSubjectLabels with input and targetSchema', async () => {
 		const wrapper = createWrapper( { targetSchema: 'Company' } );
-		const lookup = wrapper.findComponent( CdxLookup );
 
-		lookup.vm.$emit( 'input', 'acme' );
-		await flushPromises();
+		await type( wrapper, 'acme' );
 
 		expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenCalledWith( 'acme', 'Company' );
 	} );
@@ -141,8 +141,7 @@ describe( 'SubjectPicker', () => {
 		const wrapper = createWrapper( { targetSchema: 'Company' } );
 		const lookup = wrapper.findComponent( CdxLookup );
 
-		lookup.vm.$emit( 'input', 'a' );
-		await flushPromises();
+		await type( wrapper, 'a' );
 
 		expect( lookup.props( 'menuItems' ) ).toEqual( [
 			{ label: 'ACME Inc.', value: 's1demo1aaaaaaa1' },
@@ -158,12 +157,10 @@ describe( 'SubjectPicker', () => {
 		const wrapper = createWrapper();
 		const lookup = wrapper.findComponent( CdxLookup );
 
-		lookup.vm.$emit( 'input', 'Foo' );
-		await flushPromises();
+		await type( wrapper, 'Foo' );
 		expect( lookup.props( 'menuItems' ) ).toHaveLength( 1 );
 
-		lookup.vm.$emit( 'input', '' );
-		await flushPromises();
+		await type( wrapper, '' );
 		expect( lookup.props( 'menuItems' ) ).toEqual( [] );
 	} );
 
@@ -171,8 +168,7 @@ describe( 'SubjectPicker', () => {
 		const wrapper = createWrapper();
 		const lookup = wrapper.findComponent( CdxLookup );
 
-		lookup.vm.$emit( 'input', 'zzzzz' );
-		await flushPromises();
+		await type( wrapper, 'zzzzz' );
 
 		expect( lookup.props( 'menuItems' ) ).toEqual( [] );
 	} );
@@ -183,8 +179,7 @@ describe( 'SubjectPicker', () => {
 		const wrapper = createWrapper();
 		const lookup = wrapper.findComponent( CdxLookup );
 
-		lookup.vm.$emit( 'input', 'test' );
-		await flushPromises();
+		await type( wrapper, 'test' );
 
 		expect( lookup.props( 'menuItems' ) ).toEqual( [] );
 	} );
@@ -267,9 +262,8 @@ describe( 'SubjectPicker', () => {
 		const wrapper = createWrapper( { targetSchema: 'Company' } );
 		const lookup = wrapper.findComponent( CdxLookup );
 
-		lookup.vm.$emit( 'input', 'first' );
-		lookup.vm.$emit( 'input', 'second' );
-		await flushPromises();
+		await type( wrapper, 'first' );
+		await type( wrapper, 'second' );
 
 		expect( lookup.props( 'menuItems' ) ).toEqual( [
 			{ label: 'Second Result', value: 's1demo5sssssss1' },
@@ -283,7 +277,7 @@ describe( 'SubjectPicker', () => {
 		] );
 	} );
 
-	it( 'does not propagate null selection to parent when input has text', async () => {
+	it( 'does not propagate a null selection reported by Codex', async () => {
 		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue(
 			new Subject( new SubjectId( 's1demo1aaaaaaa1' ), 'ACME Inc.', 'ACME Inc.', false, 'Company', new StatementList( [] ) ),
 		);
@@ -293,7 +287,6 @@ describe( 'SubjectPicker', () => {
 
 		const lookup = wrapper.findComponent( CdxLookupWithVModel );
 		lookup.vm.$emit( 'update:input-value', 'ACME In' );
-		lookup.vm.$emit( 'input', 'ACME In' );
 		lookup.vm.$emit( 'update:selected', null );
 		await flushPromises();
 
@@ -306,7 +299,6 @@ describe( 'SubjectPicker', () => {
 		const lookup = wrapper.findComponent( CdxLookupWithVModel );
 
 		lookup.vm.$emit( 'update:input-value', 'some text' );
-		lookup.vm.$emit( 'input', 'some text' );
 		await flushPromises();
 
 		lookup.vm.$emit( 'blur' );
@@ -321,7 +313,6 @@ describe( 'SubjectPicker', () => {
 		const lookup = wrapper.findComponent( CdxLookupWithVModel );
 
 		lookup.vm.$emit( 'update:input-value', 'unmatched' );
-		lookup.vm.$emit( 'input', 'unmatched' );
 		await flushPromises();
 
 		lookup.vm.$emit( 'blur' );
@@ -335,7 +326,6 @@ describe( 'SubjectPicker', () => {
 		const lookup = wrapper.findComponent( CdxLookupWithVModel );
 
 		lookup.vm.$emit( 'update:input-value', 'some text' );
-		lookup.vm.$emit( 'input', 'some text' );
 		await flushPromises();
 		lookup.vm.$emit( 'blur' );
 		await wrapper.vm.$nextTick();
@@ -354,14 +344,13 @@ describe( 'SubjectPicker', () => {
 		const lookup = wrapper.findComponent( CdxLookupWithVModel );
 
 		lookup.vm.$emit( 'update:input-value', 'some text' );
-		lookup.vm.$emit( 'input', 'some text' );
 		await flushPromises();
 		lookup.vm.$emit( 'blur' );
 		await wrapper.vm.$nextTick();
 
 		expect( wrapper.findComponent( CdxMessage ).exists() ).toBe( true );
 
-		lookup.vm.$emit( 'input', 'new text' );
+		lookup.vm.$emit( 'update:input-value', 'new text' );
 		await wrapper.vm.$nextTick();
 
 		expect( wrapper.findComponent( CdxMessage ).exists() ).toBe( false );
@@ -373,7 +362,6 @@ describe( 'SubjectPicker', () => {
 		const lookup = wrapper.findComponent( CdxLookupWithVModel );
 
 		lookup.vm.$emit( 'update:input-value', 'some text' );
-		lookup.vm.$emit( 'input', 'some text' );
 		await flushPromises();
 		lookup.vm.$emit( 'blur' );
 		await wrapper.vm.$nextTick();
@@ -387,16 +375,13 @@ describe( 'SubjectPicker', () => {
 		const lookup = wrapper.findComponent( CdxLookupWithVModel );
 
 		lookup.vm.$emit( 'update:input-value', 'some text' );
-		lookup.vm.$emit( 'input', 'some text' );
 		await flushPromises();
 		lookup.vm.$emit( 'blur' );
 		await wrapper.vm.$nextTick();
 
 		expect( wrapper.findComponent( CdxMessage ).exists() ).toBe( true );
 
-		lookup.vm.$emit( 'update:input-value', '' );
-		lookup.vm.$emit( 'input', '' );
-		await flushPromises();
+		await type( wrapper, '' );
 		lookup.vm.$emit( 'blur' );
 		await wrapper.vm.$nextTick();
 
@@ -584,6 +569,18 @@ describe( 'SubjectPicker', () => {
 
 		function creatorThrowing(): Mock<SubjectCreator> {
 			return vi.fn<SubjectCreator>().mockRejectedValue( new Error( 'the host could not create it' ) );
+		}
+
+		// Its Subject arrives only once the test calls finish, so the picker can be observed while the
+		// creation is still in flight.
+		function creatorPending(): { create: Mock<SubjectCreator>; finish: ( subject: Subject | null ) => void } {
+			let finish!: ( subject: Subject | null ) => void;
+			const create = vi.fn<SubjectCreator>().mockReturnValue(
+				new Promise<Subject | null>( ( resolve ) => {
+					finish = resolve;
+				} ),
+			);
+			return { create, finish };
 		}
 
 		// Stands in for the editor hosting the picker: it keeps the Subjects invented this session in
@@ -891,30 +888,70 @@ describe( 'SubjectPicker', () => {
 		} );
 
 		it( 'keeps a creation that lands after the field was cleared', async () => {
-			let finishCreating: ( subject: Subject ) => void;
-			const create = vi.fn<SubjectCreator>().mockReturnValue(
-				new Promise<Subject | null>( ( resolve ) => {
-					finishCreating = resolve as ( subject: Subject ) => void;
-				} ),
-			);
+			const { create, finish } = creatorPending();
 			const wrapper = await createWrapperOffering( hostOffering( create ) );
 			await type( wrapper, 'Widget Co' );
 			await chooseLastMenuItem( wrapper );
 
 			await type( wrapper, '' );
-			finishCreating!( createdSubject( 'Widget Co', 'Widget Co' ) );
+			finish( createdSubject( 'Widget Co', 'Widget Co' ) );
 			await flushPromises();
 
 			expect( wrapper.emitted( 'update:selected' ) ).toEqual( [ [ 's1demo1aaaaaaa1' ] ] );
 		} );
 
-		it( 'abandons a creation that lands after another Subject has been selected', async () => {
-			let finishCreation: ( subject: Subject | null ) => void;
-			const create = vi.fn<SubjectCreator>().mockReturnValue(
-				new Promise<Subject | null>( ( resolve ) => {
-					finishCreation = resolve;
+		it( 'keeps a creation that lands after the field was cleared while a search was still out', async () => {
+			const { create, finish } = creatorPending();
+			searchNeverAnswers();
+			const wrapper = await createWrapperOffering( hostOffering( create ) );
+			await type( wrapper, 'Widget Co' );
+			await chooseLastMenuItem( wrapper );
+
+			await type( wrapper, '' );
+			finish( createdSubject( 'Widget Co', 'Widget Co' ) );
+			await flushPromises();
+
+			expect( wrapper.emitted( 'update:selected' ) ).toEqual( [ [ 's1demo1aaaaaaa1' ] ] );
+		} );
+
+		it( 'keeps what a search still out finds when the creation is refused', async () => {
+			let answerSearch: ( results: { id: string; label: string }[] ) => void = silence;
+			( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockReturnValue(
+				new Promise<{ id: string; label: string }[]>( ( resolve ) => {
+					answerSearch = resolve;
 				} ),
 			);
+			const wrapper = await createWrapperOffering( hostOffering( creatorReturning( null ) ) );
+			await type( wrapper, 'Widget' );
+			await chooseLastMenuItem( wrapper );
+
+			answerSearch( [ { id: 's1demo5sssssss1', label: 'Widget Co' } ] );
+			await flushPromises();
+
+			expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Widget Co', 'Create "Widget" as a new Product' ] );
+		} );
+
+		it( 'drops what a search still out finds once the creation has landed', async () => {
+			let answerSearch: ( results: { id: string; label: string }[] ) => void = silence;
+			( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockReturnValue(
+				new Promise<{ id: string; label: string }[]>( ( resolve ) => {
+					answerSearch = resolve;
+				} ),
+			);
+			const wrapper = await createWrapperOffering(
+				hostOffering( creatorReturning( createdSubject( 'Widget Co', 'Widget Co' ) ) ),
+			);
+			await type( wrapper, 'Widget' );
+			await chooseLastMenuItem( wrapper );
+
+			answerSearch( [ { id: 's1demo5sssssss1', label: 'Widget Ltd' } ] );
+			await flushPromises();
+
+			expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Widget Co', 'Create a new Product' ] );
+		} );
+
+		it( 'abandons a creation that lands after another Subject has been selected', async () => {
+			const { create, finish } = creatorPending();
 			searchReturns( [ { id: 's1demo5sssssss1', label: 'ACME Inc.' } ] );
 			const wrapper = await createWrapperOffering( hostOffering( create ) );
 			await type( wrapper, 'wid' );
@@ -922,7 +959,7 @@ describe( 'SubjectPicker', () => {
 
 			await type( wrapper, 'acme' );
 			await chooseFirstMenuItem( wrapper );
-			finishCreation!( createdSubject( 'Widget X', 'Widget X' ) );
+			finish( createdSubject( 'Widget X', 'Widget X' ) );
 			await flushPromises();
 
 			expect( wrapper.emitted( 'update:selected' ) ).toEqual( [ [ 's1demo5sssssss1' ] ] );
@@ -933,6 +970,15 @@ describe( 'SubjectPicker', () => {
 				const wrapper = await createWrapperHolding( 'ACME Inc.', hostOffering( creatorReturning( null ) ) );
 
 				expect( lastMenuLabelOf( wrapper ) ).toBe( 'Create a new Company' );
+			} );
+
+			it( 'searches again when the target name is typed back after other text', async () => {
+				const wrapper = await createWrapperHolding( 'ACME Inc.', hostOffering( creatorReturning( null ) ) );
+
+				await type( wrapper, 'Widget Co' );
+				await type( wrapper, 'ACME Inc.' );
+
+				expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenLastCalledWith( 'ACME Inc.', 'Company' );
 			} );
 
 			it( 'names the create option after text typed over the target', async () => {
@@ -1133,28 +1179,33 @@ describe( 'SubjectPicker', () => {
 				.toEqual( [ 'Create a new Product' ] );
 		} );
 
+		async function typeInField( wrapper: VueWrapper, text: string ): Promise<void> {
+			const input = wrapper.find( 'input' );
+			await input.trigger( 'focus' );
+			await input.setValue( text );
+			await flushPromises();
+		}
+
+		async function chooseFirstOption( wrapper: VueWrapper ): Promise<void> {
+			await wrapper.findAll( '[role="option"]' )[ 0 ].trigger( 'click' );
+			await flushPromises();
+		}
+
+		// The create option is the last one, as in the stubbed tests above.
+		async function chooseLastOption( wrapper: VueWrapper ): Promise<void> {
+			const options = wrapper.findAll( '[role="option"]' );
+			await options[ options.length - 1 ].trigger( 'click' );
+			await flushPromises();
+		}
+
+		function fieldTextOf( wrapper: VueWrapper ): string {
+			return wrapper.find( 'input' ).element.value;
+		}
+
 		describe( 'replacing the target in the real Codex Lookup', () => {
 			async function mountHoldingTarget( subjectCreation: SubjectCreation ): Promise<VueWrapper> {
 				wikiHolds( subjectNamed( EXISTING_TARGET_ID, 'ACME Inc.', 'Product' ) );
 				return mountInCodex( subjectCreation, { selected: EXISTING_TARGET_ID } );
-			}
-
-			async function typeOverTarget( wrapper: VueWrapper, text: string ): Promise<void> {
-				const input = wrapper.find( 'input' );
-				await input.trigger( 'focus' );
-				await input.setValue( text );
-				await flushPromises();
-			}
-
-			// The create option is the last one, as in the stubbed tests above.
-			async function chooseLastOption( wrapper: VueWrapper ): Promise<void> {
-				const options = wrapper.findAll( '[role="option"]' );
-				await options[ options.length - 1 ].trigger( 'click' );
-				await flushPromises();
-			}
-
-			function fieldTextOf( wrapper: VueWrapper ): string {
-				return wrapper.find( 'input' ).element.value;
 			}
 
 			it( 'reports a Subject created over the target as the selection', async () => {
@@ -1162,7 +1213,7 @@ describe( 'SubjectPicker', () => {
 					hostOffering( creatorReturning( createdSubject( 'Zurich Depot', 'Zurich Depot' ) ) ),
 				);
 
-				await typeOverTarget( wrapper, 'Zurich Depot' );
+				await typeInField( wrapper, 'Zurich Depot' );
 				await chooseLastOption( wrapper );
 
 				expect( wrapper.emitted( 'update:selected' ) ).toEqual( [ [ 's1demo1aaaaaaa1' ] ] );
@@ -1174,7 +1225,7 @@ describe( 'SubjectPicker', () => {
 					hostOffering( creatorReturning( createdSubject( 'Zurich Depot', 'Zurich Depot' ) ) ),
 				);
 
-				await typeOverTarget( wrapper, '  Zurich Depot  ' );
+				await typeInField( wrapper, '  Zurich Depot  ' );
 				await chooseLastOption( wrapper );
 
 				expect( fieldTextOf( wrapper ) ).toBe( 'Zurich Depot' );
@@ -1183,7 +1234,7 @@ describe( 'SubjectPicker', () => {
 			it( 'keeps the text typed over the target when the creation is abandoned', async () => {
 				const wrapper = await mountHoldingTarget( hostOffering( creatorReturning( null ) ) );
 
-				await typeOverTarget( wrapper, 'Zurich Depot' );
+				await typeInField( wrapper, 'Zurich Depot' );
 				await chooseLastOption( wrapper );
 
 				expect( fieldTextOf( wrapper ) ).toBe( 'Zurich Depot' );
@@ -1194,7 +1245,7 @@ describe( 'SubjectPicker', () => {
 				vi.spyOn( console, 'error' ).mockImplementation( silence );
 				const wrapper = await mountHoldingTarget( hostOffering( creatorThrowing() ) );
 
-				await typeOverTarget( wrapper, 'Zurich Depot' );
+				await typeInField( wrapper, 'Zurich Depot' );
 				await chooseLastOption( wrapper );
 
 				expect( fieldTextOf( wrapper ) ).toBe( 'Zurich Depot' );
@@ -1203,10 +1254,70 @@ describe( 'SubjectPicker', () => {
 			it( 'flags text typed over the target as unmatched on leaving the field', async () => {
 				const wrapper = await mountHoldingTarget( hostOffering( creatorReturning( null ) ) );
 
-				await typeOverTarget( wrapper, 'Zurich Depot' );
+				await typeInField( wrapper, 'Zurich Depot' );
 				await wrapper.find( 'input' ).trigger( 'blur' );
 
 				expect( wrapper.emitted( 'blur' ) ).toEqual( [ [ true ] ] );
+			} );
+
+			it( 'empties the relation when the target is cleared without being typed over', async () => {
+				const wrapper = await mountHoldingTarget( hostOffering( creatorReturning( null ) ) );
+
+				await typeInField( wrapper, '' );
+
+				expect( wrapper.emitted( 'update:selected' ) ).toEqual( [ [ null ] ] );
+			} );
+
+			it( 'empties the relation when the text typed over the target is cleared', async () => {
+				const wrapper = await mountHoldingTarget( hostOffering( creatorReturning( null ) ) );
+
+				await typeInField( wrapper, 'Zu' );
+				await typeInField( wrapper, '' );
+
+				expect( wrapper.emitted( 'update:selected' ) ).toEqual( [ [ null ] ] );
+			} );
+		} );
+
+		describe( 'picking in the real Codex Lookup', () => {
+			const PICKED_ID = 's1demo5sssssss1';
+
+			it( 'searches once for text that a pick then replaces with its label', async () => {
+				searchReturns( [ { id: PICKED_ID, label: 'ACME Inc.' } ] );
+				const wrapper = await mountInCodex( hostOffering( creatorReturning( null ) ) );
+
+				await typeInField( wrapper, 'acme' );
+				await chooseFirstOption( wrapper );
+
+				expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenCalledTimes( 1 );
+			} );
+
+			// Typed as the picked Subject's label, so the pick changes no text: Codex writes nothing into
+			// the field and emits nothing for it.
+			it( 'abandons a pending creation once another Subject is picked', async () => {
+				const { create, finish } = creatorPending();
+				searchReturns( [ { id: PICKED_ID, label: 'Widget Co' } ] );
+				const wrapper = await mountInCodex( hostOffering( create ) );
+
+				await typeInField( wrapper, 'Widget Co' );
+				await chooseLastOption( wrapper );
+				await chooseFirstOption( wrapper );
+				finish( createdSubject( 'Widget Co', 'Widget Co' ) );
+				await flushPromises();
+
+				expect( wrapper.emitted( 'update:selected' ) ).toEqual( [ [ PICKED_ID ] ] );
+			} );
+
+			// Codex blanks a field holding other text when its selection turns to an item the menu does
+			// not list, as the host's target is. That is Codex writing, not the user emptying the field.
+			it( 'keeps a target the host sets over text the user had typed', async () => {
+				const wrapper = await mountInCodex( hostOffering( creatorReturning( null ) ) );
+				wikiHolds( subjectNamed( EXISTING_TARGET_ID, 'ACME Inc.', 'Product' ) );
+
+				await typeInField( wrapper, 'Zu' );
+				await wrapper.setProps( { selected: EXISTING_TARGET_ID } );
+				await flushPromises();
+
+				expect( wrapper.emitted( 'update:selected' ) ).toBeUndefined();
 			} );
 		} );
 	} );
