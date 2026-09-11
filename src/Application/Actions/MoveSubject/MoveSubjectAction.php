@@ -54,6 +54,8 @@ readonly class MoveSubjectAction {
 			return;
 		}
 
+		// The caller's page id is read-gated before any write check, as CreateSubjectAction gates its
+		// page id, so a 403 cannot reveal a hidden page (ADR 27).
 		if ( !$this->readAuthorizer->authorizeReadByPageId( $targetPageId ) ) {
 			$this->presenter->presentTargetPageNotFound();
 			return;

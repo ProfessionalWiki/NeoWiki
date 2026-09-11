@@ -13,9 +13,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
  * Exports one Subject's outbound bounded description as a self-contained RDF document, placed in the
  * hosting page's per-projection named graph (the same graph the Subject's triples occupy in the page
  * export and the store sync). Returns null — which the REST handler maps to one indistinguishable
- * 404 — for every reason the Subject cannot be served: it is not in the index, its hosting page is
- * gone, the current revision no longer holds it (an index lagging the slot), or the hosting page is not
- * readable.
+ * 404 — when SubjectHostingPageResolver answers no readable page, when that page cannot be loaded,
+ * or when its current revision no longer holds the Subject (an index lagging the slot).
  */
 readonly class RdfSubjectExporter {
 

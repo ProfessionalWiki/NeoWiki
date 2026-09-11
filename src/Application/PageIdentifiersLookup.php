@@ -11,6 +11,9 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 /**
  * The subject-to-page index, keyed by bare local id (ADR 32). A Subject id from another Source is never
  * indexed, so it resolves to nothing.
+ *
+ * Resolving a Subject on a user's behalf goes through SubjectHostingPageResolver, which adds the read
+ * gate; this lookup alone is for callers that must see every hosting page.
  */
 interface PageIdentifiersLookup {
 

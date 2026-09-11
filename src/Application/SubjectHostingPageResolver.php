@@ -15,13 +15,13 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
  * not-found shape, so that the cases cannot be told apart:
  *
  * - A page the caller may not read is denied in the not-found shape PageReadAuthorizer prescribes.
- * - A local Subject no page hosts has nothing to authorize against: every right on a Subject is a
- *   right on the page holding it (ADR 32).
+ * - A local Subject no page hosts has nothing to authorize against: a Subject's rights are those of
+ *   the page holding it (ADR 27, ADR 32).
  * - A Subject id from another Source is never indexed (PageIdentifiersLookup), so it is answered
  *   without the query.
  *
- * Write actions resolve through this before their write check, so that a 403 cannot reveal what the
- * 404 hides (ADR 27).
+ * Subject-id-keyed write actions resolve through this before their write check, so that a 403 cannot
+ * reveal what the 404 hides (ADR 27).
  */
 readonly class SubjectHostingPageResolver {
 

@@ -33,7 +33,7 @@ class RdfSubjectExporterTest extends TestCase {
 	private const string SUBJECT_ID = 's1acmeaaaaaaaa1';
 	private const string OTHER_ID = 's1janeaaaaaaaa2';
 
-	public function testReturnsNullWhenTheSubjectIsNotInTheGraph(): void {
+	public function testReturnsNullWhenNoPageHostsTheSubject(): void {
 		$exporter = $this->exporter(
 			lookup: new InMemoryPageIdentifiersLookup(),
 			loadedPage: $this->pageWithTheSubject(),
@@ -63,8 +63,8 @@ class RdfSubjectExporterTest extends TestCase {
 		$this->assertNull( $exporter->exportBySubjectId( new SubjectId( self::SUBJECT_ID ), RdfFormat::TriG ) );
 	}
 
-	public function testReturnsNullWhenTheGraphPointsToAPageThatNoLongerHasTheSubject(): void {
-		// Stale graph: it resolves the Subject to a page whose current revision no longer carries it.
+	public function testReturnsNullWhenTheIndexPointsToAPageThatNoLongerHasTheSubject(): void {
+		// Stale index: it names, for the Subject, a page whose current revision no longer carries it.
 		$exporter = $this->exporter(
 			lookup: $this->lookupResolvingTheSubject(),
 			loadedPage: TestPage::build( id: 42, mainSubject: TestSubject::build( id: self::OTHER_ID ) ),
