@@ -213,23 +213,25 @@ describe( 'SubjectRow', () => {
 
 	} );
 
-	// The header toggles the row wherever it is clicked, so reaching the Subject's page is an action
-	// of its own rather than a link buried in the name.
+	// The header toggles the row wherever it is clicked except on its links, and the name is one of
+	// them where the surface names a page for the Subject.
 	describe( 'the way to the Subject\'s own page', () => {
 
-		const OPEN = '[aria-label="neowiki-managesubjects-row-open"]';
+		const NAME_LINK = 'a.ext-neowiki-subject-row__name';
 		const URL = '/wiki/Special:Subject/' + SUBJECT_ID;
 
 		afterEach( () => {
 			vi.unstubAllGlobals();
 		} );
 
-		it( 'is a link to the page the surface named', () => {
+		it( 'is the Subject\'s name, linked to the page the surface named', () => {
 			const wrapper = mountRow( { subjectPageUrl: URL } );
 
-			const open = wrapper.find( OPEN );
-			expect( open.element.tagName ).toBe( 'A' );
-			expect( open.attributes( 'href' ) ).toBe( URL );
+			const link = wrapper.find( NAME_LINK );
+			expect( link.attributes( 'href' ) ).toBe( URL );
+			expect( link.find( '.ext-neowiki-subject-row__label' ).text() ).toBe( 'ACME Inc' );
+			// The cue that it leads somewhere, which CSS shows while the name is pointed at.
+			expect( link.find( '.ext-neowiki-subject-row__name-arrow' ).exists() ).toBe( true );
 		} );
 
 		// Codex selects a menu item chosen with the keyboard but does not follow its url.
@@ -243,21 +245,25 @@ describe( 'SubjectRow', () => {
 			expect( location.href ).toBe( URL );
 		} );
 
-		it( 'is absent on a row the reader is already on', () => {
+		it( 'leaves the name plain text on a row the reader is already on', () => {
 			const wrapper = mountRow();
 
-			expect( wrapper.find( OPEN ).exists() ).toBe( false );
+			expect( wrapper.find( NAME_LINK ).exists() ).toBe( false );
+			expect( wrapper.find( '.ext-neowiki-subject-row__label' ).text() ).toBe( 'ACME Inc' );
 			expect( wrapper.findComponent( CdxMenuButton ).props( 'menuItems' ).map( ( item ) => item.value ) )
 				.not.toContain( 'open' );
 		} );
 
-		// Clicking it must not also toggle the row it sits in.
-		it( 'keeps its click from reaching the header', async () => {
+		// Following the name must not also toggle the row it sits in, and must still be followed: the
+		// header one line above it cancels the clicks it handles.
+		it( 'keeps a click on the name from reaching the header, and follows it', () => {
 			const wrapper = mountRow( { subjectPageUrl: URL } );
 
-			await wrapper.find( OPEN ).trigger( 'click' );
+			const click = new Event( 'click', { bubbles: true, cancelable: true } );
+			wrapper.find( NAME_LINK ).element.dispatchEvent( click );
 
 			expect( wrapper.emitted( 'toggle' ) ).toBeUndefined();
+			expect( click.defaultPrevented ).toBe( false );
 		} );
 
 	} );

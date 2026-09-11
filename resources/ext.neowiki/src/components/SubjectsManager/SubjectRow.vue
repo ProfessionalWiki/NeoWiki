@@ -38,7 +38,25 @@
 					/>
 				</template>
 				<span class="ext-neowiki-subject-row__title">
-					<span class="ext-neowiki-subject-row__label">
+					<a
+						v-if="subjectPageUrl !== null"
+						class="ext-neowiki-subject-row__name"
+						:href="subjectPageUrl"
+						@click.stop
+					>
+						<span class="ext-neowiki-subject-row__label">
+							{{ displayName }}
+						</span>
+						<CdxIcon
+							class="ext-neowiki-subject-row__name-arrow"
+							:icon="cdxIconArrowNext"
+							size="x-small"
+						/>
+					</a>
+					<span
+						v-else
+						class="ext-neowiki-subject-row__label"
+					>
 						{{ displayName }}
 					</span>
 					<span class="ext-neowiki-subject-row__subtitle">
@@ -54,16 +72,6 @@
 					</span>
 				</span>
 				<span class="ext-neowiki-subject-row__actions">
-					<a
-						v-if="subjectPageUrl !== null"
-						class="ext-neowiki-subject-row__open cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--weight-quiet"
-						:href="subjectPageUrl"
-						:aria-label="$i18n( 'neowiki-managesubjects-row-open' ).text()"
-						:title="$i18n( 'neowiki-managesubjects-row-open' ).text()"
-						@click.stop
-					>
-						<CdxIcon :icon="cdxIconNext" />
-					</a>
 					<CdxButton
 						weight="quiet"
 						:aria-label="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
@@ -207,6 +215,7 @@ import { computed, ref } from 'vue';
 import { CdxButton, CdxIcon, CdxMenuButton } from '@wikimedia/codex';
 import type { MenuButtonItemData } from '@wikimedia/codex';
 import {
+	cdxIconArrowNext,
 	cdxIconArticleRedirect,
 	cdxIconCollapse,
 	cdxIconDraggable,
@@ -214,7 +223,6 @@ import {
 	cdxIconEllipsis,
 	cdxIconExpand,
 	cdxIconLink,
-	cdxIconNext,
 	cdxIconPushPin,
 	cdxIconTrash
 } from '@wikimedia/codex-icons';
@@ -241,7 +249,8 @@ const props = withDefaults( defineProps<{
 	subject: Subject;
 	expanded: boolean;
 	/**
-	 * The Subject's own page, offered as a row action. Null where the reader is on it already.
+	 * The Subject's own page, which the name links to and the overflow menu offers. Null where the
+	 * reader is on it already.
 	 */
 	subjectPageUrl?: string | null;
 	/**
@@ -310,7 +319,8 @@ function pageUrl( pageName: string ): string {
 }
 
 // Opening and copying a link lead: they change nothing. Edit and promote change the row in place;
-// move and delete take it out of the listing, with delete last. Mirrors the inline strip's order.
+// move and delete take it out of the listing, with delete last. The inline strip keeps this order,
+// less opening, which the name offers there.
 const menuItems = computed<MenuButtonItemData[]>( () => {
 	// Neither is permission-gated: everyone, read-only users included, may reach a Subject's page
 	// and copy a link to it.
@@ -320,7 +330,7 @@ const menuItems = computed<MenuButtonItemData[]>( () => {
 		items.push( {
 			value: 'open',
 			label: mw.msg( 'neowiki-managesubjects-row-open' ),
-			icon: cdxIconNext
+			icon: cdxIconArrowNext
 		} );
 	}
 
@@ -437,10 +447,6 @@ function copySubjectIri(): Promise<void> {
 			&:active {
 				background-color: @background-color-interactive;
 			}
-
-			.ext-neowiki-subject-row__label {
-				color: @color-progressive;
-			}
 		}
 	}
 
@@ -547,6 +553,36 @@ function copySubjectIri(): Promise<void> {
 		white-space: nowrap;
 	}
 
+	/* The way to the Subject's own page. Only as wide as the name and its arrow, so the rest of the
+		header still toggles the row. */
+	&__name {
+		display: inline-flex;
+		align-items: center;
+		gap: @spacing-25;
+		align-self: flex-start;
+		max-width: @size-full;
+		min-width: 0;
+	}
+
+	/* The cue that the name leads somewhere: shown while the name is pointed at or focused where the
+		pointer can hover, and always where it cannot, like the action strip. In the link's colour,
+		which Codex sets on `.cdx-icon` unless told otherwise. */
+	&__name-arrow.cdx-icon {
+		flex-shrink: 0;
+		color: inherit;
+
+		@media ( hover: hover ) {
+			opacity: 0;
+			// Slides the way it points as it appears.
+			transform: translateX( -@spacing-25 );
+			transition: opacity @transition-duration-base @transition-timing-function-system, transform @transition-duration-base @transition-timing-function-system;
+		}
+
+		@media ( prefers-reduced-motion: reduce ) {
+			transition-duration: 0s;
+		}
+	}
+
 	&__identifiers {
 		display: flex;
 		flex-direction: column;
@@ -643,16 +679,6 @@ function copySubjectIri(): Promise<void> {
 		}
 	}
 
-	/* A link styled as one of the row's quiet icon buttons — Codex's fake-button pattern. */
-	&__open.cdx-button {
-		min-width: @min-size-interactive-pointer;
-		padding: 0;
-
-		&:hover {
-			text-decoration: none;
-		}
-	}
-
 	&__drag-handle {
 		// Set off from the buttons: this is grabbed, not clicked, and delete sits right before it.
 		margin-inline-start: @spacing-50;
@@ -711,6 +737,56 @@ function copySubjectIri(): Promise<void> {
 		margin-top: @spacing-100;
 		padding-top: @spacing-75;
 		border-top: @border-width-base @border-style-base @border-color-subtle;
+	}
+}
+/* Codex's link colours, less the visited one: a Subject's name reads the same whether or not the
+	reader has been to its page. Every state is spelled out and qualified with `a`, because core
+	colours `a:visited` and underlines `a:hover, a:focus` at (0,1,1), as SchemaNameDisplay explains.
+	Hover and active come after focus, so that they still underline. */
+a.ext-neowiki-subject-row__name {
+	border-radius: @border-radius-base;
+
+	&,
+	&:visited {
+		color: @color-progressive;
+		text-decoration: @text-decoration-none;
+	}
+
+	&:focus {
+		text-decoration: @text-decoration-none;
+	}
+
+	// Also qualified with `:visited`: Vector paints `a:visited:hover` at (0,2,1), which a bare
+	// `a.<class>:hover` only ties and then loses to on source order.
+	&:hover,
+	&:visited:hover {
+		color: @color-progressive--hover;
+		text-decoration: @text-decoration-underline;
+	}
+
+	&:active,
+	&:visited:active {
+		color: @color-progressive--active;
+		text-decoration: @text-decoration-underline;
+	}
+
+	&:focus-visible {
+		outline: @border-style-base @border-width-thick @outline-color-progressive--focus;
+	}
+
+	// Vector styles every link with Codex's link mixin, which gives a trailing icon the size and
+	// padding of an external-link mark, at (0,3,1). The arrow is only a cue: x-small, spaced by the
+	// link's gap.
+	.ext-neowiki-subject-row__name-arrow.cdx-icon:last-child {
+		width: @size-icon-x-small;
+		height: @size-icon-x-small;
+		padding-left: 0;
+	}
+
+	&:hover .ext-neowiki-subject-row__name-arrow,
+	&:focus-visible .ext-neowiki-subject-row__name-arrow {
+		opacity: 1;
+		transform: translateX( 0 );
 	}
 }
 </style>

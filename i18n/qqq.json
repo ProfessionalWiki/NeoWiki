@@ -391,5 +391,5 @@
 	"neowiki-special-subject-referenced-heading": "Heading on [[Special:Subject]] above the Subjects the displayed Subject's relations point at.",
 	"neowiki-special-subject-not-found": "Shown on [[Special:Subject]] in place of the Subject when the wiki has no Subject with that ID. It is also shown for a Subject on a page the reader may not read, so the translation must not mention permissions.\n\nParameters:\n* $1 - the Subject ID that was asked for",
 	"neowiki-special-subject-load-error": "Shown on [[Special:Subject]] when loading a Subject failed with a network or server error: in place of the Subject on first load, and as a notification when a re-read after a change failed. Distinct from {{msg-neowiki|neowiki-special-subject-not-found}}, which says the wiki has no such Subject.",
-	"neowiki-managesubjects-row-open": "Aria/button label for the row action (an inline button on wide viewports, an overflow-menu item on narrow ones) that goes to [[Special:Subject]], the page showing that one Subject. It navigates; it does not expand the row."
+	"neowiki-managesubjects-row-open": "Label for the item in a Subject row's overflow menu, which replaces the row's inline actions on narrow viewports. It goes to [[Special:Subject]], the page showing that one Subject, which the Subject's name links to as well. It navigates; it does not expand the row."
 }
