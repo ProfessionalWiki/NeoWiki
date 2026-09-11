@@ -301,7 +301,7 @@ describe( 'SubjectsManagerPage rows and the Subject pages behind them', () => {
 	it( 'links every row to that Subject\'s own page', async () => {
 		const wrapper = await mountPage();
 
-		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-open"]' )
+		expect( wrapper.findAll( 'a.ext-neowiki-subject-row__name' )
 			.map( ( link ) => link.attributes( 'href' ) ) )
 			.toEqual( [ '/wiki/Special:Subject/' + ID_A, '/wiki/Special:Subject/' + ID_B ] );
 	} );
@@ -553,10 +553,10 @@ describe( 'SubjectsManagerPage move action', () => {
 		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 2 );
 	} );
 
-	// Opening the Subject's page and copying a link change nothing, so they lead; edit and promote
-	// change the row in place; move and delete take the row out of the listing, with delete last.
-	// The main row's pin is its indicator, outside the strip.
-	it( 'orders each row\'s inline actions open, copy-link, edit, promote, move, delete', async () => {
+	// Copying a link changes nothing, so it leads; edit and promote change the row in place; move and
+	// delete take the row out of the listing, with delete last. The main row's pin is its indicator,
+	// outside the strip, and the Subject's own page is its name's link.
+	it( 'orders each row\'s inline actions copy-link, edit, promote, move, delete', async () => {
 		const wrapper = await mountPage();
 
 		const strips = wrapper.findAll( '.ext-neowiki-subject-row__actions' )
@@ -564,14 +564,12 @@ describe( 'SubjectsManagerPage move action', () => {
 
 		expect( strips ).toEqual( [
 			[
-				'neowiki-managesubjects-row-open',
 				'neowiki-managesubjects-row-copy-link',
 				'neowiki-managesubjects-row-edit',
 				'neowiki-managesubjects-row-move',
 				'neowiki-managesubjects-row-delete',
 			],
 			[
-				'neowiki-managesubjects-row-open',
 				'neowiki-managesubjects-row-copy-link',
 				'neowiki-managesubjects-row-edit',
 				'neowiki-managesubjects-row-promote',

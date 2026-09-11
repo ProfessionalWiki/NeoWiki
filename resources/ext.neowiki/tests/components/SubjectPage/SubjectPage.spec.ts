@@ -49,7 +49,7 @@ const EDIT_CONTROL = '[aria-label="neowiki-managesubjects-row-edit"]';
 const DELETE_CONTROL = '[aria-label="neowiki-managesubjects-row-delete"]';
 const COPY_LINK_CONTROL = '[aria-label="neowiki-managesubjects-row-copy-link"]';
 const PAGE_LINK = '.ext-neowiki-subject-row__page-value a';
-const OPEN_CONTROL = '[aria-label="neowiki-managesubjects-row-open"]';
+const NAME_LINK = 'a.ext-neowiki-subject-row__name';
 
 const SCHEMAS: Record<string, Schema> = {
 	Company: newSchema( { title: 'Company', description: 'An organisation' } ),
@@ -346,9 +346,9 @@ describe( 'SubjectPage', () => {
 
 		const wrapper = await mountLoadedPage();
 
-		expect( wrapper.find( `${ REFERENCED_ROW } ${ OPEN_CONTROL }` ).attributes( 'href' ) )
+		expect( wrapper.find( `${ REFERENCED_ROW } ${ NAME_LINK }` ).attributes( 'href' ) )
 			.toBe( '/wiki/Special:Subject/' + REFERENCED_ID );
-		expect( wrapper.find( `${ REQUESTED_ROW } ${ OPEN_CONTROL }` ).exists() ).toBe( false );
+		expect( wrapper.find( `${ REQUESTED_ROW } ${ NAME_LINK }` ).exists() ).toBe( false );
 	} );
 
 	it( 'lists referenced Subjects in the order the read returned them', async () => {
@@ -361,13 +361,14 @@ describe( 'SubjectPage', () => {
 		expect( names ).toEqual( [ 'Rocket', 'Anvil' ] );
 	} );
 
-	// The whole header toggles, as on the Data tab: nothing in it navigates.
-	it( 'opens a referenced row from anywhere in its header', async () => {
+	// The header still toggles where it is not a link, as on the Data tab; the statement count stands
+	// for the rest of it.
+	it( 'opens a referenced row from its header', async () => {
 		getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [ referencedSubject ] ) );
 
 		const wrapper = await mountLoadedPage();
 
-		await wrapper.find( `${ REFERENCED_ROW } ${ ROW_LABEL }` ).trigger( 'click' );
+		await wrapper.find( `${ REFERENCED_ROW } .ext-neowiki-subject-row__count` ).trigger( 'click' );
 
 		expect( isOpen( wrapper.find( REFERENCED_ROW ) ) ).toBe( true );
 	} );
@@ -520,7 +521,6 @@ describe( 'SubjectPage', () => {
 					'neowiki-managesubjects-row-delete',
 				],
 				[
-					'neowiki-managesubjects-row-open',
 					'neowiki-managesubjects-row-copy-link',
 					'neowiki-managesubjects-row-edit',
 					'neowiki-managesubjects-row-delete',
