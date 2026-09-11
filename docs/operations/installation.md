@@ -360,7 +360,7 @@ token, so keep that token secret.
 Oxigraph has no equivalent setting and will attempt the outbound request; the stacks' Oxigraph services federate
 for that reason. Other stores vary — consult their documentation. Where the store cannot be restricted, restrict
 around it: block its outbound traffic at the network layer, and narrow who holds the `neowiki-query` right — see
-[Choosing who may query](restricted-content.md#choosing-who-may-query).
+[Narrowing `neowiki-query`](restricted-content.md#narrowing-neowiki-query).
 
 ## Production hardening
 
