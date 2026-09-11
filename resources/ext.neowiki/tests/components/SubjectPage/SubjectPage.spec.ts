@@ -134,6 +134,12 @@ function stubExtension( repositories: { subject?: object; schema?: object } ): v
 	} as unknown as NeoWikiExtension );
 }
 
+// Renders its slot, so the Subject name the delete confirmation interpolates reaches the DOM.
+const I18nSlotStub = {
+	template: '<span>{{ messageKey }}<slot /></span>',
+	props: [ 'messageKey' ],
+};
+
 function silenceConsoleErrors(): void {
 	vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 }
@@ -157,7 +163,13 @@ function mountPage(): VueWrapper {
 			mocks: { $i18n: createI18nMock() },
 			// The row and the delete dialog are this page's own building blocks rather than
 			// collaborators to stand in for: the assertions below are about what they render.
-			stubs: { CdxIcon: true, CdxDialog: CdxDialogStub, SubjectRow: false, SubjectDeleteDialog: false },
+			stubs: {
+				CdxIcon: true,
+				CdxDialog: CdxDialogStub,
+				I18nSlot: I18nSlotStub,
+				SubjectRow: false,
+				SubjectDeleteDialog: false,
+			},
 			provide: {
 				[ Service.SubjectRepository ]: {
 					getSubjectWithReferencedSubjects: getSubjectWithReferencedSubjectsMock,
@@ -753,6 +765,26 @@ describe( 'SubjectPage', () => {
 				{ type: 'error' },
 			);
 			expect( wrapper.find( `${ REQUESTED_ROW } ${ ROW_LABEL }` ).text() ).toBe( 'ACME Inc' );
+		} );
+
+		// The close button, Escape and a click outside all close the dialog through this event.
+		it( 'closes the confirmation when the dialog asks to close', async () => {
+			const wrapper = await mountLoadedPage();
+			await wrapper.findAll( DELETE_CONTROL )[ 1 ].trigger( 'click' );
+
+			wrapper.findComponent( CdxDialogStub ).vm.$emit( 'update:open', false );
+			await flushPromises();
+
+			expect( wrapper.find( '.cdx-dialog-stub' ).exists() ).toBe( false );
+		} );
+
+		// A referenced row can be stored on another page, so the dialog names the Subject it deletes.
+		it( 'names the Subject about to be deleted', async () => {
+			const wrapper = await mountLoadedPage();
+
+			await wrapper.findAll( DELETE_CONTROL )[ 1 ].trigger( 'click' );
+
+			expect( wrapper.find( '.cdx-dialog-stub strong' ).text() ).toBe( 'Anvil' );
 		} );
 
 	} );
