@@ -148,18 +148,31 @@ function toggleExpanded( toggled: Subject ): void {
 	expandedIds.value = next;
 }
 
+// The delete controls stay live while a re-read is in flight, so reads can overlap; only the one
+// started last decides what the rows show.
+let latestRead = 0;
+
 async function readSubject(): Promise<void> {
+	const read = ++latestRead;
+	const subjectEpoch = subjectStore.mutationEpoch;
 	const bundle = await subjectRepo.getSubjectWithReferencedSubjects( subjectId );
 	const requested = bundle.requestedSubject;
 
 	// Seeding the registry is what lets RelationDisplay resolve this Subject's relation targets,
-	// the same way the Data tab's own load does.
-	subjectStore.setSubject( requested );
-	bundle.referencedSubjects.forEach( ( referenced ) => subjectStore.setSubject( referenced ) );
+	// the same way the Data tab's own load does. A write acknowledged meanwhile may postdate what
+	// this read returned, so the registry is then left alone (ADR 30 rule 3).
+	if ( subjectEpoch === subjectStore.mutationEpoch ) {
+		subjectStore.setSubject( requested );
+		bundle.referencedSubjects.forEach( ( referenced ) => subjectStore.setSubject( referenced ) );
+	}
 	await Promise.all( [
 		loadSchemas( [ requested, ...bundle.referencedSubjects ] ),
 		seedRelationTargetsOf( bundle.referencedSubjects )
 	] );
+
+	if ( read !== latestRead ) {
+		return;
+	}
 
 	subject.value = requested;
 	referencedSubjects.value = bundle.referencedSubjects;
@@ -225,10 +238,15 @@ async function seedRelationTargetsOf( subjects: Subject[] ): Promise<void> {
 async function loadSchemas( subjects: Subject[] ): Promise<void> {
 	const names = [ ...new Set( subjects.map( ( each ) => each.getSchemaName() ) ) ]
 		.filter( ( name ) => !schemaStore.schemas.has( name ) );
+	const epoch = schemaStore.mutationEpoch;
 
 	await Promise.all( names.map( async ( name ) => {
 		try {
-			schemaStore.setSchema( name, await schemaRepo.getSchema( name ) );
+			const schema = await schemaRepo.getSchema( name );
+
+			if ( epoch === schemaStore.mutationEpoch ) {
+				schemaStore.setSchema( name, schema );
+			}
 		} catch ( error ) {
 			console.error( `Failed to load schema ${ name }:`, error );
 		}

@@ -787,6 +787,70 @@ describe( 'SubjectPage', () => {
 			expect( wrapper.find( '.cdx-dialog-stub strong' ).text() ).toBe( 'Anvil' );
 		} );
 
+		// The delete controls stay live while a re-read is in flight, so a second delete can be
+		// acknowledged before the re-read the first one started lands (ADR 30 rule 3).
+		it( 'keeps a Subject deleted during a re-read out of the registry', async () => {
+			const other = subject( { id: OTHER_REFERENCED_ID, label: 'Rocket', schemaName: 'Product' } );
+			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [ referencedSubject, other ] ) );
+			const wrapper = await mountLoadedPage();
+			const subjectStore = useSubjectStore();
+			vi.spyOn( subjectStore, 'deleteSubject' ).mockResolvedValue( undefined );
+			let landReRead!: ( value: SubjectWithReferencedSubjects ) => void;
+			getSubjectWithReferencedSubjectsMock.mockReturnValueOnce( new Promise( ( resolve ) => {
+				landReRead = resolve;
+			} ) );
+
+			await confirmDelete( wrapper, wrapper.findAll( DELETE_CONTROL )[ 1 ] );
+			// The second delete, acknowledged while that re-read is in flight.
+			subjectStore.subjects.delete( OTHER_REFERENCED_ID );
+			subjectStore.mutationEpoch++;
+			landReRead( bundle( [ other ] ) );
+			await flushPromises();
+
+			expect( subjectStore.subjects.has( OTHER_REFERENCED_ID ) ).toBe( false );
+		} );
+
+		it( 'keeps a Schema read that a Schema change overtook out of the store', async () => {
+			const wrapper = await mountLoadedPage();
+			const schemaStore = useSchemaStore();
+			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
+			getSubjectWithReferencedSubjectsMock.mockResolvedValue(
+				bundle( [ subject( { id: OTHER_REFERENCED_ID, label: 'Amsterdam', schemaName: 'Place' } ) ] ),
+			);
+			let landSchema!: ( value: Schema ) => void;
+			getSchemaMock.mockReturnValueOnce( new Promise( ( resolve ) => {
+				landSchema = resolve;
+			} ) );
+
+			await confirmDelete( wrapper, wrapper.findAll( DELETE_CONTROL )[ 1 ] );
+			// A Schema save, acknowledged while that read is in flight.
+			schemaStore.mutationEpoch++;
+			landSchema( newSchema( { title: 'Place' } ) );
+			await flushPromises();
+
+			expect( schemaStore.schemas.has( 'Place' ) ).toBe( false );
+		} );
+
+		it( 'shows what the latest re-read found when an earlier one lands after it', async () => {
+			const other = subject( { id: OTHER_REFERENCED_ID, label: 'Rocket', schemaName: 'Product' } );
+			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [ referencedSubject, other ] ) );
+			const wrapper = await mountLoadedPage();
+			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
+			let landFirstReRead!: ( value: SubjectWithReferencedSubjects ) => void;
+			getSubjectWithReferencedSubjectsMock
+				.mockReturnValueOnce( new Promise( ( resolve ) => {
+					landFirstReRead = resolve;
+				} ) )
+				.mockResolvedValueOnce( bundle() );
+
+			await confirmDelete( wrapper, wrapper.findAll( DELETE_CONTROL )[ 1 ] );
+			await confirmDelete( wrapper, wrapper.findAll( DELETE_CONTROL )[ 2 ] );
+			landFirstReRead( bundle( [ other ] ) );
+			await flushPromises();
+
+			expect( wrapper.find( REFERENCED_ROW ).exists() ).toBe( false );
+		} );
+
 	} );
 
 } );
