@@ -6,8 +6,8 @@
 		<div class="ext-neowiki-subject-picker__row">
 			<CdxLookup
 				ref="lookupRef"
-				v-model:selected="selectedSubject"
 				v-model:input-value="inputText"
+				:selected="selectedSubject"
 				:menu-items="menuItems"
 				:start-icon="props.startIcon"
 				:placeholder="$i18n( 'neowiki-subject-picker-placeholder' ).text()"
@@ -302,11 +302,12 @@ async function searchLabels( value: string, targetSchema: string ): Promise<Menu
 	}
 }
 
+// Codex's selection is bound one way so that neither sentinel ever becomes it. Codex writes the
+// label of whatever it selects into the field, or nothing for an item its menu does not list, and
+// then emits input: the create option's label would replace the typed name, and putting back a
+// target the user typed over would blank the field and abandon the creation as a new search.
 function onSubjectSelected( subjectId: string | null ): void {
 	if ( subjectId === CREATE_SUBJECT ) {
-		// Put back what the field already held, before anything awaits: Codex has just reported the
-		// sentinel as the selection, and a creation that fails must leave the old target standing.
-		selectedSubject.value = props.selected;
 		createFromTypedText();
 		return;
 	}
@@ -314,9 +315,10 @@ function onSubjectSelected( subjectId: string | null ): void {
 	// Codex refuses to select a disabled item, but the picker does not rely on that to keep its
 	// own sentinel out of a relation.
 	if ( subjectId === NO_RESULTS ) {
-		selectedSubject.value = props.selected;
 		return;
 	}
+
+	selectedSubject.value = subjectId;
 
 	if ( subjectId !== null ) {
 		// Recorded before the parent answers with a new props.selected: Codex writes the picked
@@ -362,10 +364,8 @@ async function createFromTypedText(): Promise<void> {
 		selectedSubject.value = subject.getId().text;
 		emit( 'update:selected', subject.getId().text );
 	} catch ( error ) {
-		// The host reports its own failures; this only makes sure a throwing one leaves the field
-		// holding the target it held before, rather than an empty selection under a red border.
+		// Only a host breaking its contract throws: one that fails reports it and answers null.
 		console.error( 'Failed to create a Subject from the picker:', error );
-		selectedSubject.value = props.selected;
 	}
 }
 
