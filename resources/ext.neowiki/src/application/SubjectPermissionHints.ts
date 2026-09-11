@@ -14,4 +14,6 @@ export interface SubjectPermissionHints {
 	canDeleteSubject( subjectId: SubjectId ): Promise<boolean>;
 
 	canCreateMainSubject(): Promise<boolean>;
+
+	canCreateSubjectPage(): Promise<boolean>;
 }

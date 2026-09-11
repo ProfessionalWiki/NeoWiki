@@ -578,7 +578,7 @@ class NeoWikiHooks {
 		);
 
 		if ( $title->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
-			$neoWikiTools[] = self::allPagesLink(
+			$neoWikiTools[] = self::specialPageLink(
 				$skin,
 				specialPage: 'Schemas',
 				message: 'neowiki-schema-sidebar-all-schemas',
@@ -587,7 +587,7 @@ class NeoWikiHooks {
 		}
 
 		if ( $title->getNamespace() === NeoWikiExtension::NS_LAYOUT ) {
-			$neoWikiTools[] = self::allPagesLink(
+			$neoWikiTools[] = self::specialPageLink(
 				$skin,
 				specialPage: 'Layouts',
 				message: 'neowiki-layout-sidebar-all-layouts',
@@ -596,11 +596,20 @@ class NeoWikiHooks {
 		}
 
 		if ( $title->getNamespace() === NeoWikiExtension::NS_MAPPING ) {
-			$neoWikiTools[] = self::allPagesLink(
+			$neoWikiTools[] = self::specialPageLink(
 				$skin,
 				specialPage: 'Mappings',
 				message: 'neowiki-mapping-sidebar-all-mappings',
 				linkId: 't-neowiki-mappings'
+			);
+		}
+
+		if ( $skin->getAuthority()->isAllowedAll( 'createpage', 'edit' ) ) {
+			$neoWikiTools[] = self::specialPageLink(
+				$skin,
+				specialPage: 'CreateSubject',
+				message: 'neowiki-sidebar-create-subject',
+				linkId: 't-neowiki-create-subject-page'
 			);
 		}
 
@@ -614,7 +623,7 @@ class NeoWikiHooks {
 	/**
 	 * @return array<string, mixed>
 	 */
-	private static function allPagesLink(
+	private static function specialPageLink(
 		Skin $skin,
 		string $specialPage,
 		string $message,

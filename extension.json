@@ -189,7 +189,8 @@
 		"Schemas": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialSchemas",
 		"Layouts": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialLayouts",
 		"Mappings": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialMappings",
-		"GraphStores": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialGraphStores"
+		"GraphStores": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialGraphStores",
+		"CreateSubject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialCreateSubject"
 	},
 
 	"Actions": {
@@ -607,7 +608,15 @@
 				"neowiki-subject-creator-schema-created",
 				"neowiki-subject-creator-creating-schema",
 				"neowiki-subject-creator-back",
+				"neowiki-subject-creator-page-field",
+				"neowiki-subject-creator-page-has-main-subject",
+				"neowiki-subject-creator-create-page-summary",
+				"neowiki-subject-creator-create-page-error",
+				"neowiki-subject-creator-page-taken",
+				"neowiki-subject-creator-page-read-error",
+				"neowiki-createsubject-button",
 				"neowiki-edit-schema",
+				"neowiki-schema-create-subject",
 				"neowiki-schema-delete",
 				"neowiki-schema-editor-summary-default",
 				"neowiki-schema-editor-success",

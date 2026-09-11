@@ -7,7 +7,9 @@ export interface SubjectPermissions {
 	canCreateChildSubject: Ref<boolean>;
 	canEditSubject: Ref<boolean>;
 	canDeleteSubject: Ref<boolean>;
+	canCreateSubjectPage: Ref<boolean>;
 	checkPermissions: ( pageId: number ) => Promise<void>;
+	checkCreateSubjectPagePermission: () => Promise<void>;
 }
 
 export function useSubjectPermissions(): SubjectPermissions {
@@ -15,6 +17,7 @@ export function useSubjectPermissions(): SubjectPermissions {
 	const canCreateChildSubject = ref( false );
 	const canEditSubject = ref( false );
 	const canDeleteSubject = ref( false );
+	const canCreateSubjectPage = ref( false );
 	const hints: SubjectPermissionHints = NeoWikiServices.getSubjectPermissionHints();
 
 	async function checkPermissions( pageId: number ): Promise<void> {
@@ -38,11 +41,22 @@ export function useSubjectPermissions(): SubjectPermissions {
 		}
 	}
 
+	async function checkCreateSubjectPagePermission(): Promise<void> {
+		try {
+			canCreateSubjectPage.value = await hints.canCreateSubjectPage();
+		} catch ( error ) {
+			console.error( 'Failed to check subject page creation permission:', error );
+			canCreateSubjectPage.value = false;
+		}
+	}
+
 	return {
 		canCreateMainSubject,
 		canCreateChildSubject,
 		canEditSubject,
 		canDeleteSubject,
+		canCreateSubjectPage,
 		checkPermissions,
+		checkCreateSubjectPagePermission,
 	};
 }

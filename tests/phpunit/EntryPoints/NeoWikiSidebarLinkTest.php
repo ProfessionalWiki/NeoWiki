@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -56,6 +57,38 @@ class NeoWikiSidebarLinkTest extends NeoWikiIntegrationTestCase {
 		$this->assertNull( $this->findLinkById( $sidebar[self::NEOWIKI_SECTION] ?? [], 't-neowiki-mappings' ) );
 	}
 
+	public function testCreateSubjectLinkIsPlacedInTheNeoWikiSection(): void {
+		$link = $this->findLinkById( $this->neoWikiSectionOnAnOrdinaryPage(), 't-neowiki-create-subject-page' );
+
+		$this->assertNotNull( $link, 'Expected the create-subject link in the NeoWiki sidebar section.' );
+		$this->assertSame( 'Create subject', $link['text'] );
+		$this->assertStringContainsString( 'CreateSubject', $link['href'] );
+	}
+
+	public function testCreateSubjectLinkIsListedAfterThePageTools(): void {
+		$section = $this->neoWikiSectionOnAnOrdinaryPage();
+
+		$this->assertSame( 't-neowiki-create-subject-page', end( $section )['id'] );
+	}
+
+	public function testCreateSubjectLinkIsAbsentForAUserWhoMayNotCreatePages(): void {
+		$this->setGroupPermissions( '*', 'createpage', false );
+		$this->setGroupPermissions( 'user', 'createpage', false );
+
+		$this->assertNull(
+			$this->findLinkById( $this->neoWikiSectionOnAnOrdinaryPage(), 't-neowiki-create-subject-page' )
+		);
+	}
+
+	public function testCreateSubjectLinkIsAbsentForAUserWhoMayNotEdit(): void {
+		$this->setGroupPermissions( '*', 'edit', false );
+		$this->setGroupPermissions( 'user', 'edit', false );
+
+		$this->assertNull(
+			$this->findLinkById( $this->neoWikiSectionOnAnOrdinaryPage(), 't-neowiki-create-subject-page' )
+		);
+	}
+
 	private function assertAllPagesLinkInNeoWikiSection(
 		int $namespace,
 		string $linkId,
@@ -78,9 +111,19 @@ class NeoWikiSidebarLinkTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function buildSidebar( Title $title ): array {
+	private function neoWikiSectionOnAnOrdinaryPage(): array {
+		$sidebar = $this->buildSidebar( Title::makeTitle( NS_MAIN, 'Ordinary Page' ), $this->getTestUser()->getUser() );
+
+		return $sidebar[self::NEOWIKI_SECTION] ?? [];
+	}
+
+	private function buildSidebar( Title $title, ?User $user = null ): array {
 		$context = new RequestContext();
 		$context->setTitle( $title );
+
+		if ( $user !== null ) {
+			$context->setUser( $user );
+		}
 
 		$sidebar = [];
 		NeoWikiHooks::onSidebarBeforeOutput( $context->getSkin(), $sidebar );

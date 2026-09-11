@@ -19,6 +19,7 @@
 
 	"specialpages-group-neowiki": "NeoWiki",
 	"neowiki-special-schemas": "Schemas",
+	"neowiki-special-createsubject": "Create subject",
 
 	"neowiki-property-type-text": "Text",
 	"neowiki-property-type-url": "URL",
@@ -39,7 +40,7 @@
 	"neowiki-neojson-description": "Editing neo slot of \"$1\"",
 
 	"neowiki-page-tools-label": "NeoWiki",
-	"neowiki-page-tools-create-subject": "Create subject",
+	"neowiki-page-tools-create-subject": "Create subject here",
 	"neowiki-page-tools-manage-subjects": "Manage subjects",
 	"neowiki-page-tools-view-subjects": "View subjects",
 	"neowiki-page-tools-edit-json": "View or edit JSON",
@@ -155,6 +156,13 @@
 	"neowiki-subject-creator-continue": "Continue",
 	"neowiki-subject-creator-schema-created": "Schema created successfully",
 	"neowiki-subject-creator-back": "Back",
+	"neowiki-subject-creator-page-field": "Page",
+	"neowiki-subject-creator-page-has-main-subject": "This page already has a Main Subject, $1. The new Subject will be added alongside it.",
+	"neowiki-subject-creator-create-page-summary": "Page created for a new Subject",
+	"neowiki-subject-creator-create-page-error": "The page \"$1\" could not be created.",
+	"neowiki-subject-creator-page-taken": "The page \"$1\" was created in the meantime. Pick it to add the Subject to it.",
+	"neowiki-subject-creator-page-read-error": "The page \"$1\" could not be read. Pick it again to retry.",
+	"neowiki-createsubject-button": "Create subject",
 
 	"neowiki-schema-display-property-name": "Property",
 	"neowiki-schema-display-property-type": "Type",
@@ -233,6 +241,8 @@
 	"neowiki-schemas-column-properties": "Properties",
 	"neowiki-schemas-empty": "No schemas have been created yet.",
 	"neowiki-schema-sidebar-all-schemas": "All schemas",
+	"neowiki-sidebar-create-subject": "Create subject",
+	"neowiki-schema-create-subject": "Create $1",
 
 	"neowiki-schema-delete": "Delete schema",
 
@@ -342,7 +352,7 @@
 	"neowiki-managesubjects-tab": "Data",
 	"neowiki-managesubjects-title": "Subjects on $1",
 	"neowiki-managesubjects-not-applicable": "Subject management is not available on this page.",
-	"neowiki-managesubjects-add-button": "Add subject",
+	"neowiki-managesubjects-add-button": "Create subject",
 	"neowiki-managesubjects-empty-title": "No subjects yet",
 	"neowiki-managesubjects-empty-description": "A subject describes one thing with structured data.",
 	"neowiki-managesubjects-no-main-title": "No main subject set",

@@ -31,6 +31,11 @@ export class RightsBasedSubjectPermissionHints implements SubjectPermissionHints
 		return this.canEditPage();
 	}
 
+	public async canCreateSubjectPage(): Promise<boolean> {
+		const rights = await this.rightsFetcher.getRights();
+		return rights.includes( 'createpage' ) && rights.includes( 'edit' );
+	}
+
 	private async canEditPage(): Promise<boolean> {
 		const rights = await this.rightsFetcher.getRights();
 		return rights.includes( 'edit' );

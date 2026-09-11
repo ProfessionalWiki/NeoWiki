@@ -6,12 +6,9 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages;
 
 use MediaWiki\Html\Html;
 use MediaWiki\Logger\LoggerFactory;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\Session\CsrfTokenSet;
 use MediaWiki\SpecialPage\SpecialPage;
-use MediaWiki\User\User;
-use PermissionsError;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphStoreStatus;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\NothingToCancelException;
@@ -33,6 +30,8 @@ use Throwable;
  * so the page comes back at once and progress appears on reload.
  */
 class SpecialGraphStores extends SpecialPage {
+
+	use EnforcesRestriction;
 
 	private const ACTION_FIELD = 'nwAction';
 	private const STORE_FIELD = 'nwStore';
@@ -63,28 +62,6 @@ class SpecialGraphStores extends SpecialPage {
 
 	public function getRestriction(): string {
 		return NeoWikiExtension::ADMIN_RIGHT;
-	}
-
-	/**
-	 * MediaWiki 1.46 made getRestriction() the one place a special page names the right it needs, and
-	 * pointed enforcement, listing and the denial page at it. Up to 1.45 those three instead read the
-	 * property the deprecated constructor parameter set, so each is restated here against
-	 * getRestriction(), leaving every supported version taking the right from one place.
-	 */
-	public function userCanExecute( User $user ): bool {
-		return MediaWikiServices::getInstance()
-			->getPermissionManager()
-			->userHasRight( $user, $this->getRestriction() );
-	}
-
-	public function isRestricted(): bool {
-		return !MediaWikiServices::getInstance()
-			->getGroupPermissionsLookup()
-			->groupHasPermission( '*', $this->getRestriction() );
-	}
-
-	protected function displayRestrictionError(): never {
-		throw new PermissionsError( $this->getRestriction() );
 	}
 
 	/**
