@@ -426,8 +426,9 @@ defineExpose( { focus } );
 
 	/* The create option is the last item, and it offers an action rather than a result. Codex
 		sets its own pinned footer item apart the same way, and skips the rule when that item is
-		the only one — a line above a lone entry reads as a mistake. This menu cannot use that
-		footer: it is a CdxMenu prop, and CdxLookup passes none of it through. */
+		the only one — a line above a lone entry reads as a mistake. This menu draws the line
+		itself: `menuConfig`, all CdxLookup passes on to CdxMenu, has no footer in its type, and
+		a footer item is selectable like any other anyway. */
 	&--offers-create .cdx-menu__listbox > .cdx-menu-item:last-child:not( :first-child ) {
 		border-top: @border-subtle;
 	}
