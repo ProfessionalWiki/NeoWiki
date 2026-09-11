@@ -187,6 +187,23 @@ describe( 'Infobox', () => {
 		expect( statementElements ).toHaveLength( 0 );
 	} );
 
+	// A Subject the viewer may not read is loaded as an absent one, and a View of it must render
+	// nothing rather than throw and take the page's other Views down with it.
+	it( 'renders nothing for a Subject the store does not hold', () => {
+		const unreadable = new Subject(
+			new SubjectId( 's1demo5sssssss9' ),
+			'Unreadable Subject',
+			'Unreadable Subject',
+			false,
+			'TestSchema',
+			new StatementList( [] ),
+		);
+
+		const wrapper = mountComponent( unreadable, true );
+
+		expect( wrapper.find( '.ext-neowiki-infobox' ).exists() ).toBe( false );
+	} );
+
 	it( 'does not render SubjectEditor button when canEditSubject is false', () => {
 		const wrapper = mountComponent( mockSubject, false );
 

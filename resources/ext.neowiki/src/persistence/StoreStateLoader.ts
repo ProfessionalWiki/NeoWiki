@@ -20,11 +20,21 @@ export class StoreStateLoader {
 	) {
 	}
 
+	/**
+	 * Loads each Subject independently: one that does not load is skipped, so the Views of the
+	 * others still get their data. A Subject the viewer may not read is answered as an absent one
+	 * (ADR 27), and a failed request arrives the same way — neither may blank the whole page, so
+	 * both are skipped, and the reason is logged for whoever has to tell them apart.
+	 */
 	public async loadSubjectsAndSchemas( subjectIds: Set<string> ): Promise<void> {
 		await Promise.all(
-			Array.from( subjectIds ).map(
-				( subjectId ) => this.loadForSubject( new SubjectId( subjectId ) ),
-			),
+			Array.from( subjectIds ).map( async ( subjectId ) => {
+				try {
+					await this.loadForSubject( new SubjectId( subjectId ) );
+				} catch ( error ) {
+					mw.log.warn( `NeoWiki: skipping Subject ${ subjectId }, which did not load:`, error );
+				}
+			} ),
 		);
 	}
 
@@ -56,6 +66,9 @@ export class StoreStateLoader {
 		// relations target, so storing them all avoids a re-fetch per relation.
 		const { requestedSubject, referencedSubjects } =
 			await this.subjectRepo.getSubjectWithReferencedSubjects( subjectId );
+		// Read before anything is stored, so that a Subject whose Schema does not load is skipped
+		// whole: a stored Subject with no Schema to render it by throws in the display instead.
+		const schema = await this.schemaRepo.getSchema( requestedSubject.getSchemaName() );
 
 		if ( subjectEpoch === subjectStore.mutationEpoch ) {
 			subjectStore.setSubject( requestedSubject );
@@ -64,7 +77,6 @@ export class StoreStateLoader {
 			}
 		}
 
-		const schema = await this.schemaRepo.getSchema( requestedSubject.getSchemaName() ); // TODO: handle not found
 		if ( schemaEpoch === schemaStore.mutationEpoch ) {
 			schemaStore.setSchema( requestedSubject.getSchemaName(), schema );
 		}
