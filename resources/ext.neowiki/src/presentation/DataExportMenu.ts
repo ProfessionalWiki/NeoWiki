@@ -1,5 +1,5 @@
 /**
- * Builds the export endpoint URLs for the Data tab, for a single Subject or for all Subjects on a
+ * Builds the export endpoint URLs the Subject UI offers, for a single Subject or for all Subjects on a
  * page: a JSON URL, plus a function producing the RDF URL for a given projection and serialization
  * format. Kept as pure functions so URL derivation is unit-tested independently of the Vue component.
  */

@@ -28,9 +28,9 @@ class MediaWikiWikiConfigSourceTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testReturnsTheDecodedObjectFromAJsonPage(): void {
-		$source = $this->newSource( new JsonContent( '{ "dereferenceSubjectsToDataTab": true }' ) );
+		$source = $this->newSource( new JsonContent( '{ "dereferenceSubjectsToHostingPage": true }' ) );
 
-		$this->assertSame( [ 'dereferenceSubjectsToDataTab' => true ], $source->readConfig() );
+		$this->assertSame( [ 'dereferenceSubjectsToHostingPage' => true ], $source->readConfig() );
 	}
 
 	public function testReturnsNullWhenThePageIsMissing(): void {

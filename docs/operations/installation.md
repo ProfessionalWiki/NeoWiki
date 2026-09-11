@@ -192,12 +192,12 @@ A wiki whose readers do not all see the same pages needs more than these default
 
 ## On-wiki configuration
 
-A wiki administrator without server access can set part of NeoWiki's configuration on the `MediaWiki:NeoWiki`
-page. It holds JSON and, like other site configuration, is editable only with the `editinterface` and
-`editsitejson` rights. Two settings are exposed: `dereferenceSubjectsToDataTab` (overriding
-`$wgNeoWikiDereferenceSubjectsToDataTab`) and `autoRenderMainSubject` (overriding `$wgNeoWikiAutoRenderMainSubject`).
-Editing the page shows a reference table of the exposed keys and their accepted values, and creating it
-preloads a working example.
+A wiki administrator without server access can set part of NeoWiki's configuration on the `MediaWiki:NeoWiki` page.
+It holds JSON and, like other site configuration, is editable only with the `editinterface` and `editsitejson`
+rights. Two settings are exposed: `dereferenceSubjectsToHostingPage` (overriding
+`$wgNeoWikiDereferenceSubjectsToHostingPage`) and `autoRenderMainSubject` (overriding
+`$wgNeoWikiAutoRenderMainSubject`). Editing the page shows a reference table of the exposed keys and their accepted
+values, and creating it preloads a working example.
 
 A valid value on the page takes precedence over `LocalSettings.php`, per setting. A missing page, a
 wrong-shaped value, or an unavailable database falls back to the `LocalSettings.php` value, so a

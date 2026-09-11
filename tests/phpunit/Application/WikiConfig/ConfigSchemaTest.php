@@ -14,10 +14,10 @@ use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigSchema;
 class ConfigSchemaTest extends TestCase {
 
 	public function testExposesTheDereferenceSetting(): void {
-		$setting = ( new ConfigSchema() )->getSetting( 'dereferenceSubjectsToDataTab' );
+		$setting = ( new ConfigSchema() )->getSetting( 'dereferenceSubjectsToHostingPage' );
 
 		$this->assertNotNull( $setting );
-		$this->assertSame( 'NeoWikiDereferenceSubjectsToDataTab', $setting->settingName );
+		$this->assertSame( 'NeoWikiDereferenceSubjectsToHostingPage', $setting->settingName );
 	}
 
 	public function testExposesTheAutoRenderSetting(): void {
@@ -33,7 +33,7 @@ class ConfigSchemaTest extends TestCase {
 			( new ConfigSchema() )->getSettings()
 		);
 
-		$this->assertSame( [ 'dereferenceSubjectsToDataTab', 'autoRenderMainSubject' ], $keys );
+		$this->assertSame( [ 'dereferenceSubjectsToHostingPage', 'autoRenderMainSubject' ], $keys );
 	}
 
 	public function testUnknownKeyHasNoSetting(): void {
@@ -41,7 +41,7 @@ class ConfigSchemaTest extends TestCase {
 	}
 
 	public function testSettingAcceptsOnlyRealBooleans(): void {
-		$setting = ( new ConfigSchema() )->getSetting( 'dereferenceSubjectsToDataTab' );
+		$setting = ( new ConfigSchema() )->getSetting( 'dereferenceSubjectsToHostingPage' );
 
 		$this->assertTrue( $setting->isValidValue( true ) );
 		$this->assertTrue( $setting->isValidValue( false ) );
@@ -51,11 +51,11 @@ class ConfigSchemaTest extends TestCase {
 	}
 
 	public function testSettingDescribesItselfAsBoolean(): void {
-		$setting = ( new ConfigSchema() )->getSetting( 'dereferenceSubjectsToDataTab' );
+		$setting = ( new ConfigSchema() )->getSetting( 'dereferenceSubjectsToHostingPage' );
 
 		$this->assertSame( [ 'neowiki-config-type-boolean' ], $setting->describe() );
 		$this->assertSame(
-			[ 'neowiki-config-error-invalid-boolean', 'dereferenceSubjectsToDataTab' ],
+			[ 'neowiki-config-error-invalid-boolean', 'dereferenceSubjectsToHostingPage' ],
 			$setting->invalidValueError()
 		);
 	}

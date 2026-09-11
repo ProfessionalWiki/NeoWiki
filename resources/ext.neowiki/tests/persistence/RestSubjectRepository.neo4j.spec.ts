@@ -14,6 +14,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
+import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
 
 function newRepository( apiUrl: string, httpClient: InMemoryHttpClient ): RestSubjectRepository {
@@ -115,17 +116,21 @@ describe( 'RestSubjectRepository', () => {
 			expect( subject.getLabel() ).toEqual( 'John Doe' );
 		} );
 
-		it( 'throws an error when getSubject is called with a missing subject', async () => {
+		// A Subject the wiki has none of, and one on a page the reader may not read, both answer 200
+		// with no Subject in the body. The caller may not tell them apart (#1046), so there is one error.
+		it( 'reports a Subject the response carries none of as not found', async () => {
 			const ID = 's22222222222222';
 			const url = `https://example.com/rest.php/neowiki/v0/subject/${ ID }?expand=page|relations`;
 			const inMemoryHttpClient = new InMemoryHttpClient( {
-				url: new Response( JSON.stringify( {} ), { status: 200 } ),
+				[ url ]: new Response( JSON.stringify( { subject: null } ), { status: 200 } ),
 			} );
 
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
-			await expect( repository.getSubject( new SubjectId( ID ) ) )
-				.rejects.toThrow( 'No response found for URL: ' + url );
+			const error = await repository.getSubject( new SubjectId( ID ) ).catch( ( rejection ) => rejection );
+
+			expect( error ).toBeInstanceOf( SubjectNotFoundError );
+			expect( error.subjectId ).toBe( ID );
 		} );
 
 	} );
@@ -297,7 +302,19 @@ describe( 'RestSubjectRepository', () => {
 			const repository = repositoryReturning( {} );
 
 			await expect( repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) ) )
-				.rejects.toThrow( 'Subject not found' );
+				.rejects.toThrow( SubjectNotFoundError );
+		} );
+
+		// A bundle that names a requested id it does not carry would otherwise be deserialized as
+		// undefined, which reads as a malformed Subject rather than as one the wiki does not serve.
+		it( 'throws when the response carries Subjects but not the requested one', async () => {
+			const repository = repositoryReturning( {
+				requestedId: requestedId,
+				subjects: { [ referencedId1 ]: bundleResponse.subjects[ referencedId1 ] },
+			} );
+
+			await expect( repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) ) )
+				.rejects.toThrow( SubjectNotFoundError );
 		} );
 
 		function subjectWithUnregisteredPropertyType( id: string ): object {

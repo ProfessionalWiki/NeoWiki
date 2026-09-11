@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { shallowMount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { CdxMenuButton } from '@wikimedia/codex';
 import SubjectsManagerPage from '@/components/SubjectsManager/SubjectsManagerPage.vue';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { CdxDialogStub, createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -33,6 +33,7 @@ function labellessSubject( id: string, displayName: string, generated: boolean )
 
 const loadPageSubjectsMock = vi.fn().mockResolvedValue( undefined );
 const deleteSubjectMock = vi.fn().mockResolvedValue( undefined );
+const setPageMainSubjectMock = vi.fn().mockResolvedValue( undefined );
 let storeSubjects: Subject[] = [];
 let mainSubjectId: SubjectId | null = null;
 
@@ -55,6 +56,7 @@ vi.mock( '@/stores/SubjectStore.ts', async ( importOriginal ) => {
 			return {
 				loadPageSubjects: loadPageSubjectsMock,
 				deleteSubject: deleteSubjectMock,
+				setPageMainSubject: setPageMainSubjectMock,
 				getSubject: ( id: SubjectId ) => storeSubjects.find( ( s ) => s.getId().text === id.text ),
 				openSubjectCreator: vi.fn(),
 				get pageSubjects() {
@@ -99,21 +101,12 @@ vi.mock( '@/composables/useSubjectDrag.ts', () => ( {
 	useSubjectDrag: vi.fn(),
 } ) );
 
-const HIGHLIGHT_CLASS = 'ext-neowiki-subjects-manager__row--highlighted';
-const EXPANDED_CLASS = 'ext-neowiki-subjects-manager__row--expanded';
+const HIGHLIGHT_CLASS = 'ext-neowiki-subject-row--highlighted';
+const EXPANDED_CLASS = 'ext-neowiki-subject-row--expanded';
 
 function rowFor( wrapper: VueWrapper, id: string ): VueWrapper {
 	return wrapper.find( '#' + subjectRowDomId( id ) ) as unknown as VueWrapper;
 }
-
-// shallowMount's auto-stubs do not render slots by default, but the delete-confirmation flow
-// lives in CdxDialog's #footer slot (the SummaryAction that emits 'save'); a template-carrying
-// stub keeps that slot content in the tree so the delete-flow tests can reach it.
-const CdxDialogStub = {
-	template: '<div v-if="open" class="cdx-dialog-stub"><slot /><slot name="footer" /></div>',
-	props: [ 'open', 'title', 'useCloseButton' ],
-	emits: [ 'update:open' ],
-};
 
 async function mountPage(): Promise<VueWrapper> {
 	setupMwMock( {
@@ -139,7 +132,9 @@ async function mountPage(): Promise<VueWrapper> {
 				[ Service.SubjectRepository ]: { getSubjectForEditing: getSubjectForEditingRepoMock },
 				[ Service.SchemaRepository ]: { getSchema: getSchemaRepoMock },
 			},
-			stubs: { CdxIcon: true, CdxDialog: CdxDialogStub },
+			// The row and the delete dialog are this page's own building blocks rather than collaborators
+			// to stand in for: the assertions below are about what they render and offer.
+			stubs: { CdxIcon: true, CdxDialog: CdxDialogStub, SubjectRow: false, SubjectDeleteDialog: false },
 		},
 	} );
 
@@ -271,7 +266,7 @@ describe( 'SubjectsManagerPage rows without a stored label', () => {
 	it( 'names the main row after the page and marks the child row as unnamed', async () => {
 		const wrapper = await mountPage();
 
-		const names = wrapper.findAll( '.ext-neowiki-subjects-manager__row-label' ).map( ( el ) => el.text() );
+		const names = wrapper.findAll( '.ext-neowiki-subject-row__label' ).map( ( el ) => el.text() );
 		expect( names ).toEqual( [ 'Host Page', '(unnamed Person)' ] );
 	} );
 
@@ -282,6 +277,40 @@ describe( 'SubjectsManagerPage rows without a stored label', () => {
 
 		expect( rowFor( wrapper, ID_A ).findComponent( SchemaNameDisplay ).props( 'schemaName' ) ).toBe( 'Person' );
 		expect( rowFor( wrapper, ID_B ).findComponent( SchemaNameDisplay ).exists() ).toBe( false );
+	} );
+
+} );
+
+describe( 'SubjectsManagerPage rows and the Subject pages behind them', () => {
+
+	beforeEach( () => {
+		storeSubjects = [ subject( ID_A ), subject( ID_B ) ];
+		mainSubjectId = new SubjectId( ID_A );
+		window.location.hash = '';
+		Element.prototype.scrollIntoView = vi.fn();
+		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+		window.location.hash = '';
+		vi.restoreAllMocks();
+	} );
+
+	// The Data tab is the only place a reader can discover that a Subject has a page of its own.
+	it( 'links every row to that Subject\'s own page', async () => {
+		const wrapper = await mountPage();
+
+		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-open"]' )
+			.map( ( link ) => link.attributes( 'href' ) ) )
+			.toEqual( [ '/wiki/Special:Subject/' + ID_A, '/wiki/Special:Subject/' + ID_B ] );
+	} );
+
+	// Every row is on the page the reader already has open, so naming it in each footer says nothing.
+	it( 'names no page in any row\'s footer', async () => {
+		const wrapper = await mountPage();
+
+		expect( wrapper.find( '.ext-neowiki-subject-row__page' ).exists() ).toBe( false );
 	} );
 
 } );
@@ -310,7 +339,7 @@ describe( 'SubjectsManagerPage row copy-link action', () => {
 		vi.restoreAllMocks();
 	} );
 
-	it( 'offers copy-link in the overflow menu to a read-only user on both the main and other rows', async () => {
+	it( 'offers the ungated actions in the overflow menu to a read-only user on every row', async () => {
 		storeSubjects = [ subject( ID_A ), subject( ID_B ) ];
 		mainSubjectId = new SubjectId( ID_A );
 
@@ -321,7 +350,7 @@ describe( 'SubjectsManagerPage row copy-link action', () => {
 		// The read-only user has neither edit nor delete rights, so copy-link is the whole menu: it is
 		// the one row action that is not permission-gated, and it makes the otherwise-empty ⋯ menu useful.
 		for ( const menu of menus ) {
-			expect( menu.props( 'menuItems' ).map( ( item ) => item.value ) ).toEqual( [ 'copy-link' ] );
+			expect( menu.props( 'menuItems' ).map( ( item ) => item.value ) ).toEqual( [ 'open', 'copy-link' ] );
 		}
 	} );
 
@@ -446,6 +475,56 @@ describe( 'SubjectsManagerPage edit flow', () => {
 	} );
 } );
 
+describe( 'SubjectsManagerPage main subject controls', () => {
+
+	beforeEach( () => {
+		storeSubjects = [ subject( ID_A ), subject( ID_B ) ];
+		mainSubjectId = new SubjectId( ID_A );
+		canEditSubjectRef.value = true;
+		setPageMainSubjectMock.mockClear();
+		window.location.hash = '';
+		Element.prototype.scrollIntoView = vi.fn();
+		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+		window.location.hash = '';
+		canEditSubjectRef.value = false;
+		vi.restoreAllMocks();
+	} );
+
+	// Which pin a row carries is the page's to decide, not the row's: only the main slot's row can be
+	// demoted, and only a row outside it can be promoted.
+	it( 'pins the main row for demotion and every other row for promotion', async () => {
+		const wrapper = await mountPage();
+
+		expect( rowFor( wrapper, ID_A ).find( '[aria-label="neowiki-managesubjects-row-demote"]' ).exists() ).toBe( true );
+		expect( rowFor( wrapper, ID_A ).find( '[aria-label="neowiki-managesubjects-row-promote"]' ).exists() ).toBe( false );
+		expect( rowFor( wrapper, ID_B ).find( '[aria-label="neowiki-managesubjects-row-demote"]' ).exists() ).toBe( false );
+		expect( rowFor( wrapper, ID_B ).find( '[aria-label="neowiki-managesubjects-row-promote"]' ).exists() ).toBe( true );
+	} );
+
+	it( 'clears the page\'s Main Subject from the main row\'s pin', async () => {
+		const wrapper = await mountPage();
+
+		await rowFor( wrapper, ID_A ).find( '[aria-label="neowiki-managesubjects-row-demote"]' ).trigger( 'click' );
+		await flushPromises();
+
+		expect( setPageMainSubjectMock ).toHaveBeenCalledWith( PAGE_ID, null );
+	} );
+
+	it( 'makes another row\'s Subject the page\'s Main Subject from its pin', async () => {
+		const wrapper = await mountPage();
+
+		await rowFor( wrapper, ID_B ).find( '[aria-label="neowiki-managesubjects-row-promote"]' ).trigger( 'click' );
+		await flushPromises();
+
+		expect( setPageMainSubjectMock ).toHaveBeenCalledWith( PAGE_ID, expect.objectContaining( { text: ID_B } ) );
+	} );
+
+} );
+
 describe( 'SubjectsManagerPage move action', () => {
 
 	beforeEach( () => {
@@ -474,23 +553,25 @@ describe( 'SubjectsManagerPage move action', () => {
 		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 2 );
 	} );
 
-	// Copy-link changes nothing, so it leads; edit and promote change the row in place; move and
-	// delete take the row out of the listing, with delete last. The main row's pin is its
-	// indicator, outside the strip.
-	it( 'orders each row\'s inline actions copy-link, edit, promote, move, delete', async () => {
+	// Opening the Subject's page and copying a link change nothing, so they lead; edit and promote
+	// change the row in place; move and delete take the row out of the listing, with delete last.
+	// The main row's pin is its indicator, outside the strip.
+	it( 'orders each row\'s inline actions open, copy-link, edit, promote, move, delete', async () => {
 		const wrapper = await mountPage();
 
-		const strips = wrapper.findAll( '.ext-neowiki-subjects-manager__row-actions' )
+		const strips = wrapper.findAll( '.ext-neowiki-subject-row__actions' )
 			.map( ( strip ) => strip.findAll( '[aria-label]' ).map( ( element ) => element.attributes( 'aria-label' ) ) );
 
 		expect( strips ).toEqual( [
 			[
+				'neowiki-managesubjects-row-open',
 				'neowiki-managesubjects-row-copy-link',
 				'neowiki-managesubjects-row-edit',
 				'neowiki-managesubjects-row-move',
 				'neowiki-managesubjects-row-delete',
 			],
 			[
+				'neowiki-managesubjects-row-open',
 				'neowiki-managesubjects-row-copy-link',
 				'neowiki-managesubjects-row-edit',
 				'neowiki-managesubjects-row-promote',
@@ -507,8 +588,8 @@ describe( 'SubjectsManagerPage move action', () => {
 			.map( ( menu ) => menu.props( 'menuItems' ).map( ( item ) => item.value ) );
 
 		expect( menus ).toEqual( [
-			[ 'copy-link', 'edit', 'move', 'delete' ],
-			[ 'copy-link', 'edit', 'promote', 'move', 'delete' ],
+			[ 'open', 'copy-link', 'edit', 'move', 'delete' ],
+			[ 'open', 'copy-link', 'edit', 'promote', 'move', 'delete' ],
 		] );
 	} );
 

@@ -190,7 +190,8 @@
 		"Layouts": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialLayouts",
 		"Mappings": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialMappings",
 		"GraphStores": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialGraphStores",
-		"CreateSubject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialCreateSubject"
+		"CreateSubject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialCreateSubject",
+		"Subject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialSubject"
 	},
 
 	"Actions": {
@@ -203,7 +204,7 @@
 			"value": false
 		},
 		"NeoWikiEnableInWikiConfig": {
-			"description": "Whether NeoWiki settings may also be set on the MediaWiki:NeoWiki JSON configuration page, which requires the editinterface and editsitejson rights to edit. When false, that page is never given the JSON content model, validated, or read, so only LocalSettings.php applies. The page exposes NeoWikiDereferenceSubjectsToDataTab and NeoWikiAutoRenderMainSubject; its values take precedence over LocalSettings.php.",
+			"description": "Whether NeoWiki settings may also be set on the MediaWiki:NeoWiki JSON configuration page, which requires the editinterface and editsitejson rights to edit. When false, that page is never given the JSON content model, validated, or read, so only LocalSettings.php applies. The page exposes NeoWikiDereferenceSubjectsToHostingPage and NeoWikiAutoRenderMainSubject; its values take precedence over LocalSettings.php.",
 			"value": true
 		},
 		"NeoWikiEnforceValidation": {
@@ -237,9 +238,9 @@
 			"description": "Base URI under which the RDF export mints all NeoWiki IRIs (entity, property, schema, page, etc.). When null, defaults to the wiki's canonical URL ($wgCanonicalServer). Wiki-level on purpose, so sibling projections describe the same entities with identical IRIs.",
 			"value": null
 		},
-		"NeoWikiDereferenceSubjectsToDataTab": {
-			"description": "Whether a browser dereferencing a Subject's concept URI (Accept: text/html) is sent to the hosting page's Data tab (?action=subjects) opened on the Subject's row (expanded, scrolled to, highlighted). True by default; when false, it is sent to the plain hosting page.",
-			"value": true
+		"NeoWikiDereferenceSubjectsToHostingPage": {
+			"description": "Whether a browser dereferencing a Subject's concept URI (Accept: text/html) is sent to the plain page the Subject is stored on. False by default, which sends it to Special:Subject, the view of that one Subject.",
+			"value": false
 		},
 		"NeoWikiAutoRebuildOnMappingChange": {
 			"description": "Whether saving, deleting or restoring a Mapping page automatically rebuilds, in the background, every configured graph store that holds that Mapping's projection. False by default: such a rebuild reprojects every page on the wiki into that store, which on a large wiki is substantial work an administrator should choose to take on. While it is false, Special:GraphStores reports such a store as stale and offers the rebuild.",
@@ -792,7 +793,12 @@
 				"neowiki-managesubjects-export-back",
 				"neowiki-managesubjects-export-choose-format",
 				"neowiki-managesubjects-export-choose-projection",
-				"neowiki-managesubjects-export-native"
+				"neowiki-managesubjects-export-native",
+				"neowiki-special-subject-page-label",
+				"neowiki-special-subject-referenced-heading",
+				"neowiki-special-subject-not-found",
+				"neowiki-special-subject-load-error",
+				"neowiki-managesubjects-row-open"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

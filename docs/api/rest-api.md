@@ -29,7 +29,7 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 |---|---|
 | `GET /neowiki/v0/subject/{subjectId}` | Fetch a Subject as the wiki publishes it. `latest=1` returns the hosting page's current revision instead, for editing, when the viewer may see it; it takes no `revisionId` and no `expand=relations`. Optional `revisionId`; `expand` with `page` or `relations`. |
 | `GET /neowiki/v0/subject/{subjectId}/rdf` | Export one Subject as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or an ontology target. See [RDF export](rdf-export.md). |
-| `GET /neowiki/v0/entity/{subjectId}` | Dereference a Subject's concept URI. `303` to the Subject's RDF (`Accept: application/trig` or `text/turtle`) or to the hosting page (otherwise). See [Dereferencing subject IRIs](rdf-export.md#dereferencing-subject-iris). |
+| `GET /neowiki/v0/entity/{subjectId}` | Dereference a Subject's concept URI. `303` to the Subject's RDF (`Accept: application/trig` or `text/turtle`), otherwise to `Special:Subject`. See [Dereferencing subject IRIs](rdf-export.md#dereferencing-subject-iris). |
 | `PUT /neowiki/v0/subject/{subjectId}` | Replace a Subject's label and statements. |
 | `DELETE /neowiki/v0/subject/{subjectId}` | Delete a Subject. |
 | `POST /neowiki/v0/subject/{subjectId}/move` | Move a Subject to another page, keeping its ID so relations targeting it keep resolving. Body `targetPageId`, optional `makeMainSubject` and `comment`. Edits both pages. |

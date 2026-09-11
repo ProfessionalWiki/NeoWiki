@@ -13,6 +13,7 @@ import LayoutsPage from '@/components/LayoutsPage/LayoutsPage.vue';
 import MappingsPage from '@/components/MappingsPage/MappingsPage.vue';
 import SubjectsManagerPage from '@/components/SubjectsManager/SubjectsManagerPage.vue';
 import CreateSubjectPage from '@/components/CreateSubjectPage/CreateSubjectPage.vue';
+import SubjectPage from '@/components/SubjectPage/SubjectPage.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SchemaName } from '@/domain/Schema.ts';
 import type { LayoutName } from '@/domain/Layout.ts';
@@ -228,6 +229,22 @@ function initializeCreateSubjectPage(): void {
 	} );
 }
 
+function initializeSubjectPage(): void {
+	queueMicrotask( () => {
+		const subjectPage = document.getElementById( 'ext-neowiki-subject' );
+
+		if ( subjectPage !== null ) {
+			const ext = NeoWikiExtension.getInstance();
+			const subjectId = subjectPage.dataset.mwNeowikiSubjectId;
+
+			const app = createMwApp( SubjectPage, { subjectId } ).directive( 'tooltip', CdxTooltip );
+			app.use( ext.getPinia() );
+			NeoWikiServices.registerServices( app );
+			mountNeoWikiApp( app, subjectPage );
+		}
+	} );
+}
+
 const isTestEnvironment = typeof window !== 'undefined' &&
 	( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode === true;
 
@@ -241,4 +258,5 @@ if ( !isTestEnvironment ) {
 	initializeMappingsPage();
 	initializeSubjectsManagerPage();
 	initializeCreateSubjectPage();
+	initializeSubjectPage();
 }

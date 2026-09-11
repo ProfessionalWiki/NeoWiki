@@ -14,7 +14,7 @@ class ConfigExample {
 
 	public const string JSON = <<<'JSON'
 		{
-			"dereferenceSubjectsToDataTab": true,
+			"dereferenceSubjectsToHostingPage": false,
 			"autoRenderMainSubject": true
 		}
 		JSON;
