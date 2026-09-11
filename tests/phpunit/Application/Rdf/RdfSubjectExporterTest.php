@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Rdf\PageProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfSubjectExporter;
+use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
@@ -32,7 +33,7 @@ class RdfSubjectExporterTest extends TestCase {
 	private const string SUBJECT_ID = 's1acmeaaaaaaaa1';
 	private const string OTHER_ID = 's1janeaaaaaaaa2';
 
-	public function testReturnsNullWhenTheSubjectIsNotInTheGraph(): void {
+	public function testReturnsNullWhenNoPageHostsTheSubject(): void {
 		$exporter = $this->exporter(
 			lookup: new InMemoryPageIdentifiersLookup(),
 			loadedPage: $this->pageWithTheSubject(),
@@ -62,8 +63,8 @@ class RdfSubjectExporterTest extends TestCase {
 		$this->assertNull( $exporter->exportBySubjectId( new SubjectId( self::SUBJECT_ID ), RdfFormat::TriG ) );
 	}
 
-	public function testReturnsNullWhenTheGraphPointsToAPageThatNoLongerHasTheSubject(): void {
-		// Stale graph: it resolves the Subject to a page whose current revision no longer carries it.
+	public function testReturnsNullWhenTheIndexPointsToAPageThatNoLongerHasTheSubject(): void {
+		// Stale index: it names, for the Subject, a page whose current revision no longer carries it.
 		$exporter = $this->exporter(
 			lookup: $this->lookupResolvingTheSubject(),
 			loadedPage: TestPage::build( id: 42, mainSubject: TestSubject::build( id: self::OTHER_ID ) ),
@@ -104,11 +105,10 @@ class RdfSubjectExporterTest extends TestCase {
 		?PageProjector $projector = null
 	): RdfSubjectExporter {
 		return new RdfSubjectExporter(
-			$lookup,
+			new SubjectHostingPageResolver( $lookup, new StubPageReadAuthorizer( $authorized ) ),
 			$this->fixedLoader( $loadedPage ),
 			$projector ?? new FixedPageProjector( new QuadList() ),
 			new HardfRdfSerializer( [] ),
-			new StubPageReadAuthorizer( $authorized ),
 		);
 	}
 

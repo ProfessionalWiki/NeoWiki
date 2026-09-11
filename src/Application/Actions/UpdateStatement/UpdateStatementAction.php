@@ -5,14 +5,13 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement;
 
 use InvalidArgumentException;
-use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
-use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
+use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
@@ -34,7 +33,7 @@ readonly class UpdateStatementAction {
 
 	public function __construct(
 		private SubjectRepository $subjectRepository,
-		private PageReadAuthorizer $readAuthorizer,
+		private SubjectHostingPageResolver $hostingPageResolver,
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaResolver $schemaResolver,
@@ -42,7 +41,6 @@ readonly class UpdateStatementAction {
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private UpdateStatementPresenter $presenter,
 		private bool $validationEnforced,
-		private PageIdentifiersLookup $pageIdentifiersLookup,
 	) {
 	}
 
@@ -99,18 +97,9 @@ readonly class UpdateStatementAction {
 	}
 
 	private function getPageOfSubjectToEdit( SubjectId $subjectId ): PageIdentifiers {
-		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId );
+		$pageIdentifiers = $this->hostingPageResolver->resolveReadableHostingPage( $subjectId );
 
-		// Gate on read before write: a page the caller may not read answers exactly like a Subject
-		// that does not exist, so restricted pages cannot be told apart from absent ones - and the
-		// page title and namespace this endpoint returns never reach a caller denied the page. An
-		// unresolvable Subject takes that same path, since it has no page to authorize against.
-		// Reaching the write check with null identifiers would answer 403 where a restricted page
-		// answers 404, telling a caller who lacks the wiki-global 'edit' right which of the
-		// Subject ids they hold exist. Only a Subject on a page the caller can read (its existence
-		// already public) proceeds to the write check and its 403.
-		if ( $pageIdentifiers === null
-			|| !$this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() ) ) {
+		if ( $pageIdentifiers === null ) {
 			throw SubjectNotFoundException::forId( $subjectId );
 		}
 
