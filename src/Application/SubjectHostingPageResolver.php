@@ -17,13 +17,11 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
  * - A page the caller may not read is denied in the not-found shape PageReadAuthorizer prescribes.
  * - A local Subject no page hosts has nothing to authorize against: every right on a Subject is a
  *   right on the page holding it (ADR 32).
- * - A Subject id from another Source is never indexed (PageIdentifiersLookup) and is answered without
- *   the query; sourced data is served on its Source's vouch (ADR 23), which is not a page read.
+ * - A Subject id from another Source is never indexed (PageIdentifiersLookup), so it is answered
+ *   without the query.
  *
- * Write actions resolve through this before their write check. Reaching the write check with no
- * readable page would answer 403 where a restricted page answers 404, telling a caller who lacks the
- * 'edit' right which of the Subject ids they hold exist. Only a Subject on a page the caller can read,
- * whose existence is already public, proceeds to the write check and its 403.
+ * Write actions resolve through this before their write check, so that a 403 cannot reveal what the
+ * 404 hides (ADR 27).
  */
 readonly class SubjectHostingPageResolver {
 
