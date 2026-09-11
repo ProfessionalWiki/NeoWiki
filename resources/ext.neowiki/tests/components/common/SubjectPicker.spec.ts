@@ -1097,23 +1097,33 @@ describe( 'SubjectPicker', () => {
 			} );
 		} );
 
-		// Mounted with the real Codex component: whether an empty field's menu opens on focus is
-		// decided by Codex, from the items the Lookup was built with. A stub cannot show that.
-		it( 'opens the menu on focus with an empty field so the create option can be picked without typing', async () => {
+		// Mounted with the real Codex component, for what Codex decides on its own: the stub has
+		// none of its watchers.
+		async function mountInCodex(
+			subjectCreation: SubjectCreation,
+			props: Partial<InstanceType<typeof SubjectPicker>['$props']> = {},
+		): Promise<VueWrapper> {
 			const wrapper = mount( SubjectPicker, {
-				props: { selected: null, targetSchema: 'Product' },
+				props: { selected: null, targetSchema: 'Product', ...props },
 				attachTo: document.body,
 				global: {
 					mocks: { $i18n },
 					plugins: [ pinia ],
 					provide: {
 						[ Service.SubjectLabelSearch ]: mockSubjectLabelSearch,
-						[ SubjectCreationKey as symbol ]: hostOffering( creatorReturning( null ) ),
+						[ SubjectCreationKey as symbol ]: subjectCreation,
 					},
 				},
 			} );
 			attachedWrappers.push( wrapper );
 			await flushPromises();
+			return wrapper;
+		}
+
+		// Whether an empty field's menu opens on focus is decided by Codex, from the items the
+		// Lookup was built with.
+		it( 'opens the menu on focus with an empty field so the create option can be picked without typing', async () => {
+			const wrapper = await mountInCodex( hostOffering( creatorReturning( null ) ) );
 
 			await wrapper.find( 'input' ).trigger( 'focus' );
 			await nextTick();
@@ -1121,6 +1131,83 @@ describe( 'SubjectPicker', () => {
 			expect( wrapper.find( 'input' ).attributes( 'aria-expanded' ) ).toBe( 'true' );
 			expect( wrapper.findAll( '[role="option"]' ).map( ( option ) => option.text() ) )
 				.toEqual( [ 'Create a new Product' ] );
+		} );
+
+		describe( 'replacing the target in the real Codex Lookup', () => {
+			async function mountHoldingTarget( subjectCreation: SubjectCreation ): Promise<VueWrapper> {
+				wikiHolds( subjectNamed( EXISTING_TARGET_ID, 'ACME Inc.', 'Product' ) );
+				return mountInCodex( subjectCreation, { selected: EXISTING_TARGET_ID } );
+			}
+
+			async function typeOverTarget( wrapper: VueWrapper, text: string ): Promise<void> {
+				const input = wrapper.find( 'input' );
+				await input.trigger( 'focus' );
+				await input.setValue( text );
+				await flushPromises();
+			}
+
+			// The create option is the last one, as in the stubbed tests above.
+			async function chooseLastOption( wrapper: VueWrapper ): Promise<void> {
+				const options = wrapper.findAll( '[role="option"]' );
+				await options[ options.length - 1 ].trigger( 'click' );
+				await flushPromises();
+			}
+
+			function fieldTextOf( wrapper: VueWrapper ): string {
+				return wrapper.find( 'input' ).element.value;
+			}
+
+			it( 'reports a Subject created over the target as the selection', async () => {
+				const wrapper = await mountHoldingTarget(
+					hostOffering( creatorReturning( createdSubject( 'Zurich Depot', 'Zurich Depot' ) ) ),
+				);
+
+				await typeOverTarget( wrapper, 'Zurich Depot' );
+				await chooseLastOption( wrapper );
+
+				expect( wrapper.emitted( 'update:selected' ) ).toEqual( [ [ 's1demo1aaaaaaa1' ] ] );
+			} );
+
+			// Typed with padding, which the field keeps unless the created Subject's name replaces it.
+			it( 'shows a Subject created over the target in the field', async () => {
+				const wrapper = await mountHoldingTarget(
+					hostOffering( creatorReturning( createdSubject( 'Zurich Depot', 'Zurich Depot' ) ) ),
+				);
+
+				await typeOverTarget( wrapper, '  Zurich Depot  ' );
+				await chooseLastOption( wrapper );
+
+				expect( fieldTextOf( wrapper ) ).toBe( 'Zurich Depot' );
+			} );
+
+			it( 'keeps the text typed over the target when the creation is abandoned', async () => {
+				const wrapper = await mountHoldingTarget( hostOffering( creatorReturning( null ) ) );
+
+				await typeOverTarget( wrapper, 'Zurich Depot' );
+				await chooseLastOption( wrapper );
+
+				expect( fieldTextOf( wrapper ) ).toBe( 'Zurich Depot' );
+			} );
+
+			it( 'keeps the text typed over the target when the creation throws', async () => {
+				// The picker logs the host's failure; the test asserts on the field, not on the console.
+				vi.spyOn( console, 'error' ).mockImplementation( silence );
+				const wrapper = await mountHoldingTarget( hostOffering( creatorThrowing() ) );
+
+				await typeOverTarget( wrapper, 'Zurich Depot' );
+				await chooseLastOption( wrapper );
+
+				expect( fieldTextOf( wrapper ) ).toBe( 'Zurich Depot' );
+			} );
+
+			it( 'flags text typed over the target as unmatched on leaving the field', async () => {
+				const wrapper = await mountHoldingTarget( hostOffering( creatorReturning( null ) ) );
+
+				await typeOverTarget( wrapper, 'Zurich Depot' );
+				await wrapper.find( 'input' ).trigger( 'blur' );
+
+				expect( wrapper.emitted( 'blur' ) ).toEqual( [ [ true ] ] );
+			} );
 		} );
 	} );
 
