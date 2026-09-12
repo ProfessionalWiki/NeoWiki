@@ -27,7 +27,7 @@ class ConfigValidatorTest extends TestCase {
 	public function testBothSettingsPopulatedIsValid(): void {
 		$this->assertSame(
 			[],
-			$this->validate( '{ "dereferenceSubjectsToDataTab": true, "autoRenderMainSubject": false }' )
+			$this->validate( '{ "dereferenceSubjectsToHostingPage": true, "autoRenderMainSubject": false }' )
 		);
 	}
 
@@ -63,8 +63,8 @@ class ConfigValidatorTest extends TestCase {
 
 	public function testWrongTypeForDereferenceSettingIsRejected(): void {
 		$this->assertSame(
-			[ [ 'neowiki-config-error-invalid-boolean', 'dereferenceSubjectsToDataTab' ] ],
-			$this->validate( '{ "dereferenceSubjectsToDataTab": "yes" }' )
+			[ [ 'neowiki-config-error-invalid-boolean', 'dereferenceSubjectsToHostingPage' ] ],
+			$this->validate( '{ "dereferenceSubjectsToHostingPage": "yes" }' )
 		);
 	}
 
@@ -72,9 +72,9 @@ class ConfigValidatorTest extends TestCase {
 		$this->assertEqualsCanonicalizing(
 			[
 				[ ConfigValidator::ERROR_UNKNOWN_KEY, 'nope' ],
-				[ 'neowiki-config-error-invalid-boolean', 'dereferenceSubjectsToDataTab' ],
+				[ 'neowiki-config-error-invalid-boolean', 'dereferenceSubjectsToHostingPage' ],
 			],
-			$this->validate( '{ "nope": 1, "dereferenceSubjectsToDataTab": "x" }' )
+			$this->validate( '{ "nope": 1, "dereferenceSubjectsToHostingPage": "x" }' )
 		);
 	}
 

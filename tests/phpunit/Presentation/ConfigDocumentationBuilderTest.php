@@ -48,7 +48,7 @@ class ConfigDocumentationBuilderTest extends MediaWikiIntegrationTestCase {
 
 	public function testReferenceDoesNotWrapTheSettingKeysInCode(): void {
 		// The key and LocalSettings.php columns fill their cell, so they are plain text, not code chips.
-		$this->assertStringContainsString( '<td>dereferenceSubjectsToDataTab</td>', $this->newBuilder()->buildReference() );
+		$this->assertStringContainsString( '<td>dereferenceSubjectsToHostingPage</td>', $this->newBuilder()->buildReference() );
 	}
 
 	public function testReferenceCarriesTheAnchorThePointerLinksTo(): void {

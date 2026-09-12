@@ -68,6 +68,16 @@ export function createTestWrapper<TComponent extends DefineComponent<any, any, a
 	) as VueWrapper<InstanceType<TComponent>>;
 }
 
+/**
+ * CdxDialog as a stub that still renders its slots. shallowMount's auto-stubs render none, and a
+ * dialog's controls live in its #footer slot, so a test driving one needs them in the tree.
+ */
+export const CdxDialogStub = {
+	template: '<div v-if="open" class="cdx-dialog-stub"><slot /><slot name="footer" /></div>',
+	props: [ 'open', 'title', 'useCloseButton' ],
+	emits: [ 'update:open' ],
+};
+
 export interface MwMockOptions {
 	messages?: Record<string, string | ( ( ...params: string[] ) => string )>;
 	config?: Record<string, any>;

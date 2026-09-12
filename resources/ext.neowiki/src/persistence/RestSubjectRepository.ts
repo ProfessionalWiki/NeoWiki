@@ -15,6 +15,7 @@ import type { Subject } from '@/domain/Subject';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
+import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError';
 import { parseViolations } from '@/persistence/violationParsing';
 
 async function throwOn422IfPossible( response: Response ): Promise<void> {
@@ -225,7 +226,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		const data = await response.json() as { requestedId?: string; subjects?: Record<string, SubjectJson> };
 
 		if ( !data.requestedId || !data.subjects || !data.subjects[ data.requestedId ] ) {
-			throw new Error( 'Subject not found' );
+			throw new SubjectNotFoundError( id.text );
 		}
 
 		return { requestedId: data.requestedId, subjects: data.subjects };

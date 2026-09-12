@@ -21,8 +21,8 @@ class ConfigSchema {
 	public function __construct() {
 		$this->settings = [
 			new ConfigSetting(
-				pageKey: 'dereferenceSubjectsToDataTab',
-				settingName: 'NeoWikiDereferenceSubjectsToDataTab',
+				pageKey: 'dereferenceSubjectsToHostingPage',
+				settingName: 'NeoWikiDereferenceSubjectsToHostingPage',
 			),
 			new ConfigSetting(
 				pageKey: 'autoRenderMainSubject',

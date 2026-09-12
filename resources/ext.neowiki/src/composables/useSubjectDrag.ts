@@ -3,8 +3,8 @@ import { useSortable } from '@/composables/useSortable';
 import { SubjectId } from '@/domain/SubjectId';
 import { subjectIdFromRowDomId } from '@/presentation/subjectRowAnchor';
 
-const DRAG_HANDLE_SELECTOR = '.ext-neowiki-subjects-manager__row-drag-handle';
-const GHOST_CLASS = 'ext-neowiki-subjects-manager__row--ghost';
+const DRAG_HANDLE_SELECTOR = '.ext-neowiki-subject-row__drag-handle';
+const GHOST_CLASS = 'ext-neowiki-subject-row--ghost';
 const SORTABLE_GROUP_NAME = 'neowiki-subjects';
 
 export interface SubjectDragHandlers {

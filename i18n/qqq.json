@@ -317,7 +317,7 @@
 	"neowiki-managesubjects-move-create-page-error": "Error shown when the target page could not be created. Parameters:\n* $1 - the title of the page that could not be created",
 	"neowiki-managesubjects-row-promote": "Aria/button label for the pin button that promotes a child Subject to the page's Main Subject.",
 	"neowiki-managesubjects-row-demote": "Aria/button label for the pin button on the Main Subject row that clears it so the page has no Main Subject.",
-	"neowiki-managesubjects-row-copy-link": "Aria/button label for the row action (an inline button on wide viewports, an overflow-menu item on narrow ones) that copies a shareable deep link to this Subject's row on the Data tab.",
+	"neowiki-managesubjects-row-copy-link": "Aria/button label for the row action (an inline button on wide viewports, an overflow-menu item on narrow ones) that copies a shareable link to this Subject.",
 	"neowiki-managesubjects-row-more": "Aria/button label for the overflow (kebab) menu that lists per-row actions on narrow viewports.",
 	"neowiki-managesubjects-row-drag-handle": "Tooltip on the drag handle on each Subject row (sighted mouse users only — the handle is not in the focus order). Dragging a child row within the child list reorders it. Dragging a child row onto the Main Subject slot promotes it (and demotes the previous main into the dragged child's slot). Dragging the Main Subject row into the child list demotes it at the drop position.",
 	"neowiki-managesubjects-statement-count": "Shown on each collapsed Subject row to indicate how many Statements the Subject has. $1 is the count.",
@@ -384,5 +384,12 @@
 	"neowiki-graphstores-outcome-nothingtocancel": "Error shown on [[Special:GraphStores]] when a cancellation was asked for a store with no rebuild.\n\nParameters:\n* $1 - name of the graph store",
 	"neowiki-graphstores-outcome-unknownstore": "Error shown on [[Special:GraphStores]] when the named store is not configured.\n\nParameters:\n* $1 - name that was asked for",
 	"neowiki-graphstores-outcome-notqueued": "Error shown on [[Special:GraphStores]] when a rebuild could not be started at all — the job queue refused it, or something else held the store's start lock.\n\nParameters:\n* $1 - name of the graph store",
-	"neowiki-graphstores-outcome-sessionfailure": "Error shown on [[Special:GraphStores]] when the edit token of a rebuild or cancel form did not match."
+	"neowiki-graphstores-outcome-sessionfailure": "Error shown on [[Special:GraphStores]] when the edit token of a rebuild or cancel form did not match.",
+	"neowiki-special-subject": "Name of the [[Special:Subject]] page, which shows one Subject. Used in the list of special pages, and as the page's heading when it shows no Subject.\n{{Identical|Subject}}",
+	"neowiki-special-subject-invalid-id": "Error shown on [[Special:Subject]] when it is opened with no subject ID, or with something that is not one. The example ID stays as it is.",
+	"neowiki-special-subject-page-label": "Inline label shown before a link to the wiki page a Subject is stored on, in the footer of an expanded Subject row.",
+	"neowiki-special-subject-referenced-heading": "Heading on [[Special:Subject]] above the Subjects the displayed Subject's relations point at.",
+	"neowiki-special-subject-not-found": "Shown on [[Special:Subject]] in place of the Subject when the wiki has no Subject with that ID. It is also shown for a Subject on a page the reader may not read, so the translation must not mention permissions.\n\nParameters:\n* $1 - the Subject ID that was asked for",
+	"neowiki-special-subject-load-error": "Shown on [[Special:Subject]] when loading a Subject failed with a network or server error: in place of the Subject on first load, and as a notification when a re-read after a change failed. Distinct from {{msg-neowiki|neowiki-special-subject-not-found}}, which says the wiki has no such Subject.",
+	"neowiki-managesubjects-row-open": "Label for the item in a Subject row's overflow menu, which replaces the row's inline actions on narrow viewports. It goes to [[Special:Subject]], the page showing that one Subject, which the Subject's name links to as well. It navigates; it does not expand the row."
 }

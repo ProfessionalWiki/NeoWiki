@@ -26,7 +26,7 @@ use TestLogger;
  * config, an invalid one falls back with a warning, and the kill switch stops the page from applying.
  *
  * @covers \ProfessionalWiki\NeoWiki\Application\WikiConfig\WikiConfigLookup
- * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::dereferenceSubjectsToDataTab
+ * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::dereferenceSubjectsToHostingPage
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiWikiConfigSource
  * @group Database
  */
@@ -42,8 +42,8 @@ class InWikiConfigDereferenceTest extends NeoWikiIntegrationTestCase {
 		$this->setUpNeo4j();
 
 		// Pin the PHP config to false (the win case's page value is true) so a passing test proves the page
-		// value, not an ambient override; the fallback cases then land on the plain page.
-		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToDataTab', false );
+		// value, not an ambient override; the fallback cases then land on Special:Subject.
+		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToHostingPage', false );
 
 		$this->createSchema( self::SCHEMA );
 
@@ -95,33 +95,38 @@ class InWikiConfigDereferenceTest extends NeoWikiIntegrationTestCase {
 		return Title::newFromID( $this->pageId )->getCanonicalURL();
 	}
 
+	private function assertLandsOnSpecialSubject( string $location, string $message ): void {
+		$this->assertStringEndsWith( 'Special:Subject/' . self::SUBJECT_ID, $location, $message );
+	}
+
 	public function testAValidPageSettingWinsOverThePhpConfig(): void {
-		$this->saveConfigPage( '{ "dereferenceSubjectsToDataTab": true }' );
+		$this->saveConfigPage( '{ "dereferenceSubjectsToHostingPage": true }' );
 
-		$location = $this->htmlDereferenceLocation();
-
-		$this->assertStringContainsString( 'action=subjects', $location, 'The redirect opens the Data tab.' );
-		$this->assertStringEndsWith( '#' . self::SUBJECT_ID, $location, 'The redirect targets the Subject row.' );
+		$this->assertSame(
+			$this->hostingPageUrl(),
+			$this->htmlDereferenceLocation(),
+			'The page value sends the dereference to the hosting page.'
+		);
 	}
 
 	public function testAnInvalidPageSettingFallsBackToThePhpConfigAndWarns(): void {
 		$logger = new TestLogger( true );
 		$this->setLogger( 'NeoWiki', $logger );
 
-		$this->saveConfigPage( '{ "dereferenceSubjectsToDataTab": "yes" }' );
+		$this->saveConfigPage( '{ "dereferenceSubjectsToHostingPage": "yes" }' );
 
-		$location = $this->htmlDereferenceLocation();
-
-		$this->assertSame( $this->hostingPageUrl(), $location, 'The dereference falls back to the PHP config target.' );
+		$this->assertLandsOnSpecialSubject(
+			$this->htmlDereferenceLocation(),
+			'The dereference falls back to the PHP config target.'
+		);
 		$this->assertTrue( $this->loggedAWarning( $logger ), 'The invalid page value is logged.' );
 	}
 
 	public function testThePageSettingIsIgnoredWhenInWikiConfigIsDisabled(): void {
-		$this->saveConfigPage( '{ "dereferenceSubjectsToDataTab": true }' );
+		$this->saveConfigPage( '{ "dereferenceSubjectsToHostingPage": true }' );
 		$this->overrideConfigValue( 'NeoWikiEnableInWikiConfig', false );
 
-		$this->assertSame(
-			$this->hostingPageUrl(),
+		$this->assertLandsOnSpecialSubject(
 			$this->htmlDereferenceLocation(),
 			'With the kill switch off the page is not read, so the PHP config target applies.'
 		);

@@ -49,16 +49,8 @@ class SubjectsAction extends FormlessAction {
 		$extension->newFrontendModuleLoader()->load( $out, $this->getSkin() );
 
 		$out->addJsConfigVars( [
+			...$extension->getSubjectUiJsConfigVars( $this->getAuthority() ),
 			'wgNeoWikiManageSubjectsPageId' => $title->getArticleID(),
-			// The export UI (Data tab menus) is driven by this list. Filtered by the viewing user's
-			// read authority so restricted Mapping page titles never reach a reader who cannot see them.
-			'wgNeoWikiRdfProjections' => $extension->filterReadableProjectionNames(
-				$extension->getRdfProjectionNames(),
-				$this->getAuthority()
-			),
-			// The copy-IRI control appends the Subject id to this base to show the full neo-subj:
-			// concept URI, deriving it from the same server-side rule the RDF export mints IRIs with.
-			'wgNeoWikiSubjectIriBase' => $extension->getRdfNamespaces()->subjectIriBase(),
 		] );
 
 		return Html::element( 'div', [ 'id' => 'ext-neowiki-manage-subjects' ] );

@@ -7,9 +7,9 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
-use MediaWiki\Title\Title;
+use MediaWiki\SpecialPage\SpecialPage;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
-use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -21,8 +21,8 @@ use Wikimedia\ParamValidator\ParamValidator;
  *   - `Accept` includes `application/trig` → the Subject's TriG RDF export.
  *   - else `Accept` includes `text/turtle` → the Subject's Turtle RDF export (TriG wins a tie, matching
  *     {@see RdfFormatNegotiation}).
- *   - else (a browser's `text/html`, `*&#47;*`, an absent or unrecognized `Accept`) → the hosting page's
- *     Data tab row by default, or the plain page when `$wgNeoWikiDereferenceSubjectsToDataTab` is disabled.
+ *   - else (a browser's `text/html`, `*&#47;*`, an absent or unrecognized `Accept`) → `Special:Subject` for
+ *     that Subject, or the page it is stored on when `$wgNeoWikiDereferenceSubjectsToHostingPage` is set.
  *
  * The RDF branches target the native projection: selecting an ontology target or a specific
  * serialization stays on the per-Subject RDF endpoint, keeping this concept-URI surface Accept-only.
@@ -57,15 +57,21 @@ class ResolveSubjectIriApi extends SimpleHandler {
 		$rdfFormat = $this->negotiatedRdfFormat();
 
 		if ( $rdfFormat !== null ) {
-			return $this->negotiatedRedirect( $this->subjectRdfUrl( $subjectId, $rdfFormat ) );
+			return $this->negotiatedRedirect( $this->subjectRdfUrl( $id->text, $rdfFormat ) );
 		}
 
-		return $this->hostingPageRedirect( $subjectId, $hostingPage );
+		$htmlUrl = $this->htmlUrl( $id, $hostingPage );
+
+		if ( $htmlUrl === null ) {
+			return $this->noDataResponse( $subjectId );
+		}
+
+		return $this->negotiatedRedirect( $htmlUrl );
 	}
 
 	/**
 	 * The RDF serialization the Accept header asks for, or null when it does not ask for RDF (so the
-	 * dereference lands on the hosting page).
+	 * dereference lands on an HTML view).
 	 */
 	private function negotiatedRdfFormat(): ?string {
 		$accept = $this->getRequest()->getHeaderLine( 'Accept' );
@@ -90,16 +96,20 @@ class ResolveSubjectIriApi extends SimpleHandler {
 		);
 	}
 
-	private function hostingPageRedirect( string $subjectId, PageIdentifiers $hostingPage ): Response {
-		$title = MediaWikiServices::getInstance()->getTitleFactory()->newFromID( $hostingPage->getId()->id );
-
-		// The resolver already authorized this page, so it resolves here; a null only means the page was
-		// deleted within this same request, which takes the same not-found as any other unservable Subject.
-		if ( $title === null ) {
-			return $this->noDataResponse( $subjectId );
+	/**
+	 * The Subject's own view, or the page it is stored on when the wiki asks for that. The hosting page
+	 * is authorized either way: it is what the resolver above gated on.
+	 *
+	 * The resolver already authorized that page, so it resolves here; a null only means it was deleted
+	 * within this same request, which takes the same not-found as any other unservable Subject.
+	 */
+	private function htmlUrl( SubjectId $id, PageIdentifiers $hostingPage ): ?string {
+		if ( !$this->dereferenceToHostingPage() ) {
+			return SpecialPage::getTitleFor( 'Subject', $id->text )->getCanonicalURL();
 		}
 
-		return $this->negotiatedRedirect( $this->hostingPageUrl( $title, $subjectId ) );
+		return MediaWikiServices::getInstance()->getTitleFactory()
+			->newFromID( $hostingPage->getId()->id )?->getCanonicalURL();
 	}
 
 	/**
@@ -113,20 +123,10 @@ class ResolveSubjectIriApi extends SimpleHandler {
 		return $response;
 	}
 
-	private function hostingPageUrl( Title $title, string $subjectId ): string {
-		if ( $this->dataTabDereference() ) {
-			// The Data tab reads this fragment on mount to expand, scroll to, and highlight the row. The
-			// fragment is the bare Subject id (like Wikibase's `#P123`), not the row's internal DOM id.
-			return $title->getCanonicalURL( [ 'action' => SubjectsAction::ACTION_NAME ] ) . '#' . $subjectId;
-		}
-
-		return $title->getCanonicalURL();
-	}
-
-	private function dataTabDereference(): bool {
-		// The effective flag combines the MediaWiki:NeoWiki page with $wgNeoWikiDereferenceSubjectsToDataTab
+	private function dereferenceToHostingPage(): bool {
+		// The effective flag combines the MediaWiki:NeoWiki page with $wgNeoWikiDereferenceSubjectsToHostingPage
 		// (the page wins when it sets a valid boolean; an invalid page value has already fallen back).
-		return NeoWikiExtension::getInstance()->dereferenceSubjectsToDataTab();
+		return NeoWikiExtension::getInstance()->dereferenceSubjectsToHostingPage();
 	}
 
 	private function noDataResponse( string $subjectId ): Response {

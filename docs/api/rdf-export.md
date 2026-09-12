@@ -18,7 +18,7 @@ For an end-to-end example comparing the native and ontology-mapped output, see t
 | Setting | Default | Purpose |
 |---|---|---|
 | `$wgNeoWikiRdfBaseUri` | the wiki's canonical URL (`$wgCanonicalServer`) | Base URI under which all NeoWiki IRIs are minted. |
-| `$wgNeoWikiDereferenceSubjectsToDataTab` | `true` | Whether a browser dereferencing a Subject IRI lands on the hosting page's Data tab row (`true`) or the plain page (`false`). |
+| `$wgNeoWikiDereferenceSubjectsToHostingPage` | `false` | When `true`, sends a browser dereferencing a Subject IRI to the Subject's hosting page instead of to `Special:Subject`. |
 
 ## IRI scheme
 
@@ -149,12 +149,11 @@ content-negotiates it and answers `303 See Other` with an absolute `Location`:
 |---|---|
 | `application/trig` | the Subject's TriG RDF (`.../subject/{id}/rdf?format=trig`) |
 | `text/turtle` | the Subject's Turtle RDF (`.../subject/{id}/rdf?format=turtle`) |
-| `text/html`, `*/*`, absent, anything else | the Subject's hosting page |
+| `text/html`, `*/*`, absent, anything else | `Special:Subject/{id}` |
 
 TriG wins when both RDF types are acceptable; the RDF redirects use the native projection.
 
-The default HTML target is that page's Data tab (`/Example_Page/subjects`) opened on the Subject's row.
-When `$wgNeoWikiDereferenceSubjectsToDataTab` is set to `false`, the target is the wiki page itself (`/Example_Page`).
+When `$wgNeoWikiDereferenceSubjectsToHostingPage` is `true`, the HTML target is the Subject's hosting page instead.
 
 The negotiator is always reachable at the REST path, which needs no server configuration:
 

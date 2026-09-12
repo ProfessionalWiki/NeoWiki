@@ -51,7 +51,7 @@ class ConfigPageFramingHooksTest extends MediaWikiIntegrationTestCase {
 
 		$this->assertTrue( $editPage->suppressIntro );
 		$this->assertStringContainsString( 'neowiki.ai', $editPage->editFormTextTop );
-		$this->assertStringContainsString( '$wgNeoWikiDereferenceSubjectsToDataTab', $editPage->editFormTextBottom );
+		$this->assertStringContainsString( '$wgNeoWikiDereferenceSubjectsToHostingPage', $editPage->editFormTextBottom );
 	}
 
 	public function testOtherMediaWikiPageEditIsNotFramed(): void {
@@ -92,7 +92,7 @@ class ConfigPageFramingHooksTest extends MediaWikiIntegrationTestCase {
 		$this->assertStringNotContainsString( 'Default intro', $html );
 		$this->assertStringContainsString( '<table class="mw-json"', $html );
 		$this->assertStringContainsString( 'neowiki.ai', $html );
-		$this->assertStringContainsString( '$wgNeoWikiDereferenceSubjectsToDataTab', $html );
+		$this->assertStringContainsString( '$wgNeoWikiDereferenceSubjectsToHostingPage', $html );
 	}
 
 	public function testFramedConfigViewEmitsBalancedDivs(): void {
@@ -113,21 +113,21 @@ class ConfigPageFramingHooksTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$this->assertStringContainsString( 'diff-marker', $html );
-		$this->assertStringNotContainsString( '$wgNeoWikiDereferenceSubjectsToDataTab', $html );
+		$this->assertStringNotContainsString( '$wgNeoWikiDereferenceSubjectsToHostingPage', $html );
 	}
 
 	public function testConfigPageIsUntouchedForNonViewActions(): void {
 		$html = $this->renderView( $this->configTitle(), 'history' );
 
 		$this->assertStringContainsString( 'Default intro', $html );
-		$this->assertStringNotContainsString( '$wgNeoWikiDereferenceSubjectsToDataTab', $html );
+		$this->assertStringNotContainsString( '$wgNeoWikiDereferenceSubjectsToHostingPage', $html );
 	}
 
 	public function testOtherMediaWikiPageViewIsUntouched(): void {
 		$html = $this->renderView( Title::makeTitle( NS_MEDIAWIKI, 'NotNeoWiki' ), 'view' );
 
 		$this->assertStringContainsString( 'Default intro', $html );
-		$this->assertStringNotContainsString( '$wgNeoWikiDereferenceSubjectsToDataTab', $html );
+		$this->assertStringNotContainsString( '$wgNeoWikiDereferenceSubjectsToHostingPage', $html );
 	}
 
 	public function testConfigPageViewIsUntouchedWhenInWikiConfigDisabled(): void {
@@ -136,7 +136,7 @@ class ConfigPageFramingHooksTest extends MediaWikiIntegrationTestCase {
 		$html = $this->renderView( $this->configTitle(), 'view' );
 
 		$this->assertStringContainsString( 'Default intro', $html );
-		$this->assertStringNotContainsString( '$wgNeoWikiDereferenceSubjectsToDataTab', $html );
+		$this->assertStringNotContainsString( '$wgNeoWikiDereferenceSubjectsToHostingPage', $html );
 	}
 
 }

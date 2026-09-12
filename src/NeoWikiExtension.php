@@ -50,6 +50,7 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetLayout\GetLayoutPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetLayout\GetLayoutQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsQuery;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubject\ValidateSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubjectUpdate\ValidateSubjectUpdateQuery;
@@ -203,7 +204,6 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Presentation\ConfigDocumentationBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\FrontendModuleLoader;
-use ProfessionalWiki\NeoWiki\Presentation\RestGetSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Presentation\LayoutPresentationSerializer;
@@ -760,6 +760,26 @@ class NeoWikiExtension {
 	}
 
 	/**
+	 * The configuration the Subject UI reads wherever it is mounted — the Data tab's action and
+	 * Special:Subject alike — so a row offers the same export menu and concept URI on both.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function getSubjectUiJsConfigVars( Authority $authority ): array {
+		return [
+			// Drives the export menus. Filtered by the viewing user's read authority so restricted
+			// Mapping page titles never reach a reader who cannot see them.
+			'wgNeoWikiRdfProjections' => $this->filterReadableProjectionNames(
+				$this->getRdfProjectionNames(),
+				$authority
+			),
+			// The copy-IRI control appends the Subject id to this base to show the full neo-subj:
+			// concept URI, deriving it from the same server-side rule the RDF export mints IRIs with.
+			'wgNeoWikiSubjectIriBase' => $this->getRdfNamespaces()->subjectIriBase(),
+		];
+	}
+
+	/**
 	 * The native prefixes (Subject IRIs stay native) plus the Mapping's declared ontology prefixes, for
 	 * readable output. Both the label and the namespace of each prefix are dropped defensively when unsafe,
 	 * so a Mapping can never inject a `@prefix` declaration (or a triple broken out of one) into the
@@ -1114,12 +1134,12 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Whether a browser dereferencing a Subject concept URI is sent to the hosting page's Data tab,
-	 * combining the on-wiki configuration page with $wgNeoWikiDereferenceSubjectsToDataTab (the page wins
-	 * when it sets a valid boolean).
+	 * Whether a browser dereferencing a Subject concept URI is sent to the plain hosting page rather
+	 * than to Special:Subject, combining the on-wiki configuration page with
+	 * $wgNeoWikiDereferenceSubjectsToHostingPage (the page wins when it sets a valid boolean).
 	 */
-	public function dereferenceSubjectsToDataTab(): bool {
-		return $this->getWikiConfigLookup()->getEffectiveValue( 'dereferenceSubjectsToDataTab' ) === true;
+	public function dereferenceSubjectsToHostingPage(): bool {
+		return $this->getWikiConfigLookup()->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) === true;
 	}
 
 	/**
@@ -1695,7 +1715,7 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newGetSubjectQuery( RestGetSubjectPresenter $presenter, Authority $authority ): GetSubjectQuery {
+	public function newGetSubjectQuery( GetSubjectPresenter $presenter, Authority $authority ): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
 			subjectLookup: $this->getSourceRoutingSubjectLookup( new PublishedSubjectLookup(
@@ -1710,7 +1730,7 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newGetSubjectQueryForRevision( RestGetSubjectPresenter $presenter, RevisionRecord $revision, Authority $authority ): GetSubjectQuery {
+	public function newGetSubjectQueryForRevision( GetSubjectPresenter $presenter, RevisionRecord $revision, Authority $authority ): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
 			subjectLookup: new PointInTimeSubjectLookup(

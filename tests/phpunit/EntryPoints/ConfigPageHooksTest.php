@@ -74,15 +74,15 @@ class ConfigPageHooksTest extends MediaWikiIntegrationTestCase {
 	public function testValidConfigIsAccepted(): void {
 		$this->assertSame(
 			'',
-			$this->editFilterError( $this->configTitle(), '{ "dereferenceSubjectsToDataTab": true }' )
+			$this->editFilterError( $this->configTitle(), '{ "dereferenceSubjectsToHostingPage": true }' )
 		);
 	}
 
 	public function testWrongTypeForDereferenceIsRejectedWithItsMessage(): void {
-		$error = $this->editFilterError( $this->configTitle(), '{ "dereferenceSubjectsToDataTab": "sidebar" }' );
+		$error = $this->editFilterError( $this->configTitle(), '{ "dereferenceSubjectsToHostingPage": "sidebar" }' );
 
 		$this->assertNotSame( '', $error );
-		$this->assertStringContainsString( 'dereferenceSubjectsToDataTab', $error );
+		$this->assertStringContainsString( 'dereferenceSubjectsToHostingPage', $error );
 	}
 
 	public function testUnknownKeyIsRejectedWithItsMessage(): void {
@@ -109,7 +109,7 @@ class ConfigPageHooksTest extends MediaWikiIntegrationTestCase {
 
 		$this->assertSame(
 			'',
-			$this->editFilterError( $this->configTitle(), '{ "dereferenceSubjectsToDataTab": "sidebar" }' )
+			$this->editFilterError( $this->configTitle(), '{ "dereferenceSubjectsToHostingPage": "sidebar" }' )
 		);
 	}
 

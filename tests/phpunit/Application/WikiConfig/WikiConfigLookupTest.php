@@ -17,7 +17,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubWikiConfigSource;
 class WikiConfigLookupTest extends TestCase {
 
 	private const PHP_CONFIG = [
-		'NeoWikiDereferenceSubjectsToDataTab' => false,
+		'NeoWikiDereferenceSubjectsToHostingPage' => false,
 		'NeoWikiAutoRenderMainSubject' => true,
 	];
 
@@ -36,19 +36,19 @@ class WikiConfigLookupTest extends TestCase {
 	}
 
 	public function testUsesThePhpValueWhenThereIsNoConfigPage(): void {
-		$this->assertFalse( $this->newLookup( null )->getEffectiveValue( 'dereferenceSubjectsToDataTab' ) );
+		$this->assertFalse( $this->newLookup( null )->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) );
 	}
 
 	public function testUsesThePhpValueWhenTheKeyIsAbsentFromThePage(): void {
 		$lookup = $this->newLookup( [ 'autoRenderMainSubject' => false ] );
 
-		$this->assertFalse( $lookup->getEffectiveValue( 'dereferenceSubjectsToDataTab' ) );
+		$this->assertFalse( $lookup->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) );
 	}
 
 	public function testAValidPageValueWinsOverThePhpValue(): void {
-		$lookup = $this->newLookup( [ 'dereferenceSubjectsToDataTab' => true ] );
+		$lookup = $this->newLookup( [ 'dereferenceSubjectsToHostingPage' => true ] );
 
-		$this->assertTrue( $lookup->getEffectiveValue( 'dereferenceSubjectsToDataTab' ) );
+		$this->assertTrue( $lookup->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) );
 	}
 
 	public function testEachSettingIsResolvedIndependently(): void {
@@ -58,16 +58,16 @@ class WikiConfigLookupTest extends TestCase {
 	}
 
 	public function testAnInvalidPageValueFallsBackToThePhpValue(): void {
-		$lookup = $this->newLookup( [ 'dereferenceSubjectsToDataTab' => 'yes' ] );
+		$lookup = $this->newLookup( [ 'dereferenceSubjectsToHostingPage' => 'yes' ] );
 
-		$this->assertFalse( $lookup->getEffectiveValue( 'dereferenceSubjectsToDataTab' ) );
+		$this->assertFalse( $lookup->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) );
 	}
 
 	public function testAnInvalidPageValueLogsAWarning(): void {
 		$logger = new TestLogger();
 
-		$this->newLookup( [ 'dereferenceSubjectsToDataTab' => 'yes' ], logger: $logger )
-			->getEffectiveValue( 'dereferenceSubjectsToDataTab' );
+		$this->newLookup( [ 'dereferenceSubjectsToHostingPage' => 'yes' ], logger: $logger )
+			->getEffectiveValue( 'dereferenceSubjectsToHostingPage' );
 
 		$this->assertTrue( $logger->hasWarningRecords() );
 	}
@@ -75,22 +75,22 @@ class WikiConfigLookupTest extends TestCase {
 	public function testUnknownPageKeysAreToleratedOnRead(): void {
 		$logger = new TestLogger();
 		$lookup = $this->newLookup(
-			[ 'dereferenceSubjectsToDataTab' => true, 'someFutureKey' => 'whatever' ],
+			[ 'dereferenceSubjectsToHostingPage' => true, 'someFutureKey' => 'whatever' ],
 			logger: $logger
 		);
 
-		$this->assertTrue( $lookup->getEffectiveValue( 'dereferenceSubjectsToDataTab' ) );
+		$this->assertTrue( $lookup->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) );
 		$this->assertFalse( $logger->hasWarningRecords() );
 	}
 
 	public function testThePageIsIgnoredWhenInWikiConfigIsDisabled(): void {
-		$lookup = $this->newLookup( [ 'dereferenceSubjectsToDataTab' => true ], enabled: false );
+		$lookup = $this->newLookup( [ 'dereferenceSubjectsToHostingPage' => true ], enabled: false );
 
-		$this->assertFalse( $lookup->getEffectiveValue( 'dereferenceSubjectsToDataTab' ) );
+		$this->assertFalse( $lookup->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) );
 	}
 
 	public function testTheConfigPageIsReadAtMostOncePerLookup(): void {
-		$source = new StubWikiConfigSource( [ 'dereferenceSubjectsToDataTab' => true ] );
+		$source = new StubWikiConfigSource( [ 'dereferenceSubjectsToHostingPage' => true ] );
 		$lookup = new WikiConfigLookup(
 			new ConfigSchema(),
 			$source,
@@ -99,7 +99,7 @@ class WikiConfigLookupTest extends TestCase {
 			new TestLogger()
 		);
 
-		$lookup->getEffectiveValue( 'dereferenceSubjectsToDataTab' );
+		$lookup->getEffectiveValue( 'dereferenceSubjectsToHostingPage' );
 		$lookup->getEffectiveValue( 'autoRenderMainSubject' );
 
 		$this->assertSame( 1, $source->readCount );

@@ -106,6 +106,22 @@ describe( 'SubjectDeserializer', () => {
 		expect( subject.getDisplayName() ).toBe( 'SDPageTitle' );
 	} );
 
+	// The API omits both page fields for a Subject whose hosting page it could not resolve, and
+	// PageIdentifiers types them as present, so a consumer has to read the values rather than the type.
+	it( 'leaves the page identifiers unset when the payload carries no page', () => {
+		const subject = deserializer.deserialize( {
+			id: 's13333333333337',
+			label: 'SubjectDeserializer',
+			displayName: 'SubjectDeserializer',
+			displayNameIsGenerated: false,
+			schema: 'SDSchema',
+			statements: {},
+		} );
+
+		expect( subject.getPageIdentifiers().getPageId() ).toBeUndefined();
+		expect( subject.getPageIdentifiers().getPageName() ).toBeUndefined();
+	} );
+
 	it( 'deserializes Subject with Statements', () => {
 		const json = {
 			id: 's13333333333337',

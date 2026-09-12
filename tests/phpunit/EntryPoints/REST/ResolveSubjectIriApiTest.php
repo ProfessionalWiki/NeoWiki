@@ -12,6 +12,7 @@ use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ResolveSubjectIriApi;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
@@ -61,11 +62,11 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * NeoWiki ships the Data tab as the dereference target (extension.json). The plain-hosting-page tests
-	 * opt out explicitly; the default test leaves the setting unset to exercise the shipped default.
+	 * NeoWiki ships Special:Subject as the dereference target (extension.json). The hosting-page tests
+	 * opt in explicitly; the default tests leave the setting unset to exercise the shipped default.
 	 */
-	private function disableDataTabDereference(): void {
-		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToDataTab', false );
+	private function dereferenceToHostingPage(): void {
+		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToHostingPage', true );
 	}
 
 	public function testAcceptTriGRedirectsToTheSubjectTriGExport(): void {
@@ -89,56 +90,54 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectRdfLocation( $response, 'trig' );
 	}
 
-	public function testAcceptHtmlRedirectsToThePlainHostingPageWhenDataTabDisabled(): void {
-		$this->disableDataTabDereference();
-
+	public function testAcceptHtmlRedirectsToTheSubjectsOwnPage(): void {
 		$response = $this->deref( headers: [ 'Accept' => 'text/html' ] );
 
 		$this->assertSame( 303, $response->getStatusCode() );
-		$this->assertHostingPageLocation( $response );
+		$this->assertSpecialSubjectLocation( $response );
 	}
 
-	public function testWildcardAcceptRedirectsToThePlainHostingPageWhenDataTabDisabled(): void {
-		$this->disableDataTabDereference();
-
+	public function testWildcardAcceptRedirectsToTheSubjectsOwnPage(): void {
 		$response = $this->deref( headers: [ 'Accept' => '*/*' ] );
 
 		$this->assertSame( 303, $response->getStatusCode() );
-		$this->assertHostingPageLocation( $response );
+		$this->assertSpecialSubjectLocation( $response );
 	}
 
-	public function testAbsentAcceptRedirectsToThePlainHostingPageWhenDataTabDisabled(): void {
-		$this->disableDataTabDereference();
-
+	public function testAbsentAcceptRedirectsToTheSubjectsOwnPage(): void {
 		$response = $this->deref();
 
 		$this->assertSame( 303, $response->getStatusCode() );
+		$this->assertSpecialSubjectLocation( $response );
+	}
+
+	/**
+	 * An id naming this wiki as its Source names a local Subject, so the dereference lands on the
+	 * bare-id URL every other surface uses for it.
+	 */
+	public function testAnIdNamingThisWikiRedirectsToItsBareForm(): void {
+		$localSourceKey = NeoWikiExtension::getInstance()->getSubjectIdParser()->getLocalSourceKey();
+
+		$response = $this->deref(
+			headers: [ 'Accept' => 'text/html' ],
+			subjectId: $localSourceKey . ':' . self::SUBJECT_ID
+		);
+
+		$this->assertSame( 303, $response->getStatusCode() );
+		$this->assertSpecialSubjectLocation( $response );
+	}
+
+	public function testHtmlDereferenceRedirectsToTheHostingPageWhenTheWikiAsksForThat(): void {
+		$this->dereferenceToHostingPage();
+
+		$response = $this->deref( headers: [ 'Accept' => 'text/html' ] );
+
+		$this->assertSame( 303, $response->getStatusCode() );
 		$this->assertHostingPageLocation( $response );
 	}
 
-	public function testHtmlDereferenceRedirectsToTheSubjectsDataTabRowByDefault(): void {
-		// No config override: NeoWiki ships the Data tab as the default dereference target.
-		$response = $this->deref( headers: [ 'Accept' => 'text/html' ] );
-
-		$location = $response->getHeaderLine( 'Location' );
-
-		$this->assertSame( 303, $response->getStatusCode() );
-		$this->assertMatchesRegularExpression( '#^https?://#', $location, 'The Location is an absolute URL.' );
-		$this->assertStringContainsString(
-			Title::newFromID( $this->pageId )->getPrefixedDBkey(),
-			$location,
-			'The redirect targets the hosting page.'
-		);
-		$this->assertStringContainsString( 'action=subjects', $location, 'The redirect opens the Data tab.' );
-		$this->assertStringEndsWith(
-			'#' . self::SUBJECT_ID,
-			$location,
-			'The fragment is the bare Subject id the Data tab expands and highlights.'
-		);
-	}
-
-	public function testDataTabTargetLeavesTheRdfBranchesUnchanged(): void {
-		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToDataTab', true );
+	public function testTheHostingPageTargetLeavesTheRdfBranchesUnchanged(): void {
+		$this->dereferenceToHostingPage();
 
 		$response = $this->deref( headers: [ 'Accept' => 'application/trig' ] );
 
@@ -183,6 +182,17 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testTheBrowserTargetIsGatedOnReadingTheHostingPageToo(): void {
+		// The Subject's own page needs no hosting page to build its URL, so without this gate the browser
+		// branch would confirm a restricted Subject exists where the RDF branches refuse to (#1046).
+		$response = $this->deref(
+			headers: [ 'Accept' => 'text/html' ],
+			authority: $this->authorityWithGlobalReadButNoPageRead()
+		);
+
+		$this->assertSame( 404, $response->getStatusCode() );
+	}
+
 	public function testReturns400ForAMalformedSubjectId(): void {
 		$response = $this->deref( subjectId: 'not-a-valid-id' );
 
@@ -200,6 +210,17 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 			'projection=',
 			$location,
 			'RDF dereferencing targets the native projection without an explicit projection parameter.'
+		);
+	}
+
+	private function assertSpecialSubjectLocation( Response $response ): void {
+		$location = $response->getHeaderLine( 'Location' );
+
+		$this->assertMatchesRegularExpression( '#^https?://#', $location, 'The Location is an absolute URL.' );
+		$this->assertStringEndsWith(
+			'Special:Subject/' . self::SUBJECT_ID,
+			$location,
+			'A browser dereference lands on the Subject\'s own page.'
 		);
 	}
 

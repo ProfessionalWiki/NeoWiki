@@ -1,9 +1,9 @@
 import { SubjectId } from '@/domain/SubjectId';
 
-// The DOM id of a Subject's row on the Data tab (?action=subjects). Internal rendering detail — HTML
-// hygiene and in-page scroll targeting — not a public contract. A row's public deep-link anchor is the
-// bare Subject id in the URL fragment (see subjectIdFromHash), which the mount handler resolves to a row
-// itself, so the fragment and this DOM id are decoupled.
+// The DOM id of a Subject's row, on the Data tab (?action=subjects) and on Special:Subject alike.
+// Internal rendering detail — HTML hygiene and in-page scroll targeting — not a public contract. A row's
+// public deep-link anchor is the bare Subject id in the URL fragment (see subjectIdFromHash), which the
+// mount handler resolves to a row itself, so the fragment and this DOM id are decoupled.
 const ROW_ID_PREFIX = 'ext-neowiki-subject-row-';
 
 export function subjectRowDomId( subjectId: string ): string {
@@ -23,9 +23,9 @@ export function subjectIdFromRowDomId( domId: string ): string | null {
 }
 
 // The Subject id carried by a Data tab URL fragment, or null when the fragment is not a Subject id (an
-// unrelated anchor, or junk — either leaves the Data tab untouched). The dereference endpoint's data-tab
-// Location and manual row expansion both write a bare Subject id as the fragment, like Wikibase's
-// `#P123`; this reads it back. Deliberately the Subject id, not the row DOM id.
+// unrelated anchor, or junk — either leaves the Data tab untouched). Expanding a row, and copying its
+// link, write a bare Subject id as the fragment, like Wikibase's `#P123`; this reads it back.
+// Deliberately the Subject id, not the row DOM id.
 export function subjectIdFromHash( hash: string ): string | null {
 	return SubjectId.isValid( hash ) ? hash : null;
 }

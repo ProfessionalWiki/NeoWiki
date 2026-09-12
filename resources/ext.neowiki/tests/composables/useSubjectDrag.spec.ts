@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { ref, Ref } from 'vue';
-import { enableAutoUnmount, mount } from '@vue/test-utils';
+import { enableAutoUnmount, mount, shallowMount } from '@vue/test-utils';
 import { useSubjectDrag, SubjectDragHandlers } from '@/composables/useSubjectDrag';
 import { subjectRowDomId } from '@/presentation/subjectRowAnchor';
+import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
+import { createI18nMock, setupMwMock } from '../VueTestHelpers.ts';
+import { newSubject } from '@/TestHelpers.ts';
 
 interface UseSortableCall {
 	containerRef: Ref<HTMLElement | null>;
@@ -122,6 +125,28 @@ describe( 'useSubjectDrag', () => {
 		findCallByContainer( mainSlot ).options.onDropIn( dragged, 0, 0 );
 
 		expect( handlers.onPromote ).not.toHaveBeenCalled();
+	} );
+
+	// The selectors are strings here and class names there, so nothing but a test relates them: a
+	// rename of the row's BEM block leaves dragging silently impossible.
+	it( 'drags by the handle and ghosts the block that SubjectRow renders', () => {
+		setupMwMock( { functions: [ 'config', 'msg', 'message', 'notify', 'util' ] } );
+		const row = shallowMount( SubjectRow, {
+			props: {
+				subject: newSubject( { id: VALID_ID } ),
+				expanded: false,
+				showDragHandle: true,
+			},
+			global: { mocks: { $i18n: createI18nMock() }, stubs: { CdxIcon: true } },
+		} ).element as HTMLElement;
+
+		mountComposable( document.createElement( 'ul' ), document.createElement( 'ul' ), newHandlers() );
+		const { handle, ghostClass } = useSortableCalls[ 0 ].options;
+
+		expect( row.querySelector( handle ) ).not.toBeNull();
+		// SortableJS puts the ghost class on the dragged row itself, where it only styles anything as a
+		// modifier of the block that row carries.
+		expect( [ ...row.classList ] ).toContain( ghostClass.replace( /--[a-z]+$/, '' ) );
 	} );
 
 	it( 'does not call onPromote when the prefix matches but the body is not a valid subject id', () => {

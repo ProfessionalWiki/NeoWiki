@@ -449,5 +449,12 @@
 	"neowiki-graphstores-outcome-nothingtocancel": "\"$1\" has no rebuild to cancel.",
 	"neowiki-graphstores-outcome-unknownstore": "This wiki has no graph store called \"$1\".",
 	"neowiki-graphstores-outcome-notqueued": "A rebuild of \"$1\" could not be queued. The store is unchanged; the NeoWiki log channel says why.",
-	"neowiki-graphstores-outcome-sessionfailure": "Your session has expired, so nothing was changed. Try again."
+	"neowiki-graphstores-outcome-sessionfailure": "Your session has expired, so nothing was changed. Try again.",
+	"neowiki-special-subject": "Subject",
+	"neowiki-special-subject-invalid-id": "Special:Subject needs a subject ID, like Special:Subject/s1demo8aaaaaab5.",
+	"neowiki-special-subject-page-label": "Page:",
+	"neowiki-special-subject-referenced-heading": "Referenced subjects",
+	"neowiki-special-subject-not-found": "No subject with the ID $1 was found.",
+	"neowiki-special-subject-load-error": "Couldn't load this subject.",
+	"neowiki-managesubjects-row-open": "Open subject"
 }
