@@ -71,22 +71,22 @@ class PointInTimeSubjectLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testReturnsChildSubjectFromPrimaryRevision(): void {
-		$child = TestSubject::build(
+	public function testReturnsOtherSubjectFromPrimaryRevision(): void {
+		$otherSubject = TestSubject::build(
 			id: 'sPitTest1111113',
-			label: new SubjectLabel( 'Child subject' ),
+			label: new SubjectLabel( 'Other subject' ),
 		);
 
 		$revision = $this->createPageWithSubjects(
-			'PitTestChild',
+			'PitTestOther',
 			mainSubject: TestSubject::build( id: 'sPitTest1111114' ),
-			childSubjects: new SubjectMap( $child ),
+			otherSubjects: new SubjectMap( $otherSubject ),
 		);
 
 		$lookup = $this->newLookup( $revision );
 
 		$this->assertEquals(
-			$child,
+			$otherSubject,
 			$lookup->getSubject( new SubjectId( 'sPitTest1111113' ) )
 		);
 	}
@@ -179,7 +179,7 @@ class PointInTimeSubjectLookupTest extends NeoWikiIntegrationTestCase {
 		$sharedRevision = $this->createPageWithSubjects(
 			'PitTestBatchShared',
 			mainSubject: $firstShared,
-			childSubjects: new SubjectMap( $secondShared ),
+			otherSubjects: new SubjectMap( $secondShared ),
 		);
 
 		$ownRevision = $this->createPageWithSubjects(
@@ -229,13 +229,13 @@ class PointInTimeSubjectLookupTest extends NeoWikiIntegrationTestCase {
 		$otherRevision = $this->createPageWithSubjects(
 			'PitTestSubsetOther',
 			mainSubject: $requestedOnOther,
-			childSubjects: new SubjectMap( $decoyOnOther ),
+			otherSubjects: new SubjectMap( $decoyOnOther ),
 		);
 
 		$primaryRevision = $this->createPageWithSubjects(
 			'PitTestSubsetPrimary',
 			mainSubject: $requestedOnPrimary,
-			childSubjects: new SubjectMap( $decoyOnPrimary ),
+			otherSubjects: new SubjectMap( $decoyOnPrimary ),
 		);
 
 		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();

@@ -12,7 +12,7 @@ readonly class GetPageSubjectsResponse {
 		public int $pageId,
 		public ?string $mainSubjectId,
 		/**
-		 * @var array<string, GetSubjectResponseItem> Indexed by subject ID, main first then children
+		 * @var array<string, GetSubjectResponseItem> Indexed by subject ID, main first then the other subjects
 		 */
 		public array $subjects,
 		/**

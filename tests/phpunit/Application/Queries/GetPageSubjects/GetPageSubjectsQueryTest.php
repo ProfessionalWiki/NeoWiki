@@ -42,7 +42,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
  */
 class GetPageSubjectsQueryTest extends TestCase {
 
-	public function testReturnsMainAndChildSubjects(): void {
+	public function testReturnsMainAndOtherSubjects(): void {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects(
 			new PageSubjects(
@@ -57,15 +57,15 @@ class GetPageSubjectsQueryTest extends TestCase {
 				new SubjectMap(
 					TestSubject::build(
 						id: 's11111111111ca2',
-						label: new SubjectLabel( 'child two' ),
+						label: new SubjectLabel( 'other two' ),
 					),
 					TestSubject::build(
 						id: 's11111111111ca3',
-						label: new SubjectLabel( 'child three' ),
+						label: new SubjectLabel( 'other three' ),
 					),
 					TestSubject::build(
 						id: 's11111111111ca1',
-						label: new SubjectLabel( 'child one' ),
+						label: new SubjectLabel( 'other one' ),
 					),
 				)
 			),
@@ -103,8 +103,8 @@ class GetPageSubjectsQueryTest extends TestCase {
 					),
 					's11111111111ca2' => new GetSubjectResponseItem(
 						id: 's11111111111ca2',
-						label: 'child two',
-						displayName: 'child two',
+						label: 'other two',
+						displayName: 'other two',
 						displayNameIsGenerated: false,
 						schema: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
@@ -114,8 +114,8 @@ class GetPageSubjectsQueryTest extends TestCase {
 					),
 					's11111111111ca3' => new GetSubjectResponseItem(
 						id: 's11111111111ca3',
-						label: 'child three',
-						displayName: 'child three',
+						label: 'other three',
+						displayName: 'other three',
 						displayNameIsGenerated: false,
 						schema: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
@@ -125,8 +125,8 @@ class GetPageSubjectsQueryTest extends TestCase {
 					),
 					's11111111111ca1' => new GetSubjectResponseItem(
 						id: 's11111111111ca1',
-						label: 'child one',
-						displayName: 'child one',
+						label: 'other one',
+						displayName: 'other one',
 						displayNameIsGenerated: false,
 						schema: TestSubject::DEFAULT_SCHEMA_ID,
 						statements: [],
@@ -151,13 +151,13 @@ class GetPageSubjectsQueryTest extends TestCase {
 		);
 	}
 
-	public function testReturnsChildrenOnlyWhenNoMainSubject(): void {
+	public function testReturnsOtherSubjectsOnlyWhenNoMainSubject(): void {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects(
 			new PageSubjects(
 				null,
 				new SubjectMap(
-					TestSubject::build( id: 's11111111111oa1', label: new SubjectLabel( 'lone child' ) ),
+					TestSubject::build( id: 's11111111111oa1', label: new SubjectLabel( 'lone subject' ) ),
 				)
 			),
 			new PageId( 7 )
@@ -173,7 +173,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 
 	/**
 	 * The page name names its Main Subject and would misname every other Subject on the page, so a
-	 * label-less Child falls through to its Schema instead.
+	 * label-less other Subject falls through to its Schema instead.
 	 */
 	public function testLabellessSubjectsAreNamedAfterThePageAndTheSchema(): void {
 		$repository = new InMemorySubjectRepository();
@@ -206,8 +206,8 @@ class GetPageSubjectsQueryTest extends TestCase {
 	}
 
 	/**
-	 * Both Subjects lack a label, but only the Child is named after something nobody chose: the Main
-	 * Subject took the page title, which an editor wrote.
+	 * Both Subjects lack a label, but only the other Subject is named after something nobody chose:
+	 * the Main Subject took the page title, which an editor wrote.
 	 */
 	public function testOnlyTheSchemaTierFallbackIsReportedAsGenerated(): void {
 		$repository = new InMemorySubjectRepository();

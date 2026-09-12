@@ -128,7 +128,7 @@ class InMemorySubjectRepository implements SubjectRepository {
 	 * caller that edits one in place - as ReplaceSubjectAction does - still edits the stored one.
 	 */
 	private static function copyOf( PageSubjects $pageSubjects ): PageSubjects {
-		return new PageSubjects( $pageSubjects->getMainSubject(), clone $pageSubjects->getChildSubjects() );
+		return new PageSubjects( $pageSubjects->getMainSubject(), clone $pageSubjects->getOtherSubjects() );
 	}
 
 	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): PageContentSavingStatus {

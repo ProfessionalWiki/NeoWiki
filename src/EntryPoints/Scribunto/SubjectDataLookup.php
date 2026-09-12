@@ -185,7 +185,7 @@ class SubjectDataLookup {
 	/**
 	 * @return array{0: array<int, array<string, mixed>>}
 	 */
-	public function getChildSubjectsData( Title $currentTitle, ?string $pageName = null ): array {
+	public function getOtherSubjectsData( Title $currentTitle, ?string $pageName = null ): array {
 		$title = $this->resolveTitle( $currentTitle, $pageName );
 
 		if ( $title === null ) {
@@ -198,16 +198,16 @@ class SubjectDataLookup {
 			return [ [] ];
 		}
 
-		$children = $pageSubjects->getChildSubjects()->asArray();
+		$otherSubjects = $pageSubjects->getOtherSubjects()->asArray();
 
-		if ( $children === [] ) {
+		if ( $otherSubjects === [] ) {
 			return [ [] ];
 		}
 
 		$result = [];
 		$index = 1;
-		foreach ( $children as $child ) {
-			$result[$index++] = $this->subjectToTable( $child, isMainSubject: false, pageName: $title->getPrefixedText() );
+		foreach ( $otherSubjects as $subject ) {
+			$result[$index++] = $this->subjectToTable( $subject, isMainSubject: false, pageName: $title->getPrefixedText() );
 		}
 
 		return [ $result ];

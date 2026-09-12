@@ -73,25 +73,25 @@
 				"redherb-subject-finder-pick-subject"
 			]
 		},
-		"ext.redherb-create-child": {
+		"ext.redherb-create-subject": {
 			"class": "MediaWiki\\ResourceLoader\\CodexModule",
-			"localBasePath": "resources/createChild",
-			"remoteExtPath": "NeoWiki/tests/RedHerb/resources/createChild",
+			"localBasePath": "resources/createSubject",
+			"remoteExtPath": "NeoWiki/tests/RedHerb/resources/createSubject",
 			"dependencies": [ "vue", "ext.neowiki" ],
 			"codexComponents": [ "CdxButton", "CdxDialog", "CdxField", "CdxTextInput", "CdxTooltip" ],
 			"packageFiles": [
 				"init.js",
-				"CreateChildDialog.vue",
+				"CreateSubjectDialog.vue",
 				"constants.js"
 			],
 			"messages": [
-				"redherb-sidebar-create-child-company",
-				"redherb-create-child-dialog-title",
-				"redherb-create-child-dialog-label",
-				"redherb-create-child-dialog-save",
-				"redherb-create-child-dialog-cancel",
-				"redherb-create-child-error",
-				"redherb-create-child-success"
+				"redherb-sidebar-create-company",
+				"redherb-create-subject-dialog-title",
+				"redherb-create-subject-dialog-label",
+				"redherb-create-subject-dialog-save",
+				"redherb-create-subject-dialog-cancel",
+				"redherb-create-subject-error",
+				"redherb-create-subject-success"
 			]
 		},
 		"ext.redherb-edit-main-subject": {

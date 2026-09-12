@@ -227,7 +227,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 		subjectStore = useSubjectStore();
 		subjectStore.createMainSubject = vi.fn().mockResolvedValue( new SubjectId( 's11111111111111' ) );
-		subjectStore.createChildSubject = vi.fn().mockResolvedValue( new SubjectId( 's11111111111112' ) );
+		subjectStore.createOtherSubject = vi.fn().mockResolvedValue( new SubjectId( 's11111111111112' ) );
 		// The dry-run validation runs alongside the live validators; stub it so
 		// it does not reach the network and stays out of the way of these tests.
 		subjectStore.validateSubject = vi.fn().mockResolvedValue( [] );
@@ -418,7 +418,7 @@ describe( 'SubjectCreatorDialog', () => {
 		expect( wrapper.find( '.cdx-text-input-stub' ).attributes( 'placeholder' ) ).toBe( 'Handbook:Onboarding' );
 	} );
 
-	// A further Subject on the page becomes a Child, so the server will name it after its Schema -
+	// A further Subject on the page is not the Main Subject, so the server will name it after its Schema -
 	// a name nobody chose, and the preview says so.
 	it( 'marks the schema name as a stand-in in the label placeholder when the page already has a main subject', async () => {
 		const wrapper = mountComponent( {}, { pageHasMainSubject: true } );
@@ -536,7 +536,7 @@ describe( 'SubjectCreatorDialog', () => {
 		);
 	} );
 
-	it( 'calls createChildSubject when the page already has a main subject', async () => {
+	it( 'calls createOtherSubject when the page already has a main subject', async () => {
 		const wrapper = mountComponent( {}, { pageHasMainSubject: true } );
 
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
@@ -548,7 +548,7 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'test summary' );
 		await flushPromises();
 
-		expect( subjectStore.createChildSubject ).toHaveBeenCalledWith(
+		expect( subjectStore.createOtherSubject ).toHaveBeenCalledWith(
 			PAGE_ID,
 			'Typed label',
 			SCHEMA_NAME,
@@ -831,7 +831,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			await save( wrapper );
 
-			expect( subjectStore.createChildSubject ).toHaveBeenCalledWith(
+			expect( subjectStore.createOtherSubject ).toHaveBeenCalledWith(
 				EXISTING_PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), undefined,
 			);
 			expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
@@ -925,7 +925,7 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
 				NEW_PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), undefined,
 			);
-			expect( subjectStore.createChildSubject ).not.toHaveBeenCalled();
+			expect( subjectStore.createOtherSubject ).not.toHaveBeenCalled();
 		} );
 
 		it( 'ignores a second save while one is in flight', async () => {

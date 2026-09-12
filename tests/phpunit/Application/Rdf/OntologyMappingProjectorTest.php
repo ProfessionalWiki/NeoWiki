@@ -134,7 +134,7 @@ class OntologyMappingProjectorTest extends TestCase {
 	}
 
 	private function examplePage(): Page {
-		return TestPage::build( id: 42, mainSubject: $this->examplePerson(), childSubjects: new SubjectMap( $this->exampleCity() ) );
+		return TestPage::build( id: 42, mainSubject: $this->examplePerson(), otherSubjects: new SubjectMap( $this->exampleCity() ) );
 	}
 
 	private function examplePerson(): Subject {
@@ -204,7 +204,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		return TestPage::build(
 			id: 42,
 			mainSubject: $this->exampleCity(),
-			childSubjects: new SubjectMap( $this->examplePerson(), $this->ghostSubject() )
+			otherSubjects: new SubjectMap( $this->examplePerson(), $this->ghostSubject() )
 		);
 	}
 
@@ -269,7 +269,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		$page = TestPage::build(
 			id: 42,
 			mainSubject: $this->examplePersonWithoutRelations(),
-			childSubjects: new SubjectMap( $ghost )
+			otherSubjects: new SubjectMap( $ghost )
 		);
 
 		$quads = $this->newProjector( [ 'Person' => $this->personMapping() ] )->projectPage( $page );
@@ -990,12 +990,12 @@ class OntologyMappingProjectorTest extends TestCase {
 		$this->logger->assertNoLoggingCallsWhereMade();
 	}
 
-	public function testChildSubjectWithNoStoredLabelIsLabelledWithItsSchemaName(): void {
+	public function testOtherSubjectWithNoStoredLabelIsLabelledWithItsSchemaName(): void {
 		$quads = $this->newCrmProjector( 'Person', new SchemaMapping(
 			subject: new SubjectMapping( class: 'crm:E21_Person' ),
 		) )->projectPage( TestPage::build(
 			id: 42,
-			childSubjects: new SubjectMap( TestSubject::build(
+			otherSubjects: new SubjectMap( TestSubject::build(
 				id: self::PERSON_ID,
 				label: null,
 				schemaName: new SchemaName( 'Person' ),

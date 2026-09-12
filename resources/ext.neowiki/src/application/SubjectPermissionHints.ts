@@ -7,7 +7,7 @@ import type { SubjectId } from '@/domain/SubjectId';
  */
 export interface SubjectPermissionHints {
 
-	canCreateChildSubject( pageId: number ): Promise<boolean>;
+	canCreateOtherSubject( pageId: number ): Promise<boolean>;
 
 	canEditSubject( subjectId: SubjectId ): Promise<boolean>;
 

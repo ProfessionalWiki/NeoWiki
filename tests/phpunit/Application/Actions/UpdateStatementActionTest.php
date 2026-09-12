@@ -270,7 +270,7 @@ class UpdateStatementActionTest extends TestCase {
 		$this->assertSame( 'Help:Test page', $this->presenterSpy->subject?->displayName );
 	}
 
-	public function testSetStatementNamesALabellessChildSubjectAfterItsSchema(): void {
+	public function testSetStatementNamesALabellessOtherSubjectAfterItsSchema(): void {
 		$this->subjectRepository->savePageSubjects(
 			new PageSubjects( null, new SubjectMap( $this->labellessSubject() ) ),
 			new PageId( 7 )

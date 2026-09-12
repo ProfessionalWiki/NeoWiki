@@ -1,5 +1,5 @@
 {
-	"description": "Annual attendance record for a museum, used as child subjects on museum pages.",
+	"description": "Annual attendance record for a museum, used as other Subjects on museum pages.",
 	"propertyDefinitions": {
 		"Year": {
 			"type": "number",

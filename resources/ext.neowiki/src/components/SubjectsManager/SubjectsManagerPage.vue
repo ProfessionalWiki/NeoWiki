@@ -258,9 +258,9 @@
 			</h2>
 
 			<ul
-				ref="childListRef"
+				ref="otherListRef"
 				class="ext-neowiki-subjects-manager__list"
-				:class="{ 'ext-neowiki-subjects-manager__list--empty': !hasChildSubjects && canEdit }"
+				:class="{ 'ext-neowiki-subjects-manager__list--empty': !hasOtherSubjects && canEdit }"
 			>
 				<li
 					v-for="subject in otherSubjects"
@@ -550,7 +550,7 @@ const subjectRepo = NeoWikiServices.getSubjectRepository();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 const {
 	canCreateMainSubject,
-	canCreateChildSubject,
+	canCreateOtherSubject,
 	canEditSubject,
 	canDeleteSubject,
 	checkPermissions
@@ -561,7 +561,7 @@ const expandedIds = ref<Set<string>>( new Set() );
 const highlightedId = ref<string | null>( null );
 const focusedId = ref<string | null>( null );
 const mainSlotRef = ref<HTMLElement | null>( null );
-const childListRef = ref<HTMLElement | null>( null );
+const otherListRef = ref<HTMLElement | null>( null );
 let focusTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 function focusSubject( id: string ): void {
@@ -607,7 +607,7 @@ const subjects = computed<Subject[]>( () =>
 		.map( ( s ) => subjectStore.getSubject( s.getId() ) ) ?? []
 );
 
-const canCreate = computed( () => canCreateMainSubject.value || canCreateChildSubject.value );
+const canCreate = computed( () => canCreateMainSubject.value || canCreateOtherSubject.value );
 const canEdit = computed( () => canEditSubject.value );
 const canDelete = computed( () => canDeleteSubject.value );
 
@@ -628,8 +628,8 @@ const otherSubjects = computed<Subject[]>( () => {
 } );
 
 const hasMainSubject = computed( () => mainSubject.value !== null );
-const hasChildSubjects = computed( () => otherSubjects.value.length > 0 );
-const isCompletelyEmpty = computed( () => !hasMainSubject.value && !hasChildSubjects.value );
+const hasOtherSubjects = computed( () => otherSubjects.value.length > 0 );
+const isCompletelyEmpty = computed( () => !hasMainSubject.value && !hasOtherSubjects.value );
 
 const deletingSubjectName = computed( () => deletingSubject.value === null ? '' : subjectDisplayName( deletingSubject.value ) );
 
@@ -786,58 +786,58 @@ async function loadSubjects(): Promise<void> {
 	}
 }
 
-useSubjectDrag( mainSlotRef, childListRef, {
-	onPromote: ( id, oldChildIndex ) => {
-		dragPromote( id, oldChildIndex );
+useSubjectDrag( mainSlotRef, otherListRef, {
+	onPromote: ( id, oldOtherIndex ) => {
+		dragPromote( id, oldOtherIndex );
 	},
-	onDemote: ( newChildIndex ) => {
-		dragDemote( newChildIndex );
+	onDemote: ( newOtherIndex ) => {
+		dragDemote( newOtherIndex );
 	},
-	onReorderChildren: ( oldIndex, newIndex ) => {
-		dragReorderChildren( oldIndex, newIndex );
+	onReorderOthers: ( oldIndex, newIndex ) => {
+		dragReorderOthers( oldIndex, newIndex );
 	}
 } );
 
-async function dragPromote( newMainId: SubjectId, oldChildIndex: number | undefined ): Promise<void> {
-	// Swap-into-position: previous main lands in the dragged child's old slot.
-	const childIds = currentChildIds();
-	const draggedIndex = childIds.findIndex( ( id ) => id.text === newMainId.text );
+async function dragPromote( newMainId: SubjectId, oldOtherIndex: number | undefined ): Promise<void> {
+	// Swap-into-position: previous main lands in the dragged Subject's old slot.
+	const otherIds = currentOtherIds();
+	const draggedIndex = otherIds.findIndex( ( id ) => id.text === newMainId.text );
 	if ( draggedIndex === -1 ) {
 		return;
 	}
-	childIds.splice( draggedIndex, 1 );
+	otherIds.splice( draggedIndex, 1 );
 	const previousMainId = mainSubject.value?.getId() ?? null;
 	if ( previousMainId !== null ) {
-		const insertAt = oldChildIndex !== undefined && oldChildIndex >= 0 && oldChildIndex <= childIds.length ?
-			oldChildIndex :
-			childIds.length;
-		childIds.splice( insertAt, 0, previousMainId );
+		const insertAt = oldOtherIndex !== undefined && oldOtherIndex >= 0 && oldOtherIndex <= otherIds.length ?
+			oldOtherIndex :
+			otherIds.length;
+		otherIds.splice( insertAt, 0, previousMainId );
 	}
-	await applyOrdering( newMainId, childIds, () => mainSubjectSetMessage( newMainId ), newMainId.text );
+	await applyOrdering( newMainId, otherIds, () => mainSubjectSetMessage( newMainId ), newMainId.text );
 }
 
-async function dragDemote( newChildIndex: number | undefined ): Promise<void> {
+async function dragDemote( newOtherIndex: number | undefined ): Promise<void> {
 	const previousMain = mainSubject.value;
 	if ( previousMain === null ) {
 		return;
 	}
-	const childIds = currentChildIds();
-	const insertAt = newChildIndex !== undefined && newChildIndex >= 0 && newChildIndex <= childIds.length ?
-		newChildIndex :
-		childIds.length;
-	childIds.splice( insertAt, 0, previousMain.getId() );
-	await applyOrdering( null, childIds, () => mw.msg( 'neowiki-managesubjects-main-subject-cleared' ), previousMain.getId().text );
+	const otherIds = currentOtherIds();
+	const insertAt = newOtherIndex !== undefined && newOtherIndex >= 0 && newOtherIndex <= otherIds.length ?
+		newOtherIndex :
+		otherIds.length;
+	otherIds.splice( insertAt, 0, previousMain.getId() );
+	await applyOrdering( null, otherIds, () => mw.msg( 'neowiki-managesubjects-main-subject-cleared' ), previousMain.getId().text );
 }
 
-async function dragReorderChildren( oldIndex: number, newIndex: number ): Promise<void> {
-	const childIds = currentChildIds();
-	const [ moved ] = childIds.splice( oldIndex, 1 );
+async function dragReorderOthers( oldIndex: number, newIndex: number ): Promise<void> {
+	const otherIds = currentOtherIds();
+	const [ moved ] = otherIds.splice( oldIndex, 1 );
 	if ( moved === undefined ) {
 		return;
 	}
-	childIds.splice( newIndex, 0, moved );
+	otherIds.splice( newIndex, 0, moved );
 	const mainId = mainSubject.value?.getId() ?? null;
-	await applyOrdering( mainId, childIds, () => mw.msg( 'neowiki-managesubjects-reordered' ), moved.text );
+	await applyOrdering( mainId, otherIds, () => mw.msg( 'neowiki-managesubjects-reordered' ), moved.text );
 }
 
 // Read after the write: promotion moves a Subject to the page-name tier, so a name read before it
@@ -848,14 +848,14 @@ function mainSubjectSetMessage( id: SubjectId ): string {
 
 async function applyOrdering(
 	mainId: SubjectId | null,
-	childIds: SubjectId[],
+	otherIds: SubjectId[],
 	successMessage: () => string,
 	focusId: string | null
 ): Promise<void> {
 	// Only the write is guarded: naming the Subject afterwards reads the store, and reporting a
 	// committed write as failed because that read threw would be worse than the read's own error.
 	try {
-		await subjectStore.setPageSubjectsOrdering( pageId, mainId, childIds );
+		await subjectStore.setPageSubjectsOrdering( pageId, mainId, otherIds );
 	} catch ( error ) {
 		console.error( 'Failed to update subjects ordering:', error );
 		mw.notify( mw.msg( 'neowiki-managesubjects-ordering-error' ), { type: 'error' } );
@@ -869,7 +869,7 @@ async function applyOrdering(
 	}
 }
 
-function currentChildIds(): SubjectId[] {
+function currentOtherIds(): SubjectId[] {
 	return otherSubjects.value.map( ( s ) => s.getId() );
 }
 

@@ -133,14 +133,14 @@ export class RestSubjectRepository implements SubjectRepository {
 	public async setSubjectsOrdering(
 		pageId: number,
 		mainSubjectId: SubjectId | null,
-		childSubjectIds: SubjectId[],
+		otherSubjectIds: SubjectId[],
 		comment?: string,
 	): Promise<void> {
 		const response = await this.httpClient.put(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/page/${ pageId }/subjectsOrdering`,
 			{
 				mainSubjectId: mainSubjectId === null ? null : mainSubjectId.text,
-				childSubjectIds: childSubjectIds.map( ( id ) => id.text ),
+				otherSubjectIds: otherSubjectIds.map( ( id ) => id.text ),
 				comment,
 			},
 			{
@@ -264,7 +264,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		return this.deserializeWriteResult( await response.json() as SubjectWriteResponseJson );
 	}
 
-	public async createChildSubject(
+	public async createOtherSubject(
 		pageId: number,
 		label: string | null,
 		schemaName: SchemaName,
@@ -281,7 +281,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		};
 
 		const response = await this.httpClient.post(
-			`${ this.mediaWikiRestApiUrl }/neowiki/v0/page/${ pageId }/childSubjects`,
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/page/${ pageId }/subjects`,
 			payload,
 			{
 				headers: {
@@ -299,7 +299,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		}
 
 		if ( !response.ok ) {
-			throw new Error( 'Error creating child subject' );
+			throw new Error( 'Error creating other subject' );
 		}
 
 		return this.deserializeWriteResult( await response.json() as SubjectWriteResponseJson );

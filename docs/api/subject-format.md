@@ -11,7 +11,7 @@ For Subject, Statement, and Value, see the [Glossary](../glossary.md).
 
 ## Top-level structure
 
-A page holds one optional main Subject and zero or more child Subjects
+A page holds one optional main Subject and zero or more other Subjects
 ([ADR 007](../adr/007-multiple-subjects-per-page.md)), all in one `subjects` map with `mainSubject` pointing at
 the main one.
 
@@ -142,7 +142,7 @@ Subject gains an `id` and a `displayName`, and carries `label` as `null` where t
 endpoint that returns a Subject object serves this shape.
 
 `displayName` is the name to show, never null: the label where there is one, otherwise the page name for a main
-Subject and the Schema name for a child Subject ([ADR 31](../adr/031-optional-subject-labels.md)).
+Subject and the Schema name for any other Subject ([ADR 31](../adr/031-optional-subject-labels.md)).
 `displayNameIsGenerated` is true in that last case.
 
 - `?expand=page` adds `pageId`, `pageTitle`, and `pageNamespaceId` to each Subject. `pageTitle` is the full page
@@ -154,7 +154,7 @@ Subject and the Schema name for a child Subject ([ADR 31](../adr/031-optional-su
 
 ### Creating Subjects
 
-`POST /rest.php/neowiki/v0/page/{pageId}/mainSubject` and `.../childSubjects` create a Subject on a page. The body
+`POST /rest.php/neowiki/v0/page/{pageId}/mainSubject` and `.../subjects` create a Subject on a page. The body
 takes `schema` and [`statements`](#statement-object), both required, plus an optional `label` and an optional
 `comment` edit summary. Omitting `label`, or passing only whitespace, creates a Subject with no label.
 
@@ -251,7 +251,7 @@ copy does not.
 
 ## Complete example
 
-A page about Berlin with a main Subject and a child Subject for population data:
+A page about Berlin with a main Subject and another Subject for population data:
 
 ```json
 {

@@ -46,13 +46,13 @@ class PublishedSubjectLookupTest extends NeoWikiIntegrationTestCase {
 		$publishedRevision = $this->createPageWithSubjects(
 			'PublishedTestApproved',
 			mainSubject: $firstPublished,
-			childSubjects: new SubjectMap( $secondPublished ),
+			otherSubjects: new SubjectMap( $secondPublished ),
 		);
 
 		$this->createPageWithSubjects(
 			'PublishedTestApproved',
 			mainSubject: TestSubject::build( id: 'sPubTest1111111', label: new SubjectLabel( 'First draft' ) ),
-			childSubjects: new SubjectMap( TestSubject::build( id: 'sPubTest1111112', label: new SubjectLabel( 'Second draft' ) ) ),
+			otherSubjects: new SubjectMap( TestSubject::build( id: 'sPubTest1111112', label: new SubjectLabel( 'Second draft' ) ) ),
 		);
 
 		$otherRevision = $this->createPageWithSubjects( 'PublishedTestOther', mainSubject: $onOtherPage );

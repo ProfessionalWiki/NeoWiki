@@ -79,7 +79,7 @@ readonly class CreateSubjectAction {
 			if ( $request->isMainSubject ) {
 				$pageSubjects->createMainSubject( $subject );
 			} else {
-				$pageSubjects->createChildSubject( $subject );
+				$pageSubjects->createOtherSubject( $subject );
 			}
 		} catch ( RuntimeException ) {
 			$this->presenter->presentSubjectAlreadyExists();

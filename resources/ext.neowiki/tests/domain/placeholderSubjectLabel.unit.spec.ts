@@ -6,7 +6,7 @@ describe( 'placeholderSubjectLabel', () => {
 		expect( placeholderSubjectLabel( false, 'Acme Anvil', 'Product' ) ).toBe( 'Acme Anvil' );
 	} );
 
-	it( 'offers the schema name for a child subject', () => {
+	it( 'offers the schema name for any other subject', () => {
 		expect( placeholderSubjectLabel( true, 'Acme Anvil', 'Product' ) ).toBe( 'Product' );
 	} );
 } );

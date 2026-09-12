@@ -657,7 +657,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		const commentOrUndefined = summary || undefined;
 
 		if ( addAlongsideMainSubject ) {
-			await subjectStore.createChildSubject(
+			await subjectStore.createOtherSubject(
 				pageId,
 				label,
 				selectedSchemaName.value,

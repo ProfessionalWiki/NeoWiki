@@ -4,10 +4,10 @@
 	const Vue = require( 'vue' );
 	const codex = require( './codex.js' );
 	const nw = require( 'ext.neowiki' );
-	const CreateChildDialog = require( './CreateChildDialog.vue' );
+	const CreateSubjectDialog = require( './CreateSubjectDialog.vue' );
 	const DIALOG_OPEN_KEY = require( './constants.js' ).DIALOG_OPEN_KEY;
 
-	const TRIGGER_SELECTOR = '.ext-redherb-create-child-company-trigger';
+	const TRIGGER_SELECTOR = '.ext-redherb-create-company-trigger';
 
 	const open = Vue.ref( false );
 	let mounted = false;
@@ -17,10 +17,10 @@
 			return;
 		}
 		const host = document.createElement( 'div' );
-		host.className = 'ext-redherb-create-child-mount';
+		host.className = 'ext-redherb-create-subject-mount';
 		document.body.appendChild( host );
 
-		const app = Vue.createMwApp( CreateChildDialog )
+		const app = Vue.createMwApp( CreateSubjectDialog )
 			.directive( 'tooltip', codex.CdxTooltip );
 		app.use( nw.NeoWikiExtension.getInstance().getPinia() );
 		nw.NeoWikiServices.registerServices( app );

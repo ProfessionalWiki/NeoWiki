@@ -87,7 +87,7 @@ const getSchemaRepoMock = vi.fn();
 vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 	useSubjectPermissions: () => ( {
 		canCreateMainSubject: ref( false ),
-		canCreateChildSubject: ref( false ),
+		canCreateOtherSubject: ref( false ),
 		canEditSubject: canEditSubjectRef,
 		canDeleteSubject: canDeleteSubjectRef,
 		checkPermissions: vi.fn().mockResolvedValue( undefined ),
@@ -266,9 +266,9 @@ describe( 'SubjectsManagerPage rows without a stored label', () => {
 		vi.restoreAllMocks();
 	} );
 
-	// The main row took its page's title, which someone chose; only the child row is named after
+	// The main row took its page's title, which someone chose; only the other row is named after
 	// something nobody picked, and it says so.
-	it( 'names the main row after the page and marks the child row as unnamed', async () => {
+	it( 'names the main row after the page and marks the other row as unnamed', async () => {
 		const wrapper = await mountPage();
 
 		const names = wrapper.findAll( '.ext-neowiki-subjects-manager__row-label' ).map( ( el ) => el.text() );
@@ -276,7 +276,7 @@ describe( 'SubjectsManagerPage rows without a stored label', () => {
 	} );
 
 	// The main row is named after its page, so 'Person' still tells the reader something. The
-	// child row already reads "(unnamed Person)", so saying it again says nothing.
+	// other row already reads "(unnamed Person)", so saying it again says nothing.
 	it( 'shows the schema beside the main row only', async () => {
 		const wrapper = await mountPage();
 
@@ -469,7 +469,7 @@ describe( 'SubjectsManagerPage move action', () => {
 	it( 'offers the move on both the main row and the other rows', async () => {
 		const wrapper = await mountPage();
 
-		// One per row: the main subject and the child. Offering it on the main row is deliberate -
+		// One per row: the main subject and the other subject. Offering it on the main row is deliberate -
 		// moving a page's topic elsewhere is allowed, and the dialog warns what the page loses.
 		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 2 );
 	} );
@@ -545,7 +545,7 @@ describe( 'SubjectsManagerPage move action', () => {
 		expect( wrapper.findComponent( MoveSubjectDialog ).props( 'subjectIsMainSubject' ) ).toBe( true );
 	} );
 
-	it( 'tells the dialog when a child subject is being moved', async () => {
+	it( 'tells the dialog when one of the other subjects is being moved', async () => {
 		const wrapper = await mountPage();
 
 		await wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' )[ 1 ].trigger( 'click' );

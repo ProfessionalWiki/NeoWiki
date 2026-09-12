@@ -4,7 +4,7 @@ import type { SubjectPermissionHints } from '@/application/SubjectPermissionHint
 
 export interface SubjectPermissions {
 	canCreateMainSubject: Ref<boolean>;
-	canCreateChildSubject: Ref<boolean>;
+	canCreateOtherSubject: Ref<boolean>;
 	canEditSubject: Ref<boolean>;
 	canDeleteSubject: Ref<boolean>;
 	canCreateSubjectPage: Ref<boolean>;
@@ -14,7 +14,7 @@ export interface SubjectPermissions {
 
 export function useSubjectPermissions(): SubjectPermissions {
 	const canCreateMainSubject = ref( false );
-	const canCreateChildSubject = ref( false );
+	const canCreateOtherSubject = ref( false );
 	const canEditSubject = ref( false );
 	const canDeleteSubject = ref( false );
 	const canCreateSubjectPage = ref( false );
@@ -22,20 +22,20 @@ export function useSubjectPermissions(): SubjectPermissions {
 
 	async function checkPermissions( pageId: number ): Promise<void> {
 		try {
-			const [ createMain, createChild, edit, del ] = await Promise.all( [
+			const [ createMain, createOther, edit, del ] = await Promise.all( [
 				hints.canCreateMainSubject(),
-				hints.canCreateChildSubject( pageId ),
+				hints.canCreateOtherSubject( pageId ),
 				hints.canEditSubject( { text: '' } as never ),
 				hints.canDeleteSubject( { text: '' } as never ),
 			] );
 			canCreateMainSubject.value = createMain;
-			canCreateChildSubject.value = createChild;
+			canCreateOtherSubject.value = createOther;
 			canEditSubject.value = edit;
 			canDeleteSubject.value = del;
 		} catch ( error ) {
 			console.error( 'Failed to check subject permissions:', error );
 			canCreateMainSubject.value = false;
-			canCreateChildSubject.value = false;
+			canCreateOtherSubject.value = false;
 			canEditSubject.value = false;
 			canDeleteSubject.value = false;
 		}
@@ -52,7 +52,7 @@ export function useSubjectPermissions(): SubjectPermissions {
 
 	return {
 		canCreateMainSubject,
-		canCreateChildSubject,
+		canCreateOtherSubject,
 		canEditSubject,
 		canDeleteSubject,
 		canCreateSubjectPage,

@@ -104,15 +104,15 @@ module.exports = exports = {
 			}
 			const pageId = mw.config.get( 'wgArticleId' );
 			const subjectStatements = editorRef.value.getSubjectData();
-			subjectStore.createChildSubject( pageId, trimmed, SCHEMA_NAME, subjectStatements )
+			subjectStore.createOtherSubject( pageId, trimmed, SCHEMA_NAME, subjectStatements )
 				.then( () => {
-					mw.notify( mw.message( 'redherb-create-child-success' ).text() );
+					mw.notify( mw.message( 'redherb-create-subject-success' ).text() );
 					open.value = false;
 				} )
 				.catch( ( err ) => {
 					mw.log.error( err );
 					mw.notify(
-						mw.message( 'redherb-create-child-error' ).text(),
+						mw.message( 'redherb-create-subject-error' ).text(),
 						{ type: 'error' }
 					);
 				} );
@@ -127,14 +127,14 @@ module.exports = exports = {
 			onSave: onSave,
 			onClose: onClose,
 			onOpenChange: onOpenChange,
-			dialogTitle: mw.message( 'redherb-create-child-dialog-title' ).text(),
-			labelLabel: mw.message( 'redherb-create-child-dialog-label' ).text(),
+			dialogTitle: mw.message( 'redherb-create-subject-dialog-title' ).text(),
+			labelLabel: mw.message( 'redherb-create-subject-dialog-label' ).text(),
 			primaryAction: {
-				label: mw.message( 'redherb-create-child-dialog-save' ).text(),
+				label: mw.message( 'redherb-create-subject-dialog-save' ).text(),
 				actionType: 'progressive'
 			},
 			defaultAction: {
-				label: mw.message( 'redherb-create-child-dialog-cancel' ).text()
+				label: mw.message( 'redherb-create-subject-dialog-cancel' ).text()
 			}
 		};
 	}
@@ -142,7 +142,7 @@ module.exports = exports = {
 </script>
 
 <style lang="less">
-.ext-redherb-create-child-mount {
+.ext-redherb-create-subject-mount {
 	display: contents;
 }
 </style>

@@ -38,8 +38,8 @@ qualifier (`Year`) and a reference (`Source`) on one population Statement. Here 
 the `Attendance` Schema, so they validate and render like any other data. A linked Subject can link to further
 Subjects, with no depth limit.
 
-The Attendance Subjects can live on their own pages or as [Child Subjects](glossary.md#page) on the museum's page. The
-[Subject Format](api/subject-format.md#complete-example) shows the same pattern in JSON.
+The Attendance Subjects can live on their own pages or as additional [Subjects](glossary.md#page) on the museum's
+page. The [Subject Format](api/subject-format.md#complete-example) shows the same pattern in JSON.
 
 ## Qualifying a relationship: relation properties
 

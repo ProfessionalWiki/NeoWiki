@@ -131,7 +131,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build(
 			id: 42,
 			mainSubject: TestSubject::build( id: self::GUID_1 ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_2 ),
 			)
 		) );
@@ -236,7 +236,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build(
 			id: 42,
 			mainSubject: TestSubject::build( id: self::GUID_1 ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_2 ),
 				TestSubject::build( id: self::GUID_3 ),
 			)
@@ -269,7 +269,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build(
 			id: 42,
 			mainSubject: TestSubject::build( id: self::GUID_1 ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_2 ),
 				TestSubject::build( id: self::GUID_3 ),
 			)
@@ -277,7 +277,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 		$store->savePage( TestPage::build(
 			id: 42,
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_2 ),
 				TestSubject::build( id: self::GUID_4 ),
 			)
@@ -334,7 +334,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build(
 			id: 1,
 			mainSubject: TestSubject::build( id: self::GUID_1 ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_2 ),
 			)
 		) );
@@ -423,7 +423,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build(
 			id: 1,
 			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_3, 'rTestNQS1111rr1' ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				$this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_3, 'rTestNQS1111rr2' ),
 			)
 		) );
@@ -509,24 +509,24 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertRelationExists( self::GUID_5, 'LocatedIn', self::GUID_1, 'rTestNQS1111rDA' );
 	}
 
-	public function testFlippingASubjectBetweenMainAndChildLeavesASingleHasSubjectEdge(): void {
+	public function testFlippingASubjectBetweenMainAndOtherLeavesASingleHasSubjectEdge(): void {
 		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
 			mainSubject: TestSubject::build( id: self::GUID_1 ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_2 ),
 			)
 		) );
 
-		// Swap the roles: GUID_2 becomes the main subject and GUID_1 becomes a child.
+		// Swap the roles: GUID_2 becomes the main subject and GUID_1 no longer is.
 		// The HasSubject relation carries the isMain flag, so re-saving must not leave a
 		// second, stale HasSubject edge behind for either subject.
 		$store->savePage( TestPage::build(
 			id: 42,
 			mainSubject: TestSubject::build( id: self::GUID_2 ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_1 ),
 			)
 		) );
@@ -563,7 +563,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build(
 			id: 1,
 			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				$this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr2' ),
 			)
 		) );
@@ -581,7 +581,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build(
 			id: 1,
 			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_1, self::GUID_2, 'rTestNQS1111rr1' ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				$this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_3, 'rTestNQS1111rr2' ),
 				$this->buildSubjectWithLocationRelation( self::GUID_3, self::GUID_1, 'rTestNQS1111rr3' ),
 			)
@@ -692,7 +692,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		// of a name for the mark of a stub would delete this one and its Statements with it.
 		$store->savePage( TestPage::build(
 			id: 1,
-			childSubjects: new SubjectMap( TestSubject::build( id: self::GUID_1, label: null ) )
+			otherSubjects: new SubjectMap( TestSubject::build( id: self::GUID_1, label: null ) )
 		) );
 		$store->savePage( TestPage::build(
 			id: 2,
@@ -701,7 +701,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 		$store->savePage( TestPage::build(
 			id: 1,
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_1, label: null, schemaName: new SchemaName( self::SCHEMA_ID_A ) )
 			)
 		) );
@@ -1010,7 +1010,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build(
 			id: 42,
 			mainSubject: TestSubject::build( id: self::GUID_1 ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_2 ),
 				TestSubject::build( id: self::GUID_3 ),
 			)
@@ -1037,7 +1037,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build(
 			id: 42,
 			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
 				TestSubject::build( id: self::GUID_3, schemaName: new SchemaName( self::SCHEMA_ID_Z ) ),
 			)
@@ -1065,12 +1065,12 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectName( 'Help:Unnamed topic', self::GUID_1 );
 	}
 
-	public function testChildSubjectWithoutALabelGetsNoNodeName(): void {
+	public function testOtherSubjectWithoutALabelGetsNoNodeName(): void {
 		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
-			childSubjects: new SubjectMap( TestSubject::build( id: self::GUID_2, label: null ) )
+			otherSubjects: new SubjectMap( TestSubject::build( id: self::GUID_2, label: null ) )
 		) );
 
 		$this->assertSubjectName( null, self::GUID_2 );
@@ -1088,12 +1088,12 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectName( 'Chosen label', self::GUID_1 );
 	}
 
-	public function testClearingALabelRemovesTheNodeNameOfAChildSubject(): void {
+	public function testClearingALabelRemovesTheNodeNameOfAnOtherSubject(): void {
 		$store = $this->newProjectionStore();
 
 		$page = fn ( ?string $label ) => TestPage::build(
 			id: 42,
-			childSubjects: new SubjectMap( TestSubject::build( id: self::GUID_2, label: $label ) )
+			otherSubjects: new SubjectMap( TestSubject::build( id: self::GUID_2, label: $label ) )
 		);
 
 		$store->savePage( $page( 'Named for now' ) );
@@ -1107,7 +1107,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 		$store->savePage( TestPage::build(
 			id: 42,
-			childSubjects: new SubjectMap( TestSubject::build(
+			otherSubjects: new SubjectMap( TestSubject::build(
 				id: self::GUID_2,
 				label: null,
 				statements: new StatementList( [ TestStatement::build( property: 'name', value: new StringValue( 'Impostor' ) ) ] )
@@ -1319,7 +1319,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build(
 			id: 42,
 			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
 				TestSubject::build( id: self::GUID_3, schemaName: new SchemaName( self::SCHEMA_ID_Z ) ),
 			)
@@ -1328,7 +1328,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build(
 			id: 42,
 			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
 				TestSubject::build( id: self::GUID_3, schemaName: new SchemaName( self::SCHEMA_ID_Z ) ),
 				TestSubject::build( id: self::GUID_4, schemaName: new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
@@ -1357,7 +1357,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build(
 			id: 42,
 			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( self::SCHEMA_ID_Z ) ),
 			)
 		) );
@@ -1365,7 +1365,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build(
 			id: 42,
 			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_Z ) ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
 			)
 		) );

@@ -59,10 +59,10 @@ readonly class GetPageSubjectsQuery {
 			);
 		}
 
-		foreach ( $pageSubjects->getChildSubjects()->asArray() as $childSubject ) {
-			$subjectItems[$childSubject->id->text] = $this->buildItem(
-				$childSubject,
-				$hostingPages[$childSubject->id->text] ?? null,
+		foreach ( $pageSubjects->getOtherSubjects()->asArray() as $otherSubject ) {
+			$subjectItems[$otherSubject->id->text] = $this->buildItem(
+				$otherSubject,
+				$hostingPages[$otherSubject->id->text] ?? null,
 				isMainSubject: false
 			);
 		}

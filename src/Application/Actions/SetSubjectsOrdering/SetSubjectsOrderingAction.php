@@ -50,7 +50,7 @@ readonly class SetSubjectsOrderingAction {
 		try {
 			$pageSubjects->setOrdering(
 				$request->mainSubjectId === null ? null : $this->subjectIdParser->parseOrThrow( $request->mainSubjectId ),
-				array_map( fn ( string $id ) => $this->subjectIdParser->parseOrThrow( $id ), $request->childSubjectIds )
+				array_map( fn ( string $id ) => $this->subjectIdParser->parseOrThrow( $id ), $request->otherSubjectIds )
 			);
 		} catch ( InvalidArgumentException $e ) {
 			$this->presenter->presentInvalidOrdering( $e->getMessage() );
@@ -79,8 +79,8 @@ readonly class SetSubjectsOrderingAction {
 			return false;
 		}
 
-		return $pageSubjects->getChildSubjects()->getIdsAsTextArray()
-			=== array_map( $this->canonicalize( ... ), $request->childSubjectIds );
+		return $pageSubjects->getOtherSubjects()->getIdsAsTextArray()
+			=== array_map( $this->canonicalize( ... ), $request->otherSubjectIds );
 	}
 
 	/**

@@ -32,7 +32,7 @@ require_once __DIR__ . '/../../../maintenance/ClearDefaultSubjectLabels.php';
 class ClearDefaultSubjectLabelsTest extends NeoWikiIntegrationTestCase {
 
 	private const string MAIN_ID = 's11111111111111';
-	private const string CHILD_ID = 's22222222222222';
+	private const string OTHER_SUBJECT_ID = 's22222222222222';
 	private const string SECOND_PAGE_MAIN_ID = 's33333333333333';
 	private const string THIRD_PAGE_MAIN_ID = 's44444444444444';
 
@@ -72,51 +72,51 @@ class ClearDefaultSubjectLabelsTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * Before the child default became the Schema name, every Subject on a page was named after the page.
-	 * Almost every child label a real wiki carries is of this era, so a heuristic that only knew about
-	 * the Schema name would migrate next to nothing.
+	 * Before the default for a page's other Subjects became the Schema name, every Subject on a page
+	 * was named after the page. Almost every such label a real wiki carries is of this era, so a
+	 * heuristic that only knew about the Schema name would migrate next to nothing.
 	 */
-	public function testAChildLabelRepeatingThePageNameIsCleared(): void {
+	public function testAnOtherSubjectLabelRepeatingThePageNameIsCleared(): void {
 		$this->createPageWithSubjects(
 			'Vincent van Gogh',
 			TestSubject::build( id: self::MAIN_ID, label: 'Vincent van Gogh' ),
-			new SubjectMap( TestSubject::build( id: self::CHILD_ID, label: 'Vincent van Gogh' ) )
+			new SubjectMap( TestSubject::build( id: self::OTHER_SUBJECT_ID, label: 'Vincent van Gogh' ) )
 		);
 
 		$this->runScript();
 
 		$this->assertSame(
-			[ self::MAIN_ID => null, self::CHILD_ID => null ],
+			[ self::MAIN_ID => null, self::OTHER_SUBJECT_ID => null ],
 			$this->getStoredLabels( 'Vincent van Gogh' )
 		);
 	}
 
-	public function testAChildLabelRepeatingTheSchemaNameIsCleared(): void {
+	public function testAnOtherSubjectLabelRepeatingTheSchemaNameIsCleared(): void {
 		$this->createPageWithSubjects(
 			'Vincent van Gogh',
 			TestSubject::build( id: self::MAIN_ID, label: 'A chosen name' ),
-			new SubjectMap( TestSubject::build( id: self::CHILD_ID, label: TestSubject::DEFAULT_SCHEMA_ID ) )
+			new SubjectMap( TestSubject::build( id: self::OTHER_SUBJECT_ID, label: TestSubject::DEFAULT_SCHEMA_ID ) )
 		);
 
 		$this->runScript();
 
 		$this->assertSame(
-			[ self::MAIN_ID => 'A chosen name', self::CHILD_ID => null ],
+			[ self::MAIN_ID => 'A chosen name', self::OTHER_SUBJECT_ID => null ],
 			$this->getStoredLabels( 'Vincent van Gogh' )
 		);
 	}
 
-	public function testAChildLabelSomebodyChoseIsKept(): void {
+	public function testAnOtherSubjectLabelSomebodyChoseIsKept(): void {
 		$this->createPageWithSubjects(
 			'Vincent van Gogh',
 			TestSubject::build( id: self::MAIN_ID, label: 'A chosen name' ),
-			new SubjectMap( TestSubject::build( id: self::CHILD_ID, label: 'Sunflowers' ) )
+			new SubjectMap( TestSubject::build( id: self::OTHER_SUBJECT_ID, label: 'Sunflowers' ) )
 		);
 
 		$this->runScript();
 
 		$this->assertSame(
-			[ self::MAIN_ID => 'A chosen name', self::CHILD_ID => 'Sunflowers' ],
+			[ self::MAIN_ID => 'A chosen name', self::OTHER_SUBJECT_ID => 'Sunflowers' ],
 			$this->getStoredLabels( 'Vincent van Gogh' )
 		);
 	}
