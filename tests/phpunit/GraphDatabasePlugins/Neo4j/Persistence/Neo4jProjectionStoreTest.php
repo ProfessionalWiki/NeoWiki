@@ -1088,7 +1088,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectName( 'Chosen label', self::GUID_1 );
 	}
 
-	public function testClearingALabelRemovesTheNodeNameOfAnOtherSubject(): void {
+	public function testClearingALabelRemovesTheNodeNameOfOtherSubject(): void {
 		$store = $this->newProjectionStore();
 
 		$page = fn ( ?string $label ) => TestPage::build(
