@@ -131,6 +131,24 @@ class InMemorySubjectRepository implements SubjectRepository {
 		return new PageSubjects( $pageSubjects->getMainSubject(), clone $pageSubjects->getChildSubjects() );
 	}
 
+	/**
+	 * The page id the next created page gets. Pages created here have no title of their own: this
+	 * double stores Subjects by page id, as the pages a caller names by id do.
+	 */
+	private int $nextCreatedPageId = 100;
+
+	public function createPageWithSubjects( string $pageTitle, PageSubjects $pageSubjects, ?string $comment = null ): PageContentSavingStatus {
+		if ( $this->failNextSave ) {
+			return new PageContentSavingStatus( PageContentSavingStatus::ERROR, 'Page not found' );
+		}
+
+		$pageId = new PageId( $this->nextCreatedPageId++ );
+
+		$this->savePageSubjects( $pageSubjects, $pageId, $comment );
+
+		return new PageContentSavingStatus( PageContentSavingStatus::REVISION_CREATED, pageId: $pageId );
+	}
+
 	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): PageContentSavingStatus {
 		$this->savedPageIds[] = $pageId->id;
 		$callNumber = count( $this->savedPageIds );

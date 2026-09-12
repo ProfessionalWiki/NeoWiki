@@ -20,8 +20,8 @@ function newRepository( httpClient: Partial<HttpClient> ): RestSubjectRepository
 }
 
 /**
- * What the production client does with a refused move: it accepts only 2xx and 422, so every other
- * status arrives as a rejection carrying the parsed body, never as a Response.
+ * What the production client does with most refused moves: it accepts 2xx, 409 and 422, so every
+ * other status arrives as a rejection carrying the parsed body, never as a Response.
  */
 function rejectingLike( status: number, body: unknown ): Partial<HttpClient> {
 	return {
@@ -30,6 +30,19 @@ function rejectingLike( status: number, body: unknown ): Partial<HttpClient> {
 				response: { status, data: body },
 			} ),
 		),
+	};
+}
+
+/**
+ * The statuses the production client resolves arrive as a Response instead, body and all.
+ */
+function respondingLike( status: number, body: unknown ): Partial<HttpClient> {
+	return {
+		post: vi.fn().mockResolvedValue( {
+			ok: false,
+			status,
+			json: () => Promise.resolve( body ),
+		} as unknown as Response ),
 	};
 }
 
@@ -49,7 +62,18 @@ describe( 'RestSubjectRepository.moveSubject', () => {
 
 	it( 'carries the server\'s own reason through a rejection', async () => {
 		const repository = newRepository(
-			rejectingLike( 409, { status: 'error', message: 'Subject is already on the target page' } ),
+			rejectingLike( 500, { status: 'error', message: 'The graph store is unreachable' } ),
+		);
+
+		await expect( repository.moveSubject( SUBJECT_ID, 12, false ) )
+			.rejects.toThrow( 'The graph store is unreachable' );
+	} );
+
+	// A conflict is one the production client resolves rather than rejects, so its reason is on the
+	// Response rather than on a rejection - and it is the most actionable reason a move has.
+	it( 'carries the server\'s own reason through a conflict', async () => {
+		const repository = newRepository(
+			respondingLike( 409, { status: 'error', message: 'Subject is already on the target page' } ),
 		);
 
 		await expect( repository.moveSubject( SUBJECT_ID, 12, false ) )

@@ -39,10 +39,22 @@ class AuthorityBasedSubjectAuthorizer implements SubjectPermissionHints, Subject
 	}
 
 	public function authorize( PageId $pageId ): bool {
-		$title = $this->newTitle( $pageId );
+		return $this->authorizeEditOf( $this->newTitle( $pageId ) );
+	}
 
-		// authorizeWrite enforces page protection and blocks against the primary database, and
-		// counts the write against the edit rate limit.
+	/**
+	 * MediaWiki folds the createpage right into an edit of a page that does not exist, so the same
+	 * check covers making the page and putting Subjects on it.
+	 */
+	public function authorizeCreatePage( string $pageTitle ): bool {
+		return $this->authorizeEditOf( $this->titleFactory->newFromText( $pageTitle ) );
+	}
+
+	/**
+	 * authorizeWrite enforces page protection and blocks against the primary database, and counts
+	 * the write against the edit rate limit.
+	 */
+	private function authorizeEditOf( ?Title $title ): bool {
 		return $title !== null && $this->authority->authorizeWrite( 'edit', $title );
 	}
 

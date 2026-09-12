@@ -7,6 +7,16 @@ import { StatementList } from '@/domain/StatementList.ts';
 import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import type { SubjectWriteResult } from '@/domain/SubjectRepository.ts';
+
+/**
+ * A Subject created together with a page of its own: the page is the server's to title, so where
+ * the Subject landed is part of the answer rather than something the caller already knows.
+ */
+export interface CreatedSubjectPage {
+	subjectId: SubjectId;
+	pageTitle: string;
+}
 
 /**
  * A Subject write answers with the Schema the Subject instantiates, so a display can render the
@@ -68,14 +78,7 @@ export const useSubjectStore = defineStore( 'subject', {
 				comment,
 			);
 
-			this.mutationEpoch++;
-			// The response Subject, not the one passed in: only the server's copy carries the page
-			// context and the normalisation the write applied. A response without that context
-			// records nothing and leaves the previous copy in place.
-			if ( result.subject !== null ) {
-				this.setSubject( result.subject );
-			}
-			recordBundledSchema( result.schema, schemaEpoch );
+			this.recordWriteResult( result, schemaEpoch );
 		},
 		/**
 		 * Writes a Subject the client built, under the id it already carries, as a Subject of the
@@ -162,11 +165,7 @@ export const useSubjectStore = defineStore( 'subject', {
 				comment,
 			);
 
-			this.mutationEpoch++;
-			if ( result.subject !== null ) {
-				this.setSubject( result.subject );
-			}
-			recordBundledSchema( result.schema, schemaEpoch );
+			this.recordWriteResult( result, schemaEpoch );
 
 			return result.subjectId;
 		},
@@ -182,13 +181,44 @@ export const useSubjectStore = defineStore( 'subject', {
 				id,
 			);
 
+			this.recordWriteResult( result, schemaEpoch );
+
+			return result.subjectId;
+		},
+
+		/**
+		 * Creates a Subject together with a page of its own, and reports where it landed: the page
+		 * is the server's to title, so the caller learns its name only from the answer.
+		 */
+		async createSubjectPage( label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<CreatedSubjectPage> {
+			const schemaEpoch = useSchemaStore().mutationEpoch;
+
+			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createSubjectPage(
+				label,
+				schemaName,
+				statements,
+				comment,
+			);
+
+			this.recordWriteResult( result, schemaEpoch );
+
+			return { subjectId: result.subjectId, pageTitle: result.pageTitle };
+		},
+
+		/**
+		 * What every Subject write does with its answer. The Subject recorded is the response's, not
+		 * the one sent: only the server's copy carries the page context and the normalisation the
+		 * write applied. A response without that context records nothing and leaves the previous copy
+		 * in place.
+		 */
+		recordWriteResult( result: SubjectWriteResult, schemaEpochBeforeRequest: number ): void {
 			this.mutationEpoch++;
+
 			if ( result.subject !== null ) {
 				this.setSubject( result.subject );
 			}
-			recordBundledSchema( result.schema, schemaEpoch );
 
-			return result.subjectId;
+			recordBundledSchema( result.schema, schemaEpochBeforeRequest );
 		},
 
 		openSubjectCreator(): void {

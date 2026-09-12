@@ -38,7 +38,7 @@ export * from './domain/Layout';
 export * from './domain/PageIdentifiers';
 export * from './domain/PageSubjects';
 export * from './domain/enteredSubjectLabel';
-export * from './domain/placeholderSubjectLabel';
+export * from './domain/chosenSubjectName';
 export * from './domain/PropertyDefinition';
 export * from './domain/PropertyDefinitionList';
 export * from './domain/PropertyType';

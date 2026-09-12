@@ -131,6 +131,8 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 			pageIdentifiersLookup: $pageIdentifiersLookup,
 			revisionLookup: $this->getServiceContainer()->getRevisionLookup(),
 			pageContentSaver: NeoWikiExtension::getInstance()->getPageContentSaver(),
+			titleFactory: $this->getServiceContainer()->getTitleFactory(),
+			contentHandlerFactory: $this->getServiceContainer()->getContentHandlerFactory(),
 		);
 
 		$status = $repository->deleteSubject( new SubjectId( 'sTestMSR1111119' ), null );
@@ -156,6 +158,8 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 			pageIdentifiersLookup: $pageIdentifiersLookup,
 			revisionLookup: $this->getServiceContainer()->getRevisionLookup(),
 			pageContentSaver: NeoWikiExtension::getInstance()->getPageContentSaver(),
+			titleFactory: $this->getServiceContainer()->getTitleFactory(),
+			contentHandlerFactory: $this->getServiceContainer()->getContentHandlerFactory(),
 		);
 
 		$status = $repository->deleteSubject( new SubjectId( 'sTestMSR1111119' ), null );
@@ -291,6 +295,8 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 			pageIdentifiersLookup: $pageIdentifiersLookup,
 			revisionLookup: $this->getServiceContainer()->getRevisionLookup(),
 			pageContentSaver: NeoWikiExtension::getInstance()->getPageContentSaver(),
+			titleFactory: $this->getServiceContainer()->getTitleFactory(),
+			contentHandlerFactory: $this->getServiceContainer()->getContentHandlerFactory(),
 		);
 
 		$subjects = $repository->getSubjects(
@@ -332,6 +338,8 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 				new FallbackContent( '{"subjects":{}}', 'unregistered-model' )
 			),
 			pageContentSaver: $pageContentSaver,
+			titleFactory: $this->getServiceContainer()->getTitleFactory(),
+			contentHandlerFactory: $this->getServiceContainer()->getContentHandlerFactory(),
 		);
 
 		$this->expectException( RuntimeException::class );
@@ -351,6 +359,44 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 
 	private function getPageId( string $pageName ): PageId {
 		return new PageId( Title::newFromText( $pageName )->getId() );
+	}
+
+	private const string CREATED_SUBJECT_ID = 'sTestMSR1111aaa';
+
+	private function newPageSubjects(): PageSubjects {
+		return new PageSubjects(
+			TestSubject::build( id: self::CREATED_SUBJECT_ID, label: null ),
+			new SubjectMap()
+		);
+	}
+
+	public function testCreatePageWithSubjectsCreatesThePageHoldingTheSubject(): void {
+		$status = $this->newRepository()->createPageWithSubjects( 'Amsterdam', $this->newPageSubjects(), 'Because' );
+
+		$this->assertSame( PageContentSavingStatus::REVISION_CREATED, $status->status );
+		$this->assertEquals( $this->getPageId( 'Amsterdam' ), $status->pageId );
+		$this->assertSame(
+			self::CREATED_SUBJECT_ID,
+			$this->newRepository()->getSubjectsByPageId( $this->getPageId( 'Amsterdam' ) )
+				->getMainSubject()?->getId()->text
+		);
+	}
+
+	/**
+	 * The existence check that precedes this reads a replica, so a page created in the meantime -
+	 * or simply not replicated yet - would otherwise be edited rather than created, putting the
+	 * Subject on a page nobody chose.
+	 */
+	public function testCreatePageWithSubjectsRefusesAPageThatAlreadyExists(): void {
+		$this->editPage( Title::newFromText( 'Amsterdam' ), 'Someone else wrote this' );
+
+		$status = $this->newRepository()->createPageWithSubjects( 'Amsterdam', $this->newPageSubjects(), null );
+
+		$this->assertSame( PageContentSavingStatus::ERROR, $status->status );
+		$this->assertNull( $status->pageId );
+		$this->assertTrue(
+			$this->newRepository()->getSubjectsByPageId( $this->getPageId( 'Amsterdam' ) )->isEmpty()
+		);
 	}
 
 }

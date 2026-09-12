@@ -232,10 +232,9 @@ class SubjectDataLookup {
 		return [
 			'id' => $subject->getId()->text,
 			'label' => SubjectDisplayName::forSubject(
-				label: $subject->getLabel(),
+				subject: $subject,
 				isMainSubject: $isMainSubject,
-				pageName: $pageName,
-				schemaName: $subject->getSchemaName()
+				pageName: $pageName
 			),
 			'storedLabel' => $subject->getLabel()?->text,
 			'schema' => $subject->getSchemaReference()->toJson(),

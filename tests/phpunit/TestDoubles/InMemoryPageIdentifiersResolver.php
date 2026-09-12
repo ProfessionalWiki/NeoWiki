@@ -32,4 +32,25 @@ class InMemoryPageIdentifiersResolver implements PageIdentifiersResolver {
 		return $this->pageIdentifiers[$pageId->id] ?? null;
 	}
 
+	public function getIdentifiersOfTitle( string $pageTitle ): ?PageIdentifiers {
+		foreach ( $this->pageIdentifiers as $identifiers ) {
+			if ( $identifiers->getTitle() === $pageTitle ) {
+				return $identifiers;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Of the wiki's normalization only the capital first letter, which is the part callers depend
+	 * on: it is what makes a page titled after a Subject id reachable. Which other texts title no
+	 * page is the wiki's own parsing, which this double does not reproduce.
+	 */
+	public function getMainNamespaceTitle( string $text ): ?string {
+		$trimmed = trim( $text );
+
+		return $trimmed === '' ? null : ucfirst( $trimmed );
+	}
+
 }

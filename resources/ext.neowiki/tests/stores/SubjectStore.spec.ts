@@ -353,6 +353,23 @@ describe( 'SubjectStore write results', () => {
 		expect( store.getSubject( id ) ).toStrictEqual( seeded );
 	} );
 
+	it( 'records the Subject created together with its page, and reports that page', async () => {
+		const created = newSubject( { id: id.text, label: 'as persisted' } );
+		withSubjectRepository( {
+			createSubjectPage: vi.fn().mockResolvedValue( {
+				...writeResult( created ),
+				pageTitle: 'As Persisted',
+			} ),
+		} );
+		const store = useSubjectStore();
+
+		const result = await store.createSubjectPage( 'as typed', 'Person', new StatementList( [] ) );
+
+		expect( result.subjectId ).toStrictEqual( id );
+		expect( result.pageTitle ).toBe( 'As Persisted' );
+		expect( store.getSubject( id ) ).toStrictEqual( created );
+	} );
+
 	it( 'records the Subject a child creation returned', async () => {
 		const created = newSubject( { id: id.text, label: 'as persisted' } );
 		withSubjectRepository( {

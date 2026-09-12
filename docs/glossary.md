@@ -31,7 +31,8 @@ Subjects have
 - A `schema`: reference to a Schema by name. Example: Person, Company, Product, etc.
 - An optional `label`: the name of the subject. Example: "John Doe". This is a string, not a reference to a page.
   Without one, the Subject is shown under its page name when it is the page's Main Subject, and otherwise under its
-  Schema name — which the UI marks as `(unnamed <Schema>)` to say nobody chose it
+  Schema name — which the UI marks as `(unnamed <Schema>)` to say nobody chose it. A page titled with the id of a
+  Subject stored on it names nothing, so its Main Subject shows the Schema name too
   ([ADR 31](adr/031-optional-subject-labels.md))
 - `statements`: a list of Statements
 

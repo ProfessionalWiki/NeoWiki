@@ -35,6 +35,15 @@ export interface SubjectWriteResult {
 	schema: Schema | null;
 }
 
+/**
+ * What creating a Subject together with a page of its own returns, on top of the write itself: the
+ * page created, which the caller has not named and cannot derive - a label may title no page, and
+ * the wiki normalizes the titles it does.
+ */
+export interface SubjectPageWriteResult extends SubjectWriteResult {
+	pageTitle: string;
+}
+
 export interface SubjectRepository extends SubjectLookup {
 
 	/**
@@ -83,6 +92,19 @@ export interface SubjectRepository extends SubjectLookup {
 		comment?: string,
 		id?: SubjectId
 	): Promise<SubjectWriteResult>;
+
+	/**
+	 * Creates a Subject together with a page of its own, in one revision, with the Subject as that
+	 * page's Main Subject. The page is titled by the label, and by the Subject's own ID when the
+	 * label titles no page. Throws PageTitleTakenError when a page of that title already exists;
+	 * nothing is created then.
+	 */
+	createSubjectPage(
+		label: string | null,
+		schemaName: SchemaName,
+		statements: StatementList,
+		comment?: string
+	): Promise<SubjectPageWriteResult>;
 
 	/**
 	 * An unused Subject ID, minted without creating any Subject. Stateless: the ID is not
@@ -154,6 +176,15 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 
 	public createChildSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _comment?: string, id?: SubjectId ): Promise<SubjectWriteResult> {
 		return Promise.resolve( this.newWriteResult( id ?? new SubjectId( 's11111111111112' ), pageId, label, schemaName, statements ) );
+	}
+
+	public createSubjectPage( label: string | null, schemaName: string, statements: StatementList, _comment?: string ): Promise<SubjectPageWriteResult> {
+		const id = new SubjectId( 's11111111111113' );
+
+		return Promise.resolve( {
+			...this.newWriteResult( id, 0, label, schemaName, statements ),
+			pageTitle: label ?? id.text,
+		} );
 	}
 
 	public mintSubjectId(): Promise<SubjectId> {

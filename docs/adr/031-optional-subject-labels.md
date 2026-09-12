@@ -2,7 +2,7 @@
 
 Date: 2026-08-13
 
-Status: Draft
+Status: Draft. Amended 2026-09-11, on pages titled after their Subject (see Amendment).
 
 Retires the `label-required` violation, which [ADR 26](026-validation-severity-levels.md) classifies as a
 fixed-severity error on the ground that a label is Subject identity: "a labelless Subject cannot be displayed or
@@ -53,3 +53,12 @@ not.
 Clearing costs a revision per page, and a Subject that is not the Main Subject and carried the older page-name default
 is renamed to its Schema name by it. `Subject.getLabel()` in the frontend bundle can return null; display code goes
 through `presentation/subjectDisplayName.ts`, which marks the Schema tier.
+
+## Amendment, 2026-09-11: pages titled after their Subject
+
+Creating a Subject with a page of its own (`POST /neowiki/v0/subjects`) titles that page by the Subject's label, and
+by the Subject's own id when there is no label to title it by.
+
+A label-less Main Subject on a page titled with the id of a Subject stored on it therefore falls to the Schema tier,
+`(unnamed Attendance)`, rather than showing the id: the exception to "the page name for a Main Subject" above, since
+that title was chosen by nobody.

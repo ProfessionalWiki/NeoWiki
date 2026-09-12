@@ -113,7 +113,8 @@ function initializeSchemaView(): void {
 
 			const schema = new SchemaDeserializer().deserialize( schemaName, schemaJson );
 
-			const app = createMwApp( SchemaDisplay, { schema } );
+			// The Subject creator the Schema page can open reaches value inputs that use v-tooltip.
+			const app = createMwApp( SchemaDisplay, { schema } ).directive( 'tooltip', CdxTooltip );
 			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
 			mountNeoWikiApp( app, viewSchema );

@@ -13,6 +13,7 @@
 					:can-edit-schema="canEditSchema"
 					:can-create-subject="canCreateSubjectPage"
 					@edit="openEditor"
+					@create-subject="subjectStore.openSubjectCreator()"
 				/>
 			</template>
 
@@ -69,6 +70,12 @@
 			@saved="onSchemaSaved"
 			@update:open="isEditorOpen = $event"
 		/>
+
+		<SubjectCreatorDialog
+			v-if="canCreateSubjectPage"
+			:host-page="null"
+			:initial-schema-name="currentSchema.getName()"
+		/>
 	</div>
 </template>
 
@@ -81,7 +88,9 @@ import type { TableColumn } from '@wikimedia/codex';
 import type { Icon } from '@wikimedia/codex-icons';
 import SchemaDisplayHeader from './SchemaDisplayHeader.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
+import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 
@@ -93,6 +102,7 @@ const props = defineProps( {
 } );
 
 const schemaStore = useSchemaStore();
+const subjectStore = useSubjectStore();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 const { canEditSchema, checkEditPermission } = useSchemaPermissions();
 const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();

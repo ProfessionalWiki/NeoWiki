@@ -34,6 +34,13 @@ class SpySubjectWriteAuthorizer implements SubjectWriteAuthorizer {
 	) {
 	}
 
+	/**
+	 * Every page title passed to authorizeCreatePage(), in call order.
+	 *
+	 * @var string[]
+	 */
+	public array $authorizedPageTitles = [];
+
 	public function authorize( PageId $pageId ): bool {
 		$this->authorizedPageId = $pageId;
 		$this->authorizedPageIds[] = $pageId;
@@ -41,6 +48,12 @@ class SpySubjectWriteAuthorizer implements SubjectWriteAuthorizer {
 		if ( in_array( $pageId->id, $this->deniedPageIds, true ) ) {
 			return false;
 		}
+
+		return $this->allowed;
+	}
+
+	public function authorizeCreatePage( string $pageTitle ): bool {
+		$this->authorizedPageTitles[] = $pageTitle;
 
 		return $this->allowed;
 	}

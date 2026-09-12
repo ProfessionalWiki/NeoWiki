@@ -144,7 +144,7 @@ class Neo4jSubjectUpdater {
 	 */
 	private function nodeName( Neo4jPageSubject $pageSubject, string $pageName ): ?string {
 		return SubjectDisplayName::labelOrPageName(
-			$pageSubject->subject->getLabel(),
+			$pageSubject->subject,
 			$pageSubject->isMainSubject,
 			$pageName
 		);
