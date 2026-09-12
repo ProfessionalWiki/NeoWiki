@@ -21,7 +21,7 @@ Every endpoint is also published as a complete [OpenAPI 3.0 description](#full-s
 
 ### Subjects
 
-Read, change, and validate Subjects. New Subjects are created on a page — see
+Read, change, and validate Subjects. New Subjects are created on a page, or together with a page of their own — see
 [Pages and Subjects](#pages-and-subjects). For the body shape, see [Subject format](subject-format.md); for the form
 of a `{subjectId}`, see [IDs](subject-format.md#ids).
 
@@ -38,6 +38,7 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 | `POST /neowiki/v0/subject/validate` | Check whether a new Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject/{subjectId}/validate` | Check whether a change to a Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject-ids` | Mint a batch of unused Subject IDs to assign on create, e.g. to wire relations across an interlinked import. Body `count` (1–1000). |
+| `POST /neowiki/v0/subjects` | Create a Subject together with a page of its own, in one revision, as that page's main Subject. Body `schema` and `statements`, optional `label` and `comment`. The page is titled by the label, or by the Subject's ID when there is no label or the label cannot be a main-namespace title. `409` when that title is taken. |
 | `GET /neowiki/v0/subject-labels` | Find Subjects of a Schema by label; returns `id`/`label` pairs. A Child Subject with no label is absent. Query: `schema` (required), `search` (label prefix), `limit`. |
 
 ### Pages and Subjects
@@ -124,7 +125,9 @@ Subject write endpoints require per-page `edit` permission and answer `403` when
 Denial of `read` answers `404` instead, so that a page you may not read stays indistinguishable from one that is absent.
 The write endpoints keyed by page id ([Pages and Subjects](#pages-and-subjects)) return that `404` for a page you may
 not read and for a page id that does not exist; the write endpoints keyed by Subject id return it for a Subject on a
-page you may not read and for a Subject id that does not exist.
+page you may not read and for a Subject id that does not exist. `POST /neowiki/v0/subjects` is keyed by a title you
+supply rather than by an existing page: it answers `403` for a title you may not create, and `409` for one already
+taken, carrying that title and nothing about the page holding it.
 
 The Cypher query endpoint is gated only by the `neowiki-query` right, with no per-page filtering (see
 [Query API](query-api.md)).

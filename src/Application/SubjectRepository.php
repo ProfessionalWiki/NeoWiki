@@ -42,4 +42,15 @@ interface SubjectRepository extends SubjectLookup {
 	 */
 	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): PageContentSavingStatus;
 
+	/**
+	 * Creates the page $pageTitle names and puts $pageSubjects on it, in one revision. The page a
+	 * Subject gets to itself carries no wikitext: what it says about the Subject is rendered from
+	 * the Subject slot.
+	 *
+	 * A page that already exists is refused rather than edited, so a page that appeared since the
+	 * caller last looked - which is what reading a replica leaves room for - cannot silently
+	 * receive the Subject. The status is ERROR then, as it is for any write that did not land.
+	 */
+	public function createPageWithSubjects( string $pageTitle, PageSubjects $pageSubjects, ?string $comment = null ): PageContentSavingStatus;
+
 }

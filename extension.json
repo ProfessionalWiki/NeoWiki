@@ -375,6 +375,11 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newMintSubjectIdsApi"
 		},
 		{
+			"path": "/neowiki/v0/subjects",
+			"method": [ "POST" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCreateSubjectPageApi"
+		},
+		{
 			"path": "/neowiki/v0/subject/validate",
 			"method": [ "POST" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newValidateSubjectApi"
