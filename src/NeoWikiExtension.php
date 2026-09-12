@@ -20,6 +20,8 @@ use MediaWiki\Session\CsrfTokenSet;
 use MediaWiki\Title\Title;
 use MessageLocalizer;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
+use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubjectPage\CreateSubjectPageAction;
+use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubjectPage\CreateSubjectPagePresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
@@ -124,6 +126,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CancelGraphStoreRebuildApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectPageApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectEditNoticesApi;
@@ -1451,6 +1454,21 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function newCreateSubjectPageAction( CreateSubjectPagePresenter $presenter, Authority $authority ): CreateSubjectPageAction {
+		return new CreateSubjectPageAction(
+			presenter: $presenter,
+			subjectRepository: $this->getSubjectRepository(),
+			idGenerator: $this->getIdGenerator(),
+			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
+			statementListBuilder: $this->getStatementListBuilder(),
+			schemaResolver: $this->getSchemaResolver(),
+			selectStatementResolver: $this->getSelectStatementResolver(),
+			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
+			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
+			validationEnforced: $this->isValidationEnforced(),
+		);
+	}
+
 	private function getPageIdentifiersResolver(): PageIdentifiersResolver {
 		return new TitleBasedPageIdentifiersResolver(
 			MediaWikiServices::getInstance()->getTitleFactory()
@@ -1479,6 +1497,8 @@ class NeoWikiExtension {
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
 			pageContentSaver: $this->getPageContentSaver(),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+			contentHandlerFactory: MediaWikiServices::getInstance()->getContentHandlerFactory(),
 		);
 	}
 
@@ -1851,6 +1871,10 @@ class NeoWikiExtension {
 			isMainSubject: false,
 			csrfValidator: self::getCsrfValidator()
 		);
+	}
+
+	public static function newCreateSubjectPageApi(): CreateSubjectPageApi {
+		return new CreateSubjectPageApi( csrfValidator: self::getCsrfValidator() );
 	}
 
 	public static function newGetSubjectApi(): GetSubjectApi|Response {

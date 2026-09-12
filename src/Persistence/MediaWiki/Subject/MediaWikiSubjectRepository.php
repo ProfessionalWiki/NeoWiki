@@ -5,8 +5,13 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
 use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\Content;
+use MediaWiki\Content\IContentHandlerFactory;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
+use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -27,6 +32,8 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		private readonly PageIdentifiersLookup $pageIdentifiersLookup,
 		private readonly RevisionLookup $revisionLookup,
 		private readonly PageContentSaver $pageContentSaver,
+		private readonly TitleFactory $titleFactory,
+		private readonly IContentHandlerFactory $contentHandlerFactory,
 	) {
 	}
 
@@ -152,5 +159,25 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		$content->setPageSubjects( $pageSubjects );
 
 		return $this->saveContent( $content, $pageId, $comment );
+	}
+
+	public function createPageWithSubjects( string $pageTitle, PageSubjects $pageSubjects, ?string $comment = null ): PageContentSavingStatus {
+		$title = $this->titleFactory->newFromTextThrow( $pageTitle );
+
+		return $this->pageContentSaver->createPage(
+			$title,
+			[
+				// Empty rather than absent, because a page needs a main slot.
+				SlotRecord::MAIN => $this->emptyContent( $title ),
+				self::SLOT_NAME => SubjectContent::newFromData( $pageSubjects ),
+			],
+			CommentStoreComment::newUnsavedComment( $comment ?? 'Create a page for a new NeoWiki subject' )
+		);
+	}
+
+	private function emptyContent( Title $title ): Content {
+		return $this->contentHandlerFactory
+			->getContentHandler( $title->getContentModel() )
+			->makeEmptyContent();
 	}
 }
