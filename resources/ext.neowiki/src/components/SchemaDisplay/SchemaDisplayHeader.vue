@@ -10,14 +10,16 @@
 			>
 				{{ schema.getDescription() }}
 			</div>
-			<a
+			<CdxButton
 				v-if="canCreateSubject"
-				class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--action-progressive cdx-button--weight-primary ext-neowiki-schema-display-header__create-subject"
-				:href="createSubjectUrl"
+				class="ext-neowiki-schema-display-header__create-subject"
+				action="progressive"
+				weight="primary"
+				@click="emit( 'create-subject' )"
 			>
 				<CdxIcon :icon="cdxIconAdd" />
 				{{ $i18n( 'neowiki-schema-create-subject', schema.getName() ).text() }}
-			</a>
+			</CdxButton>
 		</div>
 		<div class="ext-neowiki-schema-display-header__actions">
 			<CdxButton
@@ -33,12 +35,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 import { Schema } from '@/domain/Schema.ts';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconEdit } from '@wikimedia/codex-icons';
 
-const props = defineProps( {
+defineProps( {
 	schema: {
 		type: Schema,
 		required: true
@@ -53,11 +54,9 @@ const props = defineProps( {
 	}
 } );
 
-const createSubjectUrl = computed( (): string =>
-	mw.util.getUrl( `Special:CreateSubject/${ props.schema.getName() }` ) );
-
 const emit = defineEmits<{
 	edit: [];
+	'create-subject': [];
 }>();
 </script>
 

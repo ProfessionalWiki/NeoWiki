@@ -15,6 +15,7 @@ import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError';
+import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
 
 function newRepository( apiUrl: string, httpClient: InMemoryHttpClient ): RestSubjectRepository {
@@ -441,6 +442,137 @@ describe( 'RestSubjectRepository', () => {
 			await repository.createMainSubject( 42, null, 'Employee', new StatementList( [] ) );
 
 			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { label: null } );
+		} );
+
+	} );
+
+	describe( 'createSubjectPage', () => {
+
+		const url = 'https://example.com/rest.php/neowiki/v0/subjects';
+
+		function created( overrides: Record<string, unknown> = {} ): Response {
+			return new Response(
+				JSON.stringify( {
+					status: 'created',
+					subjectId: 's33333333333333',
+					pageId: 42,
+					pageTitle: 'John Doe',
+					subject: {
+						id: 's33333333333333',
+						label: 'John Doe',
+						displayName: 'John Doe',
+						schema: 'Employee',
+						pageId: 42,
+						pageTitle: 'John Doe',
+						pageNamespaceId: 0,
+						statements: {},
+					},
+					...overrides,
+				} ),
+				{ status: 201 },
+			);
+		}
+
+		it( 'reports the page the server created for the subject', async () => {
+			const httpClient = new InMemoryHttpClient( { [ url ]: created() } );
+
+			const result = await newRepository( 'https://example.com/rest.php', httpClient )
+				.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) );
+
+			expect( result.subjectId.text ).toEqual( 's33333333333333' );
+			expect( result.pageTitle ).toEqual( 'John Doe' );
+			expect( result.subject?.getLabel() ).toEqual( 'John Doe' );
+		} );
+
+		it( 'sends the label, schema and summary the caller gave', async () => {
+			const httpClient = new InMemoryHttpClient( { [ url ]: created() } );
+			const postSpy = vi.spyOn( httpClient, 'post' );
+
+			await newRepository( 'https://example.com/rest.php', httpClient )
+				.createSubjectPage( null, 'Employee', new StatementList( [] ), 'why' );
+
+			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( {
+				label: null,
+				schema: 'Employee',
+				comment: 'why',
+			} );
+		} );
+
+		it( 'throws PageTitleTakenError naming the page in the way', async () => {
+			const httpClient = new InMemoryHttpClient( {
+				[ url ]: new Response(
+					JSON.stringify( {
+						status: 'error',
+						message: 'A page named "John Doe" already exists',
+						pageTitle: 'John Doe',
+					} ),
+					{ status: 409 },
+				),
+			} );
+
+			const error = await newRepository( 'https://example.com/rest.php', httpClient )
+				.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) )
+				.catch( ( thrown: unknown ) => thrown );
+
+			expect( error ).toBeInstanceOf( PageTitleTakenError );
+			expect( ( error as PageTitleTakenError ).pageTitle ).toEqual( 'John Doe' );
+		} );
+
+		it( 'throws ValidationFailedError with the violations the server reported', async () => {
+			const httpClient = new InMemoryHttpClient( {
+				[ url ]: new Response(
+					JSON.stringify( {
+						status: 'error',
+						violations: [ { propertyName: 'Color', code: 'required', args: [], severity: 'error' } ],
+					} ),
+					{ status: 422 },
+				),
+			} );
+
+			const error = await newRepository( 'https://example.com/rest.php', httpClient )
+				.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) )
+				.catch( ( thrown: unknown ) => thrown );
+
+			expect( error ).toBeInstanceOf( ValidationFailedError );
+		} );
+
+		it( 'throws when the API call fails', async () => {
+			const httpClient = new InMemoryHttpClient( {
+				[ url ]: new Response( JSON.stringify( { httpCode: 403 } ), { status: 403 } ),
+			} );
+
+			await expect(
+				() => newRepository( 'https://example.com/rest.php', httpClient )
+					.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) ),
+			).rejects.toThrowError( 'Error creating subject page' );
+		} );
+
+		/**
+		 * The production client resolves 2xx, 409 and 422 and rejects the rest, so a write that did
+		 * not land arrives as a rejection carrying the parsed body. Its message says what went
+		 * wrong, where the status code alone says only that something did.
+		 */
+		it( 'carries the server\'s own reason through a rejection', async () => {
+			const repository = newRepository( 'https://example.com/rest.php', {
+				post: vi.fn().mockRejectedValue( Object.assign(
+					new Error( 'Request failed with status code 500' ),
+					{ response: { status: 500, data: { status: 'error', message: 'The database is locked' } } },
+				) ),
+			} as unknown as InMemoryHttpClient );
+
+			await expect(
+				repository.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) ),
+			).rejects.toThrowError( 'The database is locked' );
+		} );
+
+		it( 'falls back to its own message when a rejection carries none', async () => {
+			const repository = newRepository( 'https://example.com/rest.php', {
+				post: vi.fn().mockRejectedValue( new Error( 'Network Error' ) ),
+			} as unknown as InMemoryHttpClient );
+
+			await expect(
+				repository.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) ),
+			).rejects.toThrowError( 'Error creating subject page' );
 		} );
 
 	} );

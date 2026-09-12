@@ -147,7 +147,7 @@
 
 		<SubjectCreatorDialog
 			v-if="canCreate"
-			:page-has-main-subject="hasMainSubject"
+			:host-page="{ hasMainSubject }"
 		/>
 
 		<SubjectEditorDialog

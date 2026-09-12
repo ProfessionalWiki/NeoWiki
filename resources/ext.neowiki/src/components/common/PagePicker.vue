@@ -1,10 +1,14 @@
 <template>
-	<div class="ext-neowiki-page-picker">
+	<div
+		class="ext-neowiki-page-picker"
+		:class="{ 'ext-neowiki-page-picker--creatable': !props.existingPagesOnly }"
+	>
 		<CdxLookup
 			v-model:selected="selectedValue"
 			v-model:input-value="inputText"
 			:menu-items="menuItems"
 			:placeholder="$i18n( 'neowiki-page-picker-placeholder' ).text()"
+			:disabled="props.disabled"
 			:aria-label="props.ariaLabel"
 			@update:selected="onValueSelected"
 		/>
@@ -22,6 +26,13 @@ import type { PageChoice } from '@/components/common/PageChoice.ts';
 interface PagePickerProps {
 	/** Left out of the results, such as the page the Subject is already on. */
 	excludedPageId?: number;
+	/**
+	 * Offer only pages that exist, leaving out the option to use the typed text as a new page. For
+	 * hosts that have another way of making one.
+	 */
+	existingPagesOnly?: boolean;
+	/** Refuses input, such as while the host is saving what it was given. */
+	disabled?: boolean;
 	ariaLabel?: string;
 }
 
@@ -29,6 +40,8 @@ const props = withDefaults(
 	defineProps<PagePickerProps>(),
 	{
 		excludedPageId: undefined,
+		existingPagesOnly: false,
+		disabled: false,
 		ariaLabel: undefined
 	}
 );
@@ -74,7 +87,9 @@ const createItem = computed( (): MenuItemData => ( {
 
 // The create option is present from the first render and never leaves, which is what opens the
 // menu on focus before anything is typed: Codex expands an empty input's menu only when the
-// Lookup was built with items, and collapses it again the moment the list runs empty.
+// Lookup was built with items, and collapses it again the moment the list runs empty. A picker
+// restricted to pages that exist has nothing to offer before a search, so its menu opens on
+// results.
 const menuItems = computed( (): MenuItemData[] => {
 	const items = [ ...searchResults.value ];
 
@@ -88,7 +103,9 @@ const menuItems = computed( (): MenuItemData[] => {
 		} );
 	}
 
-	items.push( createItem.value );
+	if ( !props.existingPagesOnly ) {
+		items.push( createItem.value );
+	}
 
 	return items;
 } );
@@ -206,8 +223,9 @@ function onValueSelected( value: string | null ): void {
 	/* The create option is the last item, and it offers an action rather than a result. Codex
 		sets its own pinned footer item apart the same way, and skips the rule when that item is
 		the only one — a line above a lone entry reads as a mistake. This menu cannot use that
-		footer: it is a CdxMenu prop, and CdxLookup passes none of it through. */
-	.cdx-menu__listbox > .cdx-menu-item:last-child:not( :first-child ) {
+		footer: it is a CdxMenu prop, and CdxLookup passes none of it through. Scoped to a menu
+		that has a create option, since otherwise the line would fall above the last result. */
+	&--creatable .cdx-menu__listbox > .cdx-menu-item:last-child:not( :first-child ) {
 		border-top: @border-subtle;
 	}
 }

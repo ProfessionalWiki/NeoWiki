@@ -18,10 +18,10 @@ number, date, relation, and so on.
 ## 2. Create a Subject
 
 A Subject is one thing described with a Schema. Pick **Create subject** in the sidebar, or the **Create** button on
-the Schema's own page (it names the Schema, so **Create Person** on `Schema:Person`), name the page the Subject will
-live on, fill in the values, and save. The new page's Main Subject renders automatically as an infobox, and the
-**Data** tab lets you view and edit all its Subjects. To attach a Subject to a page that already exists, open that
-page and pick **Create subject here** from the page tools.
+the Schema's own page (it names the Schema, so **Create Person** on `Schema:Person`), name it with a
+**Subject label**, fill in the values, and save: a page of that name is made for you, and its Main Subject renders
+automatically as an infobox. Under **Page**, pick **Another page** to add the Subject to a page that already exists;
+the **Data** tab of a page lets you view and edit all its Subjects.
 
 ## 3. Render a View in wikitext
 

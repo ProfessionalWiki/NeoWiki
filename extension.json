@@ -448,7 +448,8 @@
 				"CdxLookup",
 				"CdxCombobox",
 				"CdxTable",
-				"CdxInfoChip"
+				"CdxInfoChip",
+				"CdxRadio"
 			],
 			"packageFiles": [
 				"resources/ext.neowiki/dist/neowiki.js",
@@ -615,9 +616,11 @@
 				"neowiki-subject-creator-creating-schema",
 				"neowiki-subject-creator-back",
 				"neowiki-subject-creator-page-field",
+				"neowiki-subject-creator-page-this",
+				"neowiki-subject-creator-page-another",
+				"neowiki-subject-creator-page-new",
+				"neowiki-subject-creator-page-picked",
 				"neowiki-subject-creator-page-has-main-subject",
-				"neowiki-subject-creator-create-page-summary",
-				"neowiki-subject-creator-create-page-error",
 				"neowiki-subject-creator-page-taken",
 				"neowiki-subject-creator-page-read-error",
 				"neowiki-createsubject-button",

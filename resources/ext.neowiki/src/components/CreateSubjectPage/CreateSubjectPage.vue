@@ -10,8 +10,7 @@
 		</CdxButton>
 
 		<SubjectCreatorDialog
-			:page-has-main-subject="false"
-			:choose-page="true"
+			:host-page="null"
 			:initial-schema-name="props.schemaName"
 		/>
 	</div>

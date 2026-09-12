@@ -26,12 +26,6 @@ const CdxDialogStub = {
 	emits: [ 'update:open' ],
 };
 
-const PagePickerStub = {
-	template: '<div class="page-picker-stub" />',
-	props: [ 'excludedPageId', 'ariaLabel' ],
-	emits: [ 'update:selected' ],
-};
-
 describe( 'MoveSubjectDialog', () => {
 	let createMock: ReturnType<typeof vi.fn>;
 	let getPageSubjectsMock: ReturnType<typeof vi.fn>;
@@ -52,7 +46,7 @@ describe( 'MoveSubjectDialog', () => {
 			global: {
 				mocks: { $i18n },
 				plugins: [ pinia ],
-				stubs: { CdxDialog: CdxDialogStub, PagePicker: PagePickerStub },
+				stubs: { CdxDialog: CdxDialogStub, PagePicker: true },
 			},
 		} );
 	}
@@ -132,6 +126,11 @@ describe( 'MoveSubjectDialog', () => {
 
 	it( 'keeps the page the subject is already on out of the picker', () => {
 		expect( mountDialog().findComponent( PagePicker ).props( 'excludedPageId' ) ).toBe( SOURCE_PAGE_ID );
+	} );
+
+	// A Subject can be moved onto a page that does not exist yet, which the move dialog creates.
+	it( 'keeps the option of a page that does not exist yet', () => {
+		expect( mountDialog().findComponent( PagePicker ).props( 'existingPagesOnly' ) ).toBe( false );
 	} );
 
 	it( 'moves the subject to the chosen page', async () => {
