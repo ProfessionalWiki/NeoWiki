@@ -5,6 +5,8 @@ import { ref } from 'vue';
 import SchemaDisplay from '@/components/SchemaDisplay/SchemaDisplay.vue';
 import SchemaDisplayHeader from '@/components/SchemaDisplay/SchemaDisplayHeader.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
+import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson } from '@/domain/PropertyDefinition.ts';
@@ -40,13 +42,15 @@ vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 
 const getSchemaMock = vi.fn();
 
+let pinia: ReturnType<typeof createPinia>;
+
 function mountComponent( schema: Schema ): VueWrapper {
 	setupMwMock( { functions: [ 'msg' ] } );
 
 	return mount( SchemaDisplay, {
 		props: { schema },
 		global: {
-			plugins: [ createPinia() ],
+			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
 			provide: {
 				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
@@ -57,6 +61,7 @@ function mountComponent( schema: Schema ): VueWrapper {
 				CdxInfoChip: { template: '<span><slot /></span>', props: [ 'icon' ] },
 				SchemaDisplayHeader: true,
 				SchemaEditorDialog: true,
+				SubjectCreatorDialog: true,
 			},
 		},
 	} );
@@ -64,7 +69,8 @@ function mountComponent( schema: Schema ): VueWrapper {
 
 describe( 'SchemaDisplay', () => {
 	beforeEach( () => {
-		setActivePinia( createPinia() );
+		pinia = createPinia();
+		setActivePinia( pinia );
 		canEditSchemaRef.value = false;
 		checkEditPermissionMock.mockClear();
 		grantedRight = false;
@@ -90,6 +96,35 @@ describe( 'SchemaDisplay', () => {
 		await flushPromises();
 
 		expect( wrapper.findComponent( SchemaDisplayHeader ).props( 'canCreateSubject' ) ).toBe( true );
+	} );
+
+	it( 'opens the creator on this schema, page and all, when the header asks for it', async () => {
+		grantedRight = true;
+		const wrapper = mountComponent( newSchema( { title: 'Person' } ) );
+		await flushPromises();
+
+		await wrapper.findComponent( SchemaDisplayHeader ).vm.$emit( 'create-subject' );
+
+		const dialog = wrapper.findComponent( SubjectCreatorDialog );
+		expect( dialog.props( 'hostPage' ) ).toBeNull();
+		expect( dialog.props( 'initialSchemaName' ) ).toBe( 'Person' );
+		expect( useSubjectStore( pinia ).subjectCreatorOpen ).toBe( true );
+	} );
+
+	it( 'keeps the creator closed until it is asked for', async () => {
+		grantedRight = true;
+
+		mountComponent( newSchema() );
+		await flushPromises();
+
+		expect( useSubjectStore( pinia ).subjectCreatorOpen ).toBe( false );
+	} );
+
+	it( 'renders no creator for a user who may not create subject pages', async () => {
+		const wrapper = mountComponent( newSchema() );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SubjectCreatorDialog ).exists() ).toBe( false );
 	} );
 
 	it( 'renders property names, types, and required status', () => {

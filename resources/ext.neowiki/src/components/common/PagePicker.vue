@@ -1,13 +1,25 @@
 <template>
-	<div class="ext-neowiki-page-picker">
+	<div
+		class="ext-neowiki-page-picker"
+		:class="{ 'ext-neowiki-page-picker--creatable': !props.existingPagesOnly }"
+	>
 		<CdxLookup
+			ref="lookupRef"
 			v-model:selected="selectedValue"
 			v-model:input-value="inputText"
 			:menu-items="menuItems"
 			:placeholder="$i18n( 'neowiki-page-picker-placeholder' ).text()"
+			:disabled="props.disabled"
 			:aria-label="props.ariaLabel"
 			@update:selected="onValueSelected"
-		/>
+		>
+			<template
+				v-if="props.existingPagesOnly"
+				#no-results
+			>
+				{{ $i18n( 'neowiki-page-picker-no-results' ).text() }}
+			</template>
+		</CdxLookup>
 	</div>
 </template>
 
@@ -22,6 +34,13 @@ import type { PageChoice } from '@/components/common/PageChoice.ts';
 interface PagePickerProps {
 	/** Left out of the results, such as the page the Subject is already on. */
 	excludedPageId?: number;
+	/**
+	 * Offer only pages that exist, leaving out the option to use the typed text as a new page. For
+	 * hosts that have another way of making one.
+	 */
+	existingPagesOnly?: boolean;
+	/** Refuses input, such as while the host is saving what it was given. */
+	disabled?: boolean;
 	ariaLabel?: string;
 }
 
@@ -29,6 +48,8 @@ const props = withDefaults(
 	defineProps<PagePickerProps>(),
 	{
 		excludedPageId: undefined,
+		existingPagesOnly: false,
+		disabled: false,
 		ariaLabel: undefined
 	}
 );
@@ -46,6 +67,7 @@ const RESULT_LIMIT = 10;
 
 const pageTitleSearch = NeoWikiServices.getPageTitleSearch();
 
+const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
 const selectedValue = ref<string | null>( null );
 const inputText = ref<string | number>( '' );
 const searchResults = ref<MenuItemData[]>( [] );
@@ -74,8 +96,18 @@ const createItem = computed( (): MenuItemData => ( {
 
 // The create option is present from the first render and never leaves, which is what opens the
 // menu on focus before anything is typed: Codex expands an empty input's menu only when the
-// Lookup was built with items, and collapses it again the moment the list runs empty.
+// Lookup was built with items, and collapses it again the moment the list runs empty. A picker
+// restricted to pages that exist has nothing to offer before a search, so its menu opens on
+// results.
 const menuItems = computed( (): MenuItemData[] => {
+	// Codex opens the menu on a change to this list made while it is waiting for one, and takes
+	// every other change as the answer to what it was waiting for. Reading the search's status here
+	// would change the list when the search starts, leaving its results to arrive too late to open
+	// anything, so the results stand alone and Codex's own no-results slot says when there are none.
+	if ( props.existingPagesOnly ) {
+		return searchResults.value;
+	}
+
 	const items = [ ...searchResults.value ];
 
 	// Codex's own no-results slot is shown only for an empty menu, which the create option rules
@@ -193,6 +225,12 @@ function onValueSelected( value: string | null ): void {
 	emit( 'update:selected', { pageId: Number( value ), title: selectedName.value } );
 }
 
+// Lets a host put the user in the field, such as when it reveals the picker.
+function focus(): void {
+	( lookupRef.value?.$el as HTMLElement | undefined )?.querySelector( 'input' )?.focus();
+}
+
+defineExpose( { focus } );
 </script>
 
 <style lang="less">
@@ -206,8 +244,9 @@ function onValueSelected( value: string | null ): void {
 	/* The create option is the last item, and it offers an action rather than a result. Codex
 		sets its own pinned footer item apart the same way, and skips the rule when that item is
 		the only one — a line above a lone entry reads as a mistake. This menu cannot use that
-		footer: it is a CdxMenu prop, and CdxLookup passes none of it through. */
-	.cdx-menu__listbox > .cdx-menu-item:last-child:not( :first-child ) {
+		footer: it is a CdxMenu prop, and CdxLookup passes none of it through. Scoped to a menu
+		that has a create option, since otherwise the line would fall above the last result. */
+	&--creatable .cdx-menu__listbox > .cdx-menu-item:last-child:not( :first-child ) {
 		border-top: @border-subtle;
 	}
 }

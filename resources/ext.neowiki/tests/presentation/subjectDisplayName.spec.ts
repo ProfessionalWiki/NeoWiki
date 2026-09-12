@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { subjectDisplayName } from '@/presentation/subjectDisplayName';
+import { newSubjectNamePreview, subjectDisplayName } from '@/presentation/subjectDisplayName';
 import { newSubject } from '@/TestHelpers';
 import { setupMwMock } from '../VueTestHelpers';
 
@@ -48,6 +48,40 @@ describe( 'subjectDisplayName', () => {
 				displayNameIsGenerated: false,
 			} ) ),
 		).toBe( 'Attendance' );
+	} );
+
+} );
+
+describe( 'newSubjectNamePreview', () => {
+
+	beforeEach( () => {
+		setupMwMock( {
+			messages: {
+				'neowiki-subject-generated-name': ( name: string ) => `(unnamed ${ name })`,
+			},
+		} );
+	} );
+
+	it( 'previews the page name for a main subject on a page that has one', () => {
+		expect( newSubjectNamePreview( false, 'Rijksmuseum', [], 'Museum' ) ).toBe( 'Rijksmuseum' );
+	} );
+
+	it( 'marks the schema tier for a subject joining a page that has a main subject', () => {
+		expect( newSubjectNamePreview( true, 'Rijksmuseum', [], 'Attendance' ) ).toBe( '(unnamed Attendance)' );
+	} );
+
+	/**
+	 * A page created for the Subject is titled after the Subject id when no label titles it, and an
+	 * id is not a name.
+	 */
+	it( 'marks the schema tier where the page has yet to be titled', () => {
+		expect( newSubjectNamePreview( false, null, [], 'Museum' ) ).toBe( '(unnamed Museum)' );
+	} );
+
+	it( 'marks the schema tier for a page already titled after a subject it holds', () => {
+		expect(
+			newSubjectNamePreview( false, 'S11111111111aaa', [ 's11111111111aaa' ], 'Museum' ),
+		).toBe( '(unnamed Museum)' );
 	} );
 
 } );

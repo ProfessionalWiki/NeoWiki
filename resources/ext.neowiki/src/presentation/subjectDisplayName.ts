@@ -1,5 +1,5 @@
 import type { Subject } from '@/domain/Subject';
-import { placeholderSubjectLabel } from '@/domain/placeholderSubjectLabel';
+import { chosenSubjectName } from '@/domain/chosenSubjectName';
 
 /**
  * The name to show for a Subject.
@@ -29,11 +29,16 @@ function generatedName( schemaName: string ): string {
 
 /**
  * The name the subject creator previews for a Subject that does not exist yet, matching what every
- * surface will show once it does: a page that already has a Main Subject gives this one its Schema
- * name, which is the tier nobody chose.
+ * surface will show once it does: a page that already has a Main Subject, and a page with no name
+ * of its own, both give this one its Schema name, which is the tier nobody chose. A null page name
+ * is a page that has yet to be titled; pageSubjectIds are the ids of the Subjects the page holds,
+ * one of which may already have titled it.
  */
-export function newSubjectNamePreview( pageHasMainSubject: boolean, pageName: string, schemaName: string ): string {
-	const name = placeholderSubjectLabel( pageHasMainSubject, pageName, schemaName );
-
-	return pageHasMainSubject ? generatedName( name ) : name;
+export function newSubjectNamePreview(
+	pageHasMainSubject: boolean,
+	pageName: string | null,
+	pageSubjectIds: string[],
+	schemaName: string,
+): string {
+	return chosenSubjectName( pageHasMainSubject, pageName, pageSubjectIds ) ?? generatedName( schemaName );
 }

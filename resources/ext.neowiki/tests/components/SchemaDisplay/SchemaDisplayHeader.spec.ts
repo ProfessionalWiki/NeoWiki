@@ -6,7 +6,7 @@ import { setupMwMock, createI18nMock } from '../../VueTestHelpers.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
 function mountComponent( schema: Schema, canEditSchema: boolean = false, canCreateSubject: boolean = false ): VueWrapper {
-	setupMwMock( { functions: [ 'msg', 'util' ] } );
+	setupMwMock( { functions: [ 'msg' ] } );
 
 	return mount( SchemaDisplayHeader, {
 		props: { schema, canEditSchema, canCreateSubject },
@@ -56,22 +56,29 @@ describe( 'SchemaDisplayHeader', () => {
 		expect( wrapper.emitted( 'edit' ) ).toHaveLength( 1 );
 	} );
 
-	it( 'links to the page-first creator for this schema when the user may create subjects', () => {
+	it( 'names the schema in the creation button when the user may create subjects', () => {
 		const wrapper = mountComponent( newSchema( { title: 'Company' } ), false, true );
-		const link = wrapper.find( '.ext-neowiki-schema-display-header__create-subject' );
 
-		expect( link.attributes( 'href' ) ).toBe( '/wiki/Special:CreateSubject/Company' );
-		expect( link.text() ).toContain( 'neowiki-schema-create-subjectCompany' );
+		expect( wrapper.find( '.ext-neowiki-schema-display-header__create-subject' ).text() )
+			.toContain( 'neowiki-schema-create-subjectCompany' );
 	} );
 
-	it( 'places the creation link in the header content, not among the actions', () => {
+	it( 'asks for the subject creator when the creation button is clicked', async () => {
+		const wrapper = mountComponent( newSchema( { title: 'Company' } ), false, true );
+
+		await wrapper.find( '.ext-neowiki-schema-display-header__create-subject' ).trigger( 'click' );
+
+		expect( wrapper.emitted( 'create-subject' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'places the creation button in the header content, not among the actions', () => {
 		const wrapper = mountComponent( newSchema( { title: 'Company' } ), true, true );
 
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__content .ext-neowiki-schema-display-header__create-subject' ).exists() ).toBe( true );
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__actions .ext-neowiki-schema-display-header__create-subject' ).exists() ).toBe( false );
 	} );
 
-	it( 'offers no creation link when the user may not create subjects', () => {
+	it( 'offers no creation button when the user may not create subjects', () => {
 		const wrapper = mountComponent( newSchema(), false, false );
 
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__create-subject' ).exists() ).toBe( false );
