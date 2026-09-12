@@ -16,11 +16,18 @@
 				:element-ids="elementIds"
 				:roving-key="rovingKey"
 				:select="selectItem"
+				:toggle="toggleItem"
 				:keydown="onKeydown"
 			>
 				<template #trailing="slotProps">
 					<slot
 						name="trailing"
+						v-bind="slotProps"
+					/>
+				</template>
+				<template #end="slotProps">
+					<slot
+						name="end"
 						v-bind="slotProps"
 					/>
 				</template>
@@ -32,6 +39,7 @@
 <script setup lang="ts" generic="T">
 import { computed, nextTick, ref } from 'vue';
 import NeoTreeNode from './NeoTreeNode.vue';
+import { isExpanded, isTogglable } from './NeoTreeModel.ts';
 import type { NeoTreeItem } from './NeoTreeModel.ts';
 
 const props = defineProps<{
@@ -40,7 +48,10 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+	/** A row was chosen. Whatever that costs the caller, only this gesture spends it. */
 	select: [ NeoTreeItem<T> ];
+	/** The disclosure control was pressed. The caller owns the expansion state. */
+	toggle: [ NeoTreeItem<T> ];
 }>();
 
 // Declared out here: a parenthesis anywhere inside a macro's type argument trips ESLint's
@@ -49,26 +60,42 @@ type NodeSlot = ( slotProps: { item: NeoTreeItem<T> } ) => unknown;
 
 defineSlots<{
 	trailing?: NodeSlot;
+	end?: NodeSlot;
 }>();
+
+// An item as printed, with the key of the item it sits under: Left climbs out of a node, and
+// nothing in the item itself says what it hangs from.
+interface PrintedItem<U> {
+	item: NeoTreeItem<U>;
+	parentKey: string | null;
+}
 
 // Printed order, which is both the order Up/Down move through and the order the element ids
 // are numbered in. A top-level item's `groupLabel` is dropped: the tree renders its items
 // without grouping them, so nothing decides whether that caption takes a line or a row.
-const flatItems = computed( (): NeoTreeItem<T>[] => {
-	const items: NeoTreeItem<T>[] = [];
+const printedItems = computed( (): PrintedItem<T>[] => {
+	const items: PrintedItem<T>[] = [];
 
 	for ( const item of props.items ) {
-		items.push( ...flatten( item ) );
+		items.push( ...flatten( item, null ) );
 	}
 
 	return items;
 } );
 
-function flatten( item: NeoTreeItem<T> ): NeoTreeItem<T>[] {
-	const items: NeoTreeItem<T>[] = [ item ];
+const flatItems = computed( (): NeoTreeItem<T>[] =>
+	printedItems.value.map( ( printed ) => printed.item ) );
 
-	for ( const child of item.children ?? [] ) {
-		items.push( ...flatten( child ) );
+// A collapsed item's children are not printed, so they are not in this list either: a key here
+// that nothing rendered leaves the roving focus on an element that is not there.
+function flatten( item: NeoTreeItem<T>, parentKey: string | null ): PrintedItem<T>[] {
+	const items: PrintedItem<T>[] = [ { item, parentKey } ];
+	const children = item.children ?? [];
+
+	if ( isExpanded( item ) ) {
+		for ( const child of children ) {
+			items.push( ...flatten( child, item.key ) );
+		}
 	}
 
 	return items;
@@ -102,9 +129,16 @@ function selectItem( item: NeoTreeItem<T> ): void {
 	emit( 'select', item );
 }
 
-// The tree is eagerly expanded and offers no per-item toggle, so Left/Right have nothing to
-// do. Enter and Space have to be handled here: a treeitem contains its own child group, so it
-// cannot be a button.
+// The tab stop moves here too, and for the same reason a click does: whichever control the
+// pointer used, Shift+Tab back into the tree should land on the row it was last used on.
+function toggleItem( item: NeoTreeItem<T> ): void {
+	focusedKey.value = item.key;
+	emit( 'toggle', item );
+}
+
+// Enter and Space are handled here because a treeitem contains its own child group and so cannot
+// be a button. Left and Right follow the tree pattern's two-step contract: Right opens a closed
+// node and then descends into an open one, Left closes an open node and then climbs out.
 function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 	const keys = flatItems.value.map( ( flatItem ) => flatItem.key );
 	const currentIndex = keys.indexOf( item.key );
@@ -118,6 +152,28 @@ function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 			event.stopPropagation();
 			selectItem( item );
 			return;
+		case 'ArrowRight':
+			event.preventDefault();
+			event.stopPropagation();
+			if ( isTogglable( item ) && !isExpanded( item ) ) {
+				toggleItem( item );
+			} else if ( isExpanded( item ) && ( item.children ?? [] ).length > 0 ) {
+				focusKey( ( item.children ?? [] )[ 0 ].key );
+			}
+			return;
+		case 'ArrowLeft': {
+			event.preventDefault();
+			event.stopPropagation();
+			if ( isTogglable( item ) && isExpanded( item ) ) {
+				toggleItem( item );
+				return;
+			}
+			const parentKey = printedItems.value[ currentIndex ]?.parentKey ?? null;
+			if ( parentKey !== null ) {
+				focusKey( parentKey );
+			}
+			return;
+		}
 		case 'ArrowDown':
 			nextIndex = ( currentIndex + 1 ) % keys.length;
 			break;
@@ -136,15 +192,25 @@ function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 
 	event.preventDefault();
 	event.stopPropagation();
-	focusedKey.value = keys[ nextIndex ];
+	focusKey( keys[ nextIndex ] );
+}
+
+// The tab stop and the DOM focus move together; the element is found after the render, since
+// closing a node renumbers every id below it.
+function focusKey( key: string ): void {
+	focusedKey.value = key;
 	nextTick( () => {
-		document.getElementById( elementId( nextIndex ) )?.focus();
+		const index = flatItems.value.findIndex( ( item ) => item.key === key );
+		if ( index !== -1 ) {
+			document.getElementById( elementId( index ) )?.focus();
+		}
 	} );
 }
 </script>
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-tree {
 	box-sizing: @box-sizing-base;
@@ -158,9 +224,13 @@ function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 		list-style: none;
 	}
 
-	/* One guide line per level, running the full height of that level, captions included. */
+	/* One guide line per level, running the full height of that level, captions included —
+		broken only where a disclosure control sits on it, which the control does itself.
+		The indent has to hold both the line and a control wide enough to press: a 24px control
+		centred on the line reaches 12px into the level above, so 16px leaves 4px between it and
+		that level's own line. */
 	&__relation {
-		margin-inline-start: @spacing-75;
+		margin-inline-start: @spacing-100;
 		border-inline-start: @border-subtle;
 	}
 
@@ -173,10 +243,12 @@ function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 		color: @color-subtle;
 	}
 
-	/* The inline padding matches a row's, so a caption starts where the node labels start. */
+	/* A caption starts where the labels it heads start, which is clear of the control rather
+		than at the row's own padding. Browser-measured to the same x as its labels. */
 	&__edge {
 		display: block;
 		padding: @spacing-30 @spacing-35 @spacing-12;
+		padding-inline-start: @ext-neowiki-tree-text-inset;
 	}
 
 	&__node {
@@ -195,13 +267,19 @@ function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 
 	&__node-name {
 		box-sizing: @box-sizing-base;
+		/* Positions the disclosure control against the row rather than in it. */
+		position: relative;
 		width: @size-full;
 		min-height: @size-200;
 		/* The block padding is absorbed by min-height until a row's content takes two lines. */
 		padding: @spacing-12 @spacing-35;
+		/* Clear of the control, which straddles the guide line and so reaches into the row. Carried
+			by every row rather than reserved on the rows that have one, so a row with nothing to
+			open draws nothing and the labels still line up down the level. */
+		padding-inline-start: @ext-neowiki-tree-text-inset;
 		background-color: @background-color-transparent;
 		border-radius: @border-radius-base;
-		/* Only the row selects; the rest of the <li> is the subtree, which is not clickable. */
+		/* The row is what selects; the rest of the <li> is its subtree and is not clickable. */
 		cursor: pointer;
 		transition-property: @transition-property-base;
 		transition-duration: @transition-duration-base;
@@ -230,6 +308,75 @@ function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 		color: @color-emphasized;
 	}
 
+	/* Two targets, one lit at a time. `:hover` matches an ancestor of whatever the pointer is
+		over and the control is a descendant of the row, so without this the row lights up from the
+		gutter — saying "pressing this selects the Subject" at the one place where it does not.
+		Selected stays lit: that is where the reader is, not what they are about to do. */
+	&__node > &__node-name:has( > &__twisty:hover ),
+	&__node > &__node-name:has( > &__twisty:active ):active {
+		background-color: @background-color-transparent;
+	}
+
+	&__node--active > &__node-name:has( > &__twisty:hover ) {
+		background-color: @background-color-progressive-subtle;
+	}
+
+	/* Out of the row's flow and over the guide line running down the level, so a row with
+		nothing to open reserves nothing and every label at a level starts at the same place.
+		Half its width to the start of the row centres it on that 1px line. */
+	&__twisty {
+		position: absolute;
+		inset-inline-start: calc( -1 * @size-150 / 2 - @border-width-base );
+		/* 24 by 32 rather than 24 square: the rows are contiguous, so a reader aiming at a chevron
+			must not be able to fall between two of them. What is DRAWN is the 24px box inside. */
+		top: 0;
+		height: @size-200;
+		width: @size-150;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: @color-subtle;
+		cursor: pointer;
+		/* Not text: a press on it should open the branch, not begin selecting the name beside it. */
+		user-select: none;
+		/* Load-bearing, and not for ordering: any z-index makes this a stacking context, which is
+			what keeps the two `z-index: -1` layers below the icon inside the control rather than
+			behind the guide line they exist to cover. Without it the break paints invisibly. */
+		z-index: 1;
+
+		/* The break in the line: one pixel wide and on the line itself, since the control's other
+			half lies over the row where the ground belongs to the row's own state. 24px tall, so
+			the line still shows between two controls on adjacent rows. */
+		&::before {
+			content: '';
+			position: absolute;
+			inset-block: calc( ( @size-200 - @size-150 ) / 2 );
+			inset-inline-start: calc( @size-150 / 2 );
+			width: @border-width-base;
+			background-color: @background-color-base;
+			z-index: -1;
+		}
+
+		/* The chip: what the reader sees and aims at, inside the taller target. Translucent, so
+			it tints the selected row's ground rather than patching over it. */
+		&::after {
+			content: '';
+			position: absolute;
+			inset-inline: 0;
+			inset-block: calc( ( @size-200 - @size-150 ) / 2 );
+			border-radius: @border-radius-base;
+			z-index: -1;
+		}
+
+		&:hover {
+			color: @color-base;
+		}
+
+		&:hover::after {
+			background-color: @background-color-button-quiet--hover;
+		}
+	}
+
 	/* Rows keep a common height, so a name gives way at its end. */
 	&__node-label {
 		min-width: 0;
@@ -242,6 +389,26 @@ function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 	/* Never abbreviated, as on its own line it never was: property names are authored on-wiki. */
 	&__node-caption {
 		min-width: 0;
+	}
+
+	/* The figure keeps the row's own size rather than stepping down: a smaller one needs a
+		line-height of its own to sit level with the label, and an inherited unitless one scales
+		with the font, so the two boxes stop matching and the row's centring lifts the digit.
+		Weight and colour set it back instead. Tabular figures, so a column does not shift. */
+	&__count,
+	&__mark {
+		flex: 0 0 auto;
+		margin-inline-start: auto;
+		color: @color-subtle;
+	}
+
+	&__count {
+		font-weight: @font-weight-normal;
+		font-feature-settings: 'tnum';
+	}
+
+	&__mark--unreadable {
+		color: @color-warning;
 	}
 
 	/* Transparent until a row folds, where it becomes the one item a wrap may move: otherwise
@@ -258,6 +425,25 @@ function onKeydown( event: KeyboardEvent, item: NeoTreeItem<T> ): void {
 		align-items: baseline;
 		align-content: center;
 		gap: 0 @spacing-50;
+		/* Room for what the rule below pins there, derived from where it pins it: the inset plus
+			two figures. `ch` is a digit's advance and the count is tabular at the row's size, so
+			this holds to 99, past which the digits reach into the caption. */
+		padding-inline-end: calc( @spacing-35 + 2ch );
+	}
+
+	/* This is the row that wraps, so the count cannot be a flex item on it: an auto margin would
+		make it the one item the wrap moves, landing it under the name. Pinned out of the flow
+		instead, in the room reserved above. */
+	&__node-name--folded > &__count,
+	&__node-name--folded > &__mark {
+		position: absolute;
+		inset-inline-end: @spacing-35;
+		margin-inline-start: 0;
+		/* A line box of its own, since out of the flow it can no longer take the row's centring:
+			inset by half the row's spare height, so it sits on the first line either way. */
+		top: calc( ( @size-200 - @size-150 ) / 2 );
+		height: @size-150;
+		line-height: @size-150;
 	}
 
 	&__node-name--folded > &__node-line {

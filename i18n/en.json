@@ -214,6 +214,9 @@
 	"neowiki-subject-tree-label": "Structure",
 	"neowiki-subject-editor-resize-navigator": "Resize structure panel",
 	"neowiki-subject-tree-not-linked": "Not linked here",
+	"neowiki-subject-tree-related-count": "{{PLURAL:$1|$1 related subject|$1 related subjects}}",
+	"neowiki-subject-tree-repeated": "Already shown higher up",
+	"neowiki-subject-tree-unreadable": "This subject could not be read",
 
 	"neowiki-subject-picker-placeholder": "Search by name or subject ID",
 	"neowiki-subject-picker-no-results": "No subjects found",

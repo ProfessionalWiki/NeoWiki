@@ -146,6 +146,93 @@ describe( 'NeoTree', () => {
 		} );
 	} );
 
+	// An item may declare that it has children before it holds any, so a row whose subtree has
+	// not been asked for still gets a control to ask with. `expandable` is what the control and
+	// `aria-expanded` are read from; `children` alone can only ever describe an open item.
+	describe( 'Disclosure', () => {
+		const collapsedRoot = item( 'root', 'Root', { expandable: true, expanded: false } );
+
+		it( 'draws a disclosure control inside the row of an expandable item', () => {
+			const wrapper = mountTree( [ collapsedRoot ] );
+
+			const control = row( node( wrapper, 'root' ) ).get( '.ext-neowiki-tree__twisty' );
+			expect( control.find( '.cdx-icon' ).exists() ).toBe( true );
+			// Hidden from assistive technology and unreachable by Tab: the state it would
+			// announce is already on the treeitem, and a control inside one would be a second
+			// tab stop in a widget that may only have one.
+			expect( control.attributes( 'aria-hidden' ) ).toBe( 'true' );
+			expect( control.attributes( 'tabindex' ) ).toBeUndefined();
+			expect( control.element.tagName ).not.toBe( 'BUTTON' );
+		} );
+
+		// Nothing is drawn and nothing is reserved: the control is laid over the guide line
+		// rather than given a column, so a row without one is not paying for it.
+		it( 'draws nothing at all on an item that declares no children', () => {
+			const wrapper = mountTree( [ item( 'root', 'Root' ) ] );
+
+			expect( row( node( wrapper, 'root' ) ).find( '.ext-neowiki-tree__twisty' ).exists() )
+				.toBe( false );
+		} );
+
+		// An item whose state the caller will not change on request.
+		it( 'still calls an uncollapsible parent expanded, and gives it no control', () => {
+			const wrapper = mountTree( [ item( 'root', 'Root', {
+				collapsible: false,
+				children: [ item( 'first', 'First sonata' ) ],
+			} ) ] );
+
+			expect( node( wrapper, 'root' ).attributes( 'aria-expanded' ) ).toBe( 'true' );
+			expect( row( node( wrapper, 'root' ) )
+				.find( '.ext-neowiki-tree__twisty' ).exists() ).toBe( false );
+		} );
+
+		it( 'answers neither arrow key\'s toggle on an uncollapsible parent', async () => {
+			const wrapper = mountTree( [ item( 'root', 'Root', {
+				collapsible: false,
+				children: [ item( 'first', 'First sonata' ) ],
+			} ) ] );
+
+			await node( wrapper, 'root' ).trigger( 'keydown', { key: 'ArrowLeft' } );
+			expect( wrapper.emitted( 'toggle' ) ).toBeUndefined();
+
+			// Right still descends: what it may not do is change the item's state.
+			await node( wrapper, 'root' ).trigger( 'keydown', { key: 'ArrowRight' } );
+			expect( wrapper.emitted( 'toggle' ) ).toBeUndefined();
+			expect( tabStops( wrapper )[ 0 ].element ).toBe( node( wrapper, 'first' ).element );
+		} );
+
+		it( 'reports a collapsed item as collapsed rather than as a leaf', () => {
+			const wrapper = mountTree( [ collapsedRoot ] );
+
+			expect( node( wrapper, 'root' ).attributes( 'aria-expanded' ) ).toBe( 'false' );
+		} );
+
+		it( 'emits toggle rather than select when the disclosure control is pressed', async () => {
+			const wrapper = mountTree( [ collapsedRoot ] );
+
+			await row( node( wrapper, 'root' ) ).get( '.ext-neowiki-tree__twisty' ).trigger( 'click' );
+
+			expect( wrapper.emitted( 'toggle' ) ).toHaveLength( 1 );
+			expect( ( wrapper.emitted( 'toggle' ) as unknown[][] )[ 0 ][ 0 ] )
+				.toMatchObject( { key: 'root' } );
+			expect( wrapper.emitted( 'select' ) ).toBeUndefined();
+		} );
+
+		// Whether the children exist at all is the caller's decision, and NeoTree does not
+		// second-guess it — but an item the caller calls closed never prints them, so the
+		// printed order and the arrow keys that follow it cannot reach a hidden row.
+		it( 'prints no children for an item it was told is collapsed', () => {
+			const wrapper = mountTree( [ item( 'root', 'Root', {
+				expandable: true,
+				expanded: false,
+				children: [ item( 'child', 'Child' ) ],
+			} ) ] );
+
+			expect( nodes( wrapper ) ).toHaveLength( 1 );
+			expect( wrapper.find( '[role="group"]' ).exists() ).toBe( false );
+		} );
+	} );
+
 	describe( 'Roving tabindex', () => {
 		// One tab stop for the whole widget: tabbed into once, then moved through by arrow key.
 		it( 'gives the whole tree exactly one tab stop', () => {
@@ -236,21 +323,128 @@ describe( 'NeoTree', () => {
 			expect( tabStops( wrapper )[ 0 ].element ).toBe( node( wrapper, 'second' ).element );
 		} );
 
-		// The tree is always fully expanded, so it claims neither expand key. Pressed from a node
-		// that is neither the first nor the active one: from the root those are the same element,
-		// where a Right wired to Home would look identical to a Right that does nothing.
-		it( 'leaves the tab stop where it is on Right and Left', async () => {
+	} );
+
+	// The tree pattern's two-step contract: Right opens a closed node and then descends into an
+	// open one; Left closes an open node and then climbs out of a closed one.
+	describe( 'Left and Right', () => {
+		// root ── Sonatas ── first (closed, one child) ── second
+		const closedFirst: NeoTreeItem<string> = item( 'root', 'Root', {
+			children: [
+				item( 'first', 'First sonata', {
+					groupLabel: 'Sonatas',
+					expandable: true,
+					expanded: false,
+					children: [ item( 'allegro', 'Allegro', { groupLabel: 'Movements' } ) ],
+				} ),
+				item( 'second', 'Second sonata', { groupLabel: 'Sonatas' } ),
+			],
+		} );
+
+		// Up and Down walk the printed order, which must not reach a row nobody can see. Pressed
+		// from the closed row rather than the root, where a guard that skipped only the root's
+		// own hidden grandchildren would still look right.
+		it( 'Down skips what a closed node is hiding', async () => {
+			const wrapper = mountTree( [ closedFirst ] );
+
+			await node( wrapper, 'first' ).trigger( 'keydown', { key: 'ArrowDown' } );
+
+			expect( tabStops( wrapper ) ).toHaveLength( 1 );
+			expect( tabStops( wrapper )[ 0 ].element ).toBe( node( wrapper, 'second' ).element );
+		} );
+
+		// Two children, so descending onto the bottom of the group cannot pass for the top.
+		it( 'Right moves onto the first child of an open node, not the last', async () => {
 			const wrapper = mountTree();
 
-			await node( wrapper, 'root' ).trigger( 'keydown', { key: 'ArrowDown' } );
-			const moved = tabStops( wrapper )[ 0 ].element;
-			expect( moved ).not.toBe( node( wrapper, 'root' ).element );
+			await node( wrapper, 'root' ).trigger( 'keydown', { key: 'ArrowRight' } );
 
-			await nodes( wrapper )[ 1 ].trigger( 'keydown', { key: 'ArrowRight' } );
-			expect( tabStops( wrapper )[ 0 ].element ).toBe( moved );
+			expect( tabStops( wrapper )[ 0 ].element ).toBe( node( wrapper, 'first' ).element );
+		} );
 
-			await nodes( wrapper )[ 1 ].trigger( 'keydown', { key: 'ArrowLeft' } );
-			expect( tabStops( wrapper )[ 0 ].element ).toBe( moved );
+		it( 'Right opens a closed node and leaves the tab stop on it', async () => {
+			const wrapper = mountTree( [ closedFirst ] );
+
+			await node( wrapper, 'first' ).trigger( 'keydown', { key: 'ArrowRight' } );
+
+			expect( ( wrapper.emitted( 'toggle' ) as unknown[][] )[ 0 ][ 0 ] )
+				.toMatchObject( { key: 'first' } );
+			expect( tabStops( wrapper )[ 0 ].element ).toBe( node( wrapper, 'first' ).element );
+		} );
+
+		it( 'Right moves into the first child of an open node', async () => {
+			const wrapper = mountTree();
+
+			await node( wrapper, 'first' ).trigger( 'keydown', { key: 'ArrowRight' } );
+
+			expect( wrapper.emitted( 'toggle' ) ).toBeUndefined();
+			expect( tabStops( wrapper )[ 0 ].element ).toBe( node( wrapper, 'allegro' ).element );
+		} );
+
+		it( 'Right does nothing on a node with nothing under it', async () => {
+			const wrapper = mountTree();
+			// Moved onto Second first: the tab stop starts on the active root, so a Right that
+			// silently moved it would otherwise look the same as a Right that did nothing.
+			await node( wrapper, 'second' ).trigger( 'keydown', { key: 'Home' } );
+			await node( wrapper, 'second' ).trigger( 'keydown', { key: 'End' } );
+			expect( tabStops( wrapper )[ 0 ].element ).toBe( node( wrapper, 'second' ).element );
+
+			await node( wrapper, 'second' ).trigger( 'keydown', { key: 'ArrowRight' } );
+
+			expect( wrapper.emitted( 'toggle' ) ).toBeUndefined();
+			expect( tabStops( wrapper )[ 0 ].element ).toBe( node( wrapper, 'second' ).element );
+		} );
+
+		it( 'Left closes an open node and leaves the tab stop on it', async () => {
+			const wrapper = mountTree();
+
+			await node( wrapper, 'first' ).trigger( 'keydown', { key: 'ArrowLeft' } );
+
+			expect( ( wrapper.emitted( 'toggle' ) as unknown[][] )[ 0 ][ 0 ] )
+				.toMatchObject( { key: 'first' } );
+			expect( tabStops( wrapper )[ 0 ].element ).toBe( node( wrapper, 'first' ).element );
+		} );
+
+		it( 'Left moves to the parent of a closed node', async () => {
+			const wrapper = mountTree( [ closedFirst ] );
+
+			await node( wrapper, 'first' ).trigger( 'keydown', { key: 'ArrowLeft' } );
+
+			expect( wrapper.emitted( 'toggle' ) ).toBeUndefined();
+			expect( tabStops( wrapper )[ 0 ].element ).toBe( node( wrapper, 'root' ).element );
+		} );
+
+		it( 'Left moves to the parent of a node with nothing under it', async () => {
+			const wrapper = mountTree();
+
+			await node( wrapper, 'allegro' ).trigger( 'keydown', { key: 'ArrowLeft' } );
+
+			expect( wrapper.emitted( 'toggle' ) ).toBeUndefined();
+			expect( tabStops( wrapper )[ 0 ].element ).toBe( node( wrapper, 'first' ).element );
+		} );
+
+		// An open root closes on Left like any other open node; what has nowhere to go is a node
+		// that is already closed and has nothing above it.
+		it( 'Left does nothing on a closed node at the top of the tree', async () => {
+			const wrapper = mountTree( [ item( 'root', 'Root', {
+				expandable: true,
+				expanded: false,
+				children: [ item( 'first', 'First sonata' ) ],
+			} ) ] );
+
+			await node( wrapper, 'root' ).trigger( 'keydown', { key: 'ArrowLeft' } );
+
+			expect( wrapper.emitted( 'toggle' ) ).toBeUndefined();
+			expect( tabStops( wrapper )[ 0 ].element ).toBe( node( wrapper, 'root' ).element );
+		} );
+
+		it( 'Left closes an open root', async () => {
+			const wrapper = mountTree( [ closedFirst ] );
+
+			await node( wrapper, 'root' ).trigger( 'keydown', { key: 'ArrowLeft' } );
+
+			expect( ( wrapper.emitted( 'toggle' ) as unknown[][] )[ 0 ][ 0 ] )
+				.toMatchObject( { key: 'root' } );
 		} );
 	} );
 
@@ -420,6 +614,23 @@ describe( 'NeoTree', () => {
 
 			expect( row( node( wrapper, 'allegro' ) ).get( '.mark' ).text() ).toBe( 'allegro' );
 			expect( wrapper.findAll( '.mark' ).map( ( mark ) => mark.text() ) )
+				.toEqual( [ 'root', 'first', 'allegro', 'second' ] );
+		} );
+	} );
+
+	describe( 'The end slot', () => {
+		// The rules that keep this level with the first line of a wrapped row select it as a
+		// direct child, so a slot nested one level deeper would go on rendering while silently
+		// ceasing to be pinned.
+		it( 'renders the slot as a direct child of the row, outside the label\'s line', () => {
+			const wrapper = mountTree( [ rootWithGroups ], {
+				slots: { end: '<i class="tail">{{ params.item.key }}</i>' },
+			} );
+
+			const allegroRow = row( node( wrapper, 'allegro' ) );
+			expect( allegroRow.get( '.tail' ).element.parentElement )
+				.toBe( allegroRow.element );
+			expect( wrapper.findAll( '.tail' ).map( ( slotted ) => slotted.text() ) )
 				.toEqual( [ 'root', 'first', 'allegro', 'second' ] );
 		} );
 	} );
