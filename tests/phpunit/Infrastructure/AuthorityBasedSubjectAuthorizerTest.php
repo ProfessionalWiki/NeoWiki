@@ -28,10 +28,10 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $authorizer->canCreateMainSubject( new PageId( self::PAGE_ID ) ) );
 	}
 
-	public function testCanCreateChildSubjectIsDeniedWhenThePageCannotBeEdited(): void {
+	public function testCanCreateOtherSubjectIsDeniedWhenThePageCannotBeEdited(): void {
 		$authorizer = $this->newAuthorizer( $this->authorityWithGlobalEditButNoPageEdit() );
 
-		$this->assertFalse( $authorizer->canCreateChildSubject( new PageId( self::PAGE_ID ) ) );
+		$this->assertFalse( $authorizer->canCreateOtherSubject( new PageId( self::PAGE_ID ) ) );
 	}
 
 	public function testCanEditSubjectIsDeniedWhenThePageCannotBeEdited(): void {

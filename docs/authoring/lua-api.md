@@ -17,7 +17,7 @@ enough.
 | Get a Subject by its ID, regardless of which page it's on | [`nw.getSubject`](#nwgetsubjectsubjectid) |
 | Run a read-only Cypher query | [`nw.query`](#nwquerycypher-params) |
 | Run a read-only SPARQL query | [`nw.sparqlQuery`](#nwsparqlquerysparql) |
-| List all Child Subjects on a page | [`nw.getChildSubjects`](#nwgetchildsubjectspagename) |
+| List a page's Subjects other than the Main Subject | [`nw.getOtherSubjects`](#nwgetothersubjectspagename) |
 | Inspect a Schema | [`nw.getSchema`](#nwgetschemaname) |
 
 For definitions of terms like Subject, Schema, and Statement, see the [Glossary](../glossary.md).
@@ -41,8 +41,8 @@ value. Use [`nw.getAll()`](#nwgetallpropertyname-options) when you need every va
 | `options` | table | Optional. `{ page = '...' }` or `{ subject = '...' }`. If both are passed, `subject` takes precedence. |
 
 The current-page (no options) and `{ page = '...' }` forms read the page's **Main Subject**; a property
-that lives only on a Child Subject is not found. Use `{ subject = '...' }` to address a specific Subject
-(including a Child) by ID.
+that lives only on another Subject is not found. Use `{ subject = '...' }` to address a specific Subject
+(including one that is not the Main Subject) by ID.
 
 #### Returns
 
@@ -144,9 +144,9 @@ local subject = nw.getSubject('s1abc5def6ghi78')
 local sourced = nw.getSubject('otherwiki:s1abc5def6ghi78')
 ```
 
-### `nw.getChildSubjects(pageName)`
+### `nw.getOtherSubjects(pageName)`
 
-Returns every Child Subject on a page as a 1-indexed Lua table.
+Returns every Subject on a page other than its Main Subject, as a 1-indexed Lua table.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -155,16 +155,16 @@ Returns every Child Subject on a page as a 1-indexed Lua table.
 #### Returns
 
 A 1-indexed Lua table of Subject tables (see [Subject table format](#subject-table-format)).
-Returns an empty table `{}` (not `nil`) if the page has no Child Subjects or is not readable (see
+Returns an empty table `{}` (not `nil`) if the page has no other Subjects or is not readable (see
 [Permissions](#permissions)), so it's safe to iterate the result directly with `ipairs`.
 
 #### Examples
 
 ```lua
-local children = nw.getChildSubjects()
+local otherSubjects = nw.getOtherSubjects()
 
-for _, child in ipairs(children) do
-    mw.log(child.label)
+for _, subject in ipairs(otherSubjects) do
+    mw.log(subject.label)
 end
 ```
 
@@ -365,7 +365,7 @@ end
 
 ## Subject table format
 
-Subject tables returned by `getMainSubject`, `getSubject`, and `getChildSubjects` have this
+Subject tables returned by `getMainSubject`, `getSubject`, and `getOtherSubjects` have this
 structure:
 
 ```lua
@@ -422,7 +422,7 @@ empty table, a relation to such a Subject shows the Subject ID as its label, and
 
 Each of these counts as an expensive parser function (against the page's expensive function limit):
 `nw.query`, `nw.sparqlQuery`, `nw.getSchema`, and `nw.getSubject` on every call; `nw.getValue`,
-`nw.getAll`, `nw.getMainSubject`, and `nw.getChildSubjects` only when passed a `page`/`subject`
+`nw.getAll`, `nw.getMainSubject`, and `nw.getOtherSubjects` only when passed a `page`/`subject`
 option or page name. Reads of the current page do not count.
 
 ## Related Documentation

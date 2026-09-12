@@ -27,21 +27,21 @@ function newHandlers( overrides: Partial<SubjectDragHandlers> = {} ): SubjectDra
 	return {
 		onPromote: vi.fn(),
 		onDemote: vi.fn(),
-		onReorderChildren: vi.fn(),
+		onReorderOthers: vi.fn(),
 		...overrides,
 	};
 }
 
 function mountComposable(
 	mainSlot: HTMLElement | null,
-	childList: HTMLElement | null,
+	otherList: HTMLElement | null,
 	handlers: SubjectDragHandlers,
 ): void {
 	const mainSlotRef = ref<HTMLElement | null>( mainSlot );
-	const childListRef = ref<HTMLElement | null>( childList );
+	const otherListRef = ref<HTMLElement | null>( otherList );
 	mount( {
 		setup() {
-			useSubjectDrag( mainSlotRef, childListRef, handlers );
+			useSubjectDrag( mainSlotRef, otherListRef, handlers );
 			return () => null;
 		},
 	} );
@@ -59,12 +59,12 @@ const VALID_ID = 's12345abcdefghj';
 
 describe( 'useSubjectDrag', () => {
 
-	it( 'calls onPromote with subject id and source slot when a child is dropped on the main slot', () => {
+	it( 'calls onPromote with subject id and source slot when a row from the other list is dropped on the main slot', () => {
 		const mainSlot = document.createElement( 'div' );
-		const childList = document.createElement( 'ul' );
+		const otherList = document.createElement( 'ul' );
 		const handlers = newHandlers();
 
-		mountComposable( mainSlot, childList, handlers );
+		mountComposable( mainSlot, otherList, handlers );
 
 		const dragged = document.createElement( 'li' );
 		dragged.id = subjectRowDomId( VALID_ID );
@@ -75,46 +75,46 @@ describe( 'useSubjectDrag', () => {
 		expect( ( handlers.onPromote as ReturnType<typeof vi.fn> ).mock.calls[ 0 ][ 0 ].text ).toBe( VALID_ID );
 		expect( ( handlers.onPromote as ReturnType<typeof vi.fn> ).mock.calls[ 0 ][ 1 ] ).toBe( 2 );
 		expect( handlers.onDemote ).not.toHaveBeenCalled();
-		expect( handlers.onReorderChildren ).not.toHaveBeenCalled();
+		expect( handlers.onReorderOthers ).not.toHaveBeenCalled();
 	} );
 
-	it( 'calls onDemote with the target slot when the main row is dropped into the child list', () => {
+	it( 'calls onDemote with the target slot when the main row is dropped into the other list', () => {
 		const mainSlot = document.createElement( 'div' );
-		const childList = document.createElement( 'ul' );
+		const otherList = document.createElement( 'ul' );
 		const handlers = newHandlers();
 
-		mountComposable( mainSlot, childList, handlers );
+		mountComposable( mainSlot, otherList, handlers );
 
 		const dragged = document.createElement( 'div' );
 		dragged.id = subjectRowDomId( VALID_ID );
 
-		findCallByContainer( childList ).options.onDropIn( dragged, 0, 1 );
+		findCallByContainer( otherList ).options.onDropIn( dragged, 0, 1 );
 
 		expect( handlers.onDemote ).toHaveBeenCalledTimes( 1 );
 		expect( ( handlers.onDemote as ReturnType<typeof vi.fn> ).mock.calls[ 0 ][ 0 ] ).toBe( 1 );
 		expect( handlers.onPromote ).not.toHaveBeenCalled();
 	} );
 
-	it( 'calls onReorderChildren when a child is moved within the child list', () => {
+	it( 'calls onReorderOthers when a row is moved within the other list', () => {
 		const mainSlot = document.createElement( 'div' );
-		const childList = document.createElement( 'ul' );
+		const otherList = document.createElement( 'ul' );
 		const handlers = newHandlers();
 
-		mountComposable( mainSlot, childList, handlers );
+		mountComposable( mainSlot, otherList, handlers );
 
-		findCallByContainer( childList ).options.onReorder( 0, 2 );
+		findCallByContainer( otherList ).options.onReorder( 0, 2 );
 
-		expect( handlers.onReorderChildren ).toHaveBeenCalledWith( 0, 2 );
+		expect( handlers.onReorderOthers ).toHaveBeenCalledWith( 0, 2 );
 		expect( handlers.onPromote ).not.toHaveBeenCalled();
 		expect( handlers.onDemote ).not.toHaveBeenCalled();
 	} );
 
 	it( 'does not call onPromote when the dropped element has no recognized subject id', () => {
 		const mainSlot = document.createElement( 'div' );
-		const childList = document.createElement( 'ul' );
+		const otherList = document.createElement( 'ul' );
 		const handlers = newHandlers();
 
-		mountComposable( mainSlot, childList, handlers );
+		mountComposable( mainSlot, otherList, handlers );
 
 		const dragged = document.createElement( 'li' );
 		dragged.id = 'something-else';
@@ -126,10 +126,10 @@ describe( 'useSubjectDrag', () => {
 
 	it( 'does not call onPromote when the prefix matches but the body is not a valid subject id', () => {
 		const mainSlot = document.createElement( 'div' );
-		const childList = document.createElement( 'ul' );
+		const otherList = document.createElement( 'ul' );
 		const handlers = newHandlers();
 
-		mountComposable( mainSlot, childList, handlers );
+		mountComposable( mainSlot, otherList, handlers );
 
 		const dragged = document.createElement( 'li' );
 		dragged.id = subjectRowDomId( 'not-a-valid-id' );

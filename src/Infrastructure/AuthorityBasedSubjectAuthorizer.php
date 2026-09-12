@@ -23,7 +23,7 @@ class AuthorityBasedSubjectAuthorizer implements SubjectPermissionHints, Subject
 		return $this->canEditPage( $pageId );
 	}
 
-	public function canCreateChildSubject( PageId $pageId ): bool {
+	public function canCreateOtherSubject( PageId $pageId ): bool {
 		return $this->canEditPage( $pageId );
 	}
 

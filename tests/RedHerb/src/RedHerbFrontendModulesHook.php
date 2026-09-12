@@ -12,7 +12,7 @@ class RedHerbFrontendModulesHook implements NeoWikiGetFrontendModulesHook {
 
 	public function onNeoWikiGetFrontendModules( array &$modules, OutputPage $out, Skin $skin ): void {
 		$modules[] = 'ext.redherb';
-		$modules[] = 'ext.redherb-create-child';
+		$modules[] = 'ext.redherb-create-subject';
 		$modules[] = 'ext.redherb-edit-main-subject';
 	}
 

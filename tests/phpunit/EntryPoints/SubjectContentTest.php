@@ -29,7 +29,7 @@ class SubjectContentTest extends TestCase {
 		return SubjectContent::newFromData(
 			new PageSubjects(
 				mainSubject: TestSubject::build(),
-				childSubjects: new SubjectMap()
+				otherSubjects: new SubjectMap()
 			)
 		);
 	}
@@ -48,7 +48,7 @@ class SubjectContentTest extends TestCase {
 		$content->setPageSubjects(
 			new PageSubjects(
 				mainSubject: TestSubject::build( id: TestSubject::ZERO_GUID ),
-				childSubjects: new SubjectMap()
+				otherSubjects: new SubjectMap()
 			)
 		);
 
@@ -62,7 +62,7 @@ class SubjectContentTest extends TestCase {
 		$content = SubjectContent::newFromData(
 			new PageSubjects(
 				mainSubject: TestSubject::build( id: TestSubject::ZERO_GUID ),
-				childSubjects: new SubjectMap()
+				otherSubjects: new SubjectMap()
 			)
 		);
 

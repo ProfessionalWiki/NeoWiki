@@ -58,7 +58,7 @@ export interface SubjectRepository extends SubjectLookup {
 	setSubjectsOrdering(
 		pageId: number,
 		mainSubjectId: SubjectId | null,
-		childSubjectIds: SubjectId[],
+		otherSubjectIds: SubjectId[],
 		comment?: string
 	): Promise<void>;
 
@@ -75,7 +75,7 @@ export interface SubjectRepository extends SubjectLookup {
 	 * one. Minting up front (see mintSubjectId) is what lets relations between Subjects be wired
 	 * before any of them exists.
 	 */
-	createChildSubject(
+	createOtherSubject(
 		pageId: number,
 		label: string | null,
 		schemaName: SchemaName,
@@ -102,7 +102,7 @@ export interface SubjectRepository extends SubjectLookup {
 	/**
 	 * Moves a Subject to another page, keeping its id so relations targeting it keep resolving.
 	 * Edits both pages. With makeMainSubject the target page's current Main Subject is demoted to
-	 * a child Subject.
+	 * one of the page's other Subjects.
 	 */
 	moveSubject( id: SubjectId, targetPageId: number, makeMainSubject: boolean, comment?: string ): Promise<void>;
 
@@ -142,7 +142,7 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 	public setSubjectsOrdering(
 		_pageId: number,
 		_mainSubjectId: SubjectId | null,
-		_childSubjectIds: SubjectId[],
+		_otherSubjectIds: SubjectId[],
 		_comment?: string,
 	): Promise<void> {
 		return Promise.resolve();
@@ -152,7 +152,7 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 		return Promise.resolve( this.newWriteResult( new SubjectId( 's11111111111111' ), pageId, label, schemaName, statements ) );
 	}
 
-	public createChildSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _comment?: string, id?: SubjectId ): Promise<SubjectWriteResult> {
+	public createOtherSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _comment?: string, id?: SubjectId ): Promise<SubjectWriteResult> {
 		return Promise.resolve( this.newWriteResult( id ?? new SubjectId( 's11111111111112' ), pageId, label, schemaName, statements ) );
 	}
 

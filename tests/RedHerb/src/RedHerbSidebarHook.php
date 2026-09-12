@@ -27,12 +27,12 @@ class RedHerbSidebarHook implements SidebarBeforeOutputHook {
 			$hints = $extension->newSubjectPermissionHints( $skin->getAuthority() );
 			$pageId = new PageId( $title->getArticleID() );
 
-			if ( $hints->canCreateChildSubject( $pageId ) ) {
+			if ( $hints->canCreateOtherSubject( $pageId ) ) {
 				$links[] = [
-					'id' => 'redherb-sidebar-create-child-company',
-					'text' => $skin->msg( 'redherb-sidebar-create-child-company' )->text(),
+					'id' => 'redherb-sidebar-create-company',
+					'text' => $skin->msg( 'redherb-sidebar-create-company' )->text(),
 					'href' => '#',
-					'class' => 'ext-redherb-create-child-company-trigger',
+					'class' => 'ext-redherb-create-company-trigger',
 				];
 			}
 

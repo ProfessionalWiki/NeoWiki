@@ -353,14 +353,14 @@ describe( 'SubjectStore write results', () => {
 		expect( store.getSubject( id ) ).toStrictEqual( seeded );
 	} );
 
-	it( 'records the Subject a child creation returned', async () => {
+	it( 'records the Subject that createOtherSubject returned', async () => {
 		const created = newSubject( { id: id.text, label: 'as persisted' } );
 		withSubjectRepository( {
-			createChildSubject: vi.fn().mockResolvedValue( writeResult( created ) ),
+			createOtherSubject: vi.fn().mockResolvedValue( writeResult( created ) ),
 		} );
 		const store = useSubjectStore();
 
-		await store.createChildSubject( 7, 'as typed', 'Person', new StatementList( [] ) );
+		await store.createOtherSubject( 7, 'as typed', 'Person', new StatementList( [] ) );
 
 		expect( store.getSubject( id ) ).toStrictEqual( created );
 	} );

@@ -550,38 +550,38 @@ describe( 'RestSubjectRepository', () => {
 
 	} );
 
-	describe( 'createChildSubject', () => {
+	describe( 'createOtherSubject', () => {
 
 		it( 'throws error when the API call fails', async () => {
 			const inMemoryHttpClient = new InMemoryHttpClient( {
-				'https://example.com/rest.php/neowiki/v0/page/42/childSubjects':
+				'https://example.com/rest.php/neowiki/v0/page/42/subjects':
 					new Response( JSON.stringify( { httpCode: 404, httpReason: 'Not Found' } ), { status: 404 } ),
 			} );
 
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
 			await expect(
-				() => repository.createChildSubject( 42, 'Foo', 'Bar', new StatementList( [] ) ),
-			).rejects.toThrowError( 'Error creating child subject' );
+				() => repository.createOtherSubject( 42, 'Foo', 'Bar', new StatementList( [] ) ),
+			).rejects.toThrowError( 'Error creating other subject' );
 		} );
 
 		it( 'returns the created subject as the server persisted it', async () => {
 			const inMemoryHttpClient = new InMemoryHttpClient( {
-				'https://example.com/rest.php/neowiki/v0/page/42/childSubjects':
+				'https://example.com/rest.php/neowiki/v0/page/42/subjects':
 					new Response( JSON.stringify( writeResponseJson( { status: 'created' } ) ), { status: 200 } ),
 			} );
 
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
-			const result = await repository.createChildSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
+			const result = await repository.createOtherSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
 
 			expect( result.subjectId.text ).toEqual( 's33333333333333' );
 		} );
 
-		const childSubjectsUrl = 'https://example.com/rest.php/neowiki/v0/page/42/childSubjects';
+		const subjectsUrl = 'https://example.com/rest.php/neowiki/v0/page/42/subjects';
 
 		function clientAnswering( response: Response ): InMemoryHttpClient {
-			return new InMemoryHttpClient( { [ childSubjectsUrl ]: response } );
+			return new InMemoryHttpClient( { [ subjectsUrl ]: response } );
 		}
 
 		function createdResponse(): Response {
@@ -596,7 +596,7 @@ describe( 'RestSubjectRepository', () => {
 			const inMemoryHttpClient = clientAnswering( createdResponse() );
 			const postSpy = vi.spyOn( inMemoryHttpClient, 'post' );
 
-			await newRepository( 'https://example.com/rest.php', inMemoryHttpClient ).createChildSubject(
+			await newRepository( 'https://example.com/rest.php', inMemoryHttpClient ).createOtherSubject(
 				42,
 				'John Doe',
 				'Employee',
@@ -613,7 +613,7 @@ describe( 'RestSubjectRepository', () => {
 			const postSpy = vi.spyOn( inMemoryHttpClient, 'post' );
 
 			await newRepository( 'https://example.com/rest.php', inMemoryHttpClient )
-				.createChildSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
+				.createOtherSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
 
 			expect( ( postSpy.mock.calls[ 0 ][ 1 ] as Record<string, unknown> ).id ).toBeUndefined();
 		} );
@@ -621,7 +621,7 @@ describe( 'RestSubjectRepository', () => {
 		it( 'throws SubjectIdInUseError naming the id when the server refuses the minted id as taken', async () => {
 			const repository = newRepository( 'https://example.com/rest.php', clientAnswering( conflictResponse() ) );
 
-			const error = await repository.createChildSubject(
+			const error = await repository.createOtherSubject(
 				42,
 				'John Doe',
 				'Employee',
@@ -637,9 +637,9 @@ describe( 'RestSubjectRepository', () => {
 		it( 'throws the generic error on a conflict for a create that carried no id', async () => {
 			const repository = newRepository( 'https://example.com/rest.php', clientAnswering( conflictResponse() ) );
 
-			const promise = repository.createChildSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
+			const promise = repository.createOtherSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
 
-			await expect( promise ).rejects.toThrowError( 'Error creating child subject' );
+			await expect( promise ).rejects.toThrowError( 'Error creating other subject' );
 			await expect( promise ).rejects.toSatisfy(
 				( err ) => !( err instanceof SubjectIdInUseError ),
 			);
@@ -820,7 +820,7 @@ describe( 'RestSubjectRepository', () => {
 
 	} );
 
-	describe( 'createChildSubject 422 handling', () => {
+	describe( 'createOtherSubject 422 handling', () => {
 
 		it( 'throws ValidationFailedError on well-formed 422', async () => {
 			const body = {
@@ -829,13 +829,13 @@ describe( 'RestSubjectRepository', () => {
 				],
 			};
 			const inMemoryHttpClient = new InMemoryHttpClient( {
-				'https://example.com/rest.php/neowiki/v0/page/42/childSubjects':
+				'https://example.com/rest.php/neowiki/v0/page/42/subjects':
 					new Response( JSON.stringify( body ), { status: 422, headers: { 'Content-Type': 'application/json' } } ),
 			} );
 
 			await expect(
 				newRepository( 'https://example.com/rest.php', inMemoryHttpClient )
-					.createChildSubject( 42, 'Label', 'Schema', new StatementList( [] ) ),
+					.createOtherSubject( 42, 'Label', 'Schema', new StatementList( [] ) ),
 			).rejects.toBeInstanceOf( ValidationFailedError );
 		} );
 

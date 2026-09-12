@@ -264,9 +264,9 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCreateMainSubjectApi"
 		},
 		{
-			"path": "/neowiki/v0/page/{pageId}/childSubjects",
+			"path": "/neowiki/v0/page/{pageId}/subjects",
 			"method": [ "POST" ],
-			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCreateChildSubjectApi"
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCreateOtherSubjectApi"
 		},
 		{
 			"path": "/neowiki/v0/page/{pageId}/subjects",

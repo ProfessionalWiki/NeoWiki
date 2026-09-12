@@ -27,18 +27,18 @@ class SetSubjectsOrderingActionTest extends TestCase {
 	private const string FIRST_ID = 's11111111111aaa';
 	private const string SECOND_ID = 's11111111111bbb';
 	private const string THIRD_ID = 's11111111111ccc';
-	private const string OTHER_ID = 's11111111111oth';
+	private const string UNKNOWN_SUBJECT_ID = 's11111111111oth';
 	private const int PAGE_ID = 42;
 
-	public function testReordersChildSubjects(): void {
-		$repository = $this->newRepositoryWithMainAndThreeChildren();
+	public function testReordersOtherSubjects(): void {
+		$repository = $this->newRepositoryWithMainAndThreeOtherSubjects();
 		$presenter = $this->newSpyPresenter();
 
 		$this->newAction( $presenter, $repository )->setOrdering(
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
 				mainSubjectId: self::MAIN_ID,
-				childSubjectIds: [ self::THIRD_ID, self::FIRST_ID, self::SECOND_ID ],
+				otherSubjectIds: [ self::THIRD_ID, self::FIRST_ID, self::SECOND_ID ],
 				comment: 'Reorder',
 			)
 		);
@@ -47,20 +47,20 @@ class SetSubjectsOrderingActionTest extends TestCase {
 		$saved = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
 		$this->assertSame(
 			[ self::THIRD_ID, self::FIRST_ID, self::SECOND_ID ],
-			$saved->getChildSubjects()->getIdsAsTextArray()
+			$saved->getOtherSubjects()->getIdsAsTextArray()
 		);
 		$this->assertSame( 'Reorder', $repository->comments[self::PAGE_ID] );
 	}
 
 	public function testPromotesAndSwapsPreviousMainIntoSlot(): void {
-		$repository = $this->newRepositoryWithMainAndThreeChildren();
+		$repository = $this->newRepositoryWithMainAndThreeOtherSubjects();
 		$presenter = $this->newSpyPresenter();
 
 		$this->newAction( $presenter, $repository )->setOrdering(
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
 				mainSubjectId: self::SECOND_ID,
-				childSubjectIds: [ self::FIRST_ID, self::MAIN_ID, self::THIRD_ID ],
+				otherSubjectIds: [ self::FIRST_ID, self::MAIN_ID, self::THIRD_ID ],
 			)
 		);
 
@@ -69,19 +69,19 @@ class SetSubjectsOrderingActionTest extends TestCase {
 		$this->assertSame( self::SECOND_ID, $saved->getMainSubject()->id->text );
 		$this->assertSame(
 			[ self::FIRST_ID, self::MAIN_ID, self::THIRD_ID ],
-			$saved->getChildSubjects()->getIdsAsTextArray()
+			$saved->getOtherSubjects()->getIdsAsTextArray()
 		);
 	}
 
 	public function testDemotesAtChosenPosition(): void {
-		$repository = $this->newRepositoryWithMainAndThreeChildren();
+		$repository = $this->newRepositoryWithMainAndThreeOtherSubjects();
 		$presenter = $this->newSpyPresenter();
 
 		$this->newAction( $presenter, $repository )->setOrdering(
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
 				mainSubjectId: null,
-				childSubjectIds: [ self::FIRST_ID, self::MAIN_ID, self::SECOND_ID, self::THIRD_ID ],
+				otherSubjectIds: [ self::FIRST_ID, self::MAIN_ID, self::SECOND_ID, self::THIRD_ID ],
 			)
 		);
 
@@ -90,12 +90,12 @@ class SetSubjectsOrderingActionTest extends TestCase {
 		$this->assertNull( $saved->getMainSubject() );
 		$this->assertSame(
 			[ self::FIRST_ID, self::MAIN_ID, self::SECOND_ID, self::THIRD_ID ],
-			$saved->getChildSubjects()->getIdsAsTextArray()
+			$saved->getOtherSubjects()->getIdsAsTextArray()
 		);
 	}
 
 	public function testReportsNoChangeWhenOrderingMatchesCurrent(): void {
-		$repository = $this->newRepositoryWithMainAndThreeChildren();
+		$repository = $this->newRepositoryWithMainAndThreeOtherSubjects();
 		$before = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
 		$presenter = $this->newSpyPresenter();
 
@@ -103,7 +103,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
 				mainSubjectId: self::MAIN_ID,
-				childSubjectIds: [ self::FIRST_ID, self::SECOND_ID, self::THIRD_ID ],
+				otherSubjectIds: [ self::FIRST_ID, self::SECOND_ID, self::THIRD_ID ],
 			)
 		);
 
@@ -112,7 +112,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 	}
 
 	public function testReportsNoChangeWhenTheOrderingIsSpelledWithExplicitlyLocalIds(): void {
-		$repository = $this->newRepositoryWithMainAndThreeChildren();
+		$repository = $this->newRepositoryWithMainAndThreeOtherSubjects();
 		$presenter = $this->newSpyPresenter();
 		$local = TestSubjectIds::LOCAL_SOURCE_KEY . ':';
 
@@ -120,7 +120,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
 				mainSubjectId: $local . self::MAIN_ID,
-				childSubjectIds: [ $local . self::FIRST_ID, $local . self::SECOND_ID, $local . self::THIRD_ID ],
+				otherSubjectIds: [ $local . self::FIRST_ID, $local . self::SECOND_ID, $local . self::THIRD_ID ],
 			)
 		);
 
@@ -128,7 +128,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 	}
 
 	public function testReportsInvalidOrderingOnUnknownId(): void {
-		$repository = $this->newRepositoryWithMainAndThreeChildren();
+		$repository = $this->newRepositoryWithMainAndThreeOtherSubjects();
 		$before = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
 		$presenter = $this->newSpyPresenter();
 
@@ -136,7 +136,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
 				mainSubjectId: self::MAIN_ID,
-				childSubjectIds: [ self::FIRST_ID, self::OTHER_ID, self::THIRD_ID ],
+				otherSubjectIds: [ self::FIRST_ID, self::UNKNOWN_SUBJECT_ID, self::THIRD_ID ],
 			)
 		);
 
@@ -144,22 +144,22 @@ class SetSubjectsOrderingActionTest extends TestCase {
 		$this->assertEquals( $before, $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) ) );
 	}
 
-	public function testReportsInvalidOrderingWhenChildIdMissing(): void {
-		$repository = $this->newRepositoryWithMainAndThreeChildren();
+	public function testReportsInvalidOrderingWhenOtherSubjectIdIsMissing(): void {
+		$repository = $this->newRepositoryWithMainAndThreeOtherSubjects();
 		$presenter = $this->newSpyPresenter();
 
 		$this->newAction( $presenter, $repository )->setOrdering(
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
 				mainSubjectId: self::MAIN_ID,
-				childSubjectIds: [ self::FIRST_ID, self::SECOND_ID ],
+				otherSubjectIds: [ self::FIRST_ID, self::SECOND_ID ],
 			)
 		);
 
 		$this->assertTrue( $presenter->invalid );
 	}
 
-	public function testDemotesSingleMainWithNoOtherChildren(): void {
+	public function testDemotesSingleMainOnAPageWithNoOtherSubjects(): void {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects(
 			new PageSubjects( TestSubject::build( id: self::MAIN_ID ), new SubjectMap() ),
@@ -171,17 +171,17 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
 				mainSubjectId: null,
-				childSubjectIds: [ self::MAIN_ID ],
+				otherSubjectIds: [ self::MAIN_ID ],
 			)
 		);
 
 		$this->assertTrue( $presenter->changed );
 		$saved = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
 		$this->assertNull( $saved->getMainSubject() );
-		$this->assertSame( [ self::MAIN_ID ], $saved->getChildSubjects()->getIdsAsTextArray() );
+		$this->assertSame( [ self::MAIN_ID ], $saved->getOtherSubjects()->getIdsAsTextArray() );
 	}
 
-	public function testPromotesSingleChildOnPageWithNoMain(): void {
+	public function testPromotesTheSingleOtherSubjectOnAPageWithNoMain(): void {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects(
 			new PageSubjects( null, new SubjectMap( TestSubject::build( id: self::FIRST_ID ) ) ),
@@ -193,14 +193,14 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
 				mainSubjectId: self::FIRST_ID,
-				childSubjectIds: [],
+				otherSubjectIds: [],
 			)
 		);
 
 		$this->assertTrue( $presenter->changed );
 		$saved = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
 		$this->assertSame( self::FIRST_ID, $saved->getMainSubject()->id->text );
-		$this->assertTrue( $saved->getChildSubjects()->isEmpty() );
+		$this->assertTrue( $saved->getOtherSubjects()->isEmpty() );
 	}
 
 	public function testThrowsWhenUserMayReadButNotEditPage(): void {
@@ -219,13 +219,13 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
 				mainSubjectId: null,
-				childSubjectIds: [],
+				otherSubjectIds: [],
 			)
 		);
 	}
 
 	public function testReportsPageNotFoundWhenUserMayNotReadPage(): void {
-		$repository = $this->newRepositoryWithMainAndThreeChildren();
+		$repository = $this->newRepositoryWithMainAndThreeOtherSubjects();
 		$before = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
 		$presenter = $this->newSpyPresenter();
 
@@ -239,7 +239,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
 				mainSubjectId: self::MAIN_ID,
-				childSubjectIds: [ self::THIRD_ID, self::FIRST_ID, self::SECOND_ID ],
+				otherSubjectIds: [ self::THIRD_ID, self::FIRST_ID, self::SECOND_ID ],
 			)
 		);
 
@@ -255,7 +255,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 
 		( new SetSubjectsOrderingAction(
 			presenter: $presenter,
-			subjectRepository: $this->newRepositoryWithMainAndThreeChildren(),
+			subjectRepository: $this->newRepositoryWithMainAndThreeOtherSubjects(),
 			readAuthorizer: new StubPageReadAuthorizer( allowed: false ),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: false ),
 			subjectIdParser: TestSubjectIds::newParser(),
@@ -263,7 +263,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
 				mainSubjectId: self::MAIN_ID,
-				childSubjectIds: [ self::THIRD_ID, self::FIRST_ID, self::SECOND_ID ],
+				otherSubjectIds: [ self::THIRD_ID, self::FIRST_ID, self::SECOND_ID ],
 			)
 		);
 
@@ -273,7 +273,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 	public function testReportsPageNotFoundWhenTheSaveFails(): void {
 		// The page passed the read and write checks but is gone by the time the save runs: the
 		// dropped write must be reported as not-found, never as changed.
-		$repository = $this->newRepositoryWithMainAndThreeChildren();
+		$repository = $this->newRepositoryWithMainAndThreeOtherSubjects();
 		$repository->failNextSave = true;
 
 		$presenter = $this->newSpyPresenter();
@@ -281,7 +281,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			new SetSubjectsOrderingRequest(
 				pageId: self::PAGE_ID,
 				mainSubjectId: self::MAIN_ID,
-				childSubjectIds: [ self::THIRD_ID, self::FIRST_ID, self::SECOND_ID ],
+				otherSubjectIds: [ self::THIRD_ID, self::FIRST_ID, self::SECOND_ID ],
 			)
 		);
 
@@ -289,7 +289,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 		$this->assertFalse( $presenter->changed );
 	}
 
-	private function newRepositoryWithMainAndThreeChildren(): InMemorySubjectRepository {
+	private function newRepositoryWithMainAndThreeOtherSubjects(): InMemorySubjectRepository {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects(
 			new PageSubjects(

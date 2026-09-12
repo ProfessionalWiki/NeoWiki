@@ -41,8 +41,8 @@ class SetMainSubjectApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testPromotesChildToMain(): void {
-		$pageId = $this->createPageWithMainAndChild()->getPage()->getId();
+	public function testPromotesOtherSubjectToMain(): void {
+		$pageId = $this->createPageWithMainAndOtherSubject()->getPage()->getId();
 
 		$response = $this->executeHandler(
 			$this->newApi(),
@@ -56,13 +56,13 @@ class SetMainSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$pageSubjects = NeoWikiExtension::getInstance()->getSubjectRepository()
 			->getSubjectsByPageId( new PageId( $pageId ) );
 		$this->assertSame( 'sTestSMS1111ch1', $pageSubjects->getMainSubject()?->id->text );
-		$this->assertTrue( $pageSubjects->getChildSubjects()->hasSubject(
+		$this->assertTrue( $pageSubjects->getOtherSubjects()->hasSubject(
 			TestSubject::build( id: 'sTestSMS1111maa' )->id
 		) );
 	}
 
 	public function testClearsMainWithNullSubjectId(): void {
-		$pageId = $this->createPageWithMainAndChild()->getPage()->getId();
+		$pageId = $this->createPageWithMainAndOtherSubject()->getPage()->getId();
 
 		$response = $this->executeHandler(
 			$this->newApi(),
@@ -76,13 +76,13 @@ class SetMainSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$pageSubjects = NeoWikiExtension::getInstance()->getSubjectRepository()
 			->getSubjectsByPageId( new PageId( $pageId ) );
 		$this->assertNull( $pageSubjects->getMainSubject() );
-		$this->assertTrue( $pageSubjects->getChildSubjects()->hasSubject(
+		$this->assertTrue( $pageSubjects->getOtherSubjects()->hasSubject(
 			TestSubject::build( id: 'sTestSMS1111maa' )->id
 		) );
 	}
 
 	public function testReturnsNotFoundForUnknownSubjectId(): void {
-		$pageId = $this->createPageWithMainAndChild()->getPage()->getId();
+		$pageId = $this->createPageWithMainAndOtherSubject()->getPage()->getId();
 
 		$response = $this->executeHandler(
 			$this->newApi(),
@@ -93,7 +93,7 @@ class SetMainSubjectApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testReturnsBadRequestWhenSubjectIdMissing(): void {
-		$pageId = $this->createPageWithMainAndChild()->getPage()->getId();
+		$pageId = $this->createPageWithMainAndOtherSubject()->getPage()->getId();
 
 		$response = $this->executeHandler(
 			$this->newApi(),
@@ -117,7 +117,7 @@ class SetMainSubjectApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testReadableButNotEditablePageReturns403(): void {
-		$pageId = $this->createPageWithMainAndChild()->getPage()->getId();
+		$pageId = $this->createPageWithMainAndOtherSubject()->getPage()->getId();
 
 		// The caller can read the page - so its existence is already public - but cannot edit it.
 		$response = $this->executeHandler(
@@ -130,7 +130,7 @@ class SetMainSubjectApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testUnreadablePageIsIndistinguishableFromNonexistentPage(): void {
-		$pageId = $this->createPageWithMainAndChild()->getPage()->getId();
+		$pageId = $this->createPageWithMainAndOtherSubject()->getPage()->getId();
 
 		// A real page the caller may not read: a write to it must not reveal that it exists.
 		$unreadable = $this->executeHandler(
@@ -170,7 +170,7 @@ class SetMainSubjectApiTest extends NeoWikiIntegrationTestCase {
 		] );
 	}
 
-	private function createPageWithMainAndChild(): RevisionRecord {
+	private function createPageWithMainAndOtherSubject(): RevisionRecord {
 		return $this->createPageWithSubjects(
 			'SetMainSubjectApiTest_Page',
 			mainSubject: TestSubject::build(
@@ -178,10 +178,10 @@ class SetMainSubjectApiTest extends NeoWikiIntegrationTestCase {
 				label: new SubjectLabel( 'main' ),
 				schemaName: new SchemaName( 'SetMainSubjectApiTestSchema' )
 			),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build(
 					id: 'sTestSMS1111ch1',
-					label: new SubjectLabel( 'child' ),
+					label: new SubjectLabel( 'other' ),
 					schemaName: new SchemaName( 'SetMainSubjectApiTestSchema' )
 				)
 			)

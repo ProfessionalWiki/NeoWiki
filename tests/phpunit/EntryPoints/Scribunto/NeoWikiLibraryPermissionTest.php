@@ -49,7 +49,7 @@ class NeoWikiLibraryPermissionTest extends NeoWikiLibraryTestBase {
 					new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Secret City' ) ),
 				] ),
 			),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				new Subject(
 					id: new SubjectId( 's1test5ffffffff' ),
 					label: new SubjectLabel( 'Restricted Entry' ),

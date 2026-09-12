@@ -40,7 +40,7 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		$this->createPageWithSubjects(
 			pageName: 'PageRelationUpdaterTest',
 			mainSubject: TestSubject::build( id: self::SUBJECT_ID, label: 'Relation holder' ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::TARGET_SUBJECT_1, label: 'Target 1' ),
 				TestSubject::build( id: self::TARGET_SUBJECT_2, label: 'Target 2' ),
 			)

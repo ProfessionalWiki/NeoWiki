@@ -256,7 +256,7 @@ describe( 'MoveSubjectDialog', () => {
 			.toContain( 'neowiki-managesubjects-move-source-loses-main' );
 	} );
 
-	it( 'carries no such warning when a child subject is moving', () => {
+	it( 'carries no such warning when one of the other subjects is moving', () => {
 		expect( textOf( mountDialog() ) ).not.toContain( 'neowiki-managesubjects-move-source-loses-main' );
 	} );
 

@@ -61,7 +61,7 @@ JSON
 					TestStatement::build( 'population', '3700000' ),
 				] )
 			),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build(
 					id: self::PARIS_ID,
 					label: new SubjectLabel( 'Paris' ),

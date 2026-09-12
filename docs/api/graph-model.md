@@ -122,9 +122,9 @@ Connects a Page node to each of its Subject nodes.
 
 | Property | Neo4j Type | Description |
 |----------|------------|-------------|
-| `isMain` | boolean | `true` for the Main Subject, `false` for Child Subjects |
+| `isMain` | boolean | `true` for the Main Subject, `false` for the page's other Subjects |
 
-A page can have at most one Main Subject and any number of Child Subjects
+A page can have at most one Main Subject and any number of other Subjects
 ([ADR 7](../adr/007-multiple-subjects-per-page.md)).
 
 ### Typed Relations

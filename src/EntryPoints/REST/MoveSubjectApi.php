@@ -79,7 +79,7 @@ class MoveSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'boolean',
 				ParamValidator::PARAM_REQUIRED => false,
-				self::PARAM_DESCRIPTION => 'Make the moved Subject the target page\'s Main Subject, demoting the page\'s current Main Subject to a child Subject.',
+				self::PARAM_DESCRIPTION => 'Make the moved Subject the target page\'s Main Subject, demoting the page\'s current Main Subject to one of its other Subjects.',
 			],
 			'comment' => [
 				self::PARAM_SOURCE => 'body',

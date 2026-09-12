@@ -68,17 +68,17 @@ function p.subject( frame )
 	return table.concat( rows, '\n' )
 end
 
-function p.children( frame )
+function p.otherSubjects( frame )
 	local page = frame.args[1]
-	local children = nw.getChildSubjects( page )
+	local otherSubjects = nw.getOtherSubjects( page )
 
-	if not children or #children == 0 then
-		return 'No child subjects'
+	if not otherSubjects or #otherSubjects == 0 then
+		return 'No other Subjects'
 	end
 
 	local parts = {}
-	for _, child in ipairs( children ) do
-		parts[#parts + 1] = "'''" .. child.label .. "''' (" .. child.schema .. ")"
+	for _, subject in ipairs( otherSubjects ) do
+		parts[#parts + 1] = "'''" .. subject.label .. "''' (" .. subject.schema .. ")"
 	end
 
 	return table.concat( parts, ', ' )
@@ -149,13 +149,13 @@ local function statementValue( stmt )
 	return v
 end
 
--- Renders a wikitable from the current page's child Subjects.
+-- Renders a wikitable from the current page's other Subjects.
 -- Args: columns=Col1, Col2 (required, in order)
---       schema=SchemaName (optional, filters children to one schema)
+--       schema=SchemaName (optional, filters the Subjects to one schema)
 --       sortBy=ColName (optional)
 --       sortDir=asc|desc (optional, default desc)
 --       numberColumns=Col1, Col2 (optional, formatted with thousand separators)
-function p.childTable( frame )
+function p.otherSubjectTable( frame )
 	local columns = mw.text.split( frame.args.columns or '', ',%s*' )
 	local schemaFilter = frame.args.schema
 	local sortBy = frame.args.sortBy
@@ -168,19 +168,19 @@ function p.childTable( frame )
 		end
 	end
 
-	local children = nw.getChildSubjects()
-	if not children then
+	local otherSubjects = nw.getOtherSubjects()
+	if not otherSubjects then
 		return ''
 	end
 
 	local lang = mw.getContentLanguage()
 	local rows = {}
 
-	for _, child in ipairs( children ) do
-		if not schemaFilter or child.schema == schemaFilter then
+	for _, subject in ipairs( otherSubjects ) do
+		if not schemaFilter or subject.schema == schemaFilter then
 			local row = {}
 			for _, col in ipairs( columns ) do
-				local v = statementValue( child.statements[col] )
+				local v = statementValue( subject.statements[col] )
 				if v == nil then
 					row[col] = ''
 				elseif numberSet[col] and tonumber( v ) then
@@ -192,7 +192,7 @@ function p.childTable( frame )
 			-- Stash the raw sort value so number columns sort numerically
 			-- even after thousand-separator formatting has stringified them.
 			if sortBy then
-				row.__sortValue = statementValue( child.statements[sortBy] )
+				row.__sortValue = statementValue( subject.statements[sortBy] )
 			end
 			rows[#rows + 1] = row
 		end

@@ -115,17 +115,17 @@ readonly class MoveSubjectAction {
 
 	private function addToTarget( PageSubjects $targetSubjects, Subject $subject, bool $makeMainSubject ): void {
 		if ( !$makeMainSubject ) {
-			$targetSubjects->createChildSubject( $subject );
+			$targetSubjects->createOtherSubject( $subject );
 			return;
 		}
 
 		// setMainSubject drops the previous main from the page rather than demoting it, so the
-		// previous main is put back as a child, as SetMainSubjectAction does.
+		// previous main is put back as one of the page's other Subjects, as SetMainSubjectAction does.
 		$previousMain = $targetSubjects->getMainSubject();
 		$targetSubjects->setMainSubject( $subject );
 
 		if ( $previousMain !== null ) {
-			$targetSubjects->createChildSubject( $previousMain );
+			$targetSubjects->createOtherSubject( $previousMain );
 		}
 	}
 
