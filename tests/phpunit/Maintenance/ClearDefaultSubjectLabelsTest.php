@@ -76,7 +76,7 @@ class ClearDefaultSubjectLabelsTest extends NeoWikiIntegrationTestCase {
 	 * was named after the page. Almost every such label a real wiki carries is of this era, so a
 	 * heuristic that only knew about the Schema name would migrate next to nothing.
 	 */
-	public function testAnOtherSubjectLabelRepeatingThePageNameIsCleared(): void {
+	public function testOtherSubjectLabelRepeatingThePageNameIsCleared(): void {
 		$this->createPageWithSubjects(
 			'Vincent van Gogh',
 			TestSubject::build( id: self::MAIN_ID, label: 'Vincent van Gogh' ),
@@ -91,7 +91,7 @@ class ClearDefaultSubjectLabelsTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testAnOtherSubjectLabelRepeatingTheSchemaNameIsCleared(): void {
+	public function testOtherSubjectLabelRepeatingTheSchemaNameIsCleared(): void {
 		$this->createPageWithSubjects(
 			'Vincent van Gogh',
 			TestSubject::build( id: self::MAIN_ID, label: 'A chosen name' ),
@@ -106,7 +106,7 @@ class ClearDefaultSubjectLabelsTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testAnOtherSubjectLabelSomebodyChoseIsKept(): void {
+	public function testOtherSubjectLabelSomebodyChoseIsKept(): void {
 		$this->createPageWithSubjects(
 			'Vincent van Gogh',
 			TestSubject::build( id: self::MAIN_ID, label: 'A chosen name' ),

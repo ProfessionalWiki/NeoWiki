@@ -61,3 +61,15 @@ permission check, and MediaWiki rewrites those tables only on an edit, not on a 
 
 If your Subjects predate the optional Subject label, run
 [clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before that rebuild.
+
+## Renamed accessors, September 2026
+
+`nw.getChildSubjects` is now [`nw.getOtherSubjects`](../authoring/lua-api.md#nwgetothersubjectspagename),
+and there is no alias. Modules and templates already stored on a wiki keep calling the old name and
+render a script error until edited, so grep your `Module:` namespace for `getChildSubjects` after
+upgrading. `make import-demo-data` covers the demo content.
+
+Two REST surfaces moved with it: `POST /neowiki/v0/page/{pageId}/childSubjects` is now
+`POST /neowiki/v0/page/{pageId}/subjects`, and the `childSubjectIds` key of
+`PUT /neowiki/v0/page/{pageId}/subjectsOrdering` is now `otherSubjectIds`. Bodies and responses are
+otherwise unchanged. See the [REST API reference](../api/rest-api.md#pages-and-subjects).

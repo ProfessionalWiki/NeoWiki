@@ -27,7 +27,7 @@ class SetMainSubjectActionTest extends TestCase {
 	private const string UNKNOWN_SUBJECT_ID = 's11111111111oaa';
 	private const int PAGE_ID = 42;
 
-	public function testPromotesAnOtherSubjectToMainAndDemotesPreviousMain(): void {
+	public function testPromotesOtherSubjectToMainAndDemotesPreviousMain(): void {
 		$repository = $this->newRepositoryWithMainAndOtherSubject();
 
 		$presenter = $this->newSpyPresenter();
@@ -44,7 +44,7 @@ class SetMainSubjectActionTest extends TestCase {
 		$this->assertSame( 'Promote other subject', $repository->comments[self::PAGE_ID] );
 	}
 
-	public function testClearingMainDemotesPreviousMainToAnOtherSubject(): void {
+	public function testClearingMainDemotesPreviousMainToOtherSubject(): void {
 		$repository = $this->newRepositoryWithMainAndOtherSubject();
 
 		$presenter = $this->newSpyPresenter();

@@ -89,7 +89,7 @@ class SubjectDisplayNameTest extends TestCase {
 	 * Null is what makes the Schema tier the one nobody chose, and it is the whole answer a caller
 	 * needs: the name it produces and the verdict on that name come from this one value.
 	 */
-	public function testAnOtherSubjectWithoutALabelHasNoChosenName(): void {
+	public function testOtherSubjectWithoutALabelHasNoChosenName(): void {
 		$this->assertNull( $this->chosenName( null, false ) );
 	}
 

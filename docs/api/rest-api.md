@@ -52,7 +52,7 @@ Subjects and arrange them.
 | `GET /neowiki/v0/page/{pageId}/rdf` | Export the page's Subjects and metadata as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or the name of a Mapping page. See [RDF export](rdf-export.md) and [Mapping Format](../authoring/mapping-format.md). |
 | `POST /neowiki/v0/page/{pageId}/mainSubject` | Create the page's main Subject. |
 | `PUT /neowiki/v0/page/{pageId}/mainSubject` | Promote one of the page's other Subjects to main, or clear it. |
-| `POST /neowiki/v0/page/{pageId}/subjects` | Create a Subject on the page, other than the main Subject. |
+| `POST /neowiki/v0/page/{pageId}/subjects` | Create a Subject on the page. Use `POST .../mainSubject` for the main Subject. |
 | `PUT /neowiki/v0/page/{pageId}/subjectsOrdering` | Reorder the page's other Subjects and set the main Subject. |
 
 ### Schemas

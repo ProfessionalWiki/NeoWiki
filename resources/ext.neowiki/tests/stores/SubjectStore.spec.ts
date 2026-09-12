@@ -353,7 +353,7 @@ describe( 'SubjectStore write results', () => {
 		expect( store.getSubject( id ) ).toStrictEqual( seeded );
 	} );
 
-	it( 'records the Subject an other-subject creation returned', async () => {
+	it( 'records the Subject that createOtherSubject returned', async () => {
 		const created = newSubject( { id: id.text, label: 'as persisted' } );
 		withSubjectRepository( {
 			createOtherSubject: vi.fn().mockResolvedValue( writeResult( created ) ),

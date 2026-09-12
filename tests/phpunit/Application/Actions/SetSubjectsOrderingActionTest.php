@@ -144,7 +144,7 @@ class SetSubjectsOrderingActionTest extends TestCase {
 		$this->assertEquals( $before, $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) ) );
 	}
 
-	public function testReportsInvalidOrderingWhenAnOtherSubjectIdIsMissing(): void {
+	public function testReportsInvalidOrderingWhenOtherSubjectIdIsMissing(): void {
 		$repository = $this->newRepositoryWithMainAndThreeOtherSubjects();
 		$presenter = $this->newSpyPresenter();
 
