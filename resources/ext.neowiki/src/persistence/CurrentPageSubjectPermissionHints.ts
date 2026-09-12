@@ -18,8 +18,8 @@ export class CurrentPageSubjectPermissionHints implements SubjectPermissionHints
 	) {
 	}
 
-	public async canCreateChildSubject( pageId: number ): Promise<boolean> {
-		return this.decisionFor( pageId ) ?? this.otherPages.canCreateChildSubject( pageId );
+	public async canCreateOtherSubject( pageId: number ): Promise<boolean> {
+		return this.decisionFor( pageId ) ?? this.otherPages.canCreateOtherSubject( pageId );
 	}
 
 	public async canEditSubject( pageId: number ): Promise<boolean> {

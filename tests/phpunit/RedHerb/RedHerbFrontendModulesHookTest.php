@@ -25,7 +25,7 @@ class RedHerbFrontendModulesHookTest extends TestCase {
 		);
 
 		$this->assertSame(
-			[ 'ext.redherb', 'ext.redherb-create-child', 'ext.redherb-edit-main-subject' ],
+			[ 'ext.redherb', 'ext.redherb-create-subject', 'ext.redherb-edit-main-subject' ],
 			$modules
 		);
 	}
@@ -41,7 +41,7 @@ class RedHerbFrontendModulesHookTest extends TestCase {
 		);
 
 		$this->assertSame(
-			[ 'ext.preexisting', 'ext.redherb', 'ext.redherb-create-child', 'ext.redherb-edit-main-subject' ],
+			[ 'ext.preexisting', 'ext.redherb', 'ext.redherb-create-subject', 'ext.redherb-edit-main-subject' ],
 			$modules
 		);
 	}

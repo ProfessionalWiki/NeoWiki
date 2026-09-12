@@ -367,7 +367,7 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'CreateSubjectApiTest', $responseData['subject']['displayName'] );
 	}
 
-	public function testChildSubjectWithoutLabelIsNamedAfterItsSchema(): void {
+	public function testOtherSubjectWithoutLabelIsNamedAfterItsSchema(): void {
 		$this->createSchema( 'Employee' );
 
 		$body = $this->validBody();
@@ -460,7 +460,7 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'warning', $responseData['violations'][0]['severity'] );
 	}
 
-	public function testCreatesChildSubjectWithSuppliedId(): void {
+	public function testCreatesOtherSubjectWithSuppliedId(): void {
 		$this->createSchema( 'Employee' );
 		$suppliedId = 'sMintAAAAAAAAA1';
 
@@ -550,14 +550,14 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'Subject already exists', $responseData['message'] );
 	}
 
-	public function testSuppliedIdMatchingAnExistingChildReturns409(): void {
+	public function testSuppliedIdMatchingAnExistingOtherSubjectReturns409(): void {
 		$this->createSchema( 'Employee' );
 		$suppliedId = 'sMintCCCCCCCCC3';
-		$pageTitle = 'CreateSubjectApiTestExistingChild';
+		$pageTitle = 'CreateSubjectApiTestExistingOtherSubject';
 
 		$this->createPageWithSubjects(
 			$pageTitle,
-			childSubjects: new SubjectMap( TestSubject::build( id: $suppliedId ) )
+			otherSubjects: new SubjectMap( TestSubject::build( id: $suppliedId ) )
 		);
 
 		$body = $this->validBody();
@@ -581,8 +581,8 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$body = $this->validBody();
 		$body['id'] = $suppliedId;
 
-		// Creating a child Subject whose id equals the page's main Subject must be rejected
-		// (regression: the child guard previously ignored the main Subject).
+		// Creating a Subject whose id equals the page's main Subject must be rejected
+		// (regression: the duplicate-id guard previously ignored the main Subject).
 		$response = $this->executeCreate( $this->pageIdOf( $pageTitle ), $body, isMainSubject: false );
 
 		$this->assertSame( 409, $response->getStatusCode() );

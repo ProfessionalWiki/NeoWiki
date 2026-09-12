@@ -18,7 +18,7 @@ use Wikimedia\ParamValidator\ParamValidator;
 /**
  * Creates a Subject together with a page of its own, in one revision. For the endpoints that add a
  * Subject to a page that already exists, see POST /neowiki/v0/page/{pageId}/mainSubject and
- * /childSubjects.
+ * /subjects.
  */
 class CreateSubjectPageApi extends SimpleHandler {
 

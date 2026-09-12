@@ -1861,7 +1861,7 @@ class NeoWikiExtension {
 		);
 	}
 
-	public static function newCreateChildSubjectApi(): CreateSubjectApi {
+	public static function newCreateOtherSubjectApi(): CreateSubjectApi {
 		return new CreateSubjectApi(
 			isMainSubject: false,
 			csrfValidator: self::getCsrfValidator()

@@ -34,7 +34,7 @@ require_once $basePath . '/maintenance/Maintenance.php';
  * renaming the Subjects that took their name from it. Clearing the defaults once lets the fallback
  * compute them from the page and the Schema from then on.
  *
- * The default has two eras, and both are cleared: before the child-Subject default became the Schema
+ * The default has two eras, and both are cleared: before the other-Subject default became the Schema
  * name, every Subject on a page defaulted to the page name.
  */
 class ClearDefaultSubjectLabels extends Maintenance {
@@ -57,7 +57,7 @@ class ClearDefaultSubjectLabels extends Maintenance {
 		$this->requireExtension( 'NeoWiki' );
 		$this->addDescription(
 			'Clears the Subject labels that were left at the default the editor offered: the page name for ' .
-			'a Main Subject, and the page name or the Schema name for a Child Subject. Run once, when ' .
+			'a Main Subject, and the page name or the Schema name for any other Subject. Run once, when ' .
 			'upgrading to the version that made the label optional. Each page it changes costs a revision.'
 		);
 		$this->addOption(

@@ -36,9 +36,9 @@ class SetSubjectsOrderingApiTest extends NeoWikiIntegrationTestCase {
 
 	private const string SCHEMA = 'SetSubjectsOrderingApiTestSchema';
 	private const string MAIN = 'sTestSso1111maa';
-	private const string CHILD_1 = 'sTestSso1111ch1';
-	private const string CHILD_2 = 'sTestSso1111ch2';
-	private const string CHILD_3 = 'sTestSso1111ch3';
+	private const string OTHER_1 = 'sTestSso1111ch1';
+	private const string OTHER_2 = 'sTestSso1111ch2';
+	private const string OTHER_3 = 'sTestSso1111ch3';
 	private const string UNKNOWN = 'sTestSso1111zzz';
 
 	public function setUp(): void {
@@ -46,14 +46,14 @@ class SetSubjectsOrderingApiTest extends NeoWikiIntegrationTestCase {
 		$this->createSchema( self::SCHEMA );
 	}
 
-	public function testReordersChildSubjects(): void {
-		$pageId = $this->createPageWithMainAndChildren()->getPage()->getId();
+	public function testReordersOtherSubjects(): void {
+		$pageId = $this->createPageWithMainAndOtherSubjects()->getPage()->getId();
 
 		$response = $this->executeHandler(
 			$this->newApi(),
 			$this->newRequest( $pageId, [
 				'mainSubjectId' => self::MAIN,
-				'childSubjectIds' => [ self::CHILD_3, self::CHILD_1, self::CHILD_2 ],
+				'otherSubjectIds' => [ self::OTHER_3, self::OTHER_1, self::OTHER_2 ],
 			] )
 		);
 
@@ -65,19 +65,19 @@ class SetSubjectsOrderingApiTest extends NeoWikiIntegrationTestCase {
 		$saved = $this->savedSubjects( $pageId );
 		$this->assertSame( self::MAIN, $saved->getMainSubject()?->id->text );
 		$this->assertSame(
-			[ self::CHILD_3, self::CHILD_1, self::CHILD_2 ],
-			$saved->getChildSubjects()->getIdsAsTextArray()
+			[ self::OTHER_3, self::OTHER_1, self::OTHER_2 ],
+			$saved->getOtherSubjects()->getIdsAsTextArray()
 		);
 	}
 
 	public function testDemotesMainIntoChosenPosition(): void {
-		$pageId = $this->createPageWithMainAndChildren()->getPage()->getId();
+		$pageId = $this->createPageWithMainAndOtherSubjects()->getPage()->getId();
 
 		$response = $this->executeHandler(
 			$this->newApi(),
 			$this->newRequest( $pageId, [
 				'mainSubjectId' => null,
-				'childSubjectIds' => [ self::CHILD_1, self::MAIN, self::CHILD_2, self::CHILD_3 ],
+				'otherSubjectIds' => [ self::OTHER_1, self::MAIN, self::OTHER_2, self::OTHER_3 ],
 			] )
 		);
 
@@ -89,20 +89,20 @@ class SetSubjectsOrderingApiTest extends NeoWikiIntegrationTestCase {
 		$saved = $this->savedSubjects( $pageId );
 		$this->assertNull( $saved->getMainSubject() );
 		$this->assertSame(
-			[ self::CHILD_1, self::MAIN, self::CHILD_2, self::CHILD_3 ],
-			$saved->getChildSubjects()->getIdsAsTextArray()
+			[ self::OTHER_1, self::MAIN, self::OTHER_2, self::OTHER_3 ],
+			$saved->getOtherSubjects()->getIdsAsTextArray()
 		);
 	}
 
 	public function testUnchangedOrderingCreatesNoRevision(): void {
-		$revision = $this->createPageWithMainAndChildren();
+		$revision = $this->createPageWithMainAndOtherSubjects();
 		$pageId = $revision->getPage()->getId();
 
 		$response = $this->executeHandler(
 			$this->newApi(),
 			$this->newRequest( $pageId, [
 				'mainSubjectId' => self::MAIN,
-				'childSubjectIds' => [ self::CHILD_1, self::CHILD_2, self::CHILD_3 ],
+				'otherSubjectIds' => [ self::OTHER_1, self::OTHER_2, self::OTHER_3 ],
 			] )
 		);
 
@@ -118,13 +118,13 @@ class SetSubjectsOrderingApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testRejectsOrderingWithIdNotOnThePage(): void {
-		$pageId = $this->createPageWithMainAndChildren()->getPage()->getId();
+		$pageId = $this->createPageWithMainAndOtherSubjects()->getPage()->getId();
 
 		$response = $this->executeHandler(
 			$this->newApi(),
 			$this->newRequest( $pageId, [
 				'mainSubjectId' => self::MAIN,
-				'childSubjectIds' => [ self::CHILD_1, self::UNKNOWN, self::CHILD_3 ],
+				'otherSubjectIds' => [ self::OTHER_1, self::UNKNOWN, self::OTHER_3 ],
 			] )
 		);
 
@@ -134,20 +134,20 @@ class SetSubjectsOrderingApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'error', $responseData['status'] );
 		$this->assertStringContainsString( self::UNKNOWN, $responseData['message'] );
 		$this->assertSame(
-			[ self::CHILD_1, self::CHILD_2, self::CHILD_3 ],
-			$this->savedSubjects( $pageId )->getChildSubjects()->getIdsAsTextArray(),
+			[ self::OTHER_1, self::OTHER_2, self::OTHER_3 ],
+			$this->savedSubjects( $pageId )->getOtherSubjects()->getIdsAsTextArray(),
 			'A rejected ordering must leave the stored order untouched'
 		);
 	}
 
-	public function testRejectsNonStringChildSubjectId(): void {
-		$pageId = $this->createPageWithMainAndChildren()->getPage()->getId();
+	public function testRejectsNonStringOtherSubjectId(): void {
+		$pageId = $this->createPageWithMainAndOtherSubjects()->getPage()->getId();
 
 		$response = $this->executeHandler(
 			$this->newApi(),
 			$this->newRequest( $pageId, [
 				'mainSubjectId' => self::MAIN,
-				'childSubjectIds' => [ self::CHILD_1, 42, self::CHILD_3 ],
+				'otherSubjectIds' => [ self::OTHER_1, 42, self::OTHER_3 ],
 			] )
 		);
 
@@ -155,16 +155,16 @@ class SetSubjectsOrderingApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( 400, $response->getStatusCode() );
 		$this->assertSame( 'error', $responseData['status'] );
-		$this->assertStringContainsString( 'childSubjectIds', $responseData['message'] );
+		$this->assertStringContainsString( 'otherSubjectIds', $responseData['message'] );
 	}
 
 	public function testRejectsBodyWithoutMainSubjectIdField(): void {
-		$pageId = $this->createPageWithMainAndChildren()->getPage()->getId();
+		$pageId = $this->createPageWithMainAndOtherSubjects()->getPage()->getId();
 
 		$response = $this->executeHandler(
 			$this->newApi(),
 			$this->newRequest( $pageId, [
-				'childSubjectIds' => [ self::CHILD_1, self::CHILD_2, self::CHILD_3 ],
+				'otherSubjectIds' => [ self::OTHER_1, self::OTHER_2, self::OTHER_3 ],
 			] )
 		);
 
@@ -176,13 +176,13 @@ class SetSubjectsOrderingApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testCommentIsUsedAsEditSummary(): void {
-		$pageId = $this->createPageWithMainAndChildren()->getPage()->getId();
+		$pageId = $this->createPageWithMainAndOtherSubjects()->getPage()->getId();
 
 		$response = $this->executeHandler(
 			$this->newApi(),
 			$this->newRequest( $pageId, [
 				'mainSubjectId' => self::MAIN,
-				'childSubjectIds' => [ self::CHILD_3, self::CHILD_2, self::CHILD_1 ],
+				'otherSubjectIds' => [ self::OTHER_3, self::OTHER_2, self::OTHER_1 ],
 				'comment' => 'Reorder subjects via review test',
 			] )
 		);
@@ -195,14 +195,14 @@ class SetSubjectsOrderingApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testReadableButNotEditablePageReturns403(): void {
-		$pageId = $this->createPageWithMainAndChildren()->getPage()->getId();
+		$pageId = $this->createPageWithMainAndOtherSubjects()->getPage()->getId();
 
 		// The caller can read the page - so its existence is already public - but cannot edit it.
 		$response = $this->executeHandler(
 			$this->newApi(),
 			$this->newRequest( $pageId, [
 				'mainSubjectId' => self::MAIN,
-				'childSubjectIds' => [ self::CHILD_3, self::CHILD_1, self::CHILD_2 ],
+				'otherSubjectIds' => [ self::OTHER_3, self::OTHER_1, self::OTHER_2 ],
 			] ),
 			authority: $this->authorityWithGlobalEditButNoPageEdit()
 		);
@@ -211,11 +211,11 @@ class SetSubjectsOrderingApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testUnreadablePageIsIndistinguishableFromNonexistentPage(): void {
-		$pageId = $this->createPageWithMainAndChildren()->getPage()->getId();
+		$pageId = $this->createPageWithMainAndOtherSubjects()->getPage()->getId();
 
 		$body = [
 			'mainSubjectId' => self::MAIN,
-			'childSubjectIds' => [ self::CHILD_3, self::CHILD_1, self::CHILD_2 ],
+			'otherSubjectIds' => [ self::OTHER_3, self::OTHER_1, self::OTHER_2 ],
 		];
 
 		// A real page the caller may not read: a write to it must not reveal that it exists.
@@ -259,14 +259,14 @@ class SetSubjectsOrderingApiTest extends NeoWikiIntegrationTestCase {
 		] );
 	}
 
-	private function createPageWithMainAndChildren(): RevisionRecord {
+	private function createPageWithMainAndOtherSubjects(): RevisionRecord {
 		return $this->createPageWithSubjects(
 			'SetSubjectsOrderingApiTest_Page',
 			mainSubject: $this->subject( self::MAIN, 'main' ),
-			childSubjects: new SubjectMap(
-				$this->subject( self::CHILD_1, 'child one' ),
-				$this->subject( self::CHILD_2, 'child two' ),
-				$this->subject( self::CHILD_3, 'child three' ),
+			otherSubjects: new SubjectMap(
+				$this->subject( self::OTHER_1, 'other one' ),
+				$this->subject( self::OTHER_2, 'other two' ),
+				$this->subject( self::OTHER_3, 'other three' ),
 			)
 		);
 	}

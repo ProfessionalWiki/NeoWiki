@@ -276,7 +276,7 @@ class SubjectResolverTest extends TestCase {
 		$this->assertSame( self::TARGET_PAGE_NAME, $resolver->resolveRelationLabel( $this->newRelationToTarget() ) );
 	}
 
-	public function testResolveRelationLabelFallsBackToTheSchemaNameWhenTheTargetIsALabellessChildSubject(): void {
+	public function testResolveRelationLabelFallsBackToTheSchemaNameWhenTheTargetIsALabellessOtherSubject(): void {
 		$resolver = $this->newResolverWithTargetOnPage(
 			new PageSubjects(
 				$this->createSubject( self::SUBJECT_ID, 'The Page Topic' ),

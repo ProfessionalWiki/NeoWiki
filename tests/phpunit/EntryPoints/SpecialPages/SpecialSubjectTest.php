@@ -140,7 +140,7 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	public function testTheTitleMarksANameNobodyChoseAsTheStandInItIs(): void {
 		$this->createPageWithSubjects(
 			'SpecialSubjectTest_Unnamed',
-			childSubjects: new SubjectMap( TestSubject::build(
+			otherSubjects: new SubjectMap( TestSubject::build(
 				id: self::SUBJECT_ID,
 				label: null,
 				schemaName: new SchemaName( 'Company' )

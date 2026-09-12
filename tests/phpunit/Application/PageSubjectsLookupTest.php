@@ -28,7 +28,7 @@ class PageSubjectsLookupTest extends TestCase {
 		$this->assertTrue( $lookup->pageHasSubjects( new PageId( self::PAGE_ID ) ) );
 	}
 
-	public function testPageHasSubjectsIsTrueWhenOnlyChildSubjectsExist(): void {
+	public function testPageHasSubjectsIsTrueWhenOnlyOtherSubjectsExist(): void {
 		$lookup = $this->newLookupWithSubjects(
 			new PageSubjects( null, new SubjectMap( TestSubject::build() ) )
 		);
@@ -52,7 +52,7 @@ class PageSubjectsLookupTest extends TestCase {
 		$this->assertTrue( $lookup->pageHasMainSubject( new PageId( self::PAGE_ID ) ) );
 	}
 
-	public function testPageHasMainSubjectIsFalseWhenOnlyChildSubjectsExist(): void {
+	public function testPageHasMainSubjectIsFalseWhenOnlyOtherSubjectsExist(): void {
 		$lookup = $this->newLookupWithSubjects(
 			new PageSubjects( null, new SubjectMap( TestSubject::build() ) )
 		);
@@ -82,7 +82,7 @@ class PageSubjectsLookupTest extends TestCase {
 		);
 	}
 
-	public function testGetMainSubjectIdIsNullWhenOnlyChildSubjectsExist(): void {
+	public function testGetMainSubjectIdIsNullWhenOnlyOtherSubjectsExist(): void {
 		$lookup = $this->newLookupWithSubjects(
 			new PageSubjects( null, new SubjectMap( TestSubject::build() ) )
 		);

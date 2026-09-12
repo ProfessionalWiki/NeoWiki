@@ -36,7 +36,7 @@ extension point to the file that demonstrates it.
 - **Register a View Type frontend** (`neowiki.registration` hook) —
   [`resources/init.js`](resources/init.js) with [`resources/RedHerbCard.vue`](resources/RedHerbCard.vue).
 - **Mount standalone Vue features wired to NeoWiki services** —
-  [`resources/createChild/`](resources/createChild), [`resources/editMainSubject/`](resources/editMainSubject),
+  [`resources/createSubject/`](resources/createSubject), [`resources/editMainSubject/`](resources/editMainSubject),
   and [`resources/subjectFinder/`](resources/subjectFinder).
 
 ## Frontend linting

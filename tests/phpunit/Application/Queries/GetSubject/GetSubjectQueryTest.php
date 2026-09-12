@@ -219,9 +219,9 @@ class GetSubjectQueryTest extends TestCase {
 		$this->assertFalse( $spyPresenter->response->subjects['s11111111111maa']->displayNameIsGenerated );
 	}
 
-	public function testLabellessChildSubjectIsNamedAfterItsSchema(): void {
+	public function testLabellessOtherSubjectIsNamedAfterItsSchema(): void {
 		$spyPresenter = $this->getSpyPresenter();
-		$child = TestSubject::build(
+		$otherSubject = TestSubject::build(
 			id: 's11111111111ca1',
 			label: null,
 			schemaName: new SchemaName( 'Attendance' )
@@ -229,7 +229,7 @@ class GetSubjectQueryTest extends TestCase {
 
 		$this->newQueryForLabellessSubject(
 			$spyPresenter,
-			$child,
+			$otherSubject,
 			TestSubject::build( id: 's11111111111maa' )
 		)->execute(
 			subjectId: 's11111111111ca1',

@@ -41,7 +41,7 @@ class SubjectDisplayNameTest extends TestCase {
 		);
 	}
 
-	public function testStoredLabelWinsForChildSubject(): void {
+	public function testStoredLabelWinsForOtherSubject(): void {
 		$this->assertSame(
 			'Stored',
 			$this->displayName( new SubjectLabel( 'Stored' ), false )
@@ -55,7 +55,7 @@ class SubjectDisplayNameTest extends TestCase {
 		);
 	}
 
-	public function testChildSubjectWithoutLabelFallsBackToSchemaName(): void {
+	public function testOtherSubjectWithoutLabelFallsBackToSchemaName(): void {
 		$this->assertSame(
 			self::SCHEMA_NAME,
 			$this->displayName( null, false )
@@ -95,7 +95,7 @@ class SubjectDisplayNameTest extends TestCase {
 		$this->assertSame( 'Stored', $this->chosenName( new SubjectLabel( 'Stored' ), true ) );
 	}
 
-	public function testStoredLabelIsTheChosenNameForChildSubject(): void {
+	public function testStoredLabelIsTheChosenNameForOtherSubject(): void {
 		$this->assertSame( 'Stored', $this->chosenName( new SubjectLabel( 'Stored' ), false ) );
 	}
 
@@ -107,7 +107,7 @@ class SubjectDisplayNameTest extends TestCase {
 	 * Null is what makes the Schema tier the one nobody chose, and it is the whole answer a caller
 	 * needs: the name it produces and the verdict on that name come from this one value.
 	 */
-	public function testAChildWithoutALabelHasNoChosenName(): void {
+	public function testAnOtherSubjectWithoutALabelHasNoChosenName(): void {
 		$this->assertNull( $this->chosenName( null, false ) );
 	}
 

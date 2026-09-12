@@ -142,20 +142,20 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 		);
 
 		$this->createPageWithMainSubject(
-			'NeoWikiLuaTestPageChildren',
+			'NeoWikiLuaTestPageOtherSubjects',
 			mainSubject: new Subject(
 				id: new SubjectId( 's1test5cccccccc' ),
-				label: new SubjectLabel( 'Parent' ),
+				label: new SubjectLabel( 'Main' ),
 				schema: SchemaReference::local( new SchemaName( 'Company' ) ),
 				statements: new StatementList(),
 			),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				new Subject(
 					id: new SubjectId( 's1test5dddddddd' ),
-					label: new SubjectLabel( 'Child Entry' ),
+					label: new SubjectLabel( 'Other Entry' ),
 					schema: SchemaReference::local( new SchemaName( 'Entry' ) ),
 					statements: new StatementList( [
-						new Statement( new PropertyName( 'Note' ), 'text', new StringValue( 'A child subject' ) ),
+						new Statement( new PropertyName( 'Note' ), 'text', new StringValue( 'Another subject on the page' ) ),
 					] ),
 				),
 			),
@@ -175,7 +175,7 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 	protected function createPageWithMainSubject(
 		string $pageName,
 		Subject $mainSubject,
-		SubjectMap $childSubjects = new SubjectMap(),
+		SubjectMap $otherSubjects = new SubjectMap(),
 	): void {
 		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle(
 			Title::newFromText( $pageName )
@@ -185,7 +185,7 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 		$updater->setContent( 'main', new TextContent( '' ) );
 		$updater->setContent(
 			MediaWikiSubjectRepository::SLOT_NAME,
-			SubjectContent::newFromData( new PageSubjects( $mainSubject, $childSubjects ) ),
+			SubjectContent::newFromData( new PageSubjects( $mainSubject, $otherSubjects ) ),
 		);
 
 		$updater->saveRevision( CommentStoreComment::newUnsavedComment( 'Lua test data' ) );

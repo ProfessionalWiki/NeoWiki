@@ -58,7 +58,7 @@ readonly class SetMainSubjectAction {
 		}
 
 		$pageSubjects->removeSubject( $previousMain->id );
-		$pageSubjects->createChildSubject( $previousMain );
+		$pageSubjects->createOtherSubject( $previousMain );
 
 		$this->saveAndPresentChanged( $pageSubjects, $pageId, $comment );
 	}
@@ -86,7 +86,7 @@ readonly class SetMainSubjectAction {
 		$pageSubjects->setMainSubject( $newMain );
 
 		if ( $previousMain !== null ) {
-			$pageSubjects->createChildSubject( $previousMain );
+			$pageSubjects->createOtherSubject( $previousMain );
 		}
 
 		$this->saveAndPresentChanged( $pageSubjects, $pageId, $comment );

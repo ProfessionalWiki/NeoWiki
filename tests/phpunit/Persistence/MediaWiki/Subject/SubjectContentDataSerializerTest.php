@@ -211,7 +211,7 @@ class SubjectContentDataSerializerTest extends TestCase {
 					),
 				] )
 			),
-			childSubjects: $subjects
+			otherSubjects: $subjects
 		);
 	}
 

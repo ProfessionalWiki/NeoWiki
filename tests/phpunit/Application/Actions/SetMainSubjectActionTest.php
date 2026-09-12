@@ -23,29 +23,29 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 class SetMainSubjectActionTest extends TestCase {
 
 	private const string MAIN_ID = 's11111111111maa';
-	private const string CHILD_ID = 's11111111111caa';
-	private const string OTHER_ID = 's11111111111oaa';
+	private const string OTHER_SUBJECT_ID = 's11111111111caa';
+	private const string UNKNOWN_SUBJECT_ID = 's11111111111oaa';
 	private const int PAGE_ID = 42;
 
-	public function testPromotesChildToMainAndDemotesPreviousMain(): void {
-		$repository = $this->newRepositoryWithMainAndChild();
+	public function testPromotesAnOtherSubjectToMainAndDemotesPreviousMain(): void {
+		$repository = $this->newRepositoryWithMainAndOtherSubject();
 
 		$presenter = $this->newSpyPresenter();
 
 		$this->newAction( $presenter, $repository )->setMainSubject(
-			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::CHILD_ID, comment: 'Promote child' )
+			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::OTHER_SUBJECT_ID, comment: 'Promote other subject' )
 		);
 
 		$this->assertTrue( $presenter->changed );
 
 		$saved = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
-		$this->assertSame( self::CHILD_ID, $saved->getMainSubject()->id->text );
-		$this->assertTrue( $saved->getChildSubjects()->hasSubject( TestSubject::build( id: self::MAIN_ID )->id ) );
-		$this->assertSame( 'Promote child', $repository->comments[self::PAGE_ID] );
+		$this->assertSame( self::OTHER_SUBJECT_ID, $saved->getMainSubject()->id->text );
+		$this->assertTrue( $saved->getOtherSubjects()->hasSubject( TestSubject::build( id: self::MAIN_ID )->id ) );
+		$this->assertSame( 'Promote other subject', $repository->comments[self::PAGE_ID] );
 	}
 
-	public function testClearingMainDemotesPreviousMainToChild(): void {
-		$repository = $this->newRepositoryWithMainAndChild();
+	public function testClearingMainDemotesPreviousMainToAnOtherSubject(): void {
+		$repository = $this->newRepositoryWithMainAndOtherSubject();
 
 		$presenter = $this->newSpyPresenter();
 
@@ -57,15 +57,15 @@ class SetMainSubjectActionTest extends TestCase {
 
 		$saved = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
 		$this->assertNull( $saved->getMainSubject() );
-		$this->assertSame( 2, $saved->getChildSubjects()->count() );
-		$this->assertTrue( $saved->getChildSubjects()->hasSubject( TestSubject::build( id: self::MAIN_ID )->id ) );
-		$this->assertTrue( $saved->getChildSubjects()->hasSubject( TestSubject::build( id: self::CHILD_ID )->id ) );
+		$this->assertSame( 2, $saved->getOtherSubjects()->count() );
+		$this->assertTrue( $saved->getOtherSubjects()->hasSubject( TestSubject::build( id: self::MAIN_ID )->id ) );
+		$this->assertTrue( $saved->getOtherSubjects()->hasSubject( TestSubject::build( id: self::OTHER_SUBJECT_ID )->id ) );
 	}
 
 	public function testClearingMainOnPageWithoutMainIsNoOp(): void {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects(
-			new PageSubjects( null, new SubjectMap( TestSubject::build( id: self::CHILD_ID ) ) ),
+			new PageSubjects( null, new SubjectMap( TestSubject::build( id: self::OTHER_SUBJECT_ID ) ) ),
 			new PageId( self::PAGE_ID )
 		);
 		$before = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
@@ -81,7 +81,7 @@ class SetMainSubjectActionTest extends TestCase {
 	}
 
 	public function testPromotingTheCurrentMainIsNoOp(): void {
-		$repository = $this->newRepositoryWithMainAndChild();
+		$repository = $this->newRepositoryWithMainAndOtherSubject();
 		$before = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
 
 		$presenter = $this->newSpyPresenter();
@@ -95,12 +95,12 @@ class SetMainSubjectActionTest extends TestCase {
 	}
 
 	public function testPromotingUnknownSubjectIdReportsNotFound(): void {
-		$repository = $this->newRepositoryWithMainAndChild();
+		$repository = $this->newRepositoryWithMainAndOtherSubject();
 
 		$presenter = $this->newSpyPresenter();
 
 		$this->newAction( $presenter, $repository )->setMainSubject(
-			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::OTHER_ID )
+			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::UNKNOWN_SUBJECT_ID )
 		);
 
 		$this->assertTrue( $presenter->notFound );
@@ -121,11 +121,11 @@ class SetMainSubjectActionTest extends TestCase {
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'You do not have the necessary permissions to change the main subject' );
 
-		$action->setMainSubject( new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::CHILD_ID ) );
+		$action->setMainSubject( new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::OTHER_SUBJECT_ID ) );
 	}
 
 	public function testReportsPageNotFoundWhenUserMayNotReadPage(): void {
-		$repository = $this->newRepositoryWithMainAndChild();
+		$repository = $this->newRepositoryWithMainAndOtherSubject();
 		$before = $repository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
 
 		$presenter = $this->newSpyPresenter();
@@ -137,7 +137,7 @@ class SetMainSubjectActionTest extends TestCase {
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: true ),
 			subjectIdParser: TestSubjectIds::newParser(),
 		) )->setMainSubject(
-			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::CHILD_ID )
+			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::OTHER_SUBJECT_ID )
 		);
 
 		$this->assertTrue( $presenter->pageNotFound );
@@ -152,12 +152,12 @@ class SetMainSubjectActionTest extends TestCase {
 
 		( new SetMainSubjectAction(
 			presenter: $presenter,
-			subjectRepository: $this->newRepositoryWithMainAndChild(),
+			subjectRepository: $this->newRepositoryWithMainAndOtherSubject(),
 			readAuthorizer: new StubPageReadAuthorizer( allowed: false ),
 			writeAuthorizer: new SpySubjectWriteAuthorizer( allowed: false ),
 			subjectIdParser: TestSubjectIds::newParser(),
 		) )->setMainSubject(
-			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::CHILD_ID )
+			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::OTHER_SUBJECT_ID )
 		);
 
 		$this->assertTrue( $presenter->pageNotFound );
@@ -166,24 +166,24 @@ class SetMainSubjectActionTest extends TestCase {
 	public function testReportsPageNotFoundWhenTheSaveFails(): void {
 		// The page passed the read and write checks but is gone by the time the save runs: the
 		// dropped write must be reported as not-found, never as changed.
-		$repository = $this->newRepositoryWithMainAndChild();
+		$repository = $this->newRepositoryWithMainAndOtherSubject();
 		$repository->failNextSave = true;
 
 		$presenter = $this->newSpyPresenter();
 		$this->newAction( $presenter, $repository )->setMainSubject(
-			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::CHILD_ID )
+			new SetMainSubjectRequest( pageId: self::PAGE_ID, subjectId: self::OTHER_SUBJECT_ID )
 		);
 
 		$this->assertTrue( $presenter->pageNotFound );
 		$this->assertFalse( $presenter->changed );
 	}
 
-	private function newRepositoryWithMainAndChild(): InMemorySubjectRepository {
+	private function newRepositoryWithMainAndOtherSubject(): InMemorySubjectRepository {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects(
 			new PageSubjects(
 				TestSubject::build( id: self::MAIN_ID ),
-				new SubjectMap( TestSubject::build( id: self::CHILD_ID ) )
+				new SubjectMap( TestSubject::build( id: self::OTHER_SUBJECT_ID ) )
 			),
 			new PageId( self::PAGE_ID )
 		);

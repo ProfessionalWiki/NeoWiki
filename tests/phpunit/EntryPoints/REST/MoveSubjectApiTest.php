@@ -52,7 +52,7 @@ class MoveSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->sourcePageId = $this->createPageWithSubjects(
 			'MoveSubjectApiTest_Source',
 			mainSubject: $this->newSubject( self::SOURCE_MAIN_ID, 'source main' ),
-			childSubjects: new SubjectMap( $this->newSubject( self::MOVED_ID, 'moved' ) )
+			otherSubjects: new SubjectMap( $this->newSubject( self::MOVED_ID, 'moved' ) )
 		)->getPage()->getId();
 
 		$this->targetPageId = $this->createPageWithSubjects(
@@ -68,7 +68,7 @@ class MoveSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'changed', json_decode( $response->getBody()->getContents(), true )['status'] );
 
 		$this->assertFalse( $this->subjectsOf( $this->sourcePageId )->getAllSubjects()->hasSubject( $this->movedId() ) );
-		$this->assertTrue( $this->subjectsOf( $this->targetPageId )->getChildSubjects()->hasSubject( $this->movedId() ) );
+		$this->assertTrue( $this->subjectsOf( $this->targetPageId )->getOtherSubjects()->hasSubject( $this->movedId() ) );
 	}
 
 	public function testTheSubjectToPageIndexFollowsTheMove(): void {
@@ -122,7 +122,7 @@ class MoveSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$target = $this->subjectsOf( $this->targetPageId );
 		$this->assertSame( self::MOVED_ID, $target->getMainSubject()?->id->text );
-		$this->assertTrue( $target->getChildSubjects()->hasSubject( new SubjectId( self::TARGET_MAIN_ID ) ) );
+		$this->assertTrue( $target->getOtherSubjects()->hasSubject( new SubjectId( self::TARGET_MAIN_ID ) ) );
 	}
 
 	public function testMovingToThePageTheSubjectIsAlreadyOnIsUnchanged(): void {

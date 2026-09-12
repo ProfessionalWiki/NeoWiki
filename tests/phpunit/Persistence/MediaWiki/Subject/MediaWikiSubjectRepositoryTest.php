@@ -58,7 +58,7 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 				id: 'sTestMSR1111112',
 				label: new SubjectLabel( 'Test subject 2' ),
 			),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build(
 					id: 'sTestMSR1111113',
 					label: new SubjectLabel( 'Test subject 3' ),

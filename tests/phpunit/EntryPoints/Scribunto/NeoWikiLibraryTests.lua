@@ -2,7 +2,7 @@ local testframework = require 'Module:TestFramework'
 local nw = require( 'mw.neowiki' )
 
 local page = 'NeoWikiLuaTestPage'
-local pageWithChildren = 'NeoWikiLuaTestPageChildren'
+local pageWithOtherSubjects = 'NeoWikiLuaTestPageOtherSubjects'
 
 -- getValue tests
 
@@ -66,23 +66,23 @@ local function testGetMainSubjectNonexistentPage()
 	return nw.getMainSubject( 'NonexistentPage12345' )
 end
 
--- getChildSubjects tests
+-- getOtherSubjects tests
 
-local function testGetChildSubjectsReturnsChildren()
-	local children = nw.getChildSubjects( pageWithChildren )
-	if not children or #children == 0 then return 0 end
-	return #children
+local function testGetOtherSubjectsReturnsCount()
+	local otherSubjects = nw.getOtherSubjects( pageWithOtherSubjects )
+	if not otherSubjects or #otherSubjects == 0 then return 0 end
+	return #otherSubjects
 end
 
-local function testGetChildSubjectsHasLabels()
-	local children = nw.getChildSubjects( pageWithChildren )
-	if not children or #children == 0 then return 'none' end
-	return children[1].label, children[1].schema
+local function testGetOtherSubjectsHasLabels()
+	local otherSubjects = nw.getOtherSubjects( pageWithOtherSubjects )
+	if not otherSubjects or #otherSubjects == 0 then return 'none' end
+	return otherSubjects[1].label, otherSubjects[1].schema
 end
 
-local function testGetChildSubjectsEmptyForPageWithoutChildren()
-	local children = nw.getChildSubjects( page )
-	return #children
+local function testGetOtherSubjectsEmptyForPageWithoutOtherSubjects()
+	local otherSubjects = nw.getOtherSubjects( page )
+	return #otherSubjects
 end
 
 -- query tests
@@ -230,13 +230,13 @@ local tests = {
 	{ name = 'getMainSubject returns nil for nonexistent page',
 	  func = testGetMainSubjectNonexistentPage, expect = { nil } },
 
-	-- getChildSubjects
-	{ name = 'getChildSubjects returns correct count',
-	  func = testGetChildSubjectsReturnsChildren, expect = { 1 } },
-	{ name = 'getChildSubjects includes label and schema',
-	  func = testGetChildSubjectsHasLabels, expect = { 'Child Entry', 'Entry' } },
-	{ name = 'getChildSubjects returns empty for page without children',
-	  func = testGetChildSubjectsEmptyForPageWithoutChildren, expect = { 0 } },
+	-- getOtherSubjects
+	{ name = 'getOtherSubjects returns correct count',
+	  func = testGetOtherSubjectsReturnsCount, expect = { 1 } },
+	{ name = 'getOtherSubjects includes label and schema',
+	  func = testGetOtherSubjectsHasLabels, expect = { 'Other Entry', 'Entry' } },
+	{ name = 'getOtherSubjects returns empty for page without other subjects',
+	  func = testGetOtherSubjectsEmptyForPageWithoutOtherSubjects, expect = { 0 } },
 
 	-- query
 	{ name = 'query rejects empty string with localized message',

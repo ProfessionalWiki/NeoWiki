@@ -47,7 +47,7 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 		$this->newCountingProjectionStore( $inner )->savePage(
 			TestPage::build(
 				mainSubject: $this->newSubject( 'sShrdLookup1111' ),
-				childSubjects: new SubjectMap(
+				otherSubjects: new SubjectMap(
 					$this->newSubject( 'sShrdLookup1112' ),
 					$this->newSubject( 'sShrdLookup1113' ),
 					$this->newSubject( 'sShrdLookup1114' ),

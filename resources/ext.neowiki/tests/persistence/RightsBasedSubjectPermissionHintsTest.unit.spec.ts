@@ -46,18 +46,18 @@ describe( 'Rights Based Subject Permission Hints', async () => {
 		expect( await hints.canDeleteSubject( PAGE_ID ) ).toBe( false );
 	} );
 
-	it( 'can create child subject with edit right', async () => {
-		expect( await withEditRight().canCreateChildSubject( PAGE_ID ) ).toBe( true );
+	it( 'can create other subject with edit right', async () => {
+		expect( await withEditRight().canCreateOtherSubject( PAGE_ID ) ).toBe( true );
 	} );
 
-	it( 'cannot create child subject without edit right', async () => {
-		expect( await withoutEditRight().canCreateChildSubject( PAGE_ID ) ).toBe( false );
+	it( 'cannot create other subject without edit right', async () => {
+		expect( await withoutEditRight().canCreateOtherSubject( PAGE_ID ) ).toBe( false );
 	} );
 
-	it( 'does not need the createpage right to create a child subject', async () => {
+	it( 'does not need the createpage right to create one of the other subjects', async () => {
 		const hints = newHints( [ 'foo', 'edit', 'bar' ] );
 
-		expect( await hints.canCreateChildSubject( PAGE_ID ) ).toBe( true );
+		expect( await hints.canCreateOtherSubject( PAGE_ID ) ).toBe( true );
 	} );
 
 	it( 'can create main subject with edit right', async () => {

@@ -92,7 +92,7 @@ export const useSubjectStore = defineStore( 'subject', {
 		 * given page. The counterpart to updateSubject for one the wiki does not have yet.
 		 */
 		async createSubject( subject: Subject, pageId: number, comment?: string ): Promise<SubjectId> {
-			return this.createChildSubject(
+			return this.createOtherSubject(
 				pageId,
 				subject.getLabel(),
 				subject.getSchemaName(),
@@ -176,10 +176,10 @@ export const useSubjectStore = defineStore( 'subject', {
 
 			return result.subjectId;
 		},
-		async createChildSubject( pageId: number, label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string, id?: SubjectId ): Promise<SubjectId> {
+		async createOtherSubject( pageId: number, label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string, id?: SubjectId ): Promise<SubjectId> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
-			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createChildSubject(
+			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createOtherSubject(
 				pageId,
 				label,
 				schemaName,
@@ -269,10 +269,10 @@ export const useSubjectStore = defineStore( 'subject', {
 		async setPageSubjectsOrdering(
 			pageId: number,
 			mainSubjectId: SubjectId | null,
-			childSubjectIds: SubjectId[],
+			otherSubjectIds: SubjectId[],
 			comment?: string,
 		): Promise<void> {
-			await NeoWikiExtension.getInstance().getSubjectRepository().setSubjectsOrdering( pageId, mainSubjectId, childSubjectIds, comment );
+			await NeoWikiExtension.getInstance().getSubjectRepository().setSubjectsOrdering( pageId, mainSubjectId, otherSubjectIds, comment );
 			this.mutationEpoch++;
 			await this.loadPageSubjects( pageId );
 		},

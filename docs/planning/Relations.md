@@ -111,8 +111,6 @@ Now:
 
 After the Subject Sources foundation ([#1265](https://github.com/ProfessionalWiki/NeoWiki/pull/1265)) lands:
 
-- Rename the identifiers that still say "child subject"
-  ([#1367](https://github.com/ProfessionalWiki/NeoWiki/issues/1367)); BlueSpice needs notice first.
 - Cross-Source relation targets: #1265 restricts them to registered Sources; opening them — remote display, graceful
   degradation — follows [Subject Sources](SubjectSources.md).
 

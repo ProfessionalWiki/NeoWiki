@@ -9,30 +9,31 @@ const SORTABLE_GROUP_NAME = 'neowiki-subjects';
 
 export interface SubjectDragHandlers {
 	/**
-	 * A child row was dropped onto the main slot. `oldChildIndex` is the
-	 * source row's index in the child list (used for swap-into-position).
+	 * A row from the other-Subjects list was dropped onto the main slot.
+	 * `oldOtherIndex` is the source row's index in the other-Subjects list
+	 * (used for swap-into-position).
 	 */
-	onPromote( subjectId: SubjectId, oldChildIndex: number | undefined ): void;
+	onPromote( subjectId: SubjectId, oldOtherIndex: number | undefined ): void;
 	/**
-	 * The main row was dropped into the child list. `newChildIndex` is the
-	 * target slot.
+	 * The main row was dropped into the other-Subjects list. `newOtherIndex`
+	 * is the target slot.
 	 */
-	onDemote( newChildIndex: number | undefined ): void;
+	onDemote( newOtherIndex: number | undefined ): void;
 	/**
-	 * A child row was reordered within the child list.
+	 * A row was reordered within the other-Subjects list.
 	 */
-	onReorderChildren( oldIndex: number, newIndex: number ): void;
+	onReorderOthers( oldIndex: number, newIndex: number ): void;
 }
 
 export function useSubjectDrag(
 	mainSlotRef: Ref<HTMLElement | null>,
-	childListRef: Ref<HTMLElement | null>,
+	otherListRef: Ref<HTMLElement | null>,
 	handlers: SubjectDragHandlers,
 ): void {
 	// sortablejs only consults `put` for inter-list drops, so a same-container
-	// drag never enters the cross-container handler. Reorder within the child
-	// list flows through onReorder; the main slot uses `sort: false` so
-	// reordering inside it (a single-item list) is moot.
+	// drag never enters the cross-container handler. Reorder within the
+	// other-Subjects list flows through onReorder; the main slot uses
+	// `sort: false` so reordering inside it (a single-item list) is moot.
 	const group = { name: SORTABLE_GROUP_NAME, pull: true, put: true };
 
 	useSortable( mainSlotRef, {
@@ -48,7 +49,7 @@ export function useSubjectDrag(
 		},
 	} );
 
-	useSortable( childListRef, {
+	useSortable( otherListRef, {
 		handle: DRAG_HANDLE_SELECTOR,
 		ghostClass: GHOST_CLASS,
 		group,
@@ -56,7 +57,7 @@ export function useSubjectDrag(
 			handlers.onDemote( newIndex );
 		},
 		onReorder: ( oldIndex, newIndex ) => {
-			handlers.onReorderChildren( oldIndex, newIndex );
+			handlers.onReorderOthers( oldIndex, newIndex );
 		},
 	} );
 }
