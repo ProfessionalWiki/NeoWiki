@@ -6,10 +6,12 @@ on:
     paths:
       - '.github/workflows/ci-ts.yml'
       - 'resources/**'
+      - 'tests/RedHerb/**'
   pull_request:
     paths:
       - '.github/workflows/ci-ts.yml'
       - 'resources/**'
+      - 'tests/RedHerb/**'
 
 jobs:
   build:
