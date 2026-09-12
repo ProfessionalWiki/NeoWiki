@@ -1,4 +1,5 @@
 import { RightsBasedSubjectPermissionHints } from '@/persistence/RightsBasedSubjectPermissionHints.ts';
+import { CurrentPageSubjectPermissionHints } from '@/persistence/CurrentPageSubjectPermissionHints.ts';
 import { SubjectPermissionHints } from '@/application/SubjectPermissionHints.ts';
 import { RightsFetcher, UserObjectBasedRightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
@@ -196,9 +197,26 @@ export class NeoWikiExtension {
 	}
 
 	public newSubjectPermissionHints(): SubjectPermissionHints {
-		return new RightsBasedSubjectPermissionHints(
+		const globalRightsHints = new RightsBasedSubjectPermissionHints(
 			this.getUserObjectBasedRightsFetcher(),
 		);
+
+		const config = this.getMediaWiki()?.config;
+		const canEditPageSubjects = config?.get( 'wgNeoWikiCanEditPageSubjects' );
+		const currentPageId = Number( config?.get( 'wgArticleId' ) );
+
+		// A decision arrives only from a page that holds Subjects, so Schema pages, Layout pages and
+		// special pages have none and keep the wiki-global rights. So does a title with no page
+		// behind it, whose id is 0 and whose decision therefore describes no page at all.
+		if ( typeof canEditPageSubjects === 'boolean' && currentPageId > 0 ) {
+			return new CurrentPageSubjectPermissionHints(
+				currentPageId,
+				canEditPageSubjects,
+				globalRightsHints,
+			);
+		}
+
+		return globalRightsHints;
 	}
 
 	public getUserObjectBasedRightsFetcher(): RightsFetcher {

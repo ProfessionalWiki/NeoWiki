@@ -23,10 +23,10 @@ export function useSubjectPermissions(): SubjectPermissions {
 	async function checkPermissions( pageId: number ): Promise<void> {
 		try {
 			const [ createMain, createChild, edit, del ] = await Promise.all( [
-				hints.canCreateMainSubject(),
+				hints.canCreateMainSubject( pageId ),
 				hints.canCreateChildSubject( pageId ),
-				hints.canEditSubject( { text: '' } as never ),
-				hints.canDeleteSubject( { text: '' } as never ),
+				hints.canEditSubject( pageId ),
+				hints.canDeleteSubject( pageId ),
 			] );
 			canCreateMainSubject.value = createMain;
 			canCreateChildSubject.value = createChild;
