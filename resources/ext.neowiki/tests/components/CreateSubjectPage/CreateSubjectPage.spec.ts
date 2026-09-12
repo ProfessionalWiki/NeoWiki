@@ -8,7 +8,7 @@ import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
 const SubjectCreatorDialogStub = {
 	template: '<div class="subject-creator-stub" />',
-	props: [ 'pageHasMainSubject', 'choosePage', 'initialSchemaName' ],
+	props: [ 'hostPage', 'initialSchemaName' ],
 };
 
 describe( 'CreateSubjectPage', () => {
@@ -37,11 +37,11 @@ describe( 'CreateSubjectPage', () => {
 		expect( useSubjectStore().subjectCreatorOpen ).toBe( true );
 	} );
 
-	it( 'hands the creator the page choice and the pinned schema', () => {
+	it( 'hands the creator the pinned schema, and no page of its own to offer', () => {
 		const wrapper = mountPage( { schemaName: 'Person' } );
 		const dialog = wrapper.findComponent( SubjectCreatorDialog );
 
-		expect( dialog.props( 'choosePage' ) ).toBe( true );
+		expect( dialog.props( 'hostPage' ) ).toBeNull();
 		expect( dialog.props( 'initialSchemaName' ) ).toBe( 'Person' );
 	} );
 

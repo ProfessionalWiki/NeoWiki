@@ -1,8 +1,8 @@
 /**
- * Keyboard-only focus rings for NeoWiki's Codex buttons and toggle buttons.
+ * Keyboard-only focus rings for the Codex controls NeoWiki renders.
  *
- * Codex 1.14 styles button focus on bare `:focus`, so a mouse click — which
- * focuses the button but, per the browser heuristic, does not match
+ * Codex 1.14 styles their focus on bare `:focus`, so a mouse click — which
+ * focuses the control but, per the browser heuristic, does not match
  * `:focus-visible` — leaves the progressive focus ring painted until focus
  * moves away. Focus indication should be shown to keyboard users only.
  *
@@ -76,6 +76,14 @@
 
 	// Quiet toggle (menu-button trigger): transparent resting border.
 	.cdx-toggle-button--quiet:enabled:focus:not( :focus-visible ):not( :active ):not( .cdx-toggle-button--is-active ) {
+		border-color: @border-color-transparent;
+		box-shadow: none;
+	}
+
+	// An accordion's header is its `summary`, which Codex rings on bare `:focus` as well, so
+	// clicking one leaves the ring on it (the edit summary section, and the page section of the
+	// subject creator beside it). Its resting border is transparent.
+	.cdx-accordion > summary:focus:not( :focus-visible ):not( :active ) {
 		border-color: @border-color-transparent;
 		box-shadow: none;
 	}

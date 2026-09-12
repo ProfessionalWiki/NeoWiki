@@ -17,6 +17,7 @@ const CdxLookupWithVModel = defineComponent( {
 		inputValue: { type: [ String, Number ], default: '' },
 		menuItems: { type: Array, default: () => [] },
 		placeholder: { type: String, default: '' },
+		disabled: { type: Boolean, default: false },
 		ariaLabel: { type: String, default: undefined },
 	},
 	emits: [ 'update:selected', 'update:input-value', 'input' ],
@@ -44,6 +45,15 @@ describe( 'PagePicker', () => {
 		return menuItemsOf( wrapper ).map( ( item ) => item.value );
 	}
 
+	// Read off the stub: CdxLookup passes `placeholder` through to its input rather than declaring it.
+	function placeholderOf( wrapper: VueWrapper ): string | undefined {
+		return wrapper.findComponent( CdxLookupWithVModel ).props( 'placeholder' );
+	}
+
+	function disabledOf( wrapper: VueWrapper ): boolean | undefined {
+		return wrapper.findComponent( CdxLookupWithVModel ).props( 'disabled' );
+	}
+
 	function lastSelection( wrapper: VueWrapper ): unknown {
 		const events = wrapper.emitted( 'update:selected' ) ?? [];
 		return events[ events.length - 1 ];
@@ -53,6 +63,11 @@ describe( 'PagePicker', () => {
 	// re-fires after a selection carrying the text typed before it.
 	async function search( wrapper: VueWrapper, text: string ): Promise<void> {
 		wrapper.findComponent( CdxLookup ).vm.$emit( 'update:input-value', text );
+		await flushPromises();
+	}
+
+	async function pick( wrapper: VueWrapper, value: string ): Promise<void> {
+		wrapper.findComponent( CdxLookup ).vm.$emit( 'update:selected', value );
 		await flushPromises();
 	}
 
@@ -100,6 +115,18 @@ describe( 'PagePicker', () => {
 		expect( valuesOf( wrapper ) ).toEqual( [ '34', '__create__' ] );
 	} );
 
+	it( 'invites a page search', () => {
+		expect( placeholderOf( createWrapper() ) ).toBe( 'neowiki-page-picker-placeholder' );
+	} );
+
+	it( 'takes input', () => {
+		expect( disabledOf( createWrapper() ) ).toBe( false );
+	} );
+
+	it( 'takes none once its host has disabled it', () => {
+		expect( disabledOf( createWrapper( { disabled: true } ) ) ).toBe( true );
+	} );
+
 	it( 'offers the create option before anything is typed, so the menu opens on focus', () => {
 		expect( valuesOf( createWrapper() ) ).toEqual( [ '__create__' ] );
 	} );
@@ -145,8 +172,7 @@ describe( 'PagePicker', () => {
 		const wrapper = createWrapper();
 		await search( wrapper, 'amster' );
 
-		wrapper.findComponent( CdxLookup ).vm.$emit( 'update:selected', '12' );
-		await flushPromises();
+		await pick( wrapper, '12' );
 
 		expect( lastSelection( wrapper ) ).toEqual( [ { pageId: 12, title: 'Amsterdam Museum' } ] );
 	} );
@@ -155,8 +181,7 @@ describe( 'PagePicker', () => {
 		const wrapper = createWrapper();
 		await search( wrapper, 'Rembrandt' );
 
-		wrapper.findComponent( CdxLookup ).vm.$emit( 'update:selected', '__create__' );
-		await flushPromises();
+		await pick( wrapper, '__create__' );
 
 		expect( lastSelection( wrapper ) ).toEqual( [ { pageId: null, title: 'Rembrandt' } ] );
 	} );
@@ -166,8 +191,7 @@ describe( 'PagePicker', () => {
 		await search( wrapper, 'nothing here' );
 		const before = wrapper.emitted( 'update:selected' )?.length ?? 0;
 
-		wrapper.findComponent( CdxLookup ).vm.$emit( 'update:selected', '__no_results__' );
-		await flushPromises();
+		await pick( wrapper, '__no_results__' );
 
 		expect( wrapper.emitted( 'update:selected' )?.length ?? 0 ).toBe( before );
 	} );
@@ -179,10 +203,9 @@ describe( 'PagePicker', () => {
 		const wrapper = createWrapper();
 		await search( wrapper, 'amster' );
 
-		wrapper.findComponent( CdxLookup ).vm.$emit( 'update:selected', '12' );
+		await pick( wrapper, '12' );
 		// Codex writes the picked item's label into the field, which must not read as typed text.
-		wrapper.findComponent( CdxLookup ).vm.$emit( 'update:input-value', 'Amsterdam Museum' );
-		await flushPromises();
+		await search( wrapper, 'Amsterdam Museum' );
 
 		expect( menuItemsOf( wrapper )[ menuItemsOf( wrapper ).length - 1 ]?.label ).toBe( 'neowiki-page-picker-create-hint' );
 	} );
@@ -192,8 +215,7 @@ describe( 'PagePicker', () => {
 		// create option leaves it holding none - so without this the host would keep the old title.
 		const wrapper = createWrapper();
 		await search( wrapper, 'Rembrandt van Rjin' );
-		wrapper.findComponent( CdxLookup ).vm.$emit( 'update:selected', '__create__' );
-		await flushPromises();
+		await pick( wrapper, '__create__' );
 
 		await search( wrapper, 'Rembrandt van Rijn' );
 
@@ -206,8 +228,7 @@ describe( 'PagePicker', () => {
 		] );
 		const wrapper = createWrapper();
 		await search( wrapper, 'amster' );
-		wrapper.findComponent( CdxLookup ).vm.$emit( 'update:selected', '12' );
-		await flushPromises();
+		await pick( wrapper, '12' );
 
 		await search( wrapper, 'amsterd' );
 
@@ -220,8 +241,7 @@ describe( 'PagePicker', () => {
 		] );
 		const wrapper = createWrapper();
 		await search( wrapper, 'amster' );
-		wrapper.findComponent( CdxLookup ).vm.$emit( 'update:selected', '12' );
-		await flushPromises();
+		await pick( wrapper, '12' );
 
 		// Codex writes the picked item's label into the field; that is not the user editing it.
 		await search( wrapper, 'Amsterdam Museum' );
@@ -275,11 +295,66 @@ describe( 'PagePicker', () => {
 		expect( valuesOf( wrapper ) ).toEqual( [ '__no_results__', '__create__' ] );
 	} );
 
+	it( 'reports nothing for typed text on its own, leaving the create option to be picked', async () => {
+		const wrapper = createWrapper();
+
+		await search( wrapper, 'Rembrandt' );
+
+		expect( lastSelection( wrapper ) ).toEqual( [ null ] );
+	} );
+
+	describe( 'restricted to pages that exist', () => {
+		it( 'offers no page to create', async () => {
+			( mockPageTitleSearch.searchPageTitles as ReturnType<typeof vi.fn> ).mockResolvedValue( [
+				{ pageId: 12, title: 'Amsterdam Museum' },
+			] );
+			const wrapper = createWrapper( { existingPagesOnly: true } );
+
+			await search( wrapper, 'amster' );
+
+			expect( valuesOf( wrapper ) ).toEqual( [ '12' ] );
+		} );
+
+		it( 'puts no item of its own in the menu when a search found nothing', async () => {
+			( mockPageTitleSearch.searchPageTitles as ReturnType<typeof vi.fn> ).mockResolvedValue( [] );
+			const wrapper = createWrapper( { existingPagesOnly: true } );
+
+			await search( wrapper, 'nothing here' );
+
+			expect( valuesOf( wrapper ) ).toEqual( [] );
+		} );
+
+		it( 'invites a page search, since picking one is the only thing to do', () => {
+			expect( placeholderOf( createWrapper( { existingPagesOnly: true } ) ) )
+				.toBe( 'neowiki-page-picker-placeholder' );
+		} );
+
+		it( 'reports nothing for typed text on its own', async () => {
+			const wrapper = createWrapper( { existingPagesOnly: true } );
+
+			await search( wrapper, 'Rembrandt' );
+
+			expect( lastSelection( wrapper ) ).toEqual( [ null ] );
+		} );
+
+		it( 'reports the page picked', async () => {
+			( mockPageTitleSearch.searchPageTitles as ReturnType<typeof vi.fn> ).mockResolvedValue( [
+				{ pageId: 12, title: 'Amsterdam Museum' },
+			] );
+			const wrapper = createWrapper( { existingPagesOnly: true } );
+			await search( wrapper, 'amster' );
+
+			await pick( wrapper, '12' );
+
+			expect( lastSelection( wrapper ) ).toEqual( [ { pageId: 12, title: 'Amsterdam Museum' } ] );
+		} );
+	} );
+
 } );
 
-// The stub above cannot show this: Codex writes the picked item's label into the field and reacts to
-// that change itself, and the ordering of those emits is exactly what broke selection in the browser.
-// So this one case drives the real component, as SubjectPicker.spec does for its own Codex quirk.
+// The stub above cannot show any of this: whether the menu is open, and whether a choice survives,
+// are Codex's own state, and both broke in the browser while the stubbed tests passed. So these cases
+// drive the real component, as SubjectPicker.spec does for its own Codex quirk.
 describe( 'PagePicker against the real CdxLookup', () => {
 	let mockPageTitleSearch: PageTitleSearch;
 
@@ -294,15 +369,57 @@ describe( 'PagePicker against the real CdxLookup', () => {
 		vi.restoreAllMocks();
 	} );
 
-	it( 'keeps reporting the picked page when its title differs from what was typed', async () => {
-		const wrapper = mount( PagePicker, {
-			props: {},
+	function mountPicker( props: Record<string, unknown> = {} ): VueWrapper {
+		return mount( PagePicker, {
+			props,
 			global: {
 				mocks: { $i18n },
 				provide: { [ Service.PageTitleSearch ]: mockPageTitleSearch },
 			},
 			attachTo: document.body,
 		} );
+	}
+
+	function menuIsOpen( wrapper: VueWrapper ): boolean {
+		return wrapper.find( 'input' ).attributes( 'aria-expanded' ) === 'true';
+	}
+
+	// Focused, because Codex opens the menu of a field the user is in and no other.
+	async function type( wrapper: VueWrapper, text: string ): Promise<void> {
+		const input = wrapper.find( 'input' );
+		await input.trigger( 'focus' );
+		await input.setValue( text );
+		await flushPromises();
+	}
+
+	// Codex opens the menu on a menu-items change made while it is waiting for one, and takes every
+	// other change as the answer to what it was waiting for. A menu computed from the search's status
+	// changes when the search starts too, which leaves the results themselves arriving too late.
+	it( 'opens the menu on the results of a single character, restricted to pages that exist', async () => {
+		const wrapper = mountPicker( { existingPagesOnly: true } );
+
+		await type( wrapper, 'A' );
+
+		expect( menuIsOpen( wrapper ) ).toBe( true );
+		expect( wrapper.findAll( '.cdx-menu-item' ).map( ( item ) => item.text() ) ).toContain( 'ACME Inc' );
+
+		wrapper.unmount();
+	} );
+
+	it( 'opens the menu saying nothing was found, restricted to pages that exist', async () => {
+		mockPageTitleSearch.searchPageTitles = vi.fn().mockResolvedValue( [] );
+		const wrapper = mountPicker( { existingPagesOnly: true } );
+
+		await type( wrapper, 'A' );
+
+		expect( menuIsOpen( wrapper ) ).toBe( true );
+		expect( wrapper.find( '.cdx-menu__no-results' ).text() ).toBe( 'neowiki-page-picker-no-results' );
+
+		wrapper.unmount();
+	} );
+
+	it( 'keeps reporting the picked page when its title differs from what was typed', async () => {
+		const wrapper = mountPicker();
 
 		const input = wrapper.find( 'input' );
 		await input.setValue( 'ACME' );

@@ -1,4 +1,9 @@
-import type { SubjectRepository, SubjectWithReferencedSubjects, SubjectWriteResult } from '@/domain/SubjectRepository';
+import type {
+	SubjectPageWriteResult,
+	SubjectRepository,
+	SubjectWithReferencedSubjects,
+	SubjectWriteResult,
+} from '@/domain/SubjectRepository';
 import { SubjectId } from '@/domain/SubjectId';
 import type { SubjectDeserializer } from '@/persistence/SubjectDeserializer';
 import {
@@ -16,6 +21,8 @@ import type { SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError';
+import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
+import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError';
 import { parseViolations } from '@/persistence/violationParsing';
 
 async function throwOn422IfPossible( response: Response ): Promise<void> {
@@ -306,6 +313,60 @@ export class RestSubjectRepository implements SubjectRepository {
 		return this.deserializeWriteResult( await response.json() as SubjectWriteResponseJson );
 	}
 
+	public async createSubjectPage(
+		label: string | null,
+		schemaName: SchemaName,
+		statements: StatementList,
+		comment?: string,
+		pageTitle?: string,
+	): Promise<SubjectPageWriteResult> {
+		let response: Response;
+
+		// A create can fail for reasons the user can act on - the page is protected, the write did
+		// not land - so the server's own message is carried through rather than collapsed into a
+		// status code. Which of the two paths below carries it depends on the status: the
+		// production client resolves 409 and 422 and rejects the rest.
+		try {
+			response = await this.httpClient.post(
+				`${ this.mediaWikiRestApiUrl }/neowiki/v0/subjects`,
+				{
+					label: label,
+					pageTitle,
+					schema: schemaName,
+					statements: statementsToJson( statements ),
+					comment,
+				},
+				{
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				},
+			);
+		} catch ( error ) {
+			const refusedTitle = this.refusedPageTitleOf( error );
+
+			if ( refusedTitle !== null ) {
+				throw new InvalidPageTitleError( refusedTitle );
+			}
+
+			throw new Error( this.rejectedMessageOf( error ) ?? 'Error creating subject page' );
+		}
+
+		await throwOn422IfPossible( response );
+
+		if ( response.status === 409 ) {
+			throw new PageTitleTakenError( await this.stringFieldOf( response, 'pageTitle' ) ?? '' );
+		}
+
+		if ( !response.ok ) {
+			throw new Error( await this.stringFieldOf( response, 'message' ) ?? 'Error creating subject page' );
+		}
+
+		const json = await response.json() as SubjectWriteResponseJson & { pageTitle: string };
+
+		return { ...this.deserializeWriteResult( json ), pageTitle: json.pageTitle };
+	}
+
 	public async mintSubjectId(): Promise<SubjectId> {
 		const response = await this.httpClient.post(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject-ids`,
@@ -386,8 +447,8 @@ export class RestSubjectRepository implements SubjectRepository {
 
 		// A move can fail for reasons the user can act on - the target page is protected, the Subject
 		// is already there - so the server's own message is carried through rather than collapsed into
-		// a status code. The production client rejects on every non-2xx but 422, so that message
-		// arrives on the rejection.
+		// a status code. Which of the two paths below carries it depends on the status: the production
+		// client resolves 409 and 422 and rejects the rest.
 		try {
 			response = await this.httpClient.post(
 				`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }/move`,
@@ -407,7 +468,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		}
 
 		if ( !response.ok ) {
-			throw new Error( 'Error moving subject' );
+			throw new Error( await this.stringFieldOf( response, 'message' ) ?? 'Error moving subject' );
 		}
 	}
 
@@ -415,6 +476,34 @@ export class RestSubjectRepository implements SubjectRepository {
 		const message = ( error as { response?: { data?: { message?: unknown } } } )?.response?.data?.message;
 
 		return typeof message === 'string' ? message : null;
+	}
+
+	/**
+	 * The title a refused create named as one it cannot use, or null where it refused something
+	 * else: a malformed body is refused with the same status, and only a refused title is named.
+	 */
+	private refusedPageTitleOf( error: unknown ): string | null {
+		const response = ( error as { response?: { status?: unknown; data?: { pageTitle?: unknown } } } )?.response;
+
+		if ( response?.status !== 400 ) {
+			return null;
+		}
+
+		return typeof response.data?.pageTitle === 'string' ? response.data.pageTitle : null;
+	}
+
+	/**
+	 * One field of an error body the server sent, or null when it sent none that reads as a string:
+	 * an error response need not carry JSON at all.
+	 */
+	private async stringFieldOf( response: Response, field: string ): Promise<string | null> {
+		try {
+			const value = ( await response.json() as Record<string, unknown> )?.[ field ];
+
+			return typeof value === 'string' ? value : null;
+		} catch {
+			return null;
+		}
 	}
 
 	public async validateSubject(

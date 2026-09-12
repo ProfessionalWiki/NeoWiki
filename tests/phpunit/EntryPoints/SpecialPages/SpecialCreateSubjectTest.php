@@ -57,6 +57,14 @@ class SpecialCreateSubjectTest extends SpecialPageTestBase {
 		$this->executeSpecialPage( '', null, null, $this->getTestUser()->getUser() );
 	}
 
+	public function testTheSpecialPageIsAlsoReachableAsNewSubject(): void {
+		$factory = $this->getServiceContainer()->getSpecialPageFactory();
+
+		[ $name ] = $factory->resolveAlias( 'NewSubject' );
+
+		$this->assertInstanceOf( SpecialCreateSubject::class, $factory->getPage( (string)$name ) );
+	}
+
 	public function testAUserWithoutTheCreatepageRightIsRefused(): void {
 		$this->setGroupPermissions( '*', 'createpage', false );
 		$this->setGroupPermissions( 'user', 'createpage', false );
