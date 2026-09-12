@@ -177,7 +177,7 @@ readonly class GetPageSubjectsQuery {
 			$subject,
 			$pageIdentifiers,
 			SubjectDisplayName::labelOrPageName(
-				label: $subject->getLabel(),
+				subject: $subject,
 				isMainSubject: $isMainSubject,
 				pageName: $pageIdentifiers?->getTitle() ?? ''
 			)

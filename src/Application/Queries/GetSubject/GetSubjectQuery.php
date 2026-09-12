@@ -126,7 +126,7 @@ readonly class GetSubjectQuery {
 				// name is built from the identifiers fetched either way.
 				$includePageIdentifiers ? $pageIdentifiers : null,
 				SubjectDisplayName::labelOrPageName(
-					label: $subject->getLabel(),
+					subject: $subject,
 					isMainSubject: $this->isMainSubject( $subject, $pageIdentifiers, $mainSubjectIds ),
 					pageName: $pageIdentifiers?->getTitle() ?? ''
 				)

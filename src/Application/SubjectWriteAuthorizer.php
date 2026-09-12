@@ -18,4 +18,10 @@ interface SubjectWriteAuthorizer {
 
 	public function authorize( PageId $pageId ): bool;
 
+	/**
+	 * The same authorization for a page that does not exist yet, which is named by its title rather
+	 * than by an id it has not been given. Covers creating the page as well as editing it.
+	 */
+	public function authorizeCreatePage( string $pageTitle ): bool;
+
 }

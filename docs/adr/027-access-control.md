@@ -3,7 +3,7 @@
 Date: 2026-07-22
 
 Status: Accepted (2026-09-02). Amended 2026-09-11, resolving the "Cross-wiki subject display" open decision with a
-fifth read class, source-attested (see Decision).
+fifth read class, source-attested; amended 2026-09-12, on what creating a page by title reveals (see Decision).
 
 ## Context
 
@@ -79,6 +79,10 @@ Constraints the model rests on:
   page was found; local Subjects keep the page-attributable gate. Denied and absent are the same thing by
   construction: what a Source does not vouch, it does not return. Sourced data therefore has no per-user
   granularity; if that is ever demanded, it is an additive optional context on the Source contract, not a redesign.
+- **Creating a page by title reveals whether that title is free** (amended 2026-09-12). `POST
+  /neowiki/v0/subjects` authorizes the caller-supplied title before looking for a page there, as MediaWiki's own page
+  creation does: a title they may not create answers `403` whether or not a page holds it. The `409` that says a
+  title is taken therefore reaches only a caller who may write there.
 
 ## Open decisions
 
