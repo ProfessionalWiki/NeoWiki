@@ -17,14 +17,12 @@ A UI component never shares its name with a data-access interface.
 
 ## "Store"
 
-Always qualify which store is meant:
+Always qualify which store is meant, in identifiers, docs, and discussion:
 
 - **Pinia store** — a frontend state store, e.g. `SubjectStore`
   ([ADR 30](adr/030-frontend-store-registry-semantics.md)).
 - **Graph Store** — a configured projection target ([Glossary](glossary.md)).
-- A concrete technology name ("SPARQL store", "triple store") only when the statement is about that technology.
-
-Bare "store" is ambiguous across these three; write the qualified form in identifiers, docs, and discussion.
+- **Technology name** — "SPARQL store", "triple store", used only when the statement is about that technology.
 
 ## Registry
 
@@ -42,7 +40,7 @@ Components are named noun-first with a role suffix:
 - `<X>Picker` — selects an existing X.
 - `<X>Dialog` — a modal container; combined as `<X><Role>Dialog` (e.g. `SubjectCreatorDialog`).
 
-## Known collisions, unresolved
+## Known unresolved collisions
 
 Do not add new uses of these names until the linked decision lands:
 
