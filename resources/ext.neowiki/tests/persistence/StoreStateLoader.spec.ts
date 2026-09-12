@@ -60,7 +60,7 @@ function newMainSubjectWithRelationsTo( ...targets: SubjectId[] ): Subject {
 	} );
 }
 
-function newLoader( repository: RecordingSubjectRepository ): StoreStateLoader {
+function newLoader( repository: SubjectRepository ): StoreStateLoader {
 	return new StoreStateLoader(
 		repository,
 		new InMemorySchemaRepository( [ newSchema( { title: 'Company' } ) ] ),
@@ -158,6 +158,44 @@ describe( 'StoreStateLoader', () => {
 
 		expect( subjectStore.subjects.has( 's11111111111111' ) ).toBe( false );
 		expect( () => schemaStore.getSchema( subject.getSchemaName() ) ).toThrow();
+	} );
+
+	// The REST read answers for a Subject the viewer may not read exactly as it does for one that
+	// does not exist, which is what the repository here does for an id it does not hold. A request
+	// that fails outright arrives the same way.
+	describe( 'a Subject that does not load', () => {
+
+		const unloadableId = new SubjectId( 's44444444444444' );
+		const readable = newSubject( { id: mainId, schemaName: 'Company' } );
+		let warn: ReturnType<typeof vi.fn>;
+
+		beforeEach( () => {
+			warn = vi.fn();
+			vi.stubGlobal( 'mw', { log: { warn } } );
+		} );
+
+		function loadReadableAndUnloadable(): Promise<void> {
+			return newLoader( new StubSubjectRepository( [ readable ] ) )
+				.loadSubjectsAndSchemas( new Set( [ mainId.text, unloadableId.text ] ) );
+		}
+
+		it( 'stores the Subjects that did load', async () => {
+			await loadReadableAndUnloadable();
+
+			const subjectStore = useSubjectStore();
+			expect( subjectStore.getSubject( mainId ) ).toEqual( readable );
+			expect( subjectStore.subjects.has( unloadableId.text ) ).toBe( false );
+		} );
+
+		it( 'logs the id it skipped and the reason', async () => {
+			await loadReadableAndUnloadable();
+
+			expect( warn ).toHaveBeenCalledWith(
+				expect.stringContaining( unloadableId.text ),
+				expect.any( Error ),
+			);
+		} );
+
 	} );
 
 } );

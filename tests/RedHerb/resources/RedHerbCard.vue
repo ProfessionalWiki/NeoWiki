@@ -127,7 +127,9 @@ module.exports = exports = {
 		const editingSubject = vue.shallowRef( null );
 		const editingSchema = vue.shallowRef( null );
 
-		const subject = vue.computed( () => subjectStore.getSubject( props.subjectId ) );
+		// findSubject, not getSubject: a Subject the viewer may not read is loaded as an absent
+		// one, and the card above renders nothing for it rather than throwing.
+		const subject = vue.computed( () => subjectStore.findSubject( props.subjectId ) );
 
 		const schema = vue.computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) );
 

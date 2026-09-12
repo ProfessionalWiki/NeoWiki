@@ -39,6 +39,13 @@ export const useSubjectStore = defineStore( 'subject', {
 
 			return subject as Subject;
 		},
+		// Answers null for a Subject the registry does not hold: one the viewer may not read is
+		// loaded as absent, and its View must render nothing rather than take the page's other
+		// Views down with it. Callers bound by the registry invariant (see
+		// dropFromRegistryOnceUnlisted) keep to getSubject, where an absent Subject is a fault.
+		findSubject: ( state ) => function ( id: SubjectId ): Subject | null {
+			return ( state.subjects.get( id.text ) ?? null ) as Subject | null;
+		},
 	},
 	actions: {
 		setSubject( subject: Subject ): void { // TODO: just take Subject

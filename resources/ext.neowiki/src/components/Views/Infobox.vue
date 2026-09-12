@@ -92,10 +92,18 @@ const isEditorOpen = ref( false );
 const editingSubject = shallowRef<Subject | null>( null );
 const editingSchema = shallowRef<Schema | null>( null );
 
-const subject = computed( () => subjectStore.getSubject( props.subjectId ) ); // TODO: handle not found
-const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) ); // TODO: handle not found
+// Null for a Subject the page loaded nothing for, which is how one the viewer may not read
+// arrives: the display below renders nothing then, rather than failing the whole page's Views.
+const subject = computed( (): Subject | null => subjectStore.findSubject( props.subjectId ) );
+const schema = computed( (): Schema | null =>
+	subject.value === null ? null : schemaStore.getSchema( subject.value.getSchemaName() ) );
 
 async function openEditor(): Promise<void> {
+	// The button that calls this renders inside the display, which a null Subject has none of.
+	if ( subject.value === null ) {
+		return;
+	}
+
 	try {
 		const [ freshSubject, freshSchema ] = await Promise.all( [
 			subjectRepo.getSubjectForEditing( props.subjectId ),
@@ -130,7 +138,8 @@ function getComponent( propertyType: string ): Component {
 }
 
 // Null when the Subject is already named after its Schema, so the heading above goes with the badge.
-const schemaNameBadge = computed( (): string | null => schemaNameToShow( subject.value ) );
+const schemaNameBadge = computed( (): string | null =>
+	subject.value === null ? null : schemaNameToShow( subject.value ) );
 
 const layout = computed( () => {
 	if ( !props.layoutName ) {
