@@ -1,7 +1,20 @@
 /**
- * Shared LESS mixins. Imported with `@import ( reference )`, so nothing here emits CSS on
- * its own — only where a rule calls it.
+ * Shared LESS mixins and constants. Imported with `@import ( reference )`, so nothing here
+ * emits CSS on its own — only where a rule calls it.
  */
+
+/* The constant below is arithmetic over design tokens, and LESS evaluates it where it is
+   written: without this, importing the file for the mixin alone fails the build. */
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+
+/**
+ * Where the text of a tree row starts, measured from the row's own leading edge: a row's
+ * disclosure control straddles the guide line down its level, so the text has to clear it.
+ *
+ * Shared because three places must agree or they stop lining up — the rows, the captions above
+ * them, and the inset the subject editor gives the whole tree, which subtracts it.
+ */
+@ext-neowiki-tree-text-inset: calc( @size-150 / 2 + @spacing-12 );
 
 /**
  * Removes an element from the visual layout while leaving it in the accessibility tree.

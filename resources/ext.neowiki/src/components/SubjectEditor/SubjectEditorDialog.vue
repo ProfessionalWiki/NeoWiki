@@ -745,6 +745,7 @@ defineExpose( { hasChanged: anyChanged } );
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-subject-editor-dialog {
 	/* Overrides, not replications: `.cdx-dialog__header`'s padding is unconditional in Codex,
@@ -840,12 +841,15 @@ defineExpose( { hasChanged: anyChanged } );
 
 	/* The tree carries no inset of its own; this dialog gives it the form's, on its padded
 		element rather than on the scroller around it. The gutter is the dialog's 24px less the
-		6px a row already carries, so a node's TEXT lands on that gutter, in line with the
-		notices above and the form beside it, while the row's hover and selected backgrounds
-		keep reaching the 6px further out — a background flush with the text would read as
-		clipped. Nothing on the end side, so the scrollbar sits flush with the divider. */
+		inset a row already carries to clear its disclosure control, so a node's TEXT lands on
+		that gutter, in line with the header above it and the form beside it, while the row's
+		hover and selected backgrounds keep reaching further out — a background flush with the
+		text would read as clipped. Nothing on the end side, so the scrollbar sits flush with
+		the divider.
+
+		Browser-measured: the dialog's title and the root node's name both start at the same x. */
 	& .ext-neowiki-subject-tree {
-		padding: @spacing-100 0 @spacing-100 calc( @spacing-150 - @spacing-35 );
+		padding: @spacing-100 0 @spacing-100 calc( @spacing-150 - @ext-neowiki-tree-text-inset );
 	}
 
 	/* Every inset the form has, on this padded element rather than on the scroller around it:
