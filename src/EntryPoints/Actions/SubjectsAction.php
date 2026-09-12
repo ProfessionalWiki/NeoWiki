@@ -9,6 +9,7 @@ use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 class SubjectsAction extends FormlessAction {
@@ -46,7 +47,12 @@ class SubjectsAction extends FormlessAction {
 		}
 
 		$extension = NeoWikiExtension::getInstance();
-		$extension->newFrontendModuleLoader()->load( $out, $this->getSkin() );
+		$extension->newFrontendModuleLoader()->loadWithSubjectPermissions(
+			$out,
+			$this->getSkin(),
+			$extension->newSubjectPermissionHints( $this->getAuthority() )
+				->canEditSubject( new PageId( $title->getArticleID() ) )
+		);
 
 		$out->addJsConfigVars( [
 			'wgNeoWikiManageSubjectsPageId' => $title->getArticleID(),

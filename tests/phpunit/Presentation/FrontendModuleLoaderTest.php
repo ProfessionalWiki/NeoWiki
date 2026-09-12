@@ -97,6 +97,42 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $this->addedJsConfigVars['wgNeoWikiEnforceValidation'] ?? null );
 	}
 
+	public function testEmitsThatTheViewerMayEditThePagesSubjects(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$this->newLoader()->loadWithSubjectPermissions(
+			$this->newCapturingOutputPage(),
+			$this->createMock( Skin::class ),
+			true
+		);
+
+		$this->assertTrue( $this->addedJsConfigVars['wgNeoWikiCanEditPageSubjects'] ?? null );
+	}
+
+	public function testEmitsThatTheViewerMayNotEditThePagesSubjects(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$this->newLoader()->loadWithSubjectPermissions(
+			$this->newCapturingOutputPage(),
+			$this->createMock( Skin::class ),
+			false
+		);
+
+		$this->assertFalse( $this->addedJsConfigVars['wgNeoWikiCanEditPageSubjects'] ?? null );
+	}
+
+	public function testLoadsTheFrontendModuleAlongsideThePermission(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$this->newLoader()->loadWithSubjectPermissions(
+			$this->newCapturingOutputPage(),
+			$this->createMock( Skin::class ),
+			true
+		);
+
+		$this->assertSame( [ 'ext.neowiki' ], $this->addedModules );
+	}
+
 	private function newLoader( int $validationDebounceMs = 300, bool $validationEnforced = false ): FrontendModuleLoader {
 		return new FrontendModuleLoader(
 			$this->getServiceContainer()->getHookContainer(),
