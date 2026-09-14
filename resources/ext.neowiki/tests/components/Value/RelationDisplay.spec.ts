@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import RelationDisplay from '@/components/Value/RelationDisplay.vue';
+import { RelationTargetUrlKey } from '@/components/Value/ValueDisplayContract.ts';
 import { Relation, RelationValue } from '@/domain/Value.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
@@ -27,11 +28,17 @@ async function createWrapper( ...relations: Relation[] ): Promise<ReturnType<typ
 	return wrapper;
 }
 
-function createWrapperWithValue( value: RelationValue ): ReturnType<typeof mount> {
+function createWrapperWithValue(
+	value: RelationValue,
+	provide: Record<symbol, unknown> = {},
+): ReturnType<typeof mount> {
 	return mount( RelationDisplay, {
 		props: {
 			value: value,
 			property: newRelationProperty(),
+		},
+		global: {
+			provide: provide,
 		},
 	} );
 }
@@ -75,6 +82,23 @@ describe( 'RelationDisplay.vue', () => {
 
 		expect( mockGetSubject ).toHaveBeenCalledWith( new SubjectId( 's1111111111111A' ) );
 		expect( mockGetUrl ).toHaveBeenCalledWith( 'Page_Name_1' );
+	} );
+
+	// Where a relation leads is the host's to decide: a surface showing Subjects rather than pages
+	// sends it to the target's own page instead.
+	it( 'links a relation where the host says, rather than to the target\'s page', () => {
+		mockGetSubject.mockReturnValue( createSubject( 's1111111111111A', 'Test Subject 1', 'Page_Name_1' ) );
+
+		const wrapper = createWrapperWithValue(
+			new RelationValue( [ new Relation( 'not-important', new SubjectId( 's1111111111111A' ) ) ] ),
+			{
+				[ RelationTargetUrlKey as symbol ]:
+					( target: SubjectWithContext ) => '/elsewhere/' + target.getId().text,
+			},
+		);
+
+		expect( wrapper.find( 'a' ).attributes( 'href' ) ).toBe( '/elsewhere/s1111111111111A' );
+		expect( mockGetUrl ).not.toHaveBeenCalled();
 	} );
 
 	it( 'renders the display name of a target that has no label, rather than its id', async () => {

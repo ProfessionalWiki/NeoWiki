@@ -22,9 +22,9 @@
 </template>
 
 <script setup lang="ts">
-import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
+import { RelationTargetUrlKey, ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
 import { RelationProperty } from '@/domain/propertyTypes/Relation.ts';
-import { ref, watch } from 'vue';
+import { inject, ref, watch } from 'vue';
 import { Value, RelationValue, Relation } from '@/domain/Value.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
@@ -40,6 +40,13 @@ const props = defineProps<ValueDisplayProps<RelationProperty>>();
 
 const subjectStore = useSubjectStore();
 const displayedValues = ref<RelationDisplayValueData[]>( [] );
+
+// Where a relation leads: the page its target is stored on, unless the host says otherwise.
+const relationTargetUrl = inject( RelationTargetUrlKey, targetPageUrl );
+
+function targetPageUrl( target: SubjectWithContext ): string {
+	return mw.util.getUrl( target.getPageIdentifiers().getPageName() );
+}
 
 watch( () => props.value, ( newValue ) => {
 	displayedValues.value = getDisplayedValues( newValue );
@@ -73,7 +80,7 @@ function getDisplayedValues( value: Value | undefined ): RelationDisplayValueDat
 function getValueDisplay( subject: SubjectWithContext ): RelationDisplayValueData {
 	return {
 		text: subjectDisplayName( subject ),
-		url: mw.util.getUrl( subject.getPageIdentifiers().getPageName() )
+		url: relationTargetUrl( subject )
 	};
 }
 
