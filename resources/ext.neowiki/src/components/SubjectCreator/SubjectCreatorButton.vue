@@ -10,7 +10,7 @@
 		</CdxButton>
 
 		<SubjectCreatorDialog
-			v-if="canCreateSubjectPage"
+			v-if="mayCreate"
 			v-model:open="creatorOpen"
 			:host-page="hostPage"
 			:initial-schema-name="schemaName"
@@ -36,6 +36,7 @@ import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
 import type { DialogAction } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
+import type { InitialPage } from '@/components/SubjectCreator/InitialPage.ts';
 import type { SubjectCreatorButtonProps } from '@/components/SubjectCreator/subjectCreatorButtonProps.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 
@@ -45,12 +46,43 @@ const creatorOpen = ref( false );
 const denialOpen = ref( false );
 const permissionKnown = ref( false );
 
-// The right to create a page for a Subject is the strictest a save may need, so it decides which
-// dialog the button opens; the button itself shows either way.
-const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
+// Storing on a page that exists needs the right to edit it; a new page also needs the right to create
+// it. That decides which dialog the button opens; the button itself shows either way.
+const {
+	canCreateMainSubject,
+	canCreateSubjectPage,
+	checkPermissions,
+	checkCreateSubjectPagePermission
+} = useSubjectPermissions();
+
+const existingPageId = computed( (): number | null => existingPageIdOf( props.initialPage ) );
+
+const mayCreate = computed( (): boolean =>
+	existingPageId.value === null ? canCreateSubjectPage.value : canCreateMainSubject.value
+);
+
+/**
+ * The page a fixed target stores the Subject on, when that page exists. Null where the Subject may go on a new page.
+ */
+function existingPageIdOf( initialPage: InitialPage ): number | null {
+	if ( !initialPage.fixed ) {
+		return null;
+	}
+
+	if ( initialPage.choice === 'thisPage' ) {
+		return Number( mw.config.get( 'wgArticleId' ) );
+	}
+
+	return initialPage.page?.pageId ?? null;
+}
 
 onMounted( async (): Promise<void> => {
-	await checkCreateSubjectPagePermission();
+	if ( existingPageId.value === null ) {
+		await checkCreateSubjectPagePermission();
+	} else {
+		await checkPermissions( existingPageId.value );
+	}
+
 	permissionKnown.value = true;
 } );
 
@@ -63,7 +95,7 @@ const denialReason = computed( (): string => {
 } );
 
 function openDialog(): void {
-	if ( canCreateSubjectPage.value ) {
+	if ( mayCreate.value ) {
 		creatorOpen.value = true;
 	} else {
 		denialOpen.value = true;

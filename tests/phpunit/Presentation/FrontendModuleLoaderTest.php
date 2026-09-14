@@ -166,8 +166,8 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 
 		$reason = $this->deniedReasonFor( $this->getMutableTestUser()->getUser() );
 
-		$this->assertStringContainsString( 'Bureaucrats', $reason ?? '' );
-		$this->assertStringNotContainsString( 'Administrators', $reason ?? '' );
+		$this->assertStringContainsString( 'Administrators', $reason ?? '' );
+		$this->assertStringNotContainsString( 'Bureaucrats', $reason ?? '' );
 	}
 
 	public function testStatesTheReasonAsPlainText(): void {

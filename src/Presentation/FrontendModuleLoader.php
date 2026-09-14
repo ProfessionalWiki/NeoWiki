@@ -11,8 +11,11 @@ use Skin;
 
 class FrontendModuleLoader {
 
-	/** What RightsBasedSubjectPermissionHints requires for a Subject page, in the order a missing one is reported. */
-	private const array SUBJECT_PAGE_CREATION_RIGHTS = [ 'createpage', 'edit' ];
+	/**
+	 * What RightsBasedSubjectPermissionHints requires for a Subject page, in the order a missing one is reported:
+	 * every button needs edit, while only a button that creates a page needs createpage.
+	 */
+	private const array SUBJECT_PAGE_CREATION_RIGHTS = [ 'edit', 'createpage' ];
 
 	public function __construct(
 		private readonly HookContainer $hookContainer,
