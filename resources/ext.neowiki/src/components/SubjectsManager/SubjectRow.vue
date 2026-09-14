@@ -1,6 +1,6 @@
 <template>
 	<li
-		:id="subjectRowDomId( subject.getId().text )"
+		:id="domId ?? subjectRowDomId( subject.getId().text )"
 		class="ext-neowiki-subject-row"
 		:class="{
 			'ext-neowiki-subject-row--emphasized': emphasized,
@@ -68,6 +68,13 @@
 						/>
 						<span class="ext-neowiki-subject-row__count">
 							{{ $i18n( 'neowiki-managesubjects-statement-count', statementCount ).text() }}
+						</span>
+						<span
+							v-if="caption !== null"
+							class="ext-neowiki-subject-row__caption"
+							:title="caption"
+						>
+							{{ caption }}
 						</span>
 					</span>
 				</span>
@@ -276,6 +283,16 @@ const props = withDefaults( defineProps<{
 	 * nothing — the Data tab is that page — or where the read resolved none.
 	 */
 	page?: PageIdentifiers | null;
+	/**
+	 * A short line about why this Subject is in this list, shown beside the Schema and the statement
+	 * count. Null on a listing where the row's own presence needs no explaining.
+	 */
+	caption?: string | null;
+	/**
+	 * The row's DOM id, for a surface listing the same Subject twice, which must still keep every id
+	 * on the page unique. Defaults to the one id a Subject's row carries everywhere else.
+	 */
+	domId?: string | null;
 }>(), {
 	subjectPageUrl: null,
 	emphasized: false,
@@ -286,7 +303,9 @@ const props = withDefaults( defineProps<{
 	canMove: false,
 	mainSubjectControl: 'none',
 	showDragHandle: false,
-	page: null
+	page: null,
+	caption: null,
+	domId: null
 } );
 
 // Everything the page decides is emitted rather than done here: which Subject a promotion moves
@@ -551,13 +570,17 @@ function copySubjectIri(): Promise<void> {
 		white-space: nowrap;
 	}
 
-	&__label {
-		font-size: @font-size-medium;
-		font-weight: @font-weight-bold;
+	&__label,
+	&__caption {
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	&__label {
+		font-size: @font-size-medium;
+		font-weight: @font-weight-bold;
 	}
 
 	/* The way to the Subject's own page. Only as wide as the name and its arrow, so the rest of the
@@ -653,7 +676,8 @@ function copySubjectIri(): Promise<void> {
 	}
 
 	/* The separator belongs to the pair: a row whose badge is withheld draws none. */
-	&__schema + &__count::before {
+	&__schema + &__count::before,
+	&__count + &__caption::before {
 		content: '•';
 		margin-inline-end: @spacing-50;
 	}

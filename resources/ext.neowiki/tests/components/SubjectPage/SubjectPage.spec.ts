@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { flushPromises, shallowMount, VueWrapper } from '@vue/test-utils';
@@ -21,7 +21,7 @@ import { Statement } from '@/domain/Statement.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
 import { newRelation, RelationValue } from '@/domain/Value.ts';
 import { RelationType } from '@/domain/propertyTypes/Relation.ts';
-import type { SubjectWithReferencedSubjects } from '@/domain/SubjectRepository.ts';
+import type { ReferencingSubjects, SubjectWithReferencedSubjects } from '@/domain/SubjectRepository.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError.ts';
@@ -44,6 +44,8 @@ const IRI_BASE = 'https://data.example.org/entity/';
 
 const REQUESTED_ROW = '.ext-neowiki-subject-page__subject .ext-neowiki-subject-row';
 const REFERENCED_ROW = '.ext-neowiki-subject-page__referenced .ext-neowiki-subject-row';
+const REFERENCING_ROW = '.ext-neowiki-subject-page__referencing .ext-neowiki-subject-row';
+const ROW_CAPTION = '.ext-neowiki-subject-row__caption';
 const ROW_LABEL = '.ext-neowiki-subject-row__label';
 const EDIT_CONTROL = '[aria-label="neowiki-managesubjects-row-edit"]';
 const DELETE_CONTROL = '[aria-label="neowiki-managesubjects-row-delete"]';
@@ -99,6 +101,7 @@ const referencedSubject = subject( {
 } );
 
 const getSubjectWithReferencedSubjectsMock = vi.fn();
+const getReferencingSubjectsMock = vi.fn();
 const getSubjectForEditingMock = vi.fn();
 const getSchemaMock = vi.fn();
 const checkPermissionsMock = vi.fn();
@@ -123,6 +126,13 @@ function bundle(
 	return { requestedSubject: requested, referencedSubjects };
 }
 
+function referencing( subjects: Subject[], propertyNames = [ 'Made in' ], truncated = false ): ReferencingSubjects {
+	return {
+		subjects: subjects.map( ( each ) => ( { subject: each, propertyNames } ) ),
+		truncated,
+	};
+}
+
 /**
  * Stands in for the singleton the Pinia stores read through, which is not the injected repository
  * the page itself reads through.
@@ -140,13 +150,15 @@ const I18nSlotStub = {
 	props: [ 'messageKey' ],
 };
 
-function silenceConsoleErrors(): void {
-	vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+function silenceConsoleErrors(): MockInstance {
+	return vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 }
 
 function mountPage(): VueWrapper {
 	setupMwMock( {
 		functions: [ 'config', 'msg', 'message', 'notify', 'util' ],
+		// Core's own separator, which the row captions join property names with.
+		messages: { 'comma-separator': ', ' },
 		config: {
 			wgNeoWikiRdfProjections: PROJECTIONS,
 			wgNeoWikiSubjectIriBase: IRI_BASE,
@@ -173,6 +185,7 @@ function mountPage(): VueWrapper {
 			provide: {
 				[ Service.SubjectRepository ]: {
 					getSubjectWithReferencedSubjects: getSubjectWithReferencedSubjectsMock,
+					getReferencingSubjects: getReferencingSubjectsMock,
 					getSubjectForEditing: getSubjectForEditingMock,
 				},
 				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
@@ -209,6 +222,7 @@ describe( 'SubjectPage', () => {
 
 	beforeEach( () => {
 		getSubjectWithReferencedSubjectsMock.mockReset().mockResolvedValue( bundle() );
+		getReferencingSubjectsMock.mockReset().mockResolvedValue( referencing( [] ) );
 		getSchemaMock.mockReset().mockImplementation( ( name: string ) =>
 			SCHEMAS[ name ] === undefined ?
 				Promise.reject( new Error( `Unknown schema: ${ name }` ) ) :
@@ -373,6 +387,224 @@ describe( 'SubjectPage', () => {
 		expect( isOpen( wrapper.find( REFERENCED_ROW ) ) ).toBe( true );
 	} );
 
+	// The reverse direction: without it the page is a dead end, since nothing on the Subject names
+	// the Subjects that point at it.
+	describe( 'the Subjects that reference this one', () => {
+
+		const referrer = subject( {
+			id: OTHER_REFERENCED_ID,
+			label: 'Rocket',
+			schemaName: 'Product',
+			pageId: 91,
+			pageName: 'Rocket (product)',
+			relatesTo: SUBJECT_ID,
+		} );
+
+		it( 'reads them for the Subject its subjectId names', async () => {
+			await mountLoadedPage();
+
+			expect( getReferencingSubjectsMock )
+				.toHaveBeenCalledWith( expect.objectContaining( { text: SUBJECT_ID } ) );
+		} );
+
+		it( 'lists them in the order the read returned them, collapsed', async () => {
+			getReferencingSubjectsMock.mockResolvedValue( referencing( [ referrer, referencedSubject ] ) );
+
+			const wrapper = await mountLoadedPage();
+
+			expect( wrapper.findAll( `${ REFERENCING_ROW } ${ ROW_LABEL }` ).map( ( row ) => row.text() ) )
+				.toEqual( [ 'Rocket', 'Anvil' ] );
+			expect( isOpen( wrapper.find( REFERENCING_ROW ) ) ).toBe( false );
+		} );
+
+		// Which property points here is the whole reason the row is in the list.
+		it( 'names the properties through which each one points here', async () => {
+			getReferencingSubjectsMock.mockResolvedValue(
+				referencing( [ referrer ], [ 'Made in', 'Sold in' ] ) );
+
+			const wrapper = await mountLoadedPage();
+
+			expect( wrapper.find( `${ REFERENCING_ROW } ${ ROW_CAPTION }` ).text() )
+				.toBe( 'neowiki-special-subject-referenced-by-propertiesMade in, Sold in' );
+		} );
+
+		it( 'shows no section for a Subject nothing references', async () => {
+			const wrapper = await mountLoadedPage();
+
+			expect( wrapper.find( '.ext-neowiki-subject-page__referencing-heading' ).exists() ).toBe( false );
+			expect( wrapper.find( REFERENCING_ROW ).exists() ).toBe( false );
+		} );
+
+		// A wiki with no Neo4j store answers nothing here, and a read can fail on its own. Either way
+		// the Subject the reader asked for is what the page is about.
+		it( 'shows the Subject anyway when the read fails', async () => {
+			const logged = silenceConsoleErrors();
+			getReferencingSubjectsMock.mockRejectedValue( new Error( 'Backend down' ) );
+
+			const wrapper = await mountLoadedPage();
+
+			// The failure is caught here rather than left to escape: the page is shown from the
+			// read that landed, and nothing downstream of this one sees the rejection at all.
+			expect( logged ).toHaveBeenCalledWith(
+				'Failed to load referencing subjects:', expect.any( Error ) );
+			expect( wrapper.find( `${ REQUESTED_ROW } ${ ROW_LABEL }` ).text() ).toBe( 'ACME Inc' );
+			expect( wrapper.find( '.ext-neowiki-subject-page__error' ).exists() ).toBe( false );
+			expect( wrapper.find( '.ext-neowiki-subject-page__referencing-heading' ).exists() ).toBe( false );
+		} );
+
+		// The section is worth waiting for; the Subject the reader asked for is not worth delaying.
+		it( 'shows the Subject while the read of them is still in flight', async () => {
+			let land!: ( value: ReferencingSubjects ) => void;
+			getReferencingSubjectsMock.mockReturnValue( new Promise( ( resolve ) => {
+				land = resolve;
+			} ) );
+
+			const wrapper = await mountLoadedPage();
+
+			expect( wrapper.find( `${ REQUESTED_ROW } ${ ROW_LABEL }` ).text() ).toBe( 'ACME Inc' );
+			expect( wrapper.find( REFERENCING_ROW ).exists() ).toBe( false );
+
+			land( referencing( [ referrer ] ) );
+			await flushPromises();
+
+			expect( wrapper.find( `${ REFERENCING_ROW } ${ ROW_LABEL }` ).text() ).toBe( 'Rocket' );
+		} );
+
+		// A row the reader opened stays open across the re-read after a write, and that write can have
+		// pointed it at a Subject the registry does not hold: without re-seeding, the row shows the
+		// new target's bare id.
+		it( 'seeds a new target of a row left open through a re-read', async () => {
+			const newTargetId = 's1ddddddddddd11';
+			const getSubjectMock = vi.fn().mockResolvedValue(
+				subject( { id: newTargetId, label: 'Sheffield', schemaName: 'Product' } ) );
+			stubExtension( { subject: { getSubject: getSubjectMock } } );
+			canDeleteSubjectRef.value = true;
+			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [ referencedSubject ] ) );
+			const rocketRelatingTo = ( targetId: string ): ReferencingSubjects => referencing( [
+				subject( {
+					id: OTHER_REFERENCED_ID,
+					label: 'Rocket',
+					schemaName: 'Product',
+					relatesTo: targetId,
+				} ),
+			] );
+			getReferencingSubjectsMock.mockResolvedValue( rocketRelatingTo( REFERENCED_ID ) );
+
+			const wrapper = await mountLoadedPage();
+			await wrapper.find( `${ REFERENCING_ROW } .ext-neowiki-subject-row__count` ).trigger( 'click' );
+			await flushPromises();
+			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
+			getSubjectMock.mockClear();
+			getReferencingSubjectsMock.mockResolvedValue( rocketRelatingTo( newTargetId ) );
+
+			// Any write re-reads the page; deleting a referenced Subject is the shortest way there.
+			await confirmDelete( wrapper, wrapper.find( `${ REFERENCED_ROW } ${ DELETE_CONTROL }` ) );
+
+			expect( getSubjectMock ).toHaveBeenCalledWith(
+				expect.objectContaining( { text: newTargetId } ) );
+		} );
+
+		// The Edit and Delete controls on the page's own row wait for the read of the Subject to
+		// return, and so does the editor dialog after a save. A section that never lands must hold
+		// neither: with Neo4j slow or unreachable that wait is the whole request timeout.
+		it( 'leaves the page\'s own controls unblocked while the read of them hangs', async () => {
+			getReferencingSubjectsMock.mockReturnValue( new Promise( () => {
+				// Never lands.
+			} ) );
+
+			await mountLoadedPage();
+
+			expect( checkPermissionsMock ).toHaveBeenCalledWith( PAGE_ID );
+		} );
+
+		it( 'says when the wiki holds more of them than the list shows', async () => {
+			getReferencingSubjectsMock.mockResolvedValue( referencing( [ referrer ], [ 'Made in' ], true ) );
+
+			const wrapper = await mountLoadedPage();
+
+			expect( wrapper.find( '.ext-neowiki-subject-page__referencing-truncated' ).text() )
+				.toBe( 'neowiki-special-subject-referenced-by-truncated1' );
+		} );
+
+		it( 'says nothing about truncation when the list is the whole of it', async () => {
+			getReferencingSubjectsMock.mockResolvedValue( referencing( [ referrer ] ) );
+
+			const wrapper = await mountLoadedPage();
+
+			expect( wrapper.find( '.ext-neowiki-subject-page__referencing-truncated' ).exists() ).toBe( false );
+		} );
+
+		// Two Subjects pointing at each other put the same Subject in both lists. Two elements with
+		// one id is invalid HTML, and every in-page lookup of that id then finds the wrong row.
+		describe( 'a Subject that is in both lists', () => {
+
+			beforeEach( () => {
+				getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [ referencedSubject ] ) );
+				getReferencingSubjectsMock.mockResolvedValue( referencing( [ referencedSubject ] ) );
+			} );
+
+			it( 'gets a row id of its own in each', async () => {
+				const wrapper = await mountLoadedPage();
+
+				const ids = wrapper.findAll( '.ext-neowiki-subject-row' ).map( ( row ) => row.attributes( 'id' ) );
+				expect( new Set( ids ).size ).toBe( ids.length );
+			} );
+
+			it( 'opens in one list without opening in the other', async () => {
+				const wrapper = await mountLoadedPage();
+
+				await wrapper.find( `${ REFERENCING_ROW } .ext-neowiki-subject-row__count` ).trigger( 'click' );
+				await flushPromises();
+
+				expect( isOpen( wrapper.find( REFERENCING_ROW ) ) ).toBe( true );
+				expect( isOpen( wrapper.find( REFERENCED_ROW ) ) ).toBe( false );
+			} );
+
+		} );
+
+		// One request per target per referrer, none of which the reader has asked to see: they are
+		// fetched when a row is opened, which is when RelationDisplay needs them resolved.
+		describe( 'the relation targets of a referencing row', () => {
+
+			const target = subject( { id: REFERENCED_ID, label: 'Anvil', schemaName: 'Product' } );
+
+			beforeEach( () => {
+				getReferencingSubjectsMock.mockResolvedValue( referencing( [
+					subject( {
+						id: OTHER_REFERENCED_ID,
+						label: 'Rocket',
+						schemaName: 'Product',
+						relatesTo: REFERENCED_ID,
+					} ),
+				] ) );
+			} );
+
+			it( 'are not fetched while the row is closed', async () => {
+				const getSubjectMock = vi.fn().mockResolvedValue( target );
+				stubExtension( { subject: { getSubject: getSubjectMock } } );
+
+				await mountLoadedPage();
+
+				expect( getSubjectMock ).not.toHaveBeenCalled();
+			} );
+
+			it( 'are fetched when it is opened', async () => {
+				const getSubjectMock = vi.fn().mockResolvedValue( target );
+				stubExtension( { subject: { getSubject: getSubjectMock } } );
+
+				const wrapper = await mountLoadedPage();
+				await wrapper.find( `${ REFERENCING_ROW } .ext-neowiki-subject-row__count` ).trigger( 'click' );
+				await flushPromises();
+
+				expect( getSubjectMock ).toHaveBeenCalledWith(
+					expect.objectContaining( { text: REFERENCED_ID } ) );
+				expect( useSubjectStore().getSubject( new SubjectId( REFERENCED_ID ) ) ).toStrictEqual( target );
+			} );
+
+		} );
+
+	} );
+
 	it( 'shows no referenced section for a Subject that references nothing', async () => {
 		const wrapper = await mountLoadedPage();
 
@@ -502,10 +734,20 @@ describe( 'SubjectPage', () => {
 	// action sets are named in full, so a control that reappears fails this rather than going unnoticed.
 	describe( 'what an editor is offered', () => {
 
+		const editorActions = [
+			'neowiki-managesubjects-row-copy-link',
+			'neowiki-managesubjects-row-edit',
+			'neowiki-managesubjects-row-delete',
+		];
+
 		beforeEach( () => {
 			canEditSubjectRef.value = true;
 			canDeleteSubjectRef.value = true;
 			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [ referencedSubject ] ) );
+			// A row in each list, so a control that appears on one of them and not the others fails this.
+			getReferencingSubjectsMock.mockResolvedValue( referencing( [
+				subject( { id: OTHER_REFERENCED_ID, label: 'Rocket', schemaName: 'Product' } ),
+			] ) );
 		} );
 
 		it( 'offers each row exactly its own actions', async () => {
@@ -514,18 +756,7 @@ describe( 'SubjectPage', () => {
 			const strips = wrapper.findAll( '.ext-neowiki-subject-row__actions' )
 				.map( ( strip ) => strip.findAll( '[aria-label]' ).map( ( control ) => control.attributes( 'aria-label' ) ) );
 
-			expect( strips ).toEqual( [
-				[
-					'neowiki-managesubjects-row-copy-link',
-					'neowiki-managesubjects-row-edit',
-					'neowiki-managesubjects-row-delete',
-				],
-				[
-					'neowiki-managesubjects-row-copy-link',
-					'neowiki-managesubjects-row-edit',
-					'neowiki-managesubjects-row-delete',
-				],
-			] );
+			expect( strips ).toEqual( [ editorActions, editorActions, editorActions ] );
 		} );
 
 		it( 'orders each overflow menu the same way', async () => {
@@ -535,6 +766,7 @@ describe( 'SubjectPage', () => {
 				.map( ( menu ) => menu.props( 'menuItems' ).map( ( item ) => item.value ) ) )
 				.toEqual( [
 					[ 'copy-link', 'edit', 'delete' ],
+					[ 'open', 'copy-link', 'edit', 'delete' ],
 					[ 'open', 'copy-link', 'edit', 'delete' ],
 				] );
 		} );
@@ -718,6 +950,39 @@ describe( 'SubjectPage', () => {
 			expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-managesubjects-delete-success', { type: 'success' } );
 			expect( getSubjectWithReferencedSubjectsMock ).toHaveBeenCalledTimes( 1 );
 			expect( wrapper.find( REFERENCED_ROW ).exists() ).toBe( false );
+		} );
+
+		// A deleted referrer stops referring, so the list it was in is re-read like the other one.
+		it( 'drops a deleted Subject from the list of those referencing this one', async () => {
+			const referrer = subject( { id: OTHER_REFERENCED_ID, label: 'Rocket', schemaName: 'Product' } );
+			getReferencingSubjectsMock.mockResolvedValue( referencing( [ referrer ] ) );
+
+			const wrapper = await mountLoadedPage();
+			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
+			getReferencingSubjectsMock.mockClear().mockResolvedValue( referencing( [] ) );
+
+			await confirmDelete( wrapper, wrapper.findAll( DELETE_CONTROL )[ 2 ] );
+
+			expect( getReferencingSubjectsMock ).toHaveBeenCalledTimes( 1 );
+			expect( wrapper.find( REFERENCING_ROW ).exists() ).toBe( false );
+		} );
+
+		// The rows the page holds were right when they were read, and a read that fails says nothing
+		// about them: emptying the section over one transient failure loses what is still true.
+		it( 'keeps the Subjects referencing this one when the re-read of them fails', async () => {
+			const logged = silenceConsoleErrors();
+			const referrer = subject( { id: OTHER_REFERENCED_ID, label: 'Rocket', schemaName: 'Product' } );
+			getReferencingSubjectsMock.mockResolvedValue( referencing( [ referrer ] ) );
+
+			const wrapper = await mountLoadedPage();
+			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
+			getReferencingSubjectsMock.mockRejectedValue( new Error( 'Backend down' ) );
+
+			await confirmDelete( wrapper, wrapper.findAll( DELETE_CONTROL )[ 1 ] );
+
+			expect( logged ).toHaveBeenCalledWith(
+				'Failed to load referencing subjects:', expect.any( Error ) );
+			expect( wrapper.find( `${ REFERENCING_ROW } ${ ROW_LABEL }` ).text() ).toBe( 'Rocket' );
 		} );
 
 		// Deleting drops the Subject from the store's registry, whose getter throws for an id it no

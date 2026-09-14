@@ -10,6 +10,11 @@ export function subjectRowDomId( subjectId: string ): string {
 	return ROW_ID_PREFIX + subjectId;
 }
 
+// The DOM id of a second row for the same Subject, so that no page carries the same id twice.
+export function referencingSubjectRowDomId( subjectId: string ): string {
+	return ROW_ID_PREFIX + 'referencing-' + subjectId;
+}
+
 // The Subject id encoded in a row DOM id, or null when the string is not one of ours. Reads the Subject
 // off a dragged row element, whose id subjectRowDomId built.
 export function subjectIdFromRowDomId( domId: string ): string | null {
