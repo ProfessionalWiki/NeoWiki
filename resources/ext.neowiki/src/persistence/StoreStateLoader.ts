@@ -21,10 +21,9 @@ export class StoreStateLoader {
 	}
 
 	/**
-	 * Loads each Subject independently: one that does not load is skipped, so the Views of the
-	 * others still get their data. A Subject the viewer may not read is answered as an absent one
-	 * (ADR 27), and a failed request arrives the same way — neither may blank the whole page, so
-	 * both are skipped, and the reason is logged for whoever has to tell them apart.
+	 * Loads each Subject independently, skipping and logging one that does not load: neither a
+	 * Subject the viewer may not read, which is answered as an absent one (ADR 27), nor a failed
+	 * request may blank the page's other Views.
 	 */
 	public async loadSubjectsAndSchemas( subjectIds: Set<string> ): Promise<void> {
 		await Promise.all(
@@ -66,8 +65,8 @@ export class StoreStateLoader {
 		// relations target, so storing them all avoids a re-fetch per relation.
 		const { requestedSubject, referencedSubjects } =
 			await this.subjectRepo.getSubjectWithReferencedSubjects( subjectId );
-		// Read before anything is stored, so that a Subject whose Schema does not load is skipped
-		// whole: a stored Subject with no Schema to render it by throws in the display instead.
+		// Read before the writes below, so that a failure here stores neither: a display given a
+		// Subject whose Schema is missing throws.
 		const schema = await this.schemaRepo.getSchema( requestedSubject.getSchemaName() );
 
 		if ( subjectEpoch === subjectStore.mutationEpoch ) {
