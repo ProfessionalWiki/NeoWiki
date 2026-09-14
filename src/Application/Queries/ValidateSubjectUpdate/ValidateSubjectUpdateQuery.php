@@ -4,12 +4,11 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubjectUpdate;
 
-use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
-use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
@@ -24,8 +23,7 @@ readonly class ValidateSubjectUpdateQuery {
 		private SubjectValidator $subjectValidator,
 		private StatementListBuilder $statementListBuilder,
 		private SelectStatementResolver $selectStatementResolver,
-		private PageIdentifiersLookup $pageIdentifiersLookup,
-		private PageReadAuthorizer $readAuthorizer,
+		private SubjectHostingPageResolver $hostingPageResolver,
 		private SubjectIdParser $subjectIdParser,
 	) {
 	}
@@ -40,16 +38,8 @@ readonly class ValidateSubjectUpdateQuery {
 	 */
 	public function validate( string $subjectId, array $statements ): array {
 		$id = $this->subjectIdParser->parseOrThrow( $subjectId );
-		$pageIdentifiers = $this->pageIdentifiersLookup->getPageIdOfSubject( $id );
 
-		if ( $pageIdentifiers === null ) {
-			// No owning page means the repository cannot load the Subject either.
-			throw SubjectNotFoundException::forId( $id );
-		}
-
-		if ( !$this->readAuthorizer->authorizeReadByPageId( $pageIdentifiers->getId() ) ) {
-			// Denial is shaped exactly like absence: this endpoint previously oracled Subject
-			// existence via its 404, so denied and absent must stay indistinguishable (#1046).
+		if ( $this->hostingPageResolver->resolveReadableHostingPage( $id ) === null ) {
 			throw SubjectNotFoundException::forId( $id );
 		}
 

@@ -89,6 +89,7 @@ use ProfessionalWiki\NeoWiki\Application\FailureIsolatingRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicyRegistry;
 use ProfessionalWiki\NeoWiki\Application\SubjectIdMinter;
+use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
@@ -101,7 +102,6 @@ use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfProjection;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfProjectionResolution;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfSubjectExporter;
-use ProfessionalWiki\NeoWiki\Application\Rdf\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\CurieExpander;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
@@ -640,11 +640,10 @@ class NeoWikiExtension {
 
 	public function newRdfSubjectExporterForProjection( RdfProjection $projection, Authority $authority ): RdfSubjectExporter {
 		return new RdfSubjectExporter(
-			$this->getPageIdentifiersLookup(),
+			$this->newSubjectHostingPageResolver( $authority ),
 			$this->newRdfPageLoader(),
 			$projection->projector,
 			$projection->serializer,
-			$this->newPageReadAuthorizer( $authority ),
 		);
 	}
 
@@ -1504,9 +1503,8 @@ class NeoWikiExtension {
 	public function newDeleteSubjectAction( Authority $authority ): DeleteSubjectAction {
 		return new DeleteSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
-			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			hostingPageResolver: $this->newSubjectHostingPageResolver( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
-			pageIdentifiersLookup: $this->getPageIdentifiersLookup()
 		);
 	}
 
@@ -1526,7 +1524,7 @@ class NeoWikiExtension {
 			subjectRepository: $this->getSubjectRepository(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
-			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			hostingPageResolver: $this->newSubjectHostingPageResolver( $authority ),
 			subjectIdParser: $this->getSubjectIdParser(),
 		);
 	}
@@ -1749,7 +1747,7 @@ class NeoWikiExtension {
 	public function newReplaceSubjectAction( ReplaceSubjectPresenter $presenter, Authority $authority ): ReplaceSubjectAction {
 		return new ReplaceSubjectAction(
 			subjectRepository: $this->getSubjectRepository(),
-			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			hostingPageResolver: $this->newSubjectHostingPageResolver( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),
@@ -1757,14 +1755,13 @@ class NeoWikiExtension {
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
-			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 		);
 	}
 
 	public function newUpdateStatementAction( UpdateStatementPresenter $presenter, Authority $authority ): UpdateStatementAction {
 		return new UpdateStatementAction(
 			subjectRepository: $this->getSubjectRepository(),
-			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			hostingPageResolver: $this->newSubjectHostingPageResolver( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),
@@ -1772,7 +1769,6 @@ class NeoWikiExtension {
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
-			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 		);
 	}
 
@@ -1819,8 +1815,7 @@ class NeoWikiExtension {
 			subjectValidator: $this->newSubjectValidator( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
-			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
-			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			hostingPageResolver: $this->newSubjectHostingPageResolver( $authority ),
 			subjectIdParser: $this->getSubjectIdParser(),
 		);
 	}

@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
+use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -211,9 +212,11 @@ class DeleteSubjectActionTest extends TestCase {
 	): DeleteSubjectAction {
 		return new DeleteSubjectAction(
 			subjectRepository: $repository,
-			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
+			hostingPageResolver: new SubjectHostingPageResolver(
+				$pageIdentifiersLookup,
+				$readAuthorizer ?? new StubPageReadAuthorizer( allowed: true )
+			),
 			writeAuthorizer: $authorizer,
-			pageIdentifiersLookup: $pageIdentifiersLookup
 		);
 	}
 

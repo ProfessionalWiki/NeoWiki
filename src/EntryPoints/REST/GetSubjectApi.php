@@ -93,8 +93,12 @@ class GetSubjectApi extends SimpleHandler {
 
 	private function revisionIsReadable( RevisionRecord $revision ): bool {
 		return $this->revisionPageIsReadable( $revision->getPageId() )
-			&& NeoWikiExtension::getInstance()->getRevisionPolicy()
-				->revisionIsReadableBy( $revision, $this->getAuthority() );
+			&& $this->revisionPolicyPermits( $revision );
+	}
+
+	private function revisionPolicyPermits( RevisionRecord $revision ): bool {
+		return NeoWikiExtension::getInstance()->getRevisionPolicy()
+			->revisionIsReadableBy( $revision, $this->getAuthority() );
 	}
 
 	private function revisionPageIsReadable( int $pageId ): bool {
@@ -109,9 +113,9 @@ class GetSubjectApi extends SimpleHandler {
 	 * one at the revision the gate cleared: with relation expansion refused it reads no other page.
 	 */
 	private function newQueryForLatestRevision( RestGetSubjectPresenter $presenter, SubjectId $subjectId ): GetSubjectQuery|Response {
-		$revision = $this->getLatestRevisionOfSubjectPage( $subjectId );
+		$revision = $this->getLatestRevisionOfReadableSubjectPage( $subjectId );
 
-		if ( $revision === null || !$this->revisionIsReadable( $revision ) ) {
+		if ( $revision === null || !$this->revisionPolicyPermits( $revision ) ) {
 			$presenter->presentSubjectNotFound();
 
 			return $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
@@ -120,18 +124,10 @@ class GetSubjectApi extends SimpleHandler {
 		return NeoWikiExtension::getInstance()->newGetSubjectQueryForRevision( $presenter, $revision, $this->getAuthority() );
 	}
 
-	/**
-	 * A Subject of another Source has no revision of this wiki to ask for, and the subject-to-page index
-	 * holds local ids alone (ADR 32), so it answers as an absent Subject does.
-	 */
-	private function getLatestRevisionOfSubjectPage( SubjectId $subjectId ): ?RevisionRecord {
-		if ( !$subjectId->isLocal() ) {
-			return null;
-		}
-
+	private function getLatestRevisionOfReadableSubjectPage( SubjectId $subjectId ): ?RevisionRecord {
 		$pageIdentifiers = NeoWikiExtension::getInstance()
-			->getPageIdentifiersLookup()
-			->getPageIdOfSubject( $subjectId );
+			->newSubjectHostingPageResolver( $this->getAuthority() )
+			->resolveReadableHostingPage( $subjectId );
 
 		if ( $pageIdentifiers === null ) {
 			return null;
