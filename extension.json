@@ -403,6 +403,11 @@
 			"path": "/neowiki/v0/graph-stores/{name}/rebuild",
 			"method": [ "DELETE" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCancelGraphStoreRebuildApi"
+		},
+		{
+			"path": "/neowiki/v0/subject/{subjectId}/referencingSubjects",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetReferencingSubjectsApi"
 		}
 	],
 
@@ -817,7 +822,11 @@
 				"neowiki-special-subject-referenced-heading",
 				"neowiki-special-subject-not-found",
 				"neowiki-special-subject-load-error",
-				"neowiki-managesubjects-row-open"
+				"neowiki-managesubjects-row-open",
+				"neowiki-special-subject-referenced-by-heading",
+				"neowiki-special-subject-referenced-by-properties",
+				"neowiki-special-subject-referenced-by-truncated",
+				"comma-separator"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

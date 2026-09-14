@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils';
+import { reactive } from 'vue';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import RelationDisplay from '@/components/Value/RelationDisplay.vue';
 import { RelationTargetUrlKey } from '@/components/Value/ValueDisplayContract.ts';
@@ -333,6 +334,35 @@ describe( 'RelationDisplay.vue', () => {
 			const children = wrapper.findAll( 'div > :is(a, span)' );
 			expect( children ).toHaveLength( 4 );
 		} );
+	} );
+
+	// A row whose targets are fetched only when the reader opens it renders before they are in the
+	// registry, so resolving once would leave those targets showing their bare ids forever.
+	it( 'resolves a target that reaches the registry after the first render', async () => {
+		const registry = reactive( new Map<string, SubjectWithContext>() );
+		vi.mocked( useSubjectStore ).mockReturnValue( {
+			$id: 'subject',
+			// What the real getter does with an id it does not hold, which is the state this row
+			// renders in until its targets are fetched.
+			getSubject: ( id: SubjectId ) => {
+				const subject = registry.get( id.text );
+
+				if ( subject === undefined ) {
+					throw new Error( 'Unknown subject: ' + id.text );
+				}
+
+				return subject;
+			},
+		} as any );
+		mockGetUrl.mockReturnValue( '/wiki/Page_Name_1' );
+
+		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111A' ) ) );
+		expect( wrapper.find( 'span' ).classes() ).toContain( 'error' );
+
+		registry.set( 's1111111111111A', createSubject( 's1111111111111A', 'Test Subject 1', 'Page_Name_1' ) );
+		await wrapper.vm.$nextTick();
+
+		expect( wrapper.find( 'a' ).text() ).toBe( 'Test Subject 1' );
 	} );
 
 	it( 'does not render items if value prop is not a RelationValue', async () => {

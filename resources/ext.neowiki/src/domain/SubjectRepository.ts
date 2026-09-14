@@ -16,6 +16,21 @@ export interface SubjectWithReferencedSubjects {
 }
 
 /**
+ * A Subject pointing at the one that was asked about, together with the properties through which it
+ * does, in the order that Subject holds them.
+ */
+export interface ReferencingSubject {
+	subject: Subject;
+	propertyNames: string[];
+}
+
+export interface ReferencingSubjects {
+	subjects: ReferencingSubject[];
+	/** Whether the wiki holds further referencing Subjects beyond those returned. */
+	truncated: boolean;
+}
+
+/**
  * What a Subject write returns.
  */
 export interface SubjectWriteResult {
@@ -59,6 +74,12 @@ export interface SubjectRepository extends SubjectLookup {
 	 * Referenced Subjects that cannot be loaded are omitted rather than failing the whole call.
 	 */
 	getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectWithReferencedSubjects>;
+
+	/**
+	 * The Subjects whose relations point at this one; the opposite direction of
+	 * getSubjectWithReferencedSubjects.
+	 */
+	getReferencingSubjects( id: SubjectId ): Promise<ReferencingSubjects>;
 
 	getPageSubjects( pageId: number ): Promise<DeserializedPageSubjects>;
 
@@ -149,6 +170,10 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 			requestedSubject: subject,
 			referencedSubjects: [ ...await subject.getReferencedSubjects( this ) ],
 		};
+	}
+
+	public getReferencingSubjects( _id: SubjectId ): Promise<ReferencingSubjects> {
+		return Promise.resolve( { subjects: [], truncated: false } );
 	}
 
 	public getPageSubjects( pageId: number ): Promise<DeserializedPageSubjects> {

@@ -27,6 +27,10 @@ relation Property Definition carries `relation` (the edge-type name), `targetSch
   edited and moves elsewhere keeping its id ([#1356](https://github.com/ProfessionalWiki/NeoWiki/pull/1356)). IDs can
   be pre-minted for interlinked imports ([#1101](https://github.com/ProfessionalWiki/NeoWiki/pull/1101)); single
   Statements are writable over REST ([#1216](https://github.com/ProfessionalWiki/NeoWiki/pull/1216)).
+- **Display.** `Special:Subject` lists the Subjects referencing the one shown
+  ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)). Neo4j names the candidates; each one's Statements
+  are then read from the wiki, which supplies the property names the graph cannot — edges carry Relation Types that a
+  Schema may reuse — and keeps a stale edge invisible.
 - **Projection.** The ontology mapping synthesizes intermediate nodes from flat Subjects at projection time
   ([#1229](https://github.com/ProfessionalWiki/NeoWiki/pull/1229),
   [#1263](https://github.com/ProfessionalWiki/NeoWiki/pull/1263)). The native RDF projection reifies each Relation
@@ -66,12 +70,13 @@ Schema bundles default to, and how much editor investment the nested path gets
 ### Reaching the Subjects that point here
 
 With CIDOC-CRM-style modelling the meaningful Subjects point *at* the one being edited — a birth event references its
-person — and nothing shows or adds them from that side. For display, default-off is decided; open are the
-configuration granularity (wiki, Schema, or view) and the inverse labels, which cannot be derived from the forward name
-([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)). For editing, open are how a user adds an incoming
-relation from the target, and whether a Schema declares which incoming relation types it surfaces. Both need the
-relations endpoint ([#1324](https://github.com/ProfessionalWiki/NeoWiki/issues/1324), specified and measured; the graph
-store cannot serve it, since edges carry Relation Types that a Schema may reuse), and the where-used view
+person — and nothing adds them from that side. Display ships on `Special:Subject`, always on; it loses a referrer whose
+projection lagged or failed, which no wiki-side verification can recover. For pages and views, where default-off is
+decided, open are the configuration granularity (wiki, Schema, or view) and the inverse labels, which cannot be derived
+from the forward name ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)). For editing, open are how a
+user adds an incoming relation from the target, and whether a Schema declares which incoming relation types it
+surfaces. Both need the relations endpoint
+([#1324](https://github.com/ProfessionalWiki/NeoWiki/issues/1324), specified and measured), and the where-used view
 ([#1039](https://github.com/ProfessionalWiki/NeoWiki/issues/1039)) also needs
 [#1135](https://github.com/ProfessionalWiki/NeoWiki/issues/1135) fixed.
 
@@ -98,11 +103,11 @@ Unconstrained ("any Subject") targets; cardinality beyond single/multiple; no-va
 Now:
 
 - Renaming a relation leaves the old edge in Neo4j ([#1135](https://github.com/ProfessionalWiki/NeoWiki/issues/1135));
-  blocks the incoming-relation and where-used views.
+  blocks the where-used view and misleads direct graph queries.
 - Red-link rendering and create affordance for missing targets
   ([#1120](https://github.com/ProfessionalWiki/NeoWiki/issues/1120)).
-- The relations endpoint ([#1324](https://github.com/ProfessionalWiki/NeoWiki/issues/1324)), then inverse display
-  ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)) and where-used
+- The relations endpoint ([#1324](https://github.com/ProfessionalWiki/NeoWiki/issues/1324)), then inverse display for
+  pages and views ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)) and where-used
   ([#1039](https://github.com/ProfessionalWiki/NeoWiki/issues/1039)).
 - Tree editor follow-ups: collapse and depth cap ([#1327](https://github.com/ProfessionalWiki/NeoWiki/issues/1327)),
   replacing a target loses the new one ([#1358](https://github.com/ProfessionalWiki/NeoWiki/issues/1358)).

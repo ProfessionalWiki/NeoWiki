@@ -9,6 +9,7 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponse;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
@@ -64,7 +65,7 @@ class GetSubjectQueryTest extends TestCase {
 				),
 			),
 			new InMemoryPageIdentifiersLookup(),
-			$this->emptyPageSubjectsLookup(),
+			$this->responseItemFactory(),
 			new StubPageReadAuthorizer( allowed: true ),
 			TestSubjectIds::newParser(),
 		);
@@ -141,7 +142,7 @@ class GetSubjectQueryTest extends TestCase {
 			$spyPresenter,
 			new InMemorySubjectLookup(),
 			new InMemoryPageIdentifiersLookup(),
-			$this->emptyPageSubjectsLookup(),
+			$this->responseItemFactory(),
 			new StubPageReadAuthorizer( allowed: true ),
 			TestSubjectIds::newParser(),
 		);
@@ -166,7 +167,7 @@ class GetSubjectQueryTest extends TestCase {
 				[ new SubjectId( TestSubject::ZERO_GUID ), new PageIdentifiers( new PageId( 1 ), 'wrong title', 0 ) ],
 				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'right title', 12 ) ],
 			] ),
-			$this->emptyPageSubjectsLookup(),
+			$this->responseItemFactory(),
 			new StubPageReadAuthorizer( allowed: true ),
 			TestSubjectIds::newParser(),
 		);
@@ -253,7 +254,7 @@ class GetSubjectQueryTest extends TestCase {
 			new InMemoryPageIdentifiersLookup( [
 				[ $requested->id, new PageIdentifiers( new PageId( 42 ), 'Rijksmuseum', 0 ) ],
 			] ),
-			$this->pageSubjectsLookupWithMainSubject( $mainSubjectOfPage, 42 ),
+			$this->responseItemFactoryWithMainSubject( $mainSubjectOfPage, 42 ),
 			new StubPageReadAuthorizer( allowed: true ),
 			TestSubjectIds::newParser(),
 		);
@@ -292,7 +293,7 @@ class GetSubjectQueryTest extends TestCase {
 				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'subject title', 0 ) ],
 				[ $referencedSubject->id, new PageIdentifiers( new PageId( 1337 ), 'referenced title', 12 ) ],
 			] ),
-			$this->emptyPageSubjectsLookup(),
+			$this->responseItemFactory(),
 			new StubPageReadAuthorizer( allowed: true ),
 			TestSubjectIds::newParser(),
 		);
@@ -341,7 +342,7 @@ class GetSubjectQueryTest extends TestCase {
 			$spyPresenter,
 			$subjectLookup,
 			$pageIdentifiersLookup,
-			$this->emptyPageSubjectsLookup(),
+			$this->responseItemFactory(),
 			new StubPageReadAuthorizer( allowed: true ),
 			TestSubjectIds::newParser(),
 		);
@@ -385,7 +386,7 @@ class GetSubjectQueryTest extends TestCase {
 			new InMemoryPageIdentifiersLookup( [
 				[ new SubjectId( 's11111111111aa2' ), new PageIdentifiers( new PageId( 102 ), 'Second', 0 ) ],
 			] ),
-			$this->emptyPageSubjectsLookup(),
+			$this->responseItemFactory(),
 			new StubPageReadAuthorizer( allowed: true ),
 			TestSubjectIds::newParser(),
 		);
@@ -422,7 +423,7 @@ class GetSubjectQueryTest extends TestCase {
 				[ new SubjectId( 's11111111111aa1' ), new PageIdentifiers( new PageId( 101 ), 'Hidden', 0 ) ],
 				[ new SubjectId( 's11111111111aa2' ), new PageIdentifiers( new PageId( 102 ), 'Visible', 0 ) ],
 			] ),
-			$this->emptyPageSubjectsLookup(),
+			$this->responseItemFactory(),
 			new SelectivePageReadAuthorizer( deniedPageIds: [ 101 ] ),
 			TestSubjectIds::newParser(),
 		);
@@ -458,7 +459,7 @@ class GetSubjectQueryTest extends TestCase {
 			new InMemoryPageIdentifiersLookup( [
 				[ new SubjectId( 's11111111111maa' ), new PageIdentifiers( new PageId( 42 ), 'Requested', 0 ) ],
 			] ),
-			$this->emptyPageSubjectsLookup(),
+			$this->responseItemFactory(),
 			new StubPageReadAuthorizer( allowed: true ),
 			TestSubjectIds::newParser(),
 		);
@@ -497,7 +498,7 @@ class GetSubjectQueryTest extends TestCase {
 			$spyPresenter,
 			$subjectLookup,
 			$pageIdentifiersLookup,
-			$this->emptyPageSubjectsLookup(),
+			$this->responseItemFactory(),
 			new SelectivePageReadAuthorizer( deniedPageIds: [ 42 ] ),
 			TestSubjectIds::newParser(),
 		);
@@ -517,15 +518,15 @@ class GetSubjectQueryTest extends TestCase {
 	 * For the tests that do not care which Subject a page calls its Main one: every page it is asked
 	 * about answers that it has none.
 	 */
-	private function emptyPageSubjectsLookup(): PageSubjectsLookup {
-		return new PageSubjectsLookup( new InMemorySubjectRepository() );
+	private function responseItemFactory(): SubjectResponseItemFactory {
+		return new SubjectResponseItemFactory( new PageSubjectsLookup( new InMemorySubjectRepository() ) );
 	}
 
-	private function pageSubjectsLookupWithMainSubject( Subject $mainSubject, int $pageId ): PageSubjectsLookup {
+	private function responseItemFactoryWithMainSubject( Subject $mainSubject, int $pageId ): SubjectResponseItemFactory {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects( new PageSubjects( $mainSubject, new SubjectMap() ), new PageId( $pageId ) );
 
-		return new PageSubjectsLookup( $repository );
+		return new SubjectResponseItemFactory( new PageSubjectsLookup( $repository ) );
 	}
 
 	private function newSubjectReferencing( string ...$targetIds ): Subject {

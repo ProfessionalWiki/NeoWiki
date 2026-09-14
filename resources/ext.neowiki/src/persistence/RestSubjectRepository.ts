@@ -1,4 +1,6 @@
 import type {
+	ReferencingSubject,
+	ReferencingSubjects,
 	SubjectPageWriteResult,
 	SubjectRepository,
 	SubjectWithReferencedSubjects,
@@ -67,6 +69,11 @@ export type SubjectJson = {
 type SubjectBundleJson = {
 	requestedId: string;
 	subjects: Record<string, SubjectJson>;
+};
+
+type ReferencingSubjectsJson = {
+	referencingSubjects: { subject: SubjectJson; propertyNames: string[] }[];
+	truncated: boolean;
 };
 
 type SubjectWriteResponseJson = {
@@ -189,6 +196,36 @@ export class RestSubjectRepository implements SubjectRepository {
 		return {
 			requestedSubject: this.deserializeRequested( bundle ),
 			referencedSubjects: this.deserializeReferencedSubjects( bundle ),
+		};
+	}
+
+	/**
+	 * The Subjects pointing at this one. Asked for at the endpoint's maximum, since the page shows
+	 * the whole list rather than paging through it, and answers `truncated` past that.
+	 *
+	 * An entry that fails to deserialize is skipped, like a relation target that does: one Subject
+	 * the client cannot read should not cost the reader the rest of the list.
+	 */
+	public async getReferencingSubjects( id: SubjectId ): Promise<ReferencingSubjects> {
+		const response = await this.httpClient.get(
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }/referencingSubjects?limit=50`,
+		);
+
+		if ( !response.ok ) {
+			throw new Error( 'Error fetching referencing subjects' );
+		}
+
+		const data = await response.json() as ReferencingSubjectsJson;
+
+		return {
+			subjects: data.referencingSubjects
+				.map( ( entry ) => {
+					const subject = this.deserializeOrNull( entry.subject );
+
+					return subject === null ? null : { subject, propertyNames: entry.propertyNames };
+				} )
+				.filter( ( entry ): entry is ReferencingSubject => entry !== null ),
+			truncated: data.truncated,
 		};
 	}
 

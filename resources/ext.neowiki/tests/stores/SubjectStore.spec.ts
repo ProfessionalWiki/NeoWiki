@@ -452,6 +452,32 @@ describe( 'SubjectStore moveSubject', () => {
 		expect( store.subjects.has( moved.getId().text ) ).toBe( false );
 	} );
 
+	// A Subject this page still points at comes back in the re-sync, under the page it moved to.
+	// Dropping it then throws away the copy just fetched, and every relation display pointing at it
+	// falls back to an unresolved target.
+	it( 'keeps the copy the post-move re-sync supplied', async () => {
+		const movedElsewhere = newSubject( {
+			id: moved.getId(),
+			pageIdentifiers: new PageIdentifiers( targetPageId, 'Elsewhere' ),
+		} );
+		withSubjectRepository( {
+			moveSubject: vi.fn().mockResolvedValue( undefined ),
+			getPageSubjects: vi.fn().mockResolvedValue( {
+				pageSubjects: new PageSubjects( pageId, null, [ kept ] ),
+				referencedSubjects: [ movedElsewhere ],
+				schemas: [],
+			} ),
+		} );
+		const store = useSubjectStore();
+		store.setSubject( kept );
+		store.setSubject( moved );
+		store.pageSubjects = new PageSubjects( pageId, null, [ kept, moved ] );
+
+		await store.moveSubject( moved.getId(), targetPageId, false );
+
+		expect( store.findSubject( moved.getId() ) ).toStrictEqual( movedElsewhere );
+	} );
+
 	it( 'does not refetch the page listing for a subject that page does not list', async () => {
 		const getPageSubjects = vi.fn();
 		withSubjectRepository( { moveSubject: vi.fn().mockResolvedValue( undefined ), getPageSubjects } );
