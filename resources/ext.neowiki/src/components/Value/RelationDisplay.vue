@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
 import { RelationProperty } from '@/domain/propertyTypes/Relation.ts';
-import { ref, watch } from 'vue';
+import { computed } from 'vue';
 import { Value, RelationValue, Relation } from '@/domain/Value.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
@@ -39,11 +39,9 @@ interface RelationDisplayValueData {
 const props = defineProps<ValueDisplayProps<RelationProperty>>();
 
 const subjectStore = useSubjectStore();
-const displayedValues = ref<RelationDisplayValueData[]>( [] );
 
-watch( () => props.value, ( newValue ) => {
-	displayedValues.value = getDisplayedValues( newValue );
-}, { immediate: true } );
+// Computed, not resolved once: a target seeded after the first render then resolves.
+const displayedValues = computed( () => getDisplayedValues( props.value ) );
 
 function getDisplayedValues( value: Value | undefined ): RelationDisplayValueData[] {
 	if ( !( value instanceof RelationValue ) ) {

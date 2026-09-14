@@ -138,6 +138,8 @@ export const useSubjectStore = defineStore( 'subject', {
 		 */
 		async dropFromRegistryOnceUnlisted( subjectId: SubjectId, operation: string ): Promise<void> {
 			if ( this.pageSubjects?.getSubject( subjectId ) !== undefined ) {
+				const before = this.subjects.get( subjectId.text );
+
 				try {
 					await this.loadPageSubjects( this.pageSubjects.getPageId() );
 				} catch ( error ) {
@@ -149,6 +151,13 @@ export const useSubjectStore = defineStore( 'subject', {
 				// the re-sync was in flight discards its write-back, leaving the stale listing that
 				// still names this id. Leave the registry alone then too.
 				if ( this.pageSubjects?.getSubject( subjectId ) !== undefined ) {
+					return;
+				}
+
+				// A Subject this page still points at comes back among the re-sync's referenced
+				// Subjects, carrying the page it is on now. That copy is what the next render needs,
+				// so dropping the entry would throw away the read that just replaced it.
+				if ( this.subjects.get( subjectId.text ) !== before ) {
 					return;
 				}
 			}

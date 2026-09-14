@@ -45,6 +45,41 @@
 					/>
 				</ul>
 			</template>
+
+			<template v-if="referencingSubjects.length > 0">
+				<h2 class="ext-neowiki-subject-page__referencing-heading">
+					{{ $i18n( 'neowiki-special-subject-referenced-by-heading' ).text() }}
+				</h2>
+
+				<ul class="ext-neowiki-subject-page__referencing">
+					<SubjectRow
+						v-for="referencing in referencingSubjects"
+						:key="referencing.subject.getId().text"
+						:subject="referencing.subject"
+						:dom-id="referencingSubjectRowDomId( referencing.subject.getId().text )"
+						:subject-page-url="subjectPageUrl( referencing.subject.getId().text )"
+						:caption="propertiesCaption( referencing.propertyNames )"
+						:expanded="expandedReferencingIds.has( referencing.subject.getId().text )"
+						:can-edit="canEditSubject"
+						:can-delete="canDeleteSubject"
+						:page="pageOf( referencing.subject )"
+						@toggle="toggleReferencingExpanded"
+						@edit="openEditor"
+						@delete="confirmDelete"
+						@copy-link="copySubjectLink"
+					/>
+				</ul>
+
+				<p
+					v-if="referencingTruncated"
+					class="ext-neowiki-subject-page__referencing-truncated"
+				>
+					{{ $i18n(
+						'neowiki-special-subject-referenced-by-truncated',
+						referencingSubjects.length
+					).text() }}
+				</p>
+			</template>
 		</template>
 
 		<p
@@ -84,8 +119,10 @@ import { Schema } from '@/domain/Schema.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
+import type { ReferencingSubject, ReferencingSubjects } from '@/domain/SubjectRepository.ts';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError.ts';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
+import { referencingSubjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
 import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
 import SubjectDeleteDialog from '@/components/SubjectsManager/SubjectDeleteDialog.vue';
@@ -113,10 +150,16 @@ const subject = shallowRef<Subject | null>( null );
 const errorText = ref<string | null>( null );
 // Bundle order, which is the order the Subject's relations name them.
 const referencedSubjects = shallowRef<Subject[]>( [] );
+// The other direction: the Subjects pointing at this one, in the order the wiki names them.
+const referencingSubjects = shallowRef<ReferencingSubject[]>( [] );
+const referencingTruncated = ref( false );
 
 // The Subject the page is about is open on arrival; the ones it references are not, so the page
 // opens on one Subject's data rather than on all of them.
 const expandedIds = ref<Set<string>>( new Set( [ subjectId.text ] ) );
+// Kept apart from expandedIds: a Subject can appear in both lists, and opening it in one list says
+// nothing about the other.
+const expandedReferencingIds = ref<Set<string>>( new Set() );
 
 const hostingPage = computed<PageIdentifiers | null>( () => pageOf( subject.value ) );
 
@@ -138,14 +181,40 @@ function pageOf( each: Subject | null ): PageIdentifiers | null {
 }
 
 function toggleExpanded( toggled: Subject ): void {
+	expandedIds.value = withToggled( expandedIds.value, toggled.getId().text );
+}
+
+/**
+ * A referencing row's own relation targets are fetched when it is opened rather than before the
+ * page is drawn: every referrer's targets are a request each, and a reader opens few of them.
+ */
+async function toggleReferencingExpanded( toggled: Subject ): Promise<void> {
 	const id = toggled.getId().text;
-	const next = new Set( expandedIds.value );
+
+	if ( !expandedReferencingIds.value.has( id ) ) {
+		await seedRelationTargetsOf( [ toggled ] );
+	}
+
+	expandedReferencingIds.value = withToggled( expandedReferencingIds.value, id );
+}
+
+function withToggled( ids: Set<string>, id: string ): Set<string> {
+	const next = new Set( ids );
+
 	if ( next.has( id ) ) {
 		next.delete( id );
 	} else {
 		next.add( id );
 	}
-	expandedIds.value = next;
+
+	return next;
+}
+
+function propertiesCaption( propertyNames: string[] ): string {
+	return mw.msg(
+		'neowiki-special-subject-referenced-by-properties',
+		propertyNames.join( mw.msg( 'comma-separator' ) )
+	);
 }
 
 // The delete controls stay live while a re-read is in flight, so reads can overlap; only the one
@@ -155,6 +224,9 @@ let latestRead = 0;
 async function readSubject(): Promise<void> {
 	const read = ++latestRead;
 	const subjectEpoch = subjectStore.mutationEpoch;
+	// Started together, awaited apart: the Subject the reader asked for is shown as soon as it
+	// lands, rather than waiting on a section it can do without.
+	const referencingRead = readReferencingSubjects();
 	const bundle = await subjectRepo.getSubjectWithReferencedSubjects( subjectId );
 	const requested = bundle.requestedSubject;
 
@@ -176,6 +248,58 @@ async function readSubject(): Promise<void> {
 
 	subject.value = requested;
 	referencedSubjects.value = bundle.referencedSubjects;
+
+	// Not awaited: the page's own controls must not wait on a section it can do without.
+	referencingRead.then( ( referencing ) => {
+		// A failure says nothing about the rows, so the section keeps what the last read that landed
+		// put there.
+		if ( referencing !== null ) {
+			showReferencingSubjects( referencing, read, subjectEpoch );
+		}
+	} );
+}
+
+/**
+ * Null is a failure, which is not the same answer as the empty list a wiki with nothing to show
+ * gives.
+ */
+async function readReferencingSubjects(): Promise<ReferencingSubjects | null> {
+	try {
+		return await subjectRepo.getReferencingSubjects( subjectId );
+	} catch ( error ) {
+		console.error( 'Failed to load referencing subjects:', error );
+
+		return null;
+	}
+}
+
+/**
+ * A row the reader had open stays open through a re-read, so its own relation targets are seeded
+ * again.
+ */
+async function showReferencingSubjects(
+	referencing: ReferencingSubjects,
+	read: number,
+	subjectEpoch: number
+): Promise<void> {
+	const subjects = referencing.subjects.map( ( each ) => each.subject );
+
+	if ( subjectEpoch === subjectStore.mutationEpoch ) {
+		subjects.forEach( ( each ) => subjectStore.setSubject( each ) );
+	}
+
+	await Promise.all( [
+		loadSchemas( subjects ),
+		seedRelationTargetsOf( subjects.filter(
+			( each ) => expandedReferencingIds.value.has( each.getId().text ) ) )
+	] );
+
+	if ( read !== latestRead ) {
+		return;
+	}
+
+	referencingSubjects.value = referencing.subjects;
+	referencingTruncated.value = referencing.truncated;
 }
 
 async function loadSubject(): Promise<void> {
@@ -336,6 +460,8 @@ async function executeDelete( comment: string ): Promise<void> {
 			// one it never minted.
 			subject.value = null;
 			referencedSubjects.value = [];
+			referencingSubjects.value = [];
+			referencingTruncated.value = false;
 			errorText.value = notFoundMessage();
 		} else {
 			await reloadSubject();
@@ -380,13 +506,20 @@ onMounted( async () => {
 		margin: 0 0 @spacing-150;
 	}
 
-	&__referenced {
+	&__referenced,
+	&__referencing {
 		list-style: none;
 		padding: 0;
 		margin: @spacing-100 0 0 0;
 		display: flex;
 		flex-direction: column;
 		gap: @spacing-50;
+	}
+
+	&__referencing-truncated {
+		margin-top: @spacing-50;
+		color: @color-subtle;
+		font-size: @font-size-small;
 	}
 }
 </style>

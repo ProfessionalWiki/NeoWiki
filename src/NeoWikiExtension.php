@@ -52,6 +52,8 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetLayout\GetLayoutPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetLayout\GetLayoutQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsQuery;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetReferencingSubjects\GetReferencingSubjectsPresenter;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetReferencingSubjects\GetReferencingSubjectsQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubject\ValidateSubjectQuery;
@@ -80,6 +82,9 @@ use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
+use ProfessionalWiki\NeoWiki\Application\ReferencingSubjectLookup;
+use ProfessionalWiki\NeoWiki\Application\NullReferencingSubjectLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
@@ -138,6 +143,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetMappingSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaNamesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetReferencingSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\MintSubjectIdsApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQueryApi;
@@ -179,6 +185,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jReferencingSubjectLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\CallbackProjectionResolver;
@@ -1690,6 +1697,17 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function getReferencingSubjectLookup(): ReferencingSubjectLookup {
+		if ( $this->getNeo4jPlugin() === null ) {
+			return new NullReferencingSubjectLookup();
+		}
+
+		return new Neo4jReferencingSubjectLookup(
+			client: $this->getReadOnlyNeo4jClient(),
+			wikiId: $this->config->wikiId,
+		);
+	}
+
 	public function getDbConnection(): IDatabase {
 		$db = MediaWikiServices::getInstance()
 			->getDBLoadBalancerFactory()
@@ -1733,16 +1751,20 @@ class NeoWikiExtension {
 		);
 	}
 
+	private function newPublishedSubjectLookup(): SubjectLookup {
+		return $this->getSourceRoutingSubjectLookup( new PublishedSubjectLookup(
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
+			revisionPolicy: $this->getRevisionPolicy(),
+		) );
+	}
+
 	public function newGetSubjectQuery( GetSubjectPresenter $presenter, Authority $authority ): GetSubjectQuery {
 		return new GetSubjectQuery(
 			presenter: $presenter,
-			subjectLookup: $this->getSourceRoutingSubjectLookup( new PublishedSubjectLookup(
-				pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
-				revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
-				revisionPolicy: $this->getRevisionPolicy(),
-			) ),
+			subjectLookup: $this->newPublishedSubjectLookup(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
-			pageSubjectsLookup: $this->newPageSubjectsLookup(),
+			responseItemFactory: $this->newSubjectResponseItemFactory(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			subjectIdParser: $this->getSubjectIdParser(),
 		);
@@ -1758,10 +1780,28 @@ class NeoWikiExtension {
 				primaryRevision: $revision,
 			),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
-			pageSubjectsLookup: $this->newPageSubjectsLookup(),
+			responseItemFactory: $this->newSubjectResponseItemFactory(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			subjectIdParser: $this->getSubjectIdParser(),
 		);
+	}
+
+	public function newGetReferencingSubjectsQuery(
+		GetReferencingSubjectsPresenter $presenter,
+		Authority $authority
+	): GetReferencingSubjectsQuery {
+		return new GetReferencingSubjectsQuery(
+			presenter: $presenter,
+			referencingSubjectLookup: $this->getReferencingSubjectLookup(),
+			subjectLookup: $this->newPublishedSubjectLookup(),
+			hostingPageResolver: $this->newSubjectHostingPageResolver( $authority ),
+			responseItemFactory: $this->newSubjectResponseItemFactory(),
+			subjectIdParser: $this->getSubjectIdParser(),
+		);
+	}
+
+	private function newSubjectResponseItemFactory(): SubjectResponseItemFactory {
+		return new SubjectResponseItemFactory( $this->newPageSubjectsLookup() );
 	}
 
 	public function newReplaceSubjectAction( ReplaceSubjectPresenter $presenter, Authority $authority ): ReplaceSubjectAction {
@@ -1958,6 +1998,10 @@ class NeoWikiExtension {
 
 	public static function newGetSubjectLabelsApi(): GetSubjectLabelsApi {
 		return new GetSubjectLabelsApi();
+	}
+
+	public static function newGetReferencingSubjectsApi(): GetReferencingSubjectsApi {
+		return new GetReferencingSubjectsApi();
 	}
 
 	private static function getCsrfValidator(): CsrfValidator {

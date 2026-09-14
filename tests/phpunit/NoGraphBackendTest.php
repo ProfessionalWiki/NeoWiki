@@ -9,7 +9,10 @@ use MediaWiki\Content\WikitextContent;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Rest\RequestData;
+use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Application\NullReferencingSubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
@@ -19,7 +22,9 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetReferencingSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jReferencingSubjectLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -33,6 +38,7 @@ use TestLogger;
  * @group Database
  */
 class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
+	use HandlerTestTrait;
 
 	private const SUBJECT_ID = 's1zz1111111azz1';
 	private const PROPERTY = 'Motto';
@@ -200,6 +206,37 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 		$this->assertInstanceOf(
 			Neo4jSubjectLabelLookup::class,
 			NeoWikiExtension::getInstance()->getSubjectLabelLookup()
+		);
+	}
+
+	public function testReferencingSubjectsAreEmptyWithoutBackend(): void {
+		$referencing = $this->runWithoutGraphBackend( function (): array {
+			$this->createPageWithMottoSubject( 'NoBackendReferencedPage' );
+
+			return json_decode( $this->executeHandler(
+				new GetReferencingSubjectsApi(),
+				new RequestData( [
+					'method' => 'GET',
+					'pathParams' => [ 'subjectId' => self::SUBJECT_ID ],
+				] )
+			)->getBody()->getContents(), true );
+		} );
+
+		$this->assertSame( [ 'referencingSubjects' => [], 'truncated' => false ], $referencing );
+	}
+
+	public function testReferencingSubjectLookupIsNullObjectWithoutBackend(): void {
+		$lookup = $this->runWithoutGraphBackend(
+			static fn() => NeoWikiExtension::getInstance()->getReferencingSubjectLookup()
+		);
+
+		$this->assertInstanceOf( NullReferencingSubjectLookup::class, $lookup );
+	}
+
+	public function testReferencingSubjectLookupIsNeo4jWhenConfigured(): void {
+		$this->assertInstanceOf(
+			Neo4jReferencingSubjectLookup::class,
+			NeoWikiExtension::getInstance()->getReferencingSubjectLookup()
 		);
 	}
 
