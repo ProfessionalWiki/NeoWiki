@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use MediaWiki\Html\Html;
 use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOutputFlags;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -48,6 +49,7 @@ class CreateSubjectParserFunction {
 		}
 
 		$this->loadFrontend( $parser );
+		$this->recordPageIdDependency( $parser );
 
 		return [
 			Html::element( 'div', $attributes ),
@@ -226,6 +228,21 @@ class CreateSubjectParserFunction {
 	private function loadFrontend( Parser $parser ): void {
 		$parser->getOutput()->addModules( [ 'ext.neowiki' ] );
 		$parser->getOutput()->addModuleStyles( [ 'ext.neowiki.styles' ] );
+	}
+
+	/**
+	 * The edit stash parses a new page before it has an id. Recording the id used, as {{PAGEID}} does, makes
+	 * saving render the page again once it has one instead of keeping output that treats it as absent.
+	 */
+	private function recordPageIdDependency( Parser $parser ): void {
+		$output = $parser->getOutput();
+		$output->setOutputFlag( ParserOutputFlags::VARY_PAGE_ID );
+
+		$pageId = $parser->getTitle()->getArticleID();
+
+		if ( $pageId !== 0 ) {
+			$output->setSpeculativePageIdUsed( $pageId );
+		}
 	}
 
 	private function renderError( Parser $parser, string $messageKey, string $insertion ): string {

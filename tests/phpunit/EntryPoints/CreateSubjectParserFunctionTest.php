@@ -9,6 +9,7 @@ use MediaWiki\Language\RawMessage;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\ParserOutputFlags;
 use MediaWiki\Parser\ParserOutputLinkTypes;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
@@ -161,6 +162,29 @@ class CreateSubjectParserFunctionTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertStringContainsString( 'data-mw-neowiki-page="new"', $html );
 		$this->assertStringNotContainsString( 'data-mw-neowiki-page-has-main-subject', $html );
+	}
+
+	public function testMarksItsOutputAsDependingOnThePageId(): void {
+		$output = $this->parserOutputOf( $this->contentPage );
+
+		$this->assertTrue( $output->getOutputFlag( ParserOutputFlags::VARY_PAGE_ID ) );
+		$this->assertSame( $this->contentPage->getId(), $output->getSpeculativePageIdUsed() );
+	}
+
+	/**
+	 * @dataProvider buttonArgumentsProvider
+	 * @param string[] $args
+	 */
+	public function testRecordsNoPageIdForAPageNotCreatedYet( array $args ): void {
+		$output = $this->parserOutputOf( Title::makeTitle( NS_MAIN, 'A page not created yet' ), ...$args );
+
+		$this->assertTrue( $output->getOutputFlag( ParserOutputFlags::VARY_PAGE_ID ) );
+		$this->assertNull( $output->getSpeculativePageIdUsed() );
+	}
+
+	public static function buttonArgumentsProvider(): iterable {
+		yield 'without a page argument' => [ [] ];
+		yield 'page=this' => [ [ 'page=this' ] ];
 	}
 
 	public function testPageNewEmitsANewPage(): void {
