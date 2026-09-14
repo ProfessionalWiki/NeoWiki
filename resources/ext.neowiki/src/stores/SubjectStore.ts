@@ -39,6 +39,13 @@ export const useSubjectStore = defineStore( 'subject', {
 
 			return subject as Subject;
 		},
+		/**
+		 * For a caller holding no listing that promises the Subject is there, such as a View whose
+		 * Subject may have failed to load.
+		 */
+		findSubject: ( state ) => function ( id: SubjectId ): Subject | undefined {
+			return state.subjects.get( id.text ) as Subject | undefined;
+		},
 	},
 	actions: {
 		setSubject( subject: Subject ): void { // TODO: just take Subject

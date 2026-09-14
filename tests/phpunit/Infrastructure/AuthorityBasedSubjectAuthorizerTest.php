@@ -92,6 +92,35 @@ class AuthorityBasedSubjectAuthorizerTest extends MediaWikiIntegrationTestCase {
 		$this->assertTrue( $authorizer->canEditSubject( $pageId ) );
 	}
 
+	public function testAsksTheAuthorityOncePerPageHoweverManyHintsWantTheAnswer(): void {
+		$authority = $this->createMock( Authority::class );
+		$authority->expects( $this->once() )->method( 'definitelyCan' )->willReturn( true );
+
+		$authorizer = $this->newAuthorizer( $authority );
+		$pageId = new PageId( self::PAGE_ID );
+
+		$authorizer->canCreateMainSubject( $pageId );
+		$authorizer->canCreateChildSubject( $pageId );
+		$authorizer->canEditSubject( $pageId );
+	}
+
+	public function testAnswersPerPageRatherThanReusingTheFirstPagesAnswer(): void {
+		$titleFactory = $this->createStub( TitleFactory::class );
+		$titleFactory->method( 'newFromID' )->willReturnCallback(
+			static fn ( int $id ): Title => Title::makeTitle( NS_MAIN, 'Page ' . $id )
+		);
+
+		$authority = $this->createMock( Authority::class );
+		$authority->method( 'definitelyCan' )->willReturnCallback(
+			static fn ( string $permission, PageIdentity $page ): bool => $page->getDBkey() === 'Page_42'
+		);
+
+		$authorizer = new AuthorityBasedSubjectAuthorizer( $authority, $titleFactory );
+
+		$this->assertTrue( $authorizer->canEditSubject( new PageId( self::PAGE_ID ) ) );
+		$this->assertFalse( $authorizer->canEditSubject( new PageId( self::PAGE_ID + 1 ) ) );
+	}
+
 	private function newAuthorizer( Authority $authority ): AuthorityBasedSubjectAuthorizer {
 		return new AuthorityBasedSubjectAuthorizer( $authority, $this->titleFactoryReturningPage() );
 	}

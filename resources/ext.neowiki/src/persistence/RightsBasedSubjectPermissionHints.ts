@@ -1,14 +1,14 @@
 import type { SubjectPermissionHints } from '@/application/SubjectPermissionHints';
-import type { SubjectId } from '@/domain/SubjectId';
 import type { RightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher';
 
 /**
  * Creating, editing and deleting a Subject are all edits of the page that holds it, so they all
  * hint on the 'edit' right. This matches the authorization the server applies to the write.
  *
- * TODO: the server checks 'edit' on the specific page, while these hints check the wiki-global
- * right. A user who may edit globally but not the page at hand is offered affordances that the
- * server then rejects.
+ * The wiki-global right is all these have, so they answer the same for every page, while the
+ * server decides per page. CurrentPageSubjectPermissionHints closes that gap for the page being
+ * viewed; elsewhere a user who may edit globally but not the page at hand is still offered
+ * affordances the server then rejects.
  */
 export class RightsBasedSubjectPermissionHints implements SubjectPermissionHints {
 
@@ -19,15 +19,15 @@ export class RightsBasedSubjectPermissionHints implements SubjectPermissionHints
 		return this.canEditPage();
 	}
 
-	public async canEditSubject( _subjectId: SubjectId ): Promise<boolean> {
+	public async canEditSubject( _pageId: number ): Promise<boolean> {
 		return this.canEditPage();
 	}
 
-	public async canDeleteSubject( _subjectId: SubjectId ): Promise<boolean> {
+	public async canDeleteSubject( _pageId: number ): Promise<boolean> {
 		return this.canEditPage();
 	}
 
-	public async canCreateMainSubject(): Promise<boolean> {
+	public async canCreateMainSubject( _pageId: number ): Promise<boolean> {
 		return this.canEditPage();
 	}
 

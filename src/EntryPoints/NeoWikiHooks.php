@@ -26,6 +26,7 @@ use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 use MessageLocalizer;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigExample;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -66,16 +67,23 @@ class NeoWikiHooks {
 	private static function handleContentPage( OutputPage $out, Skin $skin ): void {
 		self::warnAboutHalfConfiguredNeo4j();
 
-		NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $out, $skin );
-		$out->addHtml( self::getNeoWikiAppHtml( $out ) );
+		$extension = NeoWikiExtension::getInstance();
+		$permissionHints = $extension->newSubjectPermissionHints( $out->getAuthority() );
+
+		$extension->newFrontendModuleLoader()->loadWithSubjectPermissions(
+			$out,
+			$skin,
+			$permissionHints->canEditSubject( new PageId( $out->getTitle()->getArticleID() ) )
+		);
+		$out->addHtml( self::getNeoWikiAppHtml( $out, $permissionHints ) );
 		self::addRdfAutodiscoveryLinks( $out );
 
-		if ( !NeoWikiExtension::getInstance()->shouldAutoRenderMainSubject() ) {
+		if ( !$extension->shouldAutoRenderMainSubject() ) {
 			return;
 		}
 
 		$revisionId = self::pageIsLatestRevision( $out ) ? null : $out->getRevisionId();
-		$builder = NeoWikiExtension::getInstance()->newViewHtmlBuilder();
+		$builder = $extension->newViewHtmlBuilder();
 
 		$html = $out->getHTML();
 		$out->clearHTML();
@@ -100,12 +108,12 @@ class NeoWikiHooks {
 		);
 	}
 
-	private static function getNeoWikiAppHtml( OutputPage $out ): string {
+	private static function getNeoWikiAppHtml( OutputPage $out, SubjectPermissionHints $permissionHints ): string {
 		$attrs = [
 			'id' => 'ext-neowiki-app',
 		];
 
-		if ( self::shouldShowSubjectCreator( $out ) ) {
+		if ( self::shouldShowSubjectCreator( $out, $permissionHints ) ) {
 			$attrs['data-mw-neowiki-create-subject'] = 'true';
 			$attrs['data-mw-neowiki-page-has-main-subject'] =
 				NeoWikiExtension::getInstance()->newPageSubjectsLookup()
@@ -117,9 +125,8 @@ class NeoWikiHooks {
 		return Html::element( 'div', $attrs );
 	}
 
-	private static function shouldShowSubjectCreator( OutputPage $out ): bool {
-		return NeoWikiExtension::getInstance()->newSubjectPermissionHints( $out->getAuthority() )
-				->canCreateMainSubject( new PageId( $out->getTitle()->getArticleID() ) )
+	private static function shouldShowSubjectCreator( OutputPage $out, SubjectPermissionHints $permissionHints ): bool {
+		return $permissionHints->canCreateMainSubject( new PageId( $out->getTitle()->getArticleID() ) )
 			&& self::pageIsLatestRevision( $out );
 	}
 

@@ -13,6 +13,9 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 
 class AuthorityBasedSubjectAuthorizer implements SubjectPermissionHints, SubjectWriteAuthorizer {
 
+	/** @var array<int, bool> */
+	private array $canEditPageById = [];
+
 	public function __construct(
 		private Authority $authority,
 		private TitleFactory $titleFactory
@@ -31,11 +34,22 @@ class AuthorityBasedSubjectAuthorizer implements SubjectPermissionHints, Subject
 		return $this->canEditPage( $pageId );
 	}
 
+	/**
+	 * One page view asks this several times over — the page tools, the Subject creator and the
+	 * frontend's permission hints all want the same answer — and each ask costs a page row plus the
+	 * permission hooks. The answer cannot change within a request, so it is kept. Writes never come
+	 * through here: authorize() asks afresh, against the primary database.
+	 */
 	private function canEditPage( PageId $pageId ): bool {
-		$title = $this->newTitle( $pageId );
+		if ( !array_key_exists( $pageId->id, $this->canEditPageById ) ) {
+			$title = $this->newTitle( $pageId );
 
-		// definitelyCan reads permissions from a replica and only peeks at the edit rate limit.
-		return $title !== null && $this->authority->definitelyCan( 'edit', $title );
+			// definitelyCan reads permissions from a replica and only peeks at the edit rate limit.
+			$this->canEditPageById[$pageId->id] = $title !== null
+				&& $this->authority->definitelyCan( 'edit', $title );
+		}
+
+		return $this->canEditPageById[$pageId->id];
 	}
 
 	public function authorize( PageId $pageId ): bool {

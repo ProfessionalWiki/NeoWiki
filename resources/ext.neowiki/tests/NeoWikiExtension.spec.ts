@@ -37,6 +37,24 @@ describe( 'NeoWikiExtension.getPinia', () => {
 	} );
 } );
 
+describe( 'NeoWikiExtension.newSubjectPermissionHints', () => {
+	it( 'answers for the page being viewed with the decision the wiki sent', async () => {
+		setupMwMock( { config: { wgArticleId: 42, wgNeoWikiCanEditPageSubjects: true } } );
+
+		const hints = NeoWikiExtension.getInstance().newSubjectPermissionHints();
+
+		expect( await hints.canEditSubject( 42 ) ).toBe( true );
+	} );
+
+	it( 'does not read the absence of a page as a page, as on a special page', async () => {
+		setupMwMock( { config: { wgArticleId: 0, wgNeoWikiCanEditPageSubjects: true } } );
+
+		const hints = NeoWikiExtension.getInstance().newSubjectPermissionHints();
+
+		expect( await hints.canEditSubject( 0 ) ).toBe( false );
+	} );
+} );
+
 describe( 'NeoWikiExtension.isValidationEnforced', () => {
 	it( 'is true only when the wiki says so', () => {
 		setupMwMock( { config: { wgNeoWikiEnforceValidation: true } } );

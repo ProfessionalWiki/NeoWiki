@@ -78,6 +78,26 @@ class SubjectsActionTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testExposesThatTheViewerMayEditTheSubjects(): void {
+		$out = $this->runOnView( 'SubjectsActionTest editable', $this->getTestSysop()->getAuthority() );
+
+		$this->assertTrue( $out->getJsConfigVars()['wgNeoWikiCanEditPageSubjects'] );
+	}
+
+	public function testExposesThatAViewerWhoMayNotEditThePageMayNotEditItsSubjects(): void {
+		$pageId = $this->getExistingTestPage( 'SubjectsActionTest protected' )->getId();
+
+		$out = $this->runOnView(
+			'SubjectsActionTest protected',
+			$this->authorityThatCannotEditPageId( $pageId )
+		);
+
+		$this->assertFalse(
+			$out->getJsConfigVars()['wgNeoWikiCanEditPageSubjects'],
+			'The decision must be the one made for the page whose Subjects are managed.'
+		);
+	}
+
 	public function testExposesTheSubjectIriBaseAsConfigVar(): void {
 		$this->overrideConfigValue( 'NeoWikiRdfBaseUri', 'https://data.example.org' );
 		NeoWikiExtension::resetInstance();

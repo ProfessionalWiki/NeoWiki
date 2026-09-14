@@ -2,7 +2,7 @@
 <template>
 	<teleport
 		v-for="view in viewsData"
-		:key="`view-${view.id}`"
+		:key="`view-${view.subjectId.text}`"
 		:to="view.element"
 	>
 		<component
@@ -27,14 +27,19 @@ import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDial
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { useLayoutStore } from '@/stores/LayoutStore.ts';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import { canEditSubjectOnItsPage } from '@/presentation/subjectEditPermission.ts';
 
-interface ViewData {
-	id: string;
+/** A View placeholder on the page, before its Subject is known. */
+interface View {
 	element: HTMLElement;
 	subjectId: SubjectId;
-	canEditSubject: boolean;
 	viewType?: string;
 	layoutName?: string;
+}
+
+interface ViewData extends View {
+	canEditSubject: boolean;
 }
 
 const props = defineProps<{
@@ -70,46 +75,39 @@ function isLatestRevision(): boolean {
 }
 
 onMounted( async (): Promise<void> => {
-	const localViewsData = await getViewsData( document.querySelectorAll( '.ext-neowiki-view' ) );
+	const views = collectViews( document.querySelectorAll( '.ext-neowiki-view' ) );
 	const storeStateLoader = NeoWikiExtension.getInstance().getStoreStateLoader();
 
 	await Promise.all( [
 		storeStateLoader.loadSubjectsAndSchemas(
-			new Set( localViewsData.map( ( viewData ) => viewData.subjectId.text ) )
+			new Set( views.map( ( view ) => view.subjectId.text ) )
 		),
 		storeStateLoader.loadLayouts(
-			new Set( localViewsData.map( ( v ) => v.layoutName ).filter( ( n ): n is string => n !== undefined ) )
+			new Set( views.map( ( v ) => v.layoutName ).filter( ( n ): n is string => n !== undefined ) )
 		)
 	] );
 
-	viewsData.value = localViewsData;
+	// Each View is told about the page holding its own Subject, which a View can render from
+	// anywhere, so the Subjects have to be loaded before there is a page to ask about.
+	viewsData.value = await Promise.all( views.map( withEditPermission ) );
 } );
 
 // eslint-disable-next-line no-undef
-async function getViewsData( elements: NodeListOf<HTMLElement> ): Promise<ViewData[]> {
-	const viewsData: ViewData[] = [];
-
-	for ( const element of elements ) {
-		const viewData = await getViewData( element );
-		if ( viewData ) {
-			viewsData.push( viewData );
-		}
-	}
-	return viewsData;
+function collectViews( elements: NodeListOf<HTMLElement> ): View[] {
+	return Array.from( elements )
+		.map( ( element ) => toView( element ) )
+		.filter( ( view ): view is View => view !== null );
 }
 
-async function getViewData( element: HTMLElement ): Promise<ViewData|null> {
+function toView( element: HTMLElement ): View|null {
 	if ( !element.dataset.mwNeowikiSubjectId ) {
 		return null;
 	}
 
 	try {
-		const subjectId = new SubjectId( element.dataset.mwNeowikiSubjectId );
 		return {
-			id: subjectId.text,
+			subjectId: new SubjectId( element.dataset.mwNeowikiSubjectId ),
 			element: element,
-			subjectId: subjectId,
-			canEditSubject: isLatestRevision() && await subjectPermissionHints.canEditSubject( subjectId ),
 			viewType: element.dataset.mwNeowikiViewType,
 			layoutName: element.dataset.mwNeowikiLayoutName
 		};
@@ -117,6 +115,16 @@ async function getViewData( element: HTMLElement ): Promise<ViewData|null> {
 		console.error( error );
 		return null;
 	}
+}
+
+async function withEditPermission( view: View ): Promise<ViewData> {
+	return {
+		...view,
+		canEditSubject: isLatestRevision() && await canEditSubjectOnItsPage(
+			useSubjectStore().findSubject( view.subjectId ),
+			subjectPermissionHints
+		)
+	};
 }
 
 </script>

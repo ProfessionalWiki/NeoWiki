@@ -33,4 +33,17 @@ class FrontendModuleLoader {
 		$out->addModules( $modules );
 	}
 
+	/**
+	 * Loads the frontend for a page that holds Subjects, telling it whether this viewer may edit
+	 * them. The frontend has only the wiki-global edit right to go on otherwise, so on a page the
+	 * viewer cannot edit it would offer writes the server then rejects.
+	 */
+	public function loadWithSubjectPermissions( OutputPage $out, Skin $skin, bool $canEditPageSubjects ): void {
+		$this->load( $out, $skin );
+
+		$out->addJsConfigVars( [
+			'wgNeoWikiCanEditPageSubjects' => $canEditPageSubjects,
+		] );
+	}
+
 }
