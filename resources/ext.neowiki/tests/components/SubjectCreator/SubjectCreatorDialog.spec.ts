@@ -947,6 +947,44 @@ describe( 'SubjectCreatorDialog', () => {
 
 				noticeRepositorySpy.mockRestore();
 			} );
+
+			/** The page it goes to shows the subject just created, so no notice is left to restate it. */
+			it( 'goes to the subject\'s own page, not to the new page created for it', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await typeLabel( wrapper, 'New Person' );
+
+				await save( wrapper );
+
+				expect( location.href ).toBe( '/wiki/Special:Subject/s11111111111113' );
+				expect( mw.storage.session.set )
+					.not.toHaveBeenCalledWith( 'neowiki-subject-creator-success', '1' );
+				expect( reloadMock ).not.toHaveBeenCalled();
+			} );
+
+			it( 'goes to the subject\'s own page, not to the existing page it was saved onto', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await choose( wrapper, 'anotherPage' );
+				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
+
+				await save( wrapper );
+
+				expect( location.href ).toBe( '/wiki/Special:Subject/s11111111111111' );
+				expect( mw.storage.session.set )
+					.not.toHaveBeenCalledWith( 'neowiki-subject-creator-success', '1' );
+			} );
+
+			it( 'goes to the subject\'s own page where it joined a page that has a main subject', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await choose( wrapper, 'anotherPage' );
+				await pickPageWithMainSubject( wrapper );
+
+				await save( wrapper );
+
+				expect( location.href ).toBe( '/wiki/Special:Subject/s11111111111112' );
+			} );
 		} );
 
 		/**
@@ -996,6 +1034,11 @@ describe( 'SubjectCreatorDialog', () => {
 		} );
 
 		describe( 'on a new page', () => {
+			async function chooseNewPage( wrapper: VueWrapper ): Promise<void> {
+				await pickSchema( wrapper );
+				await choose( wrapper, 'newPage' );
+			}
+
 			it( 'creates the subject together with its page', async () => {
 				const wrapper = mountWithoutHostPage();
 				await pickSchema( wrapper );
@@ -1020,9 +1063,9 @@ describe( 'SubjectCreatorDialog', () => {
 				);
 			} );
 
-			it( 'navigates to the page the server created', async () => {
-				const wrapper = mountWithoutHostPage();
-				await pickSchema( wrapper );
+			it( 'navigates to the page the server created when opened on a page', async () => {
+				const wrapper = mountDialog();
+				await chooseNewPage( wrapper );
 				await typeLabel( wrapper, 'New Person' );
 
 				await save( wrapper );
@@ -1041,8 +1084,8 @@ describe( 'SubjectCreatorDialog', () => {
 					subjectId: new SubjectId( 's11111111111113' ),
 					pageTitle: 'S11111111111113',
 				} );
-				const wrapper = mountWithoutHostPage();
-				await pickSchema( wrapper );
+				const wrapper = mountDialog();
+				await chooseNewPage( wrapper );
 				await typeLabel( wrapper, 'Help:Not a page' );
 
 				await save( wrapper );
@@ -1396,6 +1439,7 @@ describe( 'SubjectCreatorDialog', () => {
 					EXISTING_PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), undefined,
 				);
 				expect( location.href ).toBe( '/wiki/ACME Inc' );
+				expect( mw.storage.session.set ).toHaveBeenCalledWith( 'neowiki-subject-creator-success', '1' );
 			} );
 
 			it( 'adds the subject alongside an existing main subject, under the label given', async () => {
