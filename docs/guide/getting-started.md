@@ -9,6 +9,9 @@ Turn a wiki page into structured, queryable data in a few minutes. Try it on the
 [neowiki.dev](https://neowiki.dev) (create an account, then experiment freely: it is a sandbox and resets
 periodically) or on [your own wiki](../operations/installation.md).
 
+The place to start is **Overview** in the sidebar's **NeoWiki** section: **Special:NeoWiki** lists the wiki's
+Schemas, lets you create a Subject with any of them, and links to the other NeoWiki pages.
+
 ## 1. Create a Schema
 
 A Schema describes a kind of thing: a Person, a Building, a Painting. Go to **Special:Schemas** and create one, then

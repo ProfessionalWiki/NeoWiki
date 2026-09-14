@@ -19,6 +19,30 @@ class NeoWikiSidebarLinkTest extends NeoWikiIntegrationTestCase {
 
 	private const NEOWIKI_SECTION = 'neowiki-page-tools-label';
 
+	public function testOverviewLinkIsListedFirst(): void {
+		$section = $this->neoWikiSectionOnAnOrdinaryPage();
+		$link = reset( $section );
+
+		$this->assertSame( 't-neowiki-overview', $link['id'] );
+		$this->assertSame( 'Overview', $link['text'] );
+		$this->assertStringContainsString( 'NeoWiki', $link['href'] );
+	}
+
+	public function testOverviewLinkIsShownToAUserWhoMayNotCreatePages(): void {
+		$this->setGroupPermissions( '*', 'createpage', false );
+		$this->setGroupPermissions( 'user', 'createpage', false );
+
+		$this->assertNotNull(
+			$this->findLinkById( $this->neoWikiSectionOnAnOrdinaryPage(), 't-neowiki-overview' )
+		);
+	}
+
+	public function testOverviewLinkIsShownOutsideTheContentNamespaces(): void {
+		$sidebar = $this->buildSidebar( Title::makeTitle( NS_HELP, 'Example' ) );
+
+		$this->assertNotNull( $this->findLinkById( $sidebar[self::NEOWIKI_SECTION] ?? [], 't-neowiki-overview' ) );
+	}
+
 	public function testAllSchemasLinkIsPlacedInTheNeoWikiSection(): void {
 		$this->assertAllPagesLinkInNeoWikiSection(
 			namespace: NeoWikiExtension::NS_SCHEMA,

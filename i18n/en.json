@@ -480,5 +480,13 @@
 	"neowiki-create-subject-error-unknown-schema": "There is no schema named $1.",
 	"neowiki-create-subject-error-invalid-page": "\"$1\" cannot be a page on this wiki.",
 	"neowiki-create-subject-error-uncreatable-page": "\"$1\" does not exist, and a page for a subject can only be created in the main namespace.",
-	"neowiki-create-subject-denied": "You do not have permission to create a subject."
+	"neowiki-create-subject-denied": "You do not have permission to create a subject.",
+	"neowiki-special-neowiki": "NeoWiki",
+	"neowiki-sidebar-overview": "Overview",
+	"neowiki-overview-layouts-description": "Which properties Views show, and how they look.",
+	"neowiki-overview-mappings-description": "How Subjects are expressed in ontologies such as EDM or CIDOC-CRM.",
+	"neowiki-overview-graph-stores-description": "The databases this wiki's data is projected into for querying.",
+	"neowiki-overview-configuration": "Configuration",
+	"neowiki-overview-configuration-description": "NeoWiki settings that can be changed on the wiki, without server access.",
+	"neowiki-overview-manage-schemas": "Manage schemas"
 }

@@ -191,7 +191,8 @@
 		"Mappings": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialMappings",
 		"GraphStores": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialGraphStores",
 		"CreateSubject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialCreateSubject",
-		"Subject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialSubject"
+		"Subject": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialSubject",
+		"NeoWiki": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialNeoWiki"
 	},
 
 	"Actions": {
@@ -830,7 +831,14 @@
 				"comma-separator",
 				"neowiki-create-subject-default-label",
 				"neowiki-create-subject-denied",
-				"permissionserrors"
+				"permissionserrors",
+				"neowiki-special-graphstores",
+				"neowiki-overview-layouts-description",
+				"neowiki-overview-mappings-description",
+				"neowiki-overview-graph-stores-description",
+				"neowiki-overview-configuration",
+				"neowiki-overview-configuration-description",
+				"neowiki-overview-manage-schemas"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
