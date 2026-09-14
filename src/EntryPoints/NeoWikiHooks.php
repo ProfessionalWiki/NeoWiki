@@ -52,22 +52,29 @@ class NeoWikiHooks {
 	private const SPECIAL_PAGE_CLASS_PREFIX = 'ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\';
 
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
+		$carriesCreateSubjectButton = self::carriesCreateSubjectButton( $out );
+
 		if ( self::isContentPage( $out ) ) {
 			self::handleContentPage( $out, $skin );
 		} elseif ( self::isSchemaPage( $out ) && $out->isArticle() ) {
 			self::handleSchemaPage( $out, $skin );
 		} elseif ( self::isLayoutPage( $out ) && $out->isArticle() ) {
 			self::handleLayoutPage( $out, $skin );
-		} elseif ( self::parserFunctionAskedForTheFrontend( $out ) ) {
+		} elseif ( $carriesCreateSubjectButton ) {
+			// The button still needs the config the other page kinds load the module with.
 			NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $out, $skin );
+		}
+
+		if ( $carriesCreateSubjectButton ) {
+			NeoWikiExtension::getInstance()->newFrontendModuleLoader()->loadCreateSubjectPageDeniedReason( $out );
 		}
 	}
 
 	/**
-	 * The module is in the list because a parser function asked for it, and it still needs the config the other
-	 * page kinds load it with.
+	 * On an article view, only {{#create_subject}} puts the frontend module in the list before any loader has
+	 * run. Special pages and actions add it themselves before this hook, so they do not count.
 	 */
-	private static function parserFunctionAskedForTheFrontend( OutputPage $out ): bool {
+	private static function carriesCreateSubjectButton( OutputPage $out ): bool {
 		return $out->isArticle() && in_array( 'ext.neowiki', $out->getModules(), true );
 	}
 
