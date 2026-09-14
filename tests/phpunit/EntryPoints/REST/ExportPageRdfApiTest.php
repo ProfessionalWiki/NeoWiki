@@ -294,14 +294,28 @@ JSON
 		// import or a move, both of which bypass the save-time name check. Enumerating the known
 		// projections for the 400 must skip such a page rather than let its unusable name throw — otherwise
 		// every unknown-projection request 500s instead of returning the helpful 400.
-		$this->createMapping( 'Seedmapping', '{ "version": 1, "schemas": {} }' );
-		$this->importXml(
-			str_replace( 'Mapping:Seedmapping', 'Mapping:Native', $this->exportPageToXml( 'Mapping:Seedmapping' ) )
-		);
+		$this->importMappingPageNamedNative();
 
 		$response = $this->export( query: [ 'projection' => 'bogus' ] );
 
 		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
+	public function testProjectionWhosePageHasTheReservedNameReturns400(): void {
+		// "native_" is a usable projection name, but its page is Mapping:Native, and the name a
+		// Mapping takes from its page title is the reserved one. An unknown projection, not a crash.
+		$this->importMappingPageNamedNative();
+
+		$response = $this->export( query: [ 'projection' => 'native_' ] );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
+	private function importMappingPageNamedNative(): void {
+		$this->createMapping( 'Seedmapping', '{ "version": 1, "schemas": {} }' );
+		$this->importXml(
+			str_replace( 'Mapping:Seedmapping', 'Mapping:Native', $this->exportPageToXml( 'Mapping:Seedmapping' ) )
+		);
 	}
 
 	public function testImportedMappingWithAnUnsafePrefixLabelCannotInjectTriplesIntoTheExport(): void {

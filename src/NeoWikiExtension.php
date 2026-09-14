@@ -171,8 +171,8 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseMappingNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPersistenceDeserializer;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageMappingLookup;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageMappingJsonLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaJsonLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
@@ -801,12 +801,11 @@ class NeoWikiExtension {
 
 	public function getMappingLookup(): MappingLookup {
 		return new CachingMappingLookup(
-			mappingLookup: new WikiPageMappingLookup(
+			mappingJsonLookup: new WikiPageMappingJsonLookup(
 				pageContentFetcher: $this->getPageContentFetcher(),
 				authority: $this->getRequestAuthority(),
-				mappingDeserializer: $this->getMappingPersistenceDeserializer(),
-				titleParser: MediaWikiServices::getInstance()->getTitleParser(),
 			),
+			mappingDeserializer: $this->getMappingPersistenceDeserializer(),
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
@@ -1615,11 +1614,11 @@ class NeoWikiExtension {
 
 	private function newSchemaLookup( Authority $authority ): SchemaLookup {
 		return new CachingSchemaLookup(
-			schemaLookup: new WikiPageSchemaLookup(
+			schemaJsonLookup: new WikiPageSchemaJsonLookup(
 				pageContentFetcher: $this->getPageContentFetcher(),
 				authority: $authority,
-				schemaDeserializer: $this->getPersistenceSchemaDeserializer()
 			),
+			schemaDeserializer: $this->getPersistenceSchemaDeserializer(),
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
