@@ -74,7 +74,7 @@ export function createTestWrapper<TComponent extends DefineComponent<any, any, a
  */
 export const CdxDialogStub = {
 	template: '<div v-if="open" class="cdx-dialog-stub"><slot /><slot name="footer" /></div>',
-	props: [ 'open', 'title', 'useCloseButton' ],
+	props: [ 'open', 'title', 'useCloseButton', 'defaultAction' ],
 	emits: [ 'update:open' ],
 };
 

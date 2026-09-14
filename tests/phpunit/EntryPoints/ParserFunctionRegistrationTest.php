@@ -23,6 +23,7 @@ class ParserFunctionRegistrationTest extends NeoWikiIntegrationTestCase {
 		$this->assertContains( 'cypher_raw', $names );
 		$this->assertContains( 'view', $names );
 		$this->assertContains( 'neowiki_value', $names );
+		$this->assertContains( 'create_subject', $names );
 	}
 
 	public function testCypherRawNotRegisteredWithoutBackend(): void {
@@ -34,6 +35,7 @@ class ParserFunctionRegistrationTest extends NeoWikiIntegrationTestCase {
 			$this->assertNotContains( 'cypher_raw', $names );
 			$this->assertContains( 'view', $names );
 			$this->assertContains( 'neowiki_value', $names );
+			$this->assertContains( 'create_subject', $names );
 		} );
 	}
 

@@ -4,7 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Presentation;
 
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Permissions\Authority;
+use MediaWiki\Permissions\SimpleAuthority;
+use MediaWiki\Permissions\UltimateAuthority;
+use MediaWiki\Title\Title;
+use MediaWiki\User\UserIdentityValue;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Presentation\FrontendModuleLoader;
 use Skin;
@@ -53,7 +59,7 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testPassesOutputAndSkinToHookHandlers(): void {
-		$out = $this->createMock( OutputPage::class );
+		$out = $this->newCapturingOutputPage();
 		$skin = $this->createMock( Skin::class );
 
 		$receivedOut = null;
@@ -133,6 +139,67 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( [ 'ext.neowiki' ], $this->addedModules );
 	}
 
+	public function testTellsAViewerWhoMayNotEditWhoMayCreateSubjectPages(): void {
+		$this->grantEditToAdministratorsOnly();
+
+		$reason = $this->loadFor( new SimpleAuthority( self::viewer(), [ 'createpage' ] ) );
+
+		$this->assertStringContainsString( 'Administrators', $reason ?? '' );
+	}
+
+	public function testNamesTheGroupsOfTheFirstRightTheViewerLacks(): void {
+		$this->setGroupPermissions( [
+			'*' => [ 'edit' => false, 'createpage' => false ],
+			'user' => [ 'edit' => false, 'createpage' => false ],
+			'sysop' => [ 'edit' => true ],
+			'bureaucrat' => [ 'createpage' => true ],
+		] );
+
+		$reason = $this->loadFor( new SimpleAuthority( self::viewer(), [] ) );
+
+		$this->assertStringContainsString( 'Bureaucrats', $reason ?? '' );
+		$this->assertStringNotContainsString( 'Administrators', $reason ?? '' );
+	}
+
+	public function testStatesTheReasonAsPlainText(): void {
+		$this->grantEditToAdministratorsOnly();
+
+		$reason = $this->loadFor( new SimpleAuthority( self::viewer(), [ 'createpage' ] ) );
+
+		$this->assertStringNotContainsString( '[[', $reason ?? '' );
+		$this->assertStringNotContainsString( '<', $reason ?? '' );
+	}
+
+	public function testGivesNoReasonToAViewerWhoMayCreateSubjectPages(): void {
+		$this->assertNull( $this->loadFor( new SimpleAuthority( self::viewer(), [ 'createpage', 'edit' ] ) ) );
+	}
+
+	private function grantEditToAdministratorsOnly(): void {
+		$this->setGroupPermissions( [
+			'*' => [ 'edit' => false ],
+			'user' => [ 'edit' => false ],
+			'sysop' => [ 'edit' => true ],
+		] );
+	}
+
+	private static function viewer(): UserIdentityValue {
+		return new UserIdentityValue( 1, 'Viewer' );
+	}
+
+	private function loadFor( Authority $authority ): ?string {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$context = new RequestContext();
+		$context->setTitle( Title::makeTitle( NS_MAIN, 'Carries a button' ) );
+		$context->setAuthority( $authority );
+		$context->setLanguage( 'en' );
+
+		$out = $context->getOutput();
+		$this->newLoader()->load( $out, $this->createMock( Skin::class ) );
+
+		return $out->getJsConfigVars()['wgNeoWikiCreateSubjectPageDeniedReason'] ?? null;
+	}
+
 	private function newLoader( int $validationDebounceMs = 300, bool $validationEnforced = false ): FrontendModuleLoader {
 		return new FrontendModuleLoader(
 			$this->getServiceContainer()->getHookContainer(),
@@ -143,6 +210,7 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 
 	private function newCapturingOutputPage(): OutputPage {
 		$out = $this->createMock( OutputPage::class );
+		$out->method( 'getAuthority' )->willReturn( new UltimateAuthority( self::viewer() ) );
 		$out->method( 'addModules' )->willReturnCallback(
 			function ( string|array $modules ): void {
 				$this->addedModules = array_merge( $this->addedModules, (array)$modules );

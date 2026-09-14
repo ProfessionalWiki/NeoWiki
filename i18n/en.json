@@ -472,5 +472,12 @@
 	"neowiki-managesubjects-row-open": "Open subject",
 	"neowiki-special-subject-referenced-by-heading": "Referenced by",
 	"neowiki-special-subject-referenced-by-properties": "via $1",
-	"neowiki-special-subject-referenced-by-truncated": "Showing the first $1 {{PLURAL:$1|subject|subjects}} referencing this one."
+	"neowiki-special-subject-referenced-by-truncated": "Showing the first $1 {{PLURAL:$1|subject|subjects}} referencing this one.",
+	"neowiki-create-subject-default-label": "Create subject",
+	"neowiki-create-subject-error-positional": "Unnamed argument: $1. Every argument needs a name, for example page=new.",
+	"neowiki-create-subject-error-unknown-arg": "Unknown argument: $1",
+	"neowiki-create-subject-error-unknown-schema": "There is no schema named $1.",
+	"neowiki-create-subject-error-invalid-page": "\"$1\" cannot be a page on this wiki.",
+	"neowiki-create-subject-error-uncreatable-page": "\"$1\" does not exist, and a page for a subject can only be created in the main namespace.",
+	"neowiki-create-subject-denied": "You do not have permission to create a subject."
 }

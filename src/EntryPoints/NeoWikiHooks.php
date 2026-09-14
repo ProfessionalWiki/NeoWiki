@@ -58,7 +58,17 @@ class NeoWikiHooks {
 			self::handleSchemaPage( $out, $skin );
 		} elseif ( self::isLayoutPage( $out ) && $out->isArticle() ) {
 			self::handleLayoutPage( $out, $skin );
+		} elseif ( self::parserFunctionAskedForTheFrontend( $out ) ) {
+			NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $out, $skin );
 		}
+	}
+
+	/**
+	 * The module is in the list because a parser function asked for it, and it still needs the config the other
+	 * page kinds load it with.
+	 */
+	private static function parserFunctionAskedForTheFrontend( OutputPage $out ): bool {
+		return $out->isArticle() && in_array( 'ext.neowiki', $out->getModules(), true );
 	}
 
 	private static function isContentPage( OutputPage $out ): bool {
@@ -296,6 +306,16 @@ class NeoWikiHooks {
 			static function ( Parser $parser, string ...$args ): string|array {
 				$parserFunction = new NeoWikiValueParserFunction(
 					NeoWikiExtension::getInstance()->newSubjectResolver( ParserAuthority::of( $parser ) )
+				);
+				return $parserFunction->handle( $parser, ...$args );
+			}
+		);
+
+		$parser->setFunctionHook(
+			'create_subject',
+			static function ( Parser $parser, string ...$args ): string|array {
+				$parserFunction = new CreateSubjectParserFunction(
+					NeoWikiExtension::getInstance()->newPageSubjectsLookup()
 				);
 				return $parserFunction->handle( $parser, ...$args );
 			}

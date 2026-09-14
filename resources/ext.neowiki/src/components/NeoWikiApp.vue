@@ -14,7 +14,10 @@
 	</teleport>
 
 	<teleport v-if="shouldShowSubjectCreator" to="#mw-content-text">
-		<SubjectCreatorDialog :host-page="hostPage" />
+		<SubjectCreatorDialog
+			v-model:open="subjectStore.subjectCreatorOpen"
+			:host-page="hostPage"
+		/>
 	</teleport>
 </template>
 
@@ -52,6 +55,7 @@ const viewsData = ref<ViewData[]>( [] );
 const shouldShowSubjectCreator = ref( props.showSubjectCreator );
 // The creator is teleported onto the page being viewed, which is the page it offers first.
 const hostPage = ref( { hasMainSubject: props.pageHasMainSubject } );
+const subjectStore = useSubjectStore();
 const subjectPermissionHints = NeoWikiServices.getSubjectPermissionHints();
 const viewTypeRegistry = NeoWikiServices.getViewTypeRegistry();
 

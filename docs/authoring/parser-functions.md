@@ -10,6 +10,7 @@ NeoWiki provides these parser functions for use in wikitext.
 |-------------------|-----|
 | Render a Subject visually on the page | [`{{#view}}`](#view) |
 | Insert one property's value inline as text | [`{{#neowiki_value}}`](#neowiki_value) |
+| Add a button that creates a Subject | [`{{#create_subject}}`](#create_subject) |
 | Run a custom Cypher query and see the raw results | [`{{#cypher_raw}}`](#cypher_raw) |
 | Run a custom SPARQL query and see the raw results | [`{{#sparql_raw}}`](#sparql_raw) |
 
@@ -134,6 +135,52 @@ Passing a value to another extension's parser function:
 ```
 {{#read-confirmation: audience={{#neowiki_value: Target audience}}}}
 ```
+
+## `{{#create_subject}}`
+
+Renders a button that opens the Subject creator without leaving the page.
+
+### Syntax
+
+```
+{{#create_subject: }}
+{{#create_subject: schema=<schemaName> }}
+{{#create_subject: page=new }}
+{{#create_subject: page=this }}
+{{#create_subject: page=<pageName> }}
+{{#create_subject: text=<buttonLabel> }}
+```
+
+### Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `schema=<schemaName>` | [Schema](../glossary.md#schema) to create the Subject with. Without it, the creator asks which Schema to use. |
+| `page=new` | Creates a page for the Subject, titled after the Subject. |
+| `page=this` | Stores the Subject on the page holding the button. Outside the content namespaces, `new` applies instead. |
+| `page=<pageName>` | Stores the Subject on that page, creating it when it does not exist — which only the main namespace allows. |
+| `text=<buttonLabel>` | The button's label. Defaults to `Create <schemaName>`, or `Create subject` without a Schema. |
+
+### Notes
+
+- With `page`, the user cannot change where the Subject goes. Without it, the creator asks, starting from a new page.
+- The Subject becomes the page's Main Subject where that page has none, and joins the existing Subjects otherwise.
+- Saving takes the user to the page the Subject was stored on.
+- A user who may not create pages is told why on clicking the button.
+- The button appears once the page's JavaScript has loaded.
+
+### Examples
+
+```
+{{#create_subject: }}
+{{#create_subject: schema=Person}}
+{{#create_subject: schema=Person | text=Add a person}}
+{{#create_subject: schema=Attendance | page=this}}
+{{#create_subject: schema=Person | page=People directory}}
+```
+
+Positional arguments, unknown named arguments, a Schema that does not exist, and an unusable page title produce a
+visible parser error. An empty value counts as absent.
 
 ## `{{#cypher_raw}}`
 

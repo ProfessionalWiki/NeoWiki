@@ -26,7 +26,8 @@ Concepts:
 
 Reference for wikitext and Lua authors:
 
-* [Parser Functions](authoring/parser-functions.md) — `{{#view}}`, `{{#neowiki_value}}`, and `{{#cypher_raw}}`
+* [Parser Functions](authoring/parser-functions.md) — `{{#view}}`, `{{#neowiki_value}}`, `{{#create_subject}}`,
+  and `{{#cypher_raw}}`
 * [Lua API](authoring/lua-api.md) — the `mw.neowiki` Scribunto library, including `nw.query()` for Cypher
 * [Mapping Format](authoring/mapping-format.md) — the JSON of a Mapping page: projecting Schemas into EDM,
   CIDOC-CRM, or another vocabulary
