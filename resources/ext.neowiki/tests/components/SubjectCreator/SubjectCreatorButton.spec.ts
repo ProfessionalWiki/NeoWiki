@@ -143,4 +143,36 @@ describe( 'SubjectCreatorButton', () => {
 		expect( dialog.props( 'initialPage' ) ).toEqual( initialPage );
 		expect( dialog.props( 'hostPage' ) ).toEqual( { hasMainSubject: true } );
 	} );
+
+	it( 'closes its creator when the creator asks to close', async () => {
+		const wrapper = await mountButton();
+		await wrapper.find( '.cdx-button-stub' ).trigger( 'click' );
+
+		wrapper.findComponent( SubjectCreatorDialog ).vm.$emit( 'update:open', false );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SubjectCreatorDialog ).props( 'open' ) ).toBe( false );
+	} );
+
+	it( 'closes the denial when it is dismissed', async () => {
+		canCreateSubjectPage.value = false;
+		const wrapper = await mountButton();
+		await wrapper.find( '.cdx-button-stub' ).trigger( 'click' );
+
+		wrapper.findComponent( CdxDialogStub ).vm.$emit( 'update:open', false );
+		await flushPromises();
+
+		expect( wrapper.find( '.cdx-dialog-stub' ).exists() ).toBe( false );
+	} );
+
+	it( 'closes the denial from its close action', async () => {
+		canCreateSubjectPage.value = false;
+		const wrapper = await mountButton();
+		await wrapper.find( '.cdx-button-stub' ).trigger( 'click' );
+
+		wrapper.findComponent( CdxDialogStub ).vm.$emit( 'default' );
+		await flushPromises();
+
+		expect( wrapper.find( '.cdx-dialog-stub' ).exists() ).toBe( false );
+	} );
 } );
