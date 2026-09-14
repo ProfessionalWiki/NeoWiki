@@ -89,6 +89,26 @@ class CreateSubjectParserFunctionTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'data-mw-neowiki-text="Add a person"', $html );
 	}
 
+	public function testEmitsTheSchemaNameAsItsPageIsTitled(): void {
+		$this->createSchema( 'Person record' );
+
+		$html = $this->assertRendersButton( $this->callOn( $this->contentPage, 'schema=person_record' ) );
+
+		$this->assertStringContainsString( 'data-mw-neowiki-schema="Person record"', $html );
+	}
+
+	public function testAcceptsTheSchemaNamespacePrefix(): void {
+		$html = $this->assertRendersButton( $this->callOn( $this->contentPage, 'schema=Schema:' . self::SCHEMA_NAME ) );
+
+		$this->assertStringContainsString( 'data-mw-neowiki-schema="' . self::SCHEMA_NAME . '"', $html );
+	}
+
+	public function testReportsAPageOutsideTheSchemaNamespaceAsAnUnknownSchema(): void {
+		$result = $this->callOn( $this->contentPage, 'schema=' . $this->helpPage->getPrefixedText() );
+
+		$this->assertRendersError( $result, 'neowiki-create-subject-error-unknown-schema', 'Help:Using subjects' );
+	}
+
 	public function testTreatsEmptyValuesAsAbsent(): void {
 		$html = $this->assertRendersButton( $this->callOn( $this->helpPage, 'schema=', 'text= ', 'page=' ) );
 

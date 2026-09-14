@@ -104,11 +104,14 @@ class CreateSubjectParserFunction {
 		$schemaName = $named[self::ARG_SCHEMA] ?? null;
 
 		if ( $schemaName !== null ) {
-			if ( !$this->schemaExists( $parser, $schemaName ) ) {
+			$schemaTitle = $this->existingSchemaTitle( $parser, $schemaName );
+
+			if ( $schemaTitle === null ) {
 				return $this->renderError( $parser, 'neowiki-create-subject-error-unknown-schema', $schemaName );
 			}
 
-			$attributes['data-mw-neowiki-schema'] = $schemaName;
+			// Subjects store their Schema under the name its page is titled with, not as typed.
+			$attributes['data-mw-neowiki-schema'] = $schemaTitle->getText();
 		}
 
 		$text = $named[self::ARG_TEXT] ?? null;
@@ -129,16 +132,17 @@ class CreateSubjectParserFunction {
 	/**
 	 * A page whose Schema does not exist yet renders an error, so the link re-parses it once the Schema is created.
 	 */
-	private function schemaExists( Parser $parser, string $schemaName ): bool {
+	private function existingSchemaTitle( Parser $parser, string $schemaName ): ?Title {
 		$title = Title::newFromText( $schemaName, NeoWikiExtension::NS_SCHEMA );
 
-		if ( $title === null ) {
-			return false;
+		// A prefix naming another namespace names a page that cannot be a Schema.
+		if ( $title === null || !$title->inNamespace( NeoWikiExtension::NS_SCHEMA ) ) {
+			return null;
 		}
 
 		$parser->getOutput()->addLink( $title, $title->getArticleID() );
 
-		return $title->exists();
+		return $title->exists() ? $title : null;
 	}
 
 	/**
