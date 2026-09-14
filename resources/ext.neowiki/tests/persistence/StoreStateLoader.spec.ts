@@ -196,6 +196,17 @@ describe( 'StoreStateLoader', () => {
 			);
 		} );
 
+		// Here the Subject read is the one that succeeds and its Schema read the one that fails.
+		it( 'stores nothing for a Subject whose Schema does not load', async () => {
+			const schemalessId = new SubjectId( 's55555555555555' );
+			const schemaless = newSubject( { id: schemalessId, schemaName: 'Ghost' } );
+
+			await newLoader( new StubSubjectRepository( [ readable, schemaless ] ) )
+				.loadSubjectsAndSchemas( new Set( [ mainId.text, schemalessId.text ] ) );
+
+			expect( useSubjectStore().subjects.has( schemalessId.text ) ).toBe( false );
+		} );
+
 	} );
 
 } );
