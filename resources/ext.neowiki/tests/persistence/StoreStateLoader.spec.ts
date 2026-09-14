@@ -60,6 +60,12 @@ function newMainSubjectWithRelationsTo( ...targets: SubjectId[] ): Subject {
 	} );
 }
 
+class UnreachableSubjectRepository extends StubSubjectRepository {
+	public override getSubjectWithReferencedSubjects(): Promise<SubjectWithReferencedSubjects> {
+		return Promise.reject( new Error( 'Error fetching subject' ) );
+	}
+}
+
 function newLoader( repository: SubjectRepository ): StoreStateLoader {
 	return new StoreStateLoader(
 		repository,
@@ -197,6 +203,15 @@ describe( 'StoreStateLoader', () => {
 				expect.stringContaining( unloadableId.text ),
 				expect.any( Error ),
 			);
+		} );
+
+		// A request that fails outright, the wiki unreachable or answering 500, is skipped like a denial.
+		it( 'stores nothing for a Subject whose request fails', async () => {
+			await newLoader( new UnreachableSubjectRepository( [ readable ] ) )
+				.loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
+
+			expect( useSubjectStore().subjects.has( mainId.text ) ).toBe( false );
+			expect( warn ).toHaveBeenCalledWith( expect.stringContaining( mainId.text ), expect.any( Error ) );
 		} );
 
 		// Here the Subject read is the one that succeeds and its Schema read the one that fails.
