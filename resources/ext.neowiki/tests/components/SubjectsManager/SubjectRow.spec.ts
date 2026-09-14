@@ -1,15 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { shallowMount, VueWrapper } from '@vue/test-utils';
+import { mount, shallowMount, VueWrapper } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import { CdxMenuButton } from '@wikimedia/codex';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
-import { newStringValue } from '@/domain/Value.ts';
+import { newRelation, newStringValue, RelationValue } from '@/domain/Value.ts';
+import { newRelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
-import { newSubject } from '@/TestHelpers.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import { newSchema, newSubject } from '@/TestHelpers.ts';
 
 const SUBJECT_ID = 's1aaaaaaaaaaaa1';
 const IRI_BASE = 'https://data.example.org/entity/';
@@ -19,11 +25,15 @@ const subject = newSubject( { id: SUBJECT_ID, label: 'ACME Inc', schemaName: 'Co
 
 let writeText: ReturnType<typeof vi.fn>;
 
-function mountRow( props: Record<string, unknown> = {} ): VueWrapper {
+function stubMw(): void {
 	setupMwMock( {
 		functions: [ 'config', 'msg', 'message', 'notify', 'util' ],
 		config: { wgNeoWikiSubjectIriBase: IRI_BASE },
 	} );
+}
+
+function mountRow( props: Record<string, unknown> = {} ): VueWrapper {
+	stubMw();
 
 	return shallowMount( SubjectRow, {
 		props: { subject, expanded: true, ...props },
@@ -273,6 +283,64 @@ describe( 'SubjectRow', () => {
 
 		expect( mountRow( { canEdit: true } ).find( handle ).exists() ).toBe( false );
 		expect( mountRow( { canEdit: true, showDragHandle: true } ).find( handle ).exists() ).toBe( true );
+	} );
+
+	describe( 'a relation in the expanded row', () => {
+
+		const TARGET_ID = 's1bbbbbbbbbbbb1';
+		const RELATION_LINK = '.ext-neowiki-subject-statements__value a';
+
+		// A reader of these rows is browsing Subjects, so a relation leads to its target's own page
+		// rather than to the page storing it, which is about another Subject whenever the target is
+		// not that page's Main Subject.
+		it( 'leads to the target Subject\'s own page, not to the page storing it', () => {
+			const wrapper = mountRowRelatingToTarget();
+
+			expect( wrapper.find( RELATION_LINK ).attributes( 'href' ) )
+				.toBe( '/wiki/Special:Subject/' + TARGET_ID );
+		} );
+
+		// Mounted rather than shallow-rendered, so the relation is rendered by the value-display
+		// components the surfaces really use.
+		function mountRowRelatingToTarget(): VueWrapper {
+			stubMw();
+			const pinia = createPinia();
+			setActivePinia( pinia );
+
+			useSubjectStore().setSubject( newSubject( {
+				id: TARGET_ID,
+				label: 'Anvil',
+				schemaName: 'Product',
+				pageIdentifiers: new PageIdentifiers( 7, 'Anvil (product)' ),
+			} ) );
+			useSchemaStore().setSchema( 'Company', newSchema( {
+				title: 'Company',
+				properties: new PropertyDefinitionList( [ newRelationProperty( { name: 'Makes' } ) ] ),
+			} ) );
+
+			return mount( SubjectRow, {
+				props: {
+					subject: newSubject( {
+						id: SUBJECT_ID,
+						label: 'ACME Inc',
+						schemaName: 'Company',
+						statements: new StatementList( [ new Statement(
+							new PropertyName( 'Makes' ),
+							RelationType.typeName,
+							new RelationValue( [ newRelation( undefined, TARGET_ID ) ] ),
+						) ] ),
+					} ),
+					expanded: true,
+				},
+				global: {
+					plugins: [ pinia ],
+					provide: NeoWikiTestServices.getServices(),
+					mocks: { $i18n: createI18nMock() },
+					stubs: { CdxIcon: true, CdxMenuButton: true, DataExportButton: true },
+				},
+			} );
+		}
+
 	} );
 
 } );

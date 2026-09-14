@@ -211,7 +211,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, provide, ref } from 'vue';
 import { CdxButton, CdxIcon, CdxMenuButton } from '@wikimedia/codex';
 import type { MenuButtonItemData } from '@wikimedia/codex';
 import {
@@ -229,6 +229,9 @@ import {
 import { Subject } from '@/domain/Subject.ts';
 import type { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { subjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
+// Aliased: `subjectPageUrl` is a prop of this row.
+import { subjectPageUrl as subjectPageUrlOf } from '@/presentation/subjectPageUrl.ts';
+import { RelationTargetUrlKey } from '@/components/Value/ValueDisplayContract.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
 import { subjectExportUrls } from '@/presentation/DataExportMenu.ts';
@@ -302,6 +305,10 @@ const emit = defineEmits<{
 // The projections the expanded footer's export menu offers, permission-filtered server-side. Set by
 // whichever surface mounts the row: the Data tab's action and Special:Subject alike.
 const rdfProjections = ( mw.config.get( 'wgNeoWikiRdfProjections' ) as string[] | null ) ?? [];
+
+// A reader of these rows is browsing Subjects, so a relation in one leads to its target's own page
+// rather than to the page storing it, on every surface that mounts the row.
+provide( RelationTargetUrlKey, ( target ) => subjectPageUrlOf( target.getId().text ) );
 
 const displayName = computed( () => subjectDisplayName( props.subject ) );
 const schemaName = computed( () => schemaNameToShow( props.subject ) );
