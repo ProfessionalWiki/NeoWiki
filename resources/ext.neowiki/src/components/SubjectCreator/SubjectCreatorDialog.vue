@@ -252,6 +252,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
+import type { SubjectId } from '@/domain/SubjectId.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
 import { newSubjectNamePreview, subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { withoutMissingValueViolations, type SubjectViolation } from '@/domain/SubjectViolation';
@@ -278,6 +279,7 @@ import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { setPendingNotification } from '@/presentation/PendingNotification.ts';
+import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
 import { useEditNotices } from '@/composables/useEditNotices.ts';
 
@@ -285,7 +287,7 @@ const props = defineProps<{
 	/**
 	 * The page the dialog was opened on, which the Subject can go on. Null where it was opened on
 	 * no page of its own - Special:CreateSubject, a Schema page - so that "this page" is not among
-	 * the pages offered.
+	 * the pages offered, and saving leaves for the Subject's own page.
 	 */
 	hostPage: { hasMainSubject: boolean } | null;
 	initialSchemaName?: string;
@@ -979,8 +981,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 				commentOrUndefined,
 				chosenTitle ?? undefined
 			);
-			setPendingNotification( 'neowiki-subject-creator-success' );
-			window.location.href = mw.util.getUrl( created.pageTitle );
+			leaveForCreatedSubject( created.subjectId, created.pageTitle );
 			return;
 		}
 
@@ -988,15 +989,14 @@ const handleSave = async ( summary: string ): Promise<void> => {
 			Number( mw.config.get( 'wgArticleId' ) ) :
 			( chosen as PageChoice ).pageId as number;
 
-		if ( addAlongsideMainSubject ) {
+		const subjectId = addAlongsideMainSubject ?
 			await subjectStore.createOtherSubject(
 				pageId,
 				label,
 				selectedSchemaName.value,
 				statementList,
 				commentOrUndefined
-			);
-		} else {
+			) :
 			await subjectStore.createMainSubject(
 				pageId,
 				label,
@@ -1004,9 +1004,8 @@ const handleSave = async ( summary: string ): Promise<void> => {
 				statementList,
 				commentOrUndefined
 			);
-		}
-		setPendingNotification( 'neowiki-subject-creator-success' );
-		leaveForCreatedSubject( goingTo === 'thisPage' ? null : chosen );
+
+		leaveForCreatedSubject( subjectId, goingTo === 'thisPage' ? null : ( chosen as PageChoice ).title );
 	} catch ( error ) {
 		if ( error instanceof PageTitleTakenError ) {
 			titleTakenError.value = mw.msg( 'neowiki-subject-creator-page-taken', error.pageTitle );
@@ -1036,13 +1035,25 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	}
 };
 
-function leaveForCreatedSubject( chosen: PageChoice | null ): void {
-	if ( chosen === null ) {
+/**
+ * Opened without a page of its own, the creator is about the Subject, so it leaves for the
+ * Subject's own page, which shows what was created. Opened on a page, it leaves for the page the
+ * Subject went on, with a notice that it was created; a null title is the page being viewed.
+ */
+function leaveForCreatedSubject( subjectId: SubjectId, hostingPageTitle: string | null ): void {
+	if ( props.hostPage === null ) {
+		window.location.href = subjectPageUrl( subjectId.text );
+		return;
+	}
+
+	setPendingNotification( 'neowiki-subject-creator-success' );
+
+	if ( hostingPageTitle === null ) {
 		window.location.reload();
 		return;
 	}
 
-	window.location.href = mw.util.getUrl( chosen.title );
+	window.location.href = mw.util.getUrl( hostingPageTitle );
 }
 
 defineExpose( { hasChanged } );
