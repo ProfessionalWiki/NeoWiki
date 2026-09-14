@@ -37,25 +37,33 @@
 			</template>
 
 			<template #item-actions="{ row }">
-				<span
-					v-if="canEditSchema"
-					class="ext-neowiki-schemas-page__actions"
-				>
+				<span class="ext-neowiki-schemas-page__actions">
 					<CdxButton
+						v-if="canCreateSubjectPage"
+						v-tooltip="$i18n( 'neowiki-schema-create-subject', row.name ).text()"
 						weight="quiet"
-						:aria-label="$i18n( 'neowiki-edit-schema' ).text()"
-						@click="openEditor( row.name )"
+						:aria-label="$i18n( 'neowiki-schema-create-subject', row.name ).text()"
+						@click="openSubjectCreator( row.name )"
 					>
-						<CdxIcon :icon="cdxIconEdit" />
+						<CdxIcon :icon="cdxIconArticleAdd" />
 					</CdxButton>
-					<CdxButton
-						weight="quiet"
-						action="destructive"
-						:aria-label="$i18n( 'neowiki-schema-delete' ).text()"
-						@click="confirmDelete( row.name )"
-					>
-						<CdxIcon :icon="cdxIconTrash" />
-					</CdxButton>
+					<template v-if="canEditSchema">
+						<CdxButton
+							weight="quiet"
+							:aria-label="$i18n( 'neowiki-edit-schema' ).text()"
+							@click="openEditor( row.name )"
+						>
+							<CdxIcon :icon="cdxIconEdit" />
+						</CdxButton>
+						<CdxButton
+							weight="quiet"
+							action="destructive"
+							:aria-label="$i18n( 'neowiki-schema-delete' ).text()"
+							@click="confirmDelete( row.name )"
+						>
+							<CdxIcon :icon="cdxIconTrash" />
+						</CdxButton>
+					</template>
 				</span>
 			</template>
 
@@ -88,6 +96,12 @@
 			@update:open="isDeleteConfirmOpen = $event"
 			@deleted="onSchemaDeleted"
 		/>
+
+		<SubjectCreatorDialog
+			v-if="canCreateSubjectPage"
+			:host-page="null"
+			:initial-schema-name="pinnedSchema"
+		/>
 	</div>
 </template>
 
@@ -95,17 +109,20 @@
 import { ref, shallowRef, onMounted, nextTick } from 'vue';
 import { CdxButton, CdxIcon, CdxTable } from '@wikimedia/codex';
 import type { TableColumn } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconArticleAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { useCursorPagination } from '@/composables/useCursorPagination.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
+import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import SchemaCreatorDialog from './SchemaCreatorDialog.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
+import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 
 const paginationSizeOptions: { value: number }[] = [
 	{ value: 10 },
@@ -125,7 +142,9 @@ const lastOffset = ref( 0 );
 const totalRows = ref<number | undefined>( undefined );
 const { cursorFor, recordNextCursor } = useCursorPagination();
 const { canEditSchema, canCreateSchemas, checkEditPermission, checkCreatePermission } = useSchemaPermissions();
+const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
 const schemaStore = useSchemaStore();
+const subjectStore = useSubjectStore();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 
 const isEditorOpen = ref( false );
@@ -133,6 +152,9 @@ const editingSchema = shallowRef<Schema | null>( null );
 
 const isDeleteConfirmOpen = ref( false );
 const deletingSchemaName = ref( '' );
+
+// The Schema the creator opens on, which the clicked row decides.
+const pinnedSchema = ref<string | undefined>( undefined );
 
 interface SchemaRow {
 	name: string;
@@ -201,6 +223,13 @@ function onLoadMore( offset: number, limit: number ): void {
 	fetchSchemas( offset, limit );
 }
 
+// Vue patches the new pin onto the dialog before the dialog's pre-flush watcher on the open flag
+// reads it, so the creator opens on this row's Schema rather than the one clicked before it.
+function openSubjectCreator( schemaName: string ): void {
+	pinnedSchema.value = schemaName;
+	subjectStore.openSubjectCreator();
+}
+
 async function openEditor( schemaName: string ): Promise<void> {
 	try {
 		editingSchema.value = null;
@@ -247,6 +276,7 @@ function onSchemaDeleted(): void {
 }
 
 onMounted( async () => {
+	checkCreateSubjectPagePermission();
 	await checkCreatePermission();
 	await checkEditPermission( '' );
 	await fetchSchemas( 0, paginationSizeOptions[ 0 ].value );

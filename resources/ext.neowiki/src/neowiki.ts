@@ -132,7 +132,7 @@ function initializeSchemasPage(): void {
 		if ( schemasPage !== null ) {
 			const ext = NeoWikiExtension.getInstance();
 
-			const app = createMwApp( SchemasPage );
+			const app = createMwApp( SchemasPage ).directive( 'tooltip', CdxTooltip );
 			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
 			mountNeoWikiApp( app, schemasPage );
