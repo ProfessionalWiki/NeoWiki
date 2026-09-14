@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { StoreStateLoader } from '@/persistence/StoreStateLoader';
 import { StubSubjectRepository } from '@/domain/SubjectRepository';
@@ -167,11 +167,14 @@ describe( 'StoreStateLoader', () => {
 
 		const unloadableId = new SubjectId( 's44444444444444' );
 		const readable = newSubject( { id: mainId, schemaName: 'Company' } );
-		let warn: ReturnType<typeof vi.fn>;
+		let warn: ReturnType<typeof vi.spyOn>;
 
 		beforeEach( () => {
-			warn = vi.fn();
-			vi.stubGlobal( 'mw', { log: { warn } } );
+			warn = vi.spyOn( console, 'warn' ).mockImplementation( () => undefined );
+		} );
+
+		afterEach( () => {
+			warn.mockRestore();
 		} );
 
 		function loadReadableAndUnloadable(): Promise<void> {

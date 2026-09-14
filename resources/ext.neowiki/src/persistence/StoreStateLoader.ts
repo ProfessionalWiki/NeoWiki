@@ -31,7 +31,7 @@ export class StoreStateLoader {
 				try {
 					await this.loadForSubject( new SubjectId( subjectId ) );
 				} catch ( error ) {
-					mw.log.warn( `NeoWiki: skipping Subject ${ subjectId }, which did not load:`, error );
+					console.warn( `NeoWiki: skipping Subject ${ subjectId }, which did not load:`, error );
 				}
 			} ),
 		);

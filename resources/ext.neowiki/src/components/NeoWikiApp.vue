@@ -90,8 +90,17 @@ onMounted( async (): Promise<void> => {
 
 	// Each View is told about the page holding its own Subject, which a View can render from
 	// anywhere, so the Subjects have to be loaded before there is a page to ask about.
-	viewsData.value = await Promise.all( views.map( withEditPermission ) );
+	viewsData.value = await Promise.all( views.filter( subjectDidLoad ).map( withEditPermission ) );
 } );
+
+/**
+ * A View Type renders the Subject the store holds under its id, so one whose Subject did not load
+ * is not mounted at all: its placeholder stays empty while the page's other Views render. The
+ * loader skips and logs such a Subject, which is how a Subject the viewer may not read arrives.
+ */
+function subjectDidLoad( view: View ): boolean {
+	return useSubjectStore().findSubject( view.subjectId ) !== undefined;
+}
 
 // eslint-disable-next-line no-undef
 function collectViews( elements: NodeListOf<HTMLElement> ): View[] {

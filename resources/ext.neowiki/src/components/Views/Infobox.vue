@@ -92,8 +92,9 @@ const isEditorOpen = ref( false );
 const editingSubject = shallowRef<Subject | null>( null );
 const editingSchema = shallowRef<Schema | null>( null );
 
-// Null for a Subject the page loaded nothing for, which is how one the viewer may not read
-// arrives: the display below renders nothing then, rather than failing the whole page's Views.
+// Null only for a host that mounts this itself, which the public API allows and RedHerb's subject
+// finder does: the display below then renders nothing rather than throwing. Under NeoWikiApp the
+// Subject is always there, since it mounts a View only once its Subject is in the store.
 const subject = computed( (): Subject | null => subjectStore.findSubject( props.subjectId ) ?? null );
 const schema = computed( (): Schema | null =>
 	subject.value === null ? null : schemaStore.getSchema( subject.value.getSchemaName() ) );
