@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
+use InvalidArgumentException;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
@@ -17,10 +18,13 @@ use Wikimedia\Rdbms\Database;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
- * Caches deserialized Schemas so that repeated reads do not each re-load and re-parse the Schema
- * wiki page. Two tiers: a process-local one over the shared WANObjectCache. NeoWikiExtension pins
- * one lookup in its singleton, so the process-local tier lasts as long as the PHP process — a
- * single request under mod_php, an entire run under a maintenance script.
+ * Caches Schemas in two tiers: the shared WANObjectCache holds the Schema page's JSON, and a
+ * process-local one holds the Schema parsed from it. The shared tier holds text rather than the
+ * Schema because a persistent cache outlives a deploy, and a PHP-serialized object written by one
+ * build fails to unserialize under the next once its class changed shape; the stored JSON is what
+ * the deserializer reads by contract. NeoWikiExtension pins one lookup in its singleton, so the
+ * process-local tier lasts as long as the PHP process — a single request under mod_php, an entire
+ * run under a maintenance script.
  *
  * Both key on the Schema page's latest revision id, which is read from the LinkCache. An edit made
  * by this process refreshes that cache (see WikiPage::updateRevisionOn), so it yields a new key and
@@ -30,7 +34,9 @@ use Wikimedia\Rdbms\IConnectionProvider;
  */
 class CachingSchemaLookup implements SchemaLookup {
 
-	private const CACHE_VERSION = 1;
+	// Bump when what an entry holds changes. Changes to the Schema classes do not: an entry holds
+	// the page's JSON.
+	private const CACHE_VERSION = 2;
 
 	/**
 	 * @var array<string, ?Schema>
@@ -38,7 +44,8 @@ class CachingSchemaLookup implements SchemaLookup {
 	private array $resolvedSchemas = [];
 
 	public function __construct(
-		private readonly SchemaLookup $schemaLookup,
+		private readonly SchemaJsonLookup $schemaJsonLookup,
+		private readonly SchemaPersistenceDeserializer $schemaDeserializer,
 		private readonly WANObjectCache $cache,
 		private readonly TitleFactory $titleFactory,
 		private readonly PageReadAuthorizer $readAuthorizer,
@@ -53,7 +60,7 @@ class CachingSchemaLookup implements SchemaLookup {
 			return null;
 		}
 
-		// The inner lookup applies no per-title read check (its revision audience check filters
+		// The JSON lookup applies no per-title read check (its revision audience check filters
 		// revision deletion only), so this is the sole read gate on the Schema read path. It
 		// must also run before the caches: the cached value is user-independent schema content,
 		// and a cache hit must not serve a Schema whose page the user may not read (#1046).
@@ -65,7 +72,7 @@ class CachingSchemaLookup implements SchemaLookup {
 
 		if ( !array_key_exists( $cacheKey, $this->resolvedSchemas ) ) {
 			try {
-				$this->resolvedSchemas[$cacheKey] = $this->getFromSharedCache( $cacheKey, $schemaName );
+				$json = $this->getJsonFromSharedCache( $cacheKey, $schemaName );
 			}
 			catch ( SchemaContentUnavailableException ) {
 				// The revision's content could not be read, which the next call may well manage.
@@ -74,27 +81,43 @@ class CachingSchemaLookup implements SchemaLookup {
 				// getWithSetCallback() leaves the shared tier empty too.
 				return null;
 			}
+
+			$this->resolvedSchemas[$cacheKey] = $this->deserialize( $schemaName, $json );
 		}
 
 		return $this->resolvedSchemas[$cacheKey];
 	}
 
-	private function getFromSharedCache( string $cacheKey, SchemaName $schemaName ): ?Schema {
-		/** @var Schema|null $schema */
-		$schema = $this->cache->getWithSetCallback(
+	private function getJsonFromSharedCache( string $cacheKey, SchemaName $schemaName ): string {
+		/** @var string $json */
+		$json = $this->cache->getWithSetCallback(
 			$cacheKey,
 			WANObjectCache::TTL_DAY,
-			function ( mixed $oldValue, int &$ttl, array &$setOpts ) use ( $schemaName ): ?Schema {
+			function ( mixed $oldValue, int &$ttl, array &$setOpts ) use ( $schemaName ): string {
 				// Make caching replica-lag aware: if the schema content is read
 				// from a lagged replica, WANObjectCache reduces the TTL instead of
 				// pinning that content under the new revision's key for the full
 				// TTL. Closes the narrow read-after-edit staleness window.
 				$setOpts += Database::getCacheSetOptions( $this->connectionProvider->getReplicaDatabase() );
-				return $this->schemaLookup->getSchema( $schemaName );
+				return $this->schemaJsonLookup->getSchemaJson( $schemaName );
 			}
 		);
 
-		return $schema;
+		return $json;
+	}
+
+	/**
+	 * JSON that is not a valid Schema will not become one on the next call, so the process-local
+	 * tier remembers the null. The shared tier keeps the text either way: parsing it again in the
+	 * next process is cheaper than reading the page again.
+	 */
+	private function deserialize( SchemaName $schemaName, string $json ): ?Schema {
+		try {
+			return $this->schemaDeserializer->deserialize( $schemaName, $json );
+		}
+		catch ( InvalidArgumentException ) {
+			return null;
+		}
 	}
 
 	/**

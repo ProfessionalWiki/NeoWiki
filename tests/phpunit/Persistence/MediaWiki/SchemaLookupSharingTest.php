@@ -5,17 +5,16 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use MediaWiki\MediaWikiServices;
-use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaJsonLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
@@ -79,15 +78,18 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( $extension->getSchemaLookup(), $extension->getSchemaLookup() );
 	}
 
-	private function newCountingProjectionStore( SchemaLookup $inner ): GraphDatabasePlugin {
+	private function newCountingProjectionStore( SchemaJsonLookup $inner ): GraphDatabasePlugin {
 		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore( $this->newCachingLookup( $inner ) );
 	}
 
-	private function newCachingLookup( SchemaLookup $inner ): CachingSchemaLookup {
+	private function newCachingLookup( SchemaJsonLookup $inner ): CachingSchemaLookup {
 		$services = MediaWikiServices::getInstance();
 
 		return new CachingSchemaLookup(
-			schemaLookup: $inner,
+			schemaJsonLookup: $inner,
+			schemaDeserializer: new SchemaPersistenceDeserializer(
+				NeoWikiExtension::getInstance()->getPropertyTypeLookup()
+			),
 			// Stores nothing, so every read past the process-local tier reaches the counting lookup.
 			cache: new WANObjectCache( [ 'cache' => new EmptyBagOStuff() ] ),
 			titleFactory: $services->getTitleFactory(),
@@ -101,15 +103,15 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @return SchemaLookup&object{calls: int}
+	 * @return SchemaJsonLookup&object{calls: int}
 	 */
-	private function newCountingLookup(): SchemaLookup {
-		return new class() implements SchemaLookup {
+	private function newCountingLookup(): SchemaJsonLookup {
+		return new class() implements SchemaJsonLookup {
 			public int $calls = 0;
 
-			public function getSchema( SchemaName $schemaName ): ?Schema {
+			public function getSchemaJson( SchemaName $schemaName ): string {
 				$this->calls++;
-				return TestSchema::build( name: $schemaName );
+				return '{"description":"","propertyDefinitions":{}}';
 			}
 		};
 	}
