@@ -28,7 +28,7 @@ describe( 'NeoWikiApp', () => {
 		setActivePinia( pinia );
 
 		// The repository holds only one of the two Subjects, which is how a Subject the viewer may
-		// not read arrives: the read answers for it as it does for one that does not exist.
+		// not read reaches the loader: the read answers for it as for one that does not exist.
 		vi.spyOn( NeoWikiExtension.getInstance(), 'getStoreStateLoader' ).mockReturnValue(
 			new StoreStateLoader(
 				new StubSubjectRepository( [ newSubject( { id: loadedId, schemaName: 'Company' } ) ] ),
@@ -68,8 +68,6 @@ describe( 'NeoWikiApp', () => {
 		return wrapper;
 	}
 
-	// A View Type reads its Subject from the store, so a View is mounted only once the Subject is
-	// there: the placeholder of one that did not load stays empty, and the others render as usual.
 	it( 'mounts the Views whose Subject loaded', async () => {
 		placeViewFor( loadedId );
 		placeViewFor( unloadableId );

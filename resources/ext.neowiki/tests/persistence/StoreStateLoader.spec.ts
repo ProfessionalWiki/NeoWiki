@@ -162,7 +162,7 @@ describe( 'StoreStateLoader', () => {
 
 	// The REST read answers for a Subject the viewer may not read exactly as it does for one that
 	// does not exist, which is what the repository here does for an id it does not hold. A request
-	// that fails outright arrives the same way.
+	// that fails outright reaches the loader the same way.
 	describe( 'a Subject that does not load', () => {
 
 		const unloadableId = new SubjectId( 's44444444444444' );

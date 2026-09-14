@@ -94,9 +94,9 @@ onMounted( async (): Promise<void> => {
 } );
 
 /**
- * A View Type renders the Subject the store holds under its id, so one whose Subject did not load
- * is not mounted at all: its placeholder stays empty while the page's other Views render. The
- * loader skips and logs such a Subject, which is how a Subject the viewer may not read arrives.
+ * A View Type renders the Subject the store holds under its id, so a View whose Subject did not
+ * load is not mounted at all: its placeholder stays empty while the page's other Views render.
+ * A Subject the viewer may not read arrives as one that did not load; the loader skips and logs it.
  */
 function subjectDidLoad( view: View ): boolean {
 	return useSubjectStore().findSubject( view.subjectId ) !== undefined;

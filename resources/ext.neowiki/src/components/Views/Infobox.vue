@@ -100,7 +100,7 @@ const schema = computed( (): Schema | null =>
 	subject.value === null ? null : schemaStore.getSchema( subject.value.getSchemaName() ) );
 
 async function openEditor(): Promise<void> {
-	// The button that calls this renders inside the display, which a null Subject has none of.
+	// The button that calls this renders inside the display, which is not there for a null Subject.
 	if ( subject.value === null ) {
 		return;
 	}

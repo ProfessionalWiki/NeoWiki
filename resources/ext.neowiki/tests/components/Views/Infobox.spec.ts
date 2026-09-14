@@ -187,8 +187,8 @@ describe( 'Infobox', () => {
 		expect( statementElements ).toHaveLength( 0 );
 	} );
 
-	// What a host mounting the Infobox itself can hand it, since the store holds no Subject it did
-	// not load: a View of one the viewer may not read must render nothing rather than throw.
+	// A host that mounts the Infobox itself can hand it an id the store has no Subject for: a View
+	// of a Subject the viewer may not read must render nothing rather than throw.
 	it( 'renders nothing for a Subject the store does not hold', () => {
 		const wrapper = mountComponent( new SubjectId( 's1demo5sssssss9' ), true );
 

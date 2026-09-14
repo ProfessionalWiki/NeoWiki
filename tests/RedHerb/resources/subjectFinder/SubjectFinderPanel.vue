@@ -78,9 +78,9 @@ module.exports = exports = {
 			nw.NeoWikiExtension.getInstance().getStoreStateLoader()
 				.loadSubjectsAndSchemas( new Set( [ id ] ) )
 				.then( () => {
-					// The loader skips a Subject it cannot load — one the viewer may not read
-					// among them — rather than rejecting, so the store is what says whether
-					// there is anything to render.
+					// The loader skips a Subject it cannot load rather than rejecting — one the
+					// viewer may not read among them — so the store is what says whether there
+					// is anything to render.
 					if ( subjectStore.findSubject( new nw.SubjectId( id ) ) === undefined ) {
 						notifyError( new Error( mw.message( 'redherb-subject-finder-load-failed' ).text() ) );
 						return;
