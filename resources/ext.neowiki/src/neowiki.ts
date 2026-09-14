@@ -22,8 +22,11 @@ import { LayoutDeserializer } from '@/persistence/LayoutDeserializer.ts';
 import { showPendingNotification } from '@/presentation/PendingNotification.ts';
 import { FrontendRegistrar } from '@/presentation/FrontendRegistrar';
 import { useSubjectStore } from '@/stores/SubjectStore';
+import SubjectCreatorButton from '@/components/SubjectCreator/SubjectCreatorButton.vue';
+import { subjectCreatorButtonProps } from '@/components/SubjectCreator/subjectCreatorButtonProps.ts';
 
 const SUBJECT_CREATOR_TRIGGER_SELECTOR = '[data-mw-neowiki-action="open-subject-creator"]';
+const SUBJECT_CREATOR_BUTTON_SELECTOR = '.ext-neowiki-create-subject-button';
 
 export function registerSubjectCreatorClickHandler( pinia: Pinia, signal?: AbortSignal ): void {
 	document.addEventListener( 'click', ( event ) => {
@@ -246,6 +249,25 @@ function initializeSubjectPage(): void {
 	} );
 }
 
+/**
+ * Mounts a button, with a creator dialog of its own, on every `{{#create_subject}}` placeholder.
+ */
+function initializeSubjectCreatorButtons(): void {
+	queueMicrotask( () => {
+		const ext = NeoWikiExtension.getInstance();
+
+		document.querySelectorAll( SUBJECT_CREATOR_BUTTON_SELECTOR ).forEach( ( element ) => {
+			const app = createMwApp(
+				SubjectCreatorButton,
+				subjectCreatorButtonProps( ( element as HTMLElement ).dataset ),
+			).directive( 'tooltip', CdxTooltip );
+			app.use( ext.getPinia() );
+			NeoWikiServices.registerServices( app );
+			mountNeoWikiApp( app, element );
+		} );
+	} );
+}
+
 const isTestEnvironment = typeof window !== 'undefined' &&
 	( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode === true;
 
@@ -260,4 +282,5 @@ if ( !isTestEnvironment ) {
 	initializeSubjectsManagerPage();
 	initializeCreateSubjectPage();
 	initializeSubjectPage();
+	initializeSubjectCreatorButtons();
 }

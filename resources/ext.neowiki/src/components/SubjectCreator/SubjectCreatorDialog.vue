@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/no-multiple-template-root -->
 <template>
 	<CdxDialog
-		:open="subjectStore.subjectCreatorOpen"
+		:open="props.open"
 		class="ext-neowiki-ui ext-neowiki-subject-creator-dialog cdx-dialog--dividers"
 		:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' && !selectedSchemaName }"
 		:title="$i18n( 'neowiki-subject-creator-title' ).text()"
@@ -131,8 +131,34 @@
 			v-else-if="selectedSchemaName"
 			#footer
 		>
+			<div
+				v-if="pageChoice !== null && pageFixed"
+				class="ext-neowiki-subject-creator-page-summary"
+			>
+				<span class="ext-neowiki-subject-creator-page-section__label">
+					{{ $i18n( 'neowiki-subject-creator-page-section' ).text() }}
+					<span class="ext-neowiki-subject-creator-page-section__choice">
+						<I18nSlot
+							v-if="chosenPageSummary.title !== null"
+							:message-key="chosenPageSummary.messageKey"
+						>
+							<strong>{{ chosenPageSummary.title }}</strong>
+						</I18nSlot>
+						<template v-else>{{ $i18n( chosenPageSummary.messageKey ).text() }}</template>
+					</span>
+				</span>
+
+				<CdxMessage
+					v-if="pageError !== null"
+					type="error"
+					:inline="true"
+				>
+					{{ pageError }}
+				</CdxMessage>
+			</div>
+
 			<CdxAccordion
-				v-if="pageChoice !== null"
+				v-else-if="pageChoice !== null"
 				class="ext-neowiki-subject-creator-page-section"
 				:open="pageSectionOpen"
 				@toggle="onPageSectionToggle"
@@ -143,7 +169,15 @@
 						<span
 							v-if="!pageSectionOpen"
 							class="ext-neowiki-subject-creator-page-section__choice"
-						>{{ chosenPageSummary }}</span>
+						>
+							<I18nSlot
+								v-if="chosenPageSummary.title !== null"
+								:message-key="chosenPageSummary.messageKey"
+							>
+								<strong>{{ chosenPageSummary.title }}</strong>
+							</I18nSlot>
+							<template v-else>{{ $i18n( chosenPageSummary.messageKey ).text() }}</template>
+						</span>
 					</span>
 				</template>
 
@@ -245,7 +279,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, computed, watch, nextTick, onMounted } from 'vue';
-import { CdxAccordion, CdxButton, CdxDialog, CdxField, CdxIcon, CdxRadio, CdxTextInput, CdxToggleButtonGroup } from '@wikimedia/codex';
+import { CdxAccordion, CdxButton, CdxDialog, CdxField, CdxIcon, CdxMessage, CdxRadio, CdxTextInput, CdxToggleButtonGroup } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconArrowNext, cdxIconArrowPrevious, cdxIconClose, cdxIconSearch } from '@wikimedia/codex-icons';
 import type { ButtonGroupItem, ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
@@ -268,6 +302,7 @@ import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog
 import PagePicker from '@/components/common/PagePicker.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import type { PageChoice } from '@/components/common/PageChoice.ts';
+import type { InitialPage, SubjectPageChoice } from '@/components/SubjectCreator/InitialPage.ts';
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError.ts';
 import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError.ts';
 import SchemaAbandonmentDialog from '@/components/SubjectCreator/SchemaAbandonmentDialog.vue';
@@ -291,10 +326,14 @@ const props = defineProps<{
 	 */
 	hostPage: { hasMainSubject: boolean } | null;
 	initialSchemaName?: string;
+	/** The page the caller wants; undefined asks the user as usual. */
+	initialPage?: InitialPage;
+	open: boolean;
 }>();
 
-/** Which page the Subject being created goes on. */
-type SubjectPageChoice = 'thisPage' | 'anotherPage' | 'newPage';
+const emit = defineEmits<{
+	'update:open': [ value: boolean ];
+}>();
 
 const selectedSchemaOption = ref( 'existing' );
 const selectedSchemaName = ref<string | null>( null );
@@ -313,6 +352,8 @@ const draftSchema = shallowRef<Schema | null>( null );
 let requestSequence = 0;
 
 const subjectStore = useSubjectStore();
+
+const pageFixed = computed( (): boolean => props.initialPage?.fixed === true );
 
 const chosenPage = ref<PageChoice | null>( null );
 const chosenPageRead = ref( false );
@@ -371,6 +412,10 @@ const pageOptions = computed( (): PageOption[] => {
 
 // The page being viewed where there is one, and a page of the Subject's own where there is not.
 function defaultPageChoice(): SubjectPageChoice {
+	if ( props.initialPage !== undefined ) {
+		return props.initialPage.choice;
+	}
+
 	if ( props.hostPage !== null ) {
 		return 'thisPage';
 	}
@@ -488,28 +533,31 @@ function enteredPageTitle(): string | null {
 const pageTitlePlaceholder = computed( (): string | undefined => enteredLabel() ?? undefined );
 
 // The choice, in words, for the collapsed section's header: open, the options say it themselves.
-const chosenPageSummary = computed( (): string => {
+const chosenPageSummary = computed( (): { messageKey: string; title: string | null } => {
 	if ( pageChoice.value === 'thisPage' ) {
-		return mw.msg( 'neowiki-subject-creator-page-section-this' );
+		return { messageKey: 'neowiki-subject-creator-page-section-this', title: null };
 	}
 
 	if ( pageChoice.value === 'newPage' ) {
 		const title = enteredPageTitle();
 
 		return title === null ?
-			mw.msg( 'neowiki-subject-creator-page-section-new' ) :
-			mw.msg( 'neowiki-subject-creator-page-section-new-titled', title );
+			{ messageKey: 'neowiki-subject-creator-page-section-new', title: null } :
+			{ messageKey: 'neowiki-subject-creator-page-section-new-titled', title };
 	}
 
 	const picked = chosenPage.value?.title;
 
 	if ( picked !== undefined ) {
-		return mw.msg( 'neowiki-subject-creator-page-section-picked', picked );
+		return { messageKey: 'neowiki-subject-creator-page-section-picked', title: picked };
 	}
 
-	return mw.msg( props.hostPage === null ?
-		'neowiki-subject-creator-page-section-existing' :
-		'neowiki-subject-creator-page-section-another' );
+	return {
+		messageKey: props.hostPage === null ?
+			'neowiki-subject-creator-page-section-existing' :
+			'neowiki-subject-creator-page-section-another',
+		title: null
+	};
 } );
 
 const targetHasMainSubject = computed( (): boolean => {
@@ -571,12 +619,32 @@ function resetPageChoice(): void {
 	pageReadError.value = null;
 }
 
+/**
+ * The choice watcher clears what the previous choice answered, so the nextTick lets it run first.
+ */
+async function applyInitialPageTarget(): Promise<void> {
+	const named = props.initialPage?.page;
+
+	if ( named === undefined ) {
+		return;
+	}
+
+	await nextTick();
+
+	if ( named.pageId === null ) {
+		pageTitle.value = named.title;
+		return;
+	}
+
+	await onPageSelected( named );
+}
+
 // Reloaded when the Schema is chosen too, since Schema-scoped notices cannot apply before there
 // is a Schema to scope them to.
 watch(
-	() => [ subjectStore.subjectCreatorOpen, selectedSchemaName.value ],
+	() => [ props.open, selectedSchemaName.value ],
 	() => {
-		if ( subjectStore.subjectCreatorOpen && props.hostPage !== null ) {
+		if ( props.open && props.hostPage !== null ) {
 			loadNotices( Number( mw.config.get( 'wgArticleId' ) ), selectedSchemaName.value ?? undefined );
 		}
 	}
@@ -589,10 +657,11 @@ const { hasChanged: formChanged, markChanged, resetChanged } = useChangeDetectio
 // Answering the page question is not an edit of the form, and reporting it as one would leave a
 // dialog whose answer was taken back asking to be discarded.
 const hasChanged = computed( (): boolean =>
-	formChanged.value || chosenPage.value !== null || enteredPageTitle() !== null );
+	formChanged.value ||
+	( !pageFixed.value && ( chosenPage.value !== null || enteredPageTitle() !== null ) ) );
 
 function close(): void {
-	subjectStore.closeSubjectCreator();
+	emit( 'update:open', false );
 }
 
 const hasDraftSchema = computed( () => draftSchema.value !== null );
@@ -742,6 +811,11 @@ const toggleButtons = [
 onMounted( async () => {
 	await Promise.all( [ checkCreatePermission(), checkCreateSubjectPagePermission() ] );
 	pageChoice.value = defaultPageChoice();
+
+	// Already open: the open watcher ran before pageChoice existed.
+	if ( props.open ) {
+		await applyInitialPageTarget();
+	}
 } );
 
 watch( selectedSchemaOption, ( newValue: string ) => {
@@ -766,7 +840,8 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 	await loadSchema( schemaName );
 }
 
-async function loadSchema( schemaName: string ): Promise<void> {
+// False when a later load superseded this one, so its outcome was discarded.
+async function loadSchema( schemaName: string ): Promise<boolean> {
 	selectedSchemaName.value = schemaName;
 
 	const currentSequence = ++requestSequence;
@@ -775,18 +850,20 @@ async function loadSchema( schemaName: string ): Promise<void> {
 		const schema = await schemaRepo.getSchema( schemaName );
 
 		if ( currentSequence !== requestSequence ) {
-			return;
+			return false;
 		}
 
 		loadedSchema.value = schema;
 	} catch ( error ) {
 		if ( currentSequence !== requestSequence ) {
-			return;
+			return false;
 		}
 
 		console.error( 'Failed to load schema:', error );
 		loadedSchema.value = null;
 	}
+
+	return true;
 }
 
 async function handleCreateSchema(): Promise<void> {
@@ -868,9 +945,15 @@ const statements = computed( (): StatementList | null =>
 	loadedSchema.value?.blankStatements() ?? null
 );
 
-watch( () => subjectStore.subjectCreatorOpen, async ( isOpen ) => {
+watch( () => props.open, async ( isOpen ) => {
 	if ( isOpen ) {
 		reset();
+
+		// Before mount there is no choice yet; onMounted fills it in then.
+		if ( pageChoice.value !== null ) {
+			applyInitialPageTarget();
+		}
+
 		await pinInitialSchema();
 		await nextTick();
 		focusInitialInput( selectedSchemaOption.value );
@@ -886,9 +969,9 @@ async function pinInitialSchema(): Promise<void> {
 		return;
 	}
 
-	await loadSchema( props.initialSchemaName );
-
-	if ( loadedSchema.value === null ) {
+	// Only the load still in charge may fall back: a superseded one would send the open that
+	// replaced it back a step, and strand the Schema that open is waiting for.
+	if ( await loadSchema( props.initialSchemaName ) && loadedSchema.value === null ) {
 		goBack();
 	}
 }
@@ -919,6 +1002,7 @@ function goBack(): void {
 	loadedSchema.value = null;
 	subjectLabel.value = '';
 	resetPageChoice();
+	applyInitialPageTarget();
 	pageSectionOpen.value = false;
 
 	if ( draftSchema.value ) {
@@ -1127,6 +1211,16 @@ defineExpose( { hasChanged } );
 
 		.cdx-accordion__content {
 			padding: 0;
+		}
+	}
+
+	/* Matches the accordion header it replaces. */
+	&-page-summary {
+		font-weight: @font-weight-bold;
+
+		.cdx-message {
+			margin-top: @spacing-50;
+			font-weight: @font-weight-normal;
 		}
 	}
 

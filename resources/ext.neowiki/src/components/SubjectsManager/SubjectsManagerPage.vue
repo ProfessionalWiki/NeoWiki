@@ -147,6 +147,7 @@
 
 		<SubjectCreatorDialog
 			v-if="canCreate"
+			v-model:open="subjectStore.subjectCreatorOpen"
 			:host-page="{ hasMainSubject }"
 		/>
 

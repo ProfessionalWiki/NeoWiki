@@ -10,6 +10,7 @@
 		</CdxButton>
 
 		<SubjectCreatorDialog
+			v-model:open="subjectStore.subjectCreatorOpen"
 			:host-page="null"
 			:initial-schema-name="props.schemaName"
 		/>

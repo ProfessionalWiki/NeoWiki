@@ -1,6 +1,6 @@
 import { mount, VueWrapper, DOMWrapper, flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import SchemaPicker from '@/components/common/SchemaPicker.vue';
 import PagePicker from '@/components/common/PagePicker.vue';
@@ -34,6 +34,7 @@ import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
+import type { InitialPage } from '@/components/SubjectCreator/InitialPage.ts';
 
 const PAGE_ID = 123;
 const PAGE_TITLE = 'Test Page';
@@ -171,7 +172,7 @@ describe( 'SubjectCreatorDialog', () => {
 		options: Record<string, any> = {},
 	): VueWrapper => (
 		mount( SubjectCreatorDialog, {
-			props: { hostPage: { hasMainSubject: false }, ...props },
+			props: { open: false, hostPage: { hasMainSubject: false }, ...props },
 			...options,
 			global: {
 				plugins: [ pinia ],
@@ -284,22 +285,21 @@ describe( 'SubjectCreatorDialog', () => {
 		expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( false );
 	} );
 
-	it( 'renders the dialog open when the store flag is set to true', async () => {
+	it( 'renders the dialog open when the open prop is set', async () => {
 		const wrapper = mountComponent();
-		subjectStore.openSubjectCreator();
+		await wrapper.setProps( { open: true } );
 		await flushPromises();
 		expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( true );
 	} );
 
-	it( 'clears the store flag when the dialog is closed without changes', async () => {
-		subjectStore.openSubjectCreator();
-		const wrapper = mountComponent();
+	it( 'asks to be closed when the dialog is closed without changes', async () => {
+		const wrapper = mountComponent( {}, { open: true } );
 		await flushPromises();
 
 		wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
 		await flushPromises();
 
-		expect( subjectStore.subjectCreatorOpen ).toBe( false );
+		expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
 	} );
 
 	it( 'shows schema search in the existing-schema block', () => {
@@ -591,7 +591,7 @@ describe( 'SubjectCreatorDialog', () => {
 	it( 'reloads page after successful save', async () => {
 		const wrapper = mountComponent();
 
-		subjectStore.openSubjectCreator();
+		await wrapper.setProps( { open: true } );
 		await flushPromises();
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
@@ -608,7 +608,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 		const wrapper = mountComponent();
 
-		subjectStore.openSubjectCreator();
+		await wrapper.setProps( { open: true } );
 		await flushPromises();
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
@@ -620,9 +620,7 @@ describe( 'SubjectCreatorDialog', () => {
 			'Server error',
 			expect.objectContaining( { type: 'error' } ),
 		);
-
-		const dialog = wrapper.findComponent( CdxDialog );
-		expect( dialog.props( 'open' ) ).toBe( true );
+		expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
 	} );
 
 	it( 'saves without a label when the field is emptied', async () => {
@@ -655,7 +653,7 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'opens on the second step with the initial schema loaded', async () => {
 			const wrapper = mountComponent( {}, { initialSchemaName: SCHEMA_NAME } );
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 
 			expect( getSchemaMock ).toHaveBeenCalledWith( SCHEMA_NAME );
@@ -667,17 +665,46 @@ describe( 'SubjectCreatorDialog', () => {
 			getSchemaMock.mockRejectedValue( new Error( 'No such schema' ) );
 			const wrapper = mountComponent( {}, { initialSchemaName: 'Missing' } );
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 
 			expect( wrapper.findComponent( SchemaPicker ).exists() ).toBe( true );
 			expect( wrapper.findComponent( SubjectEditor ).exists() ).toBe( false );
 		} );
 
+		it( 'stays on the pinned schema when reopened before the first open\'s schema arrived', async () => {
+			let resolveFirst!: ( schema: Schema ) => void;
+			let resolveSecond!: ( schema: Schema ) => void;
+			getSchemaMock
+				.mockReturnValueOnce( new Promise<Schema>( ( resolve ) => {
+					resolveFirst = resolve;
+				} ) )
+				.mockReturnValueOnce( new Promise<Schema>( ( resolve ) => {
+					resolveSecond = resolve;
+				} ) );
+
+			const wrapper = mountComponent( {}, { initialSchemaName: SCHEMA_NAME } );
+
+			await wrapper.setProps( { open: true } );
+			await nextTick();
+			await wrapper.setProps( { open: false } );
+			await nextTick();
+			await wrapper.setProps( { open: true } );
+			await nextTick();
+
+			resolveFirst( newSchema( { title: SCHEMA_NAME } ) );
+			await flushPromises();
+			resolveSecond( newSchema( { title: SCHEMA_NAME } ) );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SchemaPicker ).exists() ).toBe( false );
+			expect( wrapper.findComponent( SubjectEditor ).exists() ).toBe( true );
+		} );
+
 		it( 'leaves save unavailable until something is entered', async () => {
 			const wrapper = mountComponent( {}, { initialSchemaName: SCHEMA_NAME } );
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 
 			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
@@ -735,7 +762,7 @@ describe( 'SubjectCreatorDialog', () => {
 		}
 
 		async function pickSchema( wrapper: VueWrapper ): Promise<void> {
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
@@ -1653,7 +1680,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 		it( 'asks nothing on close once the page picked has been taken back', async () => {
 			const wrapper = mountWithoutHostPage( { initialSchemaName: SCHEMA_NAME } );
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 
 			await choose( wrapper, 'anotherPage' );
@@ -1662,12 +1689,12 @@ describe( 'SubjectCreatorDialog', () => {
 			await requestClose( wrapper );
 
 			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
-			expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( false );
+			expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
 		} );
 
 		it( 'asks nothing on close once the title typed for a new page has been taken back', async () => {
 			const wrapper = mountWithoutHostPage( { initialSchemaName: SCHEMA_NAME } );
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 
 			await typePageTitle( wrapper, 'Delft' );
@@ -1675,12 +1702,12 @@ describe( 'SubjectCreatorDialog', () => {
 			await requestClose( wrapper );
 
 			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
-			expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( false );
+			expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
 		} );
 
 		it( 'asks before dropping a title that is still typed', async () => {
 			const wrapper = mountWithoutHostPage( { initialSchemaName: SCHEMA_NAME } );
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 
 			await typePageTitle( wrapper, 'Delft' );
@@ -1691,7 +1718,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 		it( 'asks before dropping a page that is still picked', async () => {
 			const wrapper = mountWithoutHostPage( { initialSchemaName: SCHEMA_NAME } );
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 
 			await choose( wrapper, 'anotherPage' );
@@ -1699,6 +1726,184 @@ describe( 'SubjectCreatorDialog', () => {
 			await requestClose( wrapper );
 
 			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( true );
+		} );
+
+		describe( 'initialPage', () => {
+			// Renders its slot, so the error text is assertable.
+			const CdxMessageStub = {
+				template: '<div class="cdx-message-stub"><slot /></div>',
+				props: [ 'type', 'inline' ],
+			};
+
+			function mountWithInitialPage( initialPage: InitialPage, props: Record<string, any> = {} ): VueWrapper {
+				return mountComponent(
+					{
+						PagePicker: PagePickerStub,
+						CdxField: CdxFieldWithMessagesStub,
+						I18nSlot: I18nSlotStub,
+						CdxMessage: CdxMessageStub,
+					},
+					{ initialSchemaName: SCHEMA_NAME, initialPage, ...props },
+				);
+			}
+
+			async function open( wrapper: VueWrapper ): Promise<void> {
+				await wrapper.setProps( { open: true } );
+				await flushPromises();
+				// Second flush: the page is filled in after the choice watcher runs.
+				await flushPromises();
+				await wrapper.vm.$nextTick();
+			}
+
+			function fixedSection( wrapper: VueWrapper ): DOMWrapper<Element> {
+				return wrapper.find( '.ext-neowiki-subject-creator-page-summary' );
+			}
+
+			it( 'states a fixed this page and hides the choice', async () => {
+				const wrapper = mountWithInitialPage( { choice: 'thisPage', fixed: true } );
+				await open( wrapper );
+
+				expect( fixedSection( wrapper ).exists() ).toBe( true );
+				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-this' );
+				expect( wrapper.findAll( '.cdx-radio-stub' ) ).toHaveLength( 0 );
+				expect( pageTitleField( wrapper ).exists() ).toBe( false );
+			} );
+
+			it( 'saves a fixed new page under the title it was given', async () => {
+				const wrapper = mountWithInitialPage( {
+					choice: 'newPage',
+					page: { pageId: null, title: 'Ada Lovelace' },
+					fixed: true,
+				} );
+				await open( wrapper );
+
+				expect( shownChoice( wrapper ) )
+					.toBe( 'neowiki-subject-creator-page-section-new-titledAda Lovelace' );
+
+				await save( wrapper );
+
+				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
+					null, SCHEMA_NAME, expect.any( StatementList ), undefined, 'Ada Lovelace',
+				);
+			} );
+
+			it( 'saves a fixed new page without a title', async () => {
+				const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: true } );
+				await open( wrapper );
+
+				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-new' );
+
+				await save( wrapper );
+
+				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
+					null, SCHEMA_NAME, expect.any( StatementList ), undefined, undefined,
+				);
+			} );
+
+			it( 'saves onto a fixed page without a main Subject as its main Subject', async () => {
+				const wrapper = mountWithInitialPage( {
+					choice: 'anotherPage',
+					page: { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' },
+					fixed: true,
+				} );
+				await open( wrapper );
+
+				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-pickedACME Inc' );
+
+				await save( wrapper );
+
+				expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
+					EXISTING_PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), undefined,
+				);
+			} );
+
+			it( 'reads the fixed page only once opened', async () => {
+				const wrapper = mountWithInitialPage( {
+					choice: 'anotherPage',
+					page: { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' },
+					fixed: true,
+				} );
+				await flushPromises();
+
+				expect( getPageSubjectsMock ).not.toHaveBeenCalled();
+
+				await open( wrapper );
+
+				expect( getPageSubjectsMock ).toHaveBeenCalledWith( EXISTING_PAGE_ID );
+			} );
+
+			it( 'saves onto a fixed page with a main Subject as another Subject', async () => {
+				getPageSubjectsMock.mockResolvedValue( pageWithMainSubject( 'ACME Inc' ) );
+				const wrapper = mountWithInitialPage( {
+					choice: 'anotherPage',
+					page: { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' },
+					fixed: true,
+				} );
+				await open( wrapper );
+
+				await save( wrapper );
+
+				expect( subjectStore.createOtherSubject ).toHaveBeenCalledWith(
+					EXISTING_PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), undefined,
+				);
+				expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
+			} );
+
+			it( 'shows an error and blocks saving when the fixed page cannot be read', async () => {
+				getPageSubjectsMock.mockRejectedValue( new Error( 'network down' ) );
+				const wrapper = mountWithInitialPage( {
+					choice: 'anotherPage',
+					page: { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' },
+					fixed: true,
+				} );
+				await open( wrapper );
+
+				expect( wrapper.text() ).toContain( 'neowiki-subject-creator-page-read-errorACME Inc' );
+				expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+			} );
+
+			it( 'closes without confirming when only the fixed page was filled in', async () => {
+				const wrapper = mountWithInitialPage( {
+					choice: 'anotherPage',
+					page: { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' },
+					fixed: true,
+				} );
+				await open( wrapper );
+
+				// The page is filled in, which answering it by hand would report as a change.
+				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-pickedACME Inc' );
+				expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+
+				await requestClose( wrapper );
+
+				expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
+			} );
+
+			it( 'preselects an unfixed page but still offers the choice', async () => {
+				const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: false } );
+				await open( wrapper );
+
+				expect( fixedSection( wrapper ).exists() ).toBe( false );
+				expect( chosenOption( wrapper ) ).toBe( 'newPage' );
+				expect( offeredChoices( wrapper ) ).toEqual( [ 'thisPage', 'anotherPage', 'newPage' ] );
+			} );
+
+			it( 'restores the fixed page when the schema is picked again after going back', async () => {
+				const wrapper = mountWithInitialPage( {
+					choice: 'anotherPage',
+					page: { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' },
+					fixed: true,
+				} );
+				await open( wrapper );
+
+				await goBack( wrapper );
+				await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+				await flushPromises();
+				await typeLabel( wrapper, 'Second opinion' );
+
+				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-pickedACME Inc' );
+				expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+			} );
 		} );
 	} );
 
@@ -1776,7 +1981,7 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'focuses SchemaPicker when the dialog opens', async () => {
 			const wrapper = mountComponent();
 
-			subjectStore.subjectCreatorOpen = true;
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 
 			const pickerVm = wrapper.findComponent( SchemaPicker ).vm as any;
@@ -1974,7 +2179,7 @@ describe( 'SubjectCreatorDialog', () => {
 			schemaStore.saveSchema = vi.fn().mockRejectedValue( new Error( 'Schema save failed' ) );
 			const wrapper = mountComponent();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await switchToNewSchema( wrapper );
 
@@ -1988,15 +2193,13 @@ describe( 'SubjectCreatorDialog', () => {
 				expect.objectContaining( { type: 'error' } ),
 			);
 			expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
-
-			const dialog = wrapper.findComponent( CdxDialog );
-			expect( dialog.props( 'open' ) ).toBe( true );
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
 		} );
 
 		it( 'resets to schema step when dialog closes', async () => {
 			const wrapper = mountComponent();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await switchToNewSchema( wrapper );
 
@@ -2008,7 +2211,8 @@ describe( 'SubjectCreatorDialog', () => {
 			wrapper.findComponent( SchemaAbandonmentDialog ).vm.$emit( 'abandon' );
 			await flushPromises();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 
 			expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( true );
@@ -2105,7 +2309,7 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'shows confirmation when closing with unsaved changes', async () => {
 			const wrapper = mountComponent();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
@@ -2118,28 +2322,26 @@ describe( 'SubjectCreatorDialog', () => {
 			wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
 			await flushPromises();
 
-			const dialog = wrapper.findComponent( CdxDialog );
-			expect( dialog.props( 'open' ) ).toBe( true );
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
 			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( true );
 		} );
 
 		it( 'closes without confirmation when there are no unsaved changes', async () => {
 			const wrapper = mountComponent();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 
 			wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
 			await flushPromises();
 
-			const dialog = wrapper.findComponent( CdxDialog );
-			expect( dialog.props( 'open' ) ).toBe( false );
+			expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
 		} );
 
 		it( 'closes dialog when discard is clicked in confirmation', async () => {
 			const wrapper = mountComponent();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
@@ -2155,14 +2357,13 @@ describe( 'SubjectCreatorDialog', () => {
 			wrapper.findComponent( CloseConfirmationDialog ).vm.$emit( 'discard' );
 			await flushPromises();
 
-			const dialog = wrapper.findComponent( CdxDialog );
-			expect( dialog.props( 'open' ) ).toBe( false );
+			expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
 		} );
 
 		it( 'keeps dialog open when keep-editing is clicked in confirmation', async () => {
 			const wrapper = mountComponent();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
@@ -2178,8 +2379,7 @@ describe( 'SubjectCreatorDialog', () => {
 			wrapper.findComponent( CloseConfirmationDialog ).vm.$emit( 'keep-editing' );
 			await flushPromises();
 
-			const dialog = wrapper.findComponent( CdxDialog );
-			expect( dialog.props( 'open' ) ).toBe( true );
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
 			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
 		} );
 	} );
@@ -2188,7 +2388,7 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'shows three-option dialog when closing with draft schema on subject step', async () => {
 			const wrapper = mountComponent();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await switchToNewSchema( wrapper );
 
@@ -2204,7 +2404,7 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'closes without saving on abandon', async () => {
 			const wrapper = mountComponent();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await switchToNewSchema( wrapper );
 
@@ -2217,13 +2417,13 @@ describe( 'SubjectCreatorDialog', () => {
 			await flushPromises();
 
 			expect( schemaStore.saveSchema ).not.toHaveBeenCalled();
-			expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( false );
+			expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
 		} );
 
 		it( 'saves schema and closes on save-schema', async () => {
 			const wrapper = mountComponent();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await switchToNewSchema( wrapper );
 
@@ -2238,13 +2438,13 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( schemaStore.saveSchema ).toHaveBeenCalledWith(
 				expect.any( Schema ),
 			);
-			expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( false );
+			expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
 		} );
 
 		it( 'keeps dialog open on keep-editing', async () => {
 			const wrapper = mountComponent();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await switchToNewSchema( wrapper );
 
@@ -2256,14 +2456,14 @@ describe( 'SubjectCreatorDialog', () => {
 			wrapper.findComponent( SchemaAbandonmentDialog ).vm.$emit( 'keep-editing' );
 			await flushPromises();
 
-			expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( true );
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
 			expect( wrapper.findComponent( SchemaAbandonmentDialog ).props( 'open' ) ).toBe( false );
 		} );
 
 		it( 'uses standard close confirmation when closing with existing schema', async () => {
 			const wrapper = mountComponent();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
@@ -2282,7 +2482,7 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'uses standard close confirmation on schema editor step without draft', async () => {
 			const wrapper = mountComponent();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await switchToNewSchema( wrapper );
 
@@ -2298,7 +2498,7 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'shows three-option dialog on schema editor step when draft exists', async () => {
 			const wrapper = mountComponent();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await switchToNewSchema( wrapper );
 
@@ -2318,7 +2518,7 @@ describe( 'SubjectCreatorDialog', () => {
 			schemaStore.saveSchema = vi.fn().mockRejectedValue( new Error( 'Save failed' ) );
 			const wrapper = mountComponent();
 
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await switchToNewSchema( wrapper );
 
@@ -2334,7 +2534,7 @@ describe( 'SubjectCreatorDialog', () => {
 				'Save failed',
 				expect.objectContaining( { type: 'error' } ),
 			);
-			expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( true );
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
 		} );
 	} );
 
@@ -2348,7 +2548,7 @@ describe( 'SubjectCreatorDialog', () => {
 		};
 
 		async function openSelectSchemaAndSave( wrapper: VueWrapper ): Promise<void> {
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 			await flushPromises();
@@ -2379,7 +2579,7 @@ describe( 'SubjectCreatorDialog', () => {
 			await openSelectSchemaAndSave( wrapper );
 
 			expect( reloadMock ).not.toHaveBeenCalled();
-			expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( true );
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
 		} );
 
 		it( 'does not treat a warning-only dry-run result as blocking the save', async () => {
@@ -2481,9 +2681,9 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( ( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[] ) ).toHaveLength( 1 );
 
 			// Close and reopen the dialog
-			subjectStore.closeSubjectCreator();
+			await wrapper.setProps( { open: false } );
 			await flushPromises();
-			subjectStore.openSubjectCreator();
+			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			// Re-select schema so SubjectEditor renders again
 			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );

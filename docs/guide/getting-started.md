@@ -24,6 +24,9 @@ you opened the creator on one, **Another page** you pick, or **A new page** titl
 you give there. A page's Main Subject renders automatically as an infobox, and its **Data** tab lets you view and
 edit all its Subjects.
 
+Any page can offer the same creator as a button: add
+[`{{#create_subject: schema=Person}}`](../authoring/parser-functions.md#create_subject) to its wikitext.
+
 ## 3. Render a View in wikitext
 
 Source edit any page and add:

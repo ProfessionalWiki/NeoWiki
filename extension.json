@@ -826,7 +826,10 @@
 				"neowiki-special-subject-referenced-by-heading",
 				"neowiki-special-subject-referenced-by-properties",
 				"neowiki-special-subject-referenced-by-truncated",
-				"comma-separator"
+				"comma-separator",
+				"neowiki-create-subject-default-label",
+				"neowiki-create-subject-denied",
+				"permissionserrors"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"
