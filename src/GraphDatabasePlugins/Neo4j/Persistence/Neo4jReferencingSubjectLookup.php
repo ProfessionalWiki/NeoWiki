@@ -34,6 +34,11 @@ class Neo4jReferencingSubjectLookup implements ReferencingSubjectLookup {
 	 * returned (ADR 22). The Page anchor also drops stub nodes, which a relation into a Subject that
 	 * does not exist yet creates and which no Page holds.
 	 *
+	 * Ordered by the name each Subject is shown under. A Subject nobody labelled carries no `name`
+	 * at all unless it is its page's Main Subject, and Neo4j sorts a missing one last, so sorting on
+	 * the bare property would queue every unlabelled referrer behind every labelled one and cut them
+	 * first. Its Schema is the name it is shown under, and the node's other label is its Schema.
+	 *
 	 * @return list<string>
 	 */
 	private function fetchIds( string $targetId, int $limit ): array {
@@ -46,7 +51,8 @@ class Neo4jReferencingSubjectLookup implements ReferencingSubjectLookup {
 					'MATCH (page:Page { wiki_id: $wikiId })-[:HasSubject]->(source:Subject)
 						-[]->(target:Subject { id: $targetId })
 					 WHERE source.wiki_id = $wikiId AND source.id <> $targetId
-					 RETURN DISTINCT source.id AS id, source.name AS name
+					 RETURN DISTINCT source.id AS id,
+						coalesce( source.name, head( [ l IN labels( source ) WHERE l <> "Subject" ] ) ) AS name
 					 ORDER BY name, id
 					 LIMIT $limit',
 					[

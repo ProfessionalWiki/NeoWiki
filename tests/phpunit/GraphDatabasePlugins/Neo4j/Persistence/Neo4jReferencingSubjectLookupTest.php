@@ -33,6 +33,7 @@ class Neo4jReferencingSubjectLookupTest extends NeoWikiIntegrationTestCase {
 	private const string TARGET_ID = 'sTestRSL1111111';
 	private const string SOURCE_ID = 'sTestRSL1111112';
 	private const string OTHER_SOURCE_ID = 'sTestRSL1111113';
+	private const string UNNAMED_SOURCE_ID = 'sTestRSL1111114';
 
 	public function setUp(): void {
 		$this->setUpNeo4j();
@@ -88,15 +89,21 @@ class Neo4jReferencingSubjectLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ self::SOURCE_ID ], $this->idsOfSubjectsReferencingTarget() );
 	}
 
+	/**
+	 * By the name each row is shown under, which for a Subject nobody labelled is its Schema. Such a
+	 * Subject carries no name on its node, and sorting on that bare property would put it after every
+	 * labelled one whatever it is shown as, so the one expected in the middle is the one that pins it.
+	 */
 	public function testOrdersByName(): void {
 		$this->saveOnOnePage(
 			$this->target(),
 			$this->referrer( self::SOURCE_ID, 'Zeppelin' ),
+			$this->referrer( self::UNNAMED_SOURCE_ID, null ),
 			$this->referrer( self::OTHER_SOURCE_ID, 'Anvil' )
 		);
 
 		$this->assertSame(
-			[ self::OTHER_SOURCE_ID, self::SOURCE_ID ],
+			[ self::OTHER_SOURCE_ID, self::UNNAMED_SOURCE_ID, self::SOURCE_ID ],
 			$this->idsOfSubjectsReferencingTarget()
 		);
 	}
@@ -158,10 +165,10 @@ class Neo4jReferencingSubjectLookupTest extends NeoWikiIntegrationTestCase {
 		return TestSubject::build( id: self::TARGET_ID, label: new SubjectLabel( 'Target' ) );
 	}
 
-	private function referrer( string $id, string $label, string $targetId = self::TARGET_ID ): Subject {
+	private function referrer( string $id, ?string $label, string $targetId = self::TARGET_ID ): Subject {
 		return TestSubject::build(
 			id: $id,
-			label: new SubjectLabel( $label ),
+			label: $label,
 			statements: new StatementList( [
 				TestStatement::buildRelation( 'Made in', [ TestRelation::build( targetId: $targetId ) ] ),
 			] )
