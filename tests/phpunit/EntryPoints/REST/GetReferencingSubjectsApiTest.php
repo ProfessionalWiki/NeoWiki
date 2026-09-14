@@ -111,6 +111,34 @@ JSON
 	}
 
 	/**
+	 * The names come from the Statements that point here, so a relation the same Subject holds to a
+	 * third one names nothing in this row.
+	 */
+	public function testOmitsAPropertyPointingAtAnotherSubject(): void {
+		$this->createPageWithSubjects(
+			'GRSApiTest_Elsewhere',
+			mainSubject: TestSubject::build(
+				id: 'sTestGRS1111126',
+				label: new SubjectLabel( 'Elsewhere' ),
+				schemaName: new SchemaName( self::SCHEMA ),
+				statements: new StatementList( [
+					TestStatement::buildRelation( 'Made in', [
+						TestRelation::build( targetId: self::TARGET_ID ),
+					] ),
+					TestStatement::buildRelation( 'Sold in', [
+						TestRelation::build( targetId: 'sTestGRS1111127' ),
+					] ),
+				] )
+			)
+		);
+
+		$this->assertSame(
+			[ 'Made in' ],
+			$this->requestReferencingSubjects()['referencingSubjects'][0]['propertyNames']
+		);
+	}
+
+	/**
 	 * By name, which here is neither the order they were created in nor the order of their ids, so
 	 * returning the rows as the wiki stored them would not pass.
 	 */
