@@ -109,7 +109,7 @@ const canDeleteSubjectRef = ref( false );
 vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 	useSubjectPermissions: () => ( {
 		canCreateMainSubject: ref( false ),
-		canCreateChildSubject: ref( false ),
+		canCreateOtherSubject: ref( false ),
 		canEditSubject: canEditSubjectRef,
 		canDeleteSubject: canDeleteSubjectRef,
 		checkPermissions: checkPermissionsMock,

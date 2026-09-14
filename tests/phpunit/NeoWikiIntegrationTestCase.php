@@ -107,7 +107,7 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	protected function createPageWithSubjects(
 		string $pageName,
 		?Subject $mainSubject = null,
-		SubjectMap $childSubjects = new SubjectMap()
+		SubjectMap $otherSubjects = new SubjectMap()
 	): ?RevisionRecord {
 		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
 		$updater = $wikiPage->newPageUpdater( $this->getTestSysop()->getUser() );
@@ -116,7 +116,7 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 
 		$updater->setContent(
 			MediaWikiSubjectRepository::SLOT_NAME,
-			SubjectContent::newFromData( new PageSubjects( $mainSubject, $childSubjects ) )
+			SubjectContent::newFromData( new PageSubjects( $mainSubject, $otherSubjects ) )
 		);
 
 		return $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'TODO' ) );

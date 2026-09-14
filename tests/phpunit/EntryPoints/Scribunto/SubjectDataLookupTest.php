@@ -41,7 +41,7 @@ class SubjectDataLookupTest extends TestCase {
 
 	private const string SUBJECT_ID = 's1test5aaaaaaaa';
 	private const string TARGET_SUBJECT_ID = 's1test5bbbbbbbb';
-	private const string CHILD_SUBJECT_ID = 's1test5cccccccc';
+	private const string OTHER_SUBJECT_ID = 's1test5cccccccc';
 
 	private function createTitle(): Title {
 		return $this->createTitleNamed( 'Test Page' );
@@ -585,72 +585,72 @@ class SubjectDataLookupTest extends TestCase {
 		$this->assertSame( 'Jane Doe', $result[0]['statements']['CEO']['values'][1]['label'] );
 	}
 
-	// === getChildSubjectsData tests ===
+	// === getOtherSubjectsData tests ===
 
-	public function testGetChildSubjectsReturnsArrayOfSubjectTables(): void {
+	public function testGetOtherSubjectsReturnsArrayOfSubjectTables(): void {
 		$mainSubject = $this->createSubject();
 
-		$child1 = new Subject(
+		$other1 = new Subject(
 			id: new SubjectId( self::TARGET_SUBJECT_ID ),
-			label: new SubjectLabel( 'Child One' ),
-			schema: SchemaReference::local( new SchemaName( 'ChildSchema' ) ),
+			label: new SubjectLabel( 'Other One' ),
+			schema: SchemaReference::local( new SchemaName( 'OtherSchema' ) ),
 			statements: new StatementList(),
 		);
-		$child2 = new Subject(
-			id: new SubjectId( self::CHILD_SUBJECT_ID ),
-			label: new SubjectLabel( 'Child Two' ),
-			schema: SchemaReference::local( new SchemaName( 'ChildSchema' ) ),
+		$other2 = new Subject(
+			id: new SubjectId( self::OTHER_SUBJECT_ID ),
+			label: new SubjectLabel( 'Other Two' ),
+			schema: SchemaReference::local( new SchemaName( 'OtherSchema' ) ),
 			statements: new StatementList(),
 		);
 
 		$pageSubjects = new PageSubjects(
 			$mainSubject,
-			new SubjectMap( $child1, $child2 )
+			new SubjectMap( $other1, $other2 )
 		);
 
 		$lookup = new SubjectDataLookup( $this->newResolver( $pageSubjects ) );
 
-		$result = $lookup->getChildSubjectsData( $this->createTitle() );
+		$result = $lookup->getOtherSubjectsData( $this->createTitle() );
 
 		$this->assertCount( 2, $result[0] );
 		$this->assertSame( self::TARGET_SUBJECT_ID, $result[0][1]['id'] );
-		$this->assertSame( 'Child One', $result[0][1]['label'] );
-		$this->assertSame( self::CHILD_SUBJECT_ID, $result[0][2]['id'] );
-		$this->assertSame( 'Child Two', $result[0][2]['label'] );
+		$this->assertSame( 'Other One', $result[0][1]['label'] );
+		$this->assertSame( self::OTHER_SUBJECT_ID, $result[0][2]['id'] );
+		$this->assertSame( 'Other Two', $result[0][2]['label'] );
 	}
 
-	public function testChildSubjectWithoutALabelIsNamedAfterItsSchema(): void {
-		$child = new Subject(
-			id: new SubjectId( self::CHILD_SUBJECT_ID ),
+	public function testOtherSubjectWithoutALabelIsNamedAfterItsSchema(): void {
+		$otherSubject = new Subject(
+			id: new SubjectId( self::OTHER_SUBJECT_ID ),
 			label: null,
 			schema: SchemaReference::local( new SchemaName( 'Attendance' ) ),
 			statements: new StatementList(),
 		);
 
-		$pageSubjects = new PageSubjects( $this->createSubject(), new SubjectMap( $child ) );
+		$pageSubjects = new PageSubjects( $this->createSubject(), new SubjectMap( $otherSubject ) );
 
 		$lookup = new SubjectDataLookup( $this->newResolver( $pageSubjects ) );
 
-		$result = $lookup->getChildSubjectsData( $this->createTitleNamed( 'Rijksmuseum' ) );
+		$result = $lookup->getOtherSubjectsData( $this->createTitleNamed( 'Rijksmuseum' ) );
 
 		$this->assertSame( 'Attendance', $result[0][1]['label'] );
 		$this->assertNull( $result[0][1]['storedLabel'] );
 	}
 
-	public function testGetChildSubjectsReturnsEmptyArrayWhenNoChildren(): void {
+	public function testGetOtherSubjectsReturnsEmptyArrayWhenThereAreNone(): void {
 		$mainSubject = $this->createSubject();
 
 		$pageSubjects = new PageSubjects( $mainSubject, new SubjectMap() );
 
 		$lookup = new SubjectDataLookup( $this->newResolver( $pageSubjects ) );
 
-		$this->assertSame( [ [] ], $lookup->getChildSubjectsData( $this->createTitle() ) );
+		$this->assertSame( [ [] ], $lookup->getOtherSubjectsData( $this->createTitle() ) );
 	}
 
-	public function testGetChildSubjectsReturnsEmptyArrayWhenNoContent(): void {
+	public function testGetOtherSubjectsReturnsEmptyArrayWhenNoContent(): void {
 		$lookup = new SubjectDataLookup( $this->emptyResolver() );
 
-		$this->assertSame( [ [] ], $lookup->getChildSubjectsData( $this->createTitle() ) );
+		$this->assertSame( [ [] ], $lookup->getOtherSubjectsData( $this->createTitle() ) );
 	}
 
 	public function testGetMainSubjectIncludesBooleanStatementValues(): void {

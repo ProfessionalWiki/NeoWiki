@@ -15,7 +15,7 @@ export class RightsBasedSubjectPermissionHints implements SubjectPermissionHints
 	public constructor( private readonly rightsFetcher: RightsFetcher ) {
 	}
 
-	public async canCreateChildSubject( _pageId: number ): Promise<boolean> {
+	public async canCreateOtherSubject( _pageId: number ): Promise<boolean> {
 		return this.canEditPage();
 	}
 

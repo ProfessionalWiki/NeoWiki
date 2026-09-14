@@ -56,22 +56,22 @@ class SetSubjectsOrderingApi extends SimpleHandler {
 		}
 
 		$validatedBody = $this->getValidatedBody() ?? [];
-		$childSubjectIds = $validatedBody['childSubjectIds'] ?? null;
+		$otherSubjectIds = $validatedBody['otherSubjectIds'] ?? null;
 
-		if ( !is_array( $childSubjectIds ) ) {
-			return $this->errorResponse( 400, 'Missing required field: childSubjectIds' );
+		if ( !is_array( $otherSubjectIds ) ) {
+			return $this->errorResponse( 400, 'Missing required field: otherSubjectIds' );
 		}
 
-		foreach ( $childSubjectIds as $id ) {
+		foreach ( $otherSubjectIds as $id ) {
 			if ( !is_string( $id ) ) {
-				return $this->errorResponse( 400, 'childSubjectIds must be a list of strings' );
+				return $this->errorResponse( 400, 'otherSubjectIds must be a list of strings' );
 			}
 		}
 
 		return new SetSubjectsOrderingRequest(
 			pageId: $pageId,
 			mainSubjectId: $validatedBody['mainSubjectId'] ?? null,
-			childSubjectIds: $childSubjectIds,
+			otherSubjectIds: $otherSubjectIds,
 			comment: $validatedBody['comment'] ?? null,
 		);
 	}
@@ -102,11 +102,11 @@ class SetSubjectsOrderingApi extends SimpleHandler {
 				ParamValidator::PARAM_REQUIRED => false,
 				self::PARAM_DESCRIPTION => 'Subject ID (15 characters starting with "s") of a Subject on this page to be the Main Subject, or null to clear it.',
 			],
-			'childSubjectIds' => [
+			'otherSubjectIds' => [
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'array',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Ordered list of child Subject IDs. Together with mainSubjectId (if non-null) this must exactly equal the current set of Subject IDs on the page.',
+				self::PARAM_DESCRIPTION => 'Ordered list of the IDs of the page\'s other Subjects. Together with mainSubjectId (if non-null) this must exactly equal the current set of Subject IDs on the page.',
 			],
 			'comment' => [
 				self::PARAM_SOURCE => 'body',

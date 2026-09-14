@@ -40,8 +40,8 @@ function neowiki.getSubject( subjectId )
 	return php.getSubject( subjectId )
 end
 
-function neowiki.getChildSubjects( pageName )
-	return php.getChildSubjects( pageName )
+function neowiki.getOtherSubjects( pageName )
+	return php.getOtherSubjects( pageName )
 end
 
 function neowiki.query( cypher, params )

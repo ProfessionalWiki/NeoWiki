@@ -16,7 +16,7 @@ describe( 'canEditSubjectOnItsPage', () => {
 
 		return {
 			askedAbout,
-			canCreateChildSubject: async () => false,
+			canCreateOtherSubject: async () => false,
 			canEditSubject: async ( pageId: number ) => {
 				askedAbout.push( pageId );
 				return pageId === editablePageId;

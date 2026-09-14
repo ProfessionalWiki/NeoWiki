@@ -49,7 +49,7 @@ class MoveSubjectActionTest extends TestCase {
 		$this->assertFalse( $source->getAllSubjects()->hasSubject( new SubjectId( self::MOVED_ID ) ) );
 
 		$target = $repository->getSubjectsByPageId( new PageId( self::TARGET_PAGE_ID ) );
-		$this->assertTrue( $target->getChildSubjects()->hasSubject( new SubjectId( self::MOVED_ID ) ) );
+		$this->assertTrue( $target->getOtherSubjects()->hasSubject( new SubjectId( self::MOVED_ID ) ) );
 	}
 
 	public function testMovedSubjectKeepsItsIdAndContent(): void {
@@ -93,10 +93,10 @@ class MoveSubjectActionTest extends TestCase {
 
 		$target = $repository->getSubjectsByPageId( new PageId( self::TARGET_PAGE_ID ) );
 		$this->assertSame( self::MOVED_ID, $target->getMainSubject()->id->text );
-		$this->assertTrue( $target->getChildSubjects()->hasSubject( new SubjectId( self::TARGET_MAIN_ID ) ) );
+		$this->assertTrue( $target->getOtherSubjects()->hasSubject( new SubjectId( self::TARGET_MAIN_ID ) ) );
 	}
 
-	public function testPromotionOntoATargetWithoutAMainSubjectAddsNoChild(): void {
+	public function testPromotionOntoATargetWithoutAMainSubjectAddsNoOtherSubject(): void {
 		$repository = $this->newRepository( targetHasMainSubject: false );
 
 		$this->newAction( $this->newSpyPresenter(), $repository )->moveSubject(
@@ -105,7 +105,7 @@ class MoveSubjectActionTest extends TestCase {
 
 		$target = $repository->getSubjectsByPageId( new PageId( self::TARGET_PAGE_ID ) );
 		$this->assertSame( self::MOVED_ID, $target->getMainSubject()->id->text );
-		$this->assertSame( 0, $target->getChildSubjects()->count() );
+		$this->assertSame( 0, $target->getOtherSubjects()->count() );
 	}
 
 	public function testMovingTheSourcePagesMainSubjectLeavesTheSourceWithoutOne(): void {
@@ -305,7 +305,7 @@ class MoveSubjectActionTest extends TestCase {
 		$this->assertFalse( $presenter->moved );
 
 		$source = $repository->getSubjectsByPageId( new PageId( self::SOURCE_PAGE_ID ) );
-		$this->assertTrue( $source->getChildSubjects()->hasSubject( new SubjectId( self::MOVED_ID ) ) );
+		$this->assertTrue( $source->getOtherSubjects()->hasSubject( new SubjectId( self::MOVED_ID ) ) );
 		$this->assertSame( self::SOURCE_MAIN_ID, $source->getMainSubject()->id->text );
 
 		$target = $repository->getSubjectsByPageId( new PageId( self::TARGET_PAGE_ID ) );
@@ -338,10 +338,10 @@ class MoveSubjectActionTest extends TestCase {
 
 		$this->assertTrue( $presenter->targetPageNotFound );
 
-		$children = $repository->getSubjectsByPageId( new PageId( self::SOURCE_PAGE_ID ) )->getChildSubjects();
+		$otherSubjects = $repository->getSubjectsByPageId( new PageId( self::SOURCE_PAGE_ID ) )->getOtherSubjects();
 		$this->assertSame(
 			[ $first, self::MOVED_ID, $last ],
-			array_map( static fn ( $subject ): string => $subject->id->text, $children->asArray() )
+			array_map( static fn ( $subject ): string => $subject->id->text, $otherSubjects->asArray() )
 		);
 	}
 
@@ -361,7 +361,7 @@ class MoveSubjectActionTest extends TestCase {
 
 		$source = $repository->getSubjectsByPageId( new PageId( self::SOURCE_PAGE_ID ) );
 		$this->assertSame( self::MOVED_ID, $source->getMainSubject()?->id->text );
-		$this->assertFalse( $source->getChildSubjects()->hasSubject( new SubjectId( self::MOVED_ID ) ) );
+		$this->assertFalse( $source->getOtherSubjects()->hasSubject( new SubjectId( self::MOVED_ID ) ) );
 	}
 
 	public function testReportsAnIncompleteMoveWhenTheSubjectCannotBePutBack(): void {

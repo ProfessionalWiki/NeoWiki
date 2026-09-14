@@ -40,73 +40,73 @@ class PageSubjectsTest extends TestCase {
 		$data->removeSubject( new SubjectId( TestSubject::ZERO_GUID ) );
 
 		$this->assertNull( $data->getMainSubject() );
-		$this->assertEquals( TestSubject::newMap(), $data->getChildSubjects() );
+		$this->assertEquals( TestSubject::newMap(), $data->getOtherSubjects() );
 	}
 
-	public function testRemoveChildSubject(): void {
+	public function testRemoveOtherSubject(): void {
 		$mainSubject = TestSubject::build( TestSubject::uniqueId() );
-		$firstChild = TestSubject::build( TestSubject::uniqueId() );
-		$secondChild = TestSubject::build( TestSubject::uniqueId() );
-		$thirdChild = TestSubject::build( TestSubject::uniqueId() );
+		$firstOther = TestSubject::build( TestSubject::uniqueId() );
+		$secondOther = TestSubject::build( TestSubject::uniqueId() );
+		$thirdOther = TestSubject::build( TestSubject::uniqueId() );
 
 		$data = new PageSubjects(
 			$mainSubject,
-			new SubjectMap( $firstChild, $secondChild, $thirdChild )
+			new SubjectMap( $firstOther, $secondOther, $thirdOther )
 		);
 
-		$data->removeSubject( $secondChild->id );
+		$data->removeSubject( $secondOther->id );
 
 		$this->assertSame( $mainSubject, $data->getMainSubject() );
 		$this->assertEquals(
-			new SubjectMap( $firstChild, $thirdChild ),
-			$data->getChildSubjects()
+			new SubjectMap( $firstOther, $thirdOther ),
+			$data->getOtherSubjects()
 		);
 	}
 
-	public function testWithoutChildSubjectAnswersACopyLackingIt(): void {
+	public function testWithoutOtherSubjectAnswersACopyLackingIt(): void {
 		$mainSubject = TestSubject::build( TestSubject::uniqueId() );
-		$firstChild = TestSubject::build( TestSubject::uniqueId() );
-		$secondChild = TestSubject::build( TestSubject::uniqueId() );
-		$thirdChild = TestSubject::build( TestSubject::uniqueId() );
+		$firstOther = TestSubject::build( TestSubject::uniqueId() );
+		$secondOther = TestSubject::build( TestSubject::uniqueId() );
+		$thirdOther = TestSubject::build( TestSubject::uniqueId() );
 
-		$data = new PageSubjects( $mainSubject, new SubjectMap( $firstChild, $secondChild, $thirdChild ) );
+		$data = new PageSubjects( $mainSubject, new SubjectMap( $firstOther, $secondOther, $thirdOther ) );
 
-		$remaining = $data->without( $secondChild->id );
+		$remaining = $data->without( $secondOther->id );
 
 		$this->assertSame( $mainSubject, $remaining->getMainSubject() );
 		$this->assertEquals(
-			new SubjectMap( $firstChild, $thirdChild ),
-			$remaining->getChildSubjects()
+			new SubjectMap( $firstOther, $thirdOther ),
+			$remaining->getOtherSubjects()
 		);
 	}
 
 	public function testWithoutMainSubjectAnswersACopyWithoutOne(): void {
-		$firstChild = TestSubject::build( TestSubject::uniqueId() );
-		$secondChild = TestSubject::build( TestSubject::uniqueId() );
+		$firstOther = TestSubject::build( TestSubject::uniqueId() );
+		$secondOther = TestSubject::build( TestSubject::uniqueId() );
 		$mainSubject = TestSubject::build( TestSubject::uniqueId() );
 
-		$data = new PageSubjects( $mainSubject, new SubjectMap( $firstChild, $secondChild ) );
+		$data = new PageSubjects( $mainSubject, new SubjectMap( $firstOther, $secondOther ) );
 
 		$remaining = $data->without( $mainSubject->id );
 
 		$this->assertNull( $remaining->getMainSubject() );
 		$this->assertEquals(
-			new SubjectMap( $firstChild, $secondChild ),
-			$remaining->getChildSubjects()
+			new SubjectMap( $firstOther, $secondOther ),
+			$remaining->getOtherSubjects()
 		);
 	}
 
 	public function testWithoutLeavesTheSubjectsItWasCalledOnAlone(): void {
 		// Moving a Subject keeps the page as it was read, so a failed move can write it back.
 		$mainSubject = TestSubject::build( TestSubject::uniqueId() );
-		$child = TestSubject::build( TestSubject::uniqueId() );
+		$otherSubject = TestSubject::build( TestSubject::uniqueId() );
 
-		$data = new PageSubjects( $mainSubject, new SubjectMap( $child ) );
+		$data = new PageSubjects( $mainSubject, new SubjectMap( $otherSubject ) );
 
 		$data->without( $mainSubject->id );
 
 		$this->assertSame( $mainSubject, $data->getMainSubject() );
-		$this->assertEquals( new SubjectMap( $child ), $data->getChildSubjects() );
+		$this->assertEquals( new SubjectMap( $otherSubject ), $data->getOtherSubjects() );
 	}
 
 	public function testWithoutAnIdThatIsNotOnThePageAnswersAnEqualCopy(): void {
@@ -132,23 +132,23 @@ class PageSubjectsTest extends TestCase {
 		$this->assertSame( $updatedSubject, $data->getMainSubject() );
 	}
 
-	public function testUpdateSubjectUpdatesChildSubject(): void {
-		$firstChild = TestSubject::build( TestSubject::uniqueId() );
-		$secondChild = TestSubject::build( TestSubject::uniqueId(), new SubjectLabel( 'original' ) );
-		$thirdChild = TestSubject::build( TestSubject::uniqueId() );
+	public function testUpdateSubjectUpdatesOtherSubject(): void {
+		$firstOther = TestSubject::build( TestSubject::uniqueId() );
+		$secondOther = TestSubject::build( TestSubject::uniqueId(), new SubjectLabel( 'original' ) );
+		$thirdOther = TestSubject::build( TestSubject::uniqueId() );
 
 		$data = new PageSubjects(
 			TestSubject::build( TestSubject::uniqueId() ),
-			new SubjectMap( $firstChild, $secondChild, $thirdChild )
+			new SubjectMap( $firstOther, $secondOther, $thirdOther )
 		);
 
-		$updatedSubject = TestSubject::build( $secondChild->id->text, new SubjectLabel( 'updated' ) );
+		$updatedSubject = TestSubject::build( $secondOther->id->text, new SubjectLabel( 'updated' ) );
 
 		$data->updateSubject( $updatedSubject );
 
 		$this->assertEquals(
-			new SubjectMap( $firstChild, $updatedSubject, $thirdChild ),
-			$data->getChildSubjects()
+			new SubjectMap( $firstOther, $updatedSubject, $thirdOther ),
+			$data->getOtherSubjects()
 		);
 	}
 
@@ -162,7 +162,7 @@ class PageSubjectsTest extends TestCase {
 		$data->updateSubject( TestSubject::build( TestSubject::uniqueId() ) );
 	}
 
-	public function testSetOrderingReordersChildSubjects(): void {
+	public function testSetOrderingReordersOtherSubjects(): void {
 		$main = TestSubject::build( TestSubject::uniqueId() );
 		$first = TestSubject::build( TestSubject::uniqueId() );
 		$second = TestSubject::build( TestSubject::uniqueId() );
@@ -175,7 +175,7 @@ class PageSubjectsTest extends TestCase {
 		$this->assertSame( $main, $data->getMainSubject() );
 		$this->assertEquals(
 			new SubjectMap( $third, $first, $second ),
-			$data->getChildSubjects()
+			$data->getOtherSubjects()
 		);
 	}
 
@@ -193,7 +193,7 @@ class PageSubjectsTest extends TestCase {
 		$this->assertSame( $second, $data->getMainSubject() );
 		$this->assertEquals(
 			new SubjectMap( $first, $oldMain, $third ),
-			$data->getChildSubjects()
+			$data->getOtherSubjects()
 		);
 	}
 
@@ -209,7 +209,7 @@ class PageSubjectsTest extends TestCase {
 		$this->assertNull( $data->getMainSubject() );
 		$this->assertEquals(
 			new SubjectMap( $first, $oldMain, $second ),
-			$data->getChildSubjects()
+			$data->getOtherSubjects()
 		);
 	}
 
@@ -223,7 +223,7 @@ class PageSubjectsTest extends TestCase {
 		$data->setOrdering( TestSubject::uniqueId(), [] );
 	}
 
-	public function testSetOrderingThrowsWhenChildOrderingMissesAnId(): void {
+	public function testSetOrderingThrowsWhenTheOtherSubjectOrderingMissesAnId(): void {
 		$oldMain = TestSubject::build( TestSubject::uniqueId() );
 		$first = TestSubject::build( TestSubject::uniqueId() );
 		$second = TestSubject::build( TestSubject::uniqueId() );
@@ -235,41 +235,41 @@ class PageSubjectsTest extends TestCase {
 		$data->setOrdering( $oldMain->id, [ $first->id ] );
 	}
 
-	public function testSetOrderingThrowsWhenChildOrderingIncludesMain(): void {
+	public function testSetOrderingThrowsWhenTheOtherSubjectOrderingIncludesMain(): void {
 		$oldMain = TestSubject::build( TestSubject::uniqueId() );
 		$first = TestSubject::build( TestSubject::uniqueId() );
 
 		$data = new PageSubjects( $oldMain, new SubjectMap( $first ) );
 
 		$this->expectException( InvalidArgumentException::class );
-		// Same id appearing as main AND in the child ordering is illegal.
+		// Same id appearing as main AND in the other-subject ordering is illegal.
 		$data->setOrdering( $oldMain->id, [ $first->id, $oldMain->id ] );
 	}
 
-	public function testCreateChildSubjectAddsTheSubject(): void {
+	public function testCreateOtherSubjectAddsTheSubject(): void {
 		$data = new PageSubjects( TestSubject::build( TestSubject::uniqueId() ), new SubjectMap() );
 
-		$newChild = TestSubject::build( TestSubject::uniqueId() );
-		$data->createChildSubject( $newChild );
+		$newOther = TestSubject::build( TestSubject::uniqueId() );
+		$data->createOtherSubject( $newOther );
 
-		$this->assertEquals( new SubjectMap( $newChild ), $data->getChildSubjects() );
+		$this->assertEquals( new SubjectMap( $newOther ), $data->getOtherSubjects() );
 	}
 
-	public function testCreateChildSubjectThrowsWhenIdMatchesAnExistingChild(): void {
-		$existingChild = TestSubject::build( TestSubject::uniqueId() );
-		$data = new PageSubjects( null, new SubjectMap( $existingChild ) );
+	public function testCreateOtherSubjectThrowsWhenIdMatchesAnExistingOtherSubject(): void {
+		$existingOther = TestSubject::build( TestSubject::uniqueId() );
+		$data = new PageSubjects( null, new SubjectMap( $existingOther ) );
 
 		$this->expectException( RuntimeException::class );
-		$data->createChildSubject( TestSubject::build( $existingChild->id ) );
+		$data->createOtherSubject( TestSubject::build( $existingOther->id ) );
 	}
 
-	public function testCreateChildSubjectThrowsWhenIdMatchesTheMainSubject(): void {
+	public function testCreateOtherSubjectThrowsWhenIdMatchesTheMainSubject(): void {
 		$main = TestSubject::build( TestSubject::uniqueId() );
 		$data = new PageSubjects( $main, new SubjectMap() );
 
 		$this->expectException( RuntimeException::class );
-		// Regression: the guard previously checked only sibling children, missing the main Subject.
-		$data->createChildSubject( TestSubject::build( $main->id ) );
+		// Regression: the guard previously checked only the page's other Subjects, missing the main Subject.
+		$data->createOtherSubject( TestSubject::build( $main->id ) );
 	}
 
 	public function testCreateMainSubjectSetsTheMainSubject(): void {
@@ -288,13 +288,13 @@ class PageSubjectsTest extends TestCase {
 		$data->createMainSubject( TestSubject::build( TestSubject::uniqueId() ) );
 	}
 
-	public function testCreateMainSubjectThrowsWhenIdMatchesAnExistingChild(): void {
-		$existingChild = TestSubject::build( TestSubject::uniqueId() );
-		$data = new PageSubjects( null, new SubjectMap( $existingChild ) );
+	public function testCreateMainSubjectThrowsWhenIdMatchesAnExistingOtherSubject(): void {
+		$existingOther = TestSubject::build( TestSubject::uniqueId() );
+		$data = new PageSubjects( null, new SubjectMap( $existingOther ) );
 
 		$this->expectException( RuntimeException::class );
-		// Regression: a main Subject must not reuse an id already held by a child.
-		$data->createMainSubject( TestSubject::build( $existingChild->id ) );
+		// Regression: a main Subject must not reuse an id already held by one of the page's other Subjects.
+		$data->createMainSubject( TestSubject::build( $existingOther->id ) );
 	}
 
 }

@@ -119,7 +119,7 @@ Expressing both in one declarative form is what the mapping format had to solve,
 ### Flat vs nested native modelling (open fork)
 
 Where the structure comes from is itself undecided (2026-06-24 data-modelling call with takin and OEAW). NeoWiki can
-already express intermediate nodes as child Subjects linked by Relations; the fork is about what the modelling norm
+already express intermediate nodes as separate Subjects linked by Relations; the fork is about what the modelling norm
 should be and where the burden sits:
 
 - **(a) Flat native Schemas** (e.g. birthplace directly on Person), with intermediate nodes synthesized at projection

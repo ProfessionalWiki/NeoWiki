@@ -39,22 +39,22 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 | `POST /neowiki/v0/subject/{subjectId}/validate` | Check whether a change to a Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject-ids` | Mint a batch of unused Subject IDs to assign on create, e.g. to wire relations across an interlinked import. Body `count` (1–1000). |
 | `POST /neowiki/v0/subjects` | Create a Subject together with a page of its own, in one revision, as that page's main Subject. Body `schema` and `statements`, optional `label`, `pageTitle` and `comment`. The page is titled by `pageTitle`, or by the label, or by the Subject's ID when there is no label or the label cannot be a main-namespace title. `400` for a `pageTitle` that cannot be one, `409` when the title is taken. |
-| `GET /neowiki/v0/subject-labels` | Find Subjects of a Schema by label; returns `id`/`label` pairs. A Child Subject with no label is absent. Query: `schema` (required), `search` (label prefix), `limit`. |
+| `GET /neowiki/v0/subject-labels` | Find Subjects of a Schema by label; returns `id`/`label` pairs. A Subject with no label is absent. Query: `schema` (required), `search` (label prefix), `limit`. |
 
 ### Pages and Subjects
 
-A page holds one optional main Subject and an ordered list of child Subjects. These endpoints create
+A page holds one optional main Subject and an ordered list of other Subjects. These endpoints create
 Subjects and arrange them.
 
 | Endpoint | Description |
 |---|---|
-| `GET /neowiki/v0/page/{pageId}/subjects` | List a page's main and child Subjects. `expand` with `schemas` or `relations`. |
+| `GET /neowiki/v0/page/{pageId}/subjects` | List all of the page's Subjects. `expand` with `schemas` or `relations`. |
 | `GET /neowiki/v0/page/{pageId}/editNotices` | List the notices to show before editing the page's Subjects, in display order. Optional `schema` adds notices scoped to that Schema. Returns `{notices: [{key, html}]}`. See [Edit notices](../authoring/edit-notices.md). |
 | `GET /neowiki/v0/page/{pageId}/rdf` | Export the page's Subjects and metadata as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or the name of a Mapping page. See [RDF export](rdf-export.md) and [Mapping Format](../authoring/mapping-format.md). |
 | `POST /neowiki/v0/page/{pageId}/mainSubject` | Create the page's main Subject. |
-| `PUT /neowiki/v0/page/{pageId}/mainSubject` | Promote a child Subject to main, or clear it. |
-| `POST /neowiki/v0/page/{pageId}/childSubjects` | Create a child Subject on the page. |
-| `PUT /neowiki/v0/page/{pageId}/subjectsOrdering` | Reorder child Subjects and set the main Subject. |
+| `PUT /neowiki/v0/page/{pageId}/mainSubject` | Promote one of the page's other Subjects to main, or clear it. |
+| `POST /neowiki/v0/page/{pageId}/subjects` | Create a Subject on the page. Use `POST .../mainSubject` for the main Subject. |
+| `PUT /neowiki/v0/page/{pageId}/subjectsOrdering` | Reorder the page's other Subjects and set the main Subject. |
 
 ### Schemas
 

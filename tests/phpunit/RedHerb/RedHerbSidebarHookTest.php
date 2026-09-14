@@ -30,7 +30,7 @@ class RedHerbSidebarHookTest extends NeoWikiIntegrationTestCase {
 		$this->setUpNeo4j();
 	}
 
-	public function testAddsCreateChildLinkOnExistingPage(): void {
+	public function testAddsCreateSubjectLinkOnExistingPage(): void {
 		$this->createPageWithSubjects( self::PAGE_WITHOUT_SUBJECTS );
 		$sidebar = [];
 
@@ -44,8 +44,8 @@ class RedHerbSidebarHookTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertCount( 2, $sidebar['redherb-sidebar'] );
 		$this->assertSame( 'redherb-sidebar-subject-finder', $sidebar['redherb-sidebar'][0]['id'] );
-		$this->assertSame( 'redherb-sidebar-create-child-company', $sidebar['redherb-sidebar'][1]['id'] );
-		$this->assertSame( 'ext-redherb-create-child-company-trigger', $sidebar['redherb-sidebar'][1]['class'] );
+		$this->assertSame( 'redherb-sidebar-create-company', $sidebar['redherb-sidebar'][1]['id'] );
+		$this->assertSame( 'ext-redherb-create-company-trigger', $sidebar['redherb-sidebar'][1]['class'] );
 	}
 
 	public function testAddsEditLinkWhenUserCanEditAndPageHasMainSubject(): void {
@@ -81,7 +81,7 @@ class RedHerbSidebarHookTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'redherb-sidebar-subject-finder', $sidebar['redherb-sidebar'][0]['id'] );
 	}
 
-	public function testDoesNotAddCreateChildLinkWhenUserCannotCreateChildSubject(): void {
+	public function testDoesNotAddCreateSubjectLinkWhenUserCannotCreateOtherSubject(): void {
 		$this->createPageWithSubjects( self::PAGE_WITHOUT_SUBJECTS );
 		$sidebar = [];
 

@@ -15,7 +15,7 @@ interface SubjectPermissionHints {
 
 	public function canCreateMainSubject( PageId $pageId ): bool;
 
-	public function canCreateChildSubject( PageId $pageId ): bool;
+	public function canCreateOtherSubject( PageId $pageId ): bool;
 
 	public function canEditSubject( PageId $pageId ): bool;
 

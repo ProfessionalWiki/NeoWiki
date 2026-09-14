@@ -171,7 +171,7 @@ class CreateSubjectActionTest extends TestCase {
 	 * Creating without a label is the ordinary way into the Schema tier, and the response the UI
 	 * renders immediately afterwards is this one.
 	 */
-	public function testCreatingAChildWithoutALabelReportsTheNameAsGenerated(): void {
+	public function testCreatingOtherSubjectWithoutALabelReportsTheNameAsGenerated(): void {
 		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
 
 		$this->newCreateSubjectAction()->createSubject(

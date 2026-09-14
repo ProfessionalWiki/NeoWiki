@@ -220,7 +220,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		$this->newProjectionStore()->savePage( TestPage::build(
 			id: 1,
 			properties: TestPageProperties::build( title: 'Foo' ),
-			childSubjects: $subjects
+			otherSubjects: $subjects
 		) );
 	}
 
@@ -228,7 +228,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		$this->newProjectionStore()->savePage( TestPage::build(
 			id: $pageId,
 			properties: TestPageProperties::build( title: 'Page ' . $pageId ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: $subjectId, label: new SubjectLabel( $label ) )
 			)
 		) );

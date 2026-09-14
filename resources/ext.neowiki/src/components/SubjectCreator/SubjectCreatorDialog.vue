@@ -989,7 +989,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 			( chosen as PageChoice ).pageId as number;
 
 		if ( addAlongsideMainSubject ) {
-			await subjectStore.createChildSubject(
+			await subjectStore.createOtherSubject(
 				pageId,
 				label,
 				selectedSchemaName.value,

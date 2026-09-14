@@ -179,7 +179,7 @@ class GeneratePerformanceDumpTest extends MaintenanceBaseTestCase {
 
 	/**
 	 * Every Subject, not just each page's main one: the target index is
-	 * `( subjectIndex + index + 1 ) % subjectsPerPage`, which can only wrap for a child Subject, so
+	 * `( subjectIndex + index + 1 ) % subjectsPerPage`, which can only wrap for a Subject that is not the main one, so
 	 * asserting the main Subject alone leaves the wrapping case unmeasured.
 	 *
 	 * @dataProvider runSizeProvider

@@ -43,7 +43,7 @@ JSON
 		);
 	}
 
-	public function testReturnsMainAndChildSubjects(): void {
+	public function testReturnsMainAndOtherSubjects(): void {
 		$revision = $this->createPageWithSubjects(
 			'GetPageSubjectsApiTest_Berlin',
 			mainSubject: TestSubject::build(
@@ -54,7 +54,7 @@ JSON
 					TestStatement::build( 'population', '3700000' ),
 				] )
 			),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build(
 					id: 'sTestGPS1111112',
 					label: new SubjectLabel( 'Population 2024' ),
@@ -98,7 +98,7 @@ JSON
 				label: null,
 				schemaName: new SchemaName( 'GetPageSubjectsApiTestSchema' )
 			),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build(
 					id: 'sTestGPS1111132',
 					label: null,
@@ -277,14 +277,14 @@ JSON
 		$this->assertSame( 'Widget 7', $body['referencedSubjects']['catalog:widget-7']['label'] );
 	}
 
-	public function testReturnsChildrenWhenMainSubjectIsAbsent(): void {
+	public function testReturnsOtherSubjectsWhenMainSubjectIsAbsent(): void {
 		$revision = $this->createPageWithSubjects(
 			'GetPageSubjectsApiTest_NoMain',
 			mainSubject: null,
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build(
 					id: 'sTestGPS1111121',
-					label: new SubjectLabel( 'orphan child' ),
+					label: new SubjectLabel( 'orphan' ),
 					schemaName: new SchemaName( 'GetPageSubjectsApiTestSchema' )
 				),
 			),

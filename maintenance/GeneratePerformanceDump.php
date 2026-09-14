@@ -71,7 +71,7 @@ class GeneratePerformanceDump extends Maintenance {
 		$this->addOption( 'pages', 'Number of Subject pages to generate.', true, true );
 		$this->addOption(
 			'subjects-per-page',
-			'Subjects per page: one main Subject plus children. Default: ' . self::DEFAULT_SUBJECTS_PER_PAGE . '.',
+			'Subjects per page: one main Subject plus others. Default: ' . self::DEFAULT_SUBJECTS_PER_PAGE . '.',
 			false,
 			true
 		);

@@ -119,14 +119,14 @@ JSON,
 		$this->assertSame( 'GetSubjectApiTest Unnamed', $body['subjects']['sTestGSA1111117']['displayName'] );
 	}
 
-	public function testLabellessChildSubjectIsNamedAfterItsSchema(): void {
+	public function testLabellessOtherSubjectIsNamedAfterItsSchema(): void {
 		$this->createPageWithSubjects(
-			'GetSubjectApiTest_UnnamedChild',
+			'GetSubjectApiTest_UnnamedOtherSubject',
 			mainSubject: TestSubject::build(
 				id: 'sTestGSA1111118',
 				schemaName: new SchemaName( 'GetSubjectApiTestSchema' )
 			),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build(
 					id: 'sTestGSA1111119',
 					label: null,
@@ -367,7 +367,7 @@ JSON,
 		$this->createPageWithSubjects(
 			'GetSubjectApiTest_DraftOnly',
 			mainSubject: $this->newTestSubject( 'sTestGSA1111253' ),
-			childSubjects: new SubjectMap( $this->newTestSubject( 'sTestGSA1111254' ) )
+			otherSubjects: new SubjectMap( $this->newTestSubject( 'sTestGSA1111254' ) )
 		);
 
 		$response = $this->runWithRevisionPolicy(
@@ -539,7 +539,7 @@ JSON,
 					)
 				] )
 			),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build(
 					id: 'sTestGSA1111112',
 					schemaName: new SchemaName( 'GetSubjectApiTestSchema' ),

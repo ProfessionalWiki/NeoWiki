@@ -11,7 +11,7 @@ describe( 'Current Page Subject Permission Hints', () => {
 
 	const pageKeyedHints: [ string, Ask ][] = [
 		[ 'create a main subject', ( hints, pageId ) => hints.canCreateMainSubject( pageId ) ],
-		[ 'create a child subject', ( hints, pageId ) => hints.canCreateChildSubject( pageId ) ],
+		[ 'create one of the other subjects', ( hints, pageId ) => hints.canCreateOtherSubject( pageId ) ],
 		[ 'edit a subject', ( hints, pageId ) => hints.canEditSubject( pageId ) ],
 		[ 'delete a subject', ( hints, pageId ) => hints.canDeleteSubject( pageId ) ],
 	];
@@ -19,7 +19,7 @@ describe( 'Current Page Subject Permission Hints', () => {
 	function hintsAnswering( answer: boolean ): SubjectPermissionHints {
 		return {
 			canCreateMainSubject: async () => answer,
-			canCreateChildSubject: async () => answer,
+			canCreateOtherSubject: async () => answer,
 			canEditSubject: async () => answer,
 			canDeleteSubject: async () => answer,
 			canCreateSubjectPage: async () => answer,

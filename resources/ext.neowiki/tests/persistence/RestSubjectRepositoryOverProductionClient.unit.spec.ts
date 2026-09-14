@@ -97,7 +97,7 @@ describe( 'RestSubjectRepository over the production HTTP client', () => {
 			message: 'A subject with this ID already exists',
 		} );
 
-		const error = await repository.createChildSubject(
+		const error = await repository.createOtherSubject(
 			42,
 			'John Doe',
 			'Employee',

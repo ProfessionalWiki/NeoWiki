@@ -126,7 +126,7 @@ class RdfPageProjectorTest extends TestCase {
 				lastEditor: 'Admin',
 			),
 			mainSubject: $acme,
-			childSubjects: new SubjectMap( $jane ),
+			otherSubjects: new SubjectMap( $jane ),
 		);
 	}
 
@@ -215,7 +215,7 @@ class RdfPageProjectorTest extends TestCase {
 			label: 'Jane Smith',
 			schemaName: new SchemaName( 'Person' ),
 		);
-		$page = TestPage::build( id: 42, mainSubject: $acme, childSubjects: new SubjectMap( $jane ) );
+		$page = TestPage::build( id: 42, mainSubject: $acme, otherSubjects: new SubjectMap( $jane ) );
 
 		// Only Person is registered. The Company Schema is unavailable, so ACME is skipped entirely,
 		// mirroring Neo4jSubjectUpdater — the projection must still hold the same entity set as Neo4j.
@@ -287,11 +287,11 @@ class RdfPageProjectorTest extends TestCase {
 		) ) );
 	}
 
-	public function testChildSubjectWithoutALabelIsLabelledWithItsSchemaName(): void {
+	public function testOtherSubjectWithoutALabelIsLabelledWithItsSchemaName(): void {
 		$page = TestPage::build(
 			id: 42,
 			properties: TestPageProperties::build( title: 'Some page' ),
-			childSubjects: new SubjectMap(
+			otherSubjects: new SubjectMap(
 				TestSubject::build( id: self::ACME_ID, label: null, schemaName: new SchemaName( 'Company' ) )
 			),
 		);
@@ -465,7 +465,7 @@ class RdfPageProjectorTest extends TestCase {
 				lastEditor: 'Admin',
 			),
 			mainSubject: $jane,
-			childSubjects: new SubjectMap( $this->acmeWithCeo(), $after ),
+			otherSubjects: new SubjectMap( $this->acmeWithCeo(), $after ),
 		);
 	}
 

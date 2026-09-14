@@ -7,12 +7,12 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\SetSubjectsOrdering;
 readonly class SetSubjectsOrderingRequest {
 
 	/**
-	 * @param string[] $childSubjectIds
+	 * @param string[] $otherSubjectIds
 	 */
 	public function __construct(
 		public int $pageId,
 		public ?string $mainSubjectId,
-		public array $childSubjectIds,
+		public array $otherSubjectIds,
 		public ?string $comment = null,
 	) {
 	}

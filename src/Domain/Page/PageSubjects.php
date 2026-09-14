@@ -14,11 +14,11 @@ use RuntimeException;
 class PageSubjects {
 
 	private ?Subject $mainSubject;
-	private SubjectMap $childSubjects;
+	private SubjectMap $otherSubjects;
 
-	public function __construct( ?Subject $mainSubject, SubjectMap $childSubjects ) {
+	public function __construct( ?Subject $mainSubject, SubjectMap $otherSubjects ) {
 		$this->mainSubject = $mainSubject;
-		$this->childSubjects = $childSubjects;
+		$this->otherSubjects = $otherSubjects;
 	}
 
 	public static function newEmpty(): self {
@@ -29,17 +29,17 @@ class PageSubjects {
 		return $this->mainSubject;
 	}
 
-	public function getChildSubjects(): SubjectMap {
-		return $this->childSubjects;
+	public function getOtherSubjects(): SubjectMap {
+		return $this->otherSubjects;
 	}
 
 	public function getAllSubjects(): SubjectMap {
-		return $this->childSubjects->prepend( $this->mainSubject );
+		return $this->otherSubjects->prepend( $this->mainSubject );
 	}
 
 	public function hasSubjects(): bool {
 		return $this->mainSubject !== null
-			|| !$this->childSubjects->isEmpty();
+			|| !$this->otherSubjects->isEmpty();
 	}
 
 	public function hasMainSubject(): bool {
@@ -48,7 +48,7 @@ class PageSubjects {
 
 	public function isEmpty(): bool {
 		return $this->mainSubject === null
-			&& $this->childSubjects->isEmpty();
+			&& $this->otherSubjects->isEmpty();
 	}
 
 	public function setMainSubject( Subject $subject ): void {
@@ -60,7 +60,7 @@ class PageSubjects {
 			$this->mainSubject = null;
 		}
 		else {
-			$this->childSubjects = $this->childSubjects->without( $id );
+			$this->otherSubjects = $this->otherSubjects->without( $id );
 		}
 	}
 
@@ -70,7 +70,7 @@ class PageSubjects {
 	public function without( SubjectId $id ): self {
 		return new self(
 			$this->isMainSubject( $id ) ? null : $this->mainSubject,
-			$this->childSubjects->without( $id )
+			$this->otherSubjects->without( $id )
 		);
 	}
 
@@ -84,8 +84,8 @@ class PageSubjects {
 			return;
 		}
 
-		if ( $this->childSubjects->hasSubject( $subject->id ) ) {
-			$this->childSubjects->addOrUpdateSubject( $subject );
+		if ( $this->otherSubjects->hasSubject( $subject->id ) ) {
+			$this->otherSubjects->addOrUpdateSubject( $subject );
 			return;
 		}
 
@@ -101,34 +101,34 @@ class PageSubjects {
 			throw new RuntimeException( 'Main subject already exists' );
 		}
 
-		if ( $this->childSubjects->hasSubject( $subject->id ) ) {
+		if ( $this->otherSubjects->hasSubject( $subject->id ) ) {
 			throw new RuntimeException( 'Subject already exists' );
 		}
 
 		$this->mainSubject = $subject;
 	}
 
-	public function createChildSubject( Subject $subject ): void {
+	public function createOtherSubject( Subject $subject ): void {
 		if ( $this->hasSubjectWithId( $subject->id ) ) {
 			throw new RuntimeException( 'Subject already exists' );
 		}
 
-		$this->childSubjects->addOrUpdateSubject( $subject );
+		$this->otherSubjects->addOrUpdateSubject( $subject );
 	}
 
 	private function hasSubjectWithId( SubjectId $id ): bool {
-		return $this->isMainSubject( $id ) || $this->childSubjects->hasSubject( $id );
+		return $this->isMainSubject( $id ) || $this->otherSubjects->hasSubject( $id );
 	}
 
 	/**
-	 * Atomically set the main subject and child subject ordering. The set of
-	 * ids in $mainId (if non-null) and $childIds must match exactly the set of
+	 * Atomically set the main subject and the ordering of the other subjects. The set of
+	 * ids in $mainId (if non-null) and $otherIds must match exactly the set of
 	 * subject ids currently on this page; no additions or removals are allowed.
 	 *
-	 * @param SubjectId[] $childIds
+	 * @param SubjectId[] $otherIds
 	 * @throws InvalidArgumentException on unknown / duplicate / missing ids
 	 */
-	public function setOrdering( ?SubjectId $mainId, array $childIds ): void {
+	public function setOrdering( ?SubjectId $mainId, array $otherIds ): void {
 		$allSubjects = $this->getAllSubjects();
 
 		$newMain = null;
@@ -140,10 +140,10 @@ class PageSubjects {
 		}
 
 		$remaining = $mainId === null ? $allSubjects : $allSubjects->without( $mainId );
-		$newChildren = $remaining->withOrdering( $childIds );
+		$newOthers = $remaining->withOrdering( $otherIds );
 
 		$this->mainSubject = $newMain;
-		$this->childSubjects = $newChildren;
+		$this->otherSubjects = $newOthers;
 	}
 
 }

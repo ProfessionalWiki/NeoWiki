@@ -8,7 +8,7 @@
  */
 export interface SubjectPermissionHints {
 
-	canCreateChildSubject( pageId: number ): Promise<boolean>;
+	canCreateOtherSubject( pageId: number ): Promise<boolean>;
 
 	canEditSubject( pageId: number ): Promise<boolean>;
 
