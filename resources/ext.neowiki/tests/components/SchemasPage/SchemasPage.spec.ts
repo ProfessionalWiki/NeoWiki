@@ -6,12 +6,14 @@ import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import SchemaCreatorDialog from '@/components/SchemasPage/SchemaCreatorDialog.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
+import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { createI18nMock, findNextPageButton, setupMwMock } from '../../VueTestHelpers.ts';
 import { CdxButton } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
 const canCreateSchemasRef = ref( false );
@@ -29,6 +31,21 @@ vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
 		canEditSchema: canEditSchemaRef,
 		checkCreatePermission: checkCreatePermissionMock,
 		checkEditPermission: checkEditPermissionMock,
+	} ),
+} ) );
+
+// The right only reaches the ref through the check, so a component that never runs the check
+// sees no permission however the fixture is set.
+let mayCreateSubjectPages = false;
+const canCreateSubjectPageRef = ref( false );
+const checkCreateSubjectPagePermissionMock = vi.fn( async (): Promise<void> => {
+	canCreateSubjectPageRef.value = mayCreateSubjectPages;
+} );
+
+vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
+	useSubjectPermissions: () => ( {
+		canCreateSubjectPage: canCreateSubjectPageRef,
+		checkCreateSubjectPagePermission: checkCreateSubjectPagePermissionMock,
 	} ),
 } ) );
 
@@ -59,6 +76,18 @@ const SchemaCreatorDialogStub = {
 	emits: [ 'update:open', 'created' ],
 };
 
+const SubjectCreatorDialogStub = {
+	template: '<div class="subject-creator-dialog-stub"></div>',
+	props: [ 'hostPage', 'initialSchemaName' ],
+};
+
+// Records the tooltip text on the element, so a test can read what the real directive would show.
+const TooltipDirectiveStub = {
+	mounted( el: HTMLElement, binding: { value: string } ): void {
+		el.setAttribute( 'data-tooltip', binding.value );
+	},
+};
+
 const SchemaEditorDialogStub = {
 	template: '<div class="schema-editor-dialog-stub"></div>',
 	props: [ 'open', 'initialSchema', 'onSave' ],
@@ -68,6 +97,16 @@ const SchemaEditorDialogStub = {
 function findCreateButton( wrapper: VueWrapper ): VueWrapper | undefined {
 	return wrapper.findAllComponents( CdxButton )
 		.find( ( btn ) => btn.text().includes( 'neowiki-schema-creator-button' ) );
+}
+
+function findCreateSubjectButtons( wrapper: VueWrapper ): VueWrapper[] {
+	return wrapper.findAllComponents( CdxButton )
+		.filter( ( btn ) => btn.attributes( 'aria-label' )?.startsWith( 'neowiki-schema-create-subject' ) );
+}
+
+function findCreateSubjectButton( wrapper: VueWrapper, schemaName: string ): VueWrapper | undefined {
+	return findCreateSubjectButtons( wrapper )
+		.find( ( btn ) => btn.attributes( 'aria-label' ) === `neowiki-schema-create-subject${ schemaName }` );
 }
 
 function findEditButtons( wrapper: VueWrapper ): VueWrapper[] {
@@ -91,12 +130,14 @@ function mountComponent( summaries: unknown[] = [], nextCursor: string | null = 
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
+			directives: { tooltip: TooltipDirectiveStub },
 			provide: {
 				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
 			},
 			stubs: {
 				SchemaCreatorDialog: SchemaCreatorDialogStub,
 				SchemaEditorDialog: SchemaEditorDialogStub,
+				SubjectCreatorDialog: SubjectCreatorDialogStub,
 				DeletePageDialog: true,
 				CdxIcon: true,
 			},
@@ -108,6 +149,9 @@ describe( 'SchemasPage', () => {
 	beforeEach( () => {
 		canCreateSchemasRef.value = false;
 		canEditSchemaRef.value = false;
+		mayCreateSubjectPages = false;
+		canCreateSubjectPageRef.value = false;
+		checkCreateSubjectPagePermissionMock.mockClear();
 		checkCreatePermissionMock.mockClear();
 		checkEditPermissionMock.mockClear();
 		getSchemaMock.mockReset();
@@ -324,5 +368,61 @@ describe( 'SchemasPage', () => {
 		expect( () => schemaStore.getSchema( 'Person' ) ).toThrow();
 		expect( wrapper.text() ).toContain( 'Company' );
 		expect( wrapper.text() ).not.toContain( 'Person' );
+	} );
+
+	it( 'opens the subject creator on the schema of the clicked row', async () => {
+		mayCreateSubjectPages = true;
+		// Rows on both sides of the clicked one, so pinning the first or the last row's schema fails.
+		const wrapper = mountComponent( [
+			{ name: 'Person', description: '', propertyCount: 3 },
+			{ name: 'Artist', description: '', propertyCount: 2 },
+			{ name: 'Company', description: '', propertyCount: 1 },
+		] );
+		await flushPromises();
+
+		await findCreateSubjectButton( wrapper, 'Artist' )!.trigger( 'click' );
+
+		const dialog = wrapper.findComponent( SubjectCreatorDialog );
+		expect( useSubjectStore().subjectCreatorOpen ).toBe( true );
+		expect( dialog.props( 'initialSchemaName' ) ).toBe( 'Artist' );
+		expect( dialog.props( 'hostPage' ) ).toBeNull();
+	} );
+
+	it( 'hides the subject creator from a user who may not create subject pages', async () => {
+		mayCreateSubjectPages = false;
+		canEditSchemaRef.value = true;
+		const wrapper = mountComponent( [
+			{ name: 'Person', description: '', propertyCount: 3 },
+		] );
+		await flushPromises();
+
+		expect( findCreateSubjectButtons( wrapper ) ).toHaveLength( 0 );
+		expect( wrapper.findComponent( SubjectCreatorDialog ).exists() ).toBe( false );
+		expect( findEditButtons( wrapper ) ).toHaveLength( 1 );
+		expect( findDeleteButtons( wrapper ) ).toHaveLength( 1 );
+	} );
+
+	it( 'offers subject creation to a user who may not edit schemas', async () => {
+		mayCreateSubjectPages = true;
+		canEditSchemaRef.value = false;
+		const wrapper = mountComponent( [
+			{ name: 'Person', description: '', propertyCount: 3 },
+		] );
+		await flushPromises();
+
+		expect( findCreateSubjectButtons( wrapper ) ).toHaveLength( 1 );
+		expect( findEditButtons( wrapper ) ).toHaveLength( 0 );
+		expect( findDeleteButtons( wrapper ) ).toHaveLength( 0 );
+	} );
+
+	it( 'shows the create button its label as a tooltip', async () => {
+		mayCreateSubjectPages = true;
+		const wrapper = mountComponent( [
+			{ name: 'Person', description: '', propertyCount: 3 },
+		] );
+		await flushPromises();
+
+		expect( findCreateSubjectButton( wrapper, 'Person' )!.attributes( 'data-tooltip' ) )
+			.toBe( 'neowiki-schema-create-subjectPerson' );
 	} );
 } );
