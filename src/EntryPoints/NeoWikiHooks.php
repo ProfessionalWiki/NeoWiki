@@ -49,6 +49,8 @@ use WikiPage;
 
 class NeoWikiHooks {
 
+	private const SPECIAL_PAGE_CLASS_PREFIX = 'ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\';
+
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
 		if ( self::isContentPage( $out ) ) {
 			self::handleContentPage( $out, $skin );
@@ -524,6 +526,14 @@ class NeoWikiHooks {
 		if ( !NeoWikiExtension::getInstance()->isDevelopmentUIEnabled() ) {
 			unset( $specialPages['NeoJson'] );
 		}
+
+		// Special:SpecialPages lists groups in the order in which each group's first page appears in this
+		// list, and core offers no hook for group order, so NeoWiki's pages are moved to the front.
+		$neoWikiPages = array_filter(
+			$specialPages,
+			fn ( $spec ) => is_string( $spec ) && str_starts_with( $spec, self::SPECIAL_PAGE_CLASS_PREFIX )
+		);
+		$specialPages = $neoWikiPages + $specialPages;
 	}
 
 	public static function onContentModelCanBeUsedOn( string $modelId, Title $title, bool &$ok ): void {
