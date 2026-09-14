@@ -89,6 +89,28 @@ class NeoWikiSidebarLinkTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testCreateSubjectLinkIsAbsentWhereThePageToolsOpenTheSubjectCreator(): void {
+		$section = $this->neoWikiSectionOnAPageTheCreatorOpensOn();
+
+		$this->assertNotNull(
+			$this->findLinkById( $section, 't-neowiki-create-subject' ),
+			'Expected the page tool that opens the Subject creator on the page being viewed.'
+		);
+		$this->assertNull(
+			$this->findLinkById( $section, 't-neowiki-create-subject-page' ),
+			'The special page must not be linked where the page tools already open the creator.'
+		);
+	}
+
+	public function testCreateSubjectLinkIsShownOutsideTheContentNamespaces(): void {
+		$this->assertNotNull(
+			$this->findLinkById(
+				$this->neoWikiSection( Title::makeTitle( NS_HELP, 'Example' ) ),
+				't-neowiki-create-subject-page'
+			)
+		);
+	}
+
 	private function assertAllPagesLinkInNeoWikiSection(
 		int $namespace,
 		string $linkId,
@@ -112,18 +134,33 @@ class NeoWikiSidebarLinkTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function neoWikiSectionOnAnOrdinaryPage(): array {
-		$sidebar = $this->buildSidebar( Title::makeTitle( NS_MAIN, 'Ordinary Page' ), $this->getTestUser()->getUser() );
+		return $this->neoWikiSection( Title::makeTitle( NS_MAIN, 'Ordinary Page' ) );
+	}
+
+	/**
+	 * The page tools offer the creator on a content page that exists and is shown at its latest revision.
+	 */
+	private function neoWikiSectionOnAPageTheCreatorOpensOn(): array {
+		$page = $this->getExistingTestPage( Title::makeTitle( NS_MAIN, 'Existing Page' ) );
+
+		return $this->neoWikiSection( $page->getTitle(), $page->getLatest() );
+	}
+
+	private function neoWikiSection( Title $title, ?int $revisionId = null ): array {
+		$sidebar = $this->buildSidebar( $title, $this->getTestUser()->getUser(), $revisionId );
 
 		return $sidebar[self::NEOWIKI_SECTION] ?? [];
 	}
 
-	private function buildSidebar( Title $title, ?User $user = null ): array {
+	private function buildSidebar( Title $title, ?User $user = null, ?int $revisionId = null ): array {
 		$context = new RequestContext();
 		$context->setTitle( $title );
 
 		if ( $user !== null ) {
 			$context->setUser( $user );
 		}
+
+		$context->getOutput()->setRevisionId( $revisionId );
 
 		$sidebar = [];
 		NeoWikiHooks::onSidebarBeforeOutput( $context->getSkin(), $sidebar );

@@ -10,6 +10,8 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 
 class PageToolsBuilder {
 
+	public const CREATE_SUBJECT_ID = 't-neowiki-create-subject';
+
 	/**
 	 * @return list<array<string, mixed>>
 	 */
@@ -33,7 +35,7 @@ class PageToolsBuilder {
 			$items[] = [
 				'text' => wfMessage( 'neowiki-page-tools-create-subject' )->text(),
 				'href' => '#',
-				'id' => 't-neowiki-create-subject',
+				'id' => self::CREATE_SUBJECT_ID,
 				'data' => [
 					'mw-neowiki-action' => 'open-subject-creator',
 				],
