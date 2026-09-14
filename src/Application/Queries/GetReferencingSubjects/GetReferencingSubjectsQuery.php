@@ -61,7 +61,7 @@ readonly class GetReferencingSubjectsQuery {
 	}
 
 	/**
-	 * The candidates that survive, in the order the lookup named them, with one more than the limit
+	 * The candidates that survive, in the order the lookup named them, with more than the limit
 	 * collected so that a full page can be told from a complete one.
 	 *
 	 * Candidates are read a page at a time, so a Subject with far more referrers than the limit costs
@@ -79,12 +79,10 @@ readonly class GetReferencingSubjectsQuery {
 		$referrers = [];
 
 		foreach ( array_chunk( $candidateIds, $limit + 1 ) as $chunk ) {
-			foreach ( $this->verifyChunk( $chunk, $target ) as $referrer ) {
-				$referrers[] = $referrer;
+			$referrers = array_merge( $referrers, $this->verifyChunk( $chunk, $target ) );
 
-				if ( count( $referrers ) > $limit ) {
-					return $referrers;
-				}
+			if ( count( $referrers ) > $limit ) {
+				break;
 			}
 		}
 
