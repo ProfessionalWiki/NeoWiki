@@ -611,7 +611,7 @@ class NeoWikiHooks {
 			);
 		}
 
-		if ( $skin->getAuthority()->isAllowedAll( 'createpage', 'edit' ) ) {
+		if ( self::shouldLinkCreateSubjectPage( $skin, $neoWikiTools ) ) {
 			$neoWikiTools[] = self::specialPageLink(
 				$skin,
 				specialPage: 'CreateSubject',
@@ -625,6 +625,20 @@ class NeoWikiHooks {
 			// the section heading, so it must match an existing message name.
 			$sidebar['neowiki-page-tools-label'] = $neoWikiTools;
 		}
+	}
+
+	/**
+	 * The page tools open the Subject creator on the page being viewed. Where they do not, the special
+	 * page is the way to it, so one Create subject entry shows per page rather than two.
+	 *
+	 * @param list<array<string, mixed>> $tools
+	 */
+	private static function shouldLinkCreateSubjectPage( Skin $skin, array $tools ): bool {
+		if ( in_array( PageToolsBuilder::CREATE_SUBJECT_ID, array_column( $tools, 'id' ), true ) ) {
+			return false;
+		}
+
+		return $skin->getAuthority()->isAllowedAll( 'createpage', 'edit' );
 	}
 
 	/**
