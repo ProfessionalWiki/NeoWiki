@@ -167,7 +167,6 @@ class CreateSubjectParserFunctionTest extends NeoWikiIntegrationTestCase {
 		$html = $this->assertRendersButton( $this->callOn( $this->contentPage, 'page=new' ) );
 
 		$this->assertStringContainsString( 'data-mw-neowiki-page="new"', $html );
-		$this->assertStringNotContainsString( 'data-mw-neowiki-page-has-main-subject', $html );
 	}
 
 	public function testNamedPageEmitsItsTitleAndCurrentId(): void {
@@ -177,6 +176,20 @@ class CreateSubjectParserFunctionTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertStringContainsString( 'data-mw-neowiki-page-title="The target page"', $html );
 		$this->assertStringContainsString( 'data-mw-neowiki-page-id="' . $target->getId() . '"', $html );
+	}
+
+	/**
+	 * @dataProvider fixedPageArgumentProvider
+	 */
+	public function testKeepsTheHostPageMainSubjectFlagWithAFixedPage( string $pageArgument ): void {
+		$html = $this->assertRendersButton( $this->callOn( $this->contentPage, $pageArgument ) );
+
+		$this->assertStringContainsString( 'data-mw-neowiki-page-has-main-subject="true"', $html );
+	}
+
+	public static function fixedPageArgumentProvider(): iterable {
+		yield 'a new page' => [ 'page=new' ];
+		yield 'a named page' => [ 'page=Not a page yet' ];
 	}
 
 	public function testNamedPageThatDoesNotExistEmitsIdZero(): void {

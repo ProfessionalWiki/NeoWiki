@@ -126,7 +126,7 @@ class CreateSubjectParserFunction {
 			return $page;
 		}
 
-		return $attributes + $page;
+		return $attributes + $page + $this->hostPageAttributes( $parser );
 	}
 
 	/**
@@ -150,7 +150,7 @@ class CreateSubjectParserFunction {
 	 */
 	private function pageAttributes( Parser $parser, ?string $page ): array|string {
 		if ( $page === null ) {
-			return $this->hostPageAttributes( $parser );
+			return [];
 		}
 
 		if ( $page === self::PAGE_NEW ) {
@@ -158,13 +158,18 @@ class CreateSubjectParserFunction {
 		}
 
 		if ( $page === self::PAGE_THIS ) {
-			return $this->thisPageAttributes( $parser );
+			// A page that cannot hold Subjects falls back to a new page rather than an error.
+			$pageCanHoldSubjects = SubjectsAction::isEligibleTitle( $parser->getTitle() );
+
+			return [ 'data-mw-neowiki-page' => $pageCanHoldSubjects ? self::PAGE_THIS : self::PAGE_NEW ];
 		}
 
 		return $this->namedPageAttributes( $parser, $page );
 	}
 
 	/**
+	 * Emitted whichever page the Subject goes on: a host page is what makes saving return to a page.
+	 *
 	 * @return array<string, string>
 	 */
 	private function hostPageAttributes( Parser $parser ): array {
@@ -175,23 +180,6 @@ class CreateSubjectParserFunction {
 		}
 
 		return [ 'data-mw-neowiki-page-has-main-subject' => $this->hasMainSubject( $title ) ];
-	}
-
-	/**
-	 * @return array<string, string>
-	 */
-	private function thisPageAttributes( Parser $parser ): array {
-		$title = $parser->getTitle();
-
-		// A page that cannot hold Subjects falls back to a new page rather than an error.
-		if ( !SubjectsAction::isEligibleTitle( $title ) ) {
-			return [ 'data-mw-neowiki-page' => self::PAGE_NEW ];
-		}
-
-		return [
-			'data-mw-neowiki-page' => self::PAGE_THIS,
-			'data-mw-neowiki-page-has-main-subject' => $this->hasMainSubject( $title ),
-		];
 	}
 
 	private function hasMainSubject( Title $title ): string {
