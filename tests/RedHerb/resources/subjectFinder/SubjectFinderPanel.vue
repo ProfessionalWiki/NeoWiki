@@ -48,6 +48,7 @@ module.exports = exports = {
 	},
 	setup: function () {
 		const subjectStore = nw.useSubjectStore();
+		const schemaStore = nw.useSchemaStore();
 		const schemaName = vue.ref( '' );
 		const selectedSubjectId = vue.ref( null );
 		const loadedSubjectId = vue.ref( null );
@@ -61,14 +62,6 @@ module.exports = exports = {
 			return new nw.SubjectId( loadedSubjectId.value );
 		} );
 
-		function notifyError( err ) {
-			mw.log.error( err );
-			mw.notify(
-				err instanceof Error ? err.message : String( err ),
-				{ type: 'error' }
-			);
-		}
-
 		function onSelected( id ) {
 			selectedSubjectId.value = id;
 			if ( id === null ) {
@@ -78,16 +71,15 @@ module.exports = exports = {
 			nw.NeoWikiExtension.getInstance().getStoreStateLoader()
 				.loadSubjectsAndSchemas( new Set( [ id ] ) )
 				.then( () => {
-					// The loader skips a Subject it cannot load rather than rejecting — one the
-					// viewer may not read among them — so the store is what says whether there
-					// is anything to render.
-					if ( subjectStore.findSubject( new nw.SubjectId( id ) ) === undefined ) {
-						notifyError( new Error( mw.message( 'redherb-subject-finder-load-failed' ).text() ) );
+					// The loader never rejects, and the Subject store can hold the picked Subject
+					// without its Schema, so the Subject loaded only when both stores hold it.
+					const subject = subjectStore.findSubject( new nw.SubjectId( id ) );
+					if ( subject === undefined || !schemaStore.schemas.has( subject.getSchemaName() ) ) {
+						mw.notify( mw.message( 'redherb-subject-finder-load-failed' ).text(), { type: 'error' } );
 						return;
 					}
 					loadedSubjectId.value = id;
-				} )
-				.catch( notifyError );
+				} );
 		}
 
 		return {
