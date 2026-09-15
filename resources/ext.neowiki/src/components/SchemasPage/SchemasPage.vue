@@ -45,7 +45,7 @@
 						:aria-label="$i18n( 'neowiki-schema-create-subject', row.name ).text()"
 						@click="openSubjectCreator( row.name )"
 					>
-						<CdxIcon :icon="cdxIconArticleAdd" />
+						<CdxIcon :icon="cdxIconAdd" />
 					</CdxButton>
 					<template v-if="canEditSchema">
 						<CdxButton
@@ -110,7 +110,7 @@
 import { ref, shallowRef, onMounted, nextTick } from 'vue';
 import { CdxButton, CdxIcon, CdxTable } from '@wikimedia/codex';
 import type { TableColumn } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconArticleAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { useCursorPagination } from '@/composables/useCursorPagination.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
