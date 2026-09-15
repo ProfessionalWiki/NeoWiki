@@ -243,4 +243,25 @@ describe( 'SchemaDisplay', () => {
 		expect( dialog.props( 'open' ) ).toBe( true );
 		expect( dialog.props( 'initialSchema' ) ).toStrictEqual( fetched );
 	} );
+
+	it( 'shows the creator open once it is asked for', async () => {
+		grantedRight = true;
+		const wrapper = mountComponent( newSchema() );
+		await flushPromises();
+
+		await wrapper.findComponent( SchemaDisplayHeader ).vm.$emit( 'create-subject' );
+
+		expect( wrapper.findComponent( SubjectCreatorDialog ).props( 'open' ) ).toBe( true );
+	} );
+
+	it( 'closes the creator in the store when the dialog closes', async () => {
+		grantedRight = true;
+		const wrapper = mountComponent( newSchema() );
+		await flushPromises();
+		useSubjectStore( pinia ).openSubjectCreator();
+
+		wrapper.findComponent( SubjectCreatorDialog ).vm.$emit( 'update:open', false );
+
+		expect( useSubjectStore( pinia ).subjectCreatorOpen ).toBe( false );
+	} );
 } );

@@ -6,14 +6,16 @@ namespace ProfessionalWiki\NeoWiki\Presentation;
 
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Output\OutputPage;
-use MediaWiki\Permissions\Authority;
-use MediaWiki\User\User;
+use MediaWiki\Permissions\PermissionStatus;
 use Skin;
 
 class FrontendModuleLoader {
 
-	/** What RightsBasedSubjectPermissionHints requires for a Subject page, in the order a missing one is reported. */
-	private const SUBJECT_PAGE_CREATION_RIGHTS = [ 'createpage', 'edit' ];
+	/**
+	 * What RightsBasedSubjectPermissionHints requires for a Subject page, in the order a missing one is reported:
+	 * every button needs edit, while only a button that creates a page needs createpage.
+	 */
+	private const array SUBJECT_PAGE_CREATION_RIGHTS = [ 'edit', 'createpage' ];
 
 	public function __construct(
 		private readonly HookContainer $hookContainer,
@@ -29,7 +31,6 @@ class FrontendModuleLoader {
 		$out->addJsConfigVars( [
 			'wgNeoWikiValidationDebounceMs' => $this->validationDebounceMs,
 			'wgNeoWikiEnforceValidation' => $this->validationEnforced,
-			'wgNeoWikiCreateSubjectPageDeniedReason' => $this->subjectPageCreationDeniedReason( $out ),
 		] );
 
 		/** @var list<string> $modules populated by hook handlers */
@@ -40,25 +41,24 @@ class FrontendModuleLoader {
 	}
 
 	/**
-	 * Why this viewer may not create a Subject page, or null when they may; shown behind the
-	 * {{#create_subject}} button's click.
+	 * Tells the {{#create_subject}} button why this viewer may not create a Subject page, or null when
+	 * they may. Only a page carrying the button needs it, since it is shown behind the button's click.
 	 */
-	private function subjectPageCreationDeniedReason( OutputPage $out ): ?string {
-		$missingRight = $this->firstMissingRight( $out->getAuthority() );
-
-		if ( $missingRight === null ) {
-			return null;
-		}
-
-		$reason = User::newFatalPermissionDeniedStatus( $missingRight )->getMessages()[0];
-
-		return $this->withoutLinkMarkup( $out->msg( $reason )->text() );
+	public function loadCreateSubjectPageDeniedReason( OutputPage $out ): void {
+		$out->addJsConfigVars( [
+			'wgNeoWikiCreateSubjectPageDeniedReason' => $this->subjectPageCreationDeniedReason( $out ),
+		] );
 	}
 
-	private function firstMissingRight( Authority $authority ): ?string {
+	private function subjectPageCreationDeniedReason( OutputPage $out ): ?string {
+		$status = PermissionStatus::newEmpty();
+
 		foreach ( self::SUBJECT_PAGE_CREATION_RIGHTS as $right ) {
-			if ( !$authority->isAllowed( $right ) ) {
-				return $right;
+			if ( !$out->getAuthority()->isAllowed( $right, $status ) ) {
+				$messages = $status->getMessages();
+
+				// An Authority need not say why; the button then states a reason of its own.
+				return $messages === [] ? null : $this->withoutLinkMarkup( $out->msg( $messages[0] )->text() );
 			}
 		}
 
@@ -67,7 +67,7 @@ class FrontendModuleLoader {
 
 	/**
 	 * The reason names the groups that hold the right as wiki links. It is shown as plain text, and
-	 * parsing it into that would cost a parser run and a link lookup on every page view.
+	 * parsing it into that would cost a parser run and a link lookup on every view of a page with a button.
 	 */
 	private function withoutLinkMarkup( string $text ): string {
 		return preg_replace( '/\[\[(?:[^|\]]*\|)?([^\]]*)\]\]/', '$1', $text ) ?? $text;

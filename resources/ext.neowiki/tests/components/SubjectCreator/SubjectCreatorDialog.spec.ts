@@ -1888,6 +1888,32 @@ describe( 'SubjectCreatorDialog', () => {
 				expect( offeredChoices( wrapper ) ).toEqual( [ 'thisPage', 'anotherPage', 'newPage' ] );
 			} );
 
+			it( 'asks for a different label when the page titled after it is taken', async () => {
+				( subjectStore.createSubjectPage as any ).mockRejectedValue( new PageTitleTakenError( 'Paris' ) );
+				const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: true } );
+				await open( wrapper );
+				await typeLabel( wrapper, 'Paris' );
+
+				await save( wrapper );
+
+				expect( fixedSection( wrapper ).text() ).toContain( 'neowiki-subject-creator-page-taken-fixedParis' );
+			} );
+
+			it( 'reports a taken title of the fixed page\'s own as before', async () => {
+				( subjectStore.createSubjectPage as any ).mockRejectedValue( new PageTitleTakenError( 'Ada Lovelace' ) );
+				const wrapper = mountWithInitialPage( {
+					choice: 'newPage',
+					page: { pageId: null, title: 'Ada Lovelace' },
+					fixed: true,
+				} );
+				await open( wrapper );
+				await typeLabel( wrapper, 'Someone' );
+
+				await save( wrapper );
+
+				expect( fixedSection( wrapper ).text() ).toContain( 'neowiki-subject-creator-page-takenAda Lovelace' );
+			} );
+
 			it( 'restores the fixed page when the schema is picked again after going back', async () => {
 				const wrapper = mountWithInitialPage( {
 					choice: 'anotherPage',

@@ -1092,7 +1092,13 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		leaveForCreatedSubject( subjectId, goingTo === 'thisPage' ? null : ( chosen as PageChoice ).title );
 	} catch ( error ) {
 		if ( error instanceof PageTitleTakenError ) {
-			titleTakenError.value = mw.msg( 'neowiki-subject-creator-page-taken', error.pageTitle );
+			// A fixed destination offers no other page and no title field: only the label can change.
+			titleTakenError.value = mw.msg(
+				pageFixed.value && chosenTitle === null ?
+					'neowiki-subject-creator-page-taken-fixed' :
+					'neowiki-subject-creator-page-taken',
+				error.pageTitle
+			);
 			return;
 		}
 		if ( error instanceof InvalidPageTitleError ) {

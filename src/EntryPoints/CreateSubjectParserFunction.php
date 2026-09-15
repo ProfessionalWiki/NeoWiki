@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use MediaWiki\Html\Html;
 use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOutputFlags;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -48,6 +49,7 @@ class CreateSubjectParserFunction {
 		}
 
 		$this->loadFrontend( $parser );
+		$this->recordPageIdDependency( $parser );
 
 		return [
 			Html::element( 'div', $attributes ),
@@ -104,11 +106,14 @@ class CreateSubjectParserFunction {
 		$schemaName = $named[self::ARG_SCHEMA] ?? null;
 
 		if ( $schemaName !== null ) {
-			if ( !$this->schemaExists( $parser, $schemaName ) ) {
+			$schemaTitle = $this->existingSchemaTitle( $parser, $schemaName );
+
+			if ( $schemaTitle === null ) {
 				return $this->renderError( $parser, 'neowiki-create-subject-error-unknown-schema', $schemaName );
 			}
 
-			$attributes['data-mw-neowiki-schema'] = $schemaName;
+			// Subjects store their Schema under the name its page is titled with, not as typed.
+			$attributes['data-mw-neowiki-schema'] = $schemaTitle->getText();
 		}
 
 		$text = $named[self::ARG_TEXT] ?? null;
@@ -123,22 +128,23 @@ class CreateSubjectParserFunction {
 			return $page;
 		}
 
-		return $attributes + $page;
+		return $attributes + $page + $this->hostPageAttributes( $parser );
 	}
 
 	/**
 	 * A page whose Schema does not exist yet renders an error, so the link re-parses it once the Schema is created.
 	 */
-	private function schemaExists( Parser $parser, string $schemaName ): bool {
+	private function existingSchemaTitle( Parser $parser, string $schemaName ): ?Title {
 		$title = Title::newFromText( $schemaName, NeoWikiExtension::NS_SCHEMA );
 
-		if ( $title === null ) {
-			return false;
+		// A prefix naming another namespace names a page that cannot be a Schema.
+		if ( $title === null || !$title->inNamespace( NeoWikiExtension::NS_SCHEMA ) ) {
+			return null;
 		}
 
 		$parser->getOutput()->addLink( $title, $title->getArticleID() );
 
-		return $title->exists();
+		return $title->exists() ? $title : null;
 	}
 
 	/**
@@ -146,7 +152,7 @@ class CreateSubjectParserFunction {
 	 */
 	private function pageAttributes( Parser $parser, ?string $page ): array|string {
 		if ( $page === null ) {
-			return $this->hostPageAttributes( $parser );
+			return [];
 		}
 
 		if ( $page === self::PAGE_NEW ) {
@@ -154,13 +160,18 @@ class CreateSubjectParserFunction {
 		}
 
 		if ( $page === self::PAGE_THIS ) {
-			return $this->thisPageAttributes( $parser );
+			// A page that cannot hold Subjects falls back to a new page rather than an error.
+			$pageCanHoldSubjects = SubjectsAction::isEligibleTitle( $parser->getTitle() );
+
+			return [ 'data-mw-neowiki-page' => $pageCanHoldSubjects ? self::PAGE_THIS : self::PAGE_NEW ];
 		}
 
 		return $this->namedPageAttributes( $parser, $page );
 	}
 
 	/**
+	 * Emitted whichever page the Subject goes on: a host page is what makes saving return to a page.
+	 *
 	 * @return array<string, string>
 	 */
 	private function hostPageAttributes( Parser $parser ): array {
@@ -171,23 +182,6 @@ class CreateSubjectParserFunction {
 		}
 
 		return [ 'data-mw-neowiki-page-has-main-subject' => $this->hasMainSubject( $title ) ];
-	}
-
-	/**
-	 * @return array<string, string>
-	 */
-	private function thisPageAttributes( Parser $parser ): array {
-		$title = $parser->getTitle();
-
-		// A page that cannot hold Subjects falls back to a new page rather than an error.
-		if ( !SubjectsAction::isEligibleTitle( $title ) ) {
-			return [ 'data-mw-neowiki-page' => self::PAGE_NEW ];
-		}
-
-		return [
-			'data-mw-neowiki-page' => self::PAGE_THIS,
-			'data-mw-neowiki-page-has-main-subject' => $this->hasMainSubject( $title ),
-		];
 	}
 
 	private function hasMainSubject( Title $title ): string {
@@ -234,6 +228,21 @@ class CreateSubjectParserFunction {
 	private function loadFrontend( Parser $parser ): void {
 		$parser->getOutput()->addModules( [ 'ext.neowiki' ] );
 		$parser->getOutput()->addModuleStyles( [ 'ext.neowiki.styles' ] );
+	}
+
+	/**
+	 * The edit stash parses a new page before it has an id. Recording the id used, as {{PAGEID}} does, makes
+	 * saving render the page again once it has one instead of keeping output that treats it as absent.
+	 */
+	private function recordPageIdDependency( Parser $parser ): void {
+		$output = $parser->getOutput();
+		$output->setOutputFlag( ParserOutputFlags::VARY_PAGE_ID );
+
+		$pageId = $parser->getTitle()->getArticleID();
+
+		if ( $pageId !== 0 ) {
+			$output->setSpeculativePageIdUsed( $pageId );
+		}
 	}
 
 	private function renderError( Parser $parser, string $messageKey, string $insertion ): string {
