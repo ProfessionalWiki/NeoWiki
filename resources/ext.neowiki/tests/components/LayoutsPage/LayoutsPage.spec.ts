@@ -155,6 +155,15 @@ describe( 'LayoutsPage', () => {
 		expect( findDeleteButtons( wrapper ) ).toHaveLength( 0 );
 	} );
 
+	it( 'labels each row icon button with a title', async () => {
+		canEditLayoutRef.value = true;
+		const wrapper = mountComponent( [ sampleLayout ] );
+		await flushPromises();
+
+		expect( findEditButtons( wrapper )[ 0 ].attributes( 'title' ) ).toBe( 'neowiki-edit-layout' );
+		expect( findDeleteButtons( wrapper )[ 0 ].attributes( 'title' ) ).toBe( 'neowiki-layout-delete' );
+	} );
+
 	it( 'opens the delete confirmation for the clicked layout', async () => {
 		canEditLayoutRef.value = true;
 		const wrapper = mountComponent( [ sampleLayout ] );

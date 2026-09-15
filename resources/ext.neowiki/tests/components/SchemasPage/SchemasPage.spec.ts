@@ -81,13 +81,6 @@ const SubjectCreatorDialogStub = {
 	emits: [ 'update:open' ],
 };
 
-// Records the tooltip text on the element, so a test can read what the real directive would show.
-const TooltipDirectiveStub = {
-	mounted( el: HTMLElement, binding: { value: string } ): void {
-		el.setAttribute( 'data-tooltip', binding.value );
-	},
-};
-
 const SchemaEditorDialogStub = {
 	template: '<div class="schema-editor-dialog-stub"></div>',
 	props: [ 'open', 'initialSchema', 'onSave' ],
@@ -130,7 +123,6 @@ function mountComponent( summaries: unknown[] = [], nextCursor: string | null = 
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
-			directives: { tooltip: TooltipDirectiveStub },
 			provide: {
 				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
 			},
@@ -430,14 +422,17 @@ describe( 'SchemasPage', () => {
 		expect( findDeleteButtons( wrapper ) ).toHaveLength( 0 );
 	} );
 
-	it( 'shows the create button its label as a tooltip', async () => {
+	it( 'labels each row icon button with a title', async () => {
 		mayCreateSubjectPages = true;
+		canEditSchemaRef.value = true;
 		const wrapper = mountComponent( [
 			{ name: 'Person', description: '', propertyCount: 3 },
 		] );
 		await flushPromises();
 
-		expect( findCreateSubjectButton( wrapper, 'Person' )!.attributes( 'data-tooltip' ) )
+		expect( findCreateSubjectButton( wrapper, 'Person' )!.attributes( 'title' ) )
 			.toBe( 'neowiki-schema-create-subjectPerson' );
+		expect( findEditButtons( wrapper )[ 0 ].attributes( 'title' ) ).toBe( 'neowiki-edit-schema' );
+		expect( findDeleteButtons( wrapper )[ 0 ].attributes( 'title' ) ).toBe( 'neowiki-schema-delete' );
 	} );
 } );

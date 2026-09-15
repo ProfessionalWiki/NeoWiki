@@ -50,6 +50,7 @@
 						v-if="canEditMapping"
 						weight="quiet"
 						:aria-label="$i18n( 'neowiki-edit-mapping' ).text()"
+						:title="$i18n( 'neowiki-edit-mapping' ).text()"
 						@click="editMapping( row.name )"
 					>
 						<CdxIcon :icon="cdxIconEdit" />
@@ -59,6 +60,7 @@
 						weight="quiet"
 						action="destructive"
 						:aria-label="$i18n( 'neowiki-mapping-delete' ).text()"
+						:title="$i18n( 'neowiki-mapping-delete' ).text()"
 						@click="confirmDelete( row.name )"
 					>
 						<CdxIcon :icon="cdxIconTrash" />

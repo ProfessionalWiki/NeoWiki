@@ -242,6 +242,18 @@ describe( 'MappingsPage', () => {
 		expect( findDeleteButtons( wrapper ) ).toHaveLength( 2 );
 	} );
 
+	it( 'labels each row icon button with a title', async () => {
+		canEditMappingRef.value = true;
+		canDeleteMappingRef.value = true;
+		const wrapper = mountComponent( [
+			{ name: 'EDM', schemas: [ 'Person' ] },
+		] );
+		await flushPromises();
+
+		expect( findEditButtons( wrapper )[ 0 ].attributes( 'title' ) ).toBe( 'neowiki-edit-mapping' );
+		expect( findDeleteButtons( wrapper )[ 0 ].attributes( 'title' ) ).toBe( 'neowiki-mapping-delete' );
+	} );
+
 	it( 'hides the delete button when the user cannot delete, even with edit permission', async () => {
 		canEditMappingRef.value = true;
 		canDeleteMappingRef.value = false;
