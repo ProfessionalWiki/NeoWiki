@@ -92,19 +92,10 @@ const isEditorOpen = ref( false );
 const editingSubject = shallowRef<Subject | null>( null );
 const editingSchema = shallowRef<Schema | null>( null );
 
-// Null only for a host that mounts this itself, which the public API allows and RedHerb's subject
-// finder does: the display below then renders nothing rather than throwing. Under NeoWikiApp the
-// Subject is always there, since it mounts a View only once its Subject is in the store.
-const subject = computed( (): Subject | null => subjectStore.findSubject( props.subjectId ) ?? null );
-const schema = computed( (): Schema | null =>
-	subject.value === null ? null : schemaStore.getSchema( subject.value.getSchemaName() ) );
+const subject = computed( () => subjectStore.getSubject( props.subjectId ) );
+const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) );
 
 async function openEditor(): Promise<void> {
-	// The button that calls this renders inside the display, which is not there for a null Subject.
-	if ( subject.value === null ) {
-		return;
-	}
-
 	try {
 		const [ freshSubject, freshSchema ] = await Promise.all( [
 			subjectRepo.getSubjectForEditing( props.subjectId ),
@@ -139,8 +130,7 @@ function getComponent( propertyType: string ): Component {
 }
 
 // Null when the Subject is already named after its Schema, so the heading above goes with the badge.
-const schemaNameBadge = computed( (): string | null =>
-	subject.value === null ? null : schemaNameToShow( subject.value ) );
+const schemaNameBadge = computed( (): string | null => schemaNameToShow( subject.value ) );
 
 const layout = computed( () => {
 	if ( !props.layoutName ) {

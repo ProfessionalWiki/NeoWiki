@@ -72,9 +72,9 @@ describe( 'Infobox', () => {
 		] ),
 	);
 
-	const mountComponent = ( subjectId: SubjectId, canEditSubject: boolean ): VueWrapper => mount( Infobox, {
+	const mountComponent = ( subject: Subject, canEditSubject: boolean ): VueWrapper => mount( Infobox, {
 		props: {
-			subjectId: subjectId,
+			subjectId: subject.getId(),
 			canEditSubject: canEditSubject,
 		},
 		global: {
@@ -122,7 +122,7 @@ describe( 'Infobox', () => {
 	} );
 
 	it( 'renders the title correctly', () => {
-		const wrapper = mountComponent( mockSubject.getId(), false );
+		const wrapper = mountComponent( mockSubject, false );
 
 		expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( 'Test Subject' );
 	} );
@@ -141,13 +141,13 @@ describe( 'Infobox', () => {
 
 		subjectStore.setSubject( generated );
 
-		const wrapper = mountComponent( generated.getId(), false );
+		const wrapper = mountComponent( generated, false );
 
 		expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( '(unnamed TestSchema)' );
 	} );
 
 	it( 'renders statements correctly', () => {
-		const wrapper = mountComponent( mockSubject.getId(), false );
+		const wrapper = mountComponent( mockSubject, false );
 
 		// The badge's visible text, not the wrapper's: the wrapper also holds the
 		// visually-hidden noun that names the concept for a screen reader.
@@ -181,28 +181,20 @@ describe( 'Infobox', () => {
 
 		subjectStore.setSubject( emptySubject );
 
-		const wrapper = mountComponent( emptySubject.getId(), false );
+		const wrapper = mountComponent( emptySubject, false );
 
 		const statementElements = wrapper.findAll( '.ext-neowiki-infobox__item' );
 		expect( statementElements ).toHaveLength( 0 );
 	} );
 
-	// A host that mounts the Infobox itself can hand it an id the store has no Subject for: a View
-	// of a Subject the viewer may not read must render nothing rather than throw.
-	it( 'renders nothing for a Subject the store does not hold', () => {
-		const wrapper = mountComponent( new SubjectId( 's1demo5sssssss9' ), true );
-
-		expect( wrapper.find( '.ext-neowiki-infobox' ).exists() ).toBe( false );
-	} );
-
 	it( 'does not render SubjectEditor button when canEditSubject is false', () => {
-		const wrapper = mountComponent( mockSubject.getId(), false );
+		const wrapper = mountComponent( mockSubject, false );
 
 		expect( wrapper.findComponent( CdxButton ).exists() ).toBe( false );
 	} );
 
 	it( 'renders SubjectEditor button when canEditSubject is true', () => {
-		const wrapper = mountComponent( mockSubject.getId(), true );
+		const wrapper = mountComponent( mockSubject, true );
 
 		const editButton = wrapper.findComponent( { name: 'CdxButton', props: { 'aria-label': 'neowiki-infobox-edit-link' } } );
 		expect( editButton.exists() ).toBe( true );
@@ -223,7 +215,7 @@ describe( 'Infobox', () => {
 		getSubjectForEditingMock.mockResolvedValue( freshSubject );
 		getSchemaMock.mockResolvedValue( freshSchema );
 
-		const wrapper = mountComponent( mockSubject.getId(), true );
+		const wrapper = mountComponent( mockSubject, true );
 
 		expect( wrapper.findComponent( SubjectEditorDialog ).exists() ).toBe( false );
 
@@ -252,7 +244,7 @@ describe( 'Infobox', () => {
 		);
 		subjectStore.setSubject( labelless );
 
-		const wrapper = mountComponent( labelless.getId(), false );
+		const wrapper = mountComponent( labelless, false );
 
 		expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( '(unnamed TestSchema)' );
 		expect( wrapper.find( '.ext-neowiki-schema-name' ).exists() ).toBe( false );
@@ -262,7 +254,7 @@ describe( 'Infobox', () => {
 	} );
 
 	it( 'renders schema name as a link to the Schema page', () => {
-		const wrapper = mountComponent( mockSubject.getId(), false );
+		const wrapper = mountComponent( mockSubject, false );
 
 		const schemaLink = wrapper.find( '.ext-neowiki-infobox__schema a' );
 		// Asserted before the attribute checks below: a missed find() yields an empty wrapper
@@ -325,7 +317,7 @@ describe( 'Infobox', () => {
 				schema: schemaWithCostCentre,
 			} );
 
-			const wrapper = mountComponent( mockSubject.getId(), true );
+			const wrapper = mountComponent( mockSubject, true );
 			await openEditorAndSave( wrapper );
 
 			expect( wrapper.text() ).toContain( 'Cost centre' );
@@ -345,7 +337,7 @@ describe( 'Infobox', () => {
 				schema: null,
 			} );
 
-			const wrapper = mountComponent( mockSubject.getId(), true );
+			const wrapper = mountComponent( mockSubject, true );
 			await openEditorAndSave( wrapper );
 
 			expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( 'Server label' );
@@ -360,7 +352,7 @@ describe( 'Infobox', () => {
 				schema: null,
 			} );
 
-			const wrapper = mountComponent( mockSubject.getId(), true );
+			const wrapper = mountComponent( mockSubject, true );
 			await openEditorAndSave( wrapper );
 
 			expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( 'Test Subject' );

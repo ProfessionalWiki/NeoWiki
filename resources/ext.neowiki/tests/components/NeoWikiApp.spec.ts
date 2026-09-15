@@ -10,6 +10,10 @@ import { InMemoryLayoutLookup } from '@/application/LayoutLookup.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
+import type { Subject } from '@/domain/Subject.ts';
+import type { StatementList } from '@/domain/StatementList.ts';
+import { RelationType } from '@/domain/propertyTypes/Relation.ts';
+import { Neo } from '@/Neo.ts';
 import { newSchema, newSubject } from '@/TestHelpers.ts';
 import { NeoWikiTestServices } from '../NeoWikiTestServices.ts';
 import { createI18nMock, setupMwMock } from '../VueTestHelpers.ts';
@@ -26,22 +30,32 @@ describe( 'NeoWikiApp', () => {
 		document.body.innerHTML = '';
 		pinia = createPinia();
 		setActivePinia( pinia );
-
-		// The repository holds only one of the two Subjects, which is how a Subject the viewer may
-		// not read reaches the loader: the read answers for it as for one that does not exist.
-		vi.spyOn( NeoWikiExtension.getInstance(), 'getStoreStateLoader' ).mockReturnValue(
-			new StoreStateLoader(
-				new StubSubjectRepository( [ newSubject( { id: loadedId, schemaName: 'Company' } ) ] ),
-				new InMemorySchemaRepository( [ newSchema( { title: 'Company' } ) ] ),
-				new InMemoryLayoutLookup( [] ),
-			),
-		);
 		vi.spyOn( console, 'warn' ).mockImplementation( () => undefined );
 	} );
 
 	afterEach( () => {
 		vi.restoreAllMocks();
 	} );
+
+	/** Only the Company Schema loads. */
+	function loadFrom( ...subjects: Subject[] ): void {
+		vi.spyOn( NeoWikiExtension.getInstance(), 'getStoreStateLoader' ).mockReturnValue(
+			new StoreStateLoader(
+				new StubSubjectRepository( subjects ),
+				new InMemorySchemaRepository( [ newSchema( { title: 'Company' } ) ] ),
+				new InMemoryLayoutLookup( [] ),
+			),
+		);
+	}
+
+	function relationsTo( target: SubjectId ): StatementList {
+		return Neo.getInstance().getSubjectDeserializer().deserializeStatements( {
+			Products: {
+				value: [ { target: target.text } ],
+				propertyType: RelationType.typeName,
+			},
+		} );
+	}
 
 	function placeViewFor( subjectId: SubjectId ): void {
 		const placeholder = document.createElement( 'div' );
@@ -68,15 +82,35 @@ describe( 'NeoWikiApp', () => {
 		return wrapper;
 	}
 
+	function mountedSubjectIds( wrapper: VueWrapper ): string[] {
+		return wrapper.findAllComponents( Infobox ).map( ( view ) => view.props( 'subjectId' ).text );
+	}
+
 	it( 'mounts the Views whose Subject loaded', async () => {
+		// The repository holds only one of the two Subjects, which is how a Subject the viewer may
+		// not read reaches the loader: the read answers for it as for one that does not exist.
+		loadFrom( newSubject( { id: loadedId, schemaName: 'Company' } ) );
 		placeViewFor( loadedId );
 		placeViewFor( unloadableId );
 
 		const wrapper = await mountApp();
 
-		expect(
-			wrapper.findAllComponents( Infobox ).map( ( view ) => view.props( 'subjectId' ).text ),
-		).toEqual( [ loadedId.text ] );
+		expect( mountedSubjectIds( wrapper ) ).toEqual( [ loadedId.text ] );
+	} );
+
+	// The other Subject reaches the Subject store without its Schema twice over: through its own load,
+	// whose Schema read fails, and as the target of the loaded Subject's relations.
+	it( 'does not mount a View whose Subject is stored without its Schema', async () => {
+		loadFrom(
+			newSubject( { id: loadedId, schemaName: 'Company', statements: relationsTo( unloadableId ) } ),
+			newSubject( { id: unloadableId, schemaName: 'Product' } ),
+		);
+		placeViewFor( loadedId );
+		placeViewFor( unloadableId );
+
+		const wrapper = await mountApp();
+
+		expect( mountedSubjectIds( wrapper ) ).toEqual( [ loadedId.text ] );
 	} );
 
 } );
