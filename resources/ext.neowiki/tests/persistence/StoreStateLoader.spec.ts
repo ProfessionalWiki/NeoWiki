@@ -188,6 +188,10 @@ describe( 'StoreStateLoader', () => {
 				.loadSubjectsAndSchemas( new Set( [ mainId.text, unloadableId.text ] ) );
 		}
 
+		function expectSkipLogged( subjectId: SubjectId ): void {
+			expect( warn ).toHaveBeenCalledWith( expect.stringContaining( subjectId.text ), expect.any( Error ) );
+		}
+
 		it( 'stores the Subjects that did load', async () => {
 			await loadReadableAndUnloadable();
 
@@ -199,10 +203,7 @@ describe( 'StoreStateLoader', () => {
 		it( 'logs the id it skipped and the reason', async () => {
 			await loadReadableAndUnloadable();
 
-			expect( warn ).toHaveBeenCalledWith(
-				expect.stringContaining( unloadableId.text ),
-				expect.any( Error ),
-			);
+			expectSkipLogged( unloadableId );
 		} );
 
 		// A request that fails outright, the wiki unreachable or answering 500, is skipped like a denial.
@@ -211,18 +212,17 @@ describe( 'StoreStateLoader', () => {
 				.loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
 
 			expect( useSubjectStore().subjects.has( mainId.text ) ).toBe( false );
-			expect( warn ).toHaveBeenCalledWith( expect.stringContaining( mainId.text ), expect.any( Error ) );
+			expectSkipLogged( mainId );
 		} );
 
 		// Here the Subject read is the one that succeeds and its Schema read the one that fails.
-		it( 'stores nothing for a Subject whose Schema does not load', async () => {
+		it( 'logs a Subject whose Schema does not load', async () => {
 			const schemalessId = new SubjectId( 's55555555555555' );
-			const schemaless = newSubject( { id: schemalessId, schemaName: 'Ghost' } );
 
-			await newLoader( new StubSubjectRepository( [ readable, schemaless ] ) )
-				.loadSubjectsAndSchemas( new Set( [ mainId.text, schemalessId.text ] ) );
+			await newLoader( new StubSubjectRepository( [ newSubject( { id: schemalessId, schemaName: 'Ghost' } ) ] ) )
+				.loadSubjectsAndSchemas( new Set( [ schemalessId.text ] ) );
 
-			expect( useSubjectStore().subjects.has( schemalessId.text ) ).toBe( false );
+			expectSkipLogged( schemalessId );
 		} );
 
 	} );

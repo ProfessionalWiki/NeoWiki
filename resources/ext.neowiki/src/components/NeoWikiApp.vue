@@ -27,6 +27,7 @@ import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDial
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { useLayoutStore } from '@/stores/LayoutStore.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { canEditSubjectOnItsPage } from '@/presentation/subjectEditPermission.ts';
 
@@ -90,16 +91,19 @@ onMounted( async (): Promise<void> => {
 
 	// Each View is told about the page holding its own Subject, which a View can render from
 	// anywhere, so the Subjects have to be loaded before there is a page to ask about.
-	viewsData.value = await Promise.all( views.filter( subjectDidLoad ).map( withEditPermission ) );
+	viewsData.value = await Promise.all( views.filter( subjectAndSchemaLoaded ).map( withEditPermission ) );
 } );
 
 /**
- * A View Type renders the Subject the store holds under its id, so a View whose Subject did not
- * load is not mounted at all: its placeholder stays empty while the page's other Views render.
- * A Subject the viewer may not read arrives as one that did not load; the loader skips and logs it.
+ * A View Type renders the Subject and its Schema from the Pinia stores, so a View is mounted only
+ * when both are there: the placeholder of one whose data did not load stays empty while the page's
+ * other Views render. The Subject store alone does not settle it, since it can hold a Subject
+ * without its Schema: one whose Schema read failed, or the target of another Subject's relations.
  */
-function subjectDidLoad( view: View ): boolean {
-	return useSubjectStore().findSubject( view.subjectId ) !== undefined;
+function subjectAndSchemaLoaded( view: View ): boolean {
+	const subject = useSubjectStore().findSubject( view.subjectId );
+
+	return subject !== undefined && useSchemaStore().schemas.has( subject.getSchemaName() );
 }
 
 // eslint-disable-next-line no-undef
