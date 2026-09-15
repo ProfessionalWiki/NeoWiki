@@ -13,7 +13,6 @@ import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
 const canCreateSchemasRef = ref( false );
@@ -78,7 +77,8 @@ const SchemaCreatorDialogStub = {
 
 const SubjectCreatorDialogStub = {
 	template: '<div class="subject-creator-dialog-stub"></div>',
-	props: [ 'hostPage', 'initialSchemaName' ],
+	props: [ 'open', 'hostPage', 'initialSchemaName' ],
+	emits: [ 'update:open' ],
 };
 
 // Records the tooltip text on the element, so a test can read what the real directive would show.
@@ -383,9 +383,24 @@ describe( 'SchemasPage', () => {
 		await findCreateSubjectButton( wrapper, 'Artist' )!.trigger( 'click' );
 
 		const dialog = wrapper.findComponent( SubjectCreatorDialog );
-		expect( useSubjectStore().subjectCreatorOpen ).toBe( true );
+		expect( dialog.props( 'open' ) ).toBe( true );
 		expect( dialog.props( 'initialSchemaName' ) ).toBe( 'Artist' );
 		expect( dialog.props( 'hostPage' ) ).toBeNull();
+	} );
+
+	it( 'closes the subject creator when the dialog asks to close', async () => {
+		mayCreateSubjectPages = true;
+		const wrapper = mountComponent( [
+			{ name: 'Person', description: '', propertyCount: 3 },
+		] );
+		await flushPromises();
+		await findCreateSubjectButton( wrapper, 'Person' )!.trigger( 'click' );
+
+		const dialog = wrapper.findComponent( SubjectCreatorDialog );
+		dialog.vm.$emit( 'update:open', false );
+		await flushPromises();
+
+		expect( dialog.props( 'open' ) ).toBe( false );
 	} );
 
 	it( 'hides the subject creator from a user who may not create subject pages', async () => {
