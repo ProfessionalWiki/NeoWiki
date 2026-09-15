@@ -99,6 +99,7 @@
 
 		<SubjectCreatorDialog
 			v-if="canCreateSubjectPage"
+			v-model:open="subjectStore.subjectCreatorOpen"
 			:host-page="null"
 			:initial-schema-name="pinnedSchema"
 		/>
