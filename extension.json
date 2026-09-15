@@ -464,7 +464,6 @@
 					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
 					"callbackParam": [
 						"cdxIconAdd",
-						"cdxIconArticleAdd",
 						"cdxIconTrash",
 						"cdxIconArrowPrevious",
 						"cdxIconArrowNext",
