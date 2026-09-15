@@ -40,9 +40,9 @@
 				<span class="ext-neowiki-schemas-page__actions">
 					<CdxButton
 						v-if="canCreateSubjectPage"
-						v-tooltip="$i18n( 'neowiki-schema-create-subject', row.name ).text()"
 						weight="quiet"
 						:aria-label="$i18n( 'neowiki-schema-create-subject', row.name ).text()"
+						:title="$i18n( 'neowiki-schema-create-subject', row.name ).text()"
 						@click="openSubjectCreator( row.name )"
 					>
 						<CdxIcon :icon="cdxIconAdd" />
@@ -51,6 +51,7 @@
 						<CdxButton
 							weight="quiet"
 							:aria-label="$i18n( 'neowiki-edit-schema' ).text()"
+							:title="$i18n( 'neowiki-edit-schema' ).text()"
 							@click="openEditor( row.name )"
 						>
 							<CdxIcon :icon="cdxIconEdit" />
@@ -59,6 +60,7 @@
 							weight="quiet"
 							action="destructive"
 							:aria-label="$i18n( 'neowiki-schema-delete' ).text()"
+							:title="$i18n( 'neowiki-schema-delete' ).text()"
 							@click="confirmDelete( row.name )"
 						>
 							<CdxIcon :icon="cdxIconTrash" />

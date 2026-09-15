@@ -48,6 +48,7 @@
 					<CdxButton
 						weight="quiet"
 						:aria-label="$i18n( 'neowiki-edit-layout' ).text()"
+						:title="$i18n( 'neowiki-edit-layout' ).text()"
 						@click="openEditor( row.name )"
 					>
 						<CdxIcon :icon="cdxIconEdit" />
@@ -56,6 +57,7 @@
 						weight="quiet"
 						action="destructive"
 						:aria-label="$i18n( 'neowiki-layout-delete' ).text()"
+						:title="$i18n( 'neowiki-layout-delete' ).text()"
 						@click="confirmDelete( row.name )"
 					>
 						<CdxIcon :icon="cdxIconTrash" />
