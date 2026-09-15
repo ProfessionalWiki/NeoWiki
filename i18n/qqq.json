@@ -138,7 +138,7 @@
 	"neowiki-schemas-empty": "Message shown when no schemas exist yet on [[Special:Schemas]] and on [[Special:NeoWiki]].",
 	"neowiki-schema-sidebar-all-schemas": "Label for the link in the NeoWiki section of the sidebar on Schema pages that navigates to [[Special:Schemas]].",
 	"neowiki-sidebar-create-subject": "Label for the link in the NeoWiki section of the sidebar that navigates to [[Special:CreateSubject]], where a Subject is created together with a page of its own by default, or added to a page picked there. Shown only where {{msg-mw|neowiki-page-tools-create-subject}} is not, so a page carries one Create subject entry rather than two; the two read the same.",
-	"neowiki-schema-create-subject": "Label of the button that opens the 'create subject' dialog with a Schema chosen. Used on the Schema's own page, in each row of the Schema table on [[Special:NeoWiki]], and where {{#create_subject}} names a Schema. Parameters:\n* $1 - the Schema name",
+	"neowiki-schema-create-subject": "Label of the button that opens the 'create subject' dialog with a Schema chosen. Used on the Schema's own page, in each row of the Schema tables on [[Special:Schemas]] (as the accessible name and tooltip of an icon button) and [[Special:NeoWiki]], and where {{#create_subject}} names a Schema. Parameters:\n* $1 - the Schema name",
 
 	"neowiki-schema-delete": "Aria label for the delete button on a Schema row in the schemas list.",
 
@@ -202,14 +202,14 @@
 	"neowiki-layout-editor-error": "Error notification title shown when updating a layout fails. $1 is the layout name.",
 	"neowiki-layout-editor-schema-fetch-error": "Error message shown in the layout editor when the schema properties could not be loaded.",
 
-	"neowiki-special-layouts": "Title and description of the [[Special:Layouts]] page.",
+	"neowiki-special-layouts": "Title and description of the [[Special:Layouts]] page. Also the title of its card on [[Special:NeoWiki]].",
 	"neowiki-layouts-column-name": "Column header for layout name in the layouts list table on [[Special:Layouts]].",
 	"neowiki-layouts-column-schema": "Column header for the schema name in the layouts list table on [[Special:Layouts]].",
 	"neowiki-layouts-column-type": "Column header for the view type in the layouts list table on [[Special:Layouts]].",
 	"neowiki-layouts-column-description": "Column header for layout description in the layouts list table on [[Special:Layouts]].",
 	"neowiki-layouts-empty": "Message shown when no layouts exist yet on [[Special:Layouts]].",
 
-	"neowiki-special-mappings": "Title and description of the [[Special:Mappings]] page, which lists the ontology mapping pages.",
+	"neowiki-special-mappings": "Title and description of the [[Special:Mappings]] page, which lists the ontology mapping pages. Also the title of its card on [[Special:NeoWiki]].",
 	"neowiki-mappings-column-name": "Column header for mapping name in the mappings list table on [[Special:Mappings]].",
 	"neowiki-mappings-column-schemas": "Column header for the mapped schemas in the mappings list table on [[Special:Mappings]]. The cell lists the mapped Schema names followed by their count.",
 	"neowiki-mappings-schema-count": "Parenthesized count of mapped schemas, shown after the list of Schema names in a row of the mappings list table on [[Special:Mappings]]. $1 is the number of mapped schemas.",
@@ -374,7 +374,7 @@
 	"neowiki-config-docs-column-value": "Column header in the configuration reference table for the value the setting accepts.",
 	"neowiki-config-docs-column-setting": "Column header in the configuration reference table for the LocalSettings.php setting that the page key overrides.",
 
-	"neowiki-special-graphstores": "Title and description of the [[Special:GraphStores]] page, which reports and rebuilds the wiki's graph stores.",
+	"neowiki-special-graphstores": "Title and description of the [[Special:GraphStores]] page, which reports and rebuilds the wiki's graph stores. Also the title of its card on [[Special:NeoWiki]].",
 	"neowiki-graphstores-intro": "Introduction shown above the store table on [[Special:GraphStores]].",
 	"neowiki-graphstores-nostores": "Shown on [[Special:GraphStores]] instead of the introduction and the store table when no graph store is configured.",
 	"neowiki-graphstores-column-store": "Column heading on [[Special:GraphStores]]: the store's configured name.\n{{Identical|Store}}",
