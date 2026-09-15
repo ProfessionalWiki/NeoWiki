@@ -9,6 +9,7 @@ use MediaWiki\Language\RawMessage;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\ParserOutputFlags;
 use MediaWiki\Parser\ParserOutputLinkTypes;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
@@ -89,6 +90,26 @@ class CreateSubjectParserFunctionTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'data-mw-neowiki-text="Add a person"', $html );
 	}
 
+	public function testEmitsTheSchemaNameAsItsPageIsTitled(): void {
+		$this->createSchema( 'Person record' );
+
+		$html = $this->assertRendersButton( $this->callOn( $this->contentPage, 'schema=person_record' ) );
+
+		$this->assertStringContainsString( 'data-mw-neowiki-schema="Person record"', $html );
+	}
+
+	public function testAcceptsTheSchemaNamespacePrefix(): void {
+		$html = $this->assertRendersButton( $this->callOn( $this->contentPage, 'schema=Schema:' . self::SCHEMA_NAME ) );
+
+		$this->assertStringContainsString( 'data-mw-neowiki-schema="' . self::SCHEMA_NAME . '"', $html );
+	}
+
+	public function testReportsAPageOutsideTheSchemaNamespaceAsAnUnknownSchema(): void {
+		$result = $this->callOn( $this->contentPage, 'schema=' . $this->helpPage->getPrefixedText() );
+
+		$this->assertRendersError( $result, 'neowiki-create-subject-error-unknown-schema', 'Help:Using subjects' );
+	}
+
 	public function testTreatsEmptyValuesAsAbsent(): void {
 		$html = $this->assertRendersButton( $this->callOn( $this->helpPage, 'schema=', 'text= ', 'page=' ) );
 
@@ -143,11 +164,33 @@ class CreateSubjectParserFunctionTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringNotContainsString( 'data-mw-neowiki-page-has-main-subject', $html );
 	}
 
+	public function testMarksItsOutputAsDependingOnThePageId(): void {
+		$output = $this->parserOutputOf( $this->contentPage );
+
+		$this->assertTrue( $output->getOutputFlag( ParserOutputFlags::VARY_PAGE_ID ) );
+		$this->assertSame( $this->contentPage->getId(), $output->getSpeculativePageIdUsed() );
+	}
+
+	/**
+	 * @dataProvider buttonArgumentsProvider
+	 * @param string[] $args
+	 */
+	public function testRecordsNoPageIdForAPageNotCreatedYet( array $args ): void {
+		$output = $this->parserOutputOf( Title::makeTitle( NS_MAIN, 'A page not created yet' ), ...$args );
+
+		$this->assertTrue( $output->getOutputFlag( ParserOutputFlags::VARY_PAGE_ID ) );
+		$this->assertNull( $output->getSpeculativePageIdUsed() );
+	}
+
+	public static function buttonArgumentsProvider(): iterable {
+		yield 'without a page argument' => [ [] ];
+		yield 'page=this' => [ [ 'page=this' ] ];
+	}
+
 	public function testPageNewEmitsANewPage(): void {
 		$html = $this->assertRendersButton( $this->callOn( $this->contentPage, 'page=new' ) );
 
 		$this->assertStringContainsString( 'data-mw-neowiki-page="new"', $html );
-		$this->assertStringNotContainsString( 'data-mw-neowiki-page-has-main-subject', $html );
 	}
 
 	public function testNamedPageEmitsItsTitleAndCurrentId(): void {
@@ -157,6 +200,20 @@ class CreateSubjectParserFunctionTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertStringContainsString( 'data-mw-neowiki-page-title="The target page"', $html );
 		$this->assertStringContainsString( 'data-mw-neowiki-page-id="' . $target->getId() . '"', $html );
+	}
+
+	/**
+	 * @dataProvider fixedPageArgumentProvider
+	 */
+	public function testKeepsTheHostPageMainSubjectFlagWithAFixedPage( string $pageArgument ): void {
+		$html = $this->assertRendersButton( $this->callOn( $this->contentPage, $pageArgument ) );
+
+		$this->assertStringContainsString( 'data-mw-neowiki-page-has-main-subject="true"', $html );
+	}
+
+	public static function fixedPageArgumentProvider(): iterable {
+		yield 'a new page' => [ 'page=new' ];
+		yield 'a named page' => [ 'page=Not a page yet' ];
 	}
 
 	public function testNamedPageThatDoesNotExistEmitsIdZero(): void {

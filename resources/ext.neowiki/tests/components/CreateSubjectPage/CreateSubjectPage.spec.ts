@@ -1,4 +1,4 @@
-import { mount, VueWrapper } from '@vue/test-utils';
+import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import CreateSubjectPage from '@/components/CreateSubjectPage/CreateSubjectPage.vue';
@@ -8,7 +8,8 @@ import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
 const SubjectCreatorDialogStub = {
 	template: '<div class="subject-creator-stub" />',
-	props: [ 'hostPage', 'initialSchemaName' ],
+	props: [ 'hostPage', 'initialSchemaName', 'open' ],
+	emits: [ 'update:open' ],
 };
 
 describe( 'CreateSubjectPage', () => {
@@ -53,5 +54,20 @@ describe( 'CreateSubjectPage', () => {
 		await wrapper.find( 'button' ).trigger( 'click' );
 
 		expect( store.subjectCreatorOpen ).toBe( true );
+	} );
+
+	it( 'shows the creator open while the store says so', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( wrapper.findComponent( SubjectCreatorDialog ).props( 'open' ) ).toBe( true );
+	} );
+
+	it( 'closes the creator in the store when the dialog closes', () => {
+		const wrapper = mountPage();
+
+		wrapper.findComponent( SubjectCreatorDialog ).vm.$emit( 'update:open', false );
+
+		expect( useSubjectStore().subjectCreatorOpen ).toBe( false );
 	} );
 } );

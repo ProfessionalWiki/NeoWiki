@@ -15,6 +15,7 @@ import SummaryAction from '@/components/common/SummaryAction.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
+import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { Service } from '@/NeoWikiServices.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
@@ -45,6 +46,7 @@ let mainSubjectId: SubjectId | null = null;
 // them — see SubjectStore.spec.ts's own deleteSubject tests for the store-level coverage this
 // mirrors at the component level.
 let useRealSubjectStore = false;
+let subjectCreatorOpen = false;
 
 vi.mock( '@/stores/SubjectStore.ts', async ( importOriginal ) => {
 	const actual = await importOriginal<typeof import( '@/stores/SubjectStore.ts' )>();
@@ -59,6 +61,12 @@ vi.mock( '@/stores/SubjectStore.ts', async ( importOriginal ) => {
 				setPageMainSubject: setPageMainSubjectMock,
 				getSubject: ( id: SubjectId ) => storeSubjects.find( ( s ) => s.getId().text === id.text ),
 				openSubjectCreator: vi.fn(),
+				get subjectCreatorOpen() {
+					return subjectCreatorOpen;
+				},
+				set subjectCreatorOpen( value: boolean ) {
+					subjectCreatorOpen = value;
+				},
 				get pageSubjects() {
 					return {
 						getSubjects: () => storeSubjects,
@@ -81,6 +89,7 @@ vi.mock( '@/stores/SchemaStore.ts', () => ( {
 // edit- and delete-flow tests below can flip them on; every other describe leaves them off.
 const canDeleteSubjectRef = ref( false );
 const canEditSubjectRef = ref( false );
+const canCreateOtherSubjectRef = ref( false );
 
 // openEditor reads through the injected repositories; the edit-flow describe below arms these.
 const getSubjectForEditingRepoMock = vi.fn();
@@ -89,7 +98,7 @@ const getSchemaRepoMock = vi.fn();
 vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 	useSubjectPermissions: () => ( {
 		canCreateMainSubject: ref( false ),
-		canCreateOtherSubject: ref( false ),
+		canCreateOtherSubject: canCreateOtherSubjectRef,
 		canEditSubject: canEditSubjectRef,
 		canDeleteSubject: canDeleteSubjectRef,
 		checkPermissions: vi.fn().mockResolvedValue( undefined ),
@@ -661,6 +670,40 @@ describe( 'SubjectsManagerPage move action', () => {
 		// The listing refresh belongs to the store's move action; refreshing here too would fetch
 		// the same page twice for one move.
 		expect( loadPageSubjectsMock ).not.toHaveBeenCalled();
+	} );
+
+} );
+
+describe( 'SubjectsManagerPage subject creator', () => {
+
+	beforeEach( () => {
+		useRealSubjectStore = false;
+		canCreateOtherSubjectRef.value = true;
+		subjectCreatorOpen = true;
+		window.location.hash = '';
+		Element.prototype.scrollIntoView = vi.fn();
+		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+	} );
+
+	afterEach( () => {
+		canCreateOtherSubjectRef.value = false;
+		subjectCreatorOpen = false;
+		document.body.innerHTML = '';
+		vi.restoreAllMocks();
+	} );
+
+	it( 'shows the creator open while the store says so', async () => {
+		const wrapper = await mountPage();
+
+		expect( wrapper.findComponent( SubjectCreatorDialog ).props( 'open' ) ).toBe( true );
+	} );
+
+	it( 'closes the creator in the store when the dialog closes', async () => {
+		const wrapper = await mountPage();
+
+		wrapper.findComponent( SubjectCreatorDialog ).vm.$emit( 'update:open', false );
+
+		expect( subjectCreatorOpen ).toBe( false );
 	} );
 
 } );
