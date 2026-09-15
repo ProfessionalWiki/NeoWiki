@@ -70,7 +70,8 @@
 				"redherb-special-subject-finder",
 				"redherb-subject-finder-schema-label",
 				"redherb-subject-finder-schema-placeholder",
-				"redherb-subject-finder-pick-subject"
+				"redherb-subject-finder-pick-subject",
+				"redherb-subject-finder-load-failed"
 			]
 		},
 		"ext.redherb-create-subject": {

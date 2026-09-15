@@ -20,11 +20,21 @@ export class StoreStateLoader {
 	) {
 	}
 
+	/**
+	 * Loads each Subject independently and never rejects: one that does not load is logged, so
+	 * neither a denied read nor a failed request blanks the page's other Views. A Subject the
+	 * viewer may not read is answered as an absent one (ADR 27). A Subject whose Schema does not
+	 * load stays in the Subject store without it.
+	 */
 	public async loadSubjectsAndSchemas( subjectIds: Set<string> ): Promise<void> {
 		await Promise.all(
-			Array.from( subjectIds ).map(
-				( subjectId ) => this.loadForSubject( new SubjectId( subjectId ) ),
-			),
+			Array.from( subjectIds ).map( async ( subjectId ) => {
+				try {
+					await this.loadForSubject( new SubjectId( subjectId ) );
+				} catch ( error ) {
+					console.warn( `NeoWiki: skipping Subject ${ subjectId }, which did not load:`, error );
+				}
+			} ),
 		);
 	}
 
@@ -64,7 +74,7 @@ export class StoreStateLoader {
 			}
 		}
 
-		const schema = await this.schemaRepo.getSchema( requestedSubject.getSchemaName() ); // TODO: handle not found
+		const schema = await this.schemaRepo.getSchema( requestedSubject.getSchemaName() );
 		if ( schemaEpoch === schemaStore.mutationEpoch ) {
 			schemaStore.setSchema( requestedSubject.getSchemaName(), schema );
 		}

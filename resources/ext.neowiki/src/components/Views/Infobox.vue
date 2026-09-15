@@ -92,8 +92,8 @@ const isEditorOpen = ref( false );
 const editingSubject = shallowRef<Subject | null>( null );
 const editingSchema = shallowRef<Schema | null>( null );
 
-const subject = computed( () => subjectStore.getSubject( props.subjectId ) ); // TODO: handle not found
-const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) ); // TODO: handle not found
+const subject = computed( () => subjectStore.getSubject( props.subjectId ) );
+const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) );
 
 async function openEditor(): Promise<void> {
 	try {

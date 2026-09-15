@@ -47,6 +47,8 @@ module.exports = exports = {
 		Infobox: nw.Infobox
 	},
 	setup: function () {
+		const subjectStore = nw.useSubjectStore();
+		const schemaStore = nw.useSchemaStore();
 		const schemaName = vue.ref( '' );
 		const selectedSubjectId = vue.ref( null );
 		const loadedSubjectId = vue.ref( null );
@@ -69,14 +71,14 @@ module.exports = exports = {
 			nw.NeoWikiExtension.getInstance().getStoreStateLoader()
 				.loadSubjectsAndSchemas( new Set( [ id ] ) )
 				.then( () => {
+					// The loader never rejects, and the Subject store can hold the picked Subject
+					// without its Schema, so the Subject loaded only when both stores hold it.
+					const subject = subjectStore.findSubject( new nw.SubjectId( id ) );
+					if ( subject === undefined || !schemaStore.schemas.has( subject.getSchemaName() ) ) {
+						mw.notify( mw.message( 'redherb-subject-finder-load-failed' ).text(), { type: 'error' } );
+						return;
+					}
 					loadedSubjectId.value = id;
-				} )
-				.catch( ( err ) => {
-					mw.log.error( err );
-					mw.notify(
-						err instanceof Error ? err.message : String( err ),
-						{ type: 'error' }
-					);
 				} );
 		}
 

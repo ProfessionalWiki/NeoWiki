@@ -12,6 +12,7 @@
 	"redherb-subject-finder-schema-label": "Label of the schema name input on Special:RedHerbSubjectFinder.\n{{Identical|Schema}}",
 	"redherb-subject-finder-schema-placeholder": "Placeholder text inside the schema name input on Special:RedHerbSubjectFinder.",
 	"redherb-subject-finder-pick-subject": "Label of the subject picker on Special:RedHerbSubjectFinder.",
+	"redherb-subject-finder-load-failed": "Error shown on Special:RedHerbSubjectFinder when the selected subject could not be loaded, for instance because the viewer may not read its page.",
 	"redherb-create-subject-dialog-title": "Title of the RedHerb dialog that creates a Company subject.",
 	"redherb-create-subject-dialog-label": "Label of the subject label input in the RedHerb create-Company dialog.\n{{Identical|Label}}",
 	"redherb-create-subject-dialog-save": "Label of the save button in the RedHerb create-Company dialog.\n{{Identical|Create}}",

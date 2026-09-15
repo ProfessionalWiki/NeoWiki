@@ -12,6 +12,7 @@
 	"redherb-subject-finder-schema-label": "Schema",
 	"redherb-subject-finder-schema-placeholder": "Enter a schema name",
 	"redherb-subject-finder-pick-subject": "Pick a subject",
+	"redherb-subject-finder-load-failed": "Could not load the selected subject.",
 	"redherb-create-subject-dialog-title": "Add Company subject",
 	"redherb-create-subject-dialog-label": "Label",
 	"redherb-create-subject-dialog-save": "Create",

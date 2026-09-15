@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { StoreStateLoader } from '@/persistence/StoreStateLoader';
 import { StubSubjectRepository } from '@/domain/SubjectRepository';
@@ -60,7 +60,13 @@ function newMainSubjectWithRelationsTo( ...targets: SubjectId[] ): Subject {
 	} );
 }
 
-function newLoader( repository: RecordingSubjectRepository ): StoreStateLoader {
+class UnreachableSubjectRepository extends StubSubjectRepository {
+	public override getSubjectWithReferencedSubjects(): Promise<SubjectWithReferencedSubjects> {
+		return Promise.reject( new Error( 'Error fetching subject' ) );
+	}
+}
+
+function newLoader( repository: SubjectRepository ): StoreStateLoader {
 	return new StoreStateLoader(
 		repository,
 		new InMemorySchemaRepository( [ newSchema( { title: 'Company' } ) ] ),
@@ -158,6 +164,67 @@ describe( 'StoreStateLoader', () => {
 
 		expect( subjectStore.subjects.has( 's11111111111111' ) ).toBe( false );
 		expect( () => schemaStore.getSchema( subject.getSchemaName() ) ).toThrow();
+	} );
+
+	// The REST read answers for a Subject the viewer may not read exactly as it does for one that
+	// does not exist, which is what the repository here does for an id it does not hold. A request
+	// that fails outright reaches the loader the same way.
+	describe( 'a Subject that does not load', () => {
+
+		const unloadableId = new SubjectId( 's44444444444444' );
+		const readable = newSubject( { id: mainId, schemaName: 'Company' } );
+		let warn: ReturnType<typeof vi.spyOn>;
+
+		beforeEach( () => {
+			warn = vi.spyOn( console, 'warn' ).mockImplementation( () => undefined );
+		} );
+
+		afterEach( () => {
+			warn.mockRestore();
+		} );
+
+		function loadReadableAndUnloadable(): Promise<void> {
+			return newLoader( new StubSubjectRepository( [ readable ] ) )
+				.loadSubjectsAndSchemas( new Set( [ mainId.text, unloadableId.text ] ) );
+		}
+
+		function expectSkipLogged( subjectId: SubjectId ): void {
+			expect( warn ).toHaveBeenCalledWith( expect.stringContaining( subjectId.text ), expect.any( Error ) );
+		}
+
+		it( 'stores the Subjects that did load', async () => {
+			await loadReadableAndUnloadable();
+
+			const subjectStore = useSubjectStore();
+			expect( subjectStore.getSubject( mainId ) ).toEqual( readable );
+			expect( subjectStore.subjects.has( unloadableId.text ) ).toBe( false );
+		} );
+
+		it( 'logs the id it skipped and the reason', async () => {
+			await loadReadableAndUnloadable();
+
+			expectSkipLogged( unloadableId );
+		} );
+
+		// A request that fails outright, the wiki unreachable or answering 500, is skipped like a denial.
+		it( 'stores nothing for a Subject whose request fails', async () => {
+			await newLoader( new UnreachableSubjectRepository( [ readable ] ) )
+				.loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
+
+			expect( useSubjectStore().subjects.has( mainId.text ) ).toBe( false );
+			expectSkipLogged( mainId );
+		} );
+
+		// Here the Subject read is the one that succeeds and its Schema read the one that fails.
+		it( 'logs a Subject whose Schema does not load', async () => {
+			const schemalessId = new SubjectId( 's55555555555555' );
+
+			await newLoader( new StubSubjectRepository( [ newSubject( { id: schemalessId, schemaName: 'Ghost' } ) ] ) )
+				.loadSubjectsAndSchemas( new Set( [ schemalessId.text ] ) );
+
+			expectSkipLogged( schemalessId );
+		} );
+
 	} );
 
 } );
