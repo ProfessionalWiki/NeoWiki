@@ -16,7 +16,7 @@
 	"right-neowiki-admin": "{{doc-right|neowiki-admin}}\nName of the user right required to report and rebuild the wiki's graph stores.",
 	"action-neowiki-admin": "{{doc-action|neowiki-admin}}",
 	"specialpages-group-neowiki": "Group heading for NeoWiki special pages on [[Special:SpecialPages]].",
-	"neowiki-special-schemas": "Title and description of the [[Special:Schemas]] page.",
+	"neowiki-special-schemas": "Title and description of the [[Special:Schemas]] page. Also the caption of the Schema table on that page and on [[Special:NeoWiki]].",
 	"neowiki-special-createsubject": "Title and description of the [[Special:CreateSubject]] page, which creates a page together with its Main Subject. A subpage names the Schema to use, e.g. Special:CreateSubject/Person.",
 	"neowiki-schema-label": "Names a subject's schema. $1 is the schema name or a link to it. Also used as the accessible name of the schema badge, whose visible text is the bare name.",
 	"neowiki-cypher-raw-error-json-encode": "Error message shown when JSON encoding of query results fails.",
@@ -75,7 +75,7 @@
 	"neowiki-subject-creator-page-taken": "Error shown in the 'create subject' dialog, at the page title field of its \"Store the subject on\" section, when the title chosen for the new page is already taken. The user can either pick that page under the existing-page option or change the title. Parameters:\n* $1 - the page title",
 	"neowiki-subject-creator-page-taken-fixed": "Error shown in the 'create subject' dialog when the page it would create, titled after the Subject's label, is already taken, and the dialog was opened for a fixed new page, so the label is the only thing the user can change. Parameters:\n* $1 - the page title",
 	"neowiki-subject-creator-page-read-error": "Error shown at the page field of the 'create subject' dialog when the chosen page's Subjects could not be read. Parameters:\n* $1 - the page title",
-	"neowiki-createsubject-button": "Label of the button on [[Special:CreateSubject]] that opens the 'create subject' dialog again after it was closed.",
+	"neowiki-createsubject-button": "Label of the button that opens the 'create subject' dialog: the main button on [[Special:NeoWiki]], and the button on [[Special:CreateSubject]] that reopens the dialog after it was closed.",
 
 	"neowiki-schema-editor-summary-default": "Default edit summary used when updating a schema via the UI.",
 	"neowiki-schema-editor-success": "Success notification shown after updating a schema. $1 is the schema name.",
@@ -132,13 +132,13 @@
 	"neowiki-schema-creator-error": "Error notification title shown when creating a schema fails. $1 is the schema name.",
 	"neowiki-schema-creator-summary-default": "Default edit summary used when creating a schema via the UI.",
 
-	"neowiki-schemas-column-name": "Column header for schema name in the schemas list table on [[Special:Schemas]].",
-	"neowiki-schemas-column-description": "Column header for schema description in the schemas list table on [[Special:Schemas]].",
+	"neowiki-schemas-column-name": "Column header for schema name in the schemas list table on [[Special:Schemas]] and on [[Special:NeoWiki]].",
+	"neowiki-schemas-column-description": "Column header for schema description in the schemas list table on [[Special:Schemas]] and on [[Special:NeoWiki]].",
 	"neowiki-schemas-column-properties": "Column header for the number of property definitions in the schemas list table on [[Special:Schemas]].",
-	"neowiki-schemas-empty": "Message shown when no schemas exist yet on [[Special:Schemas]].",
+	"neowiki-schemas-empty": "Message shown when no schemas exist yet on [[Special:Schemas]] and on [[Special:NeoWiki]].",
 	"neowiki-schema-sidebar-all-schemas": "Label for the link in the NeoWiki section of the sidebar on Schema pages that navigates to [[Special:Schemas]].",
 	"neowiki-sidebar-create-subject": "Label for the link in the NeoWiki section of the sidebar that navigates to [[Special:CreateSubject]], where a Subject is created together with a page of its own by default, or added to a page picked there. Shown only where {{msg-mw|neowiki-page-tools-create-subject}} is not, so a page carries one Create subject entry rather than two; the two read the same.",
-	"neowiki-schema-create-subject": "Label of the button that opens the 'create subject' dialog with a Schema chosen. Used on the Schema's own page, and where {{#create_subject}} names a Schema. Parameters:\n* $1 - the Schema name",
+	"neowiki-schema-create-subject": "Label of the button that opens the 'create subject' dialog with a Schema chosen. Used on the Schema's own page, in each row of the Schema tables on [[Special:Schemas]] (as the accessible name and tooltip of an icon button) and [[Special:NeoWiki]], and where {{#create_subject}} names a Schema. Parameters:\n* $1 - the Schema name",
 
 	"neowiki-schema-delete": "Aria label for the delete button on a Schema row in the schemas list.",
 
@@ -202,14 +202,14 @@
 	"neowiki-layout-editor-error": "Error notification title shown when updating a layout fails. $1 is the layout name.",
 	"neowiki-layout-editor-schema-fetch-error": "Error message shown in the layout editor when the schema properties could not be loaded.",
 
-	"neowiki-special-layouts": "Title and description of the [[Special:Layouts]] page.",
+	"neowiki-special-layouts": "Title and description of the [[Special:Layouts]] page. Also the title of its card on [[Special:NeoWiki]].",
 	"neowiki-layouts-column-name": "Column header for layout name in the layouts list table on [[Special:Layouts]].",
 	"neowiki-layouts-column-schema": "Column header for the schema name in the layouts list table on [[Special:Layouts]].",
 	"neowiki-layouts-column-type": "Column header for the view type in the layouts list table on [[Special:Layouts]].",
 	"neowiki-layouts-column-description": "Column header for layout description in the layouts list table on [[Special:Layouts]].",
 	"neowiki-layouts-empty": "Message shown when no layouts exist yet on [[Special:Layouts]].",
 
-	"neowiki-special-mappings": "Title and description of the [[Special:Mappings]] page, which lists the ontology mapping pages.",
+	"neowiki-special-mappings": "Title and description of the [[Special:Mappings]] page, which lists the ontology mapping pages. Also the title of its card on [[Special:NeoWiki]].",
 	"neowiki-mappings-column-name": "Column header for mapping name in the mappings list table on [[Special:Mappings]].",
 	"neowiki-mappings-column-schemas": "Column header for the mapped schemas in the mappings list table on [[Special:Mappings]]. The cell lists the mapped Schema names followed by their count.",
 	"neowiki-mappings-schema-count": "Parenthesized count of mapped schemas, shown after the list of Schema names in a row of the mappings list table on [[Special:Mappings]]. $1 is the number of mapped schemas.",
@@ -374,7 +374,7 @@
 	"neowiki-config-docs-column-value": "Column header in the configuration reference table for the value the setting accepts.",
 	"neowiki-config-docs-column-setting": "Column header in the configuration reference table for the LocalSettings.php setting that the page key overrides.",
 
-	"neowiki-special-graphstores": "Title and description of the [[Special:GraphStores]] page, which reports and rebuilds the wiki's graph stores.",
+	"neowiki-special-graphstores": "Title and description of the [[Special:GraphStores]] page, which reports and rebuilds the wiki's graph stores. Also the title of its card on [[Special:NeoWiki]].",
 	"neowiki-graphstores-intro": "Introduction shown above the store table on [[Special:GraphStores]].",
 	"neowiki-graphstores-nostores": "Shown on [[Special:GraphStores]] instead of the introduction and the store table when no graph store is configured.",
 	"neowiki-graphstores-column-store": "Column heading on [[Special:GraphStores]]: the store's configured name.\n{{Identical|Store}}",
@@ -415,5 +415,13 @@
 	"neowiki-create-subject-error-unknown-schema": "Error shown in place of the {{#create_subject}} button when the Schema it names does not exist. Parameters:\n* $1 - the Schema name that was asked for",
 	"neowiki-create-subject-error-invalid-page": "Error shown in place of the {{#create_subject}} button when the page it names cannot be a page of this wiki: a malformed title, an interwiki link, or a special page. Parameters:\n* $1 - the page title that was asked for",
 	"neowiki-create-subject-error-uncreatable-page": "Error shown in place of the {{#create_subject}} button when the page it names does not exist and is outside the main namespace. Parameters:\n* $1 - the page title that was asked for",
-	"neowiki-create-subject-denied": "Body of the dialog the {{#create_subject}} button opens for a user who may not create a subject, used when the wiki supplied no reason of its own."
+	"neowiki-create-subject-denied": "Body of the dialog the {{#create_subject}} button opens for a user who may not create a subject, used when the wiki supplied no reason of its own.",
+	"neowiki-special-neowiki": "Title and description of the [[Special:NeoWiki]] page, which lists the wiki's Schemas, creates Subjects, and links to the other NeoWiki pages. \"NeoWiki\" is the extension name and stays untranslated.\n{{Identical|NeoWiki}}",
+	"neowiki-sidebar-overview": "Label for the link in the NeoWiki section of the sidebar that navigates to [[Special:NeoWiki]].",
+	"neowiki-overview-layouts-description": "Short description shown under the [[Special:Layouts]] link on [[Special:NeoWiki]].",
+	"neowiki-overview-mappings-description": "Short description shown under the [[Special:Mappings]] link on [[Special:NeoWiki]]. EDM and CIDOC-CRM are ontology names and stay untranslated.",
+	"neowiki-overview-graph-stores-description": "Short description shown under the [[Special:GraphStores]] link on [[Special:NeoWiki]].",
+	"neowiki-overview-configuration": "Label of the link to [[MediaWiki:NeoWiki]] on [[Special:NeoWiki]], the page holding the wiki's NeoWiki settings.\n{{Identical|Configuration}}",
+	"neowiki-overview-configuration-description": "Short description shown under the [[MediaWiki:NeoWiki]] link on [[Special:NeoWiki]]. \"Without server access\" contrasts it with the settings that can only be changed in LocalSettings.php.",
+	"neowiki-overview-manage-schemas": "Label of the link in the header of the Schema table on [[Special:NeoWiki]] that navigates to [[Special:Schemas]], where Schemas are created, edited and deleted."
 }

@@ -10,4 +10,5 @@ $specialPageAliases['en'] = [
 	'GraphStores' => [ 'GraphStores' ],
 	'CreateSubject' => [ 'CreateSubject', 'NewSubject' ],
 	'Subject' => [ 'Subject' ],
+	'NeoWiki' => [ 'NeoWiki' ],
 ];

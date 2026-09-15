@@ -621,6 +621,14 @@ class NeoWikiHooks {
 				->getActionName( $skin->getContext() )
 		);
 
+		// First, and offered to readers as well: the page to start from when the wiki is unfamiliar.
+		array_unshift( $neoWikiTools, self::specialPageLink(
+			$skin,
+			specialPage: 'NeoWiki',
+			message: 'neowiki-sidebar-overview',
+			linkId: 't-neowiki-overview'
+		) );
+
 		if ( $title->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
 			$neoWikiTools[] = self::specialPageLink(
 				$skin,
@@ -657,11 +665,9 @@ class NeoWikiHooks {
 			);
 		}
 
-		if ( $neoWikiTools !== [] ) {
-			// The section array key is used by MediaWiki as the message key for
-			// the section heading, so it must match an existing message name.
-			$sidebar['neowiki-page-tools-label'] = $neoWikiTools;
-		}
+		// The section array key is used by MediaWiki as the message key for
+		// the section heading, so it must match an existing message name.
+		$sidebar['neowiki-page-tools-label'] = $neoWikiTools;
 	}
 
 	/**

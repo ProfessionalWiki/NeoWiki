@@ -14,6 +14,7 @@ import MappingsPage from '@/components/MappingsPage/MappingsPage.vue';
 import SubjectsManagerPage from '@/components/SubjectsManager/SubjectsManagerPage.vue';
 import CreateSubjectPage from '@/components/CreateSubjectPage/CreateSubjectPage.vue';
 import SubjectPage from '@/components/SubjectPage/SubjectPage.vue';
+import OverviewPage from '@/components/OverviewPage/OverviewPage.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SchemaName } from '@/domain/Schema.ts';
 import type { LayoutName } from '@/domain/Layout.ts';
@@ -268,6 +269,25 @@ function initializeSubjectCreatorButtons(): void {
 	} );
 }
 
+function initializeOverviewPage(): void {
+	queueMicrotask( () => {
+		const overviewPage = document.getElementById( 'ext-neowiki-overview' );
+
+		if ( overviewPage !== null ) {
+			const ext = NeoWikiExtension.getInstance();
+			const canManageGraphStores = overviewPage.dataset.mwNeowikiCanManageGraphStores === 'true';
+			const canEditConfiguration = overviewPage.dataset.mwNeowikiCanEditConfiguration === 'true';
+
+			// The Subject creator this page opens reaches value inputs that use v-tooltip.
+			const app = createMwApp( OverviewPage, { canManageGraphStores, canEditConfiguration } )
+				.directive( 'tooltip', CdxTooltip );
+			app.use( ext.getPinia() );
+			NeoWikiServices.registerServices( app );
+			mountNeoWikiApp( app, overviewPage );
+		}
+	} );
+}
+
 const isTestEnvironment = typeof window !== 'undefined' &&
 	( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode === true;
 
@@ -283,4 +303,5 @@ if ( !isTestEnvironment ) {
 	initializeCreateSubjectPage();
 	initializeSubjectPage();
 	initializeSubjectCreatorButtons();
+	initializeOverviewPage();
 }
