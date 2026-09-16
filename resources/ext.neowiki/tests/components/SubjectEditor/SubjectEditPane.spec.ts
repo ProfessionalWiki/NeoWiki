@@ -40,6 +40,18 @@ const defaultSubject = new SubjectWithContext(
 	new PageIdentifiers( 42, 'Test page' ),
 );
 
+function subjectStoredOn( page: PageIdentifiers ): SubjectWithContext {
+	return new SubjectWithContext(
+		defaultSubject.getId(),
+		defaultSubject.getLabel(),
+		defaultSubject.getDisplayName(),
+		false,
+		defaultSubject.getSchemaName(),
+		new StatementList( [] ),
+		page,
+	);
+}
+
 const defaultSchema = newSchema();
 
 const schemaWithNameAndAge = new Schema(
@@ -296,6 +308,32 @@ describe( 'SubjectEditPane', () => {
 			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__page' ).text() ).toBe( 'Test page' );
 		} );
 
+		// A Subject bound for a page the save has yet to settle carries the page without a title
+		// for it, so there is nothing to point at and nothing to name.
+		it( 'names no storage page for one still to be settled', () => {
+			const wrapper = mountPane( {
+				subject: subjectStoredOn( new PageIdentifiers( 0, '' ) ),
+				nested: true,
+			} );
+
+			expect( wrapper.find( '.ext-neowiki-subject-edit-pane__storage' ).exists() ).toBe( false );
+		} );
+
+		// PageIdentifiers types both fields as present; a payload for a page the API could not
+		// resolve omits them, which an empty-string check alone would let through as a link to
+		// nowhere.
+		it( 'names no storage page the API could not resolve', () => {
+			const wrapper = mountPane( {
+				subject: subjectStoredOn( new PageIdentifiers(
+					undefined as unknown as number,
+					undefined as unknown as string,
+				) ),
+				nested: true,
+			} );
+
+			expect( wrapper.find( '.ext-neowiki-subject-edit-pane__storage' ).exists() ).toBe( false );
+		} );
+
 		it( 'links the storage page in a new tab, so following it cannot discard a pending edit', () => {
 			const wrapper = mountPane( { nested: true } );
 
@@ -357,11 +395,13 @@ describe( 'SubjectEditPane', () => {
 			expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'TestSchema' );
 		} );
 
-		// The pane already names such a Subject "(unnamed TestSchema)".
-		it( 'withholds the badge from a subject shown under its schema name', () => {
+		// The name above says the same word, but only the badge is a link to the Schema and the
+		// way into its editor. A Subject nobody has named yet is the one being created, where the
+		// Schema most wants confirming — and where the row would otherwise hold nothing at all.
+		it( 'shows the badge for a subject shown under its schema name', () => {
 			const wrapper = mountPane( { subject: schemaNamedSubject, nested: true } );
 
-			expect( wrapper.find( '.ext-neowiki-schema-name' ).exists() ).toBe( false );
+			expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'TestSchema' );
 		} );
 	} );
 
@@ -640,8 +680,7 @@ describe( 'SubjectEditPane', () => {
 				.toBe( 'neowiki-subject-editor-label-field' );
 		} );
 
-		// Named after its Schema until now, so the badge would have said the same thing twice.
-		it( 'shows the schema badge once a schema-named subject is given a label of its own', async () => {
+		it( 'keeps the schema badge once a schema-named subject is given a label of its own', async () => {
 			const wrapper = mountPane( { subject: schemaNamedSubject, nested: true } );
 
 			await rename( wrapper, 'Alice' );

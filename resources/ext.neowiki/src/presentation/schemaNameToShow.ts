@@ -8,6 +8,10 @@ import type { Subject } from '@/domain/Subject.ts';
  *
  * The badge does not apply this itself: a surface guards its own wrapper along with the
  * name, since an emptied wrapper carrying a role is worse than a repeat.
+ *
+ * For surfaces where the Schema is read rather than followed. The Subject editor's pane shows its
+ * badge unconditionally, because there the badge is a link and a way into the Schema editor, which
+ * a repeated word is not.
  */
 export function schemaNameToShow( subject: Subject ): string | null {
 	return subject.getDisplayName() === subject.getSchemaName() ? null : subject.getSchemaName();

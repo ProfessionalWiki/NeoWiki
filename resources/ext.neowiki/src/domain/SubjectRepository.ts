@@ -57,6 +57,8 @@ export interface SubjectWriteResult {
  */
 export interface SubjectPageWriteResult extends SubjectWriteResult {
 	pageTitle: string;
+	/** So a caller can go on to store further Subjects on the page this write created. */
+	pageId: number;
 }
 
 export interface SubjectRepository extends SubjectLookup {
@@ -209,8 +211,9 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 		const id = new SubjectId( 's11111111111113' );
 
 		return Promise.resolve( {
-			...this.newWriteResult( id, 0, label, schemaName, statements ),
+			...this.newWriteResult( id, 1, label, schemaName, statements ),
 			pageTitle: pageTitle ?? label ?? id.text,
+			pageId: 1,
 		} );
 	}
 
