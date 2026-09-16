@@ -32,6 +32,14 @@ export function findNextPageButton( wrapper: VueWrapper ): DOMWrapper<Element> {
 	return button;
 }
 
+export function findPropertyNameInput( wrapper: VueWrapper ): DOMWrapper<HTMLInputElement> {
+	return wrapper.find<HTMLInputElement>( '.ext-neowiki-property-editor__name input' );
+}
+
+export function selectedText( input: HTMLInputElement ): string {
+	return input.value.slice( input.selectionStart ?? 0, input.selectionEnd ?? 0 );
+}
+
 /**
  * Puts a native number input into the state a browser reports for text it cannot
  * parse, such as "5foo": the characters stay visible in the widget, the value

@@ -1,4 +1,4 @@
-import { VueWrapper } from '@vue/test-utils';
+import { flushPromises, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CdxCheckbox, CdxSelect } from '@wikimedia/codex';
 import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
@@ -11,15 +11,15 @@ import { newSelectProperty, SelectProperty } from '@/domain/propertyTypes/Select
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
 import { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { newNumberValue, newStringValue } from '@/domain/Value';
-import { createTestWrapper, reportUnparseableNumber, setupMwMock } from '../../VueTestHelpers.ts';
+import { createTestWrapper, findPropertyNameInput, reportUnparseableNumber, selectedText, setupMwMock } from '../../VueTestHelpers.ts';
 
 describe( 'PropertyDefinitionEditor', () => {
 	beforeEach( () => {
 		setupMwMock();
 	} );
 
-	function newWrapper( property: PropertyDefinition ): VueWrapper {
-		return createTestWrapper( PropertyDefinitionEditor, { property } );
+	function newWrapper( property: PropertyDefinition, props: { selectName?: boolean } = {} ): VueWrapper {
+		return createTestWrapper( PropertyDefinitionEditor, { property, ...props } );
 	}
 
 	function lastEmittedProperty( wrapper: VueWrapper ): PropertyDefinition {
@@ -235,6 +235,22 @@ describe( 'PropertyDefinitionEditor', () => {
 			await reportUnparseableNumber( wrapper.findComponent( NumberInput ).find( 'input' ) );
 
 			expect( lastEmittedProperty( wrapper ).default ).toBeUndefined();
+		} );
+	} );
+
+	describe( 'name input', () => {
+		it( 'has the whole name selected when the editor opens with selectName, so typing replaces it', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'New Property 1' } ), { selectName: true } );
+			await flushPromises();
+
+			expect( selectedText( findPropertyNameInput( wrapper ).element ) ).toBe( 'New Property 1' );
+		} );
+
+		it( 'leaves the name unselected when the editor opens without selectName', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ) );
+			await flushPromises();
+
+			expect( selectedText( findPropertyNameInput( wrapper ).element ) ).toBe( '' );
 		} );
 	} );
 } );

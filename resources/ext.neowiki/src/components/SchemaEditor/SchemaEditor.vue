@@ -34,6 +34,7 @@
 			ref="propertyDefinitionEditor"
 			:key="selectedPropertyName"
 			:property="selectedProperty as PropertyDefinition"
+			:select-name="selectedPropertyName === createdPropertyName"
 			@update:property-definition="onPropertyUpdated"
 		/>
 	</div>
@@ -88,6 +89,9 @@ const paneSize = usePaneSize( root, {
 const currentSchema = ref<Schema>( props.initialSchema );
 const selectedPropertyName = ref<string | undefined>();
 
+// The property added last, whose generated name the editor selects for replacement.
+const createdPropertyName = ref<string | undefined>();
+
 watch( () => props.initialSchema, ( schema ) => {
 	currentSchema.value = schema;
 	const firstProperty = [ ...schema.getPropertyDefinitions() ][ 0 ];
@@ -112,6 +116,7 @@ function onPropertySelected( name: PropertyName ): void {
 
 function onPropertyCreated( newProperty: PropertyDefinition ): void {
 	currentSchema.value = currentSchema.value.withAddedPropertyDefinition( newProperty );
+	createdPropertyName.value = newProperty.name.toString();
 	emit( 'change' );
 }
 

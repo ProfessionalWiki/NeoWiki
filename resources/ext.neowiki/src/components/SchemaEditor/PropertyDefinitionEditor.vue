@@ -1,6 +1,6 @@
 <template>
 	<div class="ext-neowiki-schema-editor__property-editor">
-		<CdxField>
+		<CdxField class="ext-neowiki-property-editor__name">
 			<template #label>
 				{{ $i18n( 'neowiki-property-editor-name' ).text() }}
 			</template>
@@ -77,6 +77,8 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
 	property: PropertyDefinition;
+	/** Selects the name when the editor opens, so that typing replaces it. */
+	selectName?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -99,6 +101,10 @@ onMounted( () => {
 	nextTick( () => {
 		if ( nameInput.value !== null ) {
 			nameInput.value.focus();
+		}
+
+		if ( props.selectName ) {
+			( nameInput.value?.$el as HTMLElement | undefined )?.querySelector( 'input' )?.select();
 		}
 	} );
 } );
