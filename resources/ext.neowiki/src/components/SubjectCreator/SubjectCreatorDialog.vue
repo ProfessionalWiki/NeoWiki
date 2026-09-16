@@ -756,6 +756,10 @@ async function loadSchema( schemaName: string ): Promise<void> {
 }
 
 function openSubjectStep( schema: Schema, id: SubjectId ): void {
+	// A close the Schema step was still asking about goes with the step, or the question would come
+	// back by itself the next time that step shows.
+	cancelClose();
+
 	loadedSchema.value = schema;
 	rootSubject.value = new SubjectWithContext(
 		id,

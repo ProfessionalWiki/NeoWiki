@@ -2169,6 +2169,27 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
 			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
 		} );
+
+		it( 'does not ask again after closing when a close was requested while the picked schema loaded', async () => {
+			let resolveSchema!: ( schema: Schema ) => void;
+			getSchemaMock.mockReturnValue( new Promise<Schema>( ( resolve ) => {
+				resolveSchema = resolve;
+			} ) );
+			const wrapper = mountComponent();
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+			wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+			await requestClose( wrapper );
+			resolveSchema( newSchema( { title: SCHEMA_NAME } ) );
+			await flushPromises();
+			await requestClose( wrapper );
+
+			await wrapper.setProps( { open: false } );
+			await flushPromises();
+
+			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
+		} );
 	} );
 
 	describe( 'Close confirmation with draft schema', () => {
