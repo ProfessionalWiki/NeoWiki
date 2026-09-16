@@ -34,6 +34,7 @@
 			ref="propertyDefinitionEditor"
 			:key="propertyEditorKey"
 			:property="selectedProperty as PropertyDefinition"
+			:name-is-generated="selectedPropertyName === createdPropertyName"
 			@update:property-definition="onPropertyUpdated"
 		/>
 	</div>
@@ -93,15 +94,26 @@ const selectedPropertyName = ref<string | undefined>();
 // reset the name input, and the caret with it, on every keystroke.
 const propertyEditorKey = ref( 0 );
 
+// The property added last. The editor offers its generated name for replacement.
+const createdPropertyName = ref<string | undefined>();
+
 function selectProperty( name: string | undefined ): void {
+	if ( name === selectedPropertyName.value ) {
+		return;
+	}
+
 	selectedPropertyName.value = name;
 	propertyEditorKey.value++;
 }
 
-watch( () => props.initialSchema, ( schema ) => {
-	currentSchema.value = schema;
+function selectFirstProperty( schema: Schema ): void {
 	const firstProperty = [ ...schema.getPropertyDefinitions() ][ 0 ];
 	selectProperty( firstProperty?.name.toString() );
+}
+
+watch( () => props.initialSchema, ( schema ) => {
+	currentSchema.value = schema;
+	selectFirstProperty( schema );
 }, { immediate: true } );
 
 const propertyDefinitionEditor = ref<( ComponentPublicInstance & PropertyDefinitionEditorExposes ) | null>( null );
@@ -122,6 +134,7 @@ function onPropertySelected( name: PropertyName ): void {
 
 function onPropertyCreated( newProperty: PropertyDefinition ): void {
 	currentSchema.value = currentSchema.value.withAddedPropertyDefinition( newProperty );
+	createdPropertyName.value = newProperty.name.toString();
 	emit( 'change' );
 }
 
@@ -129,8 +142,7 @@ function onPropertyDeleted( name: PropertyName ): void {
 	currentSchema.value = currentSchema.value.withRemovedPropertyDefinition( name );
 
 	if ( selectedPropertyName.value === name.toString() ) {
-		const firstProperty = [ ...currentSchema.value.getPropertyDefinitions() ][ 0 ];
-		selectProperty( firstProperty?.name.toString() );
+		selectFirstProperty( currentSchema.value );
 	}
 
 	emit( 'change' );
@@ -144,6 +156,7 @@ function onPropertyReordered( names: PropertyName[] ): void {
 function onPropertyUpdated( updatedProperty: PropertyDefinition ): void {
 	currentSchema.value = buildUpdatedSchema( updatedProperty );
 
+	// A rename, not a selection change: the editor stays mounted so the caret survives.
 	selectedPropertyName.value = updatedProperty.name.toString();
 	emit( 'change' );
 }

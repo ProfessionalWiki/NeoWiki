@@ -77,6 +77,11 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
 	property: PropertyDefinition;
+	/**
+	 * Whether the property still carries the name it was created with. The editor then
+	 * selects the name, so that typing replaces it.
+	 */
+	nameIsGenerated?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -95,13 +100,14 @@ watch(
 
 const nameInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
 
-// The name is selected rather than just focused, so that the generated name of a new
-// property is replaced by typing.
 onMounted( () => {
 	nextTick( () => {
 		const input = nameInputElement();
 		input?.focus();
-		input?.select();
+
+		if ( props.nameIsGenerated ) {
+			input?.select();
+		}
 	} );
 } );
 

@@ -18,8 +18,11 @@ describe( 'PropertyDefinitionEditor', () => {
 		setupMwMock();
 	} );
 
-	function newWrapper( property: PropertyDefinition ): VueWrapper {
-		return createTestWrapper( PropertyDefinitionEditor, { property } );
+	function newWrapper(
+		property: PropertyDefinition,
+		{ nameIsGenerated = false, attachTo }: { nameIsGenerated?: boolean; attachTo?: Element } = {},
+	): VueWrapper {
+		return createTestWrapper( PropertyDefinitionEditor, { property, nameIsGenerated }, attachTo );
 	}
 
 	function lastEmittedProperty( wrapper: VueWrapper ): PropertyDefinition {
@@ -245,27 +248,29 @@ describe( 'PropertyDefinitionEditor', () => {
 			attached?.unmount();
 		} );
 
-		async function openEditorOn( propertyName: string ): Promise<VueWrapper> {
-			attached = createTestWrapper(
-				PropertyDefinitionEditor,
-				{ property: newTextProperty( { name: propertyName } ) },
-				document.body,
-			);
+		async function openEditorOn( { name, nameIsGenerated }: { name: string; nameIsGenerated: boolean } ): Promise<VueWrapper> {
+			attached = newWrapper( newTextProperty( { name } ), { nameIsGenerated, attachTo: document.body } );
 			await flushPromises();
 
 			return attached;
 		}
 
 		it( 'is focused when the editor opens', async () => {
-			const wrapper = await openEditorOn( 'New Property 1' );
+			const wrapper = await openEditorOn( { name: 'Status', nameIsGenerated: false } );
 
 			expect( document.activeElement ).toBe( findPropertyNameInput( wrapper ).element );
 		} );
 
-		it( 'has the whole name selected when the editor opens, so typing replaces it', async () => {
-			const wrapper = await openEditorOn( 'New Property 1' );
+		it( 'has the whole generated name selected when the editor opens, so typing replaces it', async () => {
+			const wrapper = await openEditorOn( { name: 'New Property 1', nameIsGenerated: true } );
 
 			expect( selectedText( findPropertyNameInput( wrapper ).element ) ).toBe( 'New Property 1' );
+		} );
+
+		it( 'leaves a chosen name unselected when the editor opens', async () => {
+			const wrapper = await openEditorOn( { name: 'Status', nameIsGenerated: false } );
+
+			expect( selectedText( findPropertyNameInput( wrapper ).element ) ).toBe( '' );
 		} );
 	} );
 } );
