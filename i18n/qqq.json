@@ -54,7 +54,6 @@
 	"neowiki-subject-creator-create-schema": "Label for the button that creates a new schema in the subject creator dialog.",
 	"neowiki-subject-creator-continue": "Label for the button that continues from schema creation to subject editing in the subject creator dialog.",
 	"neowiki-subject-creator-schema-created": "Success notification shown after creating a schema.",
-	"neowiki-subject-creator-back": "Aria label for the back button in the subject creator dialog, used to return to schema selection.",
 	"neowiki-subject-creator-page-field": "Label of the field group in the 'create subject' dialog that picks which page the Subject goes on.",
 	"neowiki-subject-creator-page-section": "Title of the collapsible section of the 'create subject' dialog that holds the page choice, and, while it is collapsed, the choice made; it is also the header of the non-expandable block a {{#create_subject}} button shows when the page is fixed: {{msg-mw|neowiki-subject-creator-page-section-this}} and its siblings continue this title, so 'Store the subject on' plus 'this page' must read as one phrase.",
 	"neowiki-subject-creator-page-section-this": "The choice shown in the header of the collapsed page section, continuing {{msg-mw|neowiki-subject-creator-page-section}}: the page the dialog was opened on. Lower case, as the end of that phrase.",
