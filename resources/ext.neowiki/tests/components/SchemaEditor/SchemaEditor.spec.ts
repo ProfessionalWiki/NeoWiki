@@ -1,5 +1,5 @@
 import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SchemaEditor, { type SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
 import { Schema } from '@/domain/Schema.ts';
@@ -7,6 +7,8 @@ import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
+import { newTextProperty } from '@/domain/propertyTypes/Text.ts';
+import { newSchema } from '@/TestHelpers.ts';
 import { createI18nMock, findPropertyNameInput, reportUnparseableNumber, selectedText } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import PaneDivider from '@/components/common/PaneDivider.vue';
@@ -30,12 +32,11 @@ function createWrapper( schema: Schema, description = '' ): VueWrapper {
 	} );
 }
 
-function createWrapperWithPropertyEditor( schema: Schema, attachTo?: Element ): VueWrapper {
+function createWrapperWithPropertyEditor( schema: Schema ): VueWrapper {
 	return mount( SchemaEditor, {
 		props: {
 			initialSchema: schema,
 		},
-		attachTo,
 		global: {
 			provide: NeoWikiTestServices.getServices(),
 			directives: {
@@ -391,32 +392,18 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	describe( 'property editor', () => {
-		let attached: VueWrapper | undefined;
-
-		afterEach( () => {
-			attached?.unmount();
-		} );
-
 		function schemaWithTextProperties( ...names: string[] ): Schema {
-			return new Schema(
-				'TestSchema',
-				'Description',
-				new PropertyDefinitionList( names.map( ( name ) => createPropertyDefinitionFromJson( name, { type: TextType.typeName } ) ) ),
-			);
-		}
-
-		async function addProperty( wrapper: VueWrapper, name: string ): Promise<void> {
-			const newProperty = createPropertyDefinitionFromJson( name, { type: TextType.typeName } );
-			const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
-
-			await propertyList.vm.$emit( 'propertyCreated', newProperty );
-			await propertyList.vm.$emit( 'propertySelected', newProperty.name );
-			await flushPromises();
+			return newSchema( { properties: new PropertyDefinitionList( names.map( ( name ) => newTextProperty( { name } ) ) ) } );
 		}
 
 		async function selectProperty( wrapper: VueWrapper, name: string ): Promise<void> {
 			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertySelected', new PropertyName( name ) );
 			await flushPromises();
+		}
+
+		async function addProperty( wrapper: VueWrapper, name: string ): Promise<void> {
+			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertyCreated', newTextProperty( { name } ) );
+			await selectProperty( wrapper, name );
 		}
 
 		it( 'opens on a property just added with its generated name selected, so typing replaces it', async () => {
@@ -425,14 +412,6 @@ describe( 'SchemaEditor', () => {
 			await addProperty( wrapper, 'New Property 1' );
 
 			expect( selectedText( findPropertyNameInput( wrapper ).element ) ).toBe( 'New Property 1' );
-		} );
-
-		it( 'focuses the name input of a property just added', async () => {
-			attached = createWrapperWithPropertyEditor( schemaWithTextProperties( 'Alpha' ), document.body );
-
-			await addProperty( attached, 'New Property 1' );
-
-			expect( document.activeElement ).toBe( findPropertyNameInput( attached ).element );
 		} );
 
 		it( 'leaves the name of an existing property unselected when it gets selected', async () => {

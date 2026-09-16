@@ -77,11 +77,8 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
 	property: PropertyDefinition;
-	/**
-	 * Whether the property still carries the name it was created with. The editor then
-	 * selects the name, so that typing replaces it.
-	 */
-	nameIsGenerated?: boolean;
+	/** Selects the name when the editor opens, so that typing replaces it. */
+	selectName?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -102,18 +99,13 @@ const nameInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
 
 onMounted( () => {
 	nextTick( () => {
-		const input = nameInputElement();
-		input?.focus();
+		nameInput.value?.focus();
 
-		if ( props.nameIsGenerated ) {
-			input?.select();
+		if ( props.selectName ) {
+			( nameInput.value?.$el as HTMLElement | undefined )?.querySelector( 'input' )?.select();
 		}
 	} );
 } );
-
-function nameInputElement(): HTMLInputElement | null {
-	return ( nameInput.value?.$el as HTMLElement | undefined )?.querySelector( 'input' ) ?? null;
-}
 
 function updatePropertyName( name: string ): void {
 	if ( !PropertyName.isValid( name ) ) {

@@ -32,9 +32,9 @@
 		<PropertyDefinitionEditor
 			v-if="selectedProperty !== undefined"
 			ref="propertyDefinitionEditor"
-			:key="propertyEditorKey"
+			:key="selection.epoch"
 			:property="selectedProperty as PropertyDefinition"
-			:name-is-generated="selectedPropertyName === createdPropertyName"
+			:select-name="selection.justAdded"
 			@update:property-definition="onPropertyUpdated"
 		/>
 	</div>
@@ -87,33 +87,37 @@ const paneSize = usePaneSize( root, {
 } );
 
 const currentSchema = ref<Schema>( props.initialSchema );
-const selectedPropertyName = ref<string | undefined>();
 
-// Rebuilds the property editor when a different property is selected, so it starts from
-// that property. Renaming the selected property keeps the editor: rebuilding it would
-// reset the name input, and the caret with it, on every keystroke.
-const propertyEditorKey = ref( 0 );
+// Keys the property editor by epoch: a different property rebuilds it, so it starts from
+// that property; a rename of the selected property keeps it, so the caret survives.
+const selection = ref<{ name: string | undefined; epoch: number; justAdded: boolean }>( {
+	name: undefined,
+	epoch: 0,
+	justAdded: false
+} );
 
-// The property added last. The editor offers its generated name for replacement.
-const createdPropertyName = ref<string | undefined>();
+const selectedPropertyName = computed( () => selection.value.name );
 
-function selectProperty( name: string | undefined ): void {
-	if ( name === selectedPropertyName.value ) {
+function selectProperty( name: string | undefined, justAdded: boolean ): void {
+	if ( name === selection.value.name ) {
 		return;
 	}
 
-	selectedPropertyName.value = name;
-	propertyEditorKey.value++;
+	selection.value = { name, epoch: selection.value.epoch + 1, justAdded };
 }
 
-function selectFirstProperty( schema: Schema ): void {
-	const firstProperty = [ ...schema.getPropertyDefinitions() ][ 0 ];
-	selectProperty( firstProperty?.name.toString() );
+function selectFirstProperty( properties: PropertyDefinitionList ): void {
+	const firstProperty = [ ...properties ][ 0 ];
+	selectProperty( firstProperty?.name.toString(), false );
+}
+
+function renameSelectedProperty( name: string ): void {
+	selection.value = { ...selection.value, name };
 }
 
 watch( () => props.initialSchema, ( schema ) => {
 	currentSchema.value = schema;
-	selectFirstProperty( schema );
+	selectFirstProperty( schema.getPropertyDefinitions() );
 }, { immediate: true } );
 
 const propertyDefinitionEditor = ref<( ComponentPublicInstance & PropertyDefinitionEditorExposes ) | null>( null );
@@ -129,12 +133,12 @@ const selectedProperty = computed( () => {
 } );
 
 function onPropertySelected( name: PropertyName ): void {
-	selectProperty( name.toString() );
+	selectProperty( name.toString(), false );
 }
 
 function onPropertyCreated( newProperty: PropertyDefinition ): void {
 	currentSchema.value = currentSchema.value.withAddedPropertyDefinition( newProperty );
-	createdPropertyName.value = newProperty.name.toString();
+	selectProperty( newProperty.name.toString(), true );
 	emit( 'change' );
 }
 
@@ -142,7 +146,7 @@ function onPropertyDeleted( name: PropertyName ): void {
 	currentSchema.value = currentSchema.value.withRemovedPropertyDefinition( name );
 
 	if ( selectedPropertyName.value === name.toString() ) {
-		selectFirstProperty( currentSchema.value );
+		selectFirstProperty( currentSchema.value.getPropertyDefinitions() );
 	}
 
 	emit( 'change' );
@@ -155,9 +159,7 @@ function onPropertyReordered( names: PropertyName[] ): void {
 
 function onPropertyUpdated( updatedProperty: PropertyDefinition ): void {
 	currentSchema.value = buildUpdatedSchema( updatedProperty );
-
-	// A rename, not a selection change: the editor stays mounted so the caret survives.
-	selectedPropertyName.value = updatedProperty.name.toString();
+	renameSelectedProperty( updatedProperty.name.toString() );
 	emit( 'change' );
 }
 
