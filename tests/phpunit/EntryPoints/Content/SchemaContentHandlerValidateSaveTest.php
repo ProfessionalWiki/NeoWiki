@@ -50,4 +50,18 @@ class SchemaContentHandlerValidateSaveTest extends MediaWikiIntegrationTestCase 
 		$this->assertFalse( $status->isOK() );
 	}
 
+	/**
+	 * The REST envelope carries only the first message, so a caller that never sees the rest
+	 * is told nothing unless that one names what is wrong.
+	 */
+	public function testFirstMessageNamesWhatIsInvalid(): void {
+		$status = $this->validate(
+			'{ "propertyDefinitions": { "Owner": { "type": "relation", "relation": "Owner" } } }'
+		);
+
+		$text = wfMessage( $status->getMessages()[0] )->text();
+
+		$this->assertStringContainsString( 'targetSchema', $text );
+	}
+
 }
