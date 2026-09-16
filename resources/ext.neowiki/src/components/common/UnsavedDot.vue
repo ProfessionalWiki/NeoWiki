@@ -1,4 +1,4 @@
-<!-- The dot sits inside a tree node's accessible name, which the node takes from its content,
+<!-- The dot sits inside a list row's accessible name, which the row takes from its content,
 	so it needs text of its own: `role="img"` with a label, and a title for the pointer. -->
 <template>
 	<span

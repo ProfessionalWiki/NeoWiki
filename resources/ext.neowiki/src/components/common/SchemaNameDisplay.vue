@@ -1,5 +1,5 @@
 <template>
-	<!-- A span where the surface owns the click: a link inside a tree row competes with it. -->
+	<!-- A span where the surface owns the click: a link inside a clickable row competes with it. -->
 	<component
 		:is="props.link === 'none' ? 'span' : 'a'"
 		class="ext-neowiki-schema-name"

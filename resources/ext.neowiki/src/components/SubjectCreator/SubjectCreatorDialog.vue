@@ -65,7 +65,7 @@
 	</CdxDialog>
 
 	<!-- The Subject itself is filled in by the editor, opened on a Subject the wiki does not hold
-		yet: the same panes, tree and relation-target creation as editing one it does. -->
+		yet: the same panes, navigator and relation-target creation as editing one it does. -->
 	<SubjectEditorDialog
 		v-if="rootSubject !== null && loadedSchema !== null"
 		:open="props.open"
@@ -298,7 +298,7 @@ const draftSchema = shallowRef<Schema | null>( null );
 
 /**
  * The Subject being created, as the editor dialog holds it: an id of its own, so the panes and the
- * tree can name it and a relation can be recorded against it, and no label until someone types one.
+ * navigator can name it and a relation can be recorded against it, and no label until someone types one.
  * Non-null is what puts the dialog on its second step.
  */
 const rootSubject = shallowRef<SubjectWithContext | null>( null );
@@ -728,7 +728,7 @@ async function loadSchema( schemaName: string ): Promise<void> {
 
 	try {
 		// The id is minted alongside the Schema because the step it opens cannot start without
-		// one: the panes and the tree name the Subject by it, and so does a relation recorded
+		// one: the panes and the navigator name the Subject by it, and so does a relation recorded
 		// against it before anything has been written.
 		const [ schema, id ] = await Promise.all( [
 			schemaRepo.getSchema( schemaName ),
