@@ -2167,6 +2167,27 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
 			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
 		} );
+
+		it( 'does not ask again after closing when a close was requested while the picked schema loaded', async () => {
+			let resolveSchema!: ( schema: Schema ) => void;
+			getSchemaMock.mockReturnValue( new Promise<Schema>( ( resolve ) => {
+				resolveSchema = resolve;
+			} ) );
+			const wrapper = mountComponent();
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+			wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+			await requestClose( wrapper );
+			resolveSchema( newSchema( { title: SCHEMA_NAME } ) );
+			await flushPromises();
+			await requestClose( wrapper );
+
+			await wrapper.setProps( { open: false } );
+			await flushPromises();
+
+			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
+		} );
 	} );
 
 	describe( 'Close confirmation with draft schema', () => {
@@ -2182,7 +2203,6 @@ describe( 'SubjectCreatorDialog', () => {
 			await requestClose( wrapper );
 
 			expect( wrapper.findComponent( SchemaAbandonmentDialog ).props( 'open' ) ).toBe( true );
-			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
 		} );
 
 		it( 'closes without saving on abandon', async () => {
@@ -2251,7 +2271,6 @@ describe( 'SubjectCreatorDialog', () => {
 
 			await requestClose( wrapper );
 
-			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
 			expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
 		} );
 
@@ -2290,6 +2309,85 @@ describe( 'SubjectCreatorDialog', () => {
 				expect.objectContaining( { type: 'error' } ),
 			);
 			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+		} );
+	} );
+
+	// Codex stacks open dialogs in the order they were mounted, so these run on its real dialogs:
+	// a confirmation below the dialog it confirms is hidden, and that dialog is inert under it.
+	describe( 'Confirmation stacking', () => {
+		const SubjectEditorDialogWithCodexDialog = {
+			name: 'SubjectEditorDialog',
+			components: { CdxDialog },
+			template: '<CdxDialog :open="open" title="subject-editor" />',
+			props: [ 'open', 'subject', 'schema', 'rootIsNew', 'saveDisabled', 'hostHasUnsavedChanges', 'onSave', 'onCreate', 'onSaveSchema', 'onSaved' ],
+			emits: [ 'update:open' ],
+		};
+
+		let wrapper: VueWrapper | undefined;
+
+		function mountWithCodexDialogs(): VueWrapper {
+			wrapper = mountComponent( {
+				CdxDialog: false,
+				CloseConfirmationDialog: false,
+				SchemaAbandonmentDialog: false,
+				SubjectEditorDialog: SubjectEditorDialogWithCodexDialog,
+				teleport: false,
+			} );
+
+			return wrapper;
+		}
+
+		afterEach( () => {
+			wrapper?.unmount();
+			wrapper = undefined;
+		} );
+
+		/** The open dialogs, named by title, from the bottom of the stack to the top. */
+		function openDialogs(): string[] {
+			return Array.from(
+				document.querySelectorAll( '.cdx-dialog__header__title' ),
+				( title ) => title.textContent?.trim() ?? '',
+			);
+		}
+
+		/** Closes the Schema step by its own dialog, which here is not the only real one in the tree. */
+		async function closeSchemaStep( dialog: VueWrapper ): Promise<void> {
+			dialog.findAllComponents( CdxDialog )
+				.find( ( cdxDialog ) => cdxDialog.props( 'title' ) === 'neowiki-subject-creator-title' )!
+				.vm.$emit( 'update:open', false );
+			await flushPromises();
+		}
+
+		it( 'shows the discard confirmation above a schema step shown again', async () => {
+			const dialog = mountWithCodexDialogs();
+			await dialog.setProps( { open: true } );
+			await flushPromises();
+			await dialog.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+			await requestClose( dialog );
+			await dialog.setProps( { open: false } );
+			await dialog.setProps( { open: true } );
+			await flushPromises();
+			await switchToNewSchema( dialog );
+			dialog.findComponent( SchemaCreator ).vm.$emit( 'change' );
+			await flushPromises();
+
+			await closeSchemaStep( dialog );
+
+			expect( openDialogs() ).toEqual( [ 'neowiki-subject-creator-title', 'neowiki-close-confirmation-title' ] );
+		} );
+
+		it( 'shows the schema abandonment question above the subject step', async () => {
+			const dialog = mountWithCodexDialogs();
+			await dialog.setProps( { open: true } );
+			await flushPromises();
+			await switchToNewSchema( dialog );
+			await new DOMWrapper( document.querySelector( '.ext-neowiki-subject-creator-continue cdx-button-stub' )! ).trigger( 'click' );
+			await flushPromises();
+
+			await requestClose( dialog );
+
+			expect( openDialogs() ).toEqual( [ 'subject-editor', 'neowiki-schema-abandonment-title' ] );
 		} );
 	} );
 
