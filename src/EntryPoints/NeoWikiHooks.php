@@ -578,7 +578,7 @@ class NeoWikiHooks {
 	}
 
 	public static function onScribuntoExternalLibraries( string $engine, array &$extraLibraries ): bool {
-		if ( $engine === 'lua' ) {
+		if ( $engine === 'lua' && NeoWikiExtension::getInstance()->isLuaEnabled() ) {
 			$extraLibraries['mw.neowiki'] = ScribuntoLuaLibrary::class;
 		}
 

@@ -208,6 +208,10 @@
 			"description": "Whether NeoWiki settings may also be set on the MediaWiki:NeoWiki JSON configuration page, which requires the editinterface and editsitejson rights to edit. When false, that page is never given the JSON content model, validated, or read, so only LocalSettings.php applies. The page exposes NeoWikiDereferenceSubjectsToHostingPage and NeoWikiAutoRenderMainSubject; its values take precedence over LocalSettings.php.",
 			"value": true
 		},
+		"NeoWikiEnableLua": {
+			"description": "Whether NeoWiki registers its Lua library (mw.neowiki) with Scribunto. When false, requiring the library fails like any missing module. The parser functions are unaffected.",
+			"value": true
+		},
 		"NeoWikiEnforceValidation": {
 			"description": "Whether write endpoints reject edits that introduce new error-severity violations. Warnings never block. When false, violations are surfaced in responses but writes always persist.",
 			"value": false
