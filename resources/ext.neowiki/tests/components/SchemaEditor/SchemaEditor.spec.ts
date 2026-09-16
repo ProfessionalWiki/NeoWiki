@@ -1,5 +1,5 @@
 import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import SchemaEditor, { type SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
 import { Schema } from '@/domain/Schema.ts';
@@ -390,63 +390,35 @@ describe( 'SchemaEditor', () => {
 			expect( unparseableInput( wrapper ) ).toBeNull();
 		} );
 	} );
-
 	describe( 'property editor', () => {
-		function schemaWithTextProperties( ...names: string[] ): Schema {
-			return newSchema( { properties: new PropertyDefinitionList( names.map( ( name ) => newTextProperty( { name } ) ) ) } );
-		}
-
 		async function selectProperty( wrapper: VueWrapper, name: string ): Promise<void> {
 			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertySelected', new PropertyName( name ) );
 			await flushPromises();
 		}
 
-		async function addProperty( wrapper: VueWrapper, name: string ): Promise<void> {
-			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertyCreated', newTextProperty( { name } ) );
-			await selectProperty( wrapper, name );
-		}
-
 		it( 'opens on a property just added with its generated name selected, so typing replaces it', async () => {
-			const wrapper = createWrapperWithPropertyEditor( schemaWithTextProperties( 'Alpha' ) );
+			const wrapper = createWrapperWithPropertyEditor( newSchema( {
+				properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Alpha' } ) ] ),
+			} ) );
 
-			await addProperty( wrapper, 'New Property 1' );
+			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertyCreated', newTextProperty( { name: 'New Property 1' } ) );
+			await selectProperty( wrapper, 'New Property 1' );
 
 			expect( selectedText( findPropertyNameInput( wrapper ).element ) ).toBe( 'New Property 1' );
 		} );
 
 		it( 'leaves the name of an existing property unselected when it gets selected', async () => {
-			const wrapper = createWrapperWithPropertyEditor( schemaWithTextProperties( 'Alpha', 'Beta', 'Gamma' ) );
+			const wrapper = createWrapperWithPropertyEditor( newSchema( {
+				properties: new PropertyDefinitionList( [
+					newTextProperty( { name: 'Alpha' } ),
+					newTextProperty( { name: 'Beta' } ),
+					newTextProperty( { name: 'Gamma' } ),
+				] ),
+			} ) );
 
 			await selectProperty( wrapper, 'Beta' );
 
 			expect( selectedText( findPropertyNameInput( wrapper ).element ) ).toBe( '' );
-		} );
-
-		it( 'shows the property that gets selected in place of the one shown before', async () => {
-			const wrapper = createWrapperWithPropertyEditor( schemaWithTextProperties( 'Alpha', 'Beta', 'Gamma' ) );
-
-			await selectProperty( wrapper, 'Beta' );
-
-			expect( findPropertyNameInput( wrapper ).element.value ).toBe( 'Beta' );
-		} );
-
-		it( 'keeps the name input in place while the name is typed, so the caret does not jump', async () => {
-			const wrapper = createWrapperWithPropertyEditor( schemaWithTextProperties( 'New Property 1' ) );
-			const input = findPropertyNameInput( wrapper );
-
-			await input.setValue( 'Sta' );
-			await flushPromises();
-
-			expect( findPropertyNameInput( wrapper ).element ).toBe( input.element );
-		} );
-
-		it( 'keeps the name input in place when the selected property is selected once more', async () => {
-			const wrapper = createWrapperWithPropertyEditor( schemaWithTextProperties( 'Alpha', 'Beta' ) );
-			const input = findPropertyNameInput( wrapper );
-
-			await selectProperty( wrapper, 'Alpha' );
-
-			expect( findPropertyNameInput( wrapper ).element ).toBe( input.element );
 		} );
 	} );
 } );

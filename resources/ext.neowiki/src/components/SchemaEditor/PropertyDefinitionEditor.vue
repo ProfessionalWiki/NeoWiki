@@ -99,7 +99,9 @@ const nameInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
 
 onMounted( () => {
 	nextTick( () => {
-		nameInput.value?.focus();
+		if ( nameInput.value !== null ) {
+			nameInput.value.focus();
+		}
 
 		if ( props.selectName ) {
 			( nameInput.value?.$el as HTMLElement | undefined )?.querySelector( 'input' )?.select();

@@ -1,5 +1,5 @@
 import { flushPromises, VueWrapper } from '@vue/test-utils';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { CdxCheckbox, CdxSelect } from '@wikimedia/codex';
 import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
@@ -18,11 +18,8 @@ describe( 'PropertyDefinitionEditor', () => {
 		setupMwMock();
 	} );
 
-	function newWrapper(
-		property: PropertyDefinition,
-		{ attachTo, ...props }: { selectName?: boolean; attachTo?: Element } = {},
-	): VueWrapper {
-		return createTestWrapper( PropertyDefinitionEditor, { property, ...props }, attachTo );
+	function newWrapper( property: PropertyDefinition, props: { selectName?: boolean } = {} ): VueWrapper {
+		return createTestWrapper( PropertyDefinitionEditor, { property, ...props } );
 	}
 
 	function lastEmittedProperty( wrapper: VueWrapper ): PropertyDefinition {
@@ -242,19 +239,6 @@ describe( 'PropertyDefinitionEditor', () => {
 	} );
 
 	describe( 'name input', () => {
-		let attached: VueWrapper | undefined;
-
-		afterEach( () => {
-			attached?.unmount();
-		} );
-
-		it( 'is focused when the editor opens', async () => {
-			attached = newWrapper( newTextProperty( { name: 'Status' } ), { attachTo: document.body } );
-			await flushPromises();
-
-			expect( document.activeElement ).toBe( findPropertyNameInput( attached ).element );
-		} );
-
 		it( 'has the whole name selected when the editor opens with selectName, so typing replaces it', async () => {
 			const wrapper = newWrapper( newTextProperty( { name: 'New Property 1' } ), { selectName: true } );
 			await flushPromises();

@@ -58,13 +58,11 @@ export async function reportUnparseableNumber( input: DOMWrapper<Element> ): Pro
 export function createTestWrapper<TComponent extends DefineComponent<any, any, any>>(
 	component: Component,
 	props: InstanceType<TComponent>['$props'],
-	attachTo?: Element,
 ): VueWrapper<InstanceType<TComponent>> {
 	return mount(
 		component,
 		{
 			props: props,
-			attachTo,
 			global: {
 				provide: NeoWikiTestServices.getServices(),
 				directives: {
