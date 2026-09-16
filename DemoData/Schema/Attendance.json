@@ -1,6 +1,12 @@
 {
-	"description": "Annual attendance record for a museum, used as other Subjects on museum pages.",
+	"description": "Annual attendance record, linked to the museum it counts and stored as one of that museum's other Subjects.",
 	"propertyDefinitions": {
+		"Museum": {
+			"type": "relation",
+			"relation": "Recorded at",
+			"targetSchema": "Museum",
+			"required": true
+		},
 		"Year": {
 			"type": "number",
 			"required": true

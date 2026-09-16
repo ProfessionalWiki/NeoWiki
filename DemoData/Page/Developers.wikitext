@@ -2,10 +2,11 @@ NeoWiki exposes a programmable surface: a graph database, parser functions, a Lu
 
 == Browse ==
 
+* [[Special:NeoWiki]]: every Schema with a Create button, and the other NeoWiki pages
 * [[Special:Schemas]]: all schemas
 * [[Special:Layouts]]: all layouts
 * [[Special:Mappings]]: all ontology mappings
-* [[Special:NeoJson|Special:NeoJson/&lt;subject id&gt;]]: view any subject as JSON
+* [[Special:Subject/sEpfwJLnxyQy6vR|Special:Subject/&lt;subject id&gt;]]: one Subject, the Subjects it references, and the ones that reference it; the id is in the ID line of the Subject's Data tab row
 
 == Query the graph ==
 
@@ -42,6 +43,20 @@ Source:
 </syntaxhighlight>
 
 Result: {{#neowiki_value:Founded at|page=ACME Inc}}
+
+== Create subjects from wikitext ==
+
+The <code><nowiki>{{#create_subject}}</nowiki></code> parser function renders a button that opens the Subject creator, optionally fixed to a Schema and a target page.
+
+Source:
+
+<syntaxhighlight lang="mediawiki">
+{{#create_subject: schema=City | page=new | text=Add a city}}
+</syntaxhighlight>
+
+Result:
+
+{{#create_subject: schema=City | page=new | text=Add a city}}
 
 == Read values in Lua ==
 

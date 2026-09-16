@@ -9,7 +9,7 @@ partners, knowledge managers, MediaWiki ecosystem evaluators, and live-demo audi
 | Directory | Purpose | Wiki destination |
 |---|---|---|
 | `Schema/<Name>.json` | Schemas (Subject types, property definitions) | `Schema:<Name>` |
-| `Subject/<Name>.json` | Subjects (data instances). Optional paired `<Name>.wikitext` for prose. | Main namespace, `<Name>` |
+| `Subject/<Name>.json` | The Subjects of one page: `{ "mainSubject": "<id>", "subjects": { "<id>": { "schema", "label", "statements" } } }`. `label` is optional. Optional paired `<Name>.wikitext` for prose. | Main namespace, `<Name>` |
 | `Layout/<Name>.json` | Layouts (curated displays for a Schema) | `Layout:<Name>` |
 | `Mapping/<Name>.json` | Ontology mappings, one page per target ontology | `Mapping:<Name>` |
 | `Page/<Name>.wikitext` | Free-form wiki pages (hubs, references) | Main namespace, `<Name>` |
@@ -21,7 +21,7 @@ partners, knowledge managers, MediaWiki ecosystem evaluators, and live-demo audi
 
 `ImportDemoData.php` reseeds the demo set: it creates and updates pages from these directories, and
 deletes pages a previous import created whose source file is now gone. So renaming or removing a
-file and re-importing is enough — no `make reinstall-db` needed. Only pages the import itself created
+file and re-importing is enough — no database reset needed. Only pages the import itself created
 are pruned; a page someone else created — like `Main_Page`, which the installer creates and the
 import merely overwrites — is never deleted, even if its source file is removed.
 
@@ -37,10 +37,10 @@ import merely overwrites — is never deleted, even if its source file is remove
 Subject, relation, and option IDs:
 
 - 15 characters total, starting with `s` / `r` / `o` respectively.
-- Remaining 14 characters use a base32-ish alphabet that excludes look-alikes: no `0`, `O`, `l`, `I`
+- Remaining 14 characters use a 58-character alphabet that excludes look-alikes: no `0`, `O`, `l`, `I`
   (lowercase `o` and `i` are allowed; see `SubjectId`/`RelationId`).
 - Existing conventions:
-  - Museum corpus uses random base62 (e.g. `sEpfwJLnxyQy6vR`).
+  - Museum corpus uses random ids (e.g. `sEpfwJLnxyQy6vR`).
   - Older corpora group by prefix (`s1demo1...` ACME, `s1demo7...` ACME structural,
     `s1demo8...` research). Pick a fresh group prefix for new corpora.
 - The only hard requirement is uniqueness across the dataset.
@@ -74,6 +74,11 @@ Subject, relation, and option IDs:
    shortcut disappears with no other visible change. A sidebar line is transformed before it is split
    on the pipe, so `{{#ifexist:}}` works there too — write the pipe as `{{!}}`, and an entry whose
    target is missing drops out of the menu entirely.
+7. **`{{#create_subject}}` on a hub takes `page=new`.** Without `page=`, the creator starts from a
+   new page but lets the visitor switch to "This page", which would put their record on the hub;
+   `page=new` fixes the choice. Buttons render for everyone; a visitor without edit rights gets a
+   permission dialog on click, so a hub needs no sign-in note. Two buttons side by side need a flex
+   `<div>` wrapper, since each renders as a block.
 
 ## Cypher gotchas
 
@@ -102,7 +107,7 @@ Subject, relation, and option IDs:
 
 ## Hub skeleton
 
-Use-case hub pages follow a five-section pattern:
+Use-case hub pages follow a six-section pattern:
 
 1. **Scenario**. One short paragraph framing who the dataset is for and what story it tells.
 2. **Featured**. `{{#invoke:SubjectRow|render|<id>|<id>}}` showing 2 representative subjects.
@@ -110,7 +115,10 @@ Use-case hub pages follow a five-section pattern:
    the top already serves as the featured view.
 3. **Question Answered**. A natural-language question heading followed by a Cypher result table.
 4. **Browse**. A curated table of subjects in the dataset.
-5. **How this is built**. Links to schemas, layouts, and an "Edit this page" link.
+5. **Add your own**. `{{#create_subject: schema=<Schema> | page=new}}` for the hub's central Schema,
+   optionally with one sentence on what the form will ask for (relation fields, say).
+6. **How this is built**. Links to schemas and layouts, a `Special:Subject/<id>` link for a featured
+   Subject whose incoming relations make the point, and an "Edit this page" link.
 
 Use `linkColumns=` on hub-page Cypher tables so subject names render as wikilinks.
 
@@ -157,14 +165,14 @@ From the repo root:
 ```sh
 # Reseeds the demo set: creates/updates pages and deletes ones the import previously created
 # whose source files are gone. Enough on its own after renames or deletions.
-make load-test-data
+make import-demo-data
 
-# Full clean-slate reset (drops the wiki database first). Rarely needed.
-make reinstall-db && make load-test-data
+# Full clean-slate reset: drops the database, reinstalls, and reseeds. Rarely needed.
+make reset
 
-# Reproject the Neo4j graph if Cypher results look stale.
+# Reproject the graph stores if query results look stale.
 make rebuild-graph-databases
 ```
 
-A successful import ends with `Import finished` and zero `FAILED` lines. The wiki runs at
-`http://localhost:8484/`.
+A successful import ends with `Import finished` and zero `FAILED` lines. The wiki's URL is the one
+`make dev` printed, or the `url` that `make worktree-list` reports in the dev-environment repo for a worktree.

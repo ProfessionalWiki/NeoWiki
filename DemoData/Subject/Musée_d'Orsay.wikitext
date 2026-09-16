@@ -5,6 +5,6 @@ The museum holds mainly French art from 1848 to 1914: paintings, sculptures, fur
 It is home to the world's largest collection of Impressionist and Post-Impressionist masterpieces, with works by
 [[Claude Monet|Monet]], Manet, Degas, Renoir, Cézanne, Seurat, Sisley, Gauguin, and [[Vincent van Gogh|Van Gogh]].
 
-{{#view: sEpfwLY8VcdQZJL}}
-{{#view: sEpfwLY8WnceT2y}}
-{{#view: sEpfwLY8XjJ8gE1}}
+== Annual attendance ==
+
+{{#invoke:NeoWikiDemo|otherSubjectTable|schema=Attendance|columns=Year, Visitors|sortBy=Year|numberColumns=Visitors}}

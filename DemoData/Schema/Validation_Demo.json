@@ -3,7 +3,7 @@
 	"propertyDefinitions": {
 		"Title": {
 			"type": "text",
-			"required": true,
+			"required": { "severity": "error" },
 			"description": "text, required. Clear it and save to see a required error."
 		},
 		"Summary": {
@@ -20,7 +20,7 @@
 		},
 		"Homepage": {
 			"type": "url",
-			"required": true,
+			"required": { "severity": "error" },
 			"description": "url, required. Must be a valid http or https URL."
 		},
 		"Tags": {
@@ -30,8 +30,8 @@
 		},
 		"Score": {
 			"type": "number",
-			"minimum": 0,
-			"maximum": 100,
+			"minimum": { "value": 0, "severity": "error" },
+			"maximum": { "value": 100, "severity": "error" },
 			"precision": 2,
 			"description": "number, minimum 0 / maximum 100, precision 2. Enter a value below 0 or above 100 to trigger a bounds violation."
 		},
