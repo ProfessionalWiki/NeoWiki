@@ -303,8 +303,6 @@ describe( 'SchemaCreator', () => {
 		} );
 	} );
 
-	// Exposed for the dialogs that hold a save back. A template ref is not checked against what
-	// the child actually exposes, so dropping this would only surface at runtime.
 	describe( 'incompleteProperty', () => {
 		it( 'reports nothing while the schema editor reports nothing', () => {
 			const wrapper = mountComponent();

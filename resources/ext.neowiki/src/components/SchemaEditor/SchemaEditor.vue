@@ -52,7 +52,6 @@ import { usePaneSize } from '@/composables/usePaneSize.ts';
 import { useGeneratedId } from '@wikimedia/codex';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 import type { IncompleteProperty } from '@/components/common/IncompleteProperty.ts';
-import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { missingRelationAttribute } from '@/components/SchemaEditor/Property/missingRelationAttribute.ts';
 
 const props = defineProps<{
@@ -182,20 +181,14 @@ export interface SchemaEditorExposes {
 }
 
 /**
- * The first property definition the wiki would refuse to store, or null. Unlike the unparseable
- * input above this reads the Schema rather than the mounted editor, because a property the user
- * has navigated away from has no editor to speak for it and is just as unsaveable.
- *
- * Only relation properties can be incomplete today; letting each Property Type answer for its
- * own definition, so an extension's can too, is #1454.
+ * The first property definition the wiki would refuse to store, or null. Read from the Schema
+ * rather than from the mounted editor: only the selected property has one, and a property the
+ * user navigated away from is just as unsaveable. Only relation properties can be incomplete
+ * today; letting every Property Type answer for its own definition is #1454.
  */
 const incompleteProperty = (): IncompleteProperty | null => {
 	for ( const property of currentSchema.value.getPropertyDefinitions() ) {
-		if ( property.type !== RelationType.typeName ) {
-			continue;
-		}
-
-		const message = missingRelationAttribute( property as RelationProperty );
+		const message = missingRelationAttribute( property );
 
 		if ( message !== null ) {
 			return { propertyName: property.name.toString(), message: mw.message( message ).text() };

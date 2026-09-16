@@ -261,14 +261,6 @@ describe( 'SchemaPicker', () => {
 			expect( fieldText( wrapper ) ).toBe( '' );
 			expect( wrapper.emitted( 'select' ) ).toBeFalsy();
 		} );
-
-		it( 'emits blur so the consumer can mark the field touched', async () => {
-			const wrapper = await mountLoadedPicker();
-
-			await field( wrapper ).trigger( 'blur' );
-
-			expect( wrapper.emitted( 'blur' ) ).toBeTruthy();
-		} );
 	} );
 
 	describe( 'reflecting the committed schema', () => {

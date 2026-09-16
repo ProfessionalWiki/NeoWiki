@@ -131,7 +131,7 @@ describe( 'RestSchemaRepository', () => {
 
 			await expect( repository.saveSchema( testSchema, 'Comment for the edit' ) )
 				.rejects
-				.toThrow( 'Some reason' );
+				.toThrow( /^Some reason$/ );
 		} );
 
 		it( 'should encode the schema name', async () => {

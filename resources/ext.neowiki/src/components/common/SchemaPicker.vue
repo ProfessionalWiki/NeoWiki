@@ -27,7 +27,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	'select': [ schemaName: string ];
-	'blur': [];
 }>();
 
 const schemaStore = useSchemaStore();
@@ -107,7 +106,6 @@ function revertUncommittedTyping(): void {
 	selectedSchema.value = selectableSchema( props.selected ?? null );
 	inputText.value = props.selected ?? '';
 	query.value = '';
-	emit( 'blur' );
 }
 
 // Waits for the schemas so that focus lands on a field whose menu can open right away.

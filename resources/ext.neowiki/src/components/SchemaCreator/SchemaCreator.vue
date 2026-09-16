@@ -182,7 +182,7 @@ export interface SchemaCreatorExposes {
 	focus: () => void;
 }
 
-defineExpose( { validate, getSchema, unparseableInput, incompleteProperty, reset, focus } );
+defineExpose<SchemaCreatorExposes>( { validate, getSchema, unparseableInput, incompleteProperty, reset, focus } );
 </script>
 
 <style lang="less">

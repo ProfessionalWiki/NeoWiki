@@ -1913,8 +1913,6 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( wrapper.find( '.schema-creator-stub' ).exists() ).toBe( false );
 		} );
 
-		// Relation properties arrive without a target Schema, which the wiki refuses to store.
-		// Held back here, the user is still looking at the property that is missing one.
 		it( 'does not continue while a property definition is missing a field the wiki requires', async () => {
 			const wrapper = mountComponent();
 			await switchToNewSchema( wrapper );

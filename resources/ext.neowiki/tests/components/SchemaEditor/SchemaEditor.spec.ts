@@ -57,8 +57,7 @@ function createWrapperWithPropertyEditor( schema: Schema ): VueWrapper {
 describe( 'SchemaEditor', () => {
 
 	beforeEach( () => {
-		// The two Constraint messages resolve to real text, so a test asserting on them can tell
-		// a rendered message from the bare key.
+		// Real text for the messages asserted on below, to tell a rendered message from its key.
 		const messages: Record<string, string> = {
 			'neowiki-property-editor-relation-required': 'Relation type is required.',
 			'neowiki-property-editor-target-schema-required': 'Target schema is required.',

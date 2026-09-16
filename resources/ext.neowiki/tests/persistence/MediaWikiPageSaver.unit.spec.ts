@@ -95,10 +95,10 @@ describe( 'MediaWikiPageSaver', () => {
 		expect( failureOf( await save( newSaver( 'fail', failure ) ) ) ).toBe( 'Schemainhalt ist ungültig' );
 	} );
 
-	it( 'falls back to the error key when the response carries no message', async () => {
-		const status = await save( newSaver( 'fail', restFailure( { errorKey: 'rest-update-cannot-create-page' } ) ) );
+	it( 'reports the plain message of an error raised outside the localized path', async () => {
+		const status = await save( newSaver( 'fail', restFailure( { message: 'Error: exception of type RuntimeException' } ) ) );
 
-		expect( failureOf( status ) ).toBe( 'rest-update-cannot-create-page' );
+		expect( failureOf( status ) ).toBe( 'Error: exception of type RuntimeException' );
 	} );
 
 	it( 'falls back to the HTTP reason when the response carries no error body', async () => {

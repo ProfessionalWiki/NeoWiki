@@ -9,17 +9,16 @@ use MediaWiki\Content\Content;
 use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Content\ValidationParams;
-use MediaWiki\Message\Message;
 use MediaWiki\Title\Title;
 use MediaWiki\Parser\ParserOutput;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
 use StatusValue;
-use Wikimedia\Message\ListType;
-use Wikimedia\Message\MessageValue;
 
 class SchemaContentHandler extends JsonContentHandler {
+
+	use ReportsValidationErrors;
 
 	protected function getContentClass(): string {
 		return SchemaContent::class;
@@ -43,20 +42,11 @@ class SchemaContentHandler extends JsonContentHandler {
 		$validator = SchemaContentValidator::newInstance();
 
 		if ( !$validator->validate( $content->getText() ) ) {
-			$errors = $validator->getErrors();
-			$details = [];
-
-			foreach ( $errors as $pointer => $message ) {
-				$details[] = MessageValue::new( 'neowiki-schema-invalid-detail' )->params( $pointer, $message );
-			}
-
-			// The details ride in this message rather than following as messages of their own:
-			// the REST error envelope carries only the first message a Status holds, so a client
-			// told "3 errors" and nothing else cannot act on it.
-			$status->fatal(
+			$this->reportValidationErrors(
+				$status,
 				'neowiki-schema-invalid',
-				count( $errors ),
-				Message::listParam( $details, ListType::SEMICOLON )
+				'neowiki-schema-invalid-detail',
+				$validator->getErrors()
 			);
 		}
 
