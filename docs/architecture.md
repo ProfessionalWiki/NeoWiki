@@ -38,8 +38,8 @@ wiki pages ([ADR 15](adr/015-dedicated-editors.md), [ADR 16](adr/016-frontend-st
 [ADR 20](adr/020-codex-styling-policy.md)). The PHP behind them follows a domain-centric architecture
 ([ADR 1](adr/001-domain-centric-architecture.md)).
 
-Other MediaWiki extensions can add Property Types, View Types, Page Properties, graph backends, and frontend
-components ([Extending NeoWiki](extending/extending.md)).
+Other MediaWiki extensions can add Property Types, View Types, Page Properties, Subject Sources, graph backends,
+and frontend components ([Extending NeoWiki](extending/extending.md)).
 
 ## Architecture Decision Records
 
