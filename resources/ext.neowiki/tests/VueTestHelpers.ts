@@ -77,6 +77,18 @@ export function createTestWrapper<TComponent extends DefineComponent<any, any, a
 }
 
 /**
+ * The open dialogs, named by title, from the bottom of the stack to the top. Codex teleports every
+ * dialog to the document and gives each backdrop the same z-index, so the order they stand in the
+ * document is the order they stack in, and the last one named is the one the user is looking at.
+ */
+export function openDialogTitles(): string[] {
+	return Array.from(
+		document.querySelectorAll( '.cdx-dialog__header__title' ),
+		( title ) => title.textContent?.trim() ?? '',
+	);
+}
+
+/**
  * CdxDialog as a stub that still renders its slots. shallowMount's auto-stubs render none, and a
  * dialog's controls live in its #footer slot, so a test driving one needs them in the tree.
  */

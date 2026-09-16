@@ -1,6 +1,9 @@
 <template>
+	<!-- Mounted only while it asks: Codex stacks dialogs in mount order, so one kept mounted with its
+		host would open behind whatever the host opened later. Costs the fade Vue skips on unmount. -->
 	<CdxDialog
-		:open="open"
+		v-if="open"
+		:open="true"
 		class="ext-neowiki-ui"
 		:title="$i18n( 'neowiki-close-confirmation-title' ).text()"
 		:use-close-button="true"

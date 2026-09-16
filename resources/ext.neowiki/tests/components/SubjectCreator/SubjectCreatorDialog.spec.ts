@@ -8,7 +8,7 @@ import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, openDialogTitles, setupMwMock } from '../../VueTestHelpers.ts';
 import { newSchema, newSubject } from '@/TestHelpers.ts';
 import { PageSubjects } from '@/domain/PageSubjects.ts';
 import type { SubjectRepository } from '@/domain/SubjectRepository.ts';
@@ -2312,8 +2312,8 @@ describe( 'SubjectCreatorDialog', () => {
 		} );
 	} );
 
-	// Codex stacks open dialogs in the order they were mounted, so these run on its real dialogs:
-	// a confirmation below the dialog it confirms is hidden, and that dialog is inert under it.
+	// Run on Codex's real dialogs rather than stubs, so that the order they stand in the document is
+	// the order the user sees them stacked in.
 	describe( 'Confirmation stacking', () => {
 		const SubjectEditorDialogWithCodexDialog = {
 			name: 'SubjectEditorDialog',
@@ -2342,14 +2342,6 @@ describe( 'SubjectCreatorDialog', () => {
 			wrapper = undefined;
 		} );
 
-		/** The open dialogs, named by title, from the bottom of the stack to the top. */
-		function openDialogs(): string[] {
-			return Array.from(
-				document.querySelectorAll( '.cdx-dialog__header__title' ),
-				( title ) => title.textContent?.trim() ?? '',
-			);
-		}
-
 		/** Closes the Schema step by its own dialog, which here is not the only real one in the tree. */
 		async function closeSchemaStep( dialog: VueWrapper ): Promise<void> {
 			dialog.findAllComponents( CdxDialog )
@@ -2358,6 +2350,8 @@ describe( 'SubjectCreatorDialog', () => {
 			await flushPromises();
 		}
 
+		// The Schema and Subject steps here, and the reopening, are the test: they are what puts the
+		// Schema step's dialog into the document later than the confirmation that covers it.
 		it( 'shows the discard confirmation above a schema step shown again', async () => {
 			const dialog = mountWithCodexDialogs();
 			await dialog.setProps( { open: true } );
@@ -2374,7 +2368,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			await closeSchemaStep( dialog );
 
-			expect( openDialogs() ).toEqual( [ 'neowiki-subject-creator-title', 'neowiki-close-confirmation-title' ] );
+			expect( openDialogTitles() ).toEqual( [ 'neowiki-subject-creator-title', 'neowiki-close-confirmation-title' ] );
 		} );
 
 		it( 'shows the schema abandonment question above the subject step', async () => {
@@ -2387,7 +2381,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			await requestClose( dialog );
 
-			expect( openDialogs() ).toEqual( [ 'subject-editor', 'neowiki-schema-abandonment-title' ] );
+			expect( openDialogTitles() ).toEqual( [ 'subject-editor', 'neowiki-schema-abandonment-title' ] );
 		} );
 	} );
 
