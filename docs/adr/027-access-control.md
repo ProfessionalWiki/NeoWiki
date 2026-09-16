@@ -3,7 +3,8 @@
 Date: 2026-07-22
 
 Status: Accepted (2026-09-02). Amended 2026-09-11, resolving the "Cross-wiki subject display" open decision with a
-fifth read class, source-attested; amended 2026-09-12, on what creating a page by title reveals (see Decision).
+fifth read class, source-attested; amended 2026-09-12, on what creating a page by title reveals; amended 2026-09-16,
+resolving the "Default grant of `neowiki-query`" open decision (see Decision).
 
 ## Context
 
@@ -52,8 +53,10 @@ Constraints the model rests on:
 - **Raw query surfaces have whole-store read semantics.** A raw query surface executes a caller-supplied Cypher or
   SPARQL query; its result rows are not attributable to pages and are not trimmed. The REST query endpoints are gated
   by the wiki-level `neowiki-query` right; granting that right gives read access to everything the wiki projects into
-  the store. Exposing a store directly (which ADR 19 allows for SPARQL) is a different surface: see the projection
-  decision below.
+  the store. That right stays granted to `*`, since the canonical parse runs as the anonymous user; a deployment
+  whose readers do not all see the same pages narrows it
+  ([restricted content](../operations/restricted-content.md#narrowing-neowiki-query)). Exposing a store directly
+  (which ADR 19 allows for SPARQL) is a different surface: see the projection decision below.
 - **Parse-time reads run as the user the page is parsed for, and their output is cached per access class.**
   The parser functions and the Lua library read as the user recorded in the parser options: the viewer on a
   page view, or the anonymous user for the save-time parse, the job queue, and Parsoid renders. They are gated
@@ -83,14 +86,6 @@ Constraints the model rests on:
   /neowiki/v0/subjects` authorizes the caller-supplied title before looking for a page there, as MediaWiki's own page
   creation does: a title they may not create answers `403` whether or not a page holds it. The `409` that says a
   title is taken therefore reaches only a caller who may write there.
-
-## Open decisions
-
-These decisions remain open at acceptance; each is deferred to the tracking issue named with it.
-
-- **Default grant of `neowiki-query`.** The right is granted to `*` by default. Deferred to
-  [#1342](https://github.com/ProfessionalWiki/NeoWiki/issues/1342): whether the default changes, and how deployments
-  with restricted content are expected to configure it.
 
 ## Out of scope
 
@@ -146,4 +141,5 @@ These decisions remain open at acceptance; each is deferred to the tracking issu
 - Issues: [#1046](https://github.com/ProfessionalWiki/NeoWiki/issues/1046) (per-page read enforcement),
   [#350](https://github.com/ProfessionalWiki/NeoWiki/issues/350) (slot-level access),
   [#1341](https://github.com/ProfessionalWiki/NeoWiki/issues/1341) (cross-wiki subject display, resolved by the
-  source-attested class)
+  source-attested class), [#1342](https://github.com/ProfessionalWiki/NeoWiki/issues/1342) (default grant of
+  `neowiki-query`, resolved by keeping it)

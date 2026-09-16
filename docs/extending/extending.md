@@ -5,8 +5,9 @@ order: 1
 # Extending NeoWiki
 
 Other MediaWiki extensions can add Property Types and View Types, contribute page metadata and revision choices,
-keep a graph store of their own in sync, and use NeoWiki's PHP services and Vue components. The concepts used here —
-Subject, Schema, Property Type, Page Property — are defined in the [Glossary](../glossary.md).
+supply Subjects from outside this wiki, keep a graph store of their own in sync, and use NeoWiki's PHP services and
+Vue components. The concepts used here — Subject, Schema, Property Type, Page Property — are defined in the
+[Glossary](../glossary.md).
 
 [RedHerb](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb) is a minimal example extension in the NeoWiki repository; the fastest start is to copy
 the file it uses for your extension point and adapt it.

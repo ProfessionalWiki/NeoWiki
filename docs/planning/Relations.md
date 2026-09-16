@@ -18,9 +18,9 @@ relation Property Definition carries `relation` (the edge-type name), `targetSch
 ([schema format](../api/schema-format.md)). An edge-`properties` bag also exists; decision 1 removes it.
 
 - **Integrity.** Referenced-but-absent targets persist as stub nodes. Targets are validated server-side —
-  `relation-target-not-found`, `relation-target-schema-mismatch`, `single-value-only`
-  ([validation codes](../api/validation-codes.md)). Graph uniqueness constraints exist for Subjects; target
-  autocomplete is scoped to the current wiki.
+  `relation-target-not-found`, `relation-target-schema-mismatch`, `relation-target-unresolvable-source`,
+  `single-value-only` ([validation codes](../api/validation-codes.md)). Graph uniqueness constraints exist for
+  Subjects; target autocomplete is scoped to the current wiki.
 - **Editing.** The subject editor edits related Subjects in a tree and creates relation targets in place
   ([#1323](https://github.com/ProfessionalWiki/NeoWiki/pull/1323),
   [#1339](https://github.com/ProfessionalWiki/NeoWiki/pull/1339)). A Subject created in flow lands on the page being
@@ -114,10 +114,10 @@ Now:
 - Relation columns in `{{#cypher}}` result tables ([#809](https://github.com/ProfessionalWiki/NeoWiki/issues/809);
   prior analysis in [LegacyNeoWiki #625](https://github.com/ProfessionalWiki/LegacyNeoWiki/issues/625)).
 
-After the Subject Sources foundation ([#1265](https://github.com/ProfessionalWiki/NeoWiki/pull/1265)) lands:
+Gated on sourced-Subject display ([Subject Sources](SubjectSources.md)):
 
-- Cross-Source relation targets: #1265 restricts them to registered Sources; opening them — remote display, graceful
-  degradation — follows [Subject Sources](SubjectSources.md).
+- Cross-Source relation targets. The foundation ([#1265](https://github.com/ProfessionalWiki/NeoWiki/pull/1265))
+  restricts them to registered Sources; opening them up needs remote display and graceful degradation.
 
 After ADR 28 is ratified:
 

@@ -9,17 +9,17 @@ Reviewed and refined by Opus 4.8 and Alistair.
 
 ## Summary
 
-NeoWiki today assumes every Subject is local, editable, and versioned — stored in a MediaWiki revision slot and
-projected into Neo4j. Several needed capabilities do not fit that assumption: page and approval metadata, free-form
-tables, cross-wiki metadata in a wiki farm, and data drawn from other systems.
+NeoWiki assumed every Subject is local, editable, and versioned — stored in a MediaWiki revision slot and projected
+into Neo4j. Several needed capabilities do not fit that assumption: page and approval metadata, free-form tables,
+cross-wiki metadata in a wiki farm, and data drawn from other systems.
 
-Proposed direction: **Subjects come from pluggable Sources.** The local revision slot is the default Source; other
-Sources supply Subjects too — another structured-data store on the same wiki (SMW, Wikibase), another NeoWiki, or an
-external system. A Subject's source decides one thing — **editability**: local Subjects are editable (per access
-rights) and versioned; sourced Subjects are **read-only** for now (writing back to a source is an end-of-roadmap
-option, kept open, not built). Whatever the source, a Subject renders through the existing Views (sourced ones
-read-only) and is queryable once materialised — there is no per-Source capability matrix, just the
-local-editable / sourced-read-only distinction.
+Direction: **Subjects come from pluggable Sources.** The local revision slot is the default Source; other Sources
+supply Subjects too — another structured-data store on the same wiki (SMW, Wikibase), another NeoWiki, or an external
+system. A Subject's source decides one thing — **editability**: local Subjects are editable (per access rights) and
+versioned; sourced Subjects are **read-only** for now (writing back to a source is an end-of-roadmap option, kept
+open, not built). Whatever the source, a Subject renders through the existing Views (sourced ones read-only) and is
+queryable once materialised — no per-Source capability matrix, just the local-editable / sourced-read-only
+distinction.
 
 Separately, **page-facts** — approval state, system page metadata — are *not* Subjects. They are facts about a page,
 materialised on the page node and surfaced via query (Cypher / dashboards), not the View or editor. The Source system
@@ -139,18 +139,21 @@ vocabularies.
 
 Local Subjects render through the existing View/editor as today — a by-subject-id placeholder hydrated client-side,
 revision-aware. **Sourced Subjects render the same way, read-only** (clearly marked as from their source, degrading
-gracefully if the source is unavailable). Making that work needs a **source-aware subject-load seam** (resolve the
-id's source, fetch from there, resolve its schema) — real work that rides on Sources existing, so it is **deferred,
-not dropped**.
+gracefully if the source is unavailable). The backend half is built: a read by id resolves the id's Source and fetches
+from there. The frontend half is not ([#1373](https://github.com/ProfessionalWiki/NeoWiki/issues/1373)) — it carries a
+Schema reference as a bare name, so a sourced Subject's Schema would be resolved locally, and nothing marks a Subject
+as sourced.
 
 **Page-facts are not rendered through Views** — they are query-only (Cypher / dashboards).
 
 ## Relations across Sources
 
-A Relation targets a `(source, localId)` id; resolution routes to the target's Source. Cross-source relations are not
-blocked (Neo4j `MERGE` creates a stub for an absent target), but display needs the Source and `targetSchema`
-validation is limited when the target is remote. For an initial version, restrict Relation targets to resolvable
-Sources and open up cross-source relations later.
+A Relation targets a `(source, localId)` id; resolution routes to the target's Source. The v1 restriction is in place:
+a target naming a Source this wiki has not registered is a blocking
+[`relation-target-unresolvable-source`](../api/validation-codes.md#relation-target-unresolvable-source) violation. A
+target in a registered Source is allowed, but gets [no Neo4j edge](../api/graph-model.md#typed-relations) — a stub
+would carry this wiki's `wiki_id` — while RDF names it under its Source's base URI. Opening cross-source relations up
+needs display of the target and `targetSchema` validation across Sources.
 
 ## Refresh without an edit
 
@@ -225,22 +228,27 @@ id; rich chain-of-production provenance is a separate model.
 
 ### Still open
 
-- **Federation resolution** (fetch-at-read vs cache/materialise) and **shared-graph instance tagging** (the farm
-  deliverable proper).
+- **Federation resolution** (fetch-at-read vs cache/materialise).
+- **Materialising sourced Subjects.** Queryability requires materialisation, and a Source has no way to put its
+  Subjects into a graph store ([#1370](https://github.com/ProfessionalWiki/NeoWiki/issues/1370)).
+- **Source keys for farm siblings.** A farm registers each sibling wiki as a Source, but a MediaWiki Wiki ID is not
+  always a valid source key ([#1372](https://github.com/ProfessionalWiki/NeoWiki/issues/1372)).
 - **History-page rendering** for non-history-correct sourced Subjects (show current values, or hide them?).
 
 ## Sequencing
 
-1. **HW MVP core (now):** materialise approval / page metadata (page-facts, query-only) via the existing page-property
-   mechanism; the refresh-without-edit operation ([#889](https://github.com/ProfessionalWiki/NeoWiki/issues/889));
-   and multi-wiki node identity ([#905](https://github.com/ProfessionalWiki/NeoWiki/issues/905)) for per-wiki query
-   filtering. Forward-compatible down-payments, not a separate system.
-2. **Source foundation:** the `(source, localId)` identity, the Source registry/interface (contract frozen in
+1. **HW MVP core — built:** materialise approval / page metadata (page-facts, query-only) via the existing
+   page-property mechanism; the refresh-without-edit operation
+   ([#889](https://github.com/ProfessionalWiki/NeoWiki/issues/889)); and multi-wiki node identity
+   ([#905](https://github.com/ProfessionalWiki/NeoWiki/issues/905)) for per-wiki query filtering. Forward-compatible
+   down-payments, not a separate system.
+2. **Source foundation — built** ([#1265](https://github.com/ProfessionalWiki/NeoWiki/pull/1265)): the
+   `(source, localId)` identity, the Source registry/interface (contract frozen in
    [ADR 23](../adr/023-subject-sources.md): no query role, no write capability), and the local store refactored as
    the default `LocalSource`. The single system everything else builds on.
-3. **Source consumers (by demand, on the foundation):** sourced Subjects in Views (read-only); the on-wiki
-   SMW/Wikibase source (read-only) — the easiest sourced case and an adoption/migration wedge; remote federation and
-   RDF/IRI export (gated on ECHOLOT).
+3. **Source consumers (by demand, on the foundation):** sourced Subjects in Views (read-only,
+   [#1373](https://github.com/ProfessionalWiki/NeoWiki/issues/1373)); the on-wiki SMW/Wikibase source (read-only) —
+   the easiest sourced case and an adoption/migration wedge; remote federation and RDF/IRI export (gated on ECHOLOT).
 4. **End-of-roadmap, by demand:** editing sourced Subjects / write-back (enables SMW/Wikibase migration and
    bi-directional flow).
 
