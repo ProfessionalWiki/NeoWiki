@@ -1199,6 +1199,14 @@ class NeoWikiExtension {
 	}
 
 	/**
+	 * Whether the Lua library is registered with Scribunto. Read live from MainConfig so the setting
+	 * applies per request and tests can toggle it without rebuilding the singleton.
+	 */
+	public function isLuaEnabled(): bool {
+		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiEnableLua' ) === true;
+	}
+
+	/**
 	 * Whether the given title is the on-wiki configuration page and reading it is enabled.
 	 */
 	public function isConfigPage( Title $title ): bool {

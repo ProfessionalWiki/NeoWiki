@@ -28,6 +28,9 @@ For definitions of terms like Subject, Schema, and Statement, see the [Glossary]
 local nw = require('mw.neowiki')
 ```
 
+A wiki can [turn the library off](../operations/restricted-content.md#removing-the-lua-library) with
+`$wgNeoWikiEnableLua`, in which case `require` fails.
+
 ## Functions
 
 ### `nw.getValue(propertyName, options)`

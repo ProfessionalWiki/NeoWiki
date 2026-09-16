@@ -42,6 +42,16 @@ Saves, job-queue parses and Parsoid renders run as the anonymous user, so a page
 module wraps the call in `pcall`. Readers who hold the right get
 [their own cached parse](../authoring/parser-functions.md) and see results.
 
+## Removing the Lua library
+
+```php
+$wgNeoWikiEnableLua = false;
+```
+
+NeoWiki then registers no `mw.neowiki` library, so no module reads NeoWiki data or runs a query, and a module
+requiring it fails as any missing module does. `{{#cypher_raw}}` and `{{#sparql_raw}}` are unaffected and stay
+governed by `neowiki-query`.
+
 ## Where the protection stops
 
 - **Cached output outlives a restriction.** A page that showed now-restricted data keeps showing it until it is
