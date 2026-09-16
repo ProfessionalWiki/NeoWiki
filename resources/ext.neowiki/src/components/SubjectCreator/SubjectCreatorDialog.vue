@@ -1,125 +1,102 @@
 <!-- eslint-disable vue/no-multiple-template-root -->
 <template>
+	<!-- Each step's confirmation mounts with the step's dialog, and after it: Codex stacks open dialogs
+		in the order they mounted, so a confirmation mounted earlier opens hidden behind the dialog. -->
 	<!-- Unmounted rather than closed once the Schema is settled: setting a Codex dialog's own open
 		prop to false here would be indistinguishable from the user closing it. -->
-	<CdxDialog
-		v-if="rootSubject === null"
-		:open="props.open"
-		class="ext-neowiki-ui ext-neowiki-subject-creator-dialog cdx-dialog--dividers"
-		:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' }"
-		:title="$i18n( 'neowiki-subject-creator-title' ).text()"
-		:subtitle="headerSubtitle"
-		:use-close-button="true"
-		@update:open="onSchemaStepUpdateOpen"
-	>
-		<EditNoticeList :notices="shownNotices" />
-
-		<p>
-			{{ $i18n( 'neowiki-subject-creator-schema-title' ).text() }}
-		</p>
-
-		<CdxToggleButtonGroup
-			v-if="canCreateSchemas"
-			v-model="selectedSchemaOption"
-			class="ext-neowiki-subject-creator-schema-options"
-			:buttons="toggleButtons"
-		/>
-
-		<div
-			v-if="selectedSchemaOption === 'existing'"
-			class="ext-neowiki-subject-creator-existing"
+	<template v-if="rootSubject === null">
+		<CdxDialog
+			:open="props.open"
+			class="ext-neowiki-ui ext-neowiki-subject-creator-dialog cdx-dialog--dividers"
+			:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' }"
+			:title="$i18n( 'neowiki-subject-creator-title' ).text()"
+			:subtitle="headerSubtitle"
+			:use-close-button="true"
+			@update:open="onSchemaStepUpdateOpen"
 		>
-			<SchemaPicker
-				ref="schemaLookupRef"
-				@select="onSchemaSelected"
+			<EditNoticeList :notices="shownNotices" />
+
+			<p>
+				{{ $i18n( 'neowiki-subject-creator-schema-title' ).text() }}
+			</p>
+
+			<CdxToggleButtonGroup
+				v-if="canCreateSchemas"
+				v-model="selectedSchemaOption"
+				class="ext-neowiki-subject-creator-schema-options"
+				:buttons="toggleButtons"
 			/>
-		</div>
 
-		<div
-			v-if="selectedSchemaOption === 'new'"
-			class="ext-neowiki-subject-creator-new"
-		>
-			<SchemaCreator
-				ref="schemaCreatorRef"
-				:initial-schema="draftSchema ?? undefined"
-				@change="markChanged"
-			/>
-		</div>
-
-		<template
-			v-if="selectedSchemaOption === 'new'"
-			#footer
-		>
-			<div class="ext-neowiki-subject-creator-continue">
-				<CdxButton
-					action="progressive"
-					weight="primary"
-					:disabled="!hasChanged"
-					@click="handleCreateSchema"
-				>
-					{{ $i18n( 'neowiki-subject-creator-continue' ).text() }}
-					<CdxIcon :icon="cdxIconArrowNext" />
-				</CdxButton>
-			</div>
-		</template>
-	</CdxDialog>
-
-	<!-- The Subject itself is filled in by the editor, opened on a Subject the wiki does not hold
-		yet: the same panes, tree and relation-target creation as editing one it does. -->
-	<SubjectEditorDialog
-		v-if="rootSubject !== null && loadedSchema !== null"
-		:open="props.open"
-		:subject="rootSubject as Subject"
-		:schema="loadedSchema as Schema"
-		:root-is-new="true"
-		:save-disabled="!pageChosen"
-		:host-has-unsaved-changes="pageAnswered"
-		:on-save="handleSaveExisting"
-		:on-create="handleCreate"
-		:on-save-schema="handleSchemaSave"
-		:on-saved="handleSaved"
-		@update:open="onEditorUpdateOpen"
-	>
-		<template #before-actions="{ saving }">
 			<div
-				v-if="pageChoice !== null && pageFixed"
-				class="ext-neowiki-subject-creator-page-summary"
+				v-if="selectedSchemaOption === 'existing'"
+				class="ext-neowiki-subject-creator-existing"
 			>
-				<span class="ext-neowiki-subject-creator-page-section__label">
-					{{ $i18n( 'neowiki-subject-creator-page-section' ).text() }}
-					<span class="ext-neowiki-subject-creator-page-section__choice">
-						<I18nSlot
-							v-if="chosenPageSummary.title !== null"
-							:message-key="chosenPageSummary.messageKey"
-						>
-							<strong>{{ chosenPageSummary.title }}</strong>
-						</I18nSlot>
-						<template v-else>{{ $i18n( chosenPageSummary.messageKey ).text() }}</template>
-					</span>
-				</span>
-
-				<CdxMessage
-					v-if="pageError !== null"
-					type="error"
-					:inline="true"
-				>
-					{{ pageError }}
-				</CdxMessage>
+				<SchemaPicker
+					ref="schemaLookupRef"
+					@select="onSchemaSelected"
+				/>
 			</div>
 
-			<CdxAccordion
-				v-else-if="pageChoice !== null"
-				class="ext-neowiki-subject-creator-page-section"
-				:open="pageSectionOpen"
-				@toggle="onPageSectionToggle"
+			<div
+				v-if="selectedSchemaOption === 'new'"
+				class="ext-neowiki-subject-creator-new"
 			>
-				<template #title>
+				<SchemaCreator
+					ref="schemaCreatorRef"
+					:initial-schema="draftSchema ?? undefined"
+					@change="markChanged"
+				/>
+			</div>
+
+			<template
+				v-if="selectedSchemaOption === 'new'"
+				#footer
+			>
+				<div class="ext-neowiki-subject-creator-continue">
+					<CdxButton
+						action="progressive"
+						weight="primary"
+						:disabled="!hasChanged"
+						@click="handleCreateSchema"
+					>
+						{{ $i18n( 'neowiki-subject-creator-continue' ).text() }}
+						<CdxIcon :icon="cdxIconArrowNext" />
+					</CdxButton>
+				</div>
+			</template>
+		</CdxDialog>
+
+		<CloseConfirmationDialog
+			:open="confirmationOpen"
+			@discard="confirmClose"
+			@keep-editing="cancelClose"
+		/>
+	</template>
+
+	<template v-if="rootSubject !== null && loadedSchema !== null">
+		<!-- The Subject itself is filled in by the editor, opened on a Subject the wiki does not hold
+			yet: the same panes, tree and relation-target creation as editing one it does. -->
+		<SubjectEditorDialog
+			:open="props.open"
+			:subject="rootSubject as Subject"
+			:schema="loadedSchema as Schema"
+			:root-is-new="true"
+			:save-disabled="!pageChosen"
+			:host-has-unsaved-changes="pageAnswered"
+			:on-save="handleSaveExisting"
+			:on-create="handleCreate"
+			:on-save-schema="handleSchemaSave"
+			:on-saved="handleSaved"
+			@update:open="onEditorUpdateOpen"
+		>
+			<template #before-actions="{ saving }">
+				<div
+					v-if="pageChoice !== null && pageFixed"
+					class="ext-neowiki-subject-creator-page-summary"
+				>
 					<span class="ext-neowiki-subject-creator-page-section__label">
 						{{ $i18n( 'neowiki-subject-creator-page-section' ).text() }}
-						<span
-							v-if="!pageSectionOpen"
-							class="ext-neowiki-subject-creator-page-section__choice"
-						>
+						<span class="ext-neowiki-subject-creator-page-section__choice">
 							<I18nSlot
 								v-if="chosenPageSummary.title !== null"
 								:message-key="chosenPageSummary.messageKey"
@@ -129,94 +106,121 @@
 							<template v-else>{{ $i18n( chosenPageSummary.messageKey ).text() }}</template>
 						</span>
 					</span>
-				</template>
 
-				<CdxField
-					ref="pageFieldRef"
-					class="ext-neowiki-subject-creator-page-field"
-					:is-fieldset="true"
-					:hide-label="true"
-					:status="pageFieldStatus"
-					:messages="pageFieldMessages"
-				>
-					<template #label>
-						{{ $i18n( 'neowiki-subject-creator-page-field' ).text() }}
-					</template>
-
-					<CdxRadio
-						v-for="option in pageOptions"
-						:key="option.value"
-						v-model="pageChoice"
-						:input-value="option.value"
-						:disabled="saving"
-						name="ext-neowiki-subject-creator-page-choice"
+					<CdxMessage
+						v-if="pageError !== null"
+						type="error"
 						:inline="true"
 					>
-						{{ option.label }}
-					</CdxRadio>
+						{{ pageError }}
+					</CdxMessage>
+				</div>
 
-					<PagePicker
-						v-if="pageChoice === 'anotherPage'"
-						ref="pagePickerRef"
-						class="ext-neowiki-subject-creator-page-picker"
-						:existing-pages-only="true"
-						:disabled="saving"
-						:aria-label="existingPageLabel"
-						@update:selected="onPageSelected"
-					/>
+				<CdxAccordion
+					v-else-if="pageChoice !== null"
+					class="ext-neowiki-subject-creator-page-section"
+					:open="pageSectionOpen"
+					@toggle="onPageSectionToggle"
+				>
+					<template #title>
+						<span class="ext-neowiki-subject-creator-page-section__label">
+							{{ $i18n( 'neowiki-subject-creator-page-section' ).text() }}
+							<span
+								v-if="!pageSectionOpen"
+								class="ext-neowiki-subject-creator-page-section__choice"
+							>
+								<I18nSlot
+									v-if="chosenPageSummary.title !== null"
+									:message-key="chosenPageSummary.messageKey"
+								>
+									<strong>{{ chosenPageSummary.title }}</strong>
+								</I18nSlot>
+								<template v-else>{{ $i18n( chosenPageSummary.messageKey ).text() }}</template>
+							</span>
+						</span>
+					</template>
 
 					<CdxField
-						v-if="pageChoice === 'newPage'"
-						class="ext-neowiki-subject-creator-page-title-field"
-						:optional="true"
-						:status="pageTitleFieldStatus"
-						:messages="pageTitleFieldMessages"
+						ref="pageFieldRef"
+						class="ext-neowiki-subject-creator-page-field"
+						:is-fieldset="true"
+						:hide-label="true"
+						:status="pageFieldStatus"
+						:messages="pageFieldMessages"
 					>
-						<CdxTextInput
-							ref="pageTitleInputRef"
-							v-model="pageTitle"
-							:disabled="saving"
-							@input="handlePageTitleInput"
-						/>
 						<template #label>
-							{{ $i18n( 'neowiki-subject-creator-page-title-field' ).text() }}
+							{{ $i18n( 'neowiki-subject-creator-page-field' ).text() }}
 						</template>
-						<template #help-text>
-							{{ $i18n( 'neowiki-subject-creator-page-title-help' ).text() }}
-						</template>
+
+						<CdxRadio
+							v-for="option in pageOptions"
+							:key="option.value"
+							v-model="pageChoice"
+							:input-value="option.value"
+							:disabled="saving"
+							name="ext-neowiki-subject-creator-page-choice"
+							:inline="true"
+						>
+							{{ option.label }}
+						</CdxRadio>
+
+						<PagePicker
+							v-if="pageChoice === 'anotherPage'"
+							ref="pagePickerRef"
+							class="ext-neowiki-subject-creator-page-picker"
+							:existing-pages-only="true"
+							:disabled="saving"
+							:aria-label="existingPageLabel"
+							@update:selected="onPageSelected"
+						/>
+
+						<CdxField
+							v-if="pageChoice === 'newPage'"
+							class="ext-neowiki-subject-creator-page-title-field"
+							:optional="true"
+							:status="pageTitleFieldStatus"
+							:messages="pageTitleFieldMessages"
+						>
+							<CdxTextInput
+								ref="pageTitleInputRef"
+								v-model="pageTitle"
+								:disabled="saving"
+								@input="handlePageTitleInput"
+							/>
+							<template #label>
+								{{ $i18n( 'neowiki-subject-creator-page-title-field' ).text() }}
+							</template>
+							<template #help-text>
+								{{ $i18n( 'neowiki-subject-creator-page-title-help' ).text() }}
+							</template>
+						</CdxField>
 					</CdxField>
-				</CdxField>
 
-				<p
-					v-if="pickedPageTitle !== null"
-					class="ext-neowiki-subject-creator-page-note"
-				>
-					<I18nSlot
-						v-if="chosenPageMainSubjectName !== null"
-						message-key="neowiki-subject-creator-page-has-main-subject"
+					<p
+						v-if="pickedPageTitle !== null"
+						class="ext-neowiki-subject-creator-page-note"
 					>
-						<strong>{{ chosenPageMainSubjectName }}</strong>
-					</I18nSlot>
-					<template v-else>
-						{{ $i18n( 'neowiki-subject-creator-page-picked', pickedPageTitle ).text() }}
-					</template>
-				</p>
-			</CdxAccordion>
-		</template>
-	</SubjectEditorDialog>
+						<I18nSlot
+							v-if="chosenPageMainSubjectName !== null"
+							message-key="neowiki-subject-creator-page-has-main-subject"
+						>
+							<strong>{{ chosenPageMainSubjectName }}</strong>
+						</I18nSlot>
+						<template v-else>
+							{{ $i18n( 'neowiki-subject-creator-page-picked', pickedPageTitle ).text() }}
+						</template>
+					</p>
+				</CdxAccordion>
+			</template>
+		</SubjectEditorDialog>
 
-	<CloseConfirmationDialog
-		:open="confirmationOpen"
-		@discard="confirmClose"
-		@keep-editing="cancelClose"
-	/>
-
-	<SchemaAbandonmentDialog
-		:open="schemaAbandonmentOpen"
-		@abandon="abandonAll"
-		@save-schema="saveSchemaAndClose"
-		@keep-editing="cancelSchemaAbandonment"
-	/>
+		<SchemaAbandonmentDialog
+			:open="schemaAbandonmentOpen"
+			@abandon="abandonAll"
+			@save-schema="saveSchemaAndClose"
+			@keep-editing="cancelSchemaAbandonment"
+		/>
+	</template>
 </template>
 
 <script setup lang="ts">
