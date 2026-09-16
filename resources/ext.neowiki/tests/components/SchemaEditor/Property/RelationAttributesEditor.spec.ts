@@ -10,7 +10,7 @@ import { createI18nMock, FieldProps, setupMwMock } from '../../../VueTestHelpers
 
 const SchemaPickerStub = {
 	props: [ 'selected' ],
-	emits: [ 'select', 'blur' ],
+	emits: [ 'select' ],
 	template: '<div class="schema-lookup-stub"></div>',
 };
 

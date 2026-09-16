@@ -70,7 +70,7 @@ export class RestSchemaRepository implements SchemaRepository {
 		);
 
 		if ( !status.success ) {
-			throw new Error( `Error saving schema: ${ status.message }` );
+			throw new Error( status.message );
 		}
 	}
 

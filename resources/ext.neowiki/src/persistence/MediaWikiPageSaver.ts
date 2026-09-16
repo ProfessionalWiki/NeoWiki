@@ -1,17 +1,13 @@
 import { PageSaver, PageSaverStatus } from '@/persistence/PageSaver.ts';
 
 /**
- * What mw.Rest hands a failure callback: the jQuery wrapper, whose `exception` is the HTTP
- * reason, around MediaWiki's REST error body.
+ * MediaWiki's REST error body. Only the fields a failure is reported from: the jQuery wrapper
+ * around it is typed by mw.Rest, but `responseJSON` is `any` there whatever its generic says.
  */
-interface RestFailure {
-	readonly exception?: string;
-	readonly xhr?: {
-		readonly responseJSON?: {
-			readonly errorKey?: string;
-			readonly messageTranslations?: Record<string, string>;
-		};
-	};
+interface RestErrorBody {
+	readonly message?: string;
+	readonly errorKey?: string;
+	readonly messageTranslations?: Record<string, string>;
 }
 
 export class MediaWikiPageSaver implements PageSaver {
@@ -20,15 +16,22 @@ export class MediaWikiPageSaver implements PageSaver {
 
 	private readonly rest: mw.Rest;
 
-	private readonly userLanguage: string;
-
 	public constructor( mediawiki: typeof mw ) {
 		this.api = new mediawiki.Api();
 		this.rest = new mediawiki.Rest();
-		this.userLanguage = mediawiki.config.get( 'wgUserLanguage' );
 	}
 
 	public async savePage( pageName: string, source: string, comment: string, content_model: string ): Promise<PageSaverStatus> {
+		try {
+			return await this.putPage( pageName, await this.saveRequest( source, comment, content_model, pageName ) );
+		} catch ( error ) {
+			// The edit token is fetched over the network too, and fails the ways the save itself
+			// does. Its rejection would otherwise escape the status this method promises.
+			return { success: false, message: error instanceof Error ? error.message : String( error ) };
+		}
+	}
+
+	private async saveRequest( source: string, comment: string, content_model: string, pageName: string ): Promise<object> {
 		const revisionId = await this.getPageRevision( pageName );
 
 		const data = {
@@ -42,40 +45,43 @@ export class MediaWikiPageSaver implements PageSaver {
 			( data as any ).latest = { id: revisionId };
 		}
 
-		// A refused save is an outcome callers act on, not an error the caller cannot see: the
-		// status is what PageSaver promises them, so a failure resolves like a success does.
+		return data;
+	}
+
+	/**
+	 * A refused save is an outcome callers act on, not an error they cannot see: the status is
+	 * what PageSaver promises them, so a failure resolves like a success does.
+	 */
+	private putPage( pageName: string, data: object ): Promise<PageSaverStatus> {
 		return new Promise<PageSaverStatus>( ( resolve ) => {
-			this.rest.put(
-				`/v1/page/${ pageName }`,
-				data,
-			)
-				.done( ( _response ) => {
-					resolve( {
-						success: true,
-					} );
+			this.rest.put( `/v1/page/${ pageName }`, data )
+				.done( () => {
+					resolve( { success: true } );
 				} )
-				.fail( ( _error, failure: RestFailure ) => {
-					resolve( {
-						success: false,
-						message: this.failureMessage( failure ),
-					} );
+				.fail( ( _code: string, failure: mw.Rest.HttpErrorData ) => {
+					resolve( { success: false, message: MediaWikiPageSaver.failureMessage( failure ) } );
 				} );
 		} );
 	}
 
 	/**
-	 * The most specific reason the response carries. MediaWiki translates a REST error into the
-	 * languages the request asked for, so the reader's own comes first; an error carrying no
-	 * message at all leaves only its key, and a response carrying no body at all the HTTP reason.
+	 * The most specific reason the response carries. MediaWiki answers a REST error in the wiki's
+	 * content language and English, keyed by BCP 47, so there is no code here to match a reader
+	 * against: the first translation is the wiki's own. An error raised outside that path carries a
+	 * plain message instead, one carrying no message at all leaves only its key, and a response
+	 * with no body at all the HTTP reason.
+	 *
+	 * Falsy rather than nullish at each step: an empty string is no more use to a reader than a
+	 * missing one, and jQuery reports an aborted or network-level failure as exactly that.
 	 */
-	private failureMessage( failure: RestFailure ): string | undefined {
-		const error = failure.xhr?.responseJSON;
-		const translations = error?.messageTranslations ?? {};
+	private static failureMessage( failure: mw.Rest.HttpErrorData ): string {
+		const error: RestErrorBody = failure.xhr?.responseJSON ?? {};
 
-		return translations[ this.userLanguage ] ??
-			Object.values( translations )[ 0 ] ??
-			error?.errorKey ??
-			failure.exception;
+		return Object.values( error.messageTranslations ?? {} )[ 0 ] ||
+			error.message ||
+			error.errorKey ||
+			failure.exception ||
+			failure.textStatus;
 	}
 
 	/**

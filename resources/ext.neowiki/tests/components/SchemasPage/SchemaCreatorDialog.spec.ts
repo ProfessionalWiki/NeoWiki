@@ -211,5 +211,30 @@ describe( 'SchemaCreatorDialog', () => {
 
 			expect( schemaStore.saveSchema ).toHaveBeenCalledTimes( 1 );
 		} );
+
+		it( 'does not save while a property definition is missing a field the wiki requires', async () => {
+			const wrapper = mountComponent();
+			creatorIncompleteProperty = { propertyName: 'Maker', message: 'Target schema is required.' };
+
+			await save( wrapper );
+
+			expect( schemaStore.saveSchema ).not.toHaveBeenCalled();
+			expect( wrapper.emitted( 'created' ) ).toBeUndefined();
+			expect( mw.notify ).toHaveBeenCalledWith(
+				'Target schema is required.',
+				{ title: 'Maker', type: 'error' },
+			);
+		} );
+
+		it( 'saves once the property definition is complete', async () => {
+			const wrapper = mountComponent();
+			creatorIncompleteProperty = { propertyName: 'Maker', message: 'Target schema is required.' };
+			await save( wrapper );
+
+			creatorIncompleteProperty = null;
+			await save( wrapper );
+
+			expect( schemaStore.saveSchema ).toHaveBeenCalledTimes( 1 );
+		} );
 	} );
 } );

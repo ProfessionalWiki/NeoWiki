@@ -13,6 +13,7 @@ use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\PageReference;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Message\Message;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleValue;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
@@ -22,6 +23,8 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingContentValidator;
 use ProfessionalWiki\NeoWiki\Presentation\MappingPageHtmlBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\MappingPageRendering;
 use StatusValue;
+use Wikimedia\Message\ListType;
+use Wikimedia\Message\MessageValue;
 use stdClass;
 
 class MappingContentHandler extends JsonContentHandler {
@@ -49,11 +52,21 @@ class MappingContentHandler extends JsonContentHandler {
 		$validator = MappingContentValidator::newInstance( MediaWikiServices::getInstance()->getTitleParser() );
 
 		if ( !$validator->validate( $content->getText() ) ) {
-			$status->fatal( 'neowiki-mapping-invalid', count( $validator->getErrors() ) );
+			$errors = $validator->getErrors();
+			$details = [];
 
-			foreach ( $validator->getErrors() as $pointer => $message ) {
-				$status->fatal( 'neowiki-mapping-invalid-detail', $pointer, $message );
+			foreach ( $errors as $pointer => $message ) {
+				$details[] = MessageValue::new( 'neowiki-mapping-invalid-detail' )->params( $pointer, $message );
 			}
+
+			// The details ride in this message rather than following as messages of their own:
+			// the REST error envelope carries only the first message a Status holds, so a client
+			// told "3 errors" and nothing else cannot act on it.
+			$status->fatal(
+				'neowiki-mapping-invalid',
+				count( $errors ),
+				Message::listParam( $details, ListType::SEMICOLON )
+			);
 		}
 
 		return $status;

@@ -52,7 +52,8 @@ import { usePaneSize } from '@/composables/usePaneSize.ts';
 import { useGeneratedId } from '@wikimedia/codex';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 import type { IncompleteProperty } from '@/components/common/IncompleteProperty.ts';
-import { missingRelationAttribute, RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
+import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
+import { missingRelationAttribute } from '@/components/SchemaEditor/Property/missingRelationAttribute.ts';
 
 const props = defineProps<{
 	initialSchema: Schema;

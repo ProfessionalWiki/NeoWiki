@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { missingRelationAttribute, newRelationProperty, RelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
+import { newRelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newRelation, RelationValue } from '@/domain/Value';
 
@@ -82,35 +82,5 @@ describe( 'newRelationProperty', () => {
 		expect( property.relation ).toBe( 'CustomRelation' );
 		expect( property.targetSchema ).toBe( 'MyTargetSchema' );
 		expect( property.multiple ).toBe( false );
-	} );
-} );
-
-describe( 'missingRelationAttribute', () => {
-	function relationProperty( overrides: Partial<RelationProperty> = {} ): RelationProperty {
-		return { ...newRelationProperty(), relation: 'Has product', targetSchema: 'Product', ...overrides };
-	}
-
-	it( 'finds nothing missing from a complete definition', () => {
-		expect( missingRelationAttribute( relationProperty() ) ).toBeNull();
-	} );
-
-	it( 'names the target schema when it was never chosen', () => {
-		expect( missingRelationAttribute( relationProperty( { targetSchema: undefined } ) ) )
-			.toBe( 'neowiki-property-editor-target-schema-required' );
-	} );
-
-	it( 'names the target schema when it is blank', () => {
-		expect( missingRelationAttribute( relationProperty( { targetSchema: '   ' } ) ) )
-			.toBe( 'neowiki-property-editor-target-schema-required' );
-	} );
-
-	it( 'names the relation type when it is blank', () => {
-		expect( missingRelationAttribute( relationProperty( { relation: '  ' } ) ) )
-			.toBe( 'neowiki-property-editor-relation-required' );
-	} );
-
-	it( 'accepts a target schema from another Source', () => {
-		expect( missingRelationAttribute( relationProperty( { targetSchema: { source: 'otherwiki', name: 'Person' } } ) ) )
-			.toBeNull();
 	} );
 } );

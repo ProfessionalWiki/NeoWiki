@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
 use StatusValue;
 use Wikimedia\Message\ListType;
+use Wikimedia\Message\MessageValue;
 
 class SchemaContentHandler extends JsonContentHandler {
 
@@ -46,7 +47,7 @@ class SchemaContentHandler extends JsonContentHandler {
 			$details = [];
 
 			foreach ( $errors as $pointer => $message ) {
-				$details[] = wfMessage( 'neowiki-schema-invalid-detail', $pointer, $message );
+				$details[] = MessageValue::new( 'neowiki-schema-invalid-detail' )->params( $pointer, $message );
 			}
 
 			// The details ride in this message rather than following as messages of their own:

@@ -57,10 +57,17 @@ function createWrapperWithPropertyEditor( schema: Schema ): VueWrapper {
 describe( 'SchemaEditor', () => {
 
 	beforeEach( () => {
+		// The two Constraint messages resolve to real text, so a test asserting on them can tell
+		// a rendered message from the bare key.
+		const messages: Record<string, string> = {
+			'neowiki-property-editor-relation-required': 'Relation type is required.',
+			'neowiki-property-editor-target-schema-required': 'Target schema is required.',
+		};
+
 		vi.stubGlobal( 'mw', {
 			message: vi.fn( ( str ) => ( {
-				text: () => str,
-				parse: () => str,
+				text: () => messages[ str ] ?? str,
+				parse: () => messages[ str ] ?? str,
 			} ) ),
 		} );
 	} );
@@ -433,8 +440,8 @@ describe( 'SchemaEditor', () => {
 			return new Schema( 'Test', '', new PropertyDefinitionList( properties ) );
 		}
 
-		// newRelationProperty() fills a placeholder target in, which is the state
-		// switching a property's type to Relation never reaches.
+		// newRelationProperty() fills a placeholder target in, which is not the state
+		// switching a property's type to Relation leaves behind.
 		function relationPropertyWithoutTarget(): PropertyDefinition {
 			const noTarget: Partial<RelationProperty> = { targetSchema: undefined };
 
@@ -456,7 +463,7 @@ describe( 'SchemaEditor', () => {
 
 			expect( incompleteProperty( wrapper ) ).toEqual( {
 				propertyName: 'Maker',
-				message: 'neowiki-property-editor-target-schema-required',
+				message: 'Target schema is required.',
 			} );
 		} );
 

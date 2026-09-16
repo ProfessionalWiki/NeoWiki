@@ -303,6 +303,27 @@ describe( 'SchemaCreator', () => {
 		} );
 	} );
 
+	// Exposed for the dialogs that hold a save back. A template ref is not checked against what
+	// the child actually exposes, so dropping this would only surface at runtime.
+	describe( 'incompleteProperty', () => {
+		it( 'reports nothing while the schema editor reports nothing', () => {
+			const wrapper = mountComponent();
+
+			expect( ( wrapper.vm as any ).incompleteProperty() ).toBeNull();
+		} );
+
+		it( 'forwards what the schema editor reports', () => {
+			editorIncompleteProperty = { propertyName: 'Maker', message: 'Target schema is required.' };
+
+			const wrapper = mountComponent();
+
+			expect( ( wrapper.vm as any ).incompleteProperty() ).toEqual( {
+				propertyName: 'Maker',
+				message: 'Target schema is required.',
+			} );
+		} );
+	} );
+
 	describe( 'reset', () => {
 		it( 'clears name and errors', async () => {
 			const wrapper = mountComponent();

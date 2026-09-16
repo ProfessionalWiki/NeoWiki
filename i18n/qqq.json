@@ -156,10 +156,10 @@
 	"neowiki-schema-invalid": "Error message shown when saving a structurally invalid Schema. Parameters:\n* $1 - number of validation errors\n* $2 - semicolon-separated list of {{msg-mw|neowiki-schema-invalid-detail}}, one per error",
 	"neowiki-schema-invalid-detail": "One line of detail for a single Schema validation error. Parameters:\n* $1 - JSON pointer to the location of the error\n* $2 - the validation error message",
 	"neowiki-schema-name-invalid": "Error message shown when a Schema page title is not a valid schema name (empty or reserved). Parameters:\n* $1 - the reason the name is invalid",
-	"neowiki-layout-invalid": "Error message shown when saving an invalid Layout. Parameters:\n* $1 - number of validation errors",
+	"neowiki-layout-invalid": "Error message shown when saving an invalid Layout. Parameters:\n* $1 - number of validation errors\n* $2 - semicolon-separated list of {{msg-mw|neowiki-layout-invalid-detail}}, one per error",
 	"neowiki-layout-invalid-detail": "One line of detail for a single Layout validation error. Parameters:\n* $1 - JSON pointer to the location of the error\n* $2 - the validation error message",
 	"neowiki-layout-name-invalid": "Error message shown when a Layout page title is not a valid layout name (empty). Parameters:\n* $1 - the reason the name is invalid",
-	"neowiki-mapping-invalid": "Error message shown when saving a structurally or semantically invalid ontology Mapping. Parameters:\n* $1 - number of validation errors",
+	"neowiki-mapping-invalid": "Error message shown when saving a structurally or semantically invalid ontology Mapping. Parameters:\n* $1 - number of validation errors\n* $2 - semicolon-separated list of {{msg-mw|neowiki-mapping-invalid-detail}}, one per error",
 	"neowiki-mapping-invalid-detail": "One line of detail for a single Mapping validation error. Parameters:\n* $1 - JSON pointer to the location of the error\n* $2 - the validation error message",
 	"neowiki-mapping-name-invalid": "Error message shown when a Mapping page title is not a valid mapping name (empty or the reserved name \"native\"). Parameters:\n* $1 - the reason the name is invalid",
 

@@ -124,12 +124,14 @@ describe( 'RestSchemaRepository', () => {
 			);
 		} );
 
-		it( 'should throw an error if the API response failed', async () => {
+		// The reason reaches the user as the notification's body, under a title that already
+		// names the Schema, so it is passed on as the saver worded it.
+		it( 'should throw the reason the save was refused for', async () => {
 			repository = new RestSchemaRepository( apiUrl, mockHttpClient, mockSerializer, new SchemaDeserializer(), new FailingPageSaver() );
 
 			await expect( repository.saveSchema( testSchema, 'Comment for the edit' ) )
 				.rejects
-				.toThrow( 'Error saving schema: Some reason' );
+				.toThrow( 'Some reason' );
 		} );
 
 		it( 'should encode the schema name', async () => {

@@ -100,10 +100,12 @@ const localTargetSchemaName = computed<string>( () =>
 	targetSchemaIsEditable.value ? schemaReferenceName( props.property.targetSchema ) : ''
 );
 
-// Shown without waiting for the field to be touched, as the relation type above is: a property
-// switched to this type has no target, and the Schema cannot be saved until it gets one.
+// Shown without waiting for the field to be touched, which reverses the choice made in #953:
+// the save is now held back until a target is chosen, so a property switched to this type has to
+// say what it is waiting for rather than look ready. Never shown for a target of another Source,
+// which this editor cannot change anyway.
 const targetSchemaError = computed<string | null>( () =>
-	schemaReferenceName( props.property.targetSchema ).trim() === '' ?
+	targetSchemaIsEditable.value && schemaReferenceName( props.property.targetSchema ).trim() === '' ?
 		mw.message( 'neowiki-property-editor-target-schema-required' ).text() :
 		null
 );
