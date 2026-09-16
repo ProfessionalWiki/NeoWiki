@@ -28,7 +28,7 @@ import { CdxDialog, CdxMessage } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
-import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
+import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { newSubject } from '@/TestHelpers.ts';
 import { StubSubjectRepository } from '@/domain/SubjectRepository.ts';
 import { SubjectCreationKey, type SubjectCreation } from '@/components/common/SubjectCreation.ts';
@@ -38,12 +38,12 @@ import type { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 
 const $i18n = createI18nMock();
 
-// What the stubbed editor reports about fields holding text it cannot turn into
-// a value. Reset per test by the beforeEach below.
-let editorUnparseableInput: UnparseableInput | null = null;
-// Keyed by Schema name, so a multi-pane test can make one pane's field unreadable while
-// the others stay saveable.
-let editorUnparseableInputBySchema: Record<string, UnparseableInput | null> = {};
+// The reason the stubbed editor reports for holding the save. Reset per test by the
+// beforeEach below.
+let editorSaveBlocker: SaveBlocker | null = null;
+// Keyed by Schema name, so a multi-pane test can block one pane while the others stay
+// saveable.
+let editorSaveBlockerBySchema: Record<string, SaveBlocker | null> = {};
 // What the stubbed editor reports its fields hold, keyed by Schema name, so a test can make
 // one pane's form yield a real relation. Empty means no values at all.
 let editorStatementsBySchema: Record<string, Statement[]> = {};
@@ -56,14 +56,14 @@ const SubjectEditorStub = {
 		const getSubjectData = (): StatementList => new StatementList(
 			editorStatementsBySchema[ props.schema?.getName() ?? '' ] ?? [],
 		);
-		const unparseableInput = (): UnparseableInput | null => {
+		const saveBlocker = (): SaveBlocker | null => {
 			const schemaName = props.schema?.getName();
-			if ( schemaName !== undefined && schemaName in editorUnparseableInputBySchema ) {
-				return editorUnparseableInputBySchema[ schemaName ];
+			if ( schemaName !== undefined && schemaName in editorSaveBlockerBySchema ) {
+				return editorSaveBlockerBySchema[ schemaName ];
 			}
-			return editorUnparseableInput;
+			return editorSaveBlocker;
 		};
-		return { getSubjectData, unparseableInput };
+		return { getSubjectData, saveBlocker };
 	},
 };
 
@@ -81,8 +81,8 @@ const CloseConfirmationDialogStub = {
 
 describe( 'SubjectEditorDialog', () => {
 	beforeEach( () => {
-		editorUnparseableInput = null;
-		editorUnparseableInputBySchema = {};
+		editorSaveBlocker = null;
+		editorSaveBlockerBySchema = {};
 		editorStatementsBySchema = {};
 		setupMwMock( {
 			// 'util' for the relation fields and a nested pane's storage line: both call mw.util.getUrl.
@@ -851,7 +851,7 @@ describe( 'SubjectEditorDialog', () => {
 			const onSave = vi.fn().mockResolvedValue( undefined );
 			const wrapper = mountComponent( false, validationTestStubs, onSave );
 			await flushPromises();
-			editorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+			editorSaveBlocker = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
 
 			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
 			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
@@ -871,7 +871,7 @@ describe( 'SubjectEditorDialog', () => {
 		it( 'names the offending field in the blocked-save notification', async () => {
 			const wrapper = mountComponent( false, validationTestStubs );
 			await flushPromises();
-			editorUnparseableInput = { propertyName: 'Score', message: 'whatever the field shows' };
+			editorSaveBlocker = { propertyName: 'Score', message: 'whatever the field shows' };
 
 			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
 			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
@@ -887,12 +887,12 @@ describe( 'SubjectEditorDialog', () => {
 			const onSave = vi.fn().mockResolvedValue( undefined );
 			const wrapper = mountComponent( false, validationTestStubs, onSave );
 			await flushPromises();
-			editorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+			editorSaveBlocker = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
 			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
 			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
-			editorUnparseableInput = null;
+			editorSaveBlocker = null;
 			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
@@ -908,7 +908,7 @@ describe( 'SubjectEditorDialog', () => {
 			await flushPromises();
 
 			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ otherViolation ] );
-			editorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+			editorSaveBlocker = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
 			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
 			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
@@ -1742,7 +1742,7 @@ describe( 'SubjectEditorDialog', () => {
 
 				await makePaneDirty( wrapper, 0 );
 				await makePaneDirty( wrapper, 1 );
-				editorUnparseableInputBySchema = {
+				editorSaveBlockerBySchema = {
 					Person: { propertyName: 'Score', message: 'neowiki-field-invalid-number' },
 				};
 
@@ -1763,7 +1763,7 @@ describe( 'SubjectEditorDialog', () => {
 				const { wrapper } = await mountWithThreePanesOpen( { onSave } );
 				// Both targets are on Person, so keying the unreadable field by schema names the root.
 				await makePaneDirty( wrapper, 0 );
-				editorUnparseableInputBySchema = {
+				editorSaveBlockerBySchema = {
 					TestSchema: { propertyName: 'Score', message: 'neowiki-field-invalid-number' },
 				};
 				expect( visibleSubjectId( wrapper ) ).toBe( 's33333333333333' );

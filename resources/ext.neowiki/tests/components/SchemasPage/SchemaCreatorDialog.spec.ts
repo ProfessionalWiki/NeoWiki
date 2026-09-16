@@ -10,15 +10,13 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
-import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
-import type { IncompleteProperty } from '@/components/common/IncompleteProperty.ts';
+import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const NEW_SCHEMA_NAME = 'Company';
 
-// What the stubbed creator reports about a field holding text it cannot turn
-// into a value. Reset per test by the beforeEach below.
-let creatorUnparseableInput: UnparseableInput | null = null;
-let creatorIncompleteProperty: IncompleteProperty | null = null;
+// The reason the stubbed creator reports for holding the save. Reset per test by
+// the beforeEach below.
+let creatorSaveBlocker: SaveBlocker | null = null;
 
 const SchemaCreatorStub = {
 	template: '<div class="schema-creator-stub"></div>',
@@ -29,16 +27,14 @@ const SchemaCreatorStub = {
 
 		const validate = vi.fn( async (): Promise<boolean> => valid );
 		const getSchema = vi.fn( (): Schema | null => schema );
-		const unparseableInput = (): UnparseableInput | null => creatorUnparseableInput;
-		const incompleteProperty = (): IncompleteProperty | null => creatorIncompleteProperty;
+		const saveBlocker = (): SaveBlocker | null => creatorSaveBlocker;
 		const reset = vi.fn();
 		const focus = vi.fn();
 
 		return {
 			validate,
 			getSchema,
-			unparseableInput,
-			incompleteProperty,
+			saveBlocker,
 			reset,
 			focus,
 			setStubValid( v: boolean ) {
@@ -95,8 +91,7 @@ describe( 'SchemaCreatorDialog', () => {
 	}
 
 	beforeEach( () => {
-		creatorUnparseableInput = null;
-		creatorIncompleteProperty = null;
+		creatorSaveBlocker = null;
 
 		setupMwMock( {
 			functions: [ 'msg', 'notify' ],
@@ -181,15 +176,15 @@ describe( 'SchemaCreatorDialog', () => {
 		expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
 	} );
 
-	describe( 'Unparseable field input', () => {
+	describe( 'Blocked save', () => {
 		async function save( wrapper: VueWrapper ): Promise<void> {
 			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 		}
 
-		it( 'does not save while the initial-value field holds text that cannot be turned into a value', async () => {
+		it( 'does not save while the creator reports a reason not to', async () => {
 			const wrapper = mountComponent();
-			creatorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+			creatorSaveBlocker = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
 
 			await save( wrapper );
 
@@ -201,37 +196,12 @@ describe( 'SchemaCreatorDialog', () => {
 			);
 		} );
 
-		it( 'saves once the text parses again', async () => {
+		it( 'saves once the creator reports none', async () => {
 			const wrapper = mountComponent();
-			creatorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+			creatorSaveBlocker = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
 			await save( wrapper );
 
-			creatorUnparseableInput = null;
-			await save( wrapper );
-
-			expect( schemaStore.saveSchema ).toHaveBeenCalledTimes( 1 );
-		} );
-
-		it( 'does not save while a property definition is missing a field the wiki requires', async () => {
-			const wrapper = mountComponent();
-			creatorIncompleteProperty = { propertyName: 'Maker', message: 'Target schema is required.' };
-
-			await save( wrapper );
-
-			expect( schemaStore.saveSchema ).not.toHaveBeenCalled();
-			expect( wrapper.emitted( 'created' ) ).toBeUndefined();
-			expect( mw.notify ).toHaveBeenCalledWith(
-				'Target schema is required.',
-				{ title: 'Maker', type: 'error' },
-			);
-		} );
-
-		it( 'saves once the property definition is complete', async () => {
-			const wrapper = mountComponent();
-			creatorIncompleteProperty = { propertyName: 'Maker', message: 'Target schema is required.' };
-			await save( wrapper );
-
-			creatorIncompleteProperty = null;
+			creatorSaveBlocker = null;
 			await save( wrapper );
 
 			expect( schemaStore.saveSchema ).toHaveBeenCalledTimes( 1 );

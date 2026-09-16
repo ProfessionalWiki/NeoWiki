@@ -14,7 +14,25 @@ import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import { createI18nMock, findPropertyNameInput, reportUnparseableNumber, selectedText } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import PaneDivider from '@/components/common/PaneDivider.vue';
-import { nextTick } from 'vue';
+import { defineComponent, nextTick } from 'vue';
+
+// The automatic stub answers no method, and saveBlocker() asks the mounted editor
+// whether it holds unparseable text before it looks at the Schema.
+const PropertyDefinitionEditorStub = defineComponent( {
+	name: 'PropertyDefinitionEditor',
+	template: '<div class="property-definition-editor-stub"></div>',
+	props: {
+		property: { type: Object, required: true },
+		otherPropertyNames: { type: Array, default: () => [] },
+		selectName: { type: Boolean, default: false },
+	},
+	emits: [ 'update:propertyDefinition' ],
+	methods: {
+		unparseableInputMessage(): string | null {
+			return null;
+		},
+	},
+} );
 
 function createWrapper( schema: Schema, description = '' ): VueWrapper {
 	return mount( SchemaEditor, {
@@ -28,7 +46,7 @@ function createWrapper( schema: Schema, description = '' ): VueWrapper {
 			},
 			stubs: {
 				PropertyList: true,
-				PropertyDefinitionEditor: true,
+				PropertyDefinitionEditor: PropertyDefinitionEditorStub,
 			},
 		},
 	} );
@@ -52,6 +70,10 @@ function createWrapperWithPropertyEditor( schema: Schema ): VueWrapper {
 			},
 		},
 	} );
+}
+
+function saveBlocker( wrapper: VueWrapper ): ReturnType<SchemaEditorExposes['saveBlocker']> {
+	return ( wrapper.vm as unknown as SchemaEditorExposes ).saveBlocker();
 }
 
 describe( 'SchemaEditor', () => {
@@ -184,7 +206,7 @@ describe( 'SchemaEditor', () => {
 			props: { initialSchema: schema },
 			global: {
 				mocks: { $i18n: createI18nMock() },
-				stubs: { PropertyList: true, PropertyDefinitionEditor: true },
+				stubs: { PropertyList: true, PropertyDefinitionEditor: PropertyDefinitionEditorStub },
 			},
 		} );
 
@@ -362,14 +384,10 @@ describe( 'SchemaEditor', () => {
 			);
 		}
 
-		function unparseableInput( wrapper: VueWrapper ): ReturnType<SchemaEditorExposes['unparseableInput']> {
-			return ( wrapper.vm as unknown as SchemaEditorExposes ).unparseableInput();
-		}
-
 		it( 'reports nothing while the selected property editor reports nothing', () => {
 			const wrapper = createWrapperWithPropertyEditor( schemaWithScore() );
 
-			expect( unparseableInput( wrapper ) ).toBeNull();
+			expect( saveBlocker( wrapper ) ).toBeNull();
 		} );
 
 		it( 'names the selected property when its editor holds text it cannot turn into a value', async () => {
@@ -377,7 +395,7 @@ describe( 'SchemaEditor', () => {
 
 			await reportUnparseableNumber( wrapper.findComponent( NumberInput ).find( 'input' ) );
 
-			expect( unparseableInput( wrapper ) ).toEqual( {
+			expect( saveBlocker( wrapper ) ).toEqual( {
 				propertyName: 'Score',
 				message: 'neowiki-field-invalid-number',
 			} );
@@ -390,7 +408,7 @@ describe( 'SchemaEditor', () => {
 			await findPropertyNameInput( wrapper ).setValue( 'Points' );
 			await flushPromises();
 
-			expect( unparseableInput( wrapper ) ).toEqual( {
+			expect( saveBlocker( wrapper ) ).toEqual( {
 				propertyName: 'Points',
 				message: 'neowiki-field-invalid-number',
 			} );
@@ -403,7 +421,7 @@ describe( 'SchemaEditor', () => {
 			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertySelected', new PropertyName( 'Score' ) );
 			await flushPromises();
 
-			expect( unparseableInput( wrapper ) ).toEqual( {
+			expect( saveBlocker( wrapper ) ).toEqual( {
 				propertyName: 'Score',
 				message: 'neowiki-field-invalid-number',
 			} );
@@ -416,7 +434,7 @@ describe( 'SchemaEditor', () => {
 				new PropertyDefinitionList( [] ),
 			) );
 
-			expect( unparseableInput( wrapper ) ).toBeNull();
+			expect( saveBlocker( wrapper ) ).toBeNull();
 		} );
 	} );
 	describe( 'property editor', () => {
@@ -466,11 +484,7 @@ describe( 'SchemaEditor', () => {
 		} );
 	} );
 
-	describe( 'incompleteProperty', () => {
-		function incompleteProperty( wrapper: VueWrapper ): ReturnType<SchemaEditorExposes['incompleteProperty']> {
-			return ( wrapper.vm as unknown as SchemaEditorExposes ).incompleteProperty();
-		}
-
+	describe( 'Incomplete property definition', () => {
 		function schemaWith( ...properties: PropertyDefinition[] ): Schema {
 			return new Schema( 'Test', '', new PropertyDefinitionList( properties ) );
 		}
@@ -488,7 +502,7 @@ describe( 'SchemaEditor', () => {
 				newRelationProperty( { name: 'Maker', relation: 'Made by', targetSchema: 'Company' } ),
 			) );
 
-			expect( incompleteProperty( wrapper ) ).toBeNull();
+			expect( saveBlocker( wrapper ) ).toBeNull();
 		} );
 
 		it( 'names a relation property left without a target schema', () => {
@@ -496,7 +510,7 @@ describe( 'SchemaEditor', () => {
 				relationPropertyWithoutTarget(),
 			) );
 
-			expect( incompleteProperty( wrapper ) ).toEqual( {
+			expect( saveBlocker( wrapper ) ).toEqual( {
 				propertyName: 'Maker',
 				message: 'Target schema is required.',
 			} );
@@ -510,13 +524,29 @@ describe( 'SchemaEditor', () => {
 				relationPropertyWithoutTarget(),
 			) );
 
-			expect( incompleteProperty( wrapper )?.propertyName ).toBe( 'Maker' );
+			expect( saveBlocker( wrapper )?.propertyName ).toBe( 'Maker' );
 		} );
 
 		it( 'leaves properties of other types alone', () => {
 			const wrapper = createWrapper( schemaWith( newNumberProperty( { name: 'Score' } ) ) );
 
-			expect( incompleteProperty( wrapper ) ).toBeNull();
+			expect( saveBlocker( wrapper ) ).toBeNull();
+		} );
+
+		// The user is looking at the field holding the text, so naming the other property
+		// would send them somewhere they did not just type.
+		it( 'names the field holding unparseable text before an incomplete property', async () => {
+			const wrapper = createWrapperWithPropertyEditor( schemaWith(
+				newNumberProperty( { name: 'Score' } ),
+				relationPropertyWithoutTarget(),
+			) );
+
+			await reportUnparseableNumber( wrapper.findComponent( NumberInput ).find( 'input' ) );
+
+			expect( saveBlocker( wrapper ) ).toEqual( {
+				propertyName: 'Score',
+				message: 'neowiki-field-invalid-number',
+			} );
 		} );
 	} );
 } );
