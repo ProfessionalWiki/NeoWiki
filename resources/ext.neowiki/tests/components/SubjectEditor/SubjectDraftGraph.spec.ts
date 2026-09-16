@@ -108,6 +108,24 @@ describe( 'reachableTargetIds', () => {
 
 		expect( [ ...reached ].sort() ).toEqual( [ A_ID, B_ID ].sort() );
 	} );
+
+	it( 'reaches a draft a committed Subject points at, although the wiki holds neither', () => {
+		const reached = reachableTargetIds( [ held( A_ID, true, B_ID ), held( B_ID, true ) ], [ A_ID ] );
+
+		expect( [ ...reached ] ).toEqual( [ B_ID ] );
+	} );
+
+	it( 'leaves out a draft a committed Subject has stopped pointing at', () => {
+		const reached = reachableTargetIds( [ held( A_ID, true ), held( B_ID, true ) ], [ A_ID ] );
+
+		expect( reached.has( B_ID ) ).toBe( false );
+	} );
+
+	it( 'ignores a committed id nothing is held under', () => {
+		const reached = reachableTargetIds( [ held( SAVED_ID, false, A_ID ), held( A_ID, true ) ], [ C_ID ] );
+
+		expect( [ ...reached ] ).toEqual( [ A_ID ] );
+	} );
 } );
 
 describe( 'writeOrder', () => {
@@ -174,5 +192,49 @@ describe( 'writeOrder', () => {
 		const ordered = writeOrder( [ held( SAVED_ID, false ), held( OTHER_SAVED_ID, false ) ] );
 
 		expect( idsOf( ordered ) ).toEqual( [ SAVED_ID, OTHER_SAVED_ID ] );
+	} );
+
+	it( 'writes a Subject named first ahead of the draft it points at', () => {
+		const ordered = writeOrder( [ held( A_ID, true, B_ID ), held( B_ID, true ) ], [ A_ID ] );
+
+		expect( idsOf( ordered ) ).toEqual( [ A_ID, B_ID ] );
+	} );
+
+	it( 'writes a Subject named first ahead of a chain of drafts below it', () => {
+		const ordered = writeOrder(
+			[ held( A_ID, true, B_ID ), held( B_ID, true, C_ID ), held( C_ID, true ) ],
+			[ A_ID ],
+		);
+
+		expect( idsOf( ordered ) ).toEqual( [ A_ID, C_ID, B_ID ] );
+	} );
+
+	it( 'writes a Subject named first once, although a draft points back at it', () => {
+		const ordered = writeOrder( [ held( A_ID, true, B_ID ), held( B_ID, true, A_ID ) ], [ A_ID ] );
+
+		expect( idsOf( ordered ) ).toEqual( [ A_ID, B_ID ] );
+	} );
+
+	it( 'still writes the Subjects the wiki holds last when one is named first', () => {
+		const ordered = writeOrder(
+			[ held( SAVED_ID, false ), held( A_ID, true, B_ID ), held( B_ID, true ) ],
+			[ A_ID ],
+		);
+
+		expect( idsOf( ordered ) ).toEqual( [ A_ID, B_ID, SAVED_ID ] );
+	} );
+
+	// The Subjects the wiki already holds are written last whatever else is asked for, so naming
+	// one first must not pull it forward or write it twice.
+	it( 'ignores an id named first that the wiki already holds', () => {
+		const ordered = writeOrder( [ held( SAVED_ID, false ), held( A_ID, true ) ], [ SAVED_ID ] );
+
+		expect( idsOf( ordered ) ).toEqual( [ A_ID, SAVED_ID ] );
+	} );
+
+	it( 'ignores an id named first that nothing is held under', () => {
+		const ordered = writeOrder( [ held( SAVED_ID, false, A_ID ), held( A_ID, true ) ], [ C_ID ] );
+
+		expect( idsOf( ordered ) ).toEqual( [ A_ID, SAVED_ID ] );
 	} );
 } );

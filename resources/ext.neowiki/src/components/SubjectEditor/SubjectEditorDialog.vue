@@ -7,7 +7,7 @@
 			:open="open"
 			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog cdx-dialog--dividers"
 			:class="{ 'ext-neowiki-subject-editor-dialog--wide': showsNavigator }"
-			:title="$i18n( 'neowiki-subject-editor-title' ).text()"
+			:title="dialogTitle"
 			:use-close-button="true"
 			@update:open="onDialogUpdateOpen"
 		>
@@ -92,11 +92,18 @@
 				>
 					{{ partialSaveMessage }}
 				</CdxMessage>
+
+				<!-- Whatever the host has to ask alongside the save, such as which page a Subject
+					being created goes on. Above the actions, so the question is read before the
+					button that answers it. The footer sits outside the body's `inert`, so the host
+					is handed the save's progress to freeze its own controls with. -->
+				<slot name="before-actions" :saving="saving" />
+
 				<SummaryAction
 					help-text=""
 					:footer-text="saveScopeText"
-					:save-button-label="$i18n( 'neowiki-subject-editor-save' ).text()"
-					:save-disabled="!anyChanged || saving"
+					:save-button-label="saveButtonLabel"
+					:save-disabled="!anyChanged || saving || props.saveDisabled === true"
 					@save="handleSave"
 				/>
 			</template>
@@ -160,12 +167,36 @@ type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>
  */
 type SubjectCreateHandler = ( subject: Subject, pageId: number, comment: string ) => Promise<void>;
 
+/** Told that the whole save is through, by a host that reports it somewhere this dialog cannot. */
+type SaveReporter = () => void;
+
 const props = defineProps<{
 	subject: Subject;
 	schema: Schema;
 	onSave: SubjectSaveHandler;
 	onSaveSchema: SchemaSaveHandler;
 	onCreate?: SubjectCreateHandler;
+	/**
+	 * Whether the root Subject is one the wiki does not hold yet, which the save creates rather
+	 * than updates. It is what the subject creator opens this dialog on.
+	 */
+	rootIsNew?: boolean;
+	/**
+	 * Withholds Save although there are changes, for a host with a question of its own still
+	 * unanswered. It can only withhold: the dialog's own reasons to disable Save still hold.
+	 */
+	saveDisabled?: boolean;
+	/**
+	 * Whether the host holds something of its own that closing would throw away, such as an
+	 * answer given in the footer. Counted alongside the panes' own edits, so the dialog asks
+	 * once for everything a close would discard rather than leaving the host to ask again.
+	 */
+	hostHasUnsavedChanges?: boolean;
+	/**
+	 * Called in place of the success message and the close, for a host that leaves the page once
+	 * the save is through and reports it there.
+	 */
+	onSaved?: SaveReporter;
 	open: boolean;
 }>();
 
@@ -226,7 +257,12 @@ const activePaneId = ref<string>( rootPaneId.value );
 const partialSave = ref<{ written: number; attempted: number } | null>( null );
 
 const panes = computed( (): EditPane[] => [
-	{ id: rootPaneId.value, subject: props.subject, schema: currentSchema.value, isNew: false },
+	{
+		id: rootPaneId.value,
+		subject: props.subject,
+		schema: currentSchema.value,
+		isNew: props.rootIsNew === true
+	},
 	...extraPanes.value
 ] );
 
@@ -234,8 +270,11 @@ const panes = computed( (): EditPane[] => [
 // in its pane is renamed everywhere that names it. Read from the draft panes alone: going through
 // editedSubjects would make every rename and relation pick anywhere in the dialog rebuild the menu
 // of every relation field.
+// The root is left out although it may be new: the ids of the other two creation routes are
+// minted by the server, so a relation pointing at the root here could name an id it never gets.
+// Pointing back at the root waits on those routes taking a pre-minted id (#1449).
 const draftSubjects = computed( (): Subject[] => panes.value
-	.filter( ( pane ) => pane.isNew )
+	.filter( ( pane ) => pane.isNew && pane.id !== rootPaneId.value )
 	.map( ( pane ) => {
 		const instance = paneRefs.get( pane.id );
 		return instance === undefined ? pane.subject : withLiveLabel( instance );
@@ -257,7 +296,19 @@ function heldSubjects(): HeldSubject[] {
 
 // Drafts something being edited still points at. One the user has pointed the relation away from is
 // not written, and Save neither waits on it nor leaves it behind.
-const referencedDraftIds = computed( (): Set<string> => reachableTargetIds( heldSubjects() ) );
+/**
+ * Panes the save is committed to writing whatever points at them. The Subjects the wiki already
+ * holds are committed by being there; a root it does not hold is committed by being what the save
+ * exists to write. Everything below follows from that one fact: it anchors the reachability walk,
+ * it is in the write set untouched, it is not something a close would be sorry to lose, and it is
+ * written before the Subjects it points at — which is what lets them be stored on the page its own
+ * write settles.
+ */
+const committedIds = computed( (): string[] =>
+	props.rootIsNew === true ? [ rootPaneId.value ] : [] );
+
+const referencedDraftIds = computed( (): Set<string> =>
+	reachableTargetIds( heldSubjects(), committedIds.value ) );
 
 // A Subject about to be written, as the draft graph wants to see it.
 interface WriteTarget extends HeldSubject {
@@ -281,7 +332,7 @@ const dirtyPanes = computed( (): DirtyPane[] => panes.value
 	.map( ( pane ) => ( { pane, instance: paneRefs.get( pane.id ) } ) )
 	.filter( ( entry ): entry is DirtyPane => entry.instance !== undefined && (
 		entry.pane.isNew ?
-			referencedDraftIds.value.has( entry.pane.id ) :
+			( committedIds.value.includes( entry.pane.id ) || referencedDraftIds.value.has( entry.pane.id ) ) :
 			entry.instance.hasChanged
 	) )
 );
@@ -289,6 +340,27 @@ const dirtyPanes = computed( (): DirtyPane[] => panes.value
 const unsavedIds = computed( (): string[] => dirtyPanes.value.map( ( { pane } ) => pane.id ) );
 
 const anyChanged = computed( (): boolean => dirtyPanes.value.length > 0 );
+
+// What closing would throw away, which is not the same as what saving would write: an untouched
+// root the save is committed to writing is in the write set, and is nothing the user would be
+// sorry to lose. Everywhere the root already exists the two are the same.
+const hasUnsavedEdits = computed( (): boolean =>
+	props.hostHasUnsavedChanges === true ||
+	// A save that wrote something and then stopped is recorded by the amber line alone, and the
+	// close takes that line with it. What was written is worth a word before it goes.
+	partialSave.value !== null ||
+	dirtyPanes.value.some(
+		( { pane, instance } ) => !committedIds.value.includes( pane.id ) || instance.hasChanged )
+);
+
+// A Subject the wiki does not hold is being created, whoever opened the dialog on it.
+const dialogTitle = computed( (): string => mw.msg(
+	props.rootIsNew === true ? 'neowiki-subject-creator-title' : 'neowiki-subject-editor-title'
+) );
+
+const saveButtonLabel = computed( (): string => mw.msg(
+	props.rootIsNew === true ? 'neowiki-subject-creator-save' : 'neowiki-subject-editor-save'
+) );
 
 // One copy per mounted pane. A pane's own copy is refreshed on relation changes alone, so
 // the live label is laid over it here and the tree names a Subject the way its form does.
@@ -490,7 +562,7 @@ function close(): void {
 	emit( 'update:open', false );
 }
 
-const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseConfirmation( anyChanged, close );
+const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseConfirmation( hasUnsavedEdits, close );
 
 // Nothing may change or close while the loop below is writing: it harvests every dirty
 // pane up front and marks each one clean as its write lands, so an edit made meanwhile
@@ -658,7 +730,6 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 		return;
 	}
 
-	const editSummary = summary || mw.msg( 'neowiki-subject-editor-summary-default' );
 	const savedNames: string[] = [];
 
 	// A Subject an earlier attempt already wrote is not in `dirty`: its pane reset its
@@ -677,7 +748,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 		targets.push( { id: pane.id, pane, subject: updated, schema: pane.schema, isNew: pane.isNew } );
 	}
 
-	const orderedTargets = writeOrder( targets );
+	const orderedTargets = writeOrder( targets, committedIds.value );
 
 	// Carried out of the loop rather than returned from inside it, so a part-way stop is
 	// reported once, below.
@@ -687,7 +758,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 		const subjectName = subjectDisplayName( updatedSubject );
 
 		try {
-			await writeSubject( pane, updatedSubject, editSummary );
+			await writeSubject( pane, updatedSubject, summary || defaultSummaryFor( pane ) );
 			paneRefs.get( id )?.resetChanged();
 			savedNames.push( subjectName );
 		} catch ( error ) {
@@ -726,6 +797,13 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 		return;
 	}
 
+	// A host that leaves the page reports the save where it lands, so neither a message that the
+	// navigation takes away nor a close of a dialog that is going with it.
+	if ( props.onSaved !== undefined ) {
+		props.onSaved();
+		return;
+	}
+
 	mw.notify(
 		savedNames.length === 1 ?
 			mw.msg( 'neowiki-subject-editor-success', savedNames[ 0 ] ) :
@@ -735,11 +813,19 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 	close();
 }
 
+// Said of the write it is attached to, not of the save as a whole: one save can create a Subject
+// and update the one that points at it, on two pages, each getting a revision of its own.
+function defaultSummaryFor( pane: EditPane ): string {
+	return mw.msg( pane.isNew ?
+		'neowiki-subject-editor-summary-default-create' :
+		'neowiki-subject-editor-summary-default' );
+}
+
 const onSchemaSaved = ( schema: Schema ): void => {
 	currentSchema.value = schema;
 };
 
-defineExpose( { hasChanged: anyChanged } );
+defineExpose( { hasChanged: hasUnsavedEdits } );
 
 </script>
 

@@ -28,7 +28,6 @@
 					from it. Withheld while the Subject is named after its Schema, so it is
 					not named twice. -->
 				<SchemaNameDisplay
-					v-if="schemaBadge !== null"
 					:schema-name="schemaBadge"
 					link="new-tab"
 					@click="openSchemaEditor"
@@ -91,7 +90,6 @@ import SubjectViolationBanners from '@/components/common/SubjectViolationBanners
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import { subjectLabelPlaceholder } from '@/presentation/subjectLabelPlaceholder.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
-import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
 import EditableText from '@/components/common/EditableText.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { StatementList } from '@/domain/StatementList.ts';
@@ -149,16 +147,26 @@ const storedLabel = computed( (): string | null => enteredSubjectLabel( label.va
 
 const paneName = computed( (): string => storedLabel.value ?? subjectDisplayName( props.subject ) );
 
-// A label typed here counts before it is saved, as it does for `paneName`.
-const schemaBadge = computed( (): string | null =>
-	schemaNameToShow( props.subject.withLabel( storedLabel.value ) )
-);
+// Shown whether or not the name above already carries the Schema's name. Elsewhere that repeat is
+// worth suppressing, and `schemaNameToShow` does so; here the badge is the only link to the Schema
+// and the only way into its editor, so withholding it costs a way through rather than a word. A
+// Subject nobody has named is exactly the one being created, where the Schema most wants
+// confirming and where this row would otherwise render empty.
+const schemaBadge = computed( (): string => props.subject.getSchemaName() );
 
-const pageName = computed( (): string | null =>
-	props.subject instanceof SubjectWithContext ?
-		props.subject.getPageIdentifiers().getPageName() :
-		null
-);
+// A Subject bound for a page the save has yet to settle carries the page it will be stored on
+// without a title for it, and a Subject whose page the API could not resolve carries none at all
+// (PageIdentifiers types the fields as present; the payload may omit them). Either way there is
+// nothing to point at and nothing to name.
+const pageName = computed( (): string | null => {
+	if ( !( props.subject instanceof SubjectWithContext ) ) {
+		return null;
+	}
+
+	const name = props.subject.getPageIdentifiers().getPageName();
+
+	return name === undefined || name === '' ? null : name;
+} );
 
 const pageUrl = computed( (): string =>
 	pageName.value === null ? '' : mw.util.getUrl( pageName.value )

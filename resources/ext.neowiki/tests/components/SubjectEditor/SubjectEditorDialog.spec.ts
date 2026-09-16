@@ -136,6 +136,7 @@ describe( 'SubjectEditorDialog', () => {
 		// Left out by every host that cannot create Subjects, which is what the dialog reads
 		// to decide whether the relation fields are offered creation at all.
 		onCreate: ( ( subject: any, pageId: number, comment: string ) => Promise<void> ) | undefined = undefined,
+		extraProps: Record<string, unknown> = {},
 	): VueWrapper => {
 		schemaPermissionHints = {
 			canEditSchema: vi.fn().mockResolvedValue( canEditSchema ),
@@ -150,6 +151,7 @@ describe( 'SubjectEditorDialog', () => {
 				onSaveSchema: vi.fn(),
 				onCreate,
 				open: true,
+				...extraProps,
 			},
 			global: {
 				mocks: {
@@ -1243,6 +1245,7 @@ describe( 'SubjectEditorDialog', () => {
 			rootSubject: Subject = mockSubject,
 			attachTo: Element | undefined = undefined,
 			onCreate: Mock | undefined = undefined,
+			extraProps: Record<string, unknown> = {},
 		): TargetReposMount {
 			const target = targetSubject( 's22222222222222', 'Target subject' );
 			const mockSubjectRepository = {
@@ -1264,6 +1267,7 @@ describe( 'SubjectEditorDialog', () => {
 				rootSubject,
 				attachTo,
 				onCreate,
+				extraProps,
 			);
 			return { wrapper, mockSubjectRepository, mockSchemaRepository, target };
 		}
@@ -2820,10 +2824,11 @@ describe( 'SubjectEditorDialog', () => {
 				onSave?: Mock;
 				onCreate?: Mock;
 				rootSubject?: Subject;
+				extraProps?: Record<string, unknown>;
 			}
 
 			function mountForCreation( {
-				onSave, onCreate, rootSubject,
+				onSave, onCreate, rootSubject, extraProps,
 			}: CreationMountOptions = {} ): TargetReposMount {
 				const mounted = mountWithTargetRepos(
 					onSave ?? vi.fn().mockResolvedValue( undefined ),
@@ -2834,6 +2839,7 @@ describe( 'SubjectEditorDialog', () => {
 					rootSubject ?? rootOnHostPage,
 					undefined,
 					onCreate ?? vi.fn().mockResolvedValue( undefined ),
+					extraProps,
 				);
 				mounted.mockSchemaRepository.getSchema.mockImplementation(
 					( name: string ) => Promise.resolve( creationSchemas[ name ] ?? personSchema ),
@@ -3266,6 +3272,185 @@ describe( 'SubjectEditorDialog', () => {
 
 				expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
 				expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+			} );
+
+			// What the subject creator opens: the Subject at the root of the dialog is one the
+			// wiki does not hold either, so the save creates it alongside whatever it points at.
+			describe( 'when the root is new too', () => {
+				const rootSchemaName = rootOnHostPage.getSchemaName();
+
+				// A root bound for a page that its own write creates. MediaWiki numbers a page
+				// that is not there 0.
+				const rootOnPageToCome = newSubject( {
+					id: rootSubjectId,
+					label: 'New company',
+					pageIdentifiers: new PageIdentifiers( 0, '' ),
+				} );
+
+				function mountCreating( options: CreationMountOptions = {} ): Promise<TargetReposMount> {
+					return mountReadyForCreation( {
+						...options,
+						extraProps: { rootIsNew: true, ...options.extraProps },
+					} );
+				}
+
+				it( 'writes the root as a creation rather than an update', async () => {
+					const onSave = vi.fn().mockResolvedValue( undefined );
+					const onCreate = vi.fn().mockResolvedValue( undefined );
+					const { wrapper } = await mountCreating( { onSave, onCreate } );
+
+					await triggerSave( wrapper, 'a summary' );
+
+					expect( subjectIdsPassedTo( onCreate ) ).toEqual( [ rootSubjectId ] );
+					expect( onSave ).not.toHaveBeenCalled();
+				} );
+
+				// The root anchors the walk itself. Without that there is nothing the wiki holds
+				// to justify a draft, and the whole save would come to nothing.
+				it( 'writes a draft the root points at, although the wiki holds nothing that does', async () => {
+					const onCreate = vi.fn().mockResolvedValue( undefined );
+					const { wrapper } = await mountCreating( { onCreate } );
+
+					const created = await createReferencedTarget( wrapper );
+					await triggerSave( wrapper, '' );
+
+					expect( subjectIdsPassedTo( onCreate ) ).toContain( created?.getId().text );
+				} );
+
+				it( 'leaves save reachable although nothing has been typed into the root', async () => {
+					const { wrapper } = await mountCreating();
+
+					expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+				} );
+
+				// In the write set is not the same as worth keeping: nobody would be sorry to lose
+				// a Subject they have put nothing into.
+				it( 'asks nothing on close while the root is untouched', async () => {
+					const { wrapper } = await mountCreating();
+
+					wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+					await flushPromises();
+
+					expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
+				} );
+
+				// The write that landed is what the amber line records, and closing takes that line
+				// with it. Nothing else is left to say a Subject was made.
+				it( 'asks on close once a save has written something and stopped', async () => {
+					const onCreate = vi.fn()
+						.mockResolvedValueOnce( undefined )
+						.mockRejectedValueOnce( new Error( 'refused' ) );
+					const { wrapper } = await mountCreating( { onCreate, rootSubject: rootOnPageToCome } );
+
+					await createReferencedTarget( wrapper );
+					await triggerSave( wrapper, '' );
+					await reportsRelationTo( wrapper, 0, [] );
+
+					wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+					await flushPromises();
+
+					expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+					expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( true );
+				} );
+
+				it( 'asks on close once the host reports something of its own', async () => {
+					const { wrapper } = await mountCreating( { extraProps: { hostHasUnsavedChanges: true } } );
+
+					wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+					await flushPromises();
+
+					expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+					expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( true );
+				} );
+
+				it( 'withholds save while the host has a question outstanding', async () => {
+					const { wrapper } = await mountCreating( { extraProps: { saveDisabled: true } } );
+
+					expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+				} );
+
+				// Its own write is what settles the page the Subjects beside it are stored on, so it
+				// cannot wait for them the way relations would otherwise have it.
+				it( 'writes the root before the Subjects it points at', async () => {
+					const onCreate = vi.fn().mockResolvedValue( undefined );
+					const { wrapper } = await mountCreating( { onCreate } );
+
+					const created = await createReferencedTarget( wrapper );
+					await triggerSave( wrapper, '' );
+
+					expect( subjectIdsPassedTo( onCreate ) ).toEqual( [ rootSubjectId, created?.getId().text ] );
+				} );
+
+				it( 'writes the root first whatever page it carries', async () => {
+					const onCreate = vi.fn().mockResolvedValue( undefined );
+					const { wrapper } = await mountCreating( { onCreate, rootSubject: rootOnPageToCome } );
+
+					const created = await createReferencedTarget( wrapper );
+					await triggerSave( wrapper, '' );
+
+					expect( subjectIdsPassedTo( onCreate ) ).toEqual( [ rootSubjectId, created?.getId().text ] );
+				} );
+
+				// Two of the three ways a root is created have the server mint its id, so a
+				// relation recorded against the one held here could name an id it never gets.
+				it( 'leaves the root out of the drafts a relation field may point at', async () => {
+					const { wrapper } = await mountCreating();
+
+					const created = await createTarget( wrapper, { schemaName: rootSchemaName } );
+
+					expect( providedCreation( wrapper )?.drafts( rootSchemaName )
+						.map( ( draft ) => draft.getId().text ) ).toEqual( [ created?.getId().text ] );
+				} );
+
+				it( 'reports the save to the host in place of closing itself', async () => {
+					const onSaved = vi.fn();
+					const { wrapper } = await mountCreating( { extraProps: { onSaved } } );
+
+					await triggerSave( wrapper, '' );
+
+					expect( onSaved ).toHaveBeenCalled();
+					expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+				} );
+
+				// The host leaves the page on it, so a report before the last write lands would
+				// take the rest of the save with it.
+				it( 'reports the save only once every write is through', async () => {
+					const order: string[] = [];
+					const onSaved = vi.fn( () => {
+						order.push( 'saved' );
+					} );
+					const onCreate = vi.fn( async ( subject: Subject ) => {
+						order.push( subject.getId().text );
+					} );
+					const { wrapper } = await mountCreating( { onCreate, extraProps: { onSaved } } );
+
+					const created = await createReferencedTarget( wrapper );
+					await triggerSave( wrapper, '' );
+
+					expect( order ).toEqual( [ rootSubjectId, created?.getId().text, 'saved' ] );
+				} );
+
+				it( 'names itself and its button for a creation', async () => {
+					const { wrapper } = await mountCreating();
+
+					expect( wrapper.findComponent( CdxDialog ).props( 'title' ) )
+						.toBe( 'neowiki-subject-creator-title' );
+					expect( wrapper.findComponent( SummaryAction ).props( 'saveButtonLabel' ) )
+						.toBe( 'neowiki-subject-creator-save' );
+				} );
+
+				it( 'writes with the create summary where the user gave none', async () => {
+					const onCreate = vi.fn().mockResolvedValue( undefined );
+					const { wrapper } = await mountCreating( { onCreate } );
+
+					await triggerSave( wrapper, '' );
+
+					expect( onCreate ).toHaveBeenCalledWith(
+						expect.anything(),
+						expect.any( Number ),
+						'neowiki-subject-editor-summary-default-create',
+					);
+				} );
 			} );
 		} );
 	} );
