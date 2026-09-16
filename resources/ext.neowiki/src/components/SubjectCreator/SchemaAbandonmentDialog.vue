@@ -1,6 +1,8 @@
 <template>
+	<!-- Mounted only while it asks, as CloseConfirmationDialog is: the Subject step mounts after it. -->
 	<CdxDialog
-		:open="open"
+		v-if="open"
+		:open="true"
 		class="ext-neowiki-ui"
 		:title="$i18n( 'neowiki-schema-abandonment-title' ).text()"
 		:use-close-button="true"

@@ -1,40 +1,38 @@
 import { enableAutoUnmount, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
+import SchemaAbandonmentDialog from '@/components/SubjectCreator/SchemaAbandonmentDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import { createI18nMock, openDialogTitles, setupMwMock } from '../../VueTestHelpers.ts';
 
 enableAutoUnmount( afterEach );
 
-describe( 'CloseConfirmationDialog', () => {
+describe( 'SchemaAbandonmentDialog', () => {
 	beforeEach( () => {
 		setupMwMock( { functions: [ 'msg' ] } );
 	} );
 
 	function mountComponent(): VueWrapper {
-		return mount( CloseConfirmationDialog, {
+		return mount( SchemaAbandonmentDialog, {
 			props: { open: true },
 			global: {
 				mocks: { $i18n: createI18nMock() },
-				stubs: { teleport: true },
+				stubs: { teleport: true, CdxButton: { template: '<button><slot /></button>' } },
 			},
 		} );
 	}
 
-	it( 'emits discard on primary action', () => {
+	// Each button throws away, keeps or saves the Schema the user drafted, so a swapped handler
+	// destroys work the label promised to keep.
+	it.each( [
+		[ 'abandon', 'neowiki-schema-abandonment-abandon' ],
+		[ 'save-schema', 'neowiki-schema-abandonment-save-schema' ],
+		[ 'keep-editing', 'neowiki-schema-abandonment-keep-editing' ],
+	] )( 'emits %s from the button labelled %s', async ( event, label ) => {
 		const wrapper = mountComponent();
 
-		wrapper.findComponent( CdxDialog ).vm.$emit( 'primary' );
+		await wrapper.findAll( 'button' ).find( ( button ) => button.text() === label )!.trigger( 'click' );
 
-		expect( wrapper.emitted( 'discard' ) ).toHaveLength( 1 );
-	} );
-
-	it( 'emits keep-editing on default action', () => {
-		const wrapper = mountComponent();
-
-		wrapper.findComponent( CdxDialog ).vm.$emit( 'default' );
-
-		expect( wrapper.emitted( 'keep-editing' ) ).toHaveLength( 1 );
+		expect( wrapper.emitted( event ) ).toHaveLength( 1 );
 	} );
 
 	it( 'emits keep-editing on backdrop/escape dismiss', () => {
@@ -45,27 +43,12 @@ describe( 'CloseConfirmationDialog', () => {
 		expect( wrapper.emitted( 'keep-editing' ) ).toHaveLength( 1 );
 	} );
 
-	// Which action discards is the whole question the dialog asks, and the two are told apart by
-	// their labels alone: swapped, the destructive button would be the one that keeps editing.
-	it( 'offers discarding as the destructive action and keeping the edits as the default one', () => {
-		const dialog = mountComponent().findComponent( CdxDialog );
-
-		expect( dialog.props( 'primaryAction' ) ).toEqual( {
-			label: 'neowiki-close-confirmation-discard',
-			actionType: 'destructive',
-		} );
-		expect( dialog.props( 'defaultAction' ) ).toEqual( {
-			label: 'neowiki-close-confirmation-keep-editing',
-		} );
-	} );
-
-	// Behind its host, the question is invisible under a dialog Codex has marked inert, so the close
-	// button appears to do nothing.
+	// The stacking rule this relies on is spelled out in CloseConfirmationDialog.spec.ts.
 	describe( 'in front of the dialog it confirms', () => {
-		// Deliberately the wrong way round: the confirmation is written, and so mounts, first.
+		// Deliberately the wrong way round: the question is written, and so mounts, first.
 		const HostOpeningDialogsLater = {
-			components: { CloseConfirmationDialog, CdxDialog },
-			template: '<CloseConfirmationDialog :open="confirming" />' +
+			components: { SchemaAbandonmentDialog, CdxDialog },
+			template: '<SchemaAbandonmentDialog :open="confirming" />' +
 				'<CdxDialog :open="true" title="first-dialog" />' +
 				'<CdxDialog v-if="secondOpen" :open="true" title="second-dialog" />',
 			props: [ 'confirming', 'secondOpen' ],
@@ -74,7 +57,10 @@ describe( 'CloseConfirmationDialog', () => {
 		function mountHost(): VueWrapper {
 			return mount( HostOpeningDialogsLater, {
 				props: { confirming: false, secondOpen: false },
-				global: { mocks: { $i18n: createI18nMock() } },
+				global: {
+					mocks: { $i18n: createI18nMock() },
+					stubs: { CdxButton: { template: '<button><slot /></button>' } },
+				},
 			} );
 		}
 
@@ -83,7 +69,7 @@ describe( 'CloseConfirmationDialog', () => {
 
 			await wrapper.setProps( { confirming: true } );
 
-			expect( openDialogTitles() ).toEqual( [ 'first-dialog', 'neowiki-close-confirmation-title' ] );
+			expect( openDialogTitles() ).toEqual( [ 'first-dialog', 'neowiki-schema-abandonment-title' ] );
 		} );
 
 		// Asking a second time has to land on top of whatever is open by then, so the first answer
@@ -96,7 +82,7 @@ describe( 'CloseConfirmationDialog', () => {
 
 			await wrapper.setProps( { confirming: true } );
 
-			expect( openDialogTitles() ).toEqual( [ 'first-dialog', 'second-dialog', 'neowiki-close-confirmation-title' ] );
+			expect( openDialogTitles() ).toEqual( [ 'first-dialog', 'second-dialog', 'neowiki-schema-abandonment-title' ] );
 		} );
 	} );
 } );
