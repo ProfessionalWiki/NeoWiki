@@ -32,11 +32,12 @@
 					@blur="onBlur"
 					@focusin="onFocus"
 				>
-					<template v-if="targetEditingEnabled" #suffix="{ selected }">
-						<RelationTargetEditButton
+					<template v-if="targetEditingEnabled" #suffix="{ selected, targetName }">
+						<RelationTargetOpenButton
 							v-if="selected !== null"
 							:target="selected"
-							@edit="emit( 'edit-relation-target', $event )"
+							:name="targetName"
+							@open="emit( 'edit-relation-target', $event )"
 						/>
 					</template>
 				</SubjectPicker>
@@ -51,11 +52,12 @@
 			@update:selected="onSingleSelectionChanged"
 			@blur="onSingleBlur"
 		>
-			<template v-if="targetEditingEnabled" #suffix="{ selected }">
-				<RelationTargetEditButton
+			<template v-if="targetEditingEnabled" #suffix="{ selected, targetName }">
+				<RelationTargetOpenButton
 					v-if="selected !== null"
 					:target="selected"
-					@edit="emit( 'edit-relation-target', $event )"
+					:name="targetName"
+					@open="emit( 'edit-relation-target', $event )"
 				/>
 			</template>
 		</SubjectPicker>
@@ -67,7 +69,7 @@ import { isLocalSchemaReference, schemaReferenceName } from '@/domain/SchemaRefe
 import { ref, watch, computed, toRef, inject } from 'vue';
 import { CdxField, CdxIcon, ValidationMessages } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
-import RelationTargetEditButton from '@/components/Value/RelationTargetEditButton.vue';
+import RelationTargetOpenButton from '@/components/Value/RelationTargetOpenButton.vue';
 import NeoMultiLookupInput from '@/components/common/NeoMultiLookupInput.vue';
 import SubjectPicker from '@/components/common/SubjectPicker.vue';
 import { RelationTargetEditingKey, ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/components/Value/ValueInputContract';

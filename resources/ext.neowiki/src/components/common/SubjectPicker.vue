@@ -22,10 +22,17 @@
 					{{ $i18n( 'neowiki-subject-picker-no-results' ).text() }}
 				</template>
 			</CdxLookup>
-			<slot
-				name="suffix"
-				:selected="selectedSubject"
-			/>
+			<span class="ext-neowiki-subject-picker__suffix">
+				<!-- The target the relation holds, not Codex's own selection: Codex drops that on
+					the first keystroke matching neither the selected item's label nor its value,
+					so a suffix gated on it vanishes while its target is still stored.
+					`name` is reserved on a slot — Vue reads it as the slot's own name. -->
+				<slot
+					name="suffix"
+					:selected="props.selected"
+					:target-name="targetName"
+				/>
+			</span>
 		</div>
 		<CdxMessage
 			v-if="hasUnmatchedText"
@@ -90,6 +97,10 @@ const creationOffered = computed( (): boolean =>
 );
 
 const selectedSubject = ref<string | null>( props.selected );
+// The selected target's own name, kept while the user types over the field: `selectedName` below is
+// cleared by the first keystroke, because from then on the text is theirs, while the relation still
+// points where it did.
+const targetName = ref( '' );
 const inputText = ref<string | number>( '' );
 const searchResults = ref<MenuItemData[]>( [] );
 const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
@@ -213,6 +224,7 @@ async function fetchSubject( id: string ): Promise<Subject | null> {
 
 function showName( name: string ): void {
 	selectedName.value = name;
+	targetName.value = name;
 	inputText.value = name;
 }
 
@@ -221,6 +233,9 @@ resolveName( props.selected ).then( showName );
 watch( () => props.selected, async ( newSelected ) => {
 	selectedSubject.value = newSelected;
 	hasUnmatchedText.value = false;
+	// Dropped before the await, not after: resolving the new name waits on the network, and the
+	// suffix acts on the new target from this moment on.
+	targetName.value = '';
 
 	if ( newSelected !== null || searchStatus.value === 'idle' ) {
 		showName( await resolveName( newSelected ) );
@@ -356,7 +371,9 @@ function onSubjectSelected( subjectId: string | null ): void {
 	// typed — which is what the create option is named after, and what starts a search.
 	const picked = menuItems.value.find( ( item ) => item.value === subjectId );
 	if ( picked !== undefined ) {
-		selectedName.value = String( picked.label ?? '' );
+		// Through showName, so the suffix's name is settled here rather than a round trip later,
+		// still naming the target this pick replaced.
+		showName( String( picked.label ?? '' ) );
 	}
 
 	searchStatus.value = 'idle';
@@ -413,15 +430,40 @@ defineExpose( { focus } );
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-subject-picker {
+	/* One cell holding the field and whatever sits over its end. Overlapped by grid placement
+		rather than by positioning: `position: relative` here would recapture the containing block
+		Codex gives its menus inside a dialog, and silently clip every dropdown. */
 	&__row {
-		display: flex;
-		align-items: flex-start;
-		gap: @spacing-25;
+		display: grid;
+		grid-template-columns: minmax( 0, 1fr );
+		align-items: start;
 
-		.cdx-lookup {
-			flex: 1;
+		> * {
+			grid-area: 1 / 1;
+			/* A grid item's automatic minimum is its content, and Codex gives `.cdx-text-input` a
+				256px minimum, so without this the row cannot shrink below it. */
 			min-width: 0;
 		}
+	}
+
+	/* Positioned so it paints over the field: Codex gives `.cdx-text-input` `position: relative`,
+		and a positioned box paints above an unpositioned sibling whatever the source order says.
+		Safe here and not on the row: a leaf beside the field is no ancestor of the menu. */
+	&__suffix {
+		position: relative;
+		justify-self: end;
+		/* Only its own control takes the pointer; the rest of the cell is the field underneath. */
+		pointer-events: none;
+
+		> * {
+			pointer-events: auto;
+		}
+	}
+
+	/* Room for that control, so a long name ellipsises rather than running under it. Asked of the
+		rendered control, so an empty slot leaves the field its whole width. */
+	&__row:has( &__suffix > * ) .cdx-text-input__input {
+		padding-inline-end: @size-200;
 	}
 
 	/* The create option is the last item, and it offers an action rather than a result. Codex

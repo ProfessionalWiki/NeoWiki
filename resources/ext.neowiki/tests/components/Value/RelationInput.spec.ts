@@ -11,6 +11,18 @@ import { SubjectId } from '@/domain/SubjectId.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers';
 
+// The same stub with no name resolved yet, for the control's id stand-in.
+const SubjectPickerWithoutName = {
+	props: {
+		selected: { type: String, default: null },
+		targetSchema: { type: String, default: '' },
+		startIcon: { type: [ String, Object ], default: undefined },
+		status: { type: String, default: 'default' },
+		ariaLabel: { type: String, default: '' },
+	},
+	template: '<div><slot name="suffix" :selected="selected" :target-name="\'\'"></slot></div>',
+};
+
 const SubjectPickerWithSlots = {
 	props: {
 		selected: { type: String, default: null },
@@ -20,7 +32,7 @@ const SubjectPickerWithSlots = {
 		status: { type: String, default: 'default' },
 		ariaLabel: { type: String, default: '' },
 	},
-	template: '<div><slot name="suffix" :selected="selected"></slot></div>',
+	template: '<div><slot name="suffix" :selected="selected" :target-name="selected ? \'Target subject\' : \'\'"></slot></div>',
 };
 
 /**
@@ -266,23 +278,58 @@ describe( 'RelationInput', () => {
 			} );
 		}
 
-		it( 'shows an edit button for the selected target when target editing is enabled', () => {
+		it( 'offers to open the selected target when target editing is enabled', () => {
 			const wrapper = mountSingleWithTarget( true );
-			expect( wrapper.find( '.ext-neowiki-relation-input__edit-target' ).exists() ).toBe( true );
+			expect( wrapper.find( '.ext-neowiki-relation-input__open-target' ).exists() ).toBe( true );
 		} );
 
 		it( 'emits edit-relation-target with the target SubjectId on click', async () => {
 			const wrapper = mountSingleWithTarget( true );
-			await wrapper.find( '.ext-neowiki-relation-input__edit-target' ).trigger( 'click' );
+			await wrapper.find( '.ext-neowiki-relation-input__open-target' ).trigger( 'click' );
 
 			const emitted = wrapper.emitted( 'edit-relation-target' );
 			expect( emitted ).toHaveLength( 1 );
 			expect( ( emitted![ 0 ][ 0 ] as SubjectId ).text ).toBe( 's11111111111111' );
 		} );
 
-		it( 'shows no edit button when target editing was not enabled by the host', () => {
+		// The control sits inside the field and carries no text, so what it opens is said in its
+		// name alone. The pencil it replaces said only "edit this subject".
+		it( 'names the subject it opens', () => {
+			const button = mountSingleWithTarget( true ).find( '.ext-neowiki-relation-input__open-target' );
+
+			expect( button.attributes( 'aria-label' ) )
+				.toBe( 'neowiki-subject-editor-open-targetTarget subject' );
+			expect( button.attributes( 'title' ) )
+				.toBe( 'neowiki-subject-editor-open-targetTarget subject' );
+		} );
+
+		// Until the picker has resolved the name, the id stands in — or the control would offer a
+		// bare "Open" naming nothing.
+		it( 'stands in with the id while the target has no name yet', () => {
+			const wrapper = mount( RelationInput, {
+				props: {
+					modelValue: new RelationValue( [ newRelation( undefined, 's11111111111111' ) ] ),
+					property: newRelationProperty( { multiple: false } ),
+					label: 'Author',
+				},
+				global: {
+					provide: {
+						...NeoWikiTestServices.getServices(),
+						[ RelationTargetEditingKey as symbol ]: true,
+					},
+					directives: { tooltip: {} },
+					mocks: { $i18n: createI18nMock() },
+					stubs: { SubjectPicker: SubjectPickerWithoutName, NeoMultiLookupInput: true },
+				},
+			} );
+
+			expect( wrapper.find( '.ext-neowiki-relation-input__open-target' ).attributes( 'aria-label' ) )
+				.toBe( 'neowiki-subject-editor-open-targets11111111111111' );
+		} );
+
+		it( 'offers nothing when target editing was not enabled by the host', () => {
 			const wrapper = mountSingleWithTarget( false );
-			expect( wrapper.find( '.ext-neowiki-relation-input__edit-target' ).exists() ).toBe( false );
+			expect( wrapper.find( '.ext-neowiki-relation-input__open-target' ).exists() ).toBe( false );
 		} );
 
 		describe( 'multiple mode', () => {
@@ -305,26 +352,33 @@ describe( 'RelationInput', () => {
 				} );
 			}
 
-			it( 'shows an edit button only for the row with a selected target, not the trailing empty row', () => {
+			it( 'offers to open only the row with a selected target, not the trailing empty row', () => {
 				const wrapper = mountMultipleWithTarget( true );
 
 				// The stub renders one row for the selected target plus a trailing null row, mirroring
 				// NeoMultiLookupInput's always-one-empty-row behaviour.
-				expect( wrapper.findAll( '.ext-neowiki-relation-input__edit-target' ) ).toHaveLength( 1 );
+				expect( wrapper.findAll( '.ext-neowiki-relation-input__open-target' ) ).toHaveLength( 1 );
 			} );
 
 			it( 'emits edit-relation-target with that row\'s SubjectId on click', async () => {
 				const wrapper = mountMultipleWithTarget( true );
-				await wrapper.find( '.ext-neowiki-relation-input__edit-target' ).trigger( 'click' );
+				await wrapper.find( '.ext-neowiki-relation-input__open-target' ).trigger( 'click' );
 
 				const emitted = wrapper.emitted( 'edit-relation-target' );
 				expect( emitted ).toHaveLength( 1 );
 				expect( ( emitted![ 0 ][ 0 ] as SubjectId ).text ).toBe( 's11111111111111' );
 			} );
 
-			it( 'shows no edit button when target editing was not enabled by the host', () => {
+			it( 'names the subject each row opens', () => {
+				const wrapper = mountMultipleWithTarget( true );
+
+				expect( wrapper.find( '.ext-neowiki-relation-input__open-target' ).attributes( 'aria-label' ) )
+					.toBe( 'neowiki-subject-editor-open-targetTarget subject' );
+			} );
+
+			it( 'offers nothing when target editing was not enabled by the host', () => {
 				const wrapper = mountMultipleWithTarget( false );
-				expect( wrapper.find( '.ext-neowiki-relation-input__edit-target' ).exists() ).toBe( false );
+				expect( wrapper.find( '.ext-neowiki-relation-input__open-target' ).exists() ).toBe( false );
 			} );
 		} );
 	} );

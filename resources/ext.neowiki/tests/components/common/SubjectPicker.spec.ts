@@ -434,6 +434,114 @@ describe( 'SubjectPicker', () => {
 		expect( wrapper.find( '.probe' ).text() ).toBe( 's11111111111111' );
 	} );
 
+	// Whatever the suffix offers acts on the target, so it is handed the target's own name to say
+	// so with. The field's text is not that name: it is the user's from their first keystroke.
+	describe( 'the target\'s name, for the suffix', () => {
+		// What Codex really does to a filled lookup on the first keystroke that matches neither the
+		// selected item's label nor its value: it drops its own selection. The plain `type` helper
+		// above omits that, so a suffix gated on it would look reachable here and vanish in a browser.
+		async function typeOver( wrapper: VueWrapper, text: string ): Promise<void> {
+			const lookup = wrapper.findComponent( CdxLookupWithVModel );
+			lookup.vm.$emit( 'update:input-value', text );
+			lookup.vm.$emit( 'update:selected', null );
+			await flushPromises();
+		}
+
+		function mountWithSelectedProbe( selected: string ): VueWrapper {
+			return mount( SubjectPicker, {
+				props: { selected, targetSchema: 'Company' },
+				global: {
+					plugins: [ pinia ],
+					provide: { [ Service.SubjectLabelSearch ]: mockSubjectLabelSearch },
+					mocks: { $i18n },
+					stubs: { CdxLookup: CdxLookupWithVModel },
+				},
+				slots: {
+					suffix: '<template #suffix="{ selected }"><span class="probe">{{ selected }}</span></template>',
+				},
+			} );
+		}
+
+		// The relation still points where it did: the text in the field is a search the user is
+		// running, not a change to the value. Whatever the suffix offers has to stay offered, or
+		// the only way back to that target is to retype its name.
+		it( 'keeps offering the stored target while the user types over the field', async () => {
+			wikiHolds( labellessSubject( 's1demo1aaaaaaa1', 'ACME Inc.', 'Company' ) );
+			const wrapper = mountWithSelectedProbe( 's1demo1aaaaaaa1' );
+			await flushPromises();
+
+			await typeOver( wrapper, 'Acme Eur' );
+
+			expect( wrapper.find( '.probe' ).text() ).toBe( 's1demo1aaaaaaa1' );
+		} );
+
+		function mountWithNameProbe( selected: string ): VueWrapper {
+			return mount( SubjectPicker, {
+				props: { selected, targetSchema: 'Company' },
+				global: {
+					plugins: [ pinia ],
+					provide: { [ Service.SubjectLabelSearch ]: mockSubjectLabelSearch },
+					mocks: { $i18n },
+					stubs: { CdxLookup: CdxLookupWithVModel },
+				},
+				slots: {
+					suffix: '<template #suffix="{ targetName }"><span class="probe">{{ targetName }}</span></template>',
+				},
+			} );
+		}
+
+		it( 'hands the suffix the name of the selected subject', async () => {
+			wikiHolds( labellessSubject( 's1demo1aaaaaaa1', 'ACME Inc.', 'Company' ) );
+
+			const wrapper = mountWithNameProbe( 's1demo1aaaaaaa1' );
+			await flushPromises();
+
+			expect( wrapper.find( '.probe' ).text() ).toBe( 'ACME Inc.' );
+		} );
+
+		// The name is what the suffix's control says it acts on, and the control acts on whatever
+		// `selected` now holds. A fetch for the new target can take as long as the network does, so
+		// the old name must go the moment the selection does, not when its replacement lands.
+		it( 'stops naming the previous target as soon as the selection changes', async () => {
+			wikiHolds( labellessSubject( 's1demo1aaaaaaa1', 'ACME Inc.', 'Company' ) );
+			const wrapper = mountWithNameProbe( 's1demo1aaaaaaa1' );
+			await flushPromises();
+			subjectStore.getOrFetchSubject = vi.fn( () => new Promise<never>( () => {
+				// The fetch for the new target never lands.
+			} ) );
+
+			await wrapper.setProps( { selected: 's1demo5sssssss1' } );
+
+			expect( wrapper.find( '.probe' ).text() ).not.toBe( 'ACME Inc.' );
+		} );
+
+		// The pick is recorded here before the parent answers with a new `selected`, so the name has
+		// to be settled here too: until the answer lands the suffix would otherwise still be
+		// naming the target this pick replaced.
+		it( 'names the newly picked target without waiting for the parent', async () => {
+			wikiHolds( labellessSubject( 's1demo1aaaaaaa1', 'ACME Inc.', 'Company' ) );
+			const wrapper = mountWithNameProbe( 's1demo1aaaaaaa1' );
+			await flushPromises();
+			searchReturns( [ { id: 's1demo5sssssss1', label: 'Beta Corp' } ] );
+			await type( wrapper, 'Beta' );
+
+			wrapper.findComponent( CdxLookupWithVModel ).vm.$emit( 'update:selected', 's1demo5sssssss1' );
+			await nextTick();
+
+			expect( wrapper.find( '.probe' ).text() ).toBe( 'Beta Corp' );
+		} );
+
+		it( 'keeps that name while the user types over the field', async () => {
+			wikiHolds( labellessSubject( 's1demo1aaaaaaa1', 'ACME Inc.', 'Company' ) );
+			const wrapper = mountWithNameProbe( 's1demo1aaaaaaa1' );
+			await flushPromises();
+
+			await typeOver( wrapper, 'Acme Eur' );
+
+			expect( wrapper.find( '.probe' ).text() ).toBe( 'ACME Inc.' );
+		} );
+	} );
+
 	describe( 'finding the target by its id', () => {
 		const TARGET_ID = 's1demo1aaaaaaa1';
 		const OTHER_ID = 's1demo5sssssss1';

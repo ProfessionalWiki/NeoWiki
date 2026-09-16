@@ -94,7 +94,7 @@
 	"neowiki-subject-editor-title": "Title of the subject editor dialog, and its accessible name. Names the task rather than a subject: the dialog can edit several at once, and each one is named by the pane that edits it.",
 	"neowiki-subject-editor-label-field": "Accessibility label for the input shown in place of the dialog title while renaming a subject in the subject editor dialog.",
 	"neowiki-subject-editor-rename": "Accessibility label for the button next to the subject editor dialog title that starts renaming the subject.",
-	"neowiki-subject-editor-edit-target": "Aria-label of the per-target edit button shown beside a selected relation target in the subject editor. Clicking it opens that target subject for editing in a pane.",
+	"neowiki-subject-editor-open-target": "Label and tooltip of the control shown at the end of a filled relation field in the subject editor, which opens that subject for editing alongside the one being edited. Parameters:\n* $1 - the name of the subject it opens, or its ID while the name is still being fetched.",
 	"neowiki-subject-editor-summary-default": "Default edit summary used when updating a subject via the UI.",
 	"neowiki-subject-editor-summary-default-create": "Default edit summary used when creating a subject via the UI.",
 	"neowiki-subject-editor-success": "Success notification shown after updating a subject. $1 is the name the subject is shown under: a stored label, or a bracketed stand-in such as \"(unnamed Attendance)\" for a subject nobody named. Keep the quotation marks around it, because a stored label is arbitrary text and needs delimiting.",
