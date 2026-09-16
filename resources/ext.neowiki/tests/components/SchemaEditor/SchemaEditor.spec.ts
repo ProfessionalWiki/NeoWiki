@@ -1,7 +1,8 @@
-import { mount, VueWrapper } from '@vue/test-utils';
+import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import SchemaEditor, { type SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
+import PropertyDefinitionEditor from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition.ts';
@@ -30,11 +31,12 @@ function createWrapper( schema: Schema, description = '' ): VueWrapper {
 	} );
 }
 
-function createWrapperWithPropertyEditor( schema: Schema ): VueWrapper {
+function createWrapperWithPropertyEditor( schema: Schema, attachTo?: Element ): VueWrapper {
 	return mount( SchemaEditor, {
 		props: {
 			initialSchema: schema,
 		},
+		attachTo,
 		global: {
 			provide: NeoWikiTestServices.getServices(),
 			directives: {
@@ -386,6 +388,62 @@ describe( 'SchemaEditor', () => {
 			) );
 
 			expect( unparseableInput( wrapper ) ).toBeNull();
+		} );
+	} );
+
+	describe( 'property editor', () => {
+		function schemaWithTextProperties( ...names: string[] ): Schema {
+			return new Schema(
+				'TestSchema',
+				'Description',
+				new PropertyDefinitionList( names.map( ( name ) => createPropertyDefinitionFromJson( name, { type: TextType.typeName } ) ) ),
+			);
+		}
+
+		function nameInput( wrapper: VueWrapper ): HTMLInputElement {
+			return wrapper.findComponent( PropertyDefinitionEditor ).find<HTMLInputElement>( '.cdx-text-input__input' ).element;
+		}
+
+		function selectedText( input: HTMLInputElement ): string {
+			return input.value.slice( input.selectionStart ?? 0, input.selectionEnd ?? 0 );
+		}
+
+		it( 'selects the generated name of a property just added, so typing replaces it', async () => {
+			const wrapper = createWrapperWithPropertyEditor( schemaWithTextProperties(), document.body );
+			const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
+			const newProperty = createPropertyDefinitionFromJson( 'New Property 1', { type: TextType.typeName } );
+
+			await propertyList.vm.$emit( 'propertyCreated', newProperty );
+			await propertyList.vm.$emit( 'propertySelected', newProperty.name );
+			await flushPromises();
+
+			const input = nameInput( wrapper );
+			expect( document.activeElement ).toBe( input );
+			expect( selectedText( input ) ).toBe( 'New Property 1' );
+
+			wrapper.unmount();
+		} );
+
+		it( 'leaves the name input in place while the name is typed, so the caret does not jump', async () => {
+			const wrapper = createWrapperWithPropertyEditor( schemaWithTextProperties( 'New Property 1' ), document.body );
+			await flushPromises();
+			const input = nameInput( wrapper );
+
+			await wrapper.findComponent( PropertyDefinitionEditor ).find( '.cdx-text-input__input' ).setValue( 'Sta' );
+			await flushPromises();
+
+			expect( nameInput( wrapper ) ).toBe( input );
+			expect( document.activeElement ).toBe( input );
+
+			wrapper.unmount();
+		} );
+
+		it( 'shows the property that gets selected in place of the one shown before', async () => {
+			const wrapper = createWrapperWithPropertyEditor( schemaWithTextProperties( 'Alpha', 'Beta', 'Gamma' ) );
+
+			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertySelected', new PropertyName( 'Beta' ) );
+
+			expect( nameInput( wrapper ).value ).toBe( 'Beta' );
 		} );
 	} );
 } );

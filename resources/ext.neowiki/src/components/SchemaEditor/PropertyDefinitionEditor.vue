@@ -95,13 +95,19 @@ watch(
 
 const nameInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
 
+// The name is selected rather than just focused, so that the generated name of a new
+// property is replaced by typing.
 onMounted( () => {
 	nextTick( () => {
-		if ( nameInput.value !== null ) {
-			nameInput.value.focus();
-		}
+		const input = nameInputElement();
+		input?.focus();
+		input?.select();
 	} );
 } );
+
+function nameInputElement(): HTMLInputElement | null {
+	return ( nameInput.value?.$el as HTMLElement | undefined )?.querySelector( 'input' ) ?? null;
+}
 
 function updatePropertyName( name: string ): void {
 	if ( !PropertyName.isValid( name ) ) {

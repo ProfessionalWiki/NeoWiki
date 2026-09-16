@@ -1,4 +1,4 @@
-import { VueWrapper } from '@vue/test-utils';
+import { flushPromises, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CdxCheckbox, CdxSelect } from '@wikimedia/codex';
 import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
@@ -235,6 +235,27 @@ describe( 'PropertyDefinitionEditor', () => {
 			await reportUnparseableNumber( wrapper.findComponent( NumberInput ).find( 'input' ) );
 
 			expect( lastEmittedProperty( wrapper ).default ).toBeUndefined();
+		} );
+	} );
+
+	describe( 'name input', () => {
+		function nameInput( wrapper: VueWrapper ): HTMLInputElement {
+			return wrapper.find<HTMLInputElement>( '.cdx-text-input__input' ).element;
+		}
+
+		function selectedText( input: HTMLInputElement ): string {
+			return input.value.slice( input.selectionStart ?? 0, input.selectionEnd ?? 0 );
+		}
+
+		it( 'is focused with the whole name selected when the editor opens, so typing replaces the name', async () => {
+			const wrapper = createTestWrapper( PropertyDefinitionEditor, { property: newTextProperty( { name: 'New Property 1' } ) }, document.body );
+			await flushPromises();
+
+			const input = nameInput( wrapper );
+			expect( document.activeElement ).toBe( input );
+			expect( selectedText( input ) ).toBe( 'New Property 1' );
+
+			wrapper.unmount();
 		} );
 	} );
 } );

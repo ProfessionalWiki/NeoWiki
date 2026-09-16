@@ -32,7 +32,7 @@
 		<PropertyDefinitionEditor
 			v-if="selectedProperty !== undefined"
 			ref="propertyDefinitionEditor"
-			:key="selectedPropertyName"
+			:key="propertyEditorKey"
 			:property="selectedProperty as PropertyDefinition"
 			@update:property-definition="onPropertyUpdated"
 		/>
@@ -88,10 +88,20 @@ const paneSize = usePaneSize( root, {
 const currentSchema = ref<Schema>( props.initialSchema );
 const selectedPropertyName = ref<string | undefined>();
 
+// Rebuilds the property editor when a different property is selected, so it starts from
+// that property. Renaming the selected property keeps the editor: rebuilding it would
+// reset the name input, and the caret with it, on every keystroke.
+const propertyEditorKey = ref( 0 );
+
+function selectProperty( name: string | undefined ): void {
+	selectedPropertyName.value = name;
+	propertyEditorKey.value++;
+}
+
 watch( () => props.initialSchema, ( schema ) => {
 	currentSchema.value = schema;
 	const firstProperty = [ ...schema.getPropertyDefinitions() ][ 0 ];
-	selectedPropertyName.value = firstProperty?.name.toString();
+	selectProperty( firstProperty?.name.toString() );
 }, { immediate: true } );
 
 const propertyDefinitionEditor = ref<( ComponentPublicInstance & PropertyDefinitionEditorExposes ) | null>( null );
@@ -107,7 +117,7 @@ const selectedProperty = computed( () => {
 } );
 
 function onPropertySelected( name: PropertyName ): void {
-	selectedPropertyName.value = name.toString();
+	selectProperty( name.toString() );
 }
 
 function onPropertyCreated( newProperty: PropertyDefinition ): void {
@@ -119,10 +129,8 @@ function onPropertyDeleted( name: PropertyName ): void {
 	currentSchema.value = currentSchema.value.withRemovedPropertyDefinition( name );
 
 	if ( selectedPropertyName.value === name.toString() ) {
-		const properties = [ ...currentSchema.value.getPropertyDefinitions() ];
-		selectedPropertyName.value = properties.length > 0 ?
-			properties[ 0 ].name.toString() :
-			undefined;
+		const firstProperty = [ ...currentSchema.value.getPropertyDefinitions() ][ 0 ];
+		selectProperty( firstProperty?.name.toString() );
 	}
 
 	emit( 'change' );
