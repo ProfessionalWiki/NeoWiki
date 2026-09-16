@@ -9,12 +9,15 @@ use MediaWiki\Content\Content;
 use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Content\ValidationParams;
+use MediaWiki\Message\Message;
 use MediaWiki\Title\Title;
 use MediaWiki\Parser\ParserOutput;
 use ProfessionalWiki\NeoWiki\Domain\Layout\LayoutName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutContentValidator;
 use StatusValue;
+use Wikimedia\Message\ListType;
+use Wikimedia\Message\MessageValue;
 
 class LayoutContentHandler extends JsonContentHandler {
 
@@ -40,11 +43,21 @@ class LayoutContentHandler extends JsonContentHandler {
 		$validator = LayoutContentValidator::newInstance();
 
 		if ( !$validator->validate( $content->getText() ) ) {
-			$status->fatal( 'neowiki-layout-invalid', count( $validator->getErrors() ) );
+			$errors = $validator->getErrors();
+			$details = [];
 
-			foreach ( $validator->getErrors() as $pointer => $message ) {
-				$status->fatal( 'neowiki-layout-invalid-detail', $pointer, $message );
+			foreach ( $errors as $pointer => $message ) {
+				$details[] = MessageValue::new( 'neowiki-layout-invalid-detail' )->params( $pointer, $message );
 			}
+
+			// The details ride in this message rather than following as messages of their own:
+			// the REST error envelope carries only the first message a Status holds, so a client
+			// told "3 errors" and nothing else cannot act on it.
+			$status->fatal(
+				'neowiki-layout-invalid',
+				count( $errors ),
+				Message::listParam( $details, ListType::SEMICOLON )
+			);
 		}
 
 		return $status;

@@ -10,7 +10,7 @@ import { createI18nMock, FieldProps, setupMwMock } from '../../../VueTestHelpers
 
 const SchemaPickerStub = {
 	props: [ 'selected' ],
-	emits: [ 'select', 'blur' ],
+	emits: [ 'select' ],
 	template: '<div class="schema-lookup-stub"></div>',
 };
 
@@ -277,24 +277,24 @@ describe( 'RelationAttributesEditor', () => {
 			expect( props.messages ).toEqual( { error: 'Relation type is required.' } );
 		} );
 
-		it( 'does not show the target schema error before the field is touched', () => {
+		it( 'shows a required error while the target schema is empty', () => {
 			const wrapper = newWrapper( {
 				property: relationProperty( { targetSchema: '' } ),
 			} );
-
-			expect( fieldProps( wrapper, '.relation-attributes__target-schema' ).status ).toBe( 'default' );
-		} );
-
-		it( 'shows a required error after the empty target schema field is blurred', async () => {
-			const wrapper = newWrapper( {
-				property: relationProperty( { targetSchema: '' } ),
-			} );
-
-			await wrapper.findComponent( SchemaPickerStub ).vm.$emit( 'blur' );
 
 			const props = fieldProps( wrapper, '.relation-attributes__target-schema' );
 			expect( props.status ).toBe( 'error' );
 			expect( props.messages ).toEqual( { error: 'Target schema is required.' } );
+		} );
+
+		// The state switching a property's type to Relation leaves it in, which the Schema
+		// cannot be saved from.
+		it( 'shows a required error for a target schema that was never chosen', () => {
+			const wrapper = newWrapper( {
+				property: relationProperty( { targetSchema: undefined } ),
+			} );
+
+			expect( fieldProps( wrapper, '.relation-attributes__target-schema' ).status ).toBe( 'error' );
 		} );
 	} );
 

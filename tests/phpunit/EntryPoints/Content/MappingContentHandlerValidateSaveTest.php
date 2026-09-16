@@ -38,6 +38,16 @@ class MappingContentHandlerValidateSaveTest extends NeoWikiIntegrationTestCase {
 		$this->assertFalse( $this->validate( '{ "version": 1, "schemas": { "Person": {} } }' )->isOK() );
 	}
 
+	/**
+	 * The REST envelope carries only the first message, so a caller that never sees the rest
+	 * is told nothing unless that one names what is wrong.
+	 */
+	public function testFirstMessageNamesWhatIsInvalid(): void {
+		$status = $this->validate( '{ "version": 1, "schemas": { "Person": {} } }' );
+
+		$this->assertStringContainsString( 'Person', wfMessage( $status->getMessages()[0] )->text() );
+	}
+
 	public function testUnresolvableCuriePredicateFailsValidation(): void {
 		$this->assertFalse( $this->validate( <<<JSON
 			{

@@ -50,4 +50,21 @@ class SchemaContentHandlerValidateSaveTest extends MediaWikiIntegrationTestCase 
 		$this->assertFalse( $status->isOK() );
 	}
 
+	/**
+	 * The REST envelope carries only the first message, so a caller that never sees the rest
+	 * is told nothing unless that one names every error, and how many there were.
+	 */
+	public function testFirstMessageNamesEveryErrorAndCountsThem(): void {
+		$status = $this->validate( '{ "propertyDefinitions": {
+			"Owner": { "type": "relation", "relation": "Owner" },
+			"Maker": { "type": "relation", "relation": " ", "targetSchema": "Company" }
+		} }' );
+
+		$text = wfMessage( $status->getMessages()[0] )->text();
+
+		$this->assertStringContainsString( '2 errors', $text );
+		$this->assertStringContainsString( '/propertyDefinitions/Owner', $text );
+		$this->assertStringContainsString( '/propertyDefinitions/Maker/relation', $text );
+	}
+
 }

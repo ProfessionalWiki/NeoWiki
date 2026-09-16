@@ -51,6 +51,9 @@ import PaneDivider, { PANE_DIVIDER_SIZE } from '@/components/common/PaneDivider.
 import { usePaneSize } from '@/composables/usePaneSize.ts';
 import { useGeneratedId } from '@wikimedia/codex';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
+import type { IncompleteProperty } from '@/components/common/IncompleteProperty.ts';
+import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
+import { missingRelationAttribute } from '@/components/SchemaEditor/Property/missingRelationAttribute.ts';
 
 const props = defineProps<{
 	initialSchema: Schema;
@@ -175,7 +178,32 @@ function replacePropertyDefinition( updatedProperty: PropertyDefinition ): Prope
 export interface SchemaEditorExposes {
 	getSchema: () => Schema;
 	unparseableInput: () => UnparseableInput | null;
+	incompleteProperty: () => IncompleteProperty | null;
 }
+
+/**
+ * The first property definition the wiki would refuse to store, or null. Unlike the unparseable
+ * input above this reads the Schema rather than the mounted editor, because a property the user
+ * has navigated away from has no editor to speak for it and is just as unsaveable.
+ *
+ * Only relation properties can be incomplete today; letting each Property Type answer for its
+ * own definition, so an extension's can too, is #1454.
+ */
+const incompleteProperty = (): IncompleteProperty | null => {
+	for ( const property of currentSchema.value.getPropertyDefinitions() ) {
+		if ( property.type !== RelationType.typeName ) {
+			continue;
+		}
+
+		const message = missingRelationAttribute( property as RelationProperty );
+
+		if ( message !== null ) {
+			return { propertyName: property.name.toString(), message: mw.message( message ).text() };
+		}
+	}
+
+	return null;
+};
 
 /**
  * The property whose initial-value field is showing text it cannot turn into a
@@ -198,7 +226,8 @@ defineExpose<SchemaEditorExposes>( {
 
 		return props.description === undefined ? schema : schema.withDescription( props.description );
 	},
-	unparseableInput
+	unparseableInput,
+	incompleteProperty
 } );
 </script>
 

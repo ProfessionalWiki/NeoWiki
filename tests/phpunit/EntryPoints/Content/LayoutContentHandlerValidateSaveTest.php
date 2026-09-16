@@ -38,4 +38,14 @@ class LayoutContentHandlerValidateSaveTest extends MediaWikiIntegrationTestCase 
 		$this->assertFalse( $status->isOK() );
 	}
 
+	/**
+	 * The REST envelope carries only the first message, so a caller that never sees the rest
+	 * is told nothing unless that one names what is wrong.
+	 */
+	public function testFirstMessageNamesWhatIsInvalid(): void {
+		$status = $this->validate( '{ "schema": "Company" }' );
+
+		$this->assertStringContainsString( 'type', wfMessage( $status->getMessages()[0] )->text() );
+	}
+
 }

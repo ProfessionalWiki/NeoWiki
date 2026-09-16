@@ -40,7 +40,7 @@ export class RestLayoutRepository implements LayoutRepository {
 		);
 
 		if ( !status.success ) {
-			throw new Error( `Error saving layout: ${ status.message }` );
+			throw new Error( status.message );
 		}
 	}
 

@@ -10,6 +10,7 @@ import { Service } from '@/NeoWikiServices.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
+import type { IncompleteProperty } from '@/components/common/IncompleteProperty.ts';
 
 const EXISTING_SCHEMA_NAME = 'Person';
 const NEW_SCHEMA_NAME = 'Company';
@@ -18,6 +19,7 @@ const DEBOUNCE_DELAY = 300;
 // What the stubbed editor reports about its initial-value field holding text it
 // cannot turn into a value. Reset per test by the beforeEach below.
 let editorUnparseableInput: UnparseableInput | null = null;
+let editorIncompleteProperty: IncompleteProperty | null = null;
 
 const SchemaEditorStub = defineComponent( {
 	name: 'SchemaEditor',
@@ -32,6 +34,9 @@ const SchemaEditorStub = defineComponent( {
 		},
 		unparseableInput(): UnparseableInput | null {
 			return editorUnparseableInput;
+		},
+		incompleteProperty(): IncompleteProperty | null {
+			return editorIncompleteProperty;
 		},
 	},
 } );
@@ -77,6 +82,7 @@ describe( 'SchemaCreator', () => {
 
 	beforeEach( () => {
 		editorUnparseableInput = null;
+		editorIncompleteProperty = null;
 		vi.useFakeTimers();
 
 		setupMwMock( {
@@ -293,6 +299,27 @@ describe( 'SchemaCreator', () => {
 			expect( ( wrapper.vm as any ).unparseableInput() ).toEqual( {
 				propertyName: 'Score',
 				message: 'neowiki-field-invalid-number',
+			} );
+		} );
+	} );
+
+	// Exposed for the dialogs that hold a save back. A template ref is not checked against what
+	// the child actually exposes, so dropping this would only surface at runtime.
+	describe( 'incompleteProperty', () => {
+		it( 'reports nothing while the schema editor reports nothing', () => {
+			const wrapper = mountComponent();
+
+			expect( ( wrapper.vm as any ).incompleteProperty() ).toBeNull();
+		} );
+
+		it( 'forwards what the schema editor reports', () => {
+			editorIncompleteProperty = { propertyName: 'Maker', message: 'Target schema is required.' };
+
+			const wrapper = mountComponent();
+
+			expect( ( wrapper.vm as any ).incompleteProperty() ).toEqual( {
+				propertyName: 'Maker',
+				message: 'Target schema is required.',
 			} );
 		} );
 	} );
