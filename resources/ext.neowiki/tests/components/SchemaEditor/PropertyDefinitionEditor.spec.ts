@@ -200,13 +200,6 @@ describe( 'PropertyDefinitionEditor', () => {
 	} );
 
 	describe( 'Unparseable initial value', () => {
-		/**
-		 * Puts the initial-value field in the state a browser leaves it in for text
-		 * like "5foo": the reported value is empty while validity.badInput is set.
-		 * jsdom neither keeps such text nor sets the flag, so the flag is faked.
-		 * The Initial value input is found through NumberInput because the attributes
-		 * editor renders Minimum, Maximum and Precision inputs ahead of it.
-		 */
 		it( 'reports nothing while the initial value can be read', () => {
 			const wrapper = newWrapper( newNumberProperty( { name: 'Score', default: newNumberValue( 5 ) } ) );
 
@@ -270,20 +263,12 @@ describe( 'PropertyDefinitionEditor', () => {
 			expect( lastEmittedProperty( wrapper ).name.toString() ).toBe( 'State' );
 		} );
 
-		it( 'says the name is taken when another property has it', async () => {
-			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ), { otherPropertyNames: [ 'Title' ] } );
-
-			await typeName( wrapper, 'Title' );
-
-			expect( nameFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( nameFieldProps( wrapper ).messages ).toEqual( { error: 'neowiki-property-editor-name-takenTitle' } );
-		} );
-
-		it( 'says the name is taken when it differs from another property\'s only by surrounding spaces', async () => {
+		it( 'says the name is taken when another property has it, even with spaces around it', async () => {
 			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ), { otherPropertyNames: [ 'Title' ] } );
 
 			await typeName( wrapper, ' Title ' );
 
+			expect( nameFieldProps( wrapper ).status ).toBe( 'error' );
 			expect( nameFieldProps( wrapper ).messages ).toEqual( { error: 'neowiki-property-editor-name-takenTitle' } );
 		} );
 

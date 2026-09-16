@@ -130,7 +130,6 @@ const nameError = computed( (): string | null => {
 	return null;
 } );
 
-// The name the field gives the property, or null while the field shows why it cannot.
 const typedName = computed( (): string | null =>
 	nameError.value === null ? new PropertyName( nameText.value ).toString() : null
 );
@@ -224,9 +223,7 @@ export interface PropertyDefinitionEditorExposes {
 
 /**
  * The message a field is showing because the definition cannot take its text, or
- * null: a name that is empty or another property's, or initial-value text that is
- * not a Value. The definition then keeps its last name, or has already dropped its
- * default; callers hold the save rather than persist what the user cannot see.
+ * null. Callers hold the save rather than persist what the user cannot see.
  */
 function unparseableInputMessage(): string | null {
 	return nameError.value ?? defaultValueInput.value?.unparseableInputMessage?.() ?? null;
