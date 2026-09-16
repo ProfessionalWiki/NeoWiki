@@ -72,6 +72,14 @@ describe( 'RelationAttributesEditor', () => {
 			expect( wrapper.findComponent( SchemaPickerStub ).props( 'selected' ) ).toBe( null );
 		} );
 
+		it( 'offers the picker to a property that has no target schema yet', () => {
+			const wrapper = newWrapper( {
+				property: relationProperty( { targetSchema: undefined } ),
+			} );
+
+			expect( wrapper.findComponent( SchemaPickerStub ).exists() ).toBe( true );
+		} );
+
 		it( 'shows a target schema from another Source read-only', () => {
 			const wrapper = newWrapper( {
 				property: relationProperty( { targetSchema: { source: 'otherwiki', name: 'Person' } } ),

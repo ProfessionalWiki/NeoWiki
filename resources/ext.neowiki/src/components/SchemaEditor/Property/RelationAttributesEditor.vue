@@ -25,7 +25,7 @@
 				{{ $i18n( 'neowiki-property-editor-target-schema' ).text() }}
 			</template>
 			<SchemaPicker
-				v-if="targetSchemaIsLocal"
+				v-if="targetSchemaIsEditable"
 				:selected="localTargetSchemaName || null"
 				@select="updateTargetSchema"
 				@blur="targetSchemaTouched = true"
@@ -94,12 +94,13 @@ const targetSchemaTouched = ref( false );
 
 // A Schema of another Source is shown but not edited here: the picker offers this wiki's Schemas
 // alone, and selecting one from it would replace a reference the editor cannot express (ADR 23).
-const targetSchemaIsLocal = computed<boolean>( () =>
-	isLocalSchemaReference( props.property.targetSchema )
+// A property that has no target yet gets the picker, which is how it comes by one.
+const targetSchemaIsEditable = computed<boolean>( () =>
+	props.property.targetSchema === undefined || isLocalSchemaReference( props.property.targetSchema )
 );
 
 const localTargetSchemaName = computed<string>( () =>
-	targetSchemaIsLocal.value ? schemaReferenceName( props.property.targetSchema ) : ''
+	targetSchemaIsEditable.value ? schemaReferenceName( props.property.targetSchema ) : ''
 );
 
 const targetSchemaError = computed<string | null>( () =>
