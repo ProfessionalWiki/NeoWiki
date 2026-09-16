@@ -9,6 +9,8 @@ import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { newTextProperty } from '@/domain/propertyTypes/Text.ts';
 import { newSchema } from '@/TestHelpers.ts';
+import { newRelationProperty, type RelationProperty } from '@/domain/propertyTypes/Relation.ts';
+import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import { createI18nMock, findPropertyNameInput, reportUnparseableNumber, selectedText } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import PaneDivider from '@/components/common/PaneDivider.vue';
@@ -419,6 +421,60 @@ describe( 'SchemaEditor', () => {
 			await selectProperty( wrapper, 'Beta' );
 
 			expect( selectedText( findPropertyNameInput( wrapper ).element ) ).toBe( '' );
+		} );
+	} );
+
+	describe( 'incompleteProperty', () => {
+		function incompleteProperty( wrapper: VueWrapper ): ReturnType<SchemaEditorExposes['incompleteProperty']> {
+			return ( wrapper.vm as unknown as SchemaEditorExposes ).incompleteProperty();
+		}
+
+		function schemaWith( ...properties: PropertyDefinition[] ): Schema {
+			return new Schema( 'Test', '', new PropertyDefinitionList( properties ) );
+		}
+
+		// newRelationProperty() fills a placeholder target in, which is the state
+		// switching a property's type to Relation never reaches.
+		function relationPropertyWithoutTarget(): PropertyDefinition {
+			const noTarget: Partial<RelationProperty> = { targetSchema: undefined };
+
+			return { ...newRelationProperty( { name: 'Maker', relation: 'Made by' } ), ...noTarget };
+		}
+
+		it( 'reports nothing when every relation property has what it needs', () => {
+			const wrapper = createWrapper( schemaWith(
+				newRelationProperty( { name: 'Maker', relation: 'Made by', targetSchema: 'Company' } ),
+			) );
+
+			expect( incompleteProperty( wrapper ) ).toBeNull();
+		} );
+
+		it( 'names a relation property left without a target schema', () => {
+			const wrapper = createWrapper( schemaWith(
+				relationPropertyWithoutTarget(),
+			) );
+
+			expect( incompleteProperty( wrapper ) ).toEqual( {
+				propertyName: 'Maker',
+				message: 'neowiki-property-editor-target-schema-required',
+			} );
+		} );
+
+		// Only the selected property has an editor mounted, so a probe that asked the editors
+		// would miss one the user added and then navigated away from.
+		it( 'names an incomplete property that is not the selected one', () => {
+			const wrapper = createWrapper( schemaWith(
+				newNumberProperty( { name: 'Score' } ),
+				relationPropertyWithoutTarget(),
+			) );
+
+			expect( incompleteProperty( wrapper )?.propertyName ).toBe( 'Maker' );
+		} );
+
+		it( 'leaves properties of other types alone', () => {
+			const wrapper = createWrapper( schemaWith( newNumberProperty( { name: 'Score' } ) ) );
+
+			expect( incompleteProperty( wrapper ) ).toBeNull();
 		} );
 	} );
 } );

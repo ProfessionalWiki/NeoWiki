@@ -11,12 +11,14 @@ import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
+import type { IncompleteProperty } from '@/components/common/IncompleteProperty.ts';
 
 const $i18n = createI18nMock();
 
 // What the stubbed editor reports about its initial-value field holding text it
 // cannot turn into a value. Reset per test by the beforeEach below.
 let editorUnparseableInput: UnparseableInput | null = null;
+let editorIncompleteProperty: IncompleteProperty | null = null;
 
 const SchemaEditorStub = defineComponent( {
 	template: '<div class="schema-editor-stub"></div>',
@@ -32,6 +34,9 @@ const SchemaEditorStub = defineComponent( {
 		},
 		unparseableInput(): UnparseableInput | null {
 			return editorUnparseableInput;
+		},
+		incompleteProperty(): IncompleteProperty | null {
+			return editorIncompleteProperty;
 		},
 	},
 } );
@@ -53,6 +58,7 @@ describe( 'SchemaEditorDialog', () => {
 
 	beforeEach( () => {
 		editorUnparseableInput = null;
+		editorIncompleteProperty = null;
 		onSave = vi.fn<SchemaSaveHandler>();
 		setupMwMock( { functions: [ 'message', 'msg', 'notify' ] } );
 	} );
@@ -218,6 +224,30 @@ describe( 'SchemaEditorDialog', () => {
 			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 		}
+
+		it( 'does not save while a property definition is missing a field the wiki requires', async () => {
+			const wrapper = mountComponent();
+			editorIncompleteProperty = { propertyName: 'Maker', message: 'Target schema is required.' };
+
+			await save( wrapper );
+
+			expect( onSave ).not.toHaveBeenCalled();
+			expect( mw.notify ).toHaveBeenCalledWith(
+				'Target schema is required.',
+				{ title: 'Maker', type: 'error' },
+			);
+		} );
+
+		it( 'saves once the property definition is complete', async () => {
+			const wrapper = mountComponent();
+			editorIncompleteProperty = { propertyName: 'Maker', message: 'Target schema is required.' };
+			await save( wrapper );
+
+			editorIncompleteProperty = null;
+			await save( wrapper );
+
+			expect( onSave ).toHaveBeenCalledTimes( 1 );
+		} );
 
 		it( 'does not save while the initial-value field holds text that cannot be turned into a value', async () => {
 			const wrapper = mountComponent();

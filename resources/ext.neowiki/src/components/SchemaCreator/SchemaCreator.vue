@@ -46,6 +46,7 @@ import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
+import type { IncompleteProperty } from '@/components/common/IncompleteProperty.ts';
 
 const props = withDefaults( defineProps<{
 	initialSchema?: Schema;
@@ -155,6 +156,10 @@ function unparseableInput(): UnparseableInput | null {
 	return schemaEditorRef.value?.unparseableInput() ?? null;
 }
 
+function incompleteProperty(): IncompleteProperty | null {
+	return schemaEditorRef.value?.incompleteProperty() ?? null;
+}
+
 function reset(): void {
 	clearDebounceTimer();
 	requestSequence++;
@@ -172,11 +177,12 @@ export interface SchemaCreatorExposes {
 	validate: () => Promise<boolean>;
 	getSchema: () => Schema | null;
 	unparseableInput: () => UnparseableInput | null;
+	incompleteProperty: () => IncompleteProperty | null;
 	reset: () => void;
 	focus: () => void;
 }
 
-defineExpose( { validate, getSchema, unparseableInput, reset, focus } );
+defineExpose( { validate, getSchema, unparseableInput, incompleteProperty, reset, focus } );
 </script>
 
 <style lang="less">

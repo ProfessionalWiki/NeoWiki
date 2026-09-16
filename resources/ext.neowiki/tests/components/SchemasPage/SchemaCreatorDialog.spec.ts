@@ -11,12 +11,14 @@ import { Service } from '@/NeoWikiServices.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
+import type { IncompleteProperty } from '@/components/common/IncompleteProperty.ts';
 
 const NEW_SCHEMA_NAME = 'Company';
 
 // What the stubbed creator reports about a field holding text it cannot turn
 // into a value. Reset per test by the beforeEach below.
 let creatorUnparseableInput: UnparseableInput | null = null;
+let creatorIncompleteProperty: IncompleteProperty | null = null;
 
 const SchemaCreatorStub = {
 	template: '<div class="schema-creator-stub"></div>',
@@ -28,6 +30,7 @@ const SchemaCreatorStub = {
 		const validate = vi.fn( async (): Promise<boolean> => valid );
 		const getSchema = vi.fn( (): Schema | null => schema );
 		const unparseableInput = (): UnparseableInput | null => creatorUnparseableInput;
+		const incompleteProperty = (): IncompleteProperty | null => creatorIncompleteProperty;
 		const reset = vi.fn();
 		const focus = vi.fn();
 
@@ -35,6 +38,7 @@ const SchemaCreatorStub = {
 			validate,
 			getSchema,
 			unparseableInput,
+			incompleteProperty,
 			reset,
 			focus,
 			setStubValid( v: boolean ) {
@@ -92,6 +96,7 @@ describe( 'SchemaCreatorDialog', () => {
 
 	beforeEach( () => {
 		creatorUnparseableInput = null;
+		creatorIncompleteProperty = null;
 
 		setupMwMock( {
 			functions: [ 'msg', 'notify' ],

@@ -139,6 +139,15 @@ const handleSave = async ( summary: string ): Promise<void> => {
 		return;
 	}
 
+	const incomplete = schemaEditor.value.incompleteProperty();
+
+	// The wiki refuses a property definition missing a field it requires, and says so in terms
+	// of the stored JSON rather than the field the user left empty.
+	if ( incomplete !== null ) {
+		mw.notify( incomplete.message, { title: incomplete.propertyName, type: 'error' } );
+		return;
+	}
+
 	const schema = schemaEditor.value.getSchema();
 	const schemaName = schema.getName();
 	const editSummary = summary || mw.msg( 'neowiki-schema-editor-summary-default' );

@@ -28,7 +28,6 @@
 				v-if="targetSchemaIsEditable"
 				:selected="localTargetSchemaName || null"
 				@select="updateTargetSchema"
-				@blur="targetSchemaTouched = true"
 			/>
 			<CdxTextInput
 				v-else
@@ -90,8 +89,6 @@ const relationError = computed<string | null>( () =>
 		null
 );
 
-const targetSchemaTouched = ref( false );
-
 // A Schema of another Source is shown but not edited here: the picker offers this wiki's Schemas
 // alone, and selecting one from it would replace a reference the editor cannot express (ADR 23).
 // A property that has no target yet gets the picker, which is how it comes by one.
@@ -103,8 +100,10 @@ const localTargetSchemaName = computed<string>( () =>
 	targetSchemaIsEditable.value ? schemaReferenceName( props.property.targetSchema ) : ''
 );
 
+// Shown without waiting for the field to be touched, as the relation type above is: a property
+// switched to this type has no target, and the Schema cannot be saved until it gets one.
 const targetSchemaError = computed<string | null>( () =>
-	targetSchemaTouched.value && schemaReferenceName( props.property.targetSchema ).trim() === '' ?
+	schemaReferenceName( props.property.targetSchema ).trim() === '' ?
 		mw.message( 'neowiki-property-editor-target-schema-required' ).text() :
 		null
 );
