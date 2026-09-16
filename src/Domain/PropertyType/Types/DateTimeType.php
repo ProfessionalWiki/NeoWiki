@@ -96,4 +96,8 @@ class DateTimeType implements PropertyType {
 		return $first === '' ? null : $first;
 	}
 
+	public function searchText( NeoValue $value, ?PropertyDefinition $definition ): array {
+		return $value instanceof StringValue ? $value->strings : [];
+	}
+
 }

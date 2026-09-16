@@ -71,4 +71,8 @@ class NumberType implements PropertyType {
 		return $violations;
 	}
 
+	public function searchText( NeoValue $value, ?PropertyDefinition $definition ): array {
+		return $value instanceof NumberValue ? [ (string)$value->number ] : [];
+	}
+
 }

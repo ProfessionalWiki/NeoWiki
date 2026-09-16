@@ -45,6 +45,7 @@ use ProfessionalWiki\NeoWiki\Application\WikiConfig\WikiConfigSource;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
+use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchTextBuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery;
@@ -169,6 +170,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiWikiConfigSource;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Search\SubjectSearchTextLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PointInTimeSubjectLookup;
@@ -237,6 +239,8 @@ class NeoWikiExtension {
 	 */
 	public const string ADMIN_RIGHT = 'neowiki-admin';
 
+	public const string SUBJECT_SEARCH_FIELD = 'neowiki_text';
+
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
 	private SubjectEditNoticeProviderRegistry $subjectEditNoticeProviderRegistry;
@@ -292,6 +296,18 @@ class NeoWikiExtension {
 		);
 
 		self::registerPoweredByBadge();
+		self::registerCirrusSearchWeight();
+	}
+
+	/**
+	 * Weights NeoWiki's field as heavily as a page's own text in a plain CirrusSearch search.
+	 */
+	private static function registerCirrusSearchWeight(): void {
+		if ( !is_array( $GLOBALS['wgCirrusSearchWeights'] ?? null ) ) {
+			return;
+		}
+
+		$GLOBALS['wgCirrusSearchWeights'][self::SUBJECT_SEARCH_FIELD] ??= 1;
 	}
 
 	private static function registerPoweredByBadge(): void {
@@ -1238,6 +1254,16 @@ class NeoWikiExtension {
 
 	public function newPageSubjectsLookup(): PageSubjectsLookup {
 		return new PageSubjectsLookup( $this->getSubjectRepository() );
+	}
+
+	public function newSubjectSearchTextLookup(): SubjectSearchTextLookup {
+		return new SubjectSearchTextLookup(
+			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
+			textBuilder: new SubjectSearchTextBuilder(
+				$this->getPropertyTypeLookup(),
+				$this->getSchemaResolver()
+			)
+		);
 	}
 
 	public function newFrontendModuleLoader(): FrontendModuleLoader {

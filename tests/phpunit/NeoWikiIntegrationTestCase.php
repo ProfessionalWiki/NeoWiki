@@ -109,10 +109,33 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		?Subject $mainSubject = null,
 		SubjectMap $otherSubjects = new SubjectMap()
 	): ?RevisionRecord {
+		return $this->saveSubjects( $pageName, $mainSubject, $otherSubjects, new TextContent( '' ) );
+	}
+
+	/**
+	 * A revision that changes nothing but the page's Subjects, as saving in the Subject editor does:
+	 * the main slot is inherited rather than written.
+	 */
+	protected function changeSubjectsOfPage(
+		string $pageName,
+		?Subject $mainSubject = null,
+		SubjectMap $otherSubjects = new SubjectMap()
+	): ?RevisionRecord {
+		return $this->saveSubjects( $pageName, $mainSubject, $otherSubjects, null );
+	}
+
+	private function saveSubjects(
+		string $pageName,
+		?Subject $mainSubject,
+		SubjectMap $otherSubjects,
+		?TextContent $mainContent
+	): ?RevisionRecord {
 		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
 		$updater = $wikiPage->newPageUpdater( $this->getTestSysop()->getUser() );
 
-		$updater->setContent( 'main', new TextContent( '' ) );
+		if ( $mainContent !== null ) {
+			$updater->setContent( 'main', $mainContent );
+		}
 
 		$updater->setContent(
 			MediaWikiSubjectRepository::SLOT_NAME,

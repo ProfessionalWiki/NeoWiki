@@ -49,6 +49,8 @@
 		"ParserFirstCallInit": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserFirstCallInit",
 
 		"RevisionFromEditComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionFromEditComplete",
+		"SearchIndexFields": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSearchIndexFields",
+		"SearchDataForIndex2": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSearchDataForIndex2",
 		"PageDeleteComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageDeleteComplete",
 		"PageUndeleteComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageUndeleteComplete",
 		"AfterImportPage": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onAfterImportPage",
@@ -93,6 +95,13 @@
 		"NeoWikiSchema": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\SchemaContentHandler",
 		"NeoWikiLayout": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\LayoutContentHandler",
 		"NeoWikiMapping": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Content\\MappingContentHandler"
+	},
+
+	"SearchMappings": {
+		"SearchMySQL": { "class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Search\\SearchMySQLWithSubjects" },
+		"SearchSqlite": { "class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Search\\SearchSqliteWithSubjects" },
+		"MediaWiki\\Search\\SearchMySQL": { "class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Search\\SearchMySQLWithSubjects" },
+		"MediaWiki\\Search\\SearchSqlite": { "class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Search\\SearchSqliteWithSubjects" }
 	},
 
 	"namespaces": [

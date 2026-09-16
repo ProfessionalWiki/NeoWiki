@@ -63,5 +63,9 @@ error and joins the pages-with-script-errors category. A module can still reach 
 - **Stores and dumps hold restricted content in full.** Restricting a page removes nothing from a graph store, and a
   rebuild reprojects it; deleting the page does remove it. Do not expose a SPARQL store directly, and treat a
   [bulk dump](../api/rdf-export.md#bulk-dump) and any store backup as readable by whoever can reach it.
+- **Search results reveal Subject values.** Subject labels and values go into the wiki's search index, and a search
+  for one of them lists the page even to a reader who cannot open it: Special:Search withholds the snippet; the
+  search API does not. With CirrusSearch, `action=query&prop=cirrusdoc` returns everything indexed for a page,
+  Subject values included, to any reader of the wiki, as it already does for the page's wikitext.
 - **Derived data follows the anonymous parse.** On a wiki where anonymous users cannot read, a category or page
   property a template derives from a Subject value is never set.

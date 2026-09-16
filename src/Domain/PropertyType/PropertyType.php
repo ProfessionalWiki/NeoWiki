@@ -38,4 +38,13 @@ interface PropertyType {
 	 */
 	public function validate( NeoValue $value, PropertyDefinition $definition ): array;
 
+	/**
+	 * The strings someone would search for to find the Value; an empty array keeps the type's values
+	 * out of the search index. The Property Definition is the one the Value is stored under, or null
+	 * when the Schema does not declare the property with this type.
+	 *
+	 * @return string[]
+	 */
+	public function searchText( NeoValue $value, ?PropertyDefinition $definition ): array;
+
 }

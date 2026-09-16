@@ -77,4 +77,28 @@ class SelectType implements PropertyType {
 		return $violations;
 	}
 
+	/**
+	 * The stored option ids are read as their labels from the definition.
+	 */
+	public function searchText( NeoValue $value, ?PropertyDefinition $definition ): array {
+		if ( !$value instanceof StringValue || !$definition instanceof SelectProperty ) {
+			return [];
+		}
+
+		$labelsById = [];
+		foreach ( $definition->getOptions() as $option ) {
+			$labelsById[ $option->getId() ] = $option->getLabel();
+		}
+
+		$labels = [];
+
+		foreach ( $value->strings as $id ) {
+			if ( isset( $labelsById[ $id ] ) ) {
+				$labels[] = $labelsById[ $id ];
+			}
+		}
+
+		return $labels;
+	}
+
 }
