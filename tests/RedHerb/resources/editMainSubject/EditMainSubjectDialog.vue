@@ -114,10 +114,10 @@ module.exports = exports = {
 			if ( editorRef.value === null || loadedSubject.value === null ) {
 				return;
 			}
-			const unparseable = editorRef.value.unparseableInput();
-			if ( unparseable !== null ) {
+			const blocker = editorRef.value.saveBlocker();
+			if ( blocker !== null ) {
 				// The field is already flagging this; name it so the user knows where to look.
-				mw.notify( unparseable.message, { title: unparseable.propertyName, type: 'error' } );
+				mw.notify( blocker.message, { title: blocker.propertyName, type: 'error' } );
 				return;
 			}
 			const newStatements = editorRef.value.getSubjectData();

@@ -96,10 +96,10 @@ module.exports = exports = {
 			if ( trimmed === '' || editorRef.value === null ) {
 				return;
 			}
-			const unparseable = editorRef.value.unparseableInput();
-			if ( unparseable !== null ) {
+			const blocker = editorRef.value.saveBlocker();
+			if ( blocker !== null ) {
 				// The field is already flagging this; name it so the user knows where to look.
-				mw.notify( unparseable.message, { title: unparseable.propertyName, type: 'error' } );
+				mw.notify( blocker.message, { title: blocker.propertyName, type: 'error' } );
 				return;
 			}
 			const pageId = mw.config.get( 'wgArticleId' );
