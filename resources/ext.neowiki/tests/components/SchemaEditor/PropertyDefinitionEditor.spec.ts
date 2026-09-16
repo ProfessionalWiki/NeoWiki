@@ -1,5 +1,5 @@
 import { flushPromises, VueWrapper } from '@vue/test-utils';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { CdxCheckbox, CdxSelect } from '@wikimedia/codex';
 import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
@@ -11,7 +11,7 @@ import { newSelectProperty, SelectProperty } from '@/domain/propertyTypes/Select
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
 import { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { newNumberValue, newStringValue } from '@/domain/Value';
-import { createTestWrapper, reportUnparseableNumber, setupMwMock } from '../../VueTestHelpers.ts';
+import { createTestWrapper, findPropertyNameInput, reportUnparseableNumber, selectedText, setupMwMock } from '../../VueTestHelpers.ts';
 
 describe( 'PropertyDefinitionEditor', () => {
 	beforeEach( () => {
@@ -239,23 +239,33 @@ describe( 'PropertyDefinitionEditor', () => {
 	} );
 
 	describe( 'name input', () => {
-		function nameInput( wrapper: VueWrapper ): HTMLInputElement {
-			return wrapper.find<HTMLInputElement>( '.cdx-text-input__input' ).element;
-		}
+		let attached: VueWrapper | undefined;
 
-		function selectedText( input: HTMLInputElement ): string {
-			return input.value.slice( input.selectionStart ?? 0, input.selectionEnd ?? 0 );
-		}
+		afterEach( () => {
+			attached?.unmount();
+		} );
 
-		it( 'is focused with the whole name selected when the editor opens, so typing replaces the name', async () => {
-			const wrapper = createTestWrapper( PropertyDefinitionEditor, { property: newTextProperty( { name: 'New Property 1' } ) }, document.body );
+		async function openEditorOn( propertyName: string ): Promise<VueWrapper> {
+			attached = createTestWrapper(
+				PropertyDefinitionEditor,
+				{ property: newTextProperty( { name: propertyName } ) },
+				document.body,
+			);
 			await flushPromises();
 
-			const input = nameInput( wrapper );
-			expect( document.activeElement ).toBe( input );
-			expect( selectedText( input ) ).toBe( 'New Property 1' );
+			return attached;
+		}
 
-			wrapper.unmount();
+		it( 'is focused when the editor opens', async () => {
+			const wrapper = await openEditorOn( 'New Property 1' );
+
+			expect( document.activeElement ).toBe( findPropertyNameInput( wrapper ).element );
+		} );
+
+		it( 'has the whole name selected when the editor opens, so typing replaces it', async () => {
+			const wrapper = await openEditorOn( 'New Property 1' );
+
+			expect( selectedText( findPropertyNameInput( wrapper ).element ) ).toBe( 'New Property 1' );
 		} );
 	} );
 } );

@@ -1,6 +1,6 @@
 <template>
 	<div class="ext-neowiki-schema-editor__property-editor">
-		<CdxField>
+		<CdxField class="ext-neowiki-property-editor__name">
 			<template #label>
 				{{ $i18n( 'neowiki-property-editor-name' ).text() }}
 			</template>

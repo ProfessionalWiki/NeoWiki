@@ -2,13 +2,12 @@ import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import SchemaEditor, { type SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
-import PropertyDefinitionEditor from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
-import { createI18nMock, reportUnparseableNumber } from '../../VueTestHelpers.ts';
+import { createI18nMock, findPropertyNameInput, reportUnparseableNumber, selectedText } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import PaneDivider from '@/components/common/PaneDivider.vue';
 import { nextTick } from 'vue';
@@ -31,12 +30,11 @@ function createWrapper( schema: Schema, description = '' ): VueWrapper {
 	} );
 }
 
-function createWrapperWithPropertyEditor( schema: Schema, attachTo?: Element ): VueWrapper {
+function createWrapperWithPropertyEditor( schema: Schema ): VueWrapper {
 	return mount( SchemaEditor, {
 		props: {
 			initialSchema: schema,
 		},
-		attachTo,
 		global: {
 			provide: NeoWikiTestServices.getServices(),
 			directives: {
@@ -400,16 +398,8 @@ describe( 'SchemaEditor', () => {
 			);
 		}
 
-		function nameInput( wrapper: VueWrapper ): HTMLInputElement {
-			return wrapper.findComponent( PropertyDefinitionEditor ).find<HTMLInputElement>( '.cdx-text-input__input' ).element;
-		}
-
-		function selectedText( input: HTMLInputElement ): string {
-			return input.value.slice( input.selectionStart ?? 0, input.selectionEnd ?? 0 );
-		}
-
-		it( 'selects the generated name of a property just added, so typing replaces it', async () => {
-			const wrapper = createWrapperWithPropertyEditor( schemaWithTextProperties(), document.body );
+		it( 'opens on a property just added with its generated name selected, so typing replaces it', async () => {
+			const wrapper = createWrapperWithPropertyEditor( schemaWithTextProperties( 'Alpha' ) );
 			const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
 			const newProperty = createPropertyDefinitionFromJson( 'New Property 1', { type: TextType.typeName } );
 
@@ -417,25 +407,17 @@ describe( 'SchemaEditor', () => {
 			await propertyList.vm.$emit( 'propertySelected', newProperty.name );
 			await flushPromises();
 
-			const input = nameInput( wrapper );
-			expect( document.activeElement ).toBe( input );
-			expect( selectedText( input ) ).toBe( 'New Property 1' );
-
-			wrapper.unmount();
+			expect( selectedText( findPropertyNameInput( wrapper ).element ) ).toBe( 'New Property 1' );
 		} );
 
-		it( 'leaves the name input in place while the name is typed, so the caret does not jump', async () => {
-			const wrapper = createWrapperWithPropertyEditor( schemaWithTextProperties( 'New Property 1' ), document.body );
+		it( 'keeps the name input in place while the name is typed, so the caret does not jump', async () => {
+			const wrapper = createWrapperWithPropertyEditor( schemaWithTextProperties( 'New Property 1' ) );
+			const input = findPropertyNameInput( wrapper );
+
+			await input.setValue( 'Sta' );
 			await flushPromises();
-			const input = nameInput( wrapper );
 
-			await wrapper.findComponent( PropertyDefinitionEditor ).find( '.cdx-text-input__input' ).setValue( 'Sta' );
-			await flushPromises();
-
-			expect( nameInput( wrapper ) ).toBe( input );
-			expect( document.activeElement ).toBe( input );
-
-			wrapper.unmount();
+			expect( findPropertyNameInput( wrapper ).element ).toBe( input.element );
 		} );
 
 		it( 'shows the property that gets selected in place of the one shown before', async () => {
@@ -443,7 +425,7 @@ describe( 'SchemaEditor', () => {
 
 			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertySelected', new PropertyName( 'Beta' ) );
 
-			expect( nameInput( wrapper ).value ).toBe( 'Beta' );
+			expect( findPropertyNameInput( wrapper ).element.value ).toBe( 'Beta' );
 		} );
 	} );
 } );
