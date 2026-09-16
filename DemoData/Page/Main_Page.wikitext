@@ -3,22 +3,24 @@
 <div style="color:var(--color-subtle, #54595d);max-width:560px;margin-top:4px">Schemas, infoboxes, relations, and Cypher, native to MediaWiki.</div>
 </div>
 
-This is a public demo of [https://neowiki.ai NeoWiki]. Explore the examples below, edit anything you like (it is a sandbox and resets periodically, so you cannot break it), and tell us what works and what is missing via the [https://github.com/ProfessionalWiki/NeoWiki/issues issue tracker] or by [https://professional.wiki/en/contact contacting Professional Wiki].
+This is a public demo of [https://neowiki.ai NeoWiki]. Explore the examples below, or [[Special:CreateAccount|create an account]] and edit anything you like: it is a sandbox that resets periodically, so you cannot break it. Tell us what works and what is missing via the [https://github.com/ProfessionalWiki/NeoWiki/issues issue tracker] or by [https://professional.wiki/en/contact contacting Professional Wiki].
 
 == Start here ==
 
 '''Just exploring'''
 
 * Structured data, queried in a page: [[Museum collection]] runs live graph queries over linked museums, artworks, and exhibitions.
-* Several Subjects on one page: open the Data tab on [{{fullurl:Rijksmuseum|action=subjects}} Rijksmuseum] to see the museum and its yearly visitor records as separate Subjects.
+* One Subject and what references it: [[Special:Subject/sEpfwJLnxyQy6vR|the Rijksmuseum on Special:Subject]] lists the artwork, exhibition, and attendance records that point at it.
+* Several Subjects on one page: [{{fullurl:Rijksmuseum|action=subjects}} the Rijksmuseum's Data tab] holds the museum and its attendance records as separate Subjects.
 * Every Subject is shaped by a [[Special:Schemas|Schema]], and [[Special:Layouts|Layouts]] control how Subjects are displayed.
 * Every Subject's data as RDF: [[RDF and ontology mappings]] shows native, EDM and CIDOC-CRM projections of the demo content, the ontology ones defined by [[Special:Mappings|Mappings]].
 
 '''Trying it hands-on'''
 
+* Create a Subject from [[Special:NeoWiki|Overview]], which lists every Schema with a Create button, or from the buttons on each use-case page below.
 * Edit through a form and watch it update live: [[Subject views]] shows one Subject in three layouts at once, with edits propagating between them.
-* See how a Schema constrains data, with required fields, value ranges, and formats: [[Validation Demo]].
-* Create your own: start any page, then use "Create subject" in the NeoWiki section of the sidebar. The [https://neowiki.ai/docs/guide/getting-started Getting started guide] walks through it.
+* See how a Schema constrains data: [[Validation Demo]].
+* The [https://neowiki.ai/docs/guide/getting-started Getting started guide] builds your own Schema, Subject, View, and query.
 
 == Explore by use case ==
 

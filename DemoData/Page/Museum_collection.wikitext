@@ -14,8 +14,15 @@ data is curated for demonstration and is not authoritative.
 
 {{#invoke:NeoWikiDemo|query|MATCH (m:Museum)-[:`Located in`]->(c:City) RETURN m.name AS Museum, c.name AS City, m.Founded AS Founded, m.`Annual visitors` AS `Annual visitors` ORDER BY Museum|columns=Museum, City, Founded, Annual visitors|linkColumns=Museum, City}}
 
+== Add your own ==
+
+{{#create_subject: schema=Artwork | page=new}}
+
+An artwork's Creator and Located at fields offer the existing artists and museums as you type.
+
 == How this is built ==
 
 * Schemas: [[Schema:Museum]], [[Schema:Artist]], [[Schema:Artwork]], [[Schema:Exhibition]], [[Schema:Attendance]], [[Schema:City]]
+* Attendance records point at their museum, so [[Special:Subject/sEpfwJLnxyQy6vR|the Rijksmuseum on Special:Subject]] lists them under Referenced by, beside the artwork and exhibition held there.
 * See the source of one subject: [{{fullurl:Rijksmuseum|action=edit}} Edit Rijksmuseum]
 * The featured museums are embedded with the <code><nowiki>{{#view}}</nowiki></code> parser function. The tables come from Cypher queries via [[Module:NeoWikiDemo]].

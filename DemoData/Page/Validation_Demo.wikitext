@@ -1,86 +1,34 @@
-A live testbed for trying out NeoWiki's backend validation and seeing how the editor surfaces server-side errors next to each field.
+Every Subject is checked against its Schema as you edit it. Each constraint carries a severity: warnings inform, errors block saving on wikis that enforce validation. This wiki does not, so invalid values are stored, and the editor shows their violations again when reopened.
 
-== Setup ==
+== Try it ==
 
-Turn enforcement on in <code>LocalSettings.php</code>:
-
-<syntaxhighlight lang="php">
-$wgNeoWikiEnforceValidation = true;
-</syntaxhighlight>
-
-With this flag on, writes that introduce new violations are rejected with HTTP 422 and the editor renders the violations inline. With it off, writes always go through and the violations come back in the 200 response for informational purposes only.
-
-== Demo subjects ==
-
-* [[Validation Clean]] — a Subject with every property filled in correctly. Use it as the starting point for the recipes below.
-
-The [[Schema:Validation Demo|Validation Demo]] schema has one or more properties for every validatable Property Type, so you can trigger each rule by typing a bad value in the editor:
+Open the Data tab of [[Validation Clean]], choose '''Edit''', and break a value: clear the Title, set the Score to 150, or change a Tags entry to <code>ftp://example.com</code>. Each violation appears at its field with its severity.
 
 {| class="wikitable"
-! Property !! Type !! What to try
+! Property !! Constraint !! Severity
 |-
-| Title || text, required || Clear it and save to see a "required" error.
+| Title || required || error
 |-
-| Summary || text, minLength 10 / maxLength 100 || Type fewer than 10 or more than 100 characters to trigger a length violation. (This length rule was just added to the backend.)
+| Summary || 10 to 100 characters || warning
 |-
-| Aliases || text, multi, unique || Add two identical entries to trigger a duplicate violation.
+| Aliases || no duplicate entries || warning
 |-
-| Homepage || url, required || A single required URL. Empty triggers a "required" error inline.
+| Homepage || required, a valid URL || error
 |-
-| Tags || url, multi || Change one entry to a non-http(s) URL to trigger a per-entry <code>invalid-url</code> violation; only the offending sub-input is decorated.
+| Tags || valid URLs || error, fixed
 |-
-| Score || number, 0–100, precision 2 || Enter a value below 0 or above 100 to trigger a bounds violation.
+| Score || 0 to 100 || error
 |-
-| Status || select, required || A required choice between three options.
+| Status || required, one of three options || warning
 |-
-| Topics || select, multi || Pick any combination of options.
+| Release date || 2020 to 2030 || warning
 |-
-| Featured || boolean || A simple on/off flag.
+| Last reviewed || 2020 to 2030, with time || warning
 |-
-| Release date || date, 2020-01-01 – 2030-12-31 || Pick a date outside the range to trigger a bounds violation.
-|-
-| Last reviewed || dateTime, 2020-01-01 – 2030-12-31 (UTC) || Pick a moment outside the range to trigger a bounds violation.
-|-
-| Related product || relation to Product || Points at a Product subject.
+| Related product || must point at a Product || error, fixed
 |}
 
-== Recipes ==
+== How this is built ==
 
-;'''See an inline error.'''
-Open [[Validation Clean]], switch to the Subjects tab, and click '''Edit''' on the main subject. Backspace the value in '''Title''' and click '''Save changes'''. The dialog stays open, the Title field gets a red border with "Please provide a value.", and a toast appears: ''Validation failed for "Validation Clean". Please fix the highlighted fields.'' The PUT in the network panel returns <code>422</code>.
-
-;'''See the error clear as you type.'''
-Trigger the inline error above, then type any character into the Title field. The red border disappears immediately, before you click Save again. The dialog wires the input back up to drop the matching server-side violation as soon as you edit.
-
-;'''See the success path still work.'''
-Set <code>$wgNeoWikiEnforceValidation = false</code> and repeat the empty-Title save. The PUT now returns <code>200</code>, the dialog closes, and the success toast fires. The 200 body still mentions the violation but it's advisory only — no inline marking, no rejection. This proves the step-1 contract from PR #855 still holds.
-
-;'''See a create-side error.'''
-With enforcement on, click '''Add subject''' under "Other Subjects on this Page", choose '''Validation Demo''', leave Title empty, and click '''Create subject'''. The create dialog behaves the same as the edit dialog: 422, dialog stays open, Title decorated, validation-failed toast.
-
-;'''See a per-entry error on a multi-value field.'''
-With enforcement on, open [[Validation Clean]] → edit the main subject. Change the second '''Tags''' entry from <code>https://example.com/b</code> to <code>ftp://example.com/b</code> and click '''Save changes'''. Confirm: only the second sub-input gets the red border, the first stays clean. The 422 body carries <code>valuePartIndex: 1</code>, which the editor uses to target just that input.
-
-;'''Form-level banner.'''
-This one is reachable only when a violation has no field anchor (e.g. <code>schema-not-found</code>, or a property removed from the schema after a Subject was saved). The component tests cover it; there's no clean UI reproduction against this schema. Verify in the test suite.
-
-== Backend wire shape ==
-
-A 422 body from the persistence layer looks like:
-
-<syntaxhighlight lang="json">
-{
-  "status": "error",
-  "message": "Validation failed",
-  "violations": [
-    { "propertyName": "Title", "code": "required", "args": [], "valuePartIndex": null }
-  ]
-}
-</syntaxhighlight>
-
-The frontend parses this in <code>RestSubjectRepository</code> and throws a typed <code>ValidationFailedError</code>. Both <code>SubjectEditorDialog</code> and <code>SubjectCreatorDialog</code> catch it and feed the violations into the editor's reactive state. Each violation routes by <code>propertyName</code> (and <code>valuePartIndex</code> for multi-value inputs) to the matching field. Violations without an anchor fall into a form-level banner above the editor.
-
-== References ==
-
-* [[Schema:Validation Demo]] — the schema source
-* [[Special:Schemas]] — all schemas in the wiki
+* [[Schema:Validation Demo]]; the Schema editor sets the severity per constraint.
+* [https://neowiki.ai/docs/api/schema-format#constraint-severity Constraint severity] and [https://neowiki.ai/docs/api/validation-codes Validation codes] in the documentation.

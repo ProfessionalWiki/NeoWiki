@@ -12,6 +12,10 @@ A fictional research-output catalog showing NeoWiki's relations across instituti
 
 {{#invoke:NeoWikiDemo|query|MATCH (p:Publication) RETURN p.name AS Title, p.Year AS Year, p.Venue[0] AS Venue ORDER BY Year DESC, Title|columns=Title, Year, Venue|linkColumns=Title}}
 
+== Add your own ==
+
+{{#create_subject: schema=Publication | page=new}}
+
 == How this is built ==
 
 * Schemas: [[Schema:Publication]], [[Schema:Author]], [[Schema:Institution]], [[Schema:Project]]

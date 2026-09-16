@@ -8,6 +8,7 @@
 ** {{fullurl:Rijksmuseum|action=subjects}}|Subjects on a page
 ** Special:Schemas|Schemas
 ** Subject views|Subject views
+** Validation Demo|Validation
 ** RDF and ontology mappings|RDF and ontology mappings
 ** {{#ifexist:SPARQL queries|SPARQL queries{{!}}SPARQL queries|}}
 ** Developers|Developers hub

@@ -14,9 +14,18 @@ Each birth is its own Subject linking a child, mother, father, place, and date. 
 
 {{#invoke:NeoWikiDemo|query|MATCH (b:Birth)-[:`Brought into life`]->(c:Person) OPTIONAL MATCH (b)-[:`By mother`]->(m:Person) OPTIONAL MATCH (b)-[:`From father`]->(f:Person) OPTIONAL MATCH (b)-[:`Took place at`]->(pl:Place) RETURN c.name AS Child, m.name AS Mother, f.name AS Father, pl.name AS Place, b.Date[0] AS Date ORDER BY Date|columns=Child, Mother, Father, Place, Date|linkColumns=Child, Mother, Father, Place}}
 
+== Add your own ==
+
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+{{#create_subject: schema=Person | page=new}}
+{{#create_subject: schema=Birth | page=new}}
+</div>
+
+A birth's fields offer the existing people and places. When you edit a birth, the Subjects it points at are listed beside its form and open in the same dialog, where you can create a missing person or place too.
+
 == Mapping to CIDOC CRM ==
 
-This dataset partially maps to [http://www.cidoc-crm.org/ CIDOC CRM], via [[Mapping:CIDOC-CRM]]. The canonical statements run from the event to the person (E67 Birth, P98 brought into life, E21 Person); the reverse "was born" (P98i) is not stored as a separate edge but derived by [[Module:NeoWikiDemo]] reverse-querying the graph, which is how CIDOC inverse properties work.
+This dataset partially maps to [http://www.cidoc-crm.org/ CIDOC CRM], via [[Mapping:CIDOC-CRM]]; [[RDF and ontology mappings]] has the export links. The canonical statements run from the event to the person (E67 Birth, P98 brought into life, E21 Person); the reverse "was born" (P98i) is not stored as a separate edge but derived by [[Module:NeoWikiDemo]] reverse-querying the graph, which is how CIDOC inverse properties work.
 
 A person who carries the flat Birth date and Birth place fields instead of a Birth Subject still gets a birth event in the projection: the Mapping synthesizes the E67 Birth and the E52 Time-Span the CIDOC path runs through.
 
@@ -55,6 +64,7 @@ A person who carries the flat Birth date and Birth place fields instead of a Bir
 == How this is built ==
 
 * Schemas: [[Schema:Person]], [[Schema:Birth]], [[Schema:Place]]
+* Under Referenced by, [[Special:Subject/s1bachaaaaaaaa3|Johann Sebastian Bach on Special:Subject]] lists the four births that reference him, as child and as father.
 * The "was born" line on each person page is computed by [[Module:NeoWikiDemo]] (the <code>personEvents</code> function), which reverse-queries the graph rather than storing an inverse edge. This Lua reverse-query is the display approach available today; using the view system for first-class display is an open task.
 * The tables above come from Cypher queries via [[Module:NeoWikiDemo]].
 * See the source of one subject: [{{fullurl:Birth of Johann Sebastian Bach|action=edit}} Edit Birth of Johann Sebastian Bach]

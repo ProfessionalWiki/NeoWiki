@@ -8,6 +8,10 @@ A fictional company that demonstrates NeoWiki's structured-data features in a co
 
 {{#invoke:NeoWikiDemo|query|MATCH (d:Department) RETURN d.name AS Subject, 'Department' AS Type UNION MATCH (o:Office) RETURN o.name AS Subject, 'Office' AS Type UNION MATCH (p:Product) RETURN p.name AS Subject, 'Product' AS Type|columns=Subject, Type|linkColumns=Subject}}
 
+== Add your own ==
+
+{{#create_subject: schema=Product | page=new}}
+
 == How this is built ==
 
 * Schemas: [[Schema:Company]], [[Schema:Department]], [[Schema:Office]], [[Schema:Product]], [[Schema:Employee]]
