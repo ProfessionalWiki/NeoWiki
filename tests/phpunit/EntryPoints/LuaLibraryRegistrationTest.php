@@ -42,6 +42,14 @@ class LuaLibraryRegistrationTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $libraries );
 	}
 
+	public function testNothingIsRegisteredWithAnotherEngine(): void {
+		$libraries = [];
+
+		NeoWikiHooks::onScribuntoExternalLibraries( 'php', $libraries );
+
+		$this->assertSame( [], $libraries );
+	}
+
 	public function testAModuleReadsASubject(): void {
 		$this->markTestSkippedIfExtensionNotLoaded( 'Scribunto' );
 		$this->createSubjectPageAndModule();
