@@ -1,118 +1,53 @@
 <!-- eslint-disable vue/no-multiple-template-root -->
 <template>
+	<!-- Unmounted rather than closed once the Schema is settled: setting a Codex dialog's own open
+		prop to false here would be indistinguishable from the user closing it. -->
 	<CdxDialog
+		v-if="rootSubject === null"
 		:open="props.open"
 		class="ext-neowiki-ui ext-neowiki-subject-creator-dialog cdx-dialog--dividers"
-		:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' && !selectedSchemaName }"
+		:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' }"
 		:title="$i18n( 'neowiki-subject-creator-title' ).text()"
-		@update:open="onDialogUpdateOpen"
+		:subtitle="headerSubtitle"
+		:use-close-button="true"
+		@update:open="onSchemaStepUpdateOpen"
 	>
-		<template #header>
-			<div class="ext-neowiki-subject-creator-dialog__header">
-				<CdxButton
-					v-if="selectedSchemaName"
-					class="ext-neowiki-subject-creator-back-button"
-					weight="quiet"
-					type="button"
-					:aria-label="$i18n( 'neowiki-subject-creator-back' ).text()"
-					@click="goBack"
-				>
-					<CdxIcon :icon="cdxIconArrowPrevious" />
-				</CdxButton>
-
-				<div class="ext-neowiki-subject-creator-dialog__header__title-group">
-					<h2 class="cdx-dialog__header__title">
-						{{ $i18n( 'neowiki-subject-creator-title' ).text() }}
-					</h2>
-
-					<p
-						v-if="headerSubtitle"
-						class="cdx-dialog__header__subtitle"
-					>
-						{{ headerSubtitle }}
-					</p>
-				</div>
-
-				<CdxButton
-					class="cdx-dialog__header__close-button"
-					weight="quiet"
-					type="button"
-					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
-					@click="requestClose"
-				>
-					<CdxIcon :icon="cdxIconClose" />
-				</CdxButton>
-			</div>
-		</template>
-
 		<EditNoticeList :notices="shownNotices" />
 
-		<template v-if="!selectedSchemaName">
-			<p>
-				{{ $i18n( 'neowiki-subject-creator-schema-title' ).text() }}
-			</p>
+		<p>
+			{{ $i18n( 'neowiki-subject-creator-schema-title' ).text() }}
+		</p>
 
-			<CdxToggleButtonGroup
-				v-if="canCreateSchemas"
-				v-model="selectedSchemaOption"
-				class="ext-neowiki-subject-creator-schema-options"
-				:buttons="toggleButtons"
+		<CdxToggleButtonGroup
+			v-if="canCreateSchemas"
+			v-model="selectedSchemaOption"
+			class="ext-neowiki-subject-creator-schema-options"
+			:buttons="toggleButtons"
+		/>
+
+		<div
+			v-if="selectedSchemaOption === 'existing'"
+			class="ext-neowiki-subject-creator-existing"
+		>
+			<SchemaPicker
+				ref="schemaLookupRef"
+				@select="onSchemaSelected"
 			/>
+		</div>
 
-			<div
-				v-if="selectedSchemaOption === 'existing'"
-				class="ext-neowiki-subject-creator-existing"
-			>
-				<SchemaPicker
-					ref="schemaLookupRef"
-					@select="onSchemaSelected"
-				/>
-			</div>
-
-			<div
-				v-if="selectedSchemaOption === 'new'"
-				class="ext-neowiki-subject-creator-new"
-			>
-				<SchemaCreator
-					ref="schemaCreatorRef"
-					:initial-schema="draftSchema ?? undefined"
-					@change="markChanged"
-				/>
-			</div>
-		</template>
-
-		<template v-if="selectedSchemaName">
-			<CdxField
-				class="ext-neowiki-subject-creator-label-field"
-				:optional="true"
-			>
-				<CdxTextInput
-					v-model="subjectLabel"
-					:placeholder="placeholderLabel"
-					@input="handleLabelInput"
-					@blur="handleEditorBlur"
-				/>
-				<template #label>
-					{{ $i18n( 'neowiki-subject-creator-label-field' ).text() }}
-				</template>
-			</CdxField>
-
-			<SubjectViolationBanners :violations="anchorlessViolations" />
-
-			<SubjectEditor
-				v-if="statements"
-				ref="subjectEditorRef"
-				:statements="statements"
-				:schema="loadedSchema as Schema"
-				:server-violations="serverViolations"
-				@change="handleEditorChange"
-				@focusout="handleEditorBlur"
-				@clear-server-violation="handleClearViolation"
+		<div
+			v-if="selectedSchemaOption === 'new'"
+			class="ext-neowiki-subject-creator-new"
+		>
+			<SchemaCreator
+				ref="schemaCreatorRef"
+				:initial-schema="draftSchema ?? undefined"
+				@change="markChanged"
 			/>
-		</template>
+		</div>
 
 		<template
-			v-if="selectedSchemaOption === 'new' && !selectedSchemaName"
+			v-if="selectedSchemaOption === 'new'"
 			#footer
 		>
 			<div class="ext-neowiki-subject-creator-continue">
@@ -127,10 +62,25 @@
 				</CdxButton>
 			</div>
 		</template>
-		<template
-			v-else-if="selectedSchemaName"
-			#footer
-		>
+	</CdxDialog>
+
+	<!-- The Subject itself is filled in by the editor, opened on a Subject the wiki does not hold
+		yet: the same panes, tree and relation-target creation as editing one it does. -->
+	<SubjectEditorDialog
+		v-if="rootSubject !== null && loadedSchema !== null"
+		:open="props.open"
+		:subject="rootSubject as Subject"
+		:schema="loadedSchema as Schema"
+		:root-is-new="true"
+		:save-disabled="!pageChosen"
+		:host-has-unsaved-changes="pageAnswered"
+		:on-save="handleSaveExisting"
+		:on-create="handleCreate"
+		:on-save-schema="handleSchemaSave"
+		:on-saved="handleSaved"
+		@update:open="onEditorUpdateOpen"
+	>
+		<template #before-actions="{ saving }">
 			<div
 				v-if="pageChoice !== null && pageFixed"
 				class="ext-neowiki-subject-creator-page-summary"
@@ -225,7 +175,6 @@
 						<CdxTextInput
 							ref="pageTitleInputRef"
 							v-model="pageTitle"
-							:placeholder="pageTitlePlaceholder"
 							:disabled="saving"
 							@input="handlePageTitleInput"
 						/>
@@ -253,15 +202,8 @@
 					</template>
 				</p>
 			</CdxAccordion>
-
-			<SummaryAction
-				help-text=""
-				:save-button-label="$i18n( 'neowiki-subject-creator-save' ).text()"
-				:save-disabled="!hasChanged || !pageChosen || saving"
-				@save="handleSave"
-			/>
 		</template>
-	</CdxDialog>
+	</SubjectEditorDialog>
 
 	<CloseConfirmationDialog
 		:open="confirmationOpen"
@@ -280,23 +222,22 @@
 <script setup lang="ts">
 import { ref, shallowRef, computed, watch, nextTick, onMounted } from 'vue';
 import { CdxAccordion, CdxButton, CdxDialog, CdxField, CdxIcon, CdxMessage, CdxRadio, CdxTextInput, CdxToggleButtonGroup } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconArrowNext, cdxIconArrowPrevious, cdxIconClose, cdxIconSearch } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconArrowNext, cdxIconSearch } from '@wikimedia/codex-icons';
 import type { ButtonGroupItem, ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import type { CreatedSubjectPage } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
+import { Subject } from '@/domain/Subject.ts';
+import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import type { SubjectId } from '@/domain/SubjectId.ts';
-import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
-import { newSubjectNamePreview, subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
-import { withoutMissingValueViolations, type SubjectViolation } from '@/domain/SubjectViolation';
-import { ValidationFailedError } from '@/persistence/ValidationFailedError';
-import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
-import type { SubjectEditorExposes } from '@/components/SubjectEditor/SubjectEditor.vue';
-import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
+import type { SubjectRepository } from '@/domain/SubjectRepository.ts';
+import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
+import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import type { SchemaCreatorExposes } from '@/components/SchemaCreator/SchemaCreator.vue';
-import SummaryAction from '@/components/common/SummaryAction.vue';
 import SchemaPicker from '@/components/common/SchemaPicker.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import PagePicker from '@/components/common/PagePicker.vue';
@@ -305,12 +246,12 @@ import type { PageChoice } from '@/components/common/PageChoice.ts';
 import type { InitialPage, SubjectPageChoice } from '@/components/SubjectCreator/InitialPage.ts';
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError.ts';
 import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError.ts';
+import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError.ts';
 import SchemaAbandonmentDialog from '@/components/SubjectCreator/SchemaAbandonmentDialog.vue';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
-import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { setPendingNotification } from '@/presentation/PendingNotification.ts';
@@ -335,17 +276,32 @@ const emit = defineEmits<{
 	'update:open': [ value: boolean ];
 }>();
 
+/**
+ * The page the Subject being created is bound for, as the editor is handed it: unanswered. Which
+ * page it lands on is asked in the footer and can still change, so no answer is written into the
+ * Subject itself; the write handlers below read the answer as it stands when the save goes out.
+ * MediaWiki numbers a page that is not there 0. A Subject created against this one inherits these
+ * identifiers, which is what marks it as bound for the same place; one created while drilled into a
+ * Subject the wiki already holds carries that Subject's own page instead.
+ */
+const UNANSWERED_PAGE = new PageIdentifiers( 0, '' );
+
 const selectedSchemaOption = ref( 'existing' );
-const selectedSchemaName = ref<string | null>( null );
 const { notices, loadNotices } = useEditNotices( () => NeoWikiExtension.getInstance().getEditNoticeRepository() );
 
 const loadedSchema = ref<Schema | null>( null );
-const subjectLabel = ref( '' );
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const schemaLookupRef = ref<any | null>( null );
 const schemaCreatorRef = ref<SchemaCreatorExposes | null>( null );
 
 const draftSchema = shallowRef<Schema | null>( null );
+
+/**
+ * The Subject being created, as the editor dialog holds it: an id of its own, so the panes and the
+ * tree can name it and a relation can be recorded against it, and no label until someone types one.
+ * Non-null is what puts the dialog on its second step.
+ */
+const rootSubject = shallowRef<SubjectWithContext | null>( null );
 
 // Guards loadedSchema against a stale schema fetch: picking a different schema, and leaving the
 // picked one (going back, or the dialog closing), both invalidate an in-flight response.
@@ -353,13 +309,18 @@ let requestSequence = 0;
 
 const subjectStore = useSubjectStore();
 
+// Resolved per call, like the notice repository below: reaching the extension singleton must not
+// happen while a component is setting up.
+function subjectRepository(): SubjectRepository {
+	return NeoWikiExtension.getInstance().getSubjectRepository();
+}
+
 const pageFixed = computed( (): boolean => props.initialPage?.fixed === true );
 
 const chosenPage = ref<PageChoice | null>( null );
 const chosenPageRead = ref( false );
 const chosenPageHasMainSubject = ref( false );
 const chosenPageMainSubjectName = ref<string | null>( null );
-const chosenPageSubjectIds = ref<string[]>( [] );
 const pageTitle = ref( '' );
 const titleTakenError = ref<string | null>( null );
 const invalidTitleError = ref<string | null>( null );
@@ -448,10 +409,13 @@ watch( pageChoice, () => {
 const pageTitleError = computed( (): string | null => titleTakenError.value ?? invalidTitleError.value );
 const pageError = computed( (): string | null => pageTitleError.value ?? pageReadError.value );
 
-// A page-field error is cleared by picking again, or by retyping the title that was refused, so
-// the choice behind one is not a page to save onto.
+// Answered, and answerable: a page still to be picked leaves the question open, and a page that
+// could not be read leaves it unanswerable — what that page holds decides whether the Subject
+// becomes its topic or joins it, and that is not to be guessed at. A title the server refused
+// blocks neither, because one answer to it is a different label, which is typed in the editor
+// rather than here — a Save held shut until this field changed could never be given it.
 const pageChosen = computed( (): boolean =>
-	pageChoice.value !== null && pageError.value === null &&
+	pageChoice.value !== null && pageReadError.value === null &&
 	( pageChoice.value !== 'anotherPage' || chosenPage.value !== null ) );
 
 const pageFieldStatus = computed( (): ValidationStatusType =>
@@ -526,12 +490,6 @@ function enteredPageTitle(): string | null {
 	return entered === '' ? null : entered;
 }
 
-// What the page is titled without an answer here, shown as the field's placeholder so that it
-// previews rather than pre-fills. Only the label is previewed: the Subject's id, which titles the
-// page where there is no label either, would read as an instruction to type one, so the field's
-// help text says it instead.
-const pageTitlePlaceholder = computed( (): string | undefined => enteredLabel() ?? undefined );
-
 // The choice, in words, for the collapsed section's header: open, the options say it themselves.
 const chosenPageSummary = computed( (): { messageKey: string; title: string | null } => {
 	if ( pageChoice.value === 'thisPage' ) {
@@ -585,8 +543,7 @@ async function onPageSelected( choice: PageChoice | null ): Promise<void> {
 	// Read straight from the repository, not the store: the store's pageSubjects belongs to the
 	// page being viewed, if any.
 	try {
-		const { pageSubjects } = await NeoWikiExtension.getInstance()
-			.getSubjectRepository().getPageSubjects( choice.pageId );
+		const { pageSubjects } = await subjectRepository().getPageSubjects( choice.pageId );
 		const mainSubjectId = pageSubjects.getMainSubjectId();
 		const mainSubject = mainSubjectId === null ? undefined : pageSubjects.getSubject( mainSubjectId );
 
@@ -594,7 +551,6 @@ async function onPageSelected( choice: PageChoice | null ): Promise<void> {
 			chosenPageRead.value = true;
 			chosenPageHasMainSubject.value = mainSubjectId !== null;
 			chosenPageMainSubjectName.value = mainSubject === undefined ? null : subjectDisplayName( mainSubject );
-			chosenPageSubjectIds.value = pageSubjects.getSubjects().map( ( subject ) => subject.getId().text );
 		}
 	} catch ( error ) {
 		console.error( 'Failed to read the chosen page\'s main subject:', error );
@@ -612,7 +568,6 @@ function resetPageChoice(): void {
 	chosenPageRead.value = false;
 	chosenPageHasMainSubject.value = false;
 	chosenPageMainSubjectName.value = null;
-	chosenPageSubjectIds.value = [];
 	pageTitle.value = '';
 	titleTakenError.value = null;
 	invalidTitleError.value = null;
@@ -639,26 +594,27 @@ async function applyInitialPageTarget(): Promise<void> {
 	await onPageSelected( named );
 }
 
-// Reloaded when the Schema is chosen too, since Schema-scoped notices cannot apply before there
-// is a Schema to scope them to.
-watch(
-	() => [ props.open, selectedSchemaName.value ],
-	() => {
-		if ( props.open && props.hostPage !== null ) {
-			loadNotices( Number( mw.config.get( 'wgArticleId' ) ), selectedSchemaName.value ?? undefined );
-		}
+// The Schema's own notices cannot apply before there is a Schema, and once there is one the editor
+// dialog fetches them itself. These are the page's, for the step that comes first.
+watch( () => props.open, ( isOpen ) => {
+	if ( isOpen && props.hostPage !== null ) {
+		loadNotices( Number( mw.config.get( 'wgArticleId' ) ) );
 	}
-);
+} );
+
 const schemaStore = useSchemaStore();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();
 const { hasChanged: formChanged, markChanged, resetChanged } = useChangeDetection();
 
-// Answering the page question is not an edit of the form, and reporting it as one would leave a
-// dialog whose answer was taken back asking to be discarded.
-const hasChanged = computed( (): boolean =>
-	formChanged.value ||
-	( !pageFixed.value && ( chosenPage.value !== null || enteredPageTitle() !== null ) ) );
+// The page question answered, where it was the user's to answer. An answer taken back counts for
+// nothing, so a dialog whose answer was withdrawn does not go on asking to be discarded.
+const pageAnswered = computed( (): boolean =>
+	!pageFixed.value && ( chosenPage.value !== null || enteredPageTitle() !== null ) );
+
+// Answering the page question is not an edit of the form, but it is still something a close would
+// throw away.
+const hasChanged = computed( (): boolean => formChanged.value || pageAnswered.value );
 
 function close(): void {
 	emit( 'update:open', false );
@@ -696,104 +652,31 @@ async function saveSchemaAndClose(): Promise<void> {
 	abandonAll();
 }
 
-function onDialogUpdateOpen( value: boolean ): void {
+function onSchemaStepUpdateOpen( value: boolean ): void {
 	if ( !value ) {
 		requestClose();
 	}
 }
 
-const subjectEditorRef = ref<SubjectEditorExposes | null>( null );
+// The editor runs the discard confirmation, for the answer given in its footer as much as for the
+// Subject, so the only question left is the one it cannot ask: a Schema drafted in the step before,
+// which closing would throw away alongside the Subject that was to use it.
+function onEditorUpdateOpen( value: boolean ): void {
+	if ( value ) {
+		return;
+	}
 
-const { violations: serverViolations, revalidate, flush, reset } = useSubjectValidation(
-	async () => {
-		// A draft (unsaved) schema does not exist server-side yet, so a dry-run
-		// against it would only 404. Skip until the schema is saved.
-		if ( !subjectEditorRef.value || !selectedSchemaName.value || hasDraftSchema.value ) {
-			return [];
-		}
-		const statements = [ ...subjectEditorRef.value.getSubjectData() ].filter( ( s ) => s.hasValue() );
-		try {
-			const violations = await subjectStore.validateSubject(
-				enteredLabel(),
-				selectedSchemaName.value,
-				new StatementList( statements )
-			);
-			return withoutMissingValueViolations( violations );
-		} catch ( error ) {
-			// The dry-run runs alongside the live validators and must never
-			// break editing or saving; the authoritative result is the save's
-			// own 422 response.
-			console.error( 'Subject validation dry-run failed:', error );
-			return [];
-		}
-	},
-	{ debounceMs: NeoWikiExtension.getInstance().getValidationDebounceMs() }
+	if ( hasDraftSchema.value ) {
+		schemaAbandonmentOpen.value = true;
+		return;
+	}
+
+	close();
+}
+
+const headerSubtitle = computed( (): string =>
+	selectedSchemaOption.value === 'new' ? mw.msg( 'neowiki-subject-creator-creating-schema' ) : ''
 );
-
-let dirtySinceValidation = false;
-
-function handleEditorChange(): void {
-	markChanged();
-	dirtySinceValidation = true;
-	revalidate();
-}
-
-function handleLabelInput(): void {
-	// The label titles the page a new one gets, so retyping it is the answer to a title already
-	// taken, and the complaint about the old one goes. A page that would not read is untouched by
-	// it: what that page holds is still unknown.
-	titleTakenError.value = null;
-	handleEditorChange();
-}
-
-// Retyping the title is the answer to a title the server refused, whichever way it refused it.
-function handlePageTitleInput(): void {
-	titleTakenError.value = null;
-	invalidTitleError.value = null;
-}
-
-function handleEditorBlur(): void {
-	// focusout bubbles on every field-to-field move; only flush when something
-	// actually changed since the last validation, to avoid redundant requests.
-	if ( dirtySinceValidation ) {
-		dirtySinceValidation = false;
-		flush();
-	}
-}
-
-const anchorlessViolations = computed<SubjectViolation[]>( () => {
-	// SubjectEditor renders one field per entry in `statements`, which the
-	// schema materialises from its property definitions. Anchor against that
-	// list — a violation referring to a missing-but-rendered field stays on
-	// the field, not the banner.
-	const renderedPropertyNames = new Set(
-		[ ...( statements.value ?? [] ) ].map( ( s ) => s.propertyName.toString() )
-	);
-	return serverViolations.value.filter( ( v ) => {
-		if ( v.propertyName === null ) {
-			return true;
-		}
-		return !renderedPropertyNames.has( v.propertyName );
-	} );
-} );
-
-function handleClearViolation( payload: { propertyName: string; valuePartIndex: number | null } ): void {
-	serverViolations.value = serverViolations.value.filter(
-		( v ) => !( v.propertyName === payload.propertyName && v.valuePartIndex === payload.valuePartIndex )
-	);
-}
-
-const headerSubtitle = computed( (): string | null => {
-	if ( selectedSchemaOption.value === 'new' && !selectedSchemaName.value ) {
-		return mw.msg( 'neowiki-subject-creator-creating-schema' );
-	}
-
-	if ( selectedSchemaName.value ) {
-		return mw.msg( 'neowiki-schema-label', selectedSchemaName.value );
-	}
-
-	return null;
-} );
 
 const toggleButtons = [
 	{
@@ -840,30 +723,46 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 	await loadSchema( schemaName );
 }
 
-// False when a later load superseded this one, so its outcome was discarded.
-async function loadSchema( schemaName: string ): Promise<boolean> {
-	selectedSchemaName.value = schemaName;
-
+async function loadSchema( schemaName: string ): Promise<void> {
 	const currentSequence = ++requestSequence;
 
 	try {
-		const schema = await schemaRepo.getSchema( schemaName );
+		// The id is minted alongside the Schema because the step it opens cannot start without
+		// one: the panes and the tree name the Subject by it, and so does a relation recorded
+		// against it before anything has been written.
+		const [ schema, id ] = await Promise.all( [
+			schemaRepo.getSchema( schemaName ),
+			subjectRepository().mintSubjectId()
+		] );
 
 		if ( currentSequence !== requestSequence ) {
-			return false;
+			return;
 		}
 
-		loadedSchema.value = schema;
+		openSubjectStep( schema, id );
 	} catch ( error ) {
 		if ( currentSequence !== requestSequence ) {
-			return false;
+			return;
 		}
 
 		console.error( 'Failed to load schema:', error );
 		loadedSchema.value = null;
+		rootSubject.value = null;
 	}
+}
 
-	return true;
+function openSubjectStep( schema: Schema, id: SubjectId ): void {
+	loadedSchema.value = schema;
+	rootSubject.value = new SubjectWithContext(
+		id,
+		null,
+		// What the server derives for a Subject nobody has named (ADR 31).
+		schema.getName(),
+		true,
+		schema.getName(),
+		new StatementList( [] ),
+		UNANSWERED_PAGE
+	);
 }
 
 async function handleCreateSchema(): Promise<void> {
@@ -891,64 +790,247 @@ async function handleCreateSchema(): Promise<void> {
 		return;
 	}
 
+	// Takes its turn in the same sequence as a Schema being fetched, so neither can land on the
+	// other. Nothing is written here: the Schema reaches the wiki when the Subject is saved.
+	const currentSequence = ++requestSequence;
+
+	let id: SubjectId;
+
+	try {
+		id = await subjectRepository().mintSubjectId();
+	} catch ( error ) {
+		if ( currentSequence !== requestSequence ) {
+			return;
+		}
+
+		console.error( 'Failed to mint a subject id:', error );
+		mw.notify( mw.msg( 'neowiki-subject-creator-error' ), { type: 'error' } );
+		return;
+	}
+
+	if ( currentSequence !== requestSequence ) {
+		return;
+	}
+
 	draftSchema.value = schema;
-	selectedSchemaName.value = schema.getName();
-	loadedSchema.value = schema;
+	openSubjectStep( schema, id );
 	markChanged();
 }
 
-// The prefixed title, because that is what the server falls back to. wgTitle drops the namespace,
-// so it would preview "Onboarding" for a Subject that goes on to display "Handbook:Onboarding".
-function pageName(): string {
-	return String( mw.config.get( 'wgPageName' ) ?? '' ).replace( /_/g, ' ' );
-}
-
 /**
- * The page the Subject is going on, where it has a name already. Null for a page that has yet to be
- * made: it is titled by the label, and by the Subject's own id when the label titles no page, so
- * there is no name to preview.
+ * The page the Subjects created here are stored on, as the answer in the footer stands. Null for a
+ * page that is not there yet, whose id only its own creation reports.
  */
-function targetPageName(): string | null {
+function answeredPageId(): number | null {
 	if ( pageChoice.value === 'thisPage' ) {
-		return pageName();
+		return Number( mw.config.get( 'wgArticleId' ) );
 	}
 
-	return pageChoice.value === 'anotherPage' ? ( chosenPage.value?.title ?? null ) : null;
+	return pageChoice.value === 'anotherPage' ? chosenPage.value?.pageId ?? null : null;
 }
 
 /**
- * The ids of the Subjects the target page holds, which are what say whether its title was chosen by
- * anyone. Known for a page picked, whose Subjects the dialog reads to place the new one.
+ * Where the root's write put it, once it has landed. Taken from the write rather than read again
+ * from the footer, which stays live while the rest of the save is out: a Subject created alongside
+ * the root goes where the root went, whatever the fields say by then.
  */
-function targetPageSubjectIds(): string[] {
-	return pageChoice.value === 'anotherPage' ? chosenPageSubjectIds.value : [];
+let writtenRoot: { subjectId: SubjectId; pageId: number | null; pageTitle: string | null } | null = null;
+
+async function handleCreate( subject: Subject, pageId: number, comment: string ): Promise<void> {
+	if ( subject.getId().text === rootSubject.value?.getId().text ) {
+		await writeRootSubject( subject, comment );
+		return;
+	}
+
+	// A target created from a pane the user drilled into belongs on the page that pane's Subject is
+	// stored on, which the editor resolved. One created against the Subject being created carries
+	// no page of its own and follows it instead.
+	const page = pageId > 0 ? pageId : writtenRoot?.pageId ?? null;
+
+	if ( page === null ) {
+		throw new Error( mw.msg( 'neowiki-subject-creator-error' ) );
+	}
+
+	await subjectStore.createSubject( subject, page, comment );
 }
 
-// The name the Subject will be shown under, marker included: the label field's greyed placeholder,
-// previewing the outcome rather than pre-filling it, and the name a failed save calls it by.
-const placeholderLabel = computed( (): string =>
-	selectedSchemaName.value === null ?
-		'' :
-		newSubjectNamePreview(
-			targetHasMainSubject.value,
-			targetPageName(),
-			targetPageSubjectIds(),
-			selectedSchemaName.value
-		)
-);
+async function writeRootSubject( subject: Subject, comment: string ): Promise<void> {
+	// A save that stopped part way has created it already, and the answer it got carries the id the
+	// server minted for it. Creating it again would make a second Subject, or be refused outright
+	// by a page title that is now taken.
+	if ( writtenRoot !== null ) {
+		await subjectStore.updateSubject( asWrittenRoot( subject, writtenRoot ), comment );
+		return;
+	}
 
-function enteredLabel(): string | null {
-	return enteredSubjectLabel( subjectLabel.value );
+	// The whole answer, read before the first await. The footer is frozen while the writes are
+	// out, but the guarantee is this one: the page a write lands on, and the page the dialog then
+	// says it landed on, are read once and cannot drift apart across the awaits below.
+	const answer = {
+		goingTo: pageChoice.value,
+		pageId: answeredPageId(),
+		title: enteredPageTitle(),
+		pageTitle: pageChoice.value === 'thisPage' ? null : chosenPage.value?.title ?? null,
+		besideMainSubject: targetHasMainSubject.value
+	};
+
+	if ( draftSchema.value !== null ) {
+		await schemaStore.saveSchema( draftSchema.value, comment );
+		draftSchema.value = null;
+	}
+
+	const label = subject.getLabel();
+	const schemaName = subject.getSchemaName();
+	const statements = subject.getStatements();
+
+	if ( answer.goingTo === 'newPage' ) {
+		const created = await createOnNewPage( label, schemaName, statements, comment, answer.title );
+
+		writtenRoot = { subjectId: created.subjectId, pageId: created.pageId, pageTitle: created.pageTitle };
+		return;
+	}
+
+	const pageId = answer.pageId;
+
+	if ( pageId === null ) {
+		throw new Error( mw.msg( 'neowiki-subject-creator-error' ) );
+	}
+
+	// A page that has a Main Subject already gets this one beside it; one that has none is being
+	// given its topic. Only the second route takes the id minted here, so a Subject created on the
+	// first can be pointed at it before either exists.
+	const subjectId = answer.besideMainSubject ?
+		await createBesideMainSubject( pageId, label, schemaName, statements, comment, subject.getId() ) :
+		await subjectStore.createMainSubject( pageId, label, schemaName, statements, comment );
+
+	writtenRoot = { subjectId, pageId, pageTitle: answer.pageTitle };
 }
 
-const statements = computed( (): StatementList | null =>
-	loadedSchema.value?.blankStatements() ?? null
-);
+/**
+ * The Subject as it now stands under the id the server gave it, for a second pass over a root the
+ * first one created.
+ */
+function asWrittenRoot( subject: Subject, written: { subjectId: SubjectId; pageId: number | null; pageTitle: string | null } ): Subject {
+	return new SubjectWithContext(
+		written.subjectId,
+		subject.getLabel(),
+		subject.getDisplayName(),
+		subject.hasGeneratedDisplayName(),
+		subject.getSchemaName(),
+		subject.getStatements(),
+		new PageIdentifiers( written.pageId ?? 0, written.pageTitle ?? '' )
+	);
+}
+
+/**
+ * Adds the Subject beside a page's Main Subject, under the id minted for it here. That id was
+ * minted for this Subject alone, so the server holding it already means this very create landed and
+ * only its answer was lost: the id it refused is the id the Subject has. Reporting a failure
+ * instead would leave the dialog with no record of what it made, and every retry would be refused
+ * the same way.
+ */
+async function createBesideMainSubject(
+	pageId: number,
+	label: string | null,
+	schemaName: string,
+	statements: StatementList,
+	comment: string,
+	id: SubjectId
+): Promise<SubjectId> {
+	try {
+		return await subjectStore.createOtherSubject( pageId, label, schemaName, statements, comment, id );
+	} catch ( error ) {
+		if ( error instanceof SubjectIdInUseError ) {
+			return id;
+		}
+
+		throw error;
+	}
+}
+
+// The two ways a title is refused are answered at the field it was typed in, and reported as the
+// save's own failure too: the writes stop there, and the toast is what says so.
+async function createOnNewPage(
+	label: string | null,
+	schemaName: string,
+	statements: StatementList,
+	comment: string,
+	chosenTitle: string | null
+): Promise<CreatedSubjectPage> {
+	try {
+		return await subjectStore.createSubjectPage( label, schemaName, statements, comment, chosenTitle ?? undefined );
+	} catch ( error ) {
+		if ( error instanceof PageTitleTakenError ) {
+			// A fixed destination offers no other page and no title field: only the label can change.
+			titleTakenError.value = mw.msg(
+				pageFixed.value && chosenTitle === null ?
+					'neowiki-subject-creator-page-taken-fixed' :
+					'neowiki-subject-creator-page-taken',
+				error.pageTitle
+			);
+			throw new Error( titleTakenError.value );
+		}
+
+		if ( error instanceof InvalidPageTitleError ) {
+			invalidTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-invalid', error.pageTitle );
+			throw new Error( invalidTitleError.value );
+		}
+
+		throw error;
+	}
+}
+
+// Retyping the title is the answer to a title the server refused, whichever way it refused it.
+function handlePageTitleInput(): void {
+	titleTakenError.value = null;
+	invalidTitleError.value = null;
+}
+
+// A Subject the user drilled into from a relation exists already, so the editor updates it.
+async function handleSaveExisting( subject: Subject, comment: string ): Promise<void> {
+	await subjectStore.updateSubject( subject, comment );
+}
+
+/**
+ * The editor offers the Schema editor from the root pane, for a Schema still being drafted as much
+ * as for one the wiki holds. Once it is saved there it is on the wiki, so it stops being a draft:
+ * writing the drafted copy over it on save would drop whatever was added, and closing would offer
+ * to abandon a Schema that is already there.
+ */
+async function handleSchemaSave( updatedSchema: Schema, comment: string ): Promise<void> {
+	await schemaStore.saveSchema( updatedSchema, comment );
+
+	draftSchema.value = null;
+	loadedSchema.value = updatedSchema;
+}
+
+/**
+ * Opened without a page of its own, the creator is about the Subject, so it leaves for the
+ * Subject's own page, which shows what was created. Opened on a page, it leaves for the page the
+ * Subject went on, with a notice that it was created; a null title is the page being viewed.
+ */
+function handleSaved(): void {
+	if ( writtenRoot === null ) {
+		return;
+	}
+
+	if ( props.hostPage === null ) {
+		window.location.href = subjectPageUrl( writtenRoot.subjectId.text );
+		return;
+	}
+
+	setPendingNotification( 'neowiki-subject-creator-success' );
+
+	if ( writtenRoot.pageTitle === null ) {
+		window.location.reload();
+		return;
+	}
+
+	window.location.href = mw.util.getUrl( writtenRoot.pageTitle );
+}
 
 watch( () => props.open, async ( isOpen ) => {
 	if ( isOpen ) {
-		reset();
-
 		// Before mount there is no choice yet; onMounted fills it in then.
 		if ( pageChoice.value !== null ) {
 			applyInitialPageTarget();
@@ -969,19 +1051,17 @@ async function pinInitialSchema(): Promise<void> {
 		return;
 	}
 
-	// Only the load still in charge may fall back: a superseded one would send the open that
-	// replaced it back a step, and strand the Schema that open is waiting for.
-	if ( await loadSchema( props.initialSchemaName ) && loadedSchema.value === null ) {
-		goBack();
-	}
+	// The load's own catch clears the Schema and the Subject together, which leaves the picker
+	// showing; nothing further is needed to fall back to it.
+	await loadSchema( props.initialSchemaName );
 }
 
 function resetForm(): void {
 	requestSequence++;
-	selectedSchemaName.value = null;
 	loadedSchema.value = null;
+	rootSubject.value = null;
 	draftSchema.value = null;
-	subjectLabel.value = '';
+	writtenRoot = null;
 	selectedSchemaOption.value = 'existing';
 	schemaCreatorRef.value?.reset();
 
@@ -996,156 +1076,6 @@ function resetForm(): void {
 	resetChanged();
 }
 
-function goBack(): void {
-	requestSequence++;
-	selectedSchemaName.value = null;
-	loadedSchema.value = null;
-	subjectLabel.value = '';
-	resetPageChoice();
-	applyInitialPageTarget();
-	pageSectionOpen.value = false;
-
-	if ( draftSchema.value ) {
-		selectedSchemaOption.value = 'new';
-	} else {
-		resetChanged();
-	}
-}
-
-const saving = ref( false );
-
-const handleSave = async ( summary: string ): Promise<void> => {
-	await nextTick();
-
-	if ( !subjectEditorRef.value || !selectedSchemaName.value || !pageChosen.value || saving.value ) {
-		return;
-	}
-
-	// Taken once, up front: the fields stay live while the writes below are out, so a change to one
-	// would otherwise move the page the write lands on after it had landed.
-	const goingTo = pageChoice.value;
-	const chosen = chosenPage.value;
-	const chosenTitle = enteredPageTitle();
-	const addAlongsideMainSubject = targetHasMainSubject.value;
-
-	const label = enteredLabel();
-
-	saving.value = true;
-
-	try {
-		await flush();
-
-		const unparseable = subjectEditorRef.value.unparseableInput();
-
-		// Saving now would silently drop the text the user can still see. Held after
-		// the dry-run so the field's own complaint and the server's findings on the
-		// other fields surface in one pass rather than one round at a time, and above
-		// the writes below so no draft schema is created for a subject that is not saved.
-		if ( unparseable !== null ) {
-			mw.notify( unparseable.message, { title: unparseable.propertyName, type: 'error' } );
-			return;
-		}
-
-		if ( draftSchema.value ) {
-			await schemaStore.saveSchema( draftSchema.value, summary || undefined );
-			draftSchema.value = null;
-		}
-
-		const updatedStatements = subjectEditorRef.value.getSubjectData();
-		const statementsToSave = [ ...updatedStatements ].filter( ( statement ) => statement.hasValue() );
-
-		const statementList = new StatementList( statementsToSave );
-		const commentOrUndefined = summary || undefined;
-
-		if ( goingTo === 'newPage' ) {
-			const created = await subjectStore.createSubjectPage(
-				label,
-				selectedSchemaName.value,
-				statementList,
-				commentOrUndefined,
-				chosenTitle ?? undefined
-			);
-			leaveForCreatedSubject( created.subjectId, created.pageTitle );
-			return;
-		}
-
-		const pageId = goingTo === 'thisPage' ?
-			Number( mw.config.get( 'wgArticleId' ) ) :
-			( chosen as PageChoice ).pageId as number;
-
-		const subjectId = addAlongsideMainSubject ?
-			await subjectStore.createOtherSubject(
-				pageId,
-				label,
-				selectedSchemaName.value,
-				statementList,
-				commentOrUndefined
-			) :
-			await subjectStore.createMainSubject(
-				pageId,
-				label,
-				selectedSchemaName.value,
-				statementList,
-				commentOrUndefined
-			);
-
-		leaveForCreatedSubject( subjectId, goingTo === 'thisPage' ? null : ( chosen as PageChoice ).title );
-	} catch ( error ) {
-		if ( error instanceof PageTitleTakenError ) {
-			// A fixed destination offers no other page and no title field: only the label can change.
-			titleTakenError.value = mw.msg(
-				pageFixed.value && chosenTitle === null ?
-					'neowiki-subject-creator-page-taken-fixed' :
-					'neowiki-subject-creator-page-taken',
-				error.pageTitle
-			);
-			return;
-		}
-		if ( error instanceof InvalidPageTitleError ) {
-			invalidTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-invalid', error.pageTitle );
-			return;
-		}
-		if ( error instanceof ValidationFailedError ) {
-			serverViolations.value = [ ...error.violations ];
-			mw.notify(
-				mw.msg( 'neowiki-subject-editor-validation-failed', label ?? placeholderLabel.value ),
-				{ type: 'error' }
-			);
-			return;
-		}
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{
-				title: mw.msg( 'neowiki-subject-creator-error' ),
-				type: 'error'
-			}
-		);
-	} finally {
-		saving.value = false;
-	}
-};
-
-/**
- * Opened without a page of its own, the creator is about the Subject, so it leaves for the
- * Subject's own page, which shows what was created. Opened on a page, it leaves for the page the
- * Subject went on, with a notice that it was created; a null title is the page being viewed.
- */
-function leaveForCreatedSubject( subjectId: SubjectId, hostingPageTitle: string | null ): void {
-	if ( props.hostPage === null ) {
-		window.location.href = subjectPageUrl( subjectId.text );
-		return;
-	}
-
-	setPendingNotification( 'neowiki-subject-creator-success' );
-
-	if ( hostingPageTitle === null ) {
-		window.location.reload();
-		return;
-	}
-
-	window.location.href = mw.util.getUrl( hostingPageTitle );
-}
-
 defineExpose( { hasChanged } );
 </script>
 
@@ -1153,37 +1083,6 @@ defineExpose( { hasChanged } );
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-subject-creator {
-	&-dialog {
-		.cdx-dialog {
-			/* Replicate the Codex default dialog header styles */
-			.cdx-dialog__header {
-				display: flex;
-				align-items: baseline;
-				justify-content: flex-end;
-				box-sizing: @box-sizing-base;
-				width: @size-full;
-			}
-		}
-
-		&__header {
-			display: flex;
-			align-items: center;
-			width: @size-full;
-			column-gap: @spacing-75;
-
-			&__title-group {
-				display: flex;
-				flex-grow: 1;
-				flex-direction: column;
-			}
-		}
-	}
-
-	&-back-button.cdx-button {
-		margin-left: -@spacing-50;
-		flex-shrink: 0;
-	}
-
 	&-dialog--wide.cdx-dialog {
 		max-width: @size-5600;
 	}
@@ -1246,10 +1145,6 @@ defineExpose( { hasChanged } );
 	&-page-note {
 		margin: @spacing-50 0 0;
 		color: @color-subtle;
-	}
-
-	&-label-field {
-		margin-top: @spacing-100;
 	}
 
 	&-continue {
