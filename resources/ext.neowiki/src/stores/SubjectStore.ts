@@ -16,6 +16,7 @@ import type { SubjectWriteResult } from '@/domain/SubjectRepository.ts';
 export interface CreatedSubjectPage {
 	subjectId: SubjectId;
 	pageTitle: string;
+	pageId: number;
 }
 
 /**
@@ -219,7 +220,7 @@ export const useSubjectStore = defineStore( 'subject', {
 
 			this.recordWriteResult( result, schemaEpoch );
 
-			return { subjectId: result.subjectId, pageTitle: result.pageTitle };
+			return { subjectId: result.subjectId, pageTitle: result.pageTitle, pageId: result.pageId };
 		},
 
 		/**

@@ -399,9 +399,9 @@ export class RestSubjectRepository implements SubjectRepository {
 			throw new Error( await this.stringFieldOf( response, 'message' ) ?? 'Error creating subject page' );
 		}
 
-		const json = await response.json() as SubjectWriteResponseJson & { pageTitle: string };
+		const json = await response.json() as SubjectWriteResponseJson & { pageTitle: string; pageId: number };
 
-		return { ...this.deserializeWriteResult( json ), pageTitle: json.pageTitle };
+		return { ...this.deserializeWriteResult( json ), pageTitle: json.pageTitle, pageId: json.pageId };
 	}
 
 	public async mintSubjectId(): Promise<SubjectId> {
