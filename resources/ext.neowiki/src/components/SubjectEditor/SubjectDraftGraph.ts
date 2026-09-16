@@ -2,9 +2,34 @@
 // them anything still points at, and in what order they may be written. Both are pure walks over
 // relation statements, kept out of the dialog so they can be answered without mounting it.
 
-import { relationTargetsOf } from './SubjectTreeModel.ts';
 import type { Subject } from '@/domain/Subject.ts';
 import type { Schema } from '@/domain/Schema.ts';
+import { RelationType } from '@/domain/propertyTypes/Relation.ts';
+import { RelationValue } from '@/domain/Value.ts';
+
+/**
+ * The Subjects this one points at. The Schema decides what a relation is, so nothing points through
+ * a statement under a property it does not declare as one — which is what lets both walks below
+ * agree. Targets repeat where the Subject names one twice; both walks carry a visited set already.
+ */
+function relationTargetIds( subject: Subject, schema: Schema ): string[] {
+	const statements = schema.statementsFrom( subject.getStatements() );
+	const targetIds: string[] = [];
+
+	for ( const property of schema.getPropertyDefinitions() ) {
+		if ( property.type !== RelationType.typeName ) {
+			continue;
+		}
+
+		const value = statements.get( property.name ).value;
+
+		if ( value instanceof RelationValue ) {
+			targetIds.push( ...value.relations.map( ( relation ) => relation.target.text ) );
+		}
+	}
+
+	return targetIds;
+}
 
 /**
  * A Subject the editor is holding. `id` is the Subject's own id, which is what relations name, and
@@ -45,7 +70,7 @@ export function reachableTargetIds(
 			continue;
 		}
 
-		for ( const { targetId } of relationTargetsOf( entry.subject, entry.schema ) ) {
+		for ( const targetId of relationTargetIds( entry.subject, entry.schema ) ) {
 			if ( !reached.has( targetId ) ) {
 				reached.add( targetId );
 				queue.push( targetId );
@@ -100,7 +125,7 @@ export function writeOrder<T extends HeldSubject>(
 
 		visited.add( id );
 
-		for ( const { targetId } of relationTargetsOf( entry.subject, entry.schema ) ) {
+		for ( const targetId of relationTargetIds( entry.subject, entry.schema ) ) {
 			emitNew( targetId );
 		}
 

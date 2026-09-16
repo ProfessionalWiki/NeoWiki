@@ -27,18 +27,11 @@
 					:id="navigatorId"
 					class="ext-neowiki-subject-editor-dialog__surface"
 				>
-					<!-- Load-bearing, and invisible in the rendered output: it starts a new walk, with
-						no memory of which fetches failed, on each opening and each new root. Codex's
-						own v-if on the slot happens to unmount the walk too; do not rely on that. -->
-					<SubjectTree
-						:key="openEpoch"
-						:root-subject="props.subject"
-						:root-schema="currentSchema"
-						:open-ids="openIds"
+					<OpenSubjectList
+						:subjects="openSubjects"
 						:active-id="activePaneId"
 						:unsaved-ids="unsavedIds"
-						:edited-subjects="editedSubjects"
-						@select="openRelationTarget"
+						@select="showPane"
 					/>
 				</div>
 
@@ -129,7 +122,7 @@
 import { ref, shallowRef, shallowReactive, nextTick, computed, provide, watch } from 'vue';
 import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
 import type { SubjectEditPaneExposes } from '@/components/SubjectEditor/SubjectEditPane.vue';
-import SubjectTree from '@/components/SubjectEditor/SubjectTree.vue';
+import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
 import { CdxDialog, CdxMessage, useGeneratedId } from '@wikimedia/codex';
@@ -154,7 +147,6 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { relationTargetsOf } from '@/components/SubjectEditor/SubjectTreeModel.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { reachableTargetIds, writeOrder } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 import type { HeldSubject } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
@@ -363,15 +355,14 @@ const saveButtonLabel = computed( (): string => mw.msg(
 ) );
 
 // One copy per mounted pane. A pane's own copy is refreshed on relation changes alone, so
-// the live label is laid over it here and the tree names a Subject the way its form does.
+// the live label is laid over it here and the navigator names a Subject the way its form does.
 const editedSubjects = computed( (): Map<string, Subject> => {
 	const subjects = new Map<string, Subject>();
 
 	for ( const pane of panes.value ) {
 		const instance = paneRefs.get( pane.id );
 		// The pane's own copy until its ref registers, one tick behind the pane being added.
-		// Without it the tree would take a Subject it already holds for one still to fetch,
-		// and a Subject created here has nothing to fetch.
+		// Without it a pane would spend that tick unnamed in the navigator.
 		subjects.set( pane.id, instance === undefined ? pane.subject : withLiveLabel( instance ) );
 	}
 
@@ -379,39 +370,28 @@ const editedSubjects = computed( (): Map<string, Subject> => {
 } );
 
 // Rebuilt only when the label has moved, so an unrenamed Subject keeps the very object the
-// tree already walked. The field's text is read the way a write reads it.
+// navigator already rendered. The field's text is read the way a write reads it.
 function withLiveLabel( instance: SubjectEditPaneExposes ): Subject {
 	const edited = instance.editedSubject;
 	const label = enteredSubjectLabel( instance.label );
 	return edited.getLabel() === label ? edited : edited.withLabel( label );
 }
 
-const rootPane = computed( (): SubjectEditPaneExposes | undefined => paneRefs.get( rootPaneId.value ) );
+// The Subjects the navigator lists, in the order their panes were opened.
+const openSubjects = computed( (): Subject[] => panes.value.map(
+	( pane ) => editedSubjects.value.get( pane.id ) as Subject ) );
 
-// The root as the tree will walk it: the root pane's copy once that pane has registered, the
-// prop before. Labels have no bearing on relation targets, so the live label is left off.
-const treeRootSubject = computed( (): Subject => rootPane.value?.editedSubject ?? props.subject );
-
-// The navigator is rendered only once the tree would draw a row other than its own root.
-// The root's relation statements settle the walk, which starts there. An open pane is the
-// second case: it is never unmounted, and the tree is the only control that reaches it, so
-// clearing the relation that led to it must not take the navigator away.
-//
-// Both are read synchronously, so a target counts as soon as it is picked and the gate
-// cannot flicker while a label fetch is in flight.
-const showsNavigator = computed( (): boolean =>
-	relationTargetsOf( treeRootSubject.value, currentSchema.value ).length > 0 ||
-	extraPanes.value.length > 0
-);
+// A list of one says nothing the form beside it does not, so the navigator waits for a second
+// Subject — and then stays, because a pane is never unmounted, whatever becomes of the relation
+// that opened it.
+const showsNavigator = computed( (): boolean => extraPanes.value.length > 0 );
 
 const openIds = computed( (): string[] => panes.value.map( ( pane ) => pane.id ) );
 
-// Keys the tree, and nothing else: re-keying the panes would unmount them and destroy
-// unsaved values. The tree remembers which fetches failed for the life of its mount, so
-// without a remount one transient failure would leave that branch empty for the rest of the
-// session. The two watchers further down bump it, an opening and a replaced root alike, and
-// a target fetch that outlives its opening is dropped by it: the hosts keep this dialog
-// mounted after it closes, so the fetch would otherwise land in the next opening.
+// Tells one opening of the dialog from the next. The two watchers further down bump it, an
+// opening and a replaced root alike, and a target fetch that outlives its opening is dropped by
+// it: the hosts keep this dialog mounted after it closes, so the fetch would otherwise land in
+// the next opening.
 /**
  * `SchemaEditorDialog` below is bound to the root's Schema, so only the root pane may open it —
  * a nested pane would put the reader in front of a Schema they did not point at. The pane has a
@@ -481,7 +461,7 @@ function creationPage(): PageIdentifiers | null {
 // Creates the Subject a relation field is about to point at, and opens it for editing. Nothing
 // is written: the id is minted, which reserves nothing, and the Subject itself reaches the wiki
 // only when this dialog is saved. The pane is added and made active before this returns, so the
-// relation the caller then records lands in the same render as the pane and the tree node.
+// relation the caller then records lands in the same render as the pane and its row.
 async function createRelationTarget( schemaName: string, label: string | null ): Promise<Subject | null> {
 	const page = creationPage();
 
@@ -544,10 +524,16 @@ if ( props.onCreate !== undefined ) {
 	} );
 }
 
+// Every listed Subject has a pane already, so this neither fetches nor can fail. Focus stays on
+// the row that was chosen, which is the navigator's own tab stop.
+function showPane( subjectId: SubjectId ): void {
+	activePaneId.value = subjectId.text;
+}
+
 // Navigating from a control inside a form hides the pane that control lives in, so the
 // browser blurs it to <body> and the next Tab restarts at the top of the dialog. The panel
 // wrapper takes the focus instead, which is what its tabindex="-1" is for. Activation from
-// the tree is left alone: focus belongs on the treeitem there.
+// the navigator is left alone: focus belongs on the row there.
 async function openRelationTargetFromForm( targetId: SubjectId ): Promise<void> {
 	await openRelationTarget( targetId );
 	await focusPanel( targetId.text );
@@ -924,13 +910,13 @@ defineExpose( { hasChanged: hasUnsavedEdits } );
 		scrollbar-gutter: stable;
 	}
 
-	/* The tree carries no inset of its own; this dialog gives it the form's, on its padded
+	/* The list carries no inset of its own; this dialog gives it the form's, on its padded
 		element rather than on the scroller around it. The gutter is the dialog's 24px less the
-		6px a row already carries, so a node's TEXT lands on that gutter, in line with the
+		6px a row already carries, so a row's TEXT lands on that gutter, in line with the
 		notices above and the form beside it, while the row's hover and selected backgrounds
 		keep reaching the 6px further out — a background flush with the text would read as
 		clipped. Nothing on the end side, so the scrollbar sits flush with the divider. */
-	& .ext-neowiki-subject-tree {
+	& .ext-neowiki-open-subject-list {
 		padding: @spacing-100 0 @spacing-100 calc( @spacing-150 - @spacing-35 );
 	}
 

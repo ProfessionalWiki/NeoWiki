@@ -42,6 +42,20 @@ function held( id: string, isNew: boolean, ...targetIds: string[] ): HeldSubject
 	};
 }
 
+// The same Subject under a Schema that declares its relation property as plain text, so the
+// statement is there and the relation is not.
+function heldUnderTextSchema( id: string, isNew: boolean, targetId: string ): HeldSubject {
+	return {
+		...held( id, isNew, targetId ),
+		schema: newSchema( {
+			title: 'Link',
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Link', { type: 'text' } ),
+			] ),
+		} ),
+	};
+}
+
 function idsOf( entries: readonly HeldSubject[] ): string[] {
 	return entries.map( ( entry ) => entry.id );
 }
@@ -51,6 +65,18 @@ describe( 'reachableTargetIds', () => {
 		const reached = reachableTargetIds( [ held( SAVED_ID, false, A_ID ), held( A_ID, true ) ] );
 
 		expect( [ ...reached ] ).toEqual( [ A_ID ] );
+	} );
+
+	// The Schema decides what a relation is. A statement under a property it does not declare as
+	// one points nowhere — so a draft reachable only through it is written by nobody, and a save
+	// that treated it as reached would write a Subject the wiki has no route to.
+	it( 'does not reach through a property the Schema does not declare as a relation', () => {
+		const reached = reachableTargetIds( [
+			heldUnderTextSchema( SAVED_ID, false, A_ID ),
+			held( A_ID, true ),
+		] );
+
+		expect( reached.has( A_ID ) ).toBe( false );
 	} );
 
 	it( 'leaves out a draft nothing points at', () => {

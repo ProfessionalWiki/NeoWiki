@@ -71,7 +71,7 @@ export interface SubjectEditPaneExposes {
 	hasChanged: boolean;
 	label: string;
 	// Refreshed on relation changes alone, so its other statements lag: read it for the
-	// tree, never to save or validate from.
+	// relations it holds, never to save or validate from.
 	editedSubject: Subject;
 	setLabel: ( value: string ) => void;
 	resetChanged: () => void;
@@ -132,9 +132,9 @@ const subjectStore = useSubjectStore();
 const subjectEditorRef = ref<SubjectEditorExposes | null>( null );
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
-// Refreshed when a relation field changes and on nothing else: the tree is its only
-// consumer and reads only relation statements, and harvesting per keystroke would re-walk
-// the tree per character. Its other statements therefore lag; never save or validate from it.
+// Refreshed when a relation field changes and on nothing else: the dialog's draft graph is its
+// only consumer and reads only relation statements, and harvesting per keystroke would re-walk
+// that graph per character. Its other statements therefore lag; never save or validate from it.
 const editedSubject = shallowRef<Subject>( props.subject );
 
 function handleRelationChange(): void {
@@ -297,7 +297,7 @@ watch( [ subjectEditorRef, () => props.schema ], ( [ editor ] ) => {
 }, { flush: 'post' } );
 
 // A replaced Subject starts the pane over. Drop the harvest, or a reopened pane seeds the
-// tree with relations the form no longer displays.
+// draft graph with relations the form no longer displays.
 watch( () => props.subject, ( newSubject ) => {
 	label.value = newSubject.getLabel() ?? '';
 	editedSubject.value = newSubject;

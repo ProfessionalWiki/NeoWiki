@@ -20,7 +20,7 @@ import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
-import SubjectTree from '@/components/SubjectEditor/SubjectTree.vue';
+import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
 import PaneDivider from '@/components/common/PaneDivider.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
@@ -87,8 +87,6 @@ describe( 'SubjectEditorDialog', () => {
 		setupMwMock( {
 			// 'util' for the relation fields and a nested pane's storage line: both call mw.util.getUrl.
 			functions: [ 'message', 'msg', 'notify', 'config', 'util' ],
-			// The one message the navigator renders as text of its own.
-			messages: { 'neowiki-subject-tree-not-linked': 'Not linked here' },
 			// Debounce 0 is blur-only mode: the dry-run fires on blur / pre-save
 			// (via flush()), which runs synchronously in tests.
 			config: { wgNeoWikiValidationDebounceMs: 0, wgArticleId: 42 },
@@ -1159,7 +1157,7 @@ describe( 'SubjectEditorDialog', () => {
 			);
 		}
 
-		// mockSubject with the given Colleague targets stored, so the tree has a node for each.
+		// mockSubject with the given Colleague targets stored.
 		function rootSubjectWithTargets( ...targetIds: string[] ): Subject {
 			return new Subject(
 				mockSubject.getId(),
@@ -1173,39 +1171,33 @@ describe( 'SubjectEditorDialog', () => {
 
 		const relationRootSubject = rootSubjectWithTargets( 's22222222222222' );
 
-		// Through the tree component rather than the root wrapper: the real Teleport moves the
+		// Through the list component rather than the root wrapper: the real Teleport moves the
 		// dialog out of the wrapper's own element.
-		function treeHasNode( wrapper: VueWrapper, id: string ): boolean {
-			const tree = wrapper.findComponent( SubjectTree );
-			return tree.exists() && tree.find( `[data-mw-neowiki-subject-id="${ id }"]` ).exists();
+		function listRow( wrapper: VueWrapper, id: string ): Omit<DOMWrapper<Element>, 'exists'> {
+			return wrapper.findComponent( OpenSubjectList )
+				.get( `[data-mw-neowiki-subject-id="${ id }"]` );
 		}
 
-		// A relation is named by a caption line when it heads several rows and by the row itself
-		// when it heads one. Both are collected: these tests are about which relations the
-		// navigator shows, not about where each one is printed.
-		function relationNames( wrapper: VueWrapper ): string[] {
-			return wrapper.findComponent( SubjectTree )
-				.findAll( '.ext-neowiki-tree__edge, .ext-neowiki-tree__node-caption' )
-				.map( ( caption ) => caption.text() );
+		function listHasRow( wrapper: VueWrapper, id: string ): boolean {
+			const list = wrapper.findComponent( OpenSubjectList );
+			return list.exists() && list.find( `[data-mw-neowiki-subject-id="${ id }"]` ).exists();
 		}
 
-		// The node's own row, not its subtree, which would also hold a descendant's dot.
-		function treeNodeHasDot( wrapper: VueWrapper, id: string ): boolean {
-			if ( !treeHasNode( wrapper, id ) ) {
-				return false;
-			}
-			const tree = wrapper.findComponent( SubjectTree );
-			const node = tree.get( `[data-mw-neowiki-subject-id="${ id }"]` );
-			return tree.get( `#${ node.attributes( 'id' ) }-name` )
-				.find( '.ext-neowiki-unsaved-dot' ).exists();
+		// In printed order, which is the order the subjects were opened in.
+		function listedSubjectIds( wrapper: VueWrapper ): string[] {
+			return wrapper.findComponent( OpenSubjectList ).findAll( '[role="option"]' )
+				.map( ( row ) => row.attributes( 'data-mw-neowiki-subject-id' ) as string );
 		}
 
-		// The node's own row: the root node contains every descendant's label as well.
-		function treeNodeLabel( wrapper: VueWrapper, id: string ): string {
-			const tree = wrapper.findComponent( SubjectTree );
-			const node = tree.get( `[data-mw-neowiki-subject-id="${ id }"]` );
-			return tree.get( `#${ node.attributes( 'id' ) }-name` )
-				.get( '.ext-neowiki-tree__node-label' ).text();
+		// Asserted false means "listed, and clean". A row that is not there at all is a different
+		// failure — an unmounted pane loses unsaved work — so it throws rather than reading false.
+		function listRowHasDot( wrapper: VueWrapper, id: string ): boolean {
+			expect( listHasRow( wrapper, id ) ).toBe( true );
+			return listRow( wrapper, id ).find( '.ext-neowiki-unsaved-dot' ).exists();
+		}
+
+		function listRowLabel( wrapper: VueWrapper, id: string ): string {
+			return listRow( wrapper, id ).get( '.ext-neowiki-open-subject-list__name' ).text();
 		}
 
 		// The repository stub answers every request with one target, so two panes can carry the
@@ -1320,12 +1312,10 @@ describe( 'SubjectEditorDialog', () => {
 			return ( panel?.attributes( 'id' ) ?? '' ).replace( 'ext-neowiki-panel-', '' );
 		}
 
-		// Presses the row itself, so unlike selectInTree below this fails when no row is
+		// Presses the row itself, so unlike selectInList below this fails when no row is
 		// rendered: it tests reachability rather than the dialog's handler.
-		async function clickTreeNode( wrapper: VueWrapper, id: string ): Promise<void> {
-			const tree = wrapper.findComponent( SubjectTree );
-			const node = tree.get( `[data-mw-neowiki-subject-id="${ id }"]` );
-			await tree.get( `#${ node.attributes( 'id' ) }-name` ).trigger( 'click' );
+		async function clickListRow( wrapper: VueWrapper, id: string ): Promise<void> {
+			await listRow( wrapper, id ).trigger( 'click' );
 			await flushPromises();
 		}
 
@@ -1340,8 +1330,8 @@ describe( 'SubjectEditorDialog', () => {
 			return ( panel?.id ?? '' ).replace( 'ext-neowiki-panel-', '' );
 		}
 
-		async function selectInTree( wrapper: VueWrapper, id: string ): Promise<void> {
-			wrapper.findComponent( SubjectTree ).vm.$emit( 'select', new SubjectId( id ) );
+		async function selectInList( wrapper: VueWrapper, id: string ): Promise<void> {
+			wrapper.findComponent( OpenSubjectList ).vm.$emit( 'select', new SubjectId( id ) );
 			await flushPromises();
 		}
 
@@ -1441,14 +1431,14 @@ describe( 'SubjectEditorDialog', () => {
 			expect( panel.isVisible() ).toBe( true );
 		} );
 
-		it( 'switches the subject on screen when a tree node is chosen, keeping every pane mounted', async () => {
+		it( 'switches the subject on screen when one is chosen from the list, keeping every pane mounted', async () => {
 			const { wrapper } = await mountWithThreePanesOpen( {
 				rootSchema: relationRootSchema,
 				rootSubject: relationRootSubject,
 			} );
 			expect( visibleSubjectId( wrapper ) ).toBe( 's33333333333333' );
 
-			await selectInTree( wrapper, rootSubjectId );
+			await selectInList( wrapper, rootSubjectId );
 
 			expect( visibleSubjectId( wrapper ) ).toBe( rootSubjectId );
 			expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 3 );
@@ -1462,8 +1452,8 @@ describe( 'SubjectEditorDialog', () => {
 			( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).setLabel( 'Edited child' );
 			await nextTick();
 
-			await selectInTree( wrapper, rootSubjectId );
-			await selectInTree( wrapper, 's22222222222222' );
+			await selectInList( wrapper, rootSubjectId );
+			await selectInList( wrapper, 's22222222222222' );
 
 			expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
 			expect( ( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).label )
@@ -1471,7 +1461,7 @@ describe( 'SubjectEditorDialog', () => {
 			expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
 		} );
 
-		it( 'shows the tree\'s unsaved dot on a dirty subject and not on a clean sibling', async () => {
+		it( 'shows the unsaved dot on a dirty subject and not on a clean one', async () => {
 			useSubjectStore().setSubject( targetSubject( 's22222222222222', 'Target subject' ) );
 			const { wrapper } = await mountWithSecondPaneOpen( {
 				rootSchema: relationRootSchema,
@@ -1480,11 +1470,11 @@ describe( 'SubjectEditorDialog', () => {
 			await makePaneDirty( wrapper, 1 );
 			await flushPromises();
 
-			expect( treeNodeHasDot( wrapper, 's22222222222222' ) ).toBe( true );
-			expect( treeNodeHasDot( wrapper, rootSubjectId ) ).toBe( false );
+			expect( listRowHasDot( wrapper, 's22222222222222' ) ).toBe( true );
+			expect( listRowHasDot( wrapper, rootSubjectId ) ).toBe( false );
 		} );
 
-		it( 'shows the tree\'s unsaved dot on the root subject too', async () => {
+		it( 'shows the unsaved dot on the root subject too', async () => {
 			useSubjectStore().setSubject( targetSubject( 's22222222222222', 'Target subject' ) );
 			const { wrapper } = await mountWithSecondPaneOpen( {
 				rootSchema: relationRootSchema,
@@ -1493,7 +1483,7 @@ describe( 'SubjectEditorDialog', () => {
 			await makePaneDirty( wrapper, 0 );
 			await flushPromises();
 
-			expect( treeNodeHasDot( wrapper, rootSubjectId ) ).toBe( true );
+			expect( listRowHasDot( wrapper, rootSubjectId ) ).toBe( true );
 		} );
 
 		it( 'notifies and adds no pane when the target cannot be loaded', async () => {
@@ -1589,7 +1579,7 @@ describe( 'SubjectEditorDialog', () => {
 				const { wrapper, target } = await mountWithSecondPaneOpen( { onSave } );
 				await makePaneDirty( wrapper, 0 );
 				await makePaneDirty( wrapper, 1 );
-				await selectInTree( wrapper, mockSubject.getId().text );
+				await selectInList( wrapper, mockSubject.getId().text );
 				expect( visibleSubjectId( wrapper ) ).toBe( mockSubject.getId().text );
 
 				await triggerSave( wrapper, '' );
@@ -1795,7 +1785,7 @@ describe( 'SubjectEditorDialog', () => {
 				expect( ( root.vm as any ).hasChanged ).toBe( false );
 			} );
 
-			it( 'clears the tree\'s unsaved dot on a written subject and keeps the failed one\'s', async () => {
+			it( 'clears the unsaved dot on a written subject and keeps the failed one\'s', async () => {
 				useSubjectStore().setSubject( targetSubject( 's22222222222222', 'Target subject' ) );
 				// The root's form holds the relation its stored Subject holds, so the write still
 				// reaches the target whose dot this test reads.
@@ -1810,12 +1800,12 @@ describe( 'SubjectEditorDialog', () => {
 				} );
 				await makePaneDirty( wrapper, 0 );
 				await makePaneDirty( wrapper, 1 );
-				expect( treeNodeHasDot( wrapper, rootSubjectId ) ).toBe( true );
+				expect( listRowHasDot( wrapper, rootSubjectId ) ).toBe( true );
 
 				await triggerSave( wrapper, '' );
 
-				expect( treeNodeHasDot( wrapper, rootSubjectId ) ).toBe( false );
-				expect( treeNodeHasDot( wrapper, 's22222222222222' ) ).toBe( true );
+				expect( listRowHasDot( wrapper, rootSubjectId ) ).toBe( false );
+				expect( listRowHasDot( wrapper, 's22222222222222' ) ).toBe( true );
 			} );
 
 			// Were a written pane treated as settled, the user could not correct it without
@@ -2088,115 +2078,108 @@ describe( 'SubjectEditorDialog', () => {
 					.toBe( wrapper.find( '#ext-neowiki-panel-s22222222222222' ).element );
 			} );
 
-			// As the APG tree pattern expects: the node stays the single tab stop.
-			it( 'leaves focus on the tree when a node opens a subject', async () => {
+			// As the listbox pattern expects: the row the reader chose stays the tab stop, so the
+			// next Tab leaves the navigator rather than restarting inside it.
+			it( 'leaves focus on the list when a row shows a subject', async () => {
 				const wrapper = await mountAttached( relationRootSchema, relationRootSubject );
 				await openTargetFromForm( wrapper, 's22222222222222' );
-				const node = wrapper.find( '.ext-neowiki-tree__node' ).element as HTMLElement;
-				node.focus();
+				const row = wrapper.find( '.ext-neowiki-open-subject-list__item' ).element as HTMLElement;
+				row.focus();
 
-				await selectInTree( wrapper, rootSubjectId );
+				await selectInList( wrapper, rootSubjectId );
 
-				expect( document.activeElement ).toBe( node );
+				expect( document.activeElement ).toBe( row );
 			} );
 
 		} );
 
 		describe( 'Navigator', () => {
-			it( 'renders no navigator when the root schema declares no relations', async () => {
-				const { wrapper } = mountWithTargetRepos();
-				await flushPromises();
-
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( false );
-			} );
-
-			it( 'renders no navigator when the root subject fills none of its declared relations', async () => {
-				const { wrapper } = mountWithTargetRepos( undefined, {}, relationRootSchema );
-				await flushPromises();
-
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( false );
-			} );
-
 			// A relation-change event on the pane is the one path by which a pick or a clear reaches
-			// the tree. The root pane is found through the component tree, because a teleported
+			// the dialog. The root pane is found through the component tree, because a teleported
 			// dialog puts its panel outside the wrapper's own element.
 			async function setRootFormTargets( wrapper: VueWrapper, ...targetIds: string[] ): Promise<void> {
 				editorStatementsBySchema = { TestSchema: [ colleagueStatement( ...targetIds ) ] };
 				wrapper.findAllComponents( SubjectEditPane )[ 0 ]
 					.findComponent( SubjectEditor ).vm.$emit( 'relation-change' );
 				await flushPromises();
+
+				// Every caller below asserts that something did NOT change, so a relation change
+				// that never reached the dialog would satisfy all of them. Checked here once.
+				expect( rootFormTargets( wrapper ) ).toEqual( targetIds );
 			}
 
-			// The accepted cost of gating on the data: the navigator arrives under the user's cursor.
-			// Until it does there is no route to the Subject the pick just made reachable.
-			it( 'shows the navigator once the form picks the first relation target', async () => {
+			// The root's relation targets as its own pane now holds them. Through the component
+			// tree, not the panel's id: these callers run the real Teleport, which moves the
+			// dialog out of the wrapper's own element.
+			function rootFormTargets( wrapper: VueWrapper ): string[] {
+				const statements = ( wrapper.findAllComponents( SubjectEditPane )[ 0 ].vm as any )
+					.editedSubject.getStatements() as StatementList;
+
+				if ( !statements.has( new PropertyName( 'Colleague' ) ) ) {
+					return [];
+				}
+
+				const value = statements.get( new PropertyName( 'Colleague' ) ).value;
+				return value instanceof RelationValue ?
+					value.relations.map( ( relation ) => relation.target.text ) :
+					[];
+			}
+
+			// Pointing at a Subject is not opening it: the panel would otherwise arrive under the
+			// reader's cursor listing the one Subject they can already see.
+			it( 'renders no navigator when the form picks a relation target', async () => {
 				const { wrapper } = mountWithTargetRepos(
 					undefined, { teleport: false }, relationRootSchema,
 				);
 				await flushPromises();
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( false );
 
 				await setRootFormTargets( wrapper, 's22222222222222' );
 
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( true );
-			} );
-
-			it( 'hides the navigator once the form clears the last relation target', async () => {
-				const { wrapper } = mountWithTargetRepos(
-					undefined, { teleport: false }, relationRootSchema, relationRootSubject,
-				);
-				await flushPromises();
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( true );
-
-				await setRootFormTargets( wrapper );
-
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( false );
+				expect( wrapper.findComponent( OpenSubjectList ).exists() ).toBe( false );
 			} );
 
 			// A pane holds its values in its inputs' own refs, so an unmount destroys unsaved work.
-			// The gate can only flip while the root is the one Subject open — a second pane holds the
-			// navigator on by itself — so the root pane is the one at risk.
-			it( 'unmounts no pane when a picked target brings the navigator in', async () => {
-				const { wrapper } = mountWithTargetRepos(
-					undefined, { teleport: false }, relationRootSchema,
-				);
-				await flushPromises();
-				( wrapper.findComponent( SubjectEditPane ).vm as any ).setLabel( 'Edited root' );
-				await nextTick();
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( false );
-
-				await setRootFormTargets( wrapper, 's22222222222222' );
-
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( true );
-				expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
-				expect( ( wrapper.findComponent( SubjectEditPane ).vm as any ).label )
-					.toBe( 'Edited root' );
-			} );
-
-			it( 'unmounts no pane when a cleared target takes the navigator away', async () => {
+			// The gate flips as the second pane arrives, which is the only moment it can flip at all.
+			it( 'unmounts no pane when a second subject brings the navigator in', async () => {
 				const { wrapper } = mountWithTargetRepos(
 					undefined, { teleport: false }, relationRootSchema, relationRootSubject,
 				);
 				await flushPromises();
 				( wrapper.findComponent( SubjectEditPane ).vm as any ).setLabel( 'Edited root' );
 				await nextTick();
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( true );
+				expect( wrapper.findComponent( OpenSubjectList ).exists() ).toBe( false );
 
-				await setRootFormTargets( wrapper );
+				wrapper.findComponent( SubjectEditPane )
+					.vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
+				await flushPromises();
 
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( false );
-				expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
-				expect( ( wrapper.findComponent( SubjectEditPane ).vm as any ).label )
+				expect( wrapper.findComponent( OpenSubjectList ).exists() ).toBe( true );
+				expect( ( wrapper.findAllComponents( SubjectEditPane )[ 0 ].vm as any ).label )
 					.toBe( 'Edited root' );
 			} );
 
-			it( 'renders the navigator while only the root subject is open', async () => {
+			// The list names the Subjects the dialog holds, so one Subject is a list of one: a
+			// panel restating what the form beside it already says.
+			it( 'renders no navigator while only the root subject is open, whatever it points at', async () => {
 				const { wrapper } = mountWithTargetRepos(
 					undefined, {}, relationRootSchema, relationRootSubject,
 				);
 				await flushPromises();
 
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( true );
+				expect( wrapper.findComponent( OpenSubjectList ).exists() ).toBe( false );
+				// The second column is declared with the navigator, so without this the dialog
+				// would hold a navigator-wide void open beside the form.
+				expect( wrapper.find( '.cdx-dialog' ).classes() )
+					.not.toContain( 'ext-neowiki-subject-editor-dialog--wide' );
+			} );
+
+			it( 'renders the navigator once a second subject is open', async () => {
+				const { wrapper } = await mountWithSecondPaneOpen( {
+					rootSchema: relationRootSchema,
+					rootSubject: relationRootSubject,
+				} );
+
+				expect( wrapper.findComponent( OpenSubjectList ).exists() ).toBe( true );
 			} );
 
 			// The root's last target is cleared while the Subject it led to is still open and dirty.
@@ -2210,11 +2193,11 @@ describe( 'SubjectEditorDialog', () => {
 				} );
 				( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).setLabel( 'Edited child' );
 				await nextTick();
-				await selectInTree( wrapper, rootSubjectId );
+				await selectInList( wrapper, rootSubjectId );
 
 				await setRootFormTargets( wrapper );
 
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( true );
+				expect( wrapper.findComponent( OpenSubjectList ).exists() ).toBe( true );
 			} );
 
 			it( 'keeps the dirty subject reachable once the relation that led to it is cleared', async () => {
@@ -2225,60 +2208,43 @@ describe( 'SubjectEditorDialog', () => {
 				} );
 				( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).setLabel( 'Edited child' );
 				await nextTick();
-				await selectInTree( wrapper, rootSubjectId );
+				await selectInList( wrapper, rootSubjectId );
 				await setRootFormTargets( wrapper );
 
-				await clickTreeNode( wrapper, 's22222222222222' );
+				await clickListRow( wrapper, 's22222222222222' );
 
 				expect( teleportedVisibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
 				expect( ( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).label )
 					.toBe( 'Edited child' );
 			} );
 
-			// The gate is answered from the root's own statements, never from a fetch, so the
-			// navigator is there on the first paint or not at all. The never-settling label fetch
-			// below is what tells that apart from a gate settled one fetch later.
-			it( 'renders the navigator before any label fetch resolves', async () => {
+			// The list names the panes, so it needs nothing the dialog has not already got. A store
+			// that never answers would leave a list built on fetched Subjects empty or unnamed.
+			it( 'lists the open subjects by name while the subject store answers nothing', async () => {
 				useSubjectStore().getOrFetchSubject = vi.fn( () => new Promise<never>( () => {
 					// Intentionally left pending.
 				} ) );
 
-				const { wrapper } = mountWithTargetRepos(
-					undefined, { teleport: false }, relationRootSchema, relationRootSubject,
-				);
+				const { wrapper } = await mountWithSecondPaneOpen( {
+					rootSchema: relationRootSchema,
+					rootSubject: relationRootSubject,
+					stubs: { teleport: false },
+				} );
 
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( true );
-				await nextTick();
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( true );
-				await flushPromises();
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( true );
+				expect( listedSubjectIds( wrapper ) ).toEqual( [ rootSubjectId, 's22222222222222' ] );
+				expect( listRowLabel( wrapper, 's22222222222222' ) ).toBe( 'Target subject' );
 			} );
 
-			it( 'carries --wide once the root subject reaches a relation target', async () => {
-				const { wrapper } = mountWithTargetRepos(
-					undefined, {}, relationRootSchema, relationRootSubject,
-				);
-				await flushPromises();
+			it( 'carries --wide once a second subject is open', async () => {
+				const { wrapper } = await mountWithSecondPaneOpen( {
+					rootSchema: relationRootSchema,
+					rootSubject: relationRootSubject,
+				} );
 
 				expect( wrapper.find( '.cdx-dialog' ).classes() ).toContain( 'ext-neowiki-subject-editor-dialog--wide' );
 			} );
 
 			// The width follows the navigator's own gate.
-			it( 'drops --wide when a schema edit takes the navigator away', async () => {
-				const { wrapper } = mountWithTargetRepos(
-					undefined, {}, relationRootSchema, relationRootSubject,
-				);
-				await flushPromises();
-				expect( wrapper.find( '.cdx-dialog' ).classes() ).toContain( 'ext-neowiki-subject-editor-dialog--wide' );
-
-				// mockSchema declares no relation property at all.
-				wrapper.findComponent( SchemaEditorDialog ).vm.$emit( 'saved', mockSchema );
-				await flushPromises();
-
-				expect( wrapper.find( '.cdx-dialog' ).classes() )
-					.not.toContain( 'ext-neowiki-subject-editor-dialog--wide' );
-			} );
-
 			// A second open Subject holds the navigator on, and with it the width, however the
 			// root's own relations end up.
 			it( 'keeps --wide while a second subject is open without the root reaching one', async () => {
@@ -2295,9 +2261,6 @@ describe( 'SubjectEditorDialog', () => {
 					.toContain( 'ext-neowiki-subject-editor-dialog--wide' );
 			} );
 
-			// The tree remembers which fetches failed for the life of its mount, which is only safe
-			// because the tree is keyed on the dialog's open epoch. The tests below are the two
-			// halves of that one contract.
 			// Both hosts keep the dialog mounted after it closes, so a fetch started in one
 			// opening settles in the next unless it is told which opening it belongs to.
 			describe( 'A target fetch outliving its opening', () => {
@@ -2364,109 +2327,6 @@ describe( 'SubjectEditorDialog', () => {
 				} );
 			} );
 
-			describe( 'Failed tree fetches', () => {
-				function failingTreeFetch(): Mock {
-					const failing = vi.fn().mockRejectedValue( new Error( 'Target is gone' ) );
-					useSubjectStore().getOrFetchSubject = failing;
-					return failing;
-				}
-
-				// teleport: false throughout: these tests turn on whether the tree kept its mount, and
-				// the stubbed teleport rebuilds its children on every re-render of the dialog.
-
-				// The key Vue rendered the tree with, read off its vnode: nothing about it reaches the DOM.
-				function treeKey( wrapper: VueWrapper ): unknown {
-					return ( wrapper.findComponent( SubjectTree ).vm.$ as any ).vnode.key;
-				}
-
-				async function mountWithFailingTarget(): Promise<{ wrapper: VueWrapper; failing: Mock }> {
-					const failing = failingTreeFetch();
-					const { wrapper } = mountWithTargetRepos(
-						undefined, { teleport: false }, relationRootSchema, relationRootSubject,
-					);
-					await flushPromises();
-					return { wrapper, failing };
-				}
-
-				it( 'attempts a failing target fetch once for the life of one opening', async () => {
-					const { wrapper, failing } = await mountWithFailingTarget();
-					expect( failing ).toHaveBeenCalledTimes( 1 );
-
-					// A second pane changes the copies the tree walks, so it re-walks: the recompute that
-					// would re-issue the failing request.
-					wrapper.findComponent( SubjectEditPane )
-						.vm.$emit( 'edit-relation-target', new SubjectId( 's33333333333333' ) );
-					await flushPromises();
-
-					expect( failing ).toHaveBeenCalledTimes( 1 );
-				} );
-
-				// Asserted on the binding: Codex's own v-if remounts the tree on a close whichever
-				// way it is keyed, so a reopen-and-retry test would pass without the key.
-				it( 'keys the tree on a fresh epoch each time the dialog opens', async () => {
-					const { wrapper } = mountWithTargetRepos(
-						undefined, { teleport: false }, relationRootSchema, relationRootSubject,
-					);
-					await flushPromises();
-					const firstKey = treeKey( wrapper );
-
-					await wrapper.setProps( { open: false } );
-					await wrapper.setProps( { open: true } );
-					await flushPromises();
-
-					// Greater, not merely different: a key bound to any constant is still a number.
-					expect( treeKey( wrapper ) as number ).toBeGreaterThan( firstKey as number );
-				} );
-
-				it( 'keys the tree on a fresh epoch when the host replaces the root subject', async () => {
-					const { wrapper } = mountWithTargetRepos(
-						undefined, { teleport: false }, relationRootSchema, relationRootSubject,
-					);
-					await flushPromises();
-					const firstKey = treeKey( wrapper );
-
-					await wrapper.setProps( {
-						subject: new Subject(
-							new SubjectId( 's99999999999999' ),
-							'New root',
-							'New root',
-							false,
-							'TestSchema',
-							new StatementList( [ colleagueStatement( 's22222222222222' ) ] ),
-						),
-					} );
-					await flushPromises();
-
-					expect( treeKey( wrapper ) ).not.toBe( firstKey );
-				} );
-
-				// Asserted on the label the node ends up showing rather than on a call count: the new
-				// root's form holds the same relation and its picker fetches that target too, so a count
-				// cannot tell the tree's request from the form's.
-				it( 'resolves a previously failed target when the host replaces the root subject', async () => {
-					const { wrapper, failing } = await mountWithFailingTarget();
-					expect( treeNodeLabel( wrapper, 's22222222222222' ) ).toBe( 's22222222222222' );
-
-					// The fetch that failed now succeeds, so only a tree that forgot the failure shows
-					// the label.
-					failing.mockResolvedValue( targetSubject( 's22222222222222', 'Target subject' ) );
-
-					await wrapper.setProps( {
-						subject: new Subject(
-							new SubjectId( 's99999999999999' ),
-							'New root',
-							'New root',
-							false,
-							'TestSchema',
-							new StatementList( [ colleagueStatement( 's22222222222222' ) ] ),
-						),
-					} );
-					await flushPromises();
-
-					expect( treeNodeLabel( wrapper, 's22222222222222' ) ).toBe( 'Target subject' );
-				} );
-			} );
-
 			// Auto-placement puts each child in its own column, and the divider between them draws
 			// the rule between them, so both rest on this order. jsdom resolves no layout: this pins
 			// the structure, and the placement itself is verified in the browser.
@@ -2496,7 +2356,7 @@ describe( 'SubjectEditorDialog', () => {
 					'.ext-neowiki-subject-editor-dialog__content > .ext-neowiki-subject-editor-dialog__surface',
 				);
 
-				expect( surfaces[ 0 ].find( '.ext-neowiki-subject-tree' ).exists() ).toBe( true );
+				expect( surfaces[ 0 ].find( '.ext-neowiki-open-subject-list' ).exists() ).toBe( true );
 				expect( surfaces[ 1 ].find( '.ext-neowiki-subject-editor-dialog__panels' ).exists() ).toBe( true );
 			} );
 
@@ -2582,79 +2442,29 @@ describe( 'SubjectEditorDialog', () => {
 				);
 
 				expect( surfaces ).toHaveLength( 1 );
-				expect( surfaces[ 0 ].find( '.ext-neowiki-subject-tree' ).exists() ).toBe( false );
+				expect( surfaces[ 0 ].find( '.ext-neowiki-open-subject-list' ).exists() ).toBe( false );
 				expect( surfaces[ 0 ].find( '.ext-neowiki-subject-editor-dialog__panels' ).exists() ).toBe( true );
 			} );
 
-			it( 'opens the selected subject when a tree node is chosen', async () => {
+			// Every listed Subject is a pane already, so a choice is a switch and never a load.
+			it( 'shows a chosen subject without fetching it again', async () => {
 				const { wrapper, mockSubjectRepository } = await mountWithSecondPaneOpen( {
 					rootSchema: relationRootSchema,
 					rootSubject: relationRootSubject,
 				} );
 				mockSubjectRepository.getSubjectForEditing.mockClear();
 
-				wrapper.findComponent( SubjectTree ).vm.$emit( 'select', new SubjectId( 's33333333333333' ) );
-				await flushPromises();
+				await selectInList( wrapper, rootSubjectId );
 
-				expect( mockSubjectRepository.getSubjectForEditing ).toHaveBeenCalledTimes( 1 );
-				expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 3 );
+				expect( mockSubjectRepository.getSubjectForEditing ).not.toHaveBeenCalled();
+				expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 2 );
+				expect( teleportedVisibleSubjectId( wrapper ) ).toBe( rootSubjectId );
 			} );
 
-			// The gate can only flip while the root is the one Subject open, so the pane at risk
-			// from a schema-driven flip is the root's own.
-			it( 'keeps a dirty pane mounted when a schema edit brings the navigator in', async () => {
-				const onSave = vi.fn().mockResolvedValue( undefined );
-				const { wrapper } = mountWithTargetRepos(
-					onSave, { teleport: false }, mockSchema, relationRootSubject,
-				);
-				await flushPromises();
-				await makePaneDirty( wrapper, 0 );
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( false );
-				expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
-
-				wrapper.findComponent( SchemaEditorDialog ).vm.$emit( 'saved', relationRootSchema );
-				await flushPromises();
-
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( true );
-				expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
-				expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
-
-				await triggerSave( wrapper, '' );
-
-				expect( onSave ).toHaveBeenCalledTimes( 1 );
-				expect( onSave.mock.calls[ 0 ][ 0 ].getId().text ).toBe( rootSubjectId );
-			} );
-
-			// Only the tree may go: an unmounted pane takes its unsaved values with it, since they
-			// live in its inputs' refs.
-			it( 'keeps a dirty pane mounted when a schema edit takes the navigator away', async () => {
-				const onSave = vi.fn().mockResolvedValue( undefined );
-				const { wrapper } = mountWithTargetRepos(
-					onSave, { teleport: false }, relationRootSchema, relationRootSubject,
-				);
-				await flushPromises();
-				await makePaneDirty( wrapper, 0 );
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( true );
-				expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
-
-				// mockSchema declares no relation property, so saving it deletes the last one.
-				wrapper.findComponent( SchemaEditorDialog ).vm.$emit( 'saved', mockSchema );
-				await flushPromises();
-
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( false );
-				expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
-				expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
-
-				await triggerSave( wrapper, '' );
-
-				expect( onSave ).toHaveBeenCalledTimes( 1 );
-				expect( onSave.mock.calls[ 0 ][ 0 ].getId().text ).toBe( rootSubjectId );
-			} );
-
-			// Asserted on the rendered dot, not on the unsavedIds prop: that prop restates what the
-			// dialog already knows and says nothing about whether the tree has a node to hang the
-			// dot on.
-			it( 'keeps the tree\'s unsaved dot for a subject that is no longer on screen', async () => {
+			// Asserted on the rendered dot rather than on the unsavedIds prop: that prop restates
+			// what the dialog already knows and says nothing about whether the list has a row to
+			// hang the dot on.
+			it( 'keeps the unsaved dot for a subject that is no longer on screen', async () => {
 				useSubjectStore().setSubject( targetSubject( 's22222222222222', 'Target subject' ) );
 				const { wrapper } = await mountWithSecondPaneOpen( {
 					rootSchema: relationRootSchema,
@@ -2662,94 +2472,64 @@ describe( 'SubjectEditorDialog', () => {
 				} );
 				await makePaneDirty( wrapper, 1 );
 
-				await selectInTree( wrapper, rootSubjectId );
+				await selectInList( wrapper, rootSubjectId );
 
 				expect( visibleSubjectId( wrapper ) ).toBe( rootSubjectId );
-				expect( treeNodeHasDot( wrapper, 's22222222222222' ) ).toBe( true );
+				expect( listRowHasDot( wrapper, 's22222222222222' ) ).toBe( true );
 			} );
 
-			// A target picked in this session lives only in the form, so a tree walking the stored
-			// data has no node for it and the dot has nowhere to render.
-			it( 'shows the tree\'s unsaved dot for a target picked in this session and edited', async () => {
+			// The root stores no target here, so the open Subject is one nothing points at. It is
+			// listed all the same: the list is the panes, not the relations between them.
+			it( 'lists a subject the stored root does not point at, dot and all', async () => {
 				useSubjectStore().setSubject( targetSubject( 's22222222222222', 'Target subject' ) );
 				const { wrapper } = await mountWithSecondPaneOpen( {
 					rootSchema: relationRootSchema,
 					stubs: { teleport: false },
 				} );
-				// The stored root reaches nothing, so the open Subject starts outside the walk.
-				expect( relationNames( wrapper ) ).toEqual( [ 'Not linked here' ] );
-
-				await setRootFormTargets( wrapper, 's22222222222222' );
-
-				expect( relationNames( wrapper ) ).toEqual( [ 'Colleague' ] );
-				expect( treeHasNode( wrapper, 's22222222222222' ) ).toBe( true );
+				expect( listHasRow( wrapper, 's22222222222222' ) ).toBe( true );
 
 				await makePaneDirty( wrapper, 1 );
 				await flushPromises();
 
-				expect( treeNodeHasDot( wrapper, 's22222222222222' ) ).toBe( true );
+				expect( listRowHasDot( wrapper, 's22222222222222' ) ).toBe( true );
 			} );
 
-			// Once the relation is gone the walk cannot reach the Subject at all, yet the save still
-			// writes it. The root keeps a second target throughout, because a root reaching nothing
-			// has no navigator for the dot to live in.
+			// The relation is gone and the save still writes the Subject, so the row that leads to
+			// it stays, dot and all.
 			it( 'keeps the dot after the relation to an edited subject is removed from the form', async () => {
 				useSubjectStore().setSubject( targetSubject( 's22222222222222', 'Target subject' ) );
 				const { wrapper } = await mountWithSecondPaneOpen( {
 					rootSchema: relationRootSchema,
-					rootSubject: rootSubjectWithTargets( 's22222222222222', 's33333333333333' ),
+					rootSubject: relationRootSubject,
 				} );
 				await makePaneDirty( wrapper, 1 );
 				await flushPromises();
-				expect( treeNodeHasDot( wrapper, 's22222222222222' ) ).toBe( true );
+				expect( listRowHasDot( wrapper, 's22222222222222' ) ).toBe( true );
 
 				// The harvest drops a statement with no value, so the form no longer links the target.
 				await setRootFormTargets( wrapper, 's33333333333333' );
 
-				expect( treeNodeHasDot( wrapper, 's22222222222222' ) ).toBe( true );
+				expect( listRowHasDot( wrapper, 's22222222222222' ) ).toBe( true );
 			} );
 
-			// The cost of the live tree: a walk per relation pick is affordable, one per keystroke
-			// is not.
-			it( 'refreshes the tree\'s subjects on a relation change and not on an ordinary edit', async () => {
+			// The live label lives on the pane, not on the copy the dialog harvests from it, which
+			// is refreshed on relation changes alone.
+			it( 'renames the root subject\'s row when it is renamed in the header', async () => {
 				useSubjectStore().setSubject( targetSubject( 's22222222222222', 'Target subject' ) );
 				const { wrapper } = await mountWithSecondPaneOpen( {
 					rootSchema: relationRootSchema,
 					rootSubject: relationRootSubject,
 				} );
-				const rootEditor = paneFor( wrapper, rootSubjectId ).findComponent( SubjectEditor );
-				const before = wrapper.findComponent( SubjectTree ).props( 'editedSubjects' );
-
-				rootEditor.vm.$emit( 'change' );
-				await nextTick();
-
-				// The same object, so the computed did not recompute and no walk ran.
-				expect( wrapper.findComponent( SubjectTree ).props( 'editedSubjects' ) ).toBe( before );
-
-				rootEditor.vm.$emit( 'relation-change' );
-				await nextTick();
-
-				expect( wrapper.findComponent( SubjectTree ).props( 'editedSubjects' ) ).not.toBe( before );
-			} );
-
-			// The live label lives on the pane, not on the copy the tree walks, which is refreshed
-			// on relation changes alone.
-			it( 'renames the tree\'s root node when the subject is renamed in the header', async () => {
-				useSubjectStore().setSubject( targetSubject( 's22222222222222', 'Target subject' ) );
-				const { wrapper } = await mountWithSecondPaneOpen( {
-					rootSchema: relationRootSchema,
-					rootSubject: relationRootSubject,
-				} );
-				expect( treeNodeLabel( wrapper, rootSubjectId ) ).toBe( 'Test Subject' );
+				expect( listRowLabel( wrapper, rootSubjectId ) ).toBe( 'Test Subject' );
 
 				await editLabel( wrapper, 'Renamed Subject' );
 
-				expect( treeNodeLabel( wrapper, rootSubjectId ) ).toBe( 'Renamed Subject' );
+				expect( listRowLabel( wrapper, rootSubjectId ) ).toBe( 'Renamed Subject' );
 			} );
 
 			// A cleared field means no label, not an empty one, so the node falls back to a name
 			// rather than rendering a blank row the user cannot read or aim at.
-			it( 'keeps a name on the tree\'s root node when its label is cleared', async () => {
+			it( 'keeps a name on the root subject\'s row when its label is cleared', async () => {
 				useSubjectStore().setSubject( targetSubject( 's22222222222222', 'Target subject' ) );
 				const { wrapper } = await mountWithSecondPaneOpen( {
 					rootSchema: relationRootSchema,
@@ -2758,23 +2538,23 @@ describe( 'SubjectEditorDialog', () => {
 
 				await editLabel( wrapper, '' );
 
-				expect( treeNodeLabel( wrapper, rootSubjectId ) ).toBe( 'Test Subject' );
+				expect( listRowLabel( wrapper, rootSubjectId ) ).toBe( 'Test Subject' );
 			} );
 
 			// A child Subject has no rename control of its own, but the pane that edits it already
 			// owns its label.
-			it( 'renames the tree\'s node for a child subject its pane renames', async () => {
+			it( 'renames the row of a child subject its pane renames', async () => {
 				useSubjectStore().setSubject( targetSubject( 's22222222222222', 'Target subject' ) );
 				const { wrapper } = await mountWithSecondPaneOpen( {
 					rootSchema: relationRootSchema,
 					rootSubject: relationRootSubject,
 				} );
-				expect( treeNodeLabel( wrapper, 's22222222222222' ) ).toBe( 'Target subject' );
+				expect( listRowLabel( wrapper, 's22222222222222' ) ).toBe( 'Target subject' );
 
 				( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).setLabel( 'Renamed child' );
 				await nextTick();
 
-				expect( treeNodeLabel( wrapper, 's22222222222222' ) ).toBe( 'Renamed child' );
+				expect( listRowLabel( wrapper, 's22222222222222' ) ).toBe( 'Renamed child' );
 			} );
 		} );
 
@@ -2977,11 +2757,11 @@ describe( 'SubjectEditorDialog', () => {
 
 			it( 'renders the navigator once a target has been created', async () => {
 				const { wrapper } = await mountReadyForCreation();
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( false );
+				expect( wrapper.findComponent( OpenSubjectList ).exists() ).toBe( false );
 
 				await createTarget( wrapper );
 
-				expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( true );
+				expect( wrapper.findComponent( OpenSubjectList ).exists() ).toBe( true );
 			} );
 
 			// Nobody has to type into a draft for the relation pointing at it to need something
@@ -2999,7 +2779,7 @@ describe( 'SubjectEditorDialog', () => {
 
 				await createReferencedTarget( wrapper );
 
-				expect( wrapper.findComponent( SubjectTree ).props( 'unsavedIds' ) ).toContain( mintedId );
+				expect( listRowHasDot( wrapper, mintedId ) ).toBe( true );
 			} );
 
 			it( 'creates the draft with the id minted for it, on the page it was opened against', async () => {
@@ -3117,7 +2897,7 @@ describe( 'SubjectEditorDialog', () => {
 
 				await reportsRelationTo( wrapper, 0, [] );
 
-				expect( wrapper.findComponent( SubjectTree ).props( 'unsavedIds' ) ).not.toContain( mintedId );
+				expect( listRowHasDot( wrapper, mintedId ) ).toBe( false );
 			} );
 
 			it( 'creates a draft the user has pointed back at', async () => {
@@ -3455,87 +3235,13 @@ describe( 'SubjectEditorDialog', () => {
 		} );
 	} );
 
-	describe( 'Progressive disclosure', () => {
-		const relationSchema = new Schema( 'Person', 'A person', new PropertyDefinitionList( [
-			createPropertyDefinitionFromJson( 'Birth event', { type: 'relation', targetSchema: 'Birth' } ),
-		] ) );
-		const plainSchema = new Schema( 'Attendance', 'A count', new PropertyDefinitionList( [
-			createPropertyDefinitionFromJson( 'Visitors', { type: 'number' } ),
-		] ) );
-
-		// One Birth event target stored, so the tree has a node beyond the root to show.
-		const relatedSubject = new Subject(
-			mockSubject.getId(),
-			mockSubject.getLabel(),
-			mockSubject.getDisplayName(),
-			false,
-			'TestSchema',
-			new StatementList( [ new Statement(
-				new PropertyName( 'Birth event' ),
-				'relation',
-				new RelationValue( [ newRelation( undefined, 's44444444444444' ) ] ),
-			) ] ),
-		);
-
-		function navigatorRendered( wrapper: VueWrapper ): boolean {
-			return wrapper.findComponent( SubjectTree ).exists();
-		}
-
-		// The navigator's own width.
-		function reservesNavigatorWidth( wrapper: VueWrapper ): boolean {
-			return wrapper.find( '.cdx-dialog' ).classes()
-				.includes( 'ext-neowiki-subject-editor-dialog--wide' );
-		}
-
-		it( 'renders no navigator for a schema that declares no relations', async () => {
-			const wrapper = mountComponent( false, saveButtonTestStubs, undefined, plainSchema );
-			await flushPromises();
-
-			expect( navigatorRendered( wrapper ) ).toBe( false );
-		} );
-
-		// The gate is on the data, not the Schema: a declared relation with nothing in it would
-		// give the user a panel holding its own root node and navigating nowhere.
-		it( 'renders no navigator for a declared relation with no target', async () => {
-			const wrapper = mountComponent( false, saveButtonTestStubs, undefined, relationSchema );
-			await flushPromises();
-
-			expect( navigatorRendered( wrapper ) ).toBe( false );
-			expect( reservesNavigatorWidth( wrapper ) ).toBe( false );
-		} );
-
-		it( 'renders the navigator for a declared relation with a target', async () => {
-			const wrapper = mountComponent(
-				false, saveButtonTestStubs, undefined, relationSchema, {}, relatedSubject,
-			);
-			await flushPromises();
-
-			expect( navigatorRendered( wrapper ) ).toBe( true );
-			expect( reservesNavigatorWidth( wrapper ) ).toBe( true );
-		} );
-
-		// A statement whose property the Schema does not declare is not read at all.
-		it( 'shows the navigator once a schema edit declares the property a target is stored under', async () => {
-			const wrapper = mountComponent(
-				false, saveButtonTestStubs, undefined, plainSchema, {}, relatedSubject,
-			);
-			await flushPromises();
-			expect( navigatorRendered( wrapper ) ).toBe( false );
-
-			wrapper.findComponent( SchemaEditorDialog ).vm.$emit( 'saved', relationSchema );
-			await flushPromises();
-
-			expect( navigatorRendered( wrapper ) ).toBe( true );
-		} );
-	} );
-
 	// Codex draws the rules under the header and above the footer only for a dialog whose own
 	// body scrolls, which this one's never does, so the variant is asked for by name.
 	it( 'asks Codex for the dividers variant, navigator or no navigator', async () => {
 		const wrapper = mountComponent( false, saveButtonTestStubs );
 		await flushPromises();
 
-		expect( wrapper.findComponent( SubjectTree ).exists() ).toBe( false );
+		expect( wrapper.findComponent( OpenSubjectList ).exists() ).toBe( false );
 		expect( wrapper.find( '.cdx-dialog' ).classes() ).toContain( 'cdx-dialog--dividers' );
 	} );
 
