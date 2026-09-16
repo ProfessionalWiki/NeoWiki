@@ -17,14 +17,14 @@ import PaneDivider from '@/components/common/PaneDivider.vue';
 import { defineComponent, nextTick } from 'vue';
 
 // The automatic stub answers no method, and saveBlocker() asks the mounted editor
-// whether it holds unparseable text before it looks at the Schema.
+// whether it holds unparseable text before it looks at the Schema. Not the real editor:
+// mounting it on a selected relation property brings up the schema picker, which needs an
+// active Pinia that createWrapperWithPropertyEditor does not install.
 const PropertyDefinitionEditorStub = defineComponent( {
 	name: 'PropertyDefinitionEditor',
 	template: '<div class="property-definition-editor-stub"></div>',
 	props: {
 		property: { type: Object, required: true },
-		otherPropertyNames: { type: Array, default: () => [] },
-		selectName: { type: Boolean, default: false },
 	},
 	emits: [ 'update:propertyDefinition' ],
 	methods: {
@@ -206,7 +206,7 @@ describe( 'SchemaEditor', () => {
 			props: { initialSchema: schema },
 			global: {
 				mocks: { $i18n: createI18nMock() },
-				stubs: { PropertyList: true, PropertyDefinitionEditor: PropertyDefinitionEditorStub },
+				stubs: { PropertyList: true, PropertyDefinitionEditor: true },
 			},
 		} );
 
@@ -491,10 +491,10 @@ describe( 'SchemaEditor', () => {
 
 		// newRelationProperty() fills a placeholder target in, which is not the state
 		// switching a property's type to Relation leaves behind.
-		function relationPropertyWithoutTarget(): PropertyDefinition {
+		function relationPropertyWithoutTarget( name: string ): PropertyDefinition {
 			const noTarget: Partial<RelationProperty> = { targetSchema: undefined };
 
-			return { ...newRelationProperty( { name: 'Maker', relation: 'Made by' } ), ...noTarget };
+			return { ...newRelationProperty( { name, relation: 'Made by' } ), ...noTarget };
 		}
 
 		it( 'reports nothing when every relation property has what it needs', () => {
@@ -507,7 +507,7 @@ describe( 'SchemaEditor', () => {
 
 		it( 'names a relation property left without a target schema', () => {
 			const wrapper = createWrapper( schemaWith(
-				relationPropertyWithoutTarget(),
+				relationPropertyWithoutTarget( 'Maker' ),
 			) );
 
 			expect( saveBlocker( wrapper ) ).toEqual( {
@@ -521,7 +521,7 @@ describe( 'SchemaEditor', () => {
 		it( 'names an incomplete property that is not the selected one', () => {
 			const wrapper = createWrapper( schemaWith(
 				newNumberProperty( { name: 'Score' } ),
-				relationPropertyWithoutTarget(),
+				relationPropertyWithoutTarget( 'Maker' ),
 			) );
 
 			expect( saveBlocker( wrapper )?.propertyName ).toBe( 'Maker' );
@@ -533,12 +533,22 @@ describe( 'SchemaEditor', () => {
 			expect( saveBlocker( wrapper ) ).toBeNull();
 		} );
 
+		it( 'names the first incomplete property when several are incomplete', () => {
+			const wrapper = createWrapper( schemaWith(
+				newNumberProperty( { name: 'Score' } ),
+				relationPropertyWithoutTarget( 'Maker' ),
+				relationPropertyWithoutTarget( 'Owner' ),
+			) );
+
+			expect( saveBlocker( wrapper )?.propertyName ).toBe( 'Maker' );
+		} );
+
 		// The user is looking at the field holding the text, so naming the other property
 		// would send them somewhere they did not just type.
 		it( 'names the field holding unparseable text before an incomplete property', async () => {
 			const wrapper = createWrapperWithPropertyEditor( schemaWith(
 				newNumberProperty( { name: 'Score' } ),
-				relationPropertyWithoutTarget(),
+				relationPropertyWithoutTarget( 'Maker' ),
 			) );
 
 			await reportUnparseableNumber( wrapper.findComponent( NumberInput ).find( 'input' ) );
