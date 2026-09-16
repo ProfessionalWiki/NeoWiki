@@ -48,6 +48,8 @@
 	"neowiki-page-tools-rdf": "View RDF",
 
 	"neowiki-property-editor-name": "Name",
+	"neowiki-property-editor-name-required": "Please enter a property name.",
+	"neowiki-property-editor-name-taken": "A property named \"$1\" already exists.",
 	"neowiki-property-editor-type": "Type",
 	"neowiki-property-editor-initial-value": "Initial value",
 	"neowiki-property-editor-required": "Require a value",

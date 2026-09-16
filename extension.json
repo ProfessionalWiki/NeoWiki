@@ -541,6 +541,8 @@
 				"neowiki-select-unknown-option",
 				"neowiki-property-editor-description",
 				"neowiki-property-editor-name",
+				"neowiki-property-editor-name-required",
+				"neowiki-property-editor-name-taken",
 				"neowiki-property-editor-type",
 				"neowiki-property-editor-initial-value",
 				"neowiki-property-editor-required",

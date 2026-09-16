@@ -11,15 +11,19 @@ import { newSelectProperty, SelectProperty } from '@/domain/propertyTypes/Select
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
 import { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { newNumberValue, newStringValue } from '@/domain/Value';
-import { createTestWrapper, findPropertyNameInput, reportUnparseableNumber, selectedText, setupMwMock } from '../../VueTestHelpers.ts';
+import { createTestWrapper, FieldProps, findPropertyNameInput, reportUnparseableNumber, selectedText, setupMwMock } from '../../VueTestHelpers.ts';
 
 describe( 'PropertyDefinitionEditor', () => {
 	beforeEach( () => {
 		setupMwMock();
 	} );
 
-	function newWrapper( property: PropertyDefinition, props: { selectName?: boolean } = {} ): VueWrapper {
-		return createTestWrapper( PropertyDefinitionEditor, { property, ...props } );
+	function newWrapper( property: PropertyDefinition, props: { selectName?: boolean; otherPropertyNames?: string[] } = {} ): VueWrapper {
+		return createTestWrapper( PropertyDefinitionEditor, { property, otherPropertyNames: [], ...props } );
+	}
+
+	function unparseableInputMessage( wrapper: VueWrapper ): string | null {
+		return ( wrapper.vm as unknown as PropertyDefinitionEditorExposes ).unparseableInputMessage();
 	}
 
 	function lastEmittedProperty( wrapper: VueWrapper ): PropertyDefinition {
@@ -203,10 +207,6 @@ describe( 'PropertyDefinitionEditor', () => {
 		 * The Initial value input is found through NumberInput because the attributes
 		 * editor renders Minimum, Maximum and Precision inputs ahead of it.
 		 */
-		function unparseableInputMessage( wrapper: VueWrapper ): string | null {
-			return ( wrapper.vm as unknown as PropertyDefinitionEditorExposes ).unparseableInputMessage();
-		}
-
 		it( 'reports nothing while the initial value can be read', () => {
 			const wrapper = newWrapper( newNumberProperty( { name: 'Score', default: newNumberValue( 5 ) } ) );
 
@@ -251,6 +251,77 @@ describe( 'PropertyDefinitionEditor', () => {
 			await flushPromises();
 
 			expect( selectedText( findPropertyNameInput( wrapper ).element ) ).toBe( '' );
+		} );
+
+		async function typeName( wrapper: VueWrapper, name: string ): Promise<void> {
+			await findPropertyNameInput( wrapper ).setValue( name );
+			await flushPromises();
+		}
+
+		function nameFieldProps( wrapper: VueWrapper ): FieldProps {
+			return ( wrapper.findComponent( '.ext-neowiki-property-editor__name' ) as VueWrapper ).props() as FieldProps;
+		}
+
+		it( 'renames the property to the name typed', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ), { otherPropertyNames: [ 'Title' ] } );
+
+			await typeName( wrapper, 'State' );
+
+			expect( lastEmittedProperty( wrapper ).name.toString() ).toBe( 'State' );
+		} );
+
+		it( 'says the name is taken when another property has it', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ), { otherPropertyNames: [ 'Title' ] } );
+
+			await typeName( wrapper, 'Title' );
+
+			expect( nameFieldProps( wrapper ).status ).toBe( 'error' );
+			expect( nameFieldProps( wrapper ).messages ).toEqual( { error: 'neowiki-property-editor-name-takenTitle' } );
+		} );
+
+		it( 'says the name is taken when it differs from another property\'s only by surrounding spaces', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ), { otherPropertyNames: [ 'Title' ] } );
+
+			await typeName( wrapper, ' Title ' );
+
+			expect( nameFieldProps( wrapper ).messages ).toEqual( { error: 'neowiki-property-editor-name-takenTitle' } );
+		} );
+
+		it( 'keeps the last name it could take while the name typed is taken', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ), { otherPropertyNames: [ 'Title' ] } );
+
+			await typeName( wrapper, 'Titl' );
+			await typeName( wrapper, 'Title' );
+
+			expect( lastEmittedProperty( wrapper ).name.toString() ).toBe( 'Titl' );
+		} );
+
+		it( 'takes the name typed once no other property has it', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ), { otherPropertyNames: [ 'Title' ] } );
+			await typeName( wrapper, 'Title' );
+
+			await wrapper.setProps( { otherPropertyNames: [] } );
+			await flushPromises();
+
+			expect( lastEmittedProperty( wrapper ).name.toString() ).toBe( 'Title' );
+			expect( nameFieldProps( wrapper ).status ).toBe( 'default' );
+		} );
+
+		it( 'asks for a name when the name is cleared', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ) );
+
+			await typeName( wrapper, '  ' );
+
+			expect( nameFieldProps( wrapper ).status ).toBe( 'error' );
+			expect( nameFieldProps( wrapper ).messages ).toEqual( { error: 'neowiki-property-editor-name-required' } );
+		} );
+
+		it( 'reports the name field message as input the save has to wait for', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ), { otherPropertyNames: [ 'Title' ] } );
+
+			await typeName( wrapper, 'Title' );
+
+			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-property-editor-name-takenTitle' );
 		} );
 	} );
 } );

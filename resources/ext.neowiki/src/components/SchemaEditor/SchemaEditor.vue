@@ -32,8 +32,9 @@
 		<PropertyDefinitionEditor
 			v-if="selectedProperty !== undefined"
 			ref="propertyDefinitionEditor"
-			:key="selectedPropertyName"
+			:key="propertyEditorKey"
 			:property="selectedProperty as PropertyDefinition"
+			:other-property-names="otherPropertyNames"
 			:select-name="selectedPropertyName === createdPropertyName"
 			@update:property-definition="onPropertyUpdated"
 		/>
@@ -91,13 +92,25 @@ const paneSize = usePaneSize( root, {
 const currentSchema = ref<Schema>( props.initialSchema );
 const selectedPropertyName = ref<string | undefined>();
 
+// Gives each selected property an editor of its own. Not the name: renaming the property
+// would then rebuild the editor on every keystroke, moving the caret to the end of the
+// name and dropping what the editor's fields hold.
+const propertyEditorKey = ref( 0 );
+
+function selectProperty( name: string | undefined ): void {
+	if ( name !== selectedPropertyName.value ) {
+		selectedPropertyName.value = name;
+		propertyEditorKey.value++;
+	}
+}
+
 // The property added last, whose generated name the editor selects for replacement.
 const createdPropertyName = ref<string | undefined>();
 
 watch( () => props.initialSchema, ( schema ) => {
 	currentSchema.value = schema;
 	const firstProperty = [ ...schema.getPropertyDefinitions() ][ 0 ];
-	selectedPropertyName.value = firstProperty?.name.toString();
+	selectProperty( firstProperty?.name.toString() );
 }, { immediate: true } );
 
 const propertyDefinitionEditor = ref<( ComponentPublicInstance & PropertyDefinitionEditorExposes ) | null>( null );
@@ -112,8 +125,13 @@ const selectedProperty = computed( () => {
 	);
 } );
 
+const otherPropertyNames = computed( (): string[] =>
+	Object.keys( currentSchema.value.getPropertyDefinitions().asRecord() )
+		.filter( ( name ) => name !== selectedPropertyName.value )
+);
+
 function onPropertySelected( name: PropertyName ): void {
-	selectedPropertyName.value = name.toString();
+	selectProperty( name.toString() );
 }
 
 function onPropertyCreated( newProperty: PropertyDefinition ): void {
@@ -127,9 +145,9 @@ function onPropertyDeleted( name: PropertyName ): void {
 
 	if ( selectedPropertyName.value === name.toString() ) {
 		const properties = [ ...currentSchema.value.getPropertyDefinitions() ];
-		selectedPropertyName.value = properties.length > 0 ?
+		selectProperty( properties.length > 0 ?
 			properties[ 0 ].name.toString() :
-			undefined;
+			undefined );
 	}
 
 	emit( 'change' );
@@ -199,9 +217,9 @@ const incompleteProperty = (): IncompleteProperty | null => {
 };
 
 /**
- * The property whose initial-value field is showing text it cannot turn into a
- * Value, so getSchema() would return that property with its default dropped.
- * Only the selected property has an editor mounted.
+ * The property with a field showing text that getSchema() leaves out: a name the
+ * property cannot take, or initial-value text it cannot turn into a Value. Only
+ * the selected property has an editor mounted.
  */
 const unparseableInput = (): UnparseableInput | null => {
 	const message = propertyDefinitionEditor.value?.unparseableInputMessage() ?? null;
