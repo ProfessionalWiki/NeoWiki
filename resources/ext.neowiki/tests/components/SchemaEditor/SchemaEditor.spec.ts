@@ -16,10 +16,10 @@ import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import PaneDivider from '@/components/common/PaneDivider.vue';
 import { defineComponent, nextTick } from 'vue';
 
-// The automatic stub answers no method, and saveBlocker() asks the mounted editor
-// whether it holds unparseable text before it looks at the Schema. Not the real editor:
-// mounting it on a selected relation property brings up the schema picker, which needs an
-// active Pinia that createWrapperWithPropertyEditor does not install.
+// For the two tests whose selected property is a relation: the real editor mounts the schema
+// picker there, which needs an active Pinia that createWrapperWithPropertyEditor does not
+// install. saveBlocker() asks the mounted editor for unparseable text before it reads the
+// Schema, and the automatic stub answers no method at all.
 const PropertyDefinitionEditorStub = defineComponent( {
 	name: 'PropertyDefinitionEditor',
 	template: '<div class="property-definition-editor-stub"></div>',
@@ -519,7 +519,7 @@ describe( 'SchemaEditor', () => {
 		// Only the selected property has an editor mounted, so a probe that asked the editors
 		// would miss one the user added and then navigated away from.
 		it( 'names an incomplete property that is not the selected one', () => {
-			const wrapper = createWrapper( schemaWith(
+			const wrapper = createWrapperWithPropertyEditor( schemaWith(
 				newNumberProperty( { name: 'Score' } ),
 				relationPropertyWithoutTarget( 'Maker' ),
 			) );
@@ -528,13 +528,13 @@ describe( 'SchemaEditor', () => {
 		} );
 
 		it( 'leaves properties of other types alone', () => {
-			const wrapper = createWrapper( schemaWith( newNumberProperty( { name: 'Score' } ) ) );
+			const wrapper = createWrapperWithPropertyEditor( schemaWith( newNumberProperty( { name: 'Score' } ) ) );
 
 			expect( saveBlocker( wrapper ) ).toBeNull();
 		} );
 
 		it( 'names the first incomplete property when several are incomplete', () => {
-			const wrapper = createWrapper( schemaWith(
+			const wrapper = createWrapperWithPropertyEditor( schemaWith(
 				newNumberProperty( { name: 'Score' } ),
 				relationPropertyWithoutTarget( 'Maker' ),
 				relationPropertyWithoutTarget( 'Owner' ),
