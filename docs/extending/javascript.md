@@ -58,9 +58,9 @@ Examples: [`resources/createSubject/`](https://github.com/ProfessionalWiki/NeoWi
 [`resources/subjectFinder/`](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb/resources/subjectFinder).
 
 If you mount `nw.SubjectEditor` yourself, call `saveBlocker()` before `getSubjectData()` and hold the save while
-it is non-null. It returns the first field showing text the widget cannot turn into a Value — the property name and
-the message the field displays — and `getSubjectData()` returns that statement without a value, so the text would
-be lost on save. `nw.SubjectEditorDialog` does this for you.
+it is non-null. It gives the first reason not to save, as a property name and the message to show. Today that is
+always a field holding text the widget cannot turn into a Value, which `getSubjectData()` returns as a statement
+without a value, so the text would be lost on save. `nw.SubjectEditorDialog` does this for you.
 
 ## Authoring in TypeScript
 

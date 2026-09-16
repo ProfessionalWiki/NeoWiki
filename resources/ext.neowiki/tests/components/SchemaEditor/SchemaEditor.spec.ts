@@ -26,7 +26,7 @@ const PropertyDefinitionEditorStub = defineComponent( {
 	props: {
 		property: { type: Object, required: true },
 	},
-	emits: [ 'update:propertyDefinition' ],
+	emits: [ 'update:property-definition' ],
 	methods: {
 		unparseableInputMessage(): string | null {
 			return null;
