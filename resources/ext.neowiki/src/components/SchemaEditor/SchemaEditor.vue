@@ -217,9 +217,8 @@ const incompleteProperty = (): IncompleteProperty | null => {
 };
 
 /**
- * The property with a field showing text that getSchema() leaves out: a name the
- * property cannot take, or initial-value text it cannot turn into a Value. Only
- * the selected property has an editor mounted.
+ * The property with a field showing text that getSchema() leaves out. Only the
+ * selected property has an editor mounted.
  */
 const unparseableInput = (): UnparseableInput | null => {
 	const message = propertyDefinitionEditor.value?.unparseableInputMessage() ?? null;

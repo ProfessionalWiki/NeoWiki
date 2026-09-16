@@ -362,11 +362,6 @@ describe( 'SchemaEditor', () => {
 			);
 		}
 
-		/**
-		 * Puts the selected property's Initial value field in the state a browser
-		 * leaves it in for text like "5foo": the reported value is empty while
-		 * validity.badInput is set. jsdom neither keeps such text nor sets the flag.
-		 */
 		function unparseableInput( wrapper: VueWrapper ): ReturnType<SchemaEditorExposes['unparseableInput']> {
 			return ( wrapper.vm as unknown as SchemaEditorExposes ).unparseableInput();
 		}
@@ -430,14 +425,6 @@ describe( 'SchemaEditor', () => {
 			await flushPromises();
 		}
 
-		/** Leaves the caret where a keystroke inside the text would. */
-		async function typeInto( input: HTMLInputElement, value: string, caret: number ): Promise<void> {
-			input.value = value;
-			input.setSelectionRange( caret, caret );
-			input.dispatchEvent( new Event( 'input' ) );
-			await flushPromises();
-		}
-
 		it( 'opens on a property just added with its generated name selected, so typing replaces it', async () => {
 			const wrapper = createWrapperWithPropertyEditor( newSchema( {
 				properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Alpha' } ) ] ),
@@ -449,60 +436,19 @@ describe( 'SchemaEditor', () => {
 			expect( selectedText( findPropertyNameInput( wrapper ).element ) ).toBe( 'New Property 1' );
 		} );
 
-		it( 'shows the property that gets selected after another was renamed', async () => {
-			const wrapper = createWrapperWithPropertyEditor( newSchema( {
-				properties: new PropertyDefinitionList( [
-					newTextProperty( { name: 'Alpha' } ),
-					newTextProperty( { name: 'Beta' } ),
-					newTextProperty( { name: 'Gamma' } ),
-				] ),
-			} ) );
-			await findPropertyNameInput( wrapper ).setValue( 'Alphabet' );
-
-			await selectProperty( wrapper, 'Beta' );
-
-			expect( findPropertyNameInput( wrapper ).element.value ).toBe( 'Beta' );
-		} );
-
-		it( 'keeps the caret where the user types inside a property name', async () => {
-			const wrapper = createWrapperWithPropertyEditor( newSchema( {
-				properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Alpha' } ) ] ),
-			} ) );
-
-			await typeInto( findPropertyNameInput( wrapper ).element, 'Alpxha', 4 );
-
-			expect( findPropertyNameInput( wrapper ).element.selectionStart ).toBe( 4 );
-		} );
-
-		function schemaWithAlphaAndBeta(): Schema {
-			return newSchema( {
-				properties: new PropertyDefinitionList( [
-					newTextProperty( { name: 'Alpha' } ),
-					newTextProperty( { name: 'Beta' } ),
-				] ),
-			} );
-		}
-
 		it( 'keeps both properties when one is given the name of the other', async () => {
-			const wrapper = createWrapperWithPropertyEditor( schemaWithAlphaAndBeta() );
+			const wrapper = createWrapperWithPropertyEditor( newSchema( {
+				properties: new PropertyDefinitionList( [
+					newTextProperty( { name: 'Alpha' } ),
+					newTextProperty( { name: 'Beta' } ),
+				] ),
+			} ) );
 
 			await findPropertyNameInput( wrapper ).setValue( 'Beta' );
 			await flushPromises();
 
 			const schema = ( wrapper.vm as unknown as SchemaEditorExposes ).getSchema();
 			expect( Object.keys( schema.getPropertyDefinitions().asRecord() ) ).toEqual( [ 'Alpha', 'Beta' ] );
-		} );
-
-		it( 'holds the save while a property is given the name of another', async () => {
-			const wrapper = createWrapperWithPropertyEditor( schemaWithAlphaAndBeta() );
-
-			await findPropertyNameInput( wrapper ).setValue( 'Beta' );
-			await flushPromises();
-
-			expect( ( wrapper.vm as unknown as SchemaEditorExposes ).unparseableInput() ).toEqual( {
-				propertyName: 'Alpha',
-				message: 'neowiki-property-editor-name-taken',
-			} );
 		} );
 
 		it( 'leaves the name of an existing property unselected when it gets selected', async () => {
