@@ -42,6 +42,16 @@ Saves, job-queue parses and Parsoid renders run as the anonymous user, so a page
 module wraps the call in `pcall`. Readers who hold the right get
 [their own cached parse](../authoring/parser-functions.md) and see results.
 
+## Removing the Lua library
+
+```php
+$wgNeoWikiEnableLua = false;
+```
+
+`require('mw.neowiki')` then fails like any missing module, so a page whose module uses the library shows a script
+error and joins the pages-with-script-errors category. A module can still reach the parser functions through
+`frame:preprocess`, under the same gates as in wikitext.
+
 ## Where the protection stops
 
 - **Cached output outlives a restriction.** A page that showed now-restricted data keeps showing it until it is

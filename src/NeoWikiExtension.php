@@ -1207,6 +1207,10 @@ class NeoWikiExtension {
 			&& $title->getText() === self::CONFIG_PAGE_TITLE;
 	}
 
+	public function isLuaEnabled(): bool {
+		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiEnableLua' ) === true;
+	}
+
 	public function getPageContentFetcher(): PageContentFetcher {
 		return new PageContentFetcher(
 			MediaWikiServices::getInstance()->getTitleParser(),
