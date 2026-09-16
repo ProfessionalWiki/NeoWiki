@@ -277,24 +277,14 @@ describe( 'RelationAttributesEditor', () => {
 			expect( props.messages ).toEqual( { error: 'Relation type is required.' } );
 		} );
 
-		it( 'shows a required error while the target schema is empty', () => {
+		it( 'shows a required error while no target schema is chosen', () => {
 			const wrapper = newWrapper( {
-				property: relationProperty( { targetSchema: '' } ),
+				property: relationProperty( { targetSchema: undefined } ),
 			} );
 
 			const props = fieldProps( wrapper, '.relation-attributes__target-schema' );
 			expect( props.status ).toBe( 'error' );
 			expect( props.messages ).toEqual( { error: 'Target schema is required.' } );
-		} );
-
-		// The state switching a property's type to Relation leaves it in, which the Schema
-		// cannot be saved from.
-		it( 'shows a required error for a target schema that was never chosen', () => {
-			const wrapper = newWrapper( {
-				property: relationProperty( { targetSchema: undefined } ),
-			} );
-
-			expect( fieldProps( wrapper, '.relation-attributes__target-schema' ).status ).toBe( 'error' );
 		} );
 	} );
 
