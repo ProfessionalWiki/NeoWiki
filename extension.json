@@ -590,7 +590,7 @@
 				"neowiki-subject-editor-save",
 				"neowiki-subject-editor-label-field",
 				"neowiki-subject-editor-rename",
-				"neowiki-subject-editor-edit-target",
+				"neowiki-subject-editor-open-target",
 				"neowiki-schema-editor-new-property",
 				"neowiki-schema-editor-delete-property",
 				"neowiki-schema-editor-optional",

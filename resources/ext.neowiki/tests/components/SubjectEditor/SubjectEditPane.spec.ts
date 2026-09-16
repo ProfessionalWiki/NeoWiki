@@ -198,7 +198,7 @@ describe( 'SubjectEditPane', () => {
 	it( 'offers to edit a relation target in place', () => {
 		const wrapper = mountPane( { subject: subjectWithAuthor, schema: relationSchema } );
 
-		expect( wrapper.find( '.ext-neowiki-relation-input__edit-target' ).exists() ).toBe( true );
+		expect( wrapper.find( '.ext-neowiki-relation-input__open-target' ).exists() ).toBe( true );
 	} );
 
 	it( 'renders one field per schema property, including properties the subject lacks', () => {

@@ -131,7 +131,7 @@
 	"neowiki-subject-editor-save": "Save changes",
 	"neowiki-subject-editor-label-field": "Subject label",
 	"neowiki-subject-editor-rename": "Rename subject",
-	"neowiki-subject-editor-edit-target": "Edit this subject",
+	"neowiki-subject-editor-open-target": "Open $1",
 
 	"neowiki-schema-editor-new-property": "Add property definition",
 	"neowiki-schema-editor-delete-property": "Delete property definition",
