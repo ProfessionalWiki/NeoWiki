@@ -257,6 +257,8 @@
 
 	"neowiki-layout-delete": "Aria label for the delete button on a Layout row in the layouts list.",
 	"neowiki-property-type-select": "Label for the select/dropdown property type shown in the property type selector.",
+	"neowiki-property-editor-name-required": "Error shown under the property name field in the schema editor when the name is empty.",
+	"neowiki-property-editor-name-taken": "Error shown under the property name field in the schema editor when another property of the schema already has the entered name. $1 is the entered name.",
 	"neowiki-property-editor-min-exceeds-max": "Error shown in the schema editor when the minimum value exceeds the maximum value for a number property.",
 	"neowiki-property-editor-options": "Label for the options field in the select property type editor, where schema creators define the allowed values.",
 	"neowiki-property-editor-options-unique": "Error shown in the schema editor when duplicate option values are entered for a select property.",

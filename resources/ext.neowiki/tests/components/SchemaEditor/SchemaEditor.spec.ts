@@ -475,6 +475,37 @@ describe( 'SchemaEditor', () => {
 			expect( findPropertyNameInput( wrapper ).element.selectionStart ).toBe( 4 );
 		} );
 
+		function schemaWithAlphaAndBeta(): Schema {
+			return newSchema( {
+				properties: new PropertyDefinitionList( [
+					newTextProperty( { name: 'Alpha' } ),
+					newTextProperty( { name: 'Beta' } ),
+				] ),
+			} );
+		}
+
+		it( 'keeps both properties when one is given the name of the other', async () => {
+			const wrapper = createWrapperWithPropertyEditor( schemaWithAlphaAndBeta() );
+
+			await findPropertyNameInput( wrapper ).setValue( 'Beta' );
+			await flushPromises();
+
+			const schema = ( wrapper.vm as unknown as SchemaEditorExposes ).getSchema();
+			expect( Object.keys( schema.getPropertyDefinitions().asRecord() ) ).toEqual( [ 'Alpha', 'Beta' ] );
+		} );
+
+		it( 'holds the save while a property is given the name of another', async () => {
+			const wrapper = createWrapperWithPropertyEditor( schemaWithAlphaAndBeta() );
+
+			await findPropertyNameInput( wrapper ).setValue( 'Beta' );
+			await flushPromises();
+
+			expect( ( wrapper.vm as unknown as SchemaEditorExposes ).unparseableInput() ).toEqual( {
+				propertyName: 'Alpha',
+				message: 'neowiki-property-editor-name-taken',
+			} );
+		} );
+
 		it( 'leaves the name of an existing property unselected when it gets selected', async () => {
 			const wrapper = createWrapperWithPropertyEditor( newSchema( {
 				properties: new PropertyDefinitionList( [

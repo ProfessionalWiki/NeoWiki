@@ -1,14 +1,17 @@
 <template>
 	<div class="ext-neowiki-schema-editor__property-editor">
-		<CdxField class="ext-neowiki-property-editor__name">
+		<CdxField
+			class="ext-neowiki-property-editor__name"
+			:status="nameError === null ? 'default' : 'error'"
+			:messages="nameError === null ? {} : { error: nameError }"
+		>
 			<template #label>
 				{{ $i18n( 'neowiki-property-editor-name' ).text() }}
 			</template>
 			<CdxTextInput
 				ref="nameInput"
-				:model-value="localProperty.name.toString()"
+				v-model="nameText"
 				input-type="text"
-				@update:model-value="updatePropertyName"
 			/>
 		</CdxField>
 
@@ -77,6 +80,8 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
 	property: PropertyDefinition;
+	/** The names of the Schema's other properties, which this one cannot take. */
+	otherPropertyNames: string[];
 	/** Selects the name when the editor opens, so that typing replaces it. */
 	selectName?: boolean;
 }>();
@@ -109,17 +114,37 @@ onMounted( () => {
 	} );
 } );
 
-function updatePropertyName( name: string ): void {
-	if ( !PropertyName.isValid( name ) ) {
-		console.log( 'TODO: show error' );
-		return;
+const nameText = ref( props.property.name.toString() );
+
+const nameError = computed( (): string | null => {
+	if ( !PropertyName.isValid( nameText.value ) ) {
+		return mw.message( 'neowiki-property-editor-name-required' ).text();
 	}
 
-	localProperty.value = {
-		...localProperty.value,
-		name: new PropertyName( name )
-	};
-}
+	const name = new PropertyName( nameText.value ).toString();
+
+	if ( props.otherPropertyNames.includes( name ) ) {
+		return mw.message( 'neowiki-property-editor-name-taken', name ).text();
+	}
+
+	return null;
+} );
+
+// The name the field gives the property, or null while the field shows why it cannot.
+const typedName = computed( (): string | null =>
+	nameError.value === null ? new PropertyName( nameText.value ).toString() : null
+);
+
+// Renames on a change of typedName rather than on input, so that a name typed while another
+// property had it is taken once that property is deleted.
+watch( typedName, ( name ) => {
+	if ( name !== null ) {
+		localProperty.value = {
+			...localProperty.value,
+			name: new PropertyName( name )
+		};
+	}
+} );
 
 function updateRequired( required: boolean ): void {
 	updatePropertyAttributes( { required } );
@@ -198,13 +223,13 @@ export interface PropertyDefinitionEditorExposes {
 }
 
 /**
- * The message the initial-value field is showing because it holds text it cannot
- * turn into a Value, or null. The default is already dropped from the definition
- * at that point; callers hold the save rather than persist a removal the user
- * cannot see.
+ * The message a field is showing because the definition cannot take its text, or
+ * null: a name that is empty or another property's, or initial-value text that is
+ * not a Value. The definition then keeps its last name, or has already dropped its
+ * default; callers hold the save rather than persist what the user cannot see.
  */
 function unparseableInputMessage(): string | null {
-	return defaultValueInput.value?.unparseableInputMessage?.() ?? null;
+	return nameError.value ?? defaultValueInput.value?.unparseableInputMessage?.() ?? null;
 }
 
 defineExpose<PropertyDefinitionEditorExposes>( { unparseableInputMessage } );

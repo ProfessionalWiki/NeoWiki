@@ -34,6 +34,7 @@
 			ref="propertyDefinitionEditor"
 			:key="propertyEditorKey"
 			:property="selectedProperty as PropertyDefinition"
+			:other-property-names="otherPropertyNames"
 			:select-name="selectedPropertyName === createdPropertyName"
 			@update:property-definition="onPropertyUpdated"
 		/>
@@ -124,6 +125,11 @@ const selectedProperty = computed( () => {
 		new PropertyName( selectedPropertyName.value )
 	);
 } );
+
+const otherPropertyNames = computed( (): string[] =>
+	Object.keys( currentSchema.value.getPropertyDefinitions().asRecord() )
+		.filter( ( name ) => name !== selectedPropertyName.value )
+);
 
 function onPropertySelected( name: PropertyName ): void {
 	selectProperty( name.toString() );
@@ -218,9 +224,9 @@ const incompleteProperty = (): IncompleteProperty | null => {
 };
 
 /**
- * The property whose initial-value field is showing text it cannot turn into a
- * Value, so getSchema() would return that property with its default dropped.
- * Only the selected property has an editor mounted.
+ * The property with a field showing text that getSchema() leaves out: a name the
+ * property cannot take, or initial-value text it cannot turn into a Value. Only
+ * the selected property has an editor mounted.
  */
 const unparseableInput = (): UnparseableInput | null => {
 	const message = propertyDefinitionEditor.value?.unparseableInputMessage() ?? null;
