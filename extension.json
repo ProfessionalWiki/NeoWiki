@@ -833,6 +833,7 @@
 				"neowiki-special-subject-referenced-by-properties",
 				"neowiki-special-subject-referenced-by-truncated",
 				"comma-separator",
+				"parentheses",
 				"neowiki-create-subject-default-label",
 				"neowiki-create-subject-denied",
 				"permissionserrors",
