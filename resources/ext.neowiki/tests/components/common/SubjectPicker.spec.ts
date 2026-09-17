@@ -417,23 +417,6 @@ describe( 'SubjectPicker', () => {
 		expect( focusSpy ).toHaveBeenCalled();
 	} );
 
-	it( 'renders the suffix slot with the selected id as slot prop', () => {
-		const wrapper = mount( SubjectPicker, {
-			props: { selected: 's11111111111111', targetSchema: 'Person' },
-			global: {
-				plugins: [ pinia ],
-				provide: { [ Service.SubjectLabelSearch ]: mockSubjectLabelSearch },
-				mocks: { $i18n },
-				stubs: { CdxLookup: true },
-			},
-			slots: {
-				suffix: '<template #suffix="{ selected }"><span class="probe">{{ selected }}</span></template>',
-			},
-		} );
-
-		expect( wrapper.find( '.probe' ).text() ).toBe( 's11111111111111' );
-	} );
-
 	// Whatever the suffix offers acts on the target, so it is handed the target's own name to say
 	// so with. The field's text is not that name: it is the user's from their first keystroke.
 	describe( 'the target\'s name, for the suffix', () => {
@@ -457,22 +440,88 @@ describe( 'SubjectPicker', () => {
 					stubs: { CdxLookup: CdxLookupWithVModel },
 				},
 				slots: {
-					suffix: '<template #suffix="{ selected }"><span class="probe">{{ selected }}</span></template>',
+					suffix: '<template #suffix="{ shownTarget }"><span class="probe">{{ shownTarget }}</span></template>',
 				},
 			} );
 		}
 
-		// The relation still points where it did: the text in the field is a search the user is
-		// running, not a change to the value. Whatever the suffix offers has to stay offered, or
-		// the only way back to that target is to retype its name.
-		it( 'keeps offering the stored target while the user types over the field', async () => {
+		// The name is fetched, so the first render has an empty field.
+		it( 'shows no target until the name has landed in the field', async () => {
+			wikiHolds( labellessSubject( 's1demo1aaaaaaa1', 'ACME Inc.', 'Company' ) );
+			const wrapper = mountWithSelectedProbe( 's1demo1aaaaaaa1' );
+
+			expect( wrapper.find( '.probe' ).text() ).toBe( '' );
+
+			await flushPromises();
+
+			expect( wrapper.find( '.probe' ).text() ).toBe( 's1demo1aaaaaaa1' );
+		} );
+
+		// Whitespace is text the user typed, yet trims away to nothing.
+		it( 'shows no target while the field holds only whitespace', async () => {
+			wikiHolds( labellessSubject( 's1demo1aaaaaaa1', 'ACME Inc.', 'Company' ) );
+			const wrapper = mountWithSelectedProbe( 's1demo1aaaaaaa1' );
+			await flushPromises();
+
+			await typeOver( wrapper, ' ' );
+
+			expect( wrapper.find( '.probe' ).text() ).toBe( '' );
+		} );
+
+		// A label an import left padded is still the name the field is showing.
+		it( 'shows the target whose stored name carries surrounding whitespace', async () => {
+			wikiHolds( labellessSubject( 's1demo1aaaaaaa1', ' ACME Inc. ', 'Company' ) );
+			const wrapper = mountWithSelectedProbe( 's1demo1aaaaaaa1' );
+
+			await flushPromises();
+
+			expect( wrapper.find( '.probe' ).text() ).toBe( 's1demo1aaaaaaa1' );
+		} );
+
+		// What makes rejecting Codex's own selection a real distinction rather than a claim: it drops
+		// that selection on text it cannot match, while the field still shows the target's name.
+		it( 'keeps showing the target when Codex drops its selection alone', async () => {
+			wikiHolds( labellessSubject( 's1demo1aaaaaaa1', 'ACME Inc.', 'Company' ) );
+			const wrapper = mountWithSelectedProbe( 's1demo1aaaaaaa1' );
+			await flushPromises();
+
+			wrapper.findComponent( CdxLookupWithVModel ).vm.$emit( 'update:selected', null );
+			await flushPromises();
+
+			expect( wrapper.find( '.probe' ).text() ).toBe( 's1demo1aaaaaaa1' );
+		} );
+
+		// The field goes on showing the old target's name until the fetch for the new one lands.
+		it( 'shows no target while a newly set one is still being named', async () => {
+			wikiHolds( labellessSubject( 's1demo1aaaaaaa1', 'ACME Inc.', 'Company' ) );
+			const wrapper = mountWithSelectedProbe( 's1demo1aaaaaaa1' );
+			await flushPromises();
+			subjectStore.getOrFetchSubject = vi.fn( () => new Promise<never>( () => {
+				// The fetch for the new target never lands.
+			} ) );
+
+			await wrapper.setProps( { selected: 's1demo5sssssss1' } );
+
+			expect( wrapper.find( '.probe' ).text() ).toBe( '' );
+		} );
+
+		it( 'shows the stored target while the field is displaying it', async () => {
+			wikiHolds( labellessSubject( 's1demo1aaaaaaa1', 'ACME Inc.', 'Company' ) );
+			const wrapper = mountWithSelectedProbe( 's1demo1aaaaaaa1' );
+			await flushPromises();
+
+			expect( wrapper.find( '.probe' ).text() ).toBe( 's1demo1aaaaaaa1' );
+		} );
+
+		// The relation still points where it did; what the field shows is what the suffix follows.
+		it( 'shows no target while the user types over the field', async () => {
 			wikiHolds( labellessSubject( 's1demo1aaaaaaa1', 'ACME Inc.', 'Company' ) );
 			const wrapper = mountWithSelectedProbe( 's1demo1aaaaaaa1' );
 			await flushPromises();
 
 			await typeOver( wrapper, 'Acme Eur' );
 
-			expect( wrapper.find( '.probe' ).text() ).toBe( 's1demo1aaaaaaa1' );
+			expect( wrapper.find( '.probe' ).text() ).toBe( '' );
 		} );
 
 		function mountWithNameProbe( selected: string ): VueWrapper {

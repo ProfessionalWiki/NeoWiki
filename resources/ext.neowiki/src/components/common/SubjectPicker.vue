@@ -23,13 +23,14 @@
 				</template>
 			</CdxLookup>
 			<span class="ext-neowiki-subject-picker__suffix">
-				<!-- The target the relation holds, not Codex's own selection: Codex drops that on
-					the first keystroke matching neither the selected item's label nor its value,
-					so a suffix gated on it vanishes while its target is still stored.
+				<!-- The target as the field is displaying it, not the one the relation holds: a field
+					showing a search of the user's names no Subject, so a suffix acting on that
+					target has nothing to act on that they can see. selectedName is set only where
+					a name is written into the field.
 					`name` is reserved on a slot — Vue reads it as the slot's own name. -->
 				<slot
 					name="suffix"
-					:selected="props.selected"
+					:shown-target="selectedName === '' ? null : props.selected"
 					:target-name="targetName"
 				/>
 			</span>
@@ -97,9 +98,8 @@ const creationOffered = computed( (): boolean =>
 );
 
 const selectedSubject = ref<string | null>( props.selected );
-// The selected target's own name, kept while the user types over the field: `selectedName` below is
-// cleared by the first keystroke, because from then on the text is theirs, while the relation still
-// points where it did.
+// The selected target's own name, for a suffix to say what it acts on. Dropped as soon as the
+// selection changes, so a control naming it falls back to the id rather than the previous target.
 const targetName = ref( '' );
 const inputText = ref<string | number>( '' );
 const searchResults = ref<MenuItemData[]>( [] );
@@ -223,7 +223,7 @@ async function fetchSubject( id: string ): Promise<Subject | null> {
 }
 
 function showName( name: string ): void {
-	selectedName.value = name;
+	selectedName.value = name.trim();
 	targetName.value = name;
 	inputText.value = name;
 }
@@ -233,9 +233,10 @@ resolveName( props.selected ).then( showName );
 watch( () => props.selected, async ( newSelected ) => {
 	selectedSubject.value = newSelected;
 	hasUnmatchedText.value = false;
-	// Dropped before the await, not after: resolving the new name waits on the network, and the
-	// suffix acts on the new target from this moment on.
+	// Both dropped before the await, not after: resolving the new name waits on the network, and
+	// until it lands the field is still showing the name of the target this one replaced.
 	targetName.value = '';
+	selectedName.value = '';
 
 	if ( newSelected !== null || searchStatus.value === 'idle' ) {
 		showName( await resolveName( newSelected ) );

@@ -195,8 +195,11 @@ describe( 'SubjectEditPane', () => {
 
 	// Only a host that can open a target in place turns the per-target edit button on; the
 	// pane is that host, and nothing else on this branch provides the key.
-	it( 'offers to edit a relation target in place', () => {
+	it( 'offers to edit a relation target in place', async () => {
 		const wrapper = mountPane( { subject: subjectWithAuthor, schema: relationSchema } );
+
+		// Awaited because the control follows the name the field is showing, which is fetched.
+		await flushPromises();
 
 		expect( wrapper.find( '.ext-neowiki-relation-input__open-target' ).exists() ).toBe( true );
 	} );

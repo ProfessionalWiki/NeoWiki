@@ -32,10 +32,10 @@
 					@blur="onBlur"
 					@focusin="onFocus"
 				>
-					<template v-if="targetEditingEnabled" #suffix="{ selected, targetName }">
+					<template v-if="targetEditingEnabled" #suffix="{ shownTarget, targetName }">
 						<RelationTargetOpenButton
-							v-if="selected !== null"
-							:target="selected"
+							v-if="shownTarget"
+							:target="shownTarget"
 							:name="targetName"
 							@open="emit( 'edit-relation-target', $event )"
 						/>
@@ -52,10 +52,10 @@
 			@update:selected="onSingleSelectionChanged"
 			@blur="onSingleBlur"
 		>
-			<template v-if="targetEditingEnabled" #suffix="{ selected, targetName }">
+			<template v-if="targetEditingEnabled" #suffix="{ shownTarget, targetName }">
 				<RelationTargetOpenButton
-					v-if="selected !== null"
-					:target="selected"
+					v-if="shownTarget"
+					:target="shownTarget"
 					:name="targetName"
 					@open="emit( 'edit-relation-target', $event )"
 				/>
