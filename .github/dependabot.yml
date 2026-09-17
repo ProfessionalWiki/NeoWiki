@@ -1,0 +1,12 @@
+version: 2
+
+updates:
+  # Grouped into one pull request, as the npm security updates already arrive.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
