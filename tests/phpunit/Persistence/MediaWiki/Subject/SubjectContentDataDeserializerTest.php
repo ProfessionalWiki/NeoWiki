@@ -41,6 +41,31 @@ class SubjectContentDataDeserializerTest extends TestCase {
 		);
 	}
 
+	/**
+	 * The read path with the normalizer this wiki actually builds, rather than the double the tests
+	 * above use. This is what carries the claim that Subjects written down before normalization
+	 * existed are read under the name of the Schema they name, with nothing migrated.
+	 */
+	public function testSlotWrittenWithAnotherSpellingIsReadUnderTheSchemasName(): void {
+		$subjects = NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer()->deserialize(
+			<<<'JSON'
+{
+	"subjects": {
+		"sTestSCDD111115": {
+			"label": "Wilhelm",
+			"schema": "person"
+		}
+	}
+}
+JSON
+		);
+
+		$this->assertSame(
+			'Person',
+			$subjects->getAllSubjects()->asArray()[0]->getSchemaName()->getText()
+		);
+	}
+
 	private function newDeserializer(
 		?LoggerInterface $logger = null,
 		?SchemaReferenceNormalizer $schemaReferenceNormalizer = null

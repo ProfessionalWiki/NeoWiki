@@ -14,7 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
  * normalization constructs this with no arguments and gets a normalizer that changes nothing.
  *
  * The real rule is MediaWiki's and is tested against it in
- * {@see \ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\TitleSchemaReferenceNormalizerTest}.
+ * {@see \ProfessionalWiki\NeoWiki\Tests\Infrastructure\TitleBasedSchemaReferenceNormalizerTest}.
  */
 class FixedSchemaReferenceNormalizer implements SchemaReferenceNormalizer {
 

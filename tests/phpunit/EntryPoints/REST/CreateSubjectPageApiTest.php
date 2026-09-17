@@ -8,6 +8,7 @@ use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Response;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
@@ -133,15 +134,18 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function storedSchemaJsonOf( string $pageName, string $subjectId ): mixed {
-		$revision = $this->getServiceContainer()->getRevisionStore()
-			->getRevisionByTitle( Title::newFromText( $pageName ) );
+		$title = Title::newFromText( $pageName );
+		$this->assertNotNull( $title, "'$pageName' does not title a page" );
 
-		$slot = json_decode(
-			$revision->getContent( MediaWikiSubjectRepository::SLOT_NAME )->getText(),
-			true
-		);
+		$revision = $this->getServiceContainer()->getRevisionStore()->getRevisionByTitle( $title );
+		$this->assertNotNull( $revision, "no revision of '$pageName'" );
 
-		return $slot['subjects'][$subjectId]['schema'];
+		$content = $revision->getContent( MediaWikiSubjectRepository::SLOT_NAME );
+		$this->assertInstanceOf( TextContent::class, $content );
+
+		$slot = json_decode( $content->getText(), true );
+
+		return $slot['subjects'][$subjectId]['schema'] ?? null;
 	}
 
 	public function testWritesThePageAndItsSubjectInOneRevision(): void {

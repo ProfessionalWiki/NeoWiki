@@ -36,6 +36,10 @@ class TitleBasedSchemaReferenceNormalizerTest extends MediaWikiIntegrationTestCa
 		yield 'surrounding whitespace is dropped' => [ '  Person  ', 'Person' ];
 		yield 'both rules apply at once' => [ '_validation_demo_', 'Validation demo' ];
 
+		// A Schema name may hold a colon of its own, so a prefix that names no namespace of this wiki
+		// is part of the name rather than a namespace, and is capitalized like any other first letter.
+		yield 'a prefix naming no namespace stays in the name' => [ 'iso:9001', 'Iso:9001' ];
+
 		// Only the first character is touched, so these stay three different Schemas.
 		yield 'a capital after the first character survives' => [ 'pErson', 'PErson' ];
 		yield 'and is not moved to the front' => [ 'peRson', 'PeRson' ];
@@ -70,6 +74,20 @@ class TitleBasedSchemaReferenceNormalizerTest extends MediaWikiIntegrationTestCa
 	public static function unnormalizableNameProvider(): iterable {
 		yield 'no title can be made of it' => [ 'Person|Company' ];
 		yield 'its normal form is a reserved Schema name' => [ 'page_' ];
+
+		// MediaWiki reads a prefix as a namespace and hands back the bare remainder, which names a
+		// different Schema than the one written down. Renaming to it would be a silent substitution.
+		yield 'it names another namespace' => [ 'Help:Person' ];
+		yield 'it names another namespace that exists' => [ 'Category:Person' ];
+		yield 'it names a talk page' => [ 'Talk:Person' ];
+		yield 'it carries a fragment' => [ 'Person#Details' ];
+	}
+
+	/**
+	 * The Schema namespace spelled out is the one prefix that still names the Schema written down.
+	 */
+	public function testNamespaceOfSchemasItselfIsStrippedFromTheName(): void {
+		$this->assertSame( 'Person', $this->normalizeLocal( 'Schema:Person' ) );
 	}
 
 	private function normalizeLocal( string $written ): string {
