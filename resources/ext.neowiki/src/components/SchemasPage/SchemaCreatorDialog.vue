@@ -83,18 +83,12 @@ async function handleSave( summary: string ): Promise<void> {
 		return;
 	}
 
-	const unparseable = schemaCreatorRef.value.unparseableInput();
+	// Saving now would silently drop the text the user can still see, or write a
+	// property definition the wiki refuses.
+	const blocker = schemaCreatorRef.value.saveBlocker();
 
-	// Saving now would silently drop the text the user can still see.
-	if ( unparseable !== null ) {
-		mw.notify( unparseable.message, { title: unparseable.propertyName, type: 'error' } );
-		return;
-	}
-
-	const incomplete = schemaCreatorRef.value.incompleteProperty();
-
-	if ( incomplete !== null ) {
-		mw.notify( incomplete.message, { title: incomplete.propertyName, type: 'error' } );
+	if ( blocker !== null ) {
+		mw.notify( blocker.message, { title: blocker.propertyName, type: 'error' } );
 		return;
 	}
 

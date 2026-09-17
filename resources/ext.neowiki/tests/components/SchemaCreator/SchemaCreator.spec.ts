@@ -9,17 +9,15 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
-import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
-import type { IncompleteProperty } from '@/components/common/IncompleteProperty.ts';
+import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const EXISTING_SCHEMA_NAME = 'Person';
 const NEW_SCHEMA_NAME = 'Company';
 const DEBOUNCE_DELAY = 300;
 
-// What the stubbed editor reports about its initial-value field holding text it
-// cannot turn into a value. Reset per test by the beforeEach below.
-let editorUnparseableInput: UnparseableInput | null = null;
-let editorIncompleteProperty: IncompleteProperty | null = null;
+// The reason the stubbed editor reports for holding the save. Reset per test by
+// the beforeEach below.
+let editorSaveBlocker: SaveBlocker | null = null;
 
 const SchemaEditorStub = defineComponent( {
 	name: 'SchemaEditor',
@@ -32,11 +30,8 @@ const SchemaEditorStub = defineComponent( {
 		getSchema(): Schema {
 			return new Schema( '', '', new PropertyDefinitionList( [] ) );
 		},
-		unparseableInput(): UnparseableInput | null {
-			return editorUnparseableInput;
-		},
-		incompleteProperty(): IncompleteProperty | null {
-			return editorIncompleteProperty;
+		saveBlocker(): SaveBlocker | null {
+			return editorSaveBlocker;
 		},
 	},
 } );
@@ -81,8 +76,7 @@ describe( 'SchemaCreator', () => {
 	}
 
 	beforeEach( () => {
-		editorUnparseableInput = null;
-		editorIncompleteProperty = null;
+		editorSaveBlocker = null;
 		vi.useFakeTimers();
 
 		setupMwMock( {
@@ -284,40 +278,21 @@ describe( 'SchemaCreator', () => {
 		} );
 	} );
 
-	describe( 'unparseableInput', () => {
+	describe( 'saveBlocker', () => {
 		it( 'reports nothing while the schema editor reports nothing', () => {
 			const wrapper = mountComponent();
 
-			expect( ( wrapper.vm as any ).unparseableInput() ).toBeNull();
+			expect( ( wrapper.vm as any ).saveBlocker() ).toBeNull();
 		} );
 
 		it( 'forwards what the schema editor reports', () => {
-			editorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+			editorSaveBlocker = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
 
 			const wrapper = mountComponent();
 
-			expect( ( wrapper.vm as any ).unparseableInput() ).toEqual( {
+			expect( ( wrapper.vm as any ).saveBlocker() ).toEqual( {
 				propertyName: 'Score',
 				message: 'neowiki-field-invalid-number',
-			} );
-		} );
-	} );
-
-	describe( 'incompleteProperty', () => {
-		it( 'reports nothing while the schema editor reports nothing', () => {
-			const wrapper = mountComponent();
-
-			expect( ( wrapper.vm as any ).incompleteProperty() ).toBeNull();
-		} );
-
-		it( 'forwards what the schema editor reports', () => {
-			editorIncompleteProperty = { propertyName: 'Maker', message: 'Target schema is required.' };
-
-			const wrapper = mountComponent();
-
-			expect( ( wrapper.vm as any ).incompleteProperty() ).toEqual( {
-				propertyName: 'Maker',
-				message: 'Target schema is required.',
 			} );
 		} );
 	} );

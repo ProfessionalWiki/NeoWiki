@@ -145,7 +145,7 @@ import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { useEditNotices } from '@/composables/useEditNotices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
-import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
+import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { reachableTargetIds, writeOrder } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
@@ -704,15 +704,15 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 	const dirty = dirtyPanes.value;
 
 	// Saving now would silently drop text the user can still see. Checked across every
-	// dirty Subject before any write, or an unparseable later one would leave the stack
+	// dirty Subject before any write, or a blocked later one would leave the stack
 	// half written.
-	const unparseable = dirty
-		.map( ( entry ) => ( { id: entry.pane.id, input: entry.instance.unparseableInput() } ) )
-		.find( ( entry ): entry is { id: string; input: UnparseableInput } => entry.input !== null );
+	const blocked = dirty
+		.map( ( entry ) => ( { id: entry.pane.id, blocker: entry.instance.saveBlocker() } ) )
+		.find( ( entry ): entry is { id: string; blocker: SaveBlocker } => entry.blocker !== null );
 
-	if ( unparseable !== undefined ) {
-		await showSubject( unparseable.id );
-		mw.notify( unparseable.input.message, { title: unparseable.input.propertyName, type: 'error' } );
+	if ( blocked !== undefined ) {
+		await showSubject( blocked.id );
+		mw.notify( blocked.blocker.message, { title: blocked.blocker.propertyName, type: 'error' } );
 		return;
 	}
 

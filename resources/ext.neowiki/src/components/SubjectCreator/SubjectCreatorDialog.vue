@@ -774,18 +774,12 @@ async function handleCreateSchema(): Promise<void> {
 		return;
 	}
 
-	const unparseable = schemaCreatorRef.value.unparseableInput();
+	// Continuing now would freeze a draft schema with the unparseable text dropped, or
+	// one the wiki refuses once the Subject is saved.
+	const blocker = schemaCreatorRef.value.saveBlocker();
 
-	// Continuing now would freeze a draft schema with the unparseable text dropped.
-	if ( unparseable !== null ) {
-		mw.notify( unparseable.message, { title: unparseable.propertyName, type: 'error' } );
-		return;
-	}
-
-	const incomplete = schemaCreatorRef.value.incompleteProperty();
-
-	if ( incomplete !== null ) {
-		mw.notify( incomplete.message, { title: incomplete.propertyName, type: 'error' } );
+	if ( blocker !== null ) {
+		mw.notify( blocker.message, { title: blocker.propertyName, type: 'error' } );
 		return;
 	}
 

@@ -30,8 +30,7 @@ import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError';
-import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
-import type { IncompleteProperty } from '@/components/common/IncompleteProperty.ts';
+import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { Subject } from '@/domain/Subject.ts';
 import type { InitialPage } from '@/components/SubjectCreator/InitialPage.ts';
@@ -91,10 +90,9 @@ let lastSaveError: unknown = null;
 // answerable while the save is under way.
 let beforeFirstWrite: Promise<unknown> = Promise.resolve();
 
-// What the stubbed creator reports about its initial-value field holding text it
-// cannot turn into a value. Reset per test by the beforeEach below.
-let schemaCreatorUnparseableInput: UnparseableInput | null = null;
-let schemaCreatorIncompleteProperty: IncompleteProperty | null = null;
+// The reason the stubbed creator reports for holding the schema back. Reset per test
+// by the beforeEach below.
+let schemaCreatorSaveBlocker: SaveBlocker | null = null;
 
 const SchemaCreatorStub = {
 	template: '<div class="schema-creator-stub"></div>',
@@ -108,16 +106,14 @@ const SchemaCreatorStub = {
 
 		const validate = vi.fn( async (): Promise<boolean> => valid );
 		const getSchema = vi.fn( (): Schema | null => schema );
-		const unparseableInput = (): UnparseableInput | null => schemaCreatorUnparseableInput;
-		const incompleteProperty = (): IncompleteProperty | null => schemaCreatorIncompleteProperty;
+		const saveBlocker = (): SaveBlocker | null => schemaCreatorSaveBlocker;
 		const reset = vi.fn();
 		const focus = vi.fn();
 
 		return {
 			validate,
 			getSchema,
-			unparseableInput,
-			incompleteProperty,
+			saveBlocker,
 			reset,
 			focus,
 			setStubValid( v: boolean ) {
@@ -323,8 +319,7 @@ describe( 'SubjectCreatorDialog', () => {
 		sessionDrafts = [];
 		lastSaveError = null;
 		beforeFirstWrite = Promise.resolve();
-		schemaCreatorUnparseableInput = null;
-		schemaCreatorIncompleteProperty = null;
+		schemaCreatorSaveBlocker = null;
 		reloadMock = vi.fn();
 		vi.stubGlobal( 'location', { href: '', reload: reloadMock } );
 
@@ -1886,10 +1881,10 @@ describe( 'SubjectCreatorDialog', () => {
 
 		// Continue is the only point on this route where the schema can still be held
 		// back: it captures the draft and tears the creator down.
-		it( 'does not continue while the initial-value field holds text that cannot be turned into a value', async () => {
+		it( 'does not continue while the creator reports a reason not to', async () => {
 			const wrapper = mountComponent();
 			await switchToNewSchema( wrapper );
-			schemaCreatorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+			schemaCreatorSaveBlocker = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
 
 			await clickContinue( wrapper );
 
@@ -1901,40 +1896,13 @@ describe( 'SubjectCreatorDialog', () => {
 			);
 		} );
 
-		it( 'continues once the text parses again', async () => {
+		it( 'continues once the creator reports none', async () => {
 			const wrapper = mountComponent();
 			await switchToNewSchema( wrapper );
-			schemaCreatorUnparseableInput = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+			schemaCreatorSaveBlocker = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
 			await clickContinue( wrapper );
 
-			schemaCreatorUnparseableInput = null;
-			await clickContinue( wrapper );
-
-			expect( wrapper.find( '.schema-creator-stub' ).exists() ).toBe( false );
-		} );
-
-		it( 'does not continue while a property definition is missing a field the wiki requires', async () => {
-			const wrapper = mountComponent();
-			await switchToNewSchema( wrapper );
-			schemaCreatorIncompleteProperty = { propertyName: 'Maker', message: 'Target schema is required.' };
-
-			await clickContinue( wrapper );
-
-			expect( wrapper.find( '.schema-creator-stub' ).exists() ).toBe( true );
-			expect( schemaStore.saveSchema ).not.toHaveBeenCalled();
-			expect( mw.notify ).toHaveBeenCalledWith(
-				'Target schema is required.',
-				{ title: 'Maker', type: 'error' },
-			);
-		} );
-
-		it( 'continues once the property definition is complete', async () => {
-			const wrapper = mountComponent();
-			await switchToNewSchema( wrapper );
-			schemaCreatorIncompleteProperty = { propertyName: 'Maker', message: 'Target schema is required.' };
-			await clickContinue( wrapper );
-
-			schemaCreatorIncompleteProperty = null;
+			schemaCreatorSaveBlocker = null;
 			await clickContinue( wrapper );
 
 			expect( wrapper.find( '.schema-creator-stub' ).exists() ).toBe( false );

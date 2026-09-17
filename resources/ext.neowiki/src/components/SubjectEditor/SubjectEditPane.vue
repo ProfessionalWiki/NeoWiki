@@ -77,7 +77,7 @@ export interface SubjectEditPaneExposes {
 	resetChanged: () => void;
 	buildUpdatedSubject: () => Subject | null;
 	setServerViolations: ( violations: readonly SubjectViolation[] ) => void;
-	unparseableInput: () => UnparseableInput | null;
+	saveBlocker: () => SaveBlocker | null;
 	flushValidation: () => Promise<void>;
 }
 </script>
@@ -104,7 +104,7 @@ import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { RelationTargetEditingKey } from '@/components/Value/ValueInputContract.ts';
 import { withoutMissingValueViolations, withoutUnsavedTargetViolations, type SubjectViolation } from '@/domain/SubjectViolation';
-import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
+import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const props = defineProps<{
 	subject: Subject;
@@ -312,8 +312,8 @@ function buildUpdatedSubject(): Subject | null {
 		.withStatements( subjectEditorRef.value.getSubjectData().withNonEmptyValues() );
 }
 
-function unparseableInput(): UnparseableInput | null {
-	return subjectEditorRef.value?.unparseableInput() ?? null;
+function saveBlocker(): SaveBlocker | null {
+	return subjectEditorRef.value?.saveBlocker() ?? null;
 }
 
 function setServerViolations( violations: readonly SubjectViolation[] ): void {
@@ -333,7 +333,7 @@ defineExpose( {
 	resetChanged,
 	buildUpdatedSubject,
 	setServerViolations,
-	unparseableInput,
+	saveBlocker,
 	flushValidation: flush
 } );
 </script>

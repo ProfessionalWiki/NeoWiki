@@ -52,7 +52,7 @@ describe( 'SubjectEditor', () => {
 	it( 'reports no unparseable input while every field can be read', () => {
 		const wrapper = newWrapper();
 
-		expect( editor( wrapper ).unparseableInput() ).toBeNull();
+		expect( editor( wrapper ).saveBlocker() ).toBeNull();
 	} );
 
 	it( 'reports unparseable input when one of its fields holds text it cannot turn into a value', async () => {
@@ -60,7 +60,7 @@ describe( 'SubjectEditor', () => {
 
 		await reportUnparseableNumber( wrapper.find( 'input[type="number"]' ) );
 
-		expect( editor( wrapper ).unparseableInput() )
+		expect( editor( wrapper ).saveBlocker() )
 			.toEqual( { propertyName: 'Score', message: 'neowiki-field-invalid-number' } );
 	} );
 
@@ -76,7 +76,7 @@ describe( 'SubjectEditor', () => {
 			],
 		} );
 
-		expect( editor( wrapper ).unparseableInput() )
+		expect( editor( wrapper ).saveBlocker() )
 			.toEqual( { propertyName: 'Score', message: 'neowiki-field-invalid-number' } );
 	} );
 
@@ -98,7 +98,7 @@ describe( 'SubjectEditor', () => {
 		] ) );
 		await wrapper.setProps( { schema: withoutNumber, statements: withoutNumber.blankStatements() } );
 
-		expect( editor( wrapper ).unparseableInput() ).toBeNull();
+		expect( editor( wrapper ).saveBlocker() ).toBeNull();
 	} );
 
 	// A relation edit is the one that changes the Subject graph, so it is the one the tree

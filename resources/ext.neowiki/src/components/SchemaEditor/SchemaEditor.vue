@@ -51,8 +51,7 @@ import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import PaneDivider, { PANE_DIVIDER_SIZE } from '@/components/common/PaneDivider.vue';
 import { usePaneSize } from '@/composables/usePaneSize.ts';
 import { useGeneratedId } from '@wikimedia/codex';
-import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
-import type { IncompleteProperty } from '@/components/common/IncompleteProperty.ts';
+import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { missingRelationAttribute } from '@/components/SchemaEditor/Property/missingRelationAttribute.ts';
 
 const props = defineProps<{
@@ -194,9 +193,28 @@ function replacePropertyDefinition( updatedProperty: PropertyDefinition ): Prope
 
 export interface SchemaEditorExposes {
 	getSchema: () => Schema;
-	unparseableInput: () => UnparseableInput | null;
-	incompleteProperty: () => IncompleteProperty | null;
+	saveBlocker: () => SaveBlocker | null;
 }
+
+/**
+ * The first reason the save must not proceed, or null. Unparseable text comes first: the
+ * user is looking at the field holding it.
+ */
+const saveBlocker = (): SaveBlocker | null => unparseableInput() ?? incompleteProperty();
+
+/**
+ * The property with a field showing text that getSchema() leaves out. Only the
+ * selected property has an editor mounted.
+ */
+const unparseableInput = (): SaveBlocker | null => {
+	const message = propertyDefinitionEditor.value?.unparseableInputMessage() ?? null;
+
+	if ( message === null || selectedPropertyName.value === undefined ) {
+		return null;
+	}
+
+	return { propertyName: selectedPropertyName.value, message };
+};
 
 /**
  * The first property definition the wiki would refuse to store, or null. Read from the Schema
@@ -204,7 +222,7 @@ export interface SchemaEditorExposes {
  * user navigated away from is just as unsaveable. Only relation properties can be incomplete
  * today; letting every Property Type answer for its own definition is #1454.
  */
-const incompleteProperty = (): IncompleteProperty | null => {
+const incompleteProperty = (): SaveBlocker | null => {
 	for ( const property of currentSchema.value.getPropertyDefinitions() ) {
 		const message = missingRelationAttribute( property );
 
@@ -216,28 +234,13 @@ const incompleteProperty = (): IncompleteProperty | null => {
 	return null;
 };
 
-/**
- * The property with a field showing text that getSchema() leaves out. Only the
- * selected property has an editor mounted.
- */
-const unparseableInput = (): UnparseableInput | null => {
-	const message = propertyDefinitionEditor.value?.unparseableInputMessage() ?? null;
-
-	if ( message === null || selectedPropertyName.value === undefined ) {
-		return null;
-	}
-
-	return { propertyName: selectedPropertyName.value, message };
-};
-
 defineExpose<SchemaEditorExposes>( {
 	getSchema: function(): Schema {
 		const schema = currentSchema.value as Schema;
 
 		return props.description === undefined ? schema : schema.withDescription( props.description );
 	},
-	unparseableInput,
-	incompleteProperty
+	saveBlocker
 } );
 </script>
 

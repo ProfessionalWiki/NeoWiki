@@ -45,8 +45,7 @@ import type { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
-import type { IncompleteProperty } from '@/components/common/IncompleteProperty.ts';
+import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const props = withDefaults( defineProps<{
 	initialSchema?: Schema;
@@ -152,12 +151,8 @@ function getSchema(): Schema | null {
 	return new Schema( name, schemaDescription.value.trim(), propertyDefinitions );
 }
 
-function unparseableInput(): UnparseableInput | null {
-	return schemaEditorRef.value?.unparseableInput() ?? null;
-}
-
-function incompleteProperty(): IncompleteProperty | null {
-	return schemaEditorRef.value?.incompleteProperty() ?? null;
+function saveBlocker(): SaveBlocker | null {
+	return schemaEditorRef.value?.saveBlocker() ?? null;
 }
 
 function reset(): void {
@@ -176,13 +171,12 @@ function focus(): void {
 export interface SchemaCreatorExposes {
 	validate: () => Promise<boolean>;
 	getSchema: () => Schema | null;
-	unparseableInput: () => UnparseableInput | null;
-	incompleteProperty: () => IncompleteProperty | null;
+	saveBlocker: () => SaveBlocker | null;
 	reset: () => void;
 	focus: () => void;
 }
 
-defineExpose<SchemaCreatorExposes>( { validate, getSchema, unparseableInput, incompleteProperty, reset, focus } );
+defineExpose<SchemaCreatorExposes>( { validate, getSchema, saveBlocker, reset, focus } );
 </script>
 
 <style lang="less">

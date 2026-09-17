@@ -21,16 +21,16 @@
 
 <script lang="ts">
 import { StatementList } from '@/domain/StatementList.ts';
-import type { UnparseableInput } from '@/components/common/UnparseableInput.ts';
+import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 export interface SubjectEditorExposes {
 	/**
 	 * The statements as the fields currently hold them. A field showing text it
 	 * cannot turn into a Value yields a statement with no value and that text is
-	 * lost — check unparseableInput() first and hold the save while it is non-null.
+	 * lost — check saveBlocker() first and hold the save while it is non-null.
 	 */
 	getSubjectData(): StatementList;
-	unparseableInput(): UnparseableInput | null;
+	saveBlocker(): SaveBlocker | null;
 }
 </script>
 
@@ -101,7 +101,7 @@ const getSubjectData = (): StatementList => {
  * the message that field is showing. Null when every field can be read.
  * Callers hold the save while this is non-null and surface the message.
  */
-const unparseableInput = (): UnparseableInput | null => {
+const saveBlocker = (): SaveBlocker | null => {
 	for ( const [ index, statement ] of [ ...props.statements ].entries() ) {
 		const message = valueEditors.value[ index ]?.unparseableInputMessage?.() ?? null;
 
@@ -113,6 +113,6 @@ const unparseableInput = (): UnparseableInput | null => {
 	return null;
 };
 
-defineExpose<SubjectEditorExposes>( { getSubjectData, unparseableInput } );
+defineExpose<SubjectEditorExposes>( { getSubjectData, saveBlocker } );
 
 </script>
