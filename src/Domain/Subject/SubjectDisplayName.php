@@ -19,11 +19,27 @@ class SubjectDisplayName {
 	/**
 	 * A Main Subject represents the page's own topic, so it falls back to the page name. Every other
 	 * Subject falls back to its Schema name, since the page name would give all of them the same
-	 * misleading name.
+	 * misleading name. The page's Subjects are what knows whether it is the Main Subject, and which
+	 * of them could have titled the page.
 	 */
-	public static function forSubject( Subject $subject, bool $isMainSubject, string $pageName ): string {
-		return self::labelOrPageName( $subject, $isMainSubject, $pageName )
+	public static function forSubject( Subject $subject, PageSubjects $pageSubjects, string $pageName ): string {
+		return self::labelOrPageName( $subject, $pageSubjects, $pageName )
 			?? $subject->getSchemaName()->getText();
+	}
+
+	/**
+	 * The same rule for a Subject read off a whole Page, as the projectors hold one.
+	 */
+	public static function forSubjectOnPage( Subject $subject, Page $page ): string {
+		return self::forSubject( $subject, $page->getSubjects(), $page->getProperties()->getName() );
+	}
+
+	/**
+	 * The same rule for a Subject read without the page holding it, which puts the page name out of
+	 * reach: the stored label, else the Schema name.
+	 */
+	public static function forSubjectWithoutPage( Subject $subject ): string {
+		return $subject->getLabel()?->text ?? $subject->getSchemaName()->getText();
 	}
 
 	/**
@@ -31,48 +47,17 @@ class SubjectDisplayName {
 	 * nothing. What the graph materializes, since the Schema name there would make every unnamed
 	 * Subject of a Schema indistinguishable in query results while the Schema is already on the node.
 	 */
-	public static function labelOrPageName( Subject $subject, bool $isMainSubject, string $pageName ): ?string {
-		return self::chosenName( $subject->getLabel(), $isMainSubject, $pageName, [ $subject->getId()->text ] );
-	}
+	public static function labelOrPageName( Subject $subject, PageSubjects $pageSubjects, string $pageName ): ?string {
+		$label = $subject->getLabel();
 
-	/**
-	 * The same rule for a Subject read alongside the other Subjects of its page, which is what knows
-	 * whether it is the Main Subject, and which of the page's Subjects could have titled it.
-	 */
-	public static function forSubjectIn( Subject $subject, PageSubjects $pageSubjects, string $pageName ): string {
-		return self::labelOrPageNameIn( $subject, $pageSubjects, $pageName )
-			?? $subject->getSchemaName()->getText();
-	}
-
-	/**
-	 * labelOrPageName() for a Subject read alongside the other Subjects of its page, which is what
-	 * knows whether it is the Main Subject, and which of the page's Subjects could have titled it.
-	 */
-	public static function labelOrPageNameIn( Subject $subject, PageSubjects $pageSubjects, string $pageName ): ?string {
-		return self::chosenName(
-			label: $subject->getLabel(),
-			isMainSubject: $pageSubjects->isMainSubject( $subject->getId() ),
-			pageName: $pageName,
-			pageSubjectIds: $pageSubjects->getAllSubjects()->getIdsAsTextArray()
-		);
-	}
-
-	/**
-	 * @param string[] $pageSubjectIds The ids of the Subjects the page holds, as far as the caller
-	 *   knows them: all of them where the page was read as a whole, and the Subject's own id where
-	 *   it was read by itself.
-	 */
-	private static function chosenName(
-		?SubjectLabel $label,
-		bool $isMainSubject,
-		string $pageName,
-		array $pageSubjectIds
-	): ?string {
 		if ( $label !== null ) {
 			return $label->text;
 		}
 
-		if ( $isMainSubject && $pageName !== '' && !self::isTitledBySubjectOnIt( $pageName, $pageSubjectIds ) ) {
+		if ( $pageName !== ''
+			&& $pageSubjects->isMainSubject( $subject->getId() )
+			&& !self::isTitledBySubjectOnIt( $pageName, $pageSubjects )
+		) {
 			return $pageName;
 		}
 
@@ -92,18 +77,9 @@ class SubjectDisplayName {
 	 * The first letter is set aside, because a wiki that capitalizes page titles - the default -
 	 * stores such a page under an upper-case S. Nothing else of an id can differ: its grammar
 	 * (ADR 14) is ASCII that MediaWiki leaves alone.
-	 *
-	 * @param string[] $pageSubjectIds
 	 */
-	private static function isTitledBySubjectOnIt( string $pageName, array $pageSubjectIds ): bool {
-		return in_array( lcfirst( $pageName ), $pageSubjectIds, true );
-	}
-
-	/**
-	 * The same rule for a Subject read off a whole Page, as the projectors hold one.
-	 */
-	public static function forSubjectOnPage( Subject $subject, Page $page ): string {
-		return self::forSubjectIn( $subject, $page->getSubjects(), $page->getProperties()->getName() );
+	private static function isTitledBySubjectOnIt( string $pageName, PageSubjects $pageSubjects ): bool {
+		return in_array( lcfirst( $pageName ), $pageSubjects->getAllSubjects()->getIdsAsTextArray(), true );
 	}
 
 }

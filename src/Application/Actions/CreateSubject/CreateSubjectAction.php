@@ -112,7 +112,7 @@ readonly class CreateSubjectAction {
 			GetSubjectResponseItem::fromSubject(
 				$subject,
 				$pageIdentifiers,
-				SubjectDisplayName::labelOrPageNameIn( $subject, $pageSubjects, $pageName )
+				SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageName )
 			),
 			$schema,
 			$violations

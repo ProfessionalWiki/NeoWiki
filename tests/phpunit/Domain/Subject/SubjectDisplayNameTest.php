@@ -26,12 +26,21 @@ class SubjectDisplayNameTest extends TestCase {
 		return TestSubject::build( id: $id, label: $label, schemaName: new SchemaName( self::SCHEMA_NAME ) );
 	}
 
+	/**
+	 * A page holding the Subject, either as its Main Subject or beside another Subject that is.
+	 */
+	private function pageHolding( Subject $subject, bool $asMainSubject ): PageSubjects {
+		if ( $asMainSubject ) {
+			return new PageSubjects( $subject, new SubjectMap() );
+		}
+
+		return new PageSubjects( $this->newSubject( null, self::OTHER_SUBJECT_ID ), new SubjectMap( $subject ) );
+	}
+
 	private function displayName( ?SubjectLabel $label, bool $isMainSubject, string $pageName = 'Page name' ): string {
-		return SubjectDisplayName::forSubject(
-			subject: $this->newSubject( $label ),
-			isMainSubject: $isMainSubject,
-			pageName: $pageName
-		);
+		$subject = $this->newSubject( $label );
+
+		return SubjectDisplayName::forSubject( $subject, $this->pageHolding( $subject, $isMainSubject ), $pageName );
 	}
 
 	public function testStoredLabelWinsForMainSubject(): void {
@@ -83,12 +92,24 @@ class SubjectDisplayNameTest extends TestCase {
 		);
 	}
 
-	private function chosenName( ?SubjectLabel $label, bool $isMainSubject, string $pageName = 'Page name' ): ?string {
-		return SubjectDisplayName::labelOrPageName(
-			subject: $this->newSubject( $label ),
-			isMainSubject: $isMainSubject,
-			pageName: $pageName
+	public function testStoredLabelNamesASubjectReadWithoutItsPage(): void {
+		$this->assertSame(
+			'Stored',
+			SubjectDisplayName::forSubjectWithoutPage( $this->newSubject( new SubjectLabel( 'Stored' ) ) )
 		);
+	}
+
+	public function testSubjectReadWithoutItsPageAndWithoutALabelFallsBackToSchemaName(): void {
+		$this->assertSame(
+			self::SCHEMA_NAME,
+			SubjectDisplayName::forSubjectWithoutPage( $this->newSubject( null ) )
+		);
+	}
+
+	private function chosenName( ?SubjectLabel $label, bool $isMainSubject, string $pageName = 'Page name' ): ?string {
+		$subject = $this->newSubject( $label );
+
+		return SubjectDisplayName::labelOrPageName( $subject, $this->pageHolding( $subject, $isMainSubject ), $pageName );
 	}
 
 	public function testStoredLabelIsTheChosenNameForMainSubject(): void {
@@ -107,7 +128,7 @@ class SubjectDisplayNameTest extends TestCase {
 	 * Null is what makes the Schema tier the one nobody chose, and it is the whole answer a caller
 	 * needs: the name it produces and the verdict on that name come from this one value.
 	 */
-	public function testOtherSubjectWithoutALabelHasNoChosenName(): void {
+	public function testASubjectThatIsNotThePagesMainSubjectHasNoChosenName(): void {
 		$this->assertNull( $this->chosenName( null, false ) );
 	}
 
@@ -162,28 +183,13 @@ class SubjectDisplayNameTest extends TestCase {
 		$this->assertSame( 'Standardization', $this->chosenName( null, true, 'Standardization' ) );
 	}
 
-	private function chosenNameIn( Subject $subject, PageSubjects $pageSubjects, string $pageName ): ?string {
-		return SubjectDisplayName::labelOrPageNameIn( $subject, $pageSubjects, $pageName );
-	}
-
-	public function testTheMainSubjectOfAPageTakesThePageNameAsItsChosenName(): void {
-		$subject = $this->newSubject( null );
-
+	/**
+	 * A Subject of another page has nothing to do with the title of this one.
+	 */
+	public function testAPageTitledAfterASubjectItDoesNotHoldIsStillAChosenName(): void {
 		$this->assertSame(
-			'Standardization',
-			$this->chosenNameIn( $subject, new PageSubjects( $subject, new SubjectMap() ), 'Standardization' )
-		);
-	}
-
-	public function testTheMainSubjectOfAPageTitledAfterItHasNoChosenName(): void {
-		$subject = $this->newSubject( null );
-
-		$this->assertNull(
-			$this->chosenNameIn(
-				$subject,
-				new PageSubjects( $subject, new SubjectMap() ),
-				ucfirst( self::SUBJECT_ID )
-			)
+			ucfirst( self::OTHER_SUBJECT_ID ),
+			$this->chosenName( null, true, ucfirst( self::OTHER_SUBJECT_ID ) )
 		);
 	}
 
@@ -195,41 +201,10 @@ class SubjectDisplayNameTest extends TestCase {
 		$mainSubject = $this->newSubject( null );
 
 		$this->assertNull(
-			$this->chosenNameIn(
+			SubjectDisplayName::labelOrPageName(
 				$mainSubject,
-				new PageSubjects(
-					$mainSubject,
-					new SubjectMap( $this->newSubject( null, self::OTHER_SUBJECT_ID ) )
-				),
+				new PageSubjects( $mainSubject, new SubjectMap( $this->newSubject( null, self::OTHER_SUBJECT_ID ) ) ),
 				ucfirst( self::OTHER_SUBJECT_ID )
-			)
-		);
-	}
-
-	/**
-	 * A Subject of another page has nothing to do with the title of this one.
-	 */
-	public function testAPageTitledAfterASubjectItDoesNotHoldIsStillAChosenName(): void {
-		$subject = $this->newSubject( null );
-
-		$this->assertSame(
-			ucfirst( self::OTHER_SUBJECT_ID ),
-			$this->chosenNameIn(
-				$subject,
-				new PageSubjects( $subject, new SubjectMap() ),
-				ucfirst( self::OTHER_SUBJECT_ID )
-			)
-		);
-	}
-
-	public function testASubjectThatIsNotThePagesMainSubjectHasNoChosenName(): void {
-		$subject = $this->newSubject( null );
-
-		$this->assertNull(
-			$this->chosenNameIn(
-				$subject,
-				new PageSubjects( $this->newSubject( null, self::OTHER_SUBJECT_ID ), new SubjectMap( $subject ) ),
-				'Standardization'
 			)
 		);
 	}

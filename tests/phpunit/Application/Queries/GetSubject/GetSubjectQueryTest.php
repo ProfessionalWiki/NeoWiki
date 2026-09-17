@@ -243,18 +243,41 @@ class GetSubjectQueryTest extends TestCase {
 		$this->assertTrue( $spyPresenter->response->subjects['s11111111111ca1']->displayNameIsGenerated );
 	}
 
+	public function testLabellessMainSubjectOfAPageTitledByAnotherSubjectsIdIsNamedAfterItsSchema(): void {
+		$spyPresenter = $this->getSpyPresenter();
+		$mainSubject = TestSubject::build( id: 's11111111111maa', label: null, schemaName: new SchemaName( 'Museum' ) );
+		$otherSubject = TestSubject::build( id: 's11111111111ca1' );
+
+		$this->newQueryForLabellessSubject(
+			$spyPresenter,
+			$mainSubject,
+			$mainSubject,
+			pageTitle: ucfirst( $otherSubject->id->text ),
+			otherSubjectsOfPage: new SubjectMap( $otherSubject )
+		)->execute(
+			subjectId: 's11111111111maa',
+			includePageIdentifiers: true,
+			includeReferencedSubjects: false
+		);
+
+		$this->assertSame( 'Museum', $spyPresenter->response->subjects['s11111111111maa']->displayName );
+		$this->assertTrue( $spyPresenter->response->subjects['s11111111111maa']->displayNameIsGenerated );
+	}
+
 	private function newQueryForLabellessSubject(
 		object $spyPresenter,
 		Subject $requested,
-		Subject $mainSubjectOfPage
+		Subject $mainSubjectOfPage,
+		string $pageTitle = 'Rijksmuseum',
+		SubjectMap $otherSubjectsOfPage = new SubjectMap()
 	): GetSubjectQuery {
 		return new GetSubjectQuery(
 			$spyPresenter,
 			new InMemorySubjectLookup( $requested ),
 			new InMemoryPageIdentifiersLookup( [
-				[ $requested->id, new PageIdentifiers( new PageId( 42 ), 'Rijksmuseum', 0 ) ],
+				[ $requested->id, new PageIdentifiers( new PageId( 42 ), $pageTitle, 0 ) ],
 			] ),
-			$this->responseItemFactoryWithMainSubject( $mainSubjectOfPage, 42 ),
+			$this->responseItemFactoryWithMainSubject( $mainSubjectOfPage, $otherSubjectsOfPage, 42 ),
 			new StubPageReadAuthorizer( allowed: true ),
 			TestSubjectIds::newParser(),
 		);
@@ -522,9 +545,13 @@ class GetSubjectQueryTest extends TestCase {
 		return new SubjectResponseItemFactory( new PageSubjectsLookup( new InMemorySubjectRepository() ) );
 	}
 
-	private function responseItemFactoryWithMainSubject( Subject $mainSubject, int $pageId ): SubjectResponseItemFactory {
+	private function responseItemFactoryWithMainSubject(
+		Subject $mainSubject,
+		SubjectMap $otherSubjects,
+		int $pageId
+	): SubjectResponseItemFactory {
 		$repository = new InMemorySubjectRepository();
-		$repository->savePageSubjects( new PageSubjects( $mainSubject, new SubjectMap() ), new PageId( $pageId ) );
+		$repository->savePageSubjects( new PageSubjects( $mainSubject, $otherSubjects ), new PageId( $pageId ) );
 
 		return new SubjectResponseItemFactory( new PageSubjectsLookup( $repository ) );
 	}

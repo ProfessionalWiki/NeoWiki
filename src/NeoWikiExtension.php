@@ -1746,6 +1746,7 @@ class NeoWikiExtension {
 		return new GetPageSubjectsQuery(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
+			responseItemFactory: $this->newSubjectResponseItemFactory(),
 			subjectLookup: $this->getSourceRoutingSubjectLookup( $this->getSubjectRepository() ),
 			schemaLookup: $this->getSchemaLookup(),
 			schemaSerializer: $this->getSchemaPresentationSerializer(),

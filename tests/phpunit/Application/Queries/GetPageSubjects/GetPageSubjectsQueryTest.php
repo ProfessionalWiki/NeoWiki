@@ -10,9 +10,11 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjects
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsResponse;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -203,6 +205,31 @@ class GetPageSubjectsQueryTest extends TestCase {
 
 		$this->assertNull( $presenter->response->subjects['s11111111111ca1']->label );
 		$this->assertSame( 'Attendance', $presenter->response->subjects['s11111111111ca1']->displayName );
+	}
+
+	public function testLabellessMainSubjectOfAPageTitledByAnotherSubjectsIdIsNamedAfterItsSchema(): void {
+		$repository = new InMemorySubjectRepository();
+		$repository->savePageSubjects(
+			new PageSubjects(
+				TestSubject::build( id: 's11111111111maa', label: null, schemaName: new SchemaName( 'Museum' ) ),
+				new SubjectMap( TestSubject::build( id: 's11111111111ca1' ) )
+			),
+			new PageId( 42 )
+		);
+
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery(
+			$presenter,
+			$repository,
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
+				[ new SubjectId( 's11111111111maa' ), new PageIdentifiers( new PageId( 42 ), 'S11111111111ca1', 0 ) ],
+				[ new SubjectId( 's11111111111ca1' ), new PageIdentifiers( new PageId( 42 ), 'S11111111111ca1', 0 ) ],
+			] )
+		)->execute( 42 );
+
+		$this->assertSame( 'Museum', $presenter->response->subjects['s11111111111maa']->displayName );
+		$this->assertTrue( $presenter->response->subjects['s11111111111maa']->displayNameIsGenerated );
 	}
 
 	/**
@@ -463,6 +490,39 @@ class GetPageSubjectsQueryTest extends TestCase {
 		);
 	}
 
+	public function testLabellessReferencedSubjectOnAPageTitledByAnotherSubjectsIdIsNamedAfterItsSchema(): void {
+		$repository = new InMemorySubjectRepository();
+		$repository->savePageSubjects(
+			new PageSubjects(
+				$this->newSubjectReferencing( 's11111111111maa', 's11111111111tar' ),
+				new SubjectMap()
+			),
+			new PageId( 42 )
+		);
+
+		$referenced = TestSubject::build( id: 's11111111111tar', label: null, schemaName: new SchemaName( 'Museum' ) );
+		$repository->savePageSubjects(
+			new PageSubjects( $referenced, new SubjectMap( TestSubject::build( id: 's11111111111oth' ) ) ),
+			new PageId( 137 )
+		);
+
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery(
+			$presenter,
+			$repository,
+			subjectLookup: new InMemorySubjectLookup( $referenced ),
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
+				[ $referenced->id, new PageIdentifiers( new PageId( 137 ), 'S11111111111oth', 0 ) ],
+			] )
+		)->execute( 42, includeReferencedSubjects: true );
+
+		$this->assertSame(
+			'Museum',
+			$presenter->response->referencedSubjects['s11111111111tar']->displayName
+		);
+	}
+
 	public function testReferencedSubjectsAndSchemasAreNullWhenNotRequested(): void {
 		$presenter = $this->newSpyPresenter();
 
@@ -701,6 +761,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 		return new GetPageSubjectsQuery(
 			presenter: $presenter,
 			subjectRepository: $repository,
+			responseItemFactory: new SubjectResponseItemFactory( new PageSubjectsLookup( $repository ) ),
 			subjectLookup: $subjectLookup ?? new InMemorySubjectLookup(),
 			schemaLookup: $schemaLookup ?? new InMemorySchemaLookup(),
 			schemaSerializer: new SchemaPresentationSerializer(),

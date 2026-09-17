@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application;
 
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 
 class PageSubjectsLookup {
 
@@ -23,11 +23,11 @@ class PageSubjectsLookup {
 	}
 
 	/**
-	 * Which of a page's Subjects is its Main Subject, which is what a display name falling back to
-	 * the page name depends on. Null when the page has none, and when it has no Subjects at all.
+	 * The Subjects a page holds and which of them is its Main Subject: what a display name falling
+	 * back to the page name depends on. Empty when the page has none.
 	 */
-	public function getMainSubjectId( PageId $pageId ): ?SubjectId {
-		return $this->subjectRepository->getSubjectsByPageId( $pageId )->getMainSubject()?->getId();
+	public function getPageSubjects( PageId $pageId ): PageSubjects {
+		return $this->subjectRepository->getSubjectsByPageId( $pageId );
 	}
 
 }
