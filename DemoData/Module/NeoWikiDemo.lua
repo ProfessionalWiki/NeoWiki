@@ -69,19 +69,19 @@ function p.subject( frame )
 end
 
 function p.subjects( frame )
-	local page = frame.args[1]
+	local subjects = nw.getSubjects( frame.args[1] )
+
+	if #subjects == 0 then
+		return 'No Subjects'
+	end
 
 	local parts = {}
-	for _, subject in ipairs( nw.getSubjects( page ) ) do
+	for _, subject in ipairs( subjects ) do
 		local name = "'''" .. subject.label .. "''' (" .. subject.schema .. ")"
 		if subject.isMainSubject then
 			name = name .. ' — main'
 		end
 		parts[#parts + 1] = name
-	end
-
-	if #parts == 0 then
-		return 'No Subjects'
 	end
 
 	return table.concat( parts, ', ' )

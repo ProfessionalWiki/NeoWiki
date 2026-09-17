@@ -29,6 +29,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
@@ -68,12 +69,7 @@ class SubjectDataLookupTest extends TestCase {
 	}
 
 	private function createOtherSubject( string $id, string $label ): Subject {
-		return new Subject(
-			id: new SubjectId( $id ),
-			label: new SubjectLabel( $label ),
-			schema: SchemaReference::local( new SchemaName( 'OtherSchema' ) ),
-			statements: new StatementList(),
-		);
+		return TestSubject::build( id: $id, label: $label, schemaName: new SchemaName( 'OtherSchema' ) );
 	}
 
 	private function resolverWithMainSubject( Subject $subject ): SubjectResolver {
@@ -492,12 +488,7 @@ class SubjectDataLookupTest extends TestCase {
 	 * Subject nobody named. `storedLabel` is the one that reports the absence.
 	 */
 	public function testMainSubjectWithoutALabelIsNamedAfterItsPage(): void {
-		$subject = new Subject(
-			id: new SubjectId( self::SUBJECT_ID ),
-			label: null,
-			schema: SchemaReference::local( new SchemaName( 'Museum' ) ),
-			statements: new StatementList(),
-		);
+		$subject = TestSubject::build( id: self::SUBJECT_ID, label: null, schemaName: new SchemaName( 'Museum' ) );
 
 		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
@@ -609,7 +600,7 @@ class SubjectDataLookupTest extends TestCase {
 
 		$result = $lookup->getSubjectsData( $this->createTitle() );
 
-		// The other Subjects are held against ascending id order, so sorting by id cannot pass here.
+		// The other Subjects are deliberately out of id order, so a sort by id cannot pass.
 		$this->assertSame(
 			[ self::SUBJECT_ID, self::OTHER_SUBJECT_ID, self::TARGET_SUBJECT_ID ],
 			array_column( $result[0], 'id' )
@@ -652,11 +643,10 @@ class SubjectDataLookupTest extends TestCase {
 	}
 
 	public function testOtherSubjectWithoutALabelIsNamedAfterItsSchema(): void {
-		$otherSubject = new Subject(
-			id: new SubjectId( self::OTHER_SUBJECT_ID ),
+		$otherSubject = TestSubject::build(
+			id: self::OTHER_SUBJECT_ID,
 			label: null,
-			schema: SchemaReference::local( new SchemaName( 'Attendance' ) ),
-			statements: new StatementList(),
+			schemaName: new SchemaName( 'Attendance' )
 		);
 
 		$lookup = new SubjectDataLookup( $this->newResolver(
@@ -670,34 +660,17 @@ class SubjectDataLookupTest extends TestCase {
 	}
 
 	public function testGetSubjectsNamesAnUnlabelledMainSubjectAfterItsPage(): void {
-		$mainSubject = new Subject(
-			id: new SubjectId( self::SUBJECT_ID ),
-			label: null,
-			schema: SchemaReference::local( new SchemaName( 'Museum' ) ),
-			statements: new StatementList(),
-		);
+		$mainSubject = TestSubject::build( id: self::SUBJECT_ID, label: null, schemaName: new SchemaName( 'Museum' ) );
 
-		$lookup = new SubjectDataLookup( $this->newResolver(
-			new PageSubjects( $mainSubject, new SubjectMap() )
-		) );
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $mainSubject ) );
 
 		$result = $lookup->getSubjectsData( $this->createTitleNamed( 'Rijksmuseum' ) );
 
 		$this->assertSame( 'Rijksmuseum', $result[0][1]['label'] );
 	}
 
-	/**
-	 * Entity-first creation titles a page by the id of a Subject on it, which names nothing, so the
-	 * Main Subject falls through to its Schema name. Reading the page as a whole is what knows the
-	 * ids of all the Subjects it holds, not only the one being named.
-	 */
 	public function testMainSubjectOfAPageTitledByAnotherSubjectsIdIsNamedAfterItsSchema(): void {
-		$mainSubject = new Subject(
-			id: new SubjectId( self::SUBJECT_ID ),
-			label: null,
-			schema: SchemaReference::local( new SchemaName( 'Museum' ) ),
-			statements: new StatementList(),
-		);
+		$mainSubject = TestSubject::build( id: self::SUBJECT_ID, label: null, schemaName: new SchemaName( 'Museum' ) );
 
 		$lookup = new SubjectDataLookup( $this->newResolver(
 			new PageSubjects(
@@ -723,17 +696,8 @@ class SubjectDataLookupTest extends TestCase {
 		$this->assertSame( [ [] ], $lookup->getSubjectsData( $this->createTitle() ) );
 	}
 
-	/**
-	 * The page is what knows the ids of all the Subjects it holds, so reading the Main Subject alone
-	 * still has to apply the rule against every one of them, not only against its own id.
-	 */
 	public function testGetMainSubjectOfAPageTitledByAnotherSubjectsIdIsNamedAfterItsSchema(): void {
-		$mainSubject = new Subject(
-			id: new SubjectId( self::SUBJECT_ID ),
-			label: null,
-			schema: SchemaReference::local( new SchemaName( 'Museum' ) ),
-			statements: new StatementList(),
-		);
+		$mainSubject = TestSubject::build( id: self::SUBJECT_ID, label: null, schemaName: new SchemaName( 'Museum' ) );
 
 		$lookup = new SubjectDataLookup( $this->newResolver(
 			new PageSubjects(
@@ -753,10 +717,6 @@ class SubjectDataLookupTest extends TestCase {
 		$this->assertTrue( $lookup->getMainSubjectData( $this->createTitle() )[0]['isMainSubject'] );
 	}
 
-	/**
-	 * A Subject asked for by id comes without the page that hosts it, so whether it is that page's
-	 * Main Subject is unknown rather than false.
-	 */
 	public function testSubjectReadByIdCarriesNoMainSubjectMarker(): void {
 		$lookup = new SubjectDataLookup( $this->newResolver( null, $this->createSubject() ) );
 

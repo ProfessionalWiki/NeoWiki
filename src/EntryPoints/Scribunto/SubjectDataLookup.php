@@ -180,9 +180,8 @@ class SubjectDataLookup {
 		}
 
 		return [ $this->subjectToTable(
-			subject: $subject,
-			displayName: SubjectDisplayName::forSubject( $subject, isMainSubject: false, pageName: '' ),
-			isMainSubject: null
+			$subject,
+			SubjectDisplayName::forSubject( $subject, isMainSubject: false, pageName: '' )
 		) ];
 	}
 
@@ -221,17 +220,16 @@ class SubjectDataLookup {
 	}
 
 	/**
-	 * A Subject read as part of its page, which is what knows which of its Subjects is the Main
-	 * Subject, and which of them could have titled it.
-	 *
 	 * @return array<string, mixed>
 	 */
 	private function subjectOnPageToTable( Subject $subject, PageSubjects $pageSubjects, string $pageName ): array {
-		return $this->subjectToTable(
-			subject: $subject,
-			displayName: SubjectDisplayName::forSubjectIn( $subject, $pageSubjects, $pageName ),
-			isMainSubject: $pageSubjects->isMainSubject( $subject->getId() )
+		$table = $this->subjectToTable(
+			$subject,
+			SubjectDisplayName::forSubjectIn( $subject, $pageSubjects, $pageName )
 		);
+		$table['isMainSubject'] = $pageSubjects->isMainSubject( $subject->getId() );
+
+		return $table;
 	}
 
 	/**
@@ -239,25 +237,16 @@ class SubjectDataLookup {
 	 * cannot meet a nil. The stored label, which a Subject need not have, is `storedLabel`. This is
 	 * the one place the two differ from the REST API, where `label` is the stored value.
 	 *
-	 * @param ?bool $isMainSubject Null where the Subject was read without the page that knows the
-	 *   answer. The key is then absent rather than false, so Lua can tell "not the Main Subject"
-	 *   from "nobody asked its page".
 	 * @return array<string, mixed>
 	 */
-	private function subjectToTable( Subject $subject, string $displayName, ?bool $isMainSubject ): array {
-		$table = [
+	private function subjectToTable( Subject $subject, string $displayName ): array {
+		return [
 			'id' => $subject->getId()->text,
 			'label' => $displayName,
 			'storedLabel' => $subject->getLabel()?->text,
 			'schema' => $subject->getSchemaReference()->toJson(),
 			'statements' => $this->statementsToTable( $subject ),
 		];
-
-		if ( $isMainSubject !== null ) {
-			$table['isMainSubject'] = $isMainSubject;
-		}
-
-		return $table;
 	}
 
 	/**
