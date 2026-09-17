@@ -1,5 +1,6 @@
-import { mount, VueWrapper } from '@vue/test-utils';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
 import { CdxField, CdxIcon } from '@wikimedia/codex';
 import RelationInput from '@/components/Value/RelationInput.vue';
 import SubjectPicker from '@/components/common/SubjectPicker.vue';
@@ -8,6 +9,9 @@ import { RelationValue, newRelation } from '@/domain/Value';
 import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Relation';
 import { RelationTargetEditingKey, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
 import { SubjectId } from '@/domain/SubjectId.ts';
+import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import { Subject } from '@/domain/Subject.ts';
+import { StatementList } from '@/domain/StatementList.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers';
 
@@ -20,7 +24,19 @@ const SubjectPickerWithoutName = {
 		status: { type: String, default: 'default' },
 		ariaLabel: { type: String, default: '' },
 	},
-	template: '<div><slot name="suffix" :selected="selected" :target-name="\'\'"></slot></div>',
+	template: '<div><slot name="suffix" :shown-target="selected" :target-name="\'\'"></slot></div>',
+};
+
+// A picker holding a target whose field is showing something else - a search the user is running.
+const SubjectPickerShowingNoTarget = {
+	props: {
+		selected: { type: String, default: null },
+		targetSchema: { type: String, default: '' },
+		startIcon: { type: [ String, Object ], default: undefined },
+		status: { type: String, default: 'default' },
+		ariaLabel: { type: String, default: '' },
+	},
+	template: '<div><slot name="suffix" :shown-target="null" :target-name="\'\'"></slot></div>',
 };
 
 const SubjectPickerWithSlots = {
@@ -32,7 +48,7 @@ const SubjectPickerWithSlots = {
 		status: { type: String, default: 'default' },
 		ariaLabel: { type: String, default: '' },
 	},
-	template: '<div><slot name="suffix" :selected="selected" :target-name="selected ? \'Target subject\' : \'\'"></slot></div>',
+	template: '<div><slot name="suffix" :shown-target="selected" :target-name="selected ? \'Target subject\' : \'\'"></slot></div>',
 };
 
 /**
@@ -278,7 +294,7 @@ describe( 'RelationInput', () => {
 			} );
 		}
 
-		it( 'offers to open the selected target when target editing is enabled', () => {
+		it( 'offers to open the shown target when target editing is enabled', () => {
 			const wrapper = mountSingleWithTarget( true );
 			expect( wrapper.find( '.ext-neowiki-relation-input__open-target' ).exists() ).toBe( true );
 		} );
@@ -325,6 +341,58 @@ describe( 'RelationInput', () => {
 
 			expect( wrapper.find( '.ext-neowiki-relation-input__open-target' ).attributes( 'aria-label' ) )
 				.toBe( 'neowiki-subject-editor-open-targets11111111111111' );
+		} );
+
+		// The button follows the field, not the relation: one holds a target while the other shows a search.
+		it( 'offers nothing while the picker reports no target on show', () => {
+			const wrapper = mount( RelationInput, {
+				props: {
+					modelValue: new RelationValue( [ newRelation( undefined, 's11111111111111' ) ] ),
+					property: newRelationProperty( { multiple: false } ),
+					label: 'Author',
+				},
+				global: {
+					provide: {
+						...NeoWikiTestServices.getServices(),
+						[ RelationTargetEditingKey as symbol ]: true,
+					},
+					directives: { tooltip: {} },
+					mocks: { $i18n: createI18nMock() },
+					stubs: { SubjectPicker: SubjectPickerShowingNoTarget, NeoMultiLookupInput: true },
+				},
+			} );
+
+			expect( wrapper.find( '.ext-neowiki-relation-input__open-target' ).exists() ).toBe( false );
+		} );
+
+		it( 'offers to open the target through the real picker, slot contract and all', async () => {
+			const pinia = createPinia();
+			setActivePinia( pinia );
+			setupMwMock();
+			( useSubjectStore() as unknown as { getOrFetchSubject: unknown } ).getOrFetchSubject =
+				vi.fn().mockResolvedValue( new Subject(
+					new SubjectId( 's11111111111111' ), 'ACME Inc.', 'ACME Inc.', false, 'Company', new StatementList( [] ),
+				) );
+
+			const wrapper = mount( RelationInput, {
+				props: {
+					modelValue: new RelationValue( [ newRelation( undefined, 's11111111111111' ) ] ),
+					property: newRelationProperty( { multiple: false } ),
+					label: 'Author',
+				},
+				global: {
+					plugins: [ pinia ],
+					provide: {
+						...NeoWikiTestServices.getServices(),
+						[ RelationTargetEditingKey as symbol ]: true,
+					},
+					directives: { tooltip: {} },
+					mocks: { $i18n: createI18nMock() },
+				},
+			} );
+			await flushPromises();
+
+			expect( wrapper.find( '.ext-neowiki-relation-input__open-target' ).exists() ).toBe( true );
 		} );
 
 		it( 'offers nothing when target editing was not enabled by the host', () => {
