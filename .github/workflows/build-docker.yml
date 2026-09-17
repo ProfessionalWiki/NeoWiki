@@ -38,7 +38,7 @@ jobs:
       # whole, .git included, so that a hit and a miss produce the same image.
       - name: Cache MediaWiki
         id: cache-mediawiki
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: Docker/mediawiki
           key: mw-docker-${{ steps.mw.outputs.sha }}

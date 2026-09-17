@@ -101,7 +101,7 @@ jobs:
       # that does not move pins MediaWiki until someone edits the key.
       - name: Cache MediaWiki
         id: cache-mediawiki
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             mediawiki
@@ -110,7 +110,7 @@ jobs:
           key: mw_${{ matrix.mw }}-php${{ matrix.php }}-${{ steps.mw.outputs.sha }}
 
       - name: Cache Composer cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.composer/cache
           key: composer-php${{ matrix.php }}
@@ -185,7 +185,7 @@ jobs:
       # default graph the way Oxigraph above does — the spec-strict behaviour the suite asserts.
       # JVM_ARGS caps a heap the launcher otherwise defaults to -Xmx4G.
       - name: Cache Fuseki
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/fuseki-dist
           key: fuseki-6.2.0
@@ -290,7 +290,7 @@ jobs:
       # that does not move pins MediaWiki until someone edits the key.
       - name: Cache MediaWiki
         id: cache-mediawiki
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             mediawiki
@@ -299,7 +299,7 @@ jobs:
           key: mw_${{ matrix.mw }}-php${{ matrix.php }}-${{ steps.mw.outputs.sha }}
 
       - name: Cache Composer cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.composer/cache
           key: composer-php${{ matrix.php }}
@@ -352,7 +352,7 @@ jobs:
 #
 #      - name: Cache MediaWiki
 #        id: cache-mediawiki
-#        uses: actions/cache@v5
+#        uses: actions/cache@v6
 #        with:
 #          path: |
 #            mediawiki
@@ -361,7 +361,7 @@ jobs:
 #          key: mw_${{ matrix.mw }}-php${{ matrix.php }}
 #
 #      - name: Cache Composer cache
-#        uses: actions/cache@v5
+#        uses: actions/cache@v6
 #        with:
 #          path: ~/.composer/cache
 #          key: composer-php${{ matrix.php }}
