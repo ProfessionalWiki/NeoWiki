@@ -37,9 +37,19 @@ jobs:
           ref: REL1_43
           fetch-depth: 1
 
+      # MediaWiki's .gitmodules point at gerrit.wikimedia.org, which rate-limits
+      # (HTTP 429) partway through these ~40 back-to-back clones and fails the job.
+      # Fetch from the GitHub mirrors instead, as installMediaWiki.sh already does.
+      # The rewrites have to be global: git clone, which git submodule update shells
+      # out to, ignores the superproject's repository-local config.
       - name: Shallow submodules
-        run: git submodule update --init --recursive --depth 1
         working-directory: Docker/mediawiki
+        run: |
+          git config --global url."https://github.com/wikimedia/mediawiki-extensions-".insteadOf "https://gerrit.wikimedia.org/r/mediawiki/extensions/"
+          git config --global url."https://github.com/wikimedia/mediawiki-skins-".insteadOf "https://gerrit.wikimedia.org/r/mediawiki/skins/"
+          git config --global url."https://github.com/wikimedia/mediawiki-".insteadOf "https://gerrit.wikimedia.org/r/mediawiki/"
+          git config --global url."https://github.com/wikimedia/".insteadOf "https://gerrit.wikimedia.org/r/VisualEditor/"
+          git submodule update --init --recursive --depth 1
 
       # TODO: additional extensions/skins?
 
