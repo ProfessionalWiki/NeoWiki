@@ -67,4 +67,19 @@ class TextProperty extends PropertyDefinition {
 		];
 	}
 
+	public function toJsonSchema(): array {
+		$part = [ 'type' => 'string' ];
+
+		if ( $this->hasMinLength() ) {
+			$part['minLength'] = $this->getMinLength();
+		}
+
+		if ( $this->hasMaxLength() ) {
+			$part['maxLength'] = $this->getMaxLength();
+		}
+
+		return $this->listValueSchema( $part )
+			+ ( $this->enforcesUniqueValues() ? [ 'uniqueItems' => true ] : [] );
+	}
+
 }

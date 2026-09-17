@@ -66,6 +66,7 @@ A Schema defines a Subject type and its properties. For the body shape, see
 |---|---|
 | `GET /neowiki/v0/schemas` | List Schemas. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. |
 | `GET /neowiki/v0/schema/{schemaName}` | Fetch a Schema by name. |
+| `GET /neowiki/v0/schema/{schemaName}/json-schema` | Fetch a Schema as a [JSON Schema](json-schema.md) document describing its Subjects. |
 | `GET /neowiki/v0/schema-names/{search}` | Find Schema names by prefix. |
 
 ### Layouts

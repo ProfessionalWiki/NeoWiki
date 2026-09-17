@@ -85,7 +85,7 @@ JSON
             "displayName": "Test subject sTestGSA1111114",
             "displayNameIsGenerated": false,
             "schema": "GetSubjectApiTestSchema",
-            "statements": []
+            "statements": {}
         }
     }
 }
@@ -615,7 +615,7 @@ JSON,
             "pageId": $firstPageId,
             "pageTitle": "GetSubjectApiTest0000",
             "pageNamespaceId": 0,
-            "statements": []
+            "statements": {}
         },
         "sTestGSA1111113": {
             "id": "sTestGSA1111113",

@@ -5,6 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
 use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty
@@ -185,8 +187,21 @@ JSON
 JSON
 		);
 
-		$ids = array_map( fn( $o ) => $o->getId(), $property->getOptions() );
-		$this->assertSame( [ 'z', 'a', 'm' ], $ids );
+		$this->assertSame( [ 'z', 'a', 'm' ], $property->getOptionIds() );
+	}
+
+	public function testValueIsAnArrayOfOptionIds(): void {
+		$this->assertSame(
+			[ 'type' => 'array', 'items' => [ 'enum' => [ 'opt_draft', 'opt_final' ] ] ],
+			TestProperty::buildSelect(
+				options: [ new SelectOption( 'opt_draft', 'Draft' ), new SelectOption( 'opt_final', 'Final' ) ],
+				multiple: true
+			)->toJsonSchema()
+		);
+	}
+
+	public function testWithoutOptionsNoValueIsAdmitted(): void {
+		$this->assertFalse( TestProperty::buildSelect()->toJsonSchema()['items'] );
 	}
 
 }

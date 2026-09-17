@@ -10,7 +10,13 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 
 class ColorProperty extends PropertyDefinition {
 
-	private const HEX_COLOR_REGEX = '/^#[0-9a-fA-F]{6}$/';
+	/**
+	 * Carries no delimiters and stays within ECMA-262, so that the JSON Schema documents can use it
+	 * as a `pattern`.
+	 */
+	public const string HEX_COLOR_PATTERN = '^#[0-9a-fA-F]{6}$';
+
+	public const string HEX_COLOR_REGEX = '/' . self::HEX_COLOR_PATTERN . '/';
 
 	/**
 	 * @param list<string> $allowedColors
@@ -72,6 +78,16 @@ class ColorProperty extends PropertyDefinition {
 		return [
 			'allowedColors' => $this->allowedColors,
 		];
+	}
+
+	public function toJsonSchema(): array {
+		$part = [ 'type' => 'string', 'pattern' => self::HEX_COLOR_PATTERN ];
+
+		if ( $this->hasAllowedColors() ) {
+			$part['enum'] = $this->allowedColors;
+		}
+
+		return $this->listValueSchema( $part );
 	}
 
 }

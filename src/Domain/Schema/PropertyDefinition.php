@@ -73,6 +73,29 @@ abstract class PropertyDefinition {
 	abstract public function nonCoreToJson(): array;
 
 	/**
+	 * JSON Schema (draft 2020-12) for the value of a Statement of this property: what the Property
+	 * Type's validate() checks about the value itself, in a form standard validators apply. `true`
+	 * when nothing is known about the value.
+	 *
+	 * @return array<string, mixed>|true
+	 */
+	abstract public function toJsonSchema(): array|true;
+
+	/**
+	 * JSON Schema for a value held as a list of parts: the schema of one part, plus how many parts
+	 * this definition admits.
+	 *
+	 * @param array<string, mixed>|bool $partSchema
+	 *
+	 * @return array<string, mixed>
+	 */
+	protected function listValueSchema( array|bool $partSchema ): array {
+		return [ 'type' => 'array', 'items' => $partSchema ]
+			+ ( $this->allowsMultipleValues() ? [] : [ 'maxItems' => 1 ] )
+			+ ( $this->isRequired() ? [ 'minItems' => 1 ] : [] );
+	}
+
+	/**
 	 * @throws InvalidArgumentException
 	 */
 	public static function fromJson( array $json, PropertyTypeLookup $propertyTypeLookup ): self {
