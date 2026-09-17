@@ -33,7 +33,9 @@ Per-type value constraints (`options`, ranges, string formats, `uniqueItems`) ar
 Wherever a Schema is named — a Subject's [`schema`](subject-format.md#subject-object) field, a relation property's
 `targetSchema` — the value is a reference.
 
-A string names a Schema of this wiki by its page title in the Schema namespace.
+A string names a Schema of this wiki by its page title in the Schema namespace, without the namespace prefix. Any
+spelling of that title is stored as the title itself — `person` as `Person`, `Person_name` as `Person name` — so a
+reference read back can differ from the one written.
 
 A Schema from another Source ([ADR 023](../adr/023-subject-sources.md)) is an object instead:
 

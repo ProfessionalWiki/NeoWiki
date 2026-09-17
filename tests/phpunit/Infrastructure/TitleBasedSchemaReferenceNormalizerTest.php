@@ -40,8 +40,15 @@ class TitleBasedSchemaReferenceNormalizerTest extends MediaWikiIntegrationTestCa
 		// is part of the name rather than a namespace, and is capitalized like any other first letter.
 		yield 'a prefix naming no namespace stays in the name' => [ 'iso:9001', 'Iso:9001' ];
 
-		// The namespace Schemas live in is the one prefix that still names the Schema written down.
-		yield 'the Schema namespace spelled out is not part of the name' => [ 'Schema:Person', 'Person' ];
+		// A name is never split into a prefix and a remainder, so a prefix of any kind is part of the
+		// name and its page is the one titled that way: Schema:Schema:Person, Schema:Help:Person.
+		yield 'the Schema namespace spelled out stays in the name' => [ 'Schema:Person', 'Schema:Person' ];
+		yield 'another namespace stays in the name' => [ 'Help:Person', 'Help:Person' ];
+		yield 'so normalizing again renames nothing' => [ 'Schema:Schema:Person', 'Schema:Schema:Person' ];
+
+		// No page title can hold a "#", so the name is the page the fragment points into, which is
+		// what MediaWiki makes of such a link.
+		yield 'a fragment names the page before it' => [ 'Person#Details', 'Person' ];
 
 		// Only the first character is touched, so these stay three different Schemas.
 		yield 'a capital after the first character survives' => [ 'pErson', 'PErson' ];
@@ -76,13 +83,7 @@ class TitleBasedSchemaReferenceNormalizerTest extends MediaWikiIntegrationTestCa
 	public static function unnormalizableNameProvider(): iterable {
 		yield 'no title can be made of it' => [ 'Person|Company' ];
 		yield 'its normal form is a reserved Schema name' => [ 'page_' ];
-
-		// MediaWiki reads a prefix as a namespace and hands back the bare remainder, which names a
-		// different Schema than the one written down. Renaming to it would be a silent substitution.
-		yield 'it names another namespace' => [ 'Help:Person' ];
-		yield 'it names another namespace that exists' => [ 'Category:Person' ];
-		yield 'it names a talk page' => [ 'Talk:Person' ];
-		yield 'it carries a fragment' => [ 'Person#Details' ];
+		yield 'a leading colon makes no page' => [ ':Person' ];
 		yield 'it is a fragment alone' => [ '#Details' ];
 	}
 

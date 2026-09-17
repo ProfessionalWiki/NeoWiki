@@ -31,6 +31,23 @@ class LayoutPersistenceDeserializerTest extends TestCase {
 		$this->assertSame( [], $layout->getSettings() );
 	}
 
+	/**
+	 * A Layout references a Schema, and several spellings name one Schema page, so the reference is
+	 * read the same way a Subject's is — otherwise the Layout would match no Subject's Schema.
+	 */
+	public function testSchemaIsReadAsTheNameOfTheSchemaItNames(): void {
+		$deserializer = new LayoutPersistenceDeserializer(
+			TestSources::newSchemaReferenceParser( [ 'person' => 'Person' ] )
+		);
+
+		$layout = $deserializer->deserialize(
+			new LayoutName( 'PersonCard' ),
+			'{ "schema": "person", "type": "infobox" }'
+		);
+
+		$this->assertSame( 'Person', $layout->getSchema()->getText() );
+	}
+
 	public function testDeserializesFullLayout(): void {
 		$deserializer = new LayoutPersistenceDeserializer( TestSources::newSchemaReferenceParser() );
 

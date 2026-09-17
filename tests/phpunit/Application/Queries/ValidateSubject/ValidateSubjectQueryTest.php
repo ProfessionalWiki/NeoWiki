@@ -35,6 +35,16 @@ class ValidateSubjectQueryTest extends TestCase {
 		$this->assertSame( [], $violations );
 	}
 
+	/**
+	 * The reference the caller sends is read as a Subject's own is, so validating against the Schema
+	 * a spelling names agrees with validating the Subject that ends up stored under it.
+	 */
+	public function testValidatesAgainstTheSchemaAnotherSpellingNames(): void {
+		$violations = $this->newQuery( [ 'company' => self::LOCAL_SCHEMA_NAME ] )->validate( 'company', [] );
+
+		$this->assertSame( [], $violations );
+	}
+
 	public function testValidatesAgainstASchemaOfAnotherSource(): void {
 		$violations = $this->newQuery()->validate(
 			[ 'source' => 'catalog', 'name' => self::SOURCED_SCHEMA_NAME ],
@@ -59,7 +69,10 @@ class ValidateSubjectQueryTest extends TestCase {
 		);
 	}
 
-	private function newQuery(): ValidateSubjectQuery {
+	/**
+	 * @param array<string, string> $schemaNames Name as written => the name of the Schema it names.
+	 */
+	private function newQuery( array $schemaNames = [] ): ValidateSubjectQuery {
 		return new ValidateSubjectQuery(
 			schemaResolver: $this->newSchemaResolver(),
 			subjectValidator: new SubjectValidator(
@@ -73,7 +86,7 @@ class ValidateSubjectQueryTest extends TestCase {
 				TestSubjectIds::newParser(),
 			),
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
-			schemaReferenceParser: TestSources::newSchemaReferenceParser(),
+			schemaReferenceParser: TestSources::newSchemaReferenceParser( $schemaNames ),
 		);
 	}
 

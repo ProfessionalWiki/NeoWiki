@@ -54,7 +54,7 @@ class CachingSchemaLookup implements SchemaLookup {
 	}
 
 	public function getSchema( SchemaName $schemaName ): ?Schema {
-		$title = $this->titleFactory->newFromText( $schemaName->getText(), NeoWikiExtension::NS_SCHEMA );
+		$title = $this->titleFactory->makeTitleSafe( NeoWikiExtension::NS_SCHEMA, $schemaName->getText() );
 
 		if ( $title === null || !$title->exists() ) {
 			return null;
@@ -72,7 +72,7 @@ class CachingSchemaLookup implements SchemaLookup {
 
 		if ( !array_key_exists( $cacheKey, $this->resolvedSchemas ) ) {
 			try {
-				$json = $this->getJsonFromSharedCache( $cacheKey, $schemaName );
+				$json = $this->getJsonFromSharedCache( $cacheKey, $title );
 			}
 			catch ( SchemaContentUnavailableException ) {
 				// The revision's content could not be read, which the next call may well manage.
@@ -83,26 +83,25 @@ class CachingSchemaLookup implements SchemaLookup {
 			}
 
 			// Named after the page, not after the asking: the process-local tier is keyed by article id,
-			// so the first spelling asked for in a process would otherwise name the Schema for every
-			// later caller.
-			$this->resolvedSchemas[$cacheKey] = $this->deserialize( new SchemaName( $title->getText() ), $json );
+			// so the first spelling asked for would otherwise name the Schema for every later caller.
+			$this->resolvedSchemas[$cacheKey] = $this->deserialize( $title->getText(), $json );
 		}
 
 		return $this->resolvedSchemas[$cacheKey];
 	}
 
-	private function getJsonFromSharedCache( string $cacheKey, SchemaName $schemaName ): string {
+	private function getJsonFromSharedCache( string $cacheKey, Title $schemaPage ): string {
 		/** @var string $json */
 		$json = $this->cache->getWithSetCallback(
 			$cacheKey,
 			WANObjectCache::TTL_DAY,
-			function ( mixed $oldValue, int &$ttl, array &$setOpts ) use ( $schemaName ): string {
+			function ( mixed $oldValue, int &$ttl, array &$setOpts ) use ( $schemaPage ): string {
 				// Make caching replica-lag aware: if the schema content is read
 				// from a lagged replica, WANObjectCache reduces the TTL instead of
 				// pinning that content under the new revision's key for the full
 				// TTL. Closes the narrow read-after-edit staleness window.
 				$setOpts += Database::getCacheSetOptions( $this->connectionProvider->getReplicaDatabase() );
-				return $this->schemaJsonLookup->getSchemaJson( $schemaName );
+				return $this->schemaJsonLookup->getSchemaJson( $schemaPage );
 			}
 		);
 
@@ -110,13 +109,14 @@ class CachingSchemaLookup implements SchemaLookup {
 	}
 
 	/**
-	 * JSON that is not a valid Schema will not become one on the next call, so the process-local
-	 * tier remembers the null. The shared tier keeps the text either way: parsing it again in the
-	 * next process is cheaper than reading the page again.
+	 * A page titled as no Schema may be named, or holding JSON that is not a valid Schema, will not
+	 * become one on the next call, so the process-local tier remembers the null. The shared tier
+	 * keeps the text either way: parsing it again in the next process is cheaper than reading the
+	 * page again.
 	 */
-	private function deserialize( SchemaName $schemaName, string $json ): ?Schema {
+	private function deserialize( string $pageName, string $json ): ?Schema {
 		try {
-			return $this->schemaDeserializer->deserialize( $schemaName, $json );
+			return $this->schemaDeserializer->deserialize( new SchemaName( $pageName ), $json );
 		}
 		catch ( InvalidArgumentException ) {
 			return null;

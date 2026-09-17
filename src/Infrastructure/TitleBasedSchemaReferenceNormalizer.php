@@ -31,18 +31,14 @@ class TitleBasedSchemaReferenceNormalizer implements SchemaReferenceNormalizer {
 	}
 
 	/**
-	 * The name as written wherever it has no normal form to give, leaving it to whoever looks the Schema
-	 * up to report as missing. canExist() rules out the empty, the invalid, the special and the
-	 * interwiki; the namespace check rules out "Help:Person", which MediaWiki reads as a page of the
-	 * Help namespace and hands back as the bare "Person" — a different Schema than the one written down.
-	 * hasFragment() rules out "Person#Details", whose fragment the title would silently drop. What is
-	 * left is a name no Schema may be called, which SchemaName refuses.
+	 * The whole name titles the page, and is never split into a namespace or interwiki prefix, so
+	 * "Help:Person" names the page Schema:Help:Person. A name that titles no page, or whose page is
+	 * titled as no Schema may be named, is left as written for the lookup to report as missing.
 	 */
 	private function nameOfSchemaPage( SchemaName $name ): SchemaName {
-		$title = $this->titleFactory->newFromText( $name->getText(), NeoWikiExtension::NS_SCHEMA );
+		$title = $this->titleFactory->makeTitleSafe( NeoWikiExtension::NS_SCHEMA, $name->getText() );
 
-		if ( $title === null || !$title->canExist() || $title->hasFragment()
-			|| !$title->inNamespace( NeoWikiExtension::NS_SCHEMA ) ) {
+		if ( $title === null ) {
 			return $name;
 		}
 
