@@ -11,7 +11,7 @@ import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Service } from '@/NeoWikiServices.ts';
-import type { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
+import type { SubjectLabelResult, SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 import { SubjectCreationKey, type SubjectCreation } from '@/components/common/SubjectCreation.ts';
 
 const $i18n = createI18nMock();
@@ -91,8 +91,13 @@ describe( 'SubjectPicker', () => {
 		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue( subject );
 	}
 
-	function searchReturns( results: { id: string; label: string }[] ): void {
-		( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockResolvedValue( results );
+	// The page defaults to the Subject's own label, as a page titled after its Main Subject has, so
+	// a test names the page only where telling namesakes apart is what it is about. That default is
+	// also the shape the picker shows no page for, which is why the tests below name their own.
+	function searchReturns( results: { id: string; label: string; pageTitle?: string }[] ): void {
+		( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockResolvedValue(
+			results.map( ( result ) => ( { ...result, pageTitle: result.pageTitle ?? result.label } ) ),
+		);
 	}
 
 	function menuItemsOf( wrapper: VueWrapper ): MenuItemData[] {
@@ -156,7 +161,7 @@ describe( 'SubjectPicker', () => {
 	} );
 
 	it( 'populates menu items from search results', async () => {
-		( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockResolvedValue( [
+		searchReturns( [
 			{ id: 's1demo1aaaaaaa1', label: 'ACME Inc.' },
 			{ id: 's1demo5sssssss1', label: 'Professional Wiki GmbH' },
 		] );
@@ -172,10 +177,60 @@ describe( 'SubjectPicker', () => {
 		] );
 	} );
 
+	describe( 'telling namesakes apart', () => {
+		// Brackets no locale uses, so only an id put through core's parentheses message satisfies the
+		// assertions below: hardcoded brackets would read as that message's own default.
+		beforeEach( () => {
+			setupMwMock( { messages: { parentheses: ( id: string ) => `<<${ id }>>` } } );
+		} );
+
+		// setupMwMock stubs a global, which vi.restoreAllMocks does not put back.
+		afterEach( () => {
+			vi.unstubAllGlobals();
+		} );
+
+		async function searchedItems( results: { id: string; label: string; pageTitle?: string }[] ): Promise<MenuItemData[]> {
+			searchReturns( results );
+
+			const wrapper = createWrapperWithVModel();
+			await type( wrapper, 'a' );
+
+			return menuItemsOf( wrapper );
+		}
+
+		it( 'puts the page on the second line and the bracketed id beside the label', async () => {
+			const items = await searchedItems( [
+				{ id: 'sEpfwJLnxyQy6vR', label: 'Appellation', pageTitle: 'Rembrandt' },
+				{ id: 'sEpfwJLnuwcxvuJ', label: 'Appellation', pageTitle: 'Rembrandt' },
+			] );
+
+			expect( items ).toEqual( [
+				{
+					value: 'sEpfwJLnxyQy6vR',
+					label: 'Appellation',
+					description: 'Rembrandt',
+					supportingText: '<<sEpfwJLnxyQy6vR>>',
+				},
+				{
+					value: 'sEpfwJLnuwcxvuJ',
+					label: 'Appellation',
+					description: 'Rembrandt',
+					supportingText: '<<sEpfwJLnuwcxvuJ>>',
+				},
+			] );
+		} );
+
+		it( 'shows a row nobody can confuse with its label alone', async () => {
+			const items = await searchedItems( [
+				{ id: 's1demo1aaaaaaa1', label: 'Vincent van Gogh', pageTitle: 'Vincent van Gogh' },
+			] );
+
+			expect( items ).toEqual( [ { value: 's1demo1aaaaaaa1', label: 'Vincent van Gogh' } ] );
+		} );
+	} );
+
 	it( 'clears menu items when input is empty', async () => {
-		( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockResolvedValue( [
-			{ id: 's1demo1aaaaaaa2', label: 'Foo' },
-		] );
+		searchReturns( [ { id: 's1demo1aaaaaaa2', label: 'Foo' } ] );
 
 		const wrapper = createWrapper();
 		const lookup = wrapper.findComponent( CdxLookup );
@@ -271,15 +326,15 @@ describe( 'SubjectPicker', () => {
 	} );
 
 	it( 'discards stale search results when a newer request completes first', async () => {
-		let resolveFirst: ( value: { id: string; label: string }[] ) => void;
-		const firstCallPromise = new Promise<{ id: string; label: string }[]>( ( resolve ) => {
+		let resolveFirst: ( value: SubjectLabelResult[] ) => void;
+		const firstCallPromise = new Promise<SubjectLabelResult[]>( ( resolve ) => {
 			resolveFirst = resolve;
 		} );
 
 		( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> )
 			.mockReturnValueOnce( firstCallPromise )
 			.mockResolvedValueOnce( [
-				{ id: 's1demo5sssssss1', label: 'Second Result' },
+				{ id: 's1demo5sssssss1', label: 'Second Result', pageTitle: 'Second Result' },
 			] );
 
 		const wrapper = createWrapper( { targetSchema: 'Company' } );
@@ -292,7 +347,7 @@ describe( 'SubjectPicker', () => {
 			{ label: 'Second Result', value: 's1demo5sssssss1' },
 		] );
 
-		resolveFirst!( [ { id: 's1demo1aaaaaaa1', label: 'Stale Result' } ] );
+		resolveFirst!( [ { id: 's1demo1aaaaaaa1', label: 'Stale Result', pageTitle: 'Stale Result' } ] );
 		await flushPromises();
 
 		expect( lookup.props( 'menuItems' ) ).toEqual( [
@@ -846,7 +901,7 @@ describe( 'SubjectPicker', () => {
 
 		function searchNeverAnswers(): void {
 			( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockReturnValue(
-				new Promise<{ id: string; label: string }[]>( () => {
+				new Promise<SubjectLabelResult[]>( () => {
 					// Left in flight, so the menu is observed while the search is still running.
 				} ),
 			);
@@ -1125,9 +1180,9 @@ describe( 'SubjectPicker', () => {
 		} );
 
 		it( 'keeps what a search still out finds when the creation is refused', async () => {
-			let answerSearch: ( results: { id: string; label: string }[] ) => void = silence;
+			let answerSearch: ( results: SubjectLabelResult[] ) => void = silence;
 			( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockReturnValue(
-				new Promise<{ id: string; label: string }[]>( ( resolve ) => {
+				new Promise<SubjectLabelResult[]>( ( resolve ) => {
 					answerSearch = resolve;
 				} ),
 			);
@@ -1135,16 +1190,16 @@ describe( 'SubjectPicker', () => {
 			await type( wrapper, 'Widget' );
 			await chooseLastMenuItem( wrapper );
 
-			answerSearch( [ { id: 's1demo5sssssss1', label: 'Widget Co' } ] );
+			answerSearch( [ { id: 's1demo5sssssss1', label: 'Widget Co', pageTitle: 'Widget Co' } ] );
 			await flushPromises();
 
 			expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Widget Co', 'Create "Widget" as a new Product' ] );
 		} );
 
 		it( 'drops what a search still out finds once the creation has landed', async () => {
-			let answerSearch: ( results: { id: string; label: string }[] ) => void = silence;
+			let answerSearch: ( results: SubjectLabelResult[] ) => void = silence;
 			( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockReturnValue(
-				new Promise<{ id: string; label: string }[]>( ( resolve ) => {
+				new Promise<SubjectLabelResult[]>( ( resolve ) => {
 					answerSearch = resolve;
 				} ),
 			);
@@ -1154,7 +1209,7 @@ describe( 'SubjectPicker', () => {
 			await type( wrapper, 'Widget' );
 			await chooseLastMenuItem( wrapper );
 
-			answerSearch( [ { id: 's1demo5sssssss1', label: 'Widget Ltd' } ] );
+			answerSearch( [ { id: 's1demo5sssssss1', label: 'Widget Ltd', pageTitle: 'Widget Ltd' } ] );
 			await flushPromises();
 
 			expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Widget Co', 'Create a new Product' ] );
@@ -1270,6 +1325,44 @@ describe( 'SubjectPicker', () => {
 			function draftsHolding( ...drafts: Subject[] ): Ref<readonly Subject[]> {
 				return shallowRef<readonly Subject[]>( drafts );
 			}
+
+			// Two unsaved Subjects of one Schema are named alike by default, so without telling them
+			// apart the menu offers rows nobody can choose between - the case this picker's
+			// disambiguation exists for, reached without the wiki holding anything at all.
+			it( 'tells two label-less drafts of one Schema apart by their ids', async () => {
+				const drafts = draftsHolding(
+					labellessSubject( 's1draft1aaaaaa1', 'Company', 'Company' ),
+					labellessSubject( 's1draft2bbbbbb1', 'Company', 'Company' ),
+				);
+				const wrapper = await createWrapperOffering(
+					hostOffering( creatorReturning( null ), drafts ),
+					{ targetSchema: 'Company' },
+				);
+
+				await type( wrapper, 'Comp' );
+
+				expect( menuItemsOf( wrapper ).slice( 0, 2 ) ).toEqual( [
+					{ value: 's1draft1aaaaaa1', label: 'Company', supportingText: '(s1draft1aaaaaa1)' },
+					{ value: 's1draft2bbbbbb1', label: 'Company', supportingText: '(s1draft2bbbbbb1)' },
+				] );
+			} );
+
+			// A draft is on no page, so the page the saved namesake sits on is what separates them.
+			it( 'names the page of a saved Subject a draft shares its label with', async () => {
+				searchReturns( [ { id: 's1demo1aaaaaaa1', label: 'Anvil Co', pageTitle: 'Anvil Co of Ohio' } ] );
+				const drafts = draftsHolding( subjectNamed( DRAFT_ID, 'Anvil Co', 'Company' ) );
+				const wrapper = await createWrapperOffering(
+					hostOffering( creatorReturning( null ), drafts ),
+					{ targetSchema: 'Company' },
+				);
+
+				await type( wrapper, 'Anvil' );
+
+				expect( menuItemsOf( wrapper ).slice( 0, 2 ) ).toEqual( [
+					{ value: DRAFT_ID, label: 'Anvil Co' },
+					{ value: 's1demo1aaaaaaa1', label: 'Anvil Co', description: 'Anvil Co of Ohio' },
+				] );
+			} );
 
 			it( 'lists the session drafts of its own Schema above the search results', async () => {
 				searchReturns( [ { id: 's1demo1aaaaaaa1', label: 'ACME Inc.' } ] );
