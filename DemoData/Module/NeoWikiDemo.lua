@@ -68,18 +68,20 @@ function p.subject( frame )
 	return table.concat( rows, '\n' )
 end
 
-function p.otherSubjects( frame )
+function p.subjects( frame )
 	local page = frame.args[1]
 
 	local parts = {}
 	for _, subject in ipairs( nw.getSubjects( page ) ) do
-		if not subject.isMainSubject then
-			parts[#parts + 1] = "'''" .. subject.label .. "''' (" .. subject.schema .. ")"
+		local name = "'''" .. subject.label .. "''' (" .. subject.schema .. ")"
+		if subject.isMainSubject then
+			name = name .. ' — main'
 		end
+		parts[#parts + 1] = name
 	end
 
 	if #parts == 0 then
-		return 'No other Subjects'
+		return 'No Subjects'
 	end
 
 	return table.concat( parts, ', ' )
@@ -150,13 +152,13 @@ local function statementValue( stmt )
 	return v
 end
 
--- Renders a wikitable from the current page's other Subjects.
+-- Renders a wikitable from the current page's Subjects.
 -- Args: columns=Col1, Col2 (required, in order)
 --       schema=SchemaName (optional, filters the Subjects to one schema)
 --       sortBy=ColName (optional)
 --       sortDir=asc|desc (optional, default desc)
 --       numberColumns=Col1, Col2 (optional, formatted with thousand separators)
-function p.otherSubjectTable( frame )
+function p.subjectTable( frame )
 	local columns = mw.text.split( frame.args.columns or '', ',%s*' )
 	local schemaFilter = frame.args.schema
 	local sortBy = frame.args.sortBy
@@ -173,7 +175,7 @@ function p.otherSubjectTable( frame )
 	local rows = {}
 
 	for _, subject in ipairs( nw.getSubjects() ) do
-		if not subject.isMainSubject and ( not schemaFilter or subject.schema == schemaFilter ) then
+		if not schemaFilter or subject.schema == schemaFilter then
 			local row = {}
 			for _, col in ipairs( columns ) do
 				local v = statementValue( subject.statements[col] )

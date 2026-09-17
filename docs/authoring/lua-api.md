@@ -173,9 +173,11 @@ end
 ```
 
 ```lua
--- Only the Subjects the page is not about.
+-- Name the Subject the page is about.
 for _, subject in ipairs(nw.getSubjects()) do
-    if not subject.isMainSubject then
+    if subject.isMainSubject then
+        mw.log(subject.label .. ' (main)')
+    else
         mw.log(subject.label)
     end
 end
@@ -413,10 +415,9 @@ Notes:
   `label` is the stored value, `displayName` the display name.
 - `isMainSubject` says whether the Subject is the Main Subject of the page it was read from. A
   Subject fetched with [`nw.getSubject`](#nwgetsubjectsubjectid) is addressed by id rather than
-  through a page and carries no answer, so the key is absent there. Test that case with
-  `subject.isMainSubject == nil`: `not subject.isMainSubject` is also true of a Subject that is
-  simply not the Main Subject, which is why the filtering example above is safe only on a table
-  `nw.getSubjects` returned.
+  through a page and carries no answer, so the key is absent there. An absent key reads as "not the
+  Main Subject" whichever way you test it; ask `subject.isMainSubject == nil` to tell the unanswered
+  case apart.
 - `schema` is a Schema name for a Schema of this wiki, and a table `{ source = ..., name = ... }` for
   one from another Source. [`nw.getSchema`](#nwgetschemaname) takes either, so
   `nw.getSchema( subject.schema )` works whichever it is.
