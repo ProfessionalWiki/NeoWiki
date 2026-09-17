@@ -33,13 +33,21 @@ The `redherb-card` example renders each value through the [value display compone
 
 ## Editing from a View
 
-The card opens the shared `nw.SubjectEditorDialog` when `canEditSubject` is true. Editing reads go through the
-repositories (`nw.NeoWikiServices.getSubjectRepository()`, `getSchemaRepository()`), not the stores, and reach the
-dialog as props. Seed the editor with `getSubjectForEditing()`: `getSubject()` answers with the revision the wiki
-publishes, which a save would overwrite. A save through the dialog updates the stores itself. Relation fields in the
-dialog offer creating
-the target Subject in place only when the dialog is given an `onCreate` handler alongside `onSave`, which decides
-the page the new Subject goes to; the handler types are in
+The card opens the shared `nw.SubjectEditorDialog` when `canEditSubject` is true. Build its state in `setup()`:
+
+```javascript
+const { editingSubject, editingSchema, editorOpen, openEditor } = nw.useSubjectEditor(
+	nw.NeoWikiServices.getSubjectRepository(),
+	nw.NeoWikiServices.getSchemaRepository()
+);
+```
+
+Bind the three refs to the dialog and call `openEditor( subjectId )` from your edit control. It reads the Subject
+and its Schema fresh, and reports a failed read instead of opening. A save through the dialog updates the stores
+itself.
+
+Relation fields offer creating the target Subject in place only when the dialog is given an `onCreate` handler
+alongside `onSave`, which decides the page the new Subject goes to; the handler types are in
 [`SubjectEditorDialog.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/components/SubjectEditor/SubjectEditorDialog.vue).
 
 Full example: [`resources/init.js`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/init.js) with [`RedHerbCard.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/RedHerbCard.vue).

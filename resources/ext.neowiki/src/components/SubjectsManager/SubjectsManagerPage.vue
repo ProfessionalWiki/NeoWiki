@@ -76,7 +76,7 @@
 					:show-drag-handle="canEdit"
 					:subject-page-url="subjectPageUrl( mainSubject.getId().text )"
 					@toggle="toggleExpanded"
-					@edit="openEditor"
+					@edit="editSubject"
 					@demote="demoteFromMain"
 					@move="openMoveDialog"
 					@delete="confirmDelete"
@@ -125,7 +125,7 @@
 					:show-drag-handle="canEdit"
 					:subject-page-url="subjectPageUrl( subject.getId().text )"
 					@toggle="toggleExpanded"
-					@edit="openEditor"
+					@edit="editSubject"
 					@promote="promoteToMain"
 					@move="openMoveDialog"
 					@delete="confirmDelete"
@@ -201,6 +201,7 @@ import { Schema } from '@/domain/Schema';
 import { SubjectId } from '@/domain/SubjectId';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import { useSubjectEditor } from '@/composables/useSubjectEditor.ts';
 import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vue';
 import SubjectDeleteDialog from '@/components/SubjectsManager/SubjectDeleteDialog.vue';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
@@ -255,11 +256,12 @@ function scrollBehavior(): 'auto' | 'smooth' {
 	return window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches ? 'auto' : 'smooth';
 }
 
-// Editor state is component-local (ADR 16): the dialog opens on data fetched straight from the
-// repositories, not on the store the list below renders from.
-const editingSubject = shallowRef<Subject | null>( null );
-const editingSchema = shallowRef<Schema | null>( null );
-const editorOpen = ref( false );
+const { editingSubject, editingSchema, editorOpen, openEditor } = useSubjectEditor( subjectRepo, schemaRepo );
+
+// The rows emit the Subject they render; the opener reads its own copy and needs only the id.
+function editSubject( edited: Subject ): void {
+	openEditor( edited.getId() );
+}
 
 const deleteConfirmOpen = ref( false );
 const deletingSubject = shallowRef<Subject | null>( null );
@@ -466,26 +468,6 @@ async function demoteFromMain(): Promise<void> {
 	} catch ( error ) {
 		console.error( 'Failed to clear main subject:', error );
 		mw.notify( mw.msg( 'neowiki-managesubjects-main-subject-error' ), { type: 'error' } );
-	}
-}
-
-async function openEditor( subject: Subject ): Promise<void> {
-	try {
-		// Fetch both subject and schema so the editor never opens against stale data
-		// (e.g. after the subject or its schema was edited in another tab).
-		const [ freshSubject, schema ] = await Promise.all( [
-			subjectRepo.getSubjectForEditing( subject.getId() ),
-			schemaRepo.getSchema( subject.getSchemaName() )
-		] );
-
-		editingSubject.value = freshSubject;
-		editingSchema.value = schema;
-		editorOpen.value = true;
-	} catch ( error ) {
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{ type: 'error' }
-		);
 	}
 }
 

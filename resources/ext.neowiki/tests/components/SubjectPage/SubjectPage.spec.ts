@@ -845,14 +845,20 @@ describe( 'SubjectPage', () => {
 			expect( dialog.props( 'schema' ) ).toStrictEqual( freshSchema );
 		} );
 
+		// Asserted on the dialog's props rather than on the Schema read, which the page's own row
+		// loading would satisfy whichever Subject the editor actually opened on.
 		it( 'opens the editor on the referenced Subject whose row asked for it', async () => {
 			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [ referencedSubject ] ) );
+			const freshReferenced = subject( { id: REFERENCED_ID, label: 'Fetched Anvil', schemaName: 'Product' } );
+			getSubjectForEditingMock.mockResolvedValue( freshReferenced );
 
 			const wrapper = await mountLoadedPage();
 			await openEditorOn( wrapper.findAll( EDIT_CONTROL )[ 1 ] );
 
 			expect( getSubjectForEditingMock ).toHaveBeenCalledWith( expect.objectContaining( { text: REFERENCED_ID } ) );
-			expect( getSchemaMock ).toHaveBeenCalledWith( 'Product' );
+			const dialog = wrapper.findComponent( SubjectEditorDialog );
+			expect( dialog.props( 'subject' ) ).toStrictEqual( freshReferenced );
+			expect( dialog.props( 'schema' ) ).toStrictEqual( SCHEMAS.Product );
 		} );
 
 		it( 'reports a failed fetch instead of opening the editor', async () => {
