@@ -35,12 +35,12 @@ class SelectTypeTest extends TestCase {
 	}
 
 	private function statusProperty(): SelectProperty {
-		return TestProperty::buildSelect(
+		return TestProperty::buildSelect( options: [
 			new SelectOption( 'o1', 'Draft' ),
 			new SelectOption( 'o2', 'In review' ),
 			new SelectOption( 'o3', 'Published' ),
-			new SelectOption( 'o4', 'Archived' )
-		);
+			new SelectOption( 'o4', 'Archived' ),
+		] );
 	}
 
 }

@@ -47,10 +47,7 @@ class SelectType implements PropertyType {
 			return [ new Violation( propertyName: null, code: 'required', severity: $definition->severityOf( 'required' ) ) ];
 		}
 
-		$validIds = [];
-		foreach ( $definition->getOptions() as $option ) {
-			$validIds[ $option->getId() ] = true;
-		}
+		$validIds = array_flip( $definition->getOptionIds() );
 
 		$violations = [];
 

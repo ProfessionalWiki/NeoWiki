@@ -137,6 +137,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\CancelGraphStoreRebuildApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectPageApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetJsonSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectEditNoticesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
@@ -222,6 +223,7 @@ use ProfessionalWiki\NeoWiki\Presentation\ConfigDocumentationBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\FrontendModuleLoader;
 use ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder;
+use ProfessionalWiki\NeoWiki\Presentation\JsonSchemaSerializer;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Presentation\LayoutPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectSearchHitHtmlBuilder;
@@ -1736,6 +1738,10 @@ class NeoWikiExtension {
 		return new SchemaPresentationSerializer();
 	}
 
+	public function newJsonSchemaSerializer( string $documentUrl ): JsonSchemaSerializer {
+		return new JsonSchemaSerializer( documentUrl: $documentUrl );
+	}
+
 	private function getPersistenceSchemaDeserializer(): SchemaPersistenceDeserializer {
 		return new SchemaPersistenceDeserializer(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
@@ -2035,6 +2041,10 @@ class NeoWikiExtension {
 
 	public static function newGetSchemaApi(): GetSchemaApi {
 		return new GetSchemaApi();
+	}
+
+	public static function newGetJsonSchemaApi(): GetJsonSchemaApi {
+		return new GetJsonSchemaApi();
 	}
 
 	public static function newGetLayoutApi(): GetLayoutApi {

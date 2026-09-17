@@ -47,4 +47,8 @@ class UnregisteredTypeProperty extends PropertyDefinition {
 		return array_diff_key( $this->json, $this->coreToJson() );
 	}
 
+	public function toJsonSchema(): true {
+		return true;
+	}
+
 }

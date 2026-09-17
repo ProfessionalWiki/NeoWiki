@@ -13,6 +13,19 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType as RelationP
 
 class RelationProperty extends PropertyDefinition {
 
+	private const array RELATION_JSON_SCHEMA = [
+		'type' => 'object',
+		'required' => [ 'target' ],
+		'properties' => [
+			'id' => [ 'type' => 'string' ],
+			'target' => [ 'type' => 'string' ],
+			'properties' => [
+				'type' => 'object',
+				'additionalProperties' => [ 'type' => [ 'string', 'number', 'boolean', 'null' ] ],
+			],
+		],
+	];
+
 	public function __construct(
 		PropertyCore $core,
 		private readonly RelationType $relationType,
@@ -54,6 +67,10 @@ class RelationProperty extends PropertyDefinition {
 			'targetSchema' => $this->targetSchema->toJson(),
 			'multiple' => $this->multiple,
 		];
+	}
+
+	public function toJsonSchema(): array {
+		return $this->listValueSchema( self::RELATION_JSON_SCHEMA );
 	}
 
 }
