@@ -66,23 +66,28 @@ local function testGetMainSubjectNonexistentPage()
 	return nw.getMainSubject( 'NonexistentPage12345' )
 end
 
--- getOtherSubjects tests
+-- getSubjects tests
 
-local function testGetOtherSubjectsReturnsCount()
-	local otherSubjects = nw.getOtherSubjects( pageWithOtherSubjects )
-	if not otherSubjects or #otherSubjects == 0 then return 0 end
-	return #otherSubjects
+local function testGetSubjectsReturnsCount()
+	return #nw.getSubjects( pageWithOtherSubjects )
 end
 
-local function testGetOtherSubjectsHasLabels()
-	local otherSubjects = nw.getOtherSubjects( pageWithOtherSubjects )
-	if not otherSubjects or #otherSubjects == 0 then return 'none' end
-	return otherSubjects[1].label, otherSubjects[1].schema
+local function testGetSubjectsReturnsTheMainSubjectFirst()
+	local subjects = nw.getSubjects( pageWithOtherSubjects )
+	return subjects[1].label, subjects[1].isMainSubject
 end
 
-local function testGetOtherSubjectsEmptyForPageWithoutOtherSubjects()
-	local otherSubjects = nw.getOtherSubjects( page )
-	return #otherSubjects
+local function testGetSubjectsMarksTheOtherSubjects()
+	local subjects = nw.getSubjects( pageWithOtherSubjects )
+	return subjects[2].label, subjects[2].schema, subjects[2].isMainSubject
+end
+
+local function testGetSubjectsOnPageWithOnlyAMainSubject()
+	return #nw.getSubjects( page )
+end
+
+local function testGetSubjectsOnNonexistentPage()
+	return #nw.getSubjects( 'NonexistentPage12345' )
 end
 
 -- query tests
@@ -230,13 +235,17 @@ local tests = {
 	{ name = 'getMainSubject returns nil for nonexistent page',
 	  func = testGetMainSubjectNonexistentPage, expect = { nil } },
 
-	-- getOtherSubjects
-	{ name = 'getOtherSubjects returns correct count',
-	  func = testGetOtherSubjectsReturnsCount, expect = { 1 } },
-	{ name = 'getOtherSubjects includes label and schema',
-	  func = testGetOtherSubjectsHasLabels, expect = { 'Other Entry', 'Entry' } },
-	{ name = 'getOtherSubjects returns empty for page without other subjects',
-	  func = testGetOtherSubjectsEmptyForPageWithoutOtherSubjects, expect = { 0 } },
+	-- getSubjects
+	{ name = 'getSubjects returns every Subject on the page',
+	  func = testGetSubjectsReturnsCount, expect = { 2 } },
+	{ name = 'getSubjects returns the Main Subject first, marked as such',
+	  func = testGetSubjectsReturnsTheMainSubjectFirst, expect = { 'Main', true } },
+	{ name = 'getSubjects marks the Subjects that are not the Main Subject',
+	  func = testGetSubjectsMarksTheOtherSubjects, expect = { 'Other Entry', 'Entry', false } },
+	{ name = 'getSubjects returns only the Main Subject of a page holding no others',
+	  func = testGetSubjectsOnPageWithOnlyAMainSubject, expect = { 1 } },
+	{ name = 'getSubjects returns empty for a nonexistent page',
+	  func = testGetSubjectsOnNonexistentPage, expect = { 0 } },
 
 	-- query
 	{ name = 'query rejects empty string with localized message',

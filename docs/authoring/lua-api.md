@@ -15,9 +15,9 @@ enough.
 | Read every value from a multi-valued property | [`nw.getAll`](#nwgetallpropertyname-options) |
 | Get a page's Main Subject (label, schema, all properties) | [`nw.getMainSubject`](#nwgetmainsubjectpagename) |
 | Get a Subject by its ID, regardless of which page it's on | [`nw.getSubject`](#nwgetsubjectsubjectid) |
+| List every Subject on a page | [`nw.getSubjects`](#nwgetsubjectspagename) |
 | Run a read-only Cypher query | [`nw.query`](#nwquerycypher-params) |
 | Run a read-only SPARQL query | [`nw.sparqlQuery`](#nwsparqlquerysparql) |
-| List a page's Subjects other than the Main Subject | [`nw.getOtherSubjects`](#nwgetothersubjectspagename) |
 | Inspect a Schema | [`nw.getSchema`](#nwgetschemaname) |
 
 For definitions of terms like Subject, Schema, and Statement, see the [Glossary](../glossary.md).
@@ -146,9 +146,9 @@ local subject = nw.getSubject('s1abc5def6ghi78')
 local sourced = nw.getSubject('otherwiki:s1abc5def6ghi78')
 ```
 
-### `nw.getOtherSubjects(pageName)`
+### `nw.getSubjects(pageName)`
 
-Returns every Subject on a page other than its Main Subject, as a 1-indexed Lua table.
+Returns every Subject on a page, the Main Subject first where the page has one.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -157,16 +157,27 @@ Returns every Subject on a page other than its Main Subject, as a 1-indexed Lua 
 #### Returns
 
 A 1-indexed Lua table of Subject tables (see [Subject table format](#subject-table-format)).
-Returns an empty table `{}` (not `nil`) if the page has no other Subjects or is not readable (see
+Returns an empty table `{}` (not `nil`) if the page holds no Subjects or is not readable (see
 [Permissions](#permissions)), so it's safe to iterate the result directly with `ipairs`.
+
+[`nw.getSubject`](#nwgetsubjectsubjectid) differs by one letter and takes a Subject ID rather than a
+page name. Neither call reports the other's argument as an error, so check which one you named when
+a call comes back empty.
 
 #### Examples
 
 ```lua
-local otherSubjects = nw.getOtherSubjects()
-
-for _, subject in ipairs(otherSubjects) do
+for _, subject in ipairs(nw.getSubjects()) do
     mw.log(subject.label)
+end
+```
+
+```lua
+-- Only the Subjects the page is not about.
+for _, subject in ipairs(nw.getSubjects()) do
+    if not subject.isMainSubject then
+        mw.log(subject.label)
+    end
 end
 ```
 
@@ -367,7 +378,7 @@ end
 
 ## Subject table format
 
-Subject tables returned by `getMainSubject`, `getSubject`, and `getOtherSubjects` have this
+Subject tables returned by `getMainSubject`, `getSubject`, and `getSubjects` have this
 structure:
 
 ```lua
@@ -376,6 +387,7 @@ structure:
     label = 'ACME Inc.',
     storedLabel = 'ACME Inc.',
     schema = 'Company',
+    isMainSubject = true,
     statements = {
         ['Headquarters'] = { propertyType = 'text',     values = { [1] = 'Berlin' } },
         ['Founded at']   = { propertyType = 'number',   values = { [1] = 2005 } },
@@ -399,6 +411,12 @@ Notes:
   name when it is the page's Main Subject, and its Schema name otherwise. `storedLabel` carries the
   stored value and is `nil` when the Subject has none. The REST API splits these the other way:
   `label` is the stored value, `displayName` the display name.
+- `isMainSubject` says whether the Subject is the Main Subject of the page it was read from. A
+  Subject fetched with [`nw.getSubject`](#nwgetsubjectsubjectid) is addressed by id rather than
+  through a page and carries no answer, so the key is absent there. Test that case with
+  `subject.isMainSubject == nil`: `not subject.isMainSubject` is also true of a Subject that is
+  simply not the Main Subject, which is why the filtering example above is safe only on a table
+  `nw.getSubjects` returned.
 - `schema` is a Schema name for a Schema of this wiki, and a table `{ source = ..., name = ... }` for
   one from another Source. [`nw.getSchema`](#nwgetschemaname) takes either, so
   `nw.getSchema( subject.schema )` works whichever it is.
@@ -424,7 +442,7 @@ empty table, a relation to such a Subject shows the Subject ID as its label, and
 
 Each of these counts as an expensive parser function (against the page's expensive function limit):
 `nw.query`, `nw.sparqlQuery`, `nw.getSchema`, and `nw.getSubject` on every call; `nw.getValue`,
-`nw.getAll`, `nw.getMainSubject`, and `nw.getOtherSubjects` only when passed a `page`/`subject`
+`nw.getAll`, `nw.getMainSubject`, and `nw.getSubjects` only when passed a `page`/`subject`
 option or page name. Reads of the current page do not count.
 
 ## Related Documentation

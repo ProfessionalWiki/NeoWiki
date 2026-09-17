@@ -163,7 +163,7 @@ class SubjectDataLookup {
 			return [ null ];
 		}
 
-		return [ $this->subjectToTable( $subject, isMainSubject: true, pageName: $title->getPrefixedText() ) ];
+		return [ $this->subjectOnPageToTable( $subject, $pageSubjects, $title->getPrefixedText() ) ];
 	}
 
 	/**
@@ -179,13 +179,17 @@ class SubjectDataLookup {
 			return [ null ];
 		}
 
-		return [ $this->subjectToTable( $subject, isMainSubject: false, pageName: '' ) ];
+		return [ $this->subjectToTable(
+			subject: $subject,
+			displayName: SubjectDisplayName::forSubject( $subject, isMainSubject: false, pageName: '' ),
+			isMainSubject: null
+		) ];
 	}
 
 	/**
 	 * @return array{0: array<int, array<string, mixed>>}
 	 */
-	public function getOtherSubjectsData( Title $currentTitle, ?string $pageName = null ): array {
+	public function getSubjectsData( Title $currentTitle, ?string $pageName = null ): array {
 		$title = $this->resolveTitle( $currentTitle, $pageName );
 
 		if ( $title === null ) {
@@ -198,16 +202,11 @@ class SubjectDataLookup {
 			return [ [] ];
 		}
 
-		$otherSubjects = $pageSubjects->getOtherSubjects()->asArray();
-
-		if ( $otherSubjects === [] ) {
-			return [ [] ];
-		}
-
 		$result = [];
 		$index = 1;
-		foreach ( $otherSubjects as $subject ) {
-			$result[$index++] = $this->subjectToTable( $subject, isMainSubject: false, pageName: $title->getPrefixedText() );
+
+		foreach ( $pageSubjects->getAllSubjects()->asArray() as $subject ) {
+			$result[$index++] = $this->subjectOnPageToTable( $subject, $pageSubjects, $title->getPrefixedText() );
 		}
 
 		return [ $result ];
@@ -222,24 +221,43 @@ class SubjectDataLookup {
 	}
 
 	/**
+	 * A Subject read as part of its page, which is what knows which of its Subjects is the Main
+	 * Subject, and which of them could have titled it.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function subjectOnPageToTable( Subject $subject, PageSubjects $pageSubjects, string $pageName ): array {
+		return $this->subjectToTable(
+			subject: $subject,
+			displayName: SubjectDisplayName::forSubjectIn( $subject, $pageSubjects, $pageName ),
+			isMainSubject: $pageSubjects->isMainSubject( $subject->getId() )
+		);
+	}
+
+	/**
 	 * `label` carries the display name rather than the stored one, so a template concatenating it
 	 * cannot meet a nil. The stored label, which a Subject need not have, is `storedLabel`. This is
 	 * the one place the two differ from the REST API, where `label` is the stored value.
 	 *
+	 * @param ?bool $isMainSubject Null where the Subject was read without the page that knows the
+	 *   answer. The key is then absent rather than false, so Lua can tell "not the Main Subject"
+	 *   from "nobody asked its page".
 	 * @return array<string, mixed>
 	 */
-	private function subjectToTable( Subject $subject, bool $isMainSubject, string $pageName ): array {
-		return [
+	private function subjectToTable( Subject $subject, string $displayName, ?bool $isMainSubject ): array {
+		$table = [
 			'id' => $subject->getId()->text,
-			'label' => SubjectDisplayName::forSubject(
-				subject: $subject,
-				isMainSubject: $isMainSubject,
-				pageName: $pageName
-			),
+			'label' => $displayName,
 			'storedLabel' => $subject->getLabel()?->text,
 			'schema' => $subject->getSchemaReference()->toJson(),
 			'statements' => $this->statementsToTable( $subject ),
 		];
+
+		if ( $isMainSubject !== null ) {
+			$table['isMainSubject'] = $isMainSubject;
+		}
+
+		return $table;
 	}
 
 	/**

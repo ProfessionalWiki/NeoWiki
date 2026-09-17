@@ -19,7 +19,7 @@ Pages have
 * **Subjects**: list of Subjects, can be empty ([ADR 7](adr/007-multiple-subjects-per-page.md))
 * **Main Subject**: optional identifier of a Subject in the page's Subjects list. Indicates which Subject represents the same entity as the page itself.
 * **Other Subjects**: the page's Subjects apart from its Main Subject, in order. Named in code and on
-  the API surface as `otherSubjects` (`nw.getOtherSubjects`, `canCreateOtherSubject`).
+  the API surface as `otherSubjects` (`otherSubjectIds`, `canCreateOtherSubject`).
 
 *Avoid: "Child Subject" — former term for a page's other Subjects.*
 

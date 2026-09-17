@@ -67,6 +67,15 @@ class SubjectDataLookupTest extends TestCase {
 		);
 	}
 
+	private function createOtherSubject( string $id, string $label ): Subject {
+		return new Subject(
+			id: new SubjectId( $id ),
+			label: new SubjectLabel( $label ),
+			schema: SchemaReference::local( new SchemaName( 'OtherSchema' ) ),
+			statements: new StatementList(),
+		);
+	}
+
 	private function resolverWithMainSubject( Subject $subject ): SubjectResolver {
 		return $this->newResolver( new PageSubjects( $subject, new SubjectMap() ) );
 	}
@@ -585,38 +594,61 @@ class SubjectDataLookupTest extends TestCase {
 		$this->assertSame( 'Jane Doe', $result[0]['statements']['CEO']['values'][1]['label'] );
 	}
 
-	// === getOtherSubjectsData tests ===
+	// === getSubjectsData tests ===
 
-	public function testGetOtherSubjectsReturnsArrayOfSubjectTables(): void {
-		$mainSubject = $this->createSubject();
+	public function testGetSubjectsReturnsTheMainSubjectFirstThenTheOthers(): void {
+		$lookup = new SubjectDataLookup( $this->newResolver(
+			new PageSubjects(
+				$this->createSubject(),
+				new SubjectMap(
+					$this->createOtherSubject( self::OTHER_SUBJECT_ID, 'Other One' ),
+					$this->createOtherSubject( self::TARGET_SUBJECT_ID, 'Other Two' )
+				)
+			)
+		) );
 
-		$other1 = new Subject(
-			id: new SubjectId( self::TARGET_SUBJECT_ID ),
-			label: new SubjectLabel( 'Other One' ),
-			schema: SchemaReference::local( new SchemaName( 'OtherSchema' ) ),
-			statements: new StatementList(),
+		$result = $lookup->getSubjectsData( $this->createTitle() );
+
+		// The other Subjects are held against ascending id order, so sorting by id cannot pass here.
+		$this->assertSame(
+			[ self::SUBJECT_ID, self::OTHER_SUBJECT_ID, self::TARGET_SUBJECT_ID ],
+			array_column( $result[0], 'id' )
 		);
-		$other2 = new Subject(
-			id: new SubjectId( self::OTHER_SUBJECT_ID ),
-			label: new SubjectLabel( 'Other Two' ),
-			schema: SchemaReference::local( new SchemaName( 'OtherSchema' ) ),
-			statements: new StatementList(),
+		$this->assertSame( [ 'Test Subject', 'Other One', 'Other Two' ], array_column( $result[0], 'label' ) );
+	}
+
+	public function testGetSubjectsMarksWhichSubjectIsTheMainOne(): void {
+		$lookup = new SubjectDataLookup( $this->newResolver(
+			new PageSubjects(
+				$this->createSubject(),
+				new SubjectMap( $this->createOtherSubject( self::OTHER_SUBJECT_ID, 'Other' ) )
+			)
+		) );
+
+		$result = $lookup->getSubjectsData( $this->createTitle() );
+
+		$this->assertTrue( $result[0][1]['isMainSubject'] );
+		$this->assertFalse( $result[0][2]['isMainSubject'] );
+	}
+
+	public function testGetSubjectsReturnsTheOtherSubjectsOfAPageWithoutAMainSubject(): void {
+		$lookup = new SubjectDataLookup( $this->newResolver(
+			new PageSubjects(
+				null,
+				new SubjectMap(
+					$this->createOtherSubject( self::OTHER_SUBJECT_ID, 'Other One' ),
+					$this->createOtherSubject( self::TARGET_SUBJECT_ID, 'Other Two' )
+				)
+			)
+		) );
+
+		$result = $lookup->getSubjectsData( $this->createTitle() );
+
+		$this->assertSame(
+			[ self::OTHER_SUBJECT_ID, self::TARGET_SUBJECT_ID ],
+			array_column( $result[0], 'id' )
 		);
-
-		$pageSubjects = new PageSubjects(
-			$mainSubject,
-			new SubjectMap( $other1, $other2 )
-		);
-
-		$lookup = new SubjectDataLookup( $this->newResolver( $pageSubjects ) );
-
-		$result = $lookup->getOtherSubjectsData( $this->createTitle() );
-
-		$this->assertCount( 2, $result[0] );
-		$this->assertSame( self::TARGET_SUBJECT_ID, $result[0][1]['id'] );
-		$this->assertSame( 'Other One', $result[0][1]['label'] );
-		$this->assertSame( self::OTHER_SUBJECT_ID, $result[0][2]['id'] );
-		$this->assertSame( 'Other Two', $result[0][2]['label'] );
+		$this->assertSame( [ false, false ], array_column( $result[0], 'isMainSubject' ) );
 	}
 
 	public function testOtherSubjectWithoutALabelIsNamedAfterItsSchema(): void {
@@ -627,30 +659,108 @@ class SubjectDataLookupTest extends TestCase {
 			statements: new StatementList(),
 		);
 
-		$pageSubjects = new PageSubjects( $this->createSubject(), new SubjectMap( $otherSubject ) );
+		$lookup = new SubjectDataLookup( $this->newResolver(
+			new PageSubjects( $this->createSubject(), new SubjectMap( $otherSubject ) )
+		) );
 
-		$lookup = new SubjectDataLookup( $this->newResolver( $pageSubjects ) );
+		$result = $lookup->getSubjectsData( $this->createTitleNamed( 'Rijksmuseum' ) );
 
-		$result = $lookup->getOtherSubjectsData( $this->createTitleNamed( 'Rijksmuseum' ) );
-
-		$this->assertSame( 'Attendance', $result[0][1]['label'] );
-		$this->assertNull( $result[0][1]['storedLabel'] );
+		$this->assertSame( 'Attendance', $result[0][2]['label'] );
+		$this->assertNull( $result[0][2]['storedLabel'] );
 	}
 
-	public function testGetOtherSubjectsReturnsEmptyArrayWhenThereAreNone(): void {
-		$mainSubject = $this->createSubject();
+	public function testGetSubjectsNamesAnUnlabelledMainSubjectAfterItsPage(): void {
+		$mainSubject = new Subject(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: null,
+			schema: SchemaReference::local( new SchemaName( 'Museum' ) ),
+			statements: new StatementList(),
+		);
 
-		$pageSubjects = new PageSubjects( $mainSubject, new SubjectMap() );
+		$lookup = new SubjectDataLookup( $this->newResolver(
+			new PageSubjects( $mainSubject, new SubjectMap() )
+		) );
 
-		$lookup = new SubjectDataLookup( $this->newResolver( $pageSubjects ) );
+		$result = $lookup->getSubjectsData( $this->createTitleNamed( 'Rijksmuseum' ) );
 
-		$this->assertSame( [ [] ], $lookup->getOtherSubjectsData( $this->createTitle() ) );
+		$this->assertSame( 'Rijksmuseum', $result[0][1]['label'] );
 	}
 
-	public function testGetOtherSubjectsReturnsEmptyArrayWhenNoContent(): void {
+	/**
+	 * Entity-first creation titles a page by the id of a Subject on it, which names nothing, so the
+	 * Main Subject falls through to its Schema name. Reading the page as a whole is what knows the
+	 * ids of all the Subjects it holds, not only the one being named.
+	 */
+	public function testMainSubjectOfAPageTitledByAnotherSubjectsIdIsNamedAfterItsSchema(): void {
+		$mainSubject = new Subject(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: null,
+			schema: SchemaReference::local( new SchemaName( 'Museum' ) ),
+			statements: new StatementList(),
+		);
+
+		$lookup = new SubjectDataLookup( $this->newResolver(
+			new PageSubjects(
+				$mainSubject,
+				new SubjectMap( $this->createOtherSubject( self::OTHER_SUBJECT_ID, 'Other' ) )
+			)
+		) );
+
+		$result = $lookup->getSubjectsData( $this->createTitleNamed( ucfirst( self::OTHER_SUBJECT_ID ) ) );
+
+		$this->assertSame( 'Museum', $result[0][1]['label'] );
+	}
+
+	public function testGetSubjectsReturnsEmptyArrayWhenThePageHasNone(): void {
+		$lookup = new SubjectDataLookup( $this->newResolver( PageSubjects::newEmpty() ) );
+
+		$this->assertSame( [ [] ], $lookup->getSubjectsData( $this->createTitle() ) );
+	}
+
+	public function testGetSubjectsReturnsEmptyArrayWhenNoContent(): void {
 		$lookup = new SubjectDataLookup( $this->emptyResolver() );
 
-		$this->assertSame( [ [] ], $lookup->getOtherSubjectsData( $this->createTitle() ) );
+		$this->assertSame( [ [] ], $lookup->getSubjectsData( $this->createTitle() ) );
+	}
+
+	/**
+	 * The page is what knows the ids of all the Subjects it holds, so reading the Main Subject alone
+	 * still has to apply the rule against every one of them, not only against its own id.
+	 */
+	public function testGetMainSubjectOfAPageTitledByAnotherSubjectsIdIsNamedAfterItsSchema(): void {
+		$mainSubject = new Subject(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: null,
+			schema: SchemaReference::local( new SchemaName( 'Museum' ) ),
+			statements: new StatementList(),
+		);
+
+		$lookup = new SubjectDataLookup( $this->newResolver(
+			new PageSubjects(
+				$mainSubject,
+				new SubjectMap( $this->createOtherSubject( self::OTHER_SUBJECT_ID, 'Other' ) )
+			)
+		) );
+
+		$result = $lookup->getMainSubjectData( $this->createTitleNamed( ucfirst( self::OTHER_SUBJECT_ID ) ) );
+
+		$this->assertSame( 'Museum', $result[0]['label'] );
+	}
+
+	public function testGetMainSubjectIsMarkedAsTheMainSubject(): void {
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $this->createSubject() ) );
+
+		$this->assertTrue( $lookup->getMainSubjectData( $this->createTitle() )[0]['isMainSubject'] );
+	}
+
+	/**
+	 * A Subject asked for by id comes without the page that hosts it, so whether it is that page's
+	 * Main Subject is unknown rather than false.
+	 */
+	public function testSubjectReadByIdCarriesNoMainSubjectMarker(): void {
+		$lookup = new SubjectDataLookup( $this->newResolver( null, $this->createSubject() ) );
+
+		$this->assertArrayNotHasKey( 'isMainSubject', $lookup->getSubjectData( self::SUBJECT_ID )[0] );
 	}
 
 	public function testGetMainSubjectIncludesBooleanStatementValues(): void {

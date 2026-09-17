@@ -16,8 +16,8 @@ local function testGetMainSubjectOnRestrictedPageIsNil()
 	return nw.getMainSubject( restrictedPage )
 end
 
-local function testGetOtherSubjectsOnRestrictedPageIsEmpty()
-	return #nw.getOtherSubjects( restrictedPage )
+local function testGetSubjectsOnRestrictedPageIsEmpty()
+	return #nw.getSubjects( restrictedPage )
 end
 
 local function testGetSchemaOnRestrictedPageIsNil()
@@ -57,8 +57,8 @@ local tests = {
 	  func = testGetValueOnOpenPageStillReads, expect = { 'Berlin' } },
 	{ name = 'getMainSubject returns nil for a page the parsing user may not read',
 	  func = testGetMainSubjectOnRestrictedPageIsNil, expect = { nil } },
-	{ name = 'getOtherSubjects returns nothing for a page the parsing user may not read',
-	  func = testGetOtherSubjectsOnRestrictedPageIsEmpty, expect = { 0 } },
+	{ name = 'getSubjects returns nothing for a page the parsing user may not read',
+	  func = testGetSubjectsOnRestrictedPageIsEmpty, expect = { 0 } },
 	{ name = 'getSchema returns nil for a Schema page the parsing user may not read',
 	  func = testGetSchemaOnRestrictedPageIsNil, expect = { nil } },
 	{ name = 'getSchema still reads a Schema page the parsing user may read',
