@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaJsonLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ObjectForgettingBagOStuff;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
@@ -197,7 +198,7 @@ class CachingSchemaLookupTest extends TestCase {
 
 	private function newDeserializer(): SchemaPersistenceDeserializer {
 		return new SchemaPersistenceDeserializer(
-			PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY )
+			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() )
 		);
 	}
 
@@ -257,6 +258,26 @@ class CachingSchemaLookupTest extends TestCase {
 	}
 
 	/**
+	 * Several spellings name one Schema page, and the process-local tier is keyed by article id, so the
+	 * first spelling asked for in a process would otherwise name the Schema for every later caller.
+	 */
+	public function testSchemaIsNamedAfterItsPageRatherThanAfterTheAsking(): void {
+		$title = $this->createMock( Title::class );
+		$title->method( 'exists' )->willReturn( true );
+		$title->method( 'getArticleID' )->willReturn( 1 );
+		$title->method( 'getLatestRevID' )->willReturn( 100 );
+		$title->method( 'getText' )->willReturn( 'Person' );
+
+		$factory = $this->createMock( TitleFactory::class );
+		$factory->method( 'newFromText' )->willReturn( $title );
+
+		$schema = $this->newLookup( $this->newSpyLookup(), titleFactory: $factory )
+			->getSchema( new SchemaName( 'person' ) );
+
+		$this->assertSame( 'Person', $schema->getName()->getText() );
+	}
+
+	/**
 	 * @param array<string, int> $articleIdsByPageName
 	 */
 	private function newTitleFactoryPerPage( array $articleIdsByPageName ): TitleFactory {
@@ -267,6 +288,7 @@ class CachingSchemaLookupTest extends TestCase {
 			$title->method( 'exists' )->willReturn( true );
 			$title->method( 'getArticleID' )->willReturn( $articleId );
 			$title->method( 'getLatestRevID' )->willReturn( 100 );
+			$title->method( 'getText' )->willReturn( (string)$pageName );
 			$titles[$pageName] = $title;
 		}
 
@@ -282,6 +304,7 @@ class CachingSchemaLookupTest extends TestCase {
 		$title->method( 'exists' )->willReturn( true );
 		$title->method( 'getArticleID' )->willReturn( $articleId );
 		$title->method( 'getLatestRevID' )->willReturnOnConsecutiveCalls( ...$revIds );
+		$title->method( 'getText' )->willReturn( 'Person' );
 
 		$factory = $this->createMock( TitleFactory::class );
 		$factory->method( 'newFromText' )->willReturn( $title );

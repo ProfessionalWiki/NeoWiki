@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 
@@ -51,7 +52,7 @@ class WikiPageLayoutLookupTest extends MediaWikiIntegrationTestCase {
 		return new WikiPageLayoutLookup(
 			pageContentFetcher: $fetcher,
 			authority: $this->mockRegisteredUltimateAuthority(),
-			layoutDeserializer: new LayoutPersistenceDeserializer(),
+			layoutDeserializer: new LayoutPersistenceDeserializer( TestSources::newSchemaReferenceParser() ),
 			titleFactory: $titleFactory,
 			readAuthorizer: new StubPageReadAuthorizer( allowed: $canRead ),
 		);

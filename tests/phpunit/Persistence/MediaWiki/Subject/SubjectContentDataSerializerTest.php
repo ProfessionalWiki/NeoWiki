@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
@@ -373,10 +374,9 @@ JSON;
 	 */
 	private function roundTrip( string $contentJson ): string {
 		$deserializer = new SubjectContentDataDeserializer(
-			new StatementDeserializer( PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ), TestSubjectIds::newParser() ),
-			TestSubjectIds::newParser(),
+			new StatementDeserializer( PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ), TestSubjectIds::newParser() ),
 			new NullLogger(),
-			new FixedSchemaReferenceNormalizer()
+			TestSources::newSchemaReferenceParser()
 		);
 
 		return ( new SubjectContentDataSerializer() )->serialize( $deserializer->deserialize( $contentJson ) );

@@ -46,7 +46,7 @@ class SubjectValidatorTest extends TestCase {
 
 	protected function setUp(): void {
 		$this->validator = new SubjectValidator(
-			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 			subjectLookup: $this->newSubjectLookup(),
 			sourceRegistry: TestSources::newRegistry(),
 		);
@@ -556,7 +556,7 @@ class SubjectValidatorTest extends TestCase {
 	public function testResolvesEveryRelationTargetInOneLookup(): void {
 		$subjectLookup = $this->newSubjectLookup();
 		$validator = new SubjectValidator(
-			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 			subjectLookup: $subjectLookup,
 			sourceRegistry: TestSources::newRegistry(),
 		);
@@ -625,7 +625,7 @@ class SubjectValidatorTest extends TestCase {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: false, default: null ),
 			[ 'relation' => 'has', 'targetSchema' => self::TARGET_SCHEMA, 'multiple' => $multiple ],
-			TestSubjectIds::LOCAL_SOURCE_KEY,
+			TestSources::newSchemaReferenceParser(),
 		);
 	}
 

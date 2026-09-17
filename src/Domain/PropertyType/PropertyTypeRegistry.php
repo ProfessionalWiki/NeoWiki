@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\PropertyType;
 
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\BooleanType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
@@ -21,17 +22,17 @@ class PropertyTypeRegistry implements PropertyTypeLookup {
 	private array $types = [];
 
 	/**
-	 * @param string $localSourceKey The wiki's own Source key, which the relation type needs to read a
-	 *   `targetSchema` naming it (ADR 23).
+	 * @param SchemaReferenceParser $schemaReferenceParser Reads the `targetSchema` of a relation
+	 *   property, which is a Schema reference like any other and names one Schema however written.
 	 */
-	public static function withCoreTypes( string $localSourceKey ): self {
+	public static function withCoreTypes( SchemaReferenceParser $schemaReferenceParser ): self {
 		$registry = new self();
 		$registry->registerType( new TextType() );
 		$registry->registerType( new UrlType() );
 		$registry->registerType( new NumberType() );
 		$registry->registerType( new SelectType() );
 		$registry->registerType( new BooleanType() );
-		$registry->registerType( new RelationType( $localSourceKey ) );
+		$registry->registerType( new RelationType( $schemaReferenceParser ) );
 		$registry->registerType( new DateTimeType() );
 		$registry->registerType( new DateType() );
 		return $registry;

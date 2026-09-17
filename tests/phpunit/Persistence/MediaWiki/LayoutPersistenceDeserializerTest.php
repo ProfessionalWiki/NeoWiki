@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Layout\LayoutName;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutPersistenceDeserializer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutPersistenceDeserializer
@@ -15,7 +16,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutPersistenceDeserializer
 class LayoutPersistenceDeserializerTest extends TestCase {
 
 	public function testDeserializesMinimalLayout(): void {
-		$deserializer = new LayoutPersistenceDeserializer();
+		$deserializer = new LayoutPersistenceDeserializer( TestSources::newSchemaReferenceParser() );
 
 		$layout = $deserializer->deserialize(
 			new LayoutName( 'FinancialOverview' ),
@@ -31,7 +32,7 @@ class LayoutPersistenceDeserializerTest extends TestCase {
 	}
 
 	public function testDeserializesFullLayout(): void {
-		$deserializer = new LayoutPersistenceDeserializer();
+		$deserializer = new LayoutPersistenceDeserializer( TestSources::newSchemaReferenceParser() );
 
 		$layout = $deserializer->deserialize(
 			new LayoutName( 'FinancialOverview' ),
@@ -66,7 +67,7 @@ class LayoutPersistenceDeserializerTest extends TestCase {
 	}
 
 	public function testInvalidJsonThrows(): void {
-		$deserializer = new LayoutPersistenceDeserializer();
+		$deserializer = new LayoutPersistenceDeserializer( TestSources::newSchemaReferenceParser() );
 
 		$this->expectException( InvalidArgumentException::class );
 

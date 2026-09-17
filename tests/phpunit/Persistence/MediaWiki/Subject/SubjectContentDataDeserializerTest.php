@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Psr\Log\Test\TestLogger;
@@ -25,7 +26,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedSchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceNormalizer;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer
@@ -68,13 +69,12 @@ JSON
 
 	private function newDeserializer(
 		?LoggerInterface $logger = null,
-		?SchemaReferenceNormalizer $schemaReferenceNormalizer = null
+		?SchemaReferenceParser $schemaReferenceParser = null
 	): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer(
 			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup(), TestSubjectIds::newParser() ),
-			TestSubjectIds::newParser(),
 			$logger ?? new NullLogger(),
-			$schemaReferenceNormalizer ?? new FixedSchemaReferenceNormalizer()
+			$schemaReferenceParser ?? TestSources::newSchemaReferenceParser()
 		);
 	}
 
@@ -299,7 +299,7 @@ JSON
 	 */
 	public function testSchemaNameIsNormalizedWhenRead(): void {
 		$subjects = $this->newDeserializer(
-			schemaReferenceNormalizer: new FixedSchemaReferenceNormalizer( [ 'person' => 'Person' ] )
+			schemaReferenceParser: TestSources::newSchemaReferenceParser( [ 'person' => 'Person' ] )
 		)->deserialize(
 			<<<'JSON'
 {

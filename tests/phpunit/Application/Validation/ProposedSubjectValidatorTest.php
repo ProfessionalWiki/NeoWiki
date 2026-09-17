@@ -42,7 +42,7 @@ class ProposedSubjectValidatorTest extends TestCase {
 		return new ProposedSubjectValidator(
 			schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
 			subjectValidator: new SubjectValidator(
-				propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+				propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 				subjectLookup: new InMemorySubjectLookup(),
 				sourceRegistry: TestSources::newRegistry(),
 			),

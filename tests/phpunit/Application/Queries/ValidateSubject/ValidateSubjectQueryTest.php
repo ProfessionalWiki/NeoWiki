@@ -64,17 +64,17 @@ class ValidateSubjectQueryTest extends TestCase {
 		return new ValidateSubjectQuery(
 			schemaResolver: $this->newSchemaResolver(),
 			subjectValidator: new SubjectValidator(
-				propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+				propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 				subjectLookup: new InMemorySubjectLookup(),
 				sourceRegistry: TestSources::newRegistry(),
 			),
 			statementListBuilder: new StatementListBuilder(
-				PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+				PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 				new ProductionIdGenerator(),
 				TestSubjectIds::newParser(),
 			),
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
-			localSourceKey: TestSubjectIds::LOCAL_SOURCE_KEY,
+			schemaReferenceParser: TestSources::newSchemaReferenceParser(),
 		);
 	}
 

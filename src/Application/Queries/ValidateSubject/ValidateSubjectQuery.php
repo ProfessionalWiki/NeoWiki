@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
 readonly class ValidateSubjectQuery {
@@ -19,7 +20,7 @@ readonly class ValidateSubjectQuery {
 		private SubjectValidator $subjectValidator,
 		private StatementListBuilder $statementListBuilder,
 		private SelectStatementResolver $selectStatementResolver,
-		private string $localSourceKey,
+		private SchemaReferenceParser $schemaReferenceParser,
 	) {
 	}
 
@@ -34,7 +35,7 @@ readonly class ValidateSubjectQuery {
 	 * @throws SchemaNotFoundException when no Source offers the Schema.
 	 */
 	public function validate( mixed $schema, array $statements ): array {
-		$reference = SchemaReference::fromJson( $schema, $this->localSourceKey );
+		$reference = $this->schemaReferenceParser->fromJson( $schema );
 		$resolvedSchema = $this->schemaResolver->getSchema( $reference );
 
 		if ( $resolvedSchema === null ) {

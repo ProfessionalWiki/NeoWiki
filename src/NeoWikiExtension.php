@@ -78,6 +78,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredExcep
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceNormalizer;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
@@ -259,6 +260,7 @@ class NeoWikiExtension {
 	private ?WikiConfigSource $wikiConfigSource = null;
 	private ?SchemaLookup $schemaLookup = null;
 	private ?SchemaReferenceNormalizer $schemaReferenceNormalizer = null;
+	private ?SchemaReferenceParser $schemaReferenceParser = null;
 	/** @var array<string, SchemaLookup> */
 	private array $schemaLookupsByUser = [];
 	private static ?self $instance = null;
@@ -349,7 +351,7 @@ class NeoWikiExtension {
 
 	public function getPropertyTypeRegistry(): PropertyTypeRegistry {
 		if ( !isset( $this->propertyTypeRegistry ) ) {
-			$this->propertyTypeRegistry = PropertyTypeRegistry::withCoreTypes( $this->config->wikiId );
+			$this->propertyTypeRegistry = PropertyTypeRegistry::withCoreTypes( $this->getSchemaReferenceParser() );
 		}
 
 		$this->ensureExtensionsRegistered();
@@ -421,10 +423,18 @@ class NeoWikiExtension {
 	public function newSubjectContentDataDeserializer(): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer(
 			new StatementDeserializer( $this->getPropertyTypeLookup(), $this->getSubjectIdParser() ),
-			$this->getSubjectIdParser(),
 			LoggerFactory::getInstance( 'NeoWiki' ),
+			$this->getSchemaReferenceParser()
+		);
+	}
+
+	public function getSchemaReferenceParser(): SchemaReferenceParser {
+		$this->schemaReferenceParser ??= new SchemaReferenceParser(
+			$this->config->wikiId,
 			$this->getSchemaReferenceNormalizer()
 		);
+
+		return $this->schemaReferenceParser;
 	}
 
 	/**
@@ -1475,7 +1485,7 @@ class NeoWikiExtension {
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			subjectIdParser: $this->getSubjectIdParser(),
-			schemaReferenceNormalizer: $this->getSchemaReferenceNormalizer(),
+			schemaReferenceParser: $this->getSchemaReferenceParser(),
 			validationEnforced: $this->isValidationEnforced(),
 		);
 	}
@@ -1491,7 +1501,7 @@ class NeoWikiExtension {
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
-			schemaReferenceNormalizer: $this->getSchemaReferenceNormalizer(),
+			schemaReferenceParser: $this->getSchemaReferenceParser(),
 			validationEnforced: $this->isValidationEnforced(),
 		);
 	}
@@ -1694,7 +1704,7 @@ class NeoWikiExtension {
 	}
 
 	private function getLayoutPersistenceDeserializer(): LayoutPersistenceDeserializer {
-		return new LayoutPersistenceDeserializer();
+		return new LayoutPersistenceDeserializer( $this->getSchemaReferenceParser() );
 	}
 
 	public function getSchemaNameLookup(): SchemaNameLookup {
@@ -1885,7 +1895,7 @@ class NeoWikiExtension {
 			subjectValidator: $this->newSubjectValidator( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
-			localSourceKey: $this->config->wikiId,
+			schemaReferenceParser: $this->getSchemaReferenceParser(),
 		);
 	}
 

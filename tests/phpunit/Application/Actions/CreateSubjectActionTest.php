@@ -91,7 +91,7 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	private function newCreateSubjectAction( bool $validationEnforced = false ): CreateSubjectAction {
-		$registry = PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY );
+		$registry = PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() );
 		return new CreateSubjectAction(
 			$this->presenterSpy,
 			$this->subjectRepository,
@@ -116,7 +116,7 @@ class CreateSubjectActionTest extends TestCase {
 			$this->pageIdentifiersLookup,
 			$this->pageIdentifiersResolver,
 			TestSubjectIds::newParser(),
-			new FixedSchemaReferenceNormalizer( [ 'person' => 'Person' ] ),
+			TestSources::newSchemaReferenceParser( [ 'person' => 'Person' ] ),
 			$validationEnforced,
 		);
 	}

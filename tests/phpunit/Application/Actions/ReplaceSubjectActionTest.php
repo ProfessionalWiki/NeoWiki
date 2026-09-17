@@ -71,7 +71,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		bool $validationEnforced = false,
 		?PageReadAuthorizer $readAuthorizer = null,
 	): ReplaceSubjectAction {
-		$registry = PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY );
+		$registry = PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() );
 		$builder = new StatementListBuilder(
 			propertyTypeLookup: $registry,
 			idGenerator: new StubIdGenerator( '11111111111127' ),
