@@ -55,9 +55,15 @@ php maintenance/run.php NeoWiki:RebuildGraphDatabases
 [Rebuild](maintenance.md#rebuilding-the-graph) after every upgrade: with no release notes there is no way to tell
 whether the new version changed the projected shape, and rebuilds are quick at evaluation scale.
 
+If your wiki runs CirrusSearch, also [update its search index](maintenance.md#making-subjects-searchable).
+
 If your install predates September 2026 and holds restricted content, run `php maintenance/run.php refreshLinks`
 once: categories and page properties that earlier parses derived from Subject data were recorded without a
 permission check, and MediaWiki rewrites those tables only on an edit, not on a view.
+
+If your wiki uses MediaWiki's built-in database search and has pages saved before September 2026, run
+`php maintenance/run.php rebuildtextindex` once, so that those pages are
+[findable by their Subjects](maintenance.md#making-subjects-searchable).
 
 If your Subjects predate the optional Subject label, run
 [clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before that rebuild.

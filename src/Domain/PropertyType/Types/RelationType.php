@@ -70,4 +70,11 @@ class RelationType implements PropertyType {
 		return $violations;
 	}
 
+	/**
+	 * Readers find the target by its own label.
+	 */
+	public function searchText( NeoValue $value, ?PropertyDefinition $definition ): array {
+		return [];
+	}
+
 }

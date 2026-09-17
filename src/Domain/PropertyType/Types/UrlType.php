@@ -102,4 +102,8 @@ class UrlType implements PropertyType {
 		return preg_match( $pattern, $urlString ) === 1;
 	}
 
+	public function searchText( NeoValue $value, ?PropertyDefinition $definition ): array {
+		return $value instanceof StringValue ? $value->strings : [];
+	}
+
 }

@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints;
 use Exception;
 use ManualLogEntry;
 use MediaWiki\Block\DatabaseBlock;
+use MediaWiki\Content\ContentHandler;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
@@ -17,14 +18,18 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
+use MediaWiki\Search\SearchUpdate;
 use MediaWiki\Title\ForeignTitle;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 use MessageLocalizer;
+use NullIndexField;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigExample;
@@ -42,6 +47,8 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
 use MediaWiki\SpecialPage\SpecialPage;
+use SearchEngine;
+use SearchIndexField;
 use Skin;
 use SkinTemplate;
 use Throwable;
@@ -50,6 +57,8 @@ use WikiPage;
 class NeoWikiHooks {
 
 	private const SPECIAL_PAGE_CLASS_PREFIX = 'ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\';
+
+	private const SEARCH_UPDATE_BEFORE_1_44 = 'MediaWiki\\Deferred\\SearchUpdate';
 
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
 		$carriesCreateSubjectButton = self::carriesCreateSubjectButton( $out );
@@ -342,9 +351,85 @@ class NeoWikiHooks {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision );
 		$wikiPage->doPurge(); // clear cache
 
+		self::updateSearchIndexOfSlotOnlyEdit( $revision );
+
 		if ( self::changedTheContent( $revision ) ) {
 			self::rebuildStoresHoldingChangedMapping( $wikiPage->getTitle() );
 		}
+	}
+
+	/**
+	 * Saving in the Subject editor writes the Subject slot and inherits the main one, and MediaWiki
+	 * indexes a page for search only when its main slot changed. Such an edit is indexed from here instead.
+	 */
+	private static function updateSearchIndexOfSlotOnlyEdit( RevisionRecord $revision ): void {
+		if ( !self::changedOnlyTheSubjects( $revision ) ) {
+			return;
+		}
+
+		self::scheduleSearchUpdate( $revision );
+	}
+
+	private static function scheduleSearchUpdate( RevisionRecord $revision ): void {
+		// MediaWiki 1.44 moved SearchUpdate to MediaWiki\Search without an alias and stopped it being a
+		// DeferrableUpdate, so the class this wiki has is named at runtime and run from a callable.
+		$searchUpdate = class_exists( SearchUpdate::class ) ? SearchUpdate::class : self::SEARCH_UPDATE_BEFORE_1_44;
+
+		DeferredUpdates::addCallableUpdate(
+			static function () use ( $searchUpdate, $revision ): void {
+				( new $searchUpdate(
+					$revision->getPageId(),
+					$revision->getPage(),
+					$revision->getSlot( SlotRecord::MAIN, RevisionRecord::RAW )->getContent()
+				) )->doUpdate();
+			}
+		);
+	}
+
+	/**
+	 * The shape of a save from the Subject editor: the Subject slot written, the main one inherited.
+	 */
+	private static function changedOnlyTheSubjects( RevisionRecord $revision ): bool {
+		return self::slotIsInherited( $revision, SlotRecord::MAIN )
+			&& !self::slotIsInherited( $revision, MediaWikiSubjectRepository::SLOT_NAME );
+	}
+
+	/**
+	 * True too for a slot the revision does not have at all.
+	 */
+	private static function slotIsInherited( RevisionRecord $revision, string $role ): bool {
+		return !$revision->hasSlot( $role )
+			|| $revision->getSlot( $role, RevisionRecord::RAW )->isInherited();
+	}
+
+	/**
+	 * Declares the field holding a page's Subject text, for a search engine that takes fields from extensions.
+	 *
+	 * @param SearchIndexField[] &$fields
+	 */
+	public static function onSearchIndexFields( array &$fields, SearchEngine $engine ): void {
+		$field = $engine->makeSearchFieldMapping(
+			NeoWikiExtension::SUBJECT_SEARCH_FIELD,
+			SearchIndexField::INDEX_TYPE_TEXT
+		);
+
+		if ( $field instanceof NullIndexField ) {
+			return;
+		}
+
+		$fields[NeoWikiExtension::SUBJECT_SEARCH_FIELD] = $field;
+	}
+
+	public static function onSearchDataForIndex2(
+		array &$fields,
+		ContentHandler $handler,
+		WikiPage $page,
+		ParserOutput $output,
+		SearchEngine $engine,
+		RevisionRecord $revision
+	): void {
+		$fields[NeoWikiExtension::SUBJECT_SEARCH_FIELD] = NeoWikiExtension::getInstance()
+			->newSubjectSearchTextLookup()->getSearchTextForRevision( $revision );
 	}
 
 	/**
@@ -478,6 +563,11 @@ class NeoWikiHooks {
 		$title = Title::newFromPageIdentity( $page );
 
 		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuildFromPrimary( $title );
+
+		// Core re-indexes an undeleted page only when the restored revision's main slot is not inherited.
+		if ( self::slotIsInherited( $restoredRev, SlotRecord::MAIN ) ) {
+			self::scheduleSearchUpdate( $restoredRev );
+		}
 
 		// Restoring a Mapping page puts a projection back that the stores holding it were rebuilt
 		// without, so it changes what their graphs should contain exactly as deleting it did.

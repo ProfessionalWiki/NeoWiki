@@ -15,21 +15,30 @@ class OnExtensionRegistrationTest extends TestCase {
 
 	use HandlesNeo4jEnvOverrides;
 
-	private mixed $routeFiles;
-	private mixed $writeUrl;
-	private mixed $readUrl;
-	private mixed $sparqlStores;
-	private mixed $footerIcons;
-	private mixed $extensionAssetsPath;
+	/**
+	 * The globals registration writes to, restored after every test.
+	 */
+	private const CHANGED_GLOBALS = [
+		'wgRestAPIAdditionalRouteFiles',
+		'wgNeoWikiNeo4jInternalWriteUrl',
+		'wgNeoWikiNeo4jInternalReadUrl',
+		'wgNeoWikiSparqlStores',
+		'wgFooterIcons',
+		'wgExtensionAssetsPath',
+		'wgCirrusSearchWeights',
+	];
+
+	/**
+	 * @var array<string, mixed>
+	 */
+	private array $globalsBefore = [];
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->routeFiles = $GLOBALS['wgRestAPIAdditionalRouteFiles'] ?? null;
-		$this->writeUrl = $GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] ?? null;
-		$this->readUrl = $GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] ?? null;
-		$this->sparqlStores = $GLOBALS['wgNeoWikiSparqlStores'] ?? null;
-		$this->footerIcons = $GLOBALS['wgFooterIcons'] ?? null;
-		$this->extensionAssetsPath = $GLOBALS['wgExtensionAssetsPath'] ?? null;
+
+		foreach ( self::CHANGED_GLOBALS as $name ) {
+			$this->globalsBefore[$name] = $GLOBALS[$name] ?? null;
+		}
 
 		// Clear the CI env overrides so the config-value path is exercised deterministically.
 		$this->snapshotAndClearNeo4jEnvOverrides();
@@ -39,12 +48,11 @@ class OnExtensionRegistrationTest extends TestCase {
 
 	protected function tearDown(): void {
 		$this->restoreNeo4jEnvOverrides();
-		$GLOBALS['wgRestAPIAdditionalRouteFiles'] = $this->routeFiles;
-		$GLOBALS['wgNeoWikiNeo4jInternalWriteUrl'] = $this->writeUrl;
-		$GLOBALS['wgNeoWikiNeo4jInternalReadUrl'] = $this->readUrl;
-		$GLOBALS['wgNeoWikiSparqlStores'] = $this->sparqlStores;
-		$GLOBALS['wgFooterIcons'] = $this->footerIcons;
-		$GLOBALS['wgExtensionAssetsPath'] = $this->extensionAssetsPath;
+
+		foreach ( $this->globalsBefore as $name => $value ) {
+			$GLOBALS[$name] = $value;
+		}
+
 		parent::tearDown();
 	}
 
@@ -180,6 +188,30 @@ class OnExtensionRegistrationTest extends TestCase {
 
 		$this->assertFileExists( $this->fileBehind( $badge['src'] ) );
 		$this->assertFileExists( $this->fileBehind( $badge['sources'][0]['srcset'] ) );
+	}
+
+	public function testWeightsTheSubjectFieldIntoCirrusSearchQueries(): void {
+		$GLOBALS['wgCirrusSearchWeights'] = [ 'text' => 1 ];
+
+		NeoWikiExtension::onExtensionRegistration();
+
+		$this->assertSame( [ 'text' => 1, 'neowiki_text' => 1 ], $GLOBALS['wgCirrusSearchWeights'] );
+	}
+
+	public function testKeepsTheSubjectFieldWeightTheAdministratorConfigured(): void {
+		$GLOBALS['wgCirrusSearchWeights'] = [ 'neowiki_text' => 5 ];
+
+		NeoWikiExtension::onExtensionRegistration();
+
+		$this->assertSame( [ 'neowiki_text' => 5 ], $GLOBALS['wgCirrusSearchWeights'] );
+	}
+
+	public function testAddsNoWeightWithoutCirrusSearch(): void {
+		$GLOBALS['wgCirrusSearchWeights'] = null;
+
+		NeoWikiExtension::onExtensionRegistration();
+
+		$this->assertNull( $GLOBALS['wgCirrusSearchWeights'] );
 	}
 
 	private function fileBehind( string $url ): string {

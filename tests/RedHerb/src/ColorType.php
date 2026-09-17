@@ -82,4 +82,8 @@ class ColorType implements PropertyType {
 		return $violations;
 	}
 
+	public function searchText( NeoValue $value, ?PropertyDefinition $definition ): array {
+		return $value instanceof StringValue ? $value->strings : [];
+	}
+
 }

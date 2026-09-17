@@ -71,7 +71,7 @@ For the people who operate the server.
 
 * [Installation](operations/installation.md) — the Docker demo, or adding NeoWiki to an existing MediaWiki
 * [Upgrading](operations/upgrading.md) — moving your wiki to the latest NeoWiki
-* [Maintenance](operations/maintenance.md) — rebuilding the graph, Neo4j outage behavior, and backups
+* [Maintenance](operations/maintenance.md) — rebuilding the graph and search index, Neo4j outage behavior, and backups
 * [Performance](operations/performance.md) — measured write throughput
 * [Restricted content](operations/restricted-content.md) — wikis where some content is readable only by certain
   users or groups

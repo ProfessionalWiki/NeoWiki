@@ -132,6 +132,29 @@ deliberately typed to that same value is cleared too, so pass `--dry-run` first:
 saving anything, and reporting nothing means there is nothing to do. It walks the
 [subject index](#rebuilding-the-subject-index), so on a wiki whose index is empty, rebuild that first.
 
+## Making Subjects searchable
+
+Special:Search and the search API find a page by its Subjects: their labels, and their text, url, date, date-time,
+number and select values (select values by their option's label). Boolean and relation values are not indexed. A page
+matched only through a Subject value shows no matching text in its result snippet.
+
+Pages are indexed as they are saved. With MediaWiki's built-in database search, cover the pages that already
+existed by rebuilding the wiki's search index:
+
+```sh
+php maintenance/run.php rebuildtextindex
+```
+
+On PostgreSQL, the built-in database search does not index Subject values.
+
+With CirrusSearch, Subject values stay out of the index until it knows the field. Run the first command after
+installing NeoWiki and after every upgrade, and the second when the first reports that the index changed:
+
+```sh
+php maintenance/run.php CirrusSearch:UpdateSearchIndexConfig
+php maintenance/run.php CirrusSearch:ForceSearchIndex
+```
+
 ## What happens during a Neo4j outage
 
 - **Editing pages works.** Edits, deletions and undeletions all commit. NeoWiki logs the projection failure on the

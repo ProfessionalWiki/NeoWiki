@@ -18,8 +18,8 @@ NeoWiki is pre-1.0. Every extension point may change without notice until 1.0.
 
 Contribute to NeoWiki:
 
-- [Property Types](property-types.md) — a new kind of value: its validation, projection, and editing and display
-  components.
+- [Property Types](property-types.md) — a new kind of value: its validation, search text, projection, and editing
+  and display components.
 - [View Types](view-types.md) — a new visual format for rendering a Subject.
 - [Page Property Providers](page-properties.md) — key/value metadata on the Page node in the graph, and refreshing
   it without an edit.

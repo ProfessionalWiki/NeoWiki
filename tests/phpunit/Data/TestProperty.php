@@ -9,6 +9,8 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\CheckboxProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\CurrencyProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UrlProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
@@ -126,6 +128,18 @@ class TestProperty {
 			precision: $precision,
 			minimum: $minimum,
 			maximum: $maximum
+		);
+	}
+
+	public static function buildSelect( SelectOption ...$options ): SelectProperty {
+		return new SelectProperty(
+			core: new PropertyCore(
+				description: '',
+				required: false,
+				default: null
+			),
+			options: $options,
+			multiple: false
 		);
 	}
 

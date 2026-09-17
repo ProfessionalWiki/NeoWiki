@@ -34,6 +34,16 @@ For the [RDF export](../api/rdf-export.md), register a mapper under the Property
 Guard the value shape: the mapper receives whatever a Statement holds. RedHerb's
 [`RedHerbHooks.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbHooks.php) registers a guarded mapper for its color type.
 
+## Search
+
+`PropertyType::searchText()` returns the strings that make a page holding the value [findable through the wiki
+search](../operations/maintenance.md#making-subjects-searchable); an empty array keeps the type's values out of the
+index. It receives the Statement's `NeoValue` and the `PropertyDefinition` the value is stored under — null where the
+Schema does not declare that property with that type, or is unavailable. Guard the value shape: the method receives
+whatever a Statement holds. RedHerb's
+[`ColorType.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/ColorType.php) indexes
+its color by every string part.
+
 ## Frontend components
 
 Register the type's components through the `neowiki.registration` JS hook from your

@@ -48,4 +48,8 @@ class BooleanType implements PropertyType {
 		return [];
 	}
 
+	public function searchText( NeoValue $value, ?PropertyDefinition $definition ): array {
+		return [];
+	}
+
 }
