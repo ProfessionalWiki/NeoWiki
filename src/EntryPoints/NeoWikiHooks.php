@@ -16,6 +16,7 @@ use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOutput;
@@ -28,6 +29,7 @@ use MediaWiki\Title\ForeignTitle;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
+use Wikimedia\Rdbms\IDBAccessObject;
 use MessageLocalizer;
 use NullIndexField;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
@@ -387,6 +389,23 @@ class NeoWikiHooks {
 	}
 
 	/**
+	 * Indexes the page's current revision when core did not: core indexes a page only for a revision
+	 * that wrote the main slot, which a save from the Subject editor inherits. The current revision is
+	 * read fresh from the primary database rather than taken from the revision the hook was handed,
+	 * which for an undeletion or an import is not necessarily the one that ended up current.
+	 */
+	private static function scheduleSearchUpdateOfCurrentRevision( PageIdentity $page ): void {
+		$revision = MediaWikiServices::getInstance()->getRevisionLookup()
+			->getRevisionByPageId( $page->getId(), 0, IDBAccessObject::READ_LATEST );
+
+		if ( $revision === null || !self::slotIsInherited( $revision, SlotRecord::MAIN ) ) {
+			return;
+		}
+
+		self::scheduleSearchUpdate( $revision );
+	}
+
+	/**
 	 * The shape of a save from the Subject editor: the Subject slot written, the main one inherited.
 	 */
 	private static function changedOnlyTheSubjects( RevisionRecord $revision ): bool {
@@ -521,6 +540,8 @@ class NeoWikiHooks {
 		array $pageInfo
 	): void {
 		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuildFromPrimary( $title );
+
+		self::scheduleSearchUpdateOfCurrentRevision( $title );
 	}
 
 	public static function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, ?string $model, ?string $format ): void {
@@ -564,10 +585,7 @@ class NeoWikiHooks {
 
 		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuildFromPrimary( $title );
 
-		// Core re-indexes an undeleted page only when the restored revision's main slot is not inherited.
-		if ( self::slotIsInherited( $restoredRev, SlotRecord::MAIN ) ) {
-			self::scheduleSearchUpdate( $restoredRev );
-		}
+		self::scheduleSearchUpdateOfCurrentRevision( $title );
 
 		// Restoring a Mapping page puts a projection back that the stores holding it were rebuilt
 		// without, so it changes what their graphs should contain exactly as deleting it did.

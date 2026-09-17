@@ -27,6 +27,7 @@ use Wikimedia\Rdbms\IDBAccessObject;
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Search\IndexesSubjectText
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onRevisionFromEditComplete
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onPageUndeleteComplete
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onAfterImportPage
  */
 class SubjectSearchIndexingTest extends NeoWikiIntegrationTestCase {
 
@@ -118,6 +119,46 @@ class SubjectSearchIndexingTest extends NeoWikiIntegrationTestCase {
 		DeferredUpdates::doUpdates();
 
 		$this->assertStringContainsString( 'rotterdam', $this->textIndexedFor( $this->idOfPage( 'Museum page' ) ) );
+	}
+
+	/**
+	 * Restoring history older than the page's current revision leaves that revision current, so nothing
+	 * the page is findable by changed and core indexes nothing. Indexing the last restored revision
+	 * instead would overwrite the page's text in the index with a stale one.
+	 */
+	public function testUndeletingOlderRevisionsOntoALivePageIndexesNothing(): void {
+		$this->createSubjectPage( $this->museumIn( 'Amsterdam' ) );
+		$this->changeSubjectsOfPage( 'Museum page', $this->museumIn( 'Rotterdam' ) );
+		DeferredUpdates::doUpdates();
+		$this->deletePageByName( 'Museum page' );
+
+		$pageId = $this->insertPage( 'Museum page', 'Concertgebouw' )['id'];
+		DeferredUpdates::doUpdates();
+		SpySubjectIndexingSearchEngine::forgetIndexedText();
+
+		$this->undeletePageByName( 'Museum page' );
+		DeferredUpdates::doUpdates();
+
+		$this->assertNull( SpySubjectIndexingSearchEngine::textIndexedForPage( $pageId ) );
+	}
+
+	/**
+	 * Imported revisions bypass the edit path, and the importer inherits the main slot when the imported
+	 * wikitext matches what the page already holds, which is the shape a Subject-editor save exports.
+	 */
+	public function testImportThatChangesOnlyTheSubjectsUpdatesTheIndex(): void {
+		$this->createPageWithSubjects( 'Import target', $this->museumIn( 'Amsterdam' ) );
+		$this->createPageWithSubjects( 'Import source', $this->museumIn( 'Rotterdam' ) );
+		DeferredUpdates::doUpdates();
+		$xml = $this->exportPageToXml( 'Import source' );
+		SpySubjectIndexingSearchEngine::forgetIndexedText();
+
+		$this->importXml( str_replace( 'Import source', 'Import target', $xml ) );
+
+		$this->assertStringContainsString(
+			'rotterdam',
+			$this->textIndexedFor( $this->idOfPage( 'Import target' ) )
+		);
 	}
 
 	private function undeletePageByName( string $pageName ): void {
