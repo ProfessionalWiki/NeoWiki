@@ -1065,6 +1065,19 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectName( 'Help:Unnamed topic', self::GUID_1 );
 	}
 
+	public function testMainSubjectWithoutALabelOnAPageTitledByAnotherSubjectsIdGetsNoNodeName(): void {
+		$store = $this->newProjectionStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build( title: ucfirst( self::GUID_2 ) ),
+			mainSubject: TestSubject::build( id: self::GUID_1, label: null ),
+			otherSubjects: new SubjectMap( TestSubject::build( id: self::GUID_2 ) )
+		) );
+
+		$this->assertSubjectName( null, self::GUID_1 );
+	}
+
 	public function testOtherSubjectWithoutALabelGetsNoNodeName(): void {
 		$store = $this->newProjectionStore();
 

@@ -201,7 +201,7 @@ readonly class UpdateStatementAction {
 		return GetSubjectResponseItem::fromSubject(
 			$subject,
 			$pageIdentifiers,
-			SubjectDisplayName::labelOrPageNameIn( $subject, $pageSubjects, $pageIdentifiers->getTitle() )
+			SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageIdentifiers->getTitle() )
 		);
 	}
 

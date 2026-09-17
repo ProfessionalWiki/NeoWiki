@@ -68,34 +68,26 @@ class PageSubjectsLookupTest extends TestCase {
 		$this->assertFalse( $lookup->pageHasMainSubject( new PageId( self::OTHER_PAGE_ID ) ) );
 	}
 
-	public function testGetMainSubjectIdReturnsTheMainSubject(): void {
-		$lookup = $this->newLookupWithSubjects(
-			new PageSubjects(
-				TestSubject::build( id: 's11111111111maa' ),
-				new SubjectMap( TestSubject::build( id: 's11111111111ca1' ) )
-			)
+	public function testGetPageSubjectsReturnsTheSubjectsOfThePage(): void {
+		$pageSubjects = new PageSubjects(
+			TestSubject::build( id: 's11111111111maa' ),
+			new SubjectMap( TestSubject::build( id: 's11111111111ca1' ) )
 		);
 
-		$this->assertSame(
-			's11111111111maa',
-			$lookup->getMainSubjectId( new PageId( self::PAGE_ID ) )?->text
-		);
+		$lookup = $this->newLookupWithSubjects( $pageSubjects );
+
+		$this->assertEquals( $pageSubjects, $lookup->getPageSubjects( new PageId( self::PAGE_ID ) ) );
 	}
 
-	public function testGetMainSubjectIdIsNullWhenOnlyOtherSubjectsExist(): void {
-		$lookup = $this->newLookupWithSubjects(
-			new PageSubjects( null, new SubjectMap( TestSubject::build() ) )
-		);
-
-		$this->assertNull( $lookup->getMainSubjectId( new PageId( self::PAGE_ID ) ) );
-	}
-
-	public function testGetMainSubjectIdIsNullForOtherPage(): void {
+	public function testGetPageSubjectsIsEmptyForPageWithoutSubjects(): void {
 		$lookup = $this->newLookupWithSubjects(
 			new PageSubjects( TestSubject::build(), new SubjectMap() )
 		);
 
-		$this->assertNull( $lookup->getMainSubjectId( new PageId( self::OTHER_PAGE_ID ) ) );
+		$this->assertEquals(
+			PageSubjects::newEmpty(),
+			$lookup->getPageSubjects( new PageId( self::OTHER_PAGE_ID ) )
+		);
 	}
 
 	private function newLookupWithSubjects( PageSubjects $subjects ): PageSubjectsLookup {

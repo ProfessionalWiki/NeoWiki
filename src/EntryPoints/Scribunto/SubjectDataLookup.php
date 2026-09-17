@@ -181,7 +181,7 @@ class SubjectDataLookup {
 
 		return [ $this->subjectToTable(
 			$subject,
-			SubjectDisplayName::forSubject( $subject, isMainSubject: false, pageName: '' )
+			SubjectDisplayName::forSubjectWithoutPage( $subject )
 		) ];
 	}
 
@@ -225,7 +225,7 @@ class SubjectDataLookup {
 	private function subjectOnPageToTable( Subject $subject, PageSubjects $pageSubjects, string $pageName ): array {
 		$table = $this->subjectToTable(
 			$subject,
-			SubjectDisplayName::forSubjectIn( $subject, $pageSubjects, $pageName )
+			SubjectDisplayName::forSubject( $subject, $pageSubjects, $pageName )
 		);
 		$table['isMainSubject'] = $pageSubjects->isMainSubject( $subject->getId() );
 

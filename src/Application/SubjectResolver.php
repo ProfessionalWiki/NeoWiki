@@ -118,7 +118,7 @@ class SubjectResolver {
 			return null;
 		}
 
-		return SubjectDisplayName::forSubjectIn( $subject, $pageSubjects, $page->getTitle() );
+		return SubjectDisplayName::forSubject( $subject, $pageSubjects, $page->getTitle() );
 	}
 
 	/**
