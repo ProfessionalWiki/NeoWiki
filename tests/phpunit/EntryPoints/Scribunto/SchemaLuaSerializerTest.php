@@ -206,6 +206,10 @@ class SchemaLuaSerializerTest extends TestCase {
 				return [ 'items' => [ 'a', null, 'b', '', 'c' ] ];
 			}
 
+			public function toJsonSchema(): true {
+				return true;
+			}
+
 		};
 		$schema = $this->schemaWith( [ 'Fake' => $property ] );
 

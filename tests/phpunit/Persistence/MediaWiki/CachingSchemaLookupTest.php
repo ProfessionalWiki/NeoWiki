@@ -104,6 +104,28 @@ class CachingSchemaLookupTest extends TestCase {
 		$this->assertSame( 1, $inner->calls );
 	}
 
+	public function testNamesTheSchemaAfterItsPage(): void {
+		// A Schema's name is its page's name (ADR 17), so looking it up by any other spelling of
+		// that title still yields the one name Subjects of it carry.
+		$lookup = $this->newLookup(
+			$this->newSpyLookup(),
+			titleFactory: $this->newTitleFactoryTitled( 'Person', 1, 100 )
+		);
+
+		$schema = $lookup->getSchema( new SchemaName( 'person' ) );
+
+		$this->assertSame( 'Person', $schema?->getName()->getText() );
+	}
+
+	public function testReturnsNullForAPageWhoseTitleCannotBeASchemaName(): void {
+		$lookup = $this->newLookup(
+			$this->newSpyLookup(),
+			titleFactory: $this->newTitleFactoryTitled( 'Subject', 1, 100 )
+		);
+
+		$this->assertNull( $lookup->getSchema( new SchemaName( 'subject_' ) ) );
+	}
+
 	public function testResolvesEachSchemaSeparately(): void {
 		$inner = $this->newSpyLookup();
 
@@ -267,6 +289,7 @@ class CachingSchemaLookupTest extends TestCase {
 			$title->method( 'exists' )->willReturn( true );
 			$title->method( 'getArticleID' )->willReturn( $articleId );
 			$title->method( 'getLatestRevID' )->willReturn( 100 );
+			$title->method( 'getText' )->willReturn( $pageName );
 			$titles[$pageName] = $title;
 		}
 
@@ -278,10 +301,15 @@ class CachingSchemaLookupTest extends TestCase {
 	}
 
 	private function newTitleFactory( int $articleId, int ...$revIds ): TitleFactory {
+		return $this->newTitleFactoryTitled( 'Person', $articleId, ...$revIds );
+	}
+
+	private function newTitleFactoryTitled( string $pageName, int $articleId, int ...$revIds ): TitleFactory {
 		$title = $this->createMock( Title::class );
 		$title->method( 'exists' )->willReturn( true );
 		$title->method( 'getArticleID' )->willReturn( $articleId );
 		$title->method( 'getLatestRevID' )->willReturnOnConsecutiveCalls( ...$revIds );
+		$title->method( 'getText' )->willReturn( $pageName );
 
 		$factory = $this->createMock( TitleFactory::class );
 		$factory->method( 'newFromText' )->willReturn( $title );

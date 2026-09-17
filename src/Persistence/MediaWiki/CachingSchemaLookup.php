@@ -82,7 +82,7 @@ class CachingSchemaLookup implements SchemaLookup {
 				return null;
 			}
 
-			$this->resolvedSchemas[$cacheKey] = $this->deserialize( $schemaName, $json );
+			$this->resolvedSchemas[$cacheKey] = $this->deserialize( $title, $json );
 		}
 
 		return $this->resolvedSchemas[$cacheKey];
@@ -107,13 +107,19 @@ class CachingSchemaLookup implements SchemaLookup {
 	}
 
 	/**
-	 * JSON that is not a valid Schema will not become one on the next call, so the process-local
-	 * tier remembers the null. The shared tier keeps the text either way: parsing it again in the
-	 * next process is cheaper than reading the page again.
+	 * The Schema is named after its page rather than after the text the caller looked it up by
+	 * (ADR 17), so the one Schema has the one name however it was reached: `Foo bar`, `Foo_bar` and
+	 * `foo bar` all resolve to the page titled `Foo bar` and yield a Schema named that. Subjects
+	 * carry that name, and consumers compare against it.
+	 *
+	 * JSON that is not a valid Schema, or a page whose title cannot be a Schema name, will not
+	 * become one on the next call, so the process-local tier remembers the null. The shared tier
+	 * keeps the text either way: parsing it again in the next process is cheaper than reading the
+	 * page again.
 	 */
-	private function deserialize( SchemaName $schemaName, string $json ): ?Schema {
+	private function deserialize( Title $title, string $json ): ?Schema {
 		try {
-			return $this->schemaDeserializer->deserialize( $schemaName, $json );
+			return $this->schemaDeserializer->deserialize( new SchemaName( $title->getText() ), $json );
 		}
 		catch ( InvalidArgumentException ) {
 			return null;

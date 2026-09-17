@@ -17,6 +17,11 @@ fields, and register it with `NeoWikiRegistrar::addPropertyType()`. Example:
 shows the violations the server returns, each `code` resolved to the message key `neowiki-field-<code>`, which your
 extension defines (RedHerb's [`i18n/en.json`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/i18n/en.json)).
 
+Your `PropertyDefinition` class implements `toJsonSchema()` beside `nonCoreToJson()`. It states in draft 2020-12 what
+`validate()` checks about a value itself, and is all the Schema's [JSON Schema document](../api/json-schema.md) says
+about your type. For values held as a list of parts, `listValueSchema()` wraps the schema of one part in the
+`maxItems` and `minItems` the definition implies.
+
 ## Projection
 
 Statements of a Property Type without a Neo4j value builder are omitted from the Neo4j projection; without an RDF

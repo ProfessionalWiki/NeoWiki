@@ -18,7 +18,20 @@ class UrlType implements PropertyType {
 
 	public const NAME = 'url';
 
-	private const ALLOWED_PROTOCOLS = [ 'http:', 'https:' ];
+	/**
+	 * A scheme is optional and, when present, http or https. Carries no delimiters and stays within
+	 * ECMA-262, so that the JSON Schema documents can use it as a `pattern`. A `pattern` takes no
+	 * flags, and the inline `(?i)` and `(?i:...)` are a syntax error in most ECMA-262 engines and
+	 * match beyond ASCII where they parse, so the case rules are spelled out rather than left to `/i`.
+	 */
+	public const string URL_PATTERN = '^(?:[Hh][Tt][Tt][Pp][Ss]?://)?'
+		. '(?:(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,}'
+		. '|(?:[0-9]{1,3}\.){3}[0-9]{1,3}'
+		. '|[Ll][Oo][Cc][Aa][Ll][Hh][Oo][Ss][Tt])'
+		. '(?::[0-9]+)?'
+		. '(?:/[-A-Za-z0-9%_.~+]*)*'
+		. '(?:\?[;&A-Za-z0-9%_.~+=-]*)?'
+		. '(?:#[-A-Za-z0-9_]*)?$';
 
 	public function getTypeName(): string {
 		return self::NAME;
@@ -84,22 +97,7 @@ class UrlType implements PropertyType {
 	}
 
 	private static function isValidUrl( string $urlString ): bool {
-		if ( preg_match( '/^([a-z][a-z\d+.-]*):\/\//i', $urlString, $protocolMatch ) === 1 ) {
-			if ( !in_array( strtolower( $protocolMatch[1] ) . ':', self::ALLOWED_PROTOCOLS, true ) ) {
-				return false;
-			}
-		}
-
-		$pattern = '/^([a-z][a-z\d+.-]*:\/\/)?'
-			. '((?:[a-z\d](?:[a-z\d-]*[a-z\d])?\.)+[a-z]{2,}|'
-			. '((\d{1,3}\.){3}\d{1,3})|'
-			. '(localhost))'
-			. '(\:\d+)?'
-			. '(\/[-a-z\d%_.~+]*)*'
-			. '(\?[;&a-z\d%_.~+=-]*)?'
-			. '(\#[-a-z\d_]*)?$/i';
-
-		return preg_match( $pattern, $urlString ) === 1;
+		return preg_match( '@' . self::URL_PATTERN . '@', $urlString ) === 1;
 	}
 
 }
