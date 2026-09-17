@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
-use ProfessionalWiki\NeoWiki\Application\Schema\SchemaReferenceNormalizer;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
@@ -31,9 +31,9 @@ class FixedSchemaReferenceNormalizer implements SchemaReferenceNormalizer {
 			return $reference;
 		}
 
-		$normalized = $this->names[$reference->name->getText()] ?? null;
+		$written = $reference->name->getText();
 
-		return $normalized === null ? $reference : SchemaReference::local( new SchemaName( $normalized ) );
+		return SchemaReference::local( new SchemaName( $this->names[$written] ?? $written ) );
 	}
 
 }

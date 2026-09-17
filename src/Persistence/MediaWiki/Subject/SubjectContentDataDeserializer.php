@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
-use ProfessionalWiki\NeoWiki\Application\Schema\SchemaReferenceNormalizer;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceNormalizer;
 use Psr\Log\LoggerInterface;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;

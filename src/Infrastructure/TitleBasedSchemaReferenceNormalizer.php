@@ -6,9 +6,9 @@ namespace ProfessionalWiki\NeoWiki\Infrastructure;
 
 use InvalidArgumentException;
 use MediaWiki\Title\TitleFactory;
-use ProfessionalWiki\NeoWiki\Application\Schema\SchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 /**
@@ -21,11 +21,11 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 class TitleBasedSchemaReferenceNormalizer implements SchemaReferenceNormalizer {
 
 	/**
-	 * A Subject slot names a handful of Schemas across all its Subjects, and a rebuild reads every slot
-	 * on the wiki, while parsing a title is neither free nor cached by MediaWiki for a namespace other
-	 * than NS_MAIN. Keyed by the name as written, which is all {@see normalizeName} reads.
+	 * A wiki names few Schemas and every Subject read asks after one, so the names seen are remembered
+	 * for as long as this normalizer lives — which NeoWikiExtension makes the process, since parsing a
+	 * title is not free and MediaWiki caches it for NS_MAIN only.
 	 *
-	 * @var array<string, ?SchemaName>
+	 * @var array<string, SchemaName>
 	 */
 	private array $normalizedNames = [];
 
@@ -39,44 +39,39 @@ class TitleBasedSchemaReferenceNormalizer implements SchemaReferenceNormalizer {
 			return $reference;
 		}
 
-		$normalized = $this->normalizedNameOf( $reference->name );
-
-		return $normalized === null ? $reference : SchemaReference::local( $normalized );
+		return SchemaReference::local( $this->normalizedName( $reference->name ) );
 	}
 
-	private function normalizedNameOf( SchemaName $name ): ?SchemaName {
+	private function normalizedName( SchemaName $name ): SchemaName {
 		$written = $name->getText();
 
 		if ( !array_key_exists( $written, $this->normalizedNames ) ) {
-			$this->normalizedNames[$written] = $this->normalizeName( $name );
+			$this->normalizedNames[$written] = $this->nameOfSchemaPage( $name );
 		}
 
 		return $this->normalizedNames[$written];
 	}
 
 	/**
-	 * Null where the name has no normal form to give, which leaves it as written for whoever looks the
-	 * Schema up to report as missing. That covers a name no title can be made of, one whose normal form
-	 * no Schema may be called, and — the case worth stating — one carrying a prefix or fragment.
-	 * MediaWiki reads `Help:Person` as a page of the Help namespace and hands back the bare `Person`,
-	 * which names a different Schema than the one written down, so only a title that really does sit in
-	 * the Schema namespace of this wiki is allowed to rename anything.
+	 * The name as written wherever it has no normal form to give, leaving it to whoever looks the Schema
+	 * up to report as missing. canExist() rules out the empty, the invalid, the special and the
+	 * interwiki; the namespace check rules out "Help:Person", which MediaWiki reads as a page of the
+	 * Help namespace and hands back as the bare "Person" — a different Schema than the one written down.
+	 * hasFragment() rules out "Person#Details", whose fragment the title would silently drop. What is
+	 * left is a name no Schema may be called, which SchemaName refuses.
 	 */
-	private function normalizeName( SchemaName $name ): ?SchemaName {
+	private function nameOfSchemaPage( SchemaName $name ): SchemaName {
 		$title = $this->titleFactory->newFromText( $name->getText(), NeoWikiExtension::NS_SCHEMA );
 
-		if ( $title === null
-			|| $title->isExternal()
-			|| !$title->inNamespace( NeoWikiExtension::NS_SCHEMA )
-			|| $title->hasFragment()
-		) {
-			return null;
+		if ( $title === null || !$title->canExist() || $title->hasFragment()
+			|| !$title->inNamespace( NeoWikiExtension::NS_SCHEMA ) ) {
+			return $name;
 		}
 
 		try {
 			return new SchemaName( $title->getText() );
 		} catch ( InvalidArgumentException ) {
-			return null;
+			return $name;
 		}
 	}
 

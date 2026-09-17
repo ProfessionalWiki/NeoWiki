@@ -8,7 +8,6 @@ use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Response;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
-use MediaWiki\Content\TextContent;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
@@ -18,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectPageApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndex;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -121,8 +121,6 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 
 	/**
 	 * Several spellings name one Schema page, and what gets written down is the name that Schema has.
-	 * Asserted against the slot rather than a Subject read back, because reading normalizes too: a
-	 * Subject fetched through the repository would look right even if nothing normalized on write.
 	 */
 	public function testStoresTheSchemaUnderTheNameOfTheSchemaItNames(): void {
 		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam', 'schema' => 'employee' ] ) );
@@ -133,15 +131,20 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function storedSchemaJsonOf( string $pageName, string $subjectId ): mixed {
-		$title = Title::newFromText( $pageName );
-		$this->assertNotNull( $title, "'$pageName' does not title a page" );
-
-		$revision = $this->getServiceContainer()->getRevisionStore()->getRevisionByTitle( $title );
-		$this->assertNotNull( $revision, "no revision of '$pageName'" );
+	/**
+	 * The slot as written, rather than a Subject read back through the repository: reading normalizes
+	 * too, so a Subject fetched that way would look right even if nothing normalized on write.
+	 *
+	 * @return string|array<string, string>|null
+	 */
+	private function storedSchemaJsonOf( string $pageName, string $subjectId ): string|array|null {
+		$revision = $this->getServiceContainer()->getRevisionStore()->getRevisionByTitle(
+			Title::newFromText( $pageName )
+		);
+		$this->assertNotNull( $revision );
 
 		$content = $revision->getContent( MediaWikiSubjectRepository::SLOT_NAME );
-		$this->assertInstanceOf( TextContent::class, $content );
+		$this->assertInstanceOf( SubjectContent::class, $content );
 
 		$slot = json_decode( $content->getText(), true );
 

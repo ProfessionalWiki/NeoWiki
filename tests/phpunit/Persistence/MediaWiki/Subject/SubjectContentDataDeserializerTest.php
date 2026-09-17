@@ -25,7 +25,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedSchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
-use ProfessionalWiki\NeoWiki\Application\Schema\SchemaReferenceNormalizer;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceNormalizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer

@@ -40,10 +40,12 @@ class TitleBasedSchemaReferenceNormalizerTest extends MediaWikiIntegrationTestCa
 		// is part of the name rather than a namespace, and is capitalized like any other first letter.
 		yield 'a prefix naming no namespace stays in the name' => [ 'iso:9001', 'Iso:9001' ];
 
+		// The namespace Schemas live in is the one prefix that still names the Schema written down.
+		yield 'the Schema namespace spelled out is not part of the name' => [ 'Schema:Person', 'Person' ];
+
 		// Only the first character is touched, so these stay three different Schemas.
 		yield 'a capital after the first character survives' => [ 'pErson', 'PErson' ];
 		yield 'and is not moved to the front' => [ 'peRson', 'PeRson' ];
-		yield 'nor is one further in' => [ 'Person Name', 'Person Name' ];
 	}
 
 	/**
@@ -81,13 +83,7 @@ class TitleBasedSchemaReferenceNormalizerTest extends MediaWikiIntegrationTestCa
 		yield 'it names another namespace that exists' => [ 'Category:Person' ];
 		yield 'it names a talk page' => [ 'Talk:Person' ];
 		yield 'it carries a fragment' => [ 'Person#Details' ];
-	}
-
-	/**
-	 * The Schema namespace spelled out is the one prefix that still names the Schema written down.
-	 */
-	public function testNamespaceOfSchemasItselfIsStrippedFromTheName(): void {
-		$this->assertSame( 'Person', $this->normalizeLocal( 'Schema:Person' ) );
+		yield 'it is a fragment alone' => [ '#Details' ];
 	}
 
 	private function normalizeLocal( string $written ): string {
