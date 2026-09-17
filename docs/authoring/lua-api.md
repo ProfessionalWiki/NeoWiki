@@ -160,20 +160,9 @@ A 1-indexed Lua table of Subject tables (see [Subject table format](#subject-tab
 Returns an empty table `{}` (not `nil`) if the page holds no Subjects or is not readable (see
 [Permissions](#permissions)), so it's safe to iterate the result directly with `ipairs`.
 
-[`nw.getSubject`](#nwgetsubjectsubjectid) differs by one letter and takes a Subject ID rather than a
-page name. Neither call reports the other's argument as an error, so check which one you named when
-a call comes back empty.
-
 #### Examples
 
 ```lua
-for _, subject in ipairs(nw.getSubjects()) do
-    mw.log(subject.label)
-end
-```
-
-```lua
--- Name the Subject the page is about.
 for _, subject in ipairs(nw.getSubjects()) do
     if subject.isMainSubject then
         mw.log(subject.label .. ' (main)')
@@ -413,16 +402,13 @@ Notes:
   name when it is the page's Main Subject, and its Schema name otherwise. `storedLabel` carries the
   stored value and is `nil` when the Subject has none. The REST API splits these the other way:
   `label` is the stored value, `displayName` the display name.
-- `isMainSubject` says whether the Subject is the Main Subject of the page it was read from. A
-  Subject fetched with [`nw.getSubject`](#nwgetsubjectsubjectid) is addressed by id rather than
-  through a page and carries no answer, so the key is absent there. An absent key reads as "not the
-  Main Subject" whichever way you test it; ask `subject.isMainSubject == nil` to tell the unanswered
-  case apart.
+- `isMainSubject` says whether the Subject is the Main Subject of the page it was read from.
+- A Subject fetched with [`nw.getSubject`](#nwgetsubjectsubjectid) comes without its page: its
+  `isMainSubject` key is absent rather than `false`, and a label-less Main Subject is named after its
+  Schema there.
 - `schema` is a Schema name for a Schema of this wiki, and a table `{ source = ..., name = ... }` for
   one from another Source. [`nw.getSchema`](#nwgetschemaname) takes either, so
   `nw.getSchema( subject.schema )` works whichever it is.
-- A Subject fetched with [`nw.getSubject`](#nwgetsubjectsubjectid) comes without its page, so a
-  label-less Main Subject is named after its Schema there.
 - `statements` is keyed by property name. `values` within each statement is 1-indexed.
 - `propertyType` is the property type at the time the Subject was last edited. If the Schema has
   changed since (e.g. a property was changed from `text` to `select`), older Subjects keep their
