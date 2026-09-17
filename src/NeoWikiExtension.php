@@ -77,6 +77,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabaseP
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
+use ProfessionalWiki\NeoWiki\Application\Schema\SchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
@@ -160,6 +161,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedPageIdentifiersResolver;
+use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedSchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseDeletedPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdsLookup;
@@ -419,7 +421,14 @@ class NeoWikiExtension {
 		return new SubjectContentDataDeserializer(
 			new StatementDeserializer( $this->getPropertyTypeLookup(), $this->getSubjectIdParser() ),
 			$this->getSubjectIdParser(),
-			LoggerFactory::getInstance( 'NeoWiki' )
+			LoggerFactory::getInstance( 'NeoWiki' ),
+			$this->getSchemaReferenceNormalizer()
+		);
+	}
+
+	private function getSchemaReferenceNormalizer(): SchemaReferenceNormalizer {
+		return new TitleBasedSchemaReferenceNormalizer(
+			MediaWikiServices::getInstance()->getTitleFactory()
 		);
 	}
 
@@ -1459,6 +1468,7 @@ class NeoWikiExtension {
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			subjectIdParser: $this->getSubjectIdParser(),
+			schemaReferenceNormalizer: $this->getSchemaReferenceNormalizer(),
 			validationEnforced: $this->isValidationEnforced(),
 		);
 	}
@@ -1474,6 +1484,7 @@ class NeoWikiExtension {
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
+			schemaReferenceNormalizer: $this->getSchemaReferenceNormalizer(),
 			validationEnforced: $this->isValidationEnforced(),
 		);
 	}

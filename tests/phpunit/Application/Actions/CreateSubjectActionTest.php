@@ -47,6 +47,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use RuntimeException;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedSchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
@@ -115,6 +116,7 @@ class CreateSubjectActionTest extends TestCase {
 			$this->pageIdentifiersLookup,
 			$this->pageIdentifiersResolver,
 			TestSubjectIds::newParser(),
+			new FixedSchemaReferenceNormalizer( [ 'person' => 'Person' ] ),
 			$validationEnforced,
 		);
 	}
@@ -164,6 +166,33 @@ class CreateSubjectActionTest extends TestCase {
 		$this->assertSame(
 			's' . self::STUB_ID,
 			$this->presenterSpy->result
+		);
+	}
+
+	/**
+	 * The Schema name a caller sends is a reference, and several spellings reference one Schema page.
+	 * What gets stored is the name that Schema has, so the graph label, the RDF class and relation
+	 * target validation downstream all read one name per Schema.
+	 */
+	public function testSchemaNameIsStoredAsTheNameOfTheSchemaItNames(): void {
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Wilhelm',
+				schemaName: 'person',
+				statements: []
+			)
+		);
+
+		$this->assertSame(
+			'Person',
+			$this->subjectRepository->getSubjectsByPageId( new PageId( 1 ) )
+				->getMainSubject()
+				->getSchemaName()
+				->getText()
 		);
 	}
 

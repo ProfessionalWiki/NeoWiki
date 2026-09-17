@@ -118,6 +118,32 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'Amsterdam', $this->storedLabelOf( $body['subjectId'] ) );
 	}
 
+	/**
+	 * Several spellings name one Schema page, and what gets written down is the name that Schema has.
+	 * Asserted against the slot rather than a Subject read back, because reading normalizes too: a
+	 * Subject fetched through the repository would look right even if nothing normalized on write.
+	 */
+	public function testStoresTheSchemaUnderTheNameOfTheSchemaItNames(): void {
+		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam', 'schema' => 'employee' ] ) );
+
+		$this->assertSame(
+			self::SCHEMA,
+			$this->storedSchemaJsonOf( 'Amsterdam', $body['subjectId'] )
+		);
+	}
+
+	private function storedSchemaJsonOf( string $pageName, string $subjectId ): mixed {
+		$revision = $this->getServiceContainer()->getRevisionStore()
+			->getRevisionByTitle( Title::newFromText( $pageName ) );
+
+		$slot = json_decode(
+			$revision->getContent( MediaWikiSubjectRepository::SLOT_NAME )->getText(),
+			true
+		);
+
+		return $slot['subjects'][$subjectId]['schema'];
+	}
+
 	public function testWritesThePageAndItsSubjectInOneRevision(): void {
 		$this->create( [ 'label' => 'Amsterdam' ] );
 

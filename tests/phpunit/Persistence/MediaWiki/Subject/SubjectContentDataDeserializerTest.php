@@ -22,8 +22,10 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedSchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Application\Schema\SchemaReferenceNormalizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer
@@ -39,11 +41,15 @@ class SubjectContentDataDeserializerTest extends TestCase {
 		);
 	}
 
-	private function newDeserializer( ?LoggerInterface $logger = null ): SubjectContentDataDeserializer {
+	private function newDeserializer(
+		?LoggerInterface $logger = null,
+		?SchemaReferenceNormalizer $schemaReferenceNormalizer = null
+	): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer(
 			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup(), TestSubjectIds::newParser() ),
 			TestSubjectIds::newParser(),
-			$logger ?? new NullLogger()
+			$logger ?? new NullLogger(),
+			$schemaReferenceNormalizer ?? new FixedSchemaReferenceNormalizer()
 		);
 	}
 
@@ -258,6 +264,33 @@ JSON
 				),
 			],
 			$subjects->getMainSubject()->getStatements()->asArray()
+		);
+	}
+
+	/**
+	 * The slot holds whatever the writer typed, and several spellings name one Schema page. Reading
+	 * normalizes, so a Subject stored before this was fixed still reaches the graph, the RDF export
+	 * and relation validation under the one name its Schema has.
+	 */
+	public function testSchemaNameIsNormalizedWhenRead(): void {
+		$subjects = $this->newDeserializer(
+			schemaReferenceNormalizer: new FixedSchemaReferenceNormalizer( [ 'person' => 'Person' ] )
+		)->deserialize(
+			<<<'JSON'
+{
+	"subjects": {
+		"sTestSCDD111115": {
+			"label": "Wilhelm",
+			"schema": "person"
+		}
+	}
+}
+JSON
+		);
+
+		$this->assertEquals(
+			SchemaReference::local( new SchemaName( 'Person' ) ),
+			$subjects->getAllSubjects()->asArray()[0]->getSchemaReference()
 		);
 	}
 

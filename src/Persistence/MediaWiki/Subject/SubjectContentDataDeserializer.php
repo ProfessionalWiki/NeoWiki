@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
+use ProfessionalWiki\NeoWiki\Application\Schema\SchemaReferenceNormalizer;
 use Psr\Log\LoggerInterface;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
@@ -20,6 +21,7 @@ class SubjectContentDataDeserializer {
 		private readonly StatementDeserializer $statementDeserializer,
 		private readonly SubjectIdParser $subjectIdParser,
 		private readonly LoggerInterface $logger,
+		private readonly SchemaReferenceNormalizer $schemaReferenceNormalizer,
 	) {
 	}
 
@@ -85,7 +87,9 @@ class SubjectContentDataDeserializer {
 		return new Subject(
 			id: new SubjectId( $id ),
 			label: $this->deserializeLabel( $jsonArray['label'] ?? null ),
-			schema: SchemaReference::fromJson( $jsonArray['schema'], $this->subjectIdParser->getLocalSourceKey() ),
+			schema: $this->schemaReferenceNormalizer->normalize(
+				SchemaReference::fromJson( $jsonArray['schema'], $this->subjectIdParser->getLocalSourceKey() )
+			),
 			statements: $this->buildStatementList( $jsonArray ),
 		);
 	}

@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\Schema\SchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
@@ -44,6 +45,7 @@ readonly class CreateSubjectAction {
 		private PageIdentifiersLookup $pageIdentifiersLookup,
 		private PageIdentifiersResolver $pageIdentifiersResolver,
 		private SubjectIdParser $subjectIdParser,
+		private SchemaReferenceNormalizer $schemaReferenceNormalizer,
 		private bool $validationEnforced,
 	) {
 	}
@@ -158,7 +160,9 @@ readonly class CreateSubjectAction {
 	 * A Subject is only ever created in the local Source, so the Schema it names is a local one too.
 	 */
 	private function schemaReference( CreateSubjectRequest $request ): SchemaReference {
-		return SchemaReference::local( new SchemaName( $request->schemaName ) );
+		return $this->schemaReferenceNormalizer->normalize(
+			SchemaReference::local( new SchemaName( $request->schemaName ) )
+		);
 	}
 
 	/**
