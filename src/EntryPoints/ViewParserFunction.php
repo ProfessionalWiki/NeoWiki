@@ -150,7 +150,7 @@ class ViewParserFunction {
 			return null;
 		}
 
-		return $this->pageSubjectsLookup->getMainSubjectId( new PageId( $pageId ) )?->text;
+		return $this->pageSubjectsLookup->getPageSubjects( new PageId( $pageId ) )->getMainSubject()?->id->text;
 	}
 
 }

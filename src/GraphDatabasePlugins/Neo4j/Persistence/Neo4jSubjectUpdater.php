@@ -42,7 +42,7 @@ class Neo4jSubjectUpdater {
 		// updateNodeProperties must precede updateHasSubjectRelations and updateNodeLabels: those two
 		// only MATCH the subjects' nodes, and this is the step that creates them. Move it after them
 		// and a subject with no relations silently loses its page link and its Schema label.
-		$currentLabels = $this->updateNodeProperties( $subjects, $page->getProperties()->getName() );
+		$currentLabels = $this->updateNodeProperties( $subjects, $page );
 
 		$this->updateRelations( $subjects );
 		$this->updateHasSubjectRelations( $subjects );
@@ -82,7 +82,7 @@ class Neo4jSubjectUpdater {
 	 * @param Neo4jPageSubject[] $subjects
 	 * @return array<string, string[]>
 	 */
-	private function updateNodeProperties( array $subjects, string $pageName ): array {
+	private function updateNodeProperties( array $subjects, Page $page ): array {
 		/**
 		 * @var SummarizedResult $result
 		 */
@@ -95,7 +95,7 @@ class Neo4jSubjectUpdater {
 				'subjects' => array_map(
 					fn ( Neo4jPageSubject $pageSubject ) => [
 						'id' => $pageSubject->getId(),
-						'properties' => $this->nodeProperties( $pageSubject, $pageName ),
+						'properties' => $this->nodeProperties( $pageSubject, $page ),
 					],
 					$subjects
 				),
@@ -114,7 +114,7 @@ class Neo4jSubjectUpdater {
 	/**
 	 * @return array<string, mixed>
 	 */
-	private function nodeProperties( Neo4jPageSubject $pageSubject, string $pageName ): array {
+	private function nodeProperties( Neo4jPageSubject $pageSubject, Page $page ): array {
 		$subject = $pageSubject->subject;
 
 		$properties = $this->statementsToNodeProperties( $subject->getStatements() );
@@ -125,7 +125,7 @@ class Neo4jSubjectUpdater {
 		$properties['id'] = $subject->id->text;
 		$properties['wiki_id'] = $this->wikiId;
 
-		$name = $this->nodeName( $pageSubject, $pageName );
+		$name = $this->nodeName( $pageSubject, $page );
 
 		if ( $name === null ) {
 			// Explicit, because a Property Name may collide with a fixed one and must not win it.
@@ -142,11 +142,11 @@ class Neo4jSubjectUpdater {
 	 * The name a Subject node carries: the tiers the graph materializes, which a page move keeps
 	 * current through the reprojection it already triggers.
 	 */
-	private function nodeName( Neo4jPageSubject $pageSubject, string $pageName ): ?string {
+	private function nodeName( Neo4jPageSubject $pageSubject, Page $page ): ?string {
 		return SubjectDisplayName::labelOrPageName(
 			$pageSubject->subject,
-			$pageSubject->isMainSubject,
-			$pageName
+			$page->getSubjects(),
+			$page->getProperties()->getName()
 		);
 	}
 

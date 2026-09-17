@@ -73,7 +73,9 @@ your `Module:` namespace for both after upgrading. `make import-demo-data` cover
 
 `nw.getMainSubject` keeps its name and changes one answer. An unlabelled Main Subject on a page
 titled by the id of *another* Subject on that page now reads as its Schema name, where it took the
-page title before. Only entity-first creation makes such a title.
+page title before. Only entity-first creation makes such a title. The `displayName` of the REST API
+and the `name` of the Subject's node in a graph store follow the same rule, and a page save or a
+rebuild refreshes an existing node.
 
 Two REST surfaces moved with it: `POST /neowiki/v0/page/{pageId}/childSubjects` is now
 `POST /neowiki/v0/page/{pageId}/subjects`, and the `childSubjectIds` key of

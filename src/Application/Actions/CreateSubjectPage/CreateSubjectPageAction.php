@@ -99,7 +99,7 @@ readonly class CreateSubjectPageAction {
 			GetSubjectResponseItem::fromSubject(
 				$subject,
 				$page,
-				SubjectDisplayName::labelOrPageNameIn( $subject, $pageSubjects, $pageTitle )
+				SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageTitle )
 			),
 			$page,
 			$schema,
