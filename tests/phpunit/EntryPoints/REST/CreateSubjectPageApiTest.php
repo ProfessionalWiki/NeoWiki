@@ -132,6 +132,33 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
+	 * No page title can hold a "#", so a name carrying one names the page before it, and the Subject
+	 * instantiates the Schema the request resolved against rather than a Schema nothing else names.
+	 */
+	public function testStoresTheSchemaAFragmentPointsInto(): void {
+		$response = $this->create( [ 'label' => 'Amsterdam', 'schema' => self::SCHEMA . '#Details' ] );
+		$body = $this->bodyOf( $response );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertSame( [], $body['violations'] );
+		$this->assertSame( self::SCHEMA, $this->storedSchemaJsonOf( 'Amsterdam', $body['subjectId'] ) );
+	}
+
+	/**
+	 * A prefix naming another namespace stays in the name, so the lookup never leaves the Schema
+	 * namespace: a page of that title elsewhere is not read as a Schema but reported missing.
+	 */
+	public function testANameNamingAnotherNamespacesPageResolvesToNoSchema(): void {
+		$this->editPage( Title::newFromText( 'Category:Probe' ), 'A category, not a Schema' );
+
+		$response = $this->create( [ 'label' => 'Amsterdam', 'schema' => 'Category:Probe', 'statements' => [] ] );
+		$body = $this->bodyOf( $response );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertSame( 'schema-not-found', $body['violations'][0]['code'] );
+	}
+
+	/**
 	 * The slot as written, rather than a Subject read back through the repository: reading normalizes
 	 * too, so a Subject fetched that way would look right even if nothing normalized on write.
 	 *

@@ -7,9 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\PropertyType\Types;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
@@ -144,7 +142,7 @@ class RelationTypeTest extends TestCase {
 				'targetSchema' => 'Person',
 				'multiple' => [ 'value' => false, 'severity' => 'error' ],
 			],
-			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
+			TestSources::newPropertyTypeRegistry(),
 		);
 	}
 

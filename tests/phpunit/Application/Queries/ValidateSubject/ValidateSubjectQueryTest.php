@@ -13,7 +13,6 @@ use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
@@ -32,6 +31,16 @@ class ValidateSubjectQueryTest extends TestCase {
 
 	public function testValidatesAgainstASchemaOfThisWiki(): void {
 		$violations = $this->newQuery()->validate( self::LOCAL_SCHEMA_NAME, [] );
+
+		$this->assertSame( [], $violations );
+	}
+
+	/**
+	 * The reference the caller sends is read as a Subject's own is, so validating against the Schema
+	 * a spelling names agrees with validating the Subject that ends up stored under it.
+	 */
+	public function testValidatesAgainstTheSchemaAnotherSpellingNames(): void {
+		$violations = $this->newQuery( [ 'company' => self::LOCAL_SCHEMA_NAME ] )->validate( 'company', [] );
 
 		$this->assertSame( [], $violations );
 	}
@@ -60,21 +69,24 @@ class ValidateSubjectQueryTest extends TestCase {
 		);
 	}
 
-	private function newQuery(): ValidateSubjectQuery {
+	/**
+	 * @param array<string, string> $schemaNames Name as written => the name of the Schema it names.
+	 */
+	private function newQuery( array $schemaNames = [] ): ValidateSubjectQuery {
 		return new ValidateSubjectQuery(
 			schemaResolver: $this->newSchemaResolver(),
 			subjectValidator: new SubjectValidator(
-				propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
+				propertyTypeLookup: TestSources::newPropertyTypeRegistry(),
 				subjectLookup: new InMemorySubjectLookup(),
 				sourceRegistry: TestSources::newRegistry(),
 			),
 			statementListBuilder: new StatementListBuilder(
-				PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
+				TestSources::newPropertyTypeRegistry(),
 				new ProductionIdGenerator(),
 				TestSubjectIds::newParser(),
 			),
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
-			schemaReferenceParser: TestSources::newSchemaReferenceParser(),
+			schemaReferenceParser: TestSources::newSchemaReferenceParser( $schemaNames ),
 		);
 	}
 

@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Validation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
@@ -46,7 +45,7 @@ class SubjectValidatorTest extends TestCase {
 
 	protected function setUp(): void {
 		$this->validator = new SubjectValidator(
-			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
+			propertyTypeLookup: TestSources::newPropertyTypeRegistry(),
 			subjectLookup: $this->newSubjectLookup(),
 			sourceRegistry: TestSources::newRegistry(),
 		);
@@ -556,7 +555,7 @@ class SubjectValidatorTest extends TestCase {
 	public function testResolvesEveryRelationTargetInOneLookup(): void {
 		$subjectLookup = $this->newSubjectLookup();
 		$validator = new SubjectValidator(
-			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
+			propertyTypeLookup: TestSources::newPropertyTypeRegistry(),
 			subjectLookup: $subjectLookup,
 			sourceRegistry: TestSources::newRegistry(),
 		);

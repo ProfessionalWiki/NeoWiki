@@ -10,7 +10,6 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Schema\Exception\SchemaContentUnavailableException;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -18,7 +17,6 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaJsonLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ObjectForgettingBagOStuff;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use Wikimedia\ObjectCache\EmptyBagOStuff;
@@ -53,7 +51,7 @@ class CachingSchemaLookupTest extends TestCase {
 	public function testReloadsWhenTheSchemaRevisionChanges(): void {
 		$inner = $this->newSpyLookup();
 
-		$lookup = $this->newLookup( $inner, titleFactory: $this->newTitleFactory( 1, 100, 101 ) );
+		$lookup = $this->newLookup( $inner, titleFactory: $this->newTitleFactory( 'Person', 1, 100, 101 ) );
 		$lookup->getSchema( new SchemaName( 'Person' ) );
 		$lookup->getSchema( new SchemaName( 'Person' ) );
 
@@ -66,7 +64,7 @@ class CachingSchemaLookupTest extends TestCase {
 		$title = $this->createMock( Title::class );
 		$title->method( 'exists' )->willReturn( false );
 		$factory = $this->createMock( TitleFactory::class );
-		$factory->method( 'newFromText' )->willReturn( $title );
+		$factory->method( 'makeTitleSafe' )->willReturn( $title );
 
 		$lookup = $this->newLookup( $inner, titleFactory: $factory );
 
@@ -161,7 +159,7 @@ class CachingSchemaLookupTest extends TestCase {
 	public function testServesTheSchemaOnceTheRevisionBecomesReadableAgain(): void {
 		$inner = $this->newRecoveringSpyLookup();
 
-		$lookup = $this->newLookup( $inner, titleFactory: $this->newTitleFactory( 1, 100, 100, 100 ) );
+		$lookup = $this->newLookup( $inner, titleFactory: $this->newTitleFactory( 'Person', 1, 100, 100, 100 ) );
 
 		$this->assertNull( $lookup->getSchema( new SchemaName( 'Person' ) ) );
 		$this->assertEquals(
@@ -186,7 +184,7 @@ class CachingSchemaLookupTest extends TestCase {
 			schemaJsonLookup: $inner,
 			schemaDeserializer: $this->newDeserializer(),
 			cache: $cache ?? new WANObjectCache( [ 'cache' => new HashBagOStuff() ] ),
-			titleFactory: $titleFactory ?? $this->newTitleFactory( 1, 100, 100 ),
+			titleFactory: $titleFactory ?? $this->newTitleFactory( 'Person', 1, 100, 100 ),
 			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
 			connectionProvider: $this->newConnectionProvider()
 		);
@@ -198,7 +196,7 @@ class CachingSchemaLookupTest extends TestCase {
 
 	private function newDeserializer(): SchemaPersistenceDeserializer {
 		return new SchemaPersistenceDeserializer(
-			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() )
+			TestSources::newPropertyTypeRegistry()
 		);
 	}
 
@@ -212,7 +210,7 @@ class CachingSchemaLookupTest extends TestCase {
 			public function __construct( private readonly string $json ) {
 			}
 
-			public function getSchemaJson( SchemaName $schemaName ): string {
+			public function getSchemaJson( Title $schemaPage ): string {
 				$this->calls++;
 				return $this->json;
 			}
@@ -226,9 +224,9 @@ class CachingSchemaLookupTest extends TestCase {
 		return new class() implements SchemaJsonLookup {
 			public int $calls = 0;
 
-			public function getSchemaJson( SchemaName $schemaName ): string {
+			public function getSchemaJson( Title $schemaPage ): string {
 				$this->calls++;
-				throw SchemaContentUnavailableException::forName( $schemaName->getText() );
+				throw SchemaContentUnavailableException::forName( $schemaPage->getText() );
 			}
 		};
 	}
@@ -245,11 +243,11 @@ class CachingSchemaLookupTest extends TestCase {
 			public function __construct( private readonly string $json ) {
 			}
 
-			public function getSchemaJson( SchemaName $schemaName ): string {
+			public function getSchemaJson( Title $schemaPage ): string {
 				$this->calls++;
 
 				if ( $this->calls === 1 ) {
-					throw SchemaContentUnavailableException::forName( $schemaName->getText() );
+					throw SchemaContentUnavailableException::forName( $schemaPage->getText() );
 				}
 
 				return $this->json;
@@ -257,24 +255,26 @@ class CachingSchemaLookupTest extends TestCase {
 		};
 	}
 
-	/**
-	 * Several spellings name one Schema page, and the process-local tier is keyed by article id, so the
-	 * first spelling asked for in a process would otherwise name the Schema for every later caller.
-	 */
 	public function testSchemaIsNamedAfterItsPageRatherThanAfterTheAsking(): void {
-		$title = $this->createMock( Title::class );
-		$title->method( 'exists' )->willReturn( true );
-		$title->method( 'getArticleID' )->willReturn( 1 );
-		$title->method( 'getLatestRevID' )->willReturn( 100 );
-		$title->method( 'getText' )->willReturn( 'Person' );
-
-		$factory = $this->createMock( TitleFactory::class );
-		$factory->method( 'newFromText' )->willReturn( $title );
-
-		$schema = $this->newLookup( $this->newSpyLookup(), titleFactory: $factory )
-			->getSchema( new SchemaName( 'person' ) );
+		$schema = $this->newLookup(
+			$this->newSpyLookup(),
+			titleFactory: $this->newTitleFactory( 'Person', 1, 100, 100 )
+		)->getSchema( new SchemaName( 'person' ) );
 
 		$this->assertSame( 'Person', $schema->getName()->getText() );
+	}
+
+	/**
+	 * A page may be titled as no Schema may be named, and every read of a Subject naming it reaches
+	 * here. Reporting it as missing is what keeps such a page from taking a request down with it.
+	 */
+	public function testPageTitledAsNoSchemaMayBeNamedResolvesToNull(): void {
+		$lookup = $this->newLookup(
+			$this->newSpyLookup(),
+			titleFactory: $this->newTitleFactory( 'Page', 1, 100 )
+		);
+
+		$this->assertNull( $lookup->getSchema( new SchemaName( 'page_' ) ) );
 	}
 
 	/**
@@ -293,21 +293,21 @@ class CachingSchemaLookupTest extends TestCase {
 		}
 
 		$factory = $this->createMock( TitleFactory::class );
-		$factory->method( 'newFromText' )->willReturnCallback(
-			static fn ( string $pageName ): ?Title => $titles[$pageName] ?? null
+		$factory->method( 'makeTitleSafe' )->willReturnCallback(
+			static fn ( int $namespace, string $pageName ): ?Title => $titles[$pageName] ?? null
 		);
 		return $factory;
 	}
 
-	private function newTitleFactory( int $articleId, int ...$revIds ): TitleFactory {
+	private function newTitleFactory( string $pageText, int $articleId, int ...$revIds ): TitleFactory {
 		$title = $this->createMock( Title::class );
 		$title->method( 'exists' )->willReturn( true );
 		$title->method( 'getArticleID' )->willReturn( $articleId );
 		$title->method( 'getLatestRevID' )->willReturnOnConsecutiveCalls( ...$revIds );
-		$title->method( 'getText' )->willReturn( 'Person' );
+		$title->method( 'getText' )->willReturn( $pageText );
 
 		$factory = $this->createMock( TitleFactory::class );
-		$factory->method( 'newFromText' )->willReturn( $title );
+		$factory->method( 'makeTitleSafe' )->willReturn( $title );
 		return $factory;
 	}
 

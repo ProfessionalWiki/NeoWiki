@@ -77,7 +77,6 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabaseP
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
@@ -259,8 +258,6 @@ class NeoWikiExtension {
 	private ClientInterface $readOnlyNeo4jClient;
 	private ?WikiConfigSource $wikiConfigSource = null;
 	private ?SchemaLookup $schemaLookup = null;
-	private ?SchemaReferenceNormalizer $schemaReferenceNormalizer = null;
-	private ?SchemaReferenceParser $schemaReferenceParser = null;
 	/** @var array<string, SchemaLookup> */
 	private array $schemaLookupsByUser = [];
 	private static ?self $instance = null;
@@ -429,24 +426,10 @@ class NeoWikiExtension {
 	}
 
 	public function getSchemaReferenceParser(): SchemaReferenceParser {
-		$this->schemaReferenceParser ??= new SchemaReferenceParser(
+		return new SchemaReferenceParser(
 			$this->config->wikiId,
-			$this->getSchemaReferenceNormalizer()
+			new TitleBasedSchemaReferenceNormalizer( MediaWikiServices::getInstance()->getTitleFactory() )
 		);
-
-		return $this->schemaReferenceParser;
-	}
-
-	/**
-	 * Held for the process, because the normalizer remembers the names it has normalized and a fresh
-	 * one per read would throw that away — every Subject on every page would parse a title again.
-	 */
-	private function getSchemaReferenceNormalizer(): SchemaReferenceNormalizer {
-		$this->schemaReferenceNormalizer ??= new TitleBasedSchemaReferenceNormalizer(
-			MediaWikiServices::getInstance()->getTitleFactory()
-		);
-
-		return $this->schemaReferenceNormalizer;
 	}
 
 	/**

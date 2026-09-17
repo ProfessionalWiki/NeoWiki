@@ -5,7 +5,6 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
@@ -64,7 +63,7 @@ class StatementDeserializerTest extends TestCase {
 	 * Core types only: no extension is loaded, so "color" is an unregistered type.
 	 */
 	private function newDeserializer(): StatementDeserializer {
-		return new StatementDeserializer( PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ), TestSubjectIds::newParser() );
+		return new StatementDeserializer( TestSources::newPropertyTypeRegistry(), TestSubjectIds::newParser() );
 	}
 
 	public function testDeserializesText(): void {

@@ -30,7 +30,6 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
@@ -47,7 +46,6 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use RuntimeException;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedSchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
@@ -90,8 +88,14 @@ class CreateSubjectActionTest extends TestCase {
 		return new PageSubjects( TestSubject::build( id: 's11111111111maa' ), new SubjectMap() );
 	}
 
-	private function newCreateSubjectAction( bool $validationEnforced = false ): CreateSubjectAction {
-		$registry = PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() );
+	/**
+	 * @param array<string, string> $schemaNames Name as written => the name of the Schema it names.
+	 */
+	private function newCreateSubjectAction(
+		bool $validationEnforced = false,
+		array $schemaNames = []
+	): CreateSubjectAction {
+		$registry = TestSources::newPropertyTypeRegistry();
 		return new CreateSubjectAction(
 			$this->presenterSpy,
 			$this->subjectRepository,
@@ -116,7 +120,7 @@ class CreateSubjectActionTest extends TestCase {
 			$this->pageIdentifiersLookup,
 			$this->pageIdentifiersResolver,
 			TestSubjectIds::newParser(),
-			TestSources::newSchemaReferenceParser( [ 'person' => 'Person' ] ),
+			TestSources::newSchemaReferenceParser( $schemaNames ),
 			$validationEnforced,
 		);
 	}
@@ -177,7 +181,7 @@ class CreateSubjectActionTest extends TestCase {
 	public function testSchemaNameIsStoredAsTheNameOfTheSchemaItNames(): void {
 		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
 
-		$this->newCreateSubjectAction()->createSubject(
+		$this->newCreateSubjectAction( schemaNames: [ 'person' => 'Person' ] )->createSubject(
 			new CreateSubjectRequest(
 				pageId: 1,
 				isMainSubject: true,

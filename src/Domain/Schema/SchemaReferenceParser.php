@@ -11,13 +11,11 @@ use InvalidArgumentException;
  * {@see SchemaReference} that names one Schema however it was written down.
  *
  * Two rules make it one: a reference naming this wiki's own Source becomes a local one (ADR 23), and a
- * local name becomes the name of the Schema's page (ADR 17). Both were applied in different places
- * before, so a reference could satisfy one and not the other, and {@see SchemaReference::equals()} then
- * disagreed with what the resolver handed back.
+ * local name becomes the name of the Schema's page (ADR 17).
  *
  * Every reference crossing a boundary — a revision slot, Schema JSON, a REST body, a Lua call — is
- * parsed here rather than constructed directly. The same rule {@see \ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser}
- * follows for Subject ids, for the same reason.
+ * parsed here rather than constructed directly, as
+ * {@see \ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser} is for Subject ids.
  */
 readonly class SchemaReferenceParser {
 
@@ -37,8 +35,7 @@ readonly class SchemaReferenceParser {
 	}
 
 	/**
-	 * A Schema of this wiki, named by a caller who cannot mean any other — a Subject is only ever
-	 * created in the local Source, so the Schema it names is a local one too.
+	 * A Schema of this wiki, named by a caller who can mean no other Source.
 	 *
 	 * @throws InvalidArgumentException When $name is no Schema name.
 	 */
