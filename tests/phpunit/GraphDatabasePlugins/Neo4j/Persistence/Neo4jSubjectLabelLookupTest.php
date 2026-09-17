@@ -48,12 +48,38 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertCount( 2, $results );
 		$this->assertContainsEquals(
-			new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie' ),
+			new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie', 'Foo' ),
 			$results
 		);
 		$this->assertContainsEquals(
-			new SubjectLabelLookupResult( self::SUBJECT_ID_2, 'Apple Crumble' ),
+			new SubjectLabelLookupResult( self::SUBJECT_ID_2, 'Apple Crumble', 'Foo' ),
 			$results
+		);
+	}
+
+	public function testCarriesTheHostingPageName(): void {
+		$this->saveSubjectOnPage( pageId: 4, subjectId: self::SUBJECT_ID_1, label: 'Apple Pie' );
+
+		$this->assertEquals(
+			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie', 'Page 4' ) ],
+			$this->getSubjectLabelsMatching( 'Apple' )
+		);
+	}
+
+	public function testEachNamesakeCarriesItsOwnPage(): void {
+		// Identical labels are what the page name is for, so each row must carry the page it is
+		// actually on rather than the first row's.
+		$this->saveSubjectOnPage( pageId: 5, subjectId: 'sTestSLL1111151', label: 'Attendance' );
+		$this->saveSubjectOnPage( pageId: 6, subjectId: 'sTestSLL1111152', label: 'Attendance' );
+
+		// Asserted in order: equal names are ordered by id, so a run of namesakes is answered the
+		// same way twice rather than differing between one search and the next.
+		$this->assertEquals(
+			[
+				new SubjectLabelLookupResult( 'sTestSLL1111151', 'Attendance', 'Page 5' ),
+				new SubjectLabelLookupResult( 'sTestSLL1111152', 'Attendance', 'Page 6' ),
+			],
+			$this->getSubjectLabelsMatching( 'Attendance' )
 		);
 	}
 
@@ -103,7 +129,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		$results = $this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, [ 'Recipe' ] );
 
 		$this->assertCount( 1, $results );
-		$this->assertContainsEquals( new SubjectLabelLookupResult( 'sTestSLL1111116', 'Apple Pie' ), $results );
+		$this->assertContainsEquals( new SubjectLabelLookupResult( 'sTestSLL1111116', 'Apple Pie', 'Foo' ), $results );
 	}
 
 	public function testFindsSubjectsOfEachListedSchemaInLabelOrder(): void {
@@ -115,8 +141,8 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertEquals(
 			[
-				new SubjectLabelLookupResult( 'sTestSLL1111133', 'Apple Inc.' ),
-				new SubjectLabelLookupResult( 'sTestSLL1111131', 'Apple Pie' ),
+				new SubjectLabelLookupResult( 'sTestSLL1111133', 'Apple Inc.', 'Foo' ),
+				new SubjectLabelLookupResult( 'sTestSLL1111131', 'Apple Pie', 'Foo' ),
 			],
 			$this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, [ 'Recipe', 'Company' ] )
 		);
@@ -140,8 +166,8 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertEquals(
 			[
-				new SubjectLabelLookupResult( 'sTestSLL1111121', 'Apple Pie' ),
-				new SubjectLabelLookupResult( 'sTestSLL1111122', 'Apple Tree' ),
+				new SubjectLabelLookupResult( 'sTestSLL1111121', 'Apple Pie', 'Foo' ),
+				new SubjectLabelLookupResult( 'sTestSLL1111122', 'Apple Tree', 'Foo' ),
 			],
 			$results
 		);
@@ -166,7 +192,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		$this->createSubjectNode( id: 'sTestSLL2222223', name: 'Apple Tart', wikiId: $otherWikiId );
 
 		$this->assertEquals(
-			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie' ) ],
+			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie', 'Foo' ) ],
 			$this->getSubjectLabelsMatching( 'Apple' )
 		);
 	}
@@ -180,7 +206,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		$this->createSubjectNode( id: 'sTestSLL3333332', name: 'Apple Tart', wikiId: null );
 
 		$this->assertEquals(
-			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie' ) ],
+			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie', 'Foo' ) ],
 			$this->getSubjectLabelsMatching( 'Apple' )
 		);
 	}
@@ -204,7 +230,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertEquals(
-			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie' ) ],
+			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie', 'Foo' ) ],
 			$this->getSubjectLabelsMatching( 'Apple' )
 		);
 	}
@@ -223,7 +249,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertEquals(
-			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie' ) ],
+			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie', 'Page 7' ) ],
 			$this->getSubjectLabelsMatching( 'Apple' )
 		);
 	}
@@ -252,10 +278,27 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertEquals(
 			[
-				new SubjectLabelLookupResult( 'sTestSLL1111141', 'Apple 1' ),
-				new SubjectLabelLookupResult( 'sTestSLL1111143', 'Apple 3' ),
+				new SubjectLabelLookupResult( 'sTestSLL1111141', 'Apple 1', 'Page 1' ),
+				new SubjectLabelLookupResult( 'sTestSLL1111143', 'Apple 3', 'Page 3' ),
 			],
 			$results
+		);
+	}
+
+	public function testAPageNameThatIsNotAStringNamesNoPage(): void {
+		// Page node properties are whatever a PagePropertyProvider returned, so `name` can be a list.
+		// Casting one would throw and empty the whole search instead of this one page's name.
+		$this->newProjectionStore()->savePage( TestPage::build(
+			id: 8,
+			properties: TestPageProperties::build( extraProperties: [ 'name' => [ 'Page 8', 'Again' ] ] ),
+			otherSubjects: new SubjectMap(
+				TestSubject::build( id: self::SUBJECT_ID_1, label: new SubjectLabel( 'Apple Pie' ) )
+			)
+		) );
+
+		$this->assertEquals(
+			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie', '' ) ],
+			$this->getSubjectLabelsMatching( 'Apple' )
 		);
 	}
 

@@ -313,6 +313,11 @@ export function setupMwMock(
 			return `(${ params[ 0 ] })`;
 		}
 
+		// Core's own wrapper, whose brackets a locale can change. Carried here for the same reason.
+		if ( key === 'parentheses' && customMessages[ key ] === undefined ) {
+			return `(${ params[ 0 ] })`;
+		}
+
 		const message = customMessages[ key ];
 		if ( typeof message === 'function' ) {
 			return message( ...params );

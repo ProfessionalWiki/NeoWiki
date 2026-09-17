@@ -24,6 +24,7 @@ class GetSubjectLabelsApi extends SimpleHandler {
 				return [
 					'id' => $result->id,
 					'label' => $result->label,
+					'pageTitle' => $result->pageTitle,
 				];
 			},
 			NeoWikiExtension::getInstance()->getSubjectLabelLookup()->getSubjectLabelsMatching(
