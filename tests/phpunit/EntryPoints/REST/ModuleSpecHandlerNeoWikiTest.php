@@ -8,6 +8,7 @@ use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Rest\BasicAccess\StaticBasicAuthorizer;
 use MediaWiki\Rest\Handler\ModuleSpecHandler;
+use MediaWiki\Rest\JsonLocalizer;
 use MediaWiki\Rest\Module\ModuleManager;
 use MediaWiki\Rest\Reporter\MWErrorReporter;
 use MediaWiki\Rest\RequestData;
@@ -44,8 +45,10 @@ class ModuleSpecHandlerNeoWikiTest extends NeoWikiIntegrationTestCase {
 	];
 
 	/**
-	 * ModuleManager exists from MediaWiki 1.46, a release before Router started taking one, so the
-	 * Router's own signature is what decides which of the two it wants.
+	 * MediaWiki 1.47 rebuilt Router's constructor: route files became a ModuleManager, the
+	 * ResponseFactory became a list of text formatters, and two arguments were added. ModuleManager
+	 * exists from 1.46, a release before Router started taking one, so the Router's own signature
+	 * is what decides which of the two shapes to build.
 	 */
 	private function routerTakesModuleManager(): bool {
 		$firstParameter = ( new ReflectionMethod( Router::class, '__construct' ) )->getParameters()[0];
@@ -53,19 +56,29 @@ class ModuleSpecHandlerNeoWikiTest extends NeoWikiIntegrationTestCase {
 		return $firstParameter->getType()?->getName() !== 'array';
 	}
 
-	private function routeSource( ResponseFactory $responseFactory ): mixed {
-		if ( !$this->routerTakesModuleManager() ) {
-			return [];
-		}
-
+	private function newModuleManager( ITextFormatter $formatter ): ModuleManager {
 		$services = $this->getServiceContainer();
 
 		return new ModuleManager(
 			new ServiceOptions( ModuleManager::CONSTRUCTOR_OPTIONS, $services->getMainConfig() ),
 			ExtensionRegistry::getInstance()->getAttribute( 'RestModuleFiles' ),
 			$services->getLocalServerObjectCache(),
-			$responseFactory
+			$this->moduleManagerLocalizer( $formatter )
 		);
+	}
+
+	/**
+	 * MediaWiki 1.47 replaced ModuleManager's ResponseFactory argument with a JsonLocalizer, so which
+	 * of the two to hand it is read off the constructor rather than assumed.
+	 */
+	private function moduleManagerLocalizer( ITextFormatter $formatter ): object {
+		$argument = ( new ReflectionMethod( ModuleManager::class, '__construct' ) )->getParameters()[3];
+
+		if ( $argument->getType()?->getName() === JsonLocalizer::class ) {
+			return new JsonLocalizer( $formatter );
+		}
+
+		return new ResponseFactory( [ $formatter ] );
 	}
 
 	private function buildRouter(): Router {
@@ -84,14 +97,32 @@ class ModuleSpecHandlerNeoWikiTest extends NeoWikiIntegrationTestCase {
 			}
 		};
 
-		$responseFactory = new ResponseFactory( [ $formatter ] );
+		if ( $this->routerTakesModuleManager() ) {
+			return new Router(
+				$this->newModuleManager( $formatter ),
+				ExtensionRegistry::getInstance()->getAttribute( 'RestRoutes' ),
+				new ServiceOptions( Router::CONSTRUCTOR_OPTIONS, $services->getMainConfig() ),
+				$services->getLocalServerObjectCache(),
+				[ $formatter ],
+				// showExceptionDetails, so that a throw in here says what it was.
+				true,
+				new StaticBasicAuthorizer(),
+				$authority,
+				$objectFactory,
+				$restValidator,
+				new MWErrorReporter(),
+				$services->getHookContainer(),
+				$this->getSession( true ),
+				$services->getUrlUtils()
+			);
+		}
 
 		return new Router(
-			$this->routeSource( $responseFactory ),
+			[],
 			ExtensionRegistry::getInstance()->getAttribute( 'RestRoutes' ),
 			new ServiceOptions( Router::CONSTRUCTOR_OPTIONS, $services->getMainConfig() ),
 			$services->getLocalServerObjectCache(),
-			$responseFactory,
+			new ResponseFactory( [ $formatter ] ),
 			new StaticBasicAuthorizer(),
 			$authority,
 			$objectFactory,
