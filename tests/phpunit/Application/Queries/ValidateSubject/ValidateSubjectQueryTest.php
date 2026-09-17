@@ -13,7 +13,6 @@ use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\ProductionIdGenerator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
@@ -64,12 +63,12 @@ class ValidateSubjectQueryTest extends TestCase {
 		return new ValidateSubjectQuery(
 			schemaResolver: $this->newSchemaResolver(),
 			subjectValidator: new SubjectValidator(
-				propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
+				propertyTypeLookup: TestSources::newPropertyTypeRegistry(),
 				subjectLookup: new InMemorySubjectLookup(),
 				sourceRegistry: TestSources::newRegistry(),
 			),
 			statementListBuilder: new StatementListBuilder(
-				PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
+				TestSources::newPropertyTypeRegistry(),
 				new ProductionIdGenerator(),
 				TestSubjectIds::newParser(),
 			),

@@ -5,10 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 
 abstract class PropertyTestCase extends TestCase {
 
@@ -22,7 +20,7 @@ abstract class PropertyTestCase extends TestCase {
 	protected function fromJson( string $json ): PropertyDefinition {
 		return PropertyDefinition::fromJson(
 			json_decode( $json, true ),
-			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() )
+			TestSources::newPropertyTypeRegistry()
 		);
 	}
 

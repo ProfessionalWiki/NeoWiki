@@ -8,7 +8,6 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
@@ -27,7 +26,6 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSer
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedSchemaReferenceNormalizer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer
@@ -374,7 +372,7 @@ JSON;
 	 */
 	private function roundTrip( string $contentJson ): string {
 		$deserializer = new SubjectContentDataDeserializer(
-			new StatementDeserializer( PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ), TestSubjectIds::newParser() ),
+			new StatementDeserializer( TestSources::newPropertyTypeRegistry(), TestSubjectIds::newParser() ),
 			new NullLogger(),
 			TestSources::newSchemaReferenceParser()
 		);

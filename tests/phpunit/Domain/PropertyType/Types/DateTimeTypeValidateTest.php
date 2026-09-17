@@ -5,9 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\PropertyType\Types;
 
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
@@ -207,7 +205,7 @@ class DateTimeTypeValidateTest extends TestCase {
 				'minimum' => [ 'value' => '2025-01-01T00:00:00Z', 'severity' => 'error' ],
 				'maximum' => '2025-12-31T23:59:59Z',
 			],
-			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
+			TestSources::newPropertyTypeRegistry(),
 		);
 
 		$violations = $this->type->validate( new StringValue( '2024-12-31T23:59:59Z' ), $definition );
@@ -223,7 +221,7 @@ class DateTimeTypeValidateTest extends TestCase {
 				'minimum' => '2025-01-01T00:00:00Z',
 				'maximum' => [ 'value' => '2025-12-31T23:59:59Z', 'severity' => 'error' ],
 			],
-			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
+			TestSources::newPropertyTypeRegistry(),
 		);
 
 		$violations = $this->type->validate( new StringValue( '2026-01-01T00:00:00Z' ), $definition );

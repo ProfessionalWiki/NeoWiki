@@ -9,7 +9,6 @@ use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
@@ -23,7 +22,7 @@ class StatementListBuilderTest extends TestCase {
 
 	private function newBuilder(): StatementListBuilder {
 		return new StatementListBuilder(
-			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
+			propertyTypeLookup: TestSources::newPropertyTypeRegistry(),
 			idGenerator: new StubIdGenerator( '11111111111111' ),
 			subjectIdParser: TestSubjectIds::newParser()
 		);
