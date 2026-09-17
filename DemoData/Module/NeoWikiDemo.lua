@@ -70,15 +70,16 @@ end
 
 function p.otherSubjects( frame )
 	local page = frame.args[1]
-	local otherSubjects = nw.getOtherSubjects( page )
-
-	if not otherSubjects or #otherSubjects == 0 then
-		return 'No other Subjects'
-	end
 
 	local parts = {}
-	for _, subject in ipairs( otherSubjects ) do
-		parts[#parts + 1] = "'''" .. subject.label .. "''' (" .. subject.schema .. ")"
+	for _, subject in ipairs( nw.getSubjects( page ) ) do
+		if not subject.isMainSubject then
+			parts[#parts + 1] = "'''" .. subject.label .. "''' (" .. subject.schema .. ")"
+		end
+	end
+
+	if #parts == 0 then
+		return 'No other Subjects'
 	end
 
 	return table.concat( parts, ', ' )
@@ -168,16 +169,11 @@ function p.otherSubjectTable( frame )
 		end
 	end
 
-	local otherSubjects = nw.getOtherSubjects()
-	if not otherSubjects then
-		return ''
-	end
-
 	local lang = mw.getContentLanguage()
 	local rows = {}
 
-	for _, subject in ipairs( otherSubjects ) do
-		if not schemaFilter or subject.schema == schemaFilter then
+	for _, subject in ipairs( nw.getSubjects() ) do
+		if not subject.isMainSubject and ( not schemaFilter or subject.schema == schemaFilter ) then
 			local row = {}
 			for _, col in ipairs( columns ) do
 				local v = statementValue( subject.statements[col] )

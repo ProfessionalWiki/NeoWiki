@@ -74,7 +74,7 @@ class ScribuntoLuaLibrary extends LibraryBase {
 			'getAll' => [ $this, 'getAll' ],
 			'getMainSubject' => [ $this, 'getMainSubject' ],
 			'getSubject' => [ $this, 'getSubject' ],
-			'getOtherSubjects' => [ $this, 'getOtherSubjects' ],
+			'getSubjects' => [ $this, 'getSubjects' ],
 			'getSchema' => [ $this, 'getSchema' ],
 		];
 
@@ -130,14 +130,14 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		return $this->getSubjectDataLookup()->getSubjectData( $subjectId );
 	}
 
-	public function getOtherSubjects( ?string $pageName = null ): array {
-		$this->checkTypeOptional( 'mw.neowiki.getOtherSubjects', 1, $pageName, 'string', null );
+	public function getSubjects( ?string $pageName = null ): array {
+		$this->checkTypeOptional( 'mw.neowiki.getSubjects', 1, $pageName, 'string', null );
 
 		if ( $pageName !== null ) {
 			$this->incrementExpensiveFunctionCount();
 		}
 
-		return $this->getSubjectDataLookup()->getOtherSubjectsData( $this->getTitle(), $pageName );
+		return $this->getSubjectDataLookup()->getSubjectsData( $this->getTitle(), $pageName );
 	}
 
 	public function query( ?string $cypher = null, ?array $params = null ): array {

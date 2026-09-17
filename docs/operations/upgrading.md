@@ -64,10 +64,17 @@ If your Subjects predate the optional Subject label, run
 
 ## Renamed accessors, September 2026
 
-`nw.getChildSubjects` is now [`nw.getOtherSubjects`](../authoring/lua-api.md#nwgetothersubjectspagename),
-and there is no alias. Modules and templates already stored on a wiki keep calling the old name and
-render a script error until edited, so grep your `Module:` namespace for `getChildSubjects` after
-upgrading. `make import-demo-data` covers the demo content.
+`nw.getChildSubjects` and `nw.getOtherSubjects` are both now
+[`nw.getSubjects`](../authoring/lua-api.md#nwgetsubjectspagename), and there is no alias. The
+replacement returns the page's Main Subject as well, first in the list, and marks every Subject with
+an `isMainSubject` flag, so a module wanting only the rest filters on that. Modules and templates
+already stored on a wiki keep calling the old names and render a script error until edited, so grep
+your `Module:` namespace for both after upgrading. `make import-demo-data` covers the demo content.
+
+`nw.getMainSubject` keeps its name and changes one answer. An unlabelled Main Subject on a page
+titled by the id of *another* Subject on that page now reads as its Schema name, where it took the
+page title before. Only entity-first creation makes such a title, and the Schema name is what the
+rest of the wiki already showed for it.
 
 Two REST surfaces moved with it: `POST /neowiki/v0/page/{pageId}/childSubjects` is now
 `POST /neowiki/v0/page/{pageId}/subjects`, and the `childSubjectIds` key of
