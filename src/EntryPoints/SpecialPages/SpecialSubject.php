@@ -5,11 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages;
 
 use MediaWiki\Html\Html;
-use MediaWiki\Language\RawMessage;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\SubjectNameMessage;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectNamePresenter;
 
 class SpecialSubject extends SpecialPage {
@@ -70,15 +70,9 @@ class SpecialSubject extends SpecialPage {
 
 		$displayName = $presenter->getDisplayName();
 
-		if ( $displayName === null ) {
-			return null;
-		}
-
-		if ( $presenter->displayNameIsGenerated() ) {
-			return $this->msg( 'neowiki-subject-generated-name' )->plaintextParams( $displayName );
-		}
-
-		return ( new RawMessage( '$1' ) )->plaintextParams( $displayName );
+		return $displayName === null
+			? null
+			: SubjectNameMessage::from( $this, $displayName, $presenter->displayNameIsGenerated() );
 	}
 
 	public function getGroupName(): string {

@@ -26,24 +26,29 @@ readonly class SubjectSearchTextBuilder {
 	}
 
 	public function build( PageSubjects $pageSubjects ): string {
-		$lines = [];
+		$texts = [];
 
 		foreach ( $pageSubjects->getAllSubjects()->asArray() as $subject ) {
-			array_push( $lines, ...$this->linesOf( $subject ) );
+			foreach ( $this->linesOf( $subject ) as $line ) {
+				$texts[] = $line->text;
+			}
 		}
 
-		return implode( "\n", $lines );
+		return implode( "\n", $texts );
 	}
 
 	/**
-	 * @return string[]
+	 * One Subject's lines, each told apart by where it came from: what a reader of a search hit
+	 * needs to be shown which Subject the hit matched and through which property.
+	 *
+	 * @return SubjectSearchLine[]
 	 */
-	private function linesOf( Subject $subject ): array {
+	public function linesOf( Subject $subject ): array {
 		$lines = [];
 		$label = $subject->getLabel();
 
 		if ( $label !== null ) {
-			$lines[] = $label->text;
+			$lines[] = new SubjectSearchLine( null, $label->text );
 		}
 
 		$schema = $this->schemaResolver->getSchema( $subject->getSchemaReference() );
@@ -55,10 +60,11 @@ readonly class SubjectSearchTextBuilder {
 				continue;
 			}
 
-			array_push( $lines, ...$propertyType->searchText(
-				$statement->getValue(),
-				$this->definitionFor( $statement, $schema )
-			) );
+			$propertyName = $statement->getPropertyName()->text;
+
+			foreach ( $propertyType->searchText( $statement->getValue(), $this->definitionFor( $statement, $schema ) ) as $text ) {
+				$lines[] = new SubjectSearchLine( $propertyName, $text );
+			}
 		}
 
 		return $lines;
