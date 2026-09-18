@@ -17,7 +17,7 @@
 					:can-delete="canDeleteSubject"
 					:page="hostingPage"
 					@toggle="toggleExpanded"
-					@edit="openEditor"
+					@edit="editSubject"
 					@delete="confirmDelete"
 					@copy-link="copySubjectLink"
 				/>
@@ -39,7 +39,7 @@
 						:can-delete="canDeleteSubject"
 						:page="pageOf( referenced )"
 						@toggle="toggleExpanded"
-						@edit="openEditor"
+						@edit="editSubject"
 						@delete="confirmDelete"
 						@copy-link="copySubjectLink"
 					/>
@@ -64,7 +64,7 @@
 						:can-delete="canDeleteSubject"
 						:page="pageOf( referencing.subject )"
 						@toggle="toggleReferencingExpanded"
-						@edit="openEditor"
+						@edit="editSubject"
 						@delete="confirmDelete"
 						@copy-link="copySubjectLink"
 					/>
@@ -127,6 +127,7 @@ import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
 import SubjectDeleteDialog from '@/components/SubjectsManager/SubjectDeleteDialog.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import { useSubjectEditor } from '@/composables/useSubjectEditor.ts';
 
 const props = defineProps<{
 	subjectId: string;
@@ -387,26 +388,11 @@ function copySubjectLink( target: Subject ): Promise<void> {
 	);
 }
 
-// Editor state is component-local (ADR 16): the dialog opens on data fetched straight from the
-// repositories, not on the store this page renders from.
-const editingSubject = shallowRef<Subject | null>( null );
-const editingSchema = shallowRef<Schema | null>( null );
-const editorOpen = ref( false );
+const { editingSubject, editingSchema, editorOpen, openEditor } = useSubjectEditor( subjectRepo, schemaRepo );
 
-async function openEditor( subjectToEdit: Subject ): Promise<void> {
-	try {
-		// Both, so the editor never opens against data another tab has moved on from.
-		const [ freshSubject, schema ] = await Promise.all( [
-			subjectRepo.getSubjectForEditing( subjectToEdit.getId() ),
-			schemaRepo.getSchema( subjectToEdit.getSchemaName() )
-		] );
-
-		editingSubject.value = freshSubject;
-		editingSchema.value = schema;
-		editorOpen.value = true;
-	} catch ( error ) {
-		mw.notify( error instanceof Error ? error.message : String( error ), { type: 'error' } );
-	}
+// The rows emit the Subject they render; the opener reads its own copy and needs only the id.
+function editSubject( edited: Subject ): void {
+	openEditor( edited.getId() );
 }
 
 // Re-read rather than patch: a save can add or drop relations, so the referenced Subjects below are
