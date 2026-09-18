@@ -1,5 +1,6 @@
 import { flushPromises, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
 import { CdxCheckbox, CdxSelect } from '@wikimedia/codex';
 import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
@@ -8,6 +9,7 @@ import { newNumberProperty } from '@/domain/propertyTypes/Number';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newSelectProperty, SelectProperty } from '@/domain/propertyTypes/Select';
+import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Relation';
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
 import { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { newNumberValue, newStringValue } from '@/domain/Value';
@@ -15,6 +17,8 @@ import { createTestWrapper, FieldProps, findPropertyNameInput, reportUnparseable
 
 describe( 'PropertyDefinitionEditor', () => {
 	beforeEach( () => {
+		// The relation attributes editor reaches SchemaPicker, which calls useSchemaStore() at setup.
+		setActivePinia( createPinia() );
 		setupMwMock();
 	} );
 
@@ -97,6 +101,29 @@ describe( 'PropertyDefinitionEditor', () => {
 		await changeTypeTo( wrapper, 'select' );
 
 		expect( lastEmittedProperty( wrapper ).constraintSeverities ).toEqual( { required: 'error' } );
+	} );
+
+	// The relation type is the graph edge label, which the editor no longer shows. It is set
+	// here, where a property first becomes a relation property, and never derived again.
+	describe( 'relation type', () => {
+		it( 'names the relation type after the property when the type changes to Relation', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Director' } ) );
+
+			await changeTypeTo( wrapper, 'relation' );
+
+			expect( ( lastEmittedProperty( wrapper ) as RelationProperty ).relation ).toBe( 'Director' );
+		} );
+
+		it( 'keeps the stored relation type of an existing relation property when it is renamed', async () => {
+			const wrapper = newWrapper( newRelationProperty( { name: 'Director', relation: 'directed by' } ) );
+
+			await findPropertyNameInput( wrapper ).setValue( 'Maker' );
+			await flushPromises();
+
+			const property = lastEmittedProperty( wrapper ) as RelationProperty;
+			expect( property.name.toString() ).toBe( 'Maker' );
+			expect( property.relation ).toBe( 'directed by' );
+		} );
 	} );
 
 	describe( 'unsetting a Constraint', () => {

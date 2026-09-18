@@ -1,12 +1,42 @@
 import { describe, expect, it } from 'vitest';
-import { newRelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
-import { PropertyName } from '@/domain/PropertyDefinition';
+import { newRelationProperty, RelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
+import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
 import { newRelation, RelationValue } from '@/domain/Value';
 
 describe( 'RelationType', () => {
 
 	it( 'has no display attributes', () => {
 		expect( new RelationType().getDisplayAttributeNames() ).toEqual( [] );
+	} );
+
+	describe( 'createPropertyDefinitionFromJson', () => {
+
+		const relationPropertyNamed = ( name: string, json: object ): RelationProperty =>
+			new RelationType().createPropertyDefinitionFromJson(
+				{
+					name: new PropertyName( name ),
+					type: RelationType.typeName,
+					description: '',
+					required: false,
+					default: undefined,
+				} as PropertyDefinition,
+				{ targetSchema: 'Artist', ...json },
+			);
+
+		it( 'keeps the stored relation type', () => {
+			expect( relationPropertyNamed( 'Creator', { relation: 'Created by' } ).relation )
+				.toBe( 'Created by' );
+		} );
+
+		it( 'names the relation type after the property when the JSON has none', () => {
+			expect( relationPropertyNamed( 'Creator', {} ).relation ).toBe( 'Creator' );
+		} );
+
+		// A Schema the wiki stored never has one: an empty relation type fails content validation.
+		it( 'names the relation type after the property when the JSON has an empty one', () => {
+			expect( relationPropertyNamed( 'Creator', { relation: '' } ).relation ).toBe( 'Creator' );
+		} );
+
 	} );
 
 } );

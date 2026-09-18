@@ -4,8 +4,8 @@ import { RelationType, type RelationProperty } from '@/domain/propertyTypes/Rela
 
 /**
  * The message naming what a relation property definition still needs before the wiki will store
- * it, or null. Switching a property's type to Relation sets neither field, and the editor fills in
- * only the relation type.
+ * it, or null. Switching a property's type to Relation leaves it without a target schema, which
+ * only the user can supply.
  */
 export function missingRelationAttribute( property: PropertyDefinition ): string | null {
 	if ( property.type !== RelationType.typeName ) {
@@ -13,10 +13,6 @@ export function missingRelationAttribute( property: PropertyDefinition ): string
 	}
 
 	const relation = property as RelationProperty;
-
-	if ( !relation.relation ) {
-		return 'neowiki-property-editor-relation-required';
-	}
 
 	if ( schemaReferenceName( relation.targetSchema ) === '' ) {
 		return 'neowiki-property-editor-target-schema-required';

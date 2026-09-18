@@ -567,8 +567,6 @@
 				"neowiki-property-editor-multiple",
 				"neowiki-property-editor-single-value",
 				"neowiki-property-editor-unique-items",
-				"neowiki-property-editor-relation",
-				"neowiki-property-editor-relation-required",
 				"neowiki-property-editor-target-schema",
 				"neowiki-property-editor-target-schema-required",
 				"neowiki-property-editor-options",
