@@ -135,6 +135,25 @@ class NeoWikiSidebarLinkTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testSpecialPagesShowTheLinksThatDescribeNoPage(): void {
+		$this->assertSame(
+			[ 't-neowiki-overview', 't-neowiki-create-subject-page' ],
+			array_column( $this->neoWikiSectionOnASpecialPage(), 'id' )
+		);
+	}
+
+	/**
+	 * Core shows Special:Badtitle for a title the user may not read, so the handler meets it on ordinary requests.
+	 */
+	public function testOverviewLinkIsShownOnTheBadtitlePage(): void {
+		$this->assertNotNull(
+			$this->findLinkById(
+				$this->neoWikiSection( Title::makeTitle( NS_SPECIAL, 'Badtitle' ) ),
+				't-neowiki-overview'
+			)
+		);
+	}
+
 	private function assertAllPagesLinkInNeoWikiSection(
 		int $namespace,
 		string $linkId,
@@ -168,6 +187,10 @@ class NeoWikiSidebarLinkTest extends NeoWikiIntegrationTestCase {
 		$page = $this->getExistingTestPage( Title::makeTitle( NS_MAIN, 'Existing Page' ) );
 
 		return $this->neoWikiSection( $page->getTitle(), $page->getLatest() );
+	}
+
+	private function neoWikiSectionOnASpecialPage(): array {
+		return $this->neoWikiSection( Title::makeTitle( NS_SPECIAL, 'Subject' ) );
 	}
 
 	private function neoWikiSection( Title $title, ?int $revisionId = null ): array {
