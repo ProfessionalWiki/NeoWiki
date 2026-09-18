@@ -140,6 +140,22 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertContains( 'invalid-option', $codes );
 	}
 
+	public function testNonStringSelectMemberAnswers400(): void {
+		$this->createSchemaWithSelectProperty();
+
+		$body = $this->validBody();
+		$body['statements'] = [
+			'Status' => [ 'propertyType' => 'select', 'value' => [ 'id' => 42 ] ],
+		];
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectApi(),
+			$this->createRequestData( $body )
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+	}
+
 	public function testValidSelectLabelIsResolvedAndValidates(): void {
 		$this->createSchemaWithSelectProperty();
 

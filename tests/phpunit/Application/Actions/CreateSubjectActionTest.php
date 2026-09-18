@@ -8,8 +8,7 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
+use ProfessionalWiki\NeoWiki\Application\StatementNormalizer;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
@@ -103,7 +102,7 @@ class CreateSubjectActionTest extends TestCase {
 				TestSubjectIds::newParser()
 			),
 			TestSources::newSchemaResolver( $this->schemaLookup ),
-			new SelectStatementResolver( new SelectValueResolver() ),
+			new StatementNormalizer( $registry ),
 			new ProposedSubjectValidator(
 				schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
 				subjectValidator: new SubjectValidator(

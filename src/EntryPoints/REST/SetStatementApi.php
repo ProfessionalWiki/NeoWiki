@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
+use ProfessionalWiki\NeoWiki\Application\RejectedValueException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
@@ -17,6 +18,8 @@ use ProfessionalWiki\NeoWiki\Presentation\RestUpdateStatementPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class SetStatementApi extends SimpleHandler {
+
+	use RejectedValueResponse;
 
 	public function __construct(
 		private readonly CsrfValidator $csrfValidator
@@ -53,6 +56,8 @@ class SetStatementApi extends SimpleHandler {
 				$statement['value'] ?? null,
 				$body['comment'] ?? null
 			);
+		} catch ( RejectedValueException $e ) {
+			return $this->newRejectedValueResponse( $e );
 		} catch ( InvalidArgumentException $e ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'status' => 'error',

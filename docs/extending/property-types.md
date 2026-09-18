@@ -17,6 +17,16 @@ fields, and register it with `NeoWikiRegistrar::addPropertyType()`. Example:
 shows the violations the server returns, each `code` resolved to the message key `neowiki-field-<code>`, which your
 extension defines (RedHerb's [`i18n/en.json`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/i18n/en.json)).
 
+A type that accepts input shapes beyond the one it stores also implements
+[`NormalizesRawValue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/src/Domain/PropertyType/NormalizesRawValue.php).
+`normalizeRawValue()` returns a `NormalizationResult`: the value with every part that could be canonicalized
+canonical, plus a `Violation` for the first part that could not (no property name, `error` severity,
+`valuePartIndex` counted on the value as sent). Never throw from it, and keep the Violation's `args` to strings and
+numbers. The core
+[`SelectType`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/src/Domain/PropertyType/Types/SelectType.php)
+is the working example; how a refused value is answered is under
+[Refused values](../api/validation-codes.md#refused-values).
+
 ## Projection
 
 Statements of a Property Type without a Neo4j value builder are omitted from the Neo4j projection; without an RDF

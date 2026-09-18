@@ -496,6 +496,24 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $this->getSubjectFromRepository( 'sTestSA11111111' )->getStatements()->asArray() );
 	}
 
+	public function testUnresolvableSelectListPartReturns400LocatingThePart(): void {
+		$this->createPagesWithMultipleSelectProperty();
+
+		$body = $this->validBody();
+		$body['statements'] = [ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'Draft', 'Bogus1', 'Bogus2' ] ] ];
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestData( $body )
+		);
+		$responseBody = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertSame( 'Status', $responseBody['violation']['propertyName'] );
+		$this->assertSame( 1, $responseBody['violation']['valuePartIndex'] );
+		$this->assertSame( [], $this->getSubjectFromRepository( 'sTestSA11111111' )->getStatements()->asArray() );
+	}
+
 	public function testNonStringPropertyTypeReturns400(): void {
 		$this->createPages();
 
@@ -720,6 +738,20 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 	private function createPages(): void {
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
+		$this->createPageWithSubjects(
+			'ReplaceSubjectApiTest',
+			mainSubject: TestSubject::build(
+				id: 'sTestSA11111111',
+				label: new SubjectLabel( 'Test subject sTestSA11111111' ),
+			)
+		);
+	}
+
+	private function createPagesWithMultipleSelectProperty(): void {
+		$this->createSchema(
+			TestSubject::DEFAULT_SCHEMA_ID,
+			'{"title":"' . TestSubject::DEFAULT_SCHEMA_ID . '","propertyDefinitions":{"Status":{"type":"select","multiple":true,"options":[{"id":"opt_draft","label":"Draft"}]}}}'
+		);
 		$this->createPageWithSubjects(
 			'ReplaceSubjectApiTest',
 			mainSubject: TestSubject::build(

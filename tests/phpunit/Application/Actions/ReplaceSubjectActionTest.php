@@ -7,8 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
+use ProfessionalWiki\NeoWiki\Application\StatementNormalizer;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
@@ -83,7 +82,7 @@ class ReplaceSubjectActionTest extends TestCase {
 			writeAuthorizer: $authorizer ?? new SpySubjectWriteAuthorizer( allowed: true ),
 			statementListBuilder: $builder,
 			schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
-			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
+			statementNormalizer: new StatementNormalizer( $registry ),
 			proposedSubjectValidator: new ProposedSubjectValidator(
 				schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
 				subjectValidator: new SubjectValidator(

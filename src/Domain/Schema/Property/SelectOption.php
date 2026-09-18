@@ -30,7 +30,15 @@ class SelectOption {
 	}
 
 	public function normalizedLabel(): string {
-		return strtolower( trim( $this->label ) );
+		return self::normalizeLabel( $this->label );
+	}
+
+	/**
+	 * The form a label is matched in: what a caller writes need not be cased or spaced as the
+	 * Schema writes it.
+	 */
+	public static function normalizeLabel( string $label ): string {
+		return strtolower( trim( $label ) );
 	}
 
 	public function equals( self $other ): bool {

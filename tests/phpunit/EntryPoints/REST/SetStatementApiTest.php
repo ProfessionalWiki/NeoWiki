@@ -50,6 +50,21 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	private function createSubjectPageWithSelectProperty(): void {
+		$this->createSchema(
+			'SetStatementSchema',
+			'{"title":"SetStatementSchema","propertyDefinitions":{"Status":{"type":"select","options":[{"id":"opt_draft","label":"Draft"}]}}}'
+		);
+		$this->createPageWithSubjects(
+			'SetStatementApiTest',
+			mainSubject: TestSubject::build(
+				id: self::SUBJECT_ID,
+				label: new SubjectLabel( 'Professional Wiki' ),
+				schemaName: new SchemaName( 'SetStatementSchema' ),
+			)
+		);
+	}
+
 	private function createLabellessSubjectPage(): void {
 		$this->createSchema(
 			'SetStatementSchema',
@@ -311,6 +326,33 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( 400, $response->getStatusCode() );
 		$this->assertNull( $this->getStoredValue( 'Founded at' ) );
+	}
+
+	public function testUnresolvableSelectValueReturns400LocatingTheValue(): void {
+		$this->createSubjectPageWithSelectProperty();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Status', [ 'statement' => [ 'propertyType' => 'select', 'value' => 'Nonexistent' ] ] )
+		);
+		$body = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertSame( 'error', $body['status'] );
+		$this->assertSame(
+			[
+				'propertyName' => 'Status',
+				'code' => 'invalid-option',
+				'args' => [ 'Nonexistent' ],
+				'severity' => 'error',
+				'valuePartIndex' => 0,
+			],
+			$body['violation']
+		);
+		$this->assertArrayHasKey( 'qqx', $body['messageTranslations'] );
+		$this->assertSame( $body['messageTranslations']['qqx'], $body['message'] );
+		$this->assertStringContainsString( '<plaintext>Nonexistent</plaintext>', $body['messageTranslations']['qqx'] );
+		$this->assertNull( $this->getStoredValue( 'Status' ) );
 	}
 
 	/**

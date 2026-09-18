@@ -91,4 +91,16 @@ class ViolationTest extends TestCase {
 		$this->assertSame( Severity::Error, $original->withPropertyName( new PropertyName( 'Age' ) )->severity );
 	}
 
+	public function testWithValuePartIndexKeepsEverythingElse(): void {
+		$violation = new Violation( propertyName: null, code: 'invalid-option', args: [ 'x' ], severity: Severity::Error );
+
+		$indexed = $violation->withValuePartIndex( 2 );
+
+		$this->assertSame( 2, $indexed->valuePartIndex );
+		$this->assertSame( 'invalid-option', $indexed->code );
+		$this->assertSame( [ 'x' ], $indexed->args );
+		$this->assertSame( Severity::Error, $indexed->severity );
+		$this->assertNull( $indexed->propertyName );
+	}
+
 }
