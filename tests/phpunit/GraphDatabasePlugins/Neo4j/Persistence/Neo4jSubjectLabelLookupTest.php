@@ -107,6 +107,23 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertContainsEquals( new SubjectLabelLookupResult( 'sTestSLL1111116', 'Apple Pie' ), $results );
 	}
 
+	public function testFindsSubjectsOfEverySchemaWithoutASchema(): void {
+		$this->saveSubjects( new SubjectMap(
+			TestSubject::build( id: 'sTestSLL1111121', label: new SubjectLabel( 'Apple Pie' ), schemaName: new SchemaName( 'Recipe' ) ),
+			TestSubject::build( id: 'sTestSLL1111122', label: new SubjectLabel( 'Apple Tree' ), schemaName: new SchemaName( 'Plant' ) ),
+		) );
+
+		$results = $this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, null );
+
+		$this->assertEquals(
+			[
+				new SubjectLabelLookupResult( 'sTestSLL1111121', 'Apple Pie' ),
+				new SubjectLabelLookupResult( 'sTestSLL1111122', 'Apple Tree' ),
+			],
+			$results
+		);
+	}
+
 	public function testDoesNotReturnSubjectsFromOtherSchemas(): void {
 		$this->saveSubjects( new SubjectMap(
 			TestSubject::build( id: 'sTestSLL1111119', label: new SubjectLabel( 'Apple Tree' ), schemaName: new SchemaName( 'Plant' ) ),

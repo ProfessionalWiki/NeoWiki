@@ -59,7 +59,11 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 
 interface SubjectPickerProps {
 	selected: string | null;
-	targetSchema: string | null;
+	/**
+	 * The Schema the picked Subject must follow. Omitted, Subjects of every Schema are on offer;
+	 * null names a Schema of another Source, which this wiki cannot search.
+	 */
+	targetSchema?: string | null;
 	startIcon?: Icon;
 	status?: ValidationStatusType | 'default';
 	ariaLabel?: string;
@@ -68,6 +72,7 @@ interface SubjectPickerProps {
 const props = withDefaults(
 	defineProps<SubjectPickerProps>(),
 	{
+		targetSchema: undefined,
 		startIcon: undefined,
 		status: 'default',
 		ariaLabel: undefined
@@ -91,10 +96,11 @@ const subjectLabelSearch = NeoWikiServices.getSubjectLabelSearch();
 // picker offering only Subjects that already exist.
 const subjectCreation = inject( SubjectCreationKey, undefined );
 
-// A target Schema from another Source is not this wiki's to create a Subject of: what the host
-// would mint is a local Subject under a bare local name, which is not the Schema referenced.
+// Creation needs one Schema to create under, which a picker offering every Schema does not name.
+// A target Schema from another Source is not this wiki's to create a Subject of either: what the
+// host would mint is a local Subject under a bare local name, not the Schema referenced.
 const creationOffered = computed( (): boolean =>
-	subjectCreation !== undefined && props.targetSchema !== null
+	subjectCreation !== undefined && typeof props.targetSchema === 'string'
 );
 
 const selectedSubject = ref<string | null>( props.selected );
@@ -127,9 +133,9 @@ const selectedName = ref( '' );
 // picking an item writes the string into this field's own text input, where the user can edit it and
 // where it feeds the offer to create a Subject under the text they typed.
 const draftItems = computed( (): MenuItemData[] =>
-	props.targetSchema === null ?
-		[] :
-		( subjectCreation?.drafts( props.targetSchema ) ?? [] ).map( menuItemFor )
+	typeof props.targetSchema === 'string' ?
+		( subjectCreation?.drafts( props.targetSchema ) ?? [] ).map( menuItemFor ) :
+		[]
 );
 
 function menuItemFor( subject: Subject ): MenuItemData {
@@ -317,9 +323,12 @@ async function candidatesFor( value: string ): Promise<MenuItemData[]> {
 	if ( SubjectId.isValid( text ) ) {
 		const subject = await fetchSubject( text );
 
-		// A Subject of another Schema cannot be this relation's target. One the user may not read
-		// never reaches here at all: the read fails instead of answering.
-		if ( subject !== null && subject.getSchemaName() === props.targetSchema ) {
+		// A Subject of another Schema cannot be this relation's target, unless every Schema is on
+		// offer. One the user may not read never reaches here at all: the read fails instead of
+		// answering.
+		if ( subject !== null &&
+			( props.targetSchema === undefined || subject.getSchemaName() === props.targetSchema )
+		) {
 			return [ menuItemFor( subject ) ];
 		}
 	}
@@ -327,7 +336,7 @@ async function candidatesFor( value: string ): Promise<MenuItemData[]> {
 	return searchLabels( text, props.targetSchema );
 }
 
-async function searchLabels( value: string, targetSchema: string ): Promise<MenuItemData[]> {
+async function searchLabels( value: string, targetSchema: string | undefined ): Promise<MenuItemData[]> {
 	try {
 		const results = await subjectLabelSearch.searchSubjectLabels( value, targetSchema );
 
@@ -383,7 +392,7 @@ function onSubjectSelected( subjectId: string | null ): void {
 }
 
 async function createFromTypedText(): Promise<void> {
-	if ( subjectCreation === undefined || props.targetSchema === null ) {
+	if ( subjectCreation === undefined || typeof props.targetSchema !== 'string' ) {
 		return;
 	}
 

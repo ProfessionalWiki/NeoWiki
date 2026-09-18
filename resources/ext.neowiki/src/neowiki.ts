@@ -14,6 +14,7 @@ import MappingsPage from '@/components/MappingsPage/MappingsPage.vue';
 import SubjectsManagerPage from '@/components/SubjectsManager/SubjectsManagerPage.vue';
 import CreateSubjectPage from '@/components/CreateSubjectPage/CreateSubjectPage.vue';
 import SubjectPage from '@/components/SubjectPage/SubjectPage.vue';
+import SubjectPickerPage from '@/components/SubjectPage/SubjectPickerPage.vue';
 import OverviewPage from '@/components/OverviewPage/OverviewPage.vue';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SchemaName } from '@/domain/Schema.ts';
@@ -242,7 +243,12 @@ function initializeSubjectPage(): void {
 			const ext = NeoWikiExtension.getInstance();
 			const subjectId = subjectPage.dataset.mwNeowikiSubjectId;
 
-			const app = createMwApp( SubjectPage, { subjectId } ).directive( 'tooltip', CdxTooltip );
+			// No id names no Subject, so the page asks for one instead of showing one.
+			const app = subjectId === undefined ?
+				createMwApp( SubjectPickerPage ) :
+				createMwApp( SubjectPage, { subjectId } );
+
+			app.directive( 'tooltip', CdxTooltip );
 			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
 			mountNeoWikiApp( app, subjectPage );

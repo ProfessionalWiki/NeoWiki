@@ -5,6 +5,7 @@ export interface SubjectLabelResult {
 
 export interface SubjectLabelSearch {
 
-	searchSubjectLabels( search: string, schema: string ): Promise<SubjectLabelResult[]>;
+	/** Without a schema, Subjects of every Schema are searched. */
+	searchSubjectLabels( search: string, schema?: string ): Promise<SubjectLabelResult[]>;
 
 }

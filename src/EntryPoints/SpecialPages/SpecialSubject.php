@@ -24,33 +24,49 @@ class SpecialSubject extends SpecialPage {
 	public function execute( $subPage ): void {
 		parent::execute( $subPage );
 
-		$out = $this->getOutput();
 		$extension = NeoWikiExtension::getInstance();
 		$subjectId = $extension->getSubjectIdParser()->parse( $subPage ?? '' );
 
-		if ( $subjectId === null ) {
-			$out->addHTML(
+		if ( $subjectId !== null ) {
+			$name = $this->subjectName( $extension, $subjectId );
+
+			if ( $name !== null ) {
+				$this->getOutput()->setPageTitleMsg( $name );
+			}
+
+			// What the Subject's own view reads. The lookup shown without one reads none of it, and
+			// each read costs a permission check per Mapping page.
+			$this->getOutput()->addJsConfigVars( $extension->getSubjectUiJsConfigVars( $this->getAuthority() ) );
+		}
+		elseif ( $subPage !== null && $subPage !== '' ) {
+			$this->getOutput()->addHTML(
 				Html::errorBox( $this->msg( 'neowiki-special-subject-invalid-id' )->escaped() )
 			);
-			return;
 		}
 
-		$name = $this->subjectName( $extension, $subjectId );
+		$this->showMountPoint( $extension, $subjectId );
+	}
 
-		if ( $name !== null ) {
-			$out->setPageTitleMsg( $name );
-		}
+	/**
+	 * The frontend fills this element with the Subject asked for, or — with no id to fill it from —
+	 * with a lookup for choosing one.
+	 *
+	 * What the body shows for an id is decided by the read the frontend makes, on the same terms as
+	 * the read behind the title: a Subject that does not exist and one on a page this user may not
+	 * read answer alike (#1046).
+	 */
+	private function showMountPoint( NeoWikiExtension $extension, ?SubjectId $subjectId ): void {
+		$out = $this->getOutput();
 
-		// What the body shows is decided by the read the frontend makes, on the same terms as the read
-		// behind the title: a Subject that does not exist and one on a page this user may not read
-		// answer alike (#1046).
 		$extension->newFrontendModuleLoader()->load( $out, $this->getSkin() );
-		$out->addJsConfigVars( $extension->getSubjectUiJsConfigVars( $this->getAuthority() ) );
 
-		$out->addHTML( Html::element( 'div', [
-			'id' => 'ext-neowiki-subject',
-			'data-mw-neowiki-subject-id' => $subjectId->text,
-		] ) );
+		$attributes = [ 'id' => 'ext-neowiki-subject' ];
+
+		if ( $subjectId !== null ) {
+			$attributes['data-mw-neowiki-subject-id'] = $subjectId->text;
+		}
+
+		$out->addHTML( Html::element( 'div', $attributes ) );
 	}
 
 	/**
