@@ -61,9 +61,10 @@ If your install predates September 2026 and holds restricted content, run `php m
 once: categories and page properties that earlier parses derived from Subject data were recorded without a
 permission check, and MediaWiki rewrites those tables only on an edit, not on a view.
 
-If your wiki uses MediaWiki's built-in database search and has pages saved before September 2026, run
-`php maintenance/run.php rebuildtextindex` once, so that those pages are
-[findable by their Subjects](maintenance.md#making-subjects-searchable).
+If your wiki uses MediaWiki's built-in database search on MySQL or SQLite and has pages saved before September
+2026, run `php maintenance/run.php rebuildtextindex` once, so that those pages are
+[findable by their Subjects](maintenance.md#making-subjects-searchable). It takes the wiki's search down for the
+length of the run.
 
 If your Subjects predate the optional Subject label, run
 [clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before that rebuild.

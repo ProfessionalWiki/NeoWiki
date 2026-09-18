@@ -145,7 +145,10 @@ existed by rebuilding the wiki's search index:
 php maintenance/run.php rebuildtextindex
 ```
 
-On PostgreSQL, the built-in database search does not index Subject values.
+It empties the search index before refilling it, so the wiki finds nothing while it runs, which on a large wiki is
+hours. Run it when the wiki is quiet.
+
+On PostgreSQL the built-in database search does not index Subject values, and `rebuildtextindex` refuses to run.
 
 With CirrusSearch, Subject values stay out of the index until it knows the field. Run this after installing NeoWiki
 and after every upgrade:
