@@ -10,6 +10,7 @@ use MediaWiki\Rest\Response;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\WikiMap\WikiMap;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -620,6 +621,30 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$repository = NeoWikiExtension::getInstance()->newSubjectRepository();
 		$this->assertSame( $idA, $repository->getSubject( new SubjectId( $idA ) )->getId()->text );
 		$this->assertSame( $idB, $repository->getSubject( new SubjectId( $idB ) )->getId()->text );
+	}
+
+	public function testUnresolvableSelectValueReturns400LocatingTheValue(): void {
+		$this->createSchema(
+			'Employee',
+			'{"title":"Employee","propertyDefinitions":{"Status":{"type":"select","options":[{"id":"opt_draft","label":"Draft"}]}}}'
+		);
+		$pageId = $this->getIdOfExistingPage();
+
+		$response = $this->executeCreate( $pageId, [
+			'label' => 'Test subject',
+			'schema' => 'Employee',
+			'statements' => [ 'Status' => [ 'propertyType' => 'select', 'value' => 'Nonexistent' ] ],
+		], isMainSubject: true );
+
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertSame( 'error', $responseData['status'] );
+		$this->assertSame( 'Status', $responseData['violation']['propertyName'] );
+		$this->assertTrue(
+			NeoWikiExtension::getInstance()->newSubjectRepository()
+				->getSubjectsByPageId( new PageId( $pageId ) )->isEmpty()
+		);
 	}
 
 	private function executeCreate( int $pageId, array $body, bool $isMainSubject = false ): Response {

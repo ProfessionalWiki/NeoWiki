@@ -324,6 +324,25 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertArrayHasKey( 'schema', $body );
 	}
 
+	public function testUnresolvableSelectValueReturns400LocatingTheValue(): void {
+		$this->createSchema(
+			'SelectSchema',
+			'{"title":"SelectSchema","propertyDefinitions":{"Status":{"type":"select","options":[{"id":"opt_draft","label":"Draft"}]}}}'
+		);
+
+		$response = $this->create( [
+			'label' => 'Amsterdam',
+			'schema' => 'SelectSchema',
+			'statements' => [ 'Status' => [ 'propertyType' => 'select', 'value' => 'Nonexistent' ] ],
+		] );
+		$body = $this->bodyOf( $response );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertSame( 'error', $body['status'] );
+		$this->assertSame( 'Status', $body['violation']['propertyName'] );
+		$this->assertFalse( Title::newFromText( 'Amsterdam' )->exists() );
+	}
+
 	/**
 	 * @param array<string, mixed> $bodyOverrides
 	 */

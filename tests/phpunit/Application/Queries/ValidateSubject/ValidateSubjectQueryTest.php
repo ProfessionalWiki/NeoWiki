@@ -8,8 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubject\ValidateSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Schema\Exception\SchemaNotFoundException;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
+use ProfessionalWiki\NeoWiki\Application\StatementNormalizer;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
@@ -73,7 +72,7 @@ class ValidateSubjectQueryTest extends TestCase {
 				new ProductionIdGenerator(),
 				TestSubjectIds::newParser(),
 			),
-			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
+			statementNormalizer: new StatementNormalizer( PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ) ),
 			localSourceKey: TestSubjectIds::LOCAL_SOURCE_KEY,
 		);
 	}
