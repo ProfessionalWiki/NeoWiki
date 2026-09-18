@@ -153,7 +153,7 @@ class SubjectDisplayNameTest extends TestCase {
 	}
 
 	/**
-	 * Entity-first creation titles a page after a Subject when no label names it, so that title was
+	 * Subject-first creation titles a page after a Subject when no label names it, so that title was
 	 * chosen by nobody.
 	 */
 	public function testAPageTitledAfterTheSubjectItselfHasNoChosenName(): void {

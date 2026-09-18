@@ -65,7 +65,7 @@ class SubjectDisplayName {
 	}
 
 	/**
-	 * Whether the page was titled by the system rather than by anyone: entity-first creation titles a
+	 * Whether the page was titled by the system rather than by anyone: subject-first creation titles a
 	 * page by the id of the Subject it creates when no label gives it a title (ADR 31). Any Subject
 	 * the page holds counts, not only the one being named: which Subject such a page carries can
 	 * change, while the title stays as unchosen as it was.
