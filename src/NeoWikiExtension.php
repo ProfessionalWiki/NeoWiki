@@ -169,6 +169,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiWikiConfigSource;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\ReplicaCacheOptions;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Search\SubjectSearchTextLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectContentRepository;
@@ -834,7 +835,7 @@ class NeoWikiExtension {
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
-			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
+			cacheOptions: $this->newReplicaCacheOptions(),
 		);
 	}
 
@@ -1677,7 +1678,14 @@ class NeoWikiExtension {
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
-			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
+			cacheOptions: $this->newReplicaCacheOptions(),
+		);
+	}
+
+	private function newReplicaCacheOptions(): ReplicaCacheOptions {
+		return new ReplicaCacheOptions(
+			MediaWikiServices::getInstance()->getConnectionProvider(),
+			MW_VERSION
 		);
 	}
 

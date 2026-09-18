@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\ReplicaCacheOptions;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaJsonLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
@@ -94,7 +95,7 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 			cache: new WANObjectCache( [ 'cache' => new EmptyBagOStuff() ] ),
 			titleFactory: $services->getTitleFactory(),
 			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
-			connectionProvider: $services->getConnectionProvider(),
+			cacheOptions: new ReplicaCacheOptions( $services->getConnectionProvider(), MW_VERSION ),
 		);
 	}
 
