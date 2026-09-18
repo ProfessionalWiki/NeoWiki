@@ -28,6 +28,13 @@ class SubjectContentDataDeserializer {
 	 */
 	public function deserialize( string $json ): PageSubjects {
 		$jsonArray = json_decode( $json, true );
+
+		// MediaWiki's JSON content model accepts any valid JSON, so a slot can hold a scalar or a bare
+		// string that no NeoWiki write path produces. A read shows the Subjects it can rather than throw.
+		if ( !is_array( $jsonArray ) ) {
+			$jsonArray = [];
+		}
+
 		$subjects = $this->deserializeSubjects( $jsonArray );
 
 		$mainSubject = $jsonArray['mainSubject'] ?? null;
