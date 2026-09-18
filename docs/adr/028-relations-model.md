@@ -102,6 +102,10 @@ docs migrate — trivial pre-production.
 Not taken (status quo): keep both names for better-reading graph queries, at the cost of the extra concept and the
 keying divergence.
 
+Shipped ahead of ratification: the schema editor no longer offers the relation type
+([PR 1494](https://github.com/ProfessionalWiki/NeoWiki/pull/1494)), so a new relation property takes the property name
+and only the page JSON can still diverge the two. The stored model is unchanged and this decision remains open.
+
 ## Consequences
 
 - Implementation is gated on ratification. Trackers:

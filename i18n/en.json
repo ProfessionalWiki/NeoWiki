@@ -66,8 +66,6 @@
 	"neowiki-property-editor-multiple": "Allow multiple values",
 	"neowiki-property-editor-single-value": "Single value",
 	"neowiki-property-editor-unique-items": "Values must be unique",
-	"neowiki-property-editor-relation": "Relation type",
-	"neowiki-property-editor-relation-required": "Relation type is required.",
 	"neowiki-property-editor-target-schema": "Target schema",
 	"neowiki-property-editor-target-schema-required": "Target schema is required.",
 	"neowiki-property-editor-options": "Options",
