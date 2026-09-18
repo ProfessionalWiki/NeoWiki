@@ -188,10 +188,7 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		$extension = NeoWikiExtension::getInstance();
 
 		try {
-			$reference = SchemaReference::fromJson(
-				$schemaReference,
-				$extension->getSubjectIdParser()->getLocalSourceKey()
-			);
+			$reference = $extension->getSchemaReferenceParser()->fromJson( $schemaReference );
 		} catch ( InvalidArgumentException ) {
 			return [ null ];
 		}

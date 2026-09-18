@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectPageApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndex;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -116,6 +117,38 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam' ] ) );
 
 		$this->assertSame( 'Amsterdam', $this->storedLabelOf( $body['subjectId'] ) );
+	}
+
+	/**
+	 * Several spellings name one Schema page, and what gets written down is the name that Schema has.
+	 */
+	public function testStoresTheSchemaUnderTheNameOfTheSchemaItNames(): void {
+		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam', 'schema' => 'employee' ] ) );
+
+		$this->assertSame(
+			self::SCHEMA,
+			$this->storedSchemaJsonOf( 'Amsterdam', $body['subjectId'] )
+		);
+	}
+
+	/**
+	 * The slot as written, rather than a Subject read back through the repository: reading normalizes
+	 * too, so a Subject fetched that way would look right even if nothing normalized on write.
+	 *
+	 * @return string|array<string, string>|null
+	 */
+	private function storedSchemaJsonOf( string $pageName, string $subjectId ): string|array|null {
+		$revision = $this->getServiceContainer()->getRevisionStore()->getRevisionByTitle(
+			Title::newFromText( $pageName )
+		);
+		$this->assertNotNull( $revision );
+
+		$content = $revision->getContent( MediaWikiSubjectRepository::SLOT_NAME );
+		$this->assertInstanceOf( SubjectContent::class, $content );
+
+		$slot = json_decode( $content->getText(), true );
+
+		return $slot['subjects'][$subjectId]['schema'] ?? null;
 	}
 
 	public function testWritesThePageAndItsSubjectInOneRevision(): void {

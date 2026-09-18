@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\PropertyType\Types;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
@@ -154,7 +155,7 @@ class DateTypeValidateTest extends TestCase {
 				'minimum' => [ 'value' => '2025-01-01', 'severity' => 'error' ],
 				'maximum' => '2025-12-31',
 			],
-			PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 		);
 
 		$violations = $this->type->validate( new StringValue( '2024-12-31' ), $definition );
@@ -170,7 +171,7 @@ class DateTypeValidateTest extends TestCase {
 				'minimum' => '2025-01-01',
 				'maximum' => [ 'value' => '2025-12-31', 'severity' => 'error' ],
 			],
-			PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 		);
 
 		$violations = $this->type->validate( new StringValue( '2026-01-01' ), $definition );

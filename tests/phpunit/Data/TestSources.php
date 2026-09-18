@@ -8,7 +8,9 @@ use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\Source\LocalSource;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedSchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 
@@ -25,6 +27,18 @@ class TestSources {
 		$registry->registerSource( TestSubjectIds::OTHER_SOURCE_KEY, self::newSource() );
 
 		return $registry;
+	}
+
+	/**
+	 * Reads Schema references the way this wiki does: local to it, and named as their Schema page is.
+	 *
+	 * @param array<string, string> $schemaNames Name as written => the name of the Schema it names.
+	 */
+	public static function newSchemaReferenceParser( array $schemaNames = [] ): SchemaReferenceParser {
+		return new SchemaReferenceParser(
+			TestSubjectIds::LOCAL_SOURCE_KEY,
+			new FixedSchemaReferenceNormalizer( $schemaNames )
+		);
 	}
 
 	private static function newSource(): LocalSource {

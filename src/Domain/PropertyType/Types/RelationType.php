@@ -8,6 +8,7 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
@@ -17,13 +18,8 @@ class RelationType implements PropertyType {
 
 	public const NAME = 'relation';
 
-	/**
-	 * @param string $localSourceKey This wiki's own Source key. A `targetSchema` in Schema JSON may be
-	 *   an object naming a Source explicitly; when that Source is this wiki itself, deserialization
-	 *   canonicalizes the reference to the plain local form, which requires knowing our own key (ADR 23).
-	 */
 	public function __construct(
-		private readonly string $localSourceKey
+		private readonly SchemaReferenceParser $schemaReferenceParser
 	) {
 	}
 
@@ -40,7 +36,7 @@ class RelationType implements PropertyType {
 	}
 
 	public function buildPropertyDefinitionFromJson( PropertyCore $core, array $property ): RelationProperty {
-		return RelationProperty::fromPartialJson( $core, $property, $this->localSourceKey );
+		return RelationProperty::fromPartialJson( $core, $property, $this->schemaReferenceParser );
 	}
 
 	/**

@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Psr\Log\Test\TestLogger;
@@ -22,8 +23,10 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedSchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer
@@ -39,11 +42,39 @@ class SubjectContentDataDeserializerTest extends TestCase {
 		);
 	}
 
-	private function newDeserializer( ?LoggerInterface $logger = null ): SubjectContentDataDeserializer {
+	/**
+	 * The read path with the normalizer this wiki actually builds, rather than the double the tests
+	 * above use. This is what carries the claim that Subjects written down before normalization
+	 * existed are read under the name of the Schema they name, with nothing migrated.
+	 */
+	public function testSlotWrittenWithAnotherSpellingIsReadUnderTheSchemasName(): void {
+		$subjects = NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer()->deserialize(
+			<<<'JSON'
+{
+	"subjects": {
+		"sTestSCDD111115": {
+			"label": "Wilhelm",
+			"schema": "person"
+		}
+	}
+}
+JSON
+		);
+
+		$this->assertSame(
+			'Person',
+			$subjects->getAllSubjects()->asArray()[0]->getSchemaName()->getText()
+		);
+	}
+
+	private function newDeserializer(
+		?LoggerInterface $logger = null,
+		?SchemaReferenceParser $schemaReferenceParser = null
+	): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer(
 			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup(), TestSubjectIds::newParser() ),
-			TestSubjectIds::newParser(),
-			$logger ?? new NullLogger()
+			$logger ?? new NullLogger(),
+			$schemaReferenceParser ?? TestSources::newSchemaReferenceParser()
 		);
 	}
 
@@ -258,6 +289,33 @@ JSON
 				),
 			],
 			$subjects->getMainSubject()->getStatements()->asArray()
+		);
+	}
+
+	/**
+	 * The slot holds whatever the writer typed, and several spellings name one Schema page. Reading
+	 * normalizes, so a Subject stored before this was fixed still reaches the graph, the RDF export
+	 * and relation validation under the one name its Schema has.
+	 */
+	public function testSchemaNameIsNormalizedWhenRead(): void {
+		$subjects = $this->newDeserializer(
+			schemaReferenceParser: TestSources::newSchemaReferenceParser( [ 'person' => 'Person' ] )
+		)->deserialize(
+			<<<'JSON'
+{
+	"subjects": {
+		"sTestSCDD111115": {
+			"label": "Wilhelm",
+			"schema": "person"
+		}
+	}
+}
+JSON
+		);
+
+		$this->assertEquals(
+			SchemaReference::local( new SchemaName( 'Person' ) ),
+			$subjects->getAllSubjects()->asArray()[0]->getSchemaReference()
 		);
 	}
 

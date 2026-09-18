@@ -87,7 +87,7 @@ class UpdateStatementActionTest extends TestCase {
 		bool $validationEnforced = false,
 		?PageReadAuthorizer $readAuthorizer = null,
 	): UpdateStatementAction {
-		$registry = PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY );
+		$registry = PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() );
 		$schemaResolver = $this->newSchemaResolver();
 
 		return new UpdateStatementAction(

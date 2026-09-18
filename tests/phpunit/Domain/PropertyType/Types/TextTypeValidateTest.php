@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\PropertyType\Types;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
@@ -80,7 +81,7 @@ class TextTypeValidateTest extends TestCase {
 	public function testUniqueViolationUsesErrorWhenUniqueItemsAnnotated(): void {
 		$definition = PropertyDefinition::fromJson(
 			[ 'type' => 'text', 'multiple' => true, 'uniqueItems' => [ 'severity' => 'error' ] ],
-			PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 		);
 
 		$violations = $this->type->validate( new StringValue( 'foo', 'bar', 'foo' ), $definition );
@@ -133,7 +134,7 @@ class TextTypeValidateTest extends TestCase {
 	public function testMinLengthViolationUsesErrorWhenMinLengthAnnotated(): void {
 		$definition = PropertyDefinition::fromJson(
 			[ 'type' => 'text', 'multiple' => true, 'minLength' => [ 'value' => 3, 'severity' => 'error' ] ],
-			PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 		);
 
 		$violations = $this->type->validate( new StringValue( 'abc', 'ab' ), $definition );
@@ -157,7 +158,7 @@ class TextTypeValidateTest extends TestCase {
 	public function testMaxLengthViolationUsesErrorWhenMaxLengthAnnotated(): void {
 		$definition = PropertyDefinition::fromJson(
 			[ 'type' => 'text', 'multiple' => true, 'maxLength' => [ 'value' => 4, 'severity' => 'error' ] ],
-			PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 		);
 
 		$violations = $this->type->validate( new StringValue( 'ok', 'toolong' ), $definition );

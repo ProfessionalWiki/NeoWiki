@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
@@ -47,12 +48,13 @@ readonly class CreateSubjectPageAction {
 		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private PageIdentifiersResolver $pageIdentifiersResolver,
+		private SchemaReferenceParser $schemaReferenceParser,
 		private bool $validationEnforced,
 	) {
 	}
 
 	public function createSubjectPage( CreateSubjectPageRequest $request ): void {
-		$schemaReference = SchemaReference::local( new SchemaName( $request->schemaName ) );
+		$schemaReference = $this->schemaReferenceParser->localName( $request->schemaName );
 		$schema = $this->schemaResolver->getSchema( $schemaReference );
 
 		$titleAsked = $this->titleAsked( $request->pageTitle );

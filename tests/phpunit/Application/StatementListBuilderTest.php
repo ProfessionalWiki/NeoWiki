@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
@@ -22,7 +23,7 @@ class StatementListBuilderTest extends TestCase {
 
 	private function newBuilder(): StatementListBuilder {
 		return new StatementListBuilder(
-			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 			idGenerator: new StubIdGenerator( '11111111111111' ),
 			subjectIdParser: TestSubjectIds::newParser()
 		);

@@ -82,7 +82,10 @@ class CachingSchemaLookup implements SchemaLookup {
 				return null;
 			}
 
-			$this->resolvedSchemas[$cacheKey] = $this->deserialize( $schemaName, $json );
+			// Named after the page, not after the asking: the process-local tier is keyed by article id,
+			// so the first spelling asked for in a process would otherwise name the Schema for every
+			// later caller.
+			$this->resolvedSchemas[$cacheKey] = $this->deserialize( new SchemaName( $title->getText() ), $json );
 		}
 
 		return $this->resolvedSchemas[$cacheKey];
