@@ -104,12 +104,17 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		)->runOutputPipeline( $parserOptions, [] )->getContentHolderText();
 	}
 
+	/**
+	 * @param TextContent $mainContent What the page says of its own, empty by default as a page
+	 *   created for a Subject has it.
+	 */
 	protected function createPageWithSubjects(
 		string $pageName,
 		?Subject $mainSubject = null,
-		SubjectMap $otherSubjects = new SubjectMap()
+		SubjectMap $otherSubjects = new SubjectMap(),
+		TextContent $mainContent = new TextContent( '' )
 	): ?RevisionRecord {
-		return $this->saveSubjects( $pageName, $mainSubject, $otherSubjects, new TextContent( '' ) );
+		return $this->saveSubjects( $pageName, $mainSubject, $otherSubjects, $mainContent );
 	}
 
 	/**

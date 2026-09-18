@@ -126,6 +126,7 @@
 	"neowiki-delete-error": "Failed to delete $1",
 
 	"neowiki-subject-generated-name": "(unnamed $1)",
+	"neowiki-search-hit-subject": "$1 ($2)",
 
 	"neowiki-subject-editor-title": "Edit subject",
 	"neowiki-subject-editor-save": "Save changes",
