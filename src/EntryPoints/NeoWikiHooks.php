@@ -917,8 +917,8 @@ class NeoWikiHooks {
 
 	/**
 	 * Says what a Mapping page is for and where its format is documented, since the raw JSON editor is
-	 * currently the only way to write one. Unlike the configuration page, a Mapping page has no core
-	 * namespace intro to displace, so the intro is left in place.
+	 * currently the only way to write one. MediaWiki's own edit intro is left in place, so someone
+	 * creating a Mapping page still sees that the page does not exist yet.
 	 */
 	private static function explainMappingPageEdit( EditPage $editPage ): void {
 		if ( $editPage->getTitle()->getNamespace() !== NeoWikiExtension::NS_MAPPING ) {
