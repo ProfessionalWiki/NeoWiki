@@ -56,6 +56,9 @@ import { SubjectCreationKey } from '@/components/common/SubjectCreation.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import type { Subject } from '@/domain/Subject.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { disambiguateSubjectLabels } from '@/presentation/disambiguateSubjectLabels.ts';
+import type { DisambiguatedSubjectLabel } from '@/presentation/disambiguateSubjectLabels.ts';
+import type { SubjectLabelResult } from '@/domain/SubjectLabelSearch.ts';
 
 interface SubjectPickerProps {
 	selected: string | null;
@@ -102,7 +105,7 @@ const selectedSubject = ref<string | null>( props.selected );
 // selection changes, so a control naming it falls back to the id rather than the previous target.
 const targetName = ref( '' );
 const inputText = ref<string | number>( '' );
-const searchResults = ref<MenuItemData[]>( [] );
+const searchResults = ref<SubjectLabelResult[]>( [] );
 const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
 // Idle until the user types, pending while the request is out, done once it has come back — which
 // is what lets the menu say "nothing found" only when a search actually found nothing, rather than
@@ -123,22 +126,23 @@ const selectedName = ref( '' );
 // Subjects this session invented, which no search can return. Read through the host on every
 // evaluation, so a draft renamed in the editor is renamed here too.
 //
-// Named bare here and at the two sites below, without the generated-name marker every display uses:
-// picking an item writes the string into this field's own text input, where the user can edit it and
-// where it feeds the offer to create a Subject under the text they typed.
-const draftItems = computed( (): MenuItemData[] =>
+// Named bare here, without the generated-name marker every display uses: picking an item writes the
+// string into this field's own text input, where the user can edit it and where it feeds the offer
+// to create a Subject under the text they typed.
+const draftRows = computed( (): SubjectLabelResult[] =>
 	props.targetSchema === null ?
 		[] :
-		( subjectCreation?.drafts( props.targetSchema ) ?? [] ).map( menuItemFor )
+		( subjectCreation?.drafts( props.targetSchema ) ?? [] ).map( rowFor )
 );
 
-function menuItemFor( subject: Subject ): MenuItemData {
-	return { value: subject.getId().text, label: subject.getDisplayName() };
+// Neither a draft nor a Subject read by id carries a page title. Having none is a place of its own,
+// which is what tells namesakes among them apart by id.
+function rowFor( subject: Subject ): SubjectLabelResult {
+	return { id: subject.getId().text, label: subject.getDisplayName(), pageTitle: '' };
 }
 
 function draftNameOf( id: string ): string | undefined {
-	const item = draftItems.value.find( ( candidate ) => candidate.value === id );
-	return item === undefined ? undefined : String( item.label ?? '' );
+	return draftRows.value.find( ( row ) => row.id === id )?.label;
 }
 
 // Only what the user actually typed: the field otherwise holds the selected Subject's own name,
@@ -160,11 +164,11 @@ const createItem = computed( (): MenuItemData => ( {
 } ) );
 
 // Matched here rather than by the search: these Subjects exist only in the editor.
-const matchingDraftItems = computed( (): MenuItemData[] => {
+const matchingDraftRows = computed( (): SubjectLabelResult[] => {
 	const search = typedText.value.toLowerCase();
 
-	return draftItems.value.filter(
-		( item ) => search === '' || String( item.label ).toLowerCase().includes( search )
+	return draftRows.value.filter(
+		( row ) => search === '' || row.label.toLowerCase().includes( search )
 	);
 } );
 
@@ -172,11 +176,16 @@ const matchingDraftItems = computed( (): MenuItemData[] => {
 // menu on focus before anything is typed: Codex expands an empty input's menu only when the
 // Lookup was built with items, and collapses it again the moment the list runs empty.
 const menuItems = computed( (): MenuItemData[] => {
-	if ( !creationOffered.value ) {
-		return searchResults.value;
-	}
+	// Every row offered is compared, drafts included: two unsaved Subjects of one Schema are named
+	// alike by default.
+	const rows = creationOffered.value ?
+		[ ...matchingDraftRows.value, ...searchResults.value ] :
+		searchResults.value;
+	const items = disambiguateSubjectLabels( rows ).map( menuItemFor );
 
-	const items = [ ...matchingDraftItems.value, ...searchResults.value ];
+	if ( !creationOffered.value ) {
+		return items;
+	}
 
 	// Codex's own no-results slot is shown only for an empty menu, which the create option rules
 	// out, so that case carries the same message as an item nobody can pick.
@@ -305,7 +314,7 @@ async function onFieldTextChanged( value: string ): Promise<void> {
 // no label is reached at all, ADR 31 leaving such a Subject out of the label search. It does not
 // replace the search, though: the shape of an id is also the shape of an ordinary fifteen-letter
 // word, so text that names no usable Subject goes on to be searched for as a label.
-async function candidatesFor( value: string ): Promise<MenuItemData[]> {
+async function candidatesFor( value: string ): Promise<SubjectLabelResult[]> {
 	// A target Schema from another Source names nothing here: neither the label search nor the
 	// Schema an id-lookup would be matched against is this wiki's to answer with.
 	if ( props.targetSchema === null ) {
@@ -320,24 +329,32 @@ async function candidatesFor( value: string ): Promise<MenuItemData[]> {
 		// A Subject of another Schema cannot be this relation's target. One the user may not read
 		// never reaches here at all: the read fails instead of answering.
 		if ( subject !== null && subject.getSchemaName() === props.targetSchema ) {
-			return [ menuItemFor( subject ) ];
+			return [ rowFor( subject ) ];
 		}
 	}
 
 	return searchLabels( text, props.targetSchema );
 }
 
-async function searchLabels( value: string, targetSchema: string ): Promise<MenuItemData[]> {
+async function searchLabels( value: string, targetSchema: string ): Promise<SubjectLabelResult[]> {
 	try {
-		const results = await subjectLabelSearch.searchSubjectLabels( value, targetSchema );
-
-		return results.map( ( result ) => ( {
-			label: result.label,
-			value: result.id
-		} ) );
+		return await subjectLabelSearch.searchSubjectLabels( value, targetSchema );
 	} catch {
 		return [];
 	}
+}
+
+// The id sits beside the label and the page on its own line: an id belongs to the Subject and
+// survives a move, while the page is only where it is stored today. Two fields rather than one
+// composed label, because picking a row writes its label into this field for the user to edit.
+// The id is never shortened: ids sort by mint time (ADR 14), so a prefix discriminates nothing.
+function menuItemFor( result: DisambiguatedSubjectLabel ): MenuItemData {
+	return {
+		value: result.id,
+		label: result.label,
+		description: result.showPageTitle ? result.pageTitle : undefined,
+		supportingText: result.showId ? mw.msg( 'parentheses', result.id ) : undefined
+	};
 }
 
 // Codex's selection is bound one way so that neither sentinel ever becomes it. Codex writes the
