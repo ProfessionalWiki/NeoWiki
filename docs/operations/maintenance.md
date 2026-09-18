@@ -147,11 +147,18 @@ php maintenance/run.php rebuildtextindex
 
 On PostgreSQL, the built-in database search does not index Subject values.
 
-With CirrusSearch, Subject values stay out of the index until it knows the field. Run the first command after
-installing NeoWiki and after every upgrade, and the second when the first reports that the index changed:
+With CirrusSearch, Subject values stay out of the index until it knows the field. Run this after installing NeoWiki
+and after every upgrade:
 
 ```sh
 php maintenance/run.php CirrusSearch:UpdateSearchIndexConfig
+```
+
+Only when that reports `different...corrected`, rebuild the index and re-index all pages. Both scale with the size
+of the wiki:
+
+```sh
+php maintenance/run.php CirrusSearch:UpdateSearchIndexConfig --reindexAndRemoveOk --indexIdentifier now --ignoreIndexChanged
 php maintenance/run.php CirrusSearch:ForceSearchIndex
 ```
 
