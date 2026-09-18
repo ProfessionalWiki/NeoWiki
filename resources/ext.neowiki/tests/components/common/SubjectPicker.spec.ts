@@ -132,6 +132,29 @@ describe( 'SubjectPicker', () => {
 		expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenCalledWith( 'acme', 'Company' );
 	} );
 
+	// An omitted prop arrives as undefined, which is what the picker reads as "no Schema in
+	// particular" — the state Special:Subject's own lookup is in.
+	it( 'searches every Schema when it is given no target Schema', async () => {
+		const wrapper = createWrapper( { targetSchema: undefined } );
+
+		await type( wrapper, 'acme' );
+
+		expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenCalledWith( 'acme', undefined );
+	} );
+
+	// Null is a Schema of another Source, which is a different thing from no Schema at all: this
+	// wiki holds no Subject of it and has nothing to search.
+	it( 'searches nothing when the target Schema is another Source\'s', async () => {
+		searchReturns( [ { id: 's1demo1aaaaaaa1', label: 'ACME Inc.' } ] );
+
+		const wrapper = createWrapper( { targetSchema: null } );
+
+		await type( wrapper, 'acme' );
+
+		expect( mockSubjectLabelSearch.searchSubjectLabels ).not.toHaveBeenCalled();
+		expect( wrapper.findComponent( CdxLookup ).props( 'menuItems' ) ).toEqual( [] );
+	} );
+
 	it( 'populates menu items from search results', async () => {
 		( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> ).mockResolvedValue( [
 			{ id: 's1demo1aaaaaaa1', label: 'ACME Inc.' },
@@ -645,6 +668,16 @@ describe( 'SubjectPicker', () => {
 			expect( menuItemsOf( wrapper ) ).toEqual( [] );
 		} );
 
+		// With no Schema to match against, there is no Schema an id can name the wrong Subject of.
+		it( 'offers the Subject an id names whatever its Schema, given no target Schema', async () => {
+			wikiHolds( labellessSubject( TARGET_ID, 'Ada Lovelace', 'Person' ) );
+			const wrapper = createWrapperWithVModel( { targetSchema: undefined } );
+
+			await type( wrapper, TARGET_ID );
+
+			expect( menuItemsOf( wrapper ) ).toEqual( [ { label: 'Ada Lovelace', value: TARGET_ID } ] );
+		} );
+
 		it( 'searches labels for a padded name without its padding', async () => {
 			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
 
@@ -849,6 +882,26 @@ describe( 'SubjectPicker', () => {
 			const wrapper = await createWrapperOffering( hostOffering( creatorReturning( null ) ) );
 
 			expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Create a new Product' ] );
+		} );
+
+		it( 'offers no create option without a target Schema', async () => {
+			const wrapper = await createWrapperOffering(
+				hostOffering( creatorReturning( null ) ),
+				{ targetSchema: undefined },
+			);
+
+			expect( menuLabelsOf( wrapper ) ).toEqual( [] );
+		} );
+
+		// What the host would mint is a local Subject, which is not of the Schema referenced. The
+		// offer would name no Schema at all, the picker holding only another Source's.
+		it( 'offers no create option for a Schema of another Source', async () => {
+			const wrapper = await createWrapperOffering(
+				hostOffering( creatorReturning( null ) ),
+				{ targetSchema: null },
+			);
+
+			expect( menuLabelsOf( wrapper ) ).toEqual( [] );
 		} );
 
 		it( 'lists the create option after the search results', async () => {

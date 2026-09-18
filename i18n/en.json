@@ -229,7 +229,7 @@
 	"neowiki-subject-editor-open-subjects": "Subjects being edited",
 	"neowiki-subject-editor-resize-navigator": "Resize the list of subjects",
 
-	"neowiki-subject-picker-placeholder": "Search by name or subject ID",
+	"neowiki-subject-picker-placeholder": "Search by label or subject ID",
 	"neowiki-subject-picker-no-results": "No subjects found",
 	"neowiki-subject-picker-no-match": "Please select a subject from the list.",
 	"neowiki-subject-picker-create": "Create a new $1",
@@ -466,6 +466,7 @@
 	"neowiki-graphstores-outcome-sessionfailure": "Your session has expired, so nothing was changed. Try again.",
 	"neowiki-special-subject": "Subject",
 	"neowiki-special-subject-invalid-id": "Special:Subject needs a subject ID, like Special:Subject/s1demo8aaaaaab5.",
+	"neowiki-special-subject-picker-label": "Find a subject",
 	"neowiki-special-subject-page-label": "Page:",
 	"neowiki-special-subject-referenced-heading": "Referenced subjects",
 	"neowiki-special-subject-not-found": "No subject with the ID $1 was found.",

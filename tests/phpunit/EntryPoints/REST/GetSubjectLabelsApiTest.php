@@ -32,4 +32,20 @@ class GetSubjectLabelsApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * A request naming no Schema passes the parameter check, `schema` being optional. That the
+	 * search then spans Schemas is Neo4jSubjectLabelLookupTest's.
+	 */
+	public function testASearchNamingNoSchemaIsAnswered(): void {
+		$response = $this->executeHandler(
+			new GetSubjectLabelsApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'search' => 'Apple' ],
+			] )
+		);
+
+		$this->assertSame( 200, $response->getStatusCode() );
+	}
+
 }
