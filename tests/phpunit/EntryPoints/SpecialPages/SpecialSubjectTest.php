@@ -65,18 +65,36 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="' . self::SUBJECT_ID . '"', $output );
 	}
 
-	public function testAMalformedSubjectIdIsRefusedWithoutAMountPoint(): void {
+	/**
+	 * The error box says what went wrong; the lookup under it is how the reader reaches what they
+	 * were after, so a stale link still leads somewhere.
+	 */
+	public function testAMalformedSubjectIdGetsTheErrorBoxAndTheLookup(): void {
 		$output = $this->outputFor( 'not-a-subject-id' );
 
 		$this->assertStringContainsString( self::INVALID_ID_ERROR, $output );
-		$this->assertStringNotContainsString( 'id="ext-neowiki-subject"', $output );
+		$this->assertStringContainsString( 'id="ext-neowiki-subject"', $output );
+		$this->assertStringNotContainsString( 'data-mw-neowiki-subject-id', $output );
 	}
 
-	public function testTheBareSpecialPageAsksForASubjectId(): void {
+	/**
+	 * With no Subject to show, the page offers a lookup for choosing one. The mount point is the
+	 * same one, carrying no id: that absence is what the frontend reads it by.
+	 */
+	public function testTheBareSpecialPageMountsWithoutASubjectId(): void {
 		$output = $this->outputFor( null );
 
-		$this->assertStringContainsString( self::INVALID_ID_ERROR, $output );
-		$this->assertStringNotContainsString( 'id="ext-neowiki-subject"', $output );
+		$this->assertStringContainsString( 'id="ext-neowiki-subject"', $output );
+		$this->assertStringNotContainsString( 'data-mw-neowiki-subject-id', $output );
+		$this->assertStringNotContainsString( self::INVALID_ID_ERROR, $output );
+	}
+
+	/**
+	 * `Special:Subject/` names no Subject either, and MediaWiki hands that trailing slash on as an
+	 * empty subpage rather than as none.
+	 */
+	public function testAnEmptySubPageIsTheBarePage(): void {
+		$this->assertSame( $this->outputFor( null ), $this->outputFor( '' ) );
 	}
 
 	/**
@@ -87,6 +105,28 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$out = $this->executeWith( self::SUBJECT_ID );
 
 		$this->assertContains( 'ext.neowiki', $out->getModules() );
+	}
+
+	/**
+	 * The lookup is mounted by the same module, which nothing on the id path can show.
+	 */
+	public function testTheBareSpecialPageLoadsTheFrontendModule(): void {
+		$out = $this->executeWith( null );
+
+		$this->assertContains( 'ext.neowiki', $out->getModules() );
+	}
+
+	/**
+	 * Reading these costs a permission check per Mapping page, and the lookup the bare page shows
+	 * reads none of them.
+	 */
+	public function testTheBareSpecialPageSetsNoSubjectViewConfigVars(): void {
+		$this->createMapping( 'EDM', '{ "version": 1, "schemas": {} }' );
+
+		$configVars = $this->executeWith( null )->getJsConfigVars();
+
+		$this->assertArrayNotHasKey( 'wgNeoWikiRdfProjections', $configVars );
+		$this->assertArrayNotHasKey( 'wgNeoWikiSubjectIriBase', $configVars );
 	}
 
 	public function testExposesReadableRdfProjectionsAsConfigVar(): void {

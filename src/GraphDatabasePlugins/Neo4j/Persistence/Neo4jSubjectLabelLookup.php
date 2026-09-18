@@ -31,7 +31,7 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 	/**
 	 * @return SubjectLabelLookupResult[]
 	 */
-	public function getSubjectLabelsMatching( string $search, int $limit, string $schemaName ): array {
+	public function getSubjectLabelsMatching( string $search, int $limit, ?string $schemaName ): array {
 		if ( trim( $search ) === '' ) {
 			return [];
 		}
@@ -61,7 +61,7 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 	 *
 	 * @return list<array{id: string, name: string, pageId: int}>
 	 */
-	private function fetchLabels( string $search, int $limit, string $schemaName ): array {
+	private function fetchLabels( string $search, int $limit, ?string $schemaName ): array {
 		return $this->client->readTransaction(
 			function ( TransactionInterface $transaction ) use ( $search, $limit, $schemaName ): array {
 				/**
@@ -70,7 +70,7 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 				$result = $transaction->run(
 					"MATCH (page:Page { wiki_id: \$wikiId })-[:HasSubject]->(n:Subject)
 					 WHERE toLower(n.name) STARTS WITH toLower(\$search)
-					 AND \$schemaName IN labels(n)
+					 AND ( \$schemaName IS NULL OR \$schemaName IN labels(n) )
 					 AND n.wiki_id = \$wikiId
 					 RETURN n.id AS id, n.name AS name, page.id AS pageId
 					 ORDER BY n.name

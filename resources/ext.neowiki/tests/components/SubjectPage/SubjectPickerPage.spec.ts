@@ -1,0 +1,87 @@
+import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createPinia } from 'pinia';
+import { CdxLookup } from '@wikimedia/codex';
+import SubjectPickerPage from '@/components/SubjectPage/SubjectPickerPage.vue';
+import SubjectPicker from '@/components/common/SubjectPicker.vue';
+import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { Service } from '@/NeoWikiServices.ts';
+import type { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
+
+const SUBJECT_ID = 's1demo1aaaaaaa1';
+
+describe( 'SubjectPickerPage', () => {
+	let subjectLabelSearch: SubjectLabelSearch;
+	// Drained by afterEach, so a failed assertion cannot leave a node attached to the document for
+	// the tests after it.
+	const attachedWrappers: VueWrapper[] = [];
+
+	// The real CdxLookup, so the field the page focuses and names is the one a browser renders.
+	function mountPage( attachTo?: HTMLElement ): VueWrapper {
+		return mount( SubjectPickerPage, {
+			attachTo,
+			global: {
+				mocks: { $i18n: createI18nMock() },
+				plugins: [ createPinia() ],
+				provide: { [ Service.SubjectLabelSearch ]: subjectLabelSearch },
+			},
+		} );
+	}
+
+	beforeEach( () => {
+		setupMwMock( { functions: [ 'util' ] } );
+
+		subjectLabelSearch = {
+			searchSubjectLabels: vi.fn().mockResolvedValue( [] ),
+		};
+
+		vi.stubGlobal( 'location', { href: '' } );
+	} );
+
+	afterEach( () => {
+		attachedWrappers.splice( 0 ).forEach( ( wrapper ) => wrapper.unmount() );
+		vi.unstubAllGlobals();
+	} );
+
+	// This page names no Schema, so a reader who knows only a Subject's label can reach it without
+	// knowing what kind of thing it is.
+	it( 'looks for Subjects of every Schema', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+
+		// Only the field's value: the picker ignores CdxLookup's `input` event, which Codex also
+		// emits for text it writes itself.
+		wrapper.findComponent( CdxLookup ).vm.$emit( 'update:input-value', 'acme' );
+		await flushPromises();
+
+		expect( subjectLabelSearch.searchSubjectLabels ).toHaveBeenCalledWith( 'acme', undefined );
+	} );
+
+	// The page heading already says "Subject", so the field carries no visible label and needs a
+	// name of its own to be announced by.
+	// Asserted on the input rather than on CdxLookup: Codex forwards the attribute to the control
+	// it wraps, which is what a screen reader reads.
+	it( 'names the lookup for a screen reader', () => {
+		expect( mountPage().find( 'input' ).attributes( 'aria-label' ) )
+			.toBe( 'neowiki-special-subject-picker-label' );
+	} );
+
+	// The field is the page's only control, so a reader can start typing without reaching for it.
+	it( 'takes the focus on load', async () => {
+		const wrapper = mountPage( document.body );
+		attachedWrappers.push( wrapper );
+		await flushPromises();
+
+		expect( document.activeElement ).toBe( wrapper.find( 'input' ).element );
+	} );
+
+	it( 'goes to the page of the Subject picked', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+
+		wrapper.findComponent( SubjectPicker ).vm.$emit( 'update:selected', SUBJECT_ID );
+
+		expect( location.href ).toBe( `/wiki/Special:Subject/${ SUBJECT_ID }` );
+	} );
+
+} );
