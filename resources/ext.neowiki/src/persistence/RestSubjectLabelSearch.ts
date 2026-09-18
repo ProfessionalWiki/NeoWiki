@@ -9,8 +9,10 @@ export class RestSubjectLabelSearch implements SubjectLabelSearch {
 	) {
 	}
 
-	public async searchSubjectLabels( search: string, schema: string ): Promise<SubjectLabelResult[]> {
-		const params = new URLSearchParams( { search, schema } );
+	public async searchSubjectLabels( search: string, schema?: string ): Promise<SubjectLabelResult[]> {
+		// The endpoint reads an absent parameter as every Schema; an empty one would be a Schema
+		// named by nothing, which matches no Subject.
+		const params = new URLSearchParams( schema === undefined ? { search } : { search, schema } );
 		const response = await this.httpClient.get(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject-labels?${ params.toString() }`,
 		);

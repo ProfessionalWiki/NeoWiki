@@ -52,8 +52,8 @@ class GetSubjectLabelsApi extends SimpleHandler {
 			'schema' => [
 				self::PARAM_SOURCE => 'query',
 				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Schema name to filter results by (e.g. "Person"). Case-sensitive. Only Subjects of this Schema are returned.',
+				ParamValidator::PARAM_REQUIRED => false,
+				self::PARAM_DESCRIPTION => 'Schema name to filter results by (e.g. "Person"). Case-sensitive. Only Subjects of this Schema are returned. Omit it to search Subjects of every Schema.',
 			],
 			'limit' => [
 				self::PARAM_SOURCE => 'query',
