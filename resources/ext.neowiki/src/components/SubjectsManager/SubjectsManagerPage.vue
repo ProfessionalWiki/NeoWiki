@@ -72,7 +72,7 @@
 					:focused="focusedId === mainSubject.getId().text"
 					:can-edit="canEdit"
 					:can-delete="canDelete"
-					:can-move="canEdit"
+					:can-move="canMove"
 					:show-drag-handle="canEdit"
 					:subject-page-url="subjectPageUrl( mainSubject.getId().text )"
 					@toggle="toggleExpanded"
@@ -121,7 +121,7 @@
 					:focused="focusedId === subject.getId().text"
 					:can-edit="canEdit"
 					:can-delete="canDelete"
-					:can-move="canEdit"
+					:can-move="canMove"
 					:show-drag-handle="canEdit"
 					:subject-page-url="subjectPageUrl( subject.getId().text )"
 					@toggle="toggleExpanded"
@@ -195,6 +195,7 @@ import { useSubjectDrag } from '@/composables/useSubjectDrag.ts';
 import { subjectRowDomId, subjectIdFromHash } from '@/presentation/subjectRowAnchor.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
+import { isSubjectFirst } from '@/presentation/wikiMode.ts';
 import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
 import { Subject } from '@/domain/Subject';
 import { Schema } from '@/domain/Schema';
@@ -278,6 +279,10 @@ const subjects = computed<Subject[]>( () =>
 
 const canCreate = computed( () => canCreateMainSubject.value || canCreateOtherSubject.value );
 const canEdit = computed( () => canEditSubject.value );
+
+// A subject-first wiki gives every Subject a page of its own, so moving one between pages would
+// advertise a page model the wiki denies (ADR 33).
+const canMove = computed( () => canEdit.value && !isSubjectFirst() );
 const canDelete = computed( () => canDeleteSubject.value );
 
 const mainSubject = computed<Subject | null>( () => {

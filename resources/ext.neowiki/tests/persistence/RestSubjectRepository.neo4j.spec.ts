@@ -508,6 +508,61 @@ describe( 'RestSubjectRepository', () => {
 			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { pageTitle: 'Employee of the year' } );
 		} );
 
+		it( 'sends the id the caller minted for the subject', async () => {
+			const httpClient = new InMemoryHttpClient( { [ url ]: created() } );
+			const postSpy = vi.spyOn( httpClient, 'post' );
+
+			await newRepository( 'https://example.com/rest.php', httpClient )
+				.createSubjectPage(
+					'John Doe', 'Employee', new StatementList( [] ), undefined, undefined,
+					new SubjectId( 's33333333333333' ),
+				);
+
+			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { id: 's33333333333333' } );
+		} );
+
+		// The conflict that names no title is the id's, and only a caller that minted one can meet
+		// it: for one minted for this very Subject it means the create already landed.
+		it( 'throws SubjectIdInUseError when the conflict names no title', async () => {
+			const httpClient = new InMemoryHttpClient( {
+				[ url ]: new Response(
+					JSON.stringify( { status: 'error', message: 'Subject already exists' } ),
+					{ status: 409 },
+				),
+			} );
+
+			const error = await newRepository( 'https://example.com/rest.php', httpClient )
+				.createSubjectPage(
+					'John Doe', 'Employee', new StatementList( [] ), undefined, undefined,
+					new SubjectId( 's33333333333333' ),
+				)
+				.catch( ( thrown: unknown ) => thrown );
+
+			expect( error ).toBeInstanceOf( SubjectIdInUseError );
+		} );
+
+		it( 'throws PageTitleTakenError for a title conflict even when an id was minted', async () => {
+			const httpClient = new InMemoryHttpClient( {
+				[ url ]: new Response(
+					JSON.stringify( {
+						status: 'error',
+						message: 'A page named "John Doe" already exists',
+						pageTitle: 'John Doe',
+					} ),
+					{ status: 409 },
+				),
+			} );
+
+			const error = await newRepository( 'https://example.com/rest.php', httpClient )
+				.createSubjectPage(
+					'John Doe', 'Employee', new StatementList( [] ), undefined, undefined,
+					new SubjectId( 's33333333333333' ),
+				)
+				.catch( ( thrown: unknown ) => thrown );
+
+			expect( error ).toBeInstanceOf( PageTitleTakenError );
+		} );
+
 		it( 'throws PageTitleTakenError naming the page in the way', async () => {
 			const httpClient = new InMemoryHttpClient( {
 				[ url ]: new Response(

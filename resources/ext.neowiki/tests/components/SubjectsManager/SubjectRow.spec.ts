@@ -25,10 +25,10 @@ const subject = newSubject( { id: SUBJECT_ID, label: 'ACME Inc', schemaName: 'Co
 
 let writeText: ReturnType<typeof vi.fn>;
 
-function stubMw(): void {
+function stubMw( config: Record<string, unknown> = {} ): void {
 	setupMwMock( {
 		functions: [ 'config', 'msg', 'message', 'notify', 'util' ],
-		config: { wgNeoWikiSubjectIriBase: IRI_BASE },
+		config: { wgNeoWikiSubjectIriBase: IRI_BASE, ...config },
 	} );
 }
 
@@ -228,6 +228,7 @@ describe( 'SubjectRow', () => {
 	describe( 'the way to the Subject\'s own page', () => {
 
 		const NAME_LINK = 'a.ext-neowiki-subject-row__name';
+		const OPEN_ACTION = '.ext-neowiki-subject-row__open';
 		const URL = '/wiki/Special:Subject/' + SUBJECT_ID;
 
 		afterEach( () => {
@@ -235,7 +236,7 @@ describe( 'SubjectRow', () => {
 		} );
 
 		it( 'is the Subject\'s name, linked to the page the surface named', () => {
-			const wrapper = mountRow( { subjectPageUrl: URL } );
+			const wrapper = mountRow( { subjectPageUrl: URL, linkTitle: true } );
 
 			const link = wrapper.find( NAME_LINK );
 			expect( link.attributes( 'href' ) ).toBe( URL );
@@ -255,6 +256,24 @@ describe( 'SubjectRow', () => {
 			expect( location.href ).toBe( URL );
 		} );
 
+		// The overflow menu is the narrow layout's; a wide one shows the inline strip instead. A row
+		// whose name leads nowhere would offer no way to the Subject at all on a wide screen, so the
+		// strip carries opening exactly where the name does not.
+		it( 'is in the inline strip wherever the name is not a link', async () => {
+			vi.stubGlobal( 'location', { href: '' } );
+			const wrapper = mountRow( { subjectPageUrl: URL } );
+
+			await wrapper.find( OPEN_ACTION ).trigger( 'click' );
+
+			expect( location.href ).toBe( URL );
+		} );
+
+		it( 'is out of the inline strip where the name links there', () => {
+			const wrapper = mountRow( { subjectPageUrl: URL, linkTitle: true } );
+
+			expect( wrapper.find( OPEN_ACTION ).exists() ).toBe( false );
+		} );
+
 		it( 'leaves the name plain text on a row the reader is already on', () => {
 			const wrapper = mountRow();
 
@@ -264,10 +283,21 @@ describe( 'SubjectRow', () => {
 				.not.toContain( 'open' );
 		} );
 
+		// The Data tab of a page-first wiki is about the page, so the name is not a way out of it,
+		// while the menu still offers the one Subject to whoever wants it.
+		it( 'leaves the name plain text on a page-first wiki, and still offers the page', () => {
+			const wrapper = mountRow( { subjectPageUrl: URL } );
+
+			expect( wrapper.find( NAME_LINK ).exists() ).toBe( false );
+			expect( wrapper.find( '.ext-neowiki-subject-row__label' ).text() ).toBe( 'ACME Inc' );
+			expect( wrapper.findComponent( CdxMenuButton ).props( 'menuItems' ).map( ( item ) => item.value ) )
+				.toContain( 'open' );
+		} );
+
 		// Following the name must not also toggle the row it sits in, and must still be followed: the
 		// header one line above it cancels the clicks it handles.
 		it( 'keeps a click on the name from reaching the header, and follows it', () => {
-			const wrapper = mountRow( { subjectPageUrl: URL } );
+			const wrapper = mountRow( { subjectPageUrl: URL, linkTitle: true } );
 
 			const click = new Event( 'click', { bubbles: true, cancelable: true } );
 			wrapper.find( NAME_LINK ).element.dispatchEvent( click );
@@ -293,17 +323,26 @@ describe( 'SubjectRow', () => {
 		// A reader of these rows is browsing Subjects, so a relation leads to its target's own page
 		// rather than to the page storing it, which is about another Subject whenever the target is
 		// not that page's Main Subject.
-		it( 'leads to the target Subject\'s own page, not to the page storing it', () => {
-			const wrapper = mountRowRelatingToTarget();
+		it( 'leads to the target Subject\'s own page on a subject-first wiki', () => {
+			const wrapper = mountRowRelatingToTarget( true );
 
 			expect( wrapper.find( RELATION_LINK ).attributes( 'href' ) )
 				.toBe( '/wiki/Special:Subject/' + TARGET_ID );
 		} );
 
+		// The page-first answer to the same problem: the target's row on the Data tab of the page
+		// storing it, rather than that page, which is about another Subject.
+		it( 'leads to the target\'s row on its page\'s Data tab on a page-first wiki', () => {
+			const wrapper = mountRowRelatingToTarget( false );
+
+			expect( wrapper.find( RELATION_LINK ).attributes( 'href' ) )
+				.toBe( '/wiki/Anvil (product)?action=subjects#' + TARGET_ID );
+		} );
+
 		// Mounted rather than shallow-rendered, so the relation is rendered by the value-display
 		// components the surfaces really use.
-		function mountRowRelatingToTarget(): VueWrapper {
-			stubMw();
+		function mountRowRelatingToTarget( subjectFirst: boolean ): VueWrapper {
+			stubMw( { wgNeoWikiSubjectFirst: subjectFirst } );
 			const pinia = createPinia();
 			setActivePinia( pinia );
 

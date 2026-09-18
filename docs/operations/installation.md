@@ -175,8 +175,29 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiEnableLua` | Registers the `mw.neowiki` Lua library with Scribunto | `true` | No |
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new `error`-severity violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
+| `$wgNeoWikiSubjectFirst` | Makes the Subject, not the page, the entity: see [Choosing page-first or subject-first](#choosing-page-first-or-subject-first) | `false` | No |
 | `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
 | `$wgNeoWikiAutoRebuildOnMappingChange` | Rebuilds every store holding a Mapping's projection when that Mapping changes | `false` | No |
+
+## Choosing page-first or subject-first
+
+`$wgNeoWikiSubjectFirst` selects whether this wiki is [page-first](../glossary.md#page-first-wiki) or
+[subject-first](../glossary.md#subject-first-wiki): `false`, the default, is page-first; `true` is
+subject-first. It can also be set on `MediaWiki:NeoWiki` as `subjectFirst`
+([on-wiki configuration](#on-wiki-configuration)).
+
+| Behaviour | Page-first | Subject-first |
+|---|---|---|
+| Creator: "Store the subject on" | shown; defaults to the current page | hidden; always a new page |
+| Target created inside the editor | non-main Subject on the host page | its own page |
+| Landing after save | the page | Special:Subject |
+| Links to Subjects in infoboxes and views | the page | Special:Subject |
+| Links to Subjects on the Data tab | relation values lead to the target page's Data tab with the row highlighted; the row title is not a link; "Open" leads to Special:Subject | Special:Subject |
+| Concept URI in a browser | the page | Special:Subject |
+| "Move" on the Data tab | offered | not offered |
+
+The mode changes defaults, landing surfaces and link targets only. The REST API, parser-function parameters such as
+an explicit `page=` on `{{#create_subject}}`, and pages holding several Subjects are the same in both.
 
 ## User rights
 
@@ -195,10 +216,9 @@ A wiki whose readers do not all see the same pages needs more than these default
 
 A wiki administrator without server access can set part of NeoWiki's configuration on the `MediaWiki:NeoWiki` page.
 It holds JSON and, like other site configuration, is editable only with the `editinterface` and `editsitejson`
-rights. Two settings are exposed: `dereferenceSubjectsToHostingPage` (overriding
-`$wgNeoWikiDereferenceSubjectsToHostingPage`) and `autoRenderMainSubject` (overriding
-`$wgNeoWikiAutoRenderMainSubject`). Editing the page shows a reference table of the exposed keys and their accepted
-values, and creating it preloads a working example.
+rights. Two settings are exposed: `subjectFirst` (overriding `$wgNeoWikiSubjectFirst`) and
+`autoRenderMainSubject` (overriding `$wgNeoWikiAutoRenderMainSubject`). Editing the page shows a reference table of
+the exposed keys and their accepted values, and creating it preloads a working example.
 
 A valid value on the page takes precedence over `LocalSettings.php`, per setting. A missing page, a
 wrong-shaped value, or an unavailable database falls back to the `LocalSettings.php` value, so a

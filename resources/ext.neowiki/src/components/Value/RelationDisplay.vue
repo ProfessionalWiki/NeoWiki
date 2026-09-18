@@ -29,6 +29,8 @@ import { Value, RelationValue, Relation } from '@/domain/Value.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
+import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
+import { isSubjectFirst } from '@/presentation/wikiMode.ts';
 
 interface RelationDisplayValueData {
 	text: string;
@@ -40,11 +42,14 @@ const props = defineProps<ValueDisplayProps<RelationProperty>>();
 
 const subjectStore = useSubjectStore();
 
-// Where a relation leads: the page its target is stored on, unless the host says otherwise.
-const relationTargetUrl = inject( RelationTargetUrlKey, targetPageUrl );
+// Where a relation leads, unless the host says otherwise: the page its target is stored on on a
+// page-first wiki, the target Subject itself on a subject-first one (ADR 33).
+const relationTargetUrl = inject( RelationTargetUrlKey, targetUrl );
 
-function targetPageUrl( target: SubjectWithContext ): string {
-	return mw.util.getUrl( target.getPageIdentifiers().getPageName() );
+function targetUrl( target: SubjectWithContext ): string {
+	return isSubjectFirst() ?
+		subjectPageUrl( target.getId().text ) :
+		mw.util.getUrl( target.getPageIdentifiers().getPageName() );
 }
 
 // Computed, not resolved once: a target seeded after the first render then resolves.

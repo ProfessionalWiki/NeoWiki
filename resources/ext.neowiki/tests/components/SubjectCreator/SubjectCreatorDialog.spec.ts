@@ -234,6 +234,23 @@ describe( 'SubjectCreatorDialog', () => {
 	let mintSubjectIdMock: ReturnType<typeof vi.fn>;
 	let repositorySpy: ReturnType<typeof vi.spyOn>;
 
+	// Re-callable inside a test that needs another wiki configuration; the mount below reads it
+	// lazily, so re-stubbing before mounting is enough.
+	function stubMw( config: Record<string, unknown> = {} ): void {
+		setupMwMock( {
+			functions: [ 'msg', 'notify', 'config', 'storage', 'util' ],
+			config: {
+				wgArticleId: PAGE_ID,
+				wgTitle: PAGE_TITLE,
+				wgPageName: PAGE_NAME,
+				// Debounce 0 is blur-only mode: the dry-run fires on blur / pre-save
+				// (via flush()), which runs synchronously in tests.
+				wgNeoWikiValidationDebounceMs: 0,
+				...config,
+			},
+		} );
+	}
+
 	const mountComponent = (
 		stubs: Record<string, any> = {},
 		props: Record<string, any> = {},
@@ -323,17 +340,7 @@ describe( 'SubjectCreatorDialog', () => {
 		reloadMock = vi.fn();
 		vi.stubGlobal( 'location', { href: '', reload: reloadMock } );
 
-		setupMwMock( {
-			functions: [ 'msg', 'notify', 'config', 'storage', 'util' ],
-			config: {
-				wgArticleId: PAGE_ID,
-				wgTitle: PAGE_TITLE,
-				wgPageName: PAGE_NAME,
-				// Debounce 0 is blur-only mode: the dry-run fires on blur / pre-save
-				// (via flush()), which runs synchronously in tests.
-				wgNeoWikiValidationDebounceMs: 0,
-			},
-		} );
+		stubMw();
 
 		pinia = createPinia();
 		setActivePinia( pinia );
@@ -926,21 +933,22 @@ describe( 'SubjectCreatorDialog', () => {
 				noticeRepositorySpy.mockRestore();
 			} );
 
-			/** The page it goes to shows the subject just created, so no notice is left to restate it. */
-			it( 'goes to the subject\'s own page, not to the new page created for it', async () => {
+			// A page-first wiki is about pages, so the reader lands on the page the Subject went on
+			// even where the dialog was opened on none.
+			it( 'goes to the new page created for it', async () => {
 				const wrapper = mountWithoutHostPage();
 				await pickSchema( wrapper );
 				await typeLabel( wrapper, 'New Person' );
 
 				await save( wrapper );
 
-				expect( location.href ).toBe( '/wiki/Special:Subject/s11111111111113' );
+				expect( location.href ).toBe( '/wiki/New Person' );
 				expect( mw.storage.session.set )
-					.not.toHaveBeenCalledWith( 'neowiki-subject-creator-success', '1' );
+					.toHaveBeenCalledWith( 'neowiki-subject-creator-success', '1' );
 				expect( reloadMock ).not.toHaveBeenCalled();
 			} );
 
-			it( 'goes to the subject\'s own page, not to the existing page it was saved onto', async () => {
+			it( 'goes to the existing page it was saved onto', async () => {
 				const wrapper = mountWithoutHostPage();
 				await pickSchema( wrapper );
 				await choose( wrapper, 'anotherPage' );
@@ -948,12 +956,12 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( location.href ).toBe( '/wiki/Special:Subject/s11111111111111' );
+				expect( location.href ).toBe( '/wiki/ACME Inc' );
 				expect( mw.storage.session.set )
-					.not.toHaveBeenCalledWith( 'neowiki-subject-creator-success', '1' );
+					.toHaveBeenCalledWith( 'neowiki-subject-creator-success', '1' );
 			} );
 
-			it( 'goes to the subject\'s own page where it joined a page that has a main subject', async () => {
+			it( 'goes to the page it joined where that page has a main subject', async () => {
 				const wrapper = mountWithoutHostPage();
 				await pickSchema( wrapper );
 				await choose( wrapper, 'anotherPage' );
@@ -961,7 +969,85 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( location.href ).toBe( '/wiki/Special:Subject/s11111111111112' );
+				expect( location.href ).toBe( '/wiki/ACME Inc' );
+			} );
+		} );
+
+		// On a subject-first wiki the Subject is the entity, so the dialog neither asks which page
+		// it goes on nor leaves for one (ADR 33).
+		describe( 'on a subject-first wiki', () => {
+
+			function mountSubjectFirst( props: Record<string, any> = {} ): VueWrapper {
+				stubMw( { wgNeoWikiSubjectFirst: true } );
+				return mountDialog( props );
+			}
+
+			it( 'asks no page question', async () => {
+				const wrapper = mountSubjectFirst();
+				await pickSchema( wrapper );
+
+				expect( wrapper.find( '.ext-neowiki-subject-creator-page-section' ).exists() ).toBe( false );
+				expect( offeredChoices( wrapper ) ).toEqual( [] );
+			} );
+
+			it( 'gives the Subject a page of its own rather than the page it was opened on', async () => {
+				const wrapper = mountSubjectFirst();
+				await pickSchema( wrapper );
+
+				await save( wrapper, 'why' );
+
+				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
+					null, SCHEMA_NAME, expect.any( StatementList ), 'why', undefined, new SubjectId( MINTED_ID ),
+				);
+				expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
+			} );
+
+			// Nobody was asked which page to use, so a label whose title is taken has no question to
+			// go back to: the Subject takes the page its own id titles, the way one whose label
+			// titles no page at all already does.
+			it( 'takes the page its own id titles where the label names one that is taken', async () => {
+				( subjectStore.createSubjectPage as any )
+					.mockRejectedValueOnce( new PageTitleTakenError( 'Amsterdam' ) );
+				const wrapper = mountSubjectFirst();
+				await pickSchema( wrapper );
+				await typeLabel( wrapper, 'Amsterdam' );
+
+				await save( wrapper );
+
+				expect( ( subjectStore.createSubjectPage as any ).mock.calls[ 1 ][ 4 ] ).toBe( MINTED_ID );
+				expect( wrapper.text() ).not.toContain( 'neowiki-subject-creator-page-taken' );
+				expect( location.href ).toBe( '/wiki/Special:Subject/' + CREATED_PAGE_SUBJECT_ID );
+			} );
+
+			it( 'goes to the Subject itself, leaving no notice for a page to show', async () => {
+				const wrapper = mountSubjectFirst();
+				await pickSchema( wrapper );
+
+				await save( wrapper );
+
+				expect( location.href ).toBe( '/wiki/Special:Subject/' + CREATED_PAGE_SUBJECT_ID );
+				expect( mw.storage.session.set )
+					.not.toHaveBeenCalledWith( 'neowiki-subject-creator-success', '1' );
+				expect( reloadMock ).not.toHaveBeenCalled();
+			} );
+
+			// The parser function names the page, and naming one is answering the question.
+			it( 'states the page the caller named all the same', async () => {
+				const wrapper = mountSubjectFirst( {
+					initialPage: { choice: 'thisPage', fixed: true } as InitialPage,
+				} );
+				await pickSchema( wrapper );
+
+				expect( wrapper.find( '.ext-neowiki-subject-creator-page-summary' ).exists() ).toBe( true );
+			} );
+
+			// Nothing would come of hiding the question from someone who cannot be given a new page.
+			it( 'asks the page question of a user who may not create pages', async () => {
+				canCreateSubjectPage.value = false;
+				const wrapper = mountSubjectFirst();
+				await pickSchema( wrapper );
+
+				expect( offeredChoices( wrapper ) ).toEqual( [ 'thisPage', 'anotherPage' ] );
 			} );
 		} );
 
@@ -1025,7 +1111,7 @@ describe( 'SubjectCreatorDialog', () => {
 				await save( wrapper, 'why' );
 
 				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					'New Person', SCHEMA_NAME, expect.any( StatementList ), 'why', undefined,
+					'New Person', SCHEMA_NAME, expect.any( StatementList ), 'why', undefined, new SubjectId( MINTED_ID ),
 				);
 				expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
 			} );
@@ -1037,7 +1123,7 @@ describe( 'SubjectCreatorDialog', () => {
 				await save( wrapper );
 
 				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, undefined,
+					null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, undefined, new SubjectId( MINTED_ID ),
 				);
 			} );
 
@@ -1274,7 +1360,7 @@ describe( 'SubjectCreatorDialog', () => {
 				await save( wrapper, 'why' );
 
 				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					'Delft Blue', SCHEMA_NAME, expect.any( StatementList ), 'why', 'Delft',
+					'Delft Blue', SCHEMA_NAME, expect.any( StatementList ), 'why', 'Delft', new SubjectId( MINTED_ID ),
 				);
 			} );
 
@@ -1286,7 +1372,7 @@ describe( 'SubjectCreatorDialog', () => {
 				await save( wrapper );
 
 				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					'Delft Blue', SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, undefined,
+					'Delft Blue', SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, undefined, new SubjectId( MINTED_ID ),
 				);
 			} );
 		} );
@@ -1677,7 +1763,7 @@ describe( 'SubjectCreatorDialog', () => {
 				await save( wrapper );
 
 				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, 'Ada Lovelace',
+					null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, 'Ada Lovelace', new SubjectId( MINTED_ID ),
 				);
 			} );
 
@@ -1690,7 +1776,7 @@ describe( 'SubjectCreatorDialog', () => {
 				await save( wrapper );
 
 				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, undefined,
+					null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, undefined, new SubjectId( MINTED_ID ),
 				);
 			} );
 
@@ -2483,14 +2569,14 @@ describe( 'SubjectCreatorDialog', () => {
 		// The whole save is through before anyone leaves the page: a Subject created alongside is
 		// written after the one that points at it, so navigating on that first write would take
 		// the rest of the save with it.
-		it( 'leaves for the created Subject only once every write is through', async () => {
+		it( 'leaves only once every write is through', async () => {
 			sessionDrafts = [ { subject: draft(), pageId: 0 } ];
 			const wrapper = await openOn( { hostPage: null } );
 
 			await save( wrapper );
 
 			expect( subjectStore.createSubject ).toHaveBeenCalled();
-			expect( location.href ).toContain( CREATED_PAGE_SUBJECT_ID );
+			expect( location.href ).toBe( '/wiki/New Person' );
 		} );
 	} );
 } );

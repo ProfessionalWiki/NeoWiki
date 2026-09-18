@@ -318,6 +318,58 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ 'bunny' ], $this->storedStatementValueOf( $body['subjectId'], 'animal' ) );
 	}
 
+	public function testCreatesTheSubjectUnderTheIdSupplied(): void {
+		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam', 'id' => 'sPreMintedAAAA1' ] ) );
+
+		$this->assertSame( 'sPreMintedAAAA1', $body['subjectId'] );
+		$this->assertSame( 'sPreMintedAAAA1', $this->mainSubjectIdOf( 'Amsterdam' ) );
+	}
+
+	public function testAnswersBadRequestForAMalformedSuppliedId(): void {
+		$response = $this->create( [ 'label' => 'Amsterdam', 'id' => 'not-a-subject-id' ] );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertFalse( Title::newFromText( 'Amsterdam' )->exists() );
+	}
+
+	public function testAnswersBadRequestForASuppliedIdFromAnotherSource(): void {
+		$response = $this->create( [ 'label' => 'Amsterdam', 'id' => 'otherwiki:sPreMintedAAAA2' ] );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertFalse( Title::newFromText( 'Amsterdam' )->exists() );
+	}
+
+	/**
+	 * Only a caller that minted the id up front can meet this, and it means their create already
+	 * landed, so the conflict names the Subject rather than the title it would have taken.
+	 */
+	public function testAnswersConflictForASuppliedIdAlreadyInUse(): void {
+		$this->createPageWithSubjects(
+			'CreateSubjectPageApiTest_Taken',
+			TestSubject::build( id: 'sPreMintedAAAA3' )
+		);
+
+		$response = $this->create( [ 'label' => 'Amsterdam', 'id' => 'sPreMintedAAAA3' ] );
+
+		$this->assertSame( 409, $response->getStatusCode() );
+		$this->assertSame( 'Subject already exists', $this->bodyOf( $response )['message'] );
+		$this->assertFalse( Title::newFromText( 'Amsterdam' )->exists() );
+	}
+
+	/**
+	 * A retry of a create that landed meets both conflicts: its Subject holds the id, and the page
+	 * it made holds the title. The id is the answer that lets the caller carry on, so it comes
+	 * first; the title conflict would send them looking for a page they made themselves.
+	 */
+	public function testAnswersTheIdConflictRatherThanTheTitleOneWhenBothStand(): void {
+		$this->createPageWithSubjects( 'Amsterdam', TestSubject::build( id: 'sPreMintedAAAA4' ) );
+
+		$response = $this->create( [ 'label' => 'Amsterdam', 'id' => 'sPreMintedAAAA4' ] );
+
+		$this->assertSame( 409, $response->getStatusCode() );
+		$this->assertSame( 'Subject already exists', $this->bodyOf( $response )['message'] );
+	}
+
 	public function testAnswersTheSchemaTheSubjectInstantiates(): void {
 		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam' ] ) );
 

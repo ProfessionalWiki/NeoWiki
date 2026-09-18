@@ -3013,6 +3013,25 @@ describe( 'SubjectEditorDialog', () => {
 				);
 			} );
 
+			// A subject-first wiki gives the draft a page of its own, so the pane it was created
+			// from needs none to store it on (ADR 33).
+			it( 'drafts a target for a pageless subject on a subject-first wiki', async () => {
+				setupMwMock( {
+					functions: [ 'message', 'msg', 'notify', 'config', 'util' ],
+					config: {
+						wgNeoWikiValidationDebounceMs: 0,
+						wgArticleId: 42,
+						wgNeoWikiSubjectFirst: true,
+					},
+				} );
+				const { wrapper } = await mountReadyForCreation( { rootSubject: mockSubject } );
+
+				const created = await createTarget( wrapper );
+
+				expect( created?.getId().text ).toBe( mintedId );
+				expect( mw.notify ).not.toHaveBeenCalled();
+			} );
+
 			// A relation naming a draft is sound in the editor and unresolvable to the server,
 			// so every pane has to know which ids to withhold that complaint for.
 			it( 'tells every pane which target ids the session has yet to write', async () => {

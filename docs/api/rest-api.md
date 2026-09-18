@@ -29,7 +29,7 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 |---|---|
 | `GET /neowiki/v0/subject/{subjectId}` | Fetch a Subject as the wiki publishes it. `latest=1` returns the hosting page's current revision instead, for editing, when the viewer may see it; it takes no `revisionId` and no `expand=relations`. Optional `revisionId`; `expand` with `page` or `relations`. |
 | `GET /neowiki/v0/subject/{subjectId}/rdf` | Export one Subject as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or an ontology target. See [RDF export](rdf-export.md). |
-| `GET /neowiki/v0/entity/{subjectId}` | Dereference a Subject's concept URI. `303` to the Subject's RDF (`Accept: application/trig` or `text/turtle`), otherwise to `Special:Subject`. See [Dereferencing subject IRIs](rdf-export.md#dereferencing-subject-iris). |
+| `GET /neowiki/v0/entity/{subjectId}` | Dereference a Subject's concept URI. `303` to the Subject's RDF (`Accept: application/trig` or `text/turtle`), otherwise to the Subject's hosting page or to `Special:Subject`, depending on the wiki's mode. See [Dereferencing subject IRIs](rdf-export.md#dereferencing-subject-iris). |
 | `PUT /neowiki/v0/subject/{subjectId}` | Replace a Subject's label and statements. |
 | `DELETE /neowiki/v0/subject/{subjectId}` | Delete a Subject. |
 | `POST /neowiki/v0/subject/{subjectId}/move` | Move a Subject to another page, keeping its ID so relations targeting it keep resolving. Body `targetPageId`, optional `makeMainSubject` and `comment`. Edits both pages. |
@@ -38,7 +38,7 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 | `POST /neowiki/v0/subject/validate` | Check whether a new Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject/{subjectId}/validate` | Check whether a change to a Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject-ids` | Mint a batch of unused Subject IDs to assign on create, e.g. to wire relations across an interlinked import. Body `count` (1–1000). |
-| `POST /neowiki/v0/subjects` | Create a Subject together with a page of its own, in one revision, as that page's main Subject. Body `schema` and `statements`, optional `label`, `pageTitle` and `comment`. The page is titled by `pageTitle`, or by the label, or by the Subject's ID when there is no label or the label cannot be a main-namespace title. `400` for a `pageTitle` that cannot be one, `409` when the title is taken. |
+| `POST /neowiki/v0/subjects` | Create a Subject together with a page of its own, in one revision, as that page's main Subject. Body `schema` and `statements`, optional `label`, `pageTitle`, `comment` and `id` (an unused Subject ID to assign; the server mints one when it is omitted). The page is titled by `pageTitle`, or by the label, or by the Subject's ID when there is no label or the label cannot be a main-namespace title. `400` for a malformed `id` or a `pageTitle` that cannot be one; `409` when the `id` is in use or the title is taken, and only the title conflict carries `pageTitle`. |
 | `GET /neowiki/v0/subject-labels` | Find Subjects of a Schema by label; returns `id`/`label` pairs. A Subject with no label is absent. Query: `schema` (required), `search` (label prefix), `limit`. |
 | `GET /neowiki/v0/subject/{subjectId}/referencingSubjects` | List the Subjects whose relations point at this one, itself excluded, ordered by name. Returns `{referencingSubjects: [{subject, propertyNames}], truncated}`, each `subject` carrying its page identifiers. `truncated` means more were left out; `false` does not promise there are none. Needs a Neo4j store; without one the list is empty. Query: `limit` (default 10). |
 
@@ -52,9 +52,9 @@ Subjects and arrange them.
 | `GET /neowiki/v0/page/{pageId}/subjects` | List all of the page's Subjects. `expand` with `schemas` or `relations`. |
 | `GET /neowiki/v0/page/{pageId}/editNotices` | List the notices to show before editing the page's Subjects, in display order. Optional `schema` adds notices scoped to that Schema. Returns `{notices: [{key, html}]}`. See [Edit notices](../authoring/edit-notices.md). |
 | `GET /neowiki/v0/page/{pageId}/rdf` | Export the page's Subjects and metadata as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or the name of a Mapping page. See [RDF export](rdf-export.md) and [Mapping Format](../authoring/mapping-format.md). |
-| `POST /neowiki/v0/page/{pageId}/mainSubject` | Create the page's main Subject. |
+| `POST /neowiki/v0/page/{pageId}/mainSubject` | Create the page's main Subject. Same body as `POST .../subjects`. |
 | `PUT /neowiki/v0/page/{pageId}/mainSubject` | Promote one of the page's other Subjects to main, or clear it. |
-| `POST /neowiki/v0/page/{pageId}/subjects` | Create a Subject on the page. Use `POST .../mainSubject` for the main Subject. |
+| `POST /neowiki/v0/page/{pageId}/subjects` | Create a Subject on the page. Body `schema` and `statements`, optional `label`, `comment` and `id` (an unused Subject ID to assign; the server mints one when it is omitted: `400` when malformed, `409` when in use). Use `POST .../mainSubject` for the main Subject. |
 | `PUT /neowiki/v0/page/{pageId}/subjectsOrdering` | Reorder the page's other Subjects and set the main Subject. |
 
 ### Schemas

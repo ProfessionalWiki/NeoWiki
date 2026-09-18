@@ -130,7 +130,7 @@ import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
-import type { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
+import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { SubjectCreationKey } from '@/components/common/SubjectCreation.ts';
@@ -148,6 +148,7 @@ import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
+import { isSubjectFirst } from '@/presentation/wikiMode.ts';
 import { reachableTargetIds, writeOrder } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 import type { HeldSubject } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 
@@ -467,7 +468,9 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 
 	// A Subject added while the write loop is running would be referenced by a Subject already
 	// written and yet never written itself, so creation is closed for the duration of a save.
-	if ( page === null || saving.value ) {
+	// A page is needed only where the Subject goes on one: a subject-first wiki gives it a page of
+	// its own, whatever the pane it was created from is stored on (ADR 33).
+	if ( saving.value || ( page === null && !isSubjectFirst() ) ) {
 		mw.notify( mw.msg( 'neowiki-subject-editor-create-target-error' ), { type: 'error' } );
 		return null;
 	}
@@ -495,7 +498,9 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 			label === null,
 			schemaName,
 			new StatementList( [] ),
-			page
+			// Only a subject-first wiki mints a draft with no page: the write that creates it
+			// creates its page too, so the pane carries one that is not there yet.
+			page ?? PageIdentifiers.notYetCreated()
 		);
 
 		extraPanes.value = [ ...extraPanes.value, { id: id.text, subject, schema, isNew: true } ];

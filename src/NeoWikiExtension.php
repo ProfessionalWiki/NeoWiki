@@ -42,6 +42,7 @@ use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigSchema;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigValidator;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\WikiConfigLookup;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\WikiConfigSource;
+use ProfessionalWiki\NeoWiki\Application\NewSubjectIdResolver;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
@@ -1158,12 +1159,12 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Whether a browser dereferencing a Subject concept URI is sent to the plain hosting page rather
-	 * than to Special:Subject, combining the on-wiki configuration page with
-	 * $wgNeoWikiDereferenceSubjectsToHostingPage (the page wins when it sets a valid boolean).
+	 * Whether the Subject rather than the page is the entity this wiki is about (ADR 33), combining
+	 * the on-wiki configuration page with $wgNeoWikiSubjectFirst (the page wins when it sets a valid
+	 * boolean).
 	 */
-	public function dereferenceSubjectsToHostingPage(): bool {
-		return $this->getWikiConfigLookup()->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) === true;
+	public function isSubjectFirst(): bool {
+		return $this->getWikiConfigLookup()->getEffectiveValue( 'subjectFirst' ) === true;
 	}
 
 	/**
@@ -1273,6 +1274,7 @@ class NeoWikiExtension {
 			MediaWikiServices::getInstance()->getHookContainer(),
 			is_int( $debounceMs ) ? $debounceMs : 300,
 			$this->isValidationEnforced(),
+			$this->isSubjectFirst(),
 		);
 	}
 
@@ -1475,17 +1477,23 @@ class NeoWikiExtension {
 		return new CreateSubjectAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			idGenerator: $this->getIdGenerator(),
+			newSubjectIdResolver: $this->getNewSubjectIdResolver(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
-			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
-			subjectIdParser: $this->getSubjectIdParser(),
 			validationEnforced: $this->isValidationEnforced(),
+		);
+	}
+
+	private function getNewSubjectIdResolver(): NewSubjectIdResolver {
+		return new NewSubjectIdResolver(
+			subjectIdParser: $this->getSubjectIdParser(),
+			idGenerator: $this->getIdGenerator(),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 		);
 	}
 
@@ -1493,7 +1501,7 @@ class NeoWikiExtension {
 		return new CreateSubjectPageAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			idGenerator: $this->getIdGenerator(),
+			newSubjectIdResolver: $this->getNewSubjectIdResolver(),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),

@@ -117,13 +117,14 @@ function rowFor( wrapper: VueWrapper, id: string ): VueWrapper {
 	return wrapper.find( '#' + subjectRowDomId( id ) ) as unknown as VueWrapper;
 }
 
-async function mountPage(): Promise<VueWrapper> {
+async function mountPage( subjectFirst = false ): Promise<VueWrapper> {
 	setupMwMock( {
 		functions: [ 'config', 'msg', 'message', 'notify', 'util' ],
 		config: {
 			wgNeoWikiManageSubjectsPageId: PAGE_ID,
 			wgNeoWikiRdfProjections: [],
 			wgNeoWikiSubjectIriBase: '',
+			wgNeoWikiSubjectFirst: subjectFirst,
 		},
 	} );
 
@@ -306,13 +307,23 @@ describe( 'SubjectsManagerPage rows and the Subject pages behind them', () => {
 		vi.restoreAllMocks();
 	} );
 
-	// The Data tab is the only place a reader can discover that a Subject has a page of its own.
-	it( 'links every row to that Subject\'s own page', async () => {
-		const wrapper = await mountPage();
+	// On a subject-first wiki the Data tab is a way into the Subjects it lists.
+	it( 'links every row to that Subject itself on a subject-first wiki', async () => {
+		const wrapper = await mountPage( true );
 
 		expect( wrapper.findAll( 'a.ext-neowiki-subject-row__name' )
 			.map( ( link ) => link.attributes( 'href' ) ) )
 			.toEqual( [ '/wiki/Special:Subject/' + ID_A, '/wiki/Special:Subject/' + ID_B ] );
+	} );
+
+	// A page-first wiki's Data tab is about the page the reader has open, so the names lead nowhere;
+	// the one Subject stays reachable through each row's overflow menu.
+	it( 'leaves every row\'s name plain text on a page-first wiki, still offering the Subject', async () => {
+		const wrapper = await mountPage();
+
+		expect( wrapper.findAll( 'a.ext-neowiki-subject-row__name' ) ).toHaveLength( 0 );
+		expect( wrapper.findComponent( CdxMenuButton ).props( 'menuItems' ).map( ( item ) => item.value ) )
+			.toContain( 'open' );
 	} );
 
 	// Every row is on the page the reader already has open, so naming it in each footer says nothing.
@@ -562,10 +573,10 @@ describe( 'SubjectsManagerPage move action', () => {
 		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 2 );
 	} );
 
-	// Copying a link changes nothing, so it leads; edit and promote change the row in place; move and
-	// delete take the row out of the listing, with delete last. The main row's pin is its indicator,
-	// outside the strip, and the Subject's own page is its name's link.
-	it( 'orders each row\'s inline actions copy-link, edit, promote, move, delete', async () => {
+	// Opening and copying a link change nothing, so they lead; edit and promote change the row in
+	// place; move and delete take the row out of the listing, with delete last. The main row's pin is
+	// its indicator, outside the strip.
+	it( 'orders each row\'s inline actions open, copy-link, edit, promote, move, delete', async () => {
 		const wrapper = await mountPage();
 
 		const strips = wrapper.findAll( '.ext-neowiki-subject-row__actions' )
@@ -573,12 +584,14 @@ describe( 'SubjectsManagerPage move action', () => {
 
 		expect( strips ).toEqual( [
 			[
+				'neowiki-managesubjects-row-open',
 				'neowiki-managesubjects-row-copy-link',
 				'neowiki-managesubjects-row-edit',
 				'neowiki-managesubjects-row-move',
 				'neowiki-managesubjects-row-delete',
 			],
 			[
+				'neowiki-managesubjects-row-open',
 				'neowiki-managesubjects-row-copy-link',
 				'neowiki-managesubjects-row-edit',
 				'neowiki-managesubjects-row-promote',
@@ -586,6 +599,13 @@ describe( 'SubjectsManagerPage move action', () => {
 				'neowiki-managesubjects-row-delete',
 			],
 		] );
+	} );
+
+	// On a subject-first wiki the name is the way to the Subject, so the strip leaves opening to it.
+	it( 'leaves opening out of the inline actions on a subject-first wiki', async () => {
+		const wrapper = await mountPage( true );
+
+		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-open"]' ) ).toHaveLength( 0 );
 	} );
 
 	it( 'orders the overflow menu the same way as the inline actions', async () => {
@@ -605,6 +625,17 @@ describe( 'SubjectsManagerPage move action', () => {
 		canDeleteSubjectRef.value = false;
 
 		const wrapper = await mountPage();
+
+		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 0 );
+		for ( const menu of wrapper.findAllComponents( CdxMenuButton ) ) {
+			expect( menu.props( 'menuItems' ).map( ( item ) => item.value ) ).not.toContain( 'move' );
+		}
+	} );
+
+	// A subject-first wiki gives every Subject a page of its own, so moving one between pages would
+	// advertise a page model the wiki denies (ADR 33).
+	it( 'offers no move on a subject-first wiki, to anyone', async () => {
+		const wrapper = await mountPage( true );
 
 		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 0 );
 		for ( const menu of wrapper.findAllComponents( CdxMenuButton ) ) {

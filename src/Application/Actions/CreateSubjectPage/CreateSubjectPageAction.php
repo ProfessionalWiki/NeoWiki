@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubjectPage;
 
+use ProfessionalWiki\NeoWiki\Application\NewSubjectIdResolver;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
@@ -23,7 +24,6 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
-use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use RuntimeException;
 
@@ -40,7 +40,7 @@ readonly class CreateSubjectPageAction {
 	public function __construct(
 		private CreateSubjectPagePresenter $presenter,
 		private SubjectRepository $subjectRepository,
-		private IdGenerator $idGenerator,
+		private NewSubjectIdResolver $newSubjectIdResolver,
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaResolver $schemaResolver,
@@ -71,6 +71,13 @@ readonly class CreateSubjectPageAction {
 		// not touch.
 		if ( !$this->writeAuthorizer->authorizeCreatePage( $pageTitle ) ) {
 			throw new RuntimeException( 'You do not have the necessary permissions to create this page' );
+		}
+
+		// Before the title check: a caller whose create already landed holds both the id and the
+		// title it took, and the id is the answer that tells them their Subject exists.
+		if ( $request->id !== null && $this->newSubjectIdResolver->isInUse( $subject->getId() ) ) {
+			$this->presenter->presentSubjectAlreadyExists();
+			return;
 		}
 
 		if ( $this->pageIdentifiersResolver->getIdentifiersOfTitle( $pageTitle ) !== null ) {
@@ -151,8 +158,8 @@ readonly class CreateSubjectPageAction {
 		SchemaReference $schemaReference,
 		?Schema $schema
 	): Subject {
-		return Subject::createNew(
-			idGenerator: $this->idGenerator,
+		return new Subject(
+			id: $this->newSubjectIdResolver->resolve( $request->id ),
 			label: SubjectLabel::fromText( $request->label ),
 			schema: $schemaReference,
 			statements: $this->statementListBuilder->build(

@@ -69,6 +69,17 @@ length of the run.
 If your Subjects predate the optional Subject label, run
 [clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before that rebuild.
 
+## Removed setting, September 2026
+
+`$wgNeoWikiDereferenceSubjectsToHostingPage` is removed, and there is no alias: the wiki's mode answers its
+question. A browser dereferencing a Subject's concept URI now lands on the page the Subject is stored on, which the
+old setting did only when set to `true`. To keep sending browsers to `Special:Subject`, set `$wgNeoWikiSubjectFirst`
+to `true`, which also changes where new Subjects are created and where links to Subjects lead. See
+[Choosing page-first or subject-first](installation.md#choosing-page-first-or-subject-first).
+
+A `MediaWiki:NeoWiki` page still carrying `dereferenceSubjectsToHostingPage` keeps working, and the key does
+nothing; saving the page is refused until the key is removed.
+
 ## Renamed accessors, September 2026
 
 `nw.getChildSubjects` and `nw.getOtherSubjects` are both now

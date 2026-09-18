@@ -122,13 +122,16 @@ export interface SubjectRepository extends SubjectLookup {
 	 * pageTitle, and by the Subject's own ID when the label titles no page. Throws
 	 * PageTitleTakenError when a page of that title already exists, and InvalidPageTitleError when
 	 * the pageTitle given titles no page; nothing is created then.
+	 *
+	 * The optional id is a pre-minted, unused Subject ID to assign, as on createOtherSubject.
 	 */
 	createSubjectPage(
 		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
 		comment?: string,
-		pageTitle?: string
+		pageTitle?: string,
+		id?: SubjectId
 	): Promise<SubjectPageWriteResult>;
 
 	/**
@@ -207,12 +210,12 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 		return Promise.resolve( this.newWriteResult( id ?? new SubjectId( 's11111111111112' ), pageId, label, schemaName, statements ) );
 	}
 
-	public createSubjectPage( label: string | null, schemaName: string, statements: StatementList, _comment?: string, pageTitle?: string ): Promise<SubjectPageWriteResult> {
-		const id = new SubjectId( 's11111111111113' );
+	public createSubjectPage( label: string | null, schemaName: string, statements: StatementList, _comment?: string, pageTitle?: string, id?: SubjectId ): Promise<SubjectPageWriteResult> {
+		const createdId = id ?? new SubjectId( 's11111111111113' );
 
 		return Promise.resolve( {
-			...this.newWriteResult( id, 1, label, schemaName, statements ),
-			pageTitle: pageTitle ?? label ?? id.text,
+			...this.newWriteResult( createdId, 1, label, schemaName, statements ),
+			pageTitle: pageTitle ?? label ?? createdId.text,
 			pageId: 1,
 		} );
 	}

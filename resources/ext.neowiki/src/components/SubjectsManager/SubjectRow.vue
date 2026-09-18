@@ -39,7 +39,7 @@
 				</template>
 				<span class="ext-neowiki-subject-row__title">
 					<a
-						v-if="subjectPageUrl !== null"
+						v-if="titleIsLinked && subjectPageUrl !== null"
 						class="ext-neowiki-subject-row__name"
 						:href="subjectPageUrl"
 						@click.stop
@@ -79,6 +79,16 @@
 					</span>
 				</span>
 				<span class="ext-neowiki-subject-row__actions">
+					<CdxButton
+						v-if="!titleIsLinked && subjectPageUrl !== null"
+						class="ext-neowiki-subject-row__open"
+						weight="quiet"
+						:aria-label="$i18n( 'neowiki-managesubjects-row-open' ).text()"
+						:title="$i18n( 'neowiki-managesubjects-row-open' ).text()"
+						@click.stop="openSubjectPage"
+					>
+						<CdxIcon :icon="cdxIconArrowNext" />
+					</CdxButton>
 					<CdxButton
 						weight="quiet"
 						:aria-label="$i18n( 'neowiki-managesubjects-row-copy-link' ).text()"
@@ -238,6 +248,8 @@ import type { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { subjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
 // Aliased: `subjectPageUrl` is a prop of this row.
 import { subjectPageUrl as subjectPageUrlOf } from '@/presentation/subjectPageUrl.ts';
+import { subjectRowUrl } from '@/presentation/subjectRowUrl.ts';
+import { isSubjectFirst } from '@/presentation/wikiMode.ts';
 import { RelationTargetUrlKey } from '@/components/Value/ValueDisplayContract.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
@@ -259,10 +271,16 @@ const props = withDefaults( defineProps<{
 	subject: Subject;
 	expanded: boolean;
 	/**
-	 * The Subject's own page, which the name links to and the overflow menu offers. Null where the
-	 * reader is on it already.
+	 * The Subject's own page, which the overflow menu offers and the name links to where it is
+	 * linked at all. Null where the reader is on it already.
 	 */
 	subjectPageUrl?: string | null;
+	/**
+	 * Links the name to that page whatever the wiki's mode, for a surface that is about Subjects
+	 * either way — Special:Subject is one. Left off, the mode answers it, so a page-first wiki's
+	 * Data tab, which is about the page the reader has open, leaves the name plain text (ADR 33).
+	 */
+	linkTitle?: boolean;
 	/**
 	 * Gives the row the prominence a surface's focal Subject gets: the page's Main Subject on the
 	 * Data tab, the Subject a page is about on Special:Subject. Says nothing about either by itself.
@@ -295,6 +313,7 @@ const props = withDefaults( defineProps<{
 	domId?: string | null;
 }>(), {
 	subjectPageUrl: null,
+	linkTitle: false,
 	emphasized: false,
 	highlighted: false,
 	focused: false,
@@ -325,9 +344,19 @@ const emit = defineEmits<{
 // whichever surface mounts the row: the Data tab's action and Special:Subject alike.
 const rdfProjections = ( mw.config.get( 'wgNeoWikiRdfProjections' ) as string[] | null ) ?? [];
 
-// A reader of these rows is browsing Subjects, so a relation in one leads to its target's own page
-// rather than to the page storing it, on every surface that mounts the row.
-provide( RelationTargetUrlKey, ( target ) => subjectPageUrlOf( target.getId().text ) );
+// The wiki's mode, read once: it cannot change while the row is mounted.
+const subjectFirst = isSubjectFirst();
+
+const titleIsLinked = computed( (): boolean => props.linkTitle || subjectFirst );
+
+// A reader of these rows is browsing Subjects, so a relation in one leads to the target itself
+// rather than to the page storing it, on every surface that mounts the row. On a page-first wiki
+// that page is where the target is read, so the relation leads to the target's row on its Data tab
+// (ADR 33).
+provide( RelationTargetUrlKey, ( target ) =>
+	subjectFirst ?
+		subjectPageUrlOf( target.getId().text ) :
+		subjectRowUrl( target.getPageIdentifiers().getPageName(), target.getId().text ) );
 
 const displayName = computed( () => subjectDisplayName( props.subject ) );
 const schemaName = computed( () => schemaNameToShow( props.subject ) );
@@ -346,7 +375,7 @@ function pageUrl( pageName: string ): string {
 
 // Opening and copying a link lead: they change nothing. Edit and promote change the row in place;
 // move and delete take it out of the listing, with delete last. The inline strip keeps this order,
-// less opening, which the name offers there.
+// and carries opening only where the name does not offer it.
 const menuItems = computed<MenuButtonItemData[]>( () => {
 	// Neither is permission-gated: everyone, read-only users included, may reach a Subject's page
 	// and copy a link to it.
@@ -408,8 +437,8 @@ const menuSelection = ref<string | number | null>( null );
 function dispatchMenuAction( value: string | number | null ): void {
 	menuSelection.value = null;
 
-	if ( value === 'open' && props.subjectPageUrl !== null ) {
-		window.location.href = props.subjectPageUrl;
+	if ( value === 'open' ) {
+		openSubjectPage();
 	} else if ( value === 'copy-link' ) {
 		emit( 'copy-link', props.subject );
 	} else if ( value === 'edit' ) {
@@ -420,6 +449,14 @@ function dispatchMenuAction( value: string | number | null ): void {
 		emit( 'move', props.subject );
 	} else if ( value === 'delete' ) {
 		emit( 'delete', props.subject );
+	}
+}
+
+// Both ways to the Subject's own page that are not the name itself: the strip's action and the
+// menu's item. Offered only where the surface named a page, which is what both are gated on.
+function openSubjectPage(): void {
+	if ( props.subjectPageUrl !== null ) {
+		window.location.href = props.subjectPageUrl;
 	}
 }
 
