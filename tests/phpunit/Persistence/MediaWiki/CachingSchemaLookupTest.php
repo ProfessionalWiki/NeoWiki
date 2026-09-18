@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\ReplicaCacheOptions;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaJsonLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
@@ -187,7 +188,7 @@ class CachingSchemaLookupTest extends TestCase {
 			cache: $cache ?? new WANObjectCache( [ 'cache' => new HashBagOStuff() ] ),
 			titleFactory: $titleFactory ?? $this->newTitleFactory( 1, 100, 100 ),
 			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
-			connectionProvider: $this->newConnectionProvider()
+			cacheOptions: new ReplicaCacheOptions( $this->newConnectionProvider(), MW_VERSION )
 		);
 	}
 
