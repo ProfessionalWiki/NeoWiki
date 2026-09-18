@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Search;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchLine;
 use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchTextBuilder;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
@@ -19,6 +20,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
@@ -134,6 +136,53 @@ class SubjectSearchTextBuilderTest extends TestCase {
 			"Rijksmuseum\nno definition",
 			$this->textIndexedWith( TestStatement::build( property: 'City', value: 'Amsterdam' ), null )
 		);
+	}
+
+	public function testALabelLineNamesNoProperty(): void {
+		$this->assertEquals(
+			[ new SubjectSearchLine( null, 'Rijksmuseum' ) ],
+			$this->linesFor( TestSubject::build( label: 'Rijksmuseum' ) )
+		);
+	}
+
+	public function testAValueLineNamesTheStatementsProperty(): void {
+		$this->assertEquals(
+			[
+				new SubjectSearchLine( null, 'Rijksmuseum' ),
+				new SubjectSearchLine( 'City', 'Amsterdam' ),
+			],
+			$this->linesFor(
+				$this->subjectWith( 'Rijksmuseum', TestStatement::build( property: 'City', value: 'Amsterdam' ) )
+			)
+		);
+	}
+
+	public function testEveryValueOfAStatementIsItsOwnLine(): void {
+		$this->assertEquals(
+			[
+				new SubjectSearchLine( 'Website', 'https://pro.wiki' ),
+				new SubjectSearchLine( 'Website', 'https://professional.wiki' ),
+			],
+			$this->linesFor( $this->subjectWith(
+				null,
+				TestStatement::build(
+					property: 'Website',
+					value: new StringValue( 'https://pro.wiki', 'https://professional.wiki' ),
+					propertyType: 'url'
+				)
+			) )
+		);
+	}
+
+	public function testASubjectWithoutSearchableContentHasNoLines(): void {
+		$this->assertSame( [], $this->linesFor( TestSubject::build( label: null ) ) );
+	}
+
+	/**
+	 * @return SubjectSearchLine[]
+	 */
+	private function linesFor( Subject $subject ): array {
+		return $this->newBuilder( $this->coreTypes() )->linesOf( $subject );
 	}
 
 	private function museumSchemaWith( string $propertyName, PropertyDefinition $definition ): Schema {

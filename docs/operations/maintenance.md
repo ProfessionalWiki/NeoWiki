@@ -134,9 +134,8 @@ saving anything, and reporting nothing means there is nothing to do. It walks th
 
 ## Making Subjects searchable
 
-Special:Search and the search API find a page by its Subjects: their labels, and their text, url, date, date-time,
-number and select values (select values by their option's label). Boolean and relation values are not indexed. A page
-matched only through a Subject value shows no matching text in its result snippet.
+Special:Search and the search API find a page by its Subjects' labels and by their text, url, date, date-time, number
+and select values. Boolean and relation values are not indexed.
 
 Pages are indexed as they are saved. With MediaWiki's built-in database search, cover the pages that already
 existed by rebuilding the wiki's search index:
@@ -145,20 +144,18 @@ existed by rebuilding the wiki's search index:
 php maintenance/run.php rebuildtextindex
 ```
 
-It empties the search index before refilling it, so the wiki finds nothing while it runs, which on a large wiki is
-hours. Run it when the wiki is quiet.
+Search finds nothing while it runs, which on a large wiki is hours. Run it when the wiki is quiet.
 
-On PostgreSQL the built-in database search does not index Subject values, and `rebuildtextindex` refuses to run.
+On PostgreSQL the built-in database search does not index Subject values; use CirrusSearch.
 
-With CirrusSearch, Subject values stay out of the index until it knows the field. Run this after installing NeoWiki
-and after every upgrade:
+With CirrusSearch, run this after installing or upgrading NeoWiki:
 
 ```sh
 php maintenance/run.php CirrusSearch:UpdateSearchIndexConfig
 ```
 
 Only when that reports `different...corrected`, rebuild the index and re-index all pages. Both scale with the size
-of the wiki:
+of the wiki, and search stays available meanwhile:
 
 ```sh
 php maintenance/run.php CirrusSearch:UpdateSearchIndexConfig --reindexAndRemoveOk --indexIdentifier now --ignoreIndexChanged

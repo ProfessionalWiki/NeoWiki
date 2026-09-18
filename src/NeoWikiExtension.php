@@ -45,6 +45,7 @@ use ProfessionalWiki\NeoWiki\Application\WikiConfig\WikiConfigSource;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
+use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchHitBuilder;
 use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchTextBuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
@@ -170,6 +171,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiWikiConfigSource;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Search\SubjectSearchHitLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Search\SubjectSearchTextLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
@@ -219,6 +221,7 @@ use ProfessionalWiki\NeoWiki\Presentation\FrontendModuleLoader;
 use ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Presentation\LayoutPresentationSerializer;
+use ProfessionalWiki\NeoWiki\Presentation\SubjectSearchHitHtmlBuilder;
 use Wikimedia\Rdbms\IDatabase;
 
 class NeoWikiExtension {
@@ -260,6 +263,7 @@ class NeoWikiExtension {
 	private ClientInterface $readOnlyNeo4jClient;
 	private ?WikiConfigSource $wikiConfigSource = null;
 	private ?SchemaLookup $schemaLookup = null;
+	private ?SubjectSearchHitLookup $subjectSearchHitLookup = null;
 	/** @var array<string, SchemaLookup> */
 	private array $schemaLookupsByUser = [];
 	private static ?self $instance = null;
@@ -1259,10 +1263,31 @@ class NeoWikiExtension {
 	public function newSubjectSearchTextLookup(): SubjectSearchTextLookup {
 		return new SubjectSearchTextLookup(
 			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
-			textBuilder: new SubjectSearchTextBuilder(
-				$this->getPropertyTypeLookup(),
-				$this->getSchemaResolver()
-			)
+			textBuilder: $this->newSubjectSearchTextBuilder()
+		);
+	}
+
+	private function newSubjectSearchTextBuilder(): SubjectSearchTextBuilder {
+		return new SubjectSearchTextBuilder(
+			$this->getPropertyTypeLookup(),
+			$this->getSchemaResolver()
+		);
+	}
+
+	public function getSubjectSearchHitLookup(): SubjectSearchHitLookup {
+		$this->subjectSearchHitLookup ??= new SubjectSearchHitLookup(
+			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
+			hitBuilder: new SubjectSearchHitBuilder( $this->newSubjectSearchTextBuilder() ),
+			logger: LoggerFactory::getInstance( 'NeoWiki' )
+		);
+
+		return $this->subjectSearchHitLookup;
+	}
+
+	public function newSubjectSearchHitHtmlBuilder( MessageLocalizer $messageLocalizer ): SubjectSearchHitHtmlBuilder {
+		return new SubjectSearchHitHtmlBuilder(
+			$messageLocalizer,
+			MediaWikiServices::getInstance()->getContentLanguage()
 		);
 	}
 
