@@ -345,6 +345,7 @@
 	"neowiki-mapping-page-prefix-column": "Prefix",
 	"neowiki-mapping-page-namespace-column": "Namespace IRI",
 	"neowiki-mapping-unsupported-version": "This Mapping page uses format version $1. Only format version 1 is supported; the page defines no projection.",
+	"neowiki-mapping-docs-pointer": "A Mapping page defines an ontology projection of your Subjects. There is no UI for defining Mappings yet. You define them via the [$1 Mapping JSON format].",
 
 	"neowiki-layout-creator-title": "Create layout",
 	"neowiki-layout-creator-button": "Create",
