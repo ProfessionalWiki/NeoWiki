@@ -90,6 +90,7 @@
 	"neowiki-schema-editor-description-add": "Label of the button that starts writing a description for a schema that has none, shown in the schema editor dialog header.",
 
 	"neowiki-subject-generated-name": "The name shown for a subject that has no label of its own, so its name was derived from its schema rather than chosen by anyone. $1 is the schema name: a noun the wiki's own users invented, in an unknown language and grammatical gender, so do not inflect it, do not change its case, and make no word agree with it. The round brackets mark the whole string as a stand-in the system supplied rather than a name someone typed, as in {{msg-mw|Blanknamespace}}; use whichever brackets your language uses for that.",
+	"neowiki-search-hit-subject": "Names the subject a search result matched, shown above the matching values. $1 is the subject's name and $2 the name of its schema: both are words the wiki's own users chose, in an unknown language and grammatical gender, so do not inflect them, do not change their case, and make no word agree with them. The round brackets set the schema name apart from the subject's name; use whichever brackets your language uses for that.",
 
 	"neowiki-subject-editor-title": "Title of the subject editor dialog, and its accessible name. Names the task rather than a subject: the dialog can edit several at once, and each one is named by the pane that edits it.",
 	"neowiki-subject-editor-label-field": "Accessibility label for the input shown in place of the dialog title while renaming a subject in the subject editor dialog.",

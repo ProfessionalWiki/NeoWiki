@@ -5,9 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use Exception;
+use HtmlArmor;
 use ManualLogEntry;
 use MediaWiki\Block\DatabaseBlock;
 use MediaWiki\Content\ContentHandler;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
@@ -25,6 +27,7 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
 use MediaWiki\Search\SearchUpdate;
+use MediaWiki\Specials\SpecialSearch;
 use MediaWiki\Title\ForeignTitle;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
@@ -33,6 +36,7 @@ use Wikimedia\Rdbms\IDBAccessObject;
 use MessageLocalizer;
 use NullIndexField;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchHit;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigExample;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
@@ -51,6 +55,7 @@ use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
 use MediaWiki\SpecialPage\SpecialPage;
 use SearchEngine;
 use SearchIndexField;
+use SearchResult;
 use Skin;
 use SkinTemplate;
 use Throwable;
@@ -449,6 +454,120 @@ class NeoWikiHooks {
 	): void {
 		$fields[NeoWikiExtension::SUBJECT_SEARCH_FIELD] = NeoWikiExtension::getInstance()
 			->newSubjectSearchTextLookup()->getSearchTextForRevision( $revision );
+	}
+
+	/**
+	 * Sends a result row to the page's Main Subject where the page exists only to hold it and has
+	 * nothing of its own to show.
+	 *
+	 * @param Title &$title
+	 * @param string|HtmlArmor|null &$titleSnippet
+	 * @param SearchResult $result
+	 * @param string[] $terms
+	 * @param SpecialSearch $specialSearch
+	 * @param string[] &$query
+	 * @param string[] &$attributes
+	 */
+	public static function onShowSearchHitTitle( &$title, &$titleSnippet, $result, $terms, $specialSearch, &$query, &$attributes ): void {
+		// MediaWiki skips ShowSearchHit for a file, so a retargeted file row would keep a thumbnail and
+		// a file description of the page it no longer leads to, with nothing saying why.
+		if ( $title->getNamespace() === NS_FILE ) {
+			return;
+		}
+
+		$landing = self::subjectSearchHitFor( $specialSearch, $title, $terms )?->landing;
+
+		if ( $landing === null ) {
+			return;
+		}
+
+		$title = SpecialPage::getTitleFor( 'Subject', $landing->subjectId->text );
+		$titleSnippet = NeoWikiExtension::getInstance()
+			->newSubjectSearchHitHtmlBuilder( $specialSearch )->buildLinkText( $landing );
+	}
+
+	/**
+	 * Shows what a result row matched in a Subject, which the page's own text does not contain and
+	 * MediaWiki therefore cannot highlight.
+	 *
+	 * @param SpecialSearch $searchPage
+	 * @param SearchResult $result
+	 * @param string[] $terms
+	 * @param string &$link
+	 * @param string &$redirect
+	 * @param string &$section
+	 * @param string &$extract
+	 * @param string &$score
+	 * @param string &$size
+	 * @param string &$date
+	 * @param string &$related
+	 * @param string &$html
+	 */
+	public static function onShowSearchHit(
+		$searchPage, $result, $terms, &$link, &$redirect, &$section, &$extract, &$score, &$size, &$date, &$related, &$html
+	): void {
+		$title = $result->getTitle();
+
+		if ( $title === null ) {
+			return;
+		}
+
+		$hit = self::subjectSearchHitFor( $searchPage, $title, $terms );
+
+		if ( $hit === null ) {
+			return;
+		}
+
+		$htmlBuilder = NeoWikiExtension::getInstance()->newSubjectSearchHitHtmlBuilder( $searchPage );
+
+		if ( $hit->match !== null ) {
+			$extract = $htmlBuilder->buildExtract( $hit->match ) . $extract;
+		}
+
+		if ( $hit->landing !== null ) {
+			// The size is the page's, which is not where the row leads.
+			$size = '';
+		}
+	}
+
+	/**
+	 * What the page behind one result row says about its Subjects. Both hooks building the row ask,
+	 * and the answer is kept between them.
+	 *
+	 * @param string[] $terms
+	 */
+	private static function subjectSearchHitFor( SpecialSearch $searchPage, Title $title, array $terms ): ?SubjectSearchHit {
+		return NeoWikiExtension::getInstance()->getSubjectSearchHitLookup()->forRow(
+			$searchPage->getAuthority(),
+			$title,
+			$terms,
+			$searchPage->getRequest()->getText( 'search' )
+		);
+	}
+
+	/**
+	 * Sends the Go button to a Subject's own page where the page named by the reader's term exists
+	 * only to hold it. Only the page title is resolved here: finding a Subject by its label would
+	 * take a lookup the wiki has only with a graph store.
+	 *
+	 * @param string $term
+	 * @param Title|null &$title
+	 */
+	public static function onSearchGetNearMatchComplete( $term, &$title ): void {
+		$context = RequestContext::getMain();
+
+		// The same question routes a reader on Special:Search and answers list=search&srwhat=nearmatch,
+		// and the search API answers with pages.
+		if ( $title === null || !$context->getTitle()?->isSpecial( 'Search' ) ) {
+			return;
+		}
+
+		$landing = NeoWikiExtension::getInstance()->getSubjectSearchHitLookup()
+			->landingForTitle( $context->getAuthority(), $title );
+
+		if ( $landing !== null ) {
+			$title = SpecialPage::getTitleFor( 'Subject', $landing->subjectId->text );
+		}
 	}
 
 	/**

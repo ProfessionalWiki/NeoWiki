@@ -135,8 +135,11 @@ saving anything, and reporting nothing means there is nothing to do. It walks th
 ## Making Subjects searchable
 
 Special:Search and the search API find a page by its Subjects: their labels, and their text, url, date, date-time,
-number and select values (select values by their option's label). Boolean and relation values are not indexed. A page
-matched only through a Subject value shows no matching text in its result snippet.
+number and select values (select values by their option's label). Boolean and relation values are not indexed.
+
+On Special:Search, a result matched through a Subject shows the Subject's Schema and the matching values. A page with
+no content of its own leads to Special:Subject rather than to the page; the Go button does the same for such a page. A
+reader who may not read the page sees only the plain row.
 
 Pages are indexed as they are saved. With MediaWiki's built-in database search, cover the pages that already
 existed by rebuilding the wiki's search index:
