@@ -75,6 +75,7 @@
 					:can-move="canMove"
 					:show-drag-handle="canEdit"
 					:subject-page-url="subjectPageUrl( mainSubject.getId().text )"
+					:link-title="subjectFirst"
 					@toggle="toggleExpanded"
 					@edit="openEditor"
 					@demote="demoteFromMain"
@@ -124,6 +125,7 @@
 					:can-move="canMove"
 					:show-drag-handle="canEdit"
 					:subject-page-url="subjectPageUrl( subject.getId().text )"
+					:link-title="subjectFirst"
 					@toggle="toggleExpanded"
 					@edit="openEditor"
 					@promote="promoteToMain"
@@ -195,7 +197,8 @@ import { useSubjectDrag } from '@/composables/useSubjectDrag.ts';
 import { subjectRowDomId, subjectIdFromHash } from '@/presentation/subjectRowAnchor.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
-import { isSubjectFirst } from '@/presentation/wikiMode.ts';
+import { isSubjectFirst } from '@/wikiMode.ts';
+import { dataTabUrl } from '@/presentation/subjectRowUrl.ts';
 import { pageDeleteFormUrl } from '@/presentation/subjectDeletion.ts';
 import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
@@ -284,7 +287,10 @@ const canEdit = computed( () => canEditSubject.value );
 
 // A subject-first wiki gives every Subject a page of its own, so moving one between pages would
 // advertise a page model the wiki denies (ADR 33).
-const canMove = computed( () => canEdit.value && !isSubjectFirst() );
+// The wiki's mode, read once: it cannot change while this tab is open.
+const subjectFirst = isSubjectFirst();
+
+const canMove = computed( () => canEdit.value && !subjectFirst );
 const canDelete = computed( () => canDeleteSubject.value );
 
 const mainSubject = computed<Subject | null>( () => {
@@ -527,7 +533,7 @@ function onSubjectMoved( targetTitle: string ): void {
 	movingSubject.value = null;
 
 	const link = document.createElement( 'a' );
-	link.href = mw.util.getUrl( targetTitle, { action: 'subjects' } );
+	link.href = dataTabUrl( targetTitle );
 	link.textContent = targetTitle;
 
 	// parseDom rather than a message string: it takes the link as a node, which leaves the subject
@@ -539,11 +545,7 @@ function onSubjectMoved( targetTitle: string ): void {
 }
 
 async function confirmDelete( subject: Subject ): Promise<void> {
-	// This tab is about one page and holds its listing already, so both answers cost nothing here.
-	const deleteForm = await pageDeleteFormUrl(
-		new PageIdentifiers( pageId, currentPageTitle ),
-		() => Promise.resolve( subjects.value.length )
-	);
+	const deleteForm = await pageDeleteFormUrl( new PageIdentifiers( pageId, currentPageTitle ), subjectRepo );
 
 	if ( deleteForm !== null ) {
 		window.location.href = deleteForm;

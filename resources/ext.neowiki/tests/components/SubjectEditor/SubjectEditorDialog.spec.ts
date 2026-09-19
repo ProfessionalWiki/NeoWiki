@@ -3078,12 +3078,11 @@ describe( 'SubjectEditorDialog', () => {
 			describe( 'when the root is new too', () => {
 				const rootSchemaName = rootOnHostPage.getSchemaName();
 
-				// A root bound for a page that its own write creates. MediaWiki numbers a page
-				// that is not there 0.
+				// A root bound for a page that its own write creates.
 				const rootOnPageToCome = newSubject( {
 					id: rootSubjectId,
 					label: 'New company',
-					pageIdentifiers: new PageIdentifiers( 0, '' ),
+					pageIdentifiers: PageIdentifiers.notYetCreated(),
 				} );
 
 				function mountCreating( options: CreationMountOptions = {} ): Promise<TargetReposMount> {

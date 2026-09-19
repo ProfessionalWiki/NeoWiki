@@ -436,7 +436,7 @@ const deletingSubjectName = computed( () =>
 	deletingSubject.value === null ? '' : subjectDisplayName( deletingSubject.value ) );
 
 async function confirmDelete( target: Subject ): Promise<void> {
-	const deleteForm = await pageDeleteFormUrl( pageOf( target ), countSubjectsOnPage );
+	const deleteForm = await pageDeleteFormUrl( pageOf( target ), subjectRepo );
 
 	if ( deleteForm !== null ) {
 		window.location.href = deleteForm;
@@ -445,14 +445,6 @@ async function confirmDelete( target: Subject ): Promise<void> {
 
 	deletingSubject.value = target;
 	deleteConfirmOpen.value = true;
-}
-
-// Read on the click rather than with the page: only a delete on a subject-first wiki asks, and only
-// about the one page the row acted on names.
-async function countSubjectsOnPage( pageId: number ): Promise<number> {
-	const { pageSubjects } = await subjectRepo.getPageSubjects( pageId );
-
-	return pageSubjects.getSubjects().length;
 }
 
 async function executeDelete( comment: string ): Promise<void> {

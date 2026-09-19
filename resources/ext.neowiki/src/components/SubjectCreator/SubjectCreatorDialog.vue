@@ -256,7 +256,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { setPendingNotification } from '@/presentation/PendingNotification.ts';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
-import { isSubjectFirst } from '@/presentation/wikiMode.ts';
+import { isSubjectFirst } from '@/wikiMode.ts';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
 import { useEditNotices } from '@/composables/useEditNotices.ts';
 
@@ -323,9 +323,9 @@ const chosenPageRead = ref( false );
 const chosenPageHasMainSubject = ref( false );
 const chosenPageMainSubjectName = ref<string | null>( null );
 const pageTitle = ref( '' );
-const titleTakenError = ref<string | null>( null );
-const invalidTitleError = ref<string | null>( null );
-const titleRequiredError = ref<string | null>( null );
+// What the page question got wrong, whichever way: a title already taken, one that titles no page,
+// or none to give. Only one of them can stand at a time, so they share the slot they are shown in.
+const pageTitleError = ref<string | null>( null );
 const pageReadError = ref<string | null>( null );
 
 // Which page the Subject goes on is asked below the Subject itself, and collapsed: the page it is
@@ -423,8 +423,6 @@ watch( pageChoice, () => {
 
 // One message per field: each of these belongs to a different page choice, so no two of them can
 // be standing at once.
-const pageTitleError = computed( (): string | null =>
-	titleTakenError.value ?? invalidTitleError.value ?? titleRequiredError.value );
 const pageError = computed( (): string | null => pageTitleError.value ?? pageReadError.value );
 
 // Answered, and answerable: a page still to be picked leaves the question open, and a page that
@@ -587,9 +585,7 @@ function resetPageChoice(): void {
 	chosenPageHasMainSubject.value = false;
 	chosenPageMainSubjectName.value = null;
 	pageTitle.value = '';
-	titleTakenError.value = null;
-	invalidTitleError.value = null;
-	titleRequiredError.value = null;
+	pageTitleError.value = null;
 	pageReadError.value = null;
 }
 
@@ -908,7 +904,7 @@ async function writeRootSubject( subject: Subject, comment: string ): Promise<vo
 	const statements = subject.getStatements();
 
 	if ( answer.goingTo === 'newPage' ) {
-		const created = await createOnNewPage( label, schemaName, statements, comment, answer.title, subject.getId() );
+		const created = await createOnNewPage( subject, comment, answer.title );
 
 		writtenRoot = { subjectId: created.subjectId, pageId: created.pageId, pageTitle: created.pageTitle };
 		return;
@@ -972,76 +968,69 @@ async function createBesideMainSubject(
 	}
 }
 
-// The two ways a title is refused are answered at the field it was typed in, and reported as the
-// save's own failure too: the writes stop there, and the toast is what says so.
+/**
+ * Creates the Subject on a page of its own. Where the page was never asked about, a label whose
+ * title is taken is not something the user can be sent back to answer, so the Subject takes the
+ * page its own id titles instead. Where the question is asked, the page comes first, so a new one
+ * is never titled after a Subject id: the title typed, else the label, and a Subject with neither
+ * is sent back to give one before anything is written.
+ *
+ * The two ways the server refuses a title are answered at the field it was typed in, and reported
+ * as the save's own failure too: the writes stop there, and the toast is what says so.
+ */
 async function createOnNewPage(
-	label: string | null,
-	schemaName: string,
-	statements: StatementList,
+	subject: Subject,
 	comment: string,
-	chosenTitle: string | null,
-	id: SubjectId
+	chosenTitle: string | null
 ): Promise<CreatedSubjectPage> {
+	if ( !pageQuestionAsked.value ) {
+		return await subjectStore.createSubjectOnOwnPage( subject, comment );
+	}
+
+	// Re-decided on each attempt, so a label typed since the last one clears what it answered.
+	pageTitleError.value = null;
+
+	const pageTitle = chosenTitle ?? subject.getLabel();
+
+	if ( pageTitle === null ) {
+		pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-required' );
+
+		throw new Error( pageTitleError.value );
+	}
+
 	try {
-		// Where the page was never asked about, a label whose title is taken is not something the
-		// user can be sent back to answer, so the Subject takes the page its own id titles instead.
-		return await ( pageQuestionAsked.value ?
-			createOnTitledPage( label, schemaName, statements, comment, chosenTitle, id ) :
-			subjectStore.createSubjectOnOwnPage( label, schemaName, statements, id, comment ) );
+		return await subjectStore.createSubjectPage(
+			subject.getLabel(),
+			subject.getSchemaName(),
+			subject.getStatements(),
+			comment,
+			pageTitle,
+			subject.getId()
+		);
 	} catch ( error ) {
 		if ( error instanceof PageTitleTakenError ) {
 			// A fixed destination offers no other page and no title field: only the label can change.
-			titleTakenError.value = mw.msg(
+			pageTitleError.value = mw.msg(
 				pageFixed.value && chosenTitle === null ?
 					'neowiki-subject-creator-page-taken-fixed' :
 					'neowiki-subject-creator-page-taken',
 				error.pageTitle
 			);
-			throw new Error( titleTakenError.value );
+			throw new Error( pageTitleError.value );
 		}
 
 		if ( error instanceof InvalidPageTitleError ) {
-			invalidTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-invalid', error.pageTitle );
-			throw new Error( invalidTitleError.value );
+			pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-invalid', error.pageTitle );
+			throw new Error( pageTitleError.value );
 		}
 
 		throw error;
 	}
 }
 
-/**
- * Creates the Subject on a page the caller named: the title typed, else the label. Where the page
- * question is asked, the page is the entity, so a new one is never titled after a Subject id the
- * way one nobody was asked about is — a Subject with neither title nor label is sent back to give
- * one, before anything is written.
- */
-function createOnTitledPage(
-	label: string | null,
-	schemaName: string,
-	statements: StatementList,
-	comment: string,
-	chosenTitle: string | null,
-	id: SubjectId
-): Promise<CreatedSubjectPage> {
-	// Re-decided on each attempt, so a label typed since the last one clears what it answered.
-	titleRequiredError.value = null;
-
-	const pageTitle = ( chosenTitle ?? label ?? '' ).trim();
-
-	if ( pageTitle === '' ) {
-		titleRequiredError.value = mw.msg( 'neowiki-subject-creator-page-title-required' );
-
-		return Promise.reject( new Error( titleRequiredError.value ) );
-	}
-
-	return subjectStore.createSubjectPage( label, schemaName, statements, comment, pageTitle, id );
-}
-
 // Retyping the title is the answer to a title the server refused, whichever way it refused it.
 function handlePageTitleInput(): void {
-	titleTakenError.value = null;
-	invalidTitleError.value = null;
-	titleRequiredError.value = null;
+	pageTitleError.value = null;
 }
 
 // A Subject the user drilled into from a relation exists already, so the editor updates it.

@@ -527,13 +527,15 @@ describe( 'SubjectPage', () => {
 			const realLocation = window.location;
 			vi.stubGlobal( 'location', { href: '' } );
 
-			await wrapper.find( `${ REQUESTED_ROW } ${ DELETE_CONTROL }` ).trigger( 'click' );
-			await flushPromises();
+			try {
+				await wrapper.find( `${ REQUESTED_ROW } ${ DELETE_CONTROL }` ).trigger( 'click' );
+				await flushPromises();
 
-			const wentTo = location.href;
-			vi.stubGlobal( 'location', realLocation );
+				expect( location.href ).toBe( '/wiki/ACME Inc?action=delete' );
+			} finally {
+				vi.stubGlobal( 'location', realLocation );
+			}
 
-			expect( wentTo ).toBe( '/wiki/ACME Inc?action=delete' );
 			expect( wrapper.findComponent( SummaryAction ).exists() ).toBe( false );
 			expect( deleteSubject ).not.toHaveBeenCalled();
 		} );

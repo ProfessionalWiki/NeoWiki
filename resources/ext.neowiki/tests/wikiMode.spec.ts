@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { isSubjectFirst } from '@/presentation/wikiMode';
-import { setupMwMock } from '../VueTestHelpers';
+import { isSubjectFirst } from '@/wikiMode';
+import { setupMwMock } from './VueTestHelpers';
 
 describe( 'isSubjectFirst', () => {
 

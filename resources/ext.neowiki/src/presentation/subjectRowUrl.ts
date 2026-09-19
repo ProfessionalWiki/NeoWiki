@@ -5,5 +5,10 @@
  * the wiki's URL style.
  */
 export function subjectRowUrl( pageName: string, subjectId: string ): string {
-	return mw.util.getUrl( pageName, { action: 'subjects' } ) + '#' + subjectId;
+	return dataTabUrl( pageName ) + '#' + subjectId;
+}
+
+/** The Data tab of a page. */
+export function dataTabUrl( pageName: string ): string {
+	return mw.util.getUrl( pageName, { action: 'subjects' } );
 }

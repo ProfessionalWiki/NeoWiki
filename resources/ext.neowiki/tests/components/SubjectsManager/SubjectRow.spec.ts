@@ -283,9 +283,9 @@ describe( 'SubjectRow', () => {
 				.not.toContain( 'open' );
 		} );
 
-		// The Data tab of a page-first wiki is about the page, so the name is not a way out of it,
-		// while the menu still offers the one Subject to whoever wants it.
-		it( 'leaves the name plain text on a page-first wiki, and still offers the page', () => {
+		// A surface about the page the reader already has open says not to link the name; the menu
+		// still offers the one Subject to whoever wants it.
+		it( 'leaves the name plain text where the surface says not to link it, still offering it', () => {
 			const wrapper = mountRow( { subjectPageUrl: URL } );
 
 			expect( wrapper.find( NAME_LINK ).exists() ).toBe( false );
@@ -323,7 +323,7 @@ describe( 'SubjectRow', () => {
 		// A reader of these rows is browsing Subjects, so a relation leads to its target's own page
 		// rather than to the page storing it, which is about another Subject whenever the target is
 		// not that page's Main Subject.
-		it( 'leads to the target Subject\'s own page on a subject-first wiki', () => {
+		it( 'leads to the target Subject itself on a subject-first wiki', () => {
 			const wrapper = mountRowRelatingToTarget( true );
 
 			expect( wrapper.find( RELATION_LINK ).attributes( 'href' ) )

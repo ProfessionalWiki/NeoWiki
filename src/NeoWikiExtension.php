@@ -1159,7 +1159,7 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Whether the Subject rather than the page is the entity this wiki is about (ADR 33), combining
+	 * Whether this wiki puts Subjects before pages (ADR 33), combining
 	 * the on-wiki configuration page with $wgNeoWikiSubjectFirst (the page wins when it sets a valid
 	 * boolean).
 	 */

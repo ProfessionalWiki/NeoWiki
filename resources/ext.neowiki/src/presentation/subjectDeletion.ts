@@ -1,12 +1,6 @@
 import type { PageIdentifiers } from '@/domain/PageIdentifiers';
-import { isSubjectFirst } from '@/presentation/wikiMode';
-
-/**
- * How many Subjects a page holds, answered however cheaply the caller can: a surface listing them
- * knows already, one showing a single Subject has to read them. Asked only where the answer decides
- * something, so a page-first wiki never pays for it.
- */
-export type PageSubjectCounter = ( pageId: number ) => Promise<number>;
+import type { SubjectRepository } from '@/domain/SubjectRepository';
+import { isSubjectFirst } from '@/wikiMode';
 
 /**
  * MediaWiki's delete form for the page a Subject is stored on, where deleting that Subject means
@@ -17,18 +11,23 @@ export type PageSubjectCounter = ( pageId: number ) => Promise<number>;
  * That form is the confirmation and the permission boundary both — a user without `delete` is
  * refused there, in MediaWiki's own words — which is why nothing here asks about the right.
  *
- * A null page is a Subject whose page the read did not resolve, which this cannot answer for.
+ * The page is read again rather than counted from whatever the surface has: a listing drawn minutes
+ * ago can be missing a Subject somebody else added since, and a page that is no longer down to its
+ * last one must not be offered for deletion. A null page is a Subject whose page the read did not
+ * resolve, which this cannot answer for.
  */
 export async function pageDeleteFormUrl(
 	page: PageIdentifiers | null,
-	countSubjectsOnPage: PageSubjectCounter,
+	subjectLookup: Pick<SubjectRepository, 'getPageSubjects'>,
 ): Promise<string | null> {
 	if ( !isSubjectFirst() || page === null || page.getPageName() === '' ) {
 		return null;
 	}
 
 	try {
-		if ( await countSubjectsOnPage( page.getPageId() ) !== 1 ) {
+		const { pageSubjects } = await subjectLookup.getPageSubjects( page.getPageId() );
+
+		if ( pageSubjects.getSubjects().length !== 1 ) {
 			return null;
 		}
 	} catch ( error ) {

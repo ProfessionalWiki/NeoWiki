@@ -33,6 +33,7 @@ function labellessSubject( id: string, displayName: string, generated: boolean )
 }
 
 const loadPageSubjectsMock = vi.fn().mockResolvedValue( undefined );
+const getPageSubjectsRepoMock = vi.fn();
 const deleteSubjectMock = vi.fn().mockResolvedValue( undefined );
 const setPageMainSubjectMock = vi.fn().mockResolvedValue( undefined );
 let storeSubjects: Subject[] = [];
@@ -142,7 +143,11 @@ async function mountPage( subjectFirst = false ): Promise<VueWrapper> {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
 			provide: {
-				[ Service.SubjectRepository ]: { getSubjectForEditing: getSubjectForEditingRepoMock },
+				[ Service.SubjectRepository ]: {
+					getSubjectForEditing: getSubjectForEditingRepoMock,
+					// What the delete routing reads to see whether the page is down to its last Subject.
+					getPageSubjects: getPageSubjectsRepoMock,
+				},
 				[ Service.SchemaRepository ]: { getSchema: getSchemaRepoMock },
 			},
 			// The row and the delete dialog are this page's own building blocks rather than collaborators
@@ -630,9 +635,9 @@ describe( 'SubjectsManagerPage move action', () => {
 		const wrapper = await mountPage();
 
 		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 0 );
-		for ( const menu of wrapper.findAllComponents( CdxMenuButton ) ) {
-			expect( menu.props( 'menuItems' ).map( ( item ) => item.value ) ).not.toContain( 'move' );
-		}
+		expect( wrapper.findAllComponents( CdxMenuButton )
+			.flatMap( ( menu ) => menu.props( 'menuItems' ).map( ( item ) => item.value ) ) )
+			.not.toContain( 'move' );
 	} );
 
 	// A subject-first wiki gives every Subject a page of its own, so moving one between pages would
@@ -641,9 +646,9 @@ describe( 'SubjectsManagerPage move action', () => {
 		const wrapper = await mountPage( true );
 
 		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 0 );
-		for ( const menu of wrapper.findAllComponents( CdxMenuButton ) ) {
-			expect( menu.props( 'menuItems' ).map( ( item ) => item.value ) ).not.toContain( 'move' );
-		}
+		expect( wrapper.findAllComponents( CdxMenuButton )
+			.flatMap( ( menu ) => menu.props( 'menuItems' ).map( ( item ) => item.value ) ) )
+			.not.toContain( 'move' );
 	} );
 
 	it( 'opens the move dialog on the row that asked for it', async () => {
@@ -745,7 +750,6 @@ describe( 'SubjectsManagerPage subject creator', () => {
 describe( 'SubjectsManagerPage delete flow', () => {
 	let reloadMock: ReturnType<typeof vi.fn>;
 	let deleteSubjectRepoMock: ReturnType<typeof vi.fn>;
-	let getPageSubjectsRepoMock: ReturnType<typeof vi.fn>;
 
 	beforeEach( () => {
 		// Real Pinia-backed SubjectStore for this describe (see the useRealSubjectStore comment
@@ -761,7 +765,7 @@ describe( 'SubjectsManagerPage delete flow', () => {
 		// Serves the mount's own loadSubjects() call. Tests that need to inspect the post-delete
 		// re-sync window queue a one-time override (mockReturnValueOnce) for the second call
 		// *after* mounting, so this default only ever serves the first (mount) call.
-		getPageSubjectsRepoMock = vi.fn().mockResolvedValue( {
+		getPageSubjectsRepoMock.mockReset().mockResolvedValue( {
 			pageSubjects: new PageSubjects( PAGE_ID, null, [ subject( ID_A ) ] ),
 			referencedSubjects: [],
 			schemas: [],

@@ -39,7 +39,7 @@
 				</template>
 				<span class="ext-neowiki-subject-row__title">
 					<a
-						v-if="titleIsLinked && subjectPageUrl !== null"
+						v-if="linkTitle && subjectPageUrl !== null"
 						class="ext-neowiki-subject-row__name"
 						:href="subjectPageUrl"
 						@click.stop
@@ -80,7 +80,7 @@
 				</span>
 				<span class="ext-neowiki-subject-row__actions">
 					<CdxButton
-						v-if="!titleIsLinked && subjectPageUrl !== null"
+						v-if="!linkTitle && subjectPageUrl !== null"
 						class="ext-neowiki-subject-row__open"
 						weight="quiet"
 						:aria-label="$i18n( 'neowiki-managesubjects-row-open' ).text()"
@@ -246,10 +246,7 @@ import {
 import { Subject } from '@/domain/Subject.ts';
 import type { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { subjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
-// Aliased: `subjectPageUrl` is a prop of this row.
-import { subjectPageUrl as subjectPageUrlOf } from '@/presentation/subjectPageUrl.ts';
-import { subjectRowUrl } from '@/presentation/subjectRowUrl.ts';
-import { isSubjectFirst } from '@/presentation/wikiMode.ts';
+import { subjectLinkUrlFromRow } from '@/presentation/subjectLinks.ts';
 import { RelationTargetUrlKey } from '@/components/Value/ValueDisplayContract.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
@@ -276,9 +273,8 @@ const props = withDefaults( defineProps<{
 	 */
 	subjectPageUrl?: string | null;
 	/**
-	 * Links the name to that page whatever the wiki's mode, for a surface that is about Subjects
-	 * either way — Special:Subject is one. Left off, the mode answers it, so a page-first wiki's
-	 * Data tab, which is about the page the reader has open, leaves the name plain text (ADR 33).
+	 * Whether the name links to that page. Left off, it stays plain text and the inline strip
+	 * carries the way there instead: a surface about the page the reader already has open says so.
 	 */
 	linkTitle?: boolean;
 	/**
@@ -344,19 +340,9 @@ const emit = defineEmits<{
 // whichever surface mounts the row: the Data tab's action and Special:Subject alike.
 const rdfProjections = ( mw.config.get( 'wgNeoWikiRdfProjections' ) as string[] | null ) ?? [];
 
-// The wiki's mode, read once: it cannot change while the row is mounted.
-const subjectFirst = isSubjectFirst();
-
-const titleIsLinked = computed( (): boolean => props.linkTitle || subjectFirst );
-
-// A reader of these rows is browsing Subjects, so a relation in one leads to the target itself
-// rather than to the page storing it, on every surface that mounts the row. On a page-first wiki
-// that page is where the target is read, so the relation leads to the target's row on its Data tab
-// (ADR 33).
-provide( RelationTargetUrlKey, ( target ) =>
-	subjectFirst ?
-		subjectPageUrlOf( target.getId().text ) :
-		subjectRowUrl( target.getPageIdentifiers().getPageName(), target.getId().text ) );
+// A reader of these rows is browsing Subjects, so a relation in one leads where a link from a row
+// leads, on every surface that mounts the row.
+provide( RelationTargetUrlKey, subjectLinkUrlFromRow );
 
 const displayName = computed( () => subjectDisplayName( props.subject ) );
 const schemaName = computed( () => schemaNameToShow( props.subject ) );

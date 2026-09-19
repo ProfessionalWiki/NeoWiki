@@ -148,7 +148,7 @@ import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
-import { isSubjectFirst } from '@/presentation/wikiMode.ts';
+import { isSubjectFirst } from '@/wikiMode.ts';
 import { reachableTargetIds, writeOrder } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 import type { HeldSubject } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 

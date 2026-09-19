@@ -8,7 +8,7 @@ import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SubjectWriteResult } from '@/domain/SubjectRepository.ts';
-import { isSubjectFirst } from '@/presentation/wikiMode.ts';
+import { isSubjectFirst } from '@/wikiMode.ts';
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError.ts';
 
 /**
@@ -99,15 +99,7 @@ export const useSubjectStore = defineStore( 'subject', {
 		 */
 		async createSubject( subject: Subject, pageId: number, comment?: string ): Promise<SubjectId> {
 			if ( isSubjectFirst() ) {
-				const created = await this.createSubjectOnOwnPage(
-					subject.getLabel(),
-					subject.getSchemaName(),
-					subject.getStatements(),
-					subject.getId(),
-					comment,
-				);
-
-				return created.subjectId;
+				return ( await this.createSubjectOnOwnPage( subject, comment ) ).subjectId;
 			}
 
 			return this.createOtherSubject(
@@ -229,7 +221,12 @@ export const useSubjectStore = defineStore( 'subject', {
 		 * For the wikis that ask which page a Subject goes on: they report the clash at the question
 		 * instead, which is where the user can answer it.
 		 */
-		async createSubjectOnOwnPage( label: string | null, schemaName: SchemaName, statements: StatementList, id: SubjectId, comment?: string ): Promise<CreatedSubjectPage> {
+		async createSubjectOnOwnPage( subject: Subject, comment?: string ): Promise<CreatedSubjectPage> {
+			const label = subject.getLabel();
+			const schemaName = subject.getSchemaName();
+			const statements = subject.getStatements();
+			const id = subject.getId();
+
 			try {
 				return await this.createSubjectPage( label, schemaName, statements, comment, undefined, id );
 			} catch ( error ) {

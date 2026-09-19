@@ -1014,7 +1014,9 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( ( subjectStore.createSubjectPage as any ).mock.calls[ 1 ][ 4 ] ).toBe( MINTED_ID );
+				expect( subjectStore.createSubjectPage ).toHaveBeenNthCalledWith(
+					2, 'Amsterdam', SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, MINTED_ID, new SubjectId( MINTED_ID ),
+				);
 				expect( wrapper.text() ).not.toContain( 'neowiki-subject-creator-page-taken' );
 				expect( location.href ).toBe( '/wiki/Special:Subject/' + CREATED_PAGE_SUBJECT_ID );
 			} );
