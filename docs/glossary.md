@@ -81,14 +81,14 @@ Each Relation has
 
 ## Page-first wiki
 
-A wiki in which the page is the entity and Subjects describe it. People arrive on pages, links lead to pages, and a
-new Subject goes onto the page it was created from. The kind is a wiki-level choice
-([ADR 33](adr/033-page-first-and-subject-first-wikis.md)); this is the default.
+A wiki where the page comes first: a page is about one thing, and its Subjects hold data about it. Links lead to
+pages, and a new Subject goes on the page you create it from. This is the default.
 
 ## Subject-first wiki
 
-A wiki in which the Subject is the entity and the page is only where it is stored. A new Subject gets a page of its
-own, and links lead to the Subject itself (`Special:Subject`) rather than to a page.
+A wiki where the Subject comes first: each new Subject gets its own page, and that page only stores it. Links lead
+to the Subject (`Special:Subject`), not to its page. A wiki-level setting turns this on
+([ADR 33](adr/033-page-first-and-subject-first-wikis.md)).
 
 ## Source
 

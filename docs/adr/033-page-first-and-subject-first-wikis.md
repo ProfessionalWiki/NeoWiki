@@ -6,8 +6,8 @@ Status: Draft
 
 ## Context
 
-NeoWiki serves two kinds of wiki. In one the page is the entity and Subjects annotate it, as in Semantic MediaWiki
-or BlueSpice; in the other the Subject is the entity and the page is only where it is stored, as in Wikibase, and
+NeoWiki serves two kinds of wiki. In one the page comes first and Subjects hold data about it, as in Semantic
+MediaWiki or BlueSpice; in the other the Subject comes first and the page only stores it, as in Wikibase, and
 people create and view Subjects without caring about pages. User testing showed both kinds, and they want different
 answers to the same two questions: where a new Subject goes, and where a link to a Subject leads.
 
@@ -39,7 +39,7 @@ an explicit `page=` on `{{#create_subject}}`, and pages holding several Subjects
 * The Data tab as default view, a namespace for id-titled pages, generated labels, and per-schema or per-user
   overrides are separate decisions.
 
-## Open questions
+## Open question
 
 Under review; the decision above is the starting point.
 
@@ -48,6 +48,3 @@ Under review; the decision above is the starting point.
   behind. The alternative is the id as the title, as Wikibase does: uniform titles, no namesake handling, renames
   and moves refused as an invariant, at the cost of every MediaWiki surface that prints a title showing the id
   unless link rendering and display titles are hooked.
-- **Whether a subject-first wiki holds one Subject per page**, refusing a second at the write path. Qualified
-  values are modelled as further Subjects on the referring page, which argues against, or for a per-Schema
-  override.

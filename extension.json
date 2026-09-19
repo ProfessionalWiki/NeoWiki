@@ -253,7 +253,7 @@
 			"value": null
 		},
 		"NeoWikiSubjectFirst": {
-			"description": "Whether Subjects, rather than pages, are the entities this wiki is about. False by default, which is page-first: a new Subject goes on the page it was created from, and links to Subjects lead to pages. True makes it subject-first: a new Subject gets a page of its own, and links lead to Special:Subject. See https://neowiki.ai/docs/operations/installation#choosing-page-first-or-subject-first",
+			"description": "Whether this wiki puts Subjects before pages. False by default, which is page-first: a new Subject goes on the page it was created from, and links to Subjects lead to pages. True makes it subject-first: a new Subject gets a page of its own, and links lead to Special:Subject. See https://neowiki.ai/docs/operations/installation#choosing-page-first-or-subject-first",
 			"value": false
 		},
 		"NeoWikiAutoRebuildOnMappingChange": {
