@@ -195,6 +195,7 @@ subject-first. It can also be set on `MediaWiki:NeoWiki` as `subjectFirst`
 | Links to Subjects on the Data tab | relation values lead to the target page's Data tab with the row highlighted; the row title is not a link; "Open" leads to Special:Subject | Special:Subject |
 | Concept URI in a browser | the page | Special:Subject |
 | "Move" on the Data tab | offered | not offered |
+| Deleting a Subject that is its page's only one | the Subject goes, the page stays | the page goes with it |
 
 The mode changes defaults, landing surfaces and link targets only. The REST API, parser-function parameters such as
 an explicit `page=` on `{{#create_subject}}`, and pages holding several Subjects are the same in both.

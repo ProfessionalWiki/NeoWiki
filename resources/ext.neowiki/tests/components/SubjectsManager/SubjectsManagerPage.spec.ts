@@ -125,6 +125,9 @@ async function mountPage( subjectFirst = false ): Promise<VueWrapper> {
 			wgNeoWikiRdfProjections: [],
 			wgNeoWikiSubjectIriBase: '',
 			wgNeoWikiSubjectFirst: subjectFirst,
+			// Every real view of this tab carries it, and the page it names is the one a deletion
+			// that empties it would take with it.
+			wgPageName: 'Test_Page',
 		},
 	} );
 
@@ -808,6 +811,37 @@ describe( 'SubjectsManagerPage delete flow', () => {
 		);
 		expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-managesubjects-delete-success', { type: 'success' } );
 		expect( reloadMock ).not.toHaveBeenCalled();
+	} );
+
+	// A subject-first wiki's page exists to hold its Subject, so the last one leaving takes the page
+	// with it — and MediaWiki's own form is what confirms that and checks the right.
+	it( 'leaves for the page\'s delete form when the Subject is the only one on it', async () => {
+		const wrapper = await mountPage( true );
+
+		await wrapper.find( '[aria-label="neowiki-managesubjects-row-delete"]' ).trigger( 'click' );
+		await flushPromises();
+
+		expect( location.href ).toBe( '/wiki/Test Page?action=delete' );
+		expect( wrapper.findComponent( SummaryAction ).exists() ).toBe( false );
+		expect( deleteSubjectRepoMock ).not.toHaveBeenCalled();
+	} );
+
+	it( 'deletes the Subject alone where its page holds others, which outlive it', async () => {
+		getPageSubjectsRepoMock.mockResolvedValue( {
+			pageSubjects: new PageSubjects( PAGE_ID, null, [ subject( ID_A ), subject( ID_B ) ] ),
+			referencedSubjects: [],
+			schemas: [],
+		} );
+		const wrapper = await mountPage( true );
+
+		await wrapper.find( '[aria-label="neowiki-managesubjects-row-delete"]' ).trigger( 'click' );
+		wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'cleanup' );
+		await flushPromises();
+
+		expect( deleteSubjectRepoMock ).toHaveBeenCalledWith(
+			expect.objectContaining( { text: ID_A } ),
+			'cleanup',
+		);
 	} );
 
 	it( 'renders the row without the Unknown-subject throw while the post-delete re-sync is in flight, then removes it', async () => {

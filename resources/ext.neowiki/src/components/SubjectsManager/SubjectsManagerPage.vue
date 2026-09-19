@@ -196,7 +196,9 @@ import { subjectRowDomId, subjectIdFromHash } from '@/presentation/subjectRowAnc
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
 import { isSubjectFirst } from '@/presentation/wikiMode.ts';
+import { pageDeleteFormUrl } from '@/presentation/subjectDeletion.ts';
 import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
+import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { Subject } from '@/domain/Subject';
 import { Schema } from '@/domain/Schema';
 import { SubjectId } from '@/domain/SubjectId';
@@ -536,7 +538,18 @@ function onSubjectMoved( targetTitle: string ): void {
 	);
 }
 
-function confirmDelete( subject: Subject ): void {
+async function confirmDelete( subject: Subject ): Promise<void> {
+	// This tab is about one page and holds its listing already, so both answers cost nothing here.
+	const deleteForm = await pageDeleteFormUrl(
+		new PageIdentifiers( pageId, currentPageTitle ),
+		() => Promise.resolve( subjects.value.length )
+	);
+
+	if ( deleteForm !== null ) {
+		window.location.href = deleteForm;
+		return;
+	}
+
 	deletingSubject.value = subject;
 	deleteConfirmOpen.value = true;
 }

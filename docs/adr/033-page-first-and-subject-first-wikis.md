@@ -26,6 +26,7 @@ It governs exactly these behaviours:
 | Search hits and Go | the page | Special:Subject |
 | Concept URI in a browser | the page | Special:Subject |
 | "Move" on the Data tab | offered | not offered |
+| Deleting a Subject that is its page's only one | the Subject goes, the page stays | the page goes with it |
 | Picker disambiguation line | page title, id on collision | id only |
 
 The mode changes defaults, landing surfaces and link targets only. The REST API, parser-function parameters such as
@@ -50,4 +51,3 @@ Under review; the decision above is the starting point.
 - **Whether a subject-first wiki holds one Subject per page**, refusing a second at the write path. Qualified
   values are modelled as further Subjects on the referring page, which argues against, or for a per-Schema
   override.
-- **Whether deleting a Subject deletes its page** in a subject-first wiki, when it was the page's only Subject.

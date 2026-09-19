@@ -116,6 +116,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
+import { pageDeleteFormUrl } from '@/presentation/subjectDeletion.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -434,9 +435,24 @@ const deletingSubject = shallowRef<Subject | null>( null );
 const deletingSubjectName = computed( () =>
 	deletingSubject.value === null ? '' : subjectDisplayName( deletingSubject.value ) );
 
-function confirmDelete( target: Subject ): void {
+async function confirmDelete( target: Subject ): Promise<void> {
+	const deleteForm = await pageDeleteFormUrl( pageOf( target ), countSubjectsOnPage );
+
+	if ( deleteForm !== null ) {
+		window.location.href = deleteForm;
+		return;
+	}
+
 	deletingSubject.value = target;
 	deleteConfirmOpen.value = true;
+}
+
+// Read on the click rather than with the page: only a delete on a subject-first wiki asks, and only
+// about the one page the row acted on names.
+async function countSubjectsOnPage( pageId: number ): Promise<number> {
+	const { pageSubjects } = await subjectRepo.getPageSubjects( pageId );
+
+	return pageSubjects.getSubjects().length;
 }
 
 async function executeDelete( comment: string ): Promise<void> {
