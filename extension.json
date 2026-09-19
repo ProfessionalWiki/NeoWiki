@@ -214,7 +214,7 @@
 			"value": false
 		},
 		"NeoWikiEnableInWikiConfig": {
-			"description": "Whether NeoWiki settings may also be set on the MediaWiki:NeoWiki JSON configuration page, which requires the editinterface and editsitejson rights to edit. When false, that page is never given the JSON content model, validated, or read, so only LocalSettings.php applies. The page exposes NeoWikiDereferenceSubjectsToHostingPage and NeoWikiAutoRenderMainSubject; its values take precedence over LocalSettings.php.",
+			"description": "Whether NeoWiki settings may also be set on the MediaWiki:NeoWiki JSON configuration page, which requires the editinterface and editsitejson rights to edit. When false, that page is never given the JSON content model, validated, or read, so only LocalSettings.php applies. The page exposes NeoWikiSubjectFirst and NeoWikiAutoRenderMainSubject; its values take precedence over LocalSettings.php.",
 			"value": true
 		},
 		"NeoWikiEnableLua": {
@@ -252,8 +252,8 @@
 			"description": "Base URI under which the RDF export mints all NeoWiki IRIs (entity, property, schema, page, etc.). When null, defaults to the wiki's canonical URL ($wgCanonicalServer). Wiki-level on purpose, so sibling projections describe the same entities with identical IRIs.",
 			"value": null
 		},
-		"NeoWikiDereferenceSubjectsToHostingPage": {
-			"description": "Whether a browser dereferencing a Subject's concept URI (Accept: text/html) is sent to the plain page the Subject is stored on. False by default, which sends it to Special:Subject, the view of that one Subject.",
+		"NeoWikiSubjectFirst": {
+			"description": "Whether this wiki puts Subjects before pages. False by default, which is page-first: a new Subject goes on the page it was created from, and links to Subjects lead to pages. True makes it subject-first: a new Subject gets a page of its own, and links lead to Special:Subject. See https://neowiki.ai/docs/operations/installation#choosing-page-first-or-subject-first",
 			"value": false
 		},
 		"NeoWikiAutoRebuildOnMappingChange": {
@@ -650,6 +650,7 @@
 				"neowiki-subject-creator-page-has-main-subject",
 				"neowiki-subject-creator-page-title-field",
 				"neowiki-subject-creator-page-title-help",
+				"neowiki-subject-creator-page-title-required",
 				"neowiki-subject-creator-page-title-invalid",
 				"neowiki-subject-creator-page-taken",
 				"neowiki-subject-creator-page-taken-fixed",

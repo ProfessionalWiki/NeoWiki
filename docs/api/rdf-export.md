@@ -18,7 +18,6 @@ For an end-to-end example comparing the native and ontology-mapped output, see t
 | Setting | Default | Purpose |
 |---|---|---|
 | `$wgNeoWikiRdfBaseUri` | the wiki's canonical URL (`$wgCanonicalServer`) | Base URI under which all NeoWiki IRIs are minted. |
-| `$wgNeoWikiDereferenceSubjectsToHostingPage` | `false` | When `true`, sends a browser dereferencing a Subject IRI to the Subject's hosting page instead of to `Special:Subject`. |
 
 ## IRI scheme
 
@@ -149,11 +148,11 @@ content-negotiates it and answers `303 See Other` with an absolute `Location`:
 |---|---|
 | `application/trig` | the Subject's TriG RDF (`.../subject/{id}/rdf?format=trig`) |
 | `text/turtle` | the Subject's Turtle RDF (`.../subject/{id}/rdf?format=turtle`) |
-| `text/html`, `*/*`, absent, anything else | `Special:Subject/{id}` |
+| `text/html`, `*/*`, absent, anything else | the Subject's hosting page in a page-first wiki, `Special:Subject/{id}` in a subject-first one |
 
 TriG wins when both RDF types are acceptable; the RDF redirects use the native projection.
 
-When `$wgNeoWikiDereferenceSubjectsToHostingPage` is `true`, the HTML target is the Subject's hosting page instead.
+The mode is the wiki operator's choice; see [Choosing page-first or subject-first](../operations/installation.md#choosing-page-first-or-subject-first).
 
 The negotiator is always reachable at the REST path, which needs no server configuration:
 

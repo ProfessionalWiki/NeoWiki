@@ -33,6 +33,7 @@ function labellessSubject( id: string, displayName: string, generated: boolean )
 }
 
 const loadPageSubjectsMock = vi.fn().mockResolvedValue( undefined );
+const getPageSubjectsRepoMock = vi.fn();
 const deleteSubjectMock = vi.fn().mockResolvedValue( undefined );
 const setPageMainSubjectMock = vi.fn().mockResolvedValue( undefined );
 let storeSubjects: Subject[] = [];
@@ -117,13 +118,17 @@ function rowFor( wrapper: VueWrapper, id: string ): VueWrapper {
 	return wrapper.find( '#' + subjectRowDomId( id ) ) as unknown as VueWrapper;
 }
 
-async function mountPage(): Promise<VueWrapper> {
+async function mountPage( subjectFirst = false ): Promise<VueWrapper> {
 	setupMwMock( {
 		functions: [ 'config', 'msg', 'message', 'notify', 'util' ],
 		config: {
 			wgNeoWikiManageSubjectsPageId: PAGE_ID,
 			wgNeoWikiRdfProjections: [],
 			wgNeoWikiSubjectIriBase: '',
+			wgNeoWikiSubjectFirst: subjectFirst,
+			// Every real view of this tab carries it, and the page it names is the one a deletion
+			// that empties it would take with it.
+			wgPageName: 'Test_Page',
 		},
 	} );
 
@@ -138,7 +143,11 @@ async function mountPage(): Promise<VueWrapper> {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
 			provide: {
-				[ Service.SubjectRepository ]: { getSubjectForEditing: getSubjectForEditingRepoMock },
+				[ Service.SubjectRepository ]: {
+					getSubjectForEditing: getSubjectForEditingRepoMock,
+					// What the delete routing reads to see whether the page is down to its last Subject.
+					getPageSubjects: getPageSubjectsRepoMock,
+				},
 				[ Service.SchemaRepository ]: { getSchema: getSchemaRepoMock },
 			},
 			// The row and the delete dialog are this page's own building blocks rather than collaborators
@@ -306,13 +315,23 @@ describe( 'SubjectsManagerPage rows and the Subject pages behind them', () => {
 		vi.restoreAllMocks();
 	} );
 
-	// The Data tab is the only place a reader can discover that a Subject has a page of its own.
-	it( 'links every row to that Subject\'s own page', async () => {
-		const wrapper = await mountPage();
+	// On a subject-first wiki the Data tab is a way into the Subjects it lists.
+	it( 'links every row to that Subject itself on a subject-first wiki', async () => {
+		const wrapper = await mountPage( true );
 
 		expect( wrapper.findAll( 'a.ext-neowiki-subject-row__name' )
 			.map( ( link ) => link.attributes( 'href' ) ) )
 			.toEqual( [ '/wiki/Special:Subject/' + ID_A, '/wiki/Special:Subject/' + ID_B ] );
+	} );
+
+	// A page-first wiki's Data tab is about the page the reader has open, so the names lead nowhere;
+	// the one Subject stays reachable through each row's overflow menu.
+	it( 'leaves every row\'s name plain text on a page-first wiki, still offering the Subject', async () => {
+		const wrapper = await mountPage();
+
+		expect( wrapper.findAll( 'a.ext-neowiki-subject-row__name' ) ).toHaveLength( 0 );
+		expect( wrapper.findComponent( CdxMenuButton ).props( 'menuItems' ).map( ( item ) => item.value ) )
+			.toContain( 'open' );
 	} );
 
 	// Every row is on the page the reader already has open, so naming it in each footer says nothing.
@@ -562,10 +581,10 @@ describe( 'SubjectsManagerPage move action', () => {
 		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 2 );
 	} );
 
-	// Copying a link changes nothing, so it leads; edit and promote change the row in place; move and
-	// delete take the row out of the listing, with delete last. The main row's pin is its indicator,
-	// outside the strip, and the Subject's own page is its name's link.
-	it( 'orders each row\'s inline actions copy-link, edit, promote, move, delete', async () => {
+	// Opening and copying a link change nothing, so they lead; edit and promote change the row in
+	// place; move and delete take the row out of the listing, with delete last. The main row's pin is
+	// its indicator, outside the strip.
+	it( 'orders each row\'s inline actions open, copy-link, edit, promote, move, delete', async () => {
 		const wrapper = await mountPage();
 
 		const strips = wrapper.findAll( '.ext-neowiki-subject-row__actions' )
@@ -573,12 +592,14 @@ describe( 'SubjectsManagerPage move action', () => {
 
 		expect( strips ).toEqual( [
 			[
+				'neowiki-managesubjects-row-open',
 				'neowiki-managesubjects-row-copy-link',
 				'neowiki-managesubjects-row-edit',
 				'neowiki-managesubjects-row-move',
 				'neowiki-managesubjects-row-delete',
 			],
 			[
+				'neowiki-managesubjects-row-open',
 				'neowiki-managesubjects-row-copy-link',
 				'neowiki-managesubjects-row-edit',
 				'neowiki-managesubjects-row-promote',
@@ -586,6 +607,13 @@ describe( 'SubjectsManagerPage move action', () => {
 				'neowiki-managesubjects-row-delete',
 			],
 		] );
+	} );
+
+	// On a subject-first wiki the name is the way to the Subject, so the strip leaves opening to it.
+	it( 'leaves opening out of the inline actions on a subject-first wiki', async () => {
+		const wrapper = await mountPage( true );
+
+		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-open"]' ) ).toHaveLength( 0 );
 	} );
 
 	it( 'orders the overflow menu the same way as the inline actions', async () => {
@@ -607,9 +635,20 @@ describe( 'SubjectsManagerPage move action', () => {
 		const wrapper = await mountPage();
 
 		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 0 );
-		for ( const menu of wrapper.findAllComponents( CdxMenuButton ) ) {
-			expect( menu.props( 'menuItems' ).map( ( item ) => item.value ) ).not.toContain( 'move' );
-		}
+		expect( wrapper.findAllComponents( CdxMenuButton )
+			.flatMap( ( menu ) => menu.props( 'menuItems' ).map( ( item ) => item.value ) ) )
+			.not.toContain( 'move' );
+	} );
+
+	// A subject-first wiki gives every Subject a page of its own, so moving one between pages would
+	// advertise a page model the wiki denies (ADR 33).
+	it( 'offers no move on a subject-first wiki, to anyone', async () => {
+		const wrapper = await mountPage( true );
+
+		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 0 );
+		expect( wrapper.findAllComponents( CdxMenuButton )
+			.flatMap( ( menu ) => menu.props( 'menuItems' ).map( ( item ) => item.value ) ) )
+			.not.toContain( 'move' );
 	} );
 
 	it( 'opens the move dialog on the row that asked for it', async () => {
@@ -711,7 +750,6 @@ describe( 'SubjectsManagerPage subject creator', () => {
 describe( 'SubjectsManagerPage delete flow', () => {
 	let reloadMock: ReturnType<typeof vi.fn>;
 	let deleteSubjectRepoMock: ReturnType<typeof vi.fn>;
-	let getPageSubjectsRepoMock: ReturnType<typeof vi.fn>;
 
 	beforeEach( () => {
 		// Real Pinia-backed SubjectStore for this describe (see the useRealSubjectStore comment
@@ -727,7 +765,7 @@ describe( 'SubjectsManagerPage delete flow', () => {
 		// Serves the mount's own loadSubjects() call. Tests that need to inspect the post-delete
 		// re-sync window queue a one-time override (mockReturnValueOnce) for the second call
 		// *after* mounting, so this default only ever serves the first (mount) call.
-		getPageSubjectsRepoMock = vi.fn().mockResolvedValue( {
+		getPageSubjectsRepoMock.mockReset().mockResolvedValue( {
 			pageSubjects: new PageSubjects( PAGE_ID, null, [ subject( ID_A ) ] ),
 			referencedSubjects: [],
 			schemas: [],
@@ -777,6 +815,37 @@ describe( 'SubjectsManagerPage delete flow', () => {
 		);
 		expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-managesubjects-delete-success', { type: 'success' } );
 		expect( reloadMock ).not.toHaveBeenCalled();
+	} );
+
+	// A subject-first wiki's page exists to hold its Subject, so the last one leaving takes the page
+	// with it — and MediaWiki's own form is what confirms that and checks the right.
+	it( 'leaves for the page\'s delete form when the Subject is the only one on it', async () => {
+		const wrapper = await mountPage( true );
+
+		await wrapper.find( '[aria-label="neowiki-managesubjects-row-delete"]' ).trigger( 'click' );
+		await flushPromises();
+
+		expect( location.href ).toBe( '/wiki/Test Page?action=delete' );
+		expect( wrapper.findComponent( SummaryAction ).exists() ).toBe( false );
+		expect( deleteSubjectRepoMock ).not.toHaveBeenCalled();
+	} );
+
+	it( 'deletes the Subject alone where its page holds others, which outlive it', async () => {
+		getPageSubjectsRepoMock.mockResolvedValue( {
+			pageSubjects: new PageSubjects( PAGE_ID, null, [ subject( ID_A ), subject( ID_B ) ] ),
+			referencedSubjects: [],
+			schemas: [],
+		} );
+		const wrapper = await mountPage( true );
+
+		await wrapper.find( '[aria-label="neowiki-managesubjects-row-delete"]' ).trigger( 'click' );
+		wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'cleanup' );
+		await flushPromises();
+
+		expect( deleteSubjectRepoMock ).toHaveBeenCalledWith(
+			expect.objectContaining( { text: ID_A } ),
+			'cleanup',
+		);
 	} );
 
 	it( 'renders the row without the Unknown-subject throw while the post-delete re-sync is in flight, then removes it', async () => {

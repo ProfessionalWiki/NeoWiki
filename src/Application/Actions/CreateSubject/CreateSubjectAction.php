@@ -4,8 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
-use InvalidArgumentException;
-use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\NewSubjectIdResolver;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
@@ -21,11 +20,8 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
-use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use RuntimeException;
 
@@ -34,16 +30,14 @@ readonly class CreateSubjectAction {
 	public function __construct(
 		private CreateSubjectPresenter $presenter,
 		private SubjectRepository $subjectRepository,
-		private IdGenerator $idGenerator,
+		private NewSubjectIdResolver $newSubjectIdResolver,
 		private PageReadAuthorizer $readAuthorizer,
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaResolver $schemaResolver,
 		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
-		private PageIdentifiersLookup $pageIdentifiersLookup,
 		private PageIdentifiersResolver $pageIdentifiersResolver,
-		private SubjectIdParser $subjectIdParser,
 		private bool $validationEnforced,
 	) {
 	}
@@ -68,7 +62,7 @@ readonly class CreateSubjectAction {
 
 		$subject = $this->buildSubject( $request, $schema );
 
-		if ( $request->id !== null && $this->subjectIdIsInUse( $subject->id ) ) {
+		if ( $request->id !== null && $this->newSubjectIdResolver->isInUse( $subject->id ) ) {
 			$this->presenter->presentSubjectAlreadyExists();
 			return;
 		}
@@ -131,26 +125,13 @@ readonly class CreateSubjectAction {
 	}
 
 	private function buildSubject( CreateSubjectRequest $request, ?Schema $schema ): Subject {
-		$schemaReference = $this->schemaReference( $request );
-		$label = SubjectLabel::fromText( $request->label );
-		$statements = $this->statementListBuilder->build(
-			$this->resolveSelectValues( $schema, $request->statements )
-		);
-
-		if ( $request->id === null ) {
-			return Subject::createNew(
-				idGenerator: $this->idGenerator,
-				label: $label,
-				schema: $schemaReference,
-				statements: $statements,
-			);
-		}
-
 		return new Subject(
-			id: $this->localId( $request->id ),
-			label: $label,
-			schema: $schemaReference,
-			statements: $statements,
+			id: $this->newSubjectIdResolver->resolve( $request->id ),
+			label: SubjectLabel::fromText( $request->label ),
+			schema: $this->schemaReference( $request ),
+			statements: $this->statementListBuilder->build(
+				$this->resolveSelectValues( $schema, $request->statements )
+			),
 		);
 	}
 
@@ -159,34 +140,6 @@ readonly class CreateSubjectAction {
 	 */
 	private function schemaReference( CreateSubjectRequest $request ): SchemaReference {
 		return SchemaReference::local( new SchemaName( $request->schemaName ) );
-	}
-
-	/**
-	 * A Subject is only ever created in the local Source, so a caller-supplied id must be a local one.
-	 *
-	 * @throws InvalidArgumentException
-	 */
-	private function localId( string $id ): SubjectId {
-		$subjectId = $this->subjectIdParser->parseOrThrow( $id );
-
-		if ( !$subjectId->isLocal() ) {
-			throw new InvalidArgumentException( "Subjects can only be created in the local Source: '$id'" );
-		}
-
-		return $subjectId;
-	}
-
-	/**
-	 * Best-effort global uniqueness check: the subject -> page index is read from a replica, so this
-	 * can miss a Subject another request just created; ID entropy carries the rest (same posture as
-	 * relation IDs).
-	 *
-	 * Reads the unfiltered index on purpose, not SubjectHostingPageResolver: a collision with a Subject
-	 * on a page the caller cannot read is still a collision, and a read-gated check would let a client
-	 * mint an id that shadows a hidden Subject.
-	 */
-	private function subjectIdIsInUse( SubjectId $id ): bool {
-		return $this->pageIdentifiersLookup->getPageIdOfSubject( $id ) !== null;
 	}
 
 	/**

@@ -47,6 +47,7 @@ function createWrapperWithValue(
 describe( 'RelationDisplay.vue', () => {
 	let mockGetSubject: ReturnType<typeof vi.fn>;
 	let mockGetUrl: ReturnType<typeof vi.fn>;
+	let wikiConfig: Record<string, unknown>;
 
 	beforeEach( () => {
 		mockGetSubject = vi.fn();
@@ -56,7 +57,11 @@ describe( 'RelationDisplay.vue', () => {
 		} as any );
 
 		mockGetUrl = vi.fn();
+		wikiConfig = {};
 		vi.stubGlobal( 'mw', {
+			config: {
+				get: ( key: string ) => wikiConfig[ key ],
+			},
 			util: {
 				getUrl: mockGetUrl,
 			},
@@ -85,9 +90,31 @@ describe( 'RelationDisplay.vue', () => {
 		expect( mockGetUrl ).toHaveBeenCalledWith( 'Page_Name_1' );
 	} );
 
-	// Where a relation leads is the host's to decide: a surface showing Subjects rather than pages
-	// sends it to the target's own page instead.
+	// Where a relation leads without a host to say otherwise follows the wiki's mode (ADR 33): the
+	// page the target is stored on where the page is the entity, the target itself where it is not.
+	it( 'links a relation to the target Subject itself on a subject-first wiki', async () => {
+		wikiConfig.wgNeoWikiSubjectFirst = true;
+		mockGetSubject.mockReturnValue( createSubject( 's1111111111111A', 'Test Subject 1', 'Page_Name_1' ) );
+		mockGetUrl.mockImplementation( ( title: string ) => '/wiki/' + title );
+
+		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111A' ) ) );
+
+		expect( wrapper.find( 'a' ).attributes( 'href' ) ).toBe( '/wiki/Special:Subject/s1111111111111A' );
+	} );
+
+	it( 'links a relation to the page the target is stored on on a page-first wiki', async () => {
+		wikiConfig.wgNeoWikiSubjectFirst = false;
+		mockGetSubject.mockReturnValue( createSubject( 's1111111111111A', 'Test Subject 1', 'Page_Name_1' ) );
+		mockGetUrl.mockImplementation( ( title: string ) => '/wiki/' + title );
+
+		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111A' ) ) );
+
+		expect( wrapper.find( 'a' ).attributes( 'href' ) ).toBe( '/wiki/Page_Name_1' );
+	} );
+
+	// A host that says where relations lead outranks the mode: it is showing Subjects, not pages.
 	it( 'links a relation where the host says, rather than to the target\'s page', () => {
+		wikiConfig.wgNeoWikiSubjectFirst = true;
 		mockGetSubject.mockReturnValue( createSubject( 's1111111111111A', 'Test Subject 1', 'Page_Name_1' ) );
 
 		const wrapper = createWrapperWithValue(
