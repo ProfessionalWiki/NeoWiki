@@ -22,6 +22,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualText;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
@@ -451,6 +453,53 @@ class SubjectDataLookupTest extends TestCase {
 		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $subject ) );
 
 		$this->assertSame( [ null ], $lookup->getAll( $this->createTitle(), 'City' ) );
+	}
+
+	public function testGetValueReturnsTheFirstTextOfAMonolingualTextValue(): void {
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $this->createSubject(
+			$this->monolingualTitleStatement()
+		) ) );
+
+		$this->assertSame( [ 'Zinema' ], $lookup->getValue( $this->createTitle(), 'Original title' ) );
+	}
+
+	public function testGetAllReturnsTheTextsOfAMonolingualTextValue(): void {
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $this->createSubject(
+			$this->monolingualTitleStatement()
+		) ) );
+
+		$this->assertSame(
+			[ [ 1 => 'Zinema', 2 => 'Cine' ] ],
+			$lookup->getAll( $this->createTitle(), 'Original title' )
+		);
+	}
+
+	public function testSubjectTableCarriesTheLanguageOfEachMonolingualTextPart(): void {
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $this->createSubject(
+			$this->monolingualTitleStatement()
+		) ) );
+
+		$result = $lookup->getMainSubjectData( $this->createTitle() );
+
+		$this->assertSame( 'monolingualText', $result[0]['statements']['Original title']['propertyType'] );
+		$this->assertSame(
+			[
+				1 => [ 'text' => 'Zinema', 'language' => 'eu' ],
+				2 => [ 'text' => 'Cine', 'language' => 'es' ],
+			],
+			$result[0]['statements']['Original title']['values']
+		);
+	}
+
+	private function monolingualTitleStatement(): Statement {
+		return new Statement(
+			new PropertyName( 'Original title' ),
+			'monolingualText',
+			new MonolingualTextValue(
+				new MonolingualText( 'Zinema', 'eu' ),
+				new MonolingualText( 'Cine', 'es' ),
+			)
+		);
 	}
 
 	// === getMainSubjectData tests ===

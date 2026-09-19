@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
@@ -78,7 +79,7 @@ readonly class StatementListBuilder {
 		// error: it would be stored as an object where every reader expects a list, and the graph
 		// projection cannot hold one. The value types cannot tell it apart from a list, so it is
 		// rejected before they see it.
-		if ( in_array( $valueType, [ ValueType::String, ValueType::Relation ], true )
+		if ( in_array( $valueType, [ ValueType::String, ValueType::Relation, ValueType::MonolingualText ], true )
 			&& is_array( $value ) && !array_is_list( $value ) ) {
 			throw new InvalidArgumentException(
 				"Value of \"{$propertyName}\" must be a list, not an object"
@@ -89,13 +90,7 @@ readonly class StatementListBuilder {
 		// arrives here as a TypeError. Every one of them comes from the caller's value, never from
 		// internal state, so they are reported as bad input rather than escaping as a server error.
 		try {
-			return match ( $valueType ) {
-				ValueType::String => new StringValue( ...(array)$value ),
-				ValueType::Number => new NumberValue( $value ),
-				ValueType::Relation => $this->deserializeRelationValue( $value ),
-				ValueType::Boolean => new BooleanValue( $value ),
-				ValueType::UnregisteredType => new UnregisteredTypeValue( $propertyType, $value ),
-			};
+			return $this->newValue( $valueType, $propertyType, $value );
 		} catch ( TypeError $e ) {
 			throw new InvalidArgumentException(
 				"Value of \"{$propertyName}\" does not fit property type \"{$propertyType}\"",
@@ -103,6 +98,17 @@ readonly class StatementListBuilder {
 				$e
 			);
 		}
+	}
+
+	private function newValue( ValueType $valueType, string $propertyType, mixed $value ): NeoValue {
+		return match ( $valueType ) {
+			ValueType::String => new StringValue( ...(array)$value ),
+			ValueType::Number => new NumberValue( $value ),
+			ValueType::Relation => $this->deserializeRelationValue( $value ),
+			ValueType::MonolingualText => MonolingualTextValue::fromScalars( $value ),
+			ValueType::Boolean => new BooleanValue( $value ),
+			ValueType::UnregisteredType => new UnregisteredTypeValue( $propertyType, $value ),
+		};
 	}
 
 	private function deserializeRelationValue( array $json ): RelationValue {

@@ -63,6 +63,7 @@ export * from './domain/propertyTypes/DateTime';
 export * from './domain/propertyTypes/dateTimeConversion';
 export * from './domain/propertyTypes/Date';
 export * from './domain/propertyTypes/dateConversion';
+export * from './domain/propertyTypes/MonolingualText';
 export * from './domain/propertyTypes/Number';
 export * from './domain/propertyTypes/Relation';
 export * from './domain/propertyTypes/Select';
@@ -142,6 +143,8 @@ export { default as DateTimeDisplay } from './components/Value/DateTimeDisplay.v
 export { default as DateTimeInput } from './components/Value/DateTimeInput.vue';
 export { default as DateDisplay } from './components/Value/DateDisplay.vue';
 export { default as DateInput } from './components/Value/DateInput.vue';
+export { default as MonolingualTextDisplay } from './components/Value/MonolingualTextDisplay.vue';
+export { default as MonolingualTextInput } from './components/Value/MonolingualTextInput.vue';
 export { default as NumberDisplay } from './components/Value/NumberDisplay.vue';
 export { default as NumberInput } from './components/Value/NumberInput.vue';
 export { default as RelationDisplay } from './components/Value/RelationDisplay.vue';

@@ -83,6 +83,7 @@ The PropertyType determines the value's Neo4j type:
 | `boolean` | boolean |
 | `date` | list of dates |
 | `dateTime` | list of datetimes |
+| `monolingualText` | list of `text@language` strings (`['Zinema@eu']`); split on the last `@` |
 | `relation` | stored as a [relationship](#typed-relations), not a node property |
 
 A Property Name that collides with a fixed property (`id`, `name`, `wiki_id`) does not override it: the fixed value

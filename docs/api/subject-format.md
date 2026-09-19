@@ -73,6 +73,7 @@ A property mapped to `null` instead of a Statement object is skipped when the JS
 | `number` | A single number (integer or float). |
 | `boolean` | A single boolean. |
 | `relation` | Array of [relation objects](#relations). |
+| `monolingualText` | Array of [monolingual text objects](#monolingual-text). |
 
 A multi-part `text` value:
 
@@ -80,7 +81,7 @@ A multi-part `text` value:
 { "propertyType": "text", "value": [ "First value", "Second value" ] }
 ```
 
-Every registered PropertyType uses one of these four `value` shapes. A `propertyType` whose PropertyType is not
+Every registered PropertyType uses one of these five `value` shapes. A `propertyType` whose PropertyType is not
 registered — its extension disabled — keeps the raw value that was stored
 ([`unregistered-type`](validation-codes.md#unregistered-type)).
 
@@ -115,6 +116,27 @@ With relation properties:
   }
 }
 ```
+
+### Monolingual text
+
+Each `monolingualText` value is an array of objects, one per value part:
+
+```json
+{
+  "propertyType": "monolingualText",
+  "value": [
+    { "text": "Zinema", "language": "eu" },
+    { "text": "Cine", "language": "es" }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `text` | string | Yes | The text. Stored trimmed; a part whose text is empty is dropped. |
+| `language` | string | Yes | BCP-47-shaped language tag (`^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$`, e.g. `eu`, `pt-BR`). Stored lowercase. |
+
+The same language may appear more than once. A `language` that does not match the pattern is rejected with `400`.
 
 ## IDs
 

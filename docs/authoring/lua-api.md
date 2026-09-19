@@ -56,6 +56,7 @@ The first value of the property, type-converted for Lua:
 | `number` | number |
 | `boolean` | boolean |
 | `relation` | string (the target Subject's display name, or its Subject ID when the target cannot be looked up) |
+| `monolingualText` | string (the text, without its language) |
 
 Returns `nil` when the Subject does not exist or its page is not readable (see
 [Permissions](#permissions)), has no value for the property, or the value is empty.
@@ -311,7 +312,7 @@ those are set. Beyond that core, the fields depend on `type`:
 
 | Property type | Always present | Present only when set |
 |---------------|----------------|------------------------|
-| `text` | `multiple`, `uniqueItems` | `minLength`, `maxLength` |
+| `text`, `monolingualText` | `multiple`, `uniqueItems` | `minLength`, `maxLength` |
 | `url` | `multiple`, `uniqueItems` | — |
 | `number` | — | `precision`, `minimum`, `maximum` |
 | `date`, `dateTime` | — | `minimum`, `maximum` |
@@ -385,6 +386,13 @@ structure:
         ['Status']       = { propertyType = 'select',   values = { [1] = 'Active' } },
         ['Websites']     = { propertyType = 'url',      values = { [1] = 'https://acme.com', [2] = 'https://acme.org' } },
         ['Active']       = { propertyType = 'boolean',  values = { [1] = true } },
+        ['Motto']        = {
+            propertyType = 'monolingualText',
+            values = {
+                [1] = { text = 'Onwards', language = 'en' },
+                [2] = { text = 'Vorwärts', language = 'de' },
+            },
+        },
         ['Products']     = {
             propertyType = 'relation',
             values = {
@@ -415,6 +423,7 @@ Notes:
   original type until they are re-saved.
 - A relation's `label` is the target's display name, and falls back to the target Subject ID when
   the target cannot be looked up at all (e.g. a broken reference).
+- Monolingual text keeps its languages here; `nw.getValue` and `nw.getAll` give the text alone.
 - Per-relation `properties` (qualifiers) are not currently exposed via Lua. Use the REST API if
   you need them.
 

@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
@@ -115,6 +116,10 @@ class NeoWikiValueParserFunction {
 
 		if ( $value instanceof RelationValue ) {
 			return $this->formatRelationValue( $value, $separator );
+		}
+
+		if ( $value instanceof MonolingualTextValue ) {
+			return implode( $separator, $value->getTexts() );
 		}
 
 		return '';

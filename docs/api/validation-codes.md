@@ -71,8 +71,8 @@ raising a Constraint's severity does not make an existing violation count as new
 
 A property declared `required: true` has no usable value. Fires when the Subject body has no
 Statement for the property, and when a Statement is present but its value is empty for its type:
-only whitespace (`text`, `date`, `dateTime`), no parts (`url`, `select`), no targets (`relation`),
-or no value at all (`number`, `boolean`).
+only whitespace (`text`, `date`, `dateTime`), no parts (`url`, `select`, `monolingualText`), no
+targets (`relation`), or no value at all (`number`, `boolean`).
 
 `args`: `[]`. `severity`: set by the `required` Constraint (default `warning`).
 
@@ -96,14 +96,17 @@ disallowed characters.
 
 ### `unique`
 
-On `text` and `url` properties with `uniqueItems` enabled: the value contains duplicate parts.
+On `text`, `url` and `monolingualText` properties with `uniqueItems` enabled: the value contains
+duplicate parts. On `monolingualText` a part duplicates another only when both its text and its
+language repeat.
 
 `args`: `[]`. `severity`: set by the `uniqueItems` Constraint (default `warning`).
 
 ### `min-length` / `max-length`
 
-On `text` properties. A part's trimmed length is below `minLength` or above `maxLength`. Empty
-parts are not length-checked.
+On `text` and `monolingualText` properties. A part's trimmed length — its text's, for
+`monolingualText` — is below `minLength` or above `maxLength`. Parts with no text are not
+length-checked.
 
 `args`: `[minLength]` / `[maxLength]`. `valuePartIndex`: the offending part. `severity`: set by the
 `minLength` / `maxLength` Constraint (default `warning`).
@@ -126,8 +129,8 @@ Constraint (default `warning`).
 
 ### `single-value-only`
 
-On single-valued (`multiple: false`) `select` and `relation` properties: more than one part
-(`select`) or relation target (`relation`) was supplied.
+On single-valued (`multiple: false`) `select`, `relation` and `monolingualText` properties: more than
+one part (`select`, `monolingualText`) or relation target (`relation`) was supplied.
 
 `args`: `[]`. `severity`: set by the `multiple` Constraint (default `warning`).
 

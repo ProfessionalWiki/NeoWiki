@@ -59,8 +59,8 @@ NeoWiki Statements are not equivalent to Wikibase Statements. The latter have a 
 Values have a type, for instance, `string`. This is called the **Value Type**. NeoWiki has a predefined list of
 these Value Types; each Property Type stores its values as one of them — a `url` property's value is a StringValue.
 
-String and Relation Values can hold multiple **parts**. For instance, a `url` property's value could be
-`["https://pro.wiki", "https://professional.wiki"]`.
+String, Relation and MonolingualText Values can hold multiple **parts**. For instance, a `url` property's value could
+be `["https://pro.wiki", "https://professional.wiki"]`.
 
 Value Types:
 
@@ -68,6 +68,8 @@ Value Types:
 - NumberValue, identified with `number`. A single number
 - BooleanValue, identified with `boolean`. A single boolean
 - RelationValue, identified with `relation`. A collection of Relations
+- MonolingualTextValue, identified with `monolingualText`. A collection of texts, each with the BCP 47 tag of the
+  language it is in ([ADR 34](adr/034-monolingual-text-value-type.md))
 - UnregisteredTypeValue, identified with `unregisteredType`. Holds a Statement's value unchanged while its
   Property Type is not registered on the wiki
 

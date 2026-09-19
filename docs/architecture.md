@@ -77,3 +77,4 @@ Every architectural decision on record, in the order it was made.
 * [ADR 30: Frontend Stores Are Registries, Not Caches](adr/030-frontend-store-registry-semantics.md)
 * [ADR 31: Optional Subject Labels](adr/031-optional-subject-labels.md)
 * [ADR 32: Subject-to-Page Index](adr/032-subject-page-index.md)
+* [ADR 34: Monolingual Text Value Type](adr/034-monolingual-text-value-type.md)
