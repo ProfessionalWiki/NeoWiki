@@ -325,6 +325,7 @@ const chosenPageMainSubjectName = ref<string | null>( null );
 const pageTitle = ref( '' );
 const titleTakenError = ref<string | null>( null );
 const invalidTitleError = ref<string | null>( null );
+const titleRequiredError = ref<string | null>( null );
 const pageReadError = ref<string | null>( null );
 
 // Which page the Subject goes on is asked below the Subject itself, and collapsed: the page it is
@@ -422,7 +423,8 @@ watch( pageChoice, () => {
 
 // One message per field: each of these belongs to a different page choice, so no two of them can
 // be standing at once.
-const pageTitleError = computed( (): string | null => titleTakenError.value ?? invalidTitleError.value );
+const pageTitleError = computed( (): string | null =>
+	titleTakenError.value ?? invalidTitleError.value ?? titleRequiredError.value );
 const pageError = computed( (): string | null => pageTitleError.value ?? pageReadError.value );
 
 // Answered, and answerable: a page still to be picked leaves the question open, and a page that
@@ -587,6 +589,7 @@ function resetPageChoice(): void {
 	pageTitle.value = '';
 	titleTakenError.value = null;
 	invalidTitleError.value = null;
+	titleRequiredError.value = null;
 	pageReadError.value = null;
 }
 
@@ -983,7 +986,7 @@ async function createOnNewPage(
 		// Where the page was never asked about, a label whose title is taken is not something the
 		// user can be sent back to answer, so the Subject takes the page its own id titles instead.
 		return await ( pageQuestionAsked.value ?
-			subjectStore.createSubjectPage( label, schemaName, statements, comment, chosenTitle ?? undefined, id ) :
+			createOnTitledPage( label, schemaName, statements, comment, chosenTitle, id ) :
 			subjectStore.createSubjectOnOwnPage( label, schemaName, statements, id, comment ) );
 	} catch ( error ) {
 		if ( error instanceof PageTitleTakenError ) {
@@ -1006,10 +1009,39 @@ async function createOnNewPage(
 	}
 }
 
+/**
+ * Creates the Subject on a page the caller named: the title typed, else the label. Where the page
+ * question is asked, the page is the entity, so a new one is never titled after a Subject id the
+ * way one nobody was asked about is — a Subject with neither title nor label is sent back to give
+ * one, before anything is written.
+ */
+function createOnTitledPage(
+	label: string | null,
+	schemaName: string,
+	statements: StatementList,
+	comment: string,
+	chosenTitle: string | null,
+	id: SubjectId
+): Promise<CreatedSubjectPage> {
+	// Re-decided on each attempt, so a label typed since the last one clears what it answered.
+	titleRequiredError.value = null;
+
+	const pageTitle = ( chosenTitle ?? label ?? '' ).trim();
+
+	if ( pageTitle === '' ) {
+		titleRequiredError.value = mw.msg( 'neowiki-subject-creator-page-title-required' );
+
+		return Promise.reject( new Error( titleRequiredError.value ) );
+	}
+
+	return subjectStore.createSubjectPage( label, schemaName, statements, comment, pageTitle, id );
+}
+
 // Retyping the title is the answer to a title the server refused, whichever way it refused it.
 function handlePageTitleInput(): void {
 	titleTakenError.value = null;
 	invalidTitleError.value = null;
+	titleRequiredError.value = null;
 }
 
 // A Subject the user drilled into from a relation exists already, so the editor updates it.
