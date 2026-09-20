@@ -68,6 +68,8 @@ class NeoWikiHooks {
 
 	private const SEARCH_UPDATE_BEFORE_1_44 = 'MediaWiki\\Deferred\\SearchUpdate';
 
+	private const string MAPPING_DOCUMENTATION_URL = 'https://neowiki.ai/docs/authoring/mapping-format';
+
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
 		$carriesCreateSubjectButton = self::carriesCreateSubjectButton( $out );
 
@@ -1018,11 +1020,16 @@ class NeoWikiHooks {
 		}
 	}
 
+	public static function onAlternateEdit( EditPage $editPage ): void {
+		self::frameConfigPageEdit( $editPage );
+		self::explainMappingPageEdit( $editPage );
+	}
+
 	/**
 	 * On the on-wiki configuration page, suppresses the default MediaWiki-namespace intro and frames the
 	 * JSON editor with a pointer to the documentation and the schema-generated configuration reference.
 	 */
-	public static function onAlternateEdit( EditPage $editPage ): void {
+	private static function frameConfigPageEdit( EditPage $editPage ): void {
 		$extension = NeoWikiExtension::getInstance();
 
 		if ( !$extension->isConfigPage( $editPage->getTitle() ) ) {
@@ -1034,6 +1041,23 @@ class NeoWikiHooks {
 		$builder = $extension->newConfigDocumentationBuilder( $editPage->getContext() );
 		$editPage->editFormTextTop = $builder->buildPointer();
 		$editPage->editFormTextBottom = $builder->buildReference();
+	}
+
+	/**
+	 * Points at the Mapping format documentation, since the raw JSON editor is currently the only way to
+	 * write a Mapping. Core's edit intro is left in place, so creating a Mapping page still shows that the
+	 * page does not exist yet.
+	 */
+	private static function explainMappingPageEdit( EditPage $editPage ): void {
+		if ( $editPage->getTitle()->getNamespace() !== NeoWikiExtension::NS_MAPPING ) {
+			return;
+		}
+
+		$editPage->editFormTextTop = Html::rawElement(
+			'div',
+			[ 'class' => 'ext-neowiki-mapping-docs-pointer' ],
+			$editPage->getContext()->msg( 'neowiki-mapping-docs-pointer', self::MAPPING_DOCUMENTATION_URL )->parse()
+		);
 	}
 
 	/**
