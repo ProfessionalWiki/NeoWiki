@@ -1,5 +1,5 @@
 import { VueWrapper } from '@vue/test-utils';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MonolingualTextInput from '@/components/Value/MonolingualTextInput.vue';
 import { type MonolingualTextValue, newMonolingualTextValue, ValueType } from '@/domain/Value';
 import {
@@ -79,6 +79,12 @@ describe( 'MonolingualTextInput', () => {
 			config: { wgUserLanguage: 'en', wgContentLanguage: 'en' },
 			languageNames: { en: 'English', eu: 'Basque', es: 'Spanish' },
 		} );
+		// jsdom reports a page without focus, which is the user being away in another tab.
+		vi.spyOn( document, 'hasFocus' ).mockReturnValue( true );
+	} );
+
+	afterEach( () => {
+		vi.restoreAllMocks();
 	} );
 
 	it( 'opens no row of its own on a single-valued property', () => {
@@ -297,6 +303,35 @@ describe( 'MonolingualTextInput', () => {
 		await leaveRow( wrapper, 0, null );
 
 		expect( textValues( wrapper ) ).toEqual( [ '' ] );
+	} );
+
+	it( 'drops a cleared row when focus leaves it for no other field', async () => {
+		const wrapper = newWrapper( {
+			modelValue: newMonolingualTextValue( [
+				{ text: 'Zinema', language: 'eu' },
+				{ text: 'Cine', language: 'es' },
+			] ),
+		} );
+
+		await textInputs( wrapper )[ 0 ].setValue( '' );
+		await leaveRow( wrapper, 0, null );
+
+		expect( textValues( wrapper ) ).toEqual( [ 'Cine', '' ] );
+	} );
+
+	it( 'keeps a cleared row while the user is away in another tab or application', async () => {
+		vi.spyOn( document, 'hasFocus' ).mockReturnValue( false );
+		const wrapper = newWrapper( {
+			modelValue: newMonolingualTextValue( [
+				{ text: 'Zinema', language: 'eu' },
+				{ text: 'Cine', language: 'es' },
+			] ),
+		} );
+
+		await textInputs( wrapper )[ 0 ].setValue( '' );
+		await leaveRow( wrapper, 0, null );
+
+		expect( textValues( wrapper ) ).toEqual( [ '', 'Cine', '' ] );
 	} );
 
 	it( 'keeps the trailing row the next part is typed into', async () => {

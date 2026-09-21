@@ -187,6 +187,10 @@ function onRowFocusOut( index: number, event: FocusEvent ): void {
 		return;
 	}
 
+	if ( userIsAway( event ) ) {
+		return;
+	}
+
 	if ( rowStays( index ) ) {
 		return;
 	}
@@ -200,6 +204,15 @@ function onRowFocusOut( index: number, event: FocusEvent ): void {
  */
 function focusStaysInRow( rowElement: HTMLElement, target: EventTarget | null ): boolean {
 	return target instanceof Node && rowElement.contains( target );
+}
+
+/**
+ * Whether focus left for another tab or application rather than for somewhere on the page. The row
+ * is kept for the user's return: they may be away copying the text it is waiting for, and dropping it
+ * would slide the next row, with its own language, into its place.
+ */
+function userIsAway( event: FocusEvent ): boolean {
+	return event.relatedTarget === null && !document.hasFocus();
 }
 
 /**
