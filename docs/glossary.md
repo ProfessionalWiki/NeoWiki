@@ -7,6 +7,8 @@ order: 1
 Definitions of NeoWiki terms. Concepts are capitalized. Used in the code and UI
 ([Ubiquitous Language](https://softwaresystemdesign.com/domain-driven-design/ubiquitous-language/)).
 
+![Page with a Main Subject shown as an infobox and a second Subject; callouts name the parts](page-with-subjects.svg)
+
 ## Page
 
 MediaWiki concept. Also known as "Wiki page".
@@ -89,6 +91,8 @@ pages, and a new Subject goes on the page you create it from. This is the defaul
 A wiki where the Subject comes first: each new Subject gets its own page, and that page only stores it. Links lead
 to the Subject (`Special:Subject`), not to its page. A wiki-level setting turns this on
 ([ADR 33](adr/033-page-first-and-subject-first-wikis.md)).
+
+![A Subject as Special:Subject shows it; callouts name its Label, Schema, ID and Statements](subject.svg)
 
 ## Source
 
