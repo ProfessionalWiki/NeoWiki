@@ -160,15 +160,12 @@ export function readerLanguageTags(): string[] {
 }
 
 /**
- * The parts to show a reader: the ones in the first of their languages that any part is in, or the
- * first part alone when they read none of them.
+ * The parts to show a reader: the ones in the first of their languages that any part is in, or,
+ * when they read none of them, the ones in the language of the first part.
  */
 export function partsForReader( parts: MonolingualText[], readerTags: string[] ): MonolingualText[] {
-	const readTag = readerTags.find( ( tag ) => parts.some( ( part ) => part.language === tag ) );
+	const shownTag = readerTags.find( ( tag ) => parts.some( ( part ) => part.language === tag ) ) ??
+		parts[ 0 ]?.language;
 
-	if ( readTag === undefined ) {
-		return parts.slice( 0, 1 );
-	}
-
-	return parts.filter( ( part ) => part.language === readTag );
+	return parts.filter( ( part ) => part.language === shownTag );
 }

@@ -44,8 +44,11 @@ describe( 'mediaWikiLanguages', () => {
 			] );
 		} );
 
-		it( 'gives the first part alone when the reader reads none of the languages', () => {
-			expect( partsForReader( parts, [ 'fr', 'nl' ] ) ).toEqual( [ { text: 'Kino', language: 'de' } ] );
+		it( 'gives every part in the first part\'s language when the reader reads none of the languages', () => {
+			expect( partsForReader( [ ...parts, { text: 'Film', language: 'de' } ], [ 'fr', 'nl' ] ) ).toEqual( [
+				{ text: 'Kino', language: 'de' },
+				{ text: 'Film', language: 'de' },
+			] );
 		} );
 
 		it( 'gives nothing when there are no parts', () => {

@@ -20,9 +20,9 @@ describe( 'MonolingualTextDisplay', () => {
 			config: { wgUserLanguage: userLanguage, wgContentLanguage: contentLanguage },
 			languageNames: { en: 'English', de: 'Deutsch', eu: 'euskara', es: 'español' },
 			messages: {
-				'neowiki-monolingual-text-display': ( text, language ) => `${ text } (${ language })`,
-				'neowiki-monolingual-text-other-languages': ( count ) => `+${ count }`,
-				'neowiki-monolingual-text-show-all': ( count ) => `Show all ${ count } languages`,
+				'neowiki-monolingual-text-more-languages': ( count ) =>
+					Number( count ) === 1 ? '1 more language' : `${ count } more languages`,
+				'neowiki-monolingual-text-fewer-languages': 'Fewer languages',
 			},
 		} );
 	}
@@ -43,68 +43,119 @@ describe( 'MonolingualTextDisplay', () => {
 	}
 
 	function shownTexts( wrapper: VueWrapper ): string[] {
-		return wrapper.findAll( '.ext-neowiki-monolingual-text-display__part' ).map( ( line ) => line.text() );
+		return wrapper.findAll( '.ext-neowiki-monolingual-text-display__part > [lang]' ).map( ( text ) => text.text() );
+	}
+
+	/** Each shown part's language as the reader sees it, its tag, or '' when the part carries none. */
+	function shownTags( wrapper: VueWrapper ): string[] {
+		return wrapper.findAll( '.ext-neowiki-monolingual-text-display__part' ).map( ( part ) => {
+			const tag = part.find( '.ext-neowiki-monolingual-text-display__language [aria-hidden]' );
+
+			return tag.exists() ? tag.text() : '';
+		} );
 	}
 
 	function toggle( wrapper: VueWrapper ): DOMWrapper<Element> {
-		return wrapper.find( '.cdx-toggle-button' );
+		return wrapper.find( '.ext-neowiki-monolingual-text-display__toggle' );
 	}
 
-	it( 'shows the parts in the interface language, unnamed because the reader is reading it', () => {
+	it( 'shows the parts in the interface language, untagged because the reader is reading it', () => {
 		const wrapper = newWrapperFor( KINO, CINEMA, { text: 'Film', language: 'en' } );
 
 		expect( shownTexts( wrapper ) ).toEqual( [ 'Cinema', 'Film' ] );
+		expect( shownTags( wrapper ) ).toEqual( [ '', '' ] );
 	} );
 
-	it( 'names the language of a part the interface language falls back to, before the content language', () => {
+	it( 'shows the part the interface language falls back to, before the content language, tagged', () => {
 		readsIn( 'de', 'eu' );
 
-		expect( shownTexts( newWrapperFor( CINE, ZINEMA, CINEMA ) ) ).toEqual( [ 'Cinema (English)' ] );
+		const wrapper = newWrapperFor( CINE, ZINEMA, CINEMA );
+
+		expect( shownTexts( wrapper ) ).toEqual( [ 'Cinema' ] );
+		expect( shownTags( wrapper ) ).toEqual( [ 'EN' ] );
 	} );
 
 	it( 'falls back to the content language once the interface language chain runs out', () => {
 		readsIn( 'de', 'eu' );
 
-		expect( shownTexts( newWrapperFor( CINE, ZINEMA ) ) ).toEqual( [ 'Zinema (euskara)' ] );
+		expect( shownTexts( newWrapperFor( CINE, ZINEMA ) ) ).toEqual( [ 'Zinema' ] );
 	} );
 
 	it( 'shows the first part when the reader reads none of the languages', () => {
 		readsIn( 'de', 'de' );
 
-		expect( shownTexts( newWrapperFor( CINE, ZINEMA ) ) ).toEqual( [ 'Cine (español)' ] );
+		expect( shownTexts( newWrapperFor( CINE, ZINEMA ) ) ).toEqual( [ 'Cine' ] );
 	} );
 
-	it( 'marks every part with the language it is in', async () => {
+	it( 'names the language of a tagged part for anyone who cannot place the tag', () => {
+		readsIn( 'de', 'de' );
+
+		const language = newWrapperFor( CINE, ZINEMA ).find( '.ext-neowiki-monolingual-text-display__language' );
+
+		expect( language.attributes( 'title' ) ).toBe( 'español' );
+		expect( language.find( '.ext-neowiki-monolingual-text-display__language-name' ).element.textContent )
+			.toMatch( /^\s+español$/ );
+	} );
+
+	it( 'marks the text of every part with the language it is in, leaving its tag in the reader\'s', async () => {
 		const wrapper = newWrapperFor( CINEMA, { text: 'فيلم', language: 'ar' } );
 
 		await toggle( wrapper ).trigger( 'click' );
 
-		const parts = wrapper.findAll( '.ext-neowiki-monolingual-text-display__part' );
+		const texts = wrapper.findAll( '.ext-neowiki-monolingual-text-display__part > [lang]' );
 
-		expect( parts.map( ( part ) => part.attributes( 'lang' ) ) ).toEqual( [ 'en', 'ar' ] );
-		expect( parts.map( ( part ) => part.attributes( 'dir' ) ) ).toEqual( [ 'auto', 'auto' ] );
+		expect( texts.map( ( text ) => text.attributes( 'lang' ) ) ).toEqual( [ 'en', 'ar' ] );
+		expect( texts.map( ( text ) => text.attributes( 'dir' ) ) ).toEqual( [ 'auto', 'auto' ] );
+		const language = wrapper.find( '.ext-neowiki-monolingual-text-display__language' );
+
+		expect( language.attributes( 'lang' ) ).toBeUndefined();
+		expect( language.attributes( 'title' ) ).toBe( 'ar' );
 	} );
 
-	it( 'counts the parts it is not showing on the button that reveals them', () => {
+	it( 'counts the other languages on the link that reveals them', () => {
 		const wrapper = newWrapperFor( CINEMA, KINO, ZINEMA, CINE );
 
-		expect( toggle( wrapper ).text() ).toBe( '+3' );
-		expect( toggle( wrapper ).attributes( 'aria-label' ) ).toBe( 'Show all 4 languages' );
+		expect( toggle( wrapper ).text() ).toBe( '3 more languages' );
+		expect( toggle( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'false' );
 	} );
 
-	it( 'reveals the parts it left out, named, and hides them again', async () => {
+	it( 'counts two texts in one language as one language', () => {
+		const wrapper = newWrapperFor( CINEMA, CINE, { text: 'Película', language: 'es' } );
+
+		expect( toggle( wrapper ).text() ).toBe( '1 more language' );
+	} );
+
+	it( 'shows every part in the language it falls back to, and counts only the languages still hidden', () => {
+		readsIn( 'nl', 'nl' );
+
+		const wrapper = newWrapperFor( { text: 'Bonjour', language: 'fr' }, KINO, { text: 'Salut', language: 'fr' } );
+
+		expect( shownTexts( wrapper ) ).toEqual( [ 'Bonjour', 'Salut' ] );
+		expect( toggle( wrapper ).text() ).toBe( '1 more language' );
+	} );
+
+	it( 'reveals the other parts, tagged, with the link after them', async () => {
 		const wrapper = newWrapperFor( CINEMA, KINO, ZINEMA );
 
 		await toggle( wrapper ).trigger( 'click' );
 
-		expect( shownTexts( wrapper ) ).toEqual( [ 'Cinema', 'Kino (Deutsch)', 'Zinema (euskara)' ] );
+		expect( shownTexts( wrapper ) ).toEqual( [ 'Cinema', 'Kino', 'Zinema' ] );
+		expect( shownTags( wrapper ) ).toEqual( [ '', 'DE', 'EU' ] );
+		expect( wrapper.element.lastElementChild ).toBe( toggle( wrapper ).element );
+		expect( toggle( wrapper ).text() ).toBe( 'Fewer languages' );
+		expect( toggle( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'true' );
+	} );
 
+	it( 'hides the other parts again', async () => {
+		const wrapper = newWrapperFor( CINEMA, KINO, ZINEMA );
+
+		await toggle( wrapper ).trigger( 'click' );
 		await toggle( wrapper ).trigger( 'click' );
 
 		expect( shownTexts( wrapper ) ).toEqual( [ 'Cinema' ] );
 	} );
 
-	it( 'offers no button when every part is shown', () => {
+	it( 'offers no link when every part is shown', () => {
 		const wrapper = newWrapperFor( CINEMA, { text: 'Film', language: 'en' } );
 
 		expect( toggle( wrapper ).exists() ).toBe( false );
