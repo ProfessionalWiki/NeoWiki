@@ -135,6 +135,15 @@ class NeoWikiSidebarLinkTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testPageToolsAreAbsentOutsideTheContentNamespaces(): void {
+		$page = $this->getExistingTestPage( Title::makeTitle( NS_HELP, 'Existing Help Page' ) );
+
+		$this->assertSame(
+			[ 't-neowiki-overview', 't-neowiki-create-subject-page' ],
+			array_column( $this->neoWikiSection( $page->getTitle(), $page->getLatest() ), 'id' )
+		);
+	}
+
 	public function testSpecialPagesShowTheLinksThatDescribeNoPage(): void {
 		$this->assertSame(
 			[ 't-neowiki-overview', 't-neowiki-create-subject-page' ],

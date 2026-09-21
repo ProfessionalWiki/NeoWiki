@@ -18,17 +18,12 @@ class PageToolsBuilder {
 	public function build(
 		Title $title,
 		int $pageId,
-		bool $isContentNamespace,
 		bool $canCreateMainSubject,
 		bool $canEditSubject,
 		bool $isLatestRevision,
 		bool $devUiEnabled,
 		string $currentAction
 	): array {
-		if ( !$isContentNamespace ) {
-			return [];
-		}
-
 		$items = [];
 
 		if ( $canCreateMainSubject && $isLatestRevision ) {
