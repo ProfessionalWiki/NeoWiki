@@ -28,7 +28,6 @@ onMounted( () => {
 } );
 
 function showSubject( subjectId: string | null ): void {
-	// Emptying the field selects nothing, which names no page to go to.
 	if ( subjectId !== null ) {
 		window.location.href = subjectPageUrl( subjectId );
 	}

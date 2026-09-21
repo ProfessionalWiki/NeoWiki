@@ -121,8 +121,6 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	 * reads none of them.
 	 */
 	public function testTheBareSpecialPageSetsNoSubjectViewConfigVars(): void {
-		$this->createMapping( 'EDM', '{ "version": 1, "schemas": {} }' );
-
 		$configVars = $this->executeWith( null )->getJsConfigVars();
 
 		$this->assertArrayNotHasKey( 'wgNeoWikiRdfProjections', $configVars );
