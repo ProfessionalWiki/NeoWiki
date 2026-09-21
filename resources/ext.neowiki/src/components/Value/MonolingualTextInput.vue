@@ -21,12 +21,13 @@
 				:key="view.row.id"
 				@focusout="onRowFocusOut( index, $event )"
 			>
-				<div class="ext-neowiki-monolingual-text-input__fields">
+				<div class="ext-neowiki-monolingual-text-input__field">
 					<CdxTextInput
 						class="ext-neowiki-monolingual-text-input__text"
 						:model-value="view.row.text"
 						:status="view.severity ?? 'default'"
 						:aria-label="view.textLabel"
+						:style="{ '--ext-neowiki-language-tag-length': view.row.language.length }"
 						@update:model-value="( text: string ) => onTextInput( index, text )"
 					/>
 					<LanguagePicker
@@ -129,14 +130,17 @@ function holdsPart( row: Row ): boolean {
  * shows is a part the next save would silently drop.
  */
 function rowsOf( value: Value | undefined ): Row[] {
-	const parts = value !== undefined && value.type === ValueType.MonolingualText ? value.parts : [];
-	const editable = parts.map( rowOf );
+	const editable = partsOf( value ).map( rowOf );
 
 	if ( !props.property.multiple ) {
 		return editable.length === 0 ? [ newRow() ] : editable;
 	}
 
 	return [ ...editable, newRow() ];
+}
+
+function partsOf( value: Value | undefined ): MonolingualText[] {
+	return value !== undefined && value.type === ValueType.MonolingualText ? value.parts : [];
 }
 
 function currentValue(): MonolingualTextValue | undefined {
@@ -191,12 +195,11 @@ function onRowFocusOut( index: number, event: FocusEvent ): void {
 }
 
 /**
- * Whether focus moved to another field of the row. Focus landing on the language menu's list, which
- * Chrome makes a tab stop while the menu is open, does not count: Codex closes the menu right after,
- * focus falls to the document, and no further event reaches the row.
+ * Whether focus moved to another part of the row: its text field, its language button, or the
+ * language panel that button opens.
  */
 function focusStaysInRow( rowElement: HTMLElement, target: EventTarget | null ): boolean {
-	return target instanceof Element && rowElement.contains( target ) && target.closest( '.cdx-menu' ) === null;
+	return target instanceof Node && rowElement.contains( target );
 }
 
 /**
@@ -276,15 +279,13 @@ const fieldMessages = computed<ValidationMessages>(
 // Re-seeds the rows when the Value changes elsewhere (a revert, a reload), leaving the ones being
 // edited alone when it is this component's own emit coming back.
 watch( () => props.modelValue, ( value ) => {
-	const incoming = value !== undefined && value.type === ValueType.MonolingualText ? value.parts : [];
-
-	if ( JSON.stringify( incoming ) !== JSON.stringify( newMonolingualTextValue( rows.value ).parts ) ) {
+	if ( JSON.stringify( partsOf( value ) ) !== JSON.stringify( partsOf( currentValue() ) ) ) {
 		rows.value = rowsOf( value );
 	}
 } );
 
 watch( () => props.property.multiple, () => {
-	rows.value = rowsOf( newMonolingualTextValue( rows.value ) );
+	rows.value = rowsOf( currentValue() );
 } );
 
 defineExpose<ValueInputExposes>( { getCurrentValue: currentValue } );
@@ -298,23 +299,36 @@ defineExpose<ValueInputExposes>( { getCurrentValue: currentValue } );
 	flex-direction: column;
 	gap: @spacing-25;
 
-	&__fields {
-		display: flex;
-		gap: @spacing-25;
+	/* One cell holding the text field and the language button over its end, so the language reads
+		as belonging to the text. Overlapped by grid placement rather than by positioning: a
+		`position: relative` here would recapture the containing block of the language panel and
+		of Codex's menus inside a dialog, and silently clip them. */
+	&__field {
+		display: grid;
+		grid-template-columns: minmax( 0, 1fr );
+		align-items: center;
+
+		> * {
+			grid-area: 1 / 1;
+		}
 	}
 
-	// Codex gives every text input a 256px minimum, which two side by side overflow the dialog.
-	&__text {
-		flex: 1 1 auto;
+	/* Codex gives every text input a 256px minimum, which a narrow pane cannot hold. Nested to
+		outrank Codex's own rule, which loads later at the same specificity. */
+	&__field > &__text {
 		min-width: 0;
 	}
 
-	&__language {
-		flex: 0 0 @size-800;
+	/* Room for the language button, so a long text ends before it rather than running under it.
+		The button is the tag, whose small capitals come out about as wide as the field's `ch`, plus its
+		chevron and padding; the tag's length is set on the field, since tags run from `en` to
+		`zh-hant-tw`. */
+	&__field > &__text .cdx-text-input__input {
+		padding-inline-end: calc( var( --ext-neowiki-language-tag-length ) * 1ch + @size-250 );
+	}
 
-		.cdx-text-input {
-			min-width: 0;
-		}
+	&__language {
+		justify-self: end;
 	}
 }
 </style>

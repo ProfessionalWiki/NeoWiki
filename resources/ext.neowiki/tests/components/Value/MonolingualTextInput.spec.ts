@@ -26,8 +26,8 @@ describe( 'MonolingualTextInput', () => {
 		return wrapper.findAll( '.ext-neowiki-monolingual-text-input__text input' );
 	}
 
-	function languageInputs( wrapper: VueWrapper ): ReturnType<VueWrapper['findAll']> {
-		return wrapper.findAll( '.ext-neowiki-monolingual-text-input__language input' );
+	function languageButtons( wrapper: VueWrapper ): ReturnType<VueWrapper['findAll']> {
+		return wrapper.findAll( '.ext-neowiki-language-picker__button' );
 	}
 
 	function lastEmittedValue( wrapper: VueWrapper ): MonolingualTextValue | undefined {
@@ -61,22 +61,22 @@ describe( 'MonolingualTextInput', () => {
 
 	// Codex gives its "no results" element the menu-item class too, so it is excluded here.
 	function languageMenuItems( wrapper: VueWrapper ): ReturnType<VueWrapper['findAll']> {
-		return wrapper.findAll( '.ext-neowiki-monolingual-text-input__language' )[ 0 ]
-			.findAll( '.cdx-menu-item:not( .cdx-menu__no-results )' );
+		return rowElements( wrapper )[ 0 ].findAll( '.cdx-menu-item:not( .cdx-menu__no-results )' );
 	}
 
 	/**
-	 * Types into the first row's language field and picks the first entry the menu then offers,
+	 * Opens the first row's languages, searches them and picks the first entry the list then offers,
 	 * which is the only way a language is committed.
 	 */
 	async function chooseLanguage( wrapper: VueWrapper, query: string ): Promise<void> {
-		await languageInputs( wrapper )[ 0 ].setValue( query );
+		await languageButtons( wrapper )[ 0 ].trigger( 'click' );
+		await rowElements( wrapper )[ 0 ].find( '.ext-neowiki-language-picker__search input' ).setValue( query );
 		await languageMenuItems( wrapper )[ 0 ].trigger( 'click' );
 	}
 
 	beforeEach( () => {
 		setupMwMock( {
-			config: { wgUserLanguage: 'en' },
+			config: { wgUserLanguage: 'en', wgContentLanguage: 'en' },
 			languageNames: { en: 'English', eu: 'Basque', es: 'Spanish' },
 		} );
 	} );
@@ -241,7 +241,7 @@ describe( 'MonolingualTextInput', () => {
 		expect( textValues( wrapper ) ).toEqual( [ 'Zinema', 'Cine', '' ] );
 	} );
 
-	it( 'keeps a cleared row while focus is on its language field', async () => {
+	it( 'keeps a cleared row while focus is on its language button', async () => {
 		const wrapper = newWrapper( {
 			modelValue: newMonolingualTextValue( [
 				{ text: 'Zinema', language: 'eu' },
@@ -250,12 +250,12 @@ describe( 'MonolingualTextInput', () => {
 		} );
 
 		await textInputs( wrapper )[ 0 ].setValue( '' );
-		await leaveRow( wrapper, 0, languageInputs( wrapper )[ 0 ].element );
+		await leaveRow( wrapper, 0, languageButtons( wrapper )[ 0 ].element );
 
 		expect( textValues( wrapper ) ).toEqual( [ '', 'Cine', '' ] );
 	} );
 
-	it( 'drops a cleared row when tabbing lands on its language menu', async () => {
+	it( 'keeps a cleared row while focus is in its list of languages', async () => {
 		const wrapper = newWrapper( {
 			modelValue: newMonolingualTextValue( [
 				{ text: 'Zinema', language: 'eu' },
@@ -264,10 +264,10 @@ describe( 'MonolingualTextInput', () => {
 		} );
 
 		await textInputs( wrapper )[ 0 ].setValue( '' );
-		await languageInputs( wrapper )[ 0 ].setValue( 'Spa' );
+		await languageButtons( wrapper )[ 0 ].trigger( 'click' );
 		await leaveRow( wrapper, 0, rowElements( wrapper )[ 0 ].find( '.cdx-menu' ).element );
 
-		expect( textValues( wrapper ) ).toEqual( [ 'Cine', '' ] );
+		expect( textValues( wrapper ) ).toEqual( [ '', 'Cine', '' ] );
 	} );
 
 	it( 'drops a cleared row of a single-valued property the user leaves', async () => {
