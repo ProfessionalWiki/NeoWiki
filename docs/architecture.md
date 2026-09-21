@@ -7,6 +7,8 @@ order: 3
 NeoWiki is a MediaWiki extension. It adds structured data to ordinary wiki pages, keeps that data on the page it
 describes, and projects it into graph stores so it can be queried.
 
+![A page's Subjects projected into Neo4j and a SPARQL store, the native projection in both, an EDM projection defined by a Mapping page, and Cypher and SPARQL queries from parser functions, Lua and the REST API](architecture.svg)
+
 ## Data lives on the page
 
 A page's structured data sits in a dedicated content slot on the page itself, stored as JSON and versioned with the
