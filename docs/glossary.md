@@ -1,13 +1,16 @@
 ---
 title: Glossary
 order: 1
+outline: deep
 ---
 # Glossary
 
 Definitions of NeoWiki terms. Concepts are capitalized. Used in the code and UI
 ([Ubiquitous Language](https://softwaresystemdesign.com/domain-driven-design/ubiquitous-language/)).
 
-## Subject
+## Core concepts
+
+### Subject
 
 Data about one thing. Similar to an Item in Wikibase or a Page/SubObject in SMW.
 
@@ -15,7 +18,6 @@ Data about one thing. Similar to an Item in Wikibase or a Page/SubObject in SMW.
 
 Subjects have
 
-- An `id`: persistent identifier. Subject IDs start with `s` and are always 15 characters long ([ADR 14](adr/014-improved-id-format.md))
 - A `schema`: reference to a Schema by name. Example: Person, Company, Product, etc.
 - An optional `label`: the name of the subject. Example: "John Doe". This is a string, not a reference to a page.
   Without one, the Subject is shown under its page name when it is the page's Main Subject, and otherwise under its
@@ -23,10 +25,11 @@ Subjects have
   Subject stored on it names nothing, so its Main Subject shows the Schema name too
   ([ADR 31](adr/031-optional-subject-labels.md))
 - `statements`: a list of Statements
+- An `id`: persistent identifier. Subject IDs start with `s` and are always 15 characters long ([ADR 14](adr/014-improved-id-format.md))
 
 *Avoid using these terms as synonyms: "object", "entity", "item"*
 
-### Statement
+#### Statement
 
 Corresponds to one row in an infobox.
 
@@ -40,7 +43,7 @@ Example: Property Name "age" with Value `42` and Property Type `number`.
 
 NeoWiki Statements are not equivalent to Wikibase Statements. The latter have a rank, qualifiers, references, and an ID. For similar modeling, NeoWiki uses Subjects (multiple per page). See [Qualifiers and References](qualifiers-and-references.md) for how to model these.
 
-### Value
+#### Value
 
 Values have a type, for instance, `string`. This is called the **Value Type**. NeoWiki has a predefined list of
 these Value Types; each Property Type stores its values as one of them — a `url` property's value is a StringValue.
@@ -63,48 +66,13 @@ Each Relation has
 - A `target`: Subject ID of the referenced Subject
 - `properties`: possibly empty collection of property-value pairs
 
-
-
-## Page
-
-MediaWiki concept. Also known as "Wiki page".
-
-![Page with a Main Subject shown as an infobox and a second Subject; callouts name the parts](page-with-subjects.svg)
-
-Pages have
-
-* A **title**: shown in the URL and as the page heading, can be changed by "moving" the page.
-* **Content**: the page's text, written in wikitext. Subjects are stored alongside it, not in it
-  ([ADR 4](adr/004-use-dedicated-slot.md)).
-* **Subjects**: list of Subjects, can be empty ([ADR 7](adr/007-multiple-subjects-per-page.md))
-* **Main Subject**: optional identifier of a Subject in the page's Subjects list. Indicates which Subject represents the same entity as the page itself.
-
-## Page-first wiki
-
-A wiki where the page comes first: a page is about one thing, and its Subjects hold data about it. Links lead to
-pages, and a new Subject goes on the page you create it from. This is the default.
-
-## Subject-first wiki
-
-A wiki where the Subject comes first: each new Subject gets its own page, and that page only stores it. Links lead
-to the Subject (`Special:Subject`), not to its page. A wiki-level setting turns this on
-([ADR 33](adr/033-page-first-and-subject-first-wikis.md)).
-
-## Source
-
-Where a Subject comes from ([ADR 23](adr/023-subject-sources.md)). A Source produces Subjects and resolves the Schemas
-they use. The wiki itself is the default Source, and the one Subjects are created in; extensions register others, each
-under a source key that prefixes the Subject IDs from it.
-
-Subjects from another Source are read-only.
-
-## Schema
+### Schema
 
 A Schema ([ADR 6](adr/006-schemas.md)) defines a type of Subject. Examples: Person, Company, Product, etc.
 
 Schemas have a name, description, and a list of Property Definitions
 
-### Property Definition
+#### Property Definition
 
 A Property Definition has:
 
@@ -119,7 +87,7 @@ A Property Definition has:
 - **Display Attributes**: presentation configuration specific to the Property Type. Example: `"precision": 2`,
   `"color": "blue"`. These serve as defaults that can be overridden per-Layout via Display Rules.
 
-### Property Type
+#### Property Type
 
 The kind of data a Property Definition holds, and how it is edited and displayed. Examples: "text", "url",
 "number", "relation". Extensions can define additional Property Types ([Extending NeoWiki](extending/extending.md)).
@@ -127,7 +95,7 @@ Each Property Type stores its values as one of the Value Types.
 
 *Avoid: "Value Format", "format" — former names of this concept.*
 
-### Violation
+#### Violation
 
 A Violation is a single validation finding: a value that does not satisfy one of its Property Definition's
 Constraints ([ADR 26](adr/026-validation-severity-levels.md)). Validating a Subject against its Schema yields
@@ -136,9 +104,34 @@ Violations; the possible kinds are cataloged in [Validation codes](api/validatio
 Each Violation carries the **Severity** of the violated Constraint: `warning` Violations inform but never
 block, while `error` Violations can block saving, depending on the wiki's validation **Enforcement** setting.
 
+## Pages and display
 
+### Page
 
-## View
+A page is an article with a title, as on Wikipedia: the place for free text and for showing Subjects in infoboxes.
+Pages are central in a page-first wiki. In a subject-first wiki you do not need to use or pay attention to them.
+
+![Page with a Main Subject shown as an infobox and a second Subject; callouts name the parts](page-with-subjects.svg)
+
+Pages have
+
+* A **title**: shown in the URL and as the page heading, can be changed by "moving" the page.
+* **Content**: the page's text, written in wikitext. Subjects are stored alongside it, not in it
+  ([ADR 4](adr/004-use-dedicated-slot.md)).
+* **Subjects**: list of Subjects, can be empty ([ADR 7](adr/007-multiple-subjects-per-page.md))
+* **Main Subject**: optional identifier of a Subject in the page's Subjects list. Indicates which Subject represents the same entity as the page itself.
+
+### Page-first and subject-first wikis
+
+A wiki-level setting decides which comes first ([ADR 33](adr/033-page-first-and-subject-first-wikis.md)).
+
+**Page-first**: a page is about one thing, and its Subjects hold data about it. Links lead to pages, and a new Subject
+goes on the page you create it from. This is the default.
+
+**Subject-first**: each new Subject gets its own page, and that page only stores it. Links lead to the Subject
+(`Special:Subject`), not to its page.
+
+### View
 
 A View is an on-page rendering of a Subject. Views are placed on wiki pages via the `{{#view}}` parser function or
 automatically for a page's Main Subject. Each View renders a Subject using a View Type.
@@ -146,13 +139,11 @@ automatically for a page's Main Subject. Each View renders a Subject using a Vie
 A View can optionally reference a Layout to customize which properties are shown and how. Without a Layout, all
 properties are shown in Schema-defined order.
 
-### View Type
+#### View Type
 
 The visual format used to render a View. Examples: "infobox", "card", "table". View Types can be defined by extensions.
 
-
-
-## Layout
+### Layout
 
 A Layout ([ADR 18](adr/018-views.md)) references a Schema and allows customized display of Subjects that use that
 Schema. The link is one-directional: Layouts reference Schemas, Schemas do not reference their Layouts.
@@ -171,22 +162,22 @@ Layouts have:
 
 *Avoid: "View" — the former name of this concept. A View is now the on-page rendering.*
 
-### Display Rule
+#### Display Rule
 
 A Display Rule is an entry in a Layout's ordered allowlist: it references a property by name and optionally
 overrides its Display Attributes; unspecified ones are inherited from the Property Definition. Unlisted
 properties are hidden.
 
+## Query and export
 
-
-## Graph Store
+### Graph Store
 
 A Graph Store is a database that NeoWiki projects wiki data into so it can be queried, such as Neo4j or SPARQL-capable
 stores. A wiki can have several Graph Stores, each identified by name. Each holds one or more Projections.
 
 *Avoid: "graph database", "graph backend", "triple store" (as names for this concept).*
 
-## Projection
+### Projection
 
 A Projection is a derived, query-optimized copy of the wiki's data in a Graph Store
 ([ADR 19](adr/019-graph-database-architecture.md)). Page content remains the source of truth; a Projection can
@@ -196,15 +187,13 @@ surfaces select a Projection by name.
 
 *Avoid: "base mapping", "target ontology" — former names for the native and ontology projections.*
 
-## Mapping
+### Mapping
 
 A Mapping defines how Subjects that follow native Schemas are expressed in an established ontology such as EDM
 or CIDOC-CRM ([Mapping Format](authoring/mapping-format.md)). Each Mapping is a page in the `Mapping:` namespace
 and defines one ontology projection; the Mapping page's title is the projection name.
 
-
-
-## Page Property
+### Page Property
 
 A key-value pair stored on the Page node in graph Projections. Page Properties are metadata about the wiki page
 itself, as opposed to Subject Statements, which are structured data about the entities described on the page.
@@ -212,7 +201,15 @@ itself, as opposed to Subject Statements, which are structured data about the en
 Built-in Page Properties include `name`, `namespaceId`, `creationTime`, `lastUpdated`, `categories`, and `lastEditor`.
 Extensions can contribute additional Page Properties (see [Extending NeoWiki](extending/extending.md)).
 
+## Extending
 
+### Source
+
+Where a Subject comes from ([ADR 23](adr/023-subject-sources.md)). A Source produces Subjects and resolves the Schemas
+they use. The wiki itself is the default Source, and the one Subjects are created in; extensions register others, each
+under a source key that prefixes the Subject IDs from it.
+
+Subjects from another Source are read-only.
 
 ## Flagged ambiguities
 
