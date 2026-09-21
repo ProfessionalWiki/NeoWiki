@@ -823,21 +823,42 @@ class NeoWikiHooks {
 			return;
 		}
 
-		// First, and offered to readers as well: the page to start from when the wiki is unfamiliar.
-		$neoWikiTools = [
-			self::specialPageLink(
-				$skin,
-				specialPage: 'NeoWiki',
-				message: 'neowiki-sidebar-overview',
-				linkId: 't-neowiki-overview'
-			),
-		];
+		$neoWikiTools = self::pageTools( $skin, $title );
 
-		if ( $title->canExist() ) {
-			$neoWikiTools = array_merge( $neoWikiTools, self::pageTools( $skin, $title ) );
+		// First, and offered to readers as well: the page to start from when the wiki is unfamiliar.
+		array_unshift( $neoWikiTools, self::specialPageLink(
+			$skin,
+			specialPage: 'NeoWiki',
+			message: 'neowiki-sidebar-overview',
+			linkId: 't-neowiki-overview'
+		) );
+
+		if ( $title->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
+			$neoWikiTools[] = self::specialPageLink(
+				$skin,
+				specialPage: 'Schemas',
+				message: 'neowiki-schema-sidebar-all-schemas',
+				linkId: 't-neowiki-schemas'
+			);
 		}
 
-		$neoWikiTools = array_merge( $neoWikiTools, self::allPagesLinks( $skin, $title ) );
+		if ( $title->getNamespace() === NeoWikiExtension::NS_LAYOUT ) {
+			$neoWikiTools[] = self::specialPageLink(
+				$skin,
+				specialPage: 'Layouts',
+				message: 'neowiki-layout-sidebar-all-layouts',
+				linkId: 't-neowiki-layouts'
+			);
+		}
+
+		if ( $title->getNamespace() === NeoWikiExtension::NS_MAPPING ) {
+			$neoWikiTools[] = self::specialPageLink(
+				$skin,
+				specialPage: 'Mappings',
+				message: 'neowiki-mapping-sidebar-all-mappings',
+				linkId: 't-neowiki-mappings'
+			);
+		}
 
 		if ( self::shouldLinkCreateSubjectPage( $skin, $neoWikiTools ) ) {
 			$neoWikiTools[] = self::specialPageLink(
@@ -854,24 +875,27 @@ class NeoWikiHooks {
 	}
 
 	/**
-	 * The tools that describe the page behind the title, hence built only for a title that can have one.
-	 * This also keeps the Subject permission lookups off every special page, which has no page to ask about.
+	 * Page tools are offered on content pages only. The check comes before the builder so that other page
+	 * views, special pages included, skip the Subject permission lookups the tools need.
 	 *
 	 * @return list<array<string, mixed>>
 	 */
 	private static function pageTools( Skin $skin, Title $title ): array {
-		$extension = NeoWikiExtension::getInstance();
-		$hints = $extension->newSubjectPermissionHints( $skin->getAuthority() );
-		$pageId = new PageId( $title->getArticleID() );
-
 		$isContentNamespace = MediaWikiServices::getInstance()
 			->getNamespaceInfo()
 			->isContent( $title->getNamespace() );
 
+		if ( !$isContentNamespace ) {
+			return [];
+		}
+
+		$extension = NeoWikiExtension::getInstance();
+		$hints = $extension->newSubjectPermissionHints( $skin->getAuthority() );
+		$pageId = new PageId( $title->getArticleID() );
+
 		return ( new PageToolsBuilder() )->build(
 			title: $title,
 			pageId: $title->getArticleID(),
-			isContentNamespace: $isContentNamespace,
 			canCreateMainSubject: $hints->canCreateMainSubject( $pageId ),
 			canEditSubject: $hints->canEditSubject( $pageId ),
 			isLatestRevision: self::pageIsLatestRevision( $skin->getOutput() ),
@@ -880,42 +904,6 @@ class NeoWikiHooks {
 				->getActionFactory()
 				->getActionName( $skin->getContext() )
 		);
-	}
-
-	/**
-	 * @return list<array<string, mixed>>
-	 */
-	private static function allPagesLinks( Skin $skin, Title $title ): array {
-		$links = [];
-
-		if ( $title->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
-			$links[] = self::specialPageLink(
-				$skin,
-				specialPage: 'Schemas',
-				message: 'neowiki-schema-sidebar-all-schemas',
-				linkId: 't-neowiki-schemas'
-			);
-		}
-
-		if ( $title->getNamespace() === NeoWikiExtension::NS_LAYOUT ) {
-			$links[] = self::specialPageLink(
-				$skin,
-				specialPage: 'Layouts',
-				message: 'neowiki-layout-sidebar-all-layouts',
-				linkId: 't-neowiki-layouts'
-			);
-		}
-
-		if ( $title->getNamespace() === NeoWikiExtension::NS_MAPPING ) {
-			$links[] = self::specialPageLink(
-				$skin,
-				specialPage: 'Mappings',
-				message: 'neowiki-mapping-sidebar-all-mappings',
-				linkId: 't-neowiki-mappings'
-			);
-		}
-
-		return $links;
 	}
 
 	/**

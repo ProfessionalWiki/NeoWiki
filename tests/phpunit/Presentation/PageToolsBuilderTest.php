@@ -17,13 +17,6 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 	private const PAGE_NAME = 'PageToolsBuilderTestPage';
 	private const PAGE_ID = 42;
 
-	public function testReturnsNoItemsOutsideContentNamespace(): void {
-		$this->assertSame(
-			[],
-			$this->build( isContentNamespace: false )
-		);
-	}
-
 	public function testShowsAllItemsWhenEverythingOpenAndDevUiEnabled(): void {
 		$this->assertSame(
 			[
@@ -128,7 +121,6 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 	 */
 	private function build(
 		int $pageId = self::PAGE_ID,
-		bool $isContentNamespace = true,
 		bool $canCreateMainSubject = true,
 		bool $canEditSubject = true,
 		bool $isLatestRevision = true,
@@ -138,7 +130,6 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 		return ( new PageToolsBuilder() )->build(
 			title: Title::newFromText( self::PAGE_NAME ),
 			pageId: $pageId,
-			isContentNamespace: $isContentNamespace,
 			canCreateMainSubject: $canCreateMainSubject,
 			canEditSubject: $canEditSubject,
 			isLatestRevision: $isLatestRevision,
