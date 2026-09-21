@@ -9,7 +9,7 @@ export class RestSubjectLabelSearch implements SubjectLabelSearch {
 	) {
 	}
 
-	public async searchSubjectLabels( search: string, schema?: string ): Promise<SubjectLabelResult[]> {
+	public async searchSubjectLabels( search: string, schema: string | undefined ): Promise<SubjectLabelResult[]> {
 		// The endpoint reads an absent parameter as every Schema; an empty one would be a Schema
 		// named by nothing, which matches no Subject.
 		const params = new URLSearchParams( schema === undefined ? { search } : { search, schema } );
