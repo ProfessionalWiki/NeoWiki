@@ -1,4 +1,4 @@
-import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia } from 'pinia';
 import { CdxLookup } from '@wikimedia/codex';
@@ -83,5 +83,43 @@ describe( 'SubjectPickerPage', () => {
 
 		expect( location.href ).toBe( `/wiki/Special:Subject/${ SUBJECT_ID }` );
 	} );
+
+	it( 'goes to the Subject highlighted when Enter is pressed', async () => {
+		const input = await highlightFirstSuggestion();
+
+		await input.trigger( 'keydown', { key: 'Enter' } );
+
+		expect( location.href ).toBe( `/wiki/Special:Subject/${ SUBJECT_ID }` );
+	} );
+
+	// Codex picks the highlighted suggestion on Tab, which in a relation field keeps the value the
+	// reader was looking at. Here a pick leaves the page, and Tab is how a reader moves on.
+	it( 'stays on the page when Tab leaves a highlighted suggestion', async () => {
+		const input = await highlightFirstSuggestion();
+
+		await input.trigger( 'keydown', { key: 'Tab' } );
+
+		expect( location.href ).toBe( '' );
+	} );
+
+	async function highlightFirstSuggestion(): Promise<DOMWrapper<HTMLInputElement>> {
+		vi.mocked( subjectLabelSearch.searchSubjectLabels ).mockResolvedValue( [
+			{ id: SUBJECT_ID, label: 'ACME Inc.' },
+			{ id: 's1demo1aaaaaaa2', label: 'ACME Labs' },
+		] );
+
+		const wrapper = mountPage( document.body );
+		attachedWrappers.push( wrapper );
+		await flushPromises();
+
+		// Focused here rather than left to the page: Codex opens the menu only in a focused field.
+		const input = wrapper.find<HTMLInputElement>( 'input' );
+		input.element.focus();
+		await input.setValue( 'acme' );
+		await flushPromises();
+		await input.trigger( 'keydown', { key: 'ArrowDown' } );
+
+		return input;
+	}
 
 } );

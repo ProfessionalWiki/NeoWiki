@@ -1,10 +1,14 @@
 <template>
-	<SubjectPicker
-		ref="pickerRef"
-		:selected="null"
-		:aria-label="$i18n( 'neowiki-special-subject-picker-label' ).text()"
-		@update:selected="showSubject"
-	/>
+	<!-- Codex picks the highlighted suggestion on Tab, and a pick here leaves the page. Held back
+		before Codex sees it, Tab only moves the focus on, as it does anywhere else. -->
+	<div @keydown.tab.capture.stop>
+		<SubjectPicker
+			ref="pickerRef"
+			:selected="null"
+			:aria-label="$i18n( 'neowiki-special-subject-picker-label' ).text()"
+			@update:selected="showSubject"
+		/>
+	</div>
 </template>
 
 <script setup lang="ts">
