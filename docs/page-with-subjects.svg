@@ -38,6 +38,9 @@
 <text x="42" y="66" text-anchor="middle" fill="#000">Page</text>
 <path stroke="#000" d="M66,72l24,12"/>
 
+<text x="175" y="36" text-anchor="middle" fill="#C2185B">Page title</text>
+<path stroke="#C2185B" d="M175,42V78"/>
+
 <text x="348" y="36" text-anchor="middle" fill="#00F">Property name</text>
 <path stroke="#00F" d="M348,42v108"/>
 

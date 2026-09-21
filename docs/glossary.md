@@ -7,23 +7,11 @@ order: 1
 Definitions of NeoWiki terms. Concepts are capitalized. Used in the code and UI
 ([Ubiquitous Language](https://softwaresystemdesign.com/domain-driven-design/ubiquitous-language/)).
 
-![Page with a Main Subject shown as an infobox and a second Subject; callouts name the parts](page-with-subjects.svg)
-
-## Page
-
-MediaWiki concept. Also known as "Wiki page".
-
-Pages have
-
-* A **title**: shown in the URL and H1, can be changed by "moving" the page.
-* An **id**: persistent numeric ID.
-* **Content**: wikitext
-* **Subjects**: list of Subjects, can be empty ([ADR 7](adr/007-multiple-subjects-per-page.md))
-* **Main Subject**: optional identifier of a Subject in the page's Subjects list. Indicates which Subject represents the same entity as the page itself.
-
 ## Subject
 
 Data about one thing. Similar to an Item in Wikibase or a Page/SubObject in SMW.
+
+![A Subject as Special:Subject shows it; callouts name its Label, Schema, ID and Statements](subject.svg)
 
 Subjects have
 
@@ -77,6 +65,20 @@ Each Relation has
 
 
 
+## Page
+
+MediaWiki concept. Also known as "Wiki page".
+
+![Page with a Main Subject shown as an infobox and a second Subject; callouts name the parts](page-with-subjects.svg)
+
+Pages have
+
+* A **title**: shown in the URL and as the page heading, can be changed by "moving" the page.
+* **Content**: the page's text, written in wikitext. Subjects are stored alongside it, not in it
+  ([ADR 4](adr/004-use-dedicated-slot.md)).
+* **Subjects**: list of Subjects, can be empty ([ADR 7](adr/007-multiple-subjects-per-page.md))
+* **Main Subject**: optional identifier of a Subject in the page's Subjects list. Indicates which Subject represents the same entity as the page itself.
+
 ## Page-first wiki
 
 A wiki where the page comes first: a page is about one thing, and its Subjects hold data about it. Links lead to
@@ -87,8 +89,6 @@ pages, and a new Subject goes on the page you create it from. This is the defaul
 A wiki where the Subject comes first: each new Subject gets its own page, and that page only stores it. Links lead
 to the Subject (`Special:Subject`), not to its page. A wiki-level setting turns this on
 ([ADR 33](adr/033-page-first-and-subject-first-wikis.md)).
-
-![A Subject as Special:Subject shows it; callouts name its Label, Schema, ID and Statements](subject.svg)
 
 ## Source
 
