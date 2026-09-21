@@ -34,7 +34,7 @@ describe( 'RestSubjectLabelSearch', () => {
 			[ SEARCH_URL ]: jsonResponse( [ { id: 's1demo1aaaaaaa1', label: 'ACME Inc.' } ] ),
 		} );
 
-		expect( await search.searchSubjectLabels( 'acme' ) ).toEqual( [
+		expect( await search.searchSubjectLabels( 'acme', undefined ) ).toEqual( [
 			{ id: 's1demo1aaaaaaa1', label: 'ACME Inc.' },
 		] );
 	} );
@@ -44,7 +44,7 @@ describe( 'RestSubjectLabelSearch', () => {
 			[ SEARCH_URL ]: { ok: false, json: async () => ( {} ) } as Response,
 		} );
 
-		await expect( search.searchSubjectLabels( 'acme' ) )
+		await expect( search.searchSubjectLabels( 'acme', undefined ) )
 			.rejects.toThrow( 'Error searching subject labels' );
 	} );
 

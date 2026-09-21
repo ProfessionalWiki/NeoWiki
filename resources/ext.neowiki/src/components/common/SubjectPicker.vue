@@ -61,7 +61,7 @@ interface SubjectPickerProps {
 	selected: string | null;
 	/**
 	 * The Schema the picked Subject must follow. Omitted, Subjects of every Schema are on offer;
-	 * null names a Schema of another Source, which this wiki cannot search.
+	 * null names no Schema this wiki can search: another Source's, or none chosen yet.
 	 */
 	targetSchema?: string | null;
 	startIcon?: Icon;

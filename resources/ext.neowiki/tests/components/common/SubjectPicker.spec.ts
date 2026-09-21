@@ -133,7 +133,7 @@ describe( 'SubjectPicker', () => {
 	} );
 
 	// An omitted prop arrives as undefined, which is what the picker reads as "no Schema in
-	// particular" — the state Special:Subject's own lookup is in.
+	// particular" — the state Special:Subject's own picker is in.
 	it( 'searches every Schema when it is given no target Schema', async () => {
 		const wrapper = createWrapper( { targetSchema: undefined } );
 

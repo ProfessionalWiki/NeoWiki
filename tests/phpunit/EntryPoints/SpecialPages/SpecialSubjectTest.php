@@ -66,10 +66,10 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * The error box says what went wrong; the lookup under it is how the reader reaches what they
+	 * The error box says what went wrong; the picker under it is how the reader reaches what they
 	 * were after, so a stale link still leads somewhere.
 	 */
-	public function testAMalformedSubjectIdGetsTheErrorBoxAndTheLookup(): void {
+	public function testAMalformedSubjectIdGetsTheErrorBoxAndThePicker(): void {
 		$output = $this->outputFor( 'not-a-subject-id' );
 
 		$this->assertStringContainsString( self::INVALID_ID_ERROR, $output );
@@ -78,7 +78,7 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * With no Subject to show, the page offers a lookup for choosing one. The mount point is the
+	 * With no Subject to show, the page offers a picker for choosing one. The mount point is the
 	 * same one, carrying no id: that absence is what the frontend reads it by.
 	 */
 	public function testTheBareSpecialPageMountsWithoutASubjectId(): void {
@@ -108,7 +108,7 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * The lookup is mounted by the same module, which nothing on the id path can show.
+	 * The picker is mounted by the same module, which nothing on the id path can show.
 	 */
 	public function testTheBareSpecialPageLoadsTheFrontendModule(): void {
 		$out = $this->executeWith( null );
@@ -117,12 +117,10 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * Reading these costs a permission check per Mapping page, and the lookup the bare page shows
+	 * Reading these costs a permission check per Mapping page, and the picker the bare page shows
 	 * reads none of them.
 	 */
 	public function testTheBareSpecialPageSetsNoSubjectViewConfigVars(): void {
-		$this->createMapping( 'EDM', '{ "version": 1, "schemas": {} }' );
-
 		$configVars = $this->executeWith( null )->getJsConfigVars();
 
 		$this->assertArrayNotHasKey( 'wgNeoWikiRdfProjections', $configVars );
