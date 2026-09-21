@@ -31,7 +31,7 @@ Subjects have
 
 #### Statement
 
-Corresponds to one row in an infobox.
+A property of a Subject together with its value: one row wherever the Subject is shown.
 
 Statements have
 
@@ -78,9 +78,9 @@ A Property Definition has:
 
 - A **name**. Example: "Website".
 - A **type**: a Property Type. Example: "url".
-- Boolean **required**
-- Optional **description** string
-- Optional **default**, which is a Value
+- Whether a value is **required**.
+- An optional **description**.
+- An optional **default** Value.
 - **Constraints**: validation and data rules specific to the Property Type. Example: `"minimum": 42`. Each carries a
   severity of `error` or `warning` (default `warning`) that decides whether violating it can block a write — see
   [Constraint severity](api/schema-format.md#constraint-severity). Not overridable in Layouts.

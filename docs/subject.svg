@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="330" viewBox="0 0 720 330"
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="330" viewBox="0 0 760 330"
 	font-family="sans-serif" font-size="17">
-<rect width="720" height="330" fill="#FFF"/>
+<rect width="760" height="330" fill="#FFF"/>
 
 <!-- Subject (Special:Subject card) -->
 <rect x="170" y="70" width="420" height="236" fill="none" stroke="#039" stroke-width="1.5"/>
 <text x="190" y="100" font-size="16" font-weight="bold" fill="#000">Rijksmuseum</text>
-<rect x="190" y="109" width="56" height="18" rx="3" fill="#EAECF0"/>
-<text x="218" y="122" font-size="11" text-anchor="middle" fill="#202122">Museum</text>
+<rect x="190" y="109" width="60" height="18" rx="3" fill="#EAECF0"/>
+<text x="220" y="122" font-size="11" text-anchor="middle" fill="#202122">Museum</text>
 <path stroke="#A2A9B1" d="M170,134H590"/>
 <rect x="176" y="140" width="408" height="30" fill="none" stroke="#D00" stroke-width="1.5"/>
 <text x="190" y="160" font-size="13" font-weight="bold" fill="#000">Founded</text>
@@ -48,5 +48,5 @@
 
 <text x="612" y="200" fill="#D96B00">Relation</text>
 <text x="612" y="216" font-size="12" fill="#D96B00">to another Subject</text>
-<path stroke="#D96B00" d="M606,195L474,196"/>
+<path stroke="#D96B00" d="M606,195L480,196"/>
 </svg>
