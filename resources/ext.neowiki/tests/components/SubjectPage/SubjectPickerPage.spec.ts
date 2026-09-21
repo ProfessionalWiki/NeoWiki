@@ -61,7 +61,7 @@ describe( 'SubjectPickerPage', () => {
 	// name of its own to be announced by.
 	// Asserted on the input rather than on CdxLookup: Codex forwards the attribute to the control
 	// it wraps, which is what a screen reader reads.
-	it( 'names the lookup for a screen reader', () => {
+	it( 'names the picker for a screen reader', () => {
 		expect( mountPage().find( 'input' ).attributes( 'aria-label' ) )
 			.toBe( 'neowiki-special-subject-picker-label' );
 	} );

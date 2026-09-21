@@ -36,7 +36,7 @@ class GetSubjectLabelsApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * What Special:Subject's own lookup sends. A default standing in for the omitted `schema`
+	 * What Special:Subject's own picker sends. A default standing in for the omitted `schema`
 	 * would name a Schema no Subject has, and find nothing.
 	 */
 	public function testASearchNamingNoSchemaFindsSubjectsOfEverySchema(): void {

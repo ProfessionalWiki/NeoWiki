@@ -36,7 +36,7 @@ class SpecialSubject extends SpecialPage {
 				$out->setPageTitleMsg( $name );
 			}
 
-			// What the Subject's own view reads. The lookup shown without one reads none of it, and
+			// What the Subject's own view reads. The picker shown without one reads none of it, and
 			// each read costs a permission check per Mapping page.
 			$out->addJsConfigVars( $extension->getSubjectUiJsConfigVars( $this->getAuthority() ) );
 			$attributes['data-mw-neowiki-subject-id'] = $subjectId->text;
@@ -48,7 +48,7 @@ class SpecialSubject extends SpecialPage {
 		}
 
 		// The frontend fills this element with the Subject asked for, or — with no id to fill it from —
-		// with a lookup for choosing one. What it shows for an id is decided by the read it makes, on
+		// with a picker for choosing one. What it shows for an id is decided by the read it makes, on
 		// the same terms as the read behind the title: a Subject that does not exist and one on a page
 		// this user may not read answer alike (#1046).
 		$extension->newFrontendModuleLoader()->load( $out, $this->getSkin() );
