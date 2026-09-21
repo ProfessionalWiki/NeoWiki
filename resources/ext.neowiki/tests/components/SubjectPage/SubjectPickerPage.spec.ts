@@ -66,13 +66,29 @@ describe( 'SubjectPickerPage', () => {
 			.toBe( 'neowiki-special-subject-picker-label' );
 	} );
 
-	// The field is the page's only control, so a reader can start typing without reaching for it.
+	// The field is what the page is for, so a reader can start typing without reaching for it.
 	it( 'takes the focus on load', async () => {
 		const wrapper = mountPage( document.body );
 		attachedWrappers.push( wrapper );
 		await flushPromises();
 
 		expect( document.activeElement ).toBe( wrapper.find( 'input' ).element );
+	} );
+
+	// The page's script arrives after the skin's search box is usable, and a reader may be typing
+	// there by then.
+	it( 'leaves the focus where the reader already put it', async () => {
+		const skinSearch = document.body.appendChild( document.createElement( 'input' ) );
+		skinSearch.focus();
+
+		try {
+			attachedWrappers.push( mountPage( document.body ) );
+			await flushPromises();
+
+			expect( document.activeElement ).toBe( skinSearch );
+		} finally {
+			skinSearch.remove();
+		}
 	} );
 
 	it( 'goes to the page of the Subject picked', async () => {
