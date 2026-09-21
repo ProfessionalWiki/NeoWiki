@@ -19,6 +19,8 @@ Two node types and two relationship categories:
 (:Subject)-[:RelationType {id, ...}]->(:Subject)
 ```
 
+![A Page node with HasSubject edges to a Museum Subject and an Attendance Subject, typed Relation edges from Attendance to Museum and from Museum to a City Subject and to a stub node, and Statement values as node properties](graph-model.svg)
+
 ## Page Nodes
 
 Every page is projected as a `:Page` node when it is saved and by
