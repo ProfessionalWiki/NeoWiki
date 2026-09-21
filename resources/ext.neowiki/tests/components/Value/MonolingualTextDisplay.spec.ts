@@ -56,10 +56,10 @@ describe( 'MonolingualTextDisplay', () => {
 		expect( shownTexts( wrapper ) ).toEqual( [ 'Cinema', 'Film' ] );
 	} );
 
-	it( 'names the language of a part the interface language falls back to', () => {
+	it( 'names the language of a part the interface language falls back to, before the content language', () => {
 		readsIn( 'de', 'eu' );
 
-		expect( shownTexts( newWrapperFor( CINEMA, CINE ) ) ).toEqual( [ 'Cinema (English)' ] );
+		expect( shownTexts( newWrapperFor( CINE, ZINEMA, CINEMA ) ) ).toEqual( [ 'Cinema (English)' ] );
 	} );
 
 	it( 'falls back to the content language once the interface language chain runs out', () => {

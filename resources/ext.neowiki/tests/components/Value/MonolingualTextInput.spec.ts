@@ -87,8 +87,7 @@ describe( 'MonolingualTextInput', () => {
 			modelValue: newMonolingualTextValue( [ { text: 'Zinema', language: 'eu' } ] ),
 		} );
 
-		expect( textInputs( wrapper ) ).toHaveLength( 1 );
-		expect( ( textInputs( wrapper )[ 0 ].element as HTMLInputElement ).value ).toBe( 'Zinema' );
+		expect( textValues( wrapper ) ).toEqual( [ 'Zinema' ] );
 	} );
 
 	it( 'edits every part a single-valued property already holds', () => {
@@ -133,13 +132,17 @@ describe( 'MonolingualTextInput', () => {
 	} );
 
 	it( 'emits a typed text tagged with the interface language', async () => {
+		setupMwMock( {
+			config: { wgUserLanguage: 'eu', wgContentLanguage: 'en' },
+			languageNames: { en: 'English', eu: 'Basque', es: 'Spanish' },
+		} );
 		const wrapper = newWrapper();
 
 		await textInputs( wrapper )[ 0 ].setValue( 'Zinema' );
 
 		expect( lastEmittedValue( wrapper ) ).toEqual( {
 			type: ValueType.MonolingualText,
-			parts: [ { text: 'Zinema', language: 'en' } ],
+			parts: [ { text: 'Zinema', language: 'eu' } ],
 		} );
 	} );
 
@@ -149,6 +152,37 @@ describe( 'MonolingualTextInput', () => {
 		await textInputs( wrapper )[ 0 ].setValue( 'Zinema' );
 
 		expect( textInputs( wrapper ) ).toHaveLength( 2 );
+	} );
+
+	it( 'opens no further row when a row above the trailing one is typed into', async () => {
+		const wrapper = newWrapper( {
+			modelValue: newMonolingualTextValue( [
+				{ text: 'Zinema', language: 'eu' },
+				{ text: 'Cine', language: 'es' },
+			] ),
+		} );
+
+		await textInputs( wrapper )[ 0 ].setValue( 'Zinemak' );
+
+		expect( textInputs( wrapper ) ).toHaveLength( 3 );
+	} );
+
+	it( 'shows the parts of a value set from outside', async () => {
+		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Zinema', language: 'eu' } ] ) } );
+
+		await wrapper.setProps( { modelValue: newMonolingualTextValue( [ { text: 'Kino', language: 'de' } ] ) } );
+
+		expect( textValues( wrapper ) ).toEqual( [ 'Kino', '' ] );
+	} );
+
+	it( 'keeps the rows being edited when its own value comes back', async () => {
+		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Zinema', language: 'eu' } ] ) } );
+
+		await textInputs( wrapper )[ 1 ].setValue( 'Cine' );
+		await textInputs( wrapper )[ 0 ].setValue( '' );
+		await wrapper.setProps( { modelValue: lastEmittedValue( wrapper ) } );
+
+		expect( textValues( wrapper ) ).toEqual( [ '', 'Cine', '' ] );
 	} );
 
 	it( 'opens no further row for a text that is only spaces', async () => {
@@ -176,7 +210,7 @@ describe( 'MonolingualTextInput', () => {
 
 		await textInputs( wrapper )[ 0 ].setValue( '' );
 
-		expect( lastEmittedValue( wrapper ) ).toBeUndefined();
+		expect( wrapper.emitted( 'update:modelValue' ) ).toEqual( [ [ undefined ] ] );
 	} );
 
 	it( 'drops a cleared row the moment focus reaches another row', async () => {
@@ -324,7 +358,7 @@ describe( 'MonolingualTextInput', () => {
 			],
 		} );
 
-		expect( wrapper.text() ).toContain( 'neowiki-field-min-length3' );
+		expect( rowMessages( wrapper ) ).toEqual( [ undefined, 'neowiki-field-min-length3', undefined ] );
 	} );
 
 	it( 'shows a violation under the row holding the part it names, not the row at that position', async () => {
@@ -385,18 +419,24 @@ describe( 'MonolingualTextInput', () => {
 			.toEqual( [ [ { propertyName: 'Original title', valuePartIndex: 1 } ] ] );
 	} );
 
-	it( 'asks the parent to drop the violation of the row being edited', async () => {
+	it( 'asks the parent to drop the violation of the row being edited, and only that one', async () => {
 		const wrapper = newWrapper( {
-			modelValue: newMonolingualTextValue( [ { text: 'Ci', language: 'es' } ] ),
+			modelValue: newMonolingualTextValue( [
+				{ text: 'Zi', language: 'eu' },
+				{ text: 'Ci', language: 'es' },
+				{ text: 'Ki', language: 'de' },
+			] ),
 			serverViolations: [
 				{ propertyName: 'Original title', code: 'min-length', args: [ 3 ], severity: 'error', valuePartIndex: 0 },
+				{ propertyName: 'Original title', code: 'min-length', args: [ 3 ], severity: 'error', valuePartIndex: 1 },
+				{ propertyName: 'Original title', code: 'min-length', args: [ 3 ], severity: 'error', valuePartIndex: 2 },
 			],
 		} );
 
-		await textInputs( wrapper )[ 0 ].setValue( 'Cine' );
+		await textInputs( wrapper )[ 1 ].setValue( 'Cine' );
 
 		expect( wrapper.emitted( 'clear-server-violation' ) )
-			.toEqual( [ [ { propertyName: 'Original title', valuePartIndex: 0 } ] ] );
+			.toEqual( [ [ { propertyName: 'Original title', valuePartIndex: 1 } ] ] );
 	} );
 
 	it( 'reports what it holds when the parent asks on save', async () => {
