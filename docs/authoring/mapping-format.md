@@ -75,6 +75,8 @@ page is rejected on save.
 }
 ```
 
+![The Person example projected: the Subject IRI typed crm:E21_Person, linked by P98i_was_born to a birth node, which links by P4_has_time-span to a time-span node carrying the Birth date, and by P7_took_place_at to the Birth place Subject](mapping-format.svg)
+
 Top level:
 
 | Field | Required | Meaning |
