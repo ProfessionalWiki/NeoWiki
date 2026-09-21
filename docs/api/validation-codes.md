@@ -43,6 +43,17 @@ Each violation in the response has this shape:
 - `valuePartIndex` is the zero-based index of the offending part of a multi-part value. Only the
   codes that document it set it; the key is omitted from the JSON otherwise.
 
+## Refused values
+
+The write endpoints (`PUT /neowiki/v0/subject/{subjectId}`,
+`PUT /neowiki/v0/subject/{subjectId}/statements/{propertyName}`, `POST /neowiki/v0/subjects`,
+`POST /neowiki/v0/page/{pageId}/mainSubject` and `POST /neowiki/v0/page/{pageId}/subjects`) do not
+store a value the property's type cannot interpret: they answer `400` with an
+`{ status, message, violation, messageTranslations }` body and write nothing. `violation` has the
+shape above, with `severity` `error` and `valuePartIndex` counted on the value as sent (0 for a
+value that is not a list). `message` is the violation's message in the wiki's content language,
+prefixed with the property name. The codes that can appear here say so.
+
 ## Severity, blocking, and enforcement
 
 Severity decides whether a write can be rejected: warnings never block, errors can. Each code in the
@@ -121,8 +132,10 @@ for `date` and `dateTime`. `severity`: set by the `minimum` / `maximum` Constrai
 
 On `select` properties. A part is not in the property's `options` allow-list.
 
-`args`: `[offendingPart]`. `valuePartIndex`: the offending part. `severity`: set by the `options`
-Constraint (default `warning`).
+`args`: `[offendingPart]`. `valuePartIndex`: the offending part; in a `violations` array it counts
+the stored parts, which omit blank strings. `severity`: set by the `options` Constraint (default
+`warning`). Also [refused](#refused-values) by the write endpoints, when a part names no option by
+id or label.
 
 ### `single-value-only`
 
@@ -130,6 +143,34 @@ On single-valued (`multiple: false`) `select` and `relation` properties: more th
 (`select`) or relation target (`relation`) was supplied.
 
 `args`: `[]`. `severity`: set by the `multiple` Constraint (default `warning`).
+
+### `select-id-label-mismatch`
+
+On `select` properties; only [refused](#refused-values) by the write endpoints. A value sent as an
+`{ "id", "label" }` object names an id and a label that belong to different options.
+
+`args`: `[id, label]`.
+
+### `select-object-without-id-or-label`
+
+On `select` properties; only [refused](#refused-values) by the write endpoints. A value sent as an
+object has neither an `id` nor a `label`.
+
+`args`: `[]`.
+
+### `select-value-not-string-or-object`
+
+On `select` properties; only [refused](#refused-values) by the write endpoints. A value part is
+neither a string nor an object.
+
+`args`: `[]`.
+
+### `select-id-label-not-strings`
+
+On `select` properties; only [refused](#refused-values) by the write endpoints. A value sent as an
+object has an `id` or a `label` that is present but not a string.
+
+`args`: `[]`.
 
 ### `invalid-datetime`
 

@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
+use ProfessionalWiki\NeoWiki\Application\StatementNormalizer;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
@@ -39,7 +39,7 @@ readonly class CreateSubjectAction {
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaResolver $schemaResolver,
-		private SelectStatementResolver $selectStatementResolver,
+		private StatementNormalizer $statementNormalizer,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
 		private PageIdentifiersResolver $pageIdentifiersResolver,
@@ -134,7 +134,7 @@ readonly class CreateSubjectAction {
 		$schemaReference = $this->schemaReference( $request );
 		$label = SubjectLabel::fromText( $request->label );
 		$statements = $this->statementListBuilder->build(
-			$this->resolveSelectValues( $schema, $request->statements )
+			$this->statementNormalizer->normalizeOrThrow( $schema, $request->statements )
 		);
 
 		if ( $request->id === null ) {
@@ -187,19 +187,6 @@ readonly class CreateSubjectAction {
 	 */
 	private function subjectIdIsInUse( SubjectId $id ): bool {
 		return $this->pageIdentifiersLookup->getPageIdOfSubject( $id ) !== null;
-	}
-
-	/**
-	 * @param array<string, mixed> $statements
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function resolveSelectValues( ?Schema $schema, array $statements ): array {
-		if ( $schema === null ) {
-			return $statements;
-		}
-
-		return $this->selectStatementResolver->resolve( $schema, $statements );
 	}
 
 }

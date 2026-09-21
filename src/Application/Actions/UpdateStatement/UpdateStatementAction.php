@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
+use ProfessionalWiki\NeoWiki\Application\StatementNormalizer;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
@@ -37,7 +37,7 @@ readonly class UpdateStatementAction {
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaResolver $schemaResolver,
-		private SelectStatementResolver $selectStatementResolver,
+		private StatementNormalizer $statementNormalizer,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private UpdateStatementPresenter $presenter,
 		private bool $validationEnforced,
@@ -137,11 +137,9 @@ readonly class UpdateStatementAction {
 			],
 		];
 
-		if ( $schema !== null ) {
-			$statements = $this->selectStatementResolver->resolve( $schema, $statements );
-		}
-
-		return $this->statementListBuilder->build( $statements )->getStatement( $propertyName );
+		return $this->statementListBuilder
+			->build( $this->statementNormalizer->normalizeOrThrow( $schema, $statements ) )
+			->getStatement( $propertyName );
 	}
 
 	/**

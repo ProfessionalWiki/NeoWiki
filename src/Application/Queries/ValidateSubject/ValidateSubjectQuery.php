@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubject;
 
 use ProfessionalWiki\NeoWiki\Application\Schema\Exception\SchemaNotFoundException;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
+use ProfessionalWiki\NeoWiki\Application\StatementNormalizer;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
@@ -18,7 +18,7 @@ readonly class ValidateSubjectQuery {
 		private SchemaResolver $schemaResolver,
 		private SubjectValidator $subjectValidator,
 		private StatementListBuilder $statementListBuilder,
-		private SelectStatementResolver $selectStatementResolver,
+		private StatementNormalizer $statementNormalizer,
 		private string $localSourceKey,
 	) {
 	}
@@ -43,7 +43,7 @@ readonly class ValidateSubjectQuery {
 
 		return $this->subjectValidator->validate(
 			$this->statementListBuilder->build(
-				$this->selectStatementResolver->resolveOrLeave( $resolvedSchema, $statements )
+				$this->statementNormalizer->normalize( $resolvedSchema, $statements )
 			),
 			$resolvedSchema,
 		);

@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
+use ProfessionalWiki\NeoWiki\Application\RejectedValueException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -16,6 +17,8 @@ use ProfessionalWiki\NeoWiki\Presentation\RestReplaceSubjectPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ReplaceSubjectApi extends SimpleHandler {
+
+	use RejectedValueResponse;
 
 	public function __construct(
 		private readonly CsrfValidator $csrfValidator
@@ -40,6 +43,8 @@ class ReplaceSubjectApi extends SimpleHandler {
 				$body['statements'],
 				$body['comment'] ?? null
 			);
+		} catch ( RejectedValueException $e ) {
+			return $this->newRejectedValueResponse( $e );
 		} catch ( InvalidArgumentException $e ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'status' => 'error',

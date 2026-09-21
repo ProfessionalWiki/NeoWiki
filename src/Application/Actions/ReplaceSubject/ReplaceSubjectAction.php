@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject;
 
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
+use ProfessionalWiki\NeoWiki\Application\StatementNormalizer;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
@@ -15,7 +15,6 @@ use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -31,7 +30,7 @@ readonly class ReplaceSubjectAction {
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaResolver $schemaResolver,
-		private SelectStatementResolver $selectStatementResolver,
+		private StatementNormalizer $statementNormalizer,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private ReplaceSubjectPresenter $presenter,
 		private bool $validationEnforced,
@@ -67,7 +66,7 @@ readonly class ReplaceSubjectAction {
 
 		$subject->setLabel( SubjectLabel::fromText( $label ) );
 		$subject->setStatements(
-			$this->statementListBuilder->build( $this->resolveStatements( $schema, $statements ) )
+			$this->statementListBuilder->build( $this->statementNormalizer->normalizeOrThrow( $schema, $statements ) )
 		);
 
 		$proposedViolations = $this->proposedSubjectValidator->validate( $subject );
@@ -107,19 +106,6 @@ readonly class ReplaceSubjectAction {
 			$pageIdentifiers,
 			SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageIdentifiers->getTitle() )
 		);
-	}
-
-	/**
-	 * @param array<string, mixed> $statements
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function resolveStatements( ?Schema $schema, array $statements ): array {
-		if ( $schema === null ) {
-			return $statements;
-		}
-
-		return $this->selectStatementResolver->resolve( $schema, $statements );
 	}
 
 }

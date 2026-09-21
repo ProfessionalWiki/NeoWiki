@@ -79,8 +79,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredExcep
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
+use ProfessionalWiki\NeoWiki\Application\StatementNormalizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\ReferencingSubjectLookup;
@@ -1480,7 +1479,7 @@ class NeoWikiExtension {
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),
-			selectStatementResolver: $this->getSelectStatementResolver(),
+			statementNormalizer: $this->getStatementNormalizer(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
@@ -1497,7 +1496,7 @@ class NeoWikiExtension {
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),
-			selectStatementResolver: $this->getSelectStatementResolver(),
+			statementNormalizer: $this->getStatementNormalizer(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			validationEnforced: $this->isValidationEnforced(),
@@ -1514,8 +1513,8 @@ class NeoWikiExtension {
 		return new SubjectIdMinter( $this->getIdGenerator() );
 	}
 
-	public function getSelectStatementResolver(): SelectStatementResolver {
-		return new SelectStatementResolver( new SelectValueResolver() );
+	public function getStatementNormalizer(): StatementNormalizer {
+		return new StatementNormalizer( $this->getPropertyTypeLookup() );
 	}
 
 	public function getSubjectRepository(): SubjectRepository {
@@ -1841,7 +1840,7 @@ class NeoWikiExtension {
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),
-			selectStatementResolver: $this->getSelectStatementResolver(),
+			statementNormalizer: $this->getStatementNormalizer(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
@@ -1855,7 +1854,7 @@ class NeoWikiExtension {
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),
-			selectStatementResolver: $this->getSelectStatementResolver(),
+			statementNormalizer: $this->getStatementNormalizer(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
@@ -1893,7 +1892,7 @@ class NeoWikiExtension {
 			schemaResolver: $this->getSchemaResolver(),
 			subjectValidator: $this->newSubjectValidator( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
-			selectStatementResolver: $this->getSelectStatementResolver(),
+			statementNormalizer: $this->getStatementNormalizer(),
 			localSourceKey: $this->config->wikiId,
 		);
 	}
@@ -1904,7 +1903,7 @@ class NeoWikiExtension {
 			schemaResolver: $this->getSchemaResolver(),
 			subjectValidator: $this->newSubjectValidator( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
-			selectStatementResolver: $this->getSelectStatementResolver(),
+			statementNormalizer: $this->getStatementNormalizer(),
 			hostingPageResolver: $this->newSubjectHostingPageResolver( $authority ),
 			subjectIdParser: $this->getSubjectIdParser(),
 		);
