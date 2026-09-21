@@ -181,9 +181,9 @@ These are the settings you are most likely to change. For the full list with des
 
 ## Choosing page-first or subject-first
 
-`$wgNeoWikiSubjectFirst` selects whether this wiki is [page-first](../glossary.md#page-first-wiki) or
-[subject-first](../glossary.md#subject-first-wiki): `false`, the default, is page-first; `true` is
-subject-first. It can also be set on `MediaWiki:NeoWiki` as `subjectFirst`
+`$wgNeoWikiSubjectFirst` selects whether this wiki is
+[page-first or subject-first](../glossary.md#page-first-and-subject-first-wikis): `false`, the default, is page-first;
+`true` is subject-first. It can also be set on `MediaWiki:NeoWiki` as `subjectFirst`
 ([on-wiki configuration](#on-wiki-configuration)).
 
 | Behaviour | Page-first | Subject-first |
