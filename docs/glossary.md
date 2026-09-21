@@ -80,7 +80,7 @@ A Property Definition has:
 - A **type**: a Property Type. Example: "url".
 - Whether a value is **required**.
 - An optional **description**.
-- An optional **default** Value, used when none is provided.
+- An optional **default** Value.
 - **Constraints**: validation and data rules specific to the Property Type. Example: `"minimum": 42`. Each carries a
   severity of `error` or `warning` (default `warning`) that decides whether violating it can block a write — see
   [Constraint severity](api/schema-format.md#constraint-severity). Not overridable in Layouts.
