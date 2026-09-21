@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="400" viewBox="0 0 720 400"
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="400" viewBox="0 0 760 400"
 	font-family="sans-serif" font-size="17">
-<rect width="720" height="400" fill="#FFF"/>
+<rect width="760" height="400" fill="#FFF"/>
 
 <!-- Page -->
 <rect x="90" y="60" width="500" height="250" fill="none" stroke="#000" stroke-width="2.4"/>
