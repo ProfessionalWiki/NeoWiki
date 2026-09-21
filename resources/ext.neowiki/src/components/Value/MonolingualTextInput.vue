@@ -67,7 +67,7 @@ import { MonolingualTextProperty } from '@/domain/propertyTypes/MonolingualText.
 import LanguagePicker from '@/components/common/LanguagePicker.vue';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { preferErrorViolation, useServerViolations, violationStatus } from '@/composables/useServerViolations.ts';
-import { userLanguageTag } from '@/presentation/mediaWikiLanguages.ts';
+import { contentLanguageTag } from '@/presentation/mediaWikiLanguages.ts';
 
 /**
  * One editable part.
@@ -111,7 +111,7 @@ const { relevant, format, emitClears, firstMessages, fieldLevelMessages } = useS
 );
 
 function newRow(): Row {
-	return rowOf( { text: '', language: userLanguageTag() } );
+	return rowOf( { text: '', language: contentLanguageTag() } );
 }
 
 function rowOf( part: MonolingualText ): Row {

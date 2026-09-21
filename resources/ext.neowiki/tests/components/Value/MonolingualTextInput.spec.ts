@@ -137,9 +137,9 @@ describe( 'MonolingualTextInput', () => {
 		expect( textValues( wrapper ) ).toEqual( [ 'Zinema', 'Cine', '' ] );
 	} );
 
-	it( 'emits a typed text tagged with the interface language', async () => {
+	it( 'emits a typed text tagged with the language the wiki is written in', async () => {
 		setupMwMock( {
-			config: { wgUserLanguage: 'eu', wgContentLanguage: 'en' },
+			config: { wgUserLanguage: 'en', wgContentLanguage: 'eu' },
 			languageNames: { en: 'English', eu: 'Basque', es: 'Spanish' },
 		} );
 		const wrapper = newWrapper();

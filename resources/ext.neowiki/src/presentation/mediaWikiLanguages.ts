@@ -16,6 +16,14 @@ export function userLanguageTag(): string {
 	return toLanguageTag( mw.config.get( 'wgUserLanguage' ) );
 }
 
+/**
+ * The language the wiki is written in, which is the same for every editor and every page they
+ * edit from, special pages included.
+ */
+export function contentLanguageTag(): string {
+	return toLanguageTag( mw.config.get( 'wgContentLanguage' ) );
+}
+
 // Kept from one call to the next, since MediaWiki hands out the same names every time and listing
 // them takes a bcp47() call for each of several hundred languages.
 let listedNames: Record<string, string> | undefined;
