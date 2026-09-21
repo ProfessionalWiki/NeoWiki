@@ -9,6 +9,9 @@ import { SubjectId } from '@/domain/SubjectId';
 import { Subject } from '@/domain/Subject';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { StatementList } from '@/domain/StatementList.ts';
+import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
+import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
+import { setupMwMock } from '../VueTestHelpers.ts';
 import type { Schema } from '@/domain/Schema.ts';
 
 describe( 'SubjectStore — subjectCreatorOpen', () => {
@@ -44,6 +47,90 @@ function withSubjectRepository( repository: Record<string, unknown> ): void {
 		{ getSubjectRepository: () => repository } as unknown as NeoWikiExtension,
 	);
 }
+
+describe( 'SubjectStore createSubject', () => {
+
+	const pageId = 7;
+	const drafted = newSubject( { id: 's33333333333333', label: 'Anvil', schemaName: 'Product' } );
+
+	beforeEach( () => {
+		setActivePinia( createPinia() );
+	} );
+
+	afterEach( () => {
+		vi.restoreAllMocks();
+	} );
+
+	function repositoryWriting( subjectFirst: boolean ): { createOtherSubject: ReturnType<typeof vi.fn>; createSubjectPage: ReturnType<typeof vi.fn> } {
+		setupMwMock( { config: { wgNeoWikiSubjectFirst: subjectFirst } } );
+
+		const repository = {
+			createOtherSubject: vi.fn().mockResolvedValue( writeResult( null ) ),
+			createSubjectPage: vi.fn().mockResolvedValue(
+				{ ...writeResult( null ), pageTitle: 'Anvil', pageId: 12 },
+			),
+		};
+
+		withSubjectRepository( repository );
+
+		return repository;
+	}
+
+	it( 'stores the Subject on the page it was given on a page-first wiki', async () => {
+		const repository = repositoryWriting( false );
+
+		await useSubjectStore().createSubject( drafted, pageId, 'why' );
+
+		expect( repository.createOtherSubject ).toHaveBeenCalledWith(
+			pageId, 'Anvil', 'Product', drafted.getStatements(), 'why', drafted.getId(),
+		);
+		expect( repository.createSubjectPage ).not.toHaveBeenCalled();
+	} );
+
+	it( 'gives the Subject a page of its own on a subject-first wiki', async () => {
+		const repository = repositoryWriting( true );
+
+		await useSubjectStore().createSubject( drafted, pageId, 'why' );
+
+		expect( repository.createSubjectPage ).toHaveBeenCalledWith(
+			'Anvil', 'Product', drafted.getStatements(), 'why', undefined, drafted.getId(),
+		);
+		expect( repository.createOtherSubject ).not.toHaveBeenCalled();
+	} );
+
+	// Two namesakes are a thing a subject-first wiki has to let people make, and nobody was asked
+	// which page to use, so there is no question to send the clash back to.
+	it( 'titles the page after the Subject when the label names a page that is taken', async () => {
+		const repository = repositoryWriting( true );
+		repository.createSubjectPage.mockRejectedValueOnce( new PageTitleTakenError( 'Anvil' ) );
+
+		await useSubjectStore().createSubject( drafted, pageId, 'why' );
+
+		expect( repository.createSubjectPage.mock.calls ).toEqual( [
+			[ 'Anvil', 'Product', drafted.getStatements(), 'why', undefined, drafted.getId() ],
+			[ 'Anvil', 'Product', drafted.getStatements(), 'why', drafted.getId().text, drafted.getId() ],
+		] );
+	} );
+
+	it( 'writes once where the label titles a page nobody holds', async () => {
+		const repository = repositoryWriting( true );
+
+		await useSubjectStore().createSubject( drafted, pageId, 'why' );
+
+		expect( repository.createSubjectPage ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	// A retry would offer the server the same id a second time, which it has just refused.
+	it( 'does not retry a write refused for anything but the title', async () => {
+		const repository = repositoryWriting( true );
+		repository.createSubjectPage.mockRejectedValueOnce( new SubjectIdInUseError( drafted.getId().text ) );
+
+		await expect( useSubjectStore().createSubject( drafted, pageId, 'why' ) )
+			.rejects.toBeInstanceOf( SubjectIdInUseError );
+		expect( repository.createSubjectPage ).toHaveBeenCalledTimes( 1 );
+	} );
+
+} );
 
 describe( 'SubjectStore deleteSubject', () => {
 

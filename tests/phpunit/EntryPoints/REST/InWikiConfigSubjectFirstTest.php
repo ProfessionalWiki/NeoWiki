@@ -26,15 +26,15 @@ use TestLogger;
  * config, an invalid one falls back with a warning, and the kill switch stops the page from applying.
  *
  * @covers \ProfessionalWiki\NeoWiki\Application\WikiConfig\WikiConfigLookup
- * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::dereferenceSubjectsToHostingPage
+ * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::isSubjectFirst
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiWikiConfigSource
  * @group Database
  */
-class InWikiConfigDereferenceTest extends NeoWikiIntegrationTestCase {
+class InWikiConfigSubjectFirstTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 
-	private const string SCHEMA = 'InWikiConfigDerefSchema';
-	private const string SUBJECT_ID = 'sCfgDeref111111';
+	private const string SCHEMA = 'InWikiConfigSubjectFirstSchema';
+	private const string SUBJECT_ID = 'sCfgSubjFirst11';
 
 	private int $pageId;
 
@@ -42,13 +42,13 @@ class InWikiConfigDereferenceTest extends NeoWikiIntegrationTestCase {
 		$this->setUpNeo4j();
 
 		// Pin the PHP config to false (the win case's page value is true) so a passing test proves the page
-		// value, not an ambient override; the fallback cases then land on Special:Subject.
-		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToHostingPage', false );
+		// value, not an ambient override; the fallback cases then land on the hosting page.
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', false );
 
 		$this->createSchema( self::SCHEMA );
 
 		$this->pageId = $this->createPageWithSubjects(
-			'InWikiConfigDereference_City',
+			'InWikiConfigSubjectFirst_City',
 			mainSubject: TestSubject::build(
 				id: self::SUBJECT_ID,
 				label: new SubjectLabel( 'Berlin' ),
@@ -95,17 +95,17 @@ class InWikiConfigDereferenceTest extends NeoWikiIntegrationTestCase {
 		return Title::newFromID( $this->pageId )->getCanonicalURL();
 	}
 
-	private function assertLandsOnSpecialSubject( string $location, string $message ): void {
-		$this->assertStringEndsWith( 'Special:Subject/' . self::SUBJECT_ID, $location, $message );
+	private function assertLandsOnHostingPage( string $location, string $message ): void {
+		$this->assertSame( $this->hostingPageUrl(), $location, $message );
 	}
 
 	public function testAValidPageSettingWinsOverThePhpConfig(): void {
-		$this->saveConfigPage( '{ "dereferenceSubjectsToHostingPage": true }' );
+		$this->saveConfigPage( '{ "subjectFirst": true }' );
 
-		$this->assertSame(
-			$this->hostingPageUrl(),
+		$this->assertStringEndsWith(
+			'Special:Subject/' . self::SUBJECT_ID,
 			$this->htmlDereferenceLocation(),
-			'The page value sends the dereference to the hosting page.'
+			'The page value sends the dereference to the Subject itself.'
 		);
 	}
 
@@ -113,9 +113,9 @@ class InWikiConfigDereferenceTest extends NeoWikiIntegrationTestCase {
 		$logger = new TestLogger( true );
 		$this->setLogger( 'NeoWiki', $logger );
 
-		$this->saveConfigPage( '{ "dereferenceSubjectsToHostingPage": "yes" }' );
+		$this->saveConfigPage( '{ "subjectFirst": "yes" }' );
 
-		$this->assertLandsOnSpecialSubject(
+		$this->assertLandsOnHostingPage(
 			$this->htmlDereferenceLocation(),
 			'The dereference falls back to the PHP config target.'
 		);
@@ -123,10 +123,10 @@ class InWikiConfigDereferenceTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testThePageSettingIsIgnoredWhenInWikiConfigIsDisabled(): void {
-		$this->saveConfigPage( '{ "dereferenceSubjectsToHostingPage": true }' );
+		$this->saveConfigPage( '{ "subjectFirst": true }' );
 		$this->overrideConfigValue( 'NeoWikiEnableInWikiConfig', false );
 
-		$this->assertLandsOnSpecialSubject(
+		$this->assertLandsOnHostingPage(
 			$this->htmlDereferenceLocation(),
 			'With the kill switch off the page is not read, so the PHP config target applies.'
 		);

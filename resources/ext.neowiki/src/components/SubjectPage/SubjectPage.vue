@@ -34,6 +34,7 @@
 						:key="referenced.getId().text"
 						:subject="referenced"
 						:subject-page-url="subjectPageUrl( referenced.getId().text )"
+						link-title
 						:expanded="expandedIds.has( referenced.getId().text )"
 						:can-edit="canEditSubject"
 						:can-delete="canDeleteSubject"
@@ -58,6 +59,7 @@
 						:subject="referencing.subject"
 						:dom-id="referencingSubjectRowDomId( referencing.subject.getId().text )"
 						:subject-page-url="subjectPageUrl( referencing.subject.getId().text )"
+						link-title
 						:caption="propertiesCaption( referencing.propertyNames )"
 						:expanded="expandedReferencingIds.has( referencing.subject.getId().text )"
 						:can-edit="canEditSubject"
@@ -114,6 +116,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
+import { pageDeleteFormUrl } from '@/presentation/subjectDeletion.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -432,7 +435,14 @@ const deletingSubject = shallowRef<Subject | null>( null );
 const deletingSubjectName = computed( () =>
 	deletingSubject.value === null ? '' : subjectDisplayName( deletingSubject.value ) );
 
-function confirmDelete( target: Subject ): void {
+async function confirmDelete( target: Subject ): Promise<void> {
+	const deleteForm = await pageDeleteFormUrl( pageOf( target ), subjectRepo );
+
+	if ( deleteForm !== null ) {
+		window.location.href = deleteForm;
+		return;
+	}
+
 	deletingSubject.value = target;
 	deleteConfirmOpen.value = true;
 }

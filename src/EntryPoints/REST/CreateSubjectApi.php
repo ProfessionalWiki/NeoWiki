@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\RestCreateSubjectPresenter;
@@ -26,19 +25,6 @@ class CreateSubjectApi extends SimpleHandler {
 
 		$body = $this->getValidatedBody();
 
-		$id = $body['id'] ?? null;
-
-		// A Subject is only ever created in the local Source, so a supplied id must name it: bare, or
-		// qualified with this wiki's own key, which the parser canonicalizes away. The action enforces
-		// the same rule; checking here makes it a 400 rather than a 400 dressed as an exception.
-		if ( $id !== null && $this->localId( $id ) === null ) {
-			return $this->getResponseFactory()->createHttpError( 400, [
-				'status' => 'error',
-				'message' => "Cannot create Subject '$id': only Subjects of this wiki can be created, "
-					. 'so the ID must be a well-formed local one.',
-			] );
-		}
-
 		$presenter = new RestCreateSubjectPresenter();
 
 		try {
@@ -50,7 +36,7 @@ class CreateSubjectApi extends SimpleHandler {
 					schemaName: $body['schema'],
 					statements: $body['statements'],
 					comment: $body['comment'] ?? null,
-					id: $id,
+					id: $body['id'] ?? null,
 				)
 			);
 		} catch ( \InvalidArgumentException $e ) {
@@ -68,12 +54,6 @@ class CreateSubjectApi extends SimpleHandler {
 		$response = $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
 		$response->setStatus( $presenter->getStatusCode() );
 		return $response;
-	}
-
-	private function localId( string $id ): ?SubjectId {
-		$subjectId = NeoWikiExtension::getInstance()->getSubjectIdParser()->parse( $id );
-
-		return $subjectId?->isLocal() === true ? $subjectId : null;
 	}
 
 	public function getParamSettings(): array {

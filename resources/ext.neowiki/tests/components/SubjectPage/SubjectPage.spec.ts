@@ -17,6 +17,7 @@ import { SubjectId } from '@/domain/SubjectId.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { StatementList } from '@/domain/StatementList.ts';
+import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
 import { newRelation, RelationValue } from '@/domain/Value.ts';
@@ -103,6 +104,7 @@ const referencedSubject = subject( {
 const getSubjectWithReferencedSubjectsMock = vi.fn();
 const getReferencingSubjectsMock = vi.fn();
 const getSubjectForEditingMock = vi.fn();
+const getPageSubjectsMock = vi.fn();
 const getSchemaMock = vi.fn();
 const checkPermissionsMock = vi.fn();
 
@@ -154,7 +156,7 @@ function silenceConsoleErrors(): MockInstance {
 	return vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 }
 
-function mountPage(): VueWrapper {
+function mountPage( subjectFirst = false ): VueWrapper {
 	setupMwMock( {
 		functions: [ 'config', 'msg', 'message', 'notify', 'util' ],
 		// Core's own separator, which the row captions join property names with.
@@ -162,6 +164,7 @@ function mountPage(): VueWrapper {
 		config: {
 			wgNeoWikiRdfProjections: PROJECTIONS,
 			wgNeoWikiSubjectIriBase: IRI_BASE,
+			wgNeoWikiSubjectFirst: subjectFirst,
 		},
 	} );
 
@@ -187,6 +190,7 @@ function mountPage(): VueWrapper {
 					getSubjectWithReferencedSubjects: getSubjectWithReferencedSubjectsMock,
 					getReferencingSubjects: getReferencingSubjectsMock,
 					getSubjectForEditing: getSubjectForEditingMock,
+					getPageSubjects: getPageSubjectsMock,
 				},
 				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
 			},
@@ -194,8 +198,8 @@ function mountPage(): VueWrapper {
 	} );
 }
 
-async function mountLoadedPage(): Promise<VueWrapper> {
-	const wrapper = mountPage();
+async function mountLoadedPage( subjectFirst = false ): Promise<VueWrapper> {
+	const wrapper = mountPage( subjectFirst );
 
 	// onMounted awaits the Subject read, then the Schema reads, then the permission check.
 	await flushPromises();
@@ -214,6 +218,8 @@ async function openEditorOn( control: ReturnType<VueWrapper['find']> ): Promise<
 
 async function confirmDelete( wrapper: VueWrapper, control: ReturnType<VueWrapper['find']> ): Promise<void> {
 	await control.trigger( 'click' );
+	// The click first settles where the deletion goes, which on a subject-first wiki is a read.
+	await flushPromises();
 	wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'no longer needed' );
 	await flushPromises();
 }
@@ -228,6 +234,11 @@ describe( 'SubjectPage', () => {
 				Promise.reject( new Error( `Unknown schema: ${ name }` ) ) :
 				Promise.resolve( SCHEMAS[ name ] ) );
 		getSubjectForEditingMock.mockReset();
+		getPageSubjectsMock.mockReset().mockResolvedValue( {
+			pageSubjects: new PageSubjects( PAGE_ID, new SubjectId( SUBJECT_ID ), [ requestedSubject ] ),
+			referencedSubjects: [],
+			schemas: [],
+		} );
 		checkPermissionsMock.mockReset().mockResolvedValue( undefined );
 	} );
 
@@ -502,6 +513,54 @@ describe( 'SubjectPage', () => {
 
 			expect( getSubjectMock ).toHaveBeenCalledWith(
 				expect.objectContaining( { text: newTargetId } ) );
+		} );
+
+		// A subject-first wiki's page exists to hold its Subject, so the last one leaving takes the
+		// page with it, and MediaWiki's own form is what confirms that and checks the right.
+		it( 'leaves for the page\'s delete form when the Subject is its page\'s only one', async () => {
+			canDeleteSubjectRef.value = true;
+			const deleteSubject = vi.fn().mockResolvedValue( undefined );
+			const wrapper = await mountLoadedPage( true );
+			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockImplementation( deleteSubject );
+			// Restored by re-stubbing rather than vi.unstubAllGlobals(), which would take the `mw`
+			// stub with it, out from under every component this file leaves mounted.
+			const realLocation = window.location;
+			vi.stubGlobal( 'location', { href: '' } );
+
+			try {
+				await wrapper.find( `${ REQUESTED_ROW } ${ DELETE_CONTROL }` ).trigger( 'click' );
+				await flushPromises();
+
+				expect( location.href ).toBe( '/wiki/ACME Inc?action=delete' );
+			} finally {
+				vi.stubGlobal( 'location', realLocation );
+			}
+
+			expect( wrapper.findComponent( SummaryAction ).exists() ).toBe( false );
+			expect( deleteSubject ).not.toHaveBeenCalled();
+		} );
+
+		it( 'deletes the Subject alone where its page holds others, which outlive it', async () => {
+			canDeleteSubjectRef.value = true;
+			getPageSubjectsMock.mockResolvedValue( {
+				pageSubjects: new PageSubjects(
+					PAGE_ID,
+					new SubjectId( SUBJECT_ID ),
+					[ requestedSubject, subject( { id: OTHER_REFERENCED_ID, label: 'Rocket' } ) ],
+				),
+				referencedSubjects: [],
+				schemas: [],
+			} );
+			const deleteSubject = vi.fn().mockResolvedValue( undefined );
+			const wrapper = await mountLoadedPage( true );
+			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockImplementation( deleteSubject );
+
+			await confirmDelete( wrapper, wrapper.find( `${ REQUESTED_ROW } ${ DELETE_CONTROL }` ) );
+
+			expect( deleteSubject ).toHaveBeenCalledWith(
+				expect.objectContaining( { text: SUBJECT_ID } ),
+				'no longer needed',
+			);
 		} );
 
 		// The Edit and Delete controls on the page's own row wait for the read of the Subject to

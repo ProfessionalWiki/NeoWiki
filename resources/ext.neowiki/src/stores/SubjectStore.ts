@@ -8,6 +8,8 @@ import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SubjectWriteResult } from '@/domain/SubjectRepository.ts';
+import { isSubjectFirst } from '@/wikiMode.ts';
+import { PageTitleTakenError } from '@/persistence/PageTitleTakenError.ts';
 
 /**
  * A Subject created together with a page of its own: the page is the server's to title, so where
@@ -89,10 +91,17 @@ export const useSubjectStore = defineStore( 'subject', {
 			this.recordWriteResult( result, schemaEpoch );
 		},
 		/**
-		 * Writes a Subject the client built, under the id it already carries, as a Subject of the
-		 * given page. The counterpart to updateSubject for one the wiki does not have yet.
+		 * Writes a Subject the client built, under the id it already carries. The counterpart to
+		 * updateSubject for one the wiki does not have yet.
+		 *
+		 * Where it lands is the wiki's mode (ADR 33): a page-first wiki stores it on the page given,
+		 * a subject-first one gives it a page of its own and ignores that page.
 		 */
 		async createSubject( subject: Subject, pageId: number, comment?: string ): Promise<SubjectId> {
+			if ( isSubjectFirst() ) {
+				return ( await this.createSubjectOnOwnPage( subject, comment ) ).subjectId;
+			}
+
 			return this.createOtherSubject(
 				pageId,
 				subject.getLabel(),
@@ -204,10 +213,36 @@ export const useSubjectStore = defineStore( 'subject', {
 		},
 
 		/**
+		 * Creates a Subject on a page of its own, titled by its label, and by the Subject's own id
+		 * where a page already holds the title the label names. Two namesakes are a thing a
+		 * subject-first wiki has to let people make, and the id-titled page is the fallback the
+		 * server already makes for a label that titles no page at all (ADR 33).
+		 *
+		 * For the wikis that ask which page a Subject goes on: they report the clash at the question
+		 * instead, which is where the user can answer it.
+		 */
+		async createSubjectOnOwnPage( subject: Subject, comment?: string ): Promise<CreatedSubjectPage> {
+			const label = subject.getLabel();
+			const schemaName = subject.getSchemaName();
+			const statements = subject.getStatements();
+			const id = subject.getId();
+
+			try {
+				return await this.createSubjectPage( label, schemaName, statements, comment, undefined, id );
+			} catch ( error ) {
+				if ( error instanceof PageTitleTakenError ) {
+					return this.createSubjectPage( label, schemaName, statements, comment, id.text, id );
+				}
+
+				throw error;
+			}
+		},
+
+		/**
 		 * Creates a Subject together with a page of its own, and reports where it landed: the page
 		 * is the server's to title, so the caller learns its name only from the answer.
 		 */
-		async createSubjectPage( label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string, pageTitle?: string ): Promise<CreatedSubjectPage> {
+		async createSubjectPage( label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string, pageTitle?: string, id?: SubjectId ): Promise<CreatedSubjectPage> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createSubjectPage(
@@ -216,6 +251,7 @@ export const useSubjectStore = defineStore( 'subject', {
 				statements,
 				comment,
 				pageTitle,
+				id,
 			);
 
 			this.recordWriteResult( result, schemaEpoch );

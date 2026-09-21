@@ -62,11 +62,11 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * NeoWiki ships Special:Subject as the dereference target (extension.json). The hosting-page tests
-	 * opt in explicitly; the default tests leave the setting unset to exercise the shipped default.
+	 * NeoWiki ships as a page-first wiki (extension.json), so the hosting page is the shipped browser
+	 * target and the tests of it leave the setting unset. The subject-first tests opt in explicitly.
 	 */
-	private function dereferenceToHostingPage(): void {
-		$this->overrideConfigValue( 'NeoWikiDereferenceSubjectsToHostingPage', true );
+	private function makeWikiSubjectFirst(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
 	}
 
 	public function testAcceptTriGRedirectsToTheSubjectTriGExport(): void {
@@ -90,25 +90,25 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectRdfLocation( $response, 'trig' );
 	}
 
-	public function testAcceptHtmlRedirectsToTheSubjectsOwnPage(): void {
+	public function testAcceptHtmlRedirectsToTheHostingPage(): void {
 		$response = $this->deref( headers: [ 'Accept' => 'text/html' ] );
 
 		$this->assertSame( 303, $response->getStatusCode() );
-		$this->assertSpecialSubjectLocation( $response );
+		$this->assertHostingPageLocation( $response );
 	}
 
-	public function testWildcardAcceptRedirectsToTheSubjectsOwnPage(): void {
+	public function testWildcardAcceptRedirectsToTheHostingPage(): void {
 		$response = $this->deref( headers: [ 'Accept' => '*/*' ] );
 
 		$this->assertSame( 303, $response->getStatusCode() );
-		$this->assertSpecialSubjectLocation( $response );
+		$this->assertHostingPageLocation( $response );
 	}
 
-	public function testAbsentAcceptRedirectsToTheSubjectsOwnPage(): void {
+	public function testAbsentAcceptRedirectsToTheHostingPage(): void {
 		$response = $this->deref();
 
 		$this->assertSame( 303, $response->getStatusCode() );
-		$this->assertSpecialSubjectLocation( $response );
+		$this->assertHostingPageLocation( $response );
 	}
 
 	/**
@@ -116,6 +116,7 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 	 * bare-id URL every other surface uses for it.
 	 */
 	public function testAnIdNamingThisWikiRedirectsToItsBareForm(): void {
+		$this->makeWikiSubjectFirst();
 		$localSourceKey = NeoWikiExtension::getInstance()->getSubjectIdParser()->getLocalSourceKey();
 
 		$response = $this->deref(
@@ -127,17 +128,17 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSpecialSubjectLocation( $response );
 	}
 
-	public function testHtmlDereferenceRedirectsToTheHostingPageWhenTheWikiAsksForThat(): void {
-		$this->dereferenceToHostingPage();
+	public function testHtmlDereferenceRedirectsToTheSubjectItselfOnASubjectFirstWiki(): void {
+		$this->makeWikiSubjectFirst();
 
 		$response = $this->deref( headers: [ 'Accept' => 'text/html' ] );
 
 		$this->assertSame( 303, $response->getStatusCode() );
-		$this->assertHostingPageLocation( $response );
+		$this->assertSpecialSubjectLocation( $response );
 	}
 
-	public function testTheHostingPageTargetLeavesTheRdfBranchesUnchanged(): void {
-		$this->dereferenceToHostingPage();
+	public function testASubjectFirstWikiLeavesTheRdfBranchesUnchanged(): void {
+		$this->makeWikiSubjectFirst();
 
 		$response = $this->deref( headers: [ 'Accept' => 'application/trig' ] );
 
@@ -220,7 +221,7 @@ class ResolveSubjectIriApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringEndsWith(
 			'Special:Subject/' . self::SUBJECT_ID,
 			$location,
-			'A browser dereference lands on the Subject\'s own page.'
+			'A browser dereference lands on the Subject itself.'
 		);
 	}
 

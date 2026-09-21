@@ -79,6 +79,17 @@ Each Relation has
 
 
 
+## Page-first wiki
+
+A wiki where the page comes first: a page is about one thing, and its Subjects hold data about it. Links lead to
+pages, and a new Subject goes on the page you create it from. This is the default.
+
+## Subject-first wiki
+
+A wiki where the Subject comes first: each new Subject gets its own page, and that page only stores it. Links lead
+to the Subject (`Special:Subject`), not to its page. A wiki-level setting turns this on
+([ADR 33](adr/033-page-first-and-subject-first-wikis.md)).
+
 ## Source
 
 Where a Subject comes from ([ADR 23](adr/023-subject-sources.md)). A Source produces Subjects and resolves the Schemas

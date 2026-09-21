@@ -315,7 +315,7 @@ describe( 'SubjectEditPane', () => {
 		// for it, so there is nothing to point at and nothing to name.
 		it( 'names no storage page for one still to be settled', () => {
 			const wrapper = mountPane( {
-				subject: subjectStoredOn( new PageIdentifiers( 0, '' ) ),
+				subject: subjectStoredOn( PageIdentifiers.notYetCreated() ),
 				nested: true,
 			} );
 

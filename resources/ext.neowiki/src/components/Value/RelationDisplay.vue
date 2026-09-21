@@ -29,6 +29,7 @@ import { Value, RelationValue, Relation } from '@/domain/Value.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
+import { subjectLinkUrl } from '@/presentation/subjectLinks.ts';
 
 interface RelationDisplayValueData {
 	text: string;
@@ -40,12 +41,8 @@ const props = defineProps<ValueDisplayProps<RelationProperty>>();
 
 const subjectStore = useSubjectStore();
 
-// Where a relation leads: the page its target is stored on, unless the host says otherwise.
-const relationTargetUrl = inject( RelationTargetUrlKey, targetPageUrl );
-
-function targetPageUrl( target: SubjectWithContext ): string {
-	return mw.util.getUrl( target.getPageIdentifiers().getPageName() );
-}
+// Where a relation leads: to the target as a View links to one, unless the host says otherwise.
+const relationTargetUrl = inject( RelationTargetUrlKey, subjectLinkUrl );
 
 // Computed, not resolved once: a target seeded after the first render then resolves.
 const displayedValues = computed( () => getDisplayedValues( props.value ) );

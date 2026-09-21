@@ -108,7 +108,7 @@
 			</div>
 
 			<CdxAccordion
-				v-else-if="pageChoice !== null"
+				v-else-if="pageChoice !== null && pageQuestionAsked"
 				class="ext-neowiki-subject-creator-page-section"
 				:open="pageSectionOpen"
 				@toggle="onPageSectionToggle"
@@ -256,6 +256,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { setPendingNotification } from '@/presentation/PendingNotification.ts';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
+import { isSubjectFirst } from '@/wikiMode.ts';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
 import { useEditNotices } from '@/composables/useEditNotices.ts';
 
@@ -279,12 +280,12 @@ const emit = defineEmits<{
 /**
  * The page the Subject being created is bound for, as the editor is handed it: unanswered. Which
  * page it lands on is asked in the footer and can still change, so no answer is written into the
- * Subject itself; the write handlers below read the answer as it stands when the save goes out.
- * MediaWiki numbers a page that is not there 0. A Subject created against this one inherits these
- * identifiers, which is what marks it as bound for the same place; one created while drilled into a
- * Subject the wiki already holds carries that Subject's own page instead.
+ * Subject itself; the write handlers below read the answer as it stands when the save goes out. A
+ * Subject created against this one inherits these identifiers, which is what marks it as bound for
+ * the same place; one created while drilled into a Subject the wiki already holds carries that
+ * Subject's own page instead.
  */
-const UNANSWERED_PAGE = new PageIdentifiers( 0, '' );
+const UNANSWERED_PAGE = PageIdentifiers.notYetCreated();
 
 const selectedSchemaOption = ref( 'existing' );
 const { notices, loadNotices } = useEditNotices( () => NeoWikiExtension.getInstance().getEditNoticeRepository() );
@@ -322,8 +323,9 @@ const chosenPageRead = ref( false );
 const chosenPageHasMainSubject = ref( false );
 const chosenPageMainSubjectName = ref<string | null>( null );
 const pageTitle = ref( '' );
-const titleTakenError = ref<string | null>( null );
-const invalidTitleError = ref<string | null>( null );
+// What the page question got wrong, whichever way: a title already taken, one that titles no page,
+// or none to give. Only one of them can stand at a time, so they share the slot they are shown in.
+const pageTitleError = ref<string | null>( null );
 const pageReadError = ref<string | null>( null );
 
 // Which page the Subject goes on is asked below the Subject itself, and collapsed: the page it is
@@ -371,10 +373,25 @@ const pageOptions = computed( (): PageOption[] => {
 	return options;
 } );
 
-// The page being viewed where there is one, and a page of the Subject's own where there is not.
+/**
+ * Whether the dialog asks which page the Subject goes on. A subject-first wiki gives it a page of
+ * its own, so there is nothing to ask - unless the caller named the page, or this user cannot
+ * create one and so could not be given it either way (ADR 33).
+ */
+const pageQuestionAsked = computed( (): boolean =>
+	!isSubjectFirst() ||
+	props.initialPage !== undefined ||
+	!canCreateSubjectPage.value );
+
+// The page being viewed where there is one, and a page of the Subject's own where there is not, or
+// where the wiki gives every Subject one.
 function defaultPageChoice(): SubjectPageChoice {
 	if ( props.initialPage !== undefined ) {
 		return props.initialPage.choice;
+	}
+
+	if ( !pageQuestionAsked.value ) {
+		return 'newPage';
 	}
 
 	if ( props.hostPage !== null ) {
@@ -406,7 +423,6 @@ watch( pageChoice, () => {
 
 // One message per field: each of these belongs to a different page choice, so no two of them can
 // be standing at once.
-const pageTitleError = computed( (): string | null => titleTakenError.value ?? invalidTitleError.value );
 const pageError = computed( (): string | null => pageTitleError.value ?? pageReadError.value );
 
 // Answered, and answerable: a page still to be picked leaves the question open, and a page that
@@ -569,8 +585,7 @@ function resetPageChoice(): void {
 	chosenPageHasMainSubject.value = false;
 	chosenPageMainSubjectName.value = null;
 	pageTitle.value = '';
-	titleTakenError.value = null;
-	invalidTitleError.value = null;
+	pageTitleError.value = null;
 	pageReadError.value = null;
 }
 
@@ -889,7 +904,7 @@ async function writeRootSubject( subject: Subject, comment: string ): Promise<vo
 	const statements = subject.getStatements();
 
 	if ( answer.goingTo === 'newPage' ) {
-		const created = await createOnNewPage( label, schemaName, statements, comment, answer.title );
+		const created = await createOnNewPage( subject, comment, answer.title );
 
 		writtenRoot = { subjectId: created.subjectId, pageId: created.pageId, pageTitle: created.pageTitle };
 		return;
@@ -953,32 +968,60 @@ async function createBesideMainSubject(
 	}
 }
 
-// The two ways a title is refused are answered at the field it was typed in, and reported as the
-// save's own failure too: the writes stop there, and the toast is what says so.
+/**
+ * Creates the Subject on a page of its own. Where the page was never asked about, a label whose
+ * title is taken is not something the user can be sent back to answer, so the Subject takes the
+ * page its own id titles instead. Where the question is asked, the page comes first, so a new one
+ * is never titled after a Subject id: the title typed, else the label, and a Subject with neither
+ * is sent back to give one before anything is written.
+ *
+ * The two ways the server refuses a title are answered at the field it was typed in, and reported
+ * as the save's own failure too: the writes stop there, and the toast is what says so.
+ */
 async function createOnNewPage(
-	label: string | null,
-	schemaName: string,
-	statements: StatementList,
+	subject: Subject,
 	comment: string,
 	chosenTitle: string | null
 ): Promise<CreatedSubjectPage> {
+	if ( !pageQuestionAsked.value ) {
+		return await subjectStore.createSubjectOnOwnPage( subject, comment );
+	}
+
+	// Re-decided on each attempt, so a label typed since the last one clears what it answered.
+	pageTitleError.value = null;
+
+	const pageTitle = chosenTitle ?? subject.getLabel();
+
+	if ( pageTitle === null ) {
+		pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-required' );
+
+		throw new Error( pageTitleError.value );
+	}
+
 	try {
-		return await subjectStore.createSubjectPage( label, schemaName, statements, comment, chosenTitle ?? undefined );
+		return await subjectStore.createSubjectPage(
+			subject.getLabel(),
+			subject.getSchemaName(),
+			subject.getStatements(),
+			comment,
+			pageTitle,
+			subject.getId()
+		);
 	} catch ( error ) {
 		if ( error instanceof PageTitleTakenError ) {
 			// A fixed destination offers no other page and no title field: only the label can change.
-			titleTakenError.value = mw.msg(
+			pageTitleError.value = mw.msg(
 				pageFixed.value && chosenTitle === null ?
 					'neowiki-subject-creator-page-taken-fixed' :
 					'neowiki-subject-creator-page-taken',
 				error.pageTitle
 			);
-			throw new Error( titleTakenError.value );
+			throw new Error( pageTitleError.value );
 		}
 
 		if ( error instanceof InvalidPageTitleError ) {
-			invalidTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-invalid', error.pageTitle );
-			throw new Error( invalidTitleError.value );
+			pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-invalid', error.pageTitle );
+			throw new Error( pageTitleError.value );
 		}
 
 		throw error;
@@ -987,8 +1030,7 @@ async function createOnNewPage(
 
 // Retyping the title is the answer to a title the server refused, whichever way it refused it.
 function handlePageTitleInput(): void {
-	titleTakenError.value = null;
-	invalidTitleError.value = null;
+	pageTitleError.value = null;
 }
 
 // A Subject the user drilled into from a relation exists already, so the editor updates it.
@@ -1010,16 +1052,17 @@ async function handleSchemaSave( updatedSchema: Schema, comment: string ): Promi
 }
 
 /**
- * Opened without a page of its own, the creator is about the Subject, so it leaves for the
- * Subject's own page, which shows what was created. Opened on a page, it leaves for the page the
- * Subject went on, with a notice that it was created; a null title is the page being viewed.
+ * Where the dialog leaves for is the wiki's mode (ADR 33). A subject-first wiki is about the
+ * Subject, so it leaves for the Subject itself, which shows what was created. A page-first wiki is
+ * about the page, so it leaves for the page the Subject went on, with a notice that it was created;
+ * a null title is the page being viewed, which is reloaded rather than navigated to.
  */
 function handleSaved(): void {
 	if ( writtenRoot === null ) {
 		return;
 	}
 
-	if ( props.hostPage === null ) {
+	if ( isSubjectFirst() ) {
 		window.location.href = subjectPageUrl( writtenRoot.subjectId.text );
 		return;
 	}
