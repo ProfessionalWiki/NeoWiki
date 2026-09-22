@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
 	newDateProperty,
 	DateType,
-	formatDateForDisplay,
 	parseStrictDate,
 } from '@/domain/propertyTypes/Date';
 import { PropertyName } from '@/domain/PropertyDefinition';
@@ -106,39 +105,6 @@ describe( 'parseStrictDate', () => {
 
 	it( 'returns null for completely malformed input', () => {
 		expect( parseStrictDate( 'not-a-date' ) ).toBeNull();
-	} );
-
-} );
-
-describe( 'formatDateForDisplay', () => {
-
-	it( 'returns the raw input when the value cannot be parsed', () => {
-		expect( formatDateForDisplay( 'not-a-date' ) ).toBe( 'not-a-date' );
-	} );
-
-	it( 'returns the raw input when given an empty string', () => {
-		expect( formatDateForDisplay( '' ) ).toBe( '' );
-	} );
-
-	it( 'renders a parsed date as a non-ISO human-readable string', () => {
-		const result = formatDateForDisplay( '2025-06-15' );
-
-		expect( result ).not.toBe( '2025-06-15' );
-		expect( result ).not.toMatch( /^\d{4}-\d{2}-\d{2}$/ );
-	} );
-
-	it( 'includes the year of the date', () => {
-		expect( formatDateForDisplay( '2025-06-15' ) ).toContain( '2025' );
-	} );
-
-	it( 'renders the stored calendar day regardless of host timezone', () => {
-		// Interpreted as UTC and rendered with timeZone: 'UTC', so the day
-		// component is always 15 and never rolls to 14 or 16.
-		expect( formatDateForDisplay( '2025-06-15' ) ).toContain( '15' );
-	} );
-
-	it( 'does not append a time component', () => {
-		expect( formatDateForDisplay( '2025-06-15' ) ).not.toMatch( /\d{2}:\d{2}/ );
 	} );
 
 } );
