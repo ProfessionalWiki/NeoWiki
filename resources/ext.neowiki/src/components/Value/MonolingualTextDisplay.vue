@@ -13,14 +13,19 @@
 				dir="auto"
 			>{{ view.part.text }}</span>
 			<span
-				v-if="view.languageName !== null"
+				v-if="view.tag !== null"
 				class="ext-neowiki-monolingual-text-display__language"
 				:title="view.languageName"
 			>
-				<span aria-hidden="true">{{ view.tag }}</span>
+				<!-- The tag is hidden from a screen reader only when the name beside it says the same
+					thing. Unnamed, the tag is all there is to announce. -->
+				<span :aria-hidden="view.languageName === undefined ? undefined : 'true'">{{ view.tag }}</span>
 				<!-- The space keeps a screen reader from running the name into the text before it; a
 					non-breaking one, since the template compiler drops a plain one at an element's start. -->
-				<span class="ext-neowiki-monolingual-text-display__language-name">&nbsp;{{ view.languageName }}</span>
+				<span
+					v-if="view.languageName !== undefined"
+					class="ext-neowiki-monolingual-text-display__language-name"
+				>&nbsp;{{ view.languageName }}</span>
 			</span>
 		</div>
 		<!-- After every part it reveals, so opening it never leaves it between the parts. -->
@@ -52,12 +57,13 @@ import { languageName, partsForReader, readerLanguageTags, userLanguageTag } fro
 interface PartView {
 	part: MonolingualText;
 	/**
-	 * The part's tag in capitals, the way the editor writes it. In script rather than by
-	 * `text-transform`, which follows the page's language and turns `it` into `İT` on a Turkish page.
+	 * The part's tag in capitals, the way the editor writes it, or null when the reader reads that
+	 * language. In script rather than by `text-transform`, which follows the page's language and
+	 * turns `it` into `İT` on a Turkish page.
 	 */
-	tag: string;
-	/** The part's language, named for anyone who cannot place its tag; null when the reader reads it. */
-	languageName: string | null;
+	tag: string | null;
+	/** The part's language, named for anyone who cannot place its tag, when MediaWiki names it. */
+	languageName?: string;
 }
 
 const props = defineProps<ValueDisplayProps<MonolingualTextProperty>>();
@@ -85,10 +91,14 @@ const shownParts = computed<PartView[]>( () => [
  * can see for themselves.
  */
 function viewOf( part: MonolingualText ): PartView {
+	if ( part.language === userLanguageTag() ) {
+		return { part: part, tag: null };
+	}
+
 	return {
 		part: part,
 		tag: part.language.toUpperCase(),
-		languageName: part.language === userLanguageTag() ? null : languageName( part.language )
+		languageName: languageName( part.language )
 	};
 }
 

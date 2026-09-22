@@ -12,8 +12,11 @@ describe( 'LanguagePicker', () => {
 	let cleanups: ( () => void )[] = [];
 
 	// Attached, because where the focus goes is part of what is asserted.
-	function newWrapper( modelValue: string ): VueWrapper {
-		wrapper = mount( LanguagePicker, { props: { modelValue: modelValue }, attachTo: document.body } );
+	function newWrapper( modelValue: string, label = 'Title language 1' ): VueWrapper {
+		wrapper = mount( LanguagePicker, {
+			props: { modelValue: modelValue, label: label },
+			attachTo: document.body,
+		} );
 		return wrapper;
 	}
 
@@ -120,14 +123,22 @@ describe( 'LanguagePicker', () => {
 		expect( button( newWrapper( 'eu' ) ).attributes( 'aria-label' ) ).toContain( 'Basque' );
 	} );
 
+	it( 'names on its button the row it belongs to, which is the only tab stop the row has', () => {
+		expect( button( newWrapper( 'eu', 'Title language 2' ) ).attributes( 'aria-label' ) )
+			.toContain( 'Title language 2' );
+	} );
+
 	it( 'names a language MediaWiki has no name for by its tag', () => {
 		setupMwMock( {
 			config: { wgUserLanguage: 'en', wgContentLanguage: 'en' },
 			languageNames: { en: 'English' },
-			messages: { 'neowiki-language-picker-button': ( name, tag ) => `${ name } (${ tag })` },
+			messages: {
+				'neowiki-language-picker-button': ( label, name, tag ) => `${ label }: ${ name } (${ tag })`,
+			},
 		} );
 
-		expect( button( newWrapper( 'und' ) ).attributes( 'aria-label' ) ).toBe( 'und (und)' );
+		expect( button( newWrapper( 'und', 'Title language 1' ) ).attributes( 'aria-label' ) )
+			.toBe( 'Title language 1: und (und)' );
 	} );
 
 	it( 'keeps its languages closed until the button is pressed', () => {

@@ -139,10 +139,11 @@ export function typedLanguageTag( options: readonly LanguageOption[], typed: str
 }
 
 /**
- * The name MediaWiki lists for a language, or its tag when it lists none.
+ * The name MediaWiki lists for a language, or undefined when it lists none. Without the CLDR
+ * extension MediaWiki names a language in that language, so it has no name for many of them.
  */
-export function languageName( tag: string ): string {
-	return languageOptions().find( ( option ) => option.tag === tag )?.name ?? tag;
+export function languageName( tag: string ): string | undefined {
+	return languageOptions().find( ( option ) => option.tag === tag )?.name;
 }
 
 /**

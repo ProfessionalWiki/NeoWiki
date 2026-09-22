@@ -49,7 +49,7 @@ describe( 'MonolingualTextDisplay', () => {
 	/** Each shown part's language as the reader sees it, its tag, or '' when the part carries none. */
 	function shownTags( wrapper: VueWrapper ): string[] {
 		return wrapper.findAll( '.ext-neowiki-monolingual-text-display__part' ).map( ( part ) => {
-			const tag = part.find( '.ext-neowiki-monolingual-text-display__language [aria-hidden]' );
+			const tag = part.find( '.ext-neowiki-monolingual-text-display__language > span' );
 
 			return tag.exists() ? tag.text() : '';
 		} );
@@ -109,7 +109,17 @@ describe( 'MonolingualTextDisplay', () => {
 		const language = wrapper.find( '.ext-neowiki-monolingual-text-display__language' );
 
 		expect( language.attributes( 'lang' ) ).toBeUndefined();
-		expect( language.attributes( 'title' ) ).toBe( 'ar' );
+	} );
+
+	it( 'shows the bare tag of a language MediaWiki has no name for, there being no name to read out', () => {
+		readsIn( 'de', 'de' );
+
+		const language = newWrapperFor( { text: 'فيلم', language: 'ar' }, CINE )
+			.find( '.ext-neowiki-monolingual-text-display__language' );
+
+		expect( language.text() ).toBe( 'AR' );
+		expect( language.attributes( 'title' ) ).toBeUndefined();
+		expect( language.find( '[aria-hidden]' ).exists() ).toBe( false );
 	} );
 
 	it( 'counts the other languages on the link that reveals them', () => {

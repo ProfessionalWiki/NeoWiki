@@ -35,7 +35,7 @@
 	"neowiki-monolingual-text-text-label": "$1 text $2",
 	"neowiki-monolingual-text-language-label": "$1 language $2",
 	"neowiki-language-picker-placeholder": "Search languages",
-	"neowiki-language-picker-button": "$1 ($2), change language",
+	"neowiki-language-picker-button": "$1: $2 ($3)",
 	"neowiki-language-picker-tag": "Language tag",
 	"neowiki-property-type-unregistered": "Unavailable type",
 	"neowiki-property-type-unregistered-note": "The type \"$1\" is not available on this wiki.",

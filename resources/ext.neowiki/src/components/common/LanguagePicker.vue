@@ -41,7 +41,7 @@
 				v-model="query"
 				class="ext-neowiki-language-picker__search"
 				:placeholder="searchPlaceholder"
-				:aria-label="props.ariaLabel"
+				:aria-label="searchPlaceholder"
 				:aria-controls="menuId"
 				:aria-activedescendant="highlightedId"
 				aria-autocomplete="list"
@@ -99,16 +99,14 @@ const FOCUS_ATTEMPTS = 10;
 interface LanguagePickerProps {
 	/** The committed language, as a BCP 47 tag. */
 	modelValue: string;
-	/** Names the search field, which is all the panel holds that the user types into. */
-	ariaLabel?: string;
+	/**
+	 * Names the field the picker stands in, such as "Title language 2". Its button is the only tab
+	 * stop that field has, so this is what names the button.
+	 */
+	label: string;
 }
 
-const props = withDefaults(
-	defineProps<LanguagePickerProps>(),
-	{
-		ariaLabel: undefined
-	}
-);
+const props = defineProps<LanguagePickerProps>();
 
 const emit = defineEmits<{
 	'update:modelValue': [ tag: string ];
@@ -139,7 +137,8 @@ const shownTag = computed( (): string => props.modelValue.toUpperCase() );
 
 const buttonLabel = computed( (): string => mw.message(
 	'neowiki-language-picker-button',
-	languageName( props.modelValue ),
+	props.label,
+	languageName( props.modelValue ) ?? props.modelValue,
 	props.modelValue
 ).text() );
 
