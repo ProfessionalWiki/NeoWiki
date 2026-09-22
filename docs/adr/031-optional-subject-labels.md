@@ -2,7 +2,9 @@
 
 Date: 2026-08-13
 
-Status: Draft. Amended 2026-09-11, on pages titled after their Subject (see Amendment).
+Status: Draft. Amended 2026-09-11, on pages titled after their Subject (see Amendment). Amended by
+[ADR 35](035-label-templates.md), which labels a Subject from its Schema's label template ahead of the page name and
+lets a Mapping's `labelPredicate` carry that label.
 
 Retires the `label-required` violation, which [ADR 26](026-validation-severity-levels.md) classifies as a
 fixed-severity error on the ground that a label is Subject identity: "a labelless Subject cannot be displayed or

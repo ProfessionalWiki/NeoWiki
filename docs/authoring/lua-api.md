@@ -305,6 +305,7 @@ Top-level fields:
 |-------|------|-------------|
 | `name` | string | The Schema name. |
 | `description` | string | The Schema description. Omitted when empty. |
+| `labelTemplate` | string | The Schema's [label template](../api/schema-format.md#label-template). Omitted when unset. |
 | `properties` | table | 1-indexed list of properties, in Schema-defined order. |
 
 Every property entry has `name`, `type`, and `required`, plus `description` and `default` when
@@ -406,14 +407,13 @@ structure:
 
 Notes:
 
-- `label` is the display name and is never `nil`: a Subject without a stored label takes its page
-  name when it is the page's Main Subject, and its Schema name otherwise. `storedLabel` carries the
-  stored value and is `nil` when the Subject has none. The REST API splits these the other way:
-  `label` is the stored value, `displayName` the display name.
+- `label` is the display name, the REST API's [`displayName`](../api/subject-format.md#reading-subjects), and
+  is never `nil`. `storedLabel` carries the stored value, the REST API's `label`, and is `nil` when the
+  Subject has none.
 - `isMainSubject` says whether the Subject is the Main Subject of the page it was read from.
 - A Subject fetched with [`nw.getSubject`](#nwgetsubjectsubjectid) comes without its page: its
-  `isMainSubject` key is absent rather than `false`, and a label-less Main Subject is named after its
-  Schema there.
+  `isMainSubject` key is absent rather than `false`, and a Main Subject with neither a stored nor a
+  template label is named after its Schema there.
 - `schema` is a Schema name for a Schema of this wiki, and a table `{ source = ..., name = ... }` for
   one from another Source. [`nw.getSchema`](#nwgetschemaname) takes either, so
   `nw.getSchema( subject.schema )` works whichever it is.

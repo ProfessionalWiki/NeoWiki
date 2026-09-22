@@ -63,9 +63,8 @@ warning is logged for each.
 ## Projected triples
 
 A Subject becomes one RDF resource: its `rdf:type` is its Schema's `neo-schema:` class, and `rdfs:label` is always
-emitted. A Subject with no label takes the page name when it is that page's Main Subject and its Schema
-name otherwise ([ADR 31](../adr/031-optional-subject-labels.md)). Each Statement adds triples whose predicate is the
-property's `neo-prop:` IRI, one per part of a multi-part Value.
+emitted, carrying the Subject's [`displayName`](subject-format.md#reading-subjects). Each Statement adds triples whose
+predicate is the property's `neo-prop:` IRI, one per part of a multi-part Value.
 
 A Relation is emitted twice, so that a simple query never has to navigate reification:
 

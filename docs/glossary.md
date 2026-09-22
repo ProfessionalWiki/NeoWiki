@@ -20,10 +20,10 @@ Subjects have
 
 - A `schema`: reference to a Schema by name. Example: Person, Company, Product, etc.
 - An optional `label`: the name of the subject. Example: "John Doe". This is a string, not a reference to a page.
-  Without one, the Subject is shown under its page name when it is the page's Main Subject, and otherwise under its
-  Schema name — which the UI marks as `(unnamed <Schema>)` to say nobody chose it. A page titled with the id of a
-  Subject stored on it names nothing, so its Main Subject shows the Schema name too
-  ([ADR 31](adr/031-optional-subject-labels.md))
+  Without one, the Subject is shown under the name its Schema's [Label Template](#label-template) gives it, else its
+  page name when it is the page's Main Subject, else its Schema name — which the UI marks as `(unnamed <Schema>)` to
+  say nobody chose it. A page titled with the id of a Subject stored on it names nothing, so its Main Subject shows the
+  Schema name too ([ADR 31](adr/031-optional-subject-labels.md))
 - `statements`: a list of Statements
 - An `id`: persistent identifier. Subject IDs start with `s` and are always 15 characters long ([ADR 14](adr/014-improved-id-format.md))
 
@@ -72,7 +72,13 @@ Each Relation has
 
 A Schema ([ADR 6](adr/006-schemas.md)) defines a type of Subject. Examples: Person, Company, Product, etc.
 
-Schemas have a name, description, and a list of Property Definitions
+Schemas have a name, description, a list of Property Definitions, and optionally a Label Template
+
+#### Label Template
+
+A Schema's rule for naming, from their own Statements, those of its Subjects that have no label. Examples: `{Title}`,
+`{Given name} {Family name}` ([ADR 35](adr/035-label-templates.md),
+[Schema format](api/schema-format.md#label-template)).
 
 #### Property Definition
 

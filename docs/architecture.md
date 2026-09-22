@@ -81,3 +81,4 @@ Every architectural decision on record, in the order it was made.
 * [ADR 32: Subject-to-Page Index](adr/032-subject-page-index.md)
 * [ADR 33: Page-first and Subject-first Wikis](adr/033-page-first-and-subject-first-wikis.md)
 * [ADR 34: Monolingual Text Value Type](adr/034-monolingual-text-value-type.md)
+* [ADR 35: Label Templates](adr/035-label-templates.md)

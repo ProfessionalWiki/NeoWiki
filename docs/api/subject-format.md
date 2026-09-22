@@ -163,9 +163,10 @@ The 15-character grammar, and the creation-time sorting that comes with it, hold
 Subject gains an `id` and a `displayName`, and carries `label` as `null` where the stored JSON omits it. Every
 endpoint that returns a Subject object serves this shape.
 
-`displayName` is the name to show, never null: the label where there is one, otherwise the page name for a main
-Subject and the Schema name for any other Subject, or for a main Subject whose page is titled with the id of a Subject
-stored on it ([ADR 31](../adr/031-optional-subject-labels.md)). `displayNameIsGenerated` is true wherever that Schema
+`displayName` is the name to show, never null: the stored `label` where there is one, otherwise the
+[template label](schema-format.md#label-template), otherwise the page name for a main Subject and the Schema name for
+any other Subject, or for a main Subject whose page is titled with the id of a Subject stored on it
+([ADR 31](../adr/031-optional-subject-labels.md)). `displayNameIsGenerated` is true wherever that Schema
 name is used.
 
 - `?expand=page` adds `pageId`, `pageTitle`, and `pageNamespaceId` to each Subject. `pageTitle` is the full page
