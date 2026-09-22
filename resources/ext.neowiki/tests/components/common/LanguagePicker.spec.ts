@@ -244,6 +244,15 @@ describe( 'LanguagePicker', () => {
 		expect( listedLanguages( picker ) ).toEqual( [] );
 	} );
 
+	it( 'says so when the search matches no language', async () => {
+		const picker = newWrapper( 'en' );
+
+		await openPicker( picker );
+		await type( picker, 'German' );
+
+		expect( picker.find( '.cdx-menu__no-results' ).text() ).toBe( 'neowiki-language-picker-no-results' );
+	} );
+
 	it( 'lists more languages once the list is scrolled to its end', async () => {
 		useLanguages( manyLanguages() );
 		const picker = newWrapper( 'en' );

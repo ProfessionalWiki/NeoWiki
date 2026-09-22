@@ -63,7 +63,11 @@
 				:visible-item-limit="VISIBLE_ITEMS"
 				@update:selected="onSelect"
 				@load-more="listMore"
-			/>
+			>
+				<template #no-results>
+					{{ noResultsLabel }}
+				</template>
+			</CdxMenu>
 		</div>
 	</div>
 </template>
@@ -118,6 +122,7 @@ const options = computed(
 	(): LanguageOption[] => languagesByPreference( languageOptions(), readerLanguageTags() )
 );
 const searchPlaceholder = mw.message( 'neowiki-language-picker-placeholder' ).text();
+const noResultsLabel = mw.message( 'neowiki-language-picker-no-results' ).text();
 
 const panelId = useGeneratedId( 'ext-neowiki-language-picker-panel' );
 const menuId = useGeneratedId( 'ext-neowiki-language-picker-menu' );
