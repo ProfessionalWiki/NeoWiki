@@ -50,13 +50,10 @@
 				@keydown="onSearchKeydown"
 				@keyup.enter="pickHighlighted"
 			/>
-			<!-- Keyed by the search, since CdxMenu keeps the entry the arrow keys reached when the
-				entries change: Enter or Tab would then pick a language the search has hidden. -->
 			<!-- Out of the tab order: the list is reached with the arrow keys from the search field, and
 				a scrollable list Chrome would otherwise stop Tab on has no name and no use there. -->
 			<CdxMenu
 				:id="menuId"
-				:key="query"
 				ref="menuRef"
 				tabindex="-1"
 				class="ext-neowiki-language-picker__menu"
@@ -136,10 +133,6 @@ const open = ref( false );
 const query = ref( '' );
 const menuLength = ref( MENU_PAGE_SIZE );
 
-// Which entry the arrow keys have reached, for a screen reader to announce while focus stays in the
-// search field.
-const highlightedId = computed( (): string | undefined => menuRef.value?.getHighlightedMenuItem()?.id );
-
 // Written in capitals, as tags usually are. In script rather than by `text-transform`, which follows
 // the page's language and turns `it` into `İT` on a Turkish page.
 const shownTag = computed( (): string => props.modelValue.toUpperCase() );
@@ -192,6 +185,22 @@ watch( query, () => {
 function listMore(): void {
 	menuLength.value += MENU_PAGE_SIZE;
 }
+
+/**
+ * Which entry the arrow keys have reached, for a screen reader to announce while focus stays in
+ * the search field. Read back from the panel rather than asked of the menu: Codex mints a fresh id
+ * for every entry whenever the list changes, so the id it holds for the entry the arrow keys
+ * reached names an element that a later page of languages has already replaced.
+ */
+const highlightedId = ref<string | undefined>( undefined );
+
+watch(
+	[ menuItems, () => menuRef.value?.getHighlightedMenuItem() ],
+	() => {
+		highlightedId.value = panelRef.value?.querySelector( '.cdx-menu-item--highlighted' )?.id;
+	},
+	{ flush: 'post' }
+);
 
 const buttonElement = computed(
 	(): HTMLElement | undefined => buttonRef.value?.$el as HTMLElement | undefined
@@ -311,9 +320,14 @@ function pickHighlighted( event: KeyboardEvent ): void {
 	}
 }
 
-// CdxMenu reports the language it holds when that one is picked again, which still ends the choice.
+/**
+ * Only a language the list is offering is a pick: Codex keeps the entry the arrow keys reached
+ * when the entries change under it, so Enter or Tab would otherwise choose a language the search
+ * has since hidden. CdxMenu reports the language the picker already holds when that one is picked
+ * again, which still ends the choice.
+ */
 function onSelect( tag: string | null ): void {
-	if ( tag === null ) {
+	if ( tag === null || !menuItems.value.some( ( item ) => item.value === tag ) ) {
 		return;
 	}
 

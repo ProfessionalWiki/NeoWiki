@@ -45,6 +45,15 @@ describe( 'LanguagePicker', () => {
 		return picker.findAll( '.cdx-menu-item__text__supporting-text' ).map( ( tag ) => tag.text() );
 	}
 
+	function listboxStyle( picker: VueWrapper ): string {
+		return picker.find( '.cdx-menu__listbox' ).attributes( 'style' ) ?? '';
+	}
+
+	// More than one page of them, so the list both scrolls and has a page left to load.
+	function manyLanguages(): Record<string, string> {
+		return Object.fromEntries( Array.from( { length: 60 }, ( _, i ) => [ `l${ i }`, `Language ${ i }` ] ) );
+	}
+
 	function listedDescriptions( picker: VueWrapper ): string[] {
 		return picker.findAll( '.cdx-menu-item__text__description' ).map( ( description ) => description.text() );
 	}
@@ -225,7 +234,7 @@ describe( 'LanguagePicker', () => {
 	} );
 
 	it( 'lists more languages once the list is scrolled to its end', async () => {
-		useLanguages( Object.fromEntries( Array.from( { length: 60 }, ( _, i ) => [ `l${ i }`, `Language ${ i }` ] ) ) );
+		useLanguages( manyLanguages() );
 		const picker = newWrapper( 'en' );
 
 		await openPicker( picker );
@@ -371,6 +380,30 @@ describe( 'LanguagePicker', () => {
 
 		expect( space.defaultPrevented ).toBe( false );
 		expect( emittedTags( picker ) ).toEqual( [] );
+	} );
+
+	it( 'holds its list to the entries it has room for once the search narrows it', async () => {
+		useLanguages( manyLanguages() );
+		const picker = newWrapper( 'en' );
+
+		await openPicker( picker );
+		await type( picker, 'Language' );
+
+		await vi.waitFor( () => expect( listboxStyle( picker ) ).toContain( 'max-height' ) );
+	} );
+
+	it( 'points its search field at an entry that is still listed once more languages are', async () => {
+		useLanguages( manyLanguages() );
+		const picker = newWrapper( 'en' );
+
+		await openPicker( picker );
+		await pressKey( 'ArrowDown' );
+		await picker.findComponent( CdxMenu ).vm.$emit( 'load-more' );
+		await picker.vm.$nextTick();
+		const highlighted = picker.find( '.cdx-menu-item--highlighted' );
+
+		expect( highlighted.exists() ).toBe( true );
+		expect( search( picker ).attributes( 'aria-activedescendant' ) ).toBe( highlighted.attributes( 'id' ) );
 	} );
 
 	it( 'points its search field at the entry the arrow keys reach, for a screen reader', async () => {
