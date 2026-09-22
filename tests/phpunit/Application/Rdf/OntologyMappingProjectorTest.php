@@ -31,6 +31,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualText;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer;
@@ -613,6 +615,56 @@ class OntologyMappingProjectorTest extends TestCase {
 			) ),
 			'The relation is a plain IRI-to-IRI triple; datatype and language overrides do not apply.'
 		);
+	}
+
+	/**
+	 * @dataProvider monolingualTextOverrideProvider
+	 */
+	public function testAMonolingualTextValueKeepsItsOwnLanguageTag( ?string $lang, ?string $datatype ): void {
+		$mapping = new SchemaMapping(
+			subject: new SubjectMapping( 'http://example.org/CHO' ),
+			properties: new PropertyMappings( [
+				'Title' => new PropertyMapping( 'dc:title', $lang, $datatype ),
+			] )
+		);
+		$page = TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build(
+				id: self::PERSON_ID,
+				label: 'Jane',
+				schemaName: new SchemaName( 'Person' ),
+				statements: new StatementList( [
+					TestStatement::build(
+						'Title',
+						new MonolingualTextValue( new MonolingualText( 'Zinema', 'eu' ) ),
+						'monolingualText'
+					),
+				] )
+			),
+		);
+
+		$quads = $this->newProjector( [ 'Person' => $mapping ] )->projectPage( $page );
+
+		$this->assertTrue(
+			$quads->contains( new Quad(
+				$this->ns->subject( new SubjectId( self::PERSON_ID ) ),
+				new Iri( self::DC . 'title' ),
+				RdfLiteralFactory::languageTagged( 'Zinema', 'eu' ),
+				$this->ns->graph( 'edm', new PageId( 42 ) )
+			) ),
+			'The tag the value carries is data, so neither `lang` nor `datatype` replaces it.'
+		);
+	}
+
+	/**
+	 * Both overrides are exercised, and the pair that save-time validation rejects is built directly to
+	 * prove the projector does not fall back to either.
+	 */
+	public static function monolingualTextOverrideProvider(): iterable {
+		yield 'no override' => [ null, null ];
+		yield 'language override' => [ 'en', null ];
+		yield 'datatype override' => [ null, 'http://www.w3.org/2001/XMLSchema#string' ];
+		yield 'both overrides' => [ 'en', 'http://www.w3.org/2001/XMLSchema#string' ];
 	}
 
 	private function personWithBirthYear(): Subject {

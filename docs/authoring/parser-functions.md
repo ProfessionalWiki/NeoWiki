@@ -102,6 +102,7 @@ Returns the value of a single property from a Subject, formatted as a string.
 | `number` | The number, e.g. `42` or `19.99`. |
 | `boolean` | `true` or `false`. |
 | `relation` | The target Subject's display name. Multiple targets joined with `separator`. Falls back to the target Subject ID when the target cannot be looked up or its page is not readable. |
+| `monolingualText` | Each part's text, without its language. Multiple parts joined with `separator`. |
 
 Boolean and number values are always rendered, even for `false` and `0` — these are not treated
 as "empty".

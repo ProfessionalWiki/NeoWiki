@@ -13,6 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
@@ -109,6 +110,10 @@ class SubjectDataLookup {
 			return $this->subjectResolver->resolveRelationLabel( $value->relations[0] );
 		}
 
+		if ( $value instanceof MonolingualTextValue ) {
+			return $value->parts[0]->text;
+		}
+
 		return null;
 	}
 
@@ -136,6 +141,10 @@ class SubjectDataLookup {
 
 		if ( $value instanceof RelationValue ) {
 			return $this->relationLabelsToLuaTable( $value );
+		}
+
+		if ( $value instanceof MonolingualTextValue ) {
+			return $this->toLuaIndexed( $value->getTexts() );
 		}
 
 		return null;
@@ -296,6 +305,10 @@ class SubjectDataLookup {
 
 		if ( $value instanceof RelationValue ) {
 			return $this->relationsToLuaArray( $value );
+		}
+
+		if ( $value instanceof MonolingualTextValue ) {
+			return $this->toLuaIndexed( $value->toScalars() );
 		}
 
 		return [];

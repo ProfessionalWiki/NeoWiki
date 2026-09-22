@@ -10,6 +10,7 @@ enum ValueType: string {
 	case Number = 'number';
 	case Boolean = 'boolean';
 	case Relation = 'relation';
+	case MonolingualText = 'monolingualText';
 
 	/**
 	 * The Value's Property Type is not registered, so its structure is unknown.

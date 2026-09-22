@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
@@ -52,6 +53,7 @@ class StatementDeserializer {
 			ValueType::String => new StringValue( ...(array)$value ),
 			ValueType::Number => new NumberValue( $value ),
 			ValueType::Relation => $this->deserializeRelationValue( $value ),
+			ValueType::MonolingualText => MonolingualTextValue::fromScalars( $value ),
 			ValueType::Boolean => new BooleanValue( $value ),
 			ValueType::UnregisteredType => new UnregisteredTypeValue( $propertyType, $value ),
 		};

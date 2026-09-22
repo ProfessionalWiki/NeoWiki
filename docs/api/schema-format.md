@@ -81,10 +81,10 @@ object at all implies `true`. `multiple` constrains when it is `false`, so its o
 `value` is the options array.
 
 The Constraints that accept a severity are `required`, `multiple`, `minimum`, `maximum`, `minLength`,
-`maxLength`, `uniqueItems`, and `options`. Only `select` and `relation` check `multiple`, so a
-severity on it is inert elsewhere. Severity is a Constraint concept, so it does not apply to Display
-Attributes such as `precision`, where it is discarded, nor to the shape-declaring fields `type`,
-`relation`, and `targetSchema`, where it is rejected when the Schema is saved.
+`maxLength`, `uniqueItems`, and `options`. Only `select`, `relation` and `monolingualText` check
+`multiple`, so a severity on it is inert elsewhere. Severity is a Constraint concept, so it does not
+apply to Display Attributes such as `precision`, where it is discarded, nor to the shape-declaring
+fields `type`, `relation`, and `targetSchema`, where it is rejected when the Schema is saved.
 
 Canonical output emits the bare form whenever the severity is the default, so a Schema that sets no
 severities round-trips unchanged. Which violation each Constraint produces, and the fixed severities
@@ -110,6 +110,25 @@ Plain text values.
   "multiple": true,
   "uniqueItems": true,
   "maxLength": 50
+}
+```
+
+### Monolingual text (`monolingualText`)
+
+Text values that each carry the language they are in ([ADR 34](../adr/034-monolingual-text-value-type.md)).
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `multiple` | boolean or object | `false` | Allow multiple values |
+| `uniqueItems` | boolean | `false` | Reject duplicates, comparing text and language together (only with `multiple`) |
+| `minLength` | number | `null` | Minimum trimmed length of each text |
+| `maxLength` | number | `null` | Maximum trimmed length of each text |
+
+```json
+{
+  "type": "monolingualText",
+  "multiple": true,
+  "uniqueItems": true
 }
 ```
 

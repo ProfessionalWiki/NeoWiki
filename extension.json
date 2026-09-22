@@ -441,7 +441,8 @@
 				"pinia",
 				"mediawiki.user",
 				"mediawiki.storage",
-				"mediawiki.jqueryMsg"
+				"mediawiki.jqueryMsg",
+				"mediawiki.language.names"
 			],
 			"codexComponents": [
 				"CdxAccordion",
@@ -507,7 +508,8 @@
 						"cdxIconCollapse",
 						"cdxIconExpand",
 						"cdxIconPushPin",
-						"cdxIconEllipsis"
+						"cdxIconEllipsis",
+						"cdxIconLanguage"
 					]
 				}
 			],
@@ -522,6 +524,14 @@
 				"neowiki-property-type-datetime",
 				"neowiki-property-type-date",
 				"neowiki-property-type-boolean",
+				"neowiki-property-type-monolingualtext",
+				"neowiki-monolingual-text-more-languages",
+				"neowiki-monolingual-text-fewer-languages",
+				"neowiki-monolingual-text-text-label",
+				"neowiki-monolingual-text-language-label",
+				"neowiki-language-picker-placeholder",
+				"neowiki-language-picker-button",
+				"neowiki-language-picker-tag",
 				"neowiki-property-type-unregistered",
 				"neowiki-property-type-unregistered-note",
 				"neowiki-property-type-unregistered-input-note",

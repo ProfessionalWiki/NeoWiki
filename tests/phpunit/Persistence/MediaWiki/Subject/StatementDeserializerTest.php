@@ -12,6 +12,8 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualText;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
@@ -93,6 +95,44 @@ class StatementDeserializerTest extends TestCase {
 		);
 
 		$this->assertSame( [ 'Foo' ], $statement->getValue()->toScalars() );
+	}
+
+	public function testDeserializesMonolingualText(): void {
+		$this->assertEquals(
+			new Statement(
+				property: new PropertyName( 'Original title' ),
+				propertyType: 'monolingualText',
+				value: new MonolingualTextValue(
+					new MonolingualText( 'Zinema', 'eu' ),
+					new MonolingualText( 'Cine', 'es' ),
+				)
+			),
+			$this->newDeserializer()->deserialize(
+				'Original title',
+				[
+					'propertyType' => 'monolingualText',
+					'value' => [
+						[ 'text' => 'Zinema', 'language' => 'eu' ],
+						[ 'text' => 'Cine', 'language' => 'es' ],
+					],
+				]
+			)
+		);
+	}
+
+	public function testDropsStoredMonolingualTextPartsWithoutText(): void {
+		$statement = $this->newDeserializer()->deserialize(
+			'Original title',
+			[
+				'propertyType' => 'monolingualText',
+				'value' => [
+					[ 'text' => ' ', 'language' => 'fr' ],
+					[ 'text' => 'Cine', 'language' => 'es' ],
+				],
+			]
+		);
+
+		$this->assertSame( [ [ 'text' => 'Cine', 'language' => 'es' ] ], $statement->getValue()->toScalars() );
 	}
 
 	public function testDeserializesRelation(): void {

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { newNumberValue, newRelation, newStringValue, newUnregisteredTypeValue, RelationValue } from '@/domain/Value';
+import {
+	newMonolingualTextValue,
+	newNumberValue,
+	newRelation,
+	newStringValue,
+	newUnregisteredTypeValue,
+	RelationValue,
+} from '@/domain/Value';
 import { Neo } from '@/Neo';
 
 describe( 'ValueDeserializer', () => {
@@ -46,6 +53,30 @@ describe( 'ValueDeserializer', () => {
 
 	it( 'throws error on invalid relation json', () => {
 		expect( () => deserializer.deserialize( { foo: 'bar' }, 'relation' ) ).toThrow( 'Invalid relation value: {"foo":"bar"}' );
+	} );
+
+	it( 'converts a list of text and language objects into a MonolingualTextValue', () => {
+		const json = [
+			{ text: 'Zinema', language: 'eu' },
+			{ text: 'Cine', language: 'es' },
+		];
+
+		const value = deserializer.deserialize( json, 'monolingualText' );
+
+		expect( value ).toEqual( newMonolingualTextValue( [
+			{ text: 'Zinema', language: 'eu' },
+			{ text: 'Cine', language: 'es' },
+		] ) );
+	} );
+
+	it( 'throws on a monolingual text value that is not a list', () => {
+		expect( () => deserializer.deserialize( { text: 'Zinema' }, 'monolingualText' ) )
+			.toThrow( 'Invalid monolingual text value: {"text":"Zinema"}' );
+	} );
+
+	it( 'throws on a monolingual text part that is not a text with a language', () => {
+		expect( () => deserializer.deserialize( [ 'Zinema' ], 'monolingualText' ) )
+			.toThrow( 'Invalid monolingual text value: ["Zinema"]' );
 	} );
 
 	it( 'wraps a value of an unregistered type as an UnregisteredTypeValue, preserving the raw data', () => {

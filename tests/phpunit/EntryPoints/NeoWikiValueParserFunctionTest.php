@@ -26,6 +26,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualText;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
@@ -194,6 +196,33 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			->handle( $this->createMockParser(), 'Tags', 'separator=' );
 
 		$this->assertNoParseHtml( 'abc', $result );
+	}
+
+	// --- Monolingual text values ---
+
+	public function testJoinsTheTextsOfAMonolingualTextValue(): void {
+		$result = $this->createPF( $this->repositoryWithSubject( $this->subjectWithOriginalTitle() ) )
+			->handle( $this->createMockParser(), 'Original title' );
+
+		$this->assertNoParseHtml( 'Zinema, Cine', $result );
+	}
+
+	public function testJoinsTheTextsOfAMonolingualTextValueWithTheGivenSeparator(): void {
+		$result = $this->createPF( $this->repositoryWithSubject( $this->subjectWithOriginalTitle() ) )
+			->handle( $this->createMockParser(), 'Original title', 'separator=;' );
+
+		$this->assertNoParseHtml( 'Zinema;Cine', $result );
+	}
+
+	private function subjectWithOriginalTitle(): Subject {
+		return $this->createSubject( new Statement(
+			new PropertyName( 'Original title' ),
+			'monolingualText',
+			new MonolingualTextValue(
+				new MonolingualText( 'Zinema', 'eu' ),
+				new MonolingualText( 'Cine', 'es' ),
+			)
+		) );
 	}
 
 	// --- Number values ---

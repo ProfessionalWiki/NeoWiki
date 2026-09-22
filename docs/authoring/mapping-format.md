@@ -117,8 +117,8 @@ Each **property** entry:
 |---|---|---|
 | `predicate` | yes | Target predicate for the property's values. A CURIE or an absolute IRI. |
 | `node` | no | A node key. The property's values then attach to that node's instance instead of to the Subject. |
-| `lang` | no | BCP-47-shaped language tag (`^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$`, e.g. `en`, `pt-BR`) applied to the produced literal **when it is a plain string** (text/select values). Ignored for typed literals (numbers, dates, …). Mutually exclusive with `datatype`. |
-| `datatype` | no | Absolute IRI or CURIE that overrides the literal's datatype. For a `url` value, which otherwise projects as an IRI object, setting `datatype` forces a literal with that datatype. Mutually exclusive with `lang`. |
+| `lang` | no | BCP-47-shaped language tag (`^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$`, e.g. `en`, `pt-BR`) applied to the produced literal **when it is a plain string** (text/select values). Ignored for typed literals (numbers, dates, …) and for monolingual text values. Mutually exclusive with `datatype`. |
+| `datatype` | no | Absolute IRI or CURIE that overrides the literal's datatype. For a `url` value, which otherwise projects as an IRI object, setting `datatype` forces a literal with that datatype. Ignored for monolingual text values. Mutually exclusive with `lang`. |
 
 Each **contribution** (an entry in `contributions`) is keyed by the name of a relation-typed property on
 *this* Schema, and every Subject that property points at receives the contributed values. The value is a
