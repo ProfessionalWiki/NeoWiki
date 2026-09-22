@@ -13,6 +13,7 @@
 			class="ext-neowiki-language-picker__button"
 			weight="quiet"
 			type="button"
+			aria-haspopup="listbox"
 			:aria-expanded="open"
 			:aria-controls="panelId"
 			:aria-label="buttonLabel"
@@ -210,12 +211,13 @@ const floatingPanel = computed( () => panelRef.value === null ?
 
 /**
  * Anchored to the button at the end of the field, and opening from that end, so the panel reads as
- * belonging to the language it changes. Flipping above when there is no room below, clamping to
- * the space left, and hiding when the field scrolls out of the dialog all come with it.
+ * belonging to the language it changes, and set off by enough of a gap that the panel's edge is
+ * never mistaken for the field's. Flipping above when there is no room below, clamping to the
+ * space left, and hiding when the field scrolls out of the dialog all come with it.
  *
- * The button goes in as the component rather than as its element: Codex's layout-shift observer
- * recognises only the component, so the element form leaves the panel where the button used to be.
- * The cast is DataExportButton.vue's, which explains it.
+ * The button goes in as the component rather than as its element: handed an element, Codex passes
+ * the ref object itself on to floating-ui's autoUpdate, which resolves it to nothing, so nothing
+ * watches the button. The cast is DataExportButton.vue's, which explains it.
  */
 useFloatingMenu(
 	buttonRef as unknown as Parameters<typeof useFloatingMenu>[0],

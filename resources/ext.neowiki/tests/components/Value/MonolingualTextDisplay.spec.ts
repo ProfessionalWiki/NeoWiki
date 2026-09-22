@@ -119,6 +119,7 @@ describe( 'MonolingualTextDisplay', () => {
 			.find( '.ext-neowiki-monolingual-text-display__language' );
 
 		expect( language.text() ).toBe( 'AR' );
+		expect( language.element.textContent ).toBe( 'AR\u00a0' );
 		expect( language.attributes( 'title' ) ).toBeUndefined();
 		expect( language.find( '[aria-hidden]' ).exists() ).toBe( false );
 	} );

@@ -517,6 +517,18 @@ describe( 'LanguagePicker', () => {
 		expect( isOpen( picker ) ).toBe( false );
 	} );
 
+	it( 'listens for an outside press again each time it opens', async () => {
+		const picker = newWrapper( 'en' );
+
+		await openPicker( picker );
+		await pressKey( 'Escape' );
+		await openPicker( picker );
+		press( document.body );
+		await picker.vm.$nextTick();
+
+		expect( isOpen( picker ) ).toBe( false );
+	} );
+
 	it( 'closes when the focus moves on from it', async () => {
 		const picker = newWrapper( 'en' );
 		const elsewhere = document.createElement( 'input' );

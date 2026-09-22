@@ -20,12 +20,10 @@
 				<!-- The tag is hidden from a screen reader only when the name beside it says the same
 					thing. Unnamed, the tag is all there is to announce. -->
 				<span :aria-hidden="view.languageName === undefined ? undefined : 'true'">{{ view.tag }}</span>
-				<!-- The space keeps a screen reader from running the name into the text before it; a
-					non-breaking one, since the template compiler drops a plain one at an element's start. -->
-				<span
-					v-if="view.languageName !== undefined"
-					class="ext-neowiki-monolingual-text-display__language-name"
-				>&nbsp;{{ view.languageName }}</span>
+				<!-- The space keeps a screen reader from running the name, or the tag when there is no
+					name, into the text before it; a non-breaking one, since the template compiler drops a
+					plain one at an element's start. -->
+				<span class="ext-neowiki-monolingual-text-display__language-name">&nbsp;{{ view.languageName }}</span>
 			</span>
 		</div>
 		<!-- After every part it reveals, so opening it never leaves it between the parts. -->
@@ -83,21 +81,17 @@ const otherParts = computed<MonolingualText[]>(
 );
 
 // The parts on show: the ones picked for the reader, then, once asked for, the others.
-const shownParts = computed<PartView[]>( () => {
-	const readerTag = userLanguageTag();
-
-	return [
-		...readParts.value,
-		...( showingOthers.value ? otherParts.value : [] )
-	].map( ( part ) => viewOf( part, readerTag ) );
-} );
+const shownParts = computed<PartView[]>( () => [
+	...readParts.value,
+	...( showingOthers.value ? otherParts.value : [] )
+].map( viewOf ) );
 
 /**
  * A part is tagged with its language unless it is in the one the interface is in, which the reader
  * can see for themselves.
  */
-function viewOf( part: MonolingualText, readerTag: string ): PartView {
-	if ( part.language === readerTag ) {
+function viewOf( part: MonolingualText ): PartView {
+	if ( part.language === userLanguageTag() ) {
 		return { part: part, tag: null };
 	}
 
