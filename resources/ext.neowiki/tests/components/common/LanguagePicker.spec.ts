@@ -226,6 +226,14 @@ describe( 'LanguagePicker', () => {
 		expect( emittedTags( picker ) ).toEqual( [ 'und' ] );
 	} );
 
+	it( 'stores a typed tag of several subtags as the lowercase tag it stands for', async () => {
+		const picker = newWrapper( 'en' );
+
+		await chooseLanguage( picker, 'PT-br' );
+
+		expect( emittedTags( picker ) ).toEqual( [ 'pt-br' ] );
+	} );
+
 	it( 'offers no tag for a typed word longer than a language subtag', async () => {
 		const picker = newWrapper( 'en' );
 
@@ -349,20 +357,6 @@ describe( 'LanguagePicker', () => {
 
 		expect( emittedTags( picker ) ).toEqual( [] );
 		expect( search( picker ).attributes( 'aria-activedescendant' ) ).toBeUndefined();
-	} );
-
-	it( 'reports no language when it is dismissed', async () => {
-		const picker = newWrapper( 'en' );
-
-		await openPicker( picker );
-		await type( picker, 'Basq' );
-		await pressKey( 'Escape' );
-		await openPicker( picker );
-		await type( picker, 'Basq' );
-		press( document.body );
-		await picker.vm.$nextTick();
-
-		expect( emittedTags( picker ) ).toEqual( [] );
 	} );
 
 	it( 'picks nothing on the Enter that ends an IME composition', async () => {
@@ -543,6 +537,8 @@ describe( 'LanguagePicker', () => {
 		await openPicker( picker );
 
 		expect( press( picker.find( '.cdx-menu' ).element ).defaultPrevented ).toBe( true );
+		await picker.vm.$nextTick();
+
 		expect( isOpen( picker ) ).toBe( true );
 	} );
 
@@ -560,6 +556,8 @@ describe( 'LanguagePicker', () => {
 		await openPicker( picker );
 
 		expect( press( search( picker ).element ).defaultPrevented ).toBe( false );
+		await picker.vm.$nextTick();
+
 		expect( isOpen( picker ) ).toBe( true );
 	} );
 

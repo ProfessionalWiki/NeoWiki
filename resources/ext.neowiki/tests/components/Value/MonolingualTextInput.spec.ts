@@ -11,15 +11,18 @@ import { createTestWrapper, setupMwMock } from '../../VueTestHelpers.ts';
 
 describe( 'MonolingualTextInput', () => {
 
+	let wrapper: VueWrapper<InstanceType<typeof MonolingualTextInput>> | undefined;
+
 	function newWrapper(
 		props: Partial<ValueInputProps<MonolingualTextProperty>> = {},
 	): VueWrapper<InstanceType<typeof MonolingualTextInput>> {
-		return createTestWrapper( MonolingualTextInput, {
+		wrapper = createTestWrapper( MonolingualTextInput, {
 			modelValue: undefined,
 			label: 'Original title',
 			property: newMonolingualTextProperty( { name: 'Original title', multiple: true } ),
 			...props,
 		} );
+		return wrapper;
 	}
 
 	function textInputs( wrapper: VueWrapper ): ReturnType<VueWrapper['findAll']> {
@@ -84,6 +87,11 @@ describe( 'MonolingualTextInput', () => {
 	} );
 
 	afterEach( () => {
+		// Every row's language picker listens to the document while it is open, and one test moves
+		// its wrapper into the document, so both are undone here.
+		wrapper?.unmount();
+		wrapper?.element.remove();
+		wrapper = undefined;
 		vi.restoreAllMocks();
 	} );
 
@@ -126,7 +134,7 @@ describe( 'MonolingualTextInput', () => {
 		} );
 	} );
 
-	it( 'shows each stored part plus the empty row the next one is typed into', () => {
+	it( 'shows each stored part under its own language, plus the empty row the next one is typed into', () => {
 		const wrapper = newWrapper( {
 			modelValue: newMonolingualTextValue( [
 				{ text: 'Zinema', language: 'eu' },
@@ -135,6 +143,7 @@ describe( 'MonolingualTextInput', () => {
 		} );
 
 		expect( textValues( wrapper ) ).toEqual( [ 'Zinema', 'Cine', '' ] );
+		expect( languageButtons( wrapper ).map( ( button ) => button.text() ) ).toEqual( [ 'EU', 'ES', 'EN' ] );
 	} );
 
 	it( 'emits a typed text tagged with the language the wiki is written in', async () => {
@@ -261,7 +270,7 @@ describe( 'MonolingualTextInput', () => {
 		expect( textValues( wrapper ) ).toEqual( [ '', 'Cine', '' ] );
 	} );
 
-	it( 'keeps a cleared row while focus is in its list of languages', async () => {
+	it( 'keeps a cleared row while focus is in the languages its button opened', async () => {
 		const wrapper = newWrapper( {
 			modelValue: newMonolingualTextValue( [
 				{ text: 'Zinema', language: 'eu' },
@@ -271,7 +280,11 @@ describe( 'MonolingualTextInput', () => {
 
 		await textInputs( wrapper )[ 0 ].setValue( '' );
 		await languageButtons( wrapper )[ 0 ].trigger( 'click' );
-		await leaveRow( wrapper, 0, rowElements( wrapper )[ 0 ].find( '.cdx-menu' ).element );
+		await leaveRow(
+			wrapper,
+			0,
+			rowElements( wrapper )[ 0 ].find( '.ext-neowiki-language-picker__search input' ).element,
+		);
 
 		expect( textValues( wrapper ) ).toEqual( [ '', 'Cine', '' ] );
 	} );
@@ -352,7 +365,7 @@ describe( 'MonolingualTextInput', () => {
 				{ text: 'Kino', language: 'de' },
 			] ),
 		} );
-		document.body.appendChild( wrapper.element as HTMLElement );
+		document.body.appendChild( wrapper.element );
 
 		// The first row is blanked and left for the third: dropping it moves every row below it up
 		// one position, and the field the user is now in has to travel with its row.

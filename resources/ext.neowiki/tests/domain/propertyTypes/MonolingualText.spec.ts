@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MonolingualTextType } from '@/domain/propertyTypes/MonolingualText';
 import { PropertyName } from '@/domain/PropertyDefinition';
 
-describe( 'createPropertyDefinitionFromJson', () => {
+describe( 'MonolingualTextType', () => {
 	const type = new MonolingualTextType();
 	const base = { name: new PropertyName( 'Title' ), type: 'monolingualText', description: '', required: false };
 
@@ -13,12 +13,21 @@ describe( 'createPropertyDefinitionFromJson', () => {
 		expect( property.uniqueItems ).toBe( false );
 	} );
 
-	it( 'reads the attributes the JSON sets', () => {
+	it( 'reads the attributes the JSON sets, keeping the ones every property type shares', () => {
 		const property = type.createPropertyDefinitionFromJson(
-			base,
+			{ ...base, description: 'The title it was released under', required: true },
 			{ type: 'monolingualText', multiple: true, uniqueItems: true, minLength: 2, maxLength: 50 },
 		);
 
-		expect( property ).toMatchObject( { multiple: true, uniqueItems: true, minLength: 2, maxLength: 50 } );
+		expect( property ).toMatchObject( {
+			name: new PropertyName( 'Title' ),
+			type: 'monolingualText',
+			description: 'The title it was released under',
+			required: true,
+			multiple: true,
+			uniqueItems: true,
+			minLength: 2,
+			maxLength: 50,
+		} );
 	} );
 } );
