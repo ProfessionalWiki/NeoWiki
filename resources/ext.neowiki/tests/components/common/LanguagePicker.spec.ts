@@ -396,6 +396,8 @@ describe( 'LanguagePicker', () => {
 		expect( emittedTags( picker ) ).toEqual( [] );
 	} );
 
+	// jsdom lays nothing out, so the height Codex works out is 2px. That it wrote one at all is what
+	// says the cap is still running.
 	it( 'holds its list to the entries it has room for once the search narrows it', async () => {
 		useLanguages( manyLanguages() );
 		const picker = newWrapper( 'en' );
@@ -477,6 +479,22 @@ describe( 'LanguagePicker', () => {
 
 		expect( isOpen( picker ) ).toBe( true );
 		expect( document.activeElement ).toBe( search( picker ).element );
+	} );
+
+	it( 'leaves the focus where it is when the page scrolls after it has closed', async () => {
+		const picker = newWrapper( 'en' );
+		const elsewhere = document.createElement( 'input' );
+		document.body.appendChild( elsewhere );
+
+		await openPicker( picker );
+		await pressKey( 'Escape' );
+		elsewhere.focus();
+		document.dispatchEvent( new Event( 'scroll' ) );
+		await picker.vm.$nextTick();
+		const focused = document.activeElement;
+		elsewhere.remove();
+
+		expect( focused ).toBe( elsewhere );
 	} );
 
 	it( 'stays open while its own list scrolls', async () => {

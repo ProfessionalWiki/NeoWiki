@@ -146,6 +146,24 @@ describe( 'MonolingualTextInput', () => {
 		expect( languageButtons( wrapper ).map( ( button ) => button.text() ) ).toEqual( [ 'EU', 'ES', 'EN' ] );
 	} );
 
+	it( 'names each row\'s language button after the row it belongs to', () => {
+		setupMwMock( {
+			config: { wgUserLanguage: 'en', wgContentLanguage: 'en' },
+			languageNames: { en: 'English', eu: 'Basque' },
+			messages: {
+				'neowiki-monolingual-text-language-label': ( property, position ) =>
+					`${ property } language ${ position }`,
+				'neowiki-language-picker-button': ( label, name, tag ) => `${ label }: ${ name } (${ tag })`,
+			},
+		} );
+		const wrapper = newWrapper( {
+			modelValue: newMonolingualTextValue( [ { text: 'Zinema', language: 'eu' } ] ),
+		} );
+
+		expect( languageButtons( wrapper ).map( ( button ) => button.attributes( 'aria-label' ) ) )
+			.toEqual( [ 'Original title language 1: Basque (eu)', 'Original title language 2: English (en)' ] );
+	} );
+
 	it( 'emits a typed text tagged with the language the wiki is written in', async () => {
 		setupMwMock( {
 			config: { wgUserLanguage: 'en', wgContentLanguage: 'eu' },

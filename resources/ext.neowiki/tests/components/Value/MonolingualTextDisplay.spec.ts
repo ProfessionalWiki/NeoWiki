@@ -93,6 +93,7 @@ describe( 'MonolingualTextDisplay', () => {
 		const language = newWrapperFor( CINE, ZINEMA ).find( '.ext-neowiki-monolingual-text-display__language' );
 
 		expect( language.attributes( 'title' ) ).toBe( 'español' );
+		expect( language.find( '[aria-hidden="true"]' ).text() ).toBe( 'ES' );
 		expect( language.find( '.ext-neowiki-monolingual-text-display__language-name' ).element.textContent )
 			.toMatch( /^\s+español$/ );
 	} );
