@@ -149,8 +149,9 @@ const toggleLabel = computed<string>( () => showingOthers.value ?
 		cursor: pointer;
 
 		/* Codex's link mixin sizes a trailing icon for body text, where this one is the chevron of
-			a line of small text, set off by the gap above rather than by padding. */
-		.cdx-icon:last-child {
+			a line of small text, set off by the gap above rather than by padding. Selector copied
+			from the mixin's own, which outranks a shorter one however late it is written. */
+		.cdx-icon:not( .cdx-thumbnail__placeholder__icon--vue ):last-child {
 			width: @size-icon-x-small;
 			height: @size-icon-x-small;
 			padding-left: 0;
