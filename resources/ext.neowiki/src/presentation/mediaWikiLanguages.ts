@@ -57,11 +57,27 @@ export function languageOptions(): readonly LanguageOption[] {
 	return listedOptions;
 }
 
+// Ordered once for as long as the names it was ordered from stand, since every row of a monolingual
+// text field has a picker of its own and each would otherwise sort several hundred names again.
+let orderedFrom: readonly LanguageOption[] | undefined;
+let orderedOptions: readonly LanguageOption[] = [];
+
 /**
  * The languages in the order a picker lists them: the ones the reader reads, best first, then the
  * rest by name.
  */
-export function languagesByPreference( options: readonly LanguageOption[], readerTags: string[] ): LanguageOption[] {
+export function languagesByPreference(): readonly LanguageOption[] {
+	const options = languageOptions();
+
+	if ( options !== orderedFrom ) {
+		orderedFrom = options;
+		orderedOptions = inPreferenceOrder( options, readerLanguageTags() );
+	}
+
+	return orderedOptions;
+}
+
+function inPreferenceOrder( options: readonly LanguageOption[], readerTags: string[] ): LanguageOption[] {
 	const readerOptions = readerTags
 		.map( ( tag ) => options.find( ( option ) => option.tag === tag ) )
 		.filter( ( option ) => option !== undefined );
@@ -79,7 +95,7 @@ export function languagesByPreference( options: readonly LanguageOption[], reade
  * as the tag it stands for, so `als` finds Alemannic under `gsw`. Languages matching equally well
  * keep their order.
  */
-export function matchingLanguages( options: LanguageOption[], typed: string ): LanguageOption[] {
+export function matchingLanguages( options: readonly LanguageOption[], typed: string ): readonly LanguageOption[] {
 	const text = typed.trim().toLowerCase();
 
 	if ( text === '' ) {
@@ -144,6 +160,15 @@ export function typedLanguageTag( options: readonly LanguageOption[], typed: str
  */
 export function languageName( tag: string ): string | undefined {
 	return languageOptions().find( ( option ) => option.tag === tag )?.name;
+}
+
+/**
+ * A language tag the way it is shown: in capitals, as tags usually are. Written out here rather
+ * than by `text-transform`, which follows the page's language and turns `it` into `İT` on a
+ * Turkish page.
+ */
+export function shownLanguageTag( tag: string ): string {
+	return tag.toUpperCase();
 }
 
 /**

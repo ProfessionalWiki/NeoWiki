@@ -52,15 +52,17 @@ import { cdxIconCollapse, cdxIconExpand } from '@wikimedia/codex-icons';
 import { type MonolingualText, ValueType } from '@/domain/Value.ts';
 import { ValueDisplayProps } from '@/components/Value/ValueDisplayContract.ts';
 import { MonolingualTextProperty } from '@/domain/propertyTypes/MonolingualText.ts';
-import { languageName, partsForReader, readerLanguageTags, userLanguageTag } from '@/presentation/mediaWikiLanguages.ts';
+import {
+	languageName,
+	partsForReader,
+	readerLanguageTags,
+	shownLanguageTag,
+	userLanguageTag
+} from '@/presentation/mediaWikiLanguages.ts';
 
 interface PartView {
 	part: MonolingualText;
-	/**
-	 * The part's tag in capitals, the way the editor writes it, or null when the reader reads that
-	 * language. In script rather than by `text-transform`, which follows the page's language and
-	 * turns `it` into `İT` on a Turkish page.
-	 */
+	/** The part's tag, the way the editor writes it; null when the reader reads that language. */
 	tag: string | null;
 	/** The part's language, named for anyone who cannot place its tag, when MediaWiki names it. */
 	languageName?: string;
@@ -97,7 +99,7 @@ function viewOf( part: MonolingualText ): PartView {
 
 	return {
 		part: part,
-		tag: part.language.toUpperCase(),
+		tag: shownLanguageTag( part.language ),
 		languageName: languageName( part.language )
 	};
 }
@@ -114,6 +116,7 @@ const toggleLabel = computed<string>( () => showingOthers.value ?
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@wikimedia/codex/mixins/link.less';
 @import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-monolingual-text-display {
@@ -130,39 +133,27 @@ const toggleLabel = computed<string>( () => showingOthers.value ?
 	}
 
 	/* A link rather than a control with a box of its own, so the value reads like any other
-		until the reader asks for more, and the aside is smaller than the value it follows. The
-		states are Codex's link mixin's, without its rule for a trailing icon: that styles an
-		external-link icon at the size of body text, where this is a chevron beside small text. */
+		until the reader asks for more, and the aside is smaller than the value it follows. */
 	&__toggle {
+		.cdx-mixin-link-base();
 		display: inline-flex;
 		align-items: center;
 		gap: @spacing-25;
 		margin: 0;
 		border: 0;
-		border-radius: @border-radius-base;
 		padding: 0;
 		background-color: transparent;
-		color: @color-progressive;
 		font-family: inherit;
 		font-size: @font-size-x-small;
 		line-height: inherit;
 		cursor: pointer;
 
-		&:hover {
-			color: @color-progressive--hover;
-			text-decoration: @text-decoration-underline;
-		}
-
-		&:active {
-			color: @color-progressive--active;
-			text-decoration: @text-decoration-underline;
-		}
-
-		&:focus-visible {
-			outline: @border-style-base @border-width-thick @outline-color-progressive--focus;
-		}
-
-		.cdx-icon {
+		/* Codex's link mixin sizes a trailing icon for body text, where this one is the chevron of
+			a line of small text, set off by the gap above rather than by padding. */
+		.cdx-icon:last-child {
+			width: @size-icon-x-small;
+			height: @size-icon-x-small;
+			padding-left: 0;
 			color: inherit;
 		}
 	}
