@@ -13,6 +13,7 @@ readonly class Schema {
 		private SchemaName $name,
 		private string $description,
 		private PropertyDefinitions $properties,
+		private ?LabelTemplate $labelTemplate = null,
 	) {
 	}
 
@@ -46,6 +47,10 @@ readonly class Schema {
 
 	public function getAllProperties(): PropertyDefinitions {
 		return $this->properties;
+	}
+
+	public function getLabelTemplate(): ?LabelTemplate {
+		return $this->labelTemplate;
 	}
 
 }

@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Domain\Schema\LabelTemplate;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
@@ -38,7 +39,14 @@ class SchemaPersistenceDeserializer {
 			name: $schemaName,
 			description: $json['description'] ?? '',
 			properties: $this->propertiesFromJson( $json ),
+			labelTemplate: $this->labelTemplateFromJson( $json ),
 		);
+	}
+
+	private function labelTemplateFromJson( array $json ): ?LabelTemplate {
+		$text = $json['labelTemplate'] ?? '';
+
+		return is_string( $text ) && trim( $text ) !== '' ? new LabelTemplate( $text ) : null;
 	}
 
 	/**

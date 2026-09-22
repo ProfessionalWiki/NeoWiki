@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\Scribunto;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Schema\LabelTemplate;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
@@ -60,6 +61,19 @@ class SchemaLuaSerializerTest extends TestCase {
 		$result = $this->newSerializer()->toLuaTable( $schema );
 
 		$this->assertSame( 'Describes a document', $result['description'] );
+	}
+
+	public function testSchemaWithLabelTemplate(): void {
+		$schema = new Schema(
+			new SchemaName( 'Attendance' ),
+			'',
+			new PropertyDefinitions( [] ),
+			new LabelTemplate( '{Museum} attendance {Year}' )
+		);
+
+		$result = $this->newSerializer()->toLuaTable( $schema );
+
+		$this->assertSame( '{Museum} attendance {Year}', $result['labelTemplate'] );
 	}
 
 	public function testTextPropertyMinimal(): void {

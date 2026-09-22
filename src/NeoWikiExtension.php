@@ -36,6 +36,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectPr
 use ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement\UpdateStatementAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement\UpdateStatementPresenter;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use ProfessionalWiki\NeoWiki\Application\Validation\LabelTemplateValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigSchema;
@@ -1742,10 +1743,14 @@ class NeoWikiExtension {
 		return new JsonSchemaSerializer( documentUrl: $documentUrl );
 	}
 
-	private function getPersistenceSchemaDeserializer(): SchemaPersistenceDeserializer {
+	public function getPersistenceSchemaDeserializer(): SchemaPersistenceDeserializer {
 		return new SchemaPersistenceDeserializer(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
 		);
+	}
+
+	public function newLabelTemplateValidator(): LabelTemplateValidator {
+		return new LabelTemplateValidator( $this->getPropertyTypeLookup() );
 	}
 
 	public function getLayoutLookup(): LayoutLookup {

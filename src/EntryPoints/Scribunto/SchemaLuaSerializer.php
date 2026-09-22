@@ -17,6 +17,11 @@ class SchemaLuaSerializer {
 			$result['description'] = $description;
 		}
 
+		$labelTemplate = $schema->getLabelTemplate();
+		if ( $labelTemplate !== null ) {
+			$result['labelTemplate'] = $labelTemplate->text;
+		}
+
 		$result['properties'] = $this->propertiesToLuaList( $schema );
 		return $result;
 	}

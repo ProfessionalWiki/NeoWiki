@@ -51,6 +51,9 @@
 		"description": {
 			"type": "string"
 		},
+		"labelTemplate": {
+			"type": "string"
+		},
 		"propertyDefinitions": {
 			"type": "object",
 			"patternProperties": {

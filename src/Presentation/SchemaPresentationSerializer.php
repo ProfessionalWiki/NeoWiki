@@ -28,10 +28,15 @@ class SchemaPresentationSerializer {
 	 * @return array<string, mixed>
 	 */
 	public function toArray( Schema $schema ): array {
-		return [
-			'description' => $schema->getDescription(),
-			'propertyDefinitions' => $this->propertiesToJson( $schema->getAllProperties() ),
-		];
+		$json = [ 'description' => $schema->getDescription() ];
+
+		$labelTemplate = $schema->getLabelTemplate();
+		if ( $labelTemplate !== null ) {
+			$json['labelTemplate'] = $labelTemplate->text;
+		}
+
+		$json['propertyDefinitions'] = $this->propertiesToJson( $schema->getAllProperties() );
+		return $json;
 	}
 
 	private function propertiesToJson( PropertyDefinitions $properties ): array {

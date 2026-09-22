@@ -67,4 +67,17 @@ class SchemaContentHandlerValidateSaveTest extends MediaWikiIntegrationTestCase 
 		$this->assertStringContainsString( '/propertyDefinitions/Maker/relation', $text );
 	}
 
+	public function testLabelTemplateNamingPropertiesOfTheSchemaPassesValidation(): void {
+		$status = $this->validate( '{ "labelTemplate": "{Title}", "propertyDefinitions": { "Title": { "type": "text" } } }' );
+
+		$this->assertTrue( $status->isOK() );
+	}
+
+	public function testLabelTemplateNamingAMissingPropertyFailsValidationAndSaysWhich(): void {
+		$status = $this->validate( '{ "labelTemplate": "{Name}", "propertyDefinitions": { "Title": { "type": "text" } } }' );
+
+		$this->assertFalse( $status->isOK() );
+		$this->assertStringContainsString( '"Name"', wfMessage( $status->getMessages()[0] )->text() );
+	}
+
 }

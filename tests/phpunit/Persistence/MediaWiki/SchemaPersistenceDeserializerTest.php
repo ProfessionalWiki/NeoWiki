@@ -82,6 +82,25 @@ class SchemaPersistenceDeserializerTest extends TestCase {
 		);
 	}
 
+	public function testReserializationPreservesTheLabelTemplate(): void {
+		$json = json_encode( [ 'labelTemplate' => '{Name}' ] + json_decode( self::SCHEMA_JSON, true ) );
+
+		$this->assertJsonStringEqualsJsonString(
+			$json,
+			( new SchemaPresentationSerializer() )->serialize( $this->deserialize( $json ) )
+		);
+	}
+
+	public function testSchemaWithoutLabelTemplateHasNone(): void {
+		$this->assertNull( $this->deserialize()->getLabelTemplate() );
+	}
+
+	public function testBlankLabelTemplateIsNone(): void {
+		$json = '{"labelTemplate": "  ", "propertyDefinitions": {}}';
+
+		$this->assertNull( $this->deserialize( $json )->getLabelTemplate() );
+	}
+
 	public function testSkipsStructurallyInvalidPropertyOfRegisteredType(): void {
 		$json = '{"propertyDefinitions": {"Age": {"type": "boolean", "default": "not a boolean"}}}';
 
