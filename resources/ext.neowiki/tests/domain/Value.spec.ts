@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	isValueEmpty,
 	newBooleanValue,
+	newMonolingualTextValue,
 	newNumberValue,
 	newRelation,
 	newStringValue,
@@ -73,6 +74,20 @@ describe( 'valueToJson', () => {
 		] );
 	} );
 
+	it( 'converts a MonolingualTextValue into an array of text and language objects', () => {
+		const value = newMonolingualTextValue( [
+			{ text: 'Zinema', language: 'eu' },
+			{ text: 'Cine', language: 'es' },
+		] );
+
+		const json = valueToJson( value );
+
+		expect( json ).toEqual( [
+			{ text: 'Zinema', language: 'eu' },
+			{ text: 'Cine', language: 'es' },
+		] );
+	} );
+
 	it( 'throws an error when value is of unexpected type', () => {
 		const value = {
 			type: 'test' as ValueType,
@@ -120,6 +135,39 @@ describe( 'newStringValue', () => {
 	it( 'trims strings', () => {
 		expect( newStringValue( '   preceding', 'tailing ', ' both    ', ' keeps middle spaces ' ) )
 			.toEqual( newStringValue( 'preceding', 'tailing', 'both', 'keeps middle spaces' ) );
+	} );
+
+} );
+
+describe( 'newMonolingualTextValue', () => {
+
+	it( 'trims each text', () => {
+		expect( newMonolingualTextValue( [ { text: '  Zinema ', language: 'eu' } ] ).parts )
+			.toEqual( [ { text: 'Zinema', language: 'eu' } ] );
+	} );
+
+	it( 'omits parts whose text is empty or blank', () => {
+		const value = newMonolingualTextValue( [
+			{ text: '', language: 'fr' },
+			{ text: '   ', language: 'de' },
+			{ text: 'Cine', language: 'es' },
+		] );
+
+		expect( value.parts ).toEqual( [ { text: 'Cine', language: 'es' } ] );
+	} );
+
+	it( 'lowercases each language tag', () => {
+		expect( newMonolingualTextValue( [ { text: 'Cinema', language: 'pt-BR' } ] ).parts )
+			.toEqual( [ { text: 'Cinema', language: 'pt-br' } ] );
+	} );
+
+	it( 'keeps several parts in the same language', () => {
+		const value = newMonolingualTextValue( [
+			{ text: 'Cine', language: 'es' },
+			{ text: 'Pelicula', language: 'es' },
+		] );
+
+		expect( value.parts ).toHaveLength( 2 );
 	} );
 
 } );
@@ -209,6 +257,14 @@ describe( 'isValueEmpty', () => {
 	it( 'returns false for a RelationValue carrying relations', () => {
 		const relation = newRelation( undefined, 's11111111111111' );
 		expect( isValueEmpty( new RelationValue( [ relation ] ) ) ).toBe( false );
+	} );
+
+	it( 'returns true for a MonolingualTextValue with no parts', () => {
+		expect( isValueEmpty( newMonolingualTextValue( [] ) ) ).toBe( true );
+	} );
+
+	it( 'returns false for a MonolingualTextValue carrying a text', () => {
+		expect( isValueEmpty( newMonolingualTextValue( [ { text: 'Zinema', language: 'eu' } ] ) ) ).toBe( false );
 	} );
 
 	it( 'returns false for an UnregisteredTypeValue (it still carries stored data)', () => {

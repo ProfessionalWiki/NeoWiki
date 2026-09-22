@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\BooleanType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\MonolingualTextType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
@@ -34,6 +35,7 @@ class PropertyTypeRegistry implements PropertyTypeLookup {
 		$registry->registerType( new RelationType( $localSourceKey ) );
 		$registry->registerType( new DateTimeType() );
 		$registry->registerType( new DateType() );
+		$registry->registerType( new MonolingualTextType() );
 		return $registry;
 	}
 

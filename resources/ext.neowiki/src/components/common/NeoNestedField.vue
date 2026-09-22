@@ -29,22 +29,26 @@ withDefaults( defineProps<{
 
 .ext-neowiki-nested-field {
 	&__inputs {
+		// This row sits in a pane whose width the reader sets, so it wraps on the room it
+		// actually has rather than on the viewport: the fields share a row while they fit and
+		// stack once they no longer do, instead of pushing their labels out of the pane.
 		display: flex;
-		flex-direction: column;
+		flex-flow: row wrap;
 		// Wide enough that a bound's severity control, at the end of its label row, does not
 		// crowd the next bound's label.
 		gap: @spacing-100;
 
-		// The viewport is only a guess at how much room this row has: it sits in a pane whose
-		// width the reader sets. Wrapping is what makes the guess safe — a row that no longer
-		// fits stacks instead of pushing its labels out of the pane.
-		@media screen and ( min-width: @min-width-breakpoint-desktop ) {
-			flex-flow: row wrap;
+		// A basis small enough that two fields share the narrowest pane they are shown in, and a
+		// lone field grows to fill the row anyway. Both minimums go because Codex asks 256px for
+		// a text input, which alone would wrap the second field.
+		.cdx-field {
+			flex: 1 1 @size-800;
+			min-width: 0;
+			margin-top: 0;
 		}
 
-		// Disable margin-top on all nested fields.
-		.cdx-field {
-			margin-top: 0;
+		.cdx-text-input {
+			min-width: 0;
 		}
 	}
 }

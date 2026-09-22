@@ -181,6 +181,50 @@ class StatementListBuilderTest extends TestCase {
 		$this->assertNull( $list->getStatement( new PropertyName( 'Unwanted' ) ) );
 	}
 
+	public function testMonolingualTextStatementIsBuilt(): void {
+		$list = $this->newBuilder()->build( [
+			'Original title' => [
+				'propertyType' => 'monolingualText',
+				'value' => [
+					[ 'text' => ' Zinema ', 'language' => 'EU' ],
+					[ 'text' => 'Cine', 'language' => 'es' ],
+				],
+			],
+		] );
+
+		$this->assertSame(
+			[
+				[ 'text' => 'Zinema', 'language' => 'eu' ],
+				[ 'text' => 'Cine', 'language' => 'es' ],
+			],
+			$list->getStatement( new PropertyName( 'Original title' ) )?->getValue()->toScalars()
+		);
+	}
+
+	public function testMonolingualTextValueWithOnlyEmptyTextsIsDropped(): void {
+		$list = $this->newBuilder()->build( [
+			'Original title' => [
+				'propertyType' => 'monolingualText',
+				'value' => [ [ 'text' => '  ', 'language' => 'eu' ] ],
+			],
+		] );
+
+		$this->assertNull( $list->getStatement( new PropertyName( 'Original title' ) ) );
+	}
+
+	public function testMonolingualTextPartWithAMalformedLanguageIsRejected(): void {
+		$builder = $this->newBuilder();
+
+		$this->expectException( InvalidArgumentException::class );
+
+		$builder->build( [
+			'Original title' => [
+				'propertyType' => 'monolingualText',
+				'value' => [ [ 'text' => 'Zinema', 'language' => 'not a tag' ] ],
+			],
+		] );
+	}
+
 	/**
 	 * @dataProvider valueNotFittingItsTypeProvider
 	 */
@@ -201,6 +245,13 @@ class StatementListBuilderTest extends TestCase {
 		yield 'relation given a scalar' => [ 'relation', 'sTargetIdWanted' ];
 		yield 'relation target missing' => [ 'relation', [ [ 'properties' => [] ] ] ];
 		yield 'relation given a list of bare target ids' => [ 'relation', [ 'sTargetIdWanted' ] ];
+		yield 'monolingual text given a list of bare strings' => [ 'monolingualText', [ 'Zinema' ] ];
+		yield 'monolingual text part without a language' => [ 'monolingualText', [ [ 'text' => 'Zinema' ] ] ];
+		yield 'monolingual text part without a text' => [ 'monolingualText', [ [ 'language' => 'eu' ] ] ];
+		yield 'monolingual text part with a non-string text' => [
+			'monolingualText',
+			[ [ 'text' => 2019, 'language' => 'eu' ] ],
+		];
 	}
 
 	/**
@@ -242,7 +293,7 @@ class StatementListBuilderTest extends TestCase {
 		$builder = $this->newBuilder();
 
 		$this->expectException( InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'Objected' );
+		$this->expectExceptionMessage( 'Value of "Objected" must be a list, not an object' );
 
 		$builder->build( [ 'Objected' => [ 'propertyType' => $propertyType, 'value' => $value ] ] );
 	}
@@ -253,6 +304,10 @@ class StatementListBuilderTest extends TestCase {
 		yield 'relation given one relation rather than a list' => [
 			'relation',
 			[ 'target' => 'sTargetIdWanted' ],
+		];
+		yield 'monolingual text given one part rather than a list' => [
+			'monolingualText',
+			[ 'text' => 'Zinema', 'language' => 'eu' ],
 		];
 	}
 

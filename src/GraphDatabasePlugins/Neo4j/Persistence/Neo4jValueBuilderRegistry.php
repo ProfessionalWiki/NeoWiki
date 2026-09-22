@@ -8,6 +8,8 @@ use DateTimeImmutable;
 use Laudis\Neo4j\Types\Date;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualText;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 
 class Neo4jValueBuilderRegistry {
@@ -48,8 +50,25 @@ class Neo4jValueBuilderRegistry {
 		$registry->registerBuilder( 'boolean', $toScalars );
 		$registry->registerBuilder( 'dateTime', self::buildDateTimeNeo4jValue( ... ) );
 		$registry->registerBuilder( 'date', self::buildDateNeo4jValue( ... ) );
+		$registry->registerBuilder( 'monolingualText', self::buildMonolingualTextNeo4jValue( ... ) );
 
 		return $registry;
+	}
+
+	/**
+	 * Neo4j has no language-tagged strings, so each part becomes `text@language`, split on the last `@`.
+	 *
+	 * @return string[]
+	 */
+	private static function buildMonolingualTextNeo4jValue( NeoValue $value ): array {
+		if ( !$value instanceof MonolingualTextValue ) {
+			return [];
+		}
+
+		return array_map(
+			static fn( MonolingualText $part ): string => $part->text . '@' . $part->language,
+			$value->parts
+		);
 	}
 
 	/**

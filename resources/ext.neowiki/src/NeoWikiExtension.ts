@@ -15,6 +15,9 @@ import { DateTimeType } from '@/domain/propertyTypes/DateTime.ts';
 import { DateType } from '@/domain/propertyTypes/Date.ts';
 import { BooleanType } from '@/domain/propertyTypes/Boolean.ts';
 import BooleanDisplay from '@/components/Value/BooleanDisplay.vue';
+import { MonolingualTextType } from '@/domain/propertyTypes/MonolingualText.ts';
+import MonolingualTextDisplay from '@/components/Value/MonolingualTextDisplay.vue';
+import MonolingualTextInput from '@/components/Value/MonolingualTextInput.vue';
 import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry.ts';
 import { ViewTypeRegistry } from '@/ViewTypeRegistry.ts';
 import Infobox from '@/components/Views/Infobox.vue';
@@ -58,7 +61,7 @@ import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
 import { SubjectDeserializer } from '@/persistence/SubjectDeserializer.ts';
 import { Neo } from '@/Neo.ts';
 // import { cdxIconStringInteger } from '@/assets/CustomIcons.ts';
-import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconMathematics, cdxIconClock, cdxIconCalendar, cdxIconCheck, cdxIconAlert } from '@wikimedia/codex-icons';
+import { cdxIconLink, cdxIconSearchCaseSensitive, cdxIconArticles, cdxIconListBullet, cdxIconMathematics, cdxIconClock, cdxIconCalendar, cdxIconCheck, cdxIconAlert, cdxIconLanguage } from '@wikimedia/codex-icons';
 import UnregisteredTypeValueDisplay from '@/components/Value/UnregisteredTypeValueDisplay.vue';
 import UnregisteredTypeValueInput from '@/components/Value/UnregisteredTypeValueInput.vue';
 import UnregisteredTypeAttributesEditor from '@/components/SchemaEditor/Property/UnregisteredTypeAttributesEditor.vue';
@@ -149,6 +152,14 @@ export class NeoWikiExtension {
 			attributesEditor: DateAttributesEditor,
 			label: 'neowiki-property-type-date',
 			icon: cdxIconCalendar,
+		} );
+
+		registry.registerType( MonolingualTextType.typeName, {
+			valueDisplayComponent: MonolingualTextDisplay,
+			valueEditor: MonolingualTextInput,
+			attributesEditor: TextAttributesEditor,
+			label: 'neowiki-property-type-monolingualtext',
+			icon: cdxIconLanguage,
 		} );
 
 		registry.registerType( BooleanType.typeName, {

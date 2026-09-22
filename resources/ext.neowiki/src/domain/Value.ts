@@ -6,6 +6,7 @@ export enum ValueType {
 	Number = 'number',
 	Boolean = 'boolean',
 	Relation = 'relation',
+	MonolingualText = 'monolingualText',
 
 	/**
 	 * Placeholder for a Value whose property type is not registered (e.g. owned
@@ -59,13 +60,26 @@ export class Relation {
 
 }
 
+/**
+ * A text and the language it is in. The language is a well-formed BCP 47 tag, lowercased.
+ */
+export interface MonolingualText {
+	readonly text: string;
+	readonly language: string;
+}
+
+export interface MonolingualTextValue extends BaseValueRepresentation {
+	readonly type: ValueType.MonolingualText;
+	readonly parts: MonolingualText[];
+}
+
 export interface UnregisteredTypeValue extends BaseValueRepresentation {
 	readonly type: ValueType.UnregisteredType;
 	readonly typeName: string;
 	readonly raw: unknown;
 }
 
-export type Value = StringValue | NumberValue | BooleanValue | RelationValue | UnregisteredTypeValue;
+export type Value = StringValue | NumberValue | BooleanValue | RelationValue | MonolingualTextValue | UnregisteredTypeValue;
 
 export function newStringValue( ...parts: string[] | [ string[] ] ): StringValue {
 	const resolved = Array.isArray( parts[ 0 ] ) ? parts[ 0 ] : parts as string[];
@@ -76,6 +90,15 @@ export function newStringValue( ...parts: string[] | [ string[] ] ): StringValue
 			.map( ( part ) => part.trim() )
 			.filter( ( part ) => part !== '' ),
 	} as StringValue;
+}
+
+export function newMonolingualTextValue( parts: MonolingualText[] ): MonolingualTextValue {
+	return {
+		type: ValueType.MonolingualText,
+		parts: parts
+			.map( ( part ) => ( { text: part.text.trim(), language: part.language.toLowerCase() } ) )
+			.filter( ( part ) => part.text !== '' ),
+	};
 }
 
 export function newNumberValue( number: number ): NumberValue {
@@ -140,6 +163,8 @@ export function valueToJson( value: Value ): unknown {
 			return ( value as RelationValue ).relations.map(
 				( relation ) => ( { id: relation.id, target: relation.target.text } ),
 			);
+		case ValueType.MonolingualText:
+			return ( value as MonolingualTextValue ).parts;
 		case ValueType.UnregisteredType:
 			return ( value as UnregisteredTypeValue ).raw;
 		default:
@@ -152,6 +177,7 @@ export function valueToJson( value: Value ): unknown {
  *   - String: empty parts array (or all parts trim to '').
  *   - Number/Boolean: never empty — 0 and false are legitimate values.
  *   - Relation: empty relations array.
+ *   - MonolingualText: no parts left once the ones without text are dropped.
  *   - undefined: empty.
  */
 export function isValueEmpty( value: Value | undefined ): boolean {
@@ -168,6 +194,8 @@ export function isValueEmpty( value: Value | undefined ): boolean {
 			return false;
 		case ValueType.Relation:
 			return value.relations.length === 0;
+		case ValueType.MonolingualText:
+			return value.parts.length === 0;
 		case ValueType.UnregisteredType:
 			return false;
 		default:

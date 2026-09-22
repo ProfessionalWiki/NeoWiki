@@ -6,6 +6,7 @@ import { UrlType } from '@/domain/propertyTypes/Url';
 import { DateTimeType } from '@/domain/propertyTypes/DateTime';
 import { DateType } from '@/domain/propertyTypes/Date';
 import { BooleanType } from '@/domain/propertyTypes/Boolean';
+import { MonolingualTextType } from '@/domain/propertyTypes/MonolingualText';
 import { PropertyTypeRegistry } from '@/domain/PropertyType';
 import { PropertyDefinitionDeserializer } from '@/domain/PropertyDefinition';
 import { ValueDeserializer } from '@/persistence/ValueDeserializer';
@@ -39,6 +40,7 @@ export class Neo {
 		registry.registerType( new UrlType() );
 		registry.registerType( new DateTimeType() );
 		registry.registerType( new DateType() );
+		registry.registerType( new MonolingualTextType() );
 
 		return registry;
 	}

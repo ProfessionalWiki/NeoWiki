@@ -101,8 +101,10 @@ export const CdxDialogStub = {
 export interface MwMockOptions {
 	messages?: Record<string, string | ( ( ...params: string[] ) => string )>;
 	config?: Record<string, any>;
+	/** The languages mw.language.getData reports names for, keyed by language code. */
+	languageNames?: Record<string, string>;
 	functions?: (
-		'config' | 'message' | 'msg' | 'notify' | 'storage' | 'util'
+		'config' | 'message' | 'msg' | 'notify' | 'storage' | 'util' | 'language'
 	)[];
 }
 
@@ -112,11 +114,13 @@ export function setupMwMock(
 	const {
 		messages: customMessages = {},
 		config: customConfig = {},
+		languageNames: customLanguageNames = {},
 		functions = [
 			'config',
 			'message',
 			'msg',
 			'notify',
+			'language',
 		],
 	} = options;
 
@@ -166,6 +170,18 @@ export function setupMwMock(
 				set: vi.fn(),
 				remove: vi.fn(),
 			},
+		} ),
+		// MediaWiki's own bcp47() also maps deprecated codes to their replacements; callers lowercase
+		// its result, so the fake carries only the pass-through every one of them relies on.
+		language: () => ( {
+			bcp47: vi.fn( ( code: string ) => code ),
+			getData: vi.fn(
+				( _langCode: string, dataKey: string ) => dataKey === 'languageNames' ? customLanguageNames : undefined,
+			),
+			// MediaWiki's own chain starts at the interface language and ends at English, which every
+			// wiki falls back to; the fake carries just that, so a spec setting a user language gets a
+			// chain of its own without configuring one.
+			getFallbackLanguageChain: vi.fn( () => [ customConfig.wgUserLanguage, 'en' ] ),
 		} ),
 		util: () => ( {
 			wikiScript: vi.fn( () => '/rest.php' ),
