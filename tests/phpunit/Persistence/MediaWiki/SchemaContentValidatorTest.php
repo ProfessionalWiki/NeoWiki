@@ -397,6 +397,108 @@ JSON
 		);
 	}
 
+	/**
+	 * @dataProvider validMinPrecisionProvider
+	 */
+	public function testDateMinPrecisionPassesValidation( string $minPrecisionJson ): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$valid = $validator->validate(
+			$this->schemaWithProperty( '{ "type": "date", "minPrecision": ' . $minPrecisionJson . ' }' )
+		);
+
+		if ( !$valid ) {
+			$this->assertSame( [], $validator->getErrors() );
+		}
+
+		$this->assertTrue( $valid );
+	}
+
+	public static function validMinPrecisionProvider(): iterable {
+		yield 'month' => [ '"month"' ];
+		yield 'day' => [ '"day"' ];
+		yield 'unset, as the serializer writes it' => [ 'null' ];
+		yield 'object form' => [ '{ "value": "day", "severity": "error" }' ];
+	}
+
+	/**
+	 * DateProperty throws on a minPrecision it does not know, and reading the Schema then drops
+	 * the whole Property Definition without a word, so one must not save cleanly.
+	 *
+	 * @dataProvider invalidMinPrecisionProvider
+	 */
+	public function testDateMinPrecisionFailsValidation( string $minPrecisionJson ): void {
+		$this->assertFalse(
+			SchemaContentValidator::newInstance()->validate(
+				$this->schemaWithProperty( '{ "type": "date", "minPrecision": ' . $minPrecisionJson . ' }' )
+			)
+		);
+	}
+
+	public static function invalidMinPrecisionProvider(): iterable {
+		yield 'year constrains nothing' => [ '"year"' ];
+		yield 'unknown precision' => [ '"week"' ];
+		yield 'not a string' => [ '2' ];
+		yield 'unknown precision in object form' => [ '{ "value": "week", "severity": "error" }' ];
+		yield 'object form missing value' => [ '{ "severity": "error" }' ];
+	}
+
+	/**
+	 * A bound DateProperty cannot read drops the whole Property Definition when the Schema is
+	 * read, and `1984` unquoted is an easy way to write a year bound.
+	 *
+	 * @dataProvider invalidDateBoundProvider
+	 */
+	public function testDateBoundThatIsNotAStringFailsValidation( string $boundJson ): void {
+		$this->assertFalse(
+			SchemaContentValidator::newInstance()->validate(
+				$this->schemaWithProperty( '{ "type": "date", "minimum": ' . $boundJson . ' }' )
+			)
+		);
+	}
+
+	public static function invalidDateBoundProvider(): iterable {
+		yield 'number' => [ '1984' ];
+		yield 'number in object form' => [ '{ "value": 1984, "severity": "error" }' ];
+	}
+
+	/**
+	 * @dataProvider validDateBoundProvider
+	 */
+	public function testDateBoundThatIsAStringPassesValidation( string $boundJson ): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$valid = $validator->validate(
+			$this->schemaWithProperty( '{ "type": "date", "maximum": ' . $boundJson . ' }' )
+		);
+
+		if ( !$valid ) {
+			$this->assertSame( [], $validator->getErrors() );
+		}
+
+		$this->assertTrue( $valid );
+	}
+
+	public static function validDateBoundProvider(): iterable {
+		yield 'year' => [ '"1984"' ];
+		yield 'unset, as the serializer writes it' => [ 'null' ];
+		yield 'object form' => [ '{ "value": "1984-06", "severity": "error" }' ];
+	}
+
+	public function testMinPrecisionOfAnExtensionDefinedTypeIsNotRestricted(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$valid = $validator->validate(
+			$this->schemaWithProperty( '{ "type": "measurement", "minPrecision": 3 }' )
+		);
+
+		if ( !$valid ) {
+			$this->assertSame( [], $validator->getErrors() );
+		}
+
+		$this->assertTrue( $valid );
+	}
+
 	public function testScalarConstraintWithInvalidSeverityStringFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();
 

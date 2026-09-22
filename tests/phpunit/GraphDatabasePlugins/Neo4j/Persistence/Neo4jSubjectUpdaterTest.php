@@ -12,7 +12,9 @@ use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -25,6 +27,8 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jOrphanC
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectUpdater;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use Psr\Log\LogLevel;
@@ -197,6 +201,51 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 			],
 			$this->newSubjectUpdater( $registry )->statementsToNodeProperties( $statements )
 		);
+	}
+
+	public function testStoresTheLatestDayOfAYearPrecisionDateInACompanionProperty(): void {
+		$statements = new StatementList( [
+			TestStatement::build( property: 'Born', value: new StringValue( '1984' ), propertyType: 'date' ),
+		] );
+
+		$this->assertEquals(
+			[ 'Born_latest' => [ new Date( 5478 ) ] ], // 1984-12-31
+			$this->newSubjectUpdater()->companionProperties( $statements, TestSchema::build() )
+		);
+	}
+
+	/**
+	 * @dataProvider clashingStatementsProvider
+	 * @param Statement[] $statements
+	 */
+	public function testAStatementNamedLikeACompanionKeepsTheName( array $statements ): void {
+		$this->assertSame(
+			[],
+			$this->newSubjectUpdater()->companionProperties( new StatementList( $statements ), TestSchema::build() )
+		);
+	}
+
+	public static function clashingStatementsProvider(): iterable {
+		$date = TestStatement::build( property: 'Born', value: new StringValue( '1984' ), propertyType: 'date' );
+		$clashing = TestStatement::build( property: 'Born_latest', value: new StringValue( 'mine' ), propertyType: 'text' );
+
+		yield 'date statement first' => [ [ $date, $clashing ] ];
+		yield 'date statement last' => [ [ $clashing, $date ] ];
+	}
+
+	/**
+	 * Decided by the Schema, so that the key holds one kind of value on every Subject of it,
+	 * whether or not a Subject fills the Property.
+	 */
+	public function testASchemaPropertyNamedLikeACompanionKeepsTheNameOnSubjectsThatLeaveItEmpty(): void {
+		$statements = new StatementList( [
+			TestStatement::build( property: 'Born', value: new StringValue( '1984' ), propertyType: 'date' ),
+		] );
+		$schema = TestSchema::build( properties: new PropertyDefinitions( [
+			'Born_latest' => TestProperty::buildText(),
+		] ) );
+
+		$this->assertSame( [], $this->newSubjectUpdater()->companionProperties( $statements, $schema ) );
 	}
 
 	public function testWarnsWhenDateValuesAreDroppedFromTheProjection(): void {

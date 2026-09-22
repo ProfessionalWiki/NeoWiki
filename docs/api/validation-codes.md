@@ -49,7 +49,7 @@ Severity decides whether a write can be rejected: warnings never block, errors c
 reference below documents its own severity.
 
 Where a violation is backed by a Constraint the schema author writes — `required`, `multiple`,
-`minimum`, `maximum`, `minLength`, `maxLength`, `uniqueItems`, `options` — that author sets its
+`minimum`, `maximum`, `minPrecision`, `minLength`, `maxLength`, `uniqueItems`, `options` — that author sets its
 severity in the Schema, per Constraint, and the default is `warning`. See
 [Constraint severity](schema-format.md#constraint-severity) for the JSON. Because the default is
 `warning`, an unannotated Schema blocks nothing at all: invalid Subjects are a normal, supported
@@ -114,7 +114,8 @@ length-checked.
 ### `min-value` / `max-value`
 
 On `number`, `date`, and `dateTime` properties. The value is below the property's inclusive
-`minimum` or above its inclusive `maximum`.
+`minimum` or above its inclusive `maximum`. A `date` of year or month precision is compared as
+[the days it stands for](schema-format.md#date-date).
 
 `args`: `[minimum]` / `[maximum]` — a number for `number` properties, the declared ISO 8601 string
 for `date` and `dateTime`. `severity`: set by the `minimum` / `maximum` Constraint (default
@@ -144,10 +145,19 @@ partial dates (`2025`, `2025-06`, `2025-06-15`), and missing offsets.
 
 ### `invalid-date`
 
-On `date` properties. The value is not a strict ISO 8601 calendar date (`YYYY-MM-DD`). Time or
-timezone components and calendar overflows like `2025-02-30` are rejected.
+On `date` properties. The value is not an EDTF level 0 date of year, month or day precision
+(`YYYY`, `YYYY-MM`, `YYYY-MM-DD`). Time or timezone components, calendar overflows like
+`2025-02-30`, and the EDTF forms beyond level 0 (`1984~`, `1984/1985`) are rejected.
 
 `args`: `[]`. `severity`: `error` (fixed).
+
+### `min-precision-month` / `min-precision-day`
+
+On `date` properties. The value is less precise than the property's `minPrecision`: a year alone
+under `"month"`, or a year or year and month under `"day"`. One code per `minPrecision`, so each
+has its own message.
+
+`args`: `[]`. `severity`: set by the `minPrecision` Constraint (default `warning`).
 
 ### `unregistered-type`
 

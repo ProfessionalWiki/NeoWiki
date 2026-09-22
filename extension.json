@@ -556,6 +556,8 @@
 				"neowiki-field-invalid-url",
 				"neowiki-field-invalid-datetime",
 				"neowiki-field-invalid-date",
+				"neowiki-field-min-precision-month",
+				"neowiki-field-min-precision-day",
 				"neowiki-field-invalid-option",
 				"neowiki-field-single-value-only",
 				"neowiki-field-type-mismatch",
