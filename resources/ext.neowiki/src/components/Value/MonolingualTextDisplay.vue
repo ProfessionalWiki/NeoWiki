@@ -83,17 +83,21 @@ const otherParts = computed<MonolingualText[]>(
 );
 
 // The parts on show: the ones picked for the reader, then, once asked for, the others.
-const shownParts = computed<PartView[]>( () => [
-	...readParts.value,
-	...( showingOthers.value ? otherParts.value : [] )
-].map( viewOf ) );
+const shownParts = computed<PartView[]>( () => {
+	const readerTag = userLanguageTag();
+
+	return [
+		...readParts.value,
+		...( showingOthers.value ? otherParts.value : [] )
+	].map( ( part ) => viewOf( part, readerTag ) );
+} );
 
 /**
  * A part is tagged with its language unless it is in the one the interface is in, which the reader
  * can see for themselves.
  */
-function viewOf( part: MonolingualText ): PartView {
-	if ( part.language === userLanguageTag() ) {
+function viewOf( part: MonolingualText, readerTag: string ): PartView {
+	if ( part.language === readerTag ) {
 		return { part: part, tag: null };
 	}
 

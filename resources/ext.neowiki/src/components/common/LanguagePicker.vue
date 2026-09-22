@@ -181,16 +181,18 @@ function listMore(): void {
 
 /**
  * Which entry the arrow keys have reached, for a screen reader to announce while focus stays in
- * the search field. Read back from the panel rather than asked of the menu: Codex mints a fresh id
- * for every entry whenever the list changes, so the id it holds for the entry the arrow keys
- * reached names an element that a later page of languages has already replaced.
+ * the search field. Read back from the rendered list rather than asked of the menu: Codex mints a
+ * fresh id for every entry whenever the list changes, so the id it holds for the entry the arrow
+ * keys reached names an element that a later page of languages has already replaced. Watched
+ * rather than read in `onUpdated`, which the arrow keys never reach: they move the menu's own
+ * state, and the picker around it does not re-render.
  */
 const highlightedId = ref<string | undefined>( undefined );
 
 watch(
 	[ menuItems, () => menuRef.value?.getHighlightedMenuItem() ],
 	() => {
-		highlightedId.value = panelRef.value?.querySelector( '.cdx-menu-item--highlighted' )?.id;
+		highlightedId.value = menuRef.value?.$el.querySelector( '.cdx-menu-item--highlighted' )?.id;
 	},
 	{ flush: 'post' }
 );
@@ -209,14 +211,11 @@ const floatingPanel = computed( () => panelRef.value === null ?
 /**
  * Anchored to the button at the end of the field, and opening from that end, so the panel reads as
  * belonging to the language it changes. Flipping above when there is no room below, clamping to
- * the space left, hiding when the field scrolls out of the dialog, and following the button when
- * the fields above it grow all come with it.
+ * the space left, and hiding when the field scrolls out of the dialog all come with it.
  *
- * The button is handed over as the component rather than as its element, as DataExportButton.vue
- * does: the element alone is not something Codex's layout-shift observer recognises. The cast
- * documents the mismatch that comes with it as deliberate — CdxButton narrows its own `$emit` to
- * its declared events, which TypeScript then treats as incompatible with the generic component
- * shape asked for here.
+ * The button goes in as the component rather than as its element: Codex's layout-shift observer
+ * recognises only the component, so the element form leaves the panel where the button used to be.
+ * The cast is DataExportButton.vue's, which explains it.
  */
 useFloatingMenu(
 	buttonRef as unknown as Parameters<typeof useFloatingMenu>[0],
@@ -324,10 +323,11 @@ function pickHighlighted( event: KeyboardEvent ): void {
 }
 
 /**
- * Only a language the list is offering is a pick: Codex keeps the entry the arrow keys reached
- * when the entries change under it, so Enter or Tab would otherwise choose a language the search
- * has since hidden. CdxMenu reports the language the picker already holds when that one is picked
- * again, which still ends the choice.
+ * Only a language the list is offering is a pick: Codex holds the entry the arrow keys reached as
+ * a snapshot and never re-resolves it against the entries, so Enter or Tab would otherwise choose
+ * a language the search has since hidden. That snapshot is also why `highlightedId` reads the id
+ * back from the list. CdxMenu reports the language the picker already holds when that one is
+ * picked again, which still ends the choice.
  */
 function onSelect( tag: string | null ): void {
 	if ( tag === null || !menuItems.value.some( ( item ) => item.value === tag ) ) {

@@ -1,4 +1,4 @@
-import { VueWrapper } from '@vue/test-utils';
+import { enableAutoUnmount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MonolingualTextInput from '@/components/Value/MonolingualTextInput.vue';
 import { type MonolingualTextValue, newMonolingualTextValue, ValueType } from '@/domain/Value';
@@ -9,20 +9,20 @@ import {
 import { ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { createTestWrapper, setupMwMock } from '../../VueTestHelpers.ts';
 
-describe( 'MonolingualTextInput', () => {
+// Every row's language picker listens to the document while it is open, so no mount is left standing.
+enableAutoUnmount( afterEach );
 
-	let wrapper: VueWrapper<InstanceType<typeof MonolingualTextInput>> | undefined;
+describe( 'MonolingualTextInput', () => {
 
 	function newWrapper(
 		props: Partial<ValueInputProps<MonolingualTextProperty>> = {},
 	): VueWrapper<InstanceType<typeof MonolingualTextInput>> {
-		wrapper = createTestWrapper( MonolingualTextInput, {
+		return createTestWrapper( MonolingualTextInput, {
 			modelValue: undefined,
 			label: 'Original title',
 			property: newMonolingualTextProperty( { name: 'Original title', multiple: true } ),
 			...props,
 		} );
-		return wrapper;
 	}
 
 	function textInputs( wrapper: VueWrapper ): ReturnType<VueWrapper['findAll']> {
@@ -87,11 +87,6 @@ describe( 'MonolingualTextInput', () => {
 	} );
 
 	afterEach( () => {
-		// Every row's language picker listens to the document while it is open, and one test moves
-		// its wrapper into the document, so both are undone here.
-		wrapper?.unmount();
-		wrapper?.element.remove();
-		wrapper = undefined;
 		vi.restoreAllMocks();
 	} );
 

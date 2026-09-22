@@ -40,14 +40,14 @@ withDefaults( defineProps<{
 
 		// A basis small enough that two fields share the narrowest pane they are shown in, and a
 		// lone field grows to fill the row anyway. Both minimums go because Codex asks 256px for
-		// a text input, which alone would wrap the second field. Only the fields placed here are
-		// resized: what an extension puts in this slot lays itself out.
+		// a text input, which alone would wrap the second field. The reach stops at a placed
+		// field's own control: everything else in this slot lays itself out.
 		> .cdx-field {
 			flex: 1 1 @size-800;
 			min-width: 0;
 			margin-top: 0;
 
-			.cdx-text-input {
+			> .cdx-field__control > .cdx-text-input {
 				min-width: 0;
 			}
 		}

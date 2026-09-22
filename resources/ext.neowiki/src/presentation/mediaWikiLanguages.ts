@@ -28,6 +28,7 @@ export function contentLanguageTag(): string {
 // them takes a bcp47() call for each of several hundred languages.
 let listedNames: Record<string, string> | undefined;
 let listedOptions: readonly LanguageOption[] = [];
+let listedByTag = new Map<string, LanguageOption>();
 
 /**
  * Every language MediaWiki has a name for, named in the user's interface language. Several
@@ -52,14 +53,16 @@ export function languageOptions(): readonly LanguageOption[] {
 	}
 
 	listedNames = names;
+	listedByTag = byTag;
 	listedOptions = [ ...byTag.values() ];
 
 	return listedOptions;
 }
 
-// Ordered once for as long as the names it was ordered from stand, since every row of a monolingual
+// Ordered once for as long as what it was ordered from stands, since every row of a monolingual
 // text field has a picker of its own and each would otherwise sort several hundred names again.
 let orderedFrom: readonly LanguageOption[] | undefined;
+let orderedFor = '';
 let orderedOptions: readonly LanguageOption[] = [];
 
 /**
@@ -68,10 +71,12 @@ let orderedOptions: readonly LanguageOption[] = [];
  */
 export function languagesByPreference(): readonly LanguageOption[] {
 	const options = languageOptions();
+	const readerTags = readerLanguageTags();
 
-	if ( options !== orderedFrom ) {
+	if ( options !== orderedFrom || readerTags.join() !== orderedFor ) {
 		orderedFrom = options;
-		orderedOptions = inPreferenceOrder( options, readerLanguageTags() );
+		orderedFor = readerTags.join();
+		orderedOptions = inPreferenceOrder( options, readerTags );
 	}
 
 	return orderedOptions;
@@ -159,14 +164,13 @@ export function typedLanguageTag( options: readonly LanguageOption[], typed: str
  * extension MediaWiki names a language in that language, so it has no name for many of them.
  */
 export function languageName( tag: string ): string | undefined {
-	return languageOptions().find( ( option ) => option.tag === tag )?.name;
+	languageOptions();
+
+	return listedByTag.get( tag )?.name;
 }
 
-/**
- * A language tag the way it is shown: in capitals, as tags usually are. Written out here rather
- * than by `text-transform`, which follows the page's language and turns `it` into `İT` on a
- * Turkish page.
- */
+// In script rather than by `text-transform`, which follows the page's language and turns `it`
+// into `İT` on a Turkish page.
 export function shownLanguageTag( tag: string ): string {
 	return tag.toUpperCase();
 }

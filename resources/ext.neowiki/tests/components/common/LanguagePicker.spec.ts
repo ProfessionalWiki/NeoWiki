@@ -48,6 +48,10 @@ describe( 'LanguagePicker', () => {
 		return picker.findAll( '.cdx-menu-item__text__supporting-text' ).map( ( tag ) => tag.text() );
 	}
 
+	function listedDescriptions( picker: VueWrapper ): string[] {
+		return picker.findAll( '.cdx-menu-item__text__description' ).map( ( description ) => description.text() );
+	}
+
 	function listboxStyle( picker: VueWrapper ): string {
 		return picker.find( '.cdx-menu__listbox' ).attributes( 'style' ) ?? '';
 	}
@@ -55,10 +59,6 @@ describe( 'LanguagePicker', () => {
 	// More than one page of them, so the list both scrolls and has a page left to load.
 	function manyLanguages(): Record<string, string> {
 		return Object.fromEntries( Array.from( { length: 60 }, ( _, i ) => [ `l${ i }`, `Language ${ i }` ] ) );
-	}
-
-	function listedDescriptions( picker: VueWrapper ): string[] {
-		return picker.findAll( '.cdx-menu-item__text__description' ).map( ( description ) => description.text() );
 	}
 
 	// Opens the languages, searches them and picks the first entry the list then offers.
