@@ -7,9 +7,6 @@ namespace ProfessionalWiki\NeoWiki\Application\Search;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
-use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 
 /**
@@ -59,26 +56,12 @@ readonly class SubjectSearchTextBuilder {
 
 			$propertyName = $statement->getPropertyName()->text;
 
-			foreach ( $propertyType->searchText( $statement->getValue(), $this->definitionFor( $statement, $schema ) ) as $text ) {
+			foreach ( $propertyType->searchText( $statement->getValue(), $schema?->definitionOf( $statement ) ) as $text ) {
 				$lines[] = new SubjectSearchLine( $propertyName, $text );
 			}
 		}
 
 		return $lines;
-	}
-
-	/**
-	 * The definition the value was written under; null when the Schema is missing, lacks the property,
-	 * or gives it another type.
-	 */
-	private function definitionFor( Statement $statement, ?Schema $schema ): ?PropertyDefinition {
-		if ( $schema === null || !$schema->hasProperty( $statement->getPropertyName() ) ) {
-			return null;
-		}
-
-		$definition = $schema->getProperty( $statement->getPropertyName() );
-
-		return $definition->getPropertyType() === $statement->getPropertyType() ? $definition : null;
 	}
 
 }

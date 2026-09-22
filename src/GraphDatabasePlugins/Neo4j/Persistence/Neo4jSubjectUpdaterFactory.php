@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use Psr\Log\LoggerInterface;
 
@@ -16,6 +17,7 @@ class Neo4jSubjectUpdaterFactory {
 		private readonly Neo4jValueBuilderRegistry $valueBuilderRegistry,
 		private readonly LoggerInterface $logger,
 		private readonly string $wikiId,
+		private readonly SubjectNamer $subjectNamer,
 	) {
 	}
 
@@ -32,6 +34,7 @@ class Neo4jSubjectUpdaterFactory {
 			$this->logger,
 			$this->wikiId,
 			$orphanCandidates,
+			$this->subjectNamer,
 		);
 	}
 

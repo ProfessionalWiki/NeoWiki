@@ -5,6 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Queries\GetPageSubjects;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsResponse;
@@ -29,6 +31,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -205,6 +208,39 @@ class GetPageSubjectsQueryTest extends TestCase {
 
 		$this->assertNull( $presenter->response->subjects['s11111111111ca1']->label );
 		$this->assertSame( 'Attendance', $presenter->response->subjects['s11111111111ca1']->displayName );
+	}
+
+	public function testLabellessSubjectIsNamedByItsSchemasLabelTemplate(): void {
+		$repository = new InMemorySubjectRepository();
+		$repository->savePageSubjects(
+			new PageSubjects(
+				TestSubject::build( id: 's11111111111maa' ),
+				new SubjectMap( TestSubject::build(
+					id: 's11111111111ca1',
+					label: null,
+					schemaName: new SchemaName( 'Attendance' ),
+					statements: new StatementList( [ TestStatement::build( property: 'Year', value: new NumberValue( 2024 ), propertyType: 'number' ) ] )
+				) )
+			),
+			new PageId( 42 )
+		);
+
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery(
+			$presenter,
+			$repository,
+			schemaLookup: new InMemorySchemaLookup( TestSchema::build(
+				name: 'Attendance',
+				properties: new PropertyDefinitions( [ 'Year' => TestProperty::buildNumber() ] ),
+				labelTemplate: 'Rijksmuseum attendance {Year}'
+			) ),
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
+				[ new SubjectId( 's11111111111ca1' ), new PageIdentifiers( new PageId( 42 ), 'Rijksmuseum', 0 ) ],
+			] )
+		)->execute( 42 );
+
+		$this->assertSame( 'Rijksmuseum attendance 2024', $presenter->response->subjects['s11111111111ca1']->displayName );
 	}
 
 	public function testLabellessMainSubjectOfAPageTitledByAnotherSubjectsIdIsNamedAfterItsSchema(): void {
@@ -758,15 +794,21 @@ class GetPageSubjectsQueryTest extends TestCase {
 		?PageIdentifiersLookup $pageIdentifiersLookup = null,
 		?PageReadAuthorizer $readAuthorizer = null,
 	): GetPageSubjectsQuery {
+		$schemaLookup ??= new InMemorySchemaLookup();
+
 		return new GetPageSubjectsQuery(
 			presenter: $presenter,
 			subjectRepository: $repository,
-			responseItemFactory: new SubjectResponseItemFactory( new PageSubjectsLookup( $repository ) ),
+			responseItemFactory: new SubjectResponseItemFactory(
+				new PageSubjectsLookup( $repository ),
+				TestSources::newSubjectNamer( $schemaLookup )
+			),
 			subjectLookup: $subjectLookup ?? new InMemorySubjectLookup(),
-			schemaLookup: $schemaLookup ?? new InMemorySchemaLookup(),
+			schemaLookup: $schemaLookup,
 			schemaSerializer: new SchemaPresentationSerializer(),
 			pageIdentifiersLookup: $pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
 			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
+			subjectNamer: TestSources::newSubjectNamer( $schemaLookup ),
 		);
 	}
 

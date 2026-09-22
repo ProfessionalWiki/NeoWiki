@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
@@ -93,6 +94,7 @@ class ReplaceSubjectActionTest extends TestCase {
 			),
 			presenter: $this->presenterSpy,
 			validationEnforced: $validationEnforced,
+			subjectNamer: TestSources::newSubjectNamer( $this->schemaLookup ),
 		);
 	}
 
@@ -944,6 +946,29 @@ class ReplaceSubjectActionTest extends TestCase {
 
 		$this->assertNull( $this->presenterSpy->subject?->label );
 		$this->assertTrue( $this->presenterSpy->subject?->displayNameIsGenerated );
+	}
+
+	public function testClearingTheLabelNamesTheSubjectThroughItsSchemasLabelTemplate(): void {
+		$this->schemaLookup->updateSchema( TestSchema::build(
+			name: self::SCHEMA_NAME,
+			properties: new PropertyDefinitions( [ 'Title' => TestProperty::buildText() ] ),
+			labelTemplate: '{Title}'
+		) );
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			label: new SubjectLabel( 'Original Label' ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		) );
+
+		$this->newAction()->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			null,
+			[ 'Title' => [ 'propertyType' => 'text', 'value' => 'Madonna and Child on a Cloud' ] ],
+			null
+		);
+
+		$this->assertSame( 'Madonna and Child on a Cloud', $this->presenterSpy->subject?->displayName );
+		$this->assertFalse( $this->presenterSpy->subject?->displayNameIsGenerated );
 	}
 
 }

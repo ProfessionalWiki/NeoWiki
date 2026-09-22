@@ -69,6 +69,7 @@ class Neo4jSubjectUpdaterTest extends TestCase {
 			$this->logger,
 			'test_wiki',
 			new Neo4jOrphanCandidates(),
+			TestSources::newSubjectNamer( $this->schemaLookup ),
 		);
 	}
 

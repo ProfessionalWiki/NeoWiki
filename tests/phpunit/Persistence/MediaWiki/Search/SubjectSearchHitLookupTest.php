@@ -108,7 +108,8 @@ class SubjectSearchHitLookupTest extends NeoWikiIntegrationTestCase {
 
 		return $this->newHits(
 			new SubjectSearchHitBuilder(
-				new SubjectSearchTextBuilder( $extension->getPropertyTypeLookup(), $extension->getSchemaResolver() )
+				new SubjectSearchTextBuilder( $extension->getPropertyTypeLookup(), $extension->getSchemaResolver() ),
+				$extension->newSubjectNamer()
 			),
 			new TestLogger()
 		);

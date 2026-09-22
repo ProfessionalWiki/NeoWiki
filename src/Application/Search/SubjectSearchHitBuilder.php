@@ -4,9 +4,9 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Search;
 
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 
 /**
  * What a page's Subjects add to its search result row: the Subject to lead to instead of the page,
@@ -20,7 +20,8 @@ readonly class SubjectSearchHitBuilder {
 	private const int MAX_LINES = 3;
 
 	public function __construct(
-		private SubjectSearchTextBuilder $textBuilder
+		private SubjectSearchTextBuilder $textBuilder,
+		private SubjectNamer $subjectNamer,
 	) {
 	}
 
@@ -60,7 +61,7 @@ readonly class SubjectSearchHitBuilder {
 			return null;
 		}
 
-		$chosenName = SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageName );
+		$chosenName = $this->subjectNamer->chosenName( $subject, $pageSubjects, $pageName );
 
 		return new SubjectSearchLanding(
 			subjectId: $subject->getId(),
@@ -142,7 +143,7 @@ readonly class SubjectSearchHitBuilder {
 		string $pageName,
 		string $rowTitle
 	): ?string {
-		$chosenName = SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageName );
+		$chosenName = $this->subjectNamer->chosenName( $subject, $pageSubjects, $pageName );
 
 		return $chosenName === $rowTitle ? null : $chosenName;
 	}

@@ -90,6 +90,7 @@ use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\ReferencingSubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\NullReferencingSubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
+use ProfessionalWiki\NeoWiki\Application\LabelTemplateRenderer;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
@@ -104,6 +105,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectIdMinter;
 use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Application\MappingLookup;
 use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
@@ -661,6 +663,7 @@ class NeoWikiExtension {
 			$this->getSchemaResolver(),
 			$this->newSubjectIriResolver(),
 			LoggerFactory::getInstance( 'NeoWiki' ),
+			$this->newSubjectNamer(),
 		);
 	}
 
@@ -742,6 +745,7 @@ class NeoWikiExtension {
 					$this->getRdfValueMapperRegistry(),
 					$this->newSubjectIriResolver(),
 					LoggerFactory::getInstance( 'NeoWiki' ),
+					$this->newSubjectNamer(),
 				),
 				new HardfRdfSerializer( $this->ontologyPrefixMap( $mapping ) ),
 			)
@@ -1122,6 +1126,7 @@ class NeoWikiExtension {
 			valueBuilderRegistry: $this->getValueBuilderRegistry(),
 			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 			wikiId: $this->config->wikiId,
+			subjectNamer: new SubjectNamer( $this->newLabelTemplateRenderer(), $schemaResolver ),
 		);
 	}
 
@@ -1297,7 +1302,7 @@ class NeoWikiExtension {
 	public function getSubjectSearchHitLookup(): SubjectSearchHitLookup {
 		$this->subjectSearchHitLookup ??= new SubjectSearchHitLookup(
 			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
-			hitBuilder: new SubjectSearchHitBuilder( $this->newSubjectSearchTextBuilder() ),
+			hitBuilder: new SubjectSearchHitBuilder( $this->newSubjectSearchTextBuilder(), $this->newSubjectNamer() ),
 			logger: LoggerFactory::getInstance( 'NeoWiki' )
 		);
 
@@ -1340,6 +1345,7 @@ class NeoWikiExtension {
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			subjectIdParser: $this->getSubjectIdParser(),
+			subjectNamer: $this->newSubjectNamerFor( $authority ),
 		);
 	}
 
@@ -1531,6 +1537,7 @@ class NeoWikiExtension {
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			schemaReferenceParser: $this->getSchemaReferenceParser(),
 			validationEnforced: $this->isValidationEnforced(),
+			subjectNamer: $this->newSubjectNamer(),
 		);
 	}
 
@@ -1555,6 +1562,7 @@ class NeoWikiExtension {
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			schemaReferenceParser: $this->getSchemaReferenceParser(),
 			validationEnforced: $this->isValidationEnforced(),
+			subjectNamer: $this->newSubjectNamer(),
 		);
 	}
 
@@ -1840,6 +1848,7 @@ class NeoWikiExtension {
 			schemaSerializer: $this->getSchemaPresentationSerializer(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			subjectNamer: $this->newSubjectNamer(),
 		);
 	}
 
@@ -1893,7 +1902,23 @@ class NeoWikiExtension {
 	}
 
 	private function newSubjectResponseItemFactory(): SubjectResponseItemFactory {
-		return new SubjectResponseItemFactory( $this->newPageSubjectsLookup() );
+		return new SubjectResponseItemFactory( $this->newPageSubjectsLookup(), $this->newSubjectNamer() );
+	}
+
+	public function newSubjectNamer(): SubjectNamer {
+		return new SubjectNamer( $this->newLabelTemplateRenderer(), $this->getSchemaResolver() );
+	}
+
+	/**
+	 * Names Subjects with the Schemas $authority may read; for the parse-time surfaces, which read as
+	 * the user the page is parsed for ({@see self::getSchemaResolverFor()}).
+	 */
+	private function newSubjectNamerFor( Authority $authority ): SubjectNamer {
+		return new SubjectNamer( $this->newLabelTemplateRenderer(), $this->getSchemaResolverFor( $authority ) );
+	}
+
+	private function newLabelTemplateRenderer(): LabelTemplateRenderer {
+		return new LabelTemplateRenderer( $this->getPropertyTypeLookup() );
 	}
 
 	public function newReplaceSubjectAction( ReplaceSubjectPresenter $presenter, Authority $authority ): ReplaceSubjectAction {
@@ -1907,6 +1932,7 @@ class NeoWikiExtension {
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
+			subjectNamer: $this->newSubjectNamer(),
 		);
 	}
 
@@ -1921,6 +1947,7 @@ class NeoWikiExtension {
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
+			subjectNamer: $this->newSubjectNamer(),
 		);
 	}
 

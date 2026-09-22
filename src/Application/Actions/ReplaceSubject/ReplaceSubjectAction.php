@@ -12,12 +12,12 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthori
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
@@ -35,6 +35,7 @@ readonly class ReplaceSubjectAction {
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private ReplaceSubjectPresenter $presenter,
 		private bool $validationEnforced,
+		private SubjectNamer $subjectNamer,
 	) {
 	}
 
@@ -105,7 +106,7 @@ readonly class ReplaceSubjectAction {
 		return GetSubjectResponseItem::fromSubject(
 			$subject,
 			$pageIdentifiers,
-			SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageIdentifiers->getTitle() )
+			$this->subjectNamer->chosenName( $subject, $pageSubjects, $pageIdentifiers->getTitle() )
 		);
 	}
 

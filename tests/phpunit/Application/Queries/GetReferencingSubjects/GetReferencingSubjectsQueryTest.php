@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
@@ -133,7 +134,7 @@ class GetReferencingSubjectsQueryTest extends TestCase {
 				$pageIdentifiersLookup,
 				new SelectivePageReadAuthorizer( $deniedPageIds )
 			),
-			responseItemFactory: new SubjectResponseItemFactory( new PageSubjectsLookup( new InMemorySubjectRepository() ) ),
+			responseItemFactory: new SubjectResponseItemFactory( new PageSubjectsLookup( new InMemorySubjectRepository() ), TestSources::newSubjectNamer() ),
 			subjectIdParser: TestSubjectIds::newParser(),
 		);
 	}

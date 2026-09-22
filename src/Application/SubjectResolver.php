@@ -10,7 +10,6 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 
@@ -36,6 +35,7 @@ class SubjectResolver {
 		private readonly PageIdentifiersLookup $pageIdentifiersLookup,
 		private readonly PageReadAuthorizer $readAuthorizer,
 		private readonly SubjectIdParser $subjectIdParser,
+		private readonly SubjectNamer $subjectNamer,
 	) {
 	}
 
@@ -85,8 +85,9 @@ class SubjectResolver {
 
 	/**
 	 * A relation target need not carry a label, so the display name stands in for one. The target is
-	 * read off the page hosting it, which supplies both inputs the fallback needs: a label-less target
-	 * that is its page's Main Subject reads as the page name, and any other reads as its Schema name.
+	 * read off the page hosting it, which supplies the inputs the fallback needs: a label-less target
+	 * reads as the label its Schema's template gives it, else as the page name where it is its page's
+	 * Main Subject, and as its Schema name otherwise.
 	 * That is the name the target takes everywhere else it is shown. The target ID remains the last
 	 * resort, for a target that does not resolve at all.
 	 */
@@ -118,7 +119,21 @@ class SubjectResolver {
 			return null;
 		}
 
-		return SubjectDisplayName::forSubject( $subject, $pageSubjects, $page->getTitle() );
+		return $this->nameOnPage( $subject, $pageSubjects, $page->getTitle() );
+	}
+
+	/**
+	 * The name a Subject read off the page holding it is shown under.
+	 */
+	public function nameOnPage( Subject $subject, PageSubjects $pageSubjects, string $pageName ): string {
+		return $this->subjectNamer->displayName( $subject, $pageSubjects, $pageName );
+	}
+
+	/**
+	 * The name a Subject read without the page holding it is shown under: the page name is out of reach.
+	 */
+	public function nameWithoutPage( Subject $subject ): string {
+		return $this->subjectNamer->displayNameWithoutPage( $subject );
 	}
 
 	/**

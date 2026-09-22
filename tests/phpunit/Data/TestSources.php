@@ -5,7 +5,9 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Data;
 
 use Psr\Log\NullLogger;
+use ProfessionalWiki\NeoWiki\Application\LabelTemplateRenderer;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use ProfessionalWiki\NeoWiki\Application\Source\LocalSource;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
@@ -101,6 +103,16 @@ class TestSources {
 	 */
 	public static function newSchemaResolver( ?SchemaLookup $schemaLookup = null ): SchemaResolver {
 		return new SchemaResolver( self::newRegistryWithLocalSchemas( $schemaLookup ), new NullLogger() );
+	}
+
+	/**
+	 * Names Subjects through the label templates of $schemaLookup's Schemas, with the core Property Types.
+	 */
+	public static function newSubjectNamer( ?SchemaLookup $schemaLookup = null ): SubjectNamer {
+		return new SubjectNamer(
+			new LabelTemplateRenderer( self::newPropertyTypeRegistry() ),
+			self::newSchemaResolver( $schemaLookup )
+		);
 	}
 
 }

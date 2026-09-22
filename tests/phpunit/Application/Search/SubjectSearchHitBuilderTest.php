@@ -4,6 +4,11 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Search;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Search\MatchedSearchLine;
 use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchHit;
@@ -188,6 +193,21 @@ class SubjectSearchHitBuilderTest extends TestCase {
 		$this->assertTrue( $this->landingOf( $hit )->subjectNameIsGenerated );
 	}
 
+	public function testALabellessLandingSubjectIsNamedByItsSchemasLabelTemplate(): void {
+		$subject = $this->subjectWith( self::MAIN_ID, null, TestStatement::build( property: 'City', value: 'Amsterdam' ) );
+		$builder = $this->newBuilder( TestSchema::build(
+			name: 'Museum',
+			properties: new PropertyDefinitions( [ 'City' => TestProperty::buildText() ] ),
+			labelTemplate: 'Museum in {City}'
+		) );
+
+		$hit = $builder->build( new PageSubjects( $subject, new SubjectMap() ), self::MAIN_ID, false, null );
+		$this->assertNotNull( $hit );
+
+		$this->assertSame( 'Museum in Amsterdam', $this->landingOf( $hit )->subjectName );
+		$this->assertFalse( $this->landingOf( $hit )->subjectNameIsGenerated );
+	}
+
 	public function testTheMatchedSubjectIsNamedInTheExtractWhenThePageTitleDoesNotNameIt(): void {
 		$hit = $this->hitFor(
 			$this->pageWith( $this->subjectWith(
@@ -307,12 +327,13 @@ class SubjectSearchHitBuilderTest extends TestCase {
 		);
 	}
 
-	private function newBuilder(): SubjectSearchHitBuilder {
+	private function newBuilder( Schema ...$schemas ): SubjectSearchHitBuilder {
 		return new SubjectSearchHitBuilder(
 			new SubjectSearchTextBuilder(
 				PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 				TestSources::newSchemaResolver()
-			)
+			),
+			TestSources::newSubjectNamer( new InMemorySchemaLookup( ...$schemas ) )
 		);
 	}
 

@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
 use OutOfBoundsException;
+use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 
 readonly class Schema {
@@ -47,6 +48,20 @@ readonly class Schema {
 
 	public function getAllProperties(): PropertyDefinitions {
 		return $this->properties;
+	}
+
+	/**
+	 * The definition the Statement's value was written under; null when the Schema lacks the property or
+	 * gives it another type.
+	 */
+	public function definitionOf( Statement $statement ): ?PropertyDefinition {
+		if ( !$this->hasProperty( $statement->getPropertyName() ) ) {
+			return null;
+		}
+
+		$definition = $this->getProperty( $statement->getPropertyName() );
+
+		return $definition->getPropertyType() === $statement->getPropertyType() ? $definition : null;
 	}
 
 	public function getLabelTemplate(): ?LabelTemplate {

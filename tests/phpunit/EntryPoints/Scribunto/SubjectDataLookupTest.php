@@ -5,6 +5,12 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\Scribunto;
 
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -45,6 +51,12 @@ class SubjectDataLookupTest extends TestCase {
 	private const string SUBJECT_ID = 's1test5aaaaaaaa';
 	private const string TARGET_SUBJECT_ID = 's1test5bbbbbbbb';
 	private const string OTHER_SUBJECT_ID = 's1test5cccccccc';
+
+	private InMemorySchemaLookup $schemaLookup;
+
+	protected function setUp(): void {
+		$this->schemaLookup = new InMemorySchemaLookup();
+	}
 
 	private function createTitle(): Title {
 		return $this->createTitleNamed( 'Test Page' );
@@ -110,7 +122,8 @@ class SubjectDataLookupTest extends TestCase {
 			new InMemorySubjectLookup(),
 			$pageIdentifiersLookup,
 			new StubPageReadAuthorizer( true ),
-			TestSubjectIds::newParser()
+			TestSubjectIds::newParser(),
+			TestSources::newSubjectNamer( $this->schemaLookup )
 		);
 	}
 
@@ -706,6 +719,25 @@ class SubjectDataLookupTest extends TestCase {
 
 		$this->assertSame( 'Attendance', $result[0][2]['label'] );
 		$this->assertNull( $result[0][2]['storedLabel'] );
+	}
+
+	public function testSubjectAskedForByIdIsNamedThroughItsSchemasLabelTemplate(): void {
+		$this->schemaLookup->updateSchema( TestSchema::build(
+			name: 'Artwork',
+			properties: new PropertyDefinitions( [ 'Title' => TestProperty::buildText() ] ),
+			labelTemplate: '{Title}'
+		) );
+		$artwork = TestSubject::build(
+			id: self::OTHER_SUBJECT_ID,
+			label: null,
+			schemaName: new SchemaName( 'Artwork' ),
+			statements: new StatementList( [ TestStatement::build( property: 'Title', value: 'Madonna and Child on a Cloud' ) ] )
+		);
+
+		$result = ( new SubjectDataLookup( $this->newResolver( null, $artwork ) ) )->getSubjectData( self::OTHER_SUBJECT_ID );
+
+		$this->assertSame( 'Madonna and Child on a Cloud', $result[0]['label'] );
+		$this->assertNull( $result[0]['storedLabel'] );
 	}
 
 	public function testGetSubjectsNamesAnUnlabelledMainSubjectAfterItsPage(): void {

@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Rdf;
 use DateTimeImmutable;
 use DateTimeZone;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageValue;
@@ -21,7 +22,6 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelation;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use Psr\Log\LoggerInterface;
 
@@ -59,6 +59,7 @@ class RdfPageProjector implements PageProjector {
 		private readonly SchemaResolver $schemaResolver,
 		private readonly SubjectIriResolver $subjectIris,
 		private readonly LoggerInterface $logger,
+		private readonly SubjectNamer $subjectNamer,
 	) {
 	}
 
@@ -200,7 +201,7 @@ class RdfPageProjector implements PageProjector {
 
 		// A Subject without a stored label still gets a label here: RDF consumers key on rdfs:label,
 		// and the Schema shows up as rdf:type rather than as a label.
-		$displayName = SubjectDisplayName::forSubjectOnPage( $subject, $page );
+		$displayName = $this->subjectNamer->displayNameOnPage( $subject, $page );
 
 		$quads = [
 			new Quad( $subjectIri, $this->namespaces->rdfType(), $this->namespaces->schemaClass( $subject->getSchemaName() ), $graph ),

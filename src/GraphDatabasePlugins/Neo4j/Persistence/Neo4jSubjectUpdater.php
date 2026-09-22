@@ -7,13 +7,13 @@ namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -29,6 +29,7 @@ class Neo4jSubjectUpdater {
 		private readonly LoggerInterface $logger,
 		private readonly string $wikiId,
 		private readonly Neo4jOrphanCandidates $orphanCandidates,
+		private readonly SubjectNamer $subjectNamer,
 	) {
 	}
 
@@ -140,10 +141,11 @@ class Neo4jSubjectUpdater {
 
 	/**
 	 * The name a Subject node carries: the tiers the graph materializes, which a page move keeps
-	 * current through the reprojection it already triggers.
+	 * current through the reprojection it already triggers. The Schema's label template is read here,
+	 * so an edit to it reaches a node when its page is next projected.
 	 */
 	private function nodeName( Neo4jPageSubject $pageSubject, Page $page ): ?string {
-		return SubjectDisplayName::labelOrPageName(
+		return $this->subjectNamer->chosenName(
 			$pageSubject->subject,
 			$page->getSubjects(),
 			$page->getProperties()->getName()

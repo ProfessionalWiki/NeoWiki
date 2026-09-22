@@ -37,10 +37,15 @@ class SubjectDisplayNameTest extends TestCase {
 		return new PageSubjects( $this->newSubject( null, self::OTHER_SUBJECT_ID ), new SubjectMap( $subject ) );
 	}
 
-	private function displayName( ?SubjectLabel $label, bool $isMainSubject, string $pageName = 'Page name' ): string {
+	private function displayName(
+		?SubjectLabel $label,
+		bool $isMainSubject,
+		string $pageName = 'Page name',
+		?string $templateLabel = null
+	): string {
 		$subject = $this->newSubject( $label );
 
-		return SubjectDisplayName::forSubject( $subject, $this->pageHolding( $subject, $isMainSubject ), $pageName );
+		return SubjectDisplayName::forSubject( $subject, $templateLabel, $this->pageHolding( $subject, $isMainSubject ), $pageName );
 	}
 
 	public function testStoredLabelWinsForMainSubject(): void {
@@ -95,21 +100,45 @@ class SubjectDisplayNameTest extends TestCase {
 	public function testStoredLabelNamesASubjectReadWithoutItsPage(): void {
 		$this->assertSame(
 			'Stored',
-			SubjectDisplayName::forSubjectWithoutPage( $this->newSubject( new SubjectLabel( 'Stored' ) ) )
+			SubjectDisplayName::forSubjectWithoutPage( $this->newSubject( new SubjectLabel( 'Stored' ) ), 'From template' )
 		);
 	}
 
 	public function testSubjectReadWithoutItsPageAndWithoutALabelFallsBackToSchemaName(): void {
 		$this->assertSame(
 			self::SCHEMA_NAME,
-			SubjectDisplayName::forSubjectWithoutPage( $this->newSubject( null ) )
+			SubjectDisplayName::forSubjectWithoutPage( $this->newSubject( null ), null )
 		);
 	}
 
-	private function chosenName( ?SubjectLabel $label, bool $isMainSubject, string $pageName = 'Page name' ): ?string {
+	public function testTemplateLabelNamesASubjectReadWithoutItsPage(): void {
+		$this->assertSame(
+			'From template',
+			SubjectDisplayName::forSubjectWithoutPage( $this->newSubject( null ), 'From template' )
+		);
+	}
+
+	public function testTypedLabelWinsOverTemplateLabel(): void {
+		$this->assertSame( 'Stored', $this->displayName( new SubjectLabel( 'Stored' ), false, templateLabel: 'From template' ) );
+	}
+
+	/**
+	 * The template reads the Subject's own data, which says more about it than the title of the page
+	 * it is stored on.
+	 */
+	public function testTemplateLabelWinsOverPageNameForMainSubject(): void {
+		$this->assertSame( 'From template', $this->displayName( null, true, templateLabel: 'From template' ) );
+	}
+
+	private function chosenName(
+		?SubjectLabel $label,
+		bool $isMainSubject,
+		string $pageName = 'Page name',
+		?string $templateLabel = null
+	): ?string {
 		$subject = $this->newSubject( $label );
 
-		return SubjectDisplayName::labelOrPageName( $subject, $this->pageHolding( $subject, $isMainSubject ), $pageName );
+		return SubjectDisplayName::chosenName( $subject, $templateLabel, $this->pageHolding( $subject, $isMainSubject ), $pageName );
 	}
 
 	public function testStoredLabelIsTheChosenNameForMainSubject(): void {
@@ -118,6 +147,13 @@ class SubjectDisplayNameTest extends TestCase {
 
 	public function testStoredLabelIsTheChosenNameForOtherSubject(): void {
 		$this->assertSame( 'Stored', $this->chosenName( new SubjectLabel( 'Stored' ), false ) );
+	}
+
+	/**
+	 * Someone chose the template, so a Subject it labels is not shown as a stand-in.
+	 */
+	public function testTemplateLabelIsAChosenName(): void {
+		$this->assertSame( 'From template', $this->chosenName( null, false, templateLabel: 'From template' ) );
 	}
 
 	public function testTheMainSubjectTakesThePageNameAsItsChosenName(): void {
@@ -201,8 +237,9 @@ class SubjectDisplayNameTest extends TestCase {
 		$mainSubject = $this->newSubject( null );
 
 		$this->assertNull(
-			SubjectDisplayName::labelOrPageName(
+			SubjectDisplayName::chosenName(
 				$mainSubject,
+				null,
 				new PageSubjects( $mainSubject, new SubjectMap( $this->newSubject( null, self::OTHER_SUBJECT_ID ) ) ),
 				ucfirst( self::OTHER_SUBJECT_ID )
 			)

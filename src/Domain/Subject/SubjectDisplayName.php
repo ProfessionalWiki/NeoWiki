@@ -11,8 +11,12 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
  * The name to show for a Subject. A Subject need not have a label, so every surface that displays one
  * needs a value to fall back on, and they all need the same one.
  *
- * Mirrored by resources/ext.neowiki/src/domain/chosenSubjectName.ts, which answers the same question
- * for a Subject that does not exist yet. Change one and change the other.
+ * The template label is what the Subject's Schema makes of its Statements through its label template,
+ * null when it has none. It is passed in rather than computed here: computing it needs the Schema and
+ * the Property Types, which {@see \ProfessionalWiki\NeoWiki\Application\SubjectNamer} brings.
+ *
+ * Mirrored, apart from the template label, by resources/ext.neowiki/src/domain/chosenSubjectName.ts,
+ * which answers the same question for a Subject that does not exist yet. Change one and change the other.
  */
 class SubjectDisplayName {
 
@@ -22,36 +26,42 @@ class SubjectDisplayName {
 	 * misleading name. The page's Subjects are what knows whether it is the Main Subject, and which
 	 * of them could have titled the page.
 	 */
-	public static function forSubject( Subject $subject, PageSubjects $pageSubjects, string $pageName ): string {
-		return self::labelOrPageName( $subject, $pageSubjects, $pageName )
+	public static function forSubject( Subject $subject, ?string $templateLabel, PageSubjects $pageSubjects, string $pageName ): string {
+		return self::chosenName( $subject, $templateLabel, $pageSubjects, $pageName )
 			?? $subject->getSchemaName()->getText();
 	}
 
 	/**
 	 * The same rule for a Subject read off a whole Page, as the projectors hold one.
 	 */
-	public static function forSubjectOnPage( Subject $subject, Page $page ): string {
-		return self::forSubject( $subject, $page->getSubjects(), $page->getProperties()->getName() );
+	public static function forSubjectOnPage( Subject $subject, ?string $templateLabel, Page $page ): string {
+		return self::forSubject( $subject, $templateLabel, $page->getSubjects(), $page->getProperties()->getName() );
 	}
 
 	/**
 	 * The same rule for a Subject read without the page holding it, which puts the page name out of
-	 * reach: the stored label, else the Schema name.
+	 * reach: the stored label, else the template label, else the Schema name.
 	 */
-	public static function forSubjectWithoutPage( Subject $subject ): string {
-		return $subject->getLabel()?->text ?? $subject->getSchemaName()->getText();
+	public static function forSubjectWithoutPage( Subject $subject, ?string $templateLabel ): string {
+		return $subject->getLabel()?->text ?? $templateLabel ?? $subject->getSchemaName()->getText();
 	}
 
 	/**
-	 * The name without the Schema tier: the stored label, else the page name for a Main Subject, else
-	 * nothing. What the graph materializes, since the Schema name there would make every unnamed
-	 * Subject of a Schema indistinguishable in query results while the Schema is already on the node.
+	 * The name without the Schema tier: the stored label, else the template label, else the page name
+	 * for a Main Subject, else nothing. The template reads the Subject's own data, which says more about
+	 * it than the title of the page it is stored on. What the graph materializes, since the Schema name
+	 * there would make every unnamed Subject of a Schema indistinguishable in query results while the
+	 * Schema is already on the node.
 	 */
-	public static function labelOrPageName( Subject $subject, PageSubjects $pageSubjects, string $pageName ): ?string {
+	public static function chosenName( Subject $subject, ?string $templateLabel, PageSubjects $pageSubjects, string $pageName ): ?string {
 		$label = $subject->getLabel();
 
 		if ( $label !== null ) {
 			return $label->text;
+		}
+
+		if ( $templateLabel !== null ) {
+			return $templateLabel;
 		}
 
 		if ( $pageName !== ''

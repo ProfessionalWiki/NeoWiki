@@ -5,6 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Queries\GetSubject;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponse;
@@ -24,6 +29,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivePageReadAuthorizer;
@@ -264,12 +270,45 @@ class GetSubjectQueryTest extends TestCase {
 		$this->assertTrue( $spyPresenter->response->subjects['s11111111111maa']->displayNameIsGenerated );
 	}
 
+	public function testLabellessSubjectIsNamedByItsSchemasLabelTemplate(): void {
+		$spyPresenter = $this->getSpyPresenter();
+		$attendance = TestSubject::build(
+			id: 's11111111111ca1',
+			label: null,
+			schemaName: new SchemaName( 'Attendance' ),
+			statements: new StatementList( [ TestStatement::build( property: 'Year', value: new NumberValue( 2024 ), propertyType: 'number' ) ] )
+		);
+
+		$this->newQueryForLabellessSubject(
+			$spyPresenter,
+			$attendance,
+			TestSubject::build( id: 's11111111111maa' ),
+			otherSubjectsOfPage: new SubjectMap( $attendance ),
+			schemas: [ TestSchema::build(
+				name: 'Attendance',
+				properties: new PropertyDefinitions( [ 'Year' => TestProperty::buildNumber() ] ),
+				labelTemplate: 'Rijksmuseum attendance {Year}'
+			) ]
+		)->execute(
+			subjectId: 's11111111111ca1',
+			includePageIdentifiers: true,
+			includeReferencedSubjects: false
+		);
+
+		$this->assertSame( 'Rijksmuseum attendance 2024', $spyPresenter->response->subjects['s11111111111ca1']->displayName );
+		$this->assertFalse( $spyPresenter->response->subjects['s11111111111ca1']->displayNameIsGenerated );
+	}
+
+	/**
+	 * @param Schema[] $schemas
+	 */
 	private function newQueryForLabellessSubject(
 		object $spyPresenter,
 		Subject $requested,
 		Subject $mainSubjectOfPage,
 		string $pageTitle = 'Rijksmuseum',
-		SubjectMap $otherSubjectsOfPage = new SubjectMap()
+		SubjectMap $otherSubjectsOfPage = new SubjectMap(),
+		array $schemas = []
 	): GetSubjectQuery {
 		return new GetSubjectQuery(
 			$spyPresenter,
@@ -277,7 +316,7 @@ class GetSubjectQueryTest extends TestCase {
 			new InMemoryPageIdentifiersLookup( [
 				[ $requested->id, new PageIdentifiers( new PageId( 42 ), $pageTitle, 0 ) ],
 			] ),
-			$this->responseItemFactoryWithMainSubject( $mainSubjectOfPage, $otherSubjectsOfPage, 42 ),
+			$this->responseItemFactoryWithMainSubject( $mainSubjectOfPage, $otherSubjectsOfPage, 42, $schemas ),
 			new StubPageReadAuthorizer( allowed: true ),
 			TestSubjectIds::newParser(),
 		);
@@ -542,18 +581,25 @@ class GetSubjectQueryTest extends TestCase {
 	 * about answers that it has none.
 	 */
 	private function responseItemFactory(): SubjectResponseItemFactory {
-		return new SubjectResponseItemFactory( new PageSubjectsLookup( new InMemorySubjectRepository() ) );
+		return new SubjectResponseItemFactory( new PageSubjectsLookup( new InMemorySubjectRepository() ), TestSources::newSubjectNamer() );
 	}
 
+	/**
+	 * @param Schema[] $schemas
+	 */
 	private function responseItemFactoryWithMainSubject(
 		Subject $mainSubject,
 		SubjectMap $otherSubjects,
-		int $pageId
+		int $pageId,
+		array $schemas = []
 	): SubjectResponseItemFactory {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects( new PageSubjects( $mainSubject, $otherSubjects ), new PageId( $pageId ) );
 
-		return new SubjectResponseItemFactory( new PageSubjectsLookup( $repository ) );
+		return new SubjectResponseItemFactory(
+			new PageSubjectsLookup( $repository ),
+			TestSources::newSubjectNamer( new InMemorySchemaLookup( ...$schemas ) )
+		);
 	}
 
 	private function newSubjectReferencing( string ...$targetIds ): Subject {

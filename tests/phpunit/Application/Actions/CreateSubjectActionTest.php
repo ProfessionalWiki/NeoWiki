@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
 use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
@@ -125,6 +126,7 @@ class CreateSubjectActionTest extends TestCase {
 			$this->pageIdentifiersResolver,
 			TestSources::newSchemaReferenceParser( $schemaNames ),
 			$validationEnforced,
+			TestSources::newSubjectNamer( $this->schemaLookup ),
 		);
 	}
 
@@ -236,6 +238,30 @@ class CreateSubjectActionTest extends TestCase {
 			)
 		);
 
+		$this->assertFalse( $this->presenterSpy->subject?->displayNameIsGenerated );
+	}
+
+	public function testCreatingASubjectWithoutALabelNamesItThroughItsSchemasLabelTemplate(): void {
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+		$this->schemaLookup->updateSchema( TestSchema::build(
+			name: 'Artwork',
+			properties: new PropertyDefinitions( [ 'Title' => TestProperty::buildText() ] ),
+			labelTemplate: '{Title}'
+		) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: false,
+				label: null,
+				schemaName: 'Artwork',
+				statements: [
+					'Title' => [ 'propertyType' => 'text', 'value' => 'Madonna and Child on a Cloud' ],
+				]
+			)
+		);
+
+		$this->assertSame( 'Madonna and Child on a Cloud', $this->presenterSpy->subject?->displayName );
 		$this->assertFalse( $this->presenterSpy->subject?->displayNameIsGenerated );
 	}
 
