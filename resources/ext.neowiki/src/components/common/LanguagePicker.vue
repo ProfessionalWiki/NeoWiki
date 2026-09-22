@@ -358,10 +358,12 @@ function onDocumentMousedown( event: MouseEvent ): void {
  * Scrolling what the picker sits in moves the button away from under its panel, and once it
  * leaves the visible area useFloatingMenu hides the panel, which drops the focus in it to the
  * page. So the panel closes instead, handing the focus back to the button, which scrolling does not
- * take it from. The panel's own list scrolling is the user browsing it.
+ * take it from. Only something the picker sits inside counts as that: the panel's own list
+ * scrolling is the user browsing it, and a text field left behind scrolls its text back to the
+ * start, which is not the page moving at all.
  */
 function closeOnScroll( event: Event ): void {
-	if ( open.value && !( event.target instanceof Node && panelRef.value?.contains( event.target ) ) ) {
+	if ( open.value && event.target instanceof Node && event.target.contains( rootRef.value ) ) {
 		closeAndReturnFocus();
 	}
 }

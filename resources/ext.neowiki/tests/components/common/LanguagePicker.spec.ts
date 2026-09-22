@@ -418,6 +418,20 @@ describe( 'LanguagePicker', () => {
 		expect( document.activeElement ).toBe( button( picker ).element );
 	} );
 
+	it( 'stays open when a field outside it scrolls, as a text input does when it is left', async () => {
+		const picker = newWrapper( 'en' );
+		const elsewhere = document.createElement( 'input' );
+		document.body.appendChild( elsewhere );
+
+		await openPicker( picker );
+		elsewhere.dispatchEvent( new Event( 'scroll' ) );
+		await picker.vm.$nextTick();
+		elsewhere.remove();
+
+		expect( isOpen( picker ) ).toBe( true );
+		expect( document.activeElement ).toBe( search( picker ).element );
+	} );
+
 	it( 'stays open while its own list scrolls', async () => {
 		const picker = newWrapper( 'en' );
 
