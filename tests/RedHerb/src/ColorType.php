@@ -17,8 +17,6 @@ class ColorType implements PropertyType {
 
 	public const NAME = 'color';
 
-	private const HEX_COLOR_REGEX = '/^#[0-9a-fA-F]{6}$/';
-
 	public function getTypeName(): string {
 		return self::NAME;
 	}
@@ -57,7 +55,7 @@ class ColorType implements PropertyType {
 		$violations = [];
 
 		foreach ( $value->strings as $index => $part ) {
-			if ( preg_match( self::HEX_COLOR_REGEX, $part ) !== 1 ) {
+			if ( preg_match( ColorProperty::HEX_COLOR_REGEX, $part ) !== 1 ) {
 				$violations[] = new Violation(
 					propertyName: null,
 					code: 'invalid-color',

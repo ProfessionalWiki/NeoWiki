@@ -357,6 +357,11 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaApi"
 		},
 		{
+			"path": "/neowiki/v0/schema/{schemaName}/json-schema",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetJsonSchemaApi"
+		},
+		{
 			"path": "/neowiki/v0/layout/{layoutName}",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetLayoutApi"

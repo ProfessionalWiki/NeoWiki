@@ -17,9 +17,15 @@ class DateTimeProperty extends PropertyDefinition {
 	 * Matches xsd:dateTime-like strings with an explicit timezone offset or `Z`.
 	 * Mirrors the regex used in the TypeScript DateTimeType; a subsequent
 	 * calendar-overflow check rejects inputs like `2025-02-30T00:00:00Z`.
+	 *
+	 * Carries no delimiters and stays within ECMA-262, so that the JSON Schema
+	 * documents can use it as a `pattern`.
 	 */
-	private const ISO_DATE_TIME_REGEX =
-		'/^(-?\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.\d{1,9})?(?<offset>Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/';
+	public const string ISO_DATE_TIME_PATTERN =
+		'^(-?[0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])'
+		. 'T([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])(?:\.[0-9]{1,9})?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])$';
+
+	private const string ISO_DATE_TIME_REGEX = '/' . self::ISO_DATE_TIME_PATTERN . '/';
 
 	public function __construct(
 		PropertyCore $core,
@@ -109,6 +115,12 @@ class DateTimeProperty extends PropertyDefinition {
 			'minimum' => $this->getMinimum(),
 			'maximum' => $this->getMaximum(),
 		];
+	}
+
+	public function toJsonSchema(): array {
+		return $this->listValueSchema(
+			[ 'type' => 'string', 'format' => 'date-time', 'pattern' => self::ISO_DATE_TIME_PATTERN ]
+		);
 	}
 
 }
