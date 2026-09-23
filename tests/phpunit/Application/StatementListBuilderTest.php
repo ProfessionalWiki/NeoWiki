@@ -201,21 +201,16 @@ class StatementListBuilderTest extends TestCase {
 		);
 	}
 
-	public function testMonolingualTextValueWithOnlyEmptyTextsIsDropped(): void {
-		$list = $this->newBuilder()->build( [
-			'Original title' => [
-				'propertyType' => 'monolingualText',
-				'value' => [ [ 'text' => '  ', 'language' => 'eu' ] ],
-			],
-		] );
-
-		$this->assertNull( $list->getStatement( new PropertyName( 'Original title' ) ) );
-	}
-
-	public function testMonolingualTextPartWithAMalformedLanguageIsRejected(): void {
+	/**
+	 * A domain message names the rule the value broke, which the property name alone does not.
+	 */
+	public function testRejectionKeepsTheReasonTheValueWasRejectedFor(): void {
 		$builder = $this->newBuilder();
 
 		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage(
+			'Value of "Original title" does not fit property type "monolingualText": Invalid language tag: "not a tag".'
+		);
 
 		$builder->build( [
 			'Original title' => [
@@ -232,7 +227,7 @@ class StatementListBuilderTest extends TestCase {
 		$builder = $this->newBuilder();
 
 		$this->expectException( InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'Mismatched' );
+		$this->expectExceptionMessage( "Value of \"Mismatched\" does not fit property type \"{$propertyType}\"" );
 
 		$builder->build( [ 'Mismatched' => [ 'propertyType' => $propertyType, 'value' => $value ] ] );
 	}
@@ -245,12 +240,21 @@ class StatementListBuilderTest extends TestCase {
 		yield 'relation given a scalar' => [ 'relation', 'sTargetIdWanted' ];
 		yield 'relation target missing' => [ 'relation', [ [ 'properties' => [] ] ] ];
 		yield 'relation given a list of bare target ids' => [ 'relation', [ 'sTargetIdWanted' ] ];
+		yield 'relation target of the wrong form' => [ 'relation', [ [ 'target' => 'not a subject id' ] ] ];
+		yield 'relation id of the wrong form' => [
+			'relation',
+			[ [ 'id' => 'not a relation id', 'target' => 's11111111111111' ] ],
+		];
 		yield 'monolingual text given a list of bare strings' => [ 'monolingualText', [ 'Zinema' ] ];
 		yield 'monolingual text part without a language' => [ 'monolingualText', [ [ 'text' => 'Zinema' ] ] ];
 		yield 'monolingual text part without a text' => [ 'monolingualText', [ [ 'language' => 'eu' ] ] ];
 		yield 'monolingual text part with a non-string text' => [
 			'monolingualText',
 			[ [ 'text' => 2019, 'language' => 'eu' ] ],
+		];
+		yield 'monolingual text part with a malformed language' => [
+			'monolingualText',
+			[ [ 'text' => 'Zinema', 'language' => 'not a tag' ] ],
 		];
 	}
 

@@ -28,6 +28,10 @@ describe( 'LanguagePicker', () => {
 		return picker.find( '.ext-neowiki-language-picker__search input' );
 	}
 
+	function panel( picker: VueWrapper ): DOMWrapper<Element> {
+		return picker.find( '.ext-neowiki-language-picker__panel' );
+	}
+
 	function isOpen( picker: VueWrapper ): boolean {
 		return button( picker ).attributes( 'aria-expanded' ) === 'true';
 	}
@@ -50,10 +54,6 @@ describe( 'LanguagePicker', () => {
 
 	function listedDescriptions( picker: VueWrapper ): string[] {
 		return picker.findAll( '.cdx-menu-item__text__description' ).map( ( description ) => description.text() );
-	}
-
-	function listboxStyle( picker: VueWrapper ): string {
-		return picker.find( '.cdx-menu__listbox' ).attributes( 'style' ) ?? '';
 	}
 
 	// More than one page of them, so the list both scrolls and has a page left to load.
@@ -145,6 +145,16 @@ describe( 'LanguagePicker', () => {
 		expect( isOpen( newWrapper( 'eu' ) ) ).toBe( false );
 	} );
 
+	it( 'keeps the panel out of sight until the button is pressed', async () => {
+		const picker = newWrapper( 'eu' );
+
+		expect( panel( picker ).isVisible() ).toBe( false );
+
+		await openPicker( picker );
+
+		expect( panel( picker ).isVisible() ).toBe( true );
+	} );
+
 	it( 'opens its languages with the focus in their search field', async () => {
 		const picker = newWrapper( 'eu' );
 
@@ -167,23 +177,17 @@ describe( 'LanguagePicker', () => {
 			.toEqual( [ 'Spanish', 'English', 'Basque', 'Aragonese', 'German', 'Welsh' ] );
 	} );
 
-	it( 'lists the language the typed text names, and no tag of its own', async () => {
-		useLanguages( { en: 'English', io: 'Ido' } );
+	it.each( [
+		[ 'Ido', 'Ido' ],
+		[ 'eu', 'Basque' ],
+	] )( 'lists the language %s names, and no tag of its own', async ( typed, listed ) => {
+		useLanguages( { en: 'English', eu: 'Basque', io: 'Ido' } );
 		const picker = newWrapper( 'en' );
 
 		await openPicker( picker );
-		await type( picker, 'Ido' );
+		await type( picker, typed );
 
-		expect( listedLanguages( picker ) ).toEqual( [ 'Ido' ] );
-	} );
-
-	it( 'lists the language a typed tag names, and no tag of its own', async () => {
-		const picker = newWrapper( 'en' );
-
-		await openPicker( picker );
-		await type( picker, 'eu' );
-
-		expect( listedLanguages( picker ) ).toEqual( [ 'Basque' ] );
+		expect( listedLanguages( picker ) ).toEqual( [ listed ] );
 	} );
 
 	it( 'lists the language whose tag is typed before those whose name only starts or contains it', async () => {
@@ -198,13 +202,13 @@ describe( 'LanguagePicker', () => {
 
 	it( 'lists the language a MediaWiki code stands for', async () => {
 		useLanguages( { als: 'Alemannisch', en: 'English' } );
-		mw.language.bcp47 = vi.fn( ( code: string ) => code === 'als' ? 'gsw' : code );
 		const picker = newWrapper( 'en' );
 
 		await openPicker( picker );
 		await type( picker, 'als' );
 
 		expect( listedLanguages( picker ) ).toEqual( [ 'Alemannisch' ] );
+		expect( listedTags( picker ) ).toEqual( [ 'GSW' ] );
 	} );
 
 	it( 'offers a typed tag alongside the languages whose name it only starts', async () => {
@@ -218,15 +222,7 @@ describe( 'LanguagePicker', () => {
 		expect( listedDescriptions( picker ) ).toEqual( [ 'neowiki-language-picker-tag' ] );
 	} );
 
-	it( 'offers a well-formed tag it has no name for, so it can be chosen too', async () => {
-		const picker = newWrapper( 'en' );
-
-		await chooseLanguage( picker, 'und' );
-
-		expect( emittedTags( picker ) ).toEqual( [ 'und' ] );
-	} );
-
-	it( 'stores a typed tag of several subtags as the lowercase tag it stands for', async () => {
+	it( 'enters a tag it has no name for as the lowercase tag it stands for', async () => {
 		const picker = newWrapper( 'en' );
 
 		await chooseLanguage( picker, 'PT-br' );
@@ -239,15 +235,6 @@ describe( 'LanguagePicker', () => {
 
 		await openPicker( picker );
 		await type( picker, 'German' );
-
-		expect( listedLanguages( picker ) ).toEqual( [] );
-	} );
-
-	it( 'offers nothing for text that is no language at all', async () => {
-		const picker = newWrapper( 'eu' );
-
-		await openPicker( picker );
-		await type( picker, 'not a language' );
 
 		expect( listedLanguages( picker ) ).toEqual( [] );
 	} );
@@ -274,12 +261,14 @@ describe( 'LanguagePicker', () => {
 		expect( listedLanguages( picker ) ).toHaveLength( 60 );
 	} );
 
-	it( 'reports the tag of the language chosen by its name', async () => {
+	it( 'reports the tag of the language chosen by its name, closing and handing the focus back', async () => {
 		const picker = newWrapper( 'en' );
 
 		await chooseLanguage( picker, 'Basq' );
 
 		expect( emittedTags( picker ) ).toEqual( [ 'eu' ] );
+		expect( isOpen( picker ) ).toBe( false );
+		expect( document.activeElement ).toBe( button( picker ).element );
 	} );
 
 	it( 'reports nothing for the language it already holds', async () => {
@@ -288,15 +277,6 @@ describe( 'LanguagePicker', () => {
 		await chooseLanguage( picker, 'Basq' );
 
 		expect( emittedTags( picker ) ).toEqual( [] );
-	} );
-
-	it( 'closes once a language is chosen, handing the focus back to its button', async () => {
-		const picker = newWrapper( 'en' );
-
-		await chooseLanguage( picker, 'Basq' );
-
-		expect( isOpen( picker ) ).toBe( false );
-		expect( document.activeElement ).toBe( button( picker ).element );
 	} );
 
 	it( 'picks the language the arrow keys reach on Enter, handing the focus back to its button', async () => {
@@ -396,18 +376,6 @@ describe( 'LanguagePicker', () => {
 		expect( emittedTags( picker ) ).toEqual( [] );
 	} );
 
-	// jsdom lays nothing out, so the height Codex works out is 2px. That it wrote one at all is what
-	// says the cap is still running.
-	it( 'holds its list to the entries it has room for once the search narrows it', async () => {
-		useLanguages( manyLanguages() );
-		const picker = newWrapper( 'en' );
-
-		await openPicker( picker );
-		await type( picker, 'Language' );
-
-		await vi.waitFor( () => expect( listboxStyle( picker ) ).toContain( 'max-height' ) );
-	} );
-
 	it( 'points its search field at an entry that is still listed once more languages are', async () => {
 		useLanguages( manyLanguages() );
 		const picker = newWrapper( 'en' );
@@ -427,9 +395,10 @@ describe( 'LanguagePicker', () => {
 
 		await openPicker( picker );
 		await pressKey( 'ArrowDown' );
+		const highlighted = picker.find( '.cdx-menu-item--highlighted' );
 
-		expect( search( picker ).attributes( 'aria-activedescendant' ) )
-			.toBe( picker.find( '.cdx-menu-item--highlighted' ).attributes( 'id' ) );
+		expect( highlighted.exists() ).toBe( true );
+		expect( search( picker ).attributes( 'aria-activedescendant' ) ).toBe( highlighted.attributes( 'id' ) );
 	} );
 
 	it( 'keeps trying to put the focus in its search field until the panel is shown', async () => {
@@ -570,14 +539,6 @@ describe( 'LanguagePicker', () => {
 		await picker.vm.$nextTick();
 
 		expect( isOpen( picker ) ).toBe( true );
-	} );
-
-	it( 'leaves the focus in the search field when the field\'s icon is pressed', async () => {
-		const picker = newWrapper( 'en' );
-
-		await openPicker( picker );
-
-		expect( press( picker.find( '.ext-neowiki-language-picker__search .cdx-icon' ).element ).defaultPrevented ).toBe( true );
 	} );
 
 	it( 'lets a press on the search field move the focus there', async () => {

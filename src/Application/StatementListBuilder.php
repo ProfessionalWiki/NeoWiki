@@ -22,6 +22,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
+use Throwable;
 use TypeError;
 
 readonly class StatementListBuilder {
@@ -86,18 +87,33 @@ readonly class StatementListBuilder {
 			);
 		}
 
-		// The value types below declare what each shape accepts, so a value of the wrong shape
-		// arrives here as a TypeError. Every one of them comes from the caller's value, never from
-		// internal state, so they are reported as bad input rather than escaping as a server error.
+		// A value of the wrong shape arrives here as a TypeError, one of the right shape but the wrong
+		// form (a malformed language tag, a Subject or Relation id) as an InvalidArgumentException. Both
+		// are the caller's value being wrong, so both are reported as bad input naming the property.
+		// Only the InvalidArgumentException's text is passed on: it says which rule the value broke,
+		// where PHP's TypeError text names internal signatures.
 		try {
 			return $this->newValue( $valueType, $propertyType, $value );
 		} catch ( TypeError $e ) {
-			throw new InvalidArgumentException(
-				"Value of \"{$propertyName}\" does not fit property type \"{$propertyType}\"",
-				0,
-				$e
-			);
+			throw $this->badValue( $propertyName, $propertyType, null, $e );
+		} catch ( InvalidArgumentException $e ) {
+			throw $this->badValue( $propertyName, $propertyType, $e->getMessage(), $e );
 		}
+	}
+
+	private function badValue(
+		string $propertyName,
+		string $propertyType,
+		?string $reason,
+		Throwable $previous
+	): InvalidArgumentException {
+		$message = "Value of \"{$propertyName}\" does not fit property type \"{$propertyType}\"";
+
+		return new InvalidArgumentException(
+			$reason === null ? $message : "{$message}: {$reason}",
+			0,
+			$previous
+		);
 	}
 
 	private function newValue( ValueType $valueType, string $propertyType, mixed $value ): NeoValue {

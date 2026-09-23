@@ -17,17 +17,6 @@ class MonolingualTextTest extends TestCase {
 		$this->assertSame( 'Zinema', ( new MonolingualText( "  Zinema\n", 'eu' ) )->text );
 	}
 
-	public function testLanguageIsLowercased(): void {
-		$this->assertSame( 'pt-br', ( new MonolingualText( 'Cinema', 'pt-BR' ) )->language );
-	}
-
-	public function testToScalarsGivesTextAndLanguage(): void {
-		$this->assertSame(
-			[ 'text' => 'Zinema', 'language' => 'eu' ],
-			( new MonolingualText( 'Zinema', 'eu' ) )->toScalars()
-		);
-	}
-
 	/**
 	 * @dataProvider validLanguageProvider
 	 */

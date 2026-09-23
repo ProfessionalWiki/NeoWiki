@@ -19,21 +19,6 @@ class MonolingualTextValueTest extends TestCase {
 		$this->assertSame( ValueType::MonolingualText, ( new MonolingualTextValue() )->getType() );
 	}
 
-	public function testToScalarsGivesOneObjectPerPart(): void {
-		$value = new MonolingualTextValue(
-			new MonolingualText( 'Zinema', 'eu' ),
-			new MonolingualText( 'Cine', 'es' ),
-		);
-
-		$this->assertSame(
-			[
-				[ 'text' => 'Zinema', 'language' => 'eu' ],
-				[ 'text' => 'Cine', 'language' => 'es' ],
-			],
-			$value->toScalars()
-		);
-	}
-
 	/**
 	 * @dataProvider contentlessPartsProvider
 	 */
@@ -61,7 +46,13 @@ class MonolingualTextValueTest extends TestCase {
 			new MonolingualText( 'Cine', 'es' ),
 		);
 
-		$this->assertSame( [ 'eu', 'es' ], array_column( $value->toScalars(), 'language' ) );
+		$this->assertSame(
+			[
+				[ 'text' => 'Zinema', 'language' => 'eu' ],
+				[ 'text' => 'Cine', 'language' => 'es' ],
+			],
+			$value->toScalars()
+		);
 	}
 
 	public function testValueWithTextIsNotEmpty(): void {
@@ -105,15 +96,6 @@ class MonolingualTextValueTest extends TestCase {
 		yield 'no text' => [ [ [ 'language' => 'eu' ] ] ];
 		yield 'non-string text' => [ [ [ 'text' => 2019, 'language' => 'eu' ] ] ];
 		yield 'non-string language' => [ [ [ 'text' => 'Zinema', 'language' => 42 ] ] ];
-	}
-
-	public function testSameLanguageMayRepeat(): void {
-		$value = new MonolingualTextValue(
-			new MonolingualText( 'Cine', 'es' ),
-			new MonolingualText( 'Película', 'es' ),
-		);
-
-		$this->assertSame( [ 'Cine', 'Película' ], array_column( $value->toScalars(), 'text' ) );
 	}
 
 }

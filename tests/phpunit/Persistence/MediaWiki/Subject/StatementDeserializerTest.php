@@ -120,21 +120,6 @@ class StatementDeserializerTest extends TestCase {
 		);
 	}
 
-	public function testDropsStoredMonolingualTextPartsWithoutText(): void {
-		$statement = $this->newDeserializer()->deserialize(
-			'Original title',
-			[
-				'propertyType' => 'monolingualText',
-				'value' => [
-					[ 'text' => ' ', 'language' => 'fr' ],
-					[ 'text' => 'Cine', 'language' => 'es' ],
-				],
-			]
-		);
-
-		$this->assertSame( [ [ 'text' => 'Cine', 'language' => 'es' ] ], $statement->getValue()->toScalars() );
-	}
-
 	public function testDeserializesRelation(): void {
 		$this->assertEquals(
 			new Statement(

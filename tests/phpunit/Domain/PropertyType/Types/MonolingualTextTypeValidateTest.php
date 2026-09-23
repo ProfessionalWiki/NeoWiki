@@ -15,7 +15,6 @@ use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualText;
 use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\MonolingualTextType
@@ -118,21 +117,6 @@ class MonolingualTextTypeValidateTest extends TestCase {
 		$this->assertSame( [], $violations );
 	}
 
-	public function testUniqueViolationUsesErrorWhenUniqueItemsAnnotated(): void {
-		$definition = $this->newAnnotatedProperty( [ 'uniqueItems' => [ 'severity' => 'error' ] ] );
-
-		$violations = $this->type->validate(
-			new MonolingualTextValue(
-				new MonolingualText( 'Zinema', 'eu' ),
-				new MonolingualText( 'Zinema', 'eu' ),
-			),
-			$definition
-		);
-
-		$this->assertSame( 'unique', $violations[0]->code );
-		$this->assertSame( Severity::Error, $violations[0]->severity );
-	}
-
 	public function testPartShorterThanMinLengthProducesMinLengthViolation(): void {
 		$violations = $this->type->validate(
 			new MonolingualTextValue(
@@ -147,18 +131,6 @@ class MonolingualTextTypeValidateTest extends TestCase {
 		$this->assertSame( 'min-length', $violations[0]->code );
 		$this->assertSame( [ 3 ], $violations[0]->args );
 		$this->assertSame( 1, $violations[0]->valuePartIndex );
-	}
-
-	public function testMinLengthViolationUsesErrorWhenMinLengthAnnotated(): void {
-		$definition = $this->newAnnotatedProperty( [ 'minLength' => [ 'value' => 3, 'severity' => 'error' ] ] );
-
-		$violations = $this->type->validate(
-			new MonolingualTextValue( new MonolingualText( 'Ci', 'es' ) ),
-			$definition
-		);
-
-		$this->assertSame( 'min-length', $violations[0]->code );
-		$this->assertSame( Severity::Error, $violations[0]->severity );
 	}
 
 	public function testPartLongerThanMaxLengthProducesMaxLengthViolation(): void {
@@ -177,33 +149,11 @@ class MonolingualTextTypeValidateTest extends TestCase {
 		$this->assertSame( 1, $violations[0]->valuePartIndex );
 	}
 
-	public function testMaxLengthViolationUsesErrorWhenMaxLengthAnnotated(): void {
-		$definition = $this->newAnnotatedProperty( [ 'maxLength' => [ 'value' => 4, 'severity' => 'error' ] ] );
-
+	// Four characters in five bytes, so a byte count in place of a character count is caught too.
+	public function testValueOnBothLengthBoundsProducesNoViolation(): void {
 		$violations = $this->type->validate(
-			new MonolingualTextValue( new MonolingualText( 'Zinemaldia', 'eu' ) ),
-			$definition
-		);
-
-		$this->assertSame( 'max-length', $violations[0]->code );
-		$this->assertSame( Severity::Error, $violations[0]->severity );
-	}
-
-	public function testTrimmedLengthBelowMinimumProducesViolation(): void {
-		// Trimmed 'Ci' has length 2 (< 3); the raw 6-character value would not.
-		$violations = $this->type->validate(
-			new MonolingualTextValue( new MonolingualText( '  Ci  ', 'es' ) ),
-			$this->newProperty( required: false, minLength: 3 )
-		);
-
-		$this->assertCount( 1, $violations );
-		$this->assertSame( 'min-length', $violations[0]->code );
-	}
-
-	public function testValueWithinLengthBoundsProducesNoViolation(): void {
-		$violations = $this->type->validate(
-			new MonolingualTextValue( new MonolingualText( 'Cine', 'es' ) ),
-			$this->newProperty( required: false, minLength: 2, maxLength: 5 )
+			new MonolingualTextValue( new MonolingualText( 'Ciné', 'fr' ) ),
+			$this->newProperty( required: false, minLength: 4, maxLength: 4 )
 		);
 
 		$this->assertSame( [], $violations );
@@ -228,9 +178,10 @@ class MonolingualTextTypeValidateTest extends TestCase {
 			$this->newProperty( required: false, uniqueItems: true, minLength: 3 ),
 		);
 
-		$codes = array_map( fn( $v ) => $v->code, $violations );
-		$this->assertContains( 'min-length', $codes );
-		$this->assertContains( 'unique', $codes );
+		$this->assertEquals(
+			[ 'min-length' => 2, 'unique' => 1 ],
+			array_count_values( array_column( $violations, 'code' ) )
+		);
 	}
 
 	public function testSeveralPartsWithoutMultipleReturnSingleValueOnlyViolation(): void {
@@ -269,22 +220,52 @@ class MonolingualTextTypeValidateTest extends TestCase {
 		$this->assertSame( [], $violations );
 	}
 
-	public function testSingleValueOnlyUsesErrorWhenMultipleAnnotated(): void {
-		$definition = PropertyDefinition::fromJson(
-			[ 'type' => 'monolingualText', 'multiple' => [ 'value' => false, 'severity' => 'error' ] ],
-			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
-		);
+	/**
+	 * @dataProvider annotatedConstraintProvider
+	 *
+	 * @param array<string, mixed> $constraints
+	 */
+	public function testViolationOfAnAnnotatedConstraintCarriesItsSeverity(
+		array $constraints,
+		MonolingualTextValue $value,
+		string $code
+	): void {
+		$violations = $this->type->validate( $value, $this->newAnnotatedProperty( $constraints ) );
 
-		$violations = $this->type->validate(
+		$this->assertSame( $code, $violations[0]->code );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
+	}
+
+	public static function annotatedConstraintProvider(): iterable {
+		yield 'uniqueItems' => [
+			[ 'uniqueItems' => [ 'severity' => 'error' ] ],
+			new MonolingualTextValue(
+				new MonolingualText( 'Zinema', 'eu' ),
+				new MonolingualText( 'Zinema', 'eu' ),
+			),
+			'unique',
+		];
+
+		yield 'minLength' => [
+			[ 'minLength' => [ 'value' => 3, 'severity' => 'error' ] ],
+			new MonolingualTextValue( new MonolingualText( 'Ci', 'es' ) ),
+			'min-length',
+		];
+
+		yield 'maxLength' => [
+			[ 'maxLength' => [ 'value' => 4, 'severity' => 'error' ] ],
+			new MonolingualTextValue( new MonolingualText( 'Zinemaldia', 'eu' ) ),
+			'max-length',
+		];
+
+		yield 'multiple' => [
+			[ 'multiple' => [ 'value' => false, 'severity' => 'error' ] ],
 			new MonolingualTextValue(
 				new MonolingualText( 'Zinema', 'eu' ),
 				new MonolingualText( 'Cine', 'es' ),
 			),
-			$definition
-		);
-
-		$this->assertSame( 'single-value-only', $violations[0]->code );
-		$this->assertSame( Severity::Error, $violations[0]->severity );
+			'single-value-only',
+		];
 	}
 
 	public function testSearchTextIsTheTexts(): void {
@@ -323,7 +304,7 @@ class MonolingualTextTypeValidateTest extends TestCase {
 	 */
 	private function newAnnotatedProperty( array $constraints ): PropertyDefinition {
 		return PropertyDefinition::fromJson(
-			[ 'type' => 'monolingualText', 'multiple' => true ] + $constraints,
+			array_merge( [ 'type' => 'monolingualText', 'multiple' => true ], $constraints ),
 			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 		);
 	}

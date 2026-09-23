@@ -620,11 +620,11 @@ class OntologyMappingProjectorTest extends TestCase {
 	/**
 	 * @dataProvider monolingualTextOverrideProvider
 	 */
-	public function testAMonolingualTextValueKeepsItsOwnLanguageTag( ?string $lang, ?string $datatype ): void {
+	public function testAMonolingualTextValueKeepsItsOwnLanguageTag( ?string $lang ): void {
 		$mapping = new SchemaMapping(
 			subject: new SubjectMapping( 'http://example.org/CHO' ),
 			properties: new PropertyMappings( [
-				'Title' => new PropertyMapping( 'dc:title', $lang, $datatype ),
+				'Title' => new PropertyMapping( 'dc:title', $lang, 'http://www.w3.org/2001/XMLSchema#string' ),
 			] )
 		);
 		$page = TestPage::build(
@@ -661,10 +661,8 @@ class OntologyMappingProjectorTest extends TestCase {
 	 * prove the projector does not fall back to either.
 	 */
 	public static function monolingualTextOverrideProvider(): iterable {
-		yield 'no override' => [ null, null ];
-		yield 'language override' => [ 'en', null ];
-		yield 'datatype override' => [ null, 'http://www.w3.org/2001/XMLSchema#string' ];
-		yield 'both overrides' => [ 'en', 'http://www.w3.org/2001/XMLSchema#string' ];
+		yield 'datatype override alone' => [ null ];
+		yield 'datatype and language override' => [ 'en' ];
 	}
 
 	private function personWithBirthYear(): Subject {

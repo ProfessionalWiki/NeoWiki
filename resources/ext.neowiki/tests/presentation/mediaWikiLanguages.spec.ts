@@ -4,28 +4,49 @@ import { setupMwMock } from '../VueTestHelpers.ts';
 
 describe( 'mediaWikiLanguages', () => {
 
-	beforeEach( () => {
-		setupMwMock( {
-			config: { wgUserLanguage: 'en' },
-			languageNames: { be: 'Belarusian', 'be-tarask': 'Belarusian (Taraskievica)', EU: 'Basque' },
+	describe( 'languageOptions', () => {
+
+		beforeEach( () => {
+			setupMwMock( {
+				config: { wgUserLanguage: 'en' },
+				languageNames: {
+					'be-tarask': 'Belarusian (Taraskievica)',
+					'be-x-old': 'Belarusian (old)',
+					EU: 'Basque',
+				},
+			} );
 		} );
 
-		// The real bcp47() maps several MediaWiki codes onto one tag, which is what the
-		// deduplication below is for; the shared fake is a deliberate pass-through.
-		mw.language.bcp47 = vi.fn( ( code: string ) => code === 'be-tarask' ? 'be' : code );
+		// MediaWiki maps be-x-old onto be-tarask, so the two codes are one language here.
+		it( 'lists each tag once, lowercased, under the first name given for it', () => {
+			expect( languageOptions() ).toEqual( [
+				{ tag: 'be-tarask', name: 'Belarusian (Taraskievica)' },
+				{ tag: 'eu', name: 'Basque' },
+			] );
+		} );
+
+		it( 'lists nothing when MediaWiki has no table of language names', () => {
+			// Asserted first, so the empty result below is this call's rather than a cache the
+			// names above never filled.
+			expect( languageOptions() ).not.toEqual( [] );
+
+			mw.language.getData = vi.fn( () => undefined );
+
+			expect( languageOptions() ).toEqual( [] );
+		} );
+
 	} );
 
-	it( 'lowercases each tag', () => {
-		expect( languageOptions() ).toContainEqual( { tag: 'eu', name: 'Basque' } );
-	} );
+	describe( 'userLanguageTag', () => {
 
-	it( 'lists a tag once, under the first name given for it', () => {
-		expect( languageOptions().filter( ( option ) => option.tag === 'be' ) )
-			.toEqual( [ { tag: 'be', name: 'Belarusian' } ] );
-	} );
+		// MediaWiki's own code for the Simple English wiki is not a BCP 47 tag; setupMwMock's bcp47
+		// fake translates it as MediaWiki does.
+		it( 'translates the interface language code to its tag', () => {
+			setupMwMock( { config: { wgUserLanguage: 'simple' } } );
 
-	it( 'reads the interface language as a tag', () => {
-		expect( userLanguageTag() ).toBe( 'en' );
+			expect( userLanguageTag() ).toBe( 'en-simple' );
+		} );
+
 	} );
 
 	describe( 'partsForReader', () => {
