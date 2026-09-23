@@ -33,7 +33,7 @@
 					<LanguagePicker
 						class="ext-neowiki-monolingual-text-input__language"
 						:model-value="view.row.language"
-						:aria-label="view.languageLabel"
+						:label="view.languageLabel"
 						@update:model-value="( tag: string ) => commitLanguage( index, tag )"
 					/>
 				</div>

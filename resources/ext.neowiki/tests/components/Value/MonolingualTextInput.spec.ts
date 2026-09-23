@@ -1,4 +1,4 @@
-import { VueWrapper } from '@vue/test-utils';
+import { enableAutoUnmount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MonolingualTextInput from '@/components/Value/MonolingualTextInput.vue';
 import { type MonolingualTextValue, newMonolingualTextValue, ValueType } from '@/domain/Value';
@@ -8,6 +8,9 @@ import {
 } from '@/domain/propertyTypes/MonolingualText';
 import { ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { createTestWrapper, setupMwMock } from '../../VueTestHelpers.ts';
+
+// Every row's language picker listens to the document while it is open, so no mount is left standing.
+enableAutoUnmount( afterEach );
 
 describe( 'MonolingualTextInput', () => {
 
@@ -126,7 +129,7 @@ describe( 'MonolingualTextInput', () => {
 		} );
 	} );
 
-	it( 'shows each stored part plus the empty row the next one is typed into', () => {
+	it( 'shows each stored part under its own language, plus the empty row the next one is typed into', () => {
 		const wrapper = newWrapper( {
 			modelValue: newMonolingualTextValue( [
 				{ text: 'Zinema', language: 'eu' },
@@ -135,6 +138,25 @@ describe( 'MonolingualTextInput', () => {
 		} );
 
 		expect( textValues( wrapper ) ).toEqual( [ 'Zinema', 'Cine', '' ] );
+		expect( languageButtons( wrapper ).map( ( button ) => button.text() ) ).toEqual( [ 'EU', 'ES', 'EN' ] );
+	} );
+
+	it( 'names each row\'s language button after the row it belongs to', () => {
+		setupMwMock( {
+			config: { wgUserLanguage: 'en', wgContentLanguage: 'en' },
+			languageNames: { en: 'English', eu: 'Basque' },
+			messages: {
+				'neowiki-monolingual-text-language-label': ( property, position ) =>
+					`${ property } language ${ position }`,
+				'neowiki-language-picker-button': ( label, name, tag ) => `${ label }: ${ name } (${ tag })`,
+			},
+		} );
+		const wrapper = newWrapper( {
+			modelValue: newMonolingualTextValue( [ { text: 'Zinema', language: 'eu' } ] ),
+		} );
+
+		expect( languageButtons( wrapper ).map( ( button ) => button.attributes( 'aria-label' ) ) )
+			.toEqual( [ 'Original title language 1: Basque (eu)', 'Original title language 2: English (en)' ] );
 	} );
 
 	it( 'emits a typed text tagged with the language the wiki is written in', async () => {
@@ -261,7 +283,7 @@ describe( 'MonolingualTextInput', () => {
 		expect( textValues( wrapper ) ).toEqual( [ '', 'Cine', '' ] );
 	} );
 
-	it( 'keeps a cleared row while focus is in its list of languages', async () => {
+	it( 'keeps a cleared row while focus is in the languages its button opened', async () => {
 		const wrapper = newWrapper( {
 			modelValue: newMonolingualTextValue( [
 				{ text: 'Zinema', language: 'eu' },
@@ -271,7 +293,11 @@ describe( 'MonolingualTextInput', () => {
 
 		await textInputs( wrapper )[ 0 ].setValue( '' );
 		await languageButtons( wrapper )[ 0 ].trigger( 'click' );
-		await leaveRow( wrapper, 0, rowElements( wrapper )[ 0 ].find( '.cdx-menu' ).element );
+		await leaveRow(
+			wrapper,
+			0,
+			rowElements( wrapper )[ 0 ].find( '.ext-neowiki-language-picker__search input' ).element,
+		);
 
 		expect( textValues( wrapper ) ).toEqual( [ '', 'Cine', '' ] );
 	} );
@@ -352,7 +378,7 @@ describe( 'MonolingualTextInput', () => {
 				{ text: 'Kino', language: 'de' },
 			] ),
 		} );
-		document.body.appendChild( wrapper.element as HTMLElement );
+		document.body.appendChild( wrapper.element );
 
 		// The first row is blanked and left for the third: dropping it moves every row below it up
 		// one position, and the field the user is now in has to travel with its row.
