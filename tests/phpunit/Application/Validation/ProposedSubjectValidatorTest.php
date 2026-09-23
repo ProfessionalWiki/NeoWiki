@@ -4,11 +4,9 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Validation;
 
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
@@ -42,7 +40,7 @@ class ProposedSubjectValidatorTest extends TestCase {
 		return new ProposedSubjectValidator(
 			schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
 			subjectValidator: new SubjectValidator(
-				propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+				propertyTypeLookup: TestSources::newPropertyTypeRegistry(),
 				subjectLookup: new InMemorySubjectLookup(),
 				sourceRegistry: TestSources::newRegistry(),
 			),

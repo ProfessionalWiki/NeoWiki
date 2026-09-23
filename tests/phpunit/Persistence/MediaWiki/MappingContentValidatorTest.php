@@ -116,6 +116,22 @@ class MappingContentValidatorTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * A Schema name is never split into a prefix and a remainder, so "Help:Person" is the whole name
+	 * of the page Schema:Help:Person, and telling its author to write "Person" would remap the entry.
+	 */
+	public function testAcceptsASchemaNameCarryingAColon(): void {
+		$this->assertValid( (string)json_encode( [
+			'version' => 1,
+			'schemas' => [
+				'Help:Person' => [
+					'subject' => [ 'class' => 'http://example.org/ns/Person' ],
+					'properties' => (object)[],
+				],
+			],
+		] ) );
+	}
+
 	public function testRejectsASchemaNameThatIsNotAValidPageTitle(): void {
 		$this->assertInvalidAt(
 			(string)json_encode( [

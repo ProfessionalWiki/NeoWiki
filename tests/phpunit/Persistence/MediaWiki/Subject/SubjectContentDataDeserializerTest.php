@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Psr\Log\Test\TestLogger;
@@ -42,8 +43,33 @@ class SubjectContentDataDeserializerTest extends TestCase {
 	private function newDeserializer( ?LoggerInterface $logger = null ): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer(
 			new StatementDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup(), TestSubjectIds::newParser() ),
-			TestSubjectIds::newParser(),
-			$logger ?? new NullLogger()
+			$logger ?? new NullLogger(),
+			TestSources::newSchemaReferenceParser()
+		);
+	}
+
+	/**
+	 * The read path with the normalizer this wiki actually builds, rather than the double the other
+	 * tests use. This is what carries the claim that Subjects written down before normalization
+	 * existed are read under the name of the Schema they name, with nothing migrated.
+	 */
+	public function testSlotWrittenWithAnotherSpellingIsReadUnderTheSchemasName(): void {
+		$subjects = NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer()->deserialize(
+			<<<'JSON'
+{
+	"subjects": {
+		"sTestSCDD111115": {
+			"label": "Wilhelm",
+			"schema": "person"
+		}
+	}
+}
+JSON
+		);
+
+		$this->assertSame(
+			'Person',
+			$subjects->getAllSubjects()->asArray()[0]->getSchemaName()->getText()
 		);
 	}
 

@@ -15,7 +15,6 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundExcept
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty;
@@ -71,7 +70,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		bool $validationEnforced = false,
 		?PageReadAuthorizer $readAuthorizer = null,
 	): ReplaceSubjectAction {
-		$registry = PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY );
+		$registry = TestSources::newPropertyTypeRegistry();
 		$builder = new StatementListBuilder(
 			propertyTypeLookup: $registry,
 			idGenerator: new StubIdGenerator( '11111111111127' ),

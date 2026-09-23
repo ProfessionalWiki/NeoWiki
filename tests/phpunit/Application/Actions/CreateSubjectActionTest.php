@@ -31,7 +31,6 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
@@ -90,8 +89,14 @@ class CreateSubjectActionTest extends TestCase {
 		return new PageSubjects( TestSubject::build( id: 's11111111111maa' ), new SubjectMap() );
 	}
 
-	private function newCreateSubjectAction( bool $validationEnforced = false ): CreateSubjectAction {
-		$registry = PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY );
+	/**
+	 * @param array<string, string> $schemaNames Name as written => the name of the Schema it names.
+	 */
+	private function newCreateSubjectAction(
+		bool $validationEnforced = false,
+		array $schemaNames = []
+	): CreateSubjectAction {
+		$registry = TestSources::newPropertyTypeRegistry();
 		return new CreateSubjectAction(
 			$this->presenterSpy,
 			$this->subjectRepository,
@@ -118,6 +123,7 @@ class CreateSubjectActionTest extends TestCase {
 				),
 			),
 			$this->pageIdentifiersResolver,
+			TestSources::newSchemaReferenceParser( $schemaNames ),
 			$validationEnforced,
 		);
 	}
@@ -167,6 +173,33 @@ class CreateSubjectActionTest extends TestCase {
 		$this->assertSame(
 			's' . self::STUB_ID,
 			$this->presenterSpy->result
+		);
+	}
+
+	/**
+	 * The Schema name a caller sends is a reference, and several spellings reference one Schema page.
+	 * What gets stored is the name that Schema has, so the graph label, the RDF class and relation
+	 * target validation downstream all read one name per Schema.
+	 */
+	public function testSchemaNameIsStoredAsTheNameOfTheSchemaItNames(): void {
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction( schemaNames: [ 'person' => 'Person' ] )->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Wilhelm',
+				schemaName: 'person',
+				statements: []
+			)
+		);
+
+		$this->assertSame(
+			'Person',
+			$this->subjectRepository->getSubjectsByPageId( new PageId( 1 ) )
+				->getMainSubject()
+				->getSchemaName()
+				->getText()
 		);
 	}
 

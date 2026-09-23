@@ -16,8 +16,8 @@ use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -38,6 +38,7 @@ readonly class CreateSubjectAction {
 		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private PageIdentifiersResolver $pageIdentifiersResolver,
+		private SchemaReferenceParser $schemaReferenceParser,
 		private bool $validationEnforced,
 	) {
 	}
@@ -58,9 +59,10 @@ readonly class CreateSubjectAction {
 			throw new RuntimeException( 'You do not have the necessary permissions to create this subject' );
 		}
 
-		$schema = $this->schemaResolver->getSchema( $this->schemaReference( $request ) );
+		$schemaReference = $this->schemaReference( $request );
+		$schema = $this->schemaResolver->getSchema( $schemaReference );
 
-		$subject = $this->buildSubject( $request, $schema );
+		$subject = $this->buildSubject( $request, $schemaReference, $schema );
 
 		if ( $request->id !== null && $this->newSubjectIdResolver->isInUse( $subject->id ) ) {
 			$this->presenter->presentSubjectAlreadyExists();
@@ -124,11 +126,15 @@ readonly class CreateSubjectAction {
 		) );
 	}
 
-	private function buildSubject( CreateSubjectRequest $request, ?Schema $schema ): Subject {
+	private function buildSubject(
+		CreateSubjectRequest $request,
+		SchemaReference $schemaReference,
+		?Schema $schema
+	): Subject {
 		return new Subject(
 			id: $this->newSubjectIdResolver->resolve( $request->id ),
 			label: SubjectLabel::fromText( $request->label ),
-			schema: $this->schemaReference( $request ),
+			schema: $schemaReference,
 			statements: $this->statementListBuilder->build(
 				$this->resolveSelectValues( $schema, $request->statements )
 			),
@@ -139,7 +145,7 @@ readonly class CreateSubjectAction {
 	 * A Subject is only ever created in the local Source, so the Schema it names is a local one too.
 	 */
 	private function schemaReference( CreateSubjectRequest $request ): SchemaReference {
-		return SchemaReference::local( new SchemaName( $request->schemaName ) );
+		return $this->schemaReferenceParser->localName( $request->schemaName );
 	}
 
 	/**

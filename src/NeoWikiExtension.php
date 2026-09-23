@@ -80,6 +80,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabaseP
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
@@ -163,6 +164,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedPageIdentifiersResolver;
+use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedSchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseDeletedPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdsLookup;
@@ -265,6 +267,7 @@ class NeoWikiExtension {
 	private ?WikiConfigSource $wikiConfigSource = null;
 	private ?SchemaLookup $schemaLookup = null;
 	private ?SubjectSearchHitLookup $subjectSearchHitLookup = null;
+	private ?SchemaReferenceParser $schemaReferenceParser = null;
 	/** @var array<string, SchemaLookup> */
 	private array $schemaLookupsByUser = [];
 	private static ?self $instance = null;
@@ -367,7 +370,7 @@ class NeoWikiExtension {
 
 	public function getPropertyTypeRegistry(): PropertyTypeRegistry {
 		if ( !isset( $this->propertyTypeRegistry ) ) {
-			$this->propertyTypeRegistry = PropertyTypeRegistry::withCoreTypes( $this->config->wikiId );
+			$this->propertyTypeRegistry = PropertyTypeRegistry::withCoreTypes( $this->getSchemaReferenceParser() );
 		}
 
 		$this->ensureExtensionsRegistered();
@@ -439,9 +442,22 @@ class NeoWikiExtension {
 	public function newSubjectContentDataDeserializer(): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer(
 			new StatementDeserializer( $this->getPropertyTypeLookup(), $this->getSubjectIdParser() ),
-			$this->getSubjectIdParser(),
-			LoggerFactory::getInstance( 'NeoWiki' )
+			LoggerFactory::getInstance( 'NeoWiki' ),
+			$this->getSchemaReferenceParser()
 		);
+	}
+
+	/**
+	 * Held for the process: the parser's normalizer remembers the Schema names it has resolved, and a
+	 * fresh one per read would throw that away, parsing every name again on every page.
+	 */
+	public function getSchemaReferenceParser(): SchemaReferenceParser {
+		$this->schemaReferenceParser ??= new SchemaReferenceParser(
+			$this->config->wikiId,
+			new TitleBasedSchemaReferenceNormalizer( MediaWikiServices::getInstance()->getTitleFactory() )
+		);
+
+		return $this->schemaReferenceParser;
 	}
 
 	/**
@@ -1510,6 +1526,7 @@ class NeoWikiExtension {
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
+			schemaReferenceParser: $this->getSchemaReferenceParser(),
 			validationEnforced: $this->isValidationEnforced(),
 		);
 	}
@@ -1533,6 +1550,7 @@ class NeoWikiExtension {
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
+			schemaReferenceParser: $this->getSchemaReferenceParser(),
 			validationEnforced: $this->isValidationEnforced(),
 		);
 	}
@@ -1735,7 +1753,7 @@ class NeoWikiExtension {
 	}
 
 	private function getLayoutPersistenceDeserializer(): LayoutPersistenceDeserializer {
-		return new LayoutPersistenceDeserializer();
+		return new LayoutPersistenceDeserializer( $this->getSchemaReferenceParser() );
 	}
 
 	public function getSchemaNameLookup(): SchemaNameLookup {
@@ -1927,7 +1945,7 @@ class NeoWikiExtension {
 			subjectValidator: $this->newSubjectValidator( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
-			localSourceKey: $this->config->wikiId,
+			schemaReferenceParser: $this->getSchemaReferenceParser(),
 		);
 	}
 

@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualText;
 use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
@@ -271,7 +272,7 @@ class MonolingualTextTypeValidateTest extends TestCase {
 	public function testSingleValueOnlyUsesErrorWhenMultipleAnnotated(): void {
 		$definition = PropertyDefinition::fromJson(
 			[ 'type' => 'monolingualText', 'multiple' => [ 'value' => false, 'severity' => 'error' ] ],
-			PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 		);
 
 		$violations = $this->type->validate(
@@ -323,7 +324,7 @@ class MonolingualTextTypeValidateTest extends TestCase {
 	private function newAnnotatedProperty( array $constraints ): PropertyDefinition {
 		return PropertyDefinition::fromJson(
 			[ 'type' => 'monolingualText', 'multiple' => true ] + $constraints,
-			PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 		);
 	}
 

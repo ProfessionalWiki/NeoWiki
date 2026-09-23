@@ -217,7 +217,7 @@ class SubjectSearchTextBuilderTest extends TestCase {
 	}
 
 	private function coreTypes(): PropertyTypeRegistry {
-		return PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY );
+		return PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() );
 	}
 
 	private function subjectWith( ?string $label, Statement ...$statements ): Subject {

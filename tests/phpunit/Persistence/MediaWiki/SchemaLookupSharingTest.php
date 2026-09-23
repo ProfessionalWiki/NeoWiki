@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 use MediaWiki\MediaWikiServices;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
+use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
@@ -78,6 +79,16 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( $extension->getSchemaLookup(), $extension->getSchemaLookup() );
 	}
 
+	/**
+	 * The parser holds what the normalizer remembers, so a fresh one per read would parse every Schema
+	 * name again on every page.
+	 */
+	public function testServesOneSchemaReferenceParserThroughoutARequest(): void {
+		$extension = NeoWikiExtension::getInstance();
+
+		$this->assertSame( $extension->getSchemaReferenceParser(), $extension->getSchemaReferenceParser() );
+	}
+
 	private function newCountingProjectionStore( SchemaJsonLookup $inner ): GraphDatabasePlugin {
 		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore( $this->newCachingLookup( $inner ) );
 	}
@@ -109,7 +120,7 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 		return new class() implements SchemaJsonLookup {
 			public int $calls = 0;
 
-			public function getSchemaJson( SchemaName $schemaName ): string {
+			public function getSchemaJson( Title $schemaPage ): string {
 				$this->calls++;
 				return '{"description":"","propertyDefinitions":{}}';
 			}

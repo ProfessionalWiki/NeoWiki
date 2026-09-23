@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectPageApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndex;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -116,6 +117,65 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam' ] ) );
 
 		$this->assertSame( 'Amsterdam', $this->storedLabelOf( $body['subjectId'] ) );
+	}
+
+	/**
+	 * Several spellings name one Schema page, and what gets written down is the name that Schema has.
+	 */
+	public function testStoresTheSchemaUnderTheNameOfTheSchemaItNames(): void {
+		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam', 'schema' => 'employee' ] ) );
+
+		$this->assertSame(
+			self::SCHEMA,
+			$this->storedSchemaJsonOf( 'Amsterdam', $body['subjectId'] )
+		);
+	}
+
+	/**
+	 * No page title can hold a "#", so a name carrying one names the page before it, and the Subject
+	 * instantiates the Schema the request resolved against rather than a Schema nothing else names.
+	 */
+	public function testStoresTheSchemaAFragmentPointsInto(): void {
+		$response = $this->create( [ 'label' => 'Amsterdam', 'schema' => self::SCHEMA . '#Details' ] );
+		$body = $this->bodyOf( $response );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertSame( [], $body['violations'] );
+		$this->assertSame( self::SCHEMA, $this->storedSchemaJsonOf( 'Amsterdam', $body['subjectId'] ) );
+	}
+
+	/**
+	 * A prefix naming another namespace stays in the name, so the lookup never leaves the Schema
+	 * namespace: a page of that title elsewhere is not read as a Schema but reported missing.
+	 */
+	public function testANameNamingAnotherNamespacesPageResolvesToNoSchema(): void {
+		$this->editPage( Title::newFromText( 'Category:Probe' ), 'A category, not a Schema' );
+
+		$response = $this->create( [ 'label' => 'Amsterdam', 'schema' => 'Category:Probe', 'statements' => [] ] );
+		$body = $this->bodyOf( $response );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertSame( 'schema-not-found', $body['violations'][0]['code'] );
+	}
+
+	/**
+	 * The slot as written, rather than a Subject read back through the repository: reading normalizes
+	 * too, so a Subject fetched that way would look right even if nothing normalized on write.
+	 *
+	 * @return string|array<string, string>|null
+	 */
+	private function storedSchemaJsonOf( string $pageName, string $subjectId ): string|array|null {
+		$revision = $this->getServiceContainer()->getRevisionStore()->getRevisionByTitle(
+			Title::newFromText( $pageName )
+		);
+		$this->assertNotNull( $revision );
+
+		$content = $revision->getContent( MediaWikiSubjectRepository::SLOT_NAME );
+		$this->assertInstanceOf( SubjectContent::class, $content );
+
+		$slot = json_decode( $content->getText(), true );
+
+		return $slot['subjects'][$subjectId]['schema'] ?? null;
 	}
 
 	public function testWritesThePageAndItsSubjectInOneRevision(): void {
