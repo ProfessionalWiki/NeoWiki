@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Infrastructure;
 
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
@@ -85,6 +87,55 @@ class TitleBasedSchemaReferenceNormalizerTest extends MediaWikiIntegrationTestCa
 		yield 'its normal form is a reserved Schema name' => [ 'page_' ];
 		yield 'a leading colon makes no page' => [ ':Person' ];
 		yield 'it is a fragment alone' => [ '#Details' ];
+	}
+
+	/**
+	 * Every Subject read asks after a Schema, a wiki names few of them, and parsing a title is neither
+	 * free nor cached by MediaWiki outside NS_MAIN. A name already seen is not parsed again.
+	 */
+	public function testParsesANameOnlyOnce(): void {
+		$titleFactory = $this->newCountingTitleFactory();
+		$normalizer = new TitleBasedSchemaReferenceNormalizer( $titleFactory );
+
+		$normalizer->normalize( SchemaReference::local( new SchemaName( 'Person' ) ) );
+		$normalizer->normalize( SchemaReference::local( new SchemaName( 'Person' ) ) );
+		$normalizer->normalize( SchemaReference::local( new SchemaName( 'Person' ) ) );
+
+		$this->assertSame( 1, $titleFactory->calls );
+	}
+
+	/**
+	 * What it remembers is per name, so a page of Subjects following different Schemas gets each of
+	 * their names, not whichever was asked for first.
+	 */
+	public function testRemembersEachNameOnItsOwn(): void {
+		$normalizer = new TitleBasedSchemaReferenceNormalizer(
+			$this->getServiceContainer()->getTitleFactory()
+		);
+
+		$names = array_map(
+			static fn ( string $written ): string => $normalizer
+				->normalize( SchemaReference::local( new SchemaName( $written ) ) )
+				->name
+				->getText(),
+			[ 'person', 'company', 'person' ]
+		);
+
+		$this->assertSame( [ 'Person', 'Company', 'Person' ], $names );
+	}
+
+	/**
+	 * @return TitleFactory&object{calls: int}
+	 */
+	private function newCountingTitleFactory(): TitleFactory {
+		return new class() extends TitleFactory {
+			public int $calls = 0;
+
+			public function makeTitleSafe( $ns, $title, $fragment = '', $interwiki = '' ): ?Title {
+				$this->calls++;
+				return parent::makeTitleSafe( $ns, $title, $fragment, $interwiki );
+			}
+		};
 	}
 
 	private function normalizeLocal( string $written ): string {
