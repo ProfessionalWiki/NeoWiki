@@ -258,6 +258,7 @@ class NeoWikiExtension {
 	private ClientInterface $readOnlyNeo4jClient;
 	private ?WikiConfigSource $wikiConfigSource = null;
 	private ?SchemaLookup $schemaLookup = null;
+	private ?SchemaReferenceParser $schemaReferenceParser = null;
 	/** @var array<string, SchemaLookup> */
 	private array $schemaLookupsByUser = [];
 	private static ?self $instance = null;
@@ -425,11 +426,17 @@ class NeoWikiExtension {
 		);
 	}
 
+	/**
+	 * Held for the process: the parser's normalizer remembers the Schema names it has resolved, and a
+	 * fresh one per read would throw that away, parsing every name again on every page.
+	 */
 	public function getSchemaReferenceParser(): SchemaReferenceParser {
-		return new SchemaReferenceParser(
+		$this->schemaReferenceParser ??= new SchemaReferenceParser(
 			$this->config->wikiId,
 			new TitleBasedSchemaReferenceNormalizer( MediaWikiServices::getInstance()->getTitleFactory() )
 		);
+
+		return $this->schemaReferenceParser;
 	}
 
 	/**

@@ -17,6 +17,15 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
  */
 class TitleBasedSchemaReferenceNormalizer implements SchemaReferenceNormalizer {
 
+	/**
+	 * A wiki names few Schemas while every Subject read asks after one, and parsing a title is neither
+	 * free nor cached by MediaWiki outside NS_MAIN. Kept for the life of this normalizer, which
+	 * NeoWikiExtension makes the process.
+	 *
+	 * @var array<string, SchemaName>
+	 */
+	private array $namesOfSchemaPages = [];
+
 	public function __construct(
 		private readonly TitleFactory $titleFactory,
 	) {
@@ -27,7 +36,17 @@ class TitleBasedSchemaReferenceNormalizer implements SchemaReferenceNormalizer {
 			return $reference;
 		}
 
-		return SchemaReference::local( $this->nameOfSchemaPage( $reference->name ) );
+		return SchemaReference::local( $this->rememberedNameOfSchemaPage( $reference->name ) );
+	}
+
+	private function rememberedNameOfSchemaPage( SchemaName $name ): SchemaName {
+		$written = $name->getText();
+
+		if ( !array_key_exists( $written, $this->namesOfSchemaPages ) ) {
+			$this->namesOfSchemaPages[$written] = $this->nameOfSchemaPage( $name );
+		}
+
+		return $this->namesOfSchemaPages[$written];
 	}
 
 	/**
