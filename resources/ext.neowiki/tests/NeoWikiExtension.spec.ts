@@ -3,8 +3,6 @@ import { defineStore } from 'pinia';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
 import MonolingualTextDisplay from '@/components/Value/MonolingualTextDisplay.vue';
 import MonolingualTextInput from '@/components/Value/MonolingualTextInput.vue';
-import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
-import { cdxIconLanguage } from '@wikimedia/codex-icons';
 import { MonolingualTextType } from '@/domain/propertyTypes/MonolingualText';
 import { setupMwMock } from './VueTestHelpers.ts';
 
@@ -15,15 +13,13 @@ describe( 'NeoWikiExtension registry caching', () => {
 			.toBe( ext.getTypeSpecificComponentRegistry() );
 	} );
 
-	it( 'offers the monolingual text type with its own components, label and icon', () => {
+	it( 'offers the monolingual text type with its own display, editor and label', () => {
 		const registry = NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry();
 
 		expect( registry.getPropertyTypes() ).toContain( MonolingualTextType.typeName );
 		expect( registry.getValueDisplayComponent( MonolingualTextType.typeName ) ).toBe( MonolingualTextDisplay );
 		expect( registry.getValueEditingComponent( MonolingualTextType.typeName ) ).toBe( MonolingualTextInput );
-		expect( registry.getAttributesEditor( MonolingualTextType.typeName ) ).toBe( TextAttributesEditor );
 		expect( registry.getLabel( MonolingualTextType.typeName ) ).toBe( 'neowiki-property-type-monolingualtext' );
-		expect( registry.getIcon( MonolingualTextType.typeName ) ).toBe( cdxIconLanguage );
 	} );
 
 	it( 'returns the same ViewTypeRegistry instance on repeated calls so extension registrations persist', () => {

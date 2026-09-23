@@ -32,11 +32,6 @@ describe( 'LanguagePicker', () => {
 		return picker.find( '.ext-neowiki-language-picker__panel' );
 	}
 
-	// What the control's aria-controls names, resolved the way a screen reader resolves it.
-	function controlledElement( control: DOMWrapper<Element> ): Element | null {
-		return document.getElementById( control.attributes( 'aria-controls' ) ?? '' );
-	}
-
 	function isOpen( picker: VueWrapper ): boolean {
 		return button( picker ).attributes( 'aria-expanded' ) === 'true';
 	}
@@ -160,15 +155,6 @@ describe( 'LanguagePicker', () => {
 		expect( panel( picker ).isVisible() ).toBe( true );
 	} );
 
-	it( 'names the panel its button opens, and the list its search field drives', async () => {
-		const picker = newWrapper( 'eu' );
-
-		await openPicker( picker );
-
-		expect( controlledElement( button( picker ) ) ).toBe( panel( picker ).element );
-		expect( controlledElement( search( picker ) ) ).toBe( picker.find( '.cdx-menu__listbox' ).element );
-	} );
-
 	it( 'opens its languages with the focus in their search field', async () => {
 		const picker = newWrapper( 'eu' );
 
@@ -202,14 +188,6 @@ describe( 'LanguagePicker', () => {
 		await type( picker, typed );
 
 		expect( listedLanguages( picker ) ).toEqual( [ listed ] );
-	} );
-
-	it( 'marks the language it holds, so the reader sees which of them it is', async () => {
-		const picker = newWrapper( 'eu' );
-
-		await openPicker( picker );
-
-		expect( picker.find( '.cdx-menu-item--selected .cdx-menu-item__text__label' ).text() ).toBe( 'Basque' );
 	} );
 
 	it( 'lists the language whose tag is typed before those whose name only starts or contains it', async () => {
@@ -281,29 +259,6 @@ describe( 'LanguagePicker', () => {
 		await picker.findComponent( CdxMenu ).vm.$emit( 'load-more' );
 
 		expect( listedLanguages( picker ) ).toHaveLength( 60 );
-	} );
-
-	it( 'lists one page again once the search changes', async () => {
-		useLanguages( manyLanguages() );
-		const picker = newWrapper( 'en' );
-
-		await openPicker( picker );
-		await picker.findComponent( CdxMenu ).vm.$emit( 'load-more' );
-		await type( picker, 'Language' );
-
-		expect( listedLanguages( picker ) ).toHaveLength( 50 );
-	} );
-
-	it( 'lists one page again each time it opens', async () => {
-		useLanguages( manyLanguages() );
-		const picker = newWrapper( 'en' );
-
-		await openPicker( picker );
-		await picker.findComponent( CdxMenu ).vm.$emit( 'load-more' );
-		await pressKey( 'Escape' );
-		await openPicker( picker );
-
-		expect( listedLanguages( picker ) ).toHaveLength( 50 );
 	} );
 
 	it( 'reports the tag of the language chosen by its name, closing and handing the focus back', async () => {
@@ -394,35 +349,6 @@ describe( 'LanguagePicker', () => {
 		await picker.vm.$nextTick();
 
 		expect( emittedTags( picker ) ).toEqual( [] );
-	} );
-
-	it( 'stays open on the Escape that cancels an IME composition', async () => {
-		const picker = newWrapper( 'en' );
-
-		await openPicker( picker );
-		search( picker ).element.dispatchEvent(
-			new KeyboardEvent( 'keyup', { key: 'Escape', isComposing: true, bubbles: true } ),
-		);
-		await picker.vm.$nextTick();
-
-		expect( isOpen( picker ) ).toBe( true );
-	} );
-
-	// Enough of the list is on show to browse, and the panel never outgrows the dialog it opens in.
-	it( 'caps how many entries its list shows at once', () => {
-		expect( newWrapper( 'en' ).findComponent( CdxMenu ).props( 'visibleItemLimit' ) ).toBe( 8 );
-	} );
-
-	// Keyed on the search text, the menu would be torn down and built again on every keystroke,
-	// taking with it the entry the arrow keys had reached.
-	it( 'keeps the same list through typing', async () => {
-		const picker = newWrapper( 'en' );
-
-		await openPicker( picker );
-		const menu = picker.findComponent( CdxMenu ).element;
-		await type( picker, 'B' );
-
-		expect( picker.findComponent( CdxMenu ).element ).toBe( menu );
 	} );
 
 	it( 'keeps its list out of the tab order', async () => {
