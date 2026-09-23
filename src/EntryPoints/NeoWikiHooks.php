@@ -22,6 +22,7 @@ use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
@@ -53,6 +54,8 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectNameMessage;
+use ProfessionalWiki\NeoWiki\Presentation\SubjectLabelHtml;
+use ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder;
 use MediaWiki\SpecialPage\SpecialPage;
 use SearchEngine;
 use SearchIndexField;
@@ -116,12 +119,14 @@ class NeoWikiHooks {
 		$out->addHtml( self::getNeoWikiAppHtml( $out, $permissionHints ) );
 		self::addRdfAutodiscoveryLinks( $out );
 
+		$revisionId = self::pageIsLatestRevision( $out ) ? null : $out->getRevisionId();
+		$builder = $extension->newViewHtmlBuilder();
+
+		self::headByMainSubject( $out, $builder, $revisionId );
+
 		if ( !$extension->shouldAutoRenderMainSubject() ) {
 			return;
 		}
-
-		$revisionId = self::pageIsLatestRevision( $out ) ? null : $out->getRevisionId();
-		$builder = $extension->newViewHtmlBuilder();
 
 		$html = $out->getHTML();
 		$out->clearHTML();
@@ -166,6 +171,33 @@ class NeoWikiHooks {
 	private static function shouldShowSubjectCreator( OutputPage $out, SubjectPermissionHints $permissionHints ): bool {
 		return $permissionHints->canCreateMainSubject( new PageId( $out->getTitle()->getArticleID() ) )
 			&& self::pageIsLatestRevision( $out );
+	}
+
+	/**
+	 * Heads the page with its Main Subject's label and id, as core applies a display title, and only
+	 * where core would apply one: not on a diff, which is headed by the diff, nor where an error stands
+	 * in for the revision, which either leaves no revision id or heads the page as an error. The
+	 * browser tab gets the label alone.
+	 */
+	private static function headByMainSubject( OutputPage $out, ViewHtmlBuilder $builder, ?int $revisionId ): void {
+		if ( $out->getRevisionId() === null
+			|| $out->getRequest()->getCheck( 'diff' )
+			|| $out->getPageTitle() === Sanitizer::removeSomeTags( $out->msg( 'errorpagetitle' )->escaped() )
+		) {
+			return;
+		}
+
+		$subject = $builder->subjectInPlaceOfPageTitle( $out->getTitle(), $revisionId );
+
+		if ( $subject === null ) {
+			return;
+		}
+
+		$label = $subject->getLabel()?->text ?? '';
+
+		$out->setPageTitle( SubjectLabelHtml::withId( $out, $label, $subject->getId()->text ) );
+		$out->setHTMLTitle( $out->msg( 'pagetitle' )->plaintextParams( $label )->inContentLanguage() );
+		$out->addModuleStyles( [ SubjectLabelHtml::STYLE_MODULE ] );
 	}
 
 	private static function pageIsLatestRevision( OutputPage $out ): bool {

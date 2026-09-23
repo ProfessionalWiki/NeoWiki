@@ -880,6 +880,11 @@
 				"resources/ext.neowiki/dist/neowiki.css",
 				"resources/styles/mapping-page.css"
 			]
+		},
+		"ext.neowiki.subjectLabel.styles": {
+			"styles": [
+				"resources/styles/subject-label.less"
+			]
 		}
 	},
 
