@@ -96,7 +96,7 @@ describe( 'RestSchemaRepository', () => {
 			repository = new RestSchemaRepository( apiUrl, mockHttpClient, mockSerializer, new SchemaDeserializer(), pageSaver );
 		} );
 
-		const testSchema = new Schema( 'TestSchema', 'Test Description', new PropertyDefinitionList( [] ) );
+		const testSchema = new Schema( 'TestSchema', 'Test Description', new PropertyDefinitionList( [] ), null );
 
 		it( 'should call the correct API endpoint with the right parameters', async () => {
 			vi.spyOn( pageSaver, 'savePage' );
@@ -139,6 +139,7 @@ describe( 'RestSchemaRepository', () => {
 				'Test/Schema With:Spaces',
 				'Description',
 				new PropertyDefinitionList( [] ),
+				null,
 			);
 
 			vi.spyOn( pageSaver, 'savePage' );

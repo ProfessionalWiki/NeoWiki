@@ -12,7 +12,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 /**
  * The label a Schema's label template gives a Subject. Each placeholder reads as the first of the strings
  * the property's type says its value is searched by, which spells a select option by its label and a
- * number in digits.
+ * number in digits. templateLabel() in resources/ext.neowiki/src/domain/LabelTemplate.ts mirrors this
+ * for the core types.
  */
 readonly class LabelTemplateRenderer {
 

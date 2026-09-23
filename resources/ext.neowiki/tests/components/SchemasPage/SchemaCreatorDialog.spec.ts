@@ -23,7 +23,7 @@ const SchemaCreatorStub = {
 	emits: [ 'change' ],
 	setup() {
 		let valid = true;
-		const schema: Schema | null = new Schema( NEW_SCHEMA_NAME, 'A description', new PropertyDefinitionList( [] ) );
+		const schema: Schema | null = new Schema( NEW_SCHEMA_NAME, 'A description', new PropertyDefinitionList( [] ), null );
 
 		const validate = vi.fn( async (): Promise<boolean> => valid );
 		const getSchema = vi.fn( (): Schema | null => schema );

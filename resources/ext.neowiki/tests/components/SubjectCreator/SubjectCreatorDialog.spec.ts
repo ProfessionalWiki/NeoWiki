@@ -21,7 +21,7 @@ import { SubjectId } from '@/domain/SubjectId.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
-import { TextType } from '@/domain/propertyTypes/Text.ts';
+import { newTextProperty, TextType } from '@/domain/propertyTypes/Text.ts';
 import { newStringValue } from '@/domain/Value.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
@@ -102,7 +102,7 @@ const SchemaCreatorStub = {
 	emits: [ 'change' ],
 	setup() {
 		let valid = true;
-		const schema = new Schema( NEW_SCHEMA_NAME, 'A description', new PropertyDefinitionList( [] ) );
+		const schema = new Schema( NEW_SCHEMA_NAME, 'A description', new PropertyDefinitionList( [] ), null );
 
 		const validate = vi.fn( async (): Promise<boolean> => valid );
 		const getSchema = vi.fn( (): Schema | null => schema );
@@ -1813,6 +1813,51 @@ describe( 'SubjectCreatorDialog', () => {
 				expect( subjectStore.createSubjectPage ).not.toHaveBeenCalled();
 			} );
 
+			describe( 'for a Schema whose label template names its Subjects', () => {
+				// The editor offers such a Subject no label of its own: its Color field names it.
+				beforeEach( () => {
+					getSchemaMock.mockResolvedValue( newSchema( {
+						title: SCHEMA_NAME,
+						properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Color' } ) ] ),
+						labelTemplate: '{Color}',
+					} ) );
+				} );
+
+				it( 'titles a fixed new page after the label the template reads from the form', async () => {
+					const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: true } );
+					await open( wrapper );
+
+					await save( wrapper );
+
+					expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
+						null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, 'Red', new SubjectId( MINTED_ID ),
+					);
+				} );
+
+				it( 'asks for the field that names the Subject when the form gives the template nothing', async () => {
+					editedStatements = (): StatementList => new StatementList( [] );
+					const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: true } );
+					await open( wrapper );
+
+					await save( wrapper );
+
+					expect( wrapper.find( '.ext-neowiki-subject-creator-page-summary' ).text() )
+						.toContain( 'neowiki-subject-creator-page-title-required-templateColor' );
+					expect( subjectStore.createSubjectPage ).not.toHaveBeenCalled();
+				} );
+
+				it( 'points at the field that names the Subject when the title it gives is taken', async () => {
+					( subjectStore.createSubjectPage as any ).mockRejectedValue( new PageTitleTakenError( 'Red' ) );
+					const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: true } );
+					await open( wrapper );
+
+					await save( wrapper );
+
+					expect( wrapper.find( '.ext-neowiki-subject-creator-page-summary' ).text() )
+						.toContain( 'neowiki-subject-creator-page-taken-fixed-templateRedColor' );
+				} );
+			} );
+
 			it( 'saves onto a fixed page without a main Subject as its main Subject', async () => {
 				const wrapper = mountWithInitialPage( {
 					choice: 'anotherPage',
@@ -2119,7 +2164,7 @@ describe( 'SubjectCreatorDialog', () => {
 			await switchToNewSchema( wrapper );
 			await clickContinue( wrapper );
 
-			const edited = new Schema( NEW_SCHEMA_NAME, 'With another property', new PropertyDefinitionList( [] ) );
+			const edited = new Schema( NEW_SCHEMA_NAME, 'With another property', new PropertyDefinitionList( [] ), null );
 			await ( wrapper.findComponent( SubjectEditorDialog ).props( 'onSaveSchema' ) as any )( edited, 'from the editor' );
 			await flushPromises();
 
@@ -2139,7 +2184,7 @@ describe( 'SubjectCreatorDialog', () => {
 			await switchToNewSchema( wrapper );
 			await clickContinue( wrapper );
 
-			const edited = new Schema( NEW_SCHEMA_NAME, 'With another property', new PropertyDefinitionList( [] ) );
+			const edited = new Schema( NEW_SCHEMA_NAME, 'With another property', new PropertyDefinitionList( [] ), null );
 			await ( wrapper.findComponent( SubjectEditorDialog ).props( 'onSaveSchema' ) as any )( edited, 'from the editor' );
 			await flushPromises();
 

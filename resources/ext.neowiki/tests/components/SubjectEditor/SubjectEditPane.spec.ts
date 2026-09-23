@@ -58,6 +58,7 @@ const schemaWithNameAndAge = new Schema(
 	'TestSchema',
 	'A test schema',
 	new PropertyDefinitionList( [ newTextProperty( { name: 'Name' } ), newNumberProperty( { name: 'Age' } ) ] ),
+	null,
 );
 
 // Stores no label (ADR 31), so its name on screen is the server's derived one: here the
@@ -155,6 +156,7 @@ const relationSchema = new Schema(
 	'TestSchema',
 	'A test schema',
 	new PropertyDefinitionList( [ newRelationProperty( { name: 'Author' } ) ] ),
+	null,
 );
 
 const subjectWithAuthor = new SubjectWithContext(
@@ -444,6 +446,7 @@ describe( 'SubjectEditPane', () => {
 			'TestSchema',
 			'A test schema',
 			new PropertyDefinitionList( [ newTextProperty( { name: propertyName } ) ] ),
+			null,
 		);
 	}
 
@@ -641,6 +644,161 @@ describe( 'SubjectEditPane', () => {
 			await flushPromises();
 
 			expect( surfacedViolations( wrapper ) ).toEqual( [ otherCode ] );
+		} );
+	} );
+
+	describe( 'A Schema whose label template names the Subject', () => {
+		const titledSchema = new Schema(
+			'TestSchema',
+			'A test schema',
+			new PropertyDefinitionList( [ newTextProperty( { name: 'Name' } ), newNumberProperty( { name: 'Age' } ) ] ),
+			'{Name}',
+		);
+
+		// No stored label, so the server named it through the template.
+		const namedByTemplate = new SubjectWithContext(
+			new SubjectId( 's11111111111111' ),
+			null,
+			'Alice',
+			false,
+			'TestSchema',
+			new StatementList( [ new Statement( new PropertyName( 'Name' ), TextType.typeName, newStringValue( 'Alice' ) ) ] ),
+			new PageIdentifiers( 42, 'Test page' ),
+		);
+
+		// Settled first, so the name follows the typing rather than the read the pane makes on mounting.
+		async function typeName( wrapper: VueWrapper, name: string ): Promise<void> {
+			await flushPromises();
+			await wrapper.get( '.ext-neowiki-subject-editor input' ).setValue( name );
+		}
+
+		function heading( wrapper: VueWrapper ): string {
+			return wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text();
+		}
+
+		it( 'shows the label the template reads from the fields as they are edited', async () => {
+			const wrapper = mountPane( { subject: namedByTemplate, schema: titledSchema, nested: true } );
+
+			await typeName( wrapper, 'Bob' );
+
+			expect( heading( wrapper ) ).toBe( 'Bob' );
+		} );
+
+		it( 'names the pane region after that label too', async () => {
+			const wrapper = mountPane( { subject: namedByTemplate, schema: titledSchema, nested: true } );
+
+			await typeName( wrapper, 'Bob' );
+
+			expect( wrapper.get( '.ext-neowiki-subject-edit-pane' ).attributes( 'aria-label' ) ).toBe( 'Bob' );
+		} );
+
+		it( 'follows a replaced Subject', async () => {
+			const wrapper = mountPane( { subject: namedByTemplate, schema: titledSchema, nested: true } );
+			await flushPromises();
+
+			await wrapper.setProps( { subject: namedByTemplate.withStatements( new StatementList( [
+				new Statement( new PropertyName( 'Name' ), TextType.typeName, newStringValue( 'Bob' ) ),
+			] ) ) } );
+
+			expect( heading( wrapper ) ).toBe( 'Bob' );
+		} );
+
+		it( 'follows a replaced Schema', async () => {
+			const wrapper = mountPane( { subject: namedByTemplate, schema: titledSchema, nested: true } );
+			await flushPromises();
+
+			await wrapper.setProps( { schema: new Schema(
+				'TestSchema',
+				'A test schema',
+				new PropertyDefinitionList( [ newTextProperty( { name: 'Name' } ), newNumberProperty( { name: 'Age' } ) ] ),
+				'Ms {Name}',
+			) } );
+			await flushPromises();
+
+			expect( heading( wrapper ) ).toBe( 'Ms Alice' );
+		} );
+
+		it( 'stands the Schema in once the fields leave the template nothing to read', async () => {
+			const wrapper = mountPane( { subject: namedByTemplate, schema: titledSchema, nested: true } );
+
+			await typeName( wrapper, '' );
+
+			expect( heading( wrapper ) ).toBe( '(unnamed TestSchema)' );
+		} );
+
+		// The field is the one place its name is changed, so no second one is offered beside it.
+		it( 'offers no label of its own to type', () => {
+			const wrapper = mountPane( { subject: namedByTemplate, schema: titledSchema, nested: true } );
+
+			expect( wrapper.findComponent( EditableText ).exists() ).toBe( false );
+		} );
+
+		// Names the second field, so focusing whichever field comes first would not pass.
+		it( 'points its edit button at the field the template names', async () => {
+			const agedSchema = new Schema(
+				'TestSchema',
+				'A test schema',
+				new PropertyDefinitionList( [ newTextProperty( { name: 'Name' } ), newNumberProperty( { name: 'Age' } ) ] ),
+				'Aged {Age}',
+			);
+			const wrapper = mountPane( { subject: namedByTemplate, schema: agedSchema, nested: true } );
+			document.body.appendChild( wrapper.element );
+
+			try {
+				await wrapper.get( 'button[aria-label="neowiki-subject-editor-edit-naming-propertyAge"]' ).trigger( 'click' );
+
+				expect( document.activeElement ).toBe( wrapper.findAll( '.ext-neowiki-subject-editor input' )[ 1 ].element );
+			} finally {
+				wrapper.element.remove();
+			}
+		} );
+
+		describe( 'with a label typed before', () => {
+			const labelled = namedByTemplate.withLabel( 'Mrs Smith' );
+
+			async function clearLabel( wrapper: VueWrapper ): Promise<void> {
+				await wrapper.get( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
+				const input = wrapper.get( '.ext-neowiki-editable-text__input input' );
+				await input.setValue( '' );
+				await input.trigger( 'keydown.enter' );
+			}
+
+			// Read off the pane's name, which the navigator and the save toasts read too: the rename
+			// field shows the typed label whatever that name says.
+			it( 'keeps the typed label over the template\'s', async () => {
+				const wrapper = mountPane( { subject: labelled, schema: titledSchema, nested: true } );
+
+				await typeName( wrapper, 'Bob' );
+
+				expect( wrapper.get( '.ext-neowiki-subject-edit-pane' ).attributes( 'aria-label' ) ).toBe( 'Mrs Smith' );
+			} );
+
+			// Its button starts renaming, so pressing Enter on it - the dialog focuses it on opening -
+			// cannot throw the label away.
+			it( 'offers it in the rename field', () => {
+				const wrapper = mountPane( { subject: labelled, schema: titledSchema, nested: true } );
+
+				expect( wrapper.findComponent( EditableText ).props( 'modelValue' ) ).toBe( 'Mrs Smith' );
+			} );
+
+			it( 'hands naming back to the template once it is cleared', async () => {
+				const wrapper = mountPane( { subject: labelled, schema: titledSchema, nested: true } );
+
+				await clearLabel( wrapper );
+
+				expect( heading( wrapper ) ).toBe( 'Alice' );
+				expect( ( ( wrapper.vm as any ).buildUpdatedSubject() as Subject ).getLabel() ).toBeNull();
+			} );
+
+			// The field stays where the user cleared it, so nothing the user was doing is taken away
+			// from them; it previews what naming falls back to.
+			it( 'keeps the rename field once it is cleared, previewing the label the template gives', async () => {
+				const wrapper = mountPane( { subject: labelled, schema: titledSchema, nested: true } );
+
+				await clearLabel( wrapper );
+
+				expect( wrapper.findComponent( EditableText ).props( 'placeholder' ) ).toBe( 'Alice' );
+			} );
 		} );
 	} );
 

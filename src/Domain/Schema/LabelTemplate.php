@@ -10,8 +10,8 @@ use Closure;
  * How a Schema labels a Subject nobody typed a label for: text in which each `{Property name}` stands
  * for that property's value, as in `{Museum} attendance {Year}`.
  *
- * The placeholder grammar is mirrored by resources/ext.neowiki/src/domain/LabelTemplate.ts. Change one
- * and change the other.
+ * Mirrored, rendering included, by resources/ext.neowiki/src/domain/LabelTemplate.ts, which previews the
+ * label in the Subject editor. Change one and change the other.
  */
 readonly class LabelTemplate {
 

@@ -9,9 +9,10 @@ import type { Subject } from '@/domain/Subject';
 export interface SubjectCreation {
 
 	/**
-	 * Creates a Subject of the given Schema, labelled with the text the user typed, or with nothing
-	 * when they typed none. Resolves to null when the host refused or the creation failed; the host
-	 * reports that failure itself.
+	 * Creates a Subject of the given Schema, named by the text the user typed, or unnamed when they
+	 * typed none: labelled with it, or where the Schema's label template names its Subjects from a
+	 * text field, with it in that field. Resolves to null when the host refused or the creation
+	 * failed; the host reports that failure itself.
 	 */
 	create( schemaName: string, label: string | null ): Promise<Subject | null>;
 

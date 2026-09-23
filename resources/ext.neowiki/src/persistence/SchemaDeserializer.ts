@@ -11,7 +11,12 @@ export class SchemaDeserializer {
 			// always has one, even if it is empty.
 			schema.description ?? '',
 			this.deserializePropertyDefinitions( schema.propertyDefinitions ),
+			this.deserializeLabelTemplate( schema.labelTemplate ),
 		);
+	}
+
+	private deserializeLabelTemplate( labelTemplate: unknown ): string | null {
+		return typeof labelTemplate === 'string' && labelTemplate.trim() !== '' ? labelTemplate : null;
 	}
 
 	private deserializePropertyDefinitions( definitions: Record<string, any> ): PropertyDefinitionList {

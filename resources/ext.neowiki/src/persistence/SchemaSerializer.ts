@@ -10,6 +10,7 @@ export class SchemaSerializer {
 		return JSON.stringify(
 			{
 				description: schema.getDescription(),
+				...( schema.getLabelTemplate() === null ? {} : { labelTemplate: schema.getLabelTemplate() } ),
 				propertyDefinitions: this.serializePropertyDefinitions( schema.getPropertyDefinitions() ),
 			},
 			null,

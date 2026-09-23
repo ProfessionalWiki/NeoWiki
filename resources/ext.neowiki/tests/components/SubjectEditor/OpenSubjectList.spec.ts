@@ -28,6 +28,7 @@ function mountList( overrides: {
 	subjects?: Subject[];
 	activeId?: string;
 	unsavedIds?: string[];
+	names?: ReadonlyMap<string, string>;
 	attachTo?: Element;
 } = {} ): VueWrapper {
 	return mount( OpenSubjectList, {
@@ -35,6 +36,7 @@ function mountList( overrides: {
 			subjects: overrides.subjects ?? [ person, birth, place ],
 			activeId: overrides.activeId ?? PERSON_ID,
 			unsavedIds: overrides.unsavedIds ?? [],
+			names: overrides.names ?? new Map(),
 		},
 		attachTo: overrides.attachTo,
 		global: {
@@ -73,6 +75,11 @@ describe( 'OpenSubjectList', () => {
 
 	it( 'marks a subject nobody named as carrying a name the system supplied', () => {
 		expect( names( mountList( { subjects: [ birth ] } ) ) ).toStrictEqual( [ '(unnamed Birth event)' ] );
+	} );
+
+	it( 'names a subject as its pane names it, where the pane says', () => {
+		expect( names( mountList( { names: new Map( [ [ BIRTH_ID, 'Birth of Rembrandt' ] ] ) } ) ) )
+			.toStrictEqual( [ 'Rembrandt', 'Birth of Rembrandt', 'Amsterdam' ] );
 	} );
 
 	it( 'selects the active subject and nothing else', () => {

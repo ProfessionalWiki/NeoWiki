@@ -400,7 +400,7 @@ async function createFromTypedText(): Promise<void> {
 
 	try {
 		// What the user typed names the new Subject, which is the only way it becomes findable
-		// again once saved: a Subject with no label is left out of the label search (ADR 31).
+		// again once saved: a Subject nothing names is left out of the label search (ADR 31).
 		const subject = await subjectCreation.create(
 			props.targetSchema,
 			typedText.value === '' ? null : typedText.value

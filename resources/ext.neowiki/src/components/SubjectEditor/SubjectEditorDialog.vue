@@ -31,6 +31,7 @@
 						:subjects="openSubjects"
 						:active-id="activePaneId"
 						:unsaved-ids="unsavedIds"
+						:names="paneNames"
 						@select="showPane"
 					/>
 				</div>
@@ -128,10 +129,10 @@ import EditNoticeList from '@/components/common/EditNoticeList.vue';
 import { CdxDialog, CdxMessage, useGeneratedId } from '@wikimedia/codex';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
+import { newSubjectNaming } from '@/domain/LabelTemplate.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
-import { StatementList } from '@/domain/StatementList.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { SubjectCreationKey } from '@/components/common/SubjectCreation.ts';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
@@ -260,9 +261,9 @@ const panes = computed( (): EditPane[] => [
 ] );
 
 // Subjects this session invented, as the panes editing them currently hold them, so a draft renamed
-// in its pane is renamed everywhere that names it. Read from the draft panes alone: going through
-// editedSubjects would make every rename and relation pick anywhere in the dialog rebuild the menu
-// of every relation field.
+// in its pane is renamed everywhere that names it. Read from the draft panes alone: reading every pane
+// would make every rename and relation pick anywhere in the dialog rebuild the menu of every relation
+// field.
 // The root is left out although it may be new: the ids of the other two creation routes are
 // minted by the server, so a relation pointing at the root here could name an id it never gets.
 // Pointing back at the root waits on those routes taking a pre-minted id (#1449).
@@ -276,12 +277,12 @@ const draftSubjects = computed( (): Subject[] => panes.value
 
 const draftIds = computed( (): string[] => draftSubjects.value.map( ( subject ) => subject.getId().text ) );
 
-// What the walks below read: a pane's Subject as its own form currently holds it. editedSubjects
-// carries an entry for every pane, so this never falls back.
+// What the walks below read: a pane's relations as its own form currently holds them, and the pane's
+// own copy until its ref registers.
 function heldSubjects(): HeldSubject[] {
 	return panes.value.map( ( pane ) => ( {
 		id: pane.id,
-		subject: editedSubjects.value.get( pane.id ) as Subject,
+		subject: paneRefs.get( pane.id )?.editedSubject ?? pane.subject,
 		schema: pane.schema,
 		isNew: pane.isNew
 	} ) );
@@ -355,32 +356,34 @@ const saveButtonLabel = computed( (): string => mw.msg(
 	props.rootIsNew === true ? 'neowiki-subject-creator-save' : 'neowiki-subject-editor-save'
 ) );
 
-// One copy per mounted pane. A pane's own copy is refreshed on relation changes alone, so
-// the live label is laid over it here and the navigator names a Subject the way its form does.
-const editedSubjects = computed( (): Map<string, Subject> => {
-	const subjects = new Map<string, Subject>();
-
-	for ( const pane of panes.value ) {
-		const instance = paneRefs.get( pane.id );
-		// The pane's own copy until its ref registers, one tick behind the pane being added.
-		// Without it a pane would spend that tick unnamed in the navigator.
-		subjects.set( pane.id, instance === undefined ? pane.subject : withLiveLabel( instance ) );
-	}
-
-	return subjects;
-} );
-
-// Rebuilt only when the label has moved, so an unrenamed Subject keeps the very object the
-// navigator already rendered. The field's text is read the way a write reads it.
+// A draft pane's copy is refreshed on relation changes alone, so its live label is laid over it here.
+// Rebuilt only when the label has moved, so an unrenamed draft keeps the very object the relation menus
+// already hold. The field's text is read the way a write reads it.
 function withLiveLabel( instance: SubjectEditPaneExposes ): Subject {
 	const edited = instance.editedSubject;
 	const label = enteredSubjectLabel( instance.label );
 	return edited.getLabel() === label ? edited : edited.withLabel( label );
 }
 
-// The Subjects the navigator lists, in the order their panes were opened.
-const openSubjects = computed( (): Subject[] => panes.value.map(
-	( pane ) => editedSubjects.value.get( pane.id ) as Subject ) );
+// The name each registered pane shows for its Subject, which follows the pane's form as it is edited:
+// a label the Schema's template reads from it is on no copy of the Subject.
+const paneNames = computed( (): Map<string, string> => {
+	const names = new Map<string, string>();
+
+	for ( const pane of panes.value ) {
+		const instance = paneRefs.get( pane.id );
+
+		if ( instance !== undefined ) {
+			names.set( pane.id, instance.paneName );
+		}
+	}
+
+	return names;
+} );
+
+// The Subjects the navigator lists, in the order their panes were opened. It names them by paneNames,
+// and a pane not registered yet by its own copy.
+const openSubjects = computed( (): Subject[] => panes.value.map( ( pane ) => pane.subject ) );
 
 // A list of one says nothing the form beside it does not, so the navigator waits for a second
 // Subject — and then stays, because a pane is never unmounted, whatever becomes of the relation
@@ -490,14 +493,15 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 			return null;
 		}
 
+		const naming = newSubjectNaming( schema, label );
+
 		const subject = new SubjectWithContext(
 			id,
-			label,
-			// What the server would derive for a Subject with no label of its own (ADR 31).
-			label ?? schemaName,
-			label === null,
+			naming.label,
+			naming.displayName,
+			naming.displayNameIsGenerated,
 			schemaName,
-			new StatementList( [] ),
+			naming.statements,
 			// Only a subject-first wiki mints a draft with no page: the write that creates it
 			// creates its page too, so the pane carries one that is not there yet.
 			page ?? PageIdentifiers.notYetCreated()
@@ -733,7 +737,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 			// A dirty pane with no data to save means it lost its editor ref;
 			// surface this as an error instead of silently discarding the edit. Named after the pane
 			// that failed, which in a nested edit is not the dialog's root Subject.
-			mw.notify( mw.msg( 'neowiki-subject-editor-error', subjectDisplayName( pane.subject ) ), { type: 'error' } );
+			mw.notify( mw.msg( 'neowiki-subject-editor-error', instance.paneName ), { type: 'error' } );
 			return;
 		}
 		targets.push( { id: pane.id, pane, subject: updated, schema: pane.schema, isNew: pane.isNew } );
@@ -746,7 +750,8 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 	let failed = false;
 
 	for ( const { id, pane, subject: updatedSubject } of orderedTargets ) {
-		const subjectName = subjectDisplayName( updatedSubject );
+		// As the pane names it, which follows its fields; the copy's own name is the one it was read under.
+		const subjectName = paneRefs.get( id )?.paneName ?? subjectDisplayName( updatedSubject );
 
 		try {
 			await writeSubject( pane, updatedSubject, summary || defaultSummaryFor( pane ) );

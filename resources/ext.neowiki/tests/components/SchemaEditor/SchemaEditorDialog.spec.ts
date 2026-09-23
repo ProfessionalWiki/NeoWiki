@@ -28,7 +28,7 @@ const SchemaEditorStub = defineComponent( {
 	methods: {
 		// Mirrors the real editor, which applies the host-owned description.
 		getSchema(): Schema {
-			return new Schema( 'TestSchema', this.description, new PropertyDefinitionList( [] ) );
+			return new Schema( 'TestSchema', this.description, new PropertyDefinitionList( [] ), null );
 		},
 		saveBlocker(): SaveBlocker | null {
 			return editorSaveBlocker;
@@ -57,7 +57,7 @@ describe( 'SchemaEditorDialog', () => {
 		setupMwMock( { functions: [ 'message', 'msg', 'notify' ] } );
 	} );
 
-	const mockSchema = new Schema( 'TestSchema', 'A test schema', new PropertyDefinitionList( [] ) );
+	const mockSchema = new Schema( 'TestSchema', 'A test schema', new PropertyDefinitionList( [] ), null );
 
 	const stubs = {
 		SchemaEditor: SchemaEditorStub,

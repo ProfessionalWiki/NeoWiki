@@ -47,7 +47,6 @@ import { Schema } from '@/domain/Schema.ts';
 import { ComponentPublicInstance, computed, ref, watch } from 'vue';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
 import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
-import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import PaneDivider, { PANE_DIVIDER_SIZE } from '@/components/common/PaneDivider.vue';
 import { usePaneSize } from '@/composables/usePaneSize.ts';
 import { useGeneratedId } from '@wikimedia/codex';
@@ -164,30 +163,21 @@ function onPropertyUpdated( updatedProperty: PropertyDefinition ): void {
 	emit( 'change' );
 }
 
-function propertyExists( name: string | undefined ): boolean {
+function propertyExists( name: string | undefined ): name is string {
 	return name !== undefined &&
 		currentSchema.value.getPropertyDefinitions().has( new PropertyName( name ) );
 }
 
 function buildUpdatedSchema( updatedProperty: PropertyDefinition ): Schema {
-	if ( !propertyExists( selectedPropertyName.value ) ) {
+	const name = selectedPropertyName.value;
+
+	if ( !propertyExists( name ) ) {
 		return currentSchema.value.withAddedPropertyDefinition( updatedProperty );
 	}
 
-	return new Schema(
-		currentSchema.value.getName(),
-		currentSchema.value.getDescription(),
-		replacePropertyDefinition( updatedProperty )
-	);
-}
-
-function replacePropertyDefinition( updatedProperty: PropertyDefinition ): PropertyDefinitionList {
-	return new PropertyDefinitionList(
-		Array.from( currentSchema.value.getPropertyDefinitions() ).map(
-			function( property: PropertyDefinition ) {
-				return property.name.toString() === selectedPropertyName.value ? updatedProperty : property;
-			}
-		)
+	return currentSchema.value.withReplacedPropertyDefinition(
+		new PropertyName( name ),
+		updatedProperty
 	);
 }
 

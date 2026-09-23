@@ -7,7 +7,8 @@ import { SubjectId } from '@/domain/SubjectId.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
-import { newRelation, RelationValue } from '@/domain/Value.ts';
+import { newRelation, newStringValue, RelationValue } from '@/domain/Value.ts';
+import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
@@ -100,6 +101,7 @@ describe( 'SubjectEditorDialog', () => {
 		'TestSchema',
 		'A test schema',
 		new PropertyDefinitionList( [] ),
+		null,
 	);
 
 	const mockSubject = new Subject(
@@ -187,6 +189,7 @@ describe( 'SubjectEditorDialog', () => {
 			new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( propertyName, { type: TextType.typeName } ),
 			] ),
+			null,
 		);
 	}
 
@@ -1023,6 +1026,34 @@ describe( 'SubjectEditorDialog', () => {
 			);
 		} );
 
+		it( 'names a subject its Schema\'s template names by the label its fields give when the save succeeds', async () => {
+			const titledSchema = new Schema(
+				'TestSchema',
+				'A test schema',
+				new PropertyDefinitionList( [ createPropertyDefinitionFromJson( 'Name', { type: 'text' } ) ] ),
+				'{Name}',
+			);
+			const namedAda = new Subject(
+				mockSubject.getId(),
+				null,
+				'Ada',
+				false,
+				'TestSchema',
+				new StatementList( [ new Statement( new PropertyName( 'Name' ), 'text', newStringValue( 'Ada' ) ) ] ),
+			);
+			const onSave = vi.fn().mockResolvedValue( undefined );
+			const wrapper = mountComponent( false, validationTestStubs, onSave, titledSchema );
+			await wrapper.setProps( { subject: namedAda } );
+			await flushPromises();
+
+			editorStatementsBySchema = { TestSchema: [ new Statement( new PropertyName( 'Name' ), 'text', newStringValue( 'Grace' ) ) ] };
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-subject-editor-successGrace', { type: 'success' } );
+		} );
+
 		it( 'shows the display name as the placeholder for a label-less subject', async () => {
 			const wrapper = mountComponent( false, validationTestStubs );
 			await wrapper.setProps( { subject: labellessSubject } );
@@ -1137,6 +1168,7 @@ describe( 'SubjectEditorDialog', () => {
 			'Person',
 			'A person',
 			new PropertyDefinitionList( [] ),
+			null,
 		);
 
 		// The module-wide mockSchema declares no relation and mockSubject stores no target, so no
@@ -1147,6 +1179,7 @@ describe( 'SubjectEditorDialog', () => {
 			new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'Colleague', { type: 'relation', targetSchema: 'Person' } ),
 			] ),
+			null,
 		);
 
 		function colleagueStatement( ...targetIds: string[] ): Statement {
@@ -1170,6 +1203,31 @@ describe( 'SubjectEditorDialog', () => {
 		}
 
 		const relationRootSubject = rootSubjectWithTargets( 's22222222222222' );
+
+		function nameStatement( name: string ): Statement {
+			return new Statement( new PropertyName( 'Name' ), 'text', newStringValue( name ) );
+		}
+
+		// Names its Subjects by their Name, so a root Subject without a label of its own is named
+		// by what its form holds.
+		const templatedRootSchema = new Schema(
+			'TestSchema',
+			'A test schema',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Colleague', { type: 'relation', targetSchema: 'Person' } ),
+				createPropertyDefinitionFromJson( 'Name', { type: 'text' } ),
+			] ),
+			'{Name}',
+		);
+
+		const templateNamedRootSubject = new Subject(
+			mockSubject.getId(),
+			null,
+			'Alice',
+			false,
+			'TestSchema',
+			new StatementList( [ nameStatement( 'Alice' ), colleagueStatement( 's22222222222222' ) ] ),
+		);
 
 		// Through the list component rather than the root wrapper: the real Teleport moves the
 		// dialog out of the wrapper's own element.
@@ -2541,6 +2599,22 @@ describe( 'SubjectEditorDialog', () => {
 				expect( listRowLabel( wrapper, rootSubjectId ) ).toBe( 'Test Subject' );
 			} );
 
+			it( 'names the root subject\'s row by the label its template reads from the form', async () => {
+				useSubjectStore().setSubject( targetSubject( 's22222222222222', 'Target subject' ) );
+				editorStatementsBySchema = { TestSchema: [ ...templateNamedRootSubject.getStatements() ] };
+				const { wrapper } = await mountWithSecondPaneOpen( {
+					rootSchema: templatedRootSchema,
+					rootSubject: templateNamedRootSubject,
+				} );
+				expect( listRowLabel( wrapper, rootSubjectId ) ).toBe( 'Alice' );
+
+				editorStatementsBySchema = { TestSchema: [ nameStatement( 'Bob' ), colleagueStatement( 's22222222222222' ) ] };
+				wrapper.findComponent( SubjectEditPane ).findComponent( SubjectEditorStub ).vm.$emit( 'change' );
+				await nextTick();
+
+				expect( listRowLabel( wrapper, rootSubjectId ) ).toBe( 'Bob' );
+			} );
+
 			// A child Subject has no rename control of its own, but the pane that edits it already
 			// owns its label.
 			it( 'renames the row of a child subject its pane renames', async () => {
@@ -2585,11 +2659,16 @@ describe( 'SubjectEditorDialog', () => {
 			// of its own, so a draft can point at another draft; Employer ends the chain.
 			const personCreationSchema = new Schema( 'Person', 'A person', new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'Colleague', { type: 'relation', targetSchema: 'Employer' } ),
-			] ) );
-			const employerSchema = new Schema( 'Employer', 'An employer', new PropertyDefinitionList( [] ) );
+			] ), null );
+			const employerSchema = new Schema( 'Employer', 'An employer', new PropertyDefinitionList( [] ), null );
+			// Names its Subjects by their Name field, which is where a typed name then goes.
+			const painterSchema = new Schema( 'Painter', 'A painter', new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Name', { type: 'text' } ),
+			] ), 'Painter {Name}' );
 			const creationSchemas: Record<string, Schema> = {
 				Person: personCreationSchema,
 				Employer: employerSchema,
+				Painter: painterSchema,
 			};
 
 			// mockSubject is a bare Subject, which is a Subject with nowhere to store one made
@@ -2693,6 +2772,17 @@ describe( 'SubjectEditorDialog', () => {
 			function subjectIdsPassedTo( handler: Mock ): string[] {
 				return handler.mock.calls.map( ( call ) => ( call[ 0 ] as Subject ).getId().text );
 			}
+
+			// A label would outrank the template for good, a second way of naming a Subject its
+			// Schema already names. How the name is placed is the domain's; this is its wiring.
+			it( 'names a target of a Schema its template names by the field the template reads', async () => {
+				const { wrapper } = await mountReadyForCreation();
+
+				const created = await createTarget( wrapper, { schemaName: 'Painter', label: 'Rembrandt' } ) as Subject;
+
+				expect( created.getLabel() ).toBeNull();
+				expect( subjectDisplayName( created ) ).toBe( 'Painter Rembrandt' );
+			} );
 
 			beforeEach( () => {
 				// A Subject the server has never seen is validated as a creation, which the

@@ -35,6 +35,10 @@ const props = defineProps<{
 	subjects: readonly Subject[];
 	activeId: string;
 	unsavedIds: readonly string[];
+	// The name a Subject's pane shows for it, by Subject id, which follows the pane's form as it is
+	// edited. A Subject it does not name, such as one whose pane has yet to register, is named as it
+	// was read.
+	names: ReadonlyMap<string, string>;
 }>();
 
 const emit = defineEmits<{
@@ -48,7 +52,7 @@ function idOf( subject: Subject ): string {
 }
 
 function displayName( subject: Subject ): string {
-	return subjectDisplayName( subject );
+	return props.names.get( idOf( subject ) ) ?? subjectDisplayName( subject );
 }
 
 function isActive( subject: Subject ): boolean {

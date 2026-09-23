@@ -231,6 +231,7 @@ import { Schema } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import { namingPropertyName, templateLabel } from '@/domain/LabelTemplate.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import type { SubjectId } from '@/domain/SubjectId.ts';
 import type { SubjectRepository } from '@/domain/SubjectRepository.ts';
@@ -990,10 +991,17 @@ async function createOnNewPage(
 	// Re-decided on each attempt, so a label typed since the last one clears what it answered.
 	pageTitleError.value = null;
 
-	const pageTitle = chosenTitle ?? subject.getLabel();
+	// A Schema whose label template names its Subjects offers a Subject without a label no label field:
+	// the field the template names is what the user fills in, and what they are pointed at.
+	const schema = loadedSchema.value as Schema | null;
+	const namingProperty = schema === null || subject.getLabel() !== null ? null : namingPropertyName( schema );
+	const pageTitle = chosenTitle ?? subject.getLabel() ??
+		( schema === null ? null : templateLabel( schema, subject.getStatements() ) );
 
 	if ( pageTitle === null ) {
-		pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-required' );
+		pageTitleError.value = namingProperty === null ?
+			mw.msg( 'neowiki-subject-creator-page-title-required' ) :
+			mw.msg( 'neowiki-subject-creator-page-title-required-template', namingProperty );
 
 		throw new Error( pageTitleError.value );
 	}
@@ -1009,13 +1017,7 @@ async function createOnNewPage(
 		);
 	} catch ( error ) {
 		if ( error instanceof PageTitleTakenError ) {
-			// A fixed destination offers no other page and no title field: only the label can change.
-			pageTitleError.value = mw.msg(
-				pageFixed.value && chosenTitle === null ?
-					'neowiki-subject-creator-page-taken-fixed' :
-					'neowiki-subject-creator-page-taken',
-				error.pageTitle
-			);
+			pageTitleError.value = pageTakenMessage( error.pageTitle, chosenTitle, namingProperty );
 			throw new Error( pageTitleError.value );
 		}
 
@@ -1026,6 +1028,20 @@ async function createOnNewPage(
 
 		throw error;
 	}
+}
+
+/**
+ * A fixed destination offers no other page and no title field, so only the name can change: the label,
+ * or on a Schema whose template names the Subject, the field the template reads it from.
+ */
+function pageTakenMessage( pageTitle: string, chosenTitle: string | null, namingProperty: string | null ): string {
+	if ( !pageFixed.value || chosenTitle !== null ) {
+		return mw.msg( 'neowiki-subject-creator-page-taken', pageTitle );
+	}
+
+	return namingProperty === null ?
+		mw.msg( 'neowiki-subject-creator-page-taken-fixed', pageTitle ) :
+		mw.msg( 'neowiki-subject-creator-page-taken-fixed-template', pageTitle, namingProperty );
 }
 
 // Retyping the title is the answer to a title the server refused, whichever way it refused it.
