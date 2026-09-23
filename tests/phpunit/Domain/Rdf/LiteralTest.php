@@ -52,7 +52,7 @@ class LiteralTest extends TestCase {
 	}
 
 	/**
-	 * Kept as the author wrote it, where a MonolingualText part lowercases its tag.
+	 * The tag is kept as written; a MonolingualText part lowercases its own.
 	 */
 	public function testKeepsTheCaseOfAValidLanguageTag(): void {
 		$this->assertSame( 'en-US', ( new Literal( 'x', $this->xsd( 'string' ), 'en-US' ) )->languageTag );

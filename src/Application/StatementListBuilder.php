@@ -87,10 +87,11 @@ readonly class StatementListBuilder {
 		}
 
 		// The value types below declare what each shape accepts, so a value of the wrong shape
-		// arrives here as a TypeError, and one the shape cannot express — a malformed language tag,
-		// a Subject id of the wrong form — as an InvalidArgumentException. Every one of them comes
-		// from the caller's value, never from internal state, so they are reported as bad input
-		// rather than escaping as a server error, and under the one wording naming the property.
+		// arrives here as a TypeError, and one that fits the shape but not the type it names — a
+		// malformed language tag, a Subject or Relation id of the wrong form — as an
+		// InvalidArgumentException. Both are the caller's value being wrong, so both are reported as
+		// bad input under the one wording that names the property, rather than escaping as a server
+		// error or under a wording of the value type's own.
 		try {
 			return $this->newValue( $valueType, $propertyType, $value );
 		} catch ( TypeError | InvalidArgumentException $e ) {

@@ -4,23 +4,25 @@ import { setupMwMock } from '../VueTestHelpers.ts';
 
 describe( 'mediaWikiLanguages', () => {
 
-	beforeEach( () => {
-		setupMwMock( {
-			config: { wgUserLanguage: 'en' },
-			languageNames: { be: 'Belarusian', 'be-tarask': 'Belarusian (Taraskievica)', EU: 'Basque' },
-		} );
-	} );
-
 	describe( 'languageOptions', () => {
 
-		it( 'lowercases each tag', () => {
-			expect( languageOptions() ).toContainEqual( { tag: 'eu', name: 'Basque' } );
+		beforeEach( () => {
+			setupMwMock( {
+				config: { wgUserLanguage: 'en' },
+				languageNames: {
+					'be-tarask': 'Belarusian (Taraskievica)',
+					'be-x-old': 'Belarusian (old)',
+					EU: 'Basque',
+				},
+			} );
 		} );
 
-		// The real bcp47() maps several MediaWiki codes onto one tag, which is what this is for.
-		it( 'lists a tag once, under the first name given for it', () => {
-			expect( languageOptions().filter( ( option ) => option.tag === 'be' ) )
-				.toEqual( [ { tag: 'be', name: 'Belarusian' } ] );
+		// MediaWiki maps be-x-old onto be-tarask, so the two codes are one language here.
+		it( 'lists each tag once, lowercased, under the first name given for it', () => {
+			expect( languageOptions() ).toEqual( [
+				{ tag: 'be-tarask', name: 'Belarusian (Taraskievica)' },
+				{ tag: 'eu', name: 'Basque' },
+			] );
 		} );
 
 		it( 'lists nothing when MediaWiki has no table of language names', () => {
@@ -37,10 +39,12 @@ describe( 'mediaWikiLanguages', () => {
 
 	describe( 'userLanguageTag', () => {
 
-		it( 'reads the interface language as a tag', () => {
-			setupMwMock( { config: { wgUserLanguage: 'be-tarask' } } );
+		// MediaWiki's own code for the Simple English wiki is not a BCP 47 tag; setupMwMock's bcp47
+		// fake translates it as MediaWiki does.
+		it( 'translates the interface language code to its tag', () => {
+			setupMwMock( { config: { wgUserLanguage: 'simple' } } );
 
-			expect( userLanguageTag() ).toBe( 'be' );
+			expect( userLanguageTag() ).toBe( 'en-simple' );
 		} );
 
 	} );

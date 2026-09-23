@@ -201,20 +201,6 @@ class StatementListBuilderTest extends TestCase {
 		);
 	}
 
-	public function testMonolingualTextPartWithAMalformedLanguageIsRejected(): void {
-		$builder = $this->newBuilder();
-
-		$this->expectException( InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'Value of "Original title" does not fit property type "monolingualText"' );
-
-		$builder->build( [
-			'Original title' => [
-				'propertyType' => 'monolingualText',
-				'value' => [ [ 'text' => 'Zinema', 'language' => 'not a tag' ] ],
-			],
-		] );
-	}
-
 	/**
 	 * @dataProvider valueNotFittingItsTypeProvider
 	 */
@@ -222,7 +208,7 @@ class StatementListBuilderTest extends TestCase {
 		$builder = $this->newBuilder();
 
 		$this->expectException( InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'Mismatched' );
+		$this->expectExceptionMessage( "Value of \"Mismatched\" does not fit property type \"{$propertyType}\"" );
 
 		$builder->build( [ 'Mismatched' => [ 'propertyType' => $propertyType, 'value' => $value ] ] );
 	}
@@ -235,12 +221,21 @@ class StatementListBuilderTest extends TestCase {
 		yield 'relation given a scalar' => [ 'relation', 'sTargetIdWanted' ];
 		yield 'relation target missing' => [ 'relation', [ [ 'properties' => [] ] ] ];
 		yield 'relation given a list of bare target ids' => [ 'relation', [ 'sTargetIdWanted' ] ];
+		yield 'relation target of the wrong form' => [ 'relation', [ [ 'target' => 'not a subject id' ] ] ];
+		yield 'relation id of the wrong form' => [
+			'relation',
+			[ [ 'id' => 'not a relation id', 'target' => 's11111111111111' ] ],
+		];
 		yield 'monolingual text given a list of bare strings' => [ 'monolingualText', [ 'Zinema' ] ];
 		yield 'monolingual text part without a language' => [ 'monolingualText', [ [ 'text' => 'Zinema' ] ] ];
 		yield 'monolingual text part without a text' => [ 'monolingualText', [ [ 'language' => 'eu' ] ] ];
 		yield 'monolingual text part with a non-string text' => [
 			'monolingualText',
 			[ [ 'text' => 2019, 'language' => 'eu' ] ],
+		];
+		yield 'monolingual text part with a malformed language' => [
+			'monolingualText',
+			[ [ 'text' => 'Zinema', 'language' => 'not a tag' ] ],
 		];
 	}
 

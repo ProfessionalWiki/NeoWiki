@@ -32,6 +32,11 @@ describe( 'LanguagePicker', () => {
 		return picker.find( '.ext-neowiki-language-picker__panel' );
 	}
 
+	// What the control's aria-controls names, resolved the way a screen reader resolves it.
+	function controlledElement( control: DOMWrapper<Element> ): Element | null {
+		return document.getElementById( control.attributes( 'aria-controls' ) ?? '' );
+	}
+
 	function isOpen( picker: VueWrapper ): boolean {
 		return button( picker ).attributes( 'aria-expanded' ) === 'true';
 	}
@@ -160,9 +165,8 @@ describe( 'LanguagePicker', () => {
 
 		await openPicker( picker );
 
-		expect( button( picker ).attributes( 'aria-controls' ) ).toBe( panel( picker ).attributes( 'id' ) );
-		expect( search( picker ).attributes( 'aria-controls' ) )
-			.toBe( picker.find( '.cdx-menu__listbox' ).attributes( 'id' ) );
+		expect( controlledElement( button( picker ) ) ).toBe( panel( picker ).element );
+		expect( controlledElement( search( picker ) ) ).toBe( picker.find( '.cdx-menu__listbox' ).element );
 	} );
 
 	it( 'opens its languages with the focus in their search field', async () => {
@@ -188,9 +192,9 @@ describe( 'LanguagePicker', () => {
 	} );
 
 	it.each( [
-		[ 'its name', 'Ido', 'Ido' ],
-		[ 'its tag', 'eu', 'Basque' ],
-	] )( 'lists the language %s names, and no tag of its own', async ( _what, typed, listed ) => {
+		[ 'Ido', 'Ido' ],
+		[ 'eu', 'Basque' ],
+	] )( 'lists the language %s names, and no tag of its own', async ( typed, listed ) => {
 		useLanguages( { en: 'English', eu: 'Basque', io: 'Ido' } );
 		const picker = newWrapper( 'en' );
 
@@ -220,7 +224,6 @@ describe( 'LanguagePicker', () => {
 
 	it( 'lists the language a MediaWiki code stands for', async () => {
 		useLanguages( { als: 'Alemannisch', en: 'English' } );
-		mw.language.bcp47 = vi.fn( ( code: string ) => code === 'als' ? 'gsw' : code );
 		const picker = newWrapper( 'en' );
 
 		await openPicker( picker );
@@ -405,12 +408,8 @@ describe( 'LanguagePicker', () => {
 	} );
 
 	// Enough of the list is on show to browse, and the panel never outgrows the dialog it opens in.
-	it( 'scrolls its list once it passes the entries it shows at once', async () => {
-		const picker = newWrapper( 'en' );
-
-		await openPicker( picker );
-
-		expect( picker.findComponent( CdxMenu ).props( 'visibleItemLimit' ) ).toBe( 8 );
+	it( 'caps how many entries its list shows at once', () => {
+		expect( newWrapper( 'en' ).findComponent( CdxMenu ).props( 'visibleItemLimit' ) ).toBe( 8 );
 	} );
 
 	it( 'keeps its list out of the tab order', async () => {

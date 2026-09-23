@@ -19,23 +19,6 @@ class MonolingualTextValueTest extends TestCase {
 		$this->assertSame( ValueType::MonolingualText, ( new MonolingualTextValue() )->getType() );
 	}
 
-	public function testToScalarsGivesOneObjectPerPart(): void {
-		$this->assertSame(
-			[
-				[ 'text' => 'Zinema', 'language' => 'eu' ],
-				[ 'text' => 'Cine', 'language' => 'es' ],
-			],
-			$this->newZinemaAndCineValue()->toScalars()
-		);
-	}
-
-	private function newZinemaAndCineValue(): MonolingualTextValue {
-		return new MonolingualTextValue(
-			new MonolingualText( 'Zinema', 'eu' ),
-			new MonolingualText( 'Cine', 'es' ),
-		);
-	}
-
 	/**
 	 * @dataProvider contentlessPartsProvider
 	 */
@@ -82,7 +65,12 @@ class MonolingualTextValueTest extends TestCase {
 	}
 
 	public function testGetTextsGivesTheTextOfEachPart(): void {
-		$this->assertSame( [ 'Zinema', 'Cine' ], $this->newZinemaAndCineValue()->getTexts() );
+		$value = new MonolingualTextValue(
+			new MonolingualText( 'Zinema', 'eu' ),
+			new MonolingualText( 'Cine', 'es' ),
+		);
+
+		$this->assertSame( [ 'Zinema', 'Cine' ], $value->getTexts() );
 	}
 
 	public function testFromScalarsReadsBackWhatToScalarsWrote(): void {

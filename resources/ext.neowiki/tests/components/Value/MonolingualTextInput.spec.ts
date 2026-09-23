@@ -145,22 +145,15 @@ describe( 'MonolingualTextInput', () => {
 		expect( languageButtons( wrapper ).map( ( button ) => button.text() ) ).toEqual( [ 'EU', 'ES', 'EN' ] );
 	} );
 
-	it( 'names each row\'s language button after the row it belongs to', () => {
-		const wrapper = newWrapper( {
-			modelValue: newMonolingualTextValue( [ { text: 'Zinema', language: 'eu' } ] ),
-		} );
-
-		expect( languageButtons( wrapper ).map( ( button ) => button.attributes( 'aria-label' ) ) )
-			.toEqual( [ 'Original title language 1: Basque (eu)', 'Original title language 2: English (en)' ] );
-	} );
-
-	it( 'names each row\'s text field after the row it belongs to', () => {
+	it( 'names both of a row\'s fields after the row they belong to', () => {
 		const wrapper = newWrapper( {
 			modelValue: newMonolingualTextValue( [ { text: 'Zinema', language: 'eu' } ] ),
 		} );
 
 		expect( textInputs( wrapper ).map( ( input ) => input.attributes( 'aria-label' ) ) )
 			.toEqual( [ 'Original title text 1', 'Original title text 2' ] );
+		expect( languageButtons( wrapper ).map( ( button ) => button.attributes( 'aria-label' ) ) )
+			.toEqual( [ 'Original title language 1: Basque (eu)', 'Original title language 2: English (en)' ] );
 	} );
 
 	it( 'emits a typed text tagged with the language the wiki is written in', async () => {
@@ -214,12 +207,13 @@ describe( 'MonolingualTextInput', () => {
 		expect( textValues( wrapper ) ).toEqual( [ '', 'Cine', '' ] );
 	} );
 
-	it( 'drops the trailing row once the property it edits becomes single-valued', async () => {
+	it( 'drops the trailing row once the property becomes single-valued, keeping what is being typed', async () => {
 		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Zinema', language: 'eu' } ] ) } );
 
+		await textInputs( wrapper )[ 1 ].setValue( 'Cine' );
 		await wrapper.setProps( { property: singleValued } );
 
-		expect( textValues( wrapper ) ).toEqual( [ 'Zinema' ] );
+		expect( textValues( wrapper ) ).toEqual( [ 'Zinema', 'Cine' ] );
 	} );
 
 	it( 'opens no further row for a text that is only spaces', async () => {
@@ -446,6 +440,16 @@ describe( 'MonolingualTextInput', () => {
 
 		expect( rowMessages( wrapper ) ).toEqual( [ 'neowiki-field-min-length3', undefined ] );
 		expect( wrapper.text().match( /neowiki-field-min-length3/g ) ).toHaveLength( 1 );
+	} );
+
+	it( 'shows a violation that names no part under the whole field', () => {
+		const wrapper = newWrapper( {
+			serverViolations: [
+				{ propertyName: 'Original title', code: 'required', args: [], severity: 'error', valuePartIndex: null },
+			],
+		} );
+
+		expect( wrapper.text() ).toContain( 'neowiki-field-required' );
 	} );
 
 	it( 'shows a single-valued property its violation once, under the field', () => {

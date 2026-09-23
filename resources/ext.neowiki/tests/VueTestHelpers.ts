@@ -99,12 +99,14 @@ export const CdxDialogStub = {
 };
 
 /**
- * What MediaWiki's own bcp47() translates: a MediaWiki code that is not a BCP 47 tag, sometimes
- * several of them onto one tag. Two is enough for a spec to tell a translated code from one passed
- * straight through, which a pass-through fake hides; every other code passes through.
+ * What MediaWiki's own bcp47() translates, from its own table: a MediaWiki code that is not a BCP 47
+ * tag, and in `be-x-old`'s case one that lands on a tag another code already carries. A few are
+ * enough for a spec to tell a translated code from one passed straight through, which a pass-through
+ * fake hides; every other code passes through.
  */
 const BCP_47_TAGS: Record<string, string> = {
-	'be-tarask': 'be',
+	als: 'gsw',
+	'be-x-old': 'be-tarask',
 	simple: 'en-simple',
 };
 

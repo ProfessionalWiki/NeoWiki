@@ -15,7 +15,6 @@ use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualText;
 use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\MonolingualTextType
@@ -304,7 +303,7 @@ class MonolingualTextTypeValidateTest extends TestCase {
 	 */
 	private function newAnnotatedProperty( array $constraints ): PropertyDefinition {
 		return PropertyDefinition::fromJson(
-			$constraints + [ 'type' => 'monolingualText', 'multiple' => true ],
+			array_merge( [ 'type' => 'monolingualText', 'multiple' => true ], $constraints ),
 			PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 		);
 	}
