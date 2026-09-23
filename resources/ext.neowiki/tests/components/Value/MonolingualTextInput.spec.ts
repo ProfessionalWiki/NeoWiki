@@ -272,7 +272,16 @@ describe( 'MonolingualTextInput', () => {
 		expect( textValues( wrapper ) ).toEqual( [ 'Zinema', 'Cine', '' ] );
 	} );
 
-	it( 'keeps a cleared row while focus is in the languages its button opened', async () => {
+	// The button as well as the panel: on Safari a pressed button does not take the focus, so a row
+	// kept only for the fields inside it would be dropped before the click reached the picker.
+	it.each( [
+		[ 'its language button', ( wrapper: VueWrapper ): Element => languageButtons( wrapper )[ 0 ].element ],
+		[
+			'the languages that button opened',
+			( wrapper: VueWrapper ): Element =>
+				rowElements( wrapper )[ 0 ].find( '.ext-neowiki-language-picker__search input' ).element,
+		],
+	] )( 'keeps a cleared row while focus is on %s', async ( _where, focused ) => {
 		const wrapper = newWrapper( {
 			modelValue: newMonolingualTextValue( [
 				{ text: 'Zinema', language: 'eu' },
@@ -282,11 +291,7 @@ describe( 'MonolingualTextInput', () => {
 
 		await textInputs( wrapper )[ 0 ].setValue( '' );
 		await languageButtons( wrapper )[ 0 ].trigger( 'click' );
-		await leaveRow(
-			wrapper,
-			0,
-			rowElements( wrapper )[ 0 ].find( '.ext-neowiki-language-picker__search input' ).element,
-		);
+		await leaveRow( wrapper, 0, focused( wrapper ) );
 
 		expect( textValues( wrapper ) ).toEqual( [ '', 'Cine', '' ] );
 	} );

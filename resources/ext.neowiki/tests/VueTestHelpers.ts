@@ -184,7 +184,7 @@ export function setupMwMock(
 			},
 		} ),
 		language: () => ( {
-			bcp47: vi.fn( ( code: string ) => BCP_47_TAGS[ code ] ?? code ),
+			bcp47: vi.fn( ( code: string ) => BCP_47_TAGS[ code.toLowerCase() ] ?? code ),
 			getData: vi.fn(
 				( _langCode: string, dataKey: string ) => dataKey === 'languageNames' ? customLanguageNames : undefined,
 			),

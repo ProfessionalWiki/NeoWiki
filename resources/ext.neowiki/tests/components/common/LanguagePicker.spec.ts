@@ -230,6 +230,7 @@ describe( 'LanguagePicker', () => {
 		await type( picker, 'als' );
 
 		expect( listedLanguages( picker ) ).toEqual( [ 'Alemannisch' ] );
+		expect( listedTags( picker ) ).toEqual( [ 'GSW' ] );
 	} );
 
 	it( 'offers a typed tag alongside the languages whose name it only starts', async () => {
@@ -412,6 +413,18 @@ describe( 'LanguagePicker', () => {
 		expect( newWrapper( 'en' ).findComponent( CdxMenu ).props( 'visibleItemLimit' ) ).toBe( 8 );
 	} );
 
+	// Keyed on the search text, the menu would be torn down and built again on every keystroke,
+	// taking with it the entry the arrow keys had reached.
+	it( 'keeps the same list through typing', async () => {
+		const picker = newWrapper( 'en' );
+
+		await openPicker( picker );
+		const menu = picker.findComponent( CdxMenu ).element;
+		await type( picker, 'B' );
+
+		expect( picker.findComponent( CdxMenu ).element ).toBe( menu );
+	} );
+
 	it( 'keeps its list out of the tab order', async () => {
 		const picker = newWrapper( 'en' );
 
@@ -445,6 +458,17 @@ describe( 'LanguagePicker', () => {
 		await pressKey( 'ArrowDown' );
 		await picker.findComponent( CdxMenu ).vm.$emit( 'load-more' );
 		await picker.vm.$nextTick();
+		const highlighted = picker.find( '.cdx-menu-item--highlighted' );
+
+		expect( highlighted.exists() ).toBe( true );
+		expect( search( picker ).attributes( 'aria-activedescendant' ) ).toBe( highlighted.attributes( 'id' ) );
+	} );
+
+	it( 'points its search field at the entry the arrow keys reach, for a screen reader', async () => {
+		const picker = newWrapper( 'en' );
+
+		await openPicker( picker );
+		await pressKey( 'ArrowDown' );
 		const highlighted = picker.find( '.cdx-menu-item--highlighted' );
 
 		expect( highlighted.exists() ).toBe( true );

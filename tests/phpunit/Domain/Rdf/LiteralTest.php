@@ -60,12 +60,19 @@ class LiteralTest extends TestCase {
 
 	/**
 	 * A non-null language tag is a domain invariant: an out-of-shape tag (which could smuggle a `"` or a
-	 * datatype into the serialized `"lexical"@tag` form) is rejected at construction. Which shapes those
-	 * are is MonolingualTextTest's; that this constructor checks at all is here.
+	 * datatype into the serialized `"lexical"@tag` form) is rejected at construction. The full catalogue
+	 * of shapes is MonolingualTextTest's; that this constructor applies the same rule is here.
+	 *
+	 * @dataProvider invalidLanguageTagProvider
 	 */
-	public function testRejectsAnInvalidLanguageTag(): void {
+	public function testRejectsAnInvalidLanguageTag( string $tag ): void {
 		$this->expectException( InvalidArgumentException::class );
-		new Literal( 'x', $this->xsd( 'string' ), 'en"^^xsd:evil' );
+		new Literal( 'x', $this->xsd( 'string' ), $tag );
+	}
+
+	public static function invalidLanguageTagProvider(): iterable {
+		yield 'underscore separator' => [ 'en_US' ];
+		yield 'datatype injection' => [ 'en"^^xsd:evil' ];
 	}
 
 }

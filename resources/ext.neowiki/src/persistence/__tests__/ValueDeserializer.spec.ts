@@ -78,6 +78,7 @@ describe( 'ValueDeserializer', () => {
 		[ 'is not an object', [ 'Zinema' ] ],
 		[ 'carries no language', [ { text: 'Zinema' } ] ],
 		[ 'carries a text that is not a string', [ { text: 2019, language: 'eu' } ] ],
+		[ 'is broken while the part beside it is not', [ { text: 'Zinema', language: 'eu' }, 'Cine' ] ],
 	] )( 'throws on a monolingual text part that %s', ( _what, json ) => {
 		expect( () => deserializer.deserialize( json, 'monolingualText' ) )
 			.toThrow( 'Invalid monolingual text value' );

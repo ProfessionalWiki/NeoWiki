@@ -22,6 +22,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\ValueType;
 use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
+use Throwable;
 use TypeError;
 
 readonly class StatementListBuilder {
@@ -86,21 +87,33 @@ readonly class StatementListBuilder {
 			);
 		}
 
-		// The value types below declare what each shape accepts, so a value of the wrong shape
-		// arrives here as a TypeError, and one that fits the shape but not the type it names — a
-		// malformed language tag, a Subject or Relation id of the wrong form — as an
-		// InvalidArgumentException. Both are the caller's value being wrong, so both are reported as
-		// bad input under the one wording that names the property, rather than escaping as a server
-		// error or under a wording of the value type's own.
+		// A value of the wrong shape arrives here as a TypeError, one of the right shape but the wrong
+		// form (a malformed language tag, a Subject or Relation id) as an InvalidArgumentException. Both
+		// are the caller's value being wrong, so both are reported as bad input naming the property.
+		// Only the InvalidArgumentException's text is passed on: it says which rule the value broke,
+		// where PHP's TypeError text names internal signatures.
 		try {
 			return $this->newValue( $valueType, $propertyType, $value );
-		} catch ( TypeError | InvalidArgumentException $e ) {
-			throw new InvalidArgumentException(
-				"Value of \"{$propertyName}\" does not fit property type \"{$propertyType}\"",
-				0,
-				$e
-			);
+		} catch ( TypeError $e ) {
+			throw $this->badValue( $propertyName, $propertyType, null, $e );
+		} catch ( InvalidArgumentException $e ) {
+			throw $this->badValue( $propertyName, $propertyType, $e->getMessage(), $e );
 		}
+	}
+
+	private function badValue(
+		string $propertyName,
+		string $propertyType,
+		?string $reason,
+		Throwable $previous
+	): InvalidArgumentException {
+		$message = "Value of \"{$propertyName}\" does not fit property type \"{$propertyType}\"";
+
+		return new InvalidArgumentException(
+			$reason === null ? $message : "{$message}: {$reason}",
+			0,
+			$previous
+		);
 	}
 
 	private function newValue( ValueType $valueType, string $propertyType, mixed $value ): NeoValue {

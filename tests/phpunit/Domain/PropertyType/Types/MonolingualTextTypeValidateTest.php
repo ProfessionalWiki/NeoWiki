@@ -149,9 +149,10 @@ class MonolingualTextTypeValidateTest extends TestCase {
 		$this->assertSame( 1, $violations[0]->valuePartIndex );
 	}
 
+	// Four characters in five bytes, so a byte count in place of a character count is caught too.
 	public function testValueOnBothLengthBoundsProducesNoViolation(): void {
 		$violations = $this->type->validate(
-			new MonolingualTextValue( new MonolingualText( 'Cine', 'es' ) ),
+			new MonolingualTextValue( new MonolingualText( 'Ciné', 'fr' ) ),
 			$this->newProperty( required: false, minLength: 4, maxLength: 4 )
 		);
 
@@ -177,9 +178,9 @@ class MonolingualTextTypeValidateTest extends TestCase {
 			$this->newProperty( required: false, uniqueItems: true, minLength: 3 ),
 		);
 
-		$this->assertSame(
-			[ 'min-length', 'min-length', 'unique' ],
-			array_column( $violations, 'code' )
+		$this->assertEquals(
+			[ 'min-length' => 2, 'unique' => 1 ],
+			array_count_values( array_column( $violations, 'code' ) )
 		);
 	}
 

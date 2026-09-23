@@ -78,7 +78,11 @@ describe( 'MonolingualTextDisplay', () => {
 	it( 'falls back to the content language once the interface language chain runs out', () => {
 		readsIn( 'de', 'eu' );
 
-		expect( shownTexts( newWrapperFor( CINE, ZINEMA ) ) ).toEqual( [ 'Zinema' ] );
+		const wrapper = newWrapperFor( CINE, ZINEMA );
+
+		expect( shownTexts( wrapper ) ).toEqual( [ 'Zinema' ] );
+		// Tagged, the part not being in the language the reader is reading the interface in.
+		expect( shownTags( wrapper ) ).toEqual( [ 'EU' ] );
 	} );
 
 	it( 'names the language of a tagged part for anyone who cannot place the tag', () => {
@@ -133,6 +137,7 @@ describe( 'MonolingualTextDisplay', () => {
 	it( 'reveals the other parts, tagged, with the link after them', async () => {
 		const wrapper = newWrapperFor( CINEMA, KINO, ZINEMA );
 
+		expect( toggle( wrapper ).text() ).toBe( '2 more languages' );
 		expect( toggle( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'false' );
 
 		await toggle( wrapper ).trigger( 'click' );

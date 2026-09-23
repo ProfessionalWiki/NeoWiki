@@ -202,6 +202,25 @@ class StatementListBuilderTest extends TestCase {
 	}
 
 	/**
+	 * A domain message names the rule the value broke, which the property name alone does not.
+	 */
+	public function testRejectionKeepsTheReasonTheValueWasRejectedFor(): void {
+		$builder = $this->newBuilder();
+
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage(
+			'Value of "Original title" does not fit property type "monolingualText": Invalid language tag: "not a tag".'
+		);
+
+		$builder->build( [
+			'Original title' => [
+				'propertyType' => 'monolingualText',
+				'value' => [ [ 'text' => 'Zinema', 'language' => 'not a tag' ] ],
+			],
+		] );
+	}
+
+	/**
 	 * @dataProvider valueNotFittingItsTypeProvider
 	 */
 	public function testValueNotFittingItsPropertyTypeIsRejected( string $propertyType, mixed $value ): void {
