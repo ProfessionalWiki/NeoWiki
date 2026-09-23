@@ -4,9 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\PropertyType\Types;
 
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
@@ -21,11 +22,11 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 class RelationTypeTest extends TestCase {
 
 	public function testDisplayAttributeNamesIsEmpty(): void {
-		$this->assertSame( [], ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->getDisplayAttributeNames() );
+		$this->assertSame( [], ( new RelationType( TestSources::newSchemaReferenceParser() ) )->getDisplayAttributeNames() );
 	}
 
 	public function testSingleValuePropertyWithTwoTargetsReturnsSingleValueOnly(): void {
-		$violations = ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->validate(
+		$violations = ( new RelationType( TestSources::newSchemaReferenceParser() ) )->validate(
 			new RelationValue(
 				TestRelation::build( targetId: 'srt111111111aaa' ),
 				TestRelation::build( targetId: 'srt111111111bbb' ),
@@ -39,7 +40,7 @@ class RelationTypeTest extends TestCase {
 	}
 
 	public function testSingleValueOnlyDefaultsToWarning(): void {
-		$violations = ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->validate(
+		$violations = ( new RelationType( TestSources::newSchemaReferenceParser() ) )->validate(
 			new RelationValue(
 				TestRelation::build( targetId: 'srt111111111aaa' ),
 				TestRelation::build( targetId: 'srt111111111bbb' ),
@@ -51,7 +52,7 @@ class RelationTypeTest extends TestCase {
 	}
 
 	public function testSingleValueOnlyUsesErrorWhenMultipleAnnotated(): void {
-		$violations = ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->validate(
+		$violations = ( new RelationType( TestSources::newSchemaReferenceParser() ) )->validate(
 			new RelationValue(
 				TestRelation::build( targetId: 'srt111111111aaa' ),
 				TestRelation::build( targetId: 'srt111111111bbb' ),
@@ -65,7 +66,7 @@ class RelationTypeTest extends TestCase {
 	}
 
 	public function testMultiValuePropertyWithTwoTargetsReturnsNoViolation(): void {
-		$this->assertSame( [], ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->validate(
+		$this->assertSame( [], ( new RelationType( TestSources::newSchemaReferenceParser() ) )->validate(
 			new RelationValue(
 				TestRelation::build( targetId: 'srt111111111aaa' ),
 				TestRelation::build( targetId: 'srt111111111bbb' ),
@@ -75,14 +76,14 @@ class RelationTypeTest extends TestCase {
 	}
 
 	public function testSingleValuePropertyWithOneTargetReturnsNoViolation(): void {
-		$this->assertSame( [], ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->validate(
+		$this->assertSame( [], ( new RelationType( TestSources::newSchemaReferenceParser() ) )->validate(
 			new RelationValue( TestRelation::build( targetId: 'srt111111111aaa' ) ),
 			$this->newRelationProperty( multiple: false ),
 		) );
 	}
 
 	public function testRequiredPropertyWithoutTargetsReturnsRequired(): void {
-		$violations = ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->validate(
+		$violations = ( new RelationType( TestSources::newSchemaReferenceParser() ) )->validate(
 			new RelationValue(),
 			$this->newRelationProperty( multiple: false, required: true ),
 		);
@@ -95,7 +96,7 @@ class RelationTypeTest extends TestCase {
 		// `multiple` is optional in the Schema JSON and defaults to false, so a relation property
 		// authored or imported without the key is single-valued. Pinned here because that default
 		// is what decides whether the violation fires at all, not the validation.
-		$violations = ( new RelationType( TestSubjectIds::LOCAL_SOURCE_KEY ) )->validate(
+		$violations = ( new RelationType( TestSources::newSchemaReferenceParser() ) )->validate(
 			new RelationValue(
 				TestRelation::build( targetId: 'srt111111111aaa' ),
 				TestRelation::build( targetId: 'srt111111111bbb' ),
@@ -107,11 +108,29 @@ class RelationTypeTest extends TestCase {
 		$this->assertSame( 'single-value-only', $violations[0]->code );
 	}
 
+	/**
+	 * A targetSchema is a Schema reference like the one on a Subject, so several spellings name one
+	 * Schema. Left as written it would not match the Subject it points at, whose own reference is
+	 * normalized, and every relation to that Subject would be reported as the wrong target type.
+	 */
+	public function testTargetSchemaIsReadAsTheNameOfTheSchemaItNames(): void {
+		$property = ( new RelationType( TestSources::newSchemaReferenceParser( [ 'person' => 'Person' ] ) ) )
+			->buildPropertyDefinitionFromJson(
+				new PropertyCore( description: '', required: false, default: null ),
+				[ 'relation' => 'has', 'targetSchema' => 'person' ]
+			);
+
+		$this->assertEquals(
+			SchemaReference::local( new SchemaName( 'Person' ) ),
+			$property->getTargetSchema()
+		);
+	}
+
 	private function newRelationProperty( bool $multiple, bool $required = false ): RelationProperty {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: $required, default: null ),
 			[ 'relation' => 'has', 'targetSchema' => 'Person', 'multiple' => $multiple ],
-			TestSubjectIds::LOCAL_SOURCE_KEY,
+			TestSources::newSchemaReferenceParser(),
 		);
 	}
 
@@ -123,7 +142,7 @@ class RelationTypeTest extends TestCase {
 				'targetSchema' => 'Person',
 				'multiple' => [ 'value' => false, 'severity' => 'error' ],
 			],
-			PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			TestSources::newPropertyTypeRegistry(),
 		);
 	}
 
@@ -131,7 +150,7 @@ class RelationTypeTest extends TestCase {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: false, default: null ),
 			[ 'relation' => 'has', 'targetSchema' => 'Person' ],
-			TestSubjectIds::LOCAL_SOURCE_KEY,
+			TestSources::newSchemaReferenceParser(),
 		);
 	}
 

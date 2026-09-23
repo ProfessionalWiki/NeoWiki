@@ -8,6 +8,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType as RelationPropertyType;
 
 class RelationProperty extends PropertyDefinition {
@@ -38,11 +39,11 @@ class RelationProperty extends PropertyDefinition {
 		return $this->multiple;
 	}
 
-	public static function fromPartialJson( PropertyCore $core, array $property, string $localSourceKey ): self {
+	public static function fromPartialJson( PropertyCore $core, array $property, SchemaReferenceParser $schemaReferenceParser ): self {
 		return new self(
 			core: $core,
 			relationType: new RelationType( $property['relation'] ?? null ), // Required field, constructor throws on null
-			targetSchema: SchemaReference::fromJson( $property['targetSchema'] ?? '', $localSourceKey ), // Required field, SchemaName throws on empty
+			targetSchema: $schemaReferenceParser->fromJson( $property['targetSchema'] ?? '' ), // Required field, SchemaName throws on empty
 			multiple: $property['multiple'] ?? false,
 		);
 	}

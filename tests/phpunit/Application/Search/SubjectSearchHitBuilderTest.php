@@ -310,7 +310,7 @@ class SubjectSearchHitBuilderTest extends TestCase {
 	private function newBuilder(): SubjectSearchHitBuilder {
 		return new SubjectSearchHitBuilder(
 			new SubjectSearchTextBuilder(
-				PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+				PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
 				TestSources::newSchemaResolver()
 			)
 		);
