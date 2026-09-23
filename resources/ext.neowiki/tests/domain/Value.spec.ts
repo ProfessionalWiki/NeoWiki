@@ -167,7 +167,10 @@ describe( 'newMonolingualTextValue', () => {
 			{ text: 'Pelicula', language: 'es' },
 		] );
 
-		expect( value.parts ).toHaveLength( 2 );
+		expect( value.parts ).toEqual( [
+			{ text: 'Cine', language: 'es' },
+			{ text: 'Pelicula', language: 'es' },
+		] );
 	} );
 
 } );

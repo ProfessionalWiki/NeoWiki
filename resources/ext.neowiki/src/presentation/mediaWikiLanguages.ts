@@ -8,7 +8,7 @@ export interface LanguageOption {
 /**
  * The stored form of a language: the BCP 47 tag of a MediaWiki language code, lowercased.
  */
-export function toLanguageTag( code: string ): string {
+function toLanguageTag( code: string ): string {
 	return mw.language.bcp47( code ).toLowerCase();
 }
 

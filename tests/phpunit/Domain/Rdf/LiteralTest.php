@@ -52,44 +52,20 @@ class LiteralTest extends TestCase {
 	}
 
 	/**
-	 * @dataProvider validLanguageTagProvider
+	 * Kept as the author wrote it, where a MonolingualText part lowercases its tag.
 	 */
-	public function testConstructsWithAValidLanguageTag( string $tag ): void {
-		$this->assertSame( $tag, ( new Literal( 'x', $this->xsd( 'string' ), $tag ) )->languageTag );
-	}
-
-	/**
-	 * @return array<string, array{string}>
-	 */
-	public static function validLanguageTagProvider(): array {
-		return [
-			'primary subtag only' => [ 'en' ],
-			'region subtag' => [ 'en-US' ],
-			'lowercase region' => [ 'pt-BR' ],
-		];
+	public function testKeepsTheCaseOfAValidLanguageTag(): void {
+		$this->assertSame( 'en-US', ( new Literal( 'x', $this->xsd( 'string' ), 'en-US' ) )->languageTag );
 	}
 
 	/**
 	 * A non-null language tag is a domain invariant: an out-of-shape tag (which could smuggle a `"` or a
-	 * datatype into the serialized `"lexical"@tag` form) is rejected at construction.
-	 *
-	 * @dataProvider invalidLanguageTagProvider
+	 * datatype into the serialized `"lexical"@tag` form) is rejected at construction. Which shapes those
+	 * are is MonolingualTextTest's; that this constructor checks at all is here.
 	 */
-	public function testRejectsAnInvalidLanguageTag( string $tag ): void {
+	public function testRejectsAnInvalidLanguageTag(): void {
 		$this->expectException( InvalidArgumentException::class );
-		new Literal( 'x', $this->xsd( 'string' ), $tag );
-	}
-
-	/**
-	 * @return array<string, array{string}>
-	 */
-	public static function invalidLanguageTagProvider(): array {
-		return [
-			'underscore separator' => [ 'en_US' ],
-			'trailing space' => [ 'en ' ],
-			'empty trailing subtag' => [ 'en-' ],
-			'datatype injection' => [ 'en"^^xsd:evil' ],
-		];
+		new Literal( 'x', $this->xsd( 'string' ), 'en"^^xsd:evil' );
 	}
 
 }

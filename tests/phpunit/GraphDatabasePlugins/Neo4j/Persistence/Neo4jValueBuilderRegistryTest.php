@@ -97,6 +97,16 @@ class Neo4jValueBuilderRegistryTest extends TestCase {
 		);
 	}
 
+	// The tag goes on the end whatever the text holds, which is why a reader splits on the last `@`.
+	public function testMonolingualTextBuilderTagsATextThatItselfHoldsAnAtSign(): void {
+		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
+
+		$this->assertSame(
+			[ 'a@b@eu' ],
+			$registry->buildNeo4jValue( 'monolingualText', new MonolingualTextValue( new MonolingualText( 'a@b', 'eu' ) ) )
+		);
+	}
+
 	public function testMonolingualTextBuilderGivenAnotherValueTypeBuildsNothing(): void {
 		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
 

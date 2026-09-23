@@ -1,10 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { MonolingualTextType } from '@/domain/propertyTypes/MonolingualText';
 import { PropertyName } from '@/domain/PropertyDefinition';
+import { newMonolingualTextValue } from '@/domain/Value';
 
 describe( 'MonolingualTextType', () => {
 	const type = new MonolingualTextType();
 	const base = { name: new PropertyName( 'Title' ), type: 'monolingualText', description: '', required: false };
+
+	it( 'has no display attributes', () => {
+		expect( type.getDisplayAttributeNames() ).toEqual( [] );
+	} );
+
+	it( 'provides a monolingual text example value', () => {
+		expect( type.getExampleValue() )
+			.toStrictEqual( newMonolingualTextValue( [ { text: 'Some Text', language: 'en' } ] ) );
+	} );
 
 	it( 'reads a single-valued property that allows repeated parts when the JSON sets neither', () => {
 		const property = type.createPropertyDefinitionFromJson( base, { type: 'monolingualText' } );

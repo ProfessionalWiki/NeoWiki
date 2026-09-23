@@ -19,6 +19,7 @@
 			<div
 				v-for="( view, index ) in rowViews"
 				:key="view.row.id"
+				class="ext-neowiki-monolingual-text-input__row"
 				@focusout="onRowFocusOut( index, $event )"
 			>
 				<div class="ext-neowiki-monolingual-text-input__field">

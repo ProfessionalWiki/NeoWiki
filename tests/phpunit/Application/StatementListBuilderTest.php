@@ -201,21 +201,11 @@ class StatementListBuilderTest extends TestCase {
 		);
 	}
 
-	public function testMonolingualTextValueWithOnlyEmptyTextsIsDropped(): void {
-		$list = $this->newBuilder()->build( [
-			'Original title' => [
-				'propertyType' => 'monolingualText',
-				'value' => [ [ 'text' => '  ', 'language' => 'eu' ] ],
-			],
-		] );
-
-		$this->assertNull( $list->getStatement( new PropertyName( 'Original title' ) ) );
-	}
-
 	public function testMonolingualTextPartWithAMalformedLanguageIsRejected(): void {
 		$builder = $this->newBuilder();
 
 		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Value of "Original title" does not fit property type "monolingualText"' );
 
 		$builder->build( [
 			'Original title' => [

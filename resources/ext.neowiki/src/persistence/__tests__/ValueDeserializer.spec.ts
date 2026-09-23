@@ -74,9 +74,13 @@ describe( 'ValueDeserializer', () => {
 			.toThrow( 'Invalid monolingual text value: {"text":"Zinema"}' );
 	} );
 
-	it( 'throws on a monolingual text part that is not a text with a language', () => {
-		expect( () => deserializer.deserialize( [ 'Zinema' ], 'monolingualText' ) )
-			.toThrow( 'Invalid monolingual text value: ["Zinema"]' );
+	it.each<[ string, unknown ]>( [
+		[ 'is not an object', [ 'Zinema' ] ],
+		[ 'carries no language', [ { text: 'Zinema' } ] ],
+		[ 'carries a text that is not a string', [ { text: 2019, language: 'eu' } ] ],
+	] )( 'throws on a monolingual text part that %s', ( _what, json ) => {
+		expect( () => deserializer.deserialize( json, 'monolingualText' ) )
+			.toThrow( 'Invalid monolingual text value' );
 	} );
 
 	it( 'wraps a value of an unregistered type as an UnregisteredTypeValue, preserving the raw data', () => {

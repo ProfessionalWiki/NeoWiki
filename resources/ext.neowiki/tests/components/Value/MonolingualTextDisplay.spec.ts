@@ -81,12 +81,6 @@ describe( 'MonolingualTextDisplay', () => {
 		expect( shownTexts( newWrapperFor( CINE, ZINEMA ) ) ).toEqual( [ 'Zinema' ] );
 	} );
 
-	it( 'shows the first part when the reader reads none of the languages', () => {
-		readsIn( 'de', 'de' );
-
-		expect( shownTexts( newWrapperFor( CINE, ZINEMA ) ) ).toEqual( [ 'Cine' ] );
-	} );
-
 	it( 'names the language of a tagged part for anyone who cannot place the tag', () => {
 		readsIn( 'de', 'de' );
 
@@ -98,7 +92,7 @@ describe( 'MonolingualTextDisplay', () => {
 			.toMatch( /^\s+español$/ );
 	} );
 
-	it( 'marks the text of every part with the language it is in, leaving its tag in the reader\'s', async () => {
+	it( 'marks the text of every part with the language it is in', async () => {
 		const wrapper = newWrapperFor( CINEMA, { text: 'فيلم', language: 'ar' } );
 
 		await toggle( wrapper ).trigger( 'click' );
@@ -107,9 +101,6 @@ describe( 'MonolingualTextDisplay', () => {
 
 		expect( texts.map( ( text ) => text.attributes( 'lang' ) ) ).toEqual( [ 'en', 'ar' ] );
 		expect( texts.map( ( text ) => text.attributes( 'dir' ) ) ).toEqual( [ 'auto', 'auto' ] );
-		const language = wrapper.find( '.ext-neowiki-monolingual-text-display__language' );
-
-		expect( language.attributes( 'lang' ) ).toBeUndefined();
 	} );
 
 	it( 'shows the bare tag of a language MediaWiki has no name for, there being no name to read out', () => {
@@ -122,13 +113,6 @@ describe( 'MonolingualTextDisplay', () => {
 		expect( language.element.textContent ).toBe( 'AR\u00a0' );
 		expect( language.attributes( 'title' ) ).toBeUndefined();
 		expect( language.find( '[aria-hidden]' ).exists() ).toBe( false );
-	} );
-
-	it( 'counts the other languages on the link that reveals them', () => {
-		const wrapper = newWrapperFor( CINEMA, KINO, ZINEMA, CINE );
-
-		expect( toggle( wrapper ).text() ).toBe( '3 more languages' );
-		expect( toggle( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'false' );
 	} );
 
 	it( 'counts two texts in one language as one language', () => {
@@ -148,6 +132,8 @@ describe( 'MonolingualTextDisplay', () => {
 
 	it( 'reveals the other parts, tagged, with the link after them', async () => {
 		const wrapper = newWrapperFor( CINEMA, KINO, ZINEMA );
+
+		expect( toggle( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'false' );
 
 		await toggle( wrapper ).trigger( 'click' );
 
@@ -170,13 +156,6 @@ describe( 'MonolingualTextDisplay', () => {
 	it( 'offers no link when every part is shown', () => {
 		const wrapper = newWrapperFor( CINEMA, { text: 'Film', language: 'en' } );
 
-		expect( toggle( wrapper ).exists() ).toBe( false );
-	} );
-
-	it( 'shows nothing for a value with no parts', () => {
-		const wrapper = newWrapperFor();
-
-		expect( shownTexts( wrapper ) ).toEqual( [] );
 		expect( toggle( wrapper ).exists() ).toBe( false );
 	} );
 

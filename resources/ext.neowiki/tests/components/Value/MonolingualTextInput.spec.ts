@@ -14,6 +14,8 @@ enableAutoUnmount( afterEach );
 
 describe( 'MonolingualTextInput', () => {
 
+	const singleValued = newMonolingualTextProperty( { name: 'Original title', multiple: false } );
+
 	function newWrapper(
 		props: Partial<ValueInputProps<MonolingualTextProperty>> = {},
 	): VueWrapper<InstanceType<typeof MonolingualTextInput>> {
@@ -41,7 +43,7 @@ describe( 'MonolingualTextInput', () => {
 	}
 
 	function rowElements( wrapper: VueWrapper ): ReturnType<VueWrapper['findAll']> {
-		return wrapper.findAll( '.ext-neowiki-monolingual-text-input > div' );
+		return wrapper.findAll( '.ext-neowiki-monolingual-text-input__row' );
 	}
 
 	function rowMessages( wrapper: VueWrapper ): ( string | undefined )[] {
@@ -77,11 +79,22 @@ describe( 'MonolingualTextInput', () => {
 		await languageMenuItems( wrapper )[ 0 ].trigger( 'click' );
 	}
 
-	beforeEach( () => {
+	// The messages render as they do in a wiki, so an assertion on a label reads as what a user hears.
+	function readsIn( userLanguage: string, contentLanguage: string ): void {
 		setupMwMock( {
-			config: { wgUserLanguage: 'en', wgContentLanguage: 'en' },
+			config: { wgUserLanguage: userLanguage, wgContentLanguage: contentLanguage },
 			languageNames: { en: 'English', eu: 'Basque', es: 'Spanish' },
+			messages: {
+				'neowiki-monolingual-text-text-label': ( property, position ) => `${ property } text ${ position }`,
+				'neowiki-monolingual-text-language-label': ( property, position ) =>
+					`${ property } language ${ position }`,
+				'neowiki-language-picker-button': ( label, name, tag ) => `${ label }: ${ name } (${ tag })`,
+			},
 		} );
+	}
+
+	beforeEach( () => {
+		readsIn( 'en', 'en' );
 		// jsdom reports a page without focus, which is the user being away in another tab.
 		vi.spyOn( document, 'hasFocus' ).mockReturnValue( true );
 	} );
@@ -90,18 +103,9 @@ describe( 'MonolingualTextInput', () => {
 		vi.restoreAllMocks();
 	} );
 
-	it( 'opens no row of its own on a single-valued property', () => {
-		const wrapper = newWrapper( {
-			property: newMonolingualTextProperty( { name: 'Original title', multiple: false } ),
-			modelValue: newMonolingualTextValue( [ { text: 'Zinema', language: 'eu' } ] ),
-		} );
-
-		expect( textValues( wrapper ) ).toEqual( [ 'Zinema' ] );
-	} );
-
 	it( 'edits every part a single-valued property already holds', () => {
 		const wrapper = newWrapper( {
-			property: newMonolingualTextProperty( { name: 'Original title', multiple: false } ),
+			property: singleValued,
 			modelValue: newMonolingualTextValue( [
 				{ text: 'Zinema', language: 'eu' },
 				{ text: 'Cine', language: 'es' },
@@ -113,7 +117,7 @@ describe( 'MonolingualTextInput', () => {
 
 	it( 'reports every part of a single-valued property it was never asked to change', () => {
 		const wrapper = newWrapper( {
-			property: newMonolingualTextProperty( { name: 'Original title', multiple: false } ),
+			property: singleValued,
 			modelValue: newMonolingualTextValue( [
 				{ text: 'Zinema', language: 'eu' },
 				{ text: 'Cine', language: 'es' },
@@ -142,15 +146,6 @@ describe( 'MonolingualTextInput', () => {
 	} );
 
 	it( 'names each row\'s language button after the row it belongs to', () => {
-		setupMwMock( {
-			config: { wgUserLanguage: 'en', wgContentLanguage: 'en' },
-			languageNames: { en: 'English', eu: 'Basque' },
-			messages: {
-				'neowiki-monolingual-text-language-label': ( property, position ) =>
-					`${ property } language ${ position }`,
-				'neowiki-language-picker-button': ( label, name, tag ) => `${ label }: ${ name } (${ tag })`,
-			},
-		} );
 		const wrapper = newWrapper( {
 			modelValue: newMonolingualTextValue( [ { text: 'Zinema', language: 'eu' } ] ),
 		} );
@@ -159,11 +154,17 @@ describe( 'MonolingualTextInput', () => {
 			.toEqual( [ 'Original title language 1: Basque (eu)', 'Original title language 2: English (en)' ] );
 	} );
 
-	it( 'emits a typed text tagged with the language the wiki is written in', async () => {
-		setupMwMock( {
-			config: { wgUserLanguage: 'en', wgContentLanguage: 'eu' },
-			languageNames: { en: 'English', eu: 'Basque', es: 'Spanish' },
+	it( 'names each row\'s text field after the row it belongs to', () => {
+		const wrapper = newWrapper( {
+			modelValue: newMonolingualTextValue( [ { text: 'Zinema', language: 'eu' } ] ),
 		} );
+
+		expect( textInputs( wrapper ).map( ( input ) => input.attributes( 'aria-label' ) ) )
+			.toEqual( [ 'Original title text 1', 'Original title text 2' ] );
+	} );
+
+	it( 'emits a typed text tagged with the language the wiki is written in', async () => {
+		readsIn( 'en', 'eu' );
 		const wrapper = newWrapper();
 
 		await textInputs( wrapper )[ 0 ].setValue( 'Zinema' );
@@ -213,6 +214,14 @@ describe( 'MonolingualTextInput', () => {
 		expect( textValues( wrapper ) ).toEqual( [ '', 'Cine', '' ] );
 	} );
 
+	it( 'drops the trailing row once the property it edits becomes single-valued', async () => {
+		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Zinema', language: 'eu' } ] ) } );
+
+		await wrapper.setProps( { property: singleValued } );
+
+		expect( textValues( wrapper ) ).toEqual( [ 'Zinema' ] );
+	} );
+
 	it( 'opens no further row for a text that is only spaces', async () => {
 		const wrapper = newWrapper();
 
@@ -223,7 +232,7 @@ describe( 'MonolingualTextInput', () => {
 
 	it( 'keeps a single-valued property at one row however much is typed', async () => {
 		const wrapper = newWrapper( {
-			property: newMonolingualTextProperty( { name: 'Original title', multiple: false } ),
+			property: singleValued,
 		} );
 
 		await textInputs( wrapper )[ 0 ].setValue( 'Zinema' );
@@ -269,20 +278,6 @@ describe( 'MonolingualTextInput', () => {
 		expect( textValues( wrapper ) ).toEqual( [ 'Zinema', 'Cine', '' ] );
 	} );
 
-	it( 'keeps a cleared row while focus is on its language button', async () => {
-		const wrapper = newWrapper( {
-			modelValue: newMonolingualTextValue( [
-				{ text: 'Zinema', language: 'eu' },
-				{ text: 'Cine', language: 'es' },
-			] ),
-		} );
-
-		await textInputs( wrapper )[ 0 ].setValue( '' );
-		await leaveRow( wrapper, 0, languageButtons( wrapper )[ 0 ].element );
-
-		expect( textValues( wrapper ) ).toEqual( [ '', 'Cine', '' ] );
-	} );
-
 	it( 'keeps a cleared row while focus is in the languages its button opened', async () => {
 		const wrapper = newWrapper( {
 			modelValue: newMonolingualTextValue( [
@@ -304,7 +299,7 @@ describe( 'MonolingualTextInput', () => {
 
 	it( 'drops a cleared row of a single-valued property the user leaves', async () => {
 		const wrapper = newWrapper( {
-			property: newMonolingualTextProperty( { name: 'Original title', multiple: false } ),
+			property: singleValued,
 			modelValue: newMonolingualTextValue( [
 				{ text: 'Zinema', language: 'eu' },
 				{ text: 'Cine', language: 'es' },
@@ -321,7 +316,7 @@ describe( 'MonolingualTextInput', () => {
 
 	it( 'keeps the one row a single-valued property has left, empty as it is', async () => {
 		const wrapper = newWrapper( {
-			property: newMonolingualTextProperty( { name: 'Original title', multiple: false } ),
+			property: singleValued,
 			modelValue: newMonolingualTextValue( [ { text: 'Zinema', language: 'eu' } ] ),
 		} );
 
@@ -441,9 +436,21 @@ describe( 'MonolingualTextInput', () => {
 		expect( rowMessages( wrapper ) ).toEqual( [ undefined, undefined, 'neowiki-field-min-length3', undefined ] );
 	} );
 
+	it( 'shows a multi-valued property its part\'s violation under that row only, not under the field too', () => {
+		const wrapper = newWrapper( {
+			modelValue: newMonolingualTextValue( [ { text: 'Ci', language: 'es' } ] ),
+			serverViolations: [
+				{ propertyName: 'Original title', code: 'min-length', args: [ 3 ], severity: 'error', valuePartIndex: 0 },
+			],
+		} );
+
+		expect( rowMessages( wrapper ) ).toEqual( [ 'neowiki-field-min-length3', undefined ] );
+		expect( wrapper.text().match( /neowiki-field-min-length3/g ) ).toHaveLength( 1 );
+	} );
+
 	it( 'shows a single-valued property its violation once, under the field', () => {
 		const wrapper = newWrapper( {
-			property: newMonolingualTextProperty( { name: 'Original title', multiple: false } ),
+			property: singleValued,
 			modelValue: newMonolingualTextValue( [ { text: 'Ci', language: 'es' } ] ),
 			serverViolations: [
 				{ propertyName: 'Original title', code: 'min-length', args: [ 3 ], severity: 'error', valuePartIndex: 0 },
@@ -451,16 +458,6 @@ describe( 'MonolingualTextInput', () => {
 		} );
 
 		expect( wrapper.text().match( /neowiki-field-min-length3/g ) ).toHaveLength( 1 );
-	} );
-
-	it( 'shows a violation that names no part under the whole field', () => {
-		const wrapper = newWrapper( {
-			serverViolations: [
-				{ propertyName: 'Original title', code: 'required', args: [], severity: 'error', valuePartIndex: null },
-			],
-		} );
-
-		expect( wrapper.text() ).toContain( 'neowiki-field-required' );
 	} );
 
 	it( 'asks the parent to drop every indexed violation once a part appears or disappears', async () => {

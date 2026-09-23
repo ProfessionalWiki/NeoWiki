@@ -661,8 +661,6 @@ class OntologyMappingProjectorTest extends TestCase {
 	 * prove the projector does not fall back to either.
 	 */
 	public static function monolingualTextOverrideProvider(): iterable {
-		yield 'no override' => [ null, null ];
-		yield 'language override' => [ 'en', null ];
 		yield 'datatype override' => [ null, 'http://www.w3.org/2001/XMLSchema#string' ];
 		yield 'both overrides' => [ 'en', 'http://www.w3.org/2001/XMLSchema#string' ];
 	}

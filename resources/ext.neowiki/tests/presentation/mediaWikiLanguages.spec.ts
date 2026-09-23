@@ -9,23 +9,40 @@ describe( 'mediaWikiLanguages', () => {
 			config: { wgUserLanguage: 'en' },
 			languageNames: { be: 'Belarusian', 'be-tarask': 'Belarusian (Taraskievica)', EU: 'Basque' },
 		} );
-
-		// The real bcp47() maps several MediaWiki codes onto one tag, which is what the
-		// deduplication below is for; the shared fake is a deliberate pass-through.
-		mw.language.bcp47 = vi.fn( ( code: string ) => code === 'be-tarask' ? 'be' : code );
 	} );
 
-	it( 'lowercases each tag', () => {
-		expect( languageOptions() ).toContainEqual( { tag: 'eu', name: 'Basque' } );
+	describe( 'languageOptions', () => {
+
+		it( 'lowercases each tag', () => {
+			expect( languageOptions() ).toContainEqual( { tag: 'eu', name: 'Basque' } );
+		} );
+
+		// The real bcp47() maps several MediaWiki codes onto one tag, which is what this is for.
+		it( 'lists a tag once, under the first name given for it', () => {
+			expect( languageOptions().filter( ( option ) => option.tag === 'be' ) )
+				.toEqual( [ { tag: 'be', name: 'Belarusian' } ] );
+		} );
+
+		it( 'lists nothing when MediaWiki has no table of language names', () => {
+			// Asserted first, so the empty result below is this call's rather than a cache the
+			// names above never filled.
+			expect( languageOptions() ).not.toEqual( [] );
+
+			mw.language.getData = vi.fn( () => undefined );
+
+			expect( languageOptions() ).toEqual( [] );
+		} );
+
 	} );
 
-	it( 'lists a tag once, under the first name given for it', () => {
-		expect( languageOptions().filter( ( option ) => option.tag === 'be' ) )
-			.toEqual( [ { tag: 'be', name: 'Belarusian' } ] );
-	} );
+	describe( 'userLanguageTag', () => {
 
-	it( 'reads the interface language as a tag', () => {
-		expect( userLanguageTag() ).toBe( 'en' );
+		it( 'reads the interface language as a tag', () => {
+			setupMwMock( { config: { wgUserLanguage: 'be-tarask' } } );
+
+			expect( userLanguageTag() ).toBe( 'be' );
+		} );
+
 	} );
 
 	describe( 'partsForReader', () => {

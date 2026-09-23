@@ -98,6 +98,16 @@ export const CdxDialogStub = {
 	emits: [ 'update:open' ],
 };
 
+/**
+ * What MediaWiki's own bcp47() translates: a MediaWiki code that is not a BCP 47 tag, sometimes
+ * several of them onto one tag. Two is enough for a spec to tell a translated code from one passed
+ * straight through, which a pass-through fake hides; every other code passes through.
+ */
+const BCP_47_TAGS: Record<string, string> = {
+	'be-tarask': 'be',
+	simple: 'en-simple',
+};
+
 export interface MwMockOptions {
 	messages?: Record<string, string | ( ( ...params: string[] ) => string )>;
 	config?: Record<string, any>;
@@ -171,10 +181,8 @@ export function setupMwMock(
 				remove: vi.fn(),
 			},
 		} ),
-		// MediaWiki's own bcp47() also maps deprecated codes to their replacements; callers lowercase
-		// its result, so the fake carries only the pass-through every one of them relies on.
 		language: () => ( {
-			bcp47: vi.fn( ( code: string ) => code ),
+			bcp47: vi.fn( ( code: string ) => BCP_47_TAGS[ code ] ?? code ),
 			getData: vi.fn(
 				( _langCode: string, dataKey: string ) => dataKey === 'languageNames' ? customLanguageNames : undefined,
 			),
