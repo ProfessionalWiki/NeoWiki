@@ -61,7 +61,7 @@ class GetJsonSchemaApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Schema name (e.g. "Person"). Case-sensitive.',
+				self::PARAM_DESCRIPTION => 'Schema name (e.g. "Person"), in any spelling that names its Schema page.',
 			],
 		];
 	}

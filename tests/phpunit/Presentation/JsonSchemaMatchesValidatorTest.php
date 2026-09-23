@@ -14,7 +14,6 @@ use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
@@ -111,6 +110,7 @@ class JsonSchemaMatchesValidatorTest extends TestCase {
 		yield from self::dateRows();
 		yield from self::dateTimeRows();
 		yield from self::relationRows();
+		yield from self::monolingualTextRows();
 		yield from self::unregisteredTypeRows();
 	}
 
@@ -388,6 +388,69 @@ class JsonSchemaMatchesValidatorTest extends TestCase {
 		];
 	}
 
+	private static function monolingualTextRows(): iterable {
+		$monolingual = [ 'type' => 'monolingualText', 'multiple' => true ];
+
+		yield 'monolingual text value' => [
+			$monolingual,
+			self::value( 'monolingualText', [ self::textIn( 'Zinema', 'eu' ) ] ),
+		];
+		yield 'monolingual text in a language with a region subtag' => [
+			$monolingual,
+			self::value( 'monolingualText', [ self::textIn( 'Cinema', 'pt-BR' ) ] ),
+		];
+		yield 'monolingual text with a malformed language tag' => [
+			$monolingual,
+			self::value( 'monolingualText', [ self::textIn( 'Cinema', 'pt_BR' ) ] ),
+		];
+		yield 'monolingual text missing its language' => [
+			$monolingual,
+			self::value( 'monolingualText', [ [ 'text' => 'Cinema' ] ] ),
+		];
+		yield 'a monolingual text value that is a bare string' => [
+			$monolingual,
+			self::value( 'monolingualText', [ 'Cinema' ] ),
+		];
+		yield 'monolingual text required and empty' => [
+			$monolingual + [ 'required' => true ],
+			self::value( 'monolingualText', [] ),
+		];
+
+		$bounded = $monolingual + [ 'minLength' => 5, 'maxLength' => 8 ];
+		yield 'monolingual text within its length bounds' => [
+			$bounded,
+			self::value( 'monolingualText', [ self::textIn( 'middle', 'en' ) ] ),
+		];
+		yield 'monolingual text below minLength' => [
+			$bounded,
+			self::value( 'monolingualText', [ self::textIn( 'abcd', 'en' ) ] ),
+		];
+		yield 'monolingual text above maxLength' => [
+			$bounded,
+			self::value( 'monolingualText', [ self::textIn( 'abcdefghi', 'en' ) ] ),
+		];
+
+		yield 'two monolingual texts on a single-valued property' => [
+			[ 'type' => 'monolingualText' ],
+			self::value( 'monolingualText', [ self::textIn( 'Zinema', 'eu' ), self::textIn( 'Cine', 'es' ) ] ),
+		];
+
+		$unique = $monolingual + [ 'uniqueItems' => true ];
+		yield 'the same monolingual text twice where uniqueItems is set' => [
+			$unique,
+			self::value( 'monolingualText', [ self::textIn( 'Kino', 'de' ), self::textIn( 'Kino', 'de' ) ] ),
+		];
+		yield 'the same text in two languages where uniqueItems is set' => [
+			$unique,
+			self::value( 'monolingualText', [ self::textIn( 'Kino', 'de' ), self::textIn( 'Kino', 'nl' ) ] ),
+		];
+		yield 'the same monolingual text with its language tag in two cases where uniqueItems is set' => [
+			$unique,
+			self::value( 'monolingualText', [ self::textIn( 'Kino', 'de' ), self::textIn( 'Kino', 'DE' ) ] ),
+			'the wiki lowercases a language tag before it compares parts; the document compares them as written.',
+		];
+	}
+
 	private static function unregisteredTypeRows(): iterable {
 		$gone = [ 'type' => 'noExtensionRegistersThis' ];
 
@@ -408,6 +471,13 @@ class JsonSchemaMatchesValidatorTest extends TestCase {
 	 */
 	private static function relationTo( string $targetId ): array {
 		return [ 'id' => 'r' . substr( $targetId, 1 ), 'target' => $targetId ];
+	}
+
+	/**
+	 * @return array<string, string>
+	 */
+	private static function textIn( string $text, string $language ): array {
+		return [ 'text' => $text, 'language' => $language ];
 	}
 
 	/**
@@ -483,12 +553,12 @@ class JsonSchemaMatchesValidatorTest extends TestCase {
 				subjectIdParser: TestSubjectIds::newParser(),
 			),
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
-			localSourceKey: TestSubjectIds::LOCAL_SOURCE_KEY,
+			schemaReferenceParser: TestSources::newSchemaReferenceParser(),
 		);
 	}
 
 	private function propertyTypeLookup(): PropertyTypeLookup {
-		return PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY );
+		return TestSources::newPropertyTypeRegistry();
 	}
 
 }

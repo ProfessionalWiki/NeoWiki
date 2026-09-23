@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
+use ProfessionalWiki\NeoWiki\Domain\LanguageTag;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\MonolingualTextType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
@@ -65,6 +66,30 @@ class MonolingualTextProperty extends PropertyDefinition {
 			'minLength' => $this->getMinLength(),
 			'maxLength' => $this->getMaxLength(),
 		];
+	}
+
+	public function toJsonSchema(): array {
+		$text = [ 'type' => 'string' ];
+
+		if ( $this->hasMinLength() ) {
+			$text['minLength'] = $this->getMinLength();
+		}
+
+		if ( $this->hasMaxLength() ) {
+			$text['maxLength'] = $this->getMaxLength();
+		}
+
+		$part = [
+			'type' => 'object',
+			'required' => [ 'text', 'language' ],
+			'properties' => [
+				'text' => $text,
+				'language' => [ 'type' => 'string', 'pattern' => LanguageTag::PATTERN ],
+			],
+		];
+
+		return $this->listValueSchema( $part )
+			+ ( $this->enforcesUniqueValues() ? [ 'uniqueItems' => true ] : [] );
 	}
 
 }
