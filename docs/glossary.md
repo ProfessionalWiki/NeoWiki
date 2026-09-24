@@ -70,19 +70,16 @@ Each Relation has
 
 #### Dependent Subject
 
-A Subject that belongs to another Subject: a person's name, an identifier, a birth event. It has its own Schema and
-id, but it is part of exactly one **Host Subject**, the Subject whose relation statement points at it. A Dependent
-Subject is entered and shown as part of its Host Subject, is stored on the Host Subject's page, and is deleted with
-it; `Special:Subject` and queries still reach it on its own.
-Whether a Schema's Subjects are dependent is declared on the Schema ([ADR 28](adr/028-relations-model.md)); every
-other Subject is standalone. A Dependent Subject can be the Host Subject of further Dependent Subjects: a birth
-event's time span.
+A Subject that belongs to its **Host Subject**.
 
-A Host Subject is not a Main Subject: the Main Subject is a page's designation, a Host Subject is what a Dependent
-Subject belongs to.
+Schemas define whether their Subjects are Dependent or not ([ADR 28](adr/028-relations-model.md)).
 
-*Avoid: "Child Subject" — a retired term for any Subject on a page other than its Main Subject, which says where a
-Subject is stored, not what it is.*
+Dependent Subjects are referenced exactly once, always by their Host Subject. They are created, edited, and displayed
+with their Host Subject, stored on its page, and deleted with it. They have no label and can can never be Main Subject of a page.
+
+Example: Book -> Chapter -> Section
+
+In this example Chapter and Section are dependent subjects. Book and Chapter are Host subjects.
 
 ### Schema
 
