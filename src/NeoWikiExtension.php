@@ -53,6 +53,8 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetLayout\GetLayoutPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetLayout\GetLayoutQuery;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetMainSubject\GetMainSubjectPresenter;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetMainSubject\GetMainSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetReferencingSubjects\GetReferencingSubjectsPresenter;
@@ -138,6 +140,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectPageApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetJsonSchemaApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetMainSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectEditNoticesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
@@ -1825,6 +1828,15 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function newGetMainSubjectQuery( GetMainSubjectPresenter $presenter, Authority $authority ): GetMainSubjectQuery {
+		return new GetMainSubjectQuery(
+			presenter: $presenter,
+			pageSubjectsLookup: $this->newPageSubjectsLookup(),
+			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+		);
+	}
+
 	public function newGetPageSubjectsQuery( GetPageSubjectsPresenter $presenter, Authority $authority ): GetPageSubjectsQuery {
 		return new GetPageSubjectsQuery(
 			presenter: $presenter,
@@ -2005,6 +2017,10 @@ class NeoWikiExtension {
 
 	public static function newGetSubjectEditNoticesApi(): GetSubjectEditNoticesApi {
 		return new GetSubjectEditNoticesApi();
+	}
+
+	public static function newGetMainSubjectApi(): GetMainSubjectApi {
+		return new GetMainSubjectApi();
 	}
 
 	public static function newGetPageSubjectsApi(): GetPageSubjectsApi {

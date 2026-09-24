@@ -50,6 +50,7 @@ Subjects and arrange them.
 | Endpoint | Description |
 |---|---|
 | `GET /neowiki/v0/page/{pageId}/subjects` | List all of the page's Subjects. `expand` with `schemas` or `relations`. |
+| `GET /neowiki/v0/page/{pageId}/mainSubject` | Fetch the page's main Subject. Returns `{pageId, subject}`, the Subject carrying its [page fields](subject-format.md#reading-subjects); `subject` is `null` when the page has none. |
 | `GET /neowiki/v0/page/{pageId}/editNotices` | List the notices to show before editing the page's Subjects, in display order. Optional `schema` adds notices scoped to that Schema. Returns `{notices: [{key, html}]}`. See [Edit notices](../authoring/edit-notices.md). |
 | `GET /neowiki/v0/page/{pageId}/rdf` | Export the page's Subjects and metadata as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or the name of a Mapping page. See [RDF export](rdf-export.md) and [Mapping Format](../authoring/mapping-format.md). |
 | `POST /neowiki/v0/page/{pageId}/mainSubject` | Create the page's main Subject. Same body as `POST .../subjects`. |
@@ -111,8 +112,8 @@ Report and rebuild the graph stores this wiki projects into. A rebuild's `202` m
 Where the wiki itself requires login to read, every endpoint answers an anonymous request with `403` and
 `"error": "rest-read-denied"`, before any of the per-page rules below apply.
 
-The Subject, page-subjects, edit-notices, subject-labels, referencing-subjects, Schema, Layout, Mapping, RDF export,
-and entity-dereference read endpoints enforce the caller's per-page `read` permission; page protection and
+The Subject, page-subjects, main-subject, edit-notices, subject-labels, referencing-subjects, Schema, Layout, Mapping,
+RDF export, and entity-dereference read endpoints enforce the caller's per-page `read` permission; page protection and
 `$wgNamespaceProtection` do not restrict them, because MediaWiki's `read` action ignores both. When you may not read a
 page they respond as if the data were absent — a `null` value, an empty list, or a `404` — never a `403`.
 `GET /subject-labels` and `GET /subject/{subjectId}/referencingSubjects` omit rows whose page you cannot read; because
