@@ -54,7 +54,6 @@ below).
 
 * Is [one Schema per Subject](../adr/008-one-schema-per-subject.md) viable?
   (likely, but let's verify)
-* Do we need to have an API that provides Schemas in JSON Schema format? (50% likely, can be deferred, easy to implement)
 * ID-generation for bulk import: do we need an API for (bulk) ID gen? (local impact, easy to implement)
 * Is multi-Subject support in the editor essential?
   Example: Person has a "Name" property. Name is a Subject with its own PersonName schema. The "Edit Person" form would show the
