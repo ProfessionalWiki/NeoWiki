@@ -21,8 +21,8 @@ relation Property Definition carries `relation` (the edge-type name), `targetSch
   `relation-target-not-found`, `relation-target-schema-mismatch`, `relation-target-unresolvable-source`,
   `single-value-only` ([validation codes](../api/validation-codes.md)). Graph uniqueness constraints exist for
   Subjects; target autocomplete is scoped to the current wiki.
-- **Editing.** The subject editor edits related Subjects in a tree and creates relation targets in place
-  ([#1323](https://github.com/ProfessionalWiki/NeoWiki/pull/1323),
+- **Editing.** The subject editor opens related Subjects beside the one being edited and creates relation targets in
+  place ([#1323](https://github.com/ProfessionalWiki/NeoWiki/pull/1323),
   [#1339](https://github.com/ProfessionalWiki/NeoWiki/pull/1339)). A Subject created in flow lands on the page being
   edited and moves elsewhere keeping its id ([#1356](https://github.com/ProfessionalWiki/NeoWiki/pull/1356)). IDs can
   be pre-minted for interlinked imports ([#1101](https://github.com/ProfessionalWiki/NeoWiki/pull/1101)); single
@@ -51,42 +51,27 @@ relation Property Definition carries `relation` (the edge-type name), `targetSch
    ([#1120](https://github.com/ProfessionalWiki/NeoWiki/issues/1120)).
 5. **Same-page relationships are schema-defined** — no automatic relation between the Subjects on a page; the Main
    Subject designation stays.
-6. **Name a relation once, on the property** — the least settled decision. The naming inventory is on
-   [#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630); the outcome determines `neo:relationType` and the
-   direct RDF predicate.
+6. **Name a relation once, on the property** — the schema editor already does
+   ([#1494](https://github.com/ProfessionalWiki/NeoWiki/pull/1494)); the stored model, `neo:relationType` and the
+   direct RDF predicate follow.
+7. **A Schema declares whether its Subjects are dependent** — structure lives in Dependent Subjects on their Host
+   Subject's page, in both wiki modes.
 
-Ratification gates decisions 1, 3, and 6. Nothing else waits for it.
+Ratification gates decisions 1, 3, 6 and 7. Nothing else waits for it.
 
 ## Open questions
 
-### Where structure lives
-
-Intermediate nodes — a birth event; a dimension with unit, bounds, and source — can be flat fields that the mapping
-assembles into nodes at projection time, or Subjects of their own edited in the tree. Both paths are built; flat puts
-the coordination in the mapping, nested puts it in the editor. Open is what to recommend: which path the standard
-Schema bundles default to, and how much editor investment the nested path gets
-([OntologyMapping.md](OntologyMapping.md)).
-
 ### Reaching the Subjects that point here
 
-With CIDOC-CRM-style modelling the meaningful Subjects point *at* the one being edited — a birth event references its
-person — and nothing adds them from that side. Display ships on `Special:Subject`, always on; it loses a referrer whose
-projection lagged or failed, which no wiki-side verification can recover. For pages and views, where default-off is
-decided, open are the configuration granularity (wiki, Schema, or view) and the inverse labels, which cannot be derived
-from the forward name ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)). For editing, open are how a
-user adds an incoming relation from the target, and whether a Schema declares which incoming relation types it
-surfaces. Both need the relations endpoint
-([#1324](https://github.com/ProfessionalWiki/NeoWiki/issues/1324), specified and measured), and the where-used view
-([#1039](https://github.com/ProfessionalWiki/NeoWiki/issues/1039)) also needs
+A Subject's structure is reached from the Subject itself (decision 7); what remains are the standalone Subjects that
+point at it — a person's compositions — and nothing adds them from that side. Display ships on `Special:Subject`,
+always on; it loses a referrer whose projection lagged or failed, which no wiki-side verification can recover. For
+pages and views, where default-off is decided, open are the configuration granularity (wiki, Schema, or view) and the
+inverse labels, which cannot be derived from the forward name
+([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)). For editing, open are how a user adds an incoming
+relation from the target, and whether a Schema declares which incoming relation types it surfaces. The where-used
+view ([#1039](https://github.com/ProfessionalWiki/NeoWiki/issues/1039)) needs
 [#1135](https://github.com/ProfessionalWiki/NeoWiki/issues/1135) fixed.
-
-### Page-scoped vs free-standing Subjects
-
-Page-scoped dependents that live and die with their host page differ from free-standing Subjects merely stored
-there, which must outlive the page and whose home should stay knowable. Nothing
-marks which is which: deleting a page removes its Subjects (referenced ones survive as stubs), and a Subject can be
-moved on its own. Open: whether the distinction needs a mechanism — a Schema-level flag, a per-Subject flag, or
-derivation from the Subject's relations — and what deleting a page should then do to each.
 
 ### Autocomplete value sourcing
 
@@ -106,11 +91,8 @@ Now:
   blocks the where-used view and misleads direct graph queries.
 - Red-link rendering and create affordance for missing targets
   ([#1120](https://github.com/ProfessionalWiki/NeoWiki/issues/1120)).
-- The relations endpoint ([#1324](https://github.com/ProfessionalWiki/NeoWiki/issues/1324)), then inverse display for
-  pages and views ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)) and where-used
+- Inverse display for pages and views ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)) and where-used
   ([#1039](https://github.com/ProfessionalWiki/NeoWiki/issues/1039)).
-- Tree editor follow-ups: collapse and depth cap ([#1327](https://github.com/ProfessionalWiki/NeoWiki/issues/1327)),
-  replacing a target loses the new one ([#1358](https://github.com/ProfessionalWiki/NeoWiki/issues/1358)).
 - Relation columns in `{{#cypher}}` result tables ([#809](https://github.com/ProfessionalWiki/NeoWiki/issues/809);
   prior analysis in [LegacyNeoWiki #625](https://github.com/ProfessionalWiki/LegacyNeoWiki/issues/625)).
 
@@ -122,7 +104,8 @@ Gated on sourced-Subject display ([Subject Sources](SubjectSources.md)):
 After ADR 28 is ratified:
 
 - Remove edge properties ([#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119)); widen `targetSchema` to a
-  list ([#991](https://github.com/ProfessionalWiki/NeoWiki/issues/991)); the decision 6 rename.
+  list ([#991](https://github.com/ProfessionalWiki/NeoWiki/issues/991)); the decision 6 rename; Dependent Schemas
+  (decision 7): schema format, validation, placement, inline editing and display.
 
 Smaller, any time: pre-fill a new Subject's relation to the page's Main Subject (decision 5); relation hover card
 ([#377](https://github.com/ProfessionalWiki/NeoWiki/issues/377)); target links in the Schema view
