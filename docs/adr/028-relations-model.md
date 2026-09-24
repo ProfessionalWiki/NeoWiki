@@ -80,24 +80,31 @@ rather than verb phrases ("Born in"). The schema editor already takes the proper
 
 ### A Schema declares whether its Subjects are dependent
 
-A Schema is standalone unless it declares its Subjects dependent. A Dependent Subject — a name, an identifier, a
-birth, a sourced date — is part of exactly one Host Subject: the Subject whose relation statement holds it. It is
-entered and shown as part of its Host Subject, and stays a Subject that `Special:Subject`, the Data tab, queries and
-exports reach on its own. It is created in the write that makes its Host Subject point at it — the Host Subject's
-editor, or an import creating both — stored on the Host Subject's page in both wiki modes
-([ADR 33](033-page-first-and-subject-first-wikis.md)), moved and deleted with it, and removed by any write after
-which no standalone Subject on the page reaches it. A write that gives it a second referrer on its page is refused,
-whatever the validation enforcement setting. It is not a search hit or a picker candidate, and needs no label; a
-Subject on another page may point at it, and a missing one is a red link like any other. A standalone Subject is
-what the wiki is about: picked by type-ahead, created as a stub when missing, linked to rather than shown inline, and
-placed by the wiki mode. A relation property targets Dependent Schemas or standalone ones, never both, checked when
-the Schema is saved; a Dependent Subject can be the Host Subject of further Dependent Subjects.
+A Schema is standalone unless it declares its Subjects dependent, which it can do only while it has no Subjects. A
+Dependent Subject — a name, an identifier, a birth, a sourced date — is part of exactly one Host Subject: the Subject
+whose relation statement holds it. Every other Subject is standalone. A Dependent Subject:
 
-Structure hangs off its Host Subject by a relation on the Host Subject. Which way an ontology draws it — a birth that
-points at the person — is the mapping's concern ([Mapping Format](../authoring/mapping-format.md)), so editing a
-Subject's structure never needs the Subjects that refer to it. A relationship with no natural Host Subject — a
-marriage, an exhibition — is a standalone Subject with participants, or is held by one side as in Wikibase; the other
-side shows it among its referring Subjects.
+- Is entered and shown as part of its Host Subject. The relation field holds its fields, not a picker; with several
+  target Schemas, adding one chooses the Schema.
+- Is created by the write that makes its Host Subject point at it, and removed by any write after which no standalone
+  Subject on the page reaches it. Deleting it on its own also removes the Host Subject's relation to it.
+- Lives on its Host Subject's page in both wiki modes ([ADR 33](033-page-first-and-subject-first-wikis.md)) and moves
+  and goes with it, so its permissions, history and revisions are the Host Subject's.
+- Is pointed at by nothing else: it is not a picker candidate, and a relation statement from any other Subject
+  targeting it is refused, whatever the validation enforcement setting. What other Subjects need to point at is
+  standalone.
+- Has no label. Its name is its Schema name with its Host Subject's name, "Birth of Pablo Picasso", until a label
+  template (decided separately) replaces it.
+- Has its values indexed under its Host Subject, which is the search hit. It is never a Main Subject, and its Schema
+  is not offered where a Subject is created without a Host Subject.
+- Keeps its id, IRI and graph node, so `Special:Subject`, the Data tab, queries and exports reach it.
+- Can be the Host Subject of further Dependent Subjects.
+
+A relation property targets Dependent Schemas or standalone ones, never both; the check runs when either Schema is
+saved. Which way an ontology draws the relation — a birth that points at the person — is the mapping's concern
+([Mapping Format](../authoring/mapping-format.md)). A relationship with no natural Host Subject — a marriage, an
+exhibition — is a standalone Subject with participants, or is held by one side; the other side sees it among its
+referring Subjects.
 
 Not taken: nesting records inside a Schema, which makes the intermediate node unaddressable and unreusable while
 mappings must still synthesize it. Not taken: deriving the kind from where a Subject was created, which cannot tell a
