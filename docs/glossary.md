@@ -68,6 +68,19 @@ Each Relation has
 - A `target`: Subject ID of the referenced Subject
 - `properties`: possibly empty collection of property-value pairs
 
+#### Dependent Subject
+
+A Subject of a Schema that declares its Subjects dependent ([ADR 28](adr/028-relations-model.md)): a name, an
+identifier, a birth event. It is part of exactly one **Host Subject**, the Subject whose relation statement holds it,
+and is entered and shown inside that Subject and stored on its page. A Dependent Subject can be the Host Subject of
+further Dependent Subjects. Every other Subject is standalone.
+
+A Host Subject is not a Main Subject: the Main Subject is a page's designation, a Host Subject is what a Dependent
+Subject belongs to.
+
+*Avoid: "Child Subject" — a retired term for any Subject on a page other than its Main Subject, which says where a
+Subject is stored, not what it is.*
+
 ### Schema
 
 A Schema ([ADR 6](adr/006-schemas.md)) defines a type of Subject. Examples: Person, Company, Product, etc.
