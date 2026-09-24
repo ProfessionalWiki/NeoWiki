@@ -30,8 +30,8 @@ It governs exactly these behaviours:
 | Picker disambiguation line | page title, id on collision | id only |
 
 The mode changes defaults, landing surfaces and link targets only. The REST API, parser-function parameters such as
-an explicit `page=` on `{{#create_subject}}`, pages holding several Subjects, and where a component Subject lives — on
-its host's page ([ADR 28](028-relations-model.md)) — are the same in both.
+an explicit `page=` on `{{#create_subject}}`, pages holding several Subjects, and where a dependent Subject lives —
+on its host's page ([ADR 28](028-relations-model.md)) — are the same in both.
 
 ## Consequences
 

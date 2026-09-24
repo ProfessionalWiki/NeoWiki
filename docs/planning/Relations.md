@@ -54,8 +54,8 @@ relation Property Definition carries `relation` (the edge-type name), `targetSch
 6. **Name a relation once, on the property** — the schema editor already does
    ([#1494](https://github.com/ProfessionalWiki/NeoWiki/pull/1494)); the stored model, `neo:relationType` and the
    direct RDF predicate follow.
-7. **A Schema says whether its Subjects are components** — structure lives in component Subjects on their host's page,
-   in both wiki modes.
+7. **A Schema declares whether its Subjects are dependent** — structure lives in dependent Subjects on their host's
+   page, in both wiki modes.
 
 Ratification gates decisions 1, 3, 6 and 7. Nothing else waits for it.
 
@@ -104,7 +104,7 @@ Gated on sourced-Subject display ([Subject Sources](SubjectSources.md)):
 After ADR 28 is ratified:
 
 - Remove edge properties ([#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119)); widen `targetSchema` to a
-  list ([#991](https://github.com/ProfessionalWiki/NeoWiki/issues/991)); the decision 6 rename; the component kind
+  list ([#991](https://github.com/ProfessionalWiki/NeoWiki/issues/991)); the decision 6 rename; dependent Schemas
   (decision 7): schema format, validation, placement, inline editing and display.
 
 Smaller, any time: pre-fill a new Subject's relation to the page's Main Subject (decision 5); relation hover card

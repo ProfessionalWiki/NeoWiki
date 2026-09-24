@@ -26,7 +26,7 @@ A Relation is `{id, target}`. The `properties` map on Relations is removed from 
 graph edges and the native RDF ([#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119)).
 
 A value that needs context — a date with its source and status, a name with its type and language, an attendance with
-its year — becomes its own Subject: the property that held the value becomes a relation to a component Schema
+its year — becomes its own Subject: the property that held the value becomes a relation to a dependent Schema
 (decision 7) holding the value and its context, validated and shown like any other data
 ([Qualifiers and References](../qualifiers-and-references.md)). Edge properties were a second path to part of that — a
 qualified relation, never a qualified literal — scalar-only, without a Schema or an editor, dropped by ontology
@@ -78,21 +78,22 @@ projection and ontology mappings on different names. Cypher edge types then read
 rather than verb phrases ("Born in"). The schema editor already takes the property name for both
 ([PR 1494](https://github.com/ProfessionalWiki/NeoWiki/pull/1494)); the stored model and the projections follow.
 
-### A Schema says whether its Subjects are components
+### A Schema declares whether its Subjects are dependent
 
-A Schema declares itself standalone, the default, or component. A component Subject — a name, an identifier, a birth,
-a sourced date — is structure of one host: the Subject whose relation statement holds it. It is entered and shown
-inside the host, stored on the host's page in both wiki modes ([ADR 33](033-page-first-and-subject-first-wikis.md)),
-moved and deleted with the host, and dropped on saving the page when no Subject on it reaches it. It is offered by no
-picker, listed nowhere as a thing of its own, and needs no label; other Subjects may still point at it, and a missing
-one is a red link like any other. A standalone Subject is what the wiki is about: picked by type-ahead, created as a
-stub when missing, linked to rather than shown inline, and placed by the wiki mode. A relation property targets
-components or standalone Subjects, never both, checked when the Schema is saved; a component may hold components of
-its own.
+A Schema is standalone unless it declares its Subjects dependent. A dependent Subject — a name, an identifier, a
+birth, a sourced date — is part of exactly one host: the Subject whose relation statement holds it. It is entered and
+shown inside the host, stored on the host's page in both wiki modes
+([ADR 33](033-page-first-and-subject-first-wikis.md)), moved and deleted with the host, and dropped on saving the
+page when no standalone Subject on it reaches it. It is not a search hit or a picker candidate, and needs no label;
+other Subjects may point at it, and a missing one is a red link like any other. A standalone Subject is what the wiki
+is about: picked by type-ahead, created as a stub when missing, linked to rather than shown inline, and placed by the
+wiki mode. A relation property targets dependent or standalone Schemas, never both, checked when the Schema is saved;
+a dependent Subject may host dependents of its own.
 
 Structure hangs off its host by a relation on the host. Which way an ontology draws it — a birth that points at the
 person — is the mapping's concern ([Mapping Format](../authoring/mapping-format.md)), so editing a Subject's structure
-never needs its incoming relations.
+never needs its incoming relations. A relationship with no natural host — a marriage, an exhibition — is a standalone
+Subject with participants, or is held by one side as in Wikibase; the other side shows it among its referring Subjects.
 
 Not taken: nesting records inside a Schema, which makes the intermediate node unaddressable and unreusable while
 mappings must still synthesize it. Not taken: deriving the kind from where a Subject was created, which cannot tell a
@@ -102,11 +103,12 @@ reusable type from a birth.
 
 - Structured and sourced data costs Subjects, not pages; [ADR 29](029-scalability-targets.md)'s targets count Subjects.
 - Breaking data-format changes are acceptable: NeoWiki is not in production.
-- Decided separately: naming a component from its data, a label template amending
+- Decided separately: naming a dependent Subject from its data, a label template amending
   [ADR 31](031-optional-subject-labels.md).
 - Out of scope, mapped in [planning/Relations.md](../planning/Relations.md): unconstrained targets, cardinality beyond
   single/multiple, no-value/some-value markers ([#937](https://github.com/ProfessionalWiki/NeoWiki/issues/937)), and
-  inverse relations in display and editing ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)).
+  showing referring Subjects on pages and views, and adding a referring Subject from its target's editor
+  ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)).
 
 ## Related
 
