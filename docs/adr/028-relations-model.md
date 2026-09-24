@@ -104,7 +104,7 @@ A relation property targets Dependent Schemas or standalone ones, never both; th
 saved. Which way an ontology draws the relation — a birth that points at the person — is the mapping's concern
 ([Mapping Format](../authoring/mapping-format.md)). A relationship with no natural Host Subject — a marriage, an
 exhibition — is a standalone Subject with participants, or is held by one side; the other side sees it among its
-referring Subjects.
+referencing Subjects.
 
 Not taken: nesting records inside a Schema, which makes the intermediate node unaddressable and unreusable while
 mappings must still synthesize it. Not taken: deriving the kind from where a Subject was created, which cannot tell a
@@ -118,7 +118,7 @@ reusable type from a birth.
   [ADR 31](031-optional-subject-labels.md).
 - Out of scope, mapped in [planning/Relations.md](../planning/Relations.md): unconstrained targets, cardinality beyond
   single/multiple, no-value/some-value markers ([#937](https://github.com/ProfessionalWiki/NeoWiki/issues/937)), and
-  showing referring Subjects on pages and views, and adding a referring Subject from its target's editor
+  showing referencing Subjects on pages and views, and adding a referencing Subject from its target's editor
   ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)).
 
 ## Related
