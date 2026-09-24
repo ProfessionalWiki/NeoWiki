@@ -88,10 +88,10 @@ editor, or an import creating both — stored on the Host Subject's page in both
 ([ADR 33](033-page-first-and-subject-first-wikis.md)), moved and deleted with it, and removed by any write after
 which no standalone Subject on the page reaches it. A write that gives it a second referrer on its page is refused,
 whatever the validation enforcement setting. It is not a search hit or a picker candidate, and needs no label; a
-Subject on another page may point at it, and a missing one is a red link like any other. A standalone Subject is what the wiki is
-about: picked by type-ahead, created as a stub when missing, linked to rather than shown inline, and placed by the
-wiki mode. A relation property targets Dependent Schemas or standalone ones, never both, checked when the Schema is
-saved; a Dependent Subject can be the Host Subject of further Dependent Subjects.
+Subject on another page may point at it, and a missing one is a red link like any other. A standalone Subject is
+what the wiki is about: picked by type-ahead, created as a stub when missing, linked to rather than shown inline, and
+placed by the wiki mode. A relation property targets Dependent Schemas or standalone ones, never both, checked when
+the Schema is saved; a Dependent Subject can be the Host Subject of further Dependent Subjects.
 
 Structure hangs off its Host Subject by a relation on the Host Subject. Which way an ontology draws it — a birth that
 points at the person — is the mapping's concern ([Mapping Format](../authoring/mapping-format.md)), so editing a
