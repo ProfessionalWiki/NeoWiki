@@ -70,10 +70,12 @@ Each Relation has
 
 #### Dependent Subject
 
-A Subject of a Schema that declares its Subjects dependent ([ADR 28](adr/028-relations-model.md)): a name, an
-identifier, a birth event. It is part of exactly one **Host Subject**, the Subject whose relation statement holds it,
-and is entered and shown inside that Subject and stored on its page. A Dependent Subject can be the Host Subject of
-further Dependent Subjects. Every other Subject is standalone.
+A Subject that belongs to another Subject: a person's name, an identifier, a birth event. It has its own Schema and
+id, but it is part of exactly one **Host Subject**, the Subject whose relation statement points at it. A Dependent
+Subject is entered and shown inside its Host Subject, is stored on the Host Subject's page, and is deleted with it.
+Whether a Schema's Subjects are dependent is declared on the Schema ([ADR 28](adr/028-relations-model.md)); every
+other Subject is standalone. A Dependent Subject can be the Host Subject of further Dependent Subjects: a birth
+event's time span.
 
 A Host Subject is not a Main Subject: the Main Subject is a page's designation, a Host Subject is what a Dependent
 Subject belongs to.
