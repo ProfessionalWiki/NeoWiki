@@ -72,7 +72,8 @@ Each Relation has
 
 A Subject that belongs to another Subject: a person's name, an identifier, a birth event. It has its own Schema and
 id, but it is part of exactly one **Host Subject**, the Subject whose relation statement points at it. A Dependent
-Subject is entered and shown inside its Host Subject, is stored on the Host Subject's page, and is deleted with it.
+Subject is entered and shown as part of its Host Subject, is stored on the Host Subject's page, and is deleted with
+it; `Special:Subject` and queries still reach it on its own.
 Whether a Schema's Subjects are dependent is declared on the Schema ([ADR 28](adr/028-relations-model.md)); every
 other Subject is standalone. A Dependent Subject can be the Host Subject of further Dependent Subjects: a birth
 event's time span.

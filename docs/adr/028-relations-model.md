@@ -82,13 +82,16 @@ rather than verb phrases ("Born in"). The schema editor already takes the proper
 
 A Schema is standalone unless it declares its Subjects dependent. A Dependent Subject — a name, an identifier, a
 birth, a sourced date — is part of exactly one Host Subject: the Subject whose relation statement holds it. It is
-entered and shown inside its Host Subject, stored on the Host Subject's page in both wiki modes
-([ADR 33](033-page-first-and-subject-first-wikis.md)), moved and deleted with it, and dropped on saving the page when
-no standalone Subject on it reaches it. It is not a search hit or a picker candidate, and needs no label; other
-Subjects may point at it, and a missing one is a red link like any other. A standalone Subject is what the wiki is
-about: picked by type-ahead, created as a stub when missing, linked to rather than shown inline, and placed by the
-wiki mode. A relation property targets Dependent Schemas or standalone ones, never both, checked when the Schema is
-saved; a Dependent Subject can be the Host Subject of further Dependent Subjects.
+entered and shown as part of its Host Subject, and stays a Subject that `Special:Subject`, the Data tab, queries and
+exports reach on its own. It is created in the write that makes its Host Subject point at it — the Host Subject's
+editor, or an import creating both — stored on the Host Subject's page in both wiki modes
+([ADR 33](033-page-first-and-subject-first-wikis.md)), moved and deleted with it, and removed by any write after
+which no standalone Subject on the page reaches it. A write that gives it a second referrer on its page is refused,
+whatever the validation enforcement setting. It is not a search hit or a picker candidate, and needs no label; a
+Subject on another page may point at it, and a missing one is a red link like any other. A standalone Subject is
+what the wiki is about: picked by type-ahead, created as a stub when missing, linked to rather than shown inline, and
+placed by the wiki mode. A relation property targets Dependent Schemas or standalone ones, never both, checked when
+the Schema is saved; a Dependent Subject can be the Host Subject of further Dependent Subjects.
 
 Structure hangs off its Host Subject by a relation on the Host Subject. Which way an ontology draws it — a birth that
 points at the person — is the mapping's concern ([Mapping Format](../authoring/mapping-format.md)), so editing a
