@@ -19,7 +19,7 @@ It governs exactly these behaviours:
 | Behaviour | Page-first | Subject-first |
 |---|---|---|
 | Creator: "Store the subject on" | shown; defaults to the current page; a new page needs a title | hidden; always a new page |
-| Target created inside the editor | non-main Subject on the host page | its own page |
+| Standalone target created inside the editor | non-main Subject on the host page | its own page |
 | Landing after save | the page | Special:Subject |
 | Links to Subjects in infoboxes and views | the page | Special:Subject |
 | Links to Subjects on the Data tab | relation values lead to the target page's Data tab with the row highlighted; the row title is not a link; "Open" leads to Special:Subject | Special:Subject |
@@ -30,7 +30,8 @@ It governs exactly these behaviours:
 | Picker disambiguation line | page title, id on collision | id only |
 
 The mode changes defaults, landing surfaces and link targets only. The REST API, parser-function parameters such as
-an explicit `page=` on `{{#create_subject}}`, and pages holding several Subjects are the same in both.
+an explicit `page=` on `{{#create_subject}}`, pages holding several Subjects, and where a component Subject lives — on
+its host's page ([ADR 28](028-relations-model.md)) — are the same in both.
 
 ## Consequences
 
