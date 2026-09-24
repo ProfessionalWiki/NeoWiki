@@ -82,7 +82,9 @@ rather than verb phrases ("Born in"). The schema editor already takes the proper
 
 A Schema is standalone unless it declares its Subjects dependent. A Dependent Subject — a name, an identifier, a
 birth, a sourced date — is part of exactly one Host Subject: the Subject whose relation statement holds it. It is
-entered and shown inside its Host Subject, stored on the Host Subject's page in both wiki modes
+entered and shown as part of its Host Subject, and stays a Subject that `Special:Subject`, the Data tab, queries and
+exports reach on its own. It is created in the write that makes its Host Subject point at it — the Host Subject's
+editor, or an import creating both — stored on the Host Subject's page in both wiki modes
 ([ADR 33](033-page-first-and-subject-first-wikis.md)), moved and deleted with it, and dropped on saving the page when
 no standalone Subject on it reaches it. It is not a search hit or a picker candidate, and needs no label; other
 Subjects may point at it, and a missing one is a red link like any other. A standalone Subject is what the wiki is
