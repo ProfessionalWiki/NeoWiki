@@ -121,5 +121,6 @@ Representative read endpoints:
 
 * <code>GET /neowiki/v0/subject/{subjectId}</code>
 * <code>GET /neowiki/v0/schema/{schemaName}</code>
+* <code>GET /neowiki/v0/schema/{schemaName}/json-schema</code>: a Schema's Subjects as a [https://neowiki.ai/docs/api/json-schema JSON Schema] document, for validating data before upload; try [{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/schema/Person/json-schema Person]
 
 For full endpoint documentation, see the OpenAPI spec above.
