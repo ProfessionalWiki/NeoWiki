@@ -33,6 +33,7 @@ export * from './composables/useLayoutPermissions';
 export * from './composables/useSchemaPermissions';
 export * from './composables/useSortable';
 export * from './composables/useStringValueInput';
+export * from './composables/useSubjectEditor';
 export * from './composables/useSubjectPermissions';
 export * from './domain/Layout';
 export * from './domain/PageIdentifiers';

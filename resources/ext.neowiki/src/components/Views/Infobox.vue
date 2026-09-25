@@ -25,13 +25,13 @@
 				v-if="canEditSubject"
 				weight="quiet"
 				:aria-label="$i18n( 'neowiki-infobox-edit-link' ).text()"
-				@click="openEditor"
+				@click="openEditor( subjectId )"
 			>
 				<CdxIcon :icon="cdxIconEdit" />
 			</CdxButton>
 			<SubjectEditorDialog
 				v-if="editingSubject !== null && editingSchema !== null"
-				v-model:open="isEditorOpen"
+				v-model:open="editorOpen"
 				:subject="editingSubject as Subject"
 				:schema="editingSchema as Schema"
 				:on-save="handleSaveSubject"
@@ -62,13 +62,14 @@
 </template>
 
 <script setup lang="ts">
-import { Component, computed, ref, shallowRef } from 'vue';
+import { Component, computed } from 'vue';
 import { Subject } from '@/domain/Subject.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import { useSubjectEditor } from '@/composables/useSubjectEditor.ts';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
@@ -86,32 +87,10 @@ const layoutStore = useLayoutStore();
 const subjectRepo = NeoWikiServices.getSubjectRepository();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 
-const isEditorOpen = ref( false );
-// The dialog edits its own copy rather than the registry entry (ADR 16). The display below stays
-// on the stores until a save, whose response carries the Subject and Schema as persisted.
-const editingSubject = shallowRef<Subject | null>( null );
-const editingSchema = shallowRef<Schema | null>( null );
+const { editingSubject, editingSchema, editorOpen, openEditor } = useSubjectEditor( subjectRepo, schemaRepo );
 
 const subject = computed( () => subjectStore.getSubject( props.subjectId ) );
 const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) );
-
-async function openEditor(): Promise<void> {
-	try {
-		const [ freshSubject, freshSchema ] = await Promise.all( [
-			subjectRepo.getSubjectForEditing( props.subjectId ),
-			schemaRepo.getSchema( subject.value.getSchemaName() )
-		] );
-
-		editingSubject.value = freshSubject;
-		editingSchema.value = freshSchema;
-		isEditorOpen.value = true;
-	} catch ( error ) {
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{ type: 'error' }
-		);
-	}
-}
 
 const handleSaveSubject = async ( updatedSubject: Subject, comment: string ): Promise<void> => {
 	await subjectStore.updateSubject( updatedSubject, comment );
