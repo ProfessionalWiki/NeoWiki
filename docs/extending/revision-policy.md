@@ -37,9 +37,9 @@ Approval changes outside an edit reach NeoWiki only through
 [`rebuild()`](page-properties.md#refreshing-a-pages-data-without-an-edit), and a newly registered policy reaches
 the graph stores only through a [full rebuild](../operations/maintenance.md#rebuilding-the-graph).
 
-Editing reads the latest revision. So do `?action=subjects`, `GET /neowiki/v0/page/{pageId}/subjects`, the
-referenced Subjects on a `revisionId` read ([#1390](https://github.com/ProfessionalWiki/NeoWiki/issues/1390)), the
-parse-time accessors, and the wiki's search index, which holds a page's Subjects the way MediaWiki holds its
-wikitext. Schema and Mapping reads are cached under the latest revision id, so an approval change without an edit to
-that Schema or Mapping page takes effect on its next edit or when the entry expires
-([#1392](https://github.com/ProfessionalWiki/NeoWiki/issues/1392)).
+Editing reads the latest revision. So do `?action=subjects`, `GET /neowiki/v0/page/{pageId}/subjects`,
+`GET /neowiki/v0/page/{pageId}/mainSubject`, the referenced Subjects on a `revisionId` read
+([#1390](https://github.com/ProfessionalWiki/NeoWiki/issues/1390)), the parse-time accessors, and the wiki's search
+index, which holds a page's Subjects the way MediaWiki holds its wikitext. Schema and Mapping reads are cached under
+the latest revision id, so an approval change without an edit to that Schema or Mapping page takes effect on its next
+edit or when the entry expires ([#1392](https://github.com/ProfessionalWiki/NeoWiki/issues/1392)).

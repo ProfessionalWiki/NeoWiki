@@ -292,6 +292,11 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetPageSubjectsApi"
 		},
 		{
+			"path": "/neowiki/v0/page/{pageId}/mainSubject",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetMainSubjectApi"
+		},
+		{
 			"path": "/neowiki/v0/page/{pageId}/editNotices",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectEditNoticesApi"
