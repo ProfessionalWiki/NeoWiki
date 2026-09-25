@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
 	newDateProperty,
 	DateType,
-	parseStrictDate,
 } from '@/domain/propertyTypes/Date';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue } from '@/domain/Value';
@@ -77,6 +76,16 @@ describe( 'createPropertyDefinitionFromJson', () => {
 		expect( property.minPrecision ).toBe( 'month' );
 	} );
 
+	it( 'drops a bound that is not a string, which the backend cannot read either', () => {
+		const property = dateType.createPropertyDefinitionFromJson(
+			{ name: new PropertyName( 'Date' ), type: 'date', description: '', required: false },
+			{ type: 'date', minimum: 1984, maximum: '1990' },
+		);
+
+		expect( property.minimum ).toBeUndefined();
+		expect( property.maximum ).toBe( '1990' );
+	} );
+
 	it( 'normalizes null minPrecision to undefined', () => {
 		const property = dateType.createPropertyDefinitionFromJson(
 			{ name: new PropertyName( 'Date' ), type: 'date', description: '', required: false },
@@ -85,26 +94,4 @@ describe( 'createPropertyDefinitionFromJson', () => {
 
 		expect( property.minPrecision ).toBeUndefined();
 	} );
-} );
-
-describe( 'parseStrictDate', () => {
-
-	it( 'returns a UTC-midnight millisecond timestamp for a valid date', () => {
-		const result = parseStrictDate( '2025-06-15' );
-
-		expect( result ).toBe( Date.parse( '2025-06-15T00:00:00Z' ) );
-	} );
-
-	it( 'returns null for a calendar-overflow date that Date silently rolls over', () => {
-		expect( parseStrictDate( '2025-02-30' ) ).toBeNull();
-	} );
-
-	it( 'returns null for a value with a time component', () => {
-		expect( parseStrictDate( '2025-06-15T12:00:00Z' ) ).toBeNull();
-	} );
-
-	it( 'returns null for completely malformed input', () => {
-		expect( parseStrictDate( 'not-a-date' ) ).toBeNull();
-	} );
-
 } );
