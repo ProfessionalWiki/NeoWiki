@@ -119,7 +119,8 @@ export interface SubjectRepository extends SubjectLookup {
 	/**
 	 * Creates a Subject together with a page of its own, in one revision, with the Subject as that
 	 * page's Main Subject. The page is titled by pageTitle, by the label where there is no
-	 * pageTitle, and by the Subject's own ID when the label titles no page. Throws
+	 * pageTitle, and by the Subject's own ID when the label titles no page. Without a label, the
+	 * label its Schema's template gives titles the page where that page is free. Throws
 	 * PageTitleTakenError when a page of that title already exists, and InvalidPageTitleError when
 	 * the pageTitle given titles no page; nothing is created then.
 	 *

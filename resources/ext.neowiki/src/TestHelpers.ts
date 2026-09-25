@@ -46,17 +46,20 @@ interface NewTestSchemaOptions {
 	title?: string;
 	description?: string;
 	properties?: PropertyDefinitionList;
+	labelTemplate?: string | null;
 }
 
 export function newSchema( {
 	title = 'TestSchema',
 	description = 'TestSchema description',
 	properties,
+	labelTemplate = null,
 }: NewTestSchemaOptions = {} ): Schema {
 	return new Schema(
 		title,
 		description,
 		properties ?? new PropertyDefinitionList( [] ),
+		labelTemplate,
 	);
 }
 

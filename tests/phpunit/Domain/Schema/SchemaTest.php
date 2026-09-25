@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
 /**
@@ -60,6 +61,33 @@ class SchemaTest extends TestCase {
 			] ),
 			$schema->getRelationProperties()
 		);
+	}
+
+	public function testDefinitionOfAStatementIsTheOneItsValueWasWrittenUnder(): void {
+		$title = TestProperty::buildText( description: 'The title' );
+		$schema = $this->newSchemaWithProperties( [
+			'Subtitle' => TestProperty::buildText( description: 'The subtitle' ),
+			'Title' => $title,
+			'Year' => TestProperty::buildNumber(),
+		] );
+
+		$this->assertEquals( $title, $schema->definitionOf( TestStatement::build( property: 'Title', propertyType: 'text' ) ) );
+	}
+
+	public function testStatementOfAPropertyTheSchemaLacksHasNoDefinition(): void {
+		$schema = $this->newSchemaWithProperties( [ 'Title' => TestProperty::buildText() ] );
+
+		$this->assertNull( $schema->definitionOf( TestStatement::build( property: 'Subtitle', propertyType: 'text' ) ) );
+	}
+
+	/**
+	 * A value written under another type than the Schema now gives the property does not follow the
+	 * definition's rules.
+	 */
+	public function testStatementWrittenUnderAnotherTypeHasNoDefinition(): void {
+		$schema = $this->newSchemaWithProperties( [ 'Title' => TestProperty::buildText() ] );
+
+		$this->assertNull( $schema->definitionOf( TestStatement::build( property: 'Title', propertyType: 'url' ) ) );
 	}
 
 }

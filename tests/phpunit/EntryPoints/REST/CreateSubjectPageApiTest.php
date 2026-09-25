@@ -218,6 +218,43 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertFalse( $body['subject']['displayNameIsGenerated'] );
 	}
 
+	public function testTitlesAndNamesAnUnlabelledSubjectByItsSchemasLabelTemplate(): void {
+		$this->createSchema(
+			'Artwork',
+			'{"labelTemplate": "{Title}", "propertyDefinitions": {"Title": {"type": "text"}}}'
+		);
+
+		$body = $this->bodyOf( $this->create( [
+			'schema' => 'Artwork',
+			'statements' => [ 'Title' => [ 'propertyType' => 'text', 'value' => 'Madonna and Child on a Cloud' ] ],
+		] ) );
+
+		$this->assertSame( 'Madonna and Child on a Cloud', $body['pageTitle'] );
+		$this->assertSame( 'Madonna and Child on a Cloud', $body['subject']['displayName'] );
+		$this->assertFalse( $body['subject']['displayNameIsGenerated'] );
+	}
+
+	/**
+	 * Nobody chose a template label, so a page already holding it is no conflict to report: the Subject
+	 * gets a page of its own under its id, as it would without a template.
+	 */
+	public function testTitlesThePageAfterTheSubjectWhenAPageHoldsItsTemplateLabel(): void {
+		$this->createSchema(
+			'Artwork',
+			'{"labelTemplate": "{Title}", "propertyDefinitions": {"Title": {"type": "text"}}}'
+		);
+		$this->editPage( Title::newFromText( 'Madonna and Child on a Cloud' ), 'Plain wikitext' );
+
+		$response = $this->create( [
+			'schema' => 'Artwork',
+			'statements' => [ 'Title' => [ 'propertyType' => 'text', 'value' => 'Madonna and Child on a Cloud' ] ],
+		] );
+		$body = $this->bodyOf( $response );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertSame( $this->titleOfSubjectId( $body['subjectId'] ), $body['pageTitle'] );
+	}
+
 	/**
 	 * The title the caller supplied goes back and nothing else: which page holds it, and what that
 	 * page carries, are not theirs to learn from a title they typed.

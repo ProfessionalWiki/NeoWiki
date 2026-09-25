@@ -3,6 +3,7 @@ import { PropertyName } from '@/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 import { Statement } from '@/domain/Statement';
 import { StatementList } from '@/domain/StatementList';
+import { withRenamedPlaceholder } from '@/domain/LabelTemplate';
 
 export type SchemaName = string;
 
@@ -12,6 +13,11 @@ export class Schema {
 		private readonly name: SchemaName,
 		private readonly description: string,
 		private readonly properties: PropertyDefinitionList,
+		/**
+		 * How the Schema labels a Subject nobody typed a label for, as `{Property name}`
+		 * placeholders in text; null when it has none.
+		 */
+		private readonly labelTemplate: string | null,
 	) {
 	}
 
@@ -21,6 +27,10 @@ export class Schema {
 
 	public getDescription(): string {
 		return this.description;
+	}
+
+	public getLabelTemplate(): string | null {
+		return this.labelTemplate;
 	}
 
 	public getPropertyDefinitions(): PropertyDefinitionList {
@@ -34,11 +44,11 @@ export class Schema {
 	}
 
 	public withName( name: SchemaName ): Schema {
-		return new Schema( name, this.description, this.properties );
+		return new Schema( name, this.description, this.properties, this.labelTemplate );
 	}
 
 	public withDescription( description: string ): Schema {
-		return new Schema( this.name, description, this.properties );
+		return new Schema( this.name, description, this.properties, this.labelTemplate );
 	}
 
 	public withAddedPropertyDefinition( property: PropertyDefinition ): Schema {
@@ -46,6 +56,7 @@ export class Schema {
 			this.name,
 			this.description,
 			new PropertyDefinitionList( [ ...this.properties, property ] ),
+			this.labelTemplate,
 		);
 	}
 
@@ -54,6 +65,24 @@ export class Schema {
 			this.name,
 			this.description,
 			this.properties.reordered( names ),
+			this.labelTemplate,
+		);
+	}
+
+	/**
+	 * A rename carries over to the placeholders of the label template, which would otherwise name a
+	 * property the Schema no longer has.
+	 */
+	public withReplacedPropertyDefinition( previousName: PropertyName, property: PropertyDefinition ): Schema {
+		return new Schema(
+			this.name,
+			this.description,
+			new PropertyDefinitionList(
+				[ ...this.properties ].map( ( existing ) => existing.name.toString() === previousName.toString() ? property : existing ),
+			),
+			this.labelTemplate === null ?
+				null :
+				withRenamedPlaceholder( this.labelTemplate, previousName.toString(), property.name.toString() ),
 		);
 	}
 
@@ -62,6 +91,7 @@ export class Schema {
 			this.name,
 			this.description,
 			this.properties.withoutNames( [ propertyName ] ),
+			this.labelTemplate,
 		);
 	}
 

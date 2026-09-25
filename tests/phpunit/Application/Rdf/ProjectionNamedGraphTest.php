@@ -94,6 +94,7 @@ class ProjectionNamedGraphTest extends TestCase {
 			) ),
 			new SubjectIriResolver( $this->ns, TestSources::newRegistry(), new LegacyLoggerSpy() ),
 			new LegacyLoggerSpy(),
+			TestSources::newSubjectNamer(),
 		);
 	}
 
@@ -104,6 +105,7 @@ class ProjectionNamedGraphTest extends TestCase {
 			RdfValueMapperRegistry::withCoreMappers(),
 			new SubjectIriResolver( $this->ns, TestSources::newRegistry(), new LegacyLoggerSpy() ),
 			new LegacyLoggerSpy(),
+			TestSources::newSubjectNamer(),
 		);
 	}
 

@@ -37,6 +37,24 @@ describe( 'SchemaDeserializer', () => {
 		} );
 	} );
 
+	it( 'reads the label template', () => {
+		const schema = new SchemaDeserializer().deserialize( 'Artwork', {
+			labelTemplate: '{Title}',
+			propertyDefinitions: {},
+		} );
+
+		expect( schema.getLabelTemplate() ).toBe( '{Title}' );
+	} );
+
+	it( 'reads a blank label template as none', () => {
+		const schema = new SchemaDeserializer().deserialize( 'Artwork', {
+			labelTemplate: '  ',
+			propertyDefinitions: {},
+		} );
+
+		expect( schema.getLabelTemplate() ).toBeNull();
+	} );
+
 	it( 'deserializes a schema with no property definitions', () => {
 		const schema = new SchemaDeserializer().deserialize( 'Empty', {
 			description: 'Empty schema',

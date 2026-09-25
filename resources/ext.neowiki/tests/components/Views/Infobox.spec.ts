@@ -51,6 +51,7 @@ describe( 'Infobox', () => {
 			createPropertyDefinitionFromJson( 'age', { type: NumberType.typeName } ),
 			createPropertyDefinitionFromJson( 'website', { type: UrlType.typeName } ),
 		] ),
+		null,
 	);
 
 	const mockSubject = new Subject(
@@ -211,7 +212,7 @@ describe( 'Infobox', () => {
 			'TestSchema',
 			new StatementList( [] ),
 		);
-		const freshSchema = new Schema( 'TestSchema', 'Fetched schema', new PropertyDefinitionList( [] ) );
+		const freshSchema = new Schema( 'TestSchema', 'Fetched schema', new PropertyDefinitionList( [] ), null );
 		getSubjectForEditingMock.mockResolvedValue( freshSubject );
 		getSchemaMock.mockResolvedValue( freshSchema );
 
@@ -276,6 +277,7 @@ describe( 'Infobox', () => {
 			new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'Cost centre', { type: TextType.typeName } ),
 			] ),
+			null,
 		);
 		// What the editor hands to onSave: a plain Subject, without the page context the registry
 		// entry carries, and here also without the statement the server ends up storing.

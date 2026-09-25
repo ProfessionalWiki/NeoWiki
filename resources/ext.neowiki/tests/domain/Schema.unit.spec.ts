@@ -95,6 +95,27 @@ describe( 'Schema', () => {
 
 	} );
 
+	describe( 'withReplacedPropertyDefinition', () => {
+
+		it( 'puts the new definition where the one it replaces was', () => {
+			const schema = newSchema( {
+				properties: new PropertyDefinitionList( [
+					newTextProperty( { name: 'First' } ),
+					newTextProperty( { name: 'Title' } ),
+					newTextProperty( { name: 'Last' } ),
+				] ),
+			} );
+
+			const updated = schema.withReplacedPropertyDefinition(
+				new PropertyName( 'Title' ),
+				newTextProperty( { name: 'Name' } ),
+			);
+
+			expect( Object.keys( updated.getPropertyDefinitions().asRecord() ) ).toEqual( [ 'First', 'Name', 'Last' ] );
+		} );
+
+	} );
+
 	describe( 'withRemovedPropertyDefinition', () => {
 
 		it( 'removes a Property Definition', () => {
@@ -110,6 +131,34 @@ describe( 'Schema', () => {
 			expect( updatedSchema.getPropertyDefinitions().asRecord() ).toEqual( {
 				[ property2.name.toString() ]: property2,
 			} );
+		} );
+
+	} );
+
+	describe( 'label template', () => {
+
+		const schema = newSchema( {
+			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Title' } ) ] ),
+			labelTemplate: '{Title}',
+		} );
+
+		it.each( [
+			[ 'withName', () => schema.withName( 'Renamed' ) ],
+			[ 'withDescription', () => schema.withDescription( 'Described' ) ],
+			[ 'withAddedPropertyDefinition', () => schema.withAddedPropertyDefinition( newTextProperty( { name: 'Material' } ) ) ],
+			[ 'withReorderedPropertyDefinitions', () => schema.withReorderedPropertyDefinitions( [ new PropertyName( 'Title' ) ] ) ],
+			[ 'withRemovedPropertyDefinition', () => schema.withRemovedPropertyDefinition( new PropertyName( 'Material' ) ) ],
+		] )( 'is kept by %s', ( _method, change ) => {
+			expect( change().getLabelTemplate() ).toBe( '{Title}' );
+		} );
+
+		it( 'follows a property definition renamed by withReplacedPropertyDefinition', () => {
+			const renamed = schema.withReplacedPropertyDefinition(
+				new PropertyName( 'Title' ),
+				newTextProperty( { name: 'Name' } ),
+			);
+
+			expect( renamed.getLabelTemplate() ).toBe( '{Name}' );
 		} );
 
 	} );

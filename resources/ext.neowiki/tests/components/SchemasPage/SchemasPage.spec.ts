@@ -269,9 +269,9 @@ describe( 'SchemasPage', () => {
 		canEditSchemaRef.value = true;
 		// A description the store copy does not have, so the assertion can only pass if the
 		// dialog received the repository's schema rather than a registry read.
-		const fetched = new Schema( 'Person', 'from the repository', new PropertyDefinitionList( [] ) );
+		const fetched = new Schema( 'Person', 'from the repository', new PropertyDefinitionList( [] ), null );
 		getSchemaMock.mockResolvedValue( fetched );
-		schemaStore.setSchema( 'Person', new Schema( 'Person', 'stale', new PropertyDefinitionList( [] ) ) );
+		schemaStore.setSchema( 'Person', new Schema( 'Person', 'stale', new PropertyDefinitionList( [] ), null ) );
 
 		const wrapper = mountComponent( [
 			{ name: 'Person', description: '', propertyCount: 3 },
@@ -305,7 +305,7 @@ describe( 'SchemasPage', () => {
 
 	it( 'does not render SchemaEditorDialog when user lacks edit permission', async () => {
 		canEditSchemaRef.value = true;
-		getSchemaMock.mockResolvedValue( new Schema( 'Person', '', new PropertyDefinitionList( [] ) ) );
+		getSchemaMock.mockResolvedValue( new Schema( 'Person', '', new PropertyDefinitionList( [] ), null ) );
 
 		const wrapper = mountComponent( [
 			{ name: 'Person', description: '', propertyCount: 3 },

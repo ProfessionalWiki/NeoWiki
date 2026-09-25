@@ -11,7 +11,6 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
@@ -176,8 +175,8 @@ class SubjectDataLookup {
 	}
 
 	/**
-	 * A Subject asked for by ID comes without the page that hosts it, so a label-less one reads as
-	 * its Schema name even where it is a page's Main Subject.
+	 * A Subject asked for by ID comes without the page that hosts it, so a label-less one its Schema's
+	 * label template does not label reads as its Schema name, even where it is a page's Main Subject.
 	 *
 	 * @return array{0: ?array<string, mixed>}
 	 */
@@ -190,7 +189,7 @@ class SubjectDataLookup {
 
 		return [ $this->subjectToTable(
 			$subject,
-			SubjectDisplayName::forSubjectWithoutPage( $subject )
+			$this->subjectResolver->nameWithoutPage( $subject )
 		) ];
 	}
 
@@ -234,7 +233,7 @@ class SubjectDataLookup {
 	private function subjectOnPageToTable( Subject $subject, PageSubjects $pageSubjects, string $pageName ): array {
 		$table = $this->subjectToTable(
 			$subject,
-			SubjectDisplayName::forSubject( $subject, $pageSubjects, $pageName )
+			$this->subjectResolver->nameOnPage( $subject, $pageSubjects, $pageName )
 		);
 		$table['isMainSubject'] = $pageSubjects->isMainSubject( $subject->getId() );
 

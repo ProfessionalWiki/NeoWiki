@@ -8,7 +8,26 @@
 			cannot follow without re-rendering CdxDialog. -->
 		<div class="ext-neowiki-subject-edit-pane__header">
 			<h3 class="ext-neowiki-subject-edit-pane__name">
+				<!-- A Schema with a label template names its Subjects from a field, so the field is
+					the one place to rename them: no label of their own is offered beside it. A label
+					typed before stays in the rename field, where clearing it hands naming back. -->
+				<span
+					v-if="namedByField"
+					class="ext-neowiki-subject-edit-pane__named"
+				>
+					<span class="ext-neowiki-subject-edit-pane__named-text">{{ paneName }}</span>
+					<CdxButton
+						weight="quiet"
+						type="button"
+						:aria-label="$i18n( 'neowiki-subject-editor-edit-naming-property', namingProperty ).text()"
+						:title="$i18n( 'neowiki-subject-editor-edit-naming-property', namingProperty ).text()"
+						@click="focusNamingField"
+					>
+						<CdxIcon :icon="cdxIconEdit" size="small" />
+					</CdxButton>
+				</span>
 				<EditableText
+					v-else
 					:model-value="label"
 					:edit-button-label="$i18n( 'neowiki-subject-editor-rename' ).text()"
 					:input-aria-label="$i18n( 'neowiki-subject-editor-label-field' ).text()"
@@ -70,6 +89,8 @@
 export interface SubjectEditPaneExposes {
 	hasChanged: boolean;
 	label: string;
+	// The name the pane shows for its Subject: its label as typed, else the name the fields give it.
+	paneName: string;
 	// Refreshed on relation changes alone, so its other statements lag: read it for the
 	// relations it holds, never to save or validate from.
 	editedSubject: Subject;
@@ -84,17 +105,20 @@ export interface SubjectEditPaneExposes {
 
 <script setup lang="ts">
 import { ref, shallowRef, computed, watch, provide } from 'vue';
+import { CdxButton, CdxIcon } from '@wikimedia/codex';
+import { cdxIconEdit } from '@wikimedia/codex-icons';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import type { SubjectEditorExposes } from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import { subjectLabelPlaceholder } from '@/presentation/subjectLabelPlaceholder.ts';
-import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
+import { editedSubjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import EditableText from '@/components/common/EditableText.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
+import { namingPropertyName, templateLabel } from '@/domain/LabelTemplate.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { Schema } from '@/domain/Schema.ts';
@@ -145,7 +169,45 @@ const label = ref( props.subject.getLabel() ?? '' );
 
 const storedLabel = computed( (): string | null => enteredSubjectLabel( label.value ) );
 
-const paneName = computed( (): string => storedLabel.value ?? subjectDisplayName( props.subject ) );
+const savedTemplateLabel = computed( (): string | null =>
+	templateLabel( props.schema, props.subject.getStatements() )
+);
+
+// What the Schema's label template reads from the fields, so the name above follows them as they are
+// edited. Read from the Subject as given until the form reports a change.
+const formTemplateLabel = ref( savedTemplateLabel.value );
+
+function refreshFormTemplateLabel(): void {
+	// Without a template there is nothing to read, and no need to harvest the form on each change.
+	if ( props.schema.getLabelTemplate() === null ) {
+		formTemplateLabel.value = null;
+		return;
+	}
+
+	if ( subjectEditorRef.value ) {
+		formTemplateLabel.value = templateLabel( props.schema, subjectEditorRef.value.getSubjectData() );
+	}
+}
+
+const nameWithoutLabel = computed( (): string =>
+	editedSubjectDisplayName( props.subject, formTemplateLabel.value, savedTemplateLabel.value )
+);
+
+const paneName = computed( (): string => storedLabel.value ?? nameWithoutLabel.value );
+
+const namingProperty = computed( (): string | null => namingPropertyName( props.schema ) );
+
+// Decided by the Subject as opened, not by the label as typed: clearing a typed label keeps the rename
+// field it was cleared in, which then previews the label the template gives, until the save.
+const namedByField = computed( (): boolean =>
+	namingProperty.value !== null && props.subject.getLabel() === null
+);
+
+function focusNamingField(): void {
+	if ( namingProperty.value !== null ) {
+		subjectEditorRef.value?.focusProperty( namingProperty.value );
+	}
+}
 
 // Shown whether or not the name above already carries the Schema's name. Elsewhere that repeat is
 // worth suppressing, and `schemaNameToShow` does so; here the badge is the only link to the Schema
@@ -172,7 +234,9 @@ const pageUrl = computed( (): string =>
 	pageName.value === null ? '' : mw.util.getUrl( pageName.value )
 );
 
-const labelPlaceholder = computed( (): string => subjectLabelPlaceholder( props.subject ) );
+const labelPlaceholder = computed( (): string =>
+	namingProperty.value === null ? subjectLabelPlaceholder( props.subject ) : nameWithoutLabel.value
+);
 
 /**
  * Opens the Schema editor in place of following the link, for a plain left click by someone
@@ -248,6 +312,7 @@ let dirtySinceValidation = false;
 
 function handleEditorChange(): void {
 	markChanged();
+	refreshFormTemplateLabel();
 	dirtySinceValidation = true;
 	revalidate();
 }
@@ -293,6 +358,7 @@ function handleClearViolation( payload: { propertyName: string; valuePartIndex: 
 watch( [ subjectEditorRef, () => props.schema ], ( [ editor ] ) => {
 	if ( editor ) {
 		flush();
+		refreshFormTemplateLabel();
 	}
 }, { flush: 'post' } );
 
@@ -301,6 +367,7 @@ watch( [ subjectEditorRef, () => props.schema ], ( [ editor ] ) => {
 watch( () => props.subject, ( newSubject ) => {
 	label.value = newSubject.getLabel() ?? '';
 	editedSubject.value = newSubject;
+	formTemplateLabel.value = savedTemplateLabel.value;
 } );
 
 function buildUpdatedSubject(): Subject | null {
@@ -328,6 +395,7 @@ function withoutSessionOnlyViolations( violations: readonly SubjectViolation[] )
 defineExpose( {
 	hasChanged,
 	label,
+	paneName,
 	editedSubject,
 	setLabel,
 	resetChanged,
@@ -362,6 +430,20 @@ defineExpose( {
 		margin: 0;
 		padding-block: 0;
 		font-size: @font-size-medium;
+	}
+
+	/* Laid out as the rename field's display mode is, so whether a Schema names its Subjects
+		does not move the row. */
+	&__named {
+		display: inline-flex;
+		align-items: center;
+		gap: @spacing-25;
+		min-width: 0;
+	}
+
+	&__named-text {
+		overflow-wrap: anywhere;
+		min-width: 0;
 	}
 
 	/* Shrinkable, with `min-width: 0` so it may go below its content: the badge ellipsises

@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseIt
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
@@ -20,8 +21,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
@@ -32,9 +31,11 @@ use RuntimeException;
  * Creates a Subject together with the page it lives on, in one revision, for callers who have a
  * thing to describe rather than a page to describe it on.
  *
- * The page is titled by the title the caller chose, by the Subject's label where they chose none,
- * and by the Subject's own id when no label titles one. No title is ever invented from one the
- * caller chose: a title already taken, and one that titles no page here, both go back to them.
+ * The page is titled by the title the caller chose, by the Subject's label where they chose none, by
+ * its template label where it has none, and by the Subject's own id when neither titles one. No title
+ * is ever invented from one the caller chose: a title already taken, and one that titles no page here,
+ * both go back to them. A template label was chosen by nobody, so a page it would title that exists,
+ * or that the caller may not create, leaves the Subject its id instead.
  */
 readonly class CreateSubjectPageAction {
 
@@ -50,6 +51,7 @@ readonly class CreateSubjectPageAction {
 		private PageIdentifiersResolver $pageIdentifiersResolver,
 		private SchemaReferenceParser $schemaReferenceParser,
 		private bool $validationEnforced,
+		private SubjectNamer $subjectNamer,
 	) {
 	}
 
@@ -66,7 +68,7 @@ readonly class CreateSubjectPageAction {
 		}
 
 		$subject = $this->buildSubject( $request, $schemaReference, $schema );
-		$pageTitle = $pageTitleAsked ?? $this->pageTitleFor( $subject->getId(), $request->label );
+		$pageTitle = $pageTitleAsked ?? $this->pageTitleFor( $subject );
 
 		// Authorized before the page is looked for, so that a title the caller may not write
 		// answers the same whether or not a page holds it, rather than reporting one they may
@@ -108,7 +110,7 @@ readonly class CreateSubjectPageAction {
 			GetSubjectResponseItem::fromSubject(
 				$subject,
 				$page,
-				SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageTitle )
+				$this->subjectNamer->chosenName( $subject, $pageSubjects, $pageTitle )
 			),
 			$page,
 			$schema,
@@ -141,11 +143,15 @@ readonly class CreateSubjectPageAction {
 	}
 
 	/**
-	 * The page a Subject gets to itself where the caller chose no title: the page its label titles,
-	 * and the page its own id titles when the label titles none.
+	 * The page a Subject gets to itself where the caller chose no title: the page its label titles, else
+	 * a free page its template label titles, and the page its own id titles when neither titles one.
 	 */
-	private function pageTitleFor( SubjectId $subjectId, ?string $label ): string {
-		$fromLabel = $label === null ? null : $this->pageIdentifiersResolver->getMainNamespaceTitle( $label );
+	private function pageTitleFor( Subject $subject ): string {
+		$label = $subject->getLabel()?->text;
+		$subjectId = $subject->getId();
+		$fromLabel = $label === null
+			? $this->freeTitleFor( $this->subjectNamer->ownLabel( $subject ) )
+			: $this->pageIdentifiersResolver->getMainNamespaceTitle( $label );
 
 		// A Subject id titles a page whatever the label does: its grammar (ADR 14) holds none of
 		// the characters MediaWiki refuses in a title. Normalized all the same, since a wiki that
@@ -153,6 +159,24 @@ readonly class CreateSubjectPageAction {
 		return $fromLabel
 			?? $this->pageIdentifiersResolver->getMainNamespaceTitle( $subjectId->text )
 			?? $subjectId->text;
+	}
+
+	/**
+	 * Authorized before the page is looked for, so that whether a page holds a title the caller may not
+	 * create stays unknown to them.
+	 */
+	private function freeTitleFor( ?string $templateLabel ): ?string {
+		if ( $templateLabel === null ) {
+			return null;
+		}
+
+		$title = $this->pageIdentifiersResolver->getMainNamespaceTitle( $templateLabel );
+
+		if ( $title === null || !$this->writeAuthorizer->authorizeCreatePage( $title ) ) {
+			return null;
+		}
+
+		return $this->pageIdentifiersResolver->getIdentifiersOfTitle( $title ) === null ? $title : null;
 	}
 
 	private function buildSubject(

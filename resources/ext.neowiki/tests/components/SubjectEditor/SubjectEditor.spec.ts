@@ -36,6 +36,7 @@ describe( 'SubjectEditor', () => {
 			// field would report nothing unparseable.
 			createPropertyDefinitionFromJson( 'Notes', { type: TextType.typeName } ),
 		] ),
+		null,
 	);
 
 	function newWrapper(): VueWrapper {
@@ -86,7 +87,7 @@ describe( 'SubjectEditor', () => {
 		const withTrailingNumber = new Schema( 'TestSchema', 'A test schema', new PropertyDefinitionList( [
 			createPropertyDefinitionFromJson( 'Name', { type: TextType.typeName } ),
 			createPropertyDefinitionFromJson( 'Score', { type: NumberType.typeName } ),
-		] ) );
+		] ), null );
 		const wrapper = createTestWrapper( SubjectEditor, {
 			statements: withTrailingNumber.blankStatements(),
 			schema: withTrailingNumber,
@@ -95,7 +96,7 @@ describe( 'SubjectEditor', () => {
 
 		const withoutNumber = new Schema( 'TestSchema', 'A test schema', new PropertyDefinitionList( [
 			createPropertyDefinitionFromJson( 'Name', { type: TextType.typeName } ),
-		] ) );
+		] ), null );
 		await wrapper.setProps( { schema: withoutNumber, statements: withoutNumber.blankStatements() } );
 
 		expect( editor( wrapper ).saveBlocker() ).toBeNull();

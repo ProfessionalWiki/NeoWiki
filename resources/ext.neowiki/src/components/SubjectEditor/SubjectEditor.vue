@@ -1,5 +1,5 @@
 <template>
-	<div class="ext-neowiki-subject-editor">
+	<div ref="root" class="ext-neowiki-subject-editor">
 		<CdxField
 			v-for="( statement, index ) in props.statements"
 			:key="statement.propertyName.toString()"
@@ -31,6 +31,10 @@ export interface SubjectEditorExposes {
 	 */
 	getSubjectData(): StatementList;
 	saveBlocker(): SaveBlocker | null;
+	/**
+	 * Moves focus into the field of the named property, if the form shows one.
+	 */
+	focusProperty( propertyName: string ): void;
 }
 </script>
 
@@ -83,6 +87,8 @@ onBeforeUpdate( () => {
 
 const valueEditors = ref<ValueInputExposes[]>( [] );
 
+const root = ref<HTMLElement | null>( null );
+
 const getSubjectData = (): StatementList => {
 	const newStatements = [ ...props.statements ].map( ( statement, index ) =>
 		new Statement(
@@ -113,6 +119,14 @@ const saveBlocker = (): SaveBlocker | null => {
 	return null;
 };
 
-defineExpose<SubjectEditorExposes>( { getSubjectData, saveBlocker } );
+// The form renders one field per Statement, in order, each as a direct child.
+const focusProperty = ( propertyName: string ): void => {
+	const index = [ ...props.statements ].findIndex( ( s ) => s.propertyName.toString() === propertyName );
+	const field = root.value?.querySelectorAll( ':scope > .cdx-field' )[ index ];
+
+	field?.querySelector<HTMLElement>( 'input, textarea, [tabindex="0"]' )?.focus();
+};
+
+defineExpose<SubjectEditorExposes>( { getSubjectData, saveBlocker, focusProperty } );
 
 </script>

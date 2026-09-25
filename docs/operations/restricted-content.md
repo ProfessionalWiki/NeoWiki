@@ -67,5 +67,9 @@ error and joins the pages-with-script-errors category. A module can still reach 
   for one of them lists the page even to a reader who cannot open it: Special:Search withholds the snippet; the
   search API does not. With CirrusSearch, `action=query&prop=cirrusdoc` returns everything indexed for a page,
   Subject values included, to any reader of the wiki, as it already does for the page's wikitext.
+- **A label search name can carry Schema text.** The graph stores the label a Schema's
+  [label template](../api/schema-format.md#label-template) gives, read with the saving user's access to the Schema,
+  and the relation picker's label search returns it to any reader of the Subject's page, whether or not they may read
+  the Schema.
 - **Derived data follows the anonymous parse.** On a wiki where anonymous users cannot read, a category or page
   property a template derives from a Subject value is never set.

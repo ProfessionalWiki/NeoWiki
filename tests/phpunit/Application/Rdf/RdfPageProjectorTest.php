@@ -66,6 +66,7 @@ class RdfPageProjectorTest extends TestCase {
 			TestSources::newSchemaResolver( $schemaLookup ),
 			new SubjectIriResolver( $this->ns, TestSources::newRegistry(), $this->logger ),
 			$this->logger,
+			TestSources::newSubjectNamer( $schemaLookup ),
 		);
 	}
 
@@ -302,6 +303,32 @@ class RdfPageProjectorTest extends TestCase {
 			$this->ns->subject( new SubjectId( self::ACME_ID ) ),
 			$this->ns->rdfsLabel(),
 			RdfLiteralFactory::typed( 'Company', 'string' )
+		) ) );
+	}
+
+	public function testSubjectWithoutALabelIsLabelledThroughItsSchemasLabelTemplate(): void {
+		$page = TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build( title: 'Some page' ),
+			otherSubjects: new SubjectMap( TestSubject::build(
+				id: self::ACME_ID,
+				label: null,
+				schemaName: new SchemaName( 'Company' ),
+				statements: new StatementList( [ TestStatement::build( 'Legal name', 'ACME Corporation' ) ] )
+			) ),
+		);
+		$schema = TestSchema::build(
+			name: 'Company',
+			properties: new PropertyDefinitions( [ 'Legal name' => TestProperty::buildText() ] ),
+			labelTemplate: '{Legal name}'
+		);
+
+		$quads = $this->newProjector( new InMemorySchemaLookup( $schema ) )->projectPage( $page );
+
+		$this->assertTrue( $quads->contains( $this->quad(
+			$this->ns->subject( new SubjectId( self::ACME_ID ) ),
+			$this->ns->rdfsLabel(),
+			RdfLiteralFactory::typed( 'ACME Corporation', 'string' )
 		) ) );
 	}
 

@@ -5,6 +5,9 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
 use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Application\LabelTemplateRenderer;
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement\UpdateStatementAction;
@@ -110,6 +113,7 @@ class UpdateStatementActionTest extends TestCase {
 			),
 			presenter: $this->presenterSpy,
 			validationEnforced: $validationEnforced,
+			subjectNamer: new SubjectNamer( new LabelTemplateRenderer( $registry ), $schemaResolver ),
 		);
 	}
 
@@ -269,6 +273,22 @@ class UpdateStatementActionTest extends TestCase {
 		$this->setStatement( 'Website', 'url', [ 'https://pro.wiki' ] );
 
 		$this->assertSame( self::SCHEMA_NAME, $this->presenterSpy->subject?->displayName );
+	}
+
+	public function testSetStatementNamesALabellessSubjectThroughTheTemplateReadingTheNewValue(): void {
+		$this->schemaLookup->updateSchema( TestSchema::build(
+			name: self::SCHEMA_NAME,
+			properties: new PropertyDefinitions( [ 'Title' => TestProperty::buildText() ] ),
+			labelTemplate: '{Title}'
+		) );
+		$this->subjectRepository->savePageSubjects(
+			new PageSubjects( null, new SubjectMap( $this->labellessSubject() ) ),
+			new PageId( 7 )
+		);
+
+		$this->setStatement( 'Title', 'text', [ 'Madonna and Child on a Cloud' ] );
+
+		$this->assertSame( 'Madonna and Child on a Cloud', $this->presenterSpy->subject?->displayName );
 	}
 
 	private function labellessSubject(): Subject {

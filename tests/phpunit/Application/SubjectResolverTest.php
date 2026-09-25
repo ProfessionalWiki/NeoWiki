@@ -5,6 +5,13 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Application;
 
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
@@ -60,14 +67,16 @@ class SubjectResolverTest extends TestCase {
 		SubjectContentRepository $contentRepository,
 		?PageIdentifiersLookup $pageIdentifiersLookup = null,
 		?PageReadAuthorizer $readAuthorizer = null,
-		?SubjectLookup $subjectLookup = null
+		?SubjectLookup $subjectLookup = null,
+		?SchemaLookup $schemaLookup = null
 	): SubjectResolver {
 		return new SubjectResolver(
 			$contentRepository,
 			$subjectLookup ?? new InMemorySubjectLookup(),
 			$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
 			$readAuthorizer ?? new StubPageReadAuthorizer( true ),
-			TestSubjectIds::newParser()
+			TestSubjectIds::newParser(),
+			TestSources::newSubjectNamer( $schemaLookup )
 		);
 	}
 
@@ -285,6 +294,27 @@ class SubjectResolverTest extends TestCase {
 		);
 
 		$this->assertSame( 'Person', $resolver->resolveRelationLabel( $this->newRelationToTarget() ) );
+	}
+
+	public function testResolveRelationLabelNamesALabellessTargetThroughItsSchemasLabelTemplate(): void {
+		$target = new Subject(
+			id: new SubjectId( self::TARGET_SUBJECT_ID ),
+			label: null,
+			schema: SchemaReference::local( new SchemaName( 'Person' ) ),
+			statements: new StatementList( [ TestStatement::build( property: 'Name', value: 'Unknown artist' ) ] ),
+		);
+
+		$resolver = $this->newResolver(
+			$this->repositoryHostingOnTargetPage( new PageSubjects( null, new SubjectMap( $target ) ) ),
+			$this->hostedOnTargetPage( self::TARGET_SUBJECT_ID ),
+			schemaLookup: new InMemorySchemaLookup( TestSchema::build(
+				name: 'Person',
+				properties: new PropertyDefinitions( [ 'Name' => TestProperty::buildText() ] ),
+				labelTemplate: '{Name}'
+			) )
+		);
+
+		$this->assertSame( 'Unknown artist', $resolver->resolveRelationLabel( $this->newRelationToTarget() ) );
 	}
 
 	public function testResolveRelationLabelFallsBackToIdWhenTheHostingPageIsNotReadable(): void {

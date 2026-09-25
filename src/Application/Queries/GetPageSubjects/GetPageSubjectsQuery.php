@@ -10,13 +10,13 @@ use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
@@ -32,6 +32,7 @@ readonly class GetPageSubjectsQuery {
 		private SchemaPresentationSerializer $schemaSerializer,
 		private PageIdentifiersLookup $pageIdentifiersLookup,
 		private PageReadAuthorizer $readAuthorizer,
+		private SubjectNamer $subjectNamer,
 	) {
 	}
 
@@ -58,7 +59,7 @@ readonly class GetPageSubjectsQuery {
 			$subjectItems[$subject->id->text] = GetSubjectResponseItem::fromSubject(
 				$subject,
 				$pageIdentifiers,
-				SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageIdentifiers?->getTitle() ?? '' )
+				$this->subjectNamer->chosenName( $subject, $pageSubjects, $pageIdentifiers?->getTitle() ?? '' )
 			);
 		}
 

@@ -75,9 +75,10 @@ class CreateSubjectPageApi extends SimpleHandler {
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => false,
 				self::PARAM_DESCRIPTION => 'Display label for the Subject, which also titles the page created '
-					. 'for it where no pageTitle is given. Optional: omit it, or pass an empty string, to create a Subject nobody named, '
-					. 'whose page is titled after its Subject ID. A label that is not a main-namespace page '
-					. 'title titles no page either, and is stored as the label all the same.',
+					. 'for it where no pageTitle is given. Optional: omit it, or pass an empty string, to create a Subject '
+					. 'without a label of its own, whose page is titled after the label its Schema\'s label template gives it '
+					. 'where that page does not exist yet and may be created, and after its Subject ID otherwise. A label '
+					. 'that is not a main-namespace page title titles no page either, and is stored as the label all the same.',
 			],
 			'pageTitle' => [
 				self::PARAM_SOURCE => 'body',

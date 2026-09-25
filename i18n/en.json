@@ -139,6 +139,7 @@
 	"neowiki-subject-editor-save": "Save changes",
 	"neowiki-subject-editor-label-field": "Subject label",
 	"neowiki-subject-editor-rename": "Rename subject",
+	"neowiki-subject-editor-edit-naming-property": "Edit $1, which names this subject",
 	"neowiki-subject-editor-open-target": "Open $1",
 
 	"neowiki-schema-editor-new-property": "Add property definition",
@@ -181,9 +182,11 @@
 	"neowiki-subject-creator-page-title-field": "Page title",
 	"neowiki-subject-creator-page-title-help": "Leave empty to title the page after the Subject's label.",
 	"neowiki-subject-creator-page-title-required": "Give the page a title, or the Subject a label.",
+	"neowiki-subject-creator-page-title-required-template": "Give the page a title, or fill in $1, which names the Subject.",
 	"neowiki-subject-creator-page-title-invalid": "\"$1\" is not a valid page title. It cannot name another namespace, and some punctuation is not allowed in a title.",
 	"neowiki-subject-creator-page-taken": "A page named \"$1\" already exists. Choose it as an existing page, or use a different title.",
 	"neowiki-subject-creator-page-taken-fixed": "A page named \"$1\" already exists. Give the Subject a different label.",
+	"neowiki-subject-creator-page-taken-fixed-template": "A page named \"$1\" already exists. Change $2, which names the Subject.",
 	"neowiki-subject-creator-page-read-error": "The page \"$1\" could not be read. Pick it again to retry.",
 	"neowiki-createsubject-button": "Create subject",
 

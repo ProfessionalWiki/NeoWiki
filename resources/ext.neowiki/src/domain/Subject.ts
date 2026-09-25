@@ -32,7 +32,7 @@ export class Subject {
 
 	/**
 	 * The name to show for this Subject: its stored label, or the fallback the server derived
-	 * from the page name or the Schema name when there is none.
+	 * from the Schema's label template, the page name or the Schema name when there is none.
 	 */
 	public getDisplayName(): string {
 		return this.displayName;
@@ -70,8 +70,7 @@ export class Subject {
 
 	/**
 	 * A stored label is its own display name, so setting one sets both, and a name someone just typed
-	 * is not generated. Clearing one keeps the display name the server last derived, since only the
-	 * server can derive a new one.
+	 * is not generated. Clearing one keeps the display name the server last derived.
 	 */
 	public withLabel( label: string | null ): Subject {
 		return new Subject(

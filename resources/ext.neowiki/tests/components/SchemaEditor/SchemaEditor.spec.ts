@@ -100,6 +100,7 @@ describe( 'SchemaEditor', () => {
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 			] ),
+			null,
 		);
 
 		const wrapper = createWrapper( schema );
@@ -114,6 +115,7 @@ describe( 'SchemaEditor', () => {
 			'EmptySchema',
 			'Description',
 			new PropertyDefinitionList( [] ),
+			null,
 		);
 
 		const wrapper = createWrapper( schema );
@@ -131,6 +133,7 @@ describe( 'SchemaEditor', () => {
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 			] ),
+			null,
 		);
 
 		const wrapper = createWrapper( schema );
@@ -151,6 +154,7 @@ describe( 'SchemaEditor', () => {
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 			] ),
+			null,
 		);
 
 		const wrapper = createWrapper( schema );
@@ -169,6 +173,7 @@ describe( 'SchemaEditor', () => {
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 			] ),
+			null,
 		);
 
 		const wrapper = createWrapper( schema );
@@ -185,6 +190,7 @@ describe( 'SchemaEditor', () => {
 			'TestSchema',
 			'The description the editor was handed',
 			new PropertyDefinitionList( [] ),
+			null,
 		);
 
 		const wrapper = createWrapper( schema, 'The description the host now holds' );
@@ -199,6 +205,7 @@ describe( 'SchemaEditor', () => {
 			'TestSchema',
 			'The description it arrived with',
 			new PropertyDefinitionList( [] ),
+			null,
 		);
 
 		const wrapper = mount( SchemaEditor, {
@@ -220,6 +227,7 @@ describe( 'SchemaEditor', () => {
 			new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 			] ),
+			null,
 		);
 
 		const wrapper = createWrapper( schema, 'Held by the host' );
@@ -235,6 +243,7 @@ describe( 'SchemaEditor', () => {
 			'TestSchema',
 			'Description',
 			new PropertyDefinitionList( [] ),
+			null,
 		);
 
 		const wrapper = createWrapper( schema );
@@ -254,6 +263,7 @@ describe( 'SchemaEditor', () => {
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 			] ),
+			null,
 		);
 
 		const wrapper = createWrapper( schema );
@@ -271,6 +281,7 @@ describe( 'SchemaEditor', () => {
 			new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 			] ),
+			null,
 		);
 
 		const wrapper = createWrapper( schema );
@@ -282,6 +293,25 @@ describe( 'SchemaEditor', () => {
 		expect( wrapper.emitted( 'change' ) ).toHaveLength( 1 );
 	} );
 
+	it( 'renames the label template placeholder when its property is renamed', async () => {
+		const schema = new Schema(
+			'Artwork',
+			'',
+			new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Title', { type: TextType.typeName } ),
+			] ),
+			'{Title}',
+		);
+
+		const wrapper = createWrapper( schema );
+		await wrapper.findComponent( { name: 'PropertyDefinitionEditor' } ).vm.$emit(
+			'update:propertyDefinition',
+			createPropertyDefinitionFromJson( 'Name', { type: TextType.typeName } ),
+		);
+
+		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getLabelTemplate() ).toBe( '{Name}' );
+	} );
+
 	it( 'reorders properties when propertyReordered event is emitted', async () => {
 		const schema = new Schema(
 			'TestSchema',
@@ -291,6 +321,7 @@ describe( 'SchemaEditor', () => {
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'thirdProp', { type: TextType.typeName } ),
 			] ),
+			null,
 		);
 
 		const wrapper = createWrapper( schema );
@@ -315,6 +346,7 @@ describe( 'SchemaEditor', () => {
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 			] ),
+			null,
 		);
 
 		const wrapper = createWrapper( schema );
@@ -335,6 +367,7 @@ describe( 'SchemaEditor', () => {
 			new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 			] ),
+			null,
 		);
 
 		const wrapper = createWrapper( schema );
@@ -348,6 +381,7 @@ describe( 'SchemaEditor', () => {
 				createPropertyDefinitionFromJson( 'alphaProperty', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'betaProperty', { type: TextType.typeName } ),
 			] ),
+			null,
 		);
 
 		await wrapper.setProps( { initialSchema: newSchema } );
@@ -364,6 +398,7 @@ describe( 'SchemaEditor', () => {
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 			] ),
+			null,
 		);
 
 		const wrapper = createWrapper( schema );
@@ -380,6 +415,7 @@ describe( 'SchemaEditor', () => {
 				'TestSchema',
 				'Description',
 				new PropertyDefinitionList( [ newNumberProperty( { name: 'Score' } ) ] ),
+				null,
 			);
 		}
 
@@ -431,6 +467,7 @@ describe( 'SchemaEditor', () => {
 				'EmptySchema',
 				'Description',
 				new PropertyDefinitionList( [] ),
+				null,
 			) );
 
 			expect( saveBlocker( wrapper ) ).toBeNull();
@@ -485,7 +522,7 @@ describe( 'SchemaEditor', () => {
 
 	describe( 'Incomplete property definition', () => {
 		function schemaWith( ...properties: PropertyDefinition[] ): Schema {
-			return new Schema( 'Test', '', new PropertyDefinitionList( properties ) );
+			return new Schema( 'Test', '', new PropertyDefinitionList( properties ), null );
 		}
 
 		// newRelationProperty() fills a placeholder target in, which is not the state
@@ -564,9 +601,9 @@ describe( 'SchemaEditor pane divider', () => {
 
 	const schemaWithProperty = new Schema( 'Test', '', new PropertyDefinitionList( [
 		createPropertyDefinitionFromJson( 'Name', { type: 'text' } ),
-	] ) );
+	] ), null );
 
-	const emptySchema = new Schema( 'Test', '', new PropertyDefinitionList( [] ) );
+	const emptySchema = new Schema( 'Test', '', new PropertyDefinitionList( [] ), null );
 
 	it( 'sits between the list and the editor', () => {
 		const wrapper = createWrapper( schemaWithProperty );

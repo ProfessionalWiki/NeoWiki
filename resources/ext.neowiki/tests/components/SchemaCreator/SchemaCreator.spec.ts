@@ -28,7 +28,7 @@ const SchemaEditorStub = defineComponent( {
 	emits: [ 'change' ],
 	methods: {
 		getSchema(): Schema {
-			return new Schema( '', '', new PropertyDefinitionList( [] ) );
+			return new Schema( '', '', new PropertyDefinitionList( [] ), null );
 		},
 		saveBlocker(): SaveBlocker | null {
 			return editorSaveBlocker;
@@ -361,7 +361,7 @@ describe( 'SchemaCreator', () => {
 	describe( 'initialSchema prop', () => {
 		it( 'pre-populates name from initialSchema', () => {
 			const wrapper = mountComponent( {
-				initialSchema: new Schema( 'PreFilledName', 'A desc', new PropertyDefinitionList( [] ) ),
+				initialSchema: new Schema( 'PreFilledName', 'A desc', new PropertyDefinitionList( [] ), null ),
 			} );
 
 			const nameInput = wrapper.find( '.cdx-text-input-stub' );
@@ -370,7 +370,7 @@ describe( 'SchemaCreator', () => {
 
 		it( 'passes initialSchema to SchemaEditor', () => {
 			const wrapper = mountComponent( {
-				initialSchema: new Schema( 'PreFilledName', 'A desc', new PropertyDefinitionList( [] ) ),
+				initialSchema: new Schema( 'PreFilledName', 'A desc', new PropertyDefinitionList( [] ), null ),
 			} );
 
 			const schemaEditor = wrapper.findComponent( { name: 'SchemaEditor' } );
@@ -386,7 +386,7 @@ describe( 'SchemaCreator', () => {
 
 		it( 'reset clears to empty state even with initialSchema', async () => {
 			const wrapper = mountComponent( {
-				initialSchema: new Schema( 'PreFilledName', 'A desc', new PropertyDefinitionList( [] ) ),
+				initialSchema: new Schema( 'PreFilledName', 'A desc', new PropertyDefinitionList( [] ), null ),
 			} );
 
 			( wrapper.vm as any ).reset();

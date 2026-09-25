@@ -18,6 +18,7 @@ describe( 'SchemaSerializer', () => {
 				'TestSchema',
 				'Test Description',
 				new PropertyDefinitionList( [] ),
+				null,
 			);
 
 			const serialized = serializer.serializeSchema( schema );
@@ -27,6 +28,17 @@ describe( 'SchemaSerializer', () => {
 				description: 'Test Description',
 				propertyDefinitions: {},
 			} );
+		} );
+
+		it( 'round-trips the label template through the deserializer', () => {
+			const schema = new Schema( 'Artwork', '', new PropertyDefinitionList( [] ), '{Title}' );
+
+			const reread = new SchemaDeserializer().deserialize(
+				'Artwork',
+				JSON.parse( serializer.serializeSchema( schema ) ),
+			);
+
+			expect( reread.getLabelTemplate() ).toBe( '{Title}' );
 		} );
 
 		it( 'serializes a schema with all property types', () => {
@@ -65,6 +77,7 @@ describe( 'SchemaSerializer', () => {
 						multiple: true,
 					} ),
 				] ),
+				null,
 			);
 
 			const serialized = serializer.serializeSchema( schema );
@@ -196,6 +209,7 @@ describe( 'SchemaSerializer', () => {
 						uniqueItems: false,
 					} ) ),
 				),
+				null,
 			);
 
 			const parsed = JSON.parse( serializer.serializeSchema( unchecked ) );
@@ -251,6 +265,7 @@ describe( 'SchemaSerializer', () => {
 				'TestSchema',
 				'Test Description',
 				new PropertyDefinitionList( [] ),
+				null,
 			);
 
 			const serialized = serializer.serializeSchema( schema );

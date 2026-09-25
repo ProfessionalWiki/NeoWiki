@@ -4,6 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Rdf;
 
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Rdf\OntologyMappingProjector;
 use ProfessionalWiki\NeoWiki\Application\Rdf\SubjectIriResolver;
@@ -80,13 +86,18 @@ class OntologyMappingProjectorTest extends TestCase {
 	 * @param array<string, SchemaMapping> $schemas
 	 * @param array<string, string> $prefixes
 	 */
-	private function newProjector( array $schemas, array $prefixes = [ 'edm' => self::EDM, 'dc' => self::DC ] ): OntologyMappingProjector {
+	private function newProjector(
+		array $schemas,
+		array $prefixes = [ 'edm' => self::EDM, 'dc' => self::DC ],
+		?SubjectNamer $subjectNamer = null
+	): OntologyMappingProjector {
 		return new OntologyMappingProjector(
 			new Mapping( new MappingName( 'edm' ), $prefixes, $schemas ),
 			$this->ns,
 			RdfValueMapperRegistry::withCoreMappers(),
 			new SubjectIriResolver( $this->ns, TestSources::newRegistry(), $this->logger ),
 			$this->logger,
+			$subjectNamer ?? TestSources::newSubjectNamer(),
 		);
 	}
 
@@ -739,8 +750,12 @@ class OntologyMappingProjectorTest extends TestCase {
 
 	// Structural transformation: synthesized nodes (expansion) and contributions (contraction).
 
-	private function newCrmProjector( string $schemaName, SchemaMapping $mapping ): OntologyMappingProjector {
-		return $this->newProjector( [ $schemaName => $mapping ], [ 'crm' => self::CRM, 'rdaGr2' => self::RDA_GR2 ] );
+	private function newCrmProjector( string $schemaName, SchemaMapping $mapping, Schema ...$storedSchemas ): OntologyMappingProjector {
+		return $this->newProjector(
+			[ $schemaName => $mapping ],
+			[ 'crm' => self::CRM, 'rdaGr2' => self::RDA_GR2 ],
+			TestSources::newSubjectNamer( new InMemorySchemaLookup( ...$storedSchemas ) )
+		);
 	}
 
 	private function triG( string $body ): string {
@@ -1040,6 +1055,33 @@ class OntologyMappingProjectorTest extends TestCase {
 		$this->logger->assertNoLoggingCallsWhereMade();
 	}
 
+	public function testLabelPredicateCarriesTheLabelTheSchemasLabelTemplateGives(): void {
+		$quads = $this->newCrmProjector(
+			'Person',
+			new SchemaMapping( subject: new SubjectMapping( class: 'crm:E21_Person', labelPredicate: 'rdaGr2:nameOfThePerson' ) ),
+			TestSchema::build(
+				name: 'Person',
+				properties: new PropertyDefinitions( [ 'Name' => TestProperty::buildText() ] ),
+				labelTemplate: '{Name}'
+			)
+		)->projectPage( TestPage::build(
+			id: 42,
+			otherSubjects: new SubjectMap( TestSubject::build(
+				id: self::PERSON_ID,
+				label: null,
+				schemaName: new SchemaName( 'Person' ),
+				statements: new StatementList( [ TestStatement::build( 'Name', 'Jane Doe' ) ] )
+			) )
+		) );
+
+		$this->assertProjectsTo( $this->triG( <<<'TRIG'
+			neo-subj:s1janeaaaaaaaa2 a crm:E21_Person ;
+				rdfs:label "Jane Doe" ;
+				rdaGr2:nameOfThePerson "Jane Doe" .
+			TRIG ), $quads );
+		$this->logger->assertNoLoggingCallsWhereMade();
+	}
+
 	public function testOtherSubjectWithNoStoredLabelIsLabelledWithItsSchemaName(): void {
 		$quads = $this->newCrmProjector( 'Person', new SchemaMapping(
 			subject: new SubjectMapping( class: 'crm:E21_Person' ),
@@ -1212,6 +1254,7 @@ class OntologyMappingProjectorTest extends TestCase {
 			RdfValueMapperRegistry::withCoreMappers(),
 			new SubjectIriResolver( $this->ns, TestSources::newRegistry(), $this->logger ),
 			$this->logger,
+			TestSources::newSubjectNamer(),
 		);
 	}
 

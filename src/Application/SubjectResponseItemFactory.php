@@ -18,6 +18,7 @@ readonly class SubjectResponseItemFactory {
 
 	public function __construct(
 		private PageSubjectsLookup $pageSubjectsLookup,
+		private SubjectNamer $subjectNamer,
 	) {
 	}
 
@@ -43,24 +44,26 @@ readonly class SubjectResponseItemFactory {
 	}
 
 	/**
-	 * A page is read only for a label-less Subject it holds: a stored label is the chosen name whichever
-	 * page holds it, and a Subject without a page of this wiki has no page name to fall back on. One
-	 * read per distinct page, however many of the response's Subjects live on it.
+	 * A page is read only for a Subject that neither a stored label nor its Schema's label template
+	 * names: either is the chosen name whichever page holds the Subject, and a Subject without a page
+	 * of this wiki has no page name to fall back on. One read per distinct page, however many of the
+	 * response's Subjects live on it.
 	 *
 	 * @param array<int, PageSubjects> $pagesRead Page ID → the Subjects that page holds, filled as
 	 *   pages are reached.
 	 */
 	private function chosenName( Subject $subject, ?PageIdentifiers $pageIdentifiers, array &$pagesRead ): ?string {
-		$label = $subject->getLabel();
+		$ownLabel = $this->subjectNamer->ownLabel( $subject );
 
-		if ( $label !== null || $pageIdentifiers === null ) {
-			return $label?->text;
+		if ( $ownLabel !== null || $pageIdentifiers === null ) {
+			return $ownLabel;
 		}
 
 		$pageId = $pageIdentifiers->getId();
 		$pagesRead[$pageId->id] ??= $this->pageSubjectsLookup->getPageSubjects( $pageId );
 
-		return SubjectDisplayName::labelOrPageName( $subject, $pagesRead[$pageId->id], $pageIdentifiers->getTitle() );
+		// No own label means the template gave none either.
+		return SubjectDisplayName::chosenName( $subject, null, $pagesRead[$pageId->id], $pageIdentifiers->getTitle() );
 	}
 
 }

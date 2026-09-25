@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
@@ -21,7 +22,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Validation\ViolationDiff;
@@ -41,6 +41,7 @@ readonly class UpdateStatementAction {
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private UpdateStatementPresenter $presenter,
 		private bool $validationEnforced,
+		private SubjectNamer $subjectNamer,
 	) {
 	}
 
@@ -201,7 +202,7 @@ readonly class UpdateStatementAction {
 		return GetSubjectResponseItem::fromSubject(
 			$subject,
 			$pageIdentifiers,
-			SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageIdentifiers->getTitle() )
+			$this->subjectNamer->chosenName( $subject, $pageSubjects, $pageIdentifiers->getTitle() )
 		);
 	}
 

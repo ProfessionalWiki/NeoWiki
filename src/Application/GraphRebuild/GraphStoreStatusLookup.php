@@ -20,7 +20,8 @@ use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
  * changing, because only that projection is defined by something editable: the Mapping page. Editing it
  * changes what every mapped page's graph should contain, and nothing reprojects those pages. The native
  * projection and a backend holding no RDF at all have no such definition, so once rebuilt they stay as
- * current as the per-edit projection keeps them.
+ * current as the per-edit projection keeps them. A Schema's label template shapes the names every projection
+ * holds as well, but an edit to it is not tracked here (ADR 35).
  */
 class GraphStoreStatusLookup {
 

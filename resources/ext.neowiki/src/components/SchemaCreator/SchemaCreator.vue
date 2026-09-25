@@ -61,9 +61,9 @@ const schemaStore = useSchemaStore();
 
 const DEBOUNCE_DELAY = 300;
 
-const baseSchema = computed( () =>
-	props.initialSchema ?? new Schema( '', '', new PropertyDefinitionList( [] ) )
-);
+const EMPTY_SCHEMA = new Schema( '', '', new PropertyDefinitionList( [] ), null );
+
+const baseSchema = computed( () => props.initialSchema ?? EMPTY_SCHEMA );
 
 const schemaName = ref( props.initialSchema?.getName() ?? '' );
 const schemaDescription = ref( props.initialSchema?.getDescription() ?? '' );
@@ -145,10 +145,9 @@ function getSchema(): Schema | null {
 		return null;
 	}
 
-	const propertyDefinitions = schemaEditorRef.value?.getSchema().getPropertyDefinitions() ??
-		new PropertyDefinitionList( [] );
+	const editedSchema = schemaEditorRef.value?.getSchema() ?? EMPTY_SCHEMA;
 
-	return new Schema( name, schemaDescription.value.trim(), propertyDefinitions );
+	return editedSchema.withName( name ).withDescription( schemaDescription.value.trim() );
 }
 
 function saveBlocker(): SaveBlocker | null {

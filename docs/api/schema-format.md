@@ -16,6 +16,7 @@ Per-type value constraints (`options`, ranges, string formats, `uniqueItems`) ar
 ```json
 {
   "description": "Optional description of the schema",
+  "labelTemplate": "{Title}",
   "propertyDefinitions": {
     "<property-name>": { ... },
     "<property-name>": { ... }
@@ -26,7 +27,29 @@ Per-type value constraints (`options`, ranges, string formats, `uniqueItems`) ar
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `description` | string | No | Human-readable description of the schema |
+| `labelTemplate` | string | No | How a Subject of the Schema is labelled when its `label` is absent; see [Label template](#label-template) |
 | `propertyDefinitions` | object | Yes | Map of property names to property definition objects |
+
+## Label template
+
+`labelTemplate` is text in which each `{Property name}` stands for that property's first value in the Subject;
+everything else is literal. `{Museum} attendance {Year}` labels a Subject with `Museum` "Rijksmuseum" and `Year` 2024
+as "Rijksmuseum attendance 2024". A blank template is the same as none.
+
+- A select value reads as its option's label, a monolingual text as its first text whatever its language, a number
+  as stored whatever its `precision`, and a `date` or `dateTime` as stored, such as `2024-03-01`.
+- A placeholder the Subject has no value for reads as nothing, and the text around it stays: `{Name} ({Born})` gives
+  "Ada ()" for a Subject without `Born`. Runs of whitespace collapse to one space, and the label is trimmed. When no
+  placeholder has a value, the template gives no label.
+- A placeholder may name only a property of this Schema whose type stores text or numbers: any built-in type but
+  `relation` and `boolean`. A property of a type not registered on the wiki reads as nothing. A Schema save that
+  breaks this, by its template or by renaming, removing or retyping a property the template names, is rejected, as is
+  a template naming no property.
+
+The template label is computed on read and never stored: `label` stays absent, and
+[`displayName`](subject-format.md#reading-subjects) carries it. REST reads a changed template at once and rendered
+pages as they are re-parsed; the graph's `name` and `rdfs:label` take it when each page is next saved, or after a
+[rebuild](../operations/maintenance.md#rebuilding-the-graph).
 
 ## Schema references
 

@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Rdf;
 
 use LogicException;
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use ProfessionalWiki\NeoWiki\Domain\LanguageTag;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\CurieExpander;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
@@ -28,7 +29,6 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use Psr\Log\LoggerInterface;
@@ -73,6 +73,7 @@ class OntologyMappingProjector implements PageProjector {
 		private readonly RdfValueMapperRegistry $valueMappers,
 		private readonly SubjectIriResolver $subjectIris,
 		private readonly LoggerInterface $logger,
+		private readonly SubjectNamer $subjectNamer,
 	) {
 		$this->target = $mapping->name->getText();
 		$this->expander = new CurieExpander( $mapping->prefixes );
@@ -154,7 +155,7 @@ class OntologyMappingProjector implements PageProjector {
 				$schemaMapping,
 				$schemaMapping->subject,
 				$graph,
-				SubjectDisplayName::forSubjectOnPage( $subject, $page )
+				$this->subjectNamer->displayNameOnPage( $subject, $page )
 			);
 
 		foreach ( $schemaMapping->contributions as $relationName => $properties ) {
@@ -208,8 +209,8 @@ class OntologyMappingProjector implements PageProjector {
 	/**
 	 * The type and label triples. `rdfs:label` is always emitted, falling back to the Subject's display
 	 * name when nobody named it. A `labelPredicate` adds the target ontology's own label term rather
-	 * than replacing it, and only for a stored label: that term states what the thing is called, so a
-	 * Schema name under it would assert a type as a name.
+	 * than replacing it, and only for a stored label or one the Schema's label template gives: that
+	 * term states what the thing is called, so a Schema name under it would assert a type as a name.
 	 *
 	 * @return Quad[]
 	 */
@@ -237,7 +238,7 @@ class OntologyMappingProjector implements PageProjector {
 		$label = RdfLiteralFactory::typed( $displayName, 'string' );
 		$quads[] = new Quad( $subjectIri, $this->namespaces->rdfsLabel(), $label, $graph );
 
-		if ( $subjectMapping->labelPredicate !== null && $subject->getLabel() !== null ) {
+		if ( $subjectMapping->labelPredicate !== null && $this->subjectNamer->ownLabel( $subject ) !== null ) {
 			$predicate = $this->expander->expand( $subjectMapping->labelPredicate );
 
 			if ( $predicate === null ) {

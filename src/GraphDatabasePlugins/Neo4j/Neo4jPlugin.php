@@ -8,6 +8,7 @@ use Laudis\Neo4j\Contracts\ClientInterface;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\EntryPoints\ParserAuthority;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CompositeCypherQueryValidator;
@@ -54,6 +55,7 @@ readonly class Neo4jPlugin {
 		Neo4jValueBuilderRegistry $valueBuilderRegistry,
 		LoggerInterface $logger,
 		string $wikiId,
+		SubjectNamer $subjectNamer,
 	) {
 		$this->writeQueryEngine = new Neo4jWriteQueryEngine( $client );
 		$this->projectionStore = new Neo4jProjectionStore(
@@ -63,6 +65,7 @@ readonly class Neo4jPlugin {
 				valueBuilderRegistry: $valueBuilderRegistry,
 				logger: $logger,
 				wikiId: $wikiId,
+				subjectNamer: $subjectNamer,
 			),
 			// Reuse the write engine the plugin already owns so initialize() creates constraints through it.
 			constraintUpdater: new Neo4jConstraintUpdater( $this->writeQueryEngine ),

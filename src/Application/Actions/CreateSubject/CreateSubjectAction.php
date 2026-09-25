@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SubjectNamer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -19,7 +20,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
@@ -40,6 +40,7 @@ readonly class CreateSubjectAction {
 		private PageIdentifiersResolver $pageIdentifiersResolver,
 		private SchemaReferenceParser $schemaReferenceParser,
 		private bool $validationEnforced,
+		private SubjectNamer $subjectNamer,
 	) {
 	}
 
@@ -108,7 +109,7 @@ readonly class CreateSubjectAction {
 			GetSubjectResponseItem::fromSubject(
 				$subject,
 				$pageIdentifiers,
-				SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageName )
+				$this->subjectNamer->chosenName( $subject, $pageSubjects, $pageName )
 			),
 			$schema,
 			$violations

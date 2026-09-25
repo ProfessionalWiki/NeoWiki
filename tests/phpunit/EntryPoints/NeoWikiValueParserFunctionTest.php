@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
 use MediaWiki\Parser\Parser;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
@@ -81,7 +82,8 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 				new InMemorySubjectLookup(),
 				$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
 				$readAuthorizer ?? new StubPageReadAuthorizer( true ),
-				TestSubjectIds::newParser()
+				TestSubjectIds::newParser(),
+				TestSources::newSubjectNamer()
 			)
 		);
 	}

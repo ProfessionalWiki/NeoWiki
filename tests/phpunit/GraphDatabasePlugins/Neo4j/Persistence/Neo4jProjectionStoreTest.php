@@ -30,6 +30,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -80,6 +81,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 				valueBuilderRegistry: $extension->getValueBuilderRegistry(),
 				logger: new NullLogger(),
 				wikiId: $wikiId,
+				subjectNamer: TestSources::newSubjectNamer(),
 			),
 			constraintUpdater: new Neo4jConstraintUpdater( new Neo4jWriteQueryEngine( $extension->getNeo4jClient() ) ),
 			wikiId: $wikiId,
@@ -831,6 +833,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 				valueBuilderRegistry: $extension->getValueBuilderRegistry(),
 				logger: new NullLogger(),
 				wikiId: $wikiId,
+				subjectNamer: TestSources::newSubjectNamer(),
 			),
 			constraintUpdater: new Neo4jConstraintUpdater( new Neo4jWriteQueryEngine( $extension->getNeo4jClient() ) ),
 			wikiId: $wikiId,
@@ -1113,6 +1116,27 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( $page( null ) );
 
 		$this->assertSubjectName( null, self::GUID_2 );
+	}
+
+	public function testSubjectWithoutALabelTakesItsSchemasLabelTemplateAsItsNodeName(): void {
+		$store = NeoWikiExtension::getInstance()->newNeo4jProjectionStore(
+			new InMemorySchemaLookup( TestSchema::build(
+				name: TestSubject::DEFAULT_SCHEMA_ID,
+				properties: new PropertyDefinitions( [ 'Title' => TestProperty::buildText() ] ),
+				labelTemplate: '{Title}'
+			) )
+		);
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			otherSubjects: new SubjectMap( TestSubject::build(
+				id: self::GUID_2,
+				label: null,
+				statements: new StatementList( [ TestStatement::build( property: 'Title', value: 'Madonna and Child on a Cloud' ) ] )
+			) )
+		) );
+
+		$this->assertSubjectName( 'Madonna and Child on a Cloud', self::GUID_2 );
 	}
 
 	public function testStatementCalledNameDoesNotBecomeTheNodeNameOfALabellessSubject(): void {

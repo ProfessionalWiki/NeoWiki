@@ -32,9 +32,10 @@ class SchemaContentHandler extends JsonContentHandler {
 		}
 
 		$title = Title::newFromPageIdentity( $validationParams->getPageIdentity() );
+		$schemaName = null;
 
 		try {
-			new SchemaName( $title->getText() );
+			$schemaName = new SchemaName( $title->getText() );
 		} catch ( InvalidArgumentException $exception ) {
 			$status->fatal( 'neowiki-schema-name-invalid', $exception->getMessage() );
 		}
@@ -48,9 +49,30 @@ class SchemaContentHandler extends JsonContentHandler {
 				'neowiki-schema-invalid-detail',
 				$validator->getErrors()
 			);
+		} elseif ( $schemaName !== null ) {
+			$this->reportLabelTemplateErrors( $status, $schemaName, $content->getText() );
 		}
 
 		return $status;
+	}
+
+	/**
+	 * Only for structurally valid content: the template is checked against the properties the Schema
+	 * declares, which needs them read.
+	 */
+	private function reportLabelTemplateErrors( StatusValue $status, SchemaName $schemaName, string $json ): void {
+		$extension = NeoWikiExtension::getInstance();
+		$schema = $extension->getPersistenceSchemaDeserializer()->deserialize( $schemaName, $json );
+		$errors = $extension->newLabelTemplateValidator()->errorsFor( $schema );
+
+		if ( $errors !== [] ) {
+			$this->reportValidationErrors(
+				$status,
+				'neowiki-schema-invalid',
+				'neowiki-schema-invalid-detail',
+				[ '/labelTemplate' => implode( ' ', $errors ) ]
+			);
+		}
 	}
 
 	protected function fillParserOutput(

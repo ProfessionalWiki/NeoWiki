@@ -7,9 +7,12 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Parser\ParserOptions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\ParseTimePermissionFixtures;
@@ -30,6 +33,8 @@ class ParseTimeGatesTest extends NeoWikiIntegrationTestCase {
 
 	private const string RESTRICTED_PAGE = 'ParseTimeGatesRestrictedPage';
 	private const string SECRET = 'Only sysops may read this';
+	private const string RESTRICTED_SCHEMA = 'ParseTimeGatesRestrictedSchema';
+	private const string CODENAME = 'Operation Falcon';
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -67,6 +72,55 @@ class ParseTimeGatesTest extends NeoWikiIntegrationTestCase {
 		$html = $this->parseAs( $this->asSysop(), $this->valueFromRestrictedPage() );
 
 		$this->assertStringContainsString( self::SECRET, $html );
+	}
+
+	public function testAnonymousParseDoesNotLabelThroughASchemaItMayNotReadEvenThoughTheRequestIsASysops(): void {
+		$html = $this->parseAs( ParserOptions::newFromAnon(), $this->relationToASubjectLabelledByARestrictedSchema() );
+
+		$this->assertStringNotContainsString( self::CODENAME, $html );
+		$this->assertStringContainsString( 'ParseTimeGatesAgentPage', $html );
+	}
+
+	/**
+	 * A readable page whose Subject points at a Subject without a label, on another readable page, whose
+	 * Schema only sysops may read. That Schema labels it from its Codename.
+	 */
+	private function relationToASubjectLabelledByARestrictedSchema(): string {
+		$this->createSchema(
+			self::RESTRICTED_SCHEMA,
+			'{"labelTemplate":"{Codename}","propertyDefinitions":{"Codename":{"type":"text"}}}'
+		);
+		$this->denyAnonymousReadOf( 'Schema:' . self::RESTRICTED_SCHEMA );
+
+		$this->createPageWithSubjects(
+			'ParseTimeGatesAgentPage',
+			TestSubject::build(
+				id: 's1agent11111111',
+				label: null,
+				schemaName: new SchemaName( self::RESTRICTED_SCHEMA ),
+				statements: new StatementList( [
+					new Statement( new PropertyName( 'Codename' ), 'text', new StringValue( self::CODENAME ) ),
+				] )
+			)
+		);
+		$this->createPageWithSubjects(
+			'ParseTimeGatesMissionPage',
+			TestSubject::build( statements: new StatementList( [
+				new Statement(
+					new PropertyName( 'Agent' ),
+					'relation',
+					new RelationValue( TestRelation::build( targetId: 's1agent11111111' ) )
+				),
+			] ) )
+		);
+
+		return '{{#neowiki_value: Agent | page=ParseTimeGatesMissionPage }}';
+	}
+
+	public function testParseForAReaderOfTheSchemaLabelsThroughIt(): void {
+		$html = $this->parseAs( $this->asSysop(), $this->relationToASubjectLabelledByARestrictedSchema() );
+
+		$this->assertStringContainsString( self::CODENAME, $html );
 	}
 
 	public function testAnonymousParseWithoutTheQueryRightRendersAnErrorEvenThoughTheRequestIsASysops(): void {
