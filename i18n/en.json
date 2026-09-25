@@ -99,6 +99,8 @@
 	"neowiki-field-invalid-url": "Please enter a valid URL.",
 	"neowiki-field-invalid-datetime": "Please enter a valid date and time.",
 	"neowiki-field-invalid-date": "Please enter a valid date.",
+	"neowiki-field-min-precision-month": "Enter at least the year and month.",
+	"neowiki-field-min-precision-day": "Enter the full date: year, month and day.",
 	"neowiki-field-invalid-option": "\"$1\" is not a valid option.",
 	"neowiki-field-single-value-only": "Only one value is allowed.",
 	"neowiki-field-type-mismatch": "This value was saved as type \"$1\" but the property now expects \"$2\".",
