@@ -47,3 +47,28 @@ function daysInMonth( year: number, month: number ): number {
 
 	return lastOfMonth.getUTCDate();
 }
+
+/**
+ * Whether every day of the minimum falls after every day of the maximum, so that no date can
+ * satisfy both bounds. False when either bound is not a date.
+ */
+export function minimumExcludesMaximum( minimum: string, maximum: string ): boolean {
+	const min = parsePartialDate( minimum );
+	const max = parsePartialDate( maximum );
+
+	if ( min === null || max === null ) {
+		return false;
+	}
+
+	return dayNumber( min, 1, 1 ) > dayNumber( max, 12, 31 );
+}
+
+/**
+ * Orders dates chronologically. The month and day a date lacks are taken from the arguments.
+ */
+function dayNumber( date: PartialDate, missingMonth: number, missingDay: number ): number {
+	const month = date.precision === 'year' ? missingMonth : date.month;
+	const day = date.precision === 'day' ? date.day : missingDay;
+
+	return date.year * 10000 + month * 100 + day;
+}
