@@ -6,6 +6,8 @@ import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '
 import NumberInput from '@/components/Value/NumberInput.vue';
 import { newTextProperty, TextProperty } from '@/domain/propertyTypes/Text';
 import { newNumberProperty } from '@/domain/propertyTypes/Number';
+import { newDateProperty } from '@/domain/propertyTypes/Date';
+import DateAttributesEditor from '@/components/SchemaEditor/Property/DateAttributesEditor.vue';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newSelectProperty, SelectProperty } from '@/domain/propertyTypes/Select';
@@ -19,7 +21,7 @@ describe( 'PropertyDefinitionEditor', () => {
 	beforeEach( () => {
 		// The relation attributes editor reaches SchemaPicker, which calls useSchemaStore() at setup.
 		setActivePinia( createPinia() );
-		setupMwMock();
+		setupMwMock( { config: { wgUserLanguage: 'en' } } );
 	} );
 
 	function newWrapper( property: PropertyDefinition, props: { selectName?: boolean; otherPropertyNames?: string[] } = {} ): VueWrapper {
@@ -38,6 +40,15 @@ describe( 'PropertyDefinitionEditor', () => {
 	async function changeTypeTo( wrapper: VueWrapper, type: string ): Promise<void> {
 		await wrapper.findComponent( CdxSelect ).vm.$emit( 'update:selected', type );
 	}
+
+	it( 'keeps the definition when its own type is picked again', async () => {
+		const wrapper = newWrapper( newDateProperty( { name: 'Born', minimum: '1990' } ) );
+
+		await changeTypeTo( wrapper, 'date' );
+
+		expect( wrapper.findComponent( DateAttributesEditor ).props( 'property' ) )
+			.toEqual( expect.objectContaining( { minimum: '1990' } ) );
+	} );
 
 	it( 'initializes the type-specific fields when the type changes to Select', async () => {
 		const wrapper = newWrapper( newTextProperty( { name: 'Status' } ) );
@@ -239,6 +250,14 @@ describe( 'PropertyDefinitionEditor', () => {
 			await reportUnparseableNumber( wrapper.findComponent( NumberInput ).find( 'input' ) );
 
 			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-field-invalid-number' );
+		} );
+
+		it( 'reports the message of an attribute the definition cannot take', async () => {
+			const wrapper = newWrapper( newDateProperty( { name: 'Born', minimum: '1990' } ) );
+
+			await wrapper.find( '.date-attributes__minimum .ext-neowiki-date-text-input__text input' ).setValue( '198x' );
+
+			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-field-unreadable-date198x' );
 		} );
 
 		it( 'reports nothing for a type whose input cannot reach that state', () => {

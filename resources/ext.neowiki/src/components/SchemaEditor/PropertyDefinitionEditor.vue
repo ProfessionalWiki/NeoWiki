@@ -55,6 +55,7 @@
 
 		<component
 			:is="componentRegistry.getAttributesEditor( localProperty.type )"
+			ref="attributesEditor"
 			:property="localProperty"
 			@update:property="updatePropertyAttributes"
 		/>
@@ -76,6 +77,7 @@ import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue'
 import { CdxCheckbox, CdxField, CdxSelect, CdxTextArea, CdxTextInput, type MenuItemData } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
+import { AttributesEditorExposes } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -175,6 +177,10 @@ const propertyTypeRegistry = NeoWikiServices.getPropertyTypeRegistry();
 // The type-specific Constraints go, and their severities with them; required is
 // shared by every type, so it keeps its severity along with its value.
 function changePropertyType( type: string ): void {
+	if ( type === localProperty.value.type ) {
+		return;
+	}
+
 	const requiredSeverity = localProperty.value.constraintSeverities?.required;
 
 	localProperty.value = propertyTypeRegistry.getType( type ).createPropertyDefinitionFromJson(
@@ -216,6 +222,7 @@ const typeOptions = computed( (): MenuItemData[] => {
 } );
 
 const defaultValueInput = ref<ValueInputExposes | null>( null );
+const attributesEditor = ref<AttributesEditorExposes | null>( null );
 
 export interface PropertyDefinitionEditorExposes {
 	unparseableInputMessage(): string | null;
@@ -226,7 +233,10 @@ export interface PropertyDefinitionEditorExposes {
  * null. Callers hold the save rather than persist what the user cannot see.
  */
 function unparseableInputMessage(): string | null {
-	return nameError.value ?? defaultValueInput.value?.unparseableInputMessage?.() ?? null;
+	return nameError.value ??
+		attributesEditor.value?.unparseableInputMessage?.() ??
+		defaultValueInput.value?.unparseableInputMessage?.() ??
+		null;
 }
 
 defineExpose<PropertyDefinitionEditorExposes>( { unparseableInputMessage } );

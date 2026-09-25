@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parsePartialDate } from '@/domain/propertyTypes/PartialDate';
+import { minimumExcludesMaximum, parsePartialDate } from '@/domain/propertyTypes/PartialDate';
 
 describe( 'parsePartialDate', () => {
 
@@ -34,6 +34,30 @@ describe( 'parsePartialDate', () => {
 		[ 'an empty string', '' ],
 	] )( 'returns null for %s', ( _description: string, value: string ) => {
 		expect( parsePartialDate( value ) ).toBeNull();
+	} );
+
+} );
+
+describe( 'minimumExcludesMaximum', () => {
+
+	it.each( [
+		[ 'a later day', '2030-01-01', '2020-01-01' ],
+		[ 'a year after the maximum year', '1991', '1990' ],
+		[ 'a month after the maximum day', '1990-07', '1990-06-30' ],
+		[ 'a day after the maximum month', '1990-07-01', '1990-06' ],
+	] )( 'is true for %s', ( _description: string, minimum: string, maximum: string ) => {
+		expect( minimumExcludesMaximum( minimum, maximum ) ).toBe( true );
+	} );
+
+	it.each( [
+		[ 'equal days', '2025-06-15', '2025-06-15' ],
+		[ 'a year holding the maximum day', '1990', '1990-06-30' ],
+		[ 'a day inside the maximum year', '1990-12-31', '1990' ],
+		[ 'a month inside the maximum year', '1990-12', '1990' ],
+		[ 'an unparseable minimum', 'abc', '1990' ],
+		[ 'an unparseable maximum', '1990', '' ],
+	] )( 'is false for %s', ( _description: string, minimum: string, maximum: string ) => {
+		expect( minimumExcludesMaximum( minimum, maximum ) ).toBe( false );
 	} );
 
 } );
