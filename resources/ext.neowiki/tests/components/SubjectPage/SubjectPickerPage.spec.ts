@@ -115,8 +115,8 @@ describe( 'SubjectPickerPage', () => {
 
 	async function highlightFirstSuggestion(): Promise<DOMWrapper<HTMLInputElement>> {
 		vi.mocked( subjectLabelSearch.searchSubjectLabels ).mockResolvedValue( [
-			{ id: SUBJECT_ID, label: 'ACME Inc.' },
-			{ id: 's1demo1aaaaaaa2', label: 'ACME Labs' },
+			{ id: SUBJECT_ID, label: 'ACME Inc.', pageTitle: 'ACME Inc.' },
+			{ id: 's1demo1aaaaaaa2', label: 'ACME Labs', pageTitle: 'ACME Labs' },
 		] );
 
 		const wrapper = mountPage();

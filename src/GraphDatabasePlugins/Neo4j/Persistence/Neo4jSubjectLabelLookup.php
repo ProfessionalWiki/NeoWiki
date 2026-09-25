@@ -47,7 +47,11 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 			}
 
 			if ( $this->readAuthorizer->authorizeReadByPageId( new PageId( $row['pageId'] ) ) ) {
-				$results[] = new SubjectLabelLookupResult( id: $row['id'], label: $row['name'] );
+				$results[] = new SubjectLabelLookupResult(
+					id: $row['id'],
+					label: $row['name'],
+					pageTitle: $row['pageTitle'],
+				);
 			}
 		}
 
@@ -59,7 +63,11 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 	 * per-page read access and the returned page id always resolves within this wiki (page ids
 	 * are unique only per wiki).
 	 *
-	 * @return list<array{id: string, name: string, pageId: int}>
+	 * Ordered by id after name, because namesakes are the case this feeds: ordering by name alone
+	 * leaves both the order and, under the limit, the membership of a run of equal names undefined,
+	 * so one search could answer with a namesake and the next with its twin.
+	 *
+	 * @return list<array{id: string, name: string, pageId: int, pageTitle: string}>
 	 */
 	private function fetchLabels( string $search, int $limit, ?string $schemaName ): array {
 		return $this->client->readTransaction(
@@ -72,8 +80,8 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 					 WHERE toLower(n.name) STARTS WITH toLower(\$search)
 					 AND ( \$schemaName IS NULL OR \$schemaName IN labels(n) )
 					 AND n.wiki_id = \$wikiId
-					 RETURN n.id AS id, n.name AS name, page.id AS pageId
-					 ORDER BY n.name
+					 RETURN n.id AS id, n.name AS name, page.id AS pageId, page.name AS pageTitle
+					 ORDER BY n.name, n.id
 					 LIMIT \$limit",
 					[
 						'search' => $search,
@@ -85,10 +93,16 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 
 				$rows = [];
 				foreach ( $result as $row ) {
+					// The store has writers besides this projection - a farm's own Cypher reaches the
+					// shared graph - so a Page node's name is read as the string it is documented to
+					// be rather than cast, which would throw on anything else and empty the search.
+					$pageTitle = $row->get( 'pageTitle' );
+
 					$rows[] = [
 						'id' => $row->get( 'id' ),
 						'name' => $row->get( 'name' ),
 						'pageId' => (int)$row->get( 'pageId' ),
+						'pageTitle' => is_string( $pageTitle ) ? $pageTitle : '',
 					];
 				}
 
