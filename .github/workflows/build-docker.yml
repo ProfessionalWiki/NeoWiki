@@ -29,12 +29,27 @@ jobs:
         run: npm run build
         working-directory: resources/ext.neowiki
 
+      - name: Resolve MediaWiki 1.43 commit
+        id: mw
+        run: echo "sha=$(git ls-remote https://github.com/wikimedia/mediawiki refs/heads/REL1_43 | cut -f1)" >> "$GITHUB_OUTPUT"
+
+      # Keyed on the resolved commit, not the branch name, so a MediaWiki update
+      # invalidates the cache rather than being masked by it. The tree is cached
+      # whole, .git included, so that a hit and a miss produce the same image.
+      - name: Cache MediaWiki
+        id: cache-mediawiki
+        uses: actions/cache@v6
+        with:
+          path: Docker/mediawiki
+          key: mw-docker-${{ steps.mw.outputs.sha }}
+
       - name: Get MediaWiki 1.43
+        if: steps.cache-mediawiki.outputs.cache-hit != 'true'
         uses: actions/checkout@v6
         with:
           repository: wikimedia/mediawiki
           path: Docker/mediawiki
-          ref: REL1_43
+          ref: ${{ steps.mw.outputs.sha }}
           fetch-depth: 1
 
       # MediaWiki's .gitmodules point at gerrit.wikimedia.org, which rate-limits
@@ -43,6 +58,7 @@ jobs:
       # The rewrites have to be global: git clone, which git submodule update shells
       # out to, ignores the superproject's repository-local config.
       - name: Shallow submodules
+        if: steps.cache-mediawiki.outputs.cache-hit != 'true'
         working-directory: Docker/mediawiki
         run: |
           git config --global url."https://github.com/wikimedia/mediawiki-extensions-".insteadOf "https://gerrit.wikimedia.org/r/mediawiki/extensions/"
