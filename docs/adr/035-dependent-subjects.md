@@ -29,8 +29,7 @@ relation statement holds it. A Dependent Subject:
   with it and is deleted with it.
 - Is referenced by exactly one relation statement, from a property whose targets are dependent. It is not a picker
   candidate, and any other statement targeting it is refused. What other Subjects need to point at is standalone.
-- Has no label. Its name is its Schema name with its Host Subject's name, "Birth of Pablo Picasso", until a label
-  template ([PR 1519](https://github.com/ProfessionalWiki/NeoWiki/pull/1519)) replaces it.
+- Has no label. Its name is its Schema name with its Host Subject's name: "Birth of Pablo Picasso".
 - Has its values indexed under the standalone Subject at the top of its host chain, which is the search hit. It is
   never a Main Subject, and its Schema is not offered where a Subject is created without a Host Subject.
 - Keeps its id, IRI and graph node, so `Special:Subject`, the Data tab, queries and exports reach it, and it can be
