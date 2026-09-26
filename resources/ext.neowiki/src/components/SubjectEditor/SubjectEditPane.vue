@@ -8,14 +8,12 @@
 			cannot follow without re-rendering CdxDialog. -->
 		<div class="ext-neowiki-subject-edit-pane__header">
 			<h3 class="ext-neowiki-subject-edit-pane__name">
-				<!-- Offered for saving as soon as it is typed: the Save click blurs the field,
-					and the blur commits the draft before the write reads it. -->
 				<EditableText
 					:model-value="label"
 					:edit-button-label="$i18n( 'neowiki-subject-editor-rename' ).text()"
 					:input-aria-label="$i18n( 'neowiki-subject-editor-label-field' ).text()"
 					:placeholder="labelPlaceholder"
-					@input="markChanged"
+					@dirty="labelDirty = $event"
 					@update:model-value="setLabel"
 				/>
 			</h3>
@@ -133,7 +131,12 @@ provide( RelationTargetEditingKey, true );
 const subjectStore = useSubjectStore();
 
 const subjectEditorRef = ref<SubjectEditorExposes | null>( null );
-const { hasChanged, markChanged, resetChanged } = useChangeDetection();
+const { hasChanged: committed, markChanged, resetChanged } = useChangeDetection();
+
+// A label still being typed is already something to save, and nothing once it is discarded.
+const labelDirty = ref( false );
+
+const hasChanged = computed( (): boolean => committed.value || labelDirty.value );
 
 // Refreshed when a relation field changes and on nothing else: the dialog's draft graph is its
 // only consumer and reads only relation statements, and harvesting per keystroke would re-walk

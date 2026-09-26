@@ -136,13 +136,23 @@ describe( 'SchemaEditorDialog', () => {
 			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
 		} );
 
-		it( 'enables save once a description is typed, before it is committed', async () => {
+		it( 'enables save while a typed description is still open', async () => {
 			const wrapper = mountComponent();
 			await flushPromises();
 
-			await wrapper.findComponent( EditableText ).vm.$emit( 'input', 'Rewr' );
+			await wrapper.findComponent( EditableText ).vm.$emit( 'dirty', true );
 
 			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+		} );
+
+		it( 'disables save again when the typed description is discarded', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			await wrapper.findComponent( EditableText ).vm.$emit( 'dirty', true );
+			await wrapper.findComponent( EditableText ).vm.$emit( 'dirty', false );
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
 		} );
 
 		it( 'saves the edited description', async () => {

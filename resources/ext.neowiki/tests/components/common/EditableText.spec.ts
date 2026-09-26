@@ -81,13 +81,23 @@ describe( 'EditableText', () => {
 		expect( wrapper.find( '.ext-neowiki-editable-text__text' ).exists() ).toBe( true );
 	} );
 
-	it( 'reports the draft as it is typed', async () => {
+	it( 'reports a typed draft as dirty', async () => {
 		const wrapper = mountComponent();
 
 		const input = await startEditing( wrapper );
 		await input.setValue( 'Renamed Anvil' );
 
-		expect( wrapper.emitted( 'input' ) ).toEqual( [ [ 'Renamed Anvil' ] ] );
+		expect( wrapper.emitted( 'dirty' ) ).toEqual( [ [ true ] ] );
+	} );
+
+	it( 'reports the draft clean again once it is discarded', async () => {
+		const wrapper = mountComponent();
+
+		const input = await startEditing( wrapper );
+		await input.setValue( 'Renamed Anvil' );
+		await input.trigger( 'keyup.esc' );
+
+		expect( wrapper.emitted( 'dirty' ) ).toEqual( [ [ true ], [ false ] ] );
 	} );
 
 	it( 'reports nothing when the field is merely opened', async () => {
@@ -95,7 +105,7 @@ describe( 'EditableText', () => {
 
 		await startEditing( wrapper );
 
-		expect( wrapper.emitted( 'input' ) ).toBeUndefined();
+		expect( wrapper.emitted( 'dirty' ) ).toBeUndefined();
 	} );
 
 	it( 'does not emit when the draft equals the value', async () => {

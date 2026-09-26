@@ -110,9 +110,10 @@ import { useClampedText } from '@/composables/useClampedText.ts';
  * an input. Enter and blur commit the draft, Escape discards it. Committing only
  * emits when the draft differs from the value; persistence is the host's concern,
  * including translating a cleared value — emitted as '' — into whatever the host
- * stores for "no value". A draft that differs from the value is also reported as
- * `input` while it is typed, for a host that offers to save before the commit.
- * The placeholder stands in for an empty value in both modes.
+ * stores for "no value". `dirty` reports whether the open draft differs from the
+ * value, so a host can offer Save before the commit and withdraw it once the draft
+ * is discarded; the pointer-down of a Save click blurs the field, so the commit
+ * lands before the click. The placeholder stands in for an empty value in both modes.
  * With `required`, a blank draft still emits (so the host's validation can flag
  * it) but the input stays open, keeping the error state anchored to a visible
  * field; Escape still reverts.
@@ -147,7 +148,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	'update:modelValue': [ value: string ];
-	input: [ value: string ];
+	dirty: [ dirty: boolean ];
 }>();
 
 const editing = ref( false );
@@ -225,12 +226,9 @@ function commit(): void {
 	}
 }
 
-// The commit's own difference test, so opening the field reports nothing.
-watch( draft, ( value ) => {
-	if ( value !== props.modelValue ) {
-		emit( 'input', value );
-	}
-} );
+const dirty = computed( () => editing.value && draft.value !== props.modelValue );
+
+watch( dirty, ( value ) => emit( 'dirty', value ) );
 
 async function cancel( event: KeyboardEvent ): Promise<void> {
 	// The Escape that cancels an IME composition is not a cancel. This runs on

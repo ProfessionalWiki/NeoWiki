@@ -25,7 +25,7 @@
 							:add-label="$i18n( 'neowiki-schema-editor-description-add' ).text()"
 							:multiline="true"
 							:clamp-lines="2"
-							@input="markChanged"
+							@dirty="descriptionDirty = $event"
 							@update:model-value="onDescriptionChanged"
 						/>
 					</div>
@@ -94,7 +94,12 @@ const emit = defineEmits<{
 
 const schemaEditor = ref<SchemaEditorExposes | null>( null );
 const description = ref( props.initialSchema.getDescription() );
-const { hasChanged, markChanged, resetChanged } = useChangeDetection();
+const { hasChanged: committed, markChanged, resetChanged } = useChangeDetection();
+
+// A description still being typed is already something to save, and nothing once it is discarded.
+const descriptionDirty = ref( false );
+
+const hasChanged = computed( (): boolean => committed.value || descriptionDirty.value );
 
 const dialogTitle = computed( () => mw.msg( 'neowiki-editing-schema', props.initialSchema.getName() ) );
 
