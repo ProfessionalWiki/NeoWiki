@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
+use MediaWiki\Interwiki\ClassicInterwikiLookup;
+use MediaWiki\MainConfigNames;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
@@ -27,10 +29,17 @@ class ValueByPageNameRenderingTest extends NeoWikiIntegrationTestCase {
 
 	/**
 	 * The page the value is rendered on has a Motto of its own, which a value falling back to that page
-	 * would show.
+	 * would show. The `wikipedia:` prefix is an interwiki one only once it is configured.
 	 */
 	protected function setUp(): void {
 		parent::setUp();
+
+		$this->overrideConfigValue(
+			MainConfigNames::InterwikiCache,
+			ClassicInterwikiLookup::buildCdbHash( [
+				[ 'iw_prefix' => 'wikipedia', 'iw_url' => 'https://en.wikipedia.org/wiki/$1' ],
+			] )
+		);
 
 		$this->createPageWithSubjects(
 			self::RENDERING_PAGE,
@@ -51,6 +60,7 @@ class ValueByPageNameRenderingTest extends NeoWikiIntegrationTestCase {
 		yield 'special page' => [ 'Special:Version' ];
 		yield 'media link' => [ 'Media:Example.jpg' ];
 		yield 'section link without a page' => [ '#History' ];
+		yield 'interwiki link' => [ 'wikipedia:Example' ];
 	}
 
 	/**

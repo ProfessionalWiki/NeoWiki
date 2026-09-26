@@ -160,6 +160,17 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 				),
 			),
 		);
+
+		// The test modules run on the main page, so a read that fell back to that page would find this.
+		$this->createPageWithMainSubject(
+			Title::newMainPage()->getPrefixedText(),
+			mainSubject: new Subject(
+				id: new SubjectId( 's1test5gggggggg' ),
+				label: new SubjectLabel( 'Page running the module' ),
+				schema: SchemaReference::local( new SchemaName( 'Company' ) ),
+				statements: new StatementList(),
+			),
+		);
 	}
 
 	protected function createSchemaPage( string $name, string $json ): void {
