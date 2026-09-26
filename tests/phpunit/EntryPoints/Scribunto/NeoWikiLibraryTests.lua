@@ -94,6 +94,10 @@ local function testGetSubjectsOnNonexistentPage()
 	return #nw.getSubjects( 'NonexistentPage12345' )
 end
 
+local function testGetSubjectsOnSpecialPage()
+	return #nw.getSubjects( 'Special:Version' )
+end
+
 -- query tests
 
 local function testQueryRejectsEmptyString()
@@ -252,6 +256,8 @@ local tests = {
 	  func = testGetSubjectsOnPageWithOnlyAMainSubject, expect = { 1 } },
 	{ name = 'getSubjects returns empty for a nonexistent page',
 	  func = testGetSubjectsOnNonexistentPage, expect = { 0 } },
+	{ name = 'getSubjects returns empty for a special page',
+	  func = testGetSubjectsOnSpecialPage, expect = { 0 } },
 
 	-- query
 	{ name = 'query rejects empty string with localized message',
