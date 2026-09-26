@@ -24,10 +24,19 @@ class ValueByPageNameRenderingTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testValueFromATitleThatCannotBeAPageRendersAsFromAMissingPage(): void {
+	public static function titleThatCannotBeAPageProvider(): iterable {
+		yield 'special page' => [ 'Special:Version' ];
+		yield 'media link' => [ 'Media:Example.jpg' ];
+		yield 'section link without a page' => [ '#History' ];
+	}
+
+	/**
+	 * @dataProvider titleThatCannotBeAPageProvider
+	 */
+	public function testValueFromATitleThatCannotBeAPageRendersAsFromAMissingPage( string $title ): void {
 		$this->assertSame(
 			$this->renderValueFrom( 'ValueByPageNameRenderingTestMissingPage' ),
-			$this->renderValueFrom( 'Special:Version' )
+			$this->renderValueFrom( $title )
 		);
 	}
 
