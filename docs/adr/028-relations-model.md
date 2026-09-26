@@ -6,7 +6,7 @@ Status: Draft
 
 ## Context
 
-Relations — the Statement values that point one Subject at another — accumulated open design questions, collected in
+Relations — the values that point to a Subject — accumulated open design questions, collected in
 the Relations epic ([#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630)). An integrity pass landed first
 ([#1080](https://github.com/ProfessionalWiki/NeoWiki/pull/1080) to
 [#1084](https://github.com/ProfessionalWiki/NeoWiki/pull/1084)). [ADR 7](007-multiple-subjects-per-page.md) left an
