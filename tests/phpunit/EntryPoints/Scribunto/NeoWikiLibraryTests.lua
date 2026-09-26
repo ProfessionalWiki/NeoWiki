@@ -66,6 +66,10 @@ local function testGetMainSubjectNonexistentPage()
 	return nw.getMainSubject( 'NonexistentPage12345' )
 end
 
+local function testGetMainSubjectSpecialPage()
+	return nw.getMainSubject( 'Special:Version' )
+end
+
 -- getSubjects tests
 
 local function testGetSubjectsReturnsCount()
@@ -234,6 +238,8 @@ local tests = {
 	  func = testGetMainSubjectStatements, expect = { 'text', 'Berlin' } },
 	{ name = 'getMainSubject returns nil for nonexistent page',
 	  func = testGetMainSubjectNonexistentPage, expect = { nil } },
+	{ name = 'getMainSubject returns nil for a special page',
+	  func = testGetMainSubjectSpecialPage, expect = { nil } },
 
 	-- getSubjects
 	{ name = 'getSubjects returns every Subject on the page',
