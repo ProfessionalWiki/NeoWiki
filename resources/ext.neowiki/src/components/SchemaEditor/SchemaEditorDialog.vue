@@ -126,8 +126,10 @@ function onDialogUpdateOpen( value: boolean ): void {
 
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
-		// Reopening after a discard must not keep the abandoned description.
+		// Reopening after a discard must not keep the abandoned description, nor the draft
+		// the closed dialog took down with it.
 		description.value = props.initialSchema.getDescription();
+		descriptionDirty.value = false;
 		resetChanged();
 	}
 } );

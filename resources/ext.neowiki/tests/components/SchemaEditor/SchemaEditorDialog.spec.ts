@@ -155,6 +155,17 @@ describe( 'SchemaEditorDialog', () => {
 			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
 		} );
 
+		it( 'drops a dirty draft when the dialog reopens', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+			await wrapper.findComponent( EditableText ).vm.$emit( 'dirty', true );
+
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+		} );
+
 		it( 'saves the edited description', async () => {
 			const wrapper = mountComponent();
 			await flushPromises();
