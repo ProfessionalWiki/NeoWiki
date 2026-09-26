@@ -79,7 +79,11 @@
 
 		"SidebarBeforeOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSidebarBeforeOutput",
 		"SkinTemplateNavigation::Universal": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSkinTemplateNavigationUniversal",
-		"ScribuntoExternalLibraries": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onScribuntoExternalLibraries"
+		"ScribuntoExternalLibraries": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onScribuntoExternalLibraries",
+
+		"HtmlPageLinkRendererBegin": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onHtmlPageLinkRendererBegin",
+		"ChangesListInitRows": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onChangesListInitRows",
+		"ChangesListSpecialPageStructuredFilters": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onChangesListSpecialPageStructuredFilters"
 	},
 
 	"JobClasses": {
@@ -884,6 +888,11 @@
 			"styles": [
 				"resources/ext.neowiki/dist/neowiki.css",
 				"resources/styles/mapping-page.css"
+			]
+		},
+		"ext.neowiki.subjectLabel.styles": {
+			"styles": [
+				"resources/styles/subject-label.less"
 			]
 		}
 	},

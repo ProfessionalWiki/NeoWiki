@@ -65,6 +65,29 @@ class SubjectDisplayName {
 	}
 
 	/**
+	 * The Subject whose label to show in place of the page's own title, or null to show the title: the
+	 * Main Subject of a page the system titled by a Subject id, since the id names nothing a reader
+	 * knows. Only a labelled one: the Schema name would make every unlabelled page of a Schema alike.
+	 */
+	public static function inPlaceOfPageTitle( PageSubjects $pageSubjects, string $pageName ): ?Subject {
+		$mainSubject = $pageSubjects->getMainSubject();
+
+		if ( $mainSubject?->getLabel() === null || !self::isTitledBySubjectOnIt( $pageName, $pageSubjects ) ) {
+			return null;
+		}
+
+		return $mainSubject;
+	}
+
+	/**
+	 * Whether a page of this name can be titled by a Subject id at all: cheap enough to ask before the
+	 * page is read, so every other page is spared the read. The first letter is set aside as below.
+	 */
+	public static function mayBeTitledBySubjectId( string $pageName ): bool {
+		return SubjectId::isValidLocalId( lcfirst( $pageName ) );
+	}
+
+	/**
 	 * Whether the page was titled by the system rather than by anyone: subject-first creation titles a
 	 * page by the id of the Subject it creates when no label gives it a title (ADR 31). Any Subject
 	 * the page holds counts, not only the one being named: which Subject such a page carries can

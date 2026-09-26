@@ -9,11 +9,14 @@ use HtmlArmor;
 use ManualLogEntry;
 use MediaWiki\Block\DatabaseBlock;
 use MediaWiki\Content\ContentHandler;
+use MediaWiki\Context\ContextSource;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
 use MediaWiki\Installer\DatabaseUpdater;
+use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
@@ -22,6 +25,7 @@ use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
@@ -30,9 +34,11 @@ use MediaWiki\Search\SearchUpdate;
 use MediaWiki\Specials\SpecialSearch;
 use MediaWiki\Title\ForeignTitle;
 use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleValue;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 use Wikimedia\Rdbms\IDBAccessObject;
+use Wikimedia\Rdbms\IResultWrapper;
 use MessageLocalizer;
 use NullIndexField;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
@@ -41,6 +47,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigExample;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\LayoutContent;
@@ -53,12 +60,15 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectNameMessage;
+use ProfessionalWiki\NeoWiki\Presentation\SubjectLabelHtml;
+use ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder;
 use MediaWiki\SpecialPage\SpecialPage;
 use SearchEngine;
 use SearchIndexField;
 use SearchResult;
 use Skin;
 use SkinTemplate;
+use stdClass;
 use Throwable;
 use WikiPage;
 
@@ -116,12 +126,14 @@ class NeoWikiHooks {
 		$out->addHtml( self::getNeoWikiAppHtml( $out, $permissionHints ) );
 		self::addRdfAutodiscoveryLinks( $out );
 
+		$revisionId = self::pageIsLatestRevision( $out ) ? null : $out->getRevisionId();
+		$builder = $extension->newViewHtmlBuilder();
+
+		self::headByMainSubject( $out, $builder, $revisionId );
+
 		if ( !$extension->shouldAutoRenderMainSubject() ) {
 			return;
 		}
-
-		$revisionId = self::pageIsLatestRevision( $out ) ? null : $out->getRevisionId();
-		$builder = $extension->newViewHtmlBuilder();
 
 		$html = $out->getHTML();
 		$out->clearHTML();
@@ -166,6 +178,140 @@ class NeoWikiHooks {
 	private static function shouldShowSubjectCreator( OutputPage $out, SubjectPermissionHints $permissionHints ): bool {
 		return $permissionHints->canCreateMainSubject( new PageId( $out->getTitle()->getArticleID() ) )
 			&& self::pageIsLatestRevision( $out );
+	}
+
+	/**
+	 * Heads the page with its Main Subject's label and id, as core applies a display title, and only
+	 * where core would apply one: not on a diff, which is headed by the diff, nor where an error stands
+	 * in for the revision, which either leaves no revision id or heads the page as an error. The
+	 * browser tab gets the label alone.
+	 */
+	private static function headByMainSubject( OutputPage $out, ViewHtmlBuilder $builder, ?int $revisionId ): void {
+		if ( $out->getRevisionId() === null
+			|| $out->getRequest()->getCheck( 'diff' )
+			|| $out->getPageTitle() === Sanitizer::removeSomeTags( $out->msg( 'errorpagetitle' )->escaped() )
+		) {
+			return;
+		}
+
+		$subject = $builder->subjectInPlaceOfPageTitle( $out->getTitle(), $revisionId );
+
+		if ( $subject === null ) {
+			return;
+		}
+
+		$label = $subject->getLabel()?->text ?? '';
+
+		$out->setPageTitle( SubjectLabelHtml::withId( $out, $label, $subject->getId()->text ) );
+		$out->setHTMLTitle( $out->msg( 'pagetitle' )->plaintextParams( $label )->inContentLanguage() );
+		$out->addModuleStyles( [ SubjectLabelHtml::STYLE_MODULE ] );
+	}
+
+	/**
+	 * In Recent changes and watchlists, a link to a page titled by a Subject id reads as the page's
+	 * heading does: its Main Subject's label and id. Only rows the list read up front change, and only
+	 * links that would show the bare title, rendered where the list renders. The parser renders with a
+	 * link renderer of its own, and a list transcluded into a page reads nothing up front, so page
+	 * content never gets a label.
+	 *
+	 * @param string|HtmlArmor|null &$text
+	 * @param string[] &$customAttribs
+	 * @param string[] &$query
+	 * @param string &$ret
+	 */
+	public static function onHtmlPageLinkRendererBegin(
+		LinkRenderer $linkRenderer,
+		LinkTarget $target,
+		&$text,
+		&$customAttribs,
+		&$query,
+		&$ret
+	): bool {
+		// The cheap checks first: this runs for every link rendered.
+		if ( $text !== null
+			|| !self::isIdShaped( $target )
+			|| $linkRenderer !== MediaWikiServices::getInstance()->getLinkRenderer()
+		) {
+			return true;
+		}
+
+		$context = RequestContext::getMain();
+
+		$subject = NeoWikiExtension::getInstance()->getSubjectInPlaceOfPageTitleLookup()->forListedPage(
+			Title::newFromLinkTarget( $target ),
+			$context->getAuthority(),
+			$context->getOutput()
+		);
+
+		if ( $subject === null ) {
+			return true;
+		}
+
+		$text = new HtmlArmor( SubjectLabelHtml::withId(
+			$context,
+			$subject->getLabel()?->text ?? '',
+			$subject->getId()->text
+		) );
+
+		return true;
+	}
+
+	/**
+	 * A namespace prefix is part of the page name, so only a page in the main namespace can be titled by
+	 * a Subject id.
+	 */
+	private static function isIdShaped( LinkTarget $target ): bool {
+		return $target->getInterwiki() === ''
+			&& $target->inNamespace( NS_MAIN )
+			&& SubjectDisplayName::mayBeTitledBySubjectId( $target->getText() );
+	}
+
+	/**
+	 * Reads the labels a Recent changes or watchlist page links by in one batch rather than one read per
+	 * row. Only content pages, as only they are headed by their label.
+	 *
+	 * A list transcluded into a page renders in a context of its own, and gets no labels: the page
+	 * would keep them in its cache after they changed.
+	 *
+	 * @param IResultWrapper|stdClass[] $rows
+	 */
+	public static function onChangesListInitRows( ContextSource $changesList, $rows ): void {
+		if ( $changesList->getContext() !== RequestContext::getMain() ) {
+			return;
+		}
+
+		$namespaceInfo = MediaWikiServices::getInstance()->getNamespaceInfo();
+		$pageIds = [];
+
+		foreach ( $rows as $row ) {
+			if ( (int)$row->rc_cur_id !== 0
+				&& $namespaceInfo->isContent( (int)$row->rc_namespace )
+				&& self::isIdShaped( new TitleValue( (int)$row->rc_namespace, (string)$row->rc_title ) )
+			) {
+				$pageIds[] = (int)$row->rc_cur_id;
+			}
+		}
+
+		// A list that cannot be labelled is still a list: its links keep their titles.
+		try {
+			NeoWikiExtension::getInstance()->getSubjectInPlaceOfPageTitleLookup()->prefetch(
+				$pageIds,
+				$changesList->getOutput()
+			);
+		} catch ( Throwable $exception ) {
+			LoggerFactory::getInstance( 'NeoWiki' )->warning(
+				'NeoWiki: reading the Subjects of listed pages failed: {exception}',
+				[ 'exception' => $exception ]
+			);
+		}
+	}
+
+	/**
+	 * The styles for labelled links go with every Recent changes and watchlist page, since the filters
+	 * reload the list without them and it can start out empty.
+	 */
+	public static function onChangesListSpecialPageStructuredFilters( SpecialPage $specialPage ): void {
+		$specialPage->getOutput()->addModuleStyles( [ SubjectLabelHtml::STYLE_MODULE ] );
 	}
 
 	private static function pageIsLatestRevision( OutputPage $out ): bool {

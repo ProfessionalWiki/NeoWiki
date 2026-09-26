@@ -187,6 +187,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PointInTimeSubjectLoo
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PublishedSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectInPlaceOfPageTitleLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingMappingLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseMappingNameLookup;
@@ -274,6 +275,7 @@ class NeoWikiExtension {
 	private ?SchemaLookup $schemaLookup = null;
 	private ?SubjectSearchHitLookup $subjectSearchHitLookup = null;
 	private ?SchemaReferenceParser $schemaReferenceParser = null;
+	private ?SubjectInPlaceOfPageTitleLookup $subjectInPlaceOfPageTitleLookup = null;
 	/** @var array<string, SchemaLookup> */
 	private array $schemaLookupsByUser = [];
 	private static ?self $instance = null;
@@ -1604,6 +1606,21 @@ class NeoWikiExtension {
 			idGenerator: $this->getIdGenerator(),
 			subjectIdParser: $this->getSubjectIdParser()
 		);
+	}
+
+	/**
+	 * Kept for the request: links find only what a list read up front through this same instance.
+	 */
+	public function getSubjectInPlaceOfPageTitleLookup(): SubjectInPlaceOfPageTitleLookup {
+		$this->subjectInPlaceOfPageTitleLookup ??= new SubjectInPlaceOfPageTitleLookup(
+			MediaWikiServices::getInstance()->getRevisionStore(),
+			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
+			$this->getRevisionPolicy(),
+			fn ( Authority $reader ): PageReadAuthorizer => $this->newPageReadAuthorizer( $reader ),
+			maxPages: 250
+		);
+
+		return $this->subjectInPlaceOfPageTitleLookup;
 	}
 
 	public function getPageIdentifiersLookup(): PageIdentifiersLookup {
