@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application;
 
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Application\PageDependencyRecorder;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
@@ -28,7 +29,9 @@ use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\NullPageDependencyRecorder;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivePageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyPageDependencyRecorder;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use RuntimeException;
 
@@ -60,14 +63,16 @@ class SubjectResolverTest extends TestCase {
 		SubjectContentRepository $contentRepository,
 		?PageIdentifiersLookup $pageIdentifiersLookup = null,
 		?PageReadAuthorizer $readAuthorizer = null,
-		?SubjectLookup $subjectLookup = null
+		?SubjectLookup $subjectLookup = null,
+		?PageDependencyRecorder $pageDependencyRecorder = null
 	): SubjectResolver {
 		return new SubjectResolver(
 			$contentRepository,
 			$subjectLookup ?? new InMemorySubjectLookup(),
 			$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
 			$readAuthorizer ?? new StubPageReadAuthorizer( true ),
-			TestSubjectIds::newParser()
+			TestSubjectIds::newParser(),
+			$pageDependencyRecorder ?? new NullPageDependencyRecorder()
 		);
 	}
 
@@ -214,6 +219,63 @@ class SubjectResolverTest extends TestCase {
 		);
 
 		$this->assertNull( $resolver->getPageSubjectsByTitle( $this->createStub( Title::class ) ) );
+	}
+
+	public function testPageReadByTitleIsADependencyEvenWhenItMayNotBeRead(): void {
+		$dependencies = new SpyPageDependencyRecorder();
+
+		$this->newResolver(
+			$this->repositoryWithMainSubject( $this->createSubject() ),
+			readAuthorizer: new StubPageReadAuthorizer( false ),
+			pageDependencyRecorder: $dependencies
+		)->getPageSubjectsByTitle( Title::makeTitle( NS_MAIN, 'Restricted page' ) );
+
+		$this->assertContains( [ NS_MAIN, 'Restricted page' ], self::recordedPagesOf( $dependencies ) );
+	}
+
+	/**
+	 * The hosting page is outside the main namespace, so the name the index gives is prefixed.
+	 */
+	public function testPageHostingASubjectReadByIdIsADependency(): void {
+		$dependencies = new SpyPageDependencyRecorder();
+
+		$this->newResolver(
+			$this->repositoryHostingOnTargetPage( new PageSubjects( $this->createSubject(), new SubjectMap() ) ),
+			new InMemoryPageIdentifiersLookup( [
+				[
+					new SubjectId( self::SUBJECT_ID ),
+					new PageIdentifiers( new PageId( self::TARGET_PAGE_ID ), 'Help:Marie Curie', NS_HELP ),
+				],
+			] ),
+			pageDependencyRecorder: $dependencies
+		)->resolveById( self::SUBJECT_ID );
+
+		$this->assertContains( [ NS_HELP, 'Marie Curie' ], self::recordedPagesOf( $dependencies ) );
+	}
+
+	/**
+	 * As namespace and title text, which a title placed in the wrong namespace cannot match.
+	 *
+	 * @return array<array{int, string}>
+	 */
+	private static function recordedPagesOf( SpyPageDependencyRecorder $dependencies ): array {
+		return array_map(
+			static fn ( Title $page ): array => [ $page->getNamespace(), $page->getText() ],
+			$dependencies->recordedPages
+		);
+	}
+
+	public function testPageHostingASubjectIsNoDependencyWhenItMayNotBeRead(): void {
+		$dependencies = new SpyPageDependencyRecorder();
+
+		$this->newResolver(
+			$this->repositoryHostingOnTargetPage( new PageSubjects( $this->createSubject(), new SubjectMap() ) ),
+			$this->hostedOnTargetPage( self::SUBJECT_ID ),
+			new SelectivePageReadAuthorizer( [ self::TARGET_PAGE_ID ] ),
+			pageDependencyRecorder: $dependencies
+		)->resolveById( self::SUBJECT_ID );
+
+		$this->assertSame( [], $dependencies->recordedPages );
 	}
 
 	private function newResolverWithTargetOnPage(

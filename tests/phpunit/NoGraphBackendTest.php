@@ -9,6 +9,8 @@ use MediaWiki\Content\WikitextContent;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Title\Title;
@@ -126,7 +128,7 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 	public function testLuaGetterReadsAValueBySubjectIdWithoutBackend(): void {
 		$value = $this->runWithoutGraphBackend( function (): array {
 			$this->createPageWithMottoSubject( 'NoBackendLuaPage' );
-			$resolver = NeoWikiExtension::getInstance()->newSubjectResolver( $this->getTestSysop()->getUser() );
+			$resolver = NeoWikiExtension::getInstance()->newSubjectResolver( $this->sysopParserOn( 'NoBackendLuaPage' ) );
 			return ( new SubjectDataLookup( $resolver ) )->getValue(
 				Title::newFromText( 'NoBackendLuaPage' ),
 				self::PROPERTY,
@@ -135,6 +137,20 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 		} );
 
 		$this->assertSame( [ self::VALUE ], $value );
+	}
+
+	/**
+	 * A parser part way through parsing the page for a sysop, as the Lua library holds one.
+	 */
+	private function sysopParserOn( string $pageName ): Parser {
+		$parser = $this->getServiceContainer()->getParserFactory()->create();
+		$parser->startExternalParse(
+			Title::newFromText( $pageName ),
+			ParserOptions::newFromUser( $this->getTestSysop()->getUser() ),
+			Parser::OT_HTML
+		);
+
+		return $parser;
 	}
 
 	public function testContentPageRenderInjectsTheAppWithoutBackend(): void {
