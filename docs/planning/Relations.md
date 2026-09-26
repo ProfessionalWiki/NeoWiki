@@ -54,23 +54,23 @@ relation Property Definition carries `relation` (the edge-type name), `targetSch
 6. **Name a relation once, on the property** — the schema editor already does
    ([#1494](https://github.com/ProfessionalWiki/NeoWiki/pull/1494)); the stored model, `neo:relationType` and the
    direct RDF predicate follow.
-7. **A Schema declares whether its Subjects are dependent** — structure lives in Dependent Subjects on their Host
-   Subject's page, in both wiki modes.
+Which Subjects are structure of another — Dependent Subjects on their Host Subject's page, in both wiki modes — is
+[ADR 36](../adr/036-dependent-subjects.md).
 
-Ratification gates decisions 1, 3, 6 and 7. Nothing else waits for it.
+Ratification gates decisions 1, 3 and 6, and ADR 36. Nothing else waits for it.
 
 ## Open questions
 
 ### Reaching the Subjects that point here
 
-A Subject's structure is reached from the Subject itself (decision 7); what remains are the standalone Subjects that
-point at it — a person's compositions — and nothing adds them from that side. Display ships on `Special:Subject`,
-always on; it loses a referrer whose projection lagged or failed, which no wiki-side verification can recover. For
-pages and views, where default-off is decided, open are the configuration granularity (wiki, Schema, or view) and the
-inverse labels, which cannot be derived from the forward name
+A Subject's structure is reached from the Subject itself ([ADR 36](../adr/036-dependent-subjects.md)); what remains are
+the standalone Subjects that point at it — a person's compositions — and nothing adds them from that side. Display ships
+on `Special:Subject`, always on; it loses a referrer whose projection lagged or failed, which no wiki-side verification
+can recover. For pages and views, where default-off is decided, open are the configuration granularity (wiki, Schema, or
+view) and the inverse labels, which cannot be derived from the forward name
 ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)). For editing, open are how a user adds an incoming
-relation from the target, and whether a Schema declares which incoming relation types it surfaces. The where-used
-view ([#1039](https://github.com/ProfessionalWiki/NeoWiki/issues/1039)) needs
+relation from the target, and whether a Schema declares which incoming relation types it surfaces. The where-used view
+([#1039](https://github.com/ProfessionalWiki/NeoWiki/issues/1039)) needs
 [#1135](https://github.com/ProfessionalWiki/NeoWiki/issues/1135) fixed.
 
 ### Autocomplete value sourcing
@@ -104,8 +104,8 @@ Gated on sourced-Subject display ([Subject Sources](SubjectSources.md)):
 After ADR 28 is ratified:
 
 - Remove edge properties ([#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119)); widen `targetSchema` to a
-  list ([#991](https://github.com/ProfessionalWiki/NeoWiki/issues/991)); the decision 6 rename; Dependent Schemas
-  (decision 7): schema format, validation, placement, inline editing and display.
+  list ([#991](https://github.com/ProfessionalWiki/NeoWiki/issues/991)); the decision 6 rename; Dependent Subjects
+  ([ADR 36](../adr/036-dependent-subjects.md)): schema format, validation, placement, inline editing and display.
 
 Smaller, any time: pre-fill a new Subject's relation to the page's Main Subject (decision 5); relation hover card
 ([#377](https://github.com/ProfessionalWiki/NeoWiki/issues/377)); target links in the Schema view
