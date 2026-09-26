@@ -645,12 +645,43 @@ describe( 'SubjectEditPane', () => {
 	} );
 
 	describe( 'Renaming from a pane', () => {
-		async function rename( wrapper: VueWrapper, name: string ): Promise<void> {
+		async function typeName( wrapper: VueWrapper, name: string ): Promise<Omit<DOMWrapper<Element>, 'exists'>> {
 			await wrapper.get( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
 			const input = wrapper.get( '.ext-neowiki-editable-text__input input' );
 			await input.setValue( name );
+			return input;
+		}
+
+		async function rename( wrapper: VueWrapper, name: string ): Promise<void> {
+			const input = await typeName( wrapper, name );
 			await input.trigger( 'keydown.enter' );
 		}
+
+		it( 'flips hasChanged as soon as a name is typed, before it is committed', async () => {
+			const wrapper = mountPane();
+
+			await typeName( wrapper, 'Alice' );
+
+			expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
+		} );
+
+		it( 'commits a name still being typed before validating for a save', async () => {
+			const wrapper = mountPane();
+			await typeName( wrapper, 'Alice' );
+
+			await ( wrapper.vm as any ).flushValidation();
+
+			expect( ( ( wrapper.vm as any ).buildUpdatedSubject() as Subject ).getLabel() ).toBe( 'Alice' );
+		} );
+
+		it( 'withdraws hasChanged when the typed name is discarded', async () => {
+			const wrapper = mountPane();
+
+			const input = await typeName( wrapper, 'Alice' );
+			await input.trigger( 'keyup.esc' );
+
+			expect( ( wrapper.vm as any ).hasChanged ).toBe( false );
+		} );
 
 		it( 'saves the committed name as the subject\'s label', async () => {
 			const wrapper = mountPane( { nested: true } );

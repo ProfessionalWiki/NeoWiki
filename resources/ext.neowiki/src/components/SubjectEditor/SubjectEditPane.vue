@@ -9,10 +9,12 @@
 		<div class="ext-neowiki-subject-edit-pane__header">
 			<h3 class="ext-neowiki-subject-edit-pane__name">
 				<EditableText
+					ref="labelField"
 					:model-value="label"
 					:edit-button-label="$i18n( 'neowiki-subject-editor-rename' ).text()"
 					:input-aria-label="$i18n( 'neowiki-subject-editor-label-field' ).text()"
 					:placeholder="labelPlaceholder"
+					@dirty="labelDirty = $event"
 					@update:model-value="setLabel"
 				/>
 			</h3>
@@ -130,7 +132,14 @@ provide( RelationTargetEditingKey, true );
 const subjectStore = useSubjectStore();
 
 const subjectEditorRef = ref<SubjectEditorExposes | null>( null );
-const { hasChanged, markChanged, resetChanged } = useChangeDetection();
+const { hasChanged: committed, markChanged, resetChanged } = useChangeDetection();
+
+// A label still being typed is already something to save, and nothing once it is discarded.
+const labelDirty = ref( false );
+
+const labelField = ref<InstanceType<typeof EditableText> | null>( null );
+
+const hasChanged = computed( (): boolean => committed.value || labelDirty.value );
 
 // Refreshed when a relation field changes and on nothing else: the dialog's draft graph is its
 // only consumer and reads only relation statements, and harvesting per keystroke would re-walk
@@ -312,6 +321,13 @@ function buildUpdatedSubject(): Subject | null {
 		.withStatements( subjectEditorRef.value.getSubjectData().withNonEmptyValues() );
 }
 
+// The write reads the committed label, so a name still being typed is committed on the way to
+// the validation a save runs first; the Save click's own blur does the same for a pointer.
+async function flushValidation(): Promise<void> {
+	labelField.value?.commit();
+	await flush();
+}
+
 function saveBlocker(): SaveBlocker | null {
 	return subjectEditorRef.value?.saveBlocker() ?? null;
 }
@@ -334,7 +350,7 @@ defineExpose( {
 	buildUpdatedSubject,
 	setServerViolations,
 	saveBlocker,
-	flushValidation: flush
+	flushValidation
 } );
 </script>
 
