@@ -23,6 +23,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class ValueByPageNameRenderingTest extends NeoWikiIntegrationTestCase {
 
 	private const string RENDERING_PAGE = 'ValueByPageNameRenderingTestPage';
+	private const string RENDERING_PAGE_MOTTO = 'Motto of the rendering page';
 
 	/**
 	 * The page the value is rendered on has a Motto of its own, which a value falling back to that page
@@ -34,7 +35,7 @@ class ValueByPageNameRenderingTest extends NeoWikiIntegrationTestCase {
 		$this->createPageWithSubjects(
 			self::RENDERING_PAGE,
 			TestSubject::build( statements: new StatementList( [
-				new Statement( new PropertyName( 'Motto' ), 'text', new StringValue( 'Motto of the rendering page' ) ),
+				new Statement( new PropertyName( 'Motto' ), 'text', new StringValue( self::RENDERING_PAGE_MOTTO ) ),
 			] ) )
 		);
 	}
@@ -56,10 +57,10 @@ class ValueByPageNameRenderingTest extends NeoWikiIntegrationTestCase {
 	 * @dataProvider titleThatCannotBeAPageProvider
 	 */
 	public function testValueFromATitleThatCannotBeAPageRendersAsFromAMissingPage( string $title ): void {
-		$this->assertSame(
-			$this->renderValueFrom( 'ValueByPageNameRenderingTestMissingPage' ),
-			$this->renderValueFrom( $title )
-		);
+		$html = $this->renderValueFrom( $title );
+
+		$this->assertSame( $this->renderValueFrom( 'ValueByPageNameRenderingTestMissingPage' ), $html );
+		$this->assertStringNotContainsString( self::RENDERING_PAGE_MOTTO, $html );
 	}
 
 }
