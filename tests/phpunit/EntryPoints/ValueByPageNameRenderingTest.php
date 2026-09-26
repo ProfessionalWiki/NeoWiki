@@ -4,6 +4,11 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Statement;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
@@ -17,9 +22,26 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  */
 class ValueByPageNameRenderingTest extends NeoWikiIntegrationTestCase {
 
+	private const string RENDERING_PAGE = 'ValueByPageNameRenderingTestPage';
+
+	/**
+	 * The page the value is rendered on has a Motto of its own, which a value falling back to that page
+	 * would show.
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->createPageWithSubjects(
+			self::RENDERING_PAGE,
+			TestSubject::build( statements: new StatementList( [
+				new Statement( new PropertyName( 'Motto' ), 'text', new StringValue( 'Motto of the rendering page' ) ),
+			] ) )
+		);
+	}
+
 	private function renderValueFrom( string $pageName ): string {
 		return $this->parseWikitextOn(
-			'ValueByPageNameRenderingTestPage',
+			self::RENDERING_PAGE,
 			'{{#neowiki_value: Motto | page=' . $pageName . ' }}'
 		);
 	}
