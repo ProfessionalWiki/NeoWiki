@@ -8,11 +8,14 @@
 			cannot follow without re-rendering CdxDialog. -->
 		<div class="ext-neowiki-subject-edit-pane__header">
 			<h3 class="ext-neowiki-subject-edit-pane__name">
+				<!-- Offered for saving as soon as it is typed: the Save click blurs the field,
+					and the blur commits the draft before the write reads it. -->
 				<EditableText
 					:model-value="label"
 					:edit-button-label="$i18n( 'neowiki-subject-editor-rename' ).text()"
 					:input-aria-label="$i18n( 'neowiki-subject-editor-label-field' ).text()"
 					:placeholder="labelPlaceholder"
+					@input="markChanged"
 					@update:model-value="setLabel"
 				/>
 			</h3>

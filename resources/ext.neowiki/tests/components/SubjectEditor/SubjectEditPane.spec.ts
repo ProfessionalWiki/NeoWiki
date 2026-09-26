@@ -645,12 +645,27 @@ describe( 'SubjectEditPane', () => {
 	} );
 
 	describe( 'Renaming from a pane', () => {
-		async function rename( wrapper: VueWrapper, name: string ): Promise<void> {
+		async function typeName( wrapper: VueWrapper, name: string ): Promise<DOMWrapper<Element>> {
 			await wrapper.get( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
-			const input = wrapper.get( '.ext-neowiki-editable-text__input input' );
+			const input = wrapper.find( '.ext-neowiki-editable-text__input input' );
 			await input.setValue( name );
+			return input;
+		}
+
+		async function rename( wrapper: VueWrapper, name: string ): Promise<void> {
+			const input = await typeName( wrapper, name );
 			await input.trigger( 'keydown.enter' );
 		}
+
+		// The Save click itself blurs the field, and the blur commits the draft before the write
+		// reads it, so a typed name is already something to save.
+		it( 'flips hasChanged as soon as a name is typed, before it is committed', async () => {
+			const wrapper = mountPane( { subject: schemaNamedSubject, nested: true } );
+
+			await typeName( wrapper, 'Alice' );
+
+			expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
+		} );
 
 		it( 'saves the committed name as the subject\'s label', async () => {
 			const wrapper = mountPane( { nested: true } );

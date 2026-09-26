@@ -25,6 +25,7 @@
 							:add-label="$i18n( 'neowiki-schema-editor-description-add' ).text()"
 							:multiline="true"
 							:clamp-lines="2"
+							@input="markChanged"
 							@update:model-value="onDescriptionChanged"
 						/>
 					</div>

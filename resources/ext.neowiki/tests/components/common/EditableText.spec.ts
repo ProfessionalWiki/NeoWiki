@@ -81,6 +81,23 @@ describe( 'EditableText', () => {
 		expect( wrapper.find( '.ext-neowiki-editable-text__text' ).exists() ).toBe( true );
 	} );
 
+	it( 'reports the draft as it is typed', async () => {
+		const wrapper = mountComponent();
+
+		const input = await startEditing( wrapper );
+		await input.setValue( 'Renamed Anvil' );
+
+		expect( wrapper.emitted( 'input' ) ).toEqual( [ [ 'Renamed Anvil' ] ] );
+	} );
+
+	it( 'reports nothing when the field is merely opened', async () => {
+		const wrapper = mountComponent();
+
+		await startEditing( wrapper );
+
+		expect( wrapper.emitted( 'input' ) ).toBeUndefined();
+	} );
+
 	it( 'does not emit when the draft equals the value', async () => {
 		const wrapper = mountComponent();
 
