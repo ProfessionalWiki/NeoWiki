@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application;
 
 use Exception;
 use MediaWiki\Title\Title;
-use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -36,6 +36,7 @@ class SubjectResolver {
 		private readonly PageIdentifiersLookup $pageIdentifiersLookup,
 		private readonly PageReadAuthorizer $readAuthorizer,
 		private readonly SubjectIdParser $subjectIdParser,
+		private readonly PageDependencyRecorder $pageDependencyRecorder,
 	) {
 	}
 
@@ -53,7 +54,7 @@ class SubjectResolver {
 
 			$page = $this->pageIdentifiersLookup->getPageIdOfSubject( $subjectId );
 
-			return $page === null ? null : $this->getPageSubjects( $page->getId() )?->getAllSubjects()->getSubject( $subjectId );
+			return $page === null ? null : $this->getPageSubjects( $page )?->getAllSubjects()->getSubject( $subjectId );
 		} catch ( Exception ) {
 			return null;
 		}
@@ -73,7 +74,14 @@ class SubjectResolver {
 		return $this->getPageSubjectsByTitle( $title )?->getMainSubject();
 	}
 
+	/**
+	 * The page is a dependency even when it does not exist or may not be read. The reader named it, so
+	 * recording it tells them nothing. Dependencies are kept from the parse on save, which reads as an
+	 * anonymous user: skipping a page that user may not read would leave the pages reading it stale.
+	 */
 	public function getPageSubjectsByTitle( Title $title ): ?PageSubjects {
+		$this->pageDependencyRecorder->recordDependencyOn( $title );
+
 		if ( !$this->readAuthorizer->authorizeReadByPageTitle( $title ) ) {
 			return null;
 		}
@@ -111,7 +119,7 @@ class SubjectResolver {
 			return null;
 		}
 
-		$pageSubjects = $this->getPageSubjects( $page->getId() );
+		$pageSubjects = $this->getPageSubjects( $page );
 		$subject = $pageSubjects?->getAllSubjects()->getSubject( $subjectId );
 
 		if ( $pageSubjects === null || $subject === null ) {
@@ -127,14 +135,31 @@ class SubjectResolver {
 	 * slot again. The Lua library keeps one resolver per parse; {{#neowiki_value}} builds one per
 	 * call, so there the memo only spans that call's relation labels.
 	 */
-	private function getPageSubjects( PageId $pageId ): ?PageSubjects {
+	private function getPageSubjects( PageIdentifiers $page ): ?PageSubjects {
+		$pageId = $page->getId();
+
 		if ( !array_key_exists( $pageId->id, $this->pageSubjectsByPageId ) ) {
 			$this->pageSubjectsByPageId[$pageId->id] = $this->readAuthorizer->authorizeReadByPageId( $pageId )
-				? $this->subjectContentRepository->getSubjectContentByPageId( $pageId )?->getPageSubjects()
+				? $this->readPageSubjects( $page )
 				: null;
 		}
 
 		return $this->pageSubjectsByPageId[$pageId->id];
+	}
+
+	/**
+	 * Only a page that may be read is a dependency here. The reader did not name it: the index led from
+	 * a Subject ID to it, so recording a page they may not read would tell them where that Subject lives
+	 * (ADR 27).
+	 */
+	private function readPageSubjects( PageIdentifiers $page ): ?PageSubjects {
+		$title = Title::newFromText( $page->getTitle() );
+
+		if ( $title !== null ) {
+			$this->pageDependencyRecorder->recordDependencyOn( $title );
+		}
+
+		return $this->subjectContentRepository->getSubjectContentByPageId( $page->getId() )?->getPageSubjects();
 	}
 
 }

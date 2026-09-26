@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use Exception;
+use HTMLCacheUpdateJob;
 use HtmlArmor;
 use ManualLogEntry;
 use MediaWiki\Block\DatabaseBlock;
@@ -331,7 +332,7 @@ class NeoWikiHooks {
 			'neowiki_value',
 			static function ( Parser $parser, string ...$args ): string|array {
 				$parserFunction = new NeoWikiValueParserFunction(
-					NeoWikiExtension::getInstance()->newSubjectResolver( ParserAuthority::of( $parser ) )
+					NeoWikiExtension::getInstance()->newSubjectResolver( $parser )
 				);
 				return $parserFunction->handle( $parser, ...$args );
 			}
@@ -361,7 +362,12 @@ class NeoWikiHooks {
 		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision );
 		$wikiPage->doPurge(); // clear cache
 
-		self::updateSearchIndexOfSlotOnlyEdit( $revision );
+		// A save from the Subject editor inherits the main slot, and MediaWiki both indexes a page for
+		// search and purges the pages using it as a template only when its main slot changed.
+		if ( self::changedOnlyTheSubjects( $revision ) ) {
+			self::scheduleSearchUpdate( $revision );
+			self::purgePagesReadingTheSubjectsOf( $wikiPage->getTitle() );
+		}
 
 		if ( self::changedTheContent( $revision ) ) {
 			self::rebuildStoresHoldingChangedMapping( $wikiPage->getTitle() );
@@ -369,15 +375,21 @@ class NeoWikiHooks {
 	}
 
 	/**
-	 * Saving in the Subject editor writes the Subject slot and inherits the main one, and MediaWiki
-	 * indexes a page for search only when its main slot changed. Such an edit is indexed from here instead.
+	 * A parse records a page it reads Subjects from as a template (ParserPageDependencyRecorder), so
+	 * the pages reading this one get the purge MediaWiki queues for pages using an edited template.
 	 */
-	private static function updateSearchIndexOfSlotOnlyEdit( RevisionRecord $revision ): void {
-		if ( !self::changedOnlyTheSubjects( $revision ) ) {
-			return;
-		}
+	private static function purgePagesReadingTheSubjectsOf( Title $title ): void {
+		DeferredUpdates::addCallableUpdate( static function () use ( $title ): void {
+			$services = MediaWikiServices::getInstance();
 
-		self::scheduleSearchUpdate( $revision );
+			if ( !$services->getBacklinkCacheFactory()->getBacklinkCache( $title )->hasLinks( 'templatelinks' ) ) {
+				return;
+			}
+
+			$services->getJobQueueGroup()->push(
+				HTMLCacheUpdateJob::newForBacklinks( $title, 'templatelinks', [ 'causeAction' => 'edit-page' ] )
+			);
+		} );
 	}
 
 	private static function scheduleSearchUpdate( RevisionRecord $revision ): void {

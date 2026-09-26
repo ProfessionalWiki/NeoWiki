@@ -35,6 +35,7 @@ use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiValueParserFunction;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\NullPageDependencyRecorder;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
@@ -81,7 +82,8 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 				new InMemorySubjectLookup(),
 				$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
 				$readAuthorizer ?? new StubPageReadAuthorizer( true ),
-				TestSubjectIds::newParser()
+				TestSubjectIds::newParser(),
+				new NullPageDependencyRecorder()
 			)
 		);
 	}

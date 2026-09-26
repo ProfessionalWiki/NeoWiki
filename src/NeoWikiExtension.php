@@ -165,8 +165,10 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\StartGraphStoreRebuildApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetSubjectsOrderingApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\ParserAuthority;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Infrastructure\ParserPageDependencyRecorder;
 use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedPageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedSchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseDeletedPageIdsLookup;
@@ -1334,7 +1336,9 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newSubjectResolver( Authority $authority ): SubjectResolver {
+	public function newSubjectResolver( Parser $parser ): SubjectResolver {
+		$authority = ParserAuthority::of( $parser );
+
 		return new SubjectResolver(
 			subjectContentRepository: $this->newSubjectContentRepository( $authority ),
 			// Latest, deliberately: the parse-time surfaces read what the editor sees, and the page gate
@@ -1343,6 +1347,7 @@ class NeoWikiExtension {
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			subjectIdParser: $this->getSubjectIdParser(),
+			pageDependencyRecorder: new ParserPageDependencyRecorder( $parser ),
 		);
 	}
 

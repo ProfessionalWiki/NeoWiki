@@ -57,9 +57,10 @@ whether the new version changed the projected shape, and rebuilds are quick at e
 
 If your wiki runs CirrusSearch, also [update its search index](maintenance.md#making-subjects-searchable).
 
-If your install predates September 2026 and holds restricted content, run `php maintenance/run.php refreshLinks`
-once: categories and page properties that earlier parses derived from Subject data were recorded without a
-permission check, and MediaWiki rewrites those tables only on an edit, not on a view.
+If your install predates September 2026, run `php maintenance/run.php refreshLinks` once: pages that read another
+page's Subjects recorded no dependency on it, and where the wiki holds restricted content, categories and page
+properties that earlier parses derived from Subject data were recorded without a permission check. MediaWiki
+rewrites those tables only on an edit, not on a view.
 
 If your wiki uses MediaWiki's built-in database search on MySQL or SQLite and has pages saved before September
 2026, run `php maintenance/run.php rebuildtextindex` once, so that those pages are
