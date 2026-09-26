@@ -25,8 +25,8 @@ A Relation is `{id, target}`. The `properties` map on Relations is removed from 
 graph edges and the native RDF ([#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119)).
 
 A value that needs context — a date with its source and status, a name with its type and language, an attendance with
-its year — becomes its own Subject: the property that held the value becomes a relation to a Dependent Schema
-(decision 7) whose Subject holds the value and its context, validated and shown like any other data
+its year — becomes its own Subject: the property that held the value becomes a relation to a Schema whose Subjects are dependent
+(decision 7), and that Subject holds the value and its context, validated and shown like any other data
 ([Qualifiers and References](../qualifiers-and-references.md)). Edge properties were a second path to part of that — a
 qualified relation, never a qualified literal — scalar-only, without a Schema or an editor, dropped by ontology
 mappings, and lost on re-save through the editor. One mechanism with Schemas, not a schema-less qualifier bag
@@ -78,15 +78,16 @@ projection and ontology mappings on different names. With one name, Cypher edge 
 
 ### 7. A Schema declares whether its Subjects are dependent
 
-A Schema is standalone unless it declares its Subjects dependent, which it can do only while it has no Subjects; the
-reverse is allowed at any time. A Dependent Subject — a name, an identifier, a birth, a sourced date — is part of
+A Schema's Subjects are standalone unless it declares them dependent, which it can do only while it has no Subjects;
+the reverse is allowed at any time. A Dependent Subject — a name, an identifier, a birth, a sourced date — is part of
 exactly one Host Subject: the Subject whose relation statement holds it. Every other Subject is standalone. A
 Dependent Subject:
 
 - Is entered and shown as part of its Host Subject. The relation field holds its fields, not a picker; with several
   target Schemas, adding one chooses the Schema.
-- Is created by the write that makes its Host Subject point at it, and removed by any write after which no standalone
-  Subject on the page reaches it. Deleting it on its own also removes the Host Subject's relation to it.
+- Is created by the write that makes its Host Subject point at it; a relation property whose targets are dependent
+  never points at a Subject the write does not hold. It is removed by any write after which no standalone Subject on
+  the page reaches it, and deleting it on its own also removes the Host Subject's relation to it.
 - Lives on its Host Subject's page in both wiki modes ([ADR 33](033-page-first-and-subject-first-wikis.md)) and moves
   with it and is deleted with it, so its permissions, history and revisions are the Host Subject's.
 - Is referenced by exactly one relation statement. It is not a picker candidate, and any other statement targeting it
@@ -98,8 +99,8 @@ Dependent Subject:
 - Keeps its id, IRI and graph node, so `Special:Subject`, the Data tab, queries and exports reach it.
 - Can be the Host Subject of further Dependent Subjects.
 
-A relation property targets Dependent Schemas or standalone ones, never both; the check runs when the Schema holding
-the property or any Schema in its target list is saved. Which way an ontology draws the relation — a birth that
+A relation property's target Schemas all have dependent Subjects or all have standalone ones, never both; the check
+runs when the Schema holding the property or any Schema in its target list is saved. Which way an ontology draws the relation — a birth that
 points at the person — is the mapping's concern ([Mapping Format](../authoring/mapping-format.md)). A relationship
 with no natural Host Subject — a marriage, an exhibition — is a standalone Subject with participants, or is held by
 one side; the other side sees it among its referencing Subjects on `Special:Subject`.
