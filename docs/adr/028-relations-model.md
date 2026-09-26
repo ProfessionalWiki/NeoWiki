@@ -1,8 +1,8 @@
 # Relations Model
 
-Date: 2026-07-21
+Date: 2026-09-27
 
-Status: Draft, revised 2026-09-24
+Status: Draft
 
 ## Context
 
