@@ -21,7 +21,7 @@ A Relation is `{id, target}`. The `properties` map on Relations is removed from 
 graph edges and the native RDF ([#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119)).
 
 A value that needs context — a date with its source and status, a name with its type and language, an attendance with
-its year — becomes its own Subject — a Dependent Subject of the one it describes ([ADR 36](036-dependent-subjects.md)),
+its year — becomes its own Subject — a Dependent Subject of the one it describes ([ADR 35](035-dependent-subjects.md)),
 or standalone where it has no single host — holding the value and its context, validated and shown like any other data
 ([Qualifiers and References](../qualifiers-and-references.md)). Edge properties were a second path to part of that — a
 qualified relation, never a qualified literal — scalar-only, without a Schema or an editor, dropped by ontology
@@ -51,7 +51,7 @@ Unconstrained targets ("any Subject") stay out until a concrete need arrives.
 A Relation may point at a Subject that does not exist yet, as a wiki link may point at an unwritten page; creating
 interlinked Subjects in a batch with pre-minted IDs depends on it
 ([#1100](https://github.com/ProfessionalWiki/NeoWiki/issues/1100)). A relation to a Dependent Subject is the
-exception: it is never missing ([ADR 36](036-dependent-subjects.md)). The server reports
+exception: it is never missing ([ADR 35](035-dependent-subjects.md)). The server reports
 [`relation-target-not-found`](../api/validation-codes.md#relation-target-not-found) as a warning and
 [`relation-target-schema-mismatch`](../api/validation-codes.md#relation-target-schema-mismatch) as an error that can
 block the save ([ADR 26](026-validation-severity-levels.md)); the graph keeps a stub node for the absent target. The UI
@@ -88,5 +88,5 @@ projection and ontology mappings on different names. With one name, Cypher edge 
 - [Qualifiers and References](../qualifiers-and-references.md), [Graph Model](../api/graph-model.md),
   [Subject Format](../api/subject-format.md), [Validation Codes](../api/validation-codes.md).
 - [ADR 7](007-multiple-subjects-per-page.md), [ADR 10](010-add-guids-to-relations.md),
-  [ADR 36](036-dependent-subjects.md) — which Subjects are structure of another.
+  [ADR 35](035-dependent-subjects.md) — which Subjects are structure of another.
 - [#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630) — the Relations epic.
