@@ -665,6 +665,15 @@ describe( 'SubjectEditPane', () => {
 			expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
 		} );
 
+		it( 'commits a name still being typed before validating for a save', async () => {
+			const wrapper = mountPane();
+			await typeName( wrapper, 'Alice' );
+
+			await ( wrapper.vm as any ).flushValidation();
+
+			expect( ( ( wrapper.vm as any ).buildUpdatedSubject() as Subject ).getLabel() ).toBe( 'Alice' );
+		} );
+
 		it( 'withdraws hasChanged when the typed name is discarded', async () => {
 			const wrapper = mountPane();
 

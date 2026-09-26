@@ -17,6 +17,7 @@
 
 					<div class="cdx-dialog__header__subtitle">
 						<EditableText
+							ref="descriptionField"
 							:model-value="description"
 							:edit-button-label="$i18n( 'neowiki-schema-editor-description-edit' ).text()"
 							:input-aria-label="$i18n( 'neowiki-schema-editor-description' ).text()"
@@ -75,7 +76,7 @@ import EditableText from '@/components/common/EditableText.vue';
 import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
 import { cdxIconClose } from '@wikimedia/codex-icons';
 import { Schema } from '@/domain/Schema.ts';
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 
@@ -98,6 +99,8 @@ const { hasChanged: committed, markChanged, resetChanged } = useChangeDetection(
 
 // A description still being typed is already something to save, and nothing once it is discarded.
 const descriptionDirty = ref( false );
+
+const descriptionField = ref<InstanceType<typeof EditableText> | null>( null );
 
 const hasChanged = computed( (): boolean => committed.value || descriptionDirty.value );
 
@@ -126,15 +129,18 @@ function onDialogUpdateOpen( value: boolean ): void {
 
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
-		// Reopening after a discard must not keep the abandoned description, nor the draft
-		// the closed dialog took down with it.
+		// Reopening after a discard must not keep the abandoned description.
 		description.value = props.initialSchema.getDescription();
-		descriptionDirty.value = false;
 		resetChanged();
 	}
 } );
 
 const handleSave = async ( summary: string ): Promise<void> => {
+	// A save that moves no focus has not committed a description still being typed. The editor
+	// reads the description as a prop, which reaches it with the next render.
+	descriptionField.value?.commit();
+	await nextTick();
+
 	if ( !schemaEditor.value ) {
 		return;
 	}

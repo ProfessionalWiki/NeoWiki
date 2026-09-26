@@ -108,6 +108,56 @@ describe( 'EditableText', () => {
 		expect( wrapper.emitted( 'dirty' ) ).toBeUndefined();
 	} );
 
+	it( 'keeps the input in place while the pointer press that blurred it lasts', async () => {
+		const wrapper = mountComponent();
+		const input = await startEditing( wrapper );
+		await input.setValue( 'Renamed Anvil' );
+
+		document.dispatchEvent( new Event( 'pointerdown' ) );
+		await input.trigger( 'blur' );
+
+		expect( wrapper.emitted( 'update:modelValue' ) ).toEqual( [ [ 'Renamed Anvil' ] ] );
+		expect( wrapper.find( 'input' ).exists() ).toBe( true );
+	} );
+
+	it( 'closes the input once that press ends', async () => {
+		const wrapper = mountComponent();
+		const input = await startEditing( wrapper );
+		document.dispatchEvent( new Event( 'pointerdown' ) );
+		await input.trigger( 'blur' );
+
+		document.dispatchEvent( new Event( 'pointerup' ) );
+		await new Promise( ( resolve ) => {
+			setTimeout( resolve );
+		} );
+		await nextTick();
+
+		expect( wrapper.find( 'input' ).exists() ).toBe( false );
+	} );
+
+	it( 'commits the draft when the host asks', async () => {
+		const wrapper = mountComponent();
+		const input = await startEditing( wrapper );
+		await input.setValue( 'Renamed Anvil' );
+
+		( wrapper.vm as any ).commit();
+		await nextTick();
+
+		expect( wrapper.emitted( 'update:modelValue' ) ).toEqual( [ [ 'Renamed Anvil' ] ] );
+		expect( wrapper.find( 'input' ).exists() ).toBe( false );
+	} );
+
+	it( 'reports the draft clean when it is taken down mid-edit', async () => {
+		const reports = vi.fn();
+		const wrapper = mountComponent( { onDirty: reports } );
+		const input = await startEditing( wrapper );
+		await input.setValue( 'Renamed Anvil' );
+
+		wrapper.unmount();
+
+		expect( reports.mock.calls ).toEqual( [ [ true ], [ false ] ] );
+	} );
+
 	it( 'does not emit when the draft equals the value', async () => {
 		const wrapper = mountComponent();
 

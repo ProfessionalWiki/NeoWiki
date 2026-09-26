@@ -99,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, toRef, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, toRef, watch } from 'vue';
 import { CdxButton, CdxIcon, CdxTextArea, CdxTextInput } from '@wikimedia/codex';
 import { cdxIconCollapse, cdxIconEdit, cdxIconEllipsis } from '@wikimedia/codex-icons';
 import { useClampedText } from '@/composables/useClampedText.ts';
@@ -112,8 +112,10 @@ import { useClampedText } from '@/composables/useClampedText.ts';
  * including translating a cleared value — emitted as '' — into whatever the host
  * stores for "no value". `dirty` reports whether the open draft differs from the
  * value, so a host can offer Save before the commit and withdraw it once the draft
- * is discarded; the pointer-down of a Save click blurs the field, so the commit
- * lands before the click. The placeholder stands in for an empty value in both modes.
+ * is discarded or the field is taken down; a host saving while the field is open
+ * calls the exposed `commit()` first. A blur caused by a pointer press elsewhere
+ * closes the field only once the press ends, so the release lands where it was
+ * aimed. The placeholder stands in for an empty value in both modes.
  * With `required`, a blank draft still emits (so the host's validation can flag
  * it) but the input stays open, keeping the error state anchored to a visible
  * field; Escape still reverts.
@@ -218,7 +220,7 @@ function commit(): void {
 	}
 
 	if ( !props.required || draft.value.trim() !== '' ) {
-		editing.value = false;
+		closeField();
 	}
 
 	if ( draft.value !== props.modelValue ) {
@@ -226,9 +228,55 @@ function commit(): void {
 	}
 }
 
+// Swapping the input for text mid-press re-lays out the dialog, and the release then lands
+// away from what was pressed: on the backdrop instead of Save, which asks to discard the edit.
+// The close waits one task past the release, so the click the press produces is dispatched first.
+let pressed = false;
+let closeOnRelease = false;
+
+function closeField(): void {
+	if ( pressed ) {
+		closeOnRelease = true;
+		return;
+	}
+
+	editing.value = false;
+}
+
+function onPointerDown(): void {
+	pressed = true;
+}
+
+function onPointerUp(): void {
+	pressed = false;
+
+	if ( closeOnRelease ) {
+		closeOnRelease = false;
+		setTimeout( () => {
+			editing.value = false;
+		} );
+	}
+}
+
+function watchPresses(): void {
+	pressed = false;
+	closeOnRelease = false;
+	document.addEventListener( 'pointerdown', onPointerDown, true );
+	document.addEventListener( 'pointerup', onPointerUp, true );
+	document.addEventListener( 'pointercancel', onPointerUp, true );
+}
+
+function stopWatchingPresses(): void {
+	document.removeEventListener( 'pointerdown', onPointerDown, true );
+	document.removeEventListener( 'pointerup', onPointerUp, true );
+	document.removeEventListener( 'pointercancel', onPointerUp, true );
+}
+
 const dirty = computed( () => editing.value && draft.value !== props.modelValue );
 
-watch( dirty, ( value ) => emit( 'dirty', value ) );
+// Synchronous, so the blur that commits on the way out of a closing dialog withdraws the
+// report before the field is taken down with it.
+watch( dirty, ( value ) => emit( 'dirty', value ), { flush: 'sync' } );
 
 async function cancel( event: KeyboardEvent ): Promise<void> {
 	// The Escape that cancels an IME composition is not a cancel. This runs on
@@ -260,10 +308,25 @@ watch( () => props.modelValue, () => {
 } );
 
 watch( editing, ( isEditing ) => {
-	if ( !isEditing ) {
+	if ( isEditing ) {
+		watchPresses();
+	} else {
+		stopWatchingPresses();
 		nextTick( measureOverflow );
 	}
 } );
+
+// A field taken down mid-edit, with the dialog that closes around it, can no longer be
+// discarded by the user, so it withdraws its own report.
+onBeforeUnmount( () => {
+	stopWatchingPresses();
+
+	if ( dirty.value ) {
+		emit( 'dirty', false );
+	}
+} );
+
+defineExpose( { commit } );
 
 async function focusEditButton(): Promise<void> {
 	await nextTick();
