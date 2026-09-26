@@ -13,6 +13,7 @@ use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
@@ -97,11 +98,19 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	protected function parseWikitextOn( string $pageName, string $wikitext, ?ParserOptions $parserOptions = null ): string {
 		$parserOptions ??= ParserOptions::newFromAnon();
 
+		return $this->parserOutputOn( $pageName, $wikitext, $parserOptions )
+			->runOutputPipeline( $parserOptions, [] )->getContentHolderText();
+	}
+
+	/**
+	 * The parse {@see self::parseWikitextOn()} renders, with what it recorded besides the text.
+	 */
+	protected function parserOutputOn( string $pageName, string $wikitext, ?ParserOptions $parserOptions = null ): ParserOutput {
 		return $this->getServiceContainer()->getParserFactory()->create()->parse(
 			$wikitext,
 			Title::newFromText( $pageName ),
-			$parserOptions
-		)->runOutputPipeline( $parserOptions, [] )->getContentHolderText();
+			$parserOptions ?? ParserOptions::newFromAnon()
+		);
 	}
 
 	/**

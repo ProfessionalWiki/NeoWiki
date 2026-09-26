@@ -35,6 +35,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\NullPageDependencyRecorder;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 
 /**
@@ -110,7 +111,8 @@ class SubjectDataLookupTest extends TestCase {
 			new InMemorySubjectLookup(),
 			$pageIdentifiersLookup,
 			new StubPageReadAuthorizer( true ),
-			TestSubjectIds::newParser()
+			TestSubjectIds::newParser(),
+			new NullPageDependencyRecorder()
 		);
 	}
 

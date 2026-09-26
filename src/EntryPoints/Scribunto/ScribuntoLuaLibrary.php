@@ -29,7 +29,7 @@ class ScribuntoLuaLibrary extends LibraryBase {
 	private function getSubjectDataLookup(): SubjectDataLookup {
 		if ( $this->subjectDataLookup === null ) {
 			$this->subjectDataLookup = new SubjectDataLookup(
-				NeoWikiExtension::getInstance()->newSubjectResolver( $this->getParserAuthority() ),
+				NeoWikiExtension::getInstance()->newSubjectResolver( $this->getParser() ),
 			);
 		}
 
