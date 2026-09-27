@@ -113,6 +113,61 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'Delft', $this->bodyOf( $response )['pageTitle'] );
 	}
 
+	public function testTitlesThePageByTheSubjectIdOnASubjectFirstWikiWhateverTheLabel(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+
+		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam' ] ) );
+
+		$this->assertSame( $this->subjectNamespaceTitleOf( $body['subjectId'] ), $body['pageTitle'] );
+		$this->assertSame( $body['subjectId'], $this->mainSubjectIdOf( $body['pageTitle'] ) );
+		$this->assertFalse( Title::newFromText( 'Amsterdam' )->exists() );
+	}
+
+	public function testAnswersTheSubjectNamespaceAsThePagesNamespaceOnASubjectFirstWiki(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+
+		$body = $this->bodyOf( $this->create( [] ) );
+
+		$this->assertSame( NeoWikiExtension::NS_SUBJECT, $body['subject']['pageNamespaceId'] );
+	}
+
+	public function testNamesAnUnlabelledSubjectAfterItsSchemaOnASubjectFirstWiki(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+
+		$body = $this->bodyOf( $this->create( [] ) );
+
+		$this->assertSame( self::SCHEMA, $body['subject']['displayName'] );
+		$this->assertTrue( $body['subject']['displayNameIsGenerated'] );
+	}
+
+	public function testCreatesThePageInTheMainNamespaceOnASubjectFirstWikiThatChoseIt(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$this->overrideConfigValue( 'NeoWikiSubjectPageNamespace', NS_MAIN );
+
+		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam' ] ) );
+
+		$this->assertSame( $this->titleOfSubjectId( $body['subjectId'] ), $body['pageTitle'] );
+		$this->assertSame( NS_MAIN, $body['subject']['pageNamespaceId'] );
+	}
+
+	public function testAnswersBadRequestForAPageTitleOnASubjectFirstWiki(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+
+		$response = $this->create( [ 'label' => 'Amsterdam', 'pageTitle' => 'Delft' ] );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertStringContainsString( 'pageTitle', $this->bodyOf( $response )['message'] );
+		$this->assertFalse( Title::newFromText( 'Delft' )->exists() );
+	}
+
+	public function testTakesAnEmptyPageTitleOnASubjectFirstWikiAsNoneAsked(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+
+		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam', 'pageTitle' => ' ' ] ) );
+
+		$this->assertSame( $this->subjectNamespaceTitleOf( $body['subjectId'] ), $body['pageTitle'] );
+	}
+
 	public function testStoresTheLabelThatTitledThePage(): void {
 		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam' ] ) );
 
@@ -476,6 +531,10 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 	 */
 	private function titleOfSubjectId( string $subjectId ): string {
 		return Title::newFromText( $subjectId )->getPrefixedText();
+	}
+
+	private function subjectNamespaceTitleOf( string $subjectId ): string {
+		return Title::makeTitleSafe( NeoWikiExtension::NS_SUBJECT, $subjectId )->getPrefixedText();
 	}
 
 	private function mainSubjectIdOf( string $pageName ): ?string {

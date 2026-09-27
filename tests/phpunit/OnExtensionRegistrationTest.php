@@ -26,6 +26,7 @@ class OnExtensionRegistrationTest extends TestCase {
 		'wgFooterIcons',
 		'wgExtensionAssetsPath',
 		'wgCirrusSearchWeights',
+		'wgNamespacesToBeSearchedDefault',
 	];
 
 	/**
@@ -212,6 +213,23 @@ class OnExtensionRegistrationTest extends TestCase {
 		NeoWikiExtension::onExtensionRegistration();
 
 		$this->assertNull( $GLOBALS['wgCirrusSearchWeights'] );
+	}
+
+	public function testSearchesTheSubjectNamespaceByDefault(): void {
+		$GLOBALS['wgNamespacesToBeSearchedDefault'] = [ NS_MAIN => true ];
+
+		NeoWikiExtension::onExtensionRegistration();
+
+		$this->assertTrue( $GLOBALS['wgNamespacesToBeSearchedDefault'][NeoWikiExtension::NS_SUBJECT] );
+		$this->assertTrue( $GLOBALS['wgNamespacesToBeSearchedDefault'][NS_MAIN] );
+	}
+
+	public function testKeepsTheSubjectNamespaceSearchTheAdministratorConfigured(): void {
+		$GLOBALS['wgNamespacesToBeSearchedDefault'] = [ NS_MAIN => true, NeoWikiExtension::NS_SUBJECT => false ];
+
+		NeoWikiExtension::onExtensionRegistration();
+
+		$this->assertFalse( $GLOBALS['wgNamespacesToBeSearchedDefault'][NeoWikiExtension::NS_SUBJECT] );
 	}
 
 	private function fileBehind( string $url ): string {

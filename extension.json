@@ -83,6 +83,7 @@
 
 		"HtmlPageLinkRendererBegin": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onHtmlPageLinkRendererBegin",
 		"ChangesListInitRows": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onChangesListInitRows",
+		"getUserPermissionsErrors": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onGetUserPermissionsErrors",
 		"ChangesListSpecialPageStructuredFilters": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onChangesListSpecialPageStructuredFilters"
 	},
 
@@ -156,6 +157,18 @@
 			"id": 7479,
 			"constant": "NS_NEOWIKI_MAPPING_TALK",
 			"name": "Mapping_talk"
+		},
+		{
+			"id": 7480,
+			"constant": "NS_NEOWIKI_SUBJECT",
+			"name": "Subject",
+			"subpages": false,
+			"content": true
+		},
+		{
+			"id": 7481,
+			"constant": "NS_NEOWIKI_SUBJECT_TALK",
+			"name": "Subject_talk"
 		}
 	],
 
@@ -262,6 +275,10 @@
 		"NeoWikiSubjectFirst": {
 			"description": "Whether this wiki puts Subjects before pages. False by default, which is page-first: a new Subject goes on the page it was created from, and links to Subjects lead to pages. True makes it subject-first: a new Subject gets a page of its own, and links lead to Special:Subject. See https://neowiki.ai/docs/operations/installation#choosing-page-first-or-subject-first",
 			"value": false
+		},
+		"NeoWikiSubjectPageNamespace": {
+			"description": "The namespace a subject-first wiki creates each Subject's own page in, titled by the Subject ID. The Subject namespace (7480) by default; NS_MAIN (0) puts those pages in the main namespace. Must be a content namespace. Page-first wikis ignore it.",
+			"value": 7480
 		},
 		"NeoWikiAutoRebuildOnMappingChange": {
 			"description": "Whether saving, deleting or restoring a Mapping page automatically rebuilds, in the background, every configured graph store that holds that Mapping's projection. False by default: such a rebuild reprojects every page on the wiki into that store, which on a large wiki is substantial work an administrator should choose to take on. While it is false, Special:GraphStores reports such a store as stale and offers the rebuild.",

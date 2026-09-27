@@ -23,6 +23,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class SubjectIdTitledPageHeadingTest extends NeoWikiIntegrationTestCase {
 
 	private const string SUBJECT_ID = 's1zz1111111azz5';
+	private const string SUBJECT_NAMESPACE_PAGE = 'Subject:' . self::SUBJECT_ID;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -102,9 +103,18 @@ class SubjectIdTitledPageHeadingTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringNotContainsString( 'Ada Lovelace', $this->display( $out )->getPageTitle() );
 	}
 
-	private function createPageLabelled( string $label ): RevisionRecord {
+	public function testAPageInTheSubjectNamespaceTitledByItsSubjectsIdIsHeadedByTheSubjectsLabelAndId(): void {
+		$revisionId = $this->createPageLabelled( 'Ada Lovelace', self::SUBJECT_NAMESPACE_PAGE )->getId();
+
+		$heading = $this->viewContentPage( $revisionId, [], self::SUBJECT_NAMESPACE_PAGE )->getPageTitle();
+
+		$this->assertStringContainsString( 'Ada Lovelace', $heading );
+		$this->assertStringContainsString( self::SUBJECT_ID, $heading );
+	}
+
+	private function createPageLabelled( string $label, string $pageName = self::SUBJECT_ID ): RevisionRecord {
 		return $this->createPageWithSubjects(
-			self::SUBJECT_ID,
+			$pageName,
 			TestSubject::build( id: self::SUBJECT_ID, label: $label )
 		);
 	}
@@ -112,17 +122,17 @@ class SubjectIdTitledPageHeadingTest extends NeoWikiIntegrationTestCase {
 	/**
 	 * @param array<string, string> $query
 	 */
-	private function viewContentPage( ?int $revisionId, array $query = [] ): OutputPage {
-		return $this->display( $this->articleOutput( $revisionId, $query ) );
+	private function viewContentPage( ?int $revisionId, array $query = [], string $pageName = self::SUBJECT_ID ): OutputPage {
+		return $this->display( $this->articleOutput( $revisionId, $query, $pageName ) );
 	}
 
 	/**
 	 * @param array<string, string> $query
 	 */
-	private function articleOutput( ?int $revisionId, array $query ): OutputPage {
+	private function articleOutput( ?int $revisionId, array $query, string $pageName = self::SUBJECT_ID ): OutputPage {
 		$context = new RequestContext();
 		$context->setRequest( new FauxRequest( $query ) );
-		$context->setTitle( Title::newFromText( self::SUBJECT_ID ) );
+		$context->setTitle( Title::newFromText( $pageName ) );
 
 		$out = $context->getOutput();
 		$out->setArticleFlag( true );

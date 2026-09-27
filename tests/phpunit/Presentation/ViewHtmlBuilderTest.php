@@ -104,17 +104,14 @@ class ViewHtmlBuilderTest extends TestCase {
 		$this->assertNull( $builder->subjectInPlaceOfPageTitle( Title::newFromText( 'Standardization' ), null ) );
 	}
 
-	/**
-	 * A namespace prefix is part of the page name, so such a page is not titled by the id.
-	 */
-	public function testAPageInAnotherNamespaceKeepsItsTitle(): void {
+	public function testAPageInTheSubjectNamespaceTitledByItsMainSubjectsIdIsHeadedByThatSubject(): void {
 		$builder = new ViewHtmlBuilder(
 			new InMemorySubjectContentRepository( $this->pageHoldingSubjectLabelled( 'Ada' ) )
 		);
 
-		$this->assertNull(
-			$builder->subjectInPlaceOfPageTitle( Title::newFromText( 'Help:' . self::TITLING_SUBJECT_ID ), null )
-		);
+		$subject = $builder->subjectInPlaceOfPageTitle( Title::newFromText( 'Subject:' . self::TITLING_SUBJECT_ID ), null );
+
+		$this->assertSame( self::TITLING_SUBJECT_ID, $subject?->getId()->text );
 	}
 
 	/**

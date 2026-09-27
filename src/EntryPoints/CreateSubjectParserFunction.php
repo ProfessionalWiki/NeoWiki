@@ -28,7 +28,8 @@ class CreateSubjectParserFunction {
 	private const string PAGE_NEW = 'new';
 
 	public function __construct(
-		private readonly PageSubjectsLookup $pageSubjectsLookup
+		private readonly PageSubjectsLookup $pageSubjectsLookup,
+		private readonly bool $subjectFirst,
 	) {
 	}
 
@@ -205,6 +206,14 @@ class CreateSubjectParserFunction {
 
 		// The emitted page id is only right until the page is created or deleted.
 		$parser->getOutput()->addLink( $title, $pageId );
+
+		if ( $pageId === 0 && $this->subjectFirst ) {
+			return $this->renderError(
+				$parser,
+				'neowiki-create-subject-error-uncreatable-page-subject-first',
+				$title->getPrefixedText()
+			);
+		}
 
 		// CreateSubjectPageApi creates main-namespace pages only, and a fixed title leaves the dialog
 		// no field to answer a save failure with.

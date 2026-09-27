@@ -53,13 +53,12 @@ class SubjectInPlaceOfPageTitleLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertNull( $this->subjectOf( $this->lookupListing( 'Standardization' ), 'Standardization' ) );
 	}
 
-	/**
-	 * A namespace prefix is part of the page name, so such a page is not titled by the id.
-	 */
-	public function testAPageInAnotherNamespaceIsNotNamed(): void {
-		$this->savePage( 'Help:' . self::MAIN_ID, 'Ada Lovelace' );
+	public function testAPageInTheSubjectNamespaceIsNamed(): void {
+		$this->savePage( 'Subject:' . self::MAIN_ID, 'Ada Lovelace' );
 
-		$this->assertNull( $this->subjectOf( $this->lookupListing( 'Help:' . self::MAIN_ID ), 'Help:' . self::MAIN_ID ) );
+		$subject = $this->subjectOf( $this->lookupListing( 'Subject:' . self::MAIN_ID ), 'Subject:' . self::MAIN_ID );
+
+		$this->assertSame( self::MAIN_ID, $subject?->getId()->text );
 	}
 
 	public function testAPageIsNamedByItsCurrentLabel(): void {

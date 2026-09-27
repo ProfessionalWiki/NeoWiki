@@ -247,6 +247,32 @@ class CreateSubjectParserFunctionTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testRejectsAMissingPageOnASubjectFirstWiki(): void {
+		$result = $this->callOnSubjectFirstWiki( $this->contentPage, 'page=Not a page yet' );
+
+		$this->assertRendersError(
+			$result,
+			'neowiki-create-subject-error-uncreatable-page-subject-first',
+			'Not a page yet'
+		);
+	}
+
+	public function testAcceptsAnExistingPageOnASubjectFirstWiki(): void {
+		$this->assertRendersButton(
+			$this->callOnSubjectFirstWiki( $this->contentPage, 'page=' . $this->helpPage->getPrefixedText() )
+		);
+	}
+
+	public function testRejectsAMissingPageOutsideTheMainNamespaceWithTheSubjectFirstReason(): void {
+		$result = $this->callOnSubjectFirstWiki( $this->contentPage, 'page=Help:Not a page yet' );
+
+		$this->assertRendersError(
+			$result,
+			'neowiki-create-subject-error-uncreatable-page-subject-first',
+			'Help:Not a page yet'
+		);
+	}
+
 	public function testRegistersARejectedPageAsALink(): void {
 		$output = $this->parserOutputOf( $this->contentPage, 'page=Help:Not a page yet' );
 
@@ -355,19 +381,26 @@ class CreateSubjectParserFunctionTest extends NeoWikiIntegrationTestCase {
 	 * @return string|array{0: string, noparse: true, isHTML: true}
 	 */
 	private function callOn( Title $title, string ...$args ): string|array {
-		return $this->newFunction()->handle( $this->newParser( $title ), ...$args );
+		return $this->newFunction( subjectFirst: false )->handle( $this->newParser( $title ), ...$args );
+	}
+
+	/**
+	 * @return string|array{0: string, noparse: true, isHTML: true}
+	 */
+	private function callOnSubjectFirstWiki( Title $title, string ...$args ): string|array {
+		return $this->newFunction( subjectFirst: true )->handle( $this->newParser( $title ), ...$args );
 	}
 
 	private function parserOutputOf( Title $title, string ...$args ): ParserOutput {
 		$parser = $this->newParser( $title );
 
-		$this->newFunction()->handle( $parser, ...$args );
+		$this->newFunction( subjectFirst: false )->handle( $parser, ...$args );
 
 		return $parser->getOutput();
 	}
 
-	private function newFunction(): CreateSubjectParserFunction {
-		return new CreateSubjectParserFunction( new PageSubjectsLookup( $this->subjectRepository ) );
+	private function newFunction( bool $subjectFirst ): CreateSubjectParserFunction {
+		return new CreateSubjectParserFunction( new PageSubjectsLookup( $this->subjectRepository ), $subjectFirst );
 	}
 
 	private function newParser( Title $title ): Parser {

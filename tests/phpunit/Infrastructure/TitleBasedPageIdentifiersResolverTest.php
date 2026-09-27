@@ -60,13 +60,25 @@ class TitleBasedPageIdentifiersResolverTest extends MediaWikiIntegrationTestCase
 	}
 
 	private function mainNamespaceTitle( string $text ): ?string {
+		return $this->titleInNamespace( NS_MAIN, $text );
+	}
+
+	private function titleInNamespace( int $namespaceId, string $text ): ?string {
 		return ( new TitleBasedPageIdentifiersResolver(
 			$this->getServiceContainer()->getTitleFactory()
-		) )->getMainNamespaceTitle( $text );
+		) )->getTitleInNamespace( $namespaceId, $text );
 	}
 
 	public function testAnswersTheTitleTheTextNames(): void {
 		$this->assertSame( 'Amsterdam', $this->mainNamespaceTitle( 'Amsterdam' ) );
+	}
+
+	public function testAnswersTheTitleTheTextNamesInTheNamespaceGiven(): void {
+		$this->assertSame( 'Help:Amsterdam', $this->titleInNamespace( NS_HELP, 'amsterdam' ) );
+	}
+
+	public function testAnswersNothingInANamespaceTheWikiDoesNotHave(): void {
+		$this->assertNull( $this->titleInNamespace( 4711, 'Amsterdam' ) );
 	}
 
 	public function testNormalizesTheTitle(): void {

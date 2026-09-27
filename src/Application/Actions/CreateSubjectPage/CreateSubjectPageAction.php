@@ -26,15 +26,13 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
+use InvalidArgumentException;
+use LogicException;
 use RuntimeException;
 
 /**
  * Creates a Subject together with the page it lives on, in one revision, for callers who have a
  * thing to describe rather than a page to describe it on.
- *
- * The page is titled by the title the caller chose, by the Subject's label where they chose none,
- * and by the Subject's own id when no label titles one. No title is ever invented from one the
- * caller chose: a title already taken, and one that titles no page here, both go back to them.
  */
 readonly class CreateSubjectPageAction {
 
@@ -50,6 +48,8 @@ readonly class CreateSubjectPageAction {
 		private PageIdentifiersResolver $pageIdentifiersResolver,
 		private SchemaReferenceParser $schemaReferenceParser,
 		private bool $validationEnforced,
+		private bool $subjectFirst,
+		private int $subjectPageNamespace,
 	) {
 	}
 
@@ -58,8 +58,15 @@ readonly class CreateSubjectPageAction {
 		$schema = $this->schemaResolver->getSchema( $schemaReference );
 
 		$titleAsked = $this->titleAsked( $request->pageTitle );
+
+		if ( $titleAsked !== null && $this->subjectFirst ) {
+			throw new InvalidArgumentException(
+				'pageTitle cannot be given on a subject-first wiki, which titles the page by the Subject ID'
+			);
+		}
+
 		$pageTitleAsked = $titleAsked === null ?
-			null : $this->pageIdentifiersResolver->getMainNamespaceTitle( $titleAsked );
+			null : $this->pageIdentifiersResolver->getTitleInNamespace( $this->subjectPageNamespace, $titleAsked );
 
 		if ( $titleAsked !== null && $pageTitleAsked === null ) {
 			throw new InvalidPageTitleException( $titleAsked );
@@ -102,7 +109,7 @@ readonly class CreateSubjectPageAction {
 			return;
 		}
 
-		$page = new PageIdentifiers( id: $status->pageId, title: $pageTitle, namespaceId: NS_MAIN );
+		$page = new PageIdentifiers( id: $status->pageId, title: $pageTitle, namespaceId: $this->subjectPageNamespace );
 
 		$this->presenter->presentCreated(
 			GetSubjectResponseItem::fromSubject(
@@ -140,19 +147,16 @@ readonly class CreateSubjectPageAction {
 		return $trimmed === '' ? null : $trimmed;
 	}
 
-	/**
-	 * The page a Subject gets to itself where the caller chose no title: the page its label titles,
-	 * and the page its own id titles when the label titles none.
-	 */
 	private function pageTitleFor( SubjectId $subjectId, ?string $label ): string {
-		$fromLabel = $label === null ? null : $this->pageIdentifiersResolver->getMainNamespaceTitle( $label );
+		$fromLabel = $label === null || $this->subjectFirst ?
+			null : $this->pageIdentifiersResolver->getTitleInNamespace( $this->subjectPageNamespace, $label );
 
-		// A Subject id titles a page whatever the label does: its grammar (ADR 14) holds none of
-		// the characters MediaWiki refuses in a title. Normalized all the same, since a wiki that
-		// capitalizes page titles - the default - stores it under an upper-case S.
-		return $fromLabel
-			?? $this->pageIdentifiersResolver->getMainNamespaceTitle( $subjectId->text )
-			?? $subjectId->text;
+		return $fromLabel ?? $this->idPageTitle( $subjectId );
+	}
+
+	private function idPageTitle( SubjectId $subjectId ): string {
+		return $this->pageIdentifiersResolver->getTitleInNamespace( $this->subjectPageNamespace, $subjectId->text )
+			?? throw new LogicException( "No page can be created in namespace $this->subjectPageNamespace" );
 	}
 
 	private function buildSubject(

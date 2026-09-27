@@ -1002,23 +1002,29 @@ describe( 'SubjectCreatorDialog', () => {
 				expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
 			} );
 
-			// Nobody was asked which page to use, so a label whose title is taken has no question to
-			// go back to: the Subject takes the page its own id titles, the way one whose label
-			// titles no page at all already does.
-			it( 'takes the page its own id titles where the label names one that is taken', async () => {
-				( subjectStore.createSubjectPage as any )
-					.mockRejectedValueOnce( new PageTitleTakenError( 'Amsterdam' ) );
-				const wrapper = mountSubjectFirst();
+			// The wiki titles a Subject's own page by its id, so a caller asking which page
+			// still leaves nothing to title.
+			it( 'asks for no page title where a caller asks which page', async () => {
+				const wrapper = mountSubjectFirst( {
+					initialPage: { choice: 'newPage', fixed: false } as InitialPage,
+				} );
+				await pickSchema( wrapper );
+
+				expect( pageTitleField( wrapper ).exists() ).toBe( false );
+			} );
+
+			it( 'sends no title for a new page where a caller asks which page', async () => {
+				const wrapper = mountSubjectFirst( {
+					initialPage: { choice: 'newPage', fixed: false } as InitialPage,
+				} );
 				await pickSchema( wrapper );
 				await typeLabel( wrapper, 'Amsterdam' );
 
 				await save( wrapper );
 
-				expect( subjectStore.createSubjectPage ).toHaveBeenNthCalledWith(
-					2, 'Amsterdam', SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, MINTED_ID, new SubjectId( MINTED_ID ),
+				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
+					'Amsterdam', SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, undefined, new SubjectId( MINTED_ID ),
 				);
-				expect( wrapper.text() ).not.toContain( 'neowiki-subject-creator-page-taken' );
-				expect( location.href ).toBe( '/wiki/Special:Subject/' + CREATED_PAGE_SUBJECT_ID );
 			} );
 
 			it( 'goes to the Subject itself, leaving no notice for a page to show', async () => {

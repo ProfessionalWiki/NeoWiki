@@ -2,7 +2,7 @@
 
 Date: 2026-08-13
 
-Status: Draft. Amended 2026-09-11, on pages titled after their Subject (see Amendment).
+Status: Draft
 
 Retires the `label-required` violation, which [ADR 26](026-validation-severity-levels.md) classifies as a
 fixed-severity error on the ground that a label is Subject identity: "a labelless Subject cannot be displayed or
@@ -16,8 +16,9 @@ that took their name from it, and what would make an importer's synthesized name
 ## Decision
 
 A Subject may have no label. Every surface then shows a computed name: the page name for a Main Subject, the Schema
-name otherwise. The contract is in the [glossary](../glossary.md#subject) and
-[subject-format.md](../api/subject-format.md); the choices worth recording are where the surfaces differ.
+name otherwise. A page titled with the id of a Subject stored on it names nothing, so its Main Subject shows the Schema
+name too. The contract is in the [glossary](../glossary.md#subject) and [subject-format.md](../api/subject-format.md);
+the choices worth recording are where the surfaces differ.
 
 **The Schema tier says so, in the string.** Such a Subject is shown as `(unnamed Attendance)`, from the
 `neowiki-subject-generated-name` message — the bracketing MediaWiki documents on `blanknamespace`, "(Main)". A Main
@@ -53,12 +54,3 @@ not.
 Clearing costs a revision per page, and a Subject that is not the Main Subject and carried the older page-name default
 is renamed to its Schema name by it. `Subject.getLabel()` in the frontend bundle can return null; display code goes
 through `presentation/subjectDisplayName.ts`, which marks the Schema tier.
-
-## Amendment, 2026-09-11: pages titled after their Subject
-
-Creating a Subject with a page of its own (`POST /neowiki/v0/subjects`) titles that page by the Subject's label, and
-by the Subject's own id when there is no label to title it by.
-
-A label-less Main Subject on a page titled with the id of a Subject stored on it therefore falls to the Schema tier,
-`(unnamed Attendance)`, rather than showing the id: the exception to "the page name for a Main Subject" above, since
-that title was chosen by nobody.

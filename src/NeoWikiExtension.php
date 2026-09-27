@@ -239,6 +239,7 @@ class NeoWikiExtension {
 	public const int NS_SCHEMA = 7474;
 	public const int NS_LAYOUT = 7476;
 	public const int NS_MAPPING = 7478;
+	public const int NS_SUBJECT = 7480;
 
 	/**
 	 * The page in the MediaWiki namespace holding the on-wiki JSON configuration (MediaWiki:NeoWiki).
@@ -313,6 +314,11 @@ class NeoWikiExtension {
 
 		self::registerPoweredByBadge();
 		self::registerCirrusSearchWeight();
+		self::searchTheSubjectNamespaceByDefault();
+	}
+
+	private static function searchTheSubjectNamespaceByDefault(): void {
+		$GLOBALS['wgNamespacesToBeSearchedDefault'][self::NS_SUBJECT] ??= true;
 	}
 
 	/**
@@ -1195,6 +1201,20 @@ class NeoWikiExtension {
 		return $this->getWikiConfigLookup()->getEffectiveValue( 'subjectFirst' ) === true;
 	}
 
+	public function getSubjectPageNamespace(): int {
+		if ( !$this->isSubjectFirst() ) {
+			return NS_MAIN;
+		}
+
+		$namespace = MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiSubjectPageNamespace' );
+
+		if ( !is_int( $namespace ) ) {
+			throw new LogicException( '$wgNeoWikiSubjectPageNamespace must be a namespace id' );
+		}
+
+		return $namespace;
+	}
+
 	/**
 	 * The combining lookup for the exposed settings. Built fresh each call so the PHP fallback and the
 	 * kill switch are read live from MainConfig (overridable in tests without a singleton rebuild), while
@@ -1560,6 +1580,8 @@ class NeoWikiExtension {
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			schemaReferenceParser: $this->getSchemaReferenceParser(),
 			validationEnforced: $this->isValidationEnforced(),
+			subjectFirst: $this->isSubjectFirst(),
+			subjectPageNamespace: $this->getSubjectPageNamespace(),
 		);
 	}
 

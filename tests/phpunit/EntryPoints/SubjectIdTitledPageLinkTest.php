@@ -11,6 +11,7 @@ use MediaWiki\Output\OutputPage;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectLabelHtml;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -26,6 +27,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class SubjectIdTitledPageLinkTest extends NeoWikiIntegrationTestCase {
 
 	private const string SUBJECT_ID = 's1zz1111111azz8';
+	private const string SUBJECT_NAMESPACE_ID = 's1zz1111111azz9';
 
 	private int $pageId;
 
@@ -80,13 +82,10 @@ class SubjectIdTitledPageLinkTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringNotContainsString( 'Ada Lovelace', $this->linkFromChangeList() );
 	}
 
-	/**
-	 * Only content pages are headed by their label, so only they are linked by it.
-	 */
-	public function testARowOutsideTheContentNamespacesShowsTheTitle(): void {
-		$this->listPage( NS_PROJECT );
+	public function testAChangeListLinksToAMainNamespacePageByItsLabelAndIdOnASubjectFirstWiki(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
 
-		$this->assertStringNotContainsString( 'Ada Lovelace', $this->link() );
+		$this->assertStringContainsString( 'Ada Lovelace', $this->linkFromChangeList() );
 	}
 
 	/**
@@ -116,6 +115,16 @@ class SubjectIdTitledPageLinkTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertStringContainsString( 'Ada Lovelace', $html );
 		$this->assertStringContainsString( self::SUBJECT_ID, $html );
+	}
+
+	public function testRecentChangesLinksToAPageInTheSubjectNamespaceByItsLabelAndIdOnASubjectFirstWiki(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$this->createSubjectNamespacePage();
+
+		$html = $this->renderRecentChanges()->getHTML();
+
+		$this->assertStringContainsString( 'Grace Hopper', $html );
+		$this->assertStringContainsString( self::SUBJECT_NAMESPACE_ID, $html );
 	}
 
 	/**
@@ -148,13 +157,13 @@ class SubjectIdTitledPageLinkTest extends NeoWikiIntegrationTestCase {
 	 * context unless it is transcluded into a page.
 	 */
 	private function listPage( int $rowNamespace, ?DerivativeContext $listContext = null ): void {
+		$this->listRow( $this->pageId, $rowNamespace, ucfirst( self::SUBJECT_ID ), $listContext );
+	}
+
+	private function listRow( int $pageId, int $namespace, string $title, ?DerivativeContext $listContext ): void {
 		NeoWikiHooks::onChangesListInitRows(
 			$listContext ?? new DerivativeContext( RequestContext::getMain() ),
-			[ (object)[
-				'rc_cur_id' => $this->pageId,
-				'rc_namespace' => $rowNamespace,
-				'rc_title' => ucfirst( self::SUBJECT_ID ),
-			] ]
+			[ (object)[ 'rc_cur_id' => $pageId, 'rc_namespace' => $namespace, 'rc_title' => $title ] ]
 		);
 	}
 
@@ -164,6 +173,17 @@ class SubjectIdTitledPageLinkTest extends NeoWikiIntegrationTestCase {
 
 	private function pageTitle(): Title {
 		return Title::newFromText( self::SUBJECT_ID );
+	}
+
+	private function createSubjectNamespacePage(): int {
+		return $this->createPageWithSubjects(
+			$this->subjectNamespacePageTitle()->getPrefixedText(),
+			TestSubject::build( id: self::SUBJECT_NAMESPACE_ID, label: 'Grace Hopper' )
+		)->getPageId();
+	}
+
+	private function subjectNamespacePageTitle(): Title {
+		return Title::makeTitle( NeoWikiExtension::NS_SUBJECT, ucfirst( self::SUBJECT_NAMESPACE_ID ) );
 	}
 
 }
