@@ -66,6 +66,6 @@ Not taken:
 
 ## Related
 
-- [ADR 28](028-relations-model.md) — the relations model this refines.
+- [ADR 28: Relations Model](028-relations-model.md) — the relations model this refines.
 - [Glossary: Dependent Subject](../glossary.md#dependent-subject), [Schema Format](../api/schema-format.md),
-  [ADR 7](007-multiple-subjects-per-page.md).
+  [ADR 7: Multiple Subjects Per Page](007-multiple-subjects-per-page.md).
