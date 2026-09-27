@@ -24,15 +24,13 @@ Subject, with a Schema that validates and shows it like any other data
 ([Qualifiers and References](../qualifiers-and-references.md)). Its Schema declares it a Dependent Subject of the
 Subject it describes ([ADR 35](035-dependent-subjects.md)), or standalone where such Subjects have no single host.
 Edge properties were a second path to part of this: they could qualify a relation but never a literal, took scalars
-only, and had no Schema and no editor. They were also dropped by ontology mappings and lost on re-save through the
-editor.
+only, and had no Schema and no editor.
 
 ### 2. Keep per-relation IDs
 
 Several Relations from one property to one target remain legal: the ID, not the pair, distinguishes them. The ID gives
 an edge a stable identity across edits and anchors the native-RDF reification node; ontology mappings mint node IRIs
-from it. IDs are minted at random ([ADR 14](014-improved-id-format.md)); the graph does not enforce their uniqueness
-([#351](https://github.com/ProfessionalWiki/NeoWiki/issues/351)).
+from it.
 
 ### 3. Constrain targets to one or more Schemas
 
@@ -41,7 +39,7 @@ A relation property's `targetSchema` widens to a list, and a target Subject must
 [`relation-target-schema-mismatch`](../api/validation-codes.md#relation-target-schema-mismatch), an error that can
 block the save ([ADR 26](026-validation-severity-levels.md)). The list is all dependent or all standalone
 ([ADR 35](035-dependent-subjects.md)). This covers the polymorphic cases: a creator that is a person, a collective or a
-studio; a place that is a city, a province or a country.
+studio.
 
 Not taken: subclass-based targets, where a relation accepts a supertype's subtypes. That needs an inheritance system
 nothing else calls for. The list's cost: a new kind of target is added to every property that accepts the kind. Should
@@ -69,8 +67,7 @@ automatic display and says which Subject the page is about.
 The `relation` attribute on a relation property is removed from the schema format; the graph edge type and the
 native-RDF predicate take the property name. Two names made users define one concept twice and keyed the native
 projection and ontology mappings on different names. With one name, Cypher edge types read as property names
-("Birth place") rather than verb phrases ("Born in"). The schema editor already takes the property name for both
-([PR 1494](https://github.com/ProfessionalWiki/NeoWiki/pull/1494)); the stored model and the projections follow.
+("Birth place") rather than verb phrases ("Born in").
 
 ## Consequences
 
