@@ -68,6 +68,7 @@
 		yet: the same panes, navigator and relation-target creation as editing one it does. -->
 	<SubjectEditorDialog
 		v-if="rootSubject !== null && loadedSchema !== null"
+		ref="editorRef"
 		:open="props.open"
 		:subject="rootSubject as Subject"
 		:schema="loadedSchema as Schema"
@@ -98,8 +99,16 @@
 					</span>
 				</span>
 
+				<PageTitleInput
+					v-if="asksPageTitle"
+					ref="pageTitleInputRef"
+					v-model="pageTitle"
+					:error="pageTitleError"
+					:disabled="saving"
+				/>
+
 				<CdxMessage
-					v-if="pageError !== null"
+					v-else-if="pageError !== null"
 					type="error"
 					:inline="true"
 				>
@@ -146,13 +155,20 @@
 					<CdxRadio
 						v-for="option in pageOptions"
 						:key="option.value"
-						v-model="pageChoice"
+						:model-value="pageChoice"
 						:input-value="option.value"
-						:disabled="saving"
+						:disabled="saving || option.deniedReason !== undefined"
 						name="ext-neowiki-subject-creator-page-choice"
 						:inline="true"
+						@update:model-value="choosePage"
 					>
 						{{ option.label }}
+						<template
+							v-if="option.deniedReason !== undefined"
+							#description
+						>
+							{{ option.deniedReason }}
+						</template>
 					</CdxRadio>
 
 					<PagePicker
@@ -165,26 +181,13 @@
 						@update:selected="onPageSelected"
 					/>
 
-					<CdxField
-						v-if="pageChoice === 'newPage' && !isSubjectFirst()"
-						class="ext-neowiki-subject-creator-page-title-field"
-						:optional="true"
-						:status="pageTitleFieldStatus"
-						:messages="pageTitleFieldMessages"
-					>
-						<CdxTextInput
-							ref="pageTitleInputRef"
-							v-model="pageTitle"
-							:disabled="saving"
-							@input="handlePageTitleInput"
-						/>
-						<template #label>
-							{{ $i18n( 'neowiki-subject-creator-page-title-field' ).text() }}
-						</template>
-						<template #help-text>
-							{{ $i18n( 'neowiki-subject-creator-page-title-help' ).text() }}
-						</template>
-					</CdxField>
+					<PageTitleInput
+						v-if="asksPageTitle"
+						ref="pageTitleInputRef"
+						v-model="pageTitle"
+						:error="pageTitleError"
+						:disabled="saving"
+					/>
 				</CdxField>
 
 				<p
@@ -221,7 +224,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, computed, watch, nextTick, onMounted } from 'vue';
-import { CdxAccordion, CdxButton, CdxDialog, CdxField, CdxIcon, CdxMessage, CdxRadio, CdxTextInput, CdxToggleButtonGroup } from '@wikimedia/codex';
+import { CdxAccordion, CdxButton, CdxDialog, CdxField, CdxIcon, CdxMessage, CdxRadio, CdxToggleButtonGroup } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconArrowNext, cdxIconSearch } from '@wikimedia/codex-icons';
 import type { ButtonGroupItem, ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
@@ -241,6 +244,7 @@ import type { SchemaCreatorExposes } from '@/components/SchemaCreator/SchemaCrea
 import SchemaPicker from '@/components/common/SchemaPicker.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import PagePicker from '@/components/common/PagePicker.vue';
+import PageTitleInput from '@/components/SubjectCreator/PageTitleInput.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import type { PageChoice } from '@/components/common/PageChoice.ts';
 import type { InitialPage, SubjectPageChoice } from '@/components/SubjectCreator/InitialPage.ts';
@@ -322,18 +326,23 @@ const chosenPage = ref<PageChoice | null>( null );
 const chosenPageRead = ref( false );
 const chosenPageHasMainSubject = ref( false );
 const chosenPageMainSubjectName = ref<string | null>( null );
-const pageTitle = ref( '' );
-// What the page question got wrong, whichever way: a title already taken, one that titles no page,
-// or none to give. Only one of them can stand at a time, so they share the slot they are shown in.
+
+const editorRef = ref<InstanceType<typeof SubjectEditorDialog> | null>( null );
+
+// The title typed, cleared included, or the caller's; while null, the title follows the label.
+const typedPageTitle = ref<string | null>( null );
+
+// What was refused about the title of the page to create: none given, one already taken, or
+// one that titles no page. Only one can stand at a time, so they share the slot they are shown in.
 const pageTitleError = ref<string | null>( null );
 const pageReadError = ref<string | null>( null );
 
-// Which page the Subject goes on is asked below the Subject itself, and collapsed: the page it is
-// opened on, or one of its own, answers it for most.
+// Which page the Subject goes on is asked below the Subject itself. startPageQuestion decides
+// whether the section starts open.
 const pageSectionOpen = ref( false );
 
 const pageFieldRef = ref<InstanceType<typeof CdxField> | null>( null );
-const pageTitleInputRef = ref<InstanceType<typeof CdxTextInput> | null>( null );
+const pageTitleInputRef = ref<InstanceType<typeof PageTitleInput> | null>( null );
 const pagePickerRef = ref<InstanceType<typeof PagePicker> | null>( null );
 
 const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
@@ -341,6 +350,8 @@ const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPer
 interface PageOption {
 	value: SubjectPageChoice;
 	label: string;
+	/** Why the option cannot be chosen, where it cannot. */
+	deniedReason?: string;
 }
 
 // The page picked is another one than the page being viewed, and where there is none, just a page
@@ -351,27 +362,31 @@ const existingPageLabel = computed( (): string => mw.msg(
 		'neowiki-subject-creator-page-another'
 ) );
 
-// "This page" needs a page the dialog was opened on; a new page needs the right to make one. The
-// page each set defaults to leads it.
+// "This page" needs a page the dialog was opened on. A new page leads where there is none, and
+// otherwise comes last.
 const pageOptions = computed( (): PageOption[] => {
 	const existingPage: PageOption = { value: 'anotherPage', label: existingPageLabel.value };
-	const newPage: PageOption = { value: 'newPage', label: mw.msg( 'neowiki-subject-creator-page-new' ) };
+	const thisPage: PageOption = { value: 'thisPage', label: mw.msg( 'neowiki-subject-creator-page-this' ) };
+	const options = props.hostPage === null ?
+		[ newPageOption(), existingPage ] :
+		[ thisPage, existingPage, newPageOption() ];
 
-	if ( props.hostPage === null ) {
-		return canCreateSubjectPage.value ? [ newPage, existingPage ] : [ existingPage ];
-	}
+	return options.filter( ( option ): option is PageOption => option !== null );
+} );
 
-	const options: PageOption[] = [
-		{ value: 'thisPage', label: mw.msg( 'neowiki-subject-creator-page-this' ) },
-		existingPage
-	];
+// A new page needs the right to create one. Without it, a page-first wiki shows the option
+// disabled, saying why, and a subject-first wiki leaves it out.
+function newPageOption(): PageOption | null {
+	const option: PageOption = { value: 'newPage', label: mw.msg( 'neowiki-subject-creator-page-new' ) };
 
 	if ( canCreateSubjectPage.value ) {
-		options.push( newPage );
+		return option;
 	}
 
-	return options;
-} );
+	return isSubjectFirst() ?
+		null :
+		{ ...option, deniedReason: mw.msg( 'neowiki-subject-creator-page-new-denied' ) };
+}
 
 /**
  * Whether the dialog asks which page the Subject goes on. A subject-first wiki gives it a page of
@@ -406,20 +421,46 @@ function defaultPageChoice(): SubjectPageChoice {
 // and drop whatever they had answered with it.
 const pageChoice = ref<SubjectPageChoice | null>( null );
 
+// The answer the page question starts from. On a page-first wiki the section starts open where
+// that answer still needs something filled in, a title or a page to pick, rather than leaving it
+// for a save to refuse.
+function startPageQuestion(): void {
+	pageChoice.value = defaultPageChoice();
+	pageSectionOpen.value = !isSubjectFirst() && pageChoice.value !== 'thisPage';
+}
+
+// A new page is titled here, unless the caller titled it, or the wiki is subject-first and titles
+// a Subject's own page itself (ADR 33).
+const asksPageTitle = computed( (): boolean =>
+	pageChoice.value === 'newPage' && props.initialPage?.page === undefined && !isSubjectFirst() );
+
+// Where a title is asked for, it follows the label of the Subject being created, so its name is
+// typed once, until the user types a title of their own.
+const pageTitle = computed( {
+	get: (): string => {
+		if ( typedPageTitle.value !== null ) {
+			return typedPageTitle.value;
+		}
+
+		return asksPageTitle.value ? editorRef.value?.rootLabel ?? '' : '';
+	},
+	set: ( title: string ): void => {
+		typedPageTitle.value = title;
+	}
+} );
+
 // The notices belong to the page the dialog was opened on, so they say nothing about a Subject
 // going anywhere else.
 const shownNotices = computed( () => pageChoice.value === 'thisPage' ? notices.value : [] );
 
 // Each choice answers the page question its own way, so what the previous one answered is gone.
-watch( pageChoice, () => {
-	resetPageChoice();
+watch( pageChoice, resetPageChoice );
 
-	// The section is where the choice is made, so one made while it is closed is the dialog
-	// resetting itself rather than a user to follow.
-	if ( pageSectionOpen.value ) {
-		focusChosenInput();
-	}
-} );
+// Only a choice the user makes moves focus; the ones the dialog makes itself do not.
+function choosePage( choice: SubjectPageChoice ): void {
+	pageChoice.value = choice;
+	focusChosenInput();
+}
 
 // One message per field: each of these belongs to a different page choice, so no two of them can
 // be standing at once.
@@ -428,8 +469,7 @@ const pageError = computed( (): string | null => pageTitleError.value ?? pageRea
 // Answered, and answerable: a page still to be picked leaves the question open, and a page that
 // could not be read leaves it unanswerable — what that page holds decides whether the Subject
 // becomes its topic or joins it, and that is not to be guessed at. A title the server refused
-// blocks neither, because one answer to it is a different label, which is typed in the editor
-// rather than here — a Save held shut until this field changed could never be given it.
+// blocks neither: the answer, another title, is what the next save tries.
 const pageChosen = computed( (): boolean =>
 	pageChoice.value !== null && pageReadError.value === null &&
 	( pageChoice.value !== 'anotherPage' || chosenPage.value !== null ) );
@@ -440,25 +480,33 @@ const pageFieldStatus = computed( (): ValidationStatusType =>
 const pageFieldMessages = computed( (): ValidationMessages =>
 	pageReadError.value === null ? {} : { error: pageReadError.value } );
 
-const pageTitleFieldStatus = computed( (): ValidationStatusType =>
-	pageTitleError.value === null ? 'default' : 'error' );
-
-const pageTitleFieldMessages = computed( (): ValidationMessages =>
-	pageTitleError.value === null ? {} : { error: pageTitleError.value } );
-
-// A collapsed section would hide what the server refused, and the field it belongs to with it.
+// A collapsed section would hide what was refused, and the field it belongs to with it. A refused
+// title also takes focus to its field, a task later, once the save has let go of it; a failed page
+// read can land after the user has moved on, so it leaves focus alone.
+// Watched synchronously: a save refused for a title still missing sets the same message again,
+// which a deferred watcher would not see change.
 watch( pageError, ( error ) => {
-	if ( error !== null ) {
-		pageSectionOpen.value = true;
+	if ( error === null ) {
+		return;
 	}
-} );
+
+	pageSectionOpen.value = true;
+
+	if ( pageTitleError.value !== null ) {
+		setTimeout( focusChosenInput );
+	}
+}, { flush: 'sync' } );
 
 // The element opens and closes itself, so its own state is what the summary and the next open
-// follow, rather than the value last rendered onto it.
+// follow, rather than the value last rendered onto it. Rendered open, it reports opening as a
+// click does, so only an opening from closed moves focus.
 function onPageSectionToggle( event: Event ): void {
-	pageSectionOpen.value = ( event.target as HTMLDetailsElement ).open;
+	const open = ( event.target as HTMLDetailsElement ).open;
+	const openedFromClosed = open && !pageSectionOpen.value;
 
-	if ( pageSectionOpen.value ) {
+	pageSectionOpen.value = open;
+
+	if ( openedFromClosed ) {
 		focusOpenedSection();
 	}
 }
@@ -499,7 +547,7 @@ async function focusChosenInput(): Promise<void> {
 	choiceInput()?.focus();
 }
 
-// The title the page created gets, where the user chose one over the label.
+// The title the page to create is given, as a write reads it: none where it is blank.
 function enteredPageTitle(): string | null {
 	const entered = pageTitle.value.trim();
 
@@ -513,7 +561,8 @@ const chosenPageSummary = computed( (): { messageKey: string; title: string | nu
 	}
 
 	if ( pageChoice.value === 'newPage' ) {
-		const title = enteredPageTitle();
+		// Below a fixed page's summary, the title has a field that says it.
+		const title = pageFixed.value && asksPageTitle.value ? null : enteredPageTitle();
 
 		return title === null ?
 			{ messageKey: 'neowiki-subject-creator-page-section-new', title: null } :
@@ -584,7 +633,7 @@ function resetPageChoice(): void {
 	chosenPageRead.value = false;
 	chosenPageHasMainSubject.value = false;
 	chosenPageMainSubjectName.value = null;
-	pageTitle.value = '';
+	typedPageTitle.value = null;
 	pageTitleError.value = null;
 	pageReadError.value = null;
 }
@@ -622,10 +671,12 @@ const schemaRepo = NeoWikiServices.getSchemaRepository();
 const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();
 const { hasChanged: formChanged, markChanged, resetChanged } = useChangeDetection();
 
-// The page question answered, where it was the user's to answer. An answer taken back counts for
-// nothing, so a dialog whose answer was withdrawn does not go on asking to be discarded.
+// The page question answered, where it was the user's to answer: a page picked, or a title typed
+// where one is asked for. An answer taken back counts for nothing, so a dialog whose answer was
+// withdrawn does not go on asking to be discarded.
 const pageAnswered = computed( (): boolean =>
-	!pageFixed.value && ( chosenPage.value !== null || enteredPageTitle() !== null ) );
+	( !pageFixed.value && chosenPage.value !== null ) ||
+	( asksPageTitle.value && ( typedPageTitle.value ?? '' ).trim() !== '' ) );
 
 // Answering the page question is not an edit of the form, but it is still something a close would
 // throw away.
@@ -708,7 +759,7 @@ const toggleButtons = [
 
 onMounted( async () => {
 	await Promise.all( [ checkCreatePermission(), checkCreateSubjectPagePermission() ] );
-	pageChoice.value = defaultPageChoice();
+	startPageQuestion();
 
 	// Already open: the open watcher ran before pageChoice existed.
 	if ( props.open ) {
@@ -894,11 +945,6 @@ async function writeRootSubject( subject: Subject, comment: string ): Promise<vo
 		besideMainSubject: targetHasMainSubject.value
 	};
 
-	if ( draftSchema.value !== null ) {
-		await schemaStore.saveSchema( draftSchema.value, comment );
-		draftSchema.value = null;
-	}
-
 	const label = subject.getLabel();
 	const schemaName = subject.getSchemaName();
 	const statements = subject.getStatements();
@@ -916,6 +962,8 @@ async function writeRootSubject( subject: Subject, comment: string ): Promise<vo
 		throw new Error( mw.msg( 'neowiki-subject-creator-error' ) );
 	}
 
+	await saveDraftSchema( comment );
+
 	// A page that has a Main Subject already gets this one beside it; one that has none is being
 	// given its topic. Only the second route takes the id minted here, so a Subject created on the
 	// first can be pointed at it before either exists.
@@ -924,6 +972,20 @@ async function writeRootSubject( subject: Subject, comment: string ): Promise<vo
 		await subjectStore.createMainSubject( pageId, label, schemaName, statements, comment );
 
 	writtenRoot = { subjectId, pageId, pageTitle: answer.pageTitle };
+}
+
+/**
+ * The Schema drafted in the step before goes onto the wiki with the Subject that uses it, and only
+ * once nothing is left to refuse ahead of that Subject's write: refused, the save would leave it
+ * behind, no longer offered for abandoning.
+ */
+async function saveDraftSchema( comment: string ): Promise<void> {
+	if ( draftSchema.value === null ) {
+		return;
+	}
+
+	await schemaStore.saveSchema( draftSchema.value, comment );
+	draftSchema.value = null;
 }
 
 /**
@@ -975,22 +1037,23 @@ async function createBesideMainSubject(
 async function createOnNewPage(
 	subject: Subject,
 	comment: string,
-	chosenTitle: string | null
+	title: string | null
 ): Promise<CreatedSubjectPage> {
 	if ( isSubjectFirst() ) {
+		await saveDraftSchema( comment );
 		return await subjectStore.createSubjectOnOwnPage( subject, comment );
 	}
 
-	// Re-decided on each attempt, so a label typed since the last one clears what it answered.
+	// Re-decided on each attempt, so a title given since the last one clears what it answered.
 	pageTitleError.value = null;
 
-	const pageTitle = chosenTitle ?? subject.getLabel();
-
-	if ( pageTitle === null ) {
+	if ( title === null ) {
 		pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-required' );
 
 		throw new Error( pageTitleError.value );
 	}
+
+	await saveDraftSchema( comment );
 
 	try {
 		return await subjectStore.createSubjectPage(
@@ -998,18 +1061,12 @@ async function createOnNewPage(
 			subject.getSchemaName(),
 			subject.getStatements(),
 			comment,
-			pageTitle,
+			title,
 			subject.getId()
 		);
 	} catch ( error ) {
 		if ( error instanceof PageTitleTakenError ) {
-			// A fixed destination offers no other page and no title field: only the label can change.
-			pageTitleError.value = mw.msg(
-				pageFixed.value && chosenTitle === null ?
-					'neowiki-subject-creator-page-taken-fixed' :
-					'neowiki-subject-creator-page-taken',
-				error.pageTitle
-			);
+			pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-taken', error.pageTitle );
 			throw new Error( pageTitleError.value );
 		}
 
@@ -1022,10 +1079,11 @@ async function createOnNewPage(
 	}
 }
 
-// Retyping the title is the answer to a title the server refused, whichever way it refused it.
-function handlePageTitleInput(): void {
+// A changed title answers the one refused, whichever way it was refused, typed or filled in from
+// the label.
+watch( pageTitle, () => {
 	pageTitleError.value = null;
-}
+} );
 
 // A Subject the user drilled into from a relation exists already, so the editor updates it.
 async function handleSaveExisting( subject: Subject, comment: string ): Promise<void> {
@@ -1107,14 +1165,13 @@ function resetForm(): void {
 	selectedSchemaOption.value = 'existing';
 	schemaCreatorRef.value?.reset();
 
-	// Back to the page a fresh open would offer, unless the permission answer that decides which
-	// one that is has yet to land, in which case no choice is being offered to reset.
+	// Back to where a fresh open starts, unless the permission answer that decides it has yet to
+	// land, in which case no choice is being offered to reset.
 	if ( pageChoice.value !== null ) {
-		pageChoice.value = defaultPageChoice();
+		startPageQuestion();
 	}
 
 	resetPageChoice();
-	pageSectionOpen.value = false;
 	resetChanged();
 }
 
@@ -1174,6 +1231,13 @@ defineExpose( { hasChanged } );
 	&-page-section__choice {
 		color: @color-subtle;
 		font-weight: @font-weight-normal;
+	}
+
+	/* Codex runs an inline radio's description on from its label; as the label's own column, the
+		reason a page option cannot be chosen sits under it. */
+	&-page-field .cdx-radio--inline .cdx-radio__label {
+		display: inline-flex;
+		white-space: normal;
 	}
 
 	&-page-picker {

@@ -1,5 +1,6 @@
 import { mount, VueWrapper, DOMWrapper, flushPromises } from '@vue/test-utils';
-import { inject, nextTick } from 'vue';
+import { inject, nextTick, proxyRefs } from 'vue';
+import type { ComponentInternalInstance } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { Subject } from '@/domain/Subject.ts';
@@ -920,6 +921,12 @@ describe( 'SubjectEditorDialog', () => {
 		return wrapper.find( '.ext-neowiki-editable-text__text' ).text();
 	}
 
+	// What a host's template ref reaches: only what the dialog exposes, where the wrapper's own vm
+	// reaches every binding of its script.
+	function exposedToHost( wrapper: VueWrapper ): Record<string, unknown> {
+		return proxyRefs( ( wrapper.vm.$ as ComponentInternalInstance ).exposed ?? {} );
+	}
+
 	async function editLabel( wrapper: VueWrapper, value: string ): Promise<void> {
 		await wrapper.find( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
 		const input = wrapper.find( '.ext-neowiki-editable-text input' );
@@ -1129,6 +1136,16 @@ describe( 'SubjectEditorDialog', () => {
 			await wrapper.setProps( { open: true } );
 
 			expect( titleText( wrapper ) ).toBe( 'Test Subject' );
+		} );
+
+		// For a host that follows the name the root is being given, read as a write reads it.
+		it( 'reports the label typed for the root subject to its host', async () => {
+			const wrapper = mountComponent( false, validationTestStubs );
+			await flushPromises();
+
+			await editLabel( wrapper, '  Renamed Subject  ' );
+
+			expect( exposedToHost( wrapper ).rootLabel ).toBe( 'Renamed Subject' );
 		} );
 	} );
 
@@ -2091,6 +2108,15 @@ describe( 'SubjectEditorDialog', () => {
 				expect( document.activeElement ).toBe( row );
 			} );
 
+		} );
+
+		it( 'reports the root subject\'s label to its host while another subject is on screen', async () => {
+			const { wrapper } = await mountWithSecondPaneOpen();
+
+			( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).setLabel( 'Edited child' );
+			await nextTick();
+
+			expect( exposedToHost( wrapper ).rootLabel ).toBe( 'Test Subject' );
 		} );
 
 		describe( 'Navigator', () => {

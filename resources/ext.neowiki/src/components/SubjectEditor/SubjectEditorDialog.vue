@@ -378,6 +378,10 @@ function withLiveLabel( instance: SubjectEditPaneExposes ): Subject {
 	return edited.getLabel() === label ? edited : edited.withLabel( label );
 }
 
+// The root Subject's label as its form holds it, for a host that follows the name being given.
+const rootLabel = computed( (): string | null =>
+	( editedSubjects.value.get( rootPaneId.value ) as Subject ).getLabel() );
+
 // The Subjects the navigator lists, in the order their panes were opened.
 const openSubjects = computed( (): Subject[] => panes.value.map(
 	( pane ) => editedSubjects.value.get( pane.id ) as Subject ) );
@@ -816,7 +820,7 @@ const onSchemaSaved = ( schema: Schema ): void => {
 	currentSchema.value = schema;
 };
 
-defineExpose( { hasChanged: hasUnsavedEdits } );
+defineExpose( { hasChanged: hasUnsavedEdits, rootLabel } );
 
 </script>
 
