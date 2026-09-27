@@ -2,7 +2,7 @@
 
 Date: 2026-09-26
 
-Status: Draft. Amends [ADR 31](031-optional-subject-labels.md) and [ADR 33](033-page-first-and-subject-first-wikis.md).
+Status: Draft
 
 ## Context
 
@@ -16,25 +16,19 @@ editor landed on whichever page that editor was opened from.
 ## Decision
 
 A Schema's Subjects are standalone unless it declares them dependent. The declaration is made when the Schema is
-created and cannot change; to switch, create a new Schema. A Dependent Subject is part of exactly one Host Subject:
-the Subject whose relation statement holds it. A Dependent Subject:
+created and cannot change; to switch, create a new Schema.
 
-- Can be the Host Subject of further Dependent Subjects.
-- Is entered and shown as part of its Host Subject. The relation field shows its fields inline, not a picker; with
-  several target Schemas, adding one asks which Schema.
-- Is created by the write that makes its Host Subject point at it. A write in which a relation property whose targets
-  are dependent points at anything else is refused, so a relation to a Dependent Subject is never missing.
-- Is removed by any write after which no standalone Subject on the page reaches it. Deleting it on its own also
-  removes the Host Subject's relation to it.
-- Lives on its Host Subject's page in both wiki modes ([ADR 33](033-page-first-and-subject-first-wikis.md)) and moves
-  with it.
-- Is referenced by exactly one Relation, from a property whose targets are dependent. Any other Relation targeting it
-  is refused, and no picker offers it. What other Subjects need to point at is standalone.
-- Has no label. Its name is its Schema name with its Host Subject's name: "Birth of Pablo Picasso".
-- Is indexed for search under the standalone Subject at the top of its host chain, which is the hit.
-- Is never a Main Subject, and its Schema is not offered where a Subject is created without a Host Subject.
-- Keeps its id, IRI and graph node. `Special:Subject` and the Data tab show it and open it for editing on its own;
-  queries and exports include it.
+A Dependent Subject is part of exactly one Host Subject, the Subject whose relation statement holds it:
+
+- It is referenced by exactly one Relation, from a property whose targets are dependent. Any other Relation targeting
+  it is refused. What other Subjects need to point at is standalone.
+- It is created by the write that makes its Host Subject point at it. A write in which such a relation points at
+  anything else is refused, so a relation to a Dependent Subject is never missing.
+- It lives on its Host Subject's page in both wiki modes ([ADR 33](033-page-first-and-subject-first-wikis.md)). Any
+  write after which no standalone Subject on the page reaches it removes it, and deleting it on its own also removes
+  the Host Subject's relation to it.
+- It has no label.
+- It can be the Host Subject of further Dependent Subjects.
 
 These rules hold whatever the validation enforcement setting.
 
@@ -57,11 +51,17 @@ Not taken:
 
 ## Consequences
 
-- [ADR 31](031-optional-subject-labels.md): Dependent Subjects have no label and no stand-in marker.
-- [ADR 33](033-page-first-and-subject-first-wikis.md): the wiki mode decides where a target created inside the editor
-  is stored for standalone targets only.
-- The schema format gains the declaration, and the page write enforces the rules above. Moving a Subject to another
-  page carries its Dependent Subjects along; a Dependent Subject cannot be moved on its own.
+- Editing: the relation field shows the Dependent Subject's fields inline, not a picker; with several target Schemas,
+  adding one asks which Schema. No picker offers a Dependent Subject.
+- Display: a Dependent Subject is shown as part of its Host Subject, named by its Schema name with its Host Subject's
+  name — "Birth of Pablo Picasso" — with no stand-in marker ([ADR 31](031-optional-subject-labels.md)).
+- It keeps its id, IRI and graph node. `Special:Subject` and the Data tab show it and open it for editing on its
+  own; queries and exports include it.
+- Search indexes it under the standalone Subject at the top of its host chain, which is the hit.
+- It is never a Main Subject, and its Schema is not offered where a Subject is created without a Host Subject.
+- Moving a Subject to another page carries its Dependent Subjects along; a Dependent Subject cannot be moved on its
+  own.
+- The schema format gains the declaration, and the page write enforces the rules above.
 - Tracked in [#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630).
 
 ## Related
