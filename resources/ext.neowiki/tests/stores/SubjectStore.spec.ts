@@ -10,7 +10,6 @@ import { Subject } from '@/domain/Subject';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
-import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import { setupMwMock } from '../VueTestHelpers.ts';
 import type { Schema } from '@/domain/Schema.ts';
 
@@ -98,35 +97,14 @@ describe( 'SubjectStore createSubject', () => {
 		expect( repository.createOtherSubject ).not.toHaveBeenCalled();
 	} );
 
-	// Two namesakes are a thing a subject-first wiki has to let people make, and nobody was asked
-	// which page to use, so there is no question to send the clash back to.
-	it( 'titles the page after the Subject when the label names a page that is taken', async () => {
+	// The wiki titles the page by the Subject's id, so a title it reports taken is not one a
+	// second write could get round.
+	it( 'does not retry a write refused for its title', async () => {
 		const repository = repositoryWriting( true );
 		repository.createSubjectPage.mockRejectedValueOnce( new PageTitleTakenError( 'Anvil' ) );
 
-		await useSubjectStore().createSubject( drafted, pageId, 'why' );
-
-		expect( repository.createSubjectPage.mock.calls ).toEqual( [
-			[ 'Anvil', 'Product', drafted.getStatements(), 'why', undefined, drafted.getId() ],
-			[ 'Anvil', 'Product', drafted.getStatements(), 'why', drafted.getId().text, drafted.getId() ],
-		] );
-	} );
-
-	it( 'writes once where the label titles a page nobody holds', async () => {
-		const repository = repositoryWriting( true );
-
-		await useSubjectStore().createSubject( drafted, pageId, 'why' );
-
-		expect( repository.createSubjectPage ).toHaveBeenCalledTimes( 1 );
-	} );
-
-	// A retry would offer the server the same id a second time, which it has just refused.
-	it( 'does not retry a write refused for anything but the title', async () => {
-		const repository = repositoryWriting( true );
-		repository.createSubjectPage.mockRejectedValueOnce( new SubjectIdInUseError( drafted.getId().text ) );
-
 		await expect( useSubjectStore().createSubject( drafted, pageId, 'why' ) )
-			.rejects.toBeInstanceOf( SubjectIdInUseError );
+			.rejects.toBeInstanceOf( PageTitleTakenError );
 		expect( repository.createSubjectPage ).toHaveBeenCalledTimes( 1 );
 	} );
 

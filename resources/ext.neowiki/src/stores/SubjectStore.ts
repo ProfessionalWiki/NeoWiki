@@ -9,7 +9,6 @@ import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SubjectWriteResult } from '@/domain/SubjectRepository.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
-import { PageTitleTakenError } from '@/persistence/PageTitleTakenError.ts';
 
 /**
  * A Subject created together with a page of its own: the page is the server's to title, so where
@@ -212,30 +211,15 @@ export const useSubjectStore = defineStore( 'subject', {
 			return result.subjectId;
 		},
 
-		/**
-		 * Creates a Subject on a page of its own, titled by its label, and by the Subject's own id
-		 * where a page already holds the title the label names. Two namesakes are a thing a
-		 * subject-first wiki has to let people make, and the id-titled page is the fallback the
-		 * server already makes for a label that titles no page at all (ADR 33).
-		 *
-		 * For the wikis that ask which page a Subject goes on: they report the clash at the question
-		 * instead, which is where the user can answer it.
-		 */
 		async createSubjectOnOwnPage( subject: Subject, comment?: string ): Promise<CreatedSubjectPage> {
-			const label = subject.getLabel();
-			const schemaName = subject.getSchemaName();
-			const statements = subject.getStatements();
-			const id = subject.getId();
-
-			try {
-				return await this.createSubjectPage( label, schemaName, statements, comment, undefined, id );
-			} catch ( error ) {
-				if ( error instanceof PageTitleTakenError ) {
-					return this.createSubjectPage( label, schemaName, statements, comment, id.text, id );
-				}
-
-				throw error;
-			}
+			return this.createSubjectPage(
+				subject.getLabel(),
+				subject.getSchemaName(),
+				subject.getStatements(),
+				comment,
+				undefined,
+				subject.getId(),
+			);
 		},
 
 		/**

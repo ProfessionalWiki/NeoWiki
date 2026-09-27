@@ -20,6 +20,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersResolver;
@@ -104,6 +105,29 @@ class GetMainSubjectQueryTest extends TestCase {
 			) ),
 			pageIdentifiersResolver: new InMemoryPageIdentifiersResolver( [
 				new PageIdentifiers( id: new PageId( self::PAGE_ID ), title: 'S11111111111ca1', namespaceId: NS_MAIN ),
+			] )
+		)->execute( self::PAGE_ID );
+
+		$this->assertSame( 'City', $presenter->response->subject->displayName );
+		$this->assertTrue( $presenter->response->subject->displayNameIsGenerated );
+	}
+
+	public function testLabellessMainSubjectOfAPageInTheSubjectNamespaceTitledByASubjectIdIsNamedAfterItsSchema(): void {
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery(
+			$presenter,
+			$this->newRepositoryWithPage( mainSubject: TestSubject::build(
+				id: self::MAIN_SUBJECT_ID,
+				label: null,
+				schemaName: new SchemaName( 'City' )
+			) ),
+			pageIdentifiersResolver: new InMemoryPageIdentifiersResolver( [
+				new PageIdentifiers(
+					id: new PageId( self::PAGE_ID ),
+					title: 'Subject:' . ucfirst( self::MAIN_SUBJECT_ID ),
+					namespaceId: NeoWikiExtension::NS_SUBJECT
+				),
 			] )
 		)->execute( self::PAGE_ID );
 

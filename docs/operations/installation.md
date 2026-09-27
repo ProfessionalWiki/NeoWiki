@@ -176,6 +176,7 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new `error`-severity violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
 | `$wgNeoWikiSubjectFirst` | Puts Subjects before pages: see [Choosing page-first or subject-first](#choosing-page-first-or-subject-first) | `false` | No |
+| `$wgNeoWikiSubjectPageNamespace` | Namespace a subject-first wiki creates each Subject's own page in: see [Choosing page-first or subject-first](#choosing-page-first-or-subject-first) | `7480` (`Subject`) | No |
 | `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
 | `$wgNeoWikiAutoRebuildOnMappingChange` | Rebuilds every store holding a Mapping's projection when that Mapping changes | `false` | No |
 
@@ -196,9 +197,12 @@ These are the settings you are most likely to change. For the full list with des
 | Concept URI in a browser | the page | Special:Subject |
 | "Move" on the Data tab | offered | not offered |
 | Deleting a Subject that is its page's only one | the Subject goes, the page stays | the page goes with it |
+| A Subject's own page | titled by the label, else by the id; in the main namespace | titled by the id; in the `Subject` namespace |
+| A page title asked for on creation (`pageTitle`, `page=` naming a page that does not exist) | used, in the main namespace | refused |
+| Moving a page titled by the id of a Subject on it | allowed | refused |
 
-The mode changes defaults, landing surfaces and link targets only. The REST API, parser-function parameters such as
-an explicit `page=` on `{{#create_subject}}`, and pages holding several Subjects are the same in both.
+On a subject-first wiki, `$wgNeoWikiSubjectPageNamespace` names the namespace each Subject's own page is created in,
+`NS_MAIN` included. It must be a content namespace, or the pages there get no heading, infobox or Data tab.
 
 ## User rights
 

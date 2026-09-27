@@ -254,4 +254,33 @@ class SubjectDisplayNameTest extends TestCase {
 		);
 	}
 
+	public function testAPageInTheSubjectNamespaceTitledAfterTheSubjectItselfHasNoChosenName(): void {
+		$this->assertNull( $this->chosenName( null, true, 'Subject:' . ucfirst( self::SUBJECT_ID ) ) );
+	}
+
+	public function testAPageInTheSubjectNamespaceTitledAfterItsMainSubjectShowsItsLabelInstead(): void {
+		$this->assertSame(
+			'Stored',
+			$this->inPlaceOfPageTitle( new SubjectLabel( 'Stored' ), 'Subject:' . ucfirst( self::SUBJECT_ID ) )
+		);
+	}
+
+	public function testAPageWhoseTitleEndsInTheIdOfASubjectItDoesNotHoldIsStillAChosenName(): void {
+		$this->assertSame(
+			'Notes:' . ucfirst( self::OTHER_SUBJECT_ID ),
+			$this->chosenName( null, true, 'Notes:' . ucfirst( self::OTHER_SUBJECT_ID ) )
+		);
+	}
+
+	public function testAPrefixedTitleWithAColonBeforeTheIdOfASubjectItHoldsIsStillAChosenName(): void {
+		$this->assertSame(
+			'Subject:Notes:' . ucfirst( self::SUBJECT_ID ),
+			$this->chosenName( null, true, 'Subject:Notes:' . ucfirst( self::SUBJECT_ID ) )
+		);
+	}
+
+	public function testANamespacePrefixDoesNotStopATitleFromBeingAnId(): void {
+		$this->assertTrue( SubjectDisplayName::mayBeTitledBySubjectId( 'Subject:' . ucfirst( self::SUBJECT_ID ) ) );
+	}
+
 }

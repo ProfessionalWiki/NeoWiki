@@ -37,6 +37,7 @@ use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleValue;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
+use Wikimedia\Message\MessageSpecifier;
 use Wikimedia\Rdbms\IDBAccessObject;
 use Wikimedia\Rdbms\IResultWrapper;
 use MessageLocalizer;
@@ -181,10 +182,10 @@ class NeoWikiHooks {
 	}
 
 	/**
-	 * Heads the page with its Main Subject's label and id, as core applies a display title, and only
-	 * where core would apply one: not on a diff, which is headed by the diff, nor where an error stands
-	 * in for the revision, which either leaves no revision id or heads the page as an error. The
-	 * browser tab gets the label alone.
+	 * Heads the page with its Main Subject's label and id. The label wins over a display title the
+	 * page's own wikitext sets, and is applied only where core would apply one: not on a diff, which is
+	 * headed by the diff, nor where an error stands in for the revision, which either leaves no revision
+	 * id or heads the page as an error. The browser tab gets the label alone.
 	 */
 	private static function headByMainSubject( OutputPage $out, ViewHtmlBuilder $builder, ?int $revisionId ): void {
 		if ( $out->getRevisionId() === null
@@ -257,18 +258,44 @@ class NeoWikiHooks {
 	}
 
 	/**
-	 * A namespace prefix is part of the page name, so only a page in the main namespace can be titled by
-	 * a Subject id.
+	 * A permission error is what removes the Move tab and gives Special:MovePage and the API their reason.
+	 *
+	 * @param array|string|MessageSpecifier &$result
 	 */
+	public static function onGetUserPermissionsErrors( Title $title, User $user, string $action, &$result ): bool {
+		if ( $action !== 'move' || !self::isSubjectsOwnPage( $title ) ) {
+			return true;
+		}
+
+		$result = [ 'neowiki-subject-page-immovable' ];
+
+		return false;
+	}
+
+	private static function isSubjectsOwnPage( Title $title ): bool {
+		$extension = NeoWikiExtension::getInstance();
+
+		if ( !$title->exists()
+			|| !SubjectDisplayName::mayBeTitledBySubjectId( $title->getPrefixedText() )
+			|| !$extension->isSubjectFirst()
+		) {
+			return false;
+		}
+
+		return SubjectDisplayName::isTitledBySubjectOnIt(
+			$title->getPrefixedText(),
+			$extension->newPageSubjectsLookup()->getPageSubjects( new PageId( $title->getArticleID() ) )
+		);
+	}
+
 	private static function isIdShaped( LinkTarget $target ): bool {
 		return $target->getInterwiki() === ''
-			&& $target->inNamespace( NS_MAIN )
 			&& SubjectDisplayName::mayBeTitledBySubjectId( $target->getText() );
 	}
 
 	/**
 	 * Reads the labels a Recent changes or watchlist page links by in one batch rather than one read per
-	 * row. Only content pages, as only they are headed by their label.
+	 * row. Only pages that can be titled by a Subject id, as only they are headed by their label.
 	 *
 	 * A list transcluded into a page renders in a context of its own, and gets no labels: the page
 	 * would keep them in its cache after they changed.
@@ -280,12 +307,10 @@ class NeoWikiHooks {
 			return;
 		}
 
-		$namespaceInfo = MediaWikiServices::getInstance()->getNamespaceInfo();
 		$pageIds = [];
 
 		foreach ( $rows as $row ) {
 			if ( (int)$row->rc_cur_id !== 0
-				&& $namespaceInfo->isContent( (int)$row->rc_namespace )
 				&& self::isIdShaped( new TitleValue( (int)$row->rc_namespace, (string)$row->rc_title ) )
 			) {
 				$pageIds[] = (int)$row->rc_cur_id;
@@ -487,7 +512,8 @@ class NeoWikiHooks {
 			'create_subject',
 			static function ( Parser $parser, string ...$args ): string|array {
 				$parserFunction = new CreateSubjectParserFunction(
-					NeoWikiExtension::getInstance()->newPageSubjectsLookup()
+					NeoWikiExtension::getInstance()->newPageSubjectsLookup(),
+					NeoWikiExtension::getInstance()->isSubjectFirst()
 				);
 				return $parserFunction->handle( $parser, ...$args );
 			}

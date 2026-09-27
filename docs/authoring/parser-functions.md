@@ -157,9 +157,9 @@ Renders a button that opens the Subject creator without leaving the page.
 | Parameter | Description |
 |-----------|-------------|
 | `schema=<schemaName>` | [Schema](../glossary.md#schema) to create the Subject with. Without it, the creator asks which Schema to use. |
-| `page=new` | Creates a page for the Subject, titled after the Subject. |
+| `page=new` | Creates a page for the Subject: titled by its label, else by its id, on a page-first wiki; by its id on a subject-first one. |
 | `page=this` | Stores the Subject on the page holding the button. Outside the content namespaces, `new` applies instead. |
-| `page=<pageName>` | Stores the Subject on that page, creating it when it does not exist — which only the main namespace allows. |
+| `page=<pageName>` | Stores the Subject on that page, creating it when it does not exist — which only the main namespace of a page-first wiki allows. |
 | `text=<buttonLabel>` | The button's label. Defaults to `Create <schemaName>`, or `Create subject` without a Schema. |
 
 ### Notes

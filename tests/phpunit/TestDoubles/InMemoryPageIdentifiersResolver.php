@@ -45,12 +45,13 @@ class InMemoryPageIdentifiersResolver implements PageIdentifiersResolver {
 	/**
 	 * Of the wiki's normalization only the capital first letter, which is the part callers depend
 	 * on: it is what makes a page titled after a Subject id reachable. Which other texts title no
-	 * page is the wiki's own parsing, which this double does not reproduce.
+	 * page, and how a namespace other than the main one prefixes a title, are the wiki's own
+	 * parsing, which this double does not reproduce.
 	 */
-	public function getMainNamespaceTitle( string $text ): ?string {
+	public function getTitleInNamespace( int $namespaceId, string $text ): ?string {
 		$trimmed = trim( $text );
 
-		return $trimmed === '' ? null : ucfirst( $trimmed );
+		return $trimmed === '' || $namespaceId !== NS_MAIN ? null : ucfirst( $trimmed );
 	}
 
 }

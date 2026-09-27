@@ -28,24 +28,21 @@ It governs exactly these behaviours:
 | "Move" on the Data tab | offered | not offered |
 | Deleting a Subject that is its page's only one | the Subject goes, the page stays | the page goes with it |
 | Picker disambiguation line | page title, id on collision | id only |
+| A Subject's own page | titled by the label, else by the id; in the main namespace | titled by the id; in the `Subject` namespace, or the one `$wgNeoWikiSubjectPageNamespace` names |
+| A page title asked for on creation (`pageTitle`, `page=` naming a page that does not exist) | used, in the main namespace | refused |
+| Moving a page titled by the id of a Subject on it | allowed | refused |
 
-The mode changes defaults, landing surfaces and link targets only. The REST API, parser-function parameters such as
-an explicit `page=` on `{{#create_subject}}`, pages holding several Subjects, and where a Dependent Subject lives —
-on its Host Subject's page ([ADR 28](028-relations-model.md)) — are the same in both.
+The mode changes defaults, landing surfaces, link targets and what titles a Subject's own page. Pages holding several
+Subjects, and where a Dependent Subject lives — on its Host Subject's page ([ADR 28](028-relations-model.md)) — are
+the same in both.
 
 ## Consequences
 
 * One switch to document and test, in place of independent toggles whose combinations would each need explaining.
 * `$wgNeoWikiDereferenceSubjectsToHostingPage` is gone: the mode answers its question.
-* The Data tab as default view, a namespace for id-titled pages, generated labels, and per-schema or per-user
-  overrides are separate decisions.
-
-## Open question
-
-Under review; the decision above is the starting point.
-
-- **What titles a Subject's page in a subject-first wiki.** Above, the label titles it, and the Subject's id only
-  where the label cannot or the title is taken, so page renames stay allowed and a label edit leaves the title
-  behind. The alternative is the id as the title, as Wikibase does: uniform titles, no namesake handling, renames
-  and moves refused as an invariant, at the cost of every MediaWiki surface that prints a title showing the id
-  unless link rendering and display titles are hooked.
+* On a subject-first wiki a label edit renames nothing and two Subjects may share a label: the title neither
+  drifts from the label nor needs namesakes told apart. The id still shows wherever MediaWiki prints a title that is
+  not yet hooked — categories, What links here, history headings, edit summaries — which
+  https://github.com/ProfessionalWiki/NeoWiki/issues/1503 tracks. Labelling every link on a page needs a source of
+  labels at render time, an open decision.
+* The Data tab as default view, generated labels, and per-schema or per-user overrides are separate decisions.

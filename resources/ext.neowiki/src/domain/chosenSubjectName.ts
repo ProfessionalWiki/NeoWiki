@@ -26,5 +26,7 @@ export function chosenSubjectName(
 }
 
 function isTitledBySubjectOnIt( pageName: string, pageSubjectIds: string[] ): boolean {
-	return pageSubjectIds.includes( pageName.charAt( 0 ).toLowerCase() + pageName.slice( 1 ) );
+	const title = pageName.slice( pageName.indexOf( ':' ) + 1 );
+
+	return pageSubjectIds.includes( title.charAt( 0 ).toLowerCase() + title.slice( 1 ) );
 }

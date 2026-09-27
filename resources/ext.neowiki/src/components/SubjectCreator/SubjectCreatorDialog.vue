@@ -166,7 +166,7 @@
 					/>
 
 					<CdxField
-						v-if="pageChoice === 'newPage'"
+						v-if="pageChoice === 'newPage' && !isSubjectFirst()"
 						class="ext-neowiki-subject-creator-page-title-field"
 						:optional="true"
 						:status="pageTitleFieldStatus"
@@ -969,12 +969,6 @@ async function createBesideMainSubject(
 }
 
 /**
- * Creates the Subject on a page of its own. Where the page was never asked about, a label whose
- * title is taken is not something the user can be sent back to answer, so the Subject takes the
- * page its own id titles instead. Where the question is asked, the page comes first, so a new one
- * is never titled after a Subject id: the title typed, else the label, and a Subject with neither
- * is sent back to give one before anything is written.
- *
  * The two ways the server refuses a title are answered at the field it was typed in, and reported
  * as the save's own failure too: the writes stop there, and the toast is what says so.
  */
@@ -983,7 +977,7 @@ async function createOnNewPage(
 	comment: string,
 	chosenTitle: string | null
 ): Promise<CreatedSubjectPage> {
-	if ( !pageQuestionAsked.value ) {
+	if ( isSubjectFirst() ) {
 		return await subjectStore.createSubjectOnOwnPage( subject, comment );
 	}
 

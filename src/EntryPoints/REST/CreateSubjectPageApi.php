@@ -74,10 +74,11 @@ class CreateSubjectPageApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => false,
-				self::PARAM_DESCRIPTION => 'Display label for the Subject, which also titles the page created '
-					. 'for it where no pageTitle is given. Optional: omit it, or pass an empty string, to create a Subject nobody named, '
-					. 'whose page is titled after its Subject ID. A label that is not a main-namespace page '
-					. 'title titles no page either, and is stored as the label all the same.',
+				self::PARAM_DESCRIPTION => 'Display label for the Subject, which on a page-first wiki also titles '
+					. 'the page created for it where no pageTitle is given. Optional: omit it, or pass an empty string, '
+					. 'to create a Subject nobody named, whose page is titled after its Subject ID. A label that is not '
+					. 'a main-namespace page title titles no page either, and is stored as the label all the same. '
+					. 'A subject-first wiki titles every page it creates after the Subject ID.',
 			],
 			'pageTitle' => [
 				self::PARAM_SOURCE => 'body',
@@ -86,7 +87,7 @@ class CreateSubjectPageApi extends SimpleHandler {
 				self::PARAM_DESCRIPTION => 'Title of the page created, which takes precedence over the label. '
 					. 'Optional: omit it, or pass an empty string, to leave the title to the label. A title that '
 					. 'names another namespace or is no title at all answers 400 rather than falling back to the '
-					. 'label; a title already taken answers 409.',
+					. 'label; a title already taken answers 409. A subject-first wiki answers 400 to any title.',
 			],
 			'schema' => [
 				self::PARAM_SOURCE => 'body',

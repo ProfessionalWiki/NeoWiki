@@ -28,6 +28,14 @@ describe( 'chosenSubjectName', () => {
 		expect( chosenSubjectName( false, 'S11111111111aaa', [ SUBJECT_ID ] ) ).toBeNull();
 	} );
 
+	it( 'is nothing where the page is titled after a subject it holds in the Subject namespace', () => {
+		expect( chosenSubjectName( false, 'Subject:S11111111111aaa', [ SUBJECT_ID ] ) ).toBeNull();
+	} );
+
+	it( 'is the page name where a colon inside the title precedes a subject it holds', () => {
+		expect( chosenSubjectName( false, 'Subject:Notes:S11111111111aaa', [ SUBJECT_ID ] ) ).toBe( 'Subject:Notes:S11111111111aaa' );
+	} );
+
 	it( 'is the page name where the page holds no subject of that id', () => {
 		expect( chosenSubjectName( false, SUBJECT_ID, [ 's11111111111bbb' ] ) ).toBe( SUBJECT_ID );
 	} );
