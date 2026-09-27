@@ -1,4 +1,4 @@
-import { mount, VueWrapper, DOMWrapper, flushPromises } from '@vue/test-utils';
+import { enableAutoUnmount, mount, VueWrapper, DOMWrapper, flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref, nextTick } from 'vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
@@ -50,6 +50,10 @@ const DEFAULT_CREATE_SUMMARY = 'neowiki-subject-editor-summary-default-create';
 
 vi.mock( '@/composables/useSchemaPermissions.ts' );
 
+// The focus and dialog-stacking tests read the document, where a dialog an earlier test left
+// mounted would still be.
+enableAutoUnmount( afterEach );
+
 const canCreateSubjectPage = ref( true );
 const checkCreateSubjectPagePermission = vi.fn();
 
@@ -74,9 +78,10 @@ const SchemaPickerStub = {
 	},
 };
 
-// What the panes inside the stubbed editor dialog hold, which is what its save hands back. Reset
-// per test by the beforeEach below.
-let editedLabel: string | null = null;
+// What the panes inside the stubbed editor dialog hold, which is what its save hands back; the label
+// is also what the editor reports while the Subject is being edited. Reset per test by the
+// beforeEach below.
+const editedLabel = ref<string | null>( null );
 let editedStatements = (): StatementList => new StatementList( [
 	new Statement( new PropertyName( 'Color' ), TextType.typeName, newStringValue( 'Red' ) ),
 ] );
@@ -179,14 +184,14 @@ const SubjectEditorDialogStub = {
 			props.onSaved();
 		}
 
-		return { saving, runSave };
+		return { saving, runSave, rootLabel: editedLabel };
 	},
 };
 
 // The Subject being created as its pane holds it: the one the creator handed down, under whatever
 // has been typed into the pane since.
 function editedRoot( subject: Subject ): Subject {
-	return subject.withLabel( editedLabel ).withStatements( editedStatements() );
+	return subject.withLabel( editedLabel.value ).withStatements( editedStatements() );
 }
 
 const CdxDialogStub = {
@@ -212,7 +217,7 @@ const CdxRadioStub = {
 	template: '<label class="cdx-radio-stub" :data-value="inputValue">' +
 		'<input type="radio" :checked="modelValue === inputValue" :disabled="disabled"' +
 		' @change="$emit( \'update:modelValue\', inputValue )">' +
-		'<slot /></label>',
+		'<slot /><slot name="description" /></label>',
 	props: [ 'modelValue', 'inputValue', 'name', 'inline', 'disabled' ],
 	emits: [ 'update:modelValue' ],
 };
@@ -329,7 +334,7 @@ describe( 'SubjectCreatorDialog', () => {
 	let reloadMock: ReturnType<typeof vi.fn>;
 
 	beforeEach( () => {
-		editedLabel = null;
+		editedLabel.value = null;
 		editedStatements = (): StatementList => new StatementList( [
 			new Statement( new PropertyName( 'Color' ), TextType.typeName, newStringValue( 'Red' ) ),
 		] );
@@ -517,7 +522,7 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
-		editedLabel = 'Typed label';
+		editedLabel.value = 'Typed label';
 
 		await wrapper.findComponent( { name: 'SummaryAction' } ).vm.$emit( 'save', 'test summary' );
 		await flushPromises();
@@ -573,7 +578,7 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
 
-		editedLabel = 'Typed label';
+		editedLabel.value = 'Typed label';
 
 		await wrapper.findComponent( { name: 'SummaryAction' } ).vm.$emit( 'save', 'test summary' );
 		await flushPromises();
@@ -687,12 +692,11 @@ describe( 'SubjectCreatorDialog', () => {
 		const EXISTING_PAGE_ID = 12;
 		const OTHER_PAGE_ID = 13;
 		const MAIN_ID = 's11111111111taa';
-		// Renders the field's error and its help text so the page-choice failures below are
-		// visible as text.
+		// Renders the field's error so the page-choice failures below are visible as text.
 		const CdxFieldWithMessagesStub = {
 			template: '<div class="cdx-field-stub"><slot name="label" /><slot />' +
-				'<span>{{ messages?.error }}</span><slot name="help-text" /></div>',
-			props: [ 'status', 'messages', 'optional', 'isFieldset' ],
+				'<span>{{ messages?.error }}</span></div>',
+			props: [ 'status', 'messages', 'isFieldset' ],
 		};
 
 		const I18nSlotStub = {
@@ -762,7 +766,7 @@ describe( 'SubjectCreatorDialog', () => {
 		}
 
 		async function typeLabel( _wrapper: VueWrapper, label: string ): Promise<void> {
-			editedLabel = label;
+			editedLabel.value = label;
 			await flushPromises();
 		}
 
@@ -781,9 +785,24 @@ describe( 'SubjectCreatorDialog', () => {
 
 		/** Opened the way a user opens it: the browser toggles the element and reports it. */
 		async function openSection( wrapper: VueWrapper ): Promise<void> {
+			await toggleSection( wrapper, true );
+		}
+
+		async function closeSection( wrapper: VueWrapper ): Promise<void> {
+			await toggleSection( wrapper, false );
+		}
+
+		async function toggleSection( wrapper: VueWrapper, open: boolean ): Promise<void> {
 			const section = wrapper.find( '.ext-neowiki-subject-creator-page-section' );
-			( section.element as HTMLDetailsElement ).open = true;
-			await section.trigger( 'toggle' );
+			( section.element as HTMLDetailsElement ).open = open;
+			await toggleReported();
+		}
+
+		/** A details element reports opening or closing a task later, rendered so or toggled alike. */
+		async function toggleReported(): Promise<void> {
+			await new Promise( ( resolve ) => {
+				setTimeout( resolve, 0 );
+			} );
 			await flushPromises();
 		}
 
@@ -795,6 +814,10 @@ describe( 'SubjectCreatorDialog', () => {
 			return wrapper.find( '.ext-neowiki-subject-creator-page-title-field .cdx-text-input-stub' );
 		}
 
+		function pageTitleValue( wrapper: VueWrapper ): string {
+			return ( pageTitleInput( wrapper ).element as HTMLInputElement ).value;
+		}
+
 		async function typePageTitle( wrapper: VueWrapper, title: string ): Promise<void> {
 			await pageTitleInput( wrapper ).setValue( title );
 			await flushPromises();
@@ -803,6 +826,12 @@ describe( 'SubjectCreatorDialog', () => {
 		async function save( wrapper: VueWrapper, summary = '' ): Promise<void> {
 			await wrapper.findComponent( { name: 'SummaryAction' } ).vm.$emit( 'save', summary );
 			await flushPromises();
+		}
+
+		/** The title the one page created was sent with. */
+		function createdPageTitle(): string | undefined {
+			expect( subjectStore.createSubjectPage ).toHaveBeenCalledOnce();
+			return ( subjectStore.createSubjectPage as ReturnType<typeof vi.fn> ).mock.calls[ 0 ][ 4 ];
 		}
 
 		function deferred<T>(): Deferred<T> {
@@ -1057,6 +1086,47 @@ describe( 'SubjectCreatorDialog', () => {
 
 				expect( offeredChoices( wrapper ) ).toEqual( [ 'thisPage', 'anotherPage' ] );
 			} );
+
+			it( 'starts the page question collapsed where the dialog was opened on no page', async () => {
+				canCreateSubjectPage.value = false;
+				const wrapper = mountSubjectFirst( { hostPage: null } );
+				await pickSchema( wrapper );
+
+				expect( sectionIsOpen( wrapper ) ).toBe( false );
+			} );
+
+			it( 'asks for no page title where a caller fixed a new page', async () => {
+				const wrapper = mountSubjectFirst( {
+					initialPage: { choice: 'newPage', fixed: true } as InitialPage,
+				} );
+				await pickSchema( wrapper );
+
+				expect( pageTitleField( wrapper ).exists() ).toBe( false );
+			} );
+
+			it( 'names no title for a new page the caller preselected, whatever the label', async () => {
+				const wrapper = mountSubjectFirst( {
+					initialPage: { choice: 'newPage', fixed: false } as InitialPage,
+				} );
+				await pickSchema( wrapper );
+
+				await typeLabel( wrapper, 'Amsterdam' );
+
+				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-new' );
+			} );
+
+			it( 'saves the drafted Schema with the Subject\'s own page', async () => {
+				const wrapper = mountSubjectFirst();
+				await wrapper.setProps( { open: true } );
+				await flushPromises();
+				await switchToNewSchema( wrapper );
+				await clickContinue( wrapper );
+
+				await save( wrapper );
+
+				expect( schemaStore.saveSchema ).toHaveBeenCalledOnce();
+				expect( subjectStore.createSubjectPage ).toHaveBeenCalledOnce();
+			} );
 		} );
 
 		/**
@@ -1083,6 +1153,7 @@ describe( 'SubjectCreatorDialog', () => {
 			await flushPromises();
 
 			expect( offeredChoices( wrapper ) ).toEqual( [ 'newPage', 'anotherPage' ] );
+			expect( chosenOption( wrapper ) ).toBe( 'newPage' );
 		} );
 
 		describe( 'without the right to create pages', () => {
@@ -1090,11 +1161,20 @@ describe( 'SubjectCreatorDialog', () => {
 				canCreateSubjectPage.value = false;
 			} );
 
-			it( 'offers no new page', async () => {
+			it( 'shows a new page first where there is no page of its own', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+
+				expect( offeredChoices( wrapper ) ).toEqual( [ 'newPage', 'anotherPage' ] );
+			} );
+
+			it( 'disables a new page, saying why', async () => {
 				const wrapper = mountDialog();
 				await pickSchema( wrapper );
 
-				expect( offeredChoices( wrapper ) ).toEqual( [ 'thisPage', 'anotherPage' ] );
+				const newPage = wrapper.find( '.cdx-radio-stub[data-value="newPage"]' );
+				expect( newPage.find( 'input' ).attributes( 'disabled' ) ).toBeDefined();
+				expect( newPage.text() ).toContain( 'neowiki-subject-creator-page-new-denied' );
 			} );
 
 			it( 'starts on another page where there is no page of its own', async () => {
@@ -1102,6 +1182,13 @@ describe( 'SubjectCreatorDialog', () => {
 				await pickSchema( wrapper );
 
 				expect( chosenOption( wrapper ) ).toBe( 'anotherPage' );
+			} );
+
+			it( 'starts open on the page to pick where there is no page of its own', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+
+				expect( sectionIsOpen( wrapper ) ).toBe( true );
 			} );
 		} );
 
@@ -1126,7 +1213,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			// Here the page is the entity, so it is never titled after a Subject id: with nothing to
 			// title it, the question comes back rather than a page nobody can read the name of.
-			it( 'refuses a new page with neither a title nor a label, writing nothing', async () => {
+			it( 'refuses a new page without a title, writing nothing', async () => {
 				const wrapper = mountWithoutHostPage();
 				await pickSchema( wrapper );
 
@@ -1136,6 +1223,68 @@ describe( 'SubjectCreatorDialog', () => {
 					.toContain( 'neowiki-subject-creator-page-title-required' );
 				expect( subjectStore.createSubjectPage ).not.toHaveBeenCalled();
 				expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+			} );
+
+			it( 'refuses a new page whose title was cleared, though the Subject has a label', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await typeLabel( wrapper, 'Delft' );
+				await typePageTitle( wrapper, '' );
+
+				await save( wrapper );
+
+				expect( pageTitleField( wrapper ).text() )
+					.toContain( 'neowiki-subject-creator-page-title-required' );
+				expect( subjectStore.createSubjectPage ).not.toHaveBeenCalled();
+			} );
+
+			it( 'saves the drafted Schema before the new page that uses it', async () => {
+				const wrapper = mountWithoutHostPage();
+				await wrapper.setProps( { open: true } );
+				await flushPromises();
+				await switchToNewSchema( wrapper );
+				await clickContinue( wrapper );
+				await typeLabel( wrapper, 'New Person' );
+
+				await save( wrapper );
+
+				const schemaSaved = ( schemaStore.saveSchema as ReturnType<typeof vi.fn> ).mock.invocationCallOrder[ 0 ];
+				const pageCreated = ( subjectStore.createSubjectPage as ReturnType<typeof vi.fn> ).mock.invocationCallOrder[ 0 ];
+				expect( schemaSaved ).toBeLessThan( pageCreated );
+			} );
+
+			it( 'saves no drafted Schema for a new page without a title', async () => {
+				const wrapper = mountWithoutHostPage();
+				await wrapper.setProps( { open: true } );
+				await flushPromises();
+				await switchToNewSchema( wrapper );
+				await clickContinue( wrapper );
+
+				await save( wrapper );
+
+				expect( schemaStore.saveSchema ).not.toHaveBeenCalled();
+			} );
+
+			it( 'opens the section again when a title is still missing', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await save( wrapper );
+				await closeSection( wrapper );
+
+				await save( wrapper );
+
+				expect( sectionIsOpen( wrapper ) ).toBe( true );
+			} );
+
+			it( 'withdraws the refusal once the label fills the title in', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await save( wrapper );
+
+				await typeLabel( wrapper, 'New Person' );
+
+				expect( pageTitleField( wrapper ).text() )
+					.not.toContain( 'neowiki-subject-creator-page-title-required' );
 			} );
 
 			it( 'takes a label typed after the refusal as the answer to it', async () => {
@@ -1163,22 +1312,19 @@ describe( 'SubjectCreatorDialog', () => {
 				expect( reloadMock ).not.toHaveBeenCalled();
 			} );
 
-			/**
-			 * The page the server titles from a label is not the label: it normalizes titles, and
-			 * a label that titles no page gets one named after the Subject instead.
-			 */
-			it( 'navigates to the title the server reported, not the label typed', async () => {
+			// The server normalizes the title it is sent, so the page may not carry it verbatim.
+			it( 'navigates to the title the server reported, not the one sent', async () => {
 				( subjectStore.createSubjectPage as any ).mockResolvedValue( {
 					subjectId: new SubjectId( 's11111111111113' ),
-					pageTitle: 'S11111111111113',
+					pageTitle: 'Delft Blue',
 				} );
 				const wrapper = mountDialog();
 				await chooseNewPage( wrapper );
-				await typeLabel( wrapper, 'Help:Not a page' );
+				await typeLabel( wrapper, 'delft Blue' );
 
 				await save( wrapper );
 
-				expect( location.href ).toBe( '/wiki/S11111111111113' );
+				expect( location.href ).toBe( '/wiki/Delft Blue' );
 			} );
 
 			it( 'reports a title already taken at the page choice', async () => {
@@ -1216,12 +1362,23 @@ describe( 'SubjectCreatorDialog', () => {
 				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-this' );
 			} );
 
-			it( 'starts collapsed on a new page where the dialog was opened on none', async () => {
+			// A new page has no title yet, so the section starts on the field that asks for one.
+			it( 'starts open where the dialog was opened on no page', async () => {
 				const wrapper = mountWithoutHostPage();
 				await pickSchema( wrapper );
 
-				expect( sectionIsOpen( wrapper ) ).toBe( false );
-				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-new' );
+				expect( sectionIsOpen( wrapper ) ).toBe( true );
+			} );
+
+			it( 'starts open again when the dialog is reopened', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await closeSection( wrapper );
+				await wrapper.setProps( { open: false } );
+
+				await pickSchema( wrapper );
+
+				expect( sectionIsOpen( wrapper ) ).toBe( true );
 			} );
 
 			it( 'names the page picked', async () => {
@@ -1246,12 +1403,24 @@ describe( 'SubjectCreatorDialog', () => {
 				await pickSchema( wrapper );
 				await typePageTitle( wrapper, 'Delft' );
 
+				await closeSection( wrapper );
+
 				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-new-titledDelft' );
+			} );
+
+			it( 'names the page to create after the label', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await typeLabel( wrapper, 'Delft Blue' );
+
+				await closeSection( wrapper );
+
+				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-new-titledDelft Blue' );
 			} );
 
 			/** Open, the options say which one is chosen themselves. */
 			it( 'stops naming the choice once it is open', async () => {
-				const wrapper = mountWithoutHostPage();
+				const wrapper = mountDialog();
 				await pickSchema( wrapper );
 
 				await openSection( wrapper );
@@ -1261,19 +1430,10 @@ describe( 'SubjectCreatorDialog', () => {
 		} );
 
 		describe( 'focus in the section', () => {
-			let attached: VueWrapper | undefined;
-
 			/** Attached to the document, since that is where what has focus is read from. */
 			function mountAttached( props: Record<string, any> = {} ): VueWrapper {
-				attached = mountDialog( props, { attachTo: document.body } );
-
-				return attached;
+				return mountDialog( props, { attachTo: document.body } );
 			}
-
-			afterEach( () => {
-				attached?.unmount();
-				attached = undefined;
-			} );
 
 			function pickerInput( wrapper: VueWrapper ): Element {
 				return wrapper.find( '.page-picker-stub input' ).element;
@@ -1286,10 +1446,25 @@ describe( 'SubjectCreatorDialog', () => {
 			it( 'moves into the title of the page to create when the section is opened', async () => {
 				const wrapper = mountAttached( { hostPage: null } );
 				await pickSchema( wrapper );
+				await closeSection( wrapper );
 
 				await openSection( wrapper );
 
 				expect( document.activeElement ).toBe( pageTitleInput( wrapper ).element );
+			} );
+
+			// Focus belongs to the Subject being named first, which is what fills the title in.
+			it( 'leaves focus where it is when the page choice arrives after the Subject', async () => {
+				const permission = deferred<void>();
+				checkCreateSubjectPagePermission.mockImplementationOnce( () => permission.promise );
+				const wrapper = mountAttached( { hostPage: null } );
+				await pickSchema( wrapper );
+
+				permission.resolve();
+				await flushPromises();
+				await toggleReported();
+
+				expect( document.activeElement ).not.toBe( pageTitleInput( wrapper ).element );
 			} );
 
 			it( 'moves into the page picker when the section is opened on an existing page', async () => {
@@ -1309,6 +1484,45 @@ describe( 'SubjectCreatorDialog', () => {
 				await openSection( wrapper );
 
 				expect( document.activeElement ).toBe( optionInput( wrapper, 'thisPage' ) );
+			} );
+
+			it( 'moves into the title of the page to create when a refusal opens the section', async () => {
+				const wrapper = mountAttached( { hostPage: null } );
+				await pickSchema( wrapper );
+				await closeSection( wrapper );
+
+				await save( wrapper );
+				await toggleReported();
+
+				expect( document.activeElement ).toBe( pageTitleInput( wrapper ).element );
+			} );
+
+			it( 'moves into the title of the page to create when a refusal finds the section open', async () => {
+				const wrapper = mountAttached( { hostPage: null } );
+				await pickSchema( wrapper );
+
+				await save( wrapper );
+				await toggleReported();
+
+				expect( document.activeElement ).toBe( pageTitleInput( wrapper ).element );
+			} );
+
+			it( 'leaves focus where it is when a page picked in the open section cannot be read', async () => {
+				const read = deferred<unknown>();
+				getPageSubjectsMock.mockImplementationOnce( () => read.promise );
+				const wrapper = mountAttached();
+				await pickSchema( wrapper );
+				await openSection( wrapper );
+				await choose( wrapper, 'anotherPage' );
+				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
+				const elsewhere = wrapper.find( '.save-button' ).element as HTMLButtonElement;
+				elsewhere.focus();
+
+				read.reject( new Error( 'Graph store unavailable' ) );
+				await flushPromises();
+				await toggleReported();
+
+				expect( document.activeElement ).toBe( elsewhere );
 			} );
 
 			it( 'follows the choice to the title of the page to create', async () => {
@@ -1364,15 +1578,47 @@ describe( 'SubjectCreatorDialog', () => {
 				expect( pageTitleField( wrapper ).exists() ).toBe( false );
 			} );
 
-			it( 'says what titles the page when left empty, whether or not anything is named', async () => {
+			it( 'is filled in from the label', async () => {
 				const wrapper = mountWithoutHostPage();
 				await pickSchema( wrapper );
 
-				expect( pageTitleField( wrapper ).text() ).toContain( 'neowiki-subject-creator-page-title-help' );
+				await typeLabel( wrapper, 'Delft Blue' );
+
+				expect( pageTitleValue( wrapper ) ).toBe( 'Delft Blue' );
+			} );
+
+			it( 'keeps a title edited after the label filled it in', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await typeLabel( wrapper, 'Delft Blue' );
+				await typePageTitle( wrapper, 'Delft' );
+
+				await typeLabel( wrapper, 'Delft Blue pottery' );
+
+				expect( pageTitleValue( wrapper ) ).toBe( 'Delft' );
+			} );
+
+			it( 'stays empty once cleared, whatever the label becomes', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await typeLabel( wrapper, 'Delft Blue' );
+				await typePageTitle( wrapper, '' );
 
 				await typeLabel( wrapper, 'Delft' );
 
-				expect( pageTitleField( wrapper ).text() ).toContain( 'neowiki-subject-creator-page-title-help' );
+				expect( pageTitleValue( wrapper ) ).toBe( '' );
+			} );
+
+			it( 'follows the label again once the dialog is reopened', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await typePageTitle( wrapper, 'Delft' );
+				await wrapper.setProps( { open: false } );
+				await pickSchema( wrapper );
+
+				await typeLabel( wrapper, 'Amsterdam' );
+
+				expect( pageTitleValue( wrapper ) ).toBe( 'Amsterdam' );
 			} );
 
 			it( 'titles the page created', async () => {
@@ -1407,6 +1653,7 @@ describe( 'SubjectCreatorDialog', () => {
 				const wrapper = mountWithoutHostPage();
 				await pickSchema( wrapper );
 				await typePageTitle( wrapper, 'Amsterdam' );
+				await closeSection( wrapper );
 
 				await save( wrapper );
 
@@ -1420,6 +1667,7 @@ describe( 'SubjectCreatorDialog', () => {
 				const wrapper = mountWithoutHostPage();
 				await pickSchema( wrapper );
 				await typePageTitle( wrapper, 'Help:Amsterdam' );
+				await closeSection( wrapper );
 
 				await save( wrapper );
 
@@ -1572,7 +1820,7 @@ describe( 'SubjectCreatorDialog', () => {
 			} );
 
 			/**
-			 * Only the label answers a title already taken; a page that would not read is still
+			 * Another title answers a title already taken; a page that would not read is still
 			 * unread whatever else is typed, and saving onto it would guess at where the Subject goes.
 			 */
 			it( 'keeps a page that could not be read blocking while the rest of the form is edited', async () => {
@@ -1722,6 +1970,17 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( closeWouldDiscard( wrapper ) ).toBe( true );
 		} );
 
+		// What fills it in is the Subject's label, an edit the editor reports itself.
+		it( 'reports nothing to discard for a title filled in from the label', async () => {
+			const wrapper = mountWithoutHostPage( { initialSchemaName: SCHEMA_NAME } );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			await typeLabel( wrapper, 'Delft' );
+
+			expect( closeWouldDiscard( wrapper ) ).toBe( false );
+		} );
+
 		it( 'reports a page still picked as something a close would discard', async () => {
 			const wrapper = mountWithoutHostPage( { initialSchemaName: SCHEMA_NAME } );
 			await wrapper.setProps( { open: true } );
@@ -1774,7 +2033,7 @@ describe( 'SubjectCreatorDialog', () => {
 				expect( pageTitleField( wrapper ).exists() ).toBe( false );
 			} );
 
-			it( 'saves a fixed new page under the title it was given', async () => {
+			it( 'asks no title of a fixed new page that was given one', async () => {
 				const wrapper = mountWithInitialPage( {
 					choice: 'newPage',
 					page: { pageId: null, title: 'Ada Lovelace' },
@@ -1782,39 +2041,39 @@ describe( 'SubjectCreatorDialog', () => {
 				} );
 				await open( wrapper );
 
-				expect( shownChoice( wrapper ) )
-					.toBe( 'neowiki-subject-creator-page-section-new-titledAda Lovelace' );
-
-				await save( wrapper );
-
-				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, 'Ada Lovelace', new SubjectId( MINTED_ID ),
-				);
+				expect( pageTitleField( wrapper ).exists() ).toBe( false );
+				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-new-titledAda Lovelace' );
 			} );
 
-			it( 'saves a fixed new page under the label, no title having been given', async () => {
+			// The parser function names a new page without titling it, so the title is asked for
+			// below the page it names, as for any new page.
+			it( 'asks for the title of a fixed new page, filled in from the label', async () => {
 				const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: true } );
 				await open( wrapper );
-
-				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-new' );
 
 				await typeLabel( wrapper, 'New Person' );
-				await save( wrapper );
 
-				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					'New Person', SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, 'New Person', new SubjectId( MINTED_ID ),
-				);
+				expect( pageTitleValue( wrapper ) ).toBe( 'New Person' );
 			} );
 
-			// The parser function names the page without titling it, so the same rule holds: the
-			// summary has no field to complain at, and states the refusal itself.
-			it( 'refuses a fixed new page with neither a title nor a label', async () => {
+			it( 'saves a fixed new page under the title typed over the label', async () => {
+				const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: true } );
+				await open( wrapper );
+				await typeLabel( wrapper, 'Grace Hopper' );
+				await typePageTitle( wrapper, 'Grace Brewster Hopper' );
+
+				await save( wrapper );
+
+				expect( createdPageTitle() ).toBe( 'Grace Brewster Hopper' );
+			} );
+
+			it( 'refuses a fixed new page without a title, at its title field', async () => {
 				const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: true } );
 				await open( wrapper );
 
 				await save( wrapper );
 
-				expect( wrapper.find( '.ext-neowiki-subject-creator-page-summary' ).text() )
+				expect( pageTitleField( wrapper ).text() )
 					.toContain( 'neowiki-subject-creator-page-title-required' );
 				expect( subjectStore.createSubjectPage ).not.toHaveBeenCalled();
 			} );
@@ -1903,6 +2162,36 @@ describe( 'SubjectCreatorDialog', () => {
 				expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
 			} );
 
+			it( 'closes without confirming when only the fixed new page\'s title was given', async () => {
+				const wrapper = mountWithInitialPage( {
+					choice: 'newPage',
+					page: { pageId: null, title: 'Ada Lovelace' },
+					fixed: true,
+				} );
+				await open( wrapper );
+
+				expect( closeWouldDiscard( wrapper ) ).toBe( false );
+			} );
+
+			it( 'reports a title typed for a fixed new page as something a close would discard', async () => {
+				const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: true } );
+				await open( wrapper );
+
+				await typePageTitle( wrapper, 'Delft' );
+
+				expect( closeWouldDiscard( wrapper ) ).toBe( true );
+			} );
+
+			// The field below says the title itself.
+			it( 'names no title for a fixed new page in its summary line', async () => {
+				const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: true } );
+				await open( wrapper );
+
+				await typeLabel( wrapper, 'New Person' );
+
+				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-new' );
+			} );
+
 			it( 'preselects an unfixed page but still offers the choice', async () => {
 				const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: false } );
 				await open( wrapper );
@@ -1912,7 +2201,14 @@ describe( 'SubjectCreatorDialog', () => {
 				expect( offeredChoices( wrapper ) ).toEqual( [ 'thisPage', 'anotherPage', 'newPage' ] );
 			} );
 
-			it( 'asks for a different label when the page titled after it is taken', async () => {
+			it( 'starts open on a new page the caller preselected', async () => {
+				const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: false } );
+				await open( wrapper );
+
+				expect( sectionIsOpen( wrapper ) ).toBe( true );
+			} );
+
+			it( 'reports a taken title at the title field of a fixed new page', async () => {
 				( subjectStore.createSubjectPage as any ).mockRejectedValue( new PageTitleTakenError( 'Paris' ) );
 				const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: true } );
 				await open( wrapper );
@@ -1920,7 +2216,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( fixedSection( wrapper ).text() ).toContain( 'neowiki-subject-creator-page-taken-fixedParis' );
+				expect( pageTitleField( wrapper ).text() ).toContain( 'neowiki-subject-creator-page-takenParis' );
 			} );
 
 			it( 'reports a taken title of the fixed page\'s own as before', async () => {
@@ -2416,24 +2712,15 @@ describe( 'SubjectCreatorDialog', () => {
 			emits: [ 'update:open' ],
 		};
 
-		let wrapper: VueWrapper | undefined;
-
 		function mountWithCodexDialogs(): VueWrapper {
-			wrapper = mountComponent( {
+			return mountComponent( {
 				CdxDialog: false,
 				CloseConfirmationDialog: false,
 				SchemaAbandonmentDialog: false,
 				SubjectEditorDialog: SubjectEditorDialogWithCodexDialog,
 				teleport: false,
 			} );
-
-			return wrapper;
 		}
-
-		afterEach( () => {
-			wrapper?.unmount();
-			wrapper = undefined;
-		} );
 
 		/** Closes the Schema step by its own dialog, which here is not the only real one in the tree. */
 		async function closeSchemaStep( dialog: VueWrapper ): Promise<void> {
@@ -2497,7 +2784,7 @@ describe( 'SubjectCreatorDialog', () => {
 			} );
 			subjectStore.updateSubject = vi.fn().mockResolvedValue( undefined );
 			// The routes below that make a page of their own need something to title it with.
-			editedLabel = 'New Person';
+			editedLabel.value = 'New Person';
 		} );
 
 		async function openOn( props: Record<string, any> = {} ): Promise<VueWrapper> {
