@@ -85,5 +85,6 @@ projection and ontology mappings on different names. With one name, Cypher edge 
 - [planning/Relations.md](../planning/Relations.md) — the remaining Relations work, open questions, and forward map.
 - [Qualifiers and References](../qualifiers-and-references.md), [Graph Model](../api/graph-model.md),
   [Subject Format](../api/subject-format.md), [Validation Codes](../api/validation-codes.md).
-- [ADR 35](035-dependent-subjects.md) — which Subjects are structure of another.
-- [ADR 7](007-multiple-subjects-per-page.md), [ADR 10](010-add-guids-to-relations.md).
+- [ADR 35: Dependent Subjects](035-dependent-subjects.md) — which Subjects are structure of another.
+- [ADR 7: Multiple Subjects Per Page](007-multiple-subjects-per-page.md),
+  [ADR 10: Add GUIDs to Relations](010-add-guids-to-relations.md).
