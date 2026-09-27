@@ -33,8 +33,7 @@ It governs exactly these behaviours:
 | Moving a page titled by the id of a Subject on it | allowed | refused |
 
 The mode changes defaults, landing surfaces, link targets and what titles a Subject's own page. Pages holding several
-Subjects, and where a Dependent Subject lives — on its Host Subject's page ([ADR 28](028-relations-model.md)) — are
-the same in both.
+Subjects are the same in both.
 
 ## Consequences
 
