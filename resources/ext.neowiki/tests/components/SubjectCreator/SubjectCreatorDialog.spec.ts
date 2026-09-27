@@ -1113,35 +1113,20 @@ describe( 'SubjectCreatorDialog', () => {
 				await save( wrapper, 'why' );
 
 				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					'New Person', SCHEMA_NAME, expect.any( StatementList ), 'why', 'New Person', new SubjectId( MINTED_ID ),
+					'New Person', SCHEMA_NAME, expect.any( StatementList ), 'why', undefined, new SubjectId( MINTED_ID ),
 				);
 				expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
 			} );
 
-			// Here the page is the entity, so it is never titled after a Subject id: with nothing to
-			// title it, the question comes back rather than a page nobody can read the name of.
-			it( 'refuses a new page with neither a title nor a label, writing nothing', async () => {
+			// The server then titles the page after the Subject's id (ADR 31).
+			it( 'creates a Subject with neither a label nor a page title, leaving the title to the server', async () => {
 				const wrapper = mountWithoutHostPage();
 				await pickSchema( wrapper );
 
-				await save( wrapper );
-
-				expect( pageTitleField( wrapper ).text() )
-					.toContain( 'neowiki-subject-creator-page-title-required' );
-				expect( subjectStore.createSubjectPage ).not.toHaveBeenCalled();
-				expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
-			} );
-
-			it( 'takes a label typed after the refusal as the answer to it', async () => {
-				const wrapper = mountWithoutHostPage();
-				await pickSchema( wrapper );
-				await save( wrapper );
-
-				await typeLabel( wrapper, 'New Person' );
 				await save( wrapper );
 
 				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					'New Person', SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, 'New Person', new SubjectId( MINTED_ID ),
+					null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, undefined, new SubjectId( MINTED_ID ),
 				);
 			} );
 
@@ -1196,6 +1181,22 @@ describe( 'SubjectCreatorDialog', () => {
 
 				expect( wrapper.text() ).toContain( 'neowiki-subject-creator-page-taken' );
 				expect( wrapper.findComponent( { name: 'SummaryAction' } ).props( 'saveDisabled' ) ).toBe( false );
+			} );
+
+			// The second save fails for another reason: one that succeeded would leave the dialog.
+			it( 'drops a taken title\'s complaint once saved again', async () => {
+				( subjectStore.createSubjectPage as any )
+					.mockRejectedValueOnce( new PageTitleTakenError( 'Amsterdam' ) )
+					.mockRejectedValueOnce( new Error( 'Server error' ) );
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await typeLabel( wrapper, 'Amsterdam' );
+				await save( wrapper );
+
+				await typeLabel( wrapper, 'Amsterdam Centraal' );
+				await save( wrapper );
+
+				expect( wrapper.text() ).not.toContain( 'neowiki-subject-creator-page-taken' );
 			} );
 
 		} );
@@ -1379,18 +1380,6 @@ describe( 'SubjectCreatorDialog', () => {
 
 				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
 					'Delft Blue', SCHEMA_NAME, expect.any( StatementList ), 'why', 'Delft', new SubjectId( MINTED_ID ),
-				);
-			} );
-
-			it( 'titles the page after the label where none was typed', async () => {
-				const wrapper = mountWithoutHostPage();
-				await pickSchema( wrapper );
-				await typeLabel( wrapper, 'Delft Blue' );
-
-				await save( wrapper );
-
-				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					'Delft Blue', SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, 'Delft Blue', new SubjectId( MINTED_ID ),
 				);
 			} );
 		} );
@@ -1671,7 +1660,6 @@ describe( 'SubjectCreatorDialog', () => {
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
 				await choose( wrapper, 'newPage' );
-				await typeLabel( wrapper, 'New Person' );
 				await save( wrapper );
 
 				expect( subjectStore.createSubjectPage ).toHaveBeenCalled();
@@ -1784,33 +1772,6 @@ describe( 'SubjectCreatorDialog', () => {
 				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
 					null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, 'Ada Lovelace', new SubjectId( MINTED_ID ),
 				);
-			} );
-
-			it( 'saves a fixed new page under the label, no title having been given', async () => {
-				const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: true } );
-				await open( wrapper );
-
-				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-new' );
-
-				await typeLabel( wrapper, 'New Person' );
-				await save( wrapper );
-
-				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					'New Person', SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, 'New Person', new SubjectId( MINTED_ID ),
-				);
-			} );
-
-			// The parser function names the page without titling it, so the same rule holds: the
-			// summary has no field to complain at, and states the refusal itself.
-			it( 'refuses a fixed new page with neither a title nor a label', async () => {
-				const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: true } );
-				await open( wrapper );
-
-				await save( wrapper );
-
-				expect( wrapper.find( '.ext-neowiki-subject-creator-page-summary' ).text() )
-					.toContain( 'neowiki-subject-creator-page-title-required' );
-				expect( subjectStore.createSubjectPage ).not.toHaveBeenCalled();
 			} );
 
 			it( 'saves onto a fixed page without a main Subject as its main Subject', async () => {
@@ -2490,8 +2451,6 @@ describe( 'SubjectCreatorDialog', () => {
 				pageId: CREATED_PAGE_ID,
 			} );
 			subjectStore.updateSubject = vi.fn().mockResolvedValue( undefined );
-			// The routes below that make a page of their own need something to title it with.
-			editedLabel = 'New Person';
 		} );
 
 		async function openOn( props: Record<string, any> = {} ): Promise<VueWrapper> {

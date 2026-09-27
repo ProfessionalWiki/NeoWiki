@@ -323,8 +323,8 @@ const chosenPageRead = ref( false );
 const chosenPageHasMainSubject = ref( false );
 const chosenPageMainSubjectName = ref<string | null>( null );
 const pageTitle = ref( '' );
-// What the page question got wrong, whichever way: a title already taken, one that titles no page,
-// or none to give. Only one of them can stand at a time, so they share the slot they are shown in.
+// What the page question got wrong, whichever way: a title already taken, or one that titles no
+// page. Only one of them can stand at a time, so they share the slot they are shown in.
 const pageTitleError = ref<string | null>( null );
 const pageReadError = ref<string | null>( null );
 
@@ -971,9 +971,8 @@ async function createBesideMainSubject(
 /**
  * Creates the Subject on a page of its own. Where the page was never asked about, a label whose
  * title is taken is not something the user can be sent back to answer, so the Subject takes the
- * page its own id titles instead. Where the question is asked, the page comes first, so a new one
- * is never titled after a Subject id: the title typed, else the label, and a Subject with neither
- * is sent back to give one before anything is written.
+ * page its own id titles instead. Where the question is asked, the server titles the page: by the
+ * title typed, else by the label where it can title one, else by the Subject's id.
  *
  * The two ways the server refuses a title are answered at the field it was typed in, and reported
  * as the save's own failure too: the writes stop there, and the toast is what says so.
@@ -987,16 +986,9 @@ async function createOnNewPage(
 		return await subjectStore.createSubjectOnOwnPage( subject, comment );
 	}
 
-	// Re-decided on each attempt, so a label typed since the last one clears what it answered.
+	// Re-decided on each attempt: a taken title can also be answered by a different label, which is
+	// typed in the editor rather than here.
 	pageTitleError.value = null;
-
-	const pageTitle = chosenTitle ?? subject.getLabel();
-
-	if ( pageTitle === null ) {
-		pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-required' );
-
-		throw new Error( pageTitleError.value );
-	}
 
 	try {
 		return await subjectStore.createSubjectPage(
@@ -1004,7 +996,7 @@ async function createOnNewPage(
 			subject.getSchemaName(),
 			subject.getStatements(),
 			comment,
-			pageTitle,
+			chosenTitle ?? undefined,
 			subject.getId()
 		);
 	} catch ( error ) {
