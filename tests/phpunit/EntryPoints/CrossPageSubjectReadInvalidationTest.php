@@ -97,11 +97,7 @@ class CrossPageSubjectReadInvalidationTest extends NeoWikiIntegrationTestCase {
 	 * purge within the second the entry was cached in would look like no purge at all.
 	 */
 	private function waitForTheNextSecond(): void {
-		$second = time();
-
-		while ( time() === $second ) {
-			usleep( 10_000 );
-		}
+		time_sleep_until( time() + 1 );
 	}
 
 	public function testReaderSeesTheNewValueAfterOnlyTheSubjectsOfTheReadPageChange(): void {

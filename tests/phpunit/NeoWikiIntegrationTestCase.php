@@ -105,11 +105,11 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	/**
 	 * The parse {@see self::parseWikitextOn()} renders, with what it recorded besides the text.
 	 */
-	protected function parserOutputOn( string $pageName, string $wikitext, ?ParserOptions $parserOptions = null ): ParserOutput {
+	protected function parserOutputOn( string $pageName, string $wikitext, ParserOptions $parserOptions ): ParserOutput {
 		return $this->getServiceContainer()->getParserFactory()->create()->parse(
 			$wikitext,
 			Title::newFromText( $pageName ),
-			$parserOptions ?? ParserOptions::newFromAnon()
+			$parserOptions
 		);
 	}
 

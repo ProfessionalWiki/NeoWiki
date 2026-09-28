@@ -549,6 +549,8 @@ class NeoWikiHooks {
 	/**
 	 * A parse records a page it reads Subjects from as a template (ParserPageDependencyRecorder), so
 	 * the pages reading this one get the purge MediaWiki queues for pages using an edited template.
+	 *
+	 * @see WikiPage::queueBacklinksJobs()
 	 */
 	private static function purgePagesReadingTheSubjectsOf( Title $title ): void {
 		DeferredUpdates::addCallableUpdate( static function () use ( $title ): void {

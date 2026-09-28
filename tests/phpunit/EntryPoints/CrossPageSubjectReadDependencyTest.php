@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
 use MediaWiki\Extension\Scribunto\ScribuntoContent;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutputLinkTypes;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
@@ -81,7 +82,7 @@ class CrossPageSubjectReadDependencyTest extends NeoWikiIntegrationTestCase {
 		return array_map(
 			fn ( array $template ): string => $this->getServiceContainer()->getTitleFormatter()
 				->getPrefixedText( $template['link'] ),
-			$this->parserOutputOn( $parsedPage, $wikitext )->getLinkList( ParserOutputLinkTypes::TEMPLATE )
+			$this->parserOutputOn( $parsedPage, $wikitext, ParserOptions::newFromAnon() )->getLinkList( ParserOutputLinkTypes::TEMPLATE )
 		);
 	}
 
@@ -132,7 +133,7 @@ class CrossPageSubjectReadDependencyTest extends NeoWikiIntegrationTestCase {
 
 	/**
 	 * Read access is denied first: the name is recorded before the permission check, and reading a
-	 * special page's Subjects throws (https://github.com/ProfessionalWiki/NeoWiki/issues/1536).
+	 * special page's Subjects throws (#1536).
 	 */
 	public function testReadingATitleThatCannotBeAPageDoesNotDependOnIt(): void {
 		$this->denyAnonymousReadOf( 'Special:Version' );
