@@ -26,9 +26,7 @@ The targets are lower bounds. Scaling beyond them is nice and should be done whe
 
 ### Scalability Targets
 
-NeoWiki needs to handle these sizes, counted per graph store (so for wiki farms we combine all wikis). The counts
-are Subjects, not real-world items: context on a value, such as a qualified relationship, is a Subject of its own,
-so qualifier-heavy data reaches a target sooner.
+NeoWiki needs to handle these sizes, counted per graph store (so for wiki farms we combine all wikis):
 
 | Metric                 | Great up to                      | Acceptable up to |
 |------------------------|----------------------------------|------------------|
