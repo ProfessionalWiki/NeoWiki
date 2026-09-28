@@ -6,12 +6,12 @@ Status: Draft
 
 ## Context
 
-Partners modelling CIDOC-CRM data built a dozen main Schemas and two dozen small ones — names, identifiers, births,
-dimensions — hung off the main ones by relations. Testers modelling their own data asked for a source on a date and
-for helper Subjects that do not surface as things of their own. [ADR 28](028-relations-model.md) makes such structure
-a Subject of its own, but nothing said which Subjects are structure of another: the editor rendered a Name like a
-Person, the picker offered births, every helper Subject wanted a label, and a Subject created inside another one's
-editor landed on whichever page that editor was opened from.
+Partners modelling CIDOC-CRM data built a dozen standalone Schemas and two dozen small ones — names, identifiers,
+births, dimensions — hung off them by relations. Testers modelling their own data asked for a source on a date and for
+helper Subjects that do not surface as things of their own. [ADR 28](028-relations-model.md) makes such structure a
+Subject of its own, but nothing said which Subjects are structure of another: the editor rendered a Name like a Person,
+the picker offered births, every helper Subject wanted a label, and a Subject created inside another one's editor landed
+on whichever page that editor was opened from.
 
 ## Decision
 
