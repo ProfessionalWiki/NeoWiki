@@ -84,23 +84,25 @@
 				class="ext-neowiki-editable-text__text"
 				:class="{ 'ext-neowiki-editable-text__text--placeholder': modelValue === '' }"
 			>{{ displayText }}</span>
-			<CdxButton
+			<!-- Native rather than CdxButton, which clicks on the Enter keyup: the Enter that
+				commits the field is released on this button. -->
+			<button
 				ref="editButtonRef"
-				class="ext-neowiki-editable-text__edit-button"
-				weight="quiet"
+				class="cdx-button cdx-button--weight-quiet cdx-button--icon-only ext-neowiki-editable-text__edit-button"
 				type="button"
 				:aria-label="editButtonLabel"
+				@keydown.enter="ignoreAutorepeat"
 				@click="startEditing"
 			>
 				<CdxIcon :icon="cdxIconEdit" size="small" />
-			</CdxButton>
+			</button>
 		</template>
 	</span>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, toRef, watch } from 'vue';
-import { CdxButton, CdxIcon, CdxTextArea, CdxTextInput } from '@wikimedia/codex';
+import { CdxIcon, CdxTextArea, CdxTextInput } from '@wikimedia/codex';
 import { cdxIconCollapse, cdxIconEdit, cdxIconEllipsis } from '@wikimedia/codex-icons';
 import { useClampedText } from '@/composables/useClampedText.ts';
 
@@ -157,7 +159,7 @@ const editing = ref( false );
 const draft = ref( '' );
 const expanded = ref( false );
 const inputRef = ref<InstanceType<typeof CdxTextInput> | InstanceType<typeof CdxTextArea> | null>( null );
-const editButtonRef = ref<InstanceType<typeof CdxButton> | HTMLElement | null>( null );
+const editButtonRef = ref<HTMLElement | null>( null );
 const textRef = ref<HTMLElement | null>( null );
 
 const displayText = computed( () => props.modelValue === '' ? ( props.placeholder ?? '' ) : props.modelValue );
@@ -195,8 +197,9 @@ function focusField(): void {
 }
 
 async function commitViaKeyboard( event: KeyboardEvent ): Promise<void> {
-	// The Enter that confirms an IME composition is not a commit.
-	if ( event.isComposing ) {
+	// The Enter that confirms an IME composition is not a commit, nor is the autorepeat of one
+	// held down on the edit button, which reaches the field that button opened.
+	if ( event.isComposing || event.repeat ) {
 		return;
 	}
 
@@ -330,17 +333,15 @@ defineExpose( { commit } );
 
 async function focusEditButton(): Promise<void> {
 	await nextTick();
-	editButtonElement()?.focus();
+	editButtonRef.value?.focus();
 }
 
-function editButtonElement(): HTMLElement | undefined {
-	const button = editButtonRef.value;
-
-	if ( button === null ) {
-		return undefined;
+// A native button clicks on every autorepeat of a held Enter, which would reopen the field
+// that the Enter's first press committed.
+function ignoreAutorepeat( event: KeyboardEvent ): void {
+	if ( event.repeat ) {
+		event.preventDefault();
 	}
-
-	return button instanceof HTMLElement ? button : ( button.$el as HTMLElement );
 }
 </script>
 
