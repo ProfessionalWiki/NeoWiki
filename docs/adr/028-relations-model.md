@@ -74,7 +74,7 @@ projection and ontology mappings on different names. With one name, Cypher edge 
 - Context on a value costs Subjects, not pages, and [ADR 29](029-scalability-targets.md)'s targets are counted in
   Subjects.
 - Breaking data-format changes are acceptable: NeoWiki is not in production.
-- Out of scope, mapped in [planning/Relations.md](../planning/Relations.md):
+- Out of scope:
   - unconstrained targets ("any Subject") and cardinality beyond single/multiple;
   - no-value/some-value markers ([#937](https://github.com/ProfessionalWiki/NeoWiki/issues/937));
   - showing referencing Subjects on pages and views, and adding a referencing Subject from its target's editor
@@ -82,7 +82,6 @@ projection and ontology mappings on different names. With one name, Cypher edge 
 
 ## Related
 
-- [planning/Relations.md](../planning/Relations.md) — the remaining Relations work, open questions, and forward map.
 - [Qualifiers and References](../qualifiers-and-references.md), [Graph Model](../api/graph-model.md),
   [Subject Format](../api/subject-format.md), [Validation Codes](../api/validation-codes.md).
 - [ADR 35: Dependent Subjects](035-dependent-subjects.md) — which Subjects are structure of another.
