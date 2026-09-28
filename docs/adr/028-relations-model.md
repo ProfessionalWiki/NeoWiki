@@ -60,9 +60,7 @@ the exception: it is never missing ([ADR 35](035-dependent-subjects.md)).
 No Relation is created automatically between Subjects that share a page: sharing a page is storage, not a
 relationship. A Subject relates to the page's Main Subject only through a relation property in a Schema
 ([#959](https://github.com/ProfessionalWiki/NeoWiki/issues/959)). The Main Subject designation stays: it anchors the
-automatic display and says which Subject the page is about. Pre-filling that relation when a Subject is created on
-the page is editing convenience, not a model relation
-([#1555](https://github.com/ProfessionalWiki/NeoWiki/issues/1555)).
+automatic display and says which Subject the page is about.
 
 ### 6. Name a relation once, on the property
 
