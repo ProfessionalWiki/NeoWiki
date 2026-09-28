@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application;
 use MediaWiki\Title\Title;
 
 /**
- * Takes note of the pages a result was built from, so that it can be rebuilt when one of them changes.
+ * Takes note of the pages a result depends on, so that it can be rebuilt when one of them changes.
  */
 interface PageDependencyRecorder {
 

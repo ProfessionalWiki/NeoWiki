@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Application;
 
 use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleValue;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\PageDependencyRecorder;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
@@ -230,7 +231,7 @@ class SubjectResolverTest extends TestCase {
 			pageDependencyRecorder: $dependencies
 		)->getPageSubjectsByTitle( Title::makeTitle( NS_MAIN, 'Restricted page' ) );
 
-		$this->assertContains( [ NS_MAIN, 'Restricted page' ], self::recordedPagesOf( $dependencies ) );
+		$this->assertEquals( [ new TitleValue( NS_MAIN, 'Restricted_page' ) ], $dependencies->recordedPages );
 	}
 
 	/**
@@ -250,19 +251,7 @@ class SubjectResolverTest extends TestCase {
 			pageDependencyRecorder: $dependencies
 		)->resolveById( self::SUBJECT_ID );
 
-		$this->assertContains( [ NS_HELP, 'Marie Curie' ], self::recordedPagesOf( $dependencies ) );
-	}
-
-	/**
-	 * As namespace and title text, which a title placed in the wrong namespace cannot match.
-	 *
-	 * @return array<array{int, string}>
-	 */
-	private static function recordedPagesOf( SpyPageDependencyRecorder $dependencies ): array {
-		return array_map(
-			static fn ( Title $page ): array => [ $page->getNamespace(), $page->getText() ],
-			$dependencies->recordedPages
-		);
+		$this->assertEquals( [ new TitleValue( NS_HELP, 'Marie_Curie' ) ], $dependencies->recordedPages );
 	}
 
 	public function testPageHostingASubjectIsNoDependencyWhenItMayNotBeRead(): void {
