@@ -62,7 +62,7 @@ Not taken:
 - Moving a Subject to another page carries its Dependent Subjects along; a Dependent Subject cannot be moved on its
   own.
 - The schema format gains the declaration, and the page write enforces the rules above.
-- Tracked in [#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630).
+- Tracked in [#1554](https://github.com/ProfessionalWiki/NeoWiki/issues/1554).
 
 ## Related
 

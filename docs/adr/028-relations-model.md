@@ -60,12 +60,15 @@ the exception: it is never missing ([ADR 35](035-dependent-subjects.md)).
 No Relation is created automatically between Subjects that share a page: sharing a page is storage, not a
 relationship. A Subject relates to the page's Main Subject only through a relation property in a Schema
 ([#959](https://github.com/ProfessionalWiki/NeoWiki/issues/959)). The Main Subject designation stays: it anchors the
-automatic display and says which Subject the page is about.
+automatic display and says which Subject the page is about. Pre-filling that relation when a Subject is created on
+the page is editing convenience, not a model relation
+([#1555](https://github.com/ProfessionalWiki/NeoWiki/issues/1555)).
 
 ### 6. Name a relation once, on the property
 
 The `relation` attribute on a relation property is removed from the schema format; the graph edge type and the
-native-RDF predicate take the property name. Two names made users define one concept twice and keyed the native
+native-RDF predicate take the property name ([#1553](https://github.com/ProfessionalWiki/NeoWiki/issues/1553)). Two
+names made users define one concept twice and keyed the native
 projection and ontology mappings on different names. With one name, Cypher edge types read as property names
 ("Birth place") rather than verb phrases ("Born in").
 
