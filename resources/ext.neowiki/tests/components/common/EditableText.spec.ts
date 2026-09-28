@@ -338,6 +338,20 @@ describe( 'EditableText', () => {
 			wrapper.unmount();
 		} );
 
+		it( 'stays closed once the Enter that committed it is released', async () => {
+			const wrapper = mountAttached();
+
+			const input = await startEditing( wrapper );
+			await input.trigger( 'keydown.enter' );
+			await flushPromises();
+			// The release goes to wherever the commit moved the focus.
+			document.activeElement?.dispatchEvent( new KeyboardEvent( 'keyup', { key: 'Enter', bubbles: true } ) );
+			await flushPromises();
+
+			expect( wrapper.find( 'input' ).exists() ).toBe( false );
+			wrapper.unmount();
+		} );
+
 		it( 'returns focus to the edit button after cancelling with Escape', async () => {
 			const wrapper = mountAttached();
 
@@ -349,6 +363,41 @@ describe( 'EditableText', () => {
 			wrapper.unmount();
 		} );
 	} );
+
+	describe( 'a held Enter', () => {
+		// jsdom does not click a button on Enter; a browser does, on every autorepeat, unless the keydown is cancelled.
+		function pressEnterOnEditButton( wrapper: VueWrapper, repeat: boolean ): KeyboardEvent {
+			const keydown = new KeyboardEvent( 'keydown', { key: 'Enter', repeat, bubbles: true, cancelable: true } );
+			editButton( wrapper ).element.dispatchEvent( keydown );
+			return keydown;
+		}
+
+		it( 'leaves the field open through the autorepeats of the Enter that opened it', async () => {
+			const wrapper = mountComponent();
+
+			const input = await startEditing( wrapper );
+			await input.trigger( 'keydown.enter', { repeat: true } );
+
+			expect( wrapper.find( 'input' ).exists() ).toBe( true );
+		} );
+
+		it( 'keeps the edit button from clicking on its autorepeats', () => {
+			const wrapper = mountComponent();
+
+			const autorepeat = pressEnterOnEditButton( wrapper, true );
+
+			expect( autorepeat.defaultPrevented ).toBe( true );
+		} );
+
+		it( 'lets the first press of Enter activate the edit button', () => {
+			const wrapper = mountComponent();
+
+			const press = pressEnterOnEditButton( wrapper, false );
+
+			expect( press.defaultPrevented ).toBe( false );
+		} );
+	} );
+
 	describe( 'multiline', () => {
 		const mountMultiline = ( props: Partial<InstanceType<typeof EditableText>['$props']> = {} ): VueWrapper =>
 			mountComponent( { multiline: true, ...props } );
