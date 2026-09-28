@@ -2,7 +2,7 @@
 
 Date: 2026-09-18
 
-Status: Draft
+Status: Accepted (2026-09-28)
 
 ## Context
 
@@ -13,35 +13,30 @@ answers to the same two questions: where a new Subject goes, and where a link to
 
 ## Decision
 
-One wiki-level setting, `$wgNeoWikiSubjectFirst`, selects the mode. It is `false` by default, which is page-first.
-It governs exactly these behaviours:
+A wiki runs in one of two modes, page-first or subject-first. `$wgNeoWikiSubjectFirst` selects which; the default
+is page-first.
 
-| Behaviour | Page-first | Subject-first |
+| | Page-first | Subject-first |
 |---|---|---|
-| Creator: "Store the subject on" | shown; defaults to the current page; a new page needs a title | hidden; always a new page |
-| Standalone target created inside the editor | non-main Subject on the edited Subject's page | its own page |
-| Landing after save | the page | Special:Subject |
-| Links to Subjects in infoboxes and views | the page | Special:Subject |
-| Links to Subjects on the Data tab | relation values lead to the target page's Data tab with the row highlighted; the row title is not a link; "Open" leads to Special:Subject | Special:Subject |
-| Search hits and Go | the page | Special:Subject |
-| Concept URI in a browser | the page | Special:Subject |
-| "Move" on the Data tab | offered | not offered |
-| Deleting a Subject that is its page's only one | the Subject goes, the page stays | the page goes with it |
-| Picker disambiguation line | page title, id on collision | id only |
-| A Subject's own page | titled by the label, else by the id; in the main namespace | titled by the id; in the `Subject` namespace, or the one `$wgNeoWikiSubjectPageNamespace` names |
-| A page title asked for on creation (`pageTitle`, `page=` naming a page that does not exist) | used, in the main namespace | refused |
-| Moving a page titled by the id of a Subject on it | allowed | refused |
+| A new Subject goes | where its author puts it, by default on the page they are on | on a page of its own |
+| A link to a Subject leads | to the page that stores it | to the Subject itself, on Special:Subject |
+| A Subject's own page is | an ordinary page, titled by the label unless the author picks a title; it can be moved | in the `Subject` namespace by default, titled by the id; it cannot be moved |
 
-The mode changes defaults, landing surfaces, link targets and what titles a Subject's own page. Pages holding several
-Subjects are the same in both.
+A surface that must behave differently in the two modes follows this setting and gets none of its own; the
+installation page lists which surface does what under
+[Choosing page-first or subject-first](../operations/installation.md#choosing-page-first-or-subject-first). A second
+setting, or a change to what the mode decides, needs a new ADR.
+
+Stored data and RDF output are the same on both, and a page may hold several Subjects on both.
 
 ## Consequences
 
-* One switch to document and test, in place of independent toggles whose combinations would each need explaining.
-* `$wgNeoWikiDereferenceSubjectsToHostingPage` is gone: the mode answers its question.
-* On a subject-first wiki a label edit renames nothing and two Subjects may share a label: the title neither
-  drifts from the label nor needs namesakes told apart. The id still shows wherever MediaWiki prints a title that is
-  not yet hooked — categories, What links here, history headings, edit summaries — which
-  https://github.com/ProfessionalWiki/NeoWiki/issues/1503 tracks. Labelling every link on a page needs a source of
-  labels at render time, an open decision.
-* The Data tab as default view, generated labels, and per-schema or per-user overrides are separate decisions.
+* One switch to document and test, instead of separate toggles whose combinations would each need explaining.
+* `$wgNeoWikiDereferenceSubjectsToHostingPage` is gone. Where a concept URI leads in a browser now follows the mode.
+* Switching an existing wiki's mode moves nothing. Pages keep their titles and namespaces; new Subjects, and all
+  links to Subjects, follow the new mode.
+* On a subject-first wiki, editing a label renames nothing, and two Subjects may share a label. The id still shows
+  wherever MediaWiki prints a page title NeoWiki has not hooked yet, tracked in
+  https://github.com/ProfessionalWiki/NeoWiki/issues/1503.
+* The Data tab as default view, generated labels, a source of labels for links at render time, and per-schema or
+  per-user overrides are open decisions of their own.
