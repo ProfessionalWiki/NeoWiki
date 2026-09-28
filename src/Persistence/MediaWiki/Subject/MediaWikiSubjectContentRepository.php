@@ -33,6 +33,10 @@ class MediaWikiSubjectContentRepository implements SubjectContentRepository {
 	}
 
 	public function getSubjectContentByPageTitle( PageIdentity $pageIdentity ): ?SubjectContent {
+		if ( !$pageIdentity->canExist() ) {
+			return null;
+		}
+
 		return $this->getSubjectContentFromWikiPage( $this->wikiPageFactory->newFromTitle( $pageIdentity ) );
 	}
 
