@@ -17,11 +17,11 @@ Discussion: [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999).
 
 ## Still open (2026-09)
 
-- [Q1 — Property predicate scope](#q1-property-predicate-scope): one predicate per property name, or one per Schema
+- [Q1 — Property predicate scope](#q1-property-predicate-scope): flat or per-Schema predicates
   ([#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163)).
 - [Q6 — Base URI conventions](#q6-base-uri-conventions): which base URI an ECCCH-integrated deployment mints under.
 - [Q8 — Writer's schema in RDF](#q8-writers-schema-in-rdf): whether a full-export mode carries it. Untracked.
-- [Q10 — Schema namespace page](#q10-schema-namespace-page): RDFS/OWL self-description of Schemas, waiting on Q1
+- [Q10 — Schema namespace page](#q10-schema-namespace-page): RDFS/OWL self-description of Schemas
   ([#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163)).
 
 Everything else this document asked has been answered — see [Decided](#decided).
@@ -98,16 +98,13 @@ thread that cites "Q7" still resolves.
 
 ### Q1: Property predicate scope
 
-Should a property's predicate be flat (`$base/prop/Name`, shared by every Schema that uses the name) or scoped per
-Schema (`$base/prop/Person/Name`)? RDFS describes a predicate once, so under flat predicates the RDFS export
-([Q10](#q10-schema-namespace-page)) must give each name one domain covering every Schema that uses it, and one range,
-which exists only if those Schemas agree on the type; nothing checks that they do. Scoped predicates give each
-property its own domain and range and leave sameness across Schemas to Mappings; queries across Schemas then need a
-`UNION` or a shared parent property. Tracked in [#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163).
+Should a property's predicate be flat (`$base/prop/Name`) or scoped per Schema (`$base/prop/Person/Name`)? Flat
+predicates cannot carry the per-Schema domains and ranges the RDFS export ([Q10](#q10-schema-namespace-page)) needs
+([#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163)).
 
-*As built: flat, chosen as more natural for RDF, with ontology alignment happening in the mapping either way.
-Recorded cost: a mapping rule reading the native projection needs an `rdf:type` constraint to select the right
-Schema's property (2026-07-03).*
+*As built: flat — more natural for RDF, and ontology alignment happens in the mapping either way. Recorded cost: a
+mapping rule reading the native projection needs an `rdf:type` constraint to select the right Schema's property
+(2026-07-03).*
 
 ### Q6: Base URI conventions
 
@@ -135,8 +132,8 @@ with domain/range)? This would make the RDF self-describing. Tentative answer: y
 not blocking the initial projection. Partner demand recorded (takin, 2026-07-03): an RDFS export of local Schemas is
 wanted as an input for authoring ontology mappings — a wiki's Schemas are effectively its own ontology, and the
 native projection should be able to say so in RDF. Tracked in
-[#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163); waits on [Q1](#q1-property-predicate-scope), which
-decides what predicates it describes. See also the generated shape exports in [ShapeLanguages.md](ShapeLanguages.md).
+[#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163); waits on [Q1](#q1-property-predicate-scope). See
+also the generated shape exports in [ShapeLanguages.md](ShapeLanguages.md).
 
 ## Decided
 
