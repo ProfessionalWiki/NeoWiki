@@ -12,13 +12,12 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 readonly class SubjectSearchLanding {
 
 	/**
-	 * @param bool $subjectNameIsGenerated Whether the name is a stand-in the wiki supplied, which the
-	 *   row marks as such
+	 * @param ?string $chosenName Null when nobody chose a name, which leaves the row to name the
+	 *   Subject by its id
 	 */
 	public function __construct(
 		public SubjectId $subjectId,
-		public string $subjectName,
-		public bool $subjectNameIsGenerated
+		public ?string $chosenName
 	) {
 	}
 

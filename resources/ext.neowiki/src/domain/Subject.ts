@@ -31,8 +31,9 @@ export class Subject {
 	}
 
 	/**
-	 * The name to show for this Subject: its stored label, or the fallback the server derived
-	 * from the page name or the Schema name when there is none.
+	 * The stored label, or the fallback the server derived from the page name or the Schema name when
+	 * there is none. Displays go through presentation/subjectDisplayName.ts, which shows a Schema-name
+	 * fallback as the Subject's id.
 	 */
 	public getDisplayName(): string {
 		return this.displayName;

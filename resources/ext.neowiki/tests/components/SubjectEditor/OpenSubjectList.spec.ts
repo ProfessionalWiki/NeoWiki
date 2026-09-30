@@ -72,7 +72,7 @@ describe( 'OpenSubjectList', () => {
 	} );
 
 	it( 'marks a subject nobody named as carrying a name the system supplied', () => {
-		expect( names( mountList( { subjects: [ birth ] } ) ) ).toStrictEqual( [ '(unnamed Birth event)' ] );
+		expect( names( mountList( { subjects: [ birth ] } ) ) ).toStrictEqual( [ `(${ BIRTH_ID })` ] );
 	} );
 
 	it( 'selects the active subject and nothing else', () => {

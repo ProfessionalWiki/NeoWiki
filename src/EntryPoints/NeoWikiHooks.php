@@ -669,11 +669,7 @@ class NeoWikiHooks {
 		}
 
 		$title = SpecialPage::getTitleFor( 'Subject', $landing->subjectId->text );
-		$titleSnippet = SubjectNameMessage::from(
-			$specialSearch,
-			$landing->subjectName,
-			$landing->subjectNameIsGenerated
-		)->text();
+		$titleSnippet = SubjectNameMessage::from( $specialSearch, $landing->subjectId, $landing->chosenName )->text();
 	}
 
 	/**

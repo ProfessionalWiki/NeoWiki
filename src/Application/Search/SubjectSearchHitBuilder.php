@@ -39,9 +39,8 @@ readonly class SubjectSearchHitBuilder {
 		?SearchTermMatcher $matcher
 	): ?SubjectSearchHit {
 		$landing = $pageHasContent ? null : $this->landingFor( $pageSubjects, $pageName );
-		$match = $matcher === null
-			? null
-			: $this->matchFor( $pageSubjects, $pageName, $landing?->subjectName ?? $pageName, $matcher );
+		$rowTitle = $landing === null ? $pageName : $landing->chosenName;
+		$match = $matcher === null ? null : $this->matchFor( $pageSubjects, $pageName, $rowTitle, $matcher );
 
 		if ( $landing === null && $match === null ) {
 			return null;
@@ -60,24 +59,22 @@ readonly class SubjectSearchHitBuilder {
 			return null;
 		}
 
-		$chosenName = SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageName );
-
 		return new SubjectSearchLanding(
 			subjectId: $subject->getId(),
-			subjectName: $chosenName ?? $subject->getSchemaName()->getText(),
-			subjectNameIsGenerated: $chosenName === null
+			chosenName: SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageName )
 		);
 	}
 
 	/**
 	 * The Main Subject first, then page order; one Subject per row.
 	 *
-	 * @param string $rowTitle The row's link text, which the extract need not repeat
+	 * @param ?string $rowTitle The name the row's link text carries, which the extract need not
+	 *   repeat; null when the link names its Subject by id
 	 */
 	private function matchFor(
 		PageSubjects $pageSubjects,
 		string $pageName,
-		string $rowTitle,
+		?string $rowTitle,
 		SearchTermMatcher $matcher
 	): ?SubjectSearchMatch {
 		foreach ( $pageSubjects->getAllSubjects()->asArray() as $subject ) {
@@ -133,14 +130,14 @@ readonly class SubjectSearchHitBuilder {
 	}
 
 	/**
-	 * Null when the row's link text already names the Subject, or when the name would be a generated
-	 * one repeating the Schema name shown beside it.
+	 * Null when the row's link text already names the Subject, or when nobody chose a name, which
+	 * leaves the extract to name the Subject by its Schema alone.
 	 */
 	private function nameTheRowDoesNotCarry(
 		Subject $subject,
 		PageSubjects $pageSubjects,
 		string $pageName,
-		string $rowTitle
+		?string $rowTitle
 	): ?string {
 		$chosenName = SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageName );
 

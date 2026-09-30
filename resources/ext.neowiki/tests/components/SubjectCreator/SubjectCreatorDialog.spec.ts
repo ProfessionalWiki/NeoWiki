@@ -472,9 +472,9 @@ describe( 'SubjectCreatorDialog', () => {
 		expect( ( editor.props( 'subject' ) as Subject ).getId().text ).toBe( MINTED_ID );
 	} );
 
-	// Nobody has named it yet, so it is shown under its Schema name and marked as a stand-in —
-	// what the server derives for a label-less Subject (ADR 31).
-	it( 'hands the editor a Subject shown under its schema name, marked as a stand-in', async () => {
+	// Nobody has named it yet, so it carries what the server derives for a label-less Subject
+	// (ADR 31): its Schema name, flagged as one nobody chose.
+	it( 'hands the editor a Subject whose name nobody chose', async () => {
 		const wrapper = mountComponent();
 
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
@@ -487,8 +487,7 @@ describe( 'SubjectCreatorDialog', () => {
 		expect( subject.hasGeneratedDisplayName() ).toBe( true );
 	} );
 
-	// A further Subject on the page is not the Main Subject, so the server will name it after its Schema -
-	// a name nobody chose, and the preview says so.
+	// A further Subject on the page is not the Main Subject, so it needs no label.
 	it( 'leaves save reachable once a schema is picked, even with the label untouched', async () => {
 		const wrapper = mountComponent();
 

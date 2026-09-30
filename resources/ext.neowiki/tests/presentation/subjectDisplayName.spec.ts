@@ -6,25 +6,22 @@ import { setupMwMock } from '../VueTestHelpers';
 describe( 'subjectDisplayName', () => {
 
 	beforeEach( () => {
-		setupMwMock( {
-			messages: {
-				'neowiki-subject-generated-name': ( name: string ) => `(unnamed ${ name })`,
-			},
-		} );
+		setupMwMock();
 	} );
 
 	it( 'shows a stored label as it was typed', () => {
 		expect( subjectDisplayName( newSubject( { label: 'Rijksmuseum' } ) ) ).toBe( 'Rijksmuseum' );
 	} );
 
-	it( 'marks a name the server derived from the Schema', () => {
+	it( 'shows a Subject nobody named under its id, marked as a stand-in', () => {
 		expect(
 			subjectDisplayName( newSubject( {
+				id: 's1demo5sssssss2',
 				label: null,
-				displayName: 'Attendance',
 				displayNameIsGenerated: true,
+				schemaName: 'Attendance',
 			} ) ),
-		).toBe( '(unnamed Attendance)' );
+		).toBe( '(s1demo5sssssss2)' );
 	} );
 
 	it( 'leaves a page-name fallback unmarked, since an editor wrote the page title', () => {

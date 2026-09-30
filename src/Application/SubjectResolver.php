@@ -95,8 +95,7 @@ class SubjectResolver {
 	 * A relation target need not carry a label, so the display name stands in for one. The target is
 	 * read off the page hosting it, which supplies both inputs the fallback needs: a label-less target
 	 * that is its page's Main Subject reads as the page name, and any other reads as its Schema name.
-	 * That is the name the target takes everywhere else it is shown. The target ID remains the last
-	 * resort, for a target that does not resolve at all.
+	 * The target ID remains the last resort, for a target that does not resolve at all.
 	 */
 	public function resolveRelationLabel( Relation $relation ): string {
 		try {

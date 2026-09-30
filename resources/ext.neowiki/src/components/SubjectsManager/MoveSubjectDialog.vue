@@ -79,6 +79,7 @@ import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
 import type { PageChoice } from '@/components/common/PageChoice.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
+import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { createEmptyPage, PageCreationError } from '@/persistence/createEmptyPage.ts';
@@ -149,7 +150,7 @@ async function onTargetSelected( choice: PageChoice | null ): Promise<void> {
 
 		// Ignored if the user has moved on to another target while this was out.
 		if ( target.value?.pageId === choice.pageId ) {
-			demotedMainSubjectName.value = mainSubject?.getDisplayName() ?? null;
+			demotedMainSubjectName.value = mainSubject === undefined ? null : subjectDisplayName( mainSubject );
 		}
 	} catch ( error ) {
 		// Only the warning is lost, and the server still demotes correctly, so the move stays

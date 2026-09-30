@@ -285,16 +285,14 @@ describe( 'SubjectsManagerPage rows without a stored label', () => {
 		const wrapper = await mountPage();
 
 		const names = wrapper.findAll( '.ext-neowiki-subject-row__label' ).map( ( el ) => el.text() );
-		expect( names ).toEqual( [ 'Host Page', '(unnamed Person)' ] );
+		expect( names ).toEqual( [ 'Host Page', `(${ ID_B })` ] );
 	} );
 
-	// The main row is named after its page, so 'Person' still tells the reader something. The
-	// other row already reads "(unnamed Person)", so saying it again says nothing.
-	it( 'shows the schema beside the main row only', async () => {
+	// An id says nothing about what the Subject is, so the badge is what does.
+	it( 'shows the schema beside the row nobody named', async () => {
 		const wrapper = await mountPage();
 
-		expect( rowFor( wrapper, ID_A ).findComponent( SchemaNameDisplay ).props( 'schemaName' ) ).toBe( 'Person' );
-		expect( rowFor( wrapper, ID_B ).findComponent( SchemaNameDisplay ).exists() ).toBe( false );
+		expect( rowFor( wrapper, ID_B ).findComponent( SchemaNameDisplay ).exists() ).toBe( true );
 	} );
 
 } );
@@ -709,6 +707,29 @@ describe( 'SubjectsManagerPage move action', () => {
 		// The listing refresh belongs to the store's move action; refreshing here too would fetch
 		// the same page twice for one move.
 		expect( loadPageSubjectsMock ).not.toHaveBeenCalled();
+	} );
+
+	it( 'names the subject nobody named by its id when it has moved', async () => {
+		storeSubjects = [ subject( ID_A ), labellessSubject( ID_B, 'Person', true ) ];
+		const wrapper = await mountPage();
+		await wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' )[ 1 ].trigger( 'click' );
+		await flushPromises();
+
+		wrapper.findComponent( MoveSubjectDialog ).vm.$emit( 'moved', 'Rembrandt van Rijn' );
+		await flushPromises();
+
+		const [ content ] = ( mw.notify as ReturnType<typeof vi.fn> ).mock.calls[ 0 ];
+		expect( ( content as HTMLElement ).textContent ).toContain( `(${ ID_B })` );
+	} );
+
+	// The dialog names it in the error it shows when the move fails.
+	it( 'hands the move dialog the id of the subject nobody named', async () => {
+		storeSubjects = [ subject( ID_A ), labellessSubject( ID_B, 'Person', true ) ];
+		const wrapper = await mountPage();
+		await wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' )[ 1 ].trigger( 'click' );
+		await flushPromises();
+
+		expect( wrapper.findComponent( MoveSubjectDialog ).props( 'subjectName' ) ).toBe( `(${ ID_B })` );
 	} );
 
 } );

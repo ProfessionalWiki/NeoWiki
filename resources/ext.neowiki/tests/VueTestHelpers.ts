@@ -142,7 +142,7 @@ export function setupMwMock(
 		// Rendered by real MediaWiki everywhere a Subject nobody named is shown, so the fake carries
 		// it rather than each spec restating the marker's shape.
 		if ( key === 'neowiki-subject-generated-name' && customMessages[ key ] === undefined ) {
-			return `(unnamed ${ params[ 0 ] })`;
+			return `(${ params[ 0 ] })`;
 		}
 
 		const message = customMessages[ key ];

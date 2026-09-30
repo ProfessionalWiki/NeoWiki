@@ -74,9 +74,11 @@ class SpecialSubject extends SpecialPage {
 
 		$displayName = $presenter->getDisplayName();
 
-		return $displayName === null
-			? null
-			: SubjectNameMessage::from( $this, $displayName, $presenter->displayNameIsGenerated() );
+		if ( $displayName === null ) {
+			return null;
+		}
+
+		return SubjectNameMessage::from( $this, $subjectId, $presenter->displayNameIsGenerated() ? null : $displayName );
 	}
 
 	public function getGroupName(): string {

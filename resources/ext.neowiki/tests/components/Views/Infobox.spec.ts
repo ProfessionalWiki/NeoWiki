@@ -143,7 +143,7 @@ describe( 'Infobox', () => {
 
 		const wrapper = mountComponent( generated, false );
 
-		expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( '(unnamed TestSchema)' );
+		expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( '(s1demo5sssssss2)' );
 	} );
 
 	it( 'renders statements correctly', () => {
@@ -232,21 +232,19 @@ describe( 'Infobox', () => {
 	} );
 
 	it( 'shows no schema badge for a subject already named after its schema', () => {
-		// ADR 31: a Subject with no label of its own is shown under its Schema name, and the
-		// infobox used to print that name in the title and again underneath.
-		const labelless = new Subject(
+		const labelledAfterSchema = new Subject(
 			new SubjectId( 's1demo5sssssss2' ),
-			null,
 			'TestSchema',
-			true,
+			'TestSchema',
+			false,
 			'TestSchema',
 			new StatementList( [] ),
 		);
-		subjectStore.setSubject( labelless );
+		subjectStore.setSubject( labelledAfterSchema );
 
-		const wrapper = mountComponent( labelless, false );
+		const wrapper = mountComponent( labelledAfterSchema, false );
 
-		expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( '(unnamed TestSchema)' );
+		expect( wrapper.find( '.ext-neowiki-infobox__title' ).text() ).toBe( 'TestSchema' );
 		expect( wrapper.find( '.ext-neowiki-schema-name' ).exists() ).toBe( false );
 		// And the heading around it goes too: a wrapper left behind is an empty
 		// `role="heading"`, which assistive technology announces as an unnamed level 3.

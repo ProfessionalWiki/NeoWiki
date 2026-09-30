@@ -20,7 +20,7 @@ import { PropertyName } from '@/domain/PropertyDefinition.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
-import { newSchema } from '@/TestHelpers.ts';
+import { newSchema, newSubject } from '@/TestHelpers.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
@@ -72,9 +72,8 @@ const labellessSubject = new SubjectWithContext(
 	new PageIdentifiers( 42, 'Test page' ),
 );
 
-// Stores no label and is not a page's Main Subject, so the name it is shown under is its
-// Schema's (ADR 31) - the shape a Subject invented mid-edit has.
-const schemaNamedSubject = new SubjectWithContext(
+// Stores no label and is not a page's Main Subject (ADR 31) - the shape a Subject invented mid-edit has.
+const unnamedSubject = new SubjectWithContext(
 	new SubjectId( 's33333333333333' ),
 	null,
 	'TestSchema',
@@ -399,10 +398,10 @@ describe( 'SubjectEditPane', () => {
 		} );
 
 		// The name above says the same word, but only the badge is a link to the Schema and the
-		// way into its editor. A Subject nobody has named yet is the one being created, where the
-		// Schema most wants confirming — and where the row would otherwise hold nothing at all.
-		it( 'shows the badge for a subject shown under its schema name', () => {
-			const wrapper = mountPane( { subject: schemaNamedSubject, nested: true } );
+		// way into its editor.
+		it( 'shows the badge for a subject labelled after its schema', () => {
+			const labelledAfterSchema = newSubject( { label: 'TestSchema', schemaName: 'TestSchema' } );
+			const wrapper = mountPane( { subject: labelledAfterSchema, nested: true } );
 
 			expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'TestSchema' );
 		} );
@@ -702,9 +701,9 @@ describe( 'SubjectEditPane', () => {
 		// The empty field stands for "no label", so it previews the name that choice leaves the
 		// Subject with rather than describing the field - marked, exactly as the header shows it.
 		it( 'previews the name a label-less subject is shown under', () => {
-			const wrapper = mountPane( { subject: schemaNamedSubject, nested: true } );
+			const wrapper = mountPane( { subject: unnamedSubject, nested: true } );
 
-			expect( wrapper.findComponent( EditableText ).props( 'placeholder' ) ).toBe( '(unnamed TestSchema)' );
+			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( '(s33333333333333)' );
 		} );
 
 		it( 'names the field instead for a subject that already has a label', () => {
@@ -714,8 +713,8 @@ describe( 'SubjectEditPane', () => {
 				.toBe( 'neowiki-subject-editor-label-field' );
 		} );
 
-		it( 'keeps the schema badge once a schema-named subject is given a label of its own', async () => {
-			const wrapper = mountPane( { subject: schemaNamedSubject, nested: true } );
+		it( 'keeps the schema badge once an unnamed subject is given a label of its own', async () => {
+			const wrapper = mountPane( { subject: unnamedSubject, nested: true } );
 
 			await rename( wrapper, 'Alice' );
 
