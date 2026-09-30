@@ -9,6 +9,7 @@ use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectNameMessage;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectNamePresenter;
 
@@ -23,6 +24,7 @@ class SpecialSubject extends SpecialPage {
 	 */
 	public function execute( $subPage ): void {
 		parent::execute( $subPage );
+		$this->addHelpLink( DocumentationUrl::Subjects->value, true );
 
 		$out = $this->getOutput();
 		$extension = NeoWikiExtension::getInstance();

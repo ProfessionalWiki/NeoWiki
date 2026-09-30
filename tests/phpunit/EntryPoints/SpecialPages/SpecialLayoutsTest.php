@@ -2,18 +2,18 @@
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\SpecialPages;
 
-use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialSchemas;
+use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialLayouts;
 use SpecialPageTestBase;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialSchemas
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialLayouts
  */
-class SpecialSchemasTest extends SpecialPageTestBase {
+class SpecialLayoutsTest extends SpecialPageTestBase {
 
 	use HelpLinkAssertions;
 
-	protected function newSpecialPage(): SpecialSchemas {
-		return new SpecialSchemas();
+	protected function newSpecialPage(): SpecialLayouts {
+		return new SpecialLayouts();
 	}
 
 	public function testOutputContainsMountPoint(): void {
@@ -21,7 +21,7 @@ class SpecialSchemasTest extends SpecialPageTestBase {
 		[ $output ] = $this->executeSpecialPage();
 
 		$this->assertStringContainsString(
-			'id="ext-neowiki-schemas"',
+			'id="ext-neowiki-layouts"',
 			$output
 		);
 	}

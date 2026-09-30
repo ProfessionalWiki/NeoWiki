@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubjectPage\CreateSubject
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubjectPage\InvalidPageTitleException;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 use ProfessionalWiki\NeoWiki\Presentation\RestCreateSubjectPagePresenter;
 use RuntimeException;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -99,7 +100,7 @@ class CreateSubjectPageApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'array',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'List of Statements (property/value pairs) for the Subject. Nested shape matches the subject JSON format documented at https://neowiki.ai/docs/api/subject-format.',
+				self::PARAM_DESCRIPTION => 'List of Statements (property/value pairs) for the Subject. Nested shape matches the subject JSON format documented at ' . DocumentationUrl::SubjectFormat->value . '.',
 			],
 			'comment' => [
 				self::PARAM_SOURCE => 'body',

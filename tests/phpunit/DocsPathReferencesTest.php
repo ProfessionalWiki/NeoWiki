@@ -10,26 +10,20 @@ use RecursiveIteratorIterator;
 use SplFileInfo;
 
 /**
- * Guards the documentation references cited in production code against the docs tree.
+ * Guards the documentation references cited in production code.
  *
- * Some REST param descriptions point readers at NeoWiki documentation. Those strings are
- * user-facing: they are served in the generated OpenAPI spec. Nothing else checks them, so a
- * doc rename silently turns them into dead references.
- *
- * Two citation forms are guarded, both resolved offline against the local docs tree:
- *  - Repo-relative paths (docs/....md), used in developer-facing code comments. A docs/....md
- *    sequence inside a URL is not such a citation and is ignored.
- *  - Public docs-site URLs (https://neowiki.ai/docs/...), used in the OpenAPI param descriptions
- *    because their readers do not have the source tree. Each must map to a doc file that exists
- *    in this repo (site URL path -> docs/....md).
- *
- * When this fails, either the doc moved (update the citing string) or the path was never right.
+ * Two citation forms are guarded:
+ *  - Repo-relative paths (docs/....md), used in developer-facing code comments, must exist in the
+ *    local docs tree. A docs/....md sequence inside a URL is not such a citation and is ignored.
+ *  - Public docs-site URLs (https://neowiki.ai/docs/...), which readers without the source tree
+ *    follow, must come from DocumentationUrl, where DocumentationUrlTest checks each one.
  *
  * @coversNothing
  */
 class DocsPathReferencesTest extends TestCase {
 
 	private const DOCS_SITE_PREFIX = 'https://neowiki.ai/';
+	private const DOCUMENTATION_URL_FILE = 'src/Presentation/DocumentationUrl.php';
 
 	public function testEveryDocsPathCitedInSourceCodeExists(): void {
 		$this->assertSame(
@@ -39,12 +33,12 @@ class DocsPathReferencesTest extends TestCase {
 		);
 	}
 
-	public function testEveryDocsSiteUrlCitedInSourceCodeResolvesToADocFile(): void {
+	public function testOnlyDocumentationUrlCitesTheDocsSite(): void {
 		$this->assertSame(
 			[],
-			$this->danglingDocsSiteUrls(),
-			'These src/ files cite a ' . self::DOCS_SITE_PREFIX . 'docs/... URL with no matching doc file '
-				. 'in the repo. The published page and its docs/....md source must both exist.'
+			$this->docsSiteUrlsOutsideDocumentationUrl(),
+			'These src/ files cite a ' . self::DOCS_SITE_PREFIX . 'docs/... URL. Add it to DocumentationUrl '
+				. 'and use that instead.'
 		);
 	}
 
@@ -68,31 +62,24 @@ class DocsPathReferencesTest extends TestCase {
 	}
 
 	/**
-	 * @return list<string> e.g. "src/.../Foo.php:66 cites https://neowiki.ai/docs/x (no docs/x.md)"
+	 * @return list<string> e.g. "src/.../Foo.php:66 cites https://neowiki.ai/docs/x"
 	 */
-	private function danglingDocsSiteUrls(): array {
-		$dangling = [];
+	private function docsSiteUrlsOutsideDocumentationUrl(): array {
+		$cited = [];
 
 		foreach ( $this->sourceFiles() as $file ) {
+			if ( $this->relativePath( $file ) === self::DOCUMENTATION_URL_FILE ) {
+				continue;
+			}
+
 			foreach ( $this->citedDocsSiteUrls( $file ) as $line => $urls ) {
 				foreach ( $urls as $url ) {
-					$docFile = $this->docFileForSiteUrl( $url );
-					if ( !file_exists( $this->extensionRoot() . '/' . $docFile ) ) {
-						$dangling[] = $this->relativePath( $file ) . ":$line cites $url (no $docFile)";
-					}
+					$cited[] = $this->relativePath( $file ) . ":$line cites $url";
 				}
 			}
 		}
 
-		return $dangling;
-	}
-
-	/**
-	 * Maps a public docs-site URL to its repo source file: strip the site prefix, append .md.
-	 * e.g. https://neowiki.ai/docs/api/subject-format -> docs/api/subject-format.md
-	 */
-	private function docFileForSiteUrl( string $url ): string {
-		return substr( $url, strlen( self::DOCS_SITE_PREFIX ) ) . '.md';
+		return $cited;
 	}
 
 	/**

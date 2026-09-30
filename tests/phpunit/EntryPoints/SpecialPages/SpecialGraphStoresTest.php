@@ -35,6 +35,7 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
 class SpecialGraphStoresTest extends SpecialPageTestBase {
 
 	use HandlesNeo4jEnvOverrides;
+	use HelpLinkAssertions;
 
 	private const STORE = 'special-store';
 	private const PROJECTION = 'EDM';
@@ -67,6 +68,10 @@ class SpecialGraphStoresTest extends SpecialPageTestBase {
 		$this->expectException( PermissionsError::class );
 
 		$this->executeSpecialPage( '', null, null, $this->getTestUser()->getUser() );
+	}
+
+	public function testTheHelpLinkLeadsToTheDocs(): void {
+		$this->assertHelpLinkLeadsToTheDocs( $this->outputOf( $this->newSpecialPage(), $this->newAdmin() ) );
 	}
 
 	public function testThePageNamesTheAdminRightAsItsRestriction(): void {

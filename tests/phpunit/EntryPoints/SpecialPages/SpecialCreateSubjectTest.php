@@ -15,6 +15,8 @@ use SpecialPageTestBase;
  */
 class SpecialCreateSubjectTest extends SpecialPageTestBase {
 
+	use HelpLinkAssertions;
+
 	protected function newSpecialPage(): SpecialCreateSubject {
 		return new SpecialCreateSubject();
 	}
@@ -25,6 +27,12 @@ class SpecialCreateSubjectTest extends SpecialPageTestBase {
 
 		$this->assertStringContainsString( 'id="ext-neowiki-create-subject"', $output );
 		$this->assertStringNotContainsString( 'data-mw-neowiki-schema', $output );
+	}
+
+	public function testTheHelpLinkLeadsToTheDocs(): void {
+		$output = $this->outputOf( $this->newSpecialPage(), $this->getTestUser()->getUser() );
+
+		$this->assertHelpLinkLeadsToTheDocs( $output );
 	}
 
 	public function testSubpageNamesTheSchemaToPin(): void {

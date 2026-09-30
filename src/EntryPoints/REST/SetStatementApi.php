@@ -13,6 +13,7 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundExcept
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 use ProfessionalWiki\NeoWiki\Presentation\RestUpdateStatementPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -98,7 +99,7 @@ class SetStatementApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'array',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'The Statement to store, as `{"propertyType": ..., "value": ...}`. `propertyType` defaults to the type the Subject\'s Schema gives the property. A value that is empty for its type removes the Statement. Shape documented at https://neowiki.ai/docs/api/subject-format.',
+				self::PARAM_DESCRIPTION => 'The Statement to store, as `{"propertyType": ..., "value": ...}`. `propertyType` defaults to the type the Subject\'s Schema gives the property. A value that is empty for its type removes the Statement. Shape documented at ' . DocumentationUrl::SubjectFormat->value . '.',
 			],
 			'comment' => [
 				self::PARAM_SOURCE => 'body',

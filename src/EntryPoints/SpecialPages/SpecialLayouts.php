@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 
 class SpecialLayouts extends SpecialPage {
 
@@ -19,6 +20,7 @@ class SpecialLayouts extends SpecialPage {
 	 */
 	public function execute( $subPage ): void {
 		parent::execute( $subPage );
+		$this->addHelpLink( DocumentationUrl::Layouts->value, true );
 
 		NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $this->getOutput(), $this->getSkin() );
 		$this->getOutput()->addHTML( '<div id="ext-neowiki-layouts"></div>' );

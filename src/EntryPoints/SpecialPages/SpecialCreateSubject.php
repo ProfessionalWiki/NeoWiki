@@ -10,6 +10,7 @@ use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
 use PermissionsError;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 
 class SpecialCreateSubject extends SpecialPage {
 
@@ -24,6 +25,7 @@ class SpecialCreateSubject extends SpecialPage {
 	 */
 	public function execute( $subPage ): void {
 		parent::execute( $subPage );
+		$this->addHelpLink( DocumentationUrl::CreatingSubjects->value, true );
 
 		// getRestriction() names one right; the page the Subject goes on needs createpage as well.
 		if ( !$this->getAuthority()->isAllowed( 'createpage' ) ) {

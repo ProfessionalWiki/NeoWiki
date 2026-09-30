@@ -21,8 +21,6 @@ class ConfigDocumentationBuilder {
 
 	public const string ANCHOR = 'neowiki-config-reference';
 
-	private const string DOCUMENTATION_URL = 'https://neowiki.ai/docs/operations/installation';
-
 	public function __construct(
 		private ConfigSchema $schema,
 		private MessageLocalizer $messageLocalizer,
@@ -37,7 +35,7 @@ class ConfigDocumentationBuilder {
 		return Html::rawElement(
 			'div',
 			[ 'class' => 'neowiki-config-docs-pointer' ],
-			$this->messageLocalizer->msg( 'neowiki-config-docs-pointer', self::ANCHOR, self::DOCUMENTATION_URL )->parse()
+			$this->messageLocalizer->msg( 'neowiki-config-docs-pointer', self::ANCHOR, DocumentationUrl::Installation->value )->parse()
 		);
 	}
 
