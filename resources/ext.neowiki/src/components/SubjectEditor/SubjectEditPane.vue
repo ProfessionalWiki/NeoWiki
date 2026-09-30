@@ -27,8 +27,7 @@
 
 					A new tab, for the reason the storage link below gives: this dialog holds
 					unsaved edits for every open pane and nothing guards a navigation away
-					from it. Withheld while the Subject is named after its Schema, so it is
-					not named twice. -->
+					from it. -->
 				<SchemaNameDisplay
 					:schema-name="schemaBadge"
 					link="new-tab"
@@ -158,9 +157,7 @@ const paneName = computed( (): string => storedLabel.value ?? subjectDisplayName
 
 // Shown whether or not the name above already carries the Schema's name. Elsewhere that repeat is
 // worth suppressing, and `schemaNameToShow` does so; here the badge is the only link to the Schema
-// and the only way into its editor, so withholding it costs a way through rather than a word. A
-// Subject nobody has named is exactly the one being created, where the Schema most wants
-// confirming and where this row would otherwise render empty.
+// and the only way into its editor, so withholding it costs a way through rather than a word.
 const schemaBadge = computed( (): string => props.subject.getSchemaName() );
 
 // A Subject bound for a page the save has yet to settle carries the page it will be stored on

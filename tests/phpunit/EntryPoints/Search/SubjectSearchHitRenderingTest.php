@@ -94,7 +94,7 @@ class SubjectSearchHitRenderingTest extends FullTextSearchTestCase {
 		$this->assertStringNotContainsString( '(neowiki-search-hit-subject:', $html, 'The link already names the Subject' );
 	}
 
-	public function testALabellessSubjectIsShownUnderItsSchemaNameRatherThanItsId(): void {
+	public function testALabellessSubjectIsShownUnderItsIdMarkedAsAStandIn(): void {
 		$this->createPageWithoutProse( self::MAIN_ID, TestSubject::build(
 			id: self::MAIN_ID,
 			label: null,
@@ -103,7 +103,7 @@ class SubjectSearchHitRenderingTest extends FullTextSearchTestCase {
 		) );
 
 		$this->assertStringContainsString(
-			'>(neowiki-subject-generated-name: Museum)</a>',
+			'>(neowiki-subject-generated-name: ' . self::MAIN_ID . ')</a>',
 			$this->searchResultsFor( 'Deventer' )
 		);
 	}

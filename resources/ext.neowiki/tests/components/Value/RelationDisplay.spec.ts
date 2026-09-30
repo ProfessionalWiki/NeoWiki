@@ -70,7 +70,7 @@ describe( 'RelationDisplay.vue', () => {
 				parse: () => str,
 			} ) ),
 			msg: vi.fn( ( key: string, ...params: string[] ) =>
-				key === 'neowiki-subject-generated-name' ? `(unnamed ${ params[ 0 ] })` : key + params.join( '' ) ),
+				key === 'neowiki-subject-generated-name' ? `(${ params[ 0 ] })` : key + params.join( '' ) ),
 		} );
 	} );
 
@@ -158,7 +158,7 @@ describe( 'RelationDisplay.vue', () => {
 
 		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111B' ) ) );
 
-		expect( wrapper.find( 'a' ).text() ).toBe( '(unnamed Attendance)' );
+		expect( wrapper.find( 'a' ).text() ).toBe( '(s1111111111111B)' );
 	} );
 
 	it( 'renders a span with error info when subject is not found', async () => {

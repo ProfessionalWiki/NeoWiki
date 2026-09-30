@@ -1286,7 +1286,7 @@ describe( 'SubjectPicker', () => {
 
 			// The picker names Subjects bare on purpose: a menu label becomes the field's own text,
 			// which the user can edit and which feeds the offer to create under what they typed.
-			// Marking it would put "(unnamed Company)" on the way into a stored label.
+			// Marking it would put the bracketed id on the way into a stored label.
 			it( 'names a label-less draft bare, without the generated-name marker', async () => {
 				const drafts = draftsHolding(
 					new Subject( new SubjectId( DRAFT_ID ), null, 'Company', true, 'Company', new StatementList( [] ) ),

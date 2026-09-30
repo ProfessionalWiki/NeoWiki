@@ -186,7 +186,7 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertSame(
-			'(neowiki-subject-generated-name: Company)',
+			'(neowiki-subject-generated-name: ' . self::SUBJECT_ID . ')',
 			$this->executeWith( self::SUBJECT_ID )->getPageTitle()
 		);
 	}

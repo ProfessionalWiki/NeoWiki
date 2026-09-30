@@ -166,8 +166,7 @@ class SubjectSearchHitBuilderTest extends TestCase {
 	public function testTheLandingSubjectIsNamedByItsLabel(): void {
 		$hit = $this->hitFor( $this->pageWith( $this->museumIn( 'Amsterdam' ) ), false, 'amsterdam' );
 
-		$this->assertSame( 'Rijksmuseum', $this->landingOf( $hit )->subjectName );
-		$this->assertFalse( $this->landingOf( $hit )->subjectNameIsGenerated );
+		$this->assertSame( 'Rijksmuseum', $this->landingOf( $hit )->chosenName );
 	}
 
 	public function testALabellessLandingSubjectOfAPageWithAChosenTitleIsNamedByThePage(): void {
@@ -175,17 +174,15 @@ class SubjectSearchHitBuilderTest extends TestCase {
 
 		$hit = $this->hitFor( new PageSubjects( $subject, new SubjectMap() ), false, 'amsterdam' );
 
-		$this->assertSame( self::PAGE_NAME, $this->landingOf( $hit )->subjectName );
-		$this->assertFalse( $this->landingOf( $hit )->subjectNameIsGenerated );
+		$this->assertSame( self::PAGE_NAME, $this->landingOf( $hit )->chosenName );
 	}
 
-	public function testALabellessMainSubjectOfAPageTitledByItsIdFallsBackToItsSchemaName(): void {
+	public function testALabellessMainSubjectOfAPageTitledByItsIdHasNoChosenName(): void {
 		$subject = $this->subjectWith( self::MAIN_ID, null, TestStatement::build( property: 'City', value: 'Amsterdam' ) );
 
 		$hit = $this->hitFor( new PageSubjects( $subject, new SubjectMap() ), false, 'amsterdam', self::MAIN_ID );
 
-		$this->assertSame( 'Museum', $this->landingOf( $hit )->subjectName );
-		$this->assertTrue( $this->landingOf( $hit )->subjectNameIsGenerated );
+		$this->assertNull( $this->landingOf( $hit )->chosenName );
 	}
 
 	public function testTheMatchedSubjectIsNamedInTheExtractWhenThePageTitleDoesNotNameIt(): void {
@@ -211,6 +208,24 @@ class SubjectSearchHitBuilderTest extends TestCase {
 
 		$this->assertSame( self::MAIN_ID, $this->landingOf( $hit )->subjectId->text );
 		$this->assertSame( 'Gemaldegalerie', $this->matchOf( $hit )->subjectName );
+	}
+
+	/**
+	 * The row names its landing Subject by id, so a label matching that Subject's Schema name is not
+	 * one the row already carries.
+	 */
+	public function testTheMatchedSubjectIsNamedWhenTheRowNamesTheLandingSubjectByItsId(): void {
+		$hit = $this->hitFor(
+			$this->pageWith(
+				$this->subjectWith( self::MAIN_ID, null, TestStatement::build( property: 'City', value: 'Amsterdam' ) ),
+				$this->subjectWith( self::OTHER_ID, 'Museum', TestStatement::build( property: 'City', value: 'Berlin' ) )
+			),
+			false,
+			'berlin',
+			self::MAIN_ID
+		);
+
+		$this->assertSame( 'Museum', $this->matchOf( $hit )->subjectName );
 	}
 
 	public function testAnEngineThatMatchedNothingKnowableStillRetargetsAnEmptyPage(): void {

@@ -167,7 +167,7 @@
 			v-if="movingSubject !== null"
 			v-model:open="moveDialogOpen"
 			:subject-id="movingSubject.getId().text"
-			:subject-name="movingSubject.getDisplayName()"
+			:subject-name="movingSubjectName"
 			:current-page-id="pageId"
 			:current-page-title="currentPageTitle"
 			:subject-is-main-subject="isMainSubject( movingSubject as Subject )"
@@ -271,7 +271,7 @@ const deleteConfirmOpen = ref( false );
 const deletingSubject = shallowRef<Subject | null>( null );
 
 const moveDialogOpen = ref( false );
-const movingSubject = ref<Subject | null>( null );
+const movingSubject = shallowRef<Subject | null>( null );
 
 // The page the Data tab is showing, named for the warning a move of the Main Subject carries.
 const currentPageTitle = String( mw.config.get( 'wgPageName' ) ?? '' ).replace( /_/g, ' ' );
@@ -314,6 +314,7 @@ const hasOtherSubjects = computed( () => otherSubjects.value.length > 0 );
 const isCompletelyEmpty = computed( () => !hasMainSubject.value && !hasOtherSubjects.value );
 
 const deletingSubjectName = computed( () => deletingSubject.value === null ? '' : subjectDisplayName( deletingSubject.value ) );
+const movingSubjectName = computed( () => movingSubject.value === null ? '' : subjectDisplayName( movingSubject.value ) );
 
 function toggleExpanded( subject: Subject ): void {
 	const id = subject.getId().text;
@@ -529,7 +530,7 @@ function openMoveDialog( subject: Subject ): void {
 // The listing needs no refresh here: moveSubject re-syncs it as part of the move, because dropping
 // the Subject from the registry before the listing stops naming it is what crashes the render.
 function onSubjectMoved( targetTitle: string ): void {
-	const subjectName = movingSubject.value?.getDisplayName() ?? '';
+	const subjectName = movingSubjectName.value;
 	movingSubject.value = null;
 
 	const link = document.createElement( 'a' );

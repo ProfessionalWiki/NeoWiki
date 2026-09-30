@@ -20,12 +20,15 @@ name otherwise. A page titled with the id of a Subject stored on it names nothin
 name too. The contract is in the [glossary](../glossary.md#subject) and [subject-format.md](../api/subject-format.md);
 the choices worth recording are where the surfaces differ.
 
-**The Schema tier says so, in the string.** Such a Subject is shown as `(unnamed Attendance)`, from the
-`neowiki-subject-generated-name` message — the bracketing MediaWiki documents on `blanknamespace`, "(Main)". A Main
-Subject's page name is left unmarked, having been chosen by whoever titled the page. The marker is composed in the
-frontend, so `rdfs:label`, Lua and `{{#neowiki_value}}` keep the bare Schema name; REST carries
-`displayNameIsGenerated`, which a client cannot derive, since a Main Subject on a page titled after its Schema is
-named its Schema name without anyone having generated it.
+**The UI shows the Schema tier as the Subject's id, in brackets.** Such a Subject is shown as `(s1ab2cd3ef4gh5i)`, from
+the `neowiki-subject-generated-name` message — the bracketing MediaWiki documents on `blanknamespace`, "(Main)". Test
+users read a Schema name, even bracketed, as a demand to add a label; an id is expected to name the Subject without
+suggesting that anything is missing, and the brackets set it apart from the bare id a relation shows for a target that
+cannot be found. Since the id does not say what the Subject is, an infobox, a Manage Subjects row and an editor pane
+show the Schema beside it. A Main Subject's page name is left unmarked, having been chosen by whoever titled the page.
+The id is put in place by the presentation layer, so `rdfs:label`, Lua and `{{#neowiki_value}}` keep the bare Schema
+name; REST carries `displayNameIsGenerated`, which a client cannot derive, since a Main Subject on a page titled after
+its Schema is named its Schema name without anyone having generated it.
 
 **The graph materializes the fallback for Main Subjects only.** Any other label-less Subject gets no `name`
 property: the Schema name there would make every unnamed Subject of a Schema indistinguishable in query results, and
@@ -47,10 +50,10 @@ that have no stored label, so without it every existing Subject keeps the bug.
 ## Consequences
 
 A Subject node's `name` is null for a label-less Subject that is not the Main Subject, so a stub is identified by its
-node labels rather than by a missing name, and such a Subject is not findable by name in label search. Several such
-Subjects of one Schema display identically; the computation can gain discriminators later, which stored defaults could
-not.
+node labels rather than by a missing name, and such a Subject is not findable by name in label search. Outside the
+UI, several such Subjects of one Schema display identically; the computation can gain discriminators later, which
+stored defaults could not.
 
 Clearing costs a revision per page, and a Subject that is not the Main Subject and carried the older page-name default
 is renamed to its Schema name by it. `Subject.getLabel()` in the frontend bundle can return null; display code goes
-through `presentation/subjectDisplayName.ts`, which marks the Schema tier.
+through `presentation/subjectDisplayName.ts`, which shows the Schema tier as the bracketed id.

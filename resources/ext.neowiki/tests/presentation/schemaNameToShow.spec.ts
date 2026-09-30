@@ -7,10 +7,16 @@ describe( 'schemaNameToShow', () => {
 		expect( schemaNameToShow( newSubject( { label: 'ACME Inc', schemaName: 'Company' } ) ) ).toBe( 'Company' );
 	} );
 
-	it( 'withholds the schema name beside a subject nobody named, which is shown under it already', () => {
+	it( 'shows the schema name beside a subject nobody named, which is shown under its id', () => {
 		const unnamed = newSubject( { label: null, displayNameIsGenerated: true, schemaName: 'Appellation' } );
 
-		expect( schemaNameToShow( unnamed ) ).toBeNull();
+		expect( schemaNameToShow( unnamed ) ).toBe( 'Appellation' );
+	} );
+
+	it( 'shows the schema name beside a subject named after its page', () => {
+		const pageNamed = newSubject( { label: null, displayName: 'Host Page', schemaName: 'Person' } );
+
+		expect( schemaNameToShow( pageNamed ) ).toBe( 'Person' );
 	} );
 
 	it( 'withholds the schema name beside a subject someone labelled after it', () => {

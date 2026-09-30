@@ -210,6 +210,12 @@ describe( 'SubjectRow', () => {
 			expect( wrapper.emitted( 'toggle' ) ).toBeUndefined();
 		} );
 
+		it( 'shows no schema badge beside a subject labelled after its schema', () => {
+			const wrapper = mountRow( { subject: newSubject( { label: 'Company', schemaName: 'Company' } ) } );
+
+			expect( wrapper.find( '.ext-neowiki-subject-row__schema' ).exists() ).toBe( false );
+		} );
+
 		it( 'emits toggle rather than letting the disclosure open itself', async () => {
 			const wrapper = mountRow();
 

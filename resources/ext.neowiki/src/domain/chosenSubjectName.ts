@@ -10,8 +10,8 @@
  * recognises. The first letter is set aside, because a wiki that capitalizes page titles, the
  * default, stores such a page under an upper-case S.
  *
- * The Schema tier the fallthrough leads to is composed in presentation/subjectDisplayName.ts, which
- * is where the stand-in is marked as one.
+ * The stand-in the fallthrough leads to, the Subject's id marked as one, is composed in
+ * presentation/subjectDisplayName.ts.
  */
 export function chosenSubjectName(
 	pageHasMainSubject: boolean,

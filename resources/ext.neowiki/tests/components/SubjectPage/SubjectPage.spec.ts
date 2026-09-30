@@ -62,7 +62,7 @@ const SCHEMAS: Record<string, Schema> = {
 interface SubjectOptions {
 	id: string;
 	label: string | null;
-	/** Nobody named it, so it is shown under its Schema name. */
+	/** Nobody named it, so it is shown under its id. */
 	unnamed?: boolean;
 	schemaName?: string;
 	pageId?: number;
