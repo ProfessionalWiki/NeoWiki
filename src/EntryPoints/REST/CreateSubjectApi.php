@@ -9,6 +9,7 @@ use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 use ProfessionalWiki\NeoWiki\Presentation\RestCreateSubjectPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -87,7 +88,7 @@ class CreateSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'array',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'List of Statements (property/value pairs) for the Subject. Nested shape matches the subject JSON format documented at https://neowiki.ai/docs/api/subject-format.',
+				self::PARAM_DESCRIPTION => 'List of Statements (property/value pairs) for the Subject. Nested shape matches the subject JSON format documented at ' . DocumentationUrl::SubjectFormat->value . '.',
 			],
 			'comment' => [
 				self::PARAM_SOURCE => 'body',

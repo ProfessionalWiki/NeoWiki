@@ -27,6 +27,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
  */
 class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 
+	use HelpLinkAssertions;
 	use NeoWikiMockAuthorityTrait;
 
 	private const string SUBJECT_ID = 's1demo8aaaaaab5';
@@ -44,6 +45,10 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'id="ext-neowiki-subject"', $output );
 		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="' . self::SUBJECT_ID . '"', $output );
 		$this->assertStringNotContainsString( self::INVALID_ID_ERROR, $output );
+	}
+
+	public function testTheHelpLinkLeadsToTheDocs(): void {
+		$this->assertHelpLinkLeadsToTheDocs( $this->outputOf( new SpecialSubject() ) );
 	}
 
 	public function testMountPointCarriesASubjectOfAnotherSource(): void {

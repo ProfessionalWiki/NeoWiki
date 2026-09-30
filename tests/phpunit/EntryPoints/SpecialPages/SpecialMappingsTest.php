@@ -10,6 +10,8 @@ use SpecialPageTestBase;
  */
 class SpecialMappingsTest extends SpecialPageTestBase {
 
+	use HelpLinkAssertions;
+
 	protected function newSpecialPage(): SpecialMappings {
 		return new SpecialMappings();
 	}
@@ -22,6 +24,10 @@ class SpecialMappingsTest extends SpecialPageTestBase {
 			'id="ext-neowiki-mappings"',
 			$output
 		);
+	}
+
+	public function testTheHelpLinkLeadsToTheDocs(): void {
+		$this->assertHelpLinkLeadsToTheDocs( $this->outputOf( $this->newSpecialPage() ) );
 	}
 
 }

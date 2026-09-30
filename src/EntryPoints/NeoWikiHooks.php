@@ -60,6 +60,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectNameMessage;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectLabelHtml;
@@ -79,8 +80,6 @@ class NeoWikiHooks {
 	private const SPECIAL_PAGE_CLASS_PREFIX = 'ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\';
 
 	private const SEARCH_UPDATE_BEFORE_1_44 = 'MediaWiki\\Deferred\\SearchUpdate';
-
-	private const string MAPPING_DOCUMENTATION_URL = 'https://neowiki.ai/docs/authoring/mapping-format';
 
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
 		$carriesCreateSubjectButton = self::carriesCreateSubjectButton( $out );
@@ -1242,7 +1241,7 @@ class NeoWikiHooks {
 		$editPage->editFormTextTop = Html::rawElement(
 			'div',
 			[ 'class' => 'ext-neowiki-mapping-docs-pointer' ],
-			$editPage->getContext()->msg( 'neowiki-mapping-docs-pointer', self::MAPPING_DOCUMENTATION_URL )->parse()
+			$editPage->getContext()->msg( 'neowiki-mapping-docs-pointer', DocumentationUrl::MappingFormat->value )->parse()
 		);
 	}
 

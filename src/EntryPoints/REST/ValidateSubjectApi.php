@@ -9,6 +9,7 @@ use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Schema\Exception\SchemaNotFoundException;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 use ProfessionalWiki\NeoWiki\Presentation\ViolationSerializer;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -59,7 +60,7 @@ class ValidateSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'array',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Proposed Statements (property/value pairs). Shape matches the subject JSON format documented at https://neowiki.ai/docs/api/subject-format.',
+				self::PARAM_DESCRIPTION => 'Proposed Statements (property/value pairs). Shape matches the subject JSON format documented at ' . DocumentationUrl::SubjectFormat->value . '.',
 			],
 		];
 	}

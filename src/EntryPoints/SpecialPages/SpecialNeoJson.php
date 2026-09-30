@@ -12,6 +12,7 @@ use PermissionsError;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 
 class SpecialNeoJson extends SpecialPage {
 
@@ -28,6 +29,7 @@ class SpecialNeoJson extends SpecialPage {
 	 */
 	public function execute( $subPage ): void {
 		parent::execute( $subPage );
+		$this->addHelpLink( DocumentationUrl::SubjectFormat->value, true );
 
 		$title = $this->buildTitle( $subPage );
 

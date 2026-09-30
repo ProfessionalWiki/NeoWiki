@@ -9,6 +9,7 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 
 /**
  * Where working with the wiki as a database starts: the Schemas it holds, a way to create a Subject with
@@ -25,6 +26,7 @@ class SpecialNeoWiki extends SpecialPage {
 	 */
 	public function execute( $subPage ): void {
 		parent::execute( $subPage );
+		$this->addHelpLink( DocumentationUrl::GettingStarted->value, true );
 
 		NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $this->getOutput(), $this->getSkin() );
 
