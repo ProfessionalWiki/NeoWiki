@@ -57,16 +57,6 @@ A relationship with no natural Host Subject, such as a marriage or an exhibition
 points at its participants, or a Dependent Subject of one side that points at the others. In the second case, the
 others find it under "Referenced by" on their `Special:Subject` page.
 
-Not taken:
-
-- Nesting records inside a Schema, such as a group of birth fields in the Person Schema. Such a record would have no
-  id or IRI of its own, other Schemas could not reuse its definition, and Mappings would still have to create a node
-  for it.
-- Deriving dependent or standalone from where a Subject was created. A Birth and a Place can both be created from a
-  Person's editor, yet other Subjects point at the Place.
-- Letting other Subjects point at a Dependent Subject. Their Relations would break when it is removed with its Host
-  Subject.
-
 ## Consequences
 
 - Editing: the Host Subject's editor shows a Dependent Subject's fields inline instead of a picker. If the relation
@@ -84,6 +74,17 @@ Not taken:
 - Moving a Subject to another page takes its Dependent Subjects along. A Dependent Subject cannot be moved on its own.
 - The schema format gains the declaration, and page saves enforce the rules above.
 - Tracked in [#1554](https://github.com/ProfessionalWiki/NeoWiki/issues/1554).
+
+## Alternatives Considered
+
+- **Compound values**: a property whose value is a group of fields defined in its Schema, such as a Birth property on
+  the Person Schema holding a date and a place. Such a value has no id or IRI, so it cannot be opened or queried on its
+  own. Its fields cannot be reused by other Schemas, as one Name Schema can serve both Person and Organization. And a
+  Mapping to CIDOC-CRM would still have to create a node for the Birth.
+- **Inferring dependence from where a Subject is created**: a Birth and a Place can both be created from a Person's
+  editor, but only the Birth is part of the Person; other Subjects point at the Place.
+- **Letting other Subjects point at a Dependent Subject**: those Relations would turn into red links when it is removed
+  with its Host Subject.
 
 ## Related
 
