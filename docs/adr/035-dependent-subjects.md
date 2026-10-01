@@ -21,53 +21,64 @@ behind. NeoWiki needs to know which Subjects are part of another.
 
 ## Decision
 
-A Schema's Subjects are standalone unless it declares them dependent. The declaration is made when the Schema is
-created and cannot change; to switch, create a new Schema.
+A Schema's Subjects are standalone unless the Schema declares them dependent. The declaration is made when the Schema
+is created and cannot be changed later; to switch, create a new Schema.
 
-A Dependent Subject is part of exactly one Host Subject, the Subject whose relation statement holds it:
+A Dependent Subject is part of exactly one Host Subject, the Subject whose Relation points at it, as a Birth is part
+of its Person:
 
-- It is referenced by exactly one Relation, from a property whose targets are dependent. Any other Relation targeting
-  it is refused. What other Subjects need to point at is standalone.
-- It is created by the write that makes its Host Subject point at it. A write in which such a relation points at
-  anything else is refused, so a relation to a Dependent Subject is never missing.
-- It lives on its Host Subject's page in both wiki modes ([ADR 33](033-page-first-and-subject-first-wikis.md)). Any
-  write after which no standalone Subject on the page reaches it removes it, and deleting it on its own also removes
-  the Host Subject's relation to it.
+- It is referenced by exactly one Relation, from a property with dependent targets. Any other Relation to it is
+  refused. Anything other Subjects need to point at, such as a Place, is a standalone Subject.
+- It is created in the same save that makes its Host Subject point at it. A property with dependent targets can only
+  point at a Subject on the same page; a save that breaks this is refused, so such a Relation never points at a
+  missing Subject.
+- It is stored on its Host Subject's page, in page-first and subject-first wikis alike
+  ([ADR 33](033-page-first-and-subject-first-wikis.md)).
+- It is removed with its Host Subject, or with the Relation to it: any save after which no standalone Subject on the
+  page reaches it, directly or through other Dependent Subjects, removes it. Deleting it on its own also removes the
+  Relation to it.
 - It has no label.
 - It can be the Host Subject of further Dependent Subjects.
 
-These rules hold whatever the validation enforcement setting.
+These rules apply even on wikis with validation enforcement off ([ADR 26](026-validation-severity-levels.md)).
 
-A relation property's target Schemas all have dependent Subjects or all have standalone ones, never both, checked
-when the Schema holding the property is saved.
+A relation property's target Schemas all have dependent Subjects or all have standalone ones, never a mix. Saving a
+Schema with a property that mixes them is refused.
 
-The stored relation runs from Host Subject to Dependent Subject. Which way an ontology draws it — a birth that points
-at the person — is the mapping's choice of predicate ([Mapping Format](../authoring/mapping-format.md)).
+The Relation is stored on the Host Subject and points at the Dependent Subject: the Person points at its Birth. Where
+an ontology draws the link the other way, from the Birth to the Person, the Mapping picks a predicate that runs from
+the Person to the Birth, such as the ontology's inverse property ([Mapping Format](../authoring/mapping-format.md)).
 
-A relationship with no natural Host Subject — a marriage, an exhibition — is a standalone Subject with participants,
-or is held by one side; the other side sees it among the referencing Subjects `Special:Subject` lists.
+A relationship with no natural Host Subject, such as a marriage or an exhibition, is either a standalone Subject that
+points at its participants, or a Dependent Subject of one side that points at the others. In the second case, the
+others find it under "Referenced by" on their `Special:Subject` page.
 
 Not taken:
 
-- Nesting records inside a Schema: the intermediate node becomes unaddressable, its definition unreusable across
-  Schemas, and mappings must still synthesize it.
-- Deriving dependent or standalone from where a Subject was created: it cannot tell a Subject others point at from a
-  birth.
-- References to a Dependent Subject from other Subjects: they would dangle when its Host Subject goes.
+- Nesting records inside a Schema, such as a group of birth fields in the Person Schema. Such a record would have no
+  id or IRI of its own, other Schemas could not reuse its definition, and Mappings would still have to create a node
+  for it.
+- Deriving dependent or standalone from where a Subject was created. A Birth and a Place can both be created from a
+  Person's editor, yet other Subjects point at the Place.
+- Letting other Subjects point at a Dependent Subject. Their Relations would break when it is removed with its Host
+  Subject.
 
 ## Consequences
 
-- Editing: the relation field shows the Dependent Subject's fields inline, not a picker; with several target Schemas,
-  adding one asks which Schema. No picker offers a Dependent Subject.
-- Display: a Dependent Subject is shown as part of its Host Subject, named by its Schema name with its Host Subject's
-  name — "Birth of Pablo Picasso" — with no stand-in marker ([ADR 31](031-optional-subject-labels.md)).
-- It keeps its id, IRI and graph node. `Special:Subject` and the Data tab show it and open it for editing on its
-  own; queries and exports include it.
-- Search indexes it under the standalone Subject at the top of its host chain, which is the hit.
-- It is never a Main Subject, and its Schema is not offered where a Subject is created without a Host Subject.
-- Moving a Subject to another page carries its Dependent Subjects along; a Dependent Subject cannot be moved on its
-  own.
-- The schema format gains the declaration, and the page write enforces the rules above.
+- Editing: in the Host Subject's editor, the field of a property with dependent targets shows the Dependent Subject's
+  fields inline instead of a picker. If the property accepts several Schemas, adding a Subject first asks which one.
+  No picker offers a Dependent Subject.
+- Display: a Dependent Subject is shown as part of its Host Subject. It is named after its Schema and its Host
+  Subject, as in "Birth of Pablo Picasso", not by the bracketed id [ADR 31](031-optional-subject-labels.md) would
+  give it.
+- A Dependent Subject keeps its own id, IRI and graph node. `Special:Subject` and the Data tab show it and can open it
+  for editing on its own, and queries and exports include it.
+- Search indexes a Dependent Subject as part of the standalone Subject at the top of its chain of Host Subjects, so a
+  search that matches a Birth finds the Person.
+- A Dependent Subject is never a Main Subject, and its Schema is not offered where a Subject is created without a Host
+  Subject.
+- Moving a Subject to another page takes its Dependent Subjects along. A Dependent Subject cannot be moved on its own.
+- The schema format gains the declaration, and page saves enforce the rules above.
 - Tracked in [#1554](https://github.com/ProfessionalWiki/NeoWiki/issues/1554).
 
 ## Related
