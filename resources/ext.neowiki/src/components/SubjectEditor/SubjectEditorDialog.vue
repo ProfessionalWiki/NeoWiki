@@ -263,9 +263,8 @@ const panes = computed( (): EditPane[] => [
 // in its pane is renamed everywhere that names it. Read from the draft panes alone: going through
 // editedSubjects would make every rename and relation pick anywhere in the dialog rebuild the menu
 // of every relation field.
-// The root is left out although it may be new: the ids of the other two creation routes are
-// minted by the server, so a relation pointing at the root here could name an id it never gets.
-// Pointing back at the root waits on those routes taking a pre-minted id (#1449).
+// The root is left out although it may be new: whether a Subject created alongside it may point
+// back at it is open (#1449).
 const draftSubjects = computed( (): Subject[] => panes.value
 	.filter( ( pane ) => pane.isNew && pane.id !== rootPaneId.value )
 	.map( ( pane ) => {

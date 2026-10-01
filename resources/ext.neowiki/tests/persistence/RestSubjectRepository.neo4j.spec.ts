@@ -444,6 +444,35 @@ describe( 'RestSubjectRepository', () => {
 			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { label: null } );
 		} );
 
+		it( 'sends the id minted for the Subject', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/page/42/mainSubject':
+					new Response( JSON.stringify( writeResponseJson() ), { status: 200 } ),
+			} );
+			const postSpy = vi.spyOn( inMemoryHttpClient, 'post' );
+
+			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
+
+			await repository.createMainSubject( 42, null, 'Employee', new StatementList( [] ), undefined, new SubjectId( 's1ab2cd3ef4gh5i' ) );
+
+			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { id: 's1ab2cd3ef4gh5i' } );
+		} );
+
+		it( 'keeps a conflict a failure even for a minted id', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/page/42/mainSubject':
+					new Response( JSON.stringify( { httpCode: 409, httpReason: 'Conflict' } ), { status: 409 } ),
+			} );
+			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
+
+			const promise = repository.createMainSubject( 42, null, 'Employee', new StatementList( [] ), undefined, new SubjectId( 's1ab2cd3ef4gh5i' ) );
+
+			await expect( promise ).rejects.toThrowError( 'Error creating main subject' );
+			await expect( promise ).rejects.toSatisfy(
+				( err ) => !( err instanceof SubjectIdInUseError ),
+			);
+		} );
+
 	} );
 
 	describe( 'createSubjectPage', () => {

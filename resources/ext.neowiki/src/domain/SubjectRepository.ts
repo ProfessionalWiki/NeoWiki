@@ -94,12 +94,16 @@ export interface SubjectRepository extends SubjectLookup {
 		comment?: string
 	): Promise<void>;
 
+	/**
+	 * The optional id is a pre-minted, unused Subject ID to assign, as on createOtherSubject.
+	 */
 	createMainSubject(
 		pageId: number,
 		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
-		comment?: string
+		comment?: string,
+		id?: SubjectId
 	): Promise<SubjectWriteResult>;
 
 	/**
@@ -202,8 +206,8 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 		return Promise.resolve();
 	}
 
-	public createMainSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _comment?: string ): Promise<SubjectWriteResult> {
-		return Promise.resolve( this.newWriteResult( new SubjectId( 's11111111111111' ), pageId, label, schemaName, statements ) );
+	public createMainSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _comment?: string, id?: SubjectId ): Promise<SubjectWriteResult> {
+		return Promise.resolve( this.newWriteResult( id ?? new SubjectId( 's11111111111111' ), pageId, label, schemaName, statements ) );
 	}
 
 	public createOtherSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _comment?: string, id?: SubjectId ): Promise<SubjectWriteResult> {
