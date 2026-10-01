@@ -78,8 +78,8 @@ others find it under "Referenced by" on their `Special:Subject` page.
 ## Alternatives Considered
 
 - **Compound values**: a property whose value is a group of fields defined in its Schema, such as a Birth property on
-  the Person Schema holding a date and a place. Such a value has no id or IRI, so it cannot be opened or queried on its
-  own. Its fields cannot be reused by other Schemas, as one Name Schema can serve both Person and Organization. And a
+  the Person Schema holding a date and a place. Such a value has no ID or IRI, so it cannot be opened or queried on its
+  own. Other schemas can't reuse its fields, since one Name Schema can serve both Person and Organization. And a
   Mapping to CIDOC-CRM would still have to create a node for the Birth.
 - **Inferring dependence from where a Subject is created**: a Birth and a Place can both be created from a Person's
   editor, but only the Birth is part of the Person; other Subjects point at the Place.
