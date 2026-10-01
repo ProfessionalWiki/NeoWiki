@@ -72,14 +72,14 @@ Each Relation has
 
 A Subject that belongs to its **Host Subject**.
 
-Schemas define whether their Subjects are Dependent or not ([ADR 28](adr/028-relations-model.md)).
+Schemas define whether their Subjects are Dependent or not ([ADR 35](adr/035-dependent-subjects.md)).
 
 Dependent Subjects are referenced exactly once, always by their Host Subject. They are created, edited, and displayed
-with their Host Subject, stored on its page, and deleted with it. They have no label and can can never be Main Subject of a page.
+with their Host Subject, stored on its page, and deleted with it. They have no label and can never be Main Subject of a page.
 
 Example: Book -> Chapter -> Section
 
-In this example Chapter and Section are dependent subjects. Book and Chapter are Host subjects.
+In this example Chapter and Section are Dependent Subjects. Book and Chapter are Host Subjects.
 
 ### Schema
 
