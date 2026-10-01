@@ -77,16 +77,34 @@ others find it under "Referenced by" on their `Special:Subject` page.
 
 ## Alternatives Considered
 
+### Other designs
+
 - **User-defined records**: a property whose value is a group of fields defined in its Schema, like Semantic MediaWiki's
   Record type. A Birth property on the Person Schema would hold a date and a place. Such a value has no ID or IRI, so it
   cannot be opened or queried on its own. Other Schemas can't reuse its fields, while one Name Schema can serve both
   Person and Organization. And a Mapping to CIDOC-CRM would still have to create a node for the Birth. Compound values
   with a fixed shape, such as monolingual text ([ADR 34](034-monolingual-text-value-type.md)), are Value Types, not
   records.
+- **A per-property inline flag**: a relation property marked inline would show its targets' fields in the editor, while
+  the targets stay ordinary Subjects. That changes only editing. Where a Subject is stored, when it goes, whether it
+  needs a label and whether search offers it are about the Subject, not about one property that points at it.
 - **Inferring dependence from where a Subject is created**: a Birth and a Place can both be created from a Person's
   editor, but only the Birth is part of the Person; other Subjects point at the Place.
+
+### Other rules
+
+- **Letting a Schema change its declaration later**: turning existing standalone Subjects into Dependent Subjects would
+  first require checking that each has exactly one referencing Relation. That needs where-used
+  ([#1039](https://github.com/ProfessionalWiki/NeoWiki/issues/1039)), a scan of every page, or a Graph Store.
 - **Letting other Subjects point at a Dependent Subject**: those Relations would turn into red links when it is removed
-  with its Host Subject.
+  with its Host Subject. The UI could only create such a Relation by pasting an id. And the strict rule can be relaxed
+  later without invalidating stored data, while a permissive one cannot be tightened. The cost: a Subject cannot be both
+  edited inline and pointed at by others. A wiki that edits rooms inside a building's form, with events that point at
+  rooms, has to make the rooms standalone.
+- **Refusing to delete a Dependent Subject on its own**: deleting a Subject through the API is never refused.
+- **Storing the Relation on the Dependent Subject**, pointing at its Host Subject as CIDOC-CRM draws a birth: the
+  Person's editor would then have to edit Relations that point at the Person, which it cannot do. Stored on the Person,
+  the Relation lets its editor reach the Birth through the Person's own Statements.
 
 ## Related
 
