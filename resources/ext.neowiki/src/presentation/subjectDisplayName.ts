@@ -17,13 +17,13 @@ import type { Subject } from '@/domain/Subject';
  * edit and submit.
  */
 export function subjectDisplayName( subject: Subject ): string {
-	return subject.hasGeneratedDisplayName() ? generatedName( subject.getId().text ) : subject.getDisplayName();
+	return subject.hasGeneratedDisplayName() ? generatedSubjectName( subject.getId().text ) : subject.getDisplayName();
 }
 
 /**
  * A Subject id presented as the stand-in it is. The frontend's one place that composes the marker;
  * the backend's is SubjectNameMessage.
  */
-function generatedName( subjectId: string ): string {
+export function generatedSubjectName( subjectId: string ): string {
 	return mw.msg( 'neowiki-subject-generated-name', subjectId );
 }

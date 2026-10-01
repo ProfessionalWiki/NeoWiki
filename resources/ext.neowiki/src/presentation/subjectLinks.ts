@@ -23,7 +23,12 @@ export function subjectLinkUrl( target: SubjectWithContext ): string {
  * browsing Subjects means that one, not whatever else its page is about.
  */
 export function subjectLinkUrlFromRow( target: SubjectWithContext ): string {
-	return isSubjectFirst() ?
-		subjectPageUrl( target.getId().text ) :
-		subjectRowUrl( target.getPageIdentifiers().getPageName(), target.getId().text );
+	return subjectRowLinkUrl( target.getPageIdentifiers().getPageName(), target.getId().text );
+}
+
+/**
+ * The same rule from the page a Subject is on and its id, for listings that hold summaries rather than Subjects.
+ */
+export function subjectRowLinkUrl( pageName: string, subjectId: string ): string {
+	return isSubjectFirst() ? subjectPageUrl( subjectId ) : subjectRowUrl( pageName, subjectId );
 }
