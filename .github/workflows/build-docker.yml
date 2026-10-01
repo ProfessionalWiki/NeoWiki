@@ -69,8 +69,10 @@ jobs:
 
       # TODO: additional extensions/skins?
 
+      # A cache hit restores the NeoWiki copy of the run that saved the cache;
+      # --delete drops the files removed from NeoWiki since.
       - name: Copy built NeoWiki extension
-        run: rsync -a --exclude='Docker/' ./ Docker/mediawiki/extensions/NeoWiki/
+        run: rsync -a --delete --exclude='Docker/' ./ Docker/mediawiki/extensions/NeoWiki/
 
       - run: make wiki-production-image
 
