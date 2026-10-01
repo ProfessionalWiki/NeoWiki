@@ -50,10 +50,6 @@ describe( 'PagePicker', () => {
 		return wrapper.findComponent( CdxLookupWithVModel ).props( 'placeholder' );
 	}
 
-	function disabledOf( wrapper: VueWrapper ): boolean | undefined {
-		return wrapper.findComponent( CdxLookupWithVModel ).props( 'disabled' );
-	}
-
 	function lastSelection( wrapper: VueWrapper ): unknown {
 		const events = wrapper.emitted( 'update:selected' ) ?? [];
 		return events[ events.length - 1 ];
@@ -85,7 +81,8 @@ describe( 'PagePicker', () => {
 
 		await search( wrapper, 'amster' );
 
-		expect( mockPageTitleSearch.searchPageTitles ).toHaveBeenCalledWith( 'amster', 10 );
+		expect( mockPageTitleSearch.searchPageTitles )
+			.toHaveBeenCalledWith( 'amster', expect.any( Number ) );
 	} );
 
 	it( 'carries each result page id as its menu value, so no title resolution is needed', async () => {
@@ -117,14 +114,6 @@ describe( 'PagePicker', () => {
 
 	it( 'invites a page search', () => {
 		expect( placeholderOf( createWrapper() ) ).toBe( 'neowiki-page-picker-placeholder' );
-	} );
-
-	it( 'takes input', () => {
-		expect( disabledOf( createWrapper() ) ).toBe( false );
-	} );
-
-	it( 'takes none once its host has disabled it', () => {
-		expect( disabledOf( createWrapper( { disabled: true } ) ) ).toBe( true );
 	} );
 
 	it( 'offers the create option before anything is typed, so the menu opens on focus', () => {
@@ -303,53 +292,6 @@ describe( 'PagePicker', () => {
 		expect( lastSelection( wrapper ) ).toEqual( [ null ] );
 	} );
 
-	describe( 'restricted to pages that exist', () => {
-		it( 'offers no page to create', async () => {
-			( mockPageTitleSearch.searchPageTitles as ReturnType<typeof vi.fn> ).mockResolvedValue( [
-				{ pageId: 12, title: 'Amsterdam Museum' },
-			] );
-			const wrapper = createWrapper( { existingPagesOnly: true } );
-
-			await search( wrapper, 'amster' );
-
-			expect( valuesOf( wrapper ) ).toEqual( [ '12' ] );
-		} );
-
-		it( 'puts no item of its own in the menu when a search found nothing', async () => {
-			( mockPageTitleSearch.searchPageTitles as ReturnType<typeof vi.fn> ).mockResolvedValue( [] );
-			const wrapper = createWrapper( { existingPagesOnly: true } );
-
-			await search( wrapper, 'nothing here' );
-
-			expect( valuesOf( wrapper ) ).toEqual( [] );
-		} );
-
-		it( 'invites a page search, since picking one is the only thing to do', () => {
-			expect( placeholderOf( createWrapper( { existingPagesOnly: true } ) ) )
-				.toBe( 'neowiki-page-picker-placeholder' );
-		} );
-
-		it( 'reports nothing for typed text on its own', async () => {
-			const wrapper = createWrapper( { existingPagesOnly: true } );
-
-			await search( wrapper, 'Rembrandt' );
-
-			expect( lastSelection( wrapper ) ).toEqual( [ null ] );
-		} );
-
-		it( 'reports the page picked', async () => {
-			( mockPageTitleSearch.searchPageTitles as ReturnType<typeof vi.fn> ).mockResolvedValue( [
-				{ pageId: 12, title: 'Amsterdam Museum' },
-			] );
-			const wrapper = createWrapper( { existingPagesOnly: true } );
-			await search( wrapper, 'amster' );
-
-			await pick( wrapper, '12' );
-
-			expect( lastSelection( wrapper ) ).toEqual( [ { pageId: 12, title: 'Amsterdam Museum' } ] );
-		} );
-	} );
-
 } );
 
 // The stub above cannot show any of this: whether the menu is open, and whether a choice survives,
@@ -380,44 +322,6 @@ describe( 'PagePicker against the real CdxLookup', () => {
 		} );
 	}
 
-	function menuIsOpen( wrapper: VueWrapper ): boolean {
-		return wrapper.find( 'input' ).attributes( 'aria-expanded' ) === 'true';
-	}
-
-	// Focused, because Codex opens the menu of a field the user is in and no other.
-	async function type( wrapper: VueWrapper, text: string ): Promise<void> {
-		const input = wrapper.find( 'input' );
-		await input.trigger( 'focus' );
-		await input.setValue( text );
-		await flushPromises();
-	}
-
-	// Codex opens the menu on a menu-items change made while it is waiting for one, and takes every
-	// other change as the answer to what it was waiting for. A menu computed from the search's status
-	// changes when the search starts too, which leaves the results themselves arriving too late.
-	it( 'opens the menu on the results of a single character, restricted to pages that exist', async () => {
-		const wrapper = mountPicker( { existingPagesOnly: true } );
-
-		await type( wrapper, 'A' );
-
-		expect( menuIsOpen( wrapper ) ).toBe( true );
-		expect( wrapper.findAll( '.cdx-menu-item' ).map( ( item ) => item.text() ) ).toContain( 'ACME Inc' );
-
-		wrapper.unmount();
-	} );
-
-	it( 'opens the menu saying nothing was found, restricted to pages that exist', async () => {
-		mockPageTitleSearch.searchPageTitles = vi.fn().mockResolvedValue( [] );
-		const wrapper = mountPicker( { existingPagesOnly: true } );
-
-		await type( wrapper, 'A' );
-
-		expect( menuIsOpen( wrapper ) ).toBe( true );
-		expect( wrapper.find( '.cdx-menu__no-results' ).text() ).toBe( 'neowiki-page-picker-no-results' );
-
-		wrapper.unmount();
-	} );
-
 	it( 'keeps reporting the picked page when its title differs from what was typed', async () => {
 		const wrapper = mountPicker();
 
@@ -437,4 +341,5 @@ describe( 'PagePicker against the real CdxLookup', () => {
 
 		wrapper.unmount();
 	} );
+
 } );

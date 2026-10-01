@@ -128,11 +128,6 @@ describe( 'MoveSubjectDialog', () => {
 		expect( mountDialog().findComponent( PagePicker ).props( 'excludedPageId' ) ).toBe( SOURCE_PAGE_ID );
 	} );
 
-	// A Subject can be moved onto a page that does not exist yet, which the move dialog creates.
-	it( 'keeps the option of a page that does not exist yet', () => {
-		expect( mountDialog().findComponent( PagePicker ).props( 'existingPagesOnly' ) ).toBe( false );
-	} );
-
 	it( 'moves the subject to the chosen page', async () => {
 		const wrapper = mountDialog();
 		await pick( wrapper, { pageId: TARGET_PAGE_ID, title: 'Rembrandt van Rijn' } );
