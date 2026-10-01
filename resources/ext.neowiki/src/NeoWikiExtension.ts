@@ -51,6 +51,8 @@ import { RestSubjectRepository } from '@/persistence/RestSubjectRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 import type { PageTitleSearch } from '@/domain/PageTitleSearch.ts';
 import { RestSubjectLabelSearch } from '@/persistence/RestSubjectLabelSearch.ts';
+import type { SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
+import { RestSubjectSummaryLookup } from '@/persistence/RestSubjectSummaryLookup.ts';
 import { RestPageTitleSearch } from '@/persistence/RestPageTitleSearch.ts';
 import TextInput from '@/components/Value/TextInput.vue';
 import UrlInput from '@/components/Value/UrlInput.vue';
@@ -290,6 +292,13 @@ export class NeoWikiExtension {
 
 	public getSubjectLabelSearch(): SubjectLabelSearch {
 		return new RestSubjectLabelSearch(
+			this.getMediaWiki().util.wikiScript( 'rest' ),
+			this.newHttpClient(),
+		);
+	}
+
+	public getSubjectSummaryLookup(): SubjectSummaryLookup {
+		return new RestSubjectSummaryLookup(
 			this.getMediaWiki().util.wikiScript( 'rest' ),
 			this.newHttpClient(),
 		);

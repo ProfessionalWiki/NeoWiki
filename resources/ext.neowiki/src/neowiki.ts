@@ -9,6 +9,7 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import SchemaDisplay from '@/components/SchemaDisplay/SchemaDisplay.vue';
 import LayoutDisplay from '@/components/LayoutDisplay/LayoutDisplay.vue';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
+import SubjectsPage from '@/components/SubjectsPage/SubjectsPage.vue';
 import LayoutsPage from '@/components/LayoutsPage/LayoutsPage.vue';
 import MappingsPage from '@/components/MappingsPage/MappingsPage.vue';
 import SubjectsManagerPage from '@/components/SubjectsManager/SubjectsManagerPage.vue';
@@ -138,6 +139,23 @@ function initializeSchemasPage(): void {
 			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
 			mountNeoWikiApp( app, schemasPage );
+		}
+	} );
+}
+
+function initializeSubjectsPage(): void {
+	queueMicrotask( () => {
+		const subjectsPage = document.getElementById( 'ext-neowiki-subjects' );
+
+		if ( subjectsPage !== null ) {
+			const ext = NeoWikiExtension.getInstance();
+			const initialSchema = subjectsPage.dataset.mwNeowikiSchema ?? null;
+
+			// The Subject creator this page opens reaches value inputs that use v-tooltip.
+			const app = createMwApp( SubjectsPage, { initialSchema } ).directive( 'tooltip', CdxTooltip );
+			app.use( ext.getPinia() );
+			NeoWikiServices.registerServices( app );
+			mountNeoWikiApp( app, subjectsPage );
 		}
 	} );
 }
@@ -303,6 +321,7 @@ if ( !isTestEnvironment ) {
 	initializeSchemaView();
 	initializeLayoutView();
 	initializeSchemasPage();
+	initializeSubjectsPage();
 	initializeLayoutsPage();
 	initializeMappingsPage();
 	initializeSubjectsManagerPage();

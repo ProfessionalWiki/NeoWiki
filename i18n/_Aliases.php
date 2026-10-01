@@ -5,6 +5,7 @@ $specialPageAliases = [];
 $specialPageAliases['en'] = [
 	'NeoJson' => [ 'NeoJson' ],
 	'Schemas' => [ 'Schemas' ],
+	'Subjects' => [ 'Subjects' ],
 	'Layouts' => [ 'Layouts' ],
 	'Mappings' => [ 'Mappings' ],
 	'GraphStores' => [ 'GraphStores' ],
