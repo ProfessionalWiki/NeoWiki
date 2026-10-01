@@ -4,6 +4,7 @@ import { ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { CdxButton, CdxCard } from '@wikimedia/codex';
 import OverviewPage from '@/components/OverviewPage/OverviewPage.vue';
+import RecentSubjectsTable from '@/components/SubjectsTable/RecentSubjectsTable.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -34,7 +35,7 @@ function summary( name: string, description = '' ): SchemaSummary {
 }
 
 // The pages the map holds whatever the reader may do. The permission-dependent ones are appended.
-const ALWAYS_MAPPED = [ '/wiki/Special:Layouts', '/wiki/Special:Mappings' ];
+const ALWAYS_MAPPED = [ '/wiki/Special:Subjects', '/wiki/Special:Layouts', '/wiki/Special:Mappings' ];
 
 const PERSON = summary( 'Person', 'Someone' );
 const PAINTING = summary( 'Painting', 'Something hung on a wall' );
@@ -54,7 +55,7 @@ function mountPage( offered: Partial<OverviewProps> = {} ): VueWrapper {
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
-			stubs: { SubjectCreatorDialog: SubjectCreatorDialogStub, CdxIcon: true },
+			stubs: { SubjectCreatorDialog: SubjectCreatorDialogStub, RecentSubjectsTable: true, CdxIcon: true },
 		},
 	} );
 }
@@ -87,7 +88,7 @@ function mappedPages( wrapper: VueWrapper ): ( string | undefined )[] {
 
 describe( 'OverviewPage', () => {
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'msg', 'util', 'notify' ] } );
+		setupMwMock( { functions: [ 'msg', 'util', 'notify', 'config' ], config: { wgNeoWikiSubjectListAvailable: true } } );
 		grantedRight = true;
 		canCreateSubjectPageRef.value = false;
 		pinia = createPinia();
@@ -203,7 +204,7 @@ describe( 'OverviewPage', () => {
 		expect( link.element.closest( '.cdx-table__header' ) ).not.toBeNull();
 	} );
 
-	it( 'shows the create button, then the map, then the schema table', async () => {
+	it( 'shows the create button, then the map, then the recent Subjects, then the schema table', async () => {
 		const wrapper = mountPage();
 		await flushPromises();
 
@@ -211,7 +212,27 @@ describe( 'OverviewPage', () => {
 
 		expect( sections[ 0 ].contains( findPickerButton( wrapper )!.element ) ).toBe( true );
 		expect( sections[ 1 ].contains( wrapper.findComponent( CdxCard ).element ) ).toBe( true );
-		expect( sections[ 2 ].contains( wrapper.find( 'table' ).element ) ).toBe( true );
+		expect( sections[ 2 ].contains( wrapper.findComponent( RecentSubjectsTable ).element ) ).toBe( true );
+		expect( sections[ 3 ].contains( wrapper.find( 'table' ).element ) ).toBe( true );
+	} );
+
+	it( 'leads to the Subject list first among the pages', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( mappedPages( wrapper )[ 0 ] ).toBe( '/wiki/Special:Subjects' );
+	} );
+
+	it( 'offers no Subject list on a wiki that cannot list Subjects', async () => {
+		setupMwMock( {
+			functions: [ 'msg', 'util', 'notify', 'config' ],
+			config: { wgNeoWikiSubjectListAvailable: false },
+		} );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( wrapper.findComponent( RecentSubjectsTable ).exists() ).toBe( false );
+		expect( wrapper.html() ).not.toContain( 'Special:Subjects' );
 	} );
 
 	it( 'reports a listing that could not be read', async () => {
