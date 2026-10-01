@@ -6,12 +6,18 @@ Status: Draft
 
 ## Context
 
-Partners modelling CIDOC-CRM data built a dozen Schemas for the things they document — people, places, objects — and
-two dozen small ones — names, identifiers, births, dimensions — hung off those by relations. Testers modelling their
-own data asked for a source on a date and for helper Subjects that do not surface as things of their own.
-[ADR 28](028-relations-model.md) makes such structure a Subject of its own, but nothing said which Subjects are
-structure of another: the editor rendered a Name like a Person, the picker offered births, every helper Subject wanted
-a label, and a Subject created inside another one's editor landed on whichever page that editor was opened from.
+NeoWiki has a simple data model: Subjects contain Statements, each holding one Value. A value that needs context,
+such as a date with its source, becomes a Subject of its own, referenced via a Relation from the Subject it describes
+([Qualifiers and References](../qualifiers-and-references.md)).
+
+Wikis that use CIDOC-CRM as their in-wiki model need many more small Subjects like these: names, identifiers, and
+births, each hanging off a bigger Subject such as a Person. One partner's model has 12 Schemas for things like people
+and objects, and 24 for such small Subjects.
+
+The data model supports both, but nothing in it says that a Birth is part of its Person. So NeoWiki treats every
+Subject as a thing of its own: the Person's editor makes you pick from all Births in the wiki rather than fill in a
+date and place, a subject-first wiki gives each new Birth a page of its own, and deleting a Person leaves its Births
+behind. NeoWiki needs to know which Subjects are part of another.
 
 ## Decision
 
