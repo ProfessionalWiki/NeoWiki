@@ -1,6 +1,6 @@
 # Dependent Subjects
 
-Date: 2026-09-26
+Date: 2026-10-02
 
 Status: Draft
 
@@ -25,20 +25,23 @@ A Schema's Subjects are standalone unless the Schema declares them dependent. Th
 is created and cannot be changed later; to switch, create a new Schema.
 
 A Dependent Subject is part of exactly one Host Subject, the Subject whose Relation points at it, as a Birth is part
-of its Person:
+of its Person. 
 
-- It is referenced by exactly one Relation, from a property with dependent targets. Any other Relation to it is
-  refused. Anything other Subjects need to point at, such as a Place, is a standalone Subject.
-- It is created in the same save that makes its Host Subject point at it. A property with dependent targets can only
+Each Dependent Subject
+
+- Is referenced by exactly one Relation. Additional Relations to it are refused.
+- Can only be referenced by a relation property that targets Schemas with dependent Subjects.
+- Anything other Subjects need to point at, such as a Place, is a standalone Subject.
+- Is created in the same save that makes its Host Subject point at it. A property with dependent targets can only
   point at a Subject on the same page; a save that breaks this is refused, so such a Relation never points at a
   missing Subject.
-- It is stored on its Host Subject's page, in page-first and subject-first wikis alike
+- Is stored on its Host Subject's page, in page-first and subject-first wikis alike
   ([ADR 33](033-page-first-and-subject-first-wikis.md)).
-- It is removed with its Host Subject, or with the Relation to it: any save after which no standalone Subject on the
+- Is removed with its Host Subject, or with the Relation to it: any save after which no standalone Subject on the
   page reaches it, directly or through other Dependent Subjects, removes it. Deleting it on its own also removes the
   Relation to it.
-- It has no label.
-- It can be the Host Subject of further Dependent Subjects.
+- Has no label.
+- Can be the Host Subject of further Dependent Subjects.
 
 These rules apply even on wikis with validation enforcement off ([ADR 26](026-validation-severity-levels.md)).
 
