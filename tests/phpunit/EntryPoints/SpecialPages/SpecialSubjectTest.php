@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
+use SpecialPageExecutor;
 
 /**
  * The page is rendered in qqx, so what is asserted is which message the error box and the title use
@@ -48,7 +49,10 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testTheHelpLinkLeadsToTheDocs(): void {
-		$this->assertHelpLinkLeadsToTheDocs( $this->outputOf( new SpecialSubject() ) );
+		$page = new SpecialSubject();
+		( new SpecialPageExecutor() )->executeSpecialPage( $page, self::SUBJECT_ID, null, 'en' );
+
+		$this->assertHelpLinkLeadsToTheDocs( $page->getOutput() );
 	}
 
 	public function testMountPointCarriesASubjectOfAnotherSource(): void {
@@ -70,11 +74,7 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="' . self::SUBJECT_ID . '"', $output );
 	}
 
-	/**
-	 * The error box says what went wrong; the picker under it is how the reader reaches what they
-	 * were after, so a stale link still leads somewhere.
-	 */
-	public function testAMalformedSubjectIdGetsTheErrorBoxAndThePicker(): void {
+	public function testAMalformedSubjectIdGetsTheErrorBoxAndNoSubjectToShow(): void {
 		$output = $this->outputFor( 'not-a-subject-id' );
 
 		$this->assertStringContainsString( self::INVALID_ID_ERROR, $output );
@@ -83,23 +83,23 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * With no Subject to show, the page offers a picker for choosing one. The mount point is the
-	 * same one, carrying no id: that absence is what the frontend reads it by.
+	 * With no Subject named, the reader is looking for one: the list is where Subjects are found.
 	 */
-	public function testTheBareSpecialPageMountsWithoutASubjectId(): void {
-		$output = $this->outputFor( null );
-
-		$this->assertStringContainsString( 'id="ext-neowiki-subject"', $output );
-		$this->assertStringNotContainsString( 'data-mw-neowiki-subject-id', $output );
-		$this->assertStringNotContainsString( self::INVALID_ID_ERROR, $output );
+	public function testTheBarePageRedirectsToTheSubjectList(): void {
+		$this->assertSame(
+			SpecialPage::getTitleFor( 'Subjects' )->getFullURL(),
+			$this->executeWith( null )->getRedirect()
+		);
 	}
 
 	/**
-	 * `Special:Subject/` names no Subject either, and MediaWiki hands that trailing slash on as an
-	 * empty subpage rather than as none.
+	 * `Special:Subject/` names no Subject either; MediaWiki hands the trailing slash on as an empty subpage.
 	 */
-	public function testAnEmptySubPageIsTheBarePage(): void {
-		$this->assertSame( $this->outputFor( null ), $this->outputFor( '' ) );
+	public function testAnEmptySubPageRedirectsToo(): void {
+		$this->assertSame(
+			SpecialPage::getTitleFor( 'Subjects' )->getFullURL(),
+			$this->executeWith( '' )->getRedirect()
+		);
 	}
 
 	/**
@@ -110,26 +110,6 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$out = $this->executeWith( self::SUBJECT_ID );
 
 		$this->assertContains( 'ext.neowiki', $out->getModules() );
-	}
-
-	/**
-	 * The picker is mounted by the same module, which nothing on the id path can show.
-	 */
-	public function testTheBareSpecialPageLoadsTheFrontendModule(): void {
-		$out = $this->executeWith( null );
-
-		$this->assertContains( 'ext.neowiki', $out->getModules() );
-	}
-
-	/**
-	 * Reading these costs a permission check per Mapping page, and the picker the bare page shows
-	 * reads none of them.
-	 */
-	public function testTheBareSpecialPageSetsNoSubjectViewConfigVars(): void {
-		$configVars = $this->executeWith( null )->getJsConfigVars();
-
-		$this->assertArrayNotHasKey( 'wgNeoWikiRdfProjections', $configVars );
-		$this->assertArrayNotHasKey( 'wgNeoWikiSubjectIriBase', $configVars );
 	}
 
 	public function testExposesReadableRdfProjectionsAsConfigVar(): void {

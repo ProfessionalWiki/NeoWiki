@@ -24,11 +24,17 @@ class SpecialSubject extends SpecialPage {
 	 */
 	public function execute( $subPage ): void {
 		parent::execute( $subPage );
+
+		if ( $subPage === null || $subPage === '' ) {
+			$this->getOutput()->redirect( SpecialPage::getTitleFor( 'Subjects' )->getFullURL() );
+			return;
+		}
+
 		$this->addHelpLink( DocumentationUrl::Subjects->value, true );
 
 		$out = $this->getOutput();
 		$extension = NeoWikiExtension::getInstance();
-		$subjectId = $extension->getSubjectIdParser()->parse( $subPage ?? '' );
+		$subjectId = $extension->getSubjectIdParser()->parse( $subPage );
 		$attributes = [ 'id' => 'ext-neowiki-subject' ];
 
 		if ( $subjectId !== null ) {
@@ -38,21 +44,19 @@ class SpecialSubject extends SpecialPage {
 				$out->setPageTitleMsg( $name );
 			}
 
-			// What the Subject's own view reads. The picker shown without one reads none of it, and
-			// each read costs a permission check per Mapping page.
+			// What the Subject's own view reads; each read costs a permission check per Mapping page.
 			$out->addJsConfigVars( $extension->getSubjectUiJsConfigVars( $this->getAuthority() ) );
 			$attributes['data-mw-neowiki-subject-id'] = $subjectId->text;
 		}
-		elseif ( $subPage !== null && $subPage !== '' ) {
+		else {
 			$out->addHTML(
 				Html::errorBox( $this->msg( 'neowiki-special-subject-invalid-id' )->escaped() )
 			);
 		}
 
-		// The frontend fills this element with the Subject asked for, or — with no id to fill it from —
-		// with a picker for choosing one. What it shows for an id is decided by the read it makes, on
-		// the same terms as the read behind the title: a Subject that does not exist and one on a page
-		// this user may not read answer alike (#1046).
+		// The frontend fills this element with the Subject asked for. What it shows is decided by the read
+		// it makes, on the same terms as the read behind the title: a Subject that does not exist and one
+		// on a page this user may not read answer alike (#1046).
 		$extension->newFrontendModuleLoader()->load( $out, $this->getSkin() );
 		$out->addHTML( Html::element( 'div', $attributes ) );
 	}
