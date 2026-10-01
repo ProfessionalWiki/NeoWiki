@@ -153,6 +153,8 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetReferencingSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectSummariesApi;
+use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryLookup;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\MintSubjectIdsApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQueryApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\Neo4jRouteRegistration;
@@ -202,6 +204,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jReferencingSubjectLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectSummaryLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\CallbackProjectionResolver;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService;
@@ -256,6 +259,12 @@ class NeoWikiExtension {
 	public const string ADMIN_RIGHT = 'neowiki-admin';
 
 	public const string SUBJECT_SEARCH_FIELD = 'neowiki_text';
+
+	/**
+	 * Most rows one Subject listing request reads while dropping rows the caller may not read (ADR 27). A page of
+	 * 50 needs 51 readable rows, so this leaves room for many unreadable ones before a page ends short.
+	 */
+	private const int SUBJECT_SUMMARY_SCAN_BOUND = 1000;
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
@@ -1346,6 +1355,7 @@ class NeoWikiExtension {
 			is_int( $debounceMs ) ? $debounceMs : 300,
 			$this->isValidationEnforced(),
 			$this->isSubjectFirst(),
+			$this->isSubjectListAvailable(),
 		);
 	}
 
@@ -1826,6 +1836,22 @@ class NeoWikiExtension {
 		);
 	}
 
+	/**
+	 * Whether this wiki can list its Subjects: the listing reads the Neo4j projection.
+	 */
+	public function isSubjectListAvailable(): bool {
+		return $this->config->hasNeo4jBackend();
+	}
+
+	public function newSubjectSummaryLookup(): SubjectSummaryLookup {
+		return new Neo4jSubjectSummaryLookup(
+			client: $this->getReadOnlyNeo4jClient(),
+			wikiId: $this->config->wikiId,
+			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
+			scanBound: self::SUBJECT_SUMMARY_SCAN_BOUND,
+		);
+	}
+
 	public function getSubjectLabelLookup(): SubjectLabelLookup {
 		if ( $this->getNeo4jPlugin() === null ) {
 			return new NullSubjectLabelLookup();
@@ -2125,6 +2151,10 @@ class NeoWikiExtension {
 
 	public static function newGetSchemaSummariesApi(): GetSchemaSummariesApi {
 		return new GetSchemaSummariesApi();
+	}
+
+	public static function newGetSubjectSummariesApi(): GetSubjectSummariesApi {
+		return new GetSubjectSummariesApi( self::getInstance()->newSubjectSummaryLookup() );
 	}
 
 	public function getLayoutNameLookup(): LayoutNameLookup {

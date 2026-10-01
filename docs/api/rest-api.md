@@ -39,6 +39,7 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 | `POST /neowiki/v0/subject/{subjectId}/validate` | Check whether a change to a Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject-ids` | Mint a batch of unused Subject IDs to assign on create, e.g. to wire relations across an interlinked import. Body `count` (1–1000). |
 | `POST /neowiki/v0/subjects` | Create a Subject together with a page of its own, in one revision, as that page's main Subject. See [Creating Subjects](subject-format.md#creating-subjects). |
+| `GET /neowiki/v0/subjects` | List Subjects, newest first. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. Query: `schema` (only that Schema's Subjects), `search` (case-insensitive substring of the name or page title, or case-sensitive prefix of the ID), `sort` (`newest`, `name`, `schema`, `page`, `edited`) and `direction` (`asc`, `desc`; ignored by `newest`). Needs a Neo4j graph store. |
 | `GET /neowiki/v0/subject-labels` | Find Subjects by label; returns `id`/`label` pairs. A Subject with no label is absent. Query: `schema` (only Subjects of that Schema; omit for every Schema), `search` (label prefix), `limit`. |
 | `GET /neowiki/v0/subject/{subjectId}/referencingSubjects` | List the Subjects whose relations point at this one. See [Referencing Subjects](subject-format.md#referencing-subjects). |
 
@@ -112,12 +113,13 @@ Report and rebuild the graph stores this wiki projects into. A rebuild's `202` m
 Where the wiki itself requires login to read, every endpoint answers an anonymous request with `403` and
 `"error": "rest-read-denied"`, before any of the per-page rules below apply.
 
-The Subject, page-subjects, main-subject, edit-notices, subject-labels, referencing-subjects, Schema, Layout, Mapping,
-RDF export, and entity-dereference read endpoints enforce the caller's per-page `read` permission; page protection and
-`$wgNamespaceProtection` do not restrict them, because MediaWiki's `read` action ignores both. When you may not read a
-page they respond as if the data were absent — a `null` value, an empty list, or a `404` — never a `403`.
-`GET /subject-labels` and `GET /subject/{subjectId}/referencingSubjects` omit rows whose page you cannot read; because
-that filter runs per result, both cap `limit` at 50.
+The Subject, Subject list, page-subjects, main-subject, edit-notices, subject-labels, referencing-subjects, Schema,
+Layout, Mapping, RDF export, and entity-dereference read endpoints enforce the caller's per-page `read` permission; page
+protection and `$wgNamespaceProtection` do not restrict them, because MediaWiki's `read` action ignores both. When you
+may not read a page they respond as if the data were absent — a `null` value, an empty list, or a `404` — never a `403`.
+`GET /subject-labels`, `GET /subjects`, and `GET /subject/{subjectId}/referencingSubjects` omit rows whose page you
+cannot read; because that filter runs per result, all cap `limit` at 50. A `GET /subjects` request reads at most 1,000
+Subjects looking for ones you may read; on reaching that cap it ends the listing with a `null` `nextCursor`.
 
 The `GET /schemas`, `GET /layouts`, and `GET /mappings` list endpoints paginate with an opaque cursor over the rows you
 may read (see [Cursor pagination](#cursor-pagination)): a restricted Schema, Layout, or Mapping is skipped exactly like
@@ -139,15 +141,16 @@ The graph-store endpoints are gated by the `neowiki-admin` right.
 
 ## Cursor pagination
 
-The Schema, Layout, and Mapping list endpoints paginate with an opaque cursor. Request up to `limit` items (1–50,
-default 10); the response carries the items and a `nextCursor`:
+The Schema, Layout, Mapping, and Subject list endpoints paginate with an opaque cursor. Request up to `limit` items
+(1–50, default 10); the response carries the items and a `nextCursor`:
 
 ```json
 { "schemas": [ ... ], "nextCursor": "1462" }
 ```
 
-Pass that value back as `cursor` to fetch the next page; `null` marks the last page. Do not construct a cursor
-yourself — a malformed one is rejected with a `400`. Cursors stay valid while items are created and deleted.
+Pass that value back as `cursor` to fetch the next page; `null` marks the last page or, on a Subject list, an [early
+end](#permissions). Do not construct a cursor yourself — a malformed one is rejected with a `400`. Cursors stay valid
+while items are created and deleted.
 
 ## The `expand` parameter
 

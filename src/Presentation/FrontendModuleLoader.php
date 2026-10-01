@@ -22,6 +22,7 @@ class FrontendModuleLoader {
 		private readonly int $validationDebounceMs,
 		private readonly bool $validationEnforced,
 		private readonly bool $subjectFirst,
+		private readonly bool $subjectListAvailable,
 	) {
 	}
 
@@ -33,6 +34,7 @@ class FrontendModuleLoader {
 			'wgNeoWikiValidationDebounceMs' => $this->validationDebounceMs,
 			'wgNeoWikiEnforceValidation' => $this->validationEnforced,
 			'wgNeoWikiSubjectFirst' => $this->subjectFirst,
+			'wgNeoWikiSubjectListAvailable' => $this->subjectListAvailable,
 		] );
 
 		/** @var list<string> $modules populated by hook handlers */

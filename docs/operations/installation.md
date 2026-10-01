@@ -59,13 +59,13 @@ Use this to add NeoWiki to a MediaWiki you already run. You provide the surround
 
 ### Requirements
 
-| Requirement               | Notes |
-|---------------------------|--|
-| MediaWiki 1.43.0 or later | |
-| PHP 8.3 with `ext-json`   | |
-| Composer                  | Installs NeoWiki's runtime dependencies. No `vendor/` is shipped. |
-| Neo4j 5.x over Bolt       | Optional. The graph backend behind Cypher queries and relation-target suggestions. |
-| Node.js 24 or later       | Needed only to build the frontend bundle in step 2. |
+| Requirement                   | Notes |
+|-------------------------------|--|
+| MediaWiki 1.43.0 or later     | |
+| PHP 8.3 with `ext-json`       | |
+| Composer                      | Installs NeoWiki's runtime dependencies. No `vendor/` is shipped. |
+| Neo4j 5.26 or later over Bolt | Optional. Needed for Cypher queries, relation-target suggestions, and Subject lists. |
+| Node.js 24 or later           | Needed only to build the frontend bundle in step 2. |
 
 These extensions are recommended. NeoWiki runs without them, but you lose the matching functionality:
 
@@ -123,7 +123,8 @@ wfLoadExtension( 'ParserFunctions' );
 ```
 
 Without both Neo4j URLs set, NeoWiki's structured-data features still work. You lose the Cypher query surfaces
-(`{{#cypher_raw}}`, `nw.query`, `POST /neowiki/v0/query/cypher`) and relation-target suggestions.
+(`{{#cypher_raw}}`, `nw.query`, `POST /neowiki/v0/query/cypher`), relation-target suggestions, and the Subject lists:
+Special:Subjects, the list on each Schema page, and the newest Subjects on Special:NeoWiki.
 
 ### 4. Run the updater
 
