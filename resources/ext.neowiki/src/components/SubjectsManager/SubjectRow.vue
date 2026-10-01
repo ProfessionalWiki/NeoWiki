@@ -170,17 +170,7 @@
 								{{ $i18n( 'neowiki-managesubjects-id-label' ).text() }}
 							</dt>
 							<dd class="ext-neowiki-subject-row__id-value">
-								<button
-									type="button"
-									class="ext-neowiki-subject-row__id-button"
-									:title="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
-									:aria-label="$i18n( 'neowiki-managesubjects-id-copy', subject.getId().text ).text()"
-									@click="copySubjectId"
-								>
-									<data :value="subject.getId().text">
-										{{ subject.getId().text }}
-									</data>
-								</button>
+								<SubjectIdDisplay :subject-id="subject.getId()" />
 							</dd>
 						</div>
 						<div
@@ -254,6 +244,7 @@ import { subjectExportUrls } from '@/presentation/DataExportMenu.ts';
 import { subjectIri } from '@/presentation/subjectIri.ts';
 import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
+import SubjectIdDisplay from '@/components/common/SubjectIdDisplay.vue';
 import SubjectStatementsView from '@/components/SubjectsManager/SubjectStatementsView.vue';
 import DataExportButton from '@/components/SubjectsManager/DataExportButton.vue';
 
@@ -324,8 +315,8 @@ const props = withDefaults( defineProps<{
 } );
 
 // Everything the page decides is emitted rather than done here: which Subject a promotion moves
-// aside, what a deletion confirms against, where a copied link points. The two clipboard copies
-// below are the exceptions — they need nothing but this row's own Subject.
+// aside, what a deletion confirms against, where a copied link points. The IRI copy below is the
+// exception: it needs nothing but this row's own Subject.
 const emit = defineEmits<{
 	toggle: [ subject: Subject ];
 	edit: [ subject: Subject ];
@@ -446,16 +437,6 @@ function openSubjectPage(): void {
 	}
 }
 
-function copySubjectId(): Promise<void> {
-	const id = props.subject.getId().text;
-
-	return copyToClipboard(
-		id,
-		mw.msg( 'neowiki-managesubjects-id-copied', id ),
-		mw.msg( 'neowiki-managesubjects-id-copy-error' )
-	);
-}
-
 function copySubjectIri(): Promise<void> {
 	return copyToClipboard(
 		iri.value,
@@ -467,6 +448,7 @@ function copySubjectIri(): Promise<void> {
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-subject-row {
 	border: @border-base;
@@ -584,11 +566,6 @@ function copySubjectIri(): Promise<void> {
 		color: @color-subtle;
 	}
 
-	/* The badge ellipsises its own text; the row only has to let it shrink. */
-	&__schema {
-		min-width: 0;
-	}
-
 	&__count {
 		white-space: nowrap;
 	}
@@ -676,26 +653,9 @@ function copySubjectIri(): Promise<void> {
 		white-space: nowrap;
 	}
 
-	&__id-button,
+	// The IRI is a full URL: a long one ellipsizes instead of stretching the footer.
 	&__iri-button {
-		appearance: none;
-		background: transparent;
-		border: 0;
-		padding: 0;
-		cursor: pointer;
-		color: inherit;
-		font: inherit;
-		font-family: @font-family-monospace;
-		// The IRI is a full URL: let a long one ellipsize instead of stretching the footer. The whole
-		// value stays in the button title and is what the click copies.
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-
-		&:hover {
-			color: @color-base;
-		}
+		.ext-neowiki-copy-button();
 	}
 
 	/* The separator belongs to the pair: a row whose badge is withheld draws none. */

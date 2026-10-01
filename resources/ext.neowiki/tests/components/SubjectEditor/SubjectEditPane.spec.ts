@@ -390,14 +390,14 @@ describe( 'SubjectEditPane', () => {
 			.toBe( 'Test page' );
 	} );
 
-	describe( 'The Schema beside the name', () => {
-		it( 'shows the schema as a badge beside a labelled subject', () => {
+	describe( 'The Schema above the name', () => {
+		it( 'shows the schema as a badge above a labelled subject', () => {
 			const wrapper = mountPane();
 
 			expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'TestSchema' );
 		} );
 
-		// The name above says the same word, but only the badge is a link to the Schema and the
+		// The name below says the same word, but only the badge is a link to the Schema and the
 		// way into its editor.
 		it( 'shows the badge for a subject labelled after its schema', () => {
 			const labelledAfterSchema = newSubject( { label: 'TestSchema', schemaName: 'TestSchema' } );
@@ -643,6 +643,10 @@ describe( 'SubjectEditPane', () => {
 		} );
 	} );
 
+	it( 'shows the subject id in the header', () => {
+		expect( mountPane().get( '.ext-neowiki-subject-edit-pane__header' ).text() ).toContain( 's11111111111111' );
+	} );
+
 	describe( 'Renaming from a pane', () => {
 		async function typeName( wrapper: VueWrapper, name: string ): Promise<Omit<DOMWrapper<Element>, 'exists'>> {
 			await wrapper.get( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
@@ -698,19 +702,27 @@ describe( 'SubjectEditPane', () => {
 			expect( wrapper.findComponent( EditableText ).exists() ).toBe( true );
 		} );
 
-		// The empty field stands for "no label", so it previews the name that choice leaves the
-		// Subject with rather than describing the field - marked, exactly as the header shows it.
-		it( 'previews the name a label-less subject is shown under', () => {
-			const wrapper = mountPane( { subject: unnamedSubject, nested: true } );
+		// Even a Main Subject shown elsewhere under its page's name: the line states the label.
+		it( 'says no label is defined while the subject has none', () => {
+			const wrapper = mountPane( { subject: labellessSubject, nested: true } );
 
-			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( '(s33333333333333)' );
+			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-editor-no-label' );
 		} );
 
-		it( 'names the field instead for a subject that already has a label', () => {
+		it( 'says no label is defined once a label is cleared', async () => {
 			const wrapper = mountPane( { nested: true } );
 
-			expect( wrapper.findComponent( EditableText ).props( 'placeholder' ) )
-				.toBe( 'neowiki-subject-editor-label-field' );
+			await rename( wrapper, '' );
+
+			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-editor-no-label' );
+		} );
+
+		it( 'says no label is defined once a label of only spaces is committed', async () => {
+			const wrapper = mountPane( { nested: true } );
+
+			await rename( wrapper, '   ' );
+
+			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-editor-no-label' );
 		} );
 
 		it( 'keeps the schema badge once an unnamed subject is given a label of its own', async () => {

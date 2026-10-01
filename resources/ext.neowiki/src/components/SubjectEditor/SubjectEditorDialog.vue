@@ -355,7 +355,7 @@ const saveButtonLabel = computed( (): string => mw.msg(
 ) );
 
 // One copy per mounted pane. A pane's own copy is refreshed on relation changes alone, so
-// the live label is laid over it here and the navigator names a Subject the way its form does.
+// the live label is laid over it here and the navigator follows a rename as it is typed.
 const editedSubjects = computed( (): Map<string, Subject> => {
 	const subjects = new Map<string, Subject>();
 

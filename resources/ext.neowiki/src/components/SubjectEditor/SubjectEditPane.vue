@@ -7,48 +7,56 @@
 			pane: a header naming the root goes stale the moment another pane is opened, and
 			cannot follow without re-rendering CdxDialog. -->
 		<div class="ext-neowiki-subject-edit-pane__header">
+			<div class="ext-neowiki-subject-edit-pane__meta">
+				<SubjectIdDisplay
+					class="ext-neowiki-subject-edit-pane__id"
+					:subject-id="props.subject.getId()"
+				/>
+
+				<div class="ext-neowiki-subject-edit-pane__context">
+					<!-- The Schema the pane's Subject uses, beside its id rather than in a dialog
+						header that cannot follow the pane. A real link, so it carries the badge's
+						own interactive styling and a destination; a plain click opens the Schema
+						editor instead, as the old header link did.
+
+						A new tab, for the reason the storage link below gives: this dialog holds
+						unsaved edits for every open pane and nothing guards a navigation away
+						from it. -->
+					<SchemaNameDisplay
+						:schema-name="schemaBadge"
+						link="new-tab"
+						@click="openSchemaEditor"
+					/>
+
+					<div
+						v-if="props.nested && pageName !== null"
+						class="ext-neowiki-subject-edit-pane__storage"
+					>
+						<I18nSlot message-key="neowiki-subject-editor-stored-on">
+							<!-- A new tab: following the link in this one discards unsaved edits. -->
+							<a
+								class="ext-neowiki-subject-edit-pane__page"
+								:href="pageUrl"
+								:title="pageName"
+								target="_blank"
+								rel="noopener"
+							>{{ pageName }}</a>
+						</I18nSlot>
+					</div>
+				</div>
+			</div>
+
 			<h3 class="ext-neowiki-subject-edit-pane__name">
 				<EditableText
 					ref="labelField"
 					:model-value="label"
 					:edit-button-label="$i18n( 'neowiki-subject-editor-rename' ).text()"
 					:input-aria-label="$i18n( 'neowiki-subject-editor-label-field' ).text()"
-					:placeholder="labelPlaceholder"
+					:placeholder="$i18n( 'neowiki-subject-editor-no-label' ).text()"
 					@dirty="labelDirty = $event"
 					@update:model-value="setLabel"
 				/>
 			</h3>
-
-			<div class="ext-neowiki-subject-edit-pane__meta">
-				<!-- The Schema the pane's Subject uses, beside the name it belongs to rather
-					than in a dialog header that cannot follow the pane. A real link, so it
-					carries the badge's own interactive styling and a destination; a plain
-					click opens the Schema editor instead, as the old header link did.
-
-					A new tab, for the reason the storage link below gives: this dialog holds
-					unsaved edits for every open pane and nothing guards a navigation away
-					from it. -->
-				<SchemaNameDisplay
-					:schema-name="schemaBadge"
-					link="new-tab"
-					@click="openSchemaEditor"
-				/>
-
-				<div
-					v-if="props.nested && pageName !== null"
-					class="ext-neowiki-subject-edit-pane__storage"
-				>
-					<I18nSlot message-key="neowiki-subject-editor-stored-on">
-						<!-- A new tab: following the link in this one discards unsaved edits. -->
-						<a
-							class="ext-neowiki-subject-edit-pane__page"
-							:href="pageUrl"
-							target="_blank"
-							rel="noopener"
-						>{{ pageName }}</a>
-					</I18nSlot>
-				</div>
-			</div>
 		</div>
 
 		<SubjectViolationBanners :violations="anchorlessViolations" />
@@ -89,10 +97,10 @@ import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import type { SubjectEditorExposes } from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';
-import { subjectLabelPlaceholder } from '@/presentation/subjectLabelPlaceholder.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import EditableText from '@/components/common/EditableText.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
+import SubjectIdDisplay from '@/components/common/SubjectIdDisplay.vue';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
@@ -155,7 +163,7 @@ const storedLabel = computed( (): string | null => enteredSubjectLabel( label.va
 
 const paneName = computed( (): string => storedLabel.value ?? subjectDisplayName( props.subject ) );
 
-// Shown whether or not the name above already carries the Schema's name. Elsewhere that repeat is
+// Shown whether or not the name below already carries the Schema's name. Elsewhere that repeat is
 // worth suppressing, and `schemaNameToShow` does so; here the badge is the only link to the Schema
 // and the only way into its editor, so withholding it costs a way through rather than a word.
 const schemaBadge = computed( (): string => props.subject.getSchemaName() );
@@ -178,8 +186,6 @@ const pageUrl = computed( (): string =>
 	pageName.value === null ? '' : mw.util.getUrl( pageName.value )
 );
 
-const labelPlaceholder = computed( (): string => subjectLabelPlaceholder( props.subject ) );
-
 /**
  * Opens the Schema editor in place of following the link, for a plain left click by someone
  * who may edit it. Anything else — a modifier, the middle button, no edit right — is left to
@@ -200,8 +206,9 @@ function openSchemaEditor( event: MouseEvent ): void {
 
 // EditableText commits once per edit, so a commit is both the change and the
 // end of the interaction: validate immediately rather than waiting for a blur.
+// A label of nothing but spaces is no label, so the field reads as empty rather than blank.
 function setLabel( value: string ): void {
-	label.value = value;
+	label.value = enteredSubjectLabel( value ) === null ? '' : value;
 	handleEditorChange();
 	handleEditorBlur();
 }
@@ -355,33 +362,29 @@ defineExpose( {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-subject-edit-pane {
-	/* The name at the start, the Schema and where it is stored flush to the end. Baseline
-		rather than centre, because the three differ in size. Wrapping is the last resort: the
-		badge truncates first, and the row only breaks when even that leaves no room. */
+	/* Two lines. The id comes first, on one line with the Schema and where the Subject is stored:
+		an id has a fixed length, so that line never needs to wrap, and the Schema name and page
+		title truncate instead. The label, the one part of any length, takes the line below and
+		wraps. */
 	&__header {
-		display: flex;
-		align-items: baseline;
-		flex-wrap: wrap;
-		gap: @spacing-25 @spacing-50;
 		margin-bottom: @spacing-75;
 	}
 
-	/* A heading for screen readers and outline tools, sized like the body around it. The
-		skin gives headings block padding of their own, which would push the row open.
-		It takes the free space, which is what puts the meta at the end of the row. */
-	&__name {
-		flex-grow: 1;
-		min-width: 0;
-		margin: 0;
-		padding-block: 0;
-		font-size: @font-size-medium;
+	/* The id at the start, the Schema and where it is stored flush to the end. */
+	&__meta {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: @spacing-50;
 	}
 
-	/* Shrinkable, with `min-width: 0` so it may go below its content: the badge ellipsises
-		itself, but only once its parent is allowed to be narrower than the name inside it.
-		Under `flex-shrink: 0` a long Schema name pushed the row wider than the pane and the
-		whole form picked up a horizontal scrollbar. */
-	&__meta {
+	&__id {
+		flex-shrink: 0;
+	}
+
+	/* Shrinkable, so the badge and the storage line share the room left beside the id, each
+		truncating its own text. */
+	&__context {
 		display: flex;
 		align-items: baseline;
 		gap: @spacing-50;
@@ -389,8 +392,21 @@ defineExpose( {
 	}
 
 	&__storage {
+		// Room for the link's focus outline, which the clip below would otherwise cut.
+		padding-inline: @spacing-25;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 		color: @color-subtle;
 		font-size: @font-size-small;
+	}
+
+	/* A heading for screen readers and outline tools, sized like the body around it. The
+		skin gives headings block padding of their own, which would push the line open. */
+	&__name {
+		margin: 0;
+		padding-block: 0;
+		font-size: @font-size-medium;
 	}
 }
 </style>

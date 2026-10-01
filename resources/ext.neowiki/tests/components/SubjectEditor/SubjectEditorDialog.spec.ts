@@ -1030,20 +1030,6 @@ describe( 'SubjectEditorDialog', () => {
 			);
 		} );
 
-		it( 'shows the display name as the placeholder for a label-less subject', async () => {
-			const wrapper = mountComponent( false, validationTestStubs );
-			await wrapper.setProps( { subject: labellessSubject } );
-			await flushPromises();
-
-			expect( titleText( wrapper ) ).toBe( 'Host Page' );
-
-			await wrapper.find( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
-
-			const input = wrapper.find( '.ext-neowiki-editable-text input' );
-			expect( input.attributes( 'placeholder' ) ).toBe( 'Host Page' );
-			expect( ( input.element as HTMLInputElement ).value ).toBe( '' );
-		} );
-
 		// Codex takes the dialog's accessible name from the title prop whenever a header slot
 		// replaces the rendered title. It names the task, not a Subject: the dialog edits
 		// several, and a name fixed at open would be wrong the moment another pane is shown.
@@ -1059,18 +1045,6 @@ describe( 'SubjectEditorDialog', () => {
 			expect( wrapper.get( '.cdx-dialog' ).attributes( 'aria-labelledby' ) )
 				.toBe( heading.attributes( 'id' ) );
 			expect( heading.text() ).toBe( 'neowiki-subject-editor-title' );
-		} );
-
-		it( 'does not preview the removed label once a labelled subject is cleared', async () => {
-			const wrapper = mountComponent( false, validationTestStubs );
-			await flushPromises();
-
-			await editLabel( wrapper, '' );
-			await flushPromises();
-
-			// The client cannot compute the name the server will fall back to, and the old label is
-			// the one name it is certain to no longer be.
-			expect( titleText( wrapper ) ).toBe( 'neowiki-subject-editor-label-field' );
 		} );
 
 		it( 'sends no label to the dry-run validation once the label is blanked', async () => {
