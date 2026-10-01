@@ -492,7 +492,6 @@
 	"neowiki-graphstores-outcome-sessionfailure": "Your session has expired, so nothing was changed. Try again.",
 	"neowiki-special-subject": "Subject",
 	"neowiki-special-subject-invalid-id": "Special:Subject needs a subject ID, like Special:Subject/s1demo8aaaaaab5.",
-	"neowiki-special-subject-picker-label": "Find a subject",
 	"neowiki-special-subject-page-label": "Page:",
 	"neowiki-special-subject-referenced-heading": "Referenced subjects",
 	"neowiki-special-subject-not-found": "No subject with the ID $1 was found.",
