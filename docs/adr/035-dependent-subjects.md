@@ -40,6 +40,7 @@ Each Dependent Subject:
   page reaches it, directly or through other Dependent Subjects, removes it. Deleting it on its own also removes the
   Relation to it.
 - Has no label.
+- Is never a page's Main Subject.
 - Can be the Host Subject of further Dependent Subjects.
 
 These rules apply even on wikis with validation enforcement off ([ADR 26](026-validation-severity-levels.md)).
@@ -62,18 +63,16 @@ others find it under "Referenced by" on their `Special:Subject` page.
 
 - Editing: the Host Subject's editor shows a Dependent Subject's fields inline instead of a picker. If the relation
   property targets several Schemas, adding a Dependent Subject first asks which one.
-- Picking: no picker for choosing an existing Subject, such as the one in a relation field, offers a Dependent Subject.
 - Display: a Dependent Subject is shown as part of its Host Subject. It is named after its Schema and its Host
   Subject, as in "Birth of Pablo Picasso", not by the bracketed id [ADR 31](031-optional-subject-labels.md) would
   give it.
 - A Dependent Subject keeps its own id, IRI and graph node. `Special:Subject` and the Data tab show it and can open it
   for editing on its own, and queries and exports include it.
-- Search indexes a Dependent Subject as part of the standalone Subject at the top of its chain of Host Subjects, so a
-  search that matches a Birth finds the Person.
-- A Dependent Subject is never a Main Subject, and its Schema is not offered where a Subject is created without a Host
-  Subject.
+- Finding: search shows a match in a Dependent Subject as a hit on the standalone Subject at the top of its chain of
+  Host Subjects, so a search that matches a Birth finds the Person. Fields for choosing an existing Subject, such as the
+  search field on `Special:Subject`, never offer a Dependent Subject.
+- Creation: Schemas with Dependent Subjects are not offered where a Subject is created without a Host Subject.
 - Moving a Subject to another page takes its Dependent Subjects along. A Dependent Subject cannot be moved on its own.
-- The schema format gains the declaration, and page saves enforce the rules above.
 - Tracked in [#1554](https://github.com/ProfessionalWiki/NeoWiki/issues/1554).
 
 ## Alternatives Considered
@@ -92,5 +91,6 @@ others find it under "Referenced by" on their `Special:Subject` page.
 ## Related
 
 - [ADR 28: Relations Model](028-relations-model.md)
-- [Glossary: Dependent Subject](../glossary.md#dependent-subject), [Schema Format](../api/schema-format.md),
-  [ADR 7: Multiple Subjects Per Page](007-multiple-subjects-per-page.md).
+- [ADR 7: Multiple Subjects Per Page](007-multiple-subjects-per-page.md)
+- [Glossary: Dependent Subject](../glossary.md#dependent-subject)
+- [Schema Format](../api/schema-format.md)
