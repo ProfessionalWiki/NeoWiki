@@ -29,7 +29,7 @@ describe( 'LanguagePicker', () => {
 	}
 
 	function panel( picker: VueWrapper ): DOMWrapper<Element> {
-		return picker.find( '.ext-neowiki-language-picker__panel' );
+		return picker.find( '.ext-neowiki-popover__panel' );
 	}
 
 	function isOpen( picker: VueWrapper ): boolean {
