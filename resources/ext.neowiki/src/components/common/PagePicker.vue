@@ -1,46 +1,27 @@
 <template>
-	<div
-		class="ext-neowiki-page-picker"
-		:class="{ 'ext-neowiki-page-picker--creatable': !props.existingPagesOnly }"
-	>
+	<div class="ext-neowiki-page-picker">
 		<CdxLookup
-			ref="lookupRef"
 			v-model:selected="selectedValue"
 			v-model:input-value="inputText"
 			:menu-items="menuItems"
 			:placeholder="$i18n( 'neowiki-page-picker-placeholder' ).text()"
-			:disabled="props.disabled"
 			:aria-label="props.ariaLabel"
 			@update:selected="onValueSelected"
-		>
-			<template
-				v-if="props.existingPagesOnly"
-				#no-results
-			>
-				{{ $i18n( 'neowiki-page-picker-no-results' ).text() }}
-			</template>
-		</CdxLookup>
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, toRef, watch } from 'vue';
 import { CdxLookup } from '@wikimedia/codex';
+import { cdxIconArticles } from '@wikimedia/codex-icons';
 import type { MenuItemData } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconArticles } from '@wikimedia/codex-icons';
-import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { usePageSearch } from '@/composables/usePageSearch.ts';
 import type { PageChoice } from '@/components/common/PageChoice.ts';
 
 interface PagePickerProps {
 	/** Left out of the results, such as the page the Subject is already on. */
 	excludedPageId?: number;
-	/**
-	 * Offer only pages that exist, leaving out the option to use the typed text as a new page. For
-	 * hosts that have another way of making one.
-	 */
-	existingPagesOnly?: boolean;
-	/** Refuses input, such as while the host is saving what it was given. */
-	disabled?: boolean;
 	ariaLabel?: string;
 }
 
@@ -48,8 +29,6 @@ const props = withDefaults(
 	defineProps<PagePickerProps>(),
 	{
 		excludedPageId: undefined,
-		existingPagesOnly: false,
-		disabled: false,
 		ariaLabel: undefined
 	}
 );
@@ -58,26 +37,11 @@ const emit = defineEmits<{
 	'update:selected': [ value: PageChoice | null ];
 }>();
 
-// Menu values are page ids as text, so neither sentinel can collide with a result: a page id is
-// always digits.
-const CREATE_PAGE = '__create__';
-const NO_RESULTS = '__no_results__';
-
-const RESULT_LIMIT = 10;
-
-const pageTitleSearch = NeoWikiServices.getPageTitleSearch();
-
-const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
 const selectedValue = ref<string | null>( null );
 const inputText = ref<string | number>( '' );
-const searchResults = ref<MenuItemData[]>( [] );
-// Idle until the user types, pending while the request is out, done once it has come back, so the
-// menu says "nothing found" only when a search actually found nothing.
-const searchStatus = ref<'idle' | 'pending' | 'done'>( 'idle' );
 // The title the field is currently showing for its selection, so text the user typed can be told
 // apart from the label Codex writes there itself.
 const selectedName = ref( '' );
-let requestSequence = 0;
 
 const typedText = computed( (): string => {
 	const text = String( inputText.value ?? '' ).trim();
@@ -85,44 +49,21 @@ const typedText = computed( (): string => {
 	return text === selectedName.value ? '' : text;
 } );
 
-const createItem = computed( (): MenuItemData => ( {
-	value: CREATE_PAGE,
-	label: typedText.value === '' ?
-		mw.msg( 'neowiki-page-picker-create-hint' ) :
-		mw.msg( 'neowiki-page-picker-create-named', typedText.value ),
-	icon: cdxIconAdd,
-	disabled: typedText.value === ''
-} ) );
+const pageSearch = usePageSearch( {
+	typedText,
+	excludedPageId: toRef( props, 'excludedPageId' )
+} );
 
-// The create option is present from the first render and never leaves, which is what opens the
-// menu on focus before anything is typed: Codex expands an empty input's menu only when the
-// Lookup was built with items, and collapses it again the moment the list runs empty. A picker
-// restricted to pages that exist has nothing to offer before a search, so its menu opens on
-// results.
+// The lookup's menu has no footer to pin it to — menuConfig, all CdxLookup passes on to CdxMenu,
+// does not carry one — so the create option rides at the end of the list here. The icon is put on
+// here rather than in the search itself: it says "page" beside a title, which is worth saying in a
+// field that takes several kinds of answer and says nothing in a panel where every row is a page.
 const menuItems = computed( (): MenuItemData[] => {
-	// Codex opens the menu on a change to this list made while it is waiting for one, and takes
-	// every other change as the answer to what it was waiting for. Reading the search's status here
-	// would change the list when the search starts, leaving its results to arrive too late to open
-	// anything, so the results stand alone and Codex's own no-results slot says when there are none.
-	if ( props.existingPagesOnly ) {
-		return searchResults.value;
-	}
+	const found = pageSearch.menuItems.value.map( ( item ) => pageSearch.isSentinel(
+		String( item.value ) ) ? item : { ...item, icon: cdxIconArticles } );
+	const create = pageSearch.createItem.value;
 
-	const items = [ ...searchResults.value ];
-
-	// Codex's own no-results slot is shown only for an empty menu, which the create option rules
-	// out, so that case carries the same message as an item nobody can pick.
-	if ( searchStatus.value === 'done' && items.length === 0 ) {
-		items.push( {
-			value: NO_RESULTS,
-			label: mw.msg( 'neowiki-page-picker-no-results' ),
-			disabled: true
-		} );
-	}
-
-	items.push( createItem.value );
-
-	return items;
+	return create === null ? found : [ ...found, create ];
 } );
 
 // The field's value, not CdxLookup's `input` event: that event re-fires after a selection carrying
@@ -136,8 +77,7 @@ async function onFieldTextChanged( value: string ): Promise<void> {
 	const text = value.trim();
 
 	if ( text === '' ) {
-		searchResults.value = [];
-		searchStatus.value = 'idle';
+		pageSearch.clear();
 		selectedName.value = '';
 		emit( 'update:selected', null );
 		return;
@@ -155,59 +95,10 @@ async function onFieldTextChanged( value: string ): Promise<void> {
 	selectedName.value = '';
 	emit( 'update:selected', null );
 
-	searchStatus.value = 'pending';
-	const currentSequence = ++requestSequence;
-
-	try {
-		const results = await pageTitleSearch.searchPageTitles( text, RESULT_LIMIT );
-
-		if ( currentSequence !== requestSequence ) {
-			return;
-		}
-
-		searchResults.value = results
-			.filter( ( result ) => result.pageId !== props.excludedPageId )
-			.map( ( result ) => ( {
-				label: result.title,
-				value: String( result.pageId ),
-				icon: cdxIconArticles
-			} ) );
-	} catch {
-		if ( currentSequence !== requestSequence ) {
-			return;
-		}
-
-		searchResults.value = [];
-	} finally {
-		if ( currentSequence === requestSequence ) {
-			searchStatus.value = 'done';
-		}
-	}
+	await pageSearch.search( text );
 }
 
 function onValueSelected( value: string | null ): void {
-	if ( value === CREATE_PAGE ) {
-		// Put back what the field already held, before anything awaits: Codex has just reported the
-		// sentinel as the selection.
-		const title = typedText.value;
-		selectedValue.value = null;
-
-		if ( title !== '' ) {
-			selectedName.value = title;
-			inputText.value = title;
-			emit( 'update:selected', { pageId: null, title } );
-		}
-
-		return;
-	}
-
-	// Codex refuses to select a disabled item; the picker does not rely on that to keep its own
-	// sentinel out of a move.
-	if ( value === NO_RESULTS ) {
-		selectedValue.value = null;
-		return;
-	}
-
 	// Codex drops its own selection whenever the field's text changes, including the change it makes
 	// itself: picking an item writes that item's label into the field, which immediately clears the
 	// selection that was just made. Forwarding that would undo every pick whose label differs from
@@ -216,21 +107,31 @@ function onValueSelected( value: string | null ): void {
 		return;
 	}
 
+	const chosen = pageSearch.pageFor( value );
+
+	// Codex refuses to select a disabled item; the picker does not rely on that to keep its own
+	// sentinels out of a choice. Put back what the field already held, before anything awaits.
+	if ( pageSearch.isSentinel( value ) ) {
+		selectedValue.value = null;
+
+		if ( chosen !== null ) {
+			// Recorded before the field is written: the watcher above reads this to tell Codex's
+			// own writing apart from the user typing.
+			selectedName.value = chosen.title;
+			inputText.value = chosen.title;
+			emit( 'update:selected', chosen );
+		}
+
+		return;
+	}
+
 	// Recorded before Codex writes the picked item's label into the field, where it would
 	// otherwise read as text the user had typed and rename the create option.
-	const picked = menuItems.value.find( ( item ) => item.value === value );
-	selectedName.value = String( picked?.label ?? '' );
+	selectedName.value = chosen?.title ?? '';
 
-	searchStatus.value = 'idle';
-	emit( 'update:selected', { pageId: Number( value ), title: selectedName.value } );
+	pageSearch.status.value = 'idle';
+	emit( 'update:selected', chosen );
 }
-
-// Lets a host put the user in the field, such as when it reveals the picker.
-function focus(): void {
-	( lookupRef.value?.$el as HTMLElement | undefined )?.querySelector( 'input' )?.focus();
-}
-
-defineExpose( { focus } );
 </script>
 
 <style lang="less">
@@ -247,7 +148,8 @@ defineExpose( { focus } );
 		itself: `menuConfig`, all CdxLookup passes on to CdxMenu, has no footer in its type, and
 		a footer item is selectable like any other anyway. Scoped to a menu that has a create
 		option, since otherwise the line would fall above the last result. */
-	&--creatable .cdx-menu__listbox > .cdx-menu-item:last-child:not( :first-child ) {
+	/* The create option is always the last item, and is set off from the results above it. */
+	.cdx-menu__listbox > .cdx-menu-item:last-child:not( :first-child ) {
 		border-top: @border-subtle;
 	}
 }
