@@ -45,8 +45,8 @@ Each Dependent Subject
 
 These rules apply even on wikis with validation enforcement off ([ADR 26](026-validation-severity-levels.md)).
 
-A relation property's target Schemas all have dependent Subjects or all have standalone ones, never a mix. Saving a
-Schema with a property that mixes them is refused.
+A Property Definition of type Relation can not mix Schemas with Dependent Subjects and Schemas with standalone ones
+in its target schemas list.
 
 The Relation is stored on the Host Subject and points at the Dependent Subject: the Person points at its Birth. Where
 an ontology draws the link the other way, from the Birth to the Person, the Mapping picks a predicate that runs from
