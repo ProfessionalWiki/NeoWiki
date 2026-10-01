@@ -52,7 +52,7 @@
 					:model-value="label"
 					:edit-button-label="$i18n( 'neowiki-subject-editor-rename' ).text()"
 					:input-aria-label="$i18n( 'neowiki-subject-editor-label-field' ).text()"
-					:placeholder="$i18n( 'neowiki-subject-editor-no-label' ).text()"
+					:placeholder="$i18n( 'neowiki-subject-no-label' ).text()"
 					@dirty="labelDirty = $event"
 					@update:model-value="setLabel"
 				/>

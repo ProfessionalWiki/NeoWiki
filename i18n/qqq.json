@@ -94,7 +94,7 @@
 
 	"neowiki-subject-editor-title": "Title of the subject editor dialog, and its accessible name. Names the task rather than a subject: the dialog can edit several at once, and each one is named by the pane that edits it.",
 	"neowiki-subject-editor-label-field": "Accessibility label for the input shown in place of the dialog title while renaming a subject in the subject editor dialog.",
-	"neowiki-subject-editor-no-label": "Shown where a subject's label goes in the subject editor and creator while the subject has none. The subject's identifier is shown on the line above it, and the edit button beside it lets the user set a label. Also the placeholder of the label field while the user edits it.",
+	"neowiki-subject-no-label": "Stands in for a subject's label while the subject has none. In the subject editor and creator it is shown where the label goes, below the subject's identifier and beside a button to set a label, and as the placeholder of the label field. In the heading of the subject's page and of Special:Subject, the subject's identifier follows it in brackets.",
 	"neowiki-subject-editor-rename": "Accessibility label for the button next to the subject editor dialog title that starts renaming the subject.",
 	"neowiki-subject-editor-open-target": "Label and tooltip of the control shown at the end of a relation field that is displaying its target, in the subject editor, which opens that subject for editing alongside the one being edited. Parameters:\n* $1 - the name of the subject it opens.",
 	"neowiki-subject-editor-summary-default": "Default edit summary used when updating a subject via the UI.",

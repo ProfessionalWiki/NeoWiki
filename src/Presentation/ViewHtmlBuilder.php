@@ -52,7 +52,7 @@ class ViewHtmlBuilder {
 	}
 
 	/**
-	 * The Subject whose label heads the page in place of its title, or null where the title stands.
+	 * The Subject that heads the page in place of its title, or null where the title stands.
 	 */
 	public function subjectInPlaceOfPageTitle( Title $title, ?int $revisionId ): ?Subject {
 		if ( !SubjectDisplayName::mayBeTitledBySubjectId( $title->getPrefixedText() ) ) {

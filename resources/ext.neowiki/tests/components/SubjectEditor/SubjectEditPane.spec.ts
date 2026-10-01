@@ -706,7 +706,7 @@ describe( 'SubjectEditPane', () => {
 		it( 'says no label is defined while the subject has none', () => {
 			const wrapper = mountPane( { subject: labellessSubject, nested: true } );
 
-			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-editor-no-label' );
+			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-no-label' );
 		} );
 
 		it( 'says no label is defined once a label is cleared', async () => {
@@ -714,7 +714,7 @@ describe( 'SubjectEditPane', () => {
 
 			await rename( wrapper, '' );
 
-			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-editor-no-label' );
+			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-no-label' );
 		} );
 
 		it( 'says no label is defined once a label of only spaces is committed', async () => {
@@ -722,7 +722,7 @@ describe( 'SubjectEditPane', () => {
 
 			await rename( wrapper, '   ' );
 
-			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-editor-no-label' );
+			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-no-label' );
 		} );
 
 		it( 'keeps the schema badge once an unnamed subject is given a label of its own', async () => {
