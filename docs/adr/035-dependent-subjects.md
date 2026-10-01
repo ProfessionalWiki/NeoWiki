@@ -32,9 +32,9 @@ Each Dependent Subject
 - Is referenced by exactly one Relation. Additional Relations to it are refused.
 - Can only be referenced by a relation property that targets Schemas with dependent Subjects.
 - Anything other Subjects need to point at, such as a Place, is a standalone Subject.
-- Is created in the same save that makes its Host Subject point at it. A property with dependent targets can only
-  point at a Subject on the same page; a save that breaks this is refused, so such a Relation never points at a
-  missing Subject.
+- Is created in the same save that makes its Host Subject point at it. A relation property that targets Schemas with
+  dependent Subjects can only point at a Subject on the same page; a save that breaks this is refused, so such a
+  Relation never points at a missing Subject.
 - Is stored on its Host Subject's page, in page-first and subject-first wikis alike
   ([ADR 33](033-page-first-and-subject-first-wikis.md)).
 - Is removed with its Host Subject, or with the Relation to it: any save after which no standalone Subject on the
@@ -68,9 +68,9 @@ Not taken:
 
 ## Consequences
 
-- Editing: in the Host Subject's editor, the field of a property with dependent targets shows the Dependent Subject's
-  fields inline instead of a picker. If the property accepts several Schemas, adding a Subject first asks which one.
-  No picker offers a Dependent Subject.
+- Editing: the Host Subject's editor shows a Dependent Subject's fields inline instead of a picker. If the relation
+  property targets several Schemas, adding a Dependent Subject first asks which one. No picker offers a Dependent
+  Subject.
 - Display: a Dependent Subject is shown as part of its Host Subject. It is named after its Schema and its Host
   Subject, as in "Birth of Pablo Picasso", not by the bracketed id [ADR 31](031-optional-subject-labels.md) would
   give it.
