@@ -27,13 +27,12 @@ is created and cannot be changed later; to switch, create a new Schema.
 A Dependent Subject is part of exactly one Host Subject, the Subject whose Relation points at it, as a Birth is part
 of its Person. 
 
-Each Dependent Subject
+Each Dependent Subject:
 
 - Is referenced by exactly one Relation. Additional Relations to it are refused.
-- Can only be referenced by a relation property that targets Schemas with dependent Subjects.
-- Anything other Subjects need to point at, such as a Place, is a standalone Subject.
+- Can only be referenced by a relation property that targets Schemas with Dependent Subjects.
 - Is created in the same save that makes its Host Subject point at it. A relation property that targets Schemas with
-  dependent Subjects can only point at a Subject on the same page; a save that breaks this is refused, so such a
+  Dependent Subjects can only point at a Subject on the same page; a save that breaks this is refused, so such a
   Relation never points at a missing Subject.
 - Is stored on its Host Subject's page, in page-first and subject-first wikis alike
   ([ADR 33](033-page-first-and-subject-first-wikis.md)).
@@ -45,8 +44,10 @@ Each Dependent Subject
 
 These rules apply even on wikis with validation enforcement off ([ADR 26](026-validation-severity-levels.md)).
 
-A Property Definition of type Relation can not mix Schemas with Dependent Subjects and Schemas with standalone ones
-in its target schemas list.
+Anything other Subjects need to point at, such as a Place, is a standalone Subject.
+
+A Property Definition of type Relation cannot mix Schemas with Dependent Subjects and Schemas with standalone ones in
+its list of target Schemas ([ADR 28](028-relations-model.md)).
 
 The Relation is stored on the Host Subject and points at the Dependent Subject: the Person points at its Birth. An
 ontology may draw the link the other way. CIDOC-CRM does: a Birth "brought into life" a Person. A
@@ -60,8 +61,8 @@ others find it under "Referenced by" on their `Special:Subject` page.
 ## Consequences
 
 - Editing: the Host Subject's editor shows a Dependent Subject's fields inline instead of a picker. If the relation
-  property targets several Schemas, adding a Dependent Subject first asks which one. No picker offers a Dependent
-  Subject.
+  property targets several Schemas, adding a Dependent Subject first asks which one.
+- Picking: no picker for choosing an existing Subject, such as the one in a relation field, offers a Dependent Subject.
 - Display: a Dependent Subject is shown as part of its Host Subject. It is named after its Schema and its Host
   Subject, as in "Birth of Pablo Picasso", not by the bracketed id [ADR 31](031-optional-subject-labels.md) would
   give it.
@@ -77,10 +78,12 @@ others find it under "Referenced by" on their `Special:Subject` page.
 
 ## Alternatives Considered
 
-- **Compound values**: a property whose value is a group of fields defined in its Schema, such as a Birth property on
-  the Person Schema holding a date and a place. Such a value has no ID or IRI, so it cannot be opened or queried on its
-  own. Other schemas can't reuse its fields, since one Name Schema can serve both Person and Organization. And a
-  Mapping to CIDOC-CRM would still have to create a node for the Birth.
+- **User-defined records**: a property whose value is a group of fields defined in its Schema, like Semantic MediaWiki's
+  Record type. A Birth property on the Person Schema would hold a date and a place. Such a value has no ID or IRI, so it
+  cannot be opened or queried on its own. Other Schemas can't reuse its fields, while one Name Schema can serve both
+  Person and Organization. And a Mapping to CIDOC-CRM would still have to create a node for the Birth. Compound values
+  with a fixed shape, such as monolingual text ([ADR 34](034-monolingual-text-value-type.md)), are Value Types, not
+  records.
 - **Inferring dependence from where a Subject is created**: a Birth and a Place can both be created from a Person's
   editor, but only the Birth is part of the Person; other Subjects point at the Place.
 - **Letting other Subjects point at a Dependent Subject**: those Relations would turn into red links when it is removed
@@ -88,6 +91,6 @@ others find it under "Referenced by" on their `Special:Subject` page.
 
 ## Related
 
-- [ADR 28: Relations Model](028-relations-model.md) — the relations model this refines.
+- [ADR 28: Relations Model](028-relations-model.md)
 - [Glossary: Dependent Subject](../glossary.md#dependent-subject), [Schema Format](../api/schema-format.md),
   [ADR 7: Multiple Subjects Per Page](007-multiple-subjects-per-page.md).
