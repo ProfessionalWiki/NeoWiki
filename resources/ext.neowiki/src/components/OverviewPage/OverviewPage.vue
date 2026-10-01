@@ -30,6 +30,11 @@
 			</CdxCard>
 		</div>
 
+		<RecentSubjectsTable
+			v-if="subjectListAvailable"
+			class="ext-neowiki-overview__recent-subjects"
+		/>
+
 		<CdxTable
 			:columns="columns"
 			:data="rows"
@@ -77,10 +82,18 @@ import { CdxButton, CdxCard, CdxIcon, CdxTable } from '@wikimedia/codex';
 import type { TableColumn } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
+import RecentSubjectsTable from '@/components/SubjectsTable/RecentSubjectsTable.vue';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
+import { isSubjectListAvailable } from '@/subjectListAvailability.ts';
+
+const SUBJECTS_LINK = {
+	page: 'Special:Subjects',
+	label: 'neowiki-special-subjects',
+	description: 'neowiki-overview-subjects-description'
+};
 
 const PAGE_LINKS = [
 	{
@@ -122,9 +135,12 @@ const rows = ref<SchemaSummary[]>( [] );
 // list, the row's own Schema for the one in it.
 const pinnedSchema = ref<string | undefined>( undefined );
 
+const subjectListAvailable = isSubjectListAvailable();
+
 const hasSchemas = computed( () => rows.value.length > 0 );
 
 const pageLinks = computed( () => [
+	...( subjectListAvailable ? [ SUBJECTS_LINK ] : [] ),
 	...PAGE_LINKS,
 	...( props.canManageGraphStores ? [ GRAPH_STORES_LINK ] : [] ),
 	...( props.canEditConfiguration ? [ CONFIGURATION_LINK ] : [] )
@@ -193,6 +209,10 @@ onMounted( async () => {
 
 	&__page {
 		flex: 1 1 14rem;
+	}
+
+	&__recent-subjects {
+		margin-bottom: @spacing-150;
 	}
 }
 </style>
