@@ -48,9 +48,10 @@ These rules apply even on wikis with validation enforcement off ([ADR 26](026-va
 A Property Definition of type Relation can not mix Schemas with Dependent Subjects and Schemas with standalone ones
 in its target schemas list.
 
-The Relation is stored on the Host Subject and points at the Dependent Subject: the Person points at its Birth. Where
-an ontology draws the link the other way, from the Birth to the Person, the Mapping picks a predicate that runs from
-the Person to the Birth, such as the ontology's inverse property ([Mapping Format](../authoring/mapping-format.md)).
+The Relation is stored on the Host Subject and points at the Dependent Subject: the Person points at its Birth. An
+ontology may draw the link the other way. CIDOC-CRM does: a Birth "brought into life" a Person. A
+[Mapping](../authoring/mapping-format.md) to such an ontology then uses the inverse property, here "was born", which
+runs from the Person to the Birth.
 
 A relationship with no natural Host Subject, such as a marriage or an exhibition, is either a standalone Subject that
 points at its participants, or a Dependent Subject of one side that points at the others. In the second case, the
