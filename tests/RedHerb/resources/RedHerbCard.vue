@@ -12,7 +12,7 @@
 					v-if="canEditSubject"
 					weight="quiet"
 					action="progressive"
-					@click="openEditor"
+					@click="openEditor( subjectId )"
 				>
 					{{ $i18n( 'redherb-card-edit-subject' ).text() }}
 				</cdx-button>
@@ -122,10 +122,9 @@ module.exports = exports = {
 		const subjectRepo = nw.NeoWikiServices.getSubjectRepository();
 		const schemaRepo = nw.NeoWikiServices.getSchemaRepository();
 
-		const editorOpen = vue.ref( false );
-		// The dialog edits its own copy rather than the registry entry.
-		const editingSubject = vue.shallowRef( null );
-		const editingSchema = vue.shallowRef( null );
+		// Opens the shared editor on freshly read data. See docs/extending/view-types.md.
+		const { editingSubject, editingSchema, editorOpen, openEditor } =
+			nw.useSubjectEditor( subjectRepo, schemaRepo );
 
 		const subject = vue.computed( () => subjectStore.getSubject( props.subjectId ) );
 
@@ -179,28 +178,6 @@ module.exports = exports = {
 
 		function valueComponent( propertyType ) {
 			return componentRegistry.getValueDisplayComponent( propertyType );
-		}
-
-		// Editing UIs read through the repositories rather than the stores
-		// (NeoWiki ADR 30 / ADR 16): the stores hold page state, not editor state.
-		// getSubjectForEditing, not getSubject: a save replaces the current
-		// revision, not the published one.
-		// Saving updates the stores, because the write answers with the Subject and
-		// Schema as the server has them.
-		function openEditor() {
-			Promise.all( [
-				subjectRepo.getSubjectForEditing( props.subjectId ),
-				schemaRepo.getSchema( subject.value.getSchemaName() )
-			] ).then( ( [ freshSubject, freshSchema ] ) => {
-				editingSubject.value = freshSubject;
-				editingSchema.value = freshSchema;
-				editorOpen.value = true;
-			} ).catch( ( error ) => {
-				mw.notify(
-					error instanceof Error ? error.message : String( error ),
-					{ type: 'error' }
-				);
-			} );
 		}
 
 		function handleSaveSubject( updatedSubject, comment ) {
