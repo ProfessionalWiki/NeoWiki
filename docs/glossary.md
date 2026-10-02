@@ -72,6 +72,8 @@ Each Relation has
 
 A Subject that belongs to its **Host Subject**.
 
+![A Person's editor and infobox, both showing its Birth's fields inline, and the Birth on its own on Special:Subject; callouts name the Host Subject, the Dependent Subject and a standalone Subject](adr/035-dependent-subjects.svg)
+
 Schemas define whether their Subjects are Dependent or not ([ADR 35](adr/035-dependent-subjects.md)).
 
 Dependent Subjects are referenced exactly once, always by their Host Subject. They are created, edited, and displayed
@@ -85,7 +87,8 @@ In this example Chapter and Section are Dependent Subjects. Book and Chapter are
 
 A Schema ([ADR 6](adr/006-schemas.md)) defines a type of Subject. Examples: Person, Company, Product, etc.
 
-Schemas have a name, description, and a list of Property Definitions
+Schemas have a name, description, and a list of Property Definitions, and declare whether their Subjects are dependent
+or standalone ([Dependent Subject](#dependent-subject)).
 
 #### Property Definition
 
