@@ -93,4 +93,47 @@ class DateFormatNeo4jTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( $subjectId->text, $result->first()->get( 'id' ) );
 	}
 
+	private function savePageWithYearPrecisionDate(): SubjectId {
+		$subjectId = TestSubject::uniqueId();
+
+		$this->newProjectionStore()->savePage( TestPage::build(
+			mainSubject: TestSubject::build(
+				id: $subjectId,
+				statements: new StatementList( [
+					new Statement(
+						property: new PropertyName( 'Born' ),
+						propertyType: DateType::NAME,
+						value: new StringValue( '1984' )
+					),
+				] )
+			),
+		) );
+
+		return $subjectId;
+	}
+
+	public function testYearPrecisionDateIsStoredAsItsEarliestAndLatestDay(): void {
+		$subjectId = $this->savePageWithYearPrecisionDate();
+
+		$result = $this->readGraph(
+			"MATCH (n {id: '$subjectId'}) RETURN n.Born[0] AS earliest, n.Born_latest[0] AS latest"
+		)->toRecursiveArray()[0];
+
+		$this->assertEquals( new Date( 5113 ), $result['earliest'] ); // 1984-01-01
+		$this->assertEquals( new Date( 5478 ), $result['latest'] ); // 1984-12-31
+	}
+
+	public function testYearPrecisionDateMatchesADayItMayFallAfter(): void {
+		$subjectId = $this->savePageWithYearPrecisionDate();
+
+		$result = $this->readGraph(
+			"MATCH (n {id: '$subjectId'})
+				WHERE n.Born_latest[0] >= date('1984-06-01')
+					AND NOT n.Born[0] >= date('1984-06-01')
+				RETURN n.id AS id"
+		);
+
+		$this->assertSame( $subjectId->text, $result->first()->get( 'id' ) );
+	}
+
 }

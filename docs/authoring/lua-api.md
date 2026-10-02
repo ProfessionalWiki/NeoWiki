@@ -315,7 +315,8 @@ those are set. Beyond that core, the fields depend on `type`:
 | `text`, `monolingualText` | `multiple`, `uniqueItems` | `minLength`, `maxLength` |
 | `url` | `multiple`, `uniqueItems` | — |
 | `number` | — | `precision`, `minimum`, `maximum` |
-| `date`, `dateTime` | — | `minimum`, `maximum` |
+| `date` | — | `minimum`, `maximum`, `minPrecision` |
+| `dateTime` | — | `minimum`, `maximum` |
 | `select` | `multiple`, `options` (1-indexed list of `{ id, label }` entries) | — |
 | `relation` | `multiple`, `relation`, `targetSchema` | — |
 | `boolean` | — | — |

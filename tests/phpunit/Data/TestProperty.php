@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Data;
 
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DatePrecision;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
@@ -147,6 +148,7 @@ class TestProperty {
 		?string $default = null,
 		?string $minimum = null,
 		?string $maximum = null,
+		?DatePrecision $minPrecision = null,
 	): DateProperty {
 		return new DateProperty(
 			core: new PropertyCore(
@@ -155,7 +157,8 @@ class TestProperty {
 				default: $default
 			),
 			minimum: $minimum,
-			maximum: $maximum
+			maximum: $maximum,
+			minPrecision: $minPrecision
 		);
 	}
 

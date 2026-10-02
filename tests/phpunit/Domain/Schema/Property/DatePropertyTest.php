@@ -7,7 +7,9 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DatePrecision;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\PartialDate;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 use ProfessionalWiki\NeoWiki\Tests\JsonSchemaAssertions;
@@ -80,9 +82,66 @@ class DatePropertyTest extends TestCase {
 			core: new PropertyCore( description: '', required: false, default: null ),
 			minimum: '2024-02-29',
 			maximum: null,
+			minPrecision: null,
 		);
 
 		$this->assertSame( '2024-02-29', $property->getMinimum() );
+	}
+
+	public function testBoundsAndDefaultAcceptYearAndMonthPrecision(): void {
+		$property = DateProperty::fromPartialJson(
+			new PropertyCore( description: '', required: false, default: '1984' ),
+			[ 'minimum' => '1900', 'maximum' => '1999-12' ]
+		);
+
+		$this->assertSame( '1900', $property->getMinimum() );
+		$this->assertSame( '1999-12', $property->getMaximum() );
+		$this->assertSame( '1984', $property->getDefault() );
+	}
+
+	public function testMinPrecisionIsNullByDefault(): void {
+		$this->assertNull( TestProperty::buildDate()->getMinPrecision() );
+	}
+
+	public function testMinPrecisionFromJson(): void {
+		$property = DateProperty::fromPartialJson(
+			new PropertyCore( description: '', required: false, default: null ),
+			[ 'minPrecision' => 'month' ]
+		);
+
+		$this->assertSame( DatePrecision::Month, $property->getMinPrecision() );
+	}
+
+	public function testMinPrecisionSerializes(): void {
+		$property = DateProperty::fromPartialJson(
+			new PropertyCore( description: '', required: false, default: null ),
+			[ 'minPrecision' => 'day' ]
+		);
+
+		$this->assertSame( 'day', $property->toJson()['minPrecision'] );
+	}
+
+	public function testUnsetMinPrecisionSerializesAsNull(): void {
+		$this->assertNull( TestProperty::buildDate()->toJson()['minPrecision'] );
+	}
+
+	/**
+	 * @dataProvider invalidMinPrecisionProvider
+	 */
+	public function testFromPartialJsonRejectsInvalidMinPrecision( mixed $invalid ): void {
+		$this->expectException( InvalidArgumentException::class );
+
+		DateProperty::fromPartialJson(
+			new PropertyCore( description: '', required: false, default: null ),
+			[ 'minPrecision' => $invalid ]
+		);
+	}
+
+	public static function invalidMinPrecisionProvider(): iterable {
+		yield 'year constrains nothing' => [ 'year' ];
+		yield 'unknown precision' => [ 'week' ];
+		yield 'wrong case' => [ 'Day' ];
+		yield 'not a string' => [ 2 ];
 	}
 
 	/**
@@ -95,6 +154,7 @@ class DatePropertyTest extends TestCase {
 			core: new PropertyCore( description: '', required: false, default: null ),
 			minimum: $malformed,
 			maximum: null,
+			minPrecision: null,
 		);
 	}
 
@@ -108,6 +168,7 @@ class DatePropertyTest extends TestCase {
 			core: new PropertyCore( description: '', required: false, default: null ),
 			minimum: null,
 			maximum: $malformed,
+			minPrecision: null,
 		);
 	}
 
@@ -121,6 +182,7 @@ class DatePropertyTest extends TestCase {
 			core: new PropertyCore( description: '', required: false, default: $malformed ),
 			minimum: null,
 			maximum: null,
+			minPrecision: null,
 		);
 	}
 
@@ -137,8 +199,6 @@ class DatePropertyTest extends TestCase {
 	}
 
 	public static function malformedDateProvider(): iterable {
-		yield 'year only' => [ '2025' ];
-		yield 'year and month' => [ '2025-06' ];
 		yield 'has time component' => [ '2025-06-15T12:00:00Z' ];
 		yield 'has midnight time component' => [ '2025-06-15T00:00:00' ];
 		yield 'invalid month' => [ '2025-13-01' ];
@@ -154,8 +214,8 @@ class DatePropertyTest extends TestCase {
 				'type' => 'array',
 				'items' => [
 					'type' => 'string',
-					'format' => 'date',
-					'pattern' => DateProperty::ISO_DATE_PATTERN,
+					'pattern' => PartialDate::PATTERN,
+					'anyOf' => [ [ 'maxLength' => 7 ], [ 'format' => 'date' ] ],
 				],
 				'maxItems' => 1,
 			],
@@ -176,12 +236,15 @@ class DatePropertyTest extends TestCase {
 	 * @dataProvider datePatternProvider
 	 */
 	public function testPatternAloneJudgesADate( string $value, bool $valid ): void {
-		$this->assertSame( $valid, $this->jsonSchemaAccepts( $this->itemSchemaWithoutFormat(), $value ) );
+		$this->assertSame( $valid, $this->jsonSchemaAccepts( TestProperty::buildDate()->toJsonSchema()['items'], $value ) );
 	}
 
 	public static function datePatternProvider(): iterable {
-		yield 'an ISO date' => [ '2025-06-15', true ];
-		yield 'a year before year one' => [ '-0500-06-15', true ];
+		yield 'a full date' => [ '2025-06-15', true ];
+		yield 'a year and month' => [ '2025-06', true ];
+		yield 'a year' => [ '2025', true ];
+		yield 'a year before year one' => [ '-0500-06-15', false ];
+		yield 'a year of fewer than four digits' => [ '984', false ];
 		yield 'an impossible month' => [ '2025-13-01', false ];
 		yield 'month zero' => [ '2025-00-15', false ];
 		yield 'an impossible day' => [ '2025-06-32', false ];
@@ -190,19 +253,24 @@ class DatePropertyTest extends TestCase {
 		yield 'no separators' => [ '20250615', false ];
 		yield 'another notation' => [ '15/06/2025', false ];
 		yield 'a date carrying a time' => [ '2025-06-15T00:00:00Z', false ];
+		yield 'a day the month does not have, which only format catches' => [ '2025-02-30', false ];
 	}
 
 	/**
-	 * The dialect leaves `format` an annotation, so `pattern` is all a validator that does not
-	 * assert formats has to go on.
-	 *
-	 * @return array<string, mixed>
+	 * @dataProvider minPrecisionProvider
 	 */
-	private function itemSchemaWithoutFormat(): array {
-		$items = TestProperty::buildDate()->toJsonSchema()['items'];
-		unset( $items['format'] );
+	public function testMinPrecisionNarrowsTheAcceptedForms( DatePrecision $minPrecision, string $value, bool $valid ): void {
+		$items = TestProperty::buildDate( minPrecision: $minPrecision )->toJsonSchema()['items'];
 
-		return $items;
+		$this->assertSame( $valid, $this->jsonSchemaAccepts( $items, $value ) );
+	}
+
+	public static function minPrecisionProvider(): iterable {
+		yield 'month admits a month' => [ DatePrecision::Month, '2025-06', true ];
+		yield 'month admits a day' => [ DatePrecision::Month, '2025-06-15', true ];
+		yield 'month rejects a year' => [ DatePrecision::Month, '2025', false ];
+		yield 'day admits a day' => [ DatePrecision::Day, '2025-06-15', true ];
+		yield 'day rejects a month' => [ DatePrecision::Day, '2025-06', false ];
 	}
 
 }

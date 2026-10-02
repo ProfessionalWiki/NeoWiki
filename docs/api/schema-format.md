@@ -82,8 +82,8 @@ object at all implies `true`. `multiple` constrains when it is `false`, so its o
 `"value": false`. Every other Constraint carries its value under `value`, including `options`, whose
 `value` is the options array.
 
-The Constraints that accept a severity are `required`, `multiple`, `minimum`, `maximum`, `minLength`,
-`maxLength`, `uniqueItems`, and `options`. Only `select`, `relation` and `monolingualText` check
+The Constraints that accept a severity are `required`, `multiple`, `minimum`, `maximum`, `minPrecision`,
+`minLength`, `maxLength`, `uniqueItems`, and `options`. Only `select`, `relation` and `monolingualText` check
 `multiple`, so a severity on it is inert elsewhere. Severity is a Constraint concept, so it does not
 apply to Display Attributes such as `precision`, where it is discarded, nor to the shape-declaring
 fields `type`, `relation`, and `targetSchema`, where it is rejected when the Schema is saved.
@@ -225,13 +225,20 @@ A true/false value. No type-specific fields; `default` may be `true`, `false`, o
 
 ### Date (`date`)
 
-A calendar date, stored as a strict ISO 8601 `YYYY-MM-DD` string (no time or timezone; see
-[`invalid-date`](validation-codes.md#invalid-date)). `minimum`, `maximum`, and any `default` use the same format.
+A calendar date of year, month or day precision, stored as an [EDTF](https://www.loc.gov/standards/datetime/)
+string. Of EDTF, the level 0 date forms are accepted: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`, with no time or timezone
+(see [`invalid-date`](validation-codes.md#invalid-date)). `minimum`, `maximum`, and any `default` use the same
+format.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `minimum` | string | `null` | Earliest allowed date |
 | `maximum` | string | `null` | Latest allowed date |
+| `minPrecision` | `"month"` \| `"day"` | `null` | Least precise date allowed; `null` allows a year alone |
+
+A date of year or month precision stands for every day in it. It violates `minimum` only when all of those days fall
+before the bound, and `maximum` only when all of them fall after it: `1984` satisfies a `minimum` of `1984-06-01`.
+A bound of year or month precision covers its whole span, so a `maximum` of `1990` allows `1990-12-31`.
 
 ### DateTime (`dateTime`)
 
