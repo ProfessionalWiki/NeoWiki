@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="810" height="490" viewBox="0 0 810 490"
+	font-family="sans-serif" font-size="16">
+<rect width="810" height="490" fill="#FFF"/>
+
+<!-- Editing: the Host Subject's editor -->
+<text x="154" y="36" text-anchor="middle" font-size="15" font-weight="bold" fill="#202122">Editing</text>
+<rect x="24" y="54" width="260" height="290" fill="none" stroke="#039" stroke-width="1.5"/>
+<text x="38" y="78" font-weight="bold" fill="#000">Pablo Picasso</text>
+<rect x="38" y="86" width="52" height="17" rx="3" fill="#EAECF0"/>
+<text x="64" y="98.5" font-size="11" text-anchor="middle" fill="#202122">Person</text>
+<path stroke="#A2A9B1" d="M24,112H284"/>
+
+<text x="38" y="134" font-size="13" font-weight="bold" fill="#000">Occupation</text>
+<rect x="38" y="142" width="232" height="26" rx="2" fill="#FFF" stroke="#A2A9B1"/>
+<text x="48" y="160" font-size="13" fill="#202122">Painter</text>
+
+<text x="38" y="192" font-size="13" font-weight="bold" fill="#000">Birth</text>
+<rect x="38" y="200" width="232" height="128" fill="#E8F5E9" stroke="#390" stroke-width="1.5"/>
+<text x="50" y="222" font-size="13" font-weight="bold" fill="#000">Date</text>
+<rect x="50" y="230" width="208" height="26" rx="2" fill="#FFF" stroke="#A2A9B1"/>
+<text x="60" y="248" font-size="13" fill="#202122">25 October 1881</text>
+<rect x="44" y="262" width="220" height="60" fill="#FFF3E0"/>
+<text x="50" y="280" font-size="13" font-weight="bold" fill="#000">Place</text>
+<rect x="50" y="288" width="208" height="26" rx="2" fill="#FFF" stroke="#A2A9B1"/>
+<circle cx="63" cy="299.5" r="4.5" fill="none" stroke="#54595D" stroke-width="1.5"/>
+<path stroke="#54595D" stroke-width="1.5" d="M66.3,302.8l4,4"/>
+<text x="78" y="306" font-size="13" fill="#202122">Málaga</text>
+
+<!-- Display: the Host Subject's infobox -->
+<text x="656" y="36" text-anchor="middle" font-size="15" font-weight="bold" fill="#202122">Display</text>
+<rect x="526" y="54" width="260" height="226" fill="none" stroke="#039" stroke-width="1.5"/>
+<text x="540" y="78" font-weight="bold" fill="#000">Pablo Picasso</text>
+<rect x="540" y="86" width="52" height="17" rx="3" fill="#EAECF0"/>
+<text x="566" y="98.5" font-size="11" text-anchor="middle" fill="#202122">Person</text>
+<path stroke="#A2A9B1" d="M526,112H786"/>
+<text x="540" y="136" font-size="13" font-weight="bold" fill="#000">Occupation</text>
+<text x="640" y="136" font-size="13" fill="#000">Painter</text>
+<path stroke="#C8CCD1" d="M532,150H780"/>
+<rect x="532" y="156" width="248" height="84" fill="#E8F5E9"/>
+<text x="540" y="175" font-size="13" font-weight="bold" fill="#000">Birth</text>
+<text x="552" y="199" font-size="13" font-weight="bold" fill="#000">Date</text>
+<text x="640" y="199" font-size="13" fill="#000">25 October 1881</text>
+<rect x="538" y="208" width="236" height="26" fill="#FFF3E0"/>
+<text x="552" y="226" font-size="13" font-weight="bold" fill="#000">Place</text>
+<text x="640" y="226" font-size="13" fill="#36C">Málaga</text>
+<path stroke="#C8CCD1" d="M532,246H780"/>
+<text x="540" y="266" font-size="13" fill="#72777D">…</text>
+
+<!-- The Dependent Subject on its own -->
+<text x="656" y="318" text-anchor="middle" font-size="15" font-weight="bold" fill="#202122">Special:Subject</text>
+<rect x="526" y="334" width="260" height="126" fill="#E8F5E9" stroke="#390" stroke-width="1.5"/>
+<text x="540" y="358" font-size="15" font-weight="bold" fill="#000">Birth of Pablo Picasso</text>
+<rect x="540" y="366" width="40" height="17" rx="3" fill="#EAECF0"/>
+<text x="560" y="378.5" font-size="11" text-anchor="middle" fill="#202122">Birth</text>
+<path stroke="#A2A9B1" d="M526,392H786"/>
+<text x="540" y="414" font-size="13" font-weight="bold" fill="#000">Date</text>
+<text x="640" y="414" font-size="13" fill="#000">25 October 1881</text>
+<rect x="532" y="424" width="248" height="26" fill="#FFF3E0"/>
+<text x="540" y="442" font-size="13" font-weight="bold" fill="#000">Place</text>
+<text x="640" y="442" font-size="13" fill="#36C">Málaga</text>
+
+<!-- Callouts -->
+<text x="405" y="84" text-anchor="middle" fill="#039">Host Subject</text>
+<path stroke="#039" d="M350,79H284"/>
+<path stroke="#039" d="M460,79H526"/>
+
+<text x="405" y="226" text-anchor="middle" fill="#390">Dependent Subject</text>
+<text x="405" y="244" text-anchor="middle" font-size="12" fill="#390">edited and shown as part</text>
+<text x="405" y="259" text-anchor="middle" font-size="12" fill="#390">of its Host Subject</text>
+<path stroke="#390" d="M325,221L270,236"/>
+<path stroke="#390" d="M487,221L531,176"/>
+
+<text x="405" y="300" text-anchor="middle" fill="#D96B00">Standalone Subject</text>
+<text x="405" y="318" text-anchor="middle" font-size="12" fill="#D96B00">picked in the editor,</text>
+<text x="405" y="333" text-anchor="middle" font-size="12" fill="#D96B00">a link in the infobox</text>
+<path stroke="#D96B00" d="M325,296L262,301"/>
+<path stroke="#D96B00" d="M487,296L537,224"/>
+
+<text x="405" y="380" text-anchor="middle" fill="#390">On its own</text>
+<text x="405" y="398" text-anchor="middle" font-size="12" fill="#390">named after its Schema</text>
+<text x="405" y="413" text-anchor="middle" font-size="12" fill="#390">and its Host Subject</text>
+<path stroke="#390" d="M455,375L522,357"/>
+</svg>

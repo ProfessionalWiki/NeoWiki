@@ -61,6 +61,8 @@ others find it under "Referenced by" on their `Special:Subject` page.
 
 ## Consequences
 
+![A Person's editor and infobox, both showing its Birth's fields inline, and the Birth on its own on Special:Subject; callouts name the Host Subject, the Dependent Subject and a standalone Subject](035-dependent-subjects.svg)
+
 - Editing: the Host Subject's editor shows a Dependent Subject's fields inline instead of a picker. If the relation
   property targets several Schemas, adding a Dependent Subject first asks which one.
 - Display: a Dependent Subject is shown as part of its Host Subject. It is named after its Schema and its Host
