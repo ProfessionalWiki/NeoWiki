@@ -189,7 +189,7 @@ These are the settings you are most likely to change. For the full list with des
 
 | Behaviour | Page-first | Subject-first |
 |---|---|---|
-| Creator: "Store the subject on" | shown; defaults to the current page; a new page needs a title | hidden; always a new page |
+| Creator: the destination beside **Create** | shown; defaults to the current page; a new page needs a title | not shown; always a page of the Subject's own |
 | Standalone target created inside the editor | non-main Subject on the edited Subject's page | its own page |
 | Landing after save | the page | Special:Subject |
 | Links to Subjects in infoboxes and views | the page | Special:Subject |
