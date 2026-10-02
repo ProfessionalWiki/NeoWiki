@@ -65,14 +65,13 @@ class SubjectDisplayName {
 	}
 
 	/**
-	 * The Subject whose label to show in place of the page's own title, or null to show the title: the
-	 * Main Subject of a page the system titled by a Subject id, since the id names nothing a reader
-	 * knows. Only a labelled one: the Schema name would make every unlabelled page of a Schema alike.
+	 * The Subject to show in place of the page's own title, or null to show the title: the Main Subject
+	 * of a page the system titled by a Subject id, since the id names nothing a reader knows.
 	 */
 	public static function inPlaceOfPageTitle( PageSubjects $pageSubjects, string $pageName ): ?Subject {
 		$mainSubject = $pageSubjects->getMainSubject();
 
-		if ( $mainSubject?->getLabel() === null || !self::isTitledBySubjectOnIt( $pageName, $pageSubjects ) ) {
+		if ( $mainSubject === null || !self::isTitledBySubjectOnIt( $pageName, $pageSubjects ) ) {
 			return null;
 		}
 

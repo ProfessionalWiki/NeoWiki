@@ -28,6 +28,7 @@ class SubjectIdTitledPageLinkTest extends NeoWikiIntegrationTestCase {
 
 	private const string SUBJECT_ID = 's1zz1111111azz8';
 	private const string SUBJECT_NAMESPACE_ID = 's1zz1111111azz9';
+	private const string UNLABELLED_ID = 's1zz1111111azz7';
 
 	private int $pageId;
 
@@ -46,6 +47,18 @@ class SubjectIdTitledPageLinkTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertStringContainsString( 'Ada Lovelace', $link );
 		$this->assertStringContainsString( self::SUBJECT_ID, $link );
+	}
+
+	public function testAChangeListLinksToThePageOfASubjectWithoutALabelByItsTitle(): void {
+		$pageId = $this->createPageWithSubjects(
+			ucfirst( self::UNLABELLED_ID ),
+			TestSubject::build( id: self::UNLABELLED_ID, label: null )
+		)->getPageId();
+		$this->listRow( $pageId, NS_MAIN, ucfirst( self::UNLABELLED_ID ), null );
+
+		$link = $this->getServiceContainer()->getLinkRenderer()->makeLink( Title::newFromText( self::UNLABELLED_ID ) );
+
+		$this->assertStringContainsString( '>' . ucfirst( self::UNLABELLED_ID ) . '</a>', $link );
 	}
 
 	public function testALinkOutsideAChangeListShowsTheTitle(): void {

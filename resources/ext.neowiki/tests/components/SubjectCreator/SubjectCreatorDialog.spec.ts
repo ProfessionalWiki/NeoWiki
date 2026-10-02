@@ -239,6 +239,14 @@ describe( 'SubjectCreatorDialog', () => {
 	let mintSubjectIdMock: ReturnType<typeof vi.fn>;
 	let repositorySpy: ReturnType<typeof vi.spyOn>;
 
+	// Every route that makes the new Subject a page's Main Subject creates it under the id the
+	// editor showed for it.
+	function expectMainSubjectCreated( pageId: number, label: string | null, schemaName: string, comment: string ): void {
+		expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
+			pageId, label, schemaName, expect.any( StatementList ), comment, new SubjectId( MINTED_ID ),
+		);
+	}
+
 	// Re-callable inside a test that needs another wiki configuration; the mount below reads it
 	// lazily, so re-stubbing before mounting is enough.
 	function stubMw( config: Record<string, unknown> = {} ): void {
@@ -526,13 +534,7 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( { name: 'SummaryAction' } ).vm.$emit( 'save', 'test summary' );
 		await flushPromises();
 
-		expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
-			PAGE_ID,
-			'Typed label',
-			SCHEMA_NAME,
-			expect.any( StatementList ),
-			'test summary',
-		);
+		expectMainSubjectCreated( PAGE_ID, 'Typed label', SCHEMA_NAME, 'test summary' );
 	} );
 
 	it( 'sends no label when the field was left empty', async () => {
@@ -544,13 +546,7 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( { name: 'SummaryAction' } ).vm.$emit( 'save', 'test summary' );
 		await flushPromises();
 
-		expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
-			PAGE_ID,
-			null,
-			SCHEMA_NAME,
-			expect.any( StatementList ),
-			'test summary',
-		);
+		expectMainSubjectCreated( PAGE_ID, null, SCHEMA_NAME, 'test summary' );
 	} );
 
 	it( 'does not pass summary when it is empty', async () => {
@@ -562,13 +558,7 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( { name: 'SummaryAction' } ).vm.$emit( 'save', '' );
 		await flushPromises();
 
-		expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
-			PAGE_ID,
-			null,
-			SCHEMA_NAME,
-			expect.any( StatementList ),
-			DEFAULT_CREATE_SUMMARY,
-		);
+		expectMainSubjectCreated( PAGE_ID, null, SCHEMA_NAME, DEFAULT_CREATE_SUMMARY );
 	} );
 
 	it( 'calls createOtherSubject when the page already has a main subject', async () => {
@@ -916,9 +906,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper, 'why' );
 
-				expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
-					PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), 'why',
-				);
+				expectMainSubjectCreated( PAGE_ID, null, SCHEMA_NAME, 'why' );
 				expect( reloadMock ).toHaveBeenCalled();
 			} );
 		} );
@@ -1733,9 +1721,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
-					EXISTING_PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY,
-				);
+				expectMainSubjectCreated( EXISTING_PAGE_ID, null, SCHEMA_NAME, DEFAULT_CREATE_SUMMARY );
 				expect( location.href ).toBe( '/wiki/ACME Inc' );
 				expect( mw.storage.session.set ).toHaveBeenCalledWith( 'neowiki-subject-creator-success', '1' );
 			} );
@@ -1877,9 +1863,7 @@ describe( 'SubjectCreatorDialog', () => {
 				await saved;
 				await flushPromises();
 
-				expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
-					EXISTING_PAGE_ID, null, NEW_SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY,
-				);
+				expectMainSubjectCreated( EXISTING_PAGE_ID, null, NEW_SCHEMA_NAME, DEFAULT_CREATE_SUMMARY );
 				expect( location.href ).toContain( 'ACME Inc' );
 				expect( reloadMock ).not.toHaveBeenCalled();
 			} );
@@ -1913,9 +1897,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
-					OTHER_PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY,
-				);
+				expectMainSubjectCreated( OTHER_PAGE_ID, null, SCHEMA_NAME, DEFAULT_CREATE_SUMMARY );
 			} );
 
 			it( 'drops the page picked once the choice moves back to a new page', async () => {
@@ -2089,9 +2071,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
-					EXISTING_PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY,
-				);
+				expectMainSubjectCreated( EXISTING_PAGE_ID, null, SCHEMA_NAME, DEFAULT_CREATE_SUMMARY );
 			} );
 
 			it( 'reads the fixed page only once opened', async () => {
@@ -2371,13 +2351,7 @@ describe( 'SubjectCreatorDialog', () => {
 			const savedSchema = ( schemaStore.saveSchema as ReturnType<typeof vi.fn> ).mock.calls[ 0 ][ 0 ] as Schema;
 			expect( savedSchema.getName() ).toBe( NEW_SCHEMA_NAME );
 
-			expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
-				PAGE_ID,
-				null,
-				NEW_SCHEMA_NAME,
-				expect.any( StatementList ),
-				'Created subject',
-			);
+			expectMainSubjectCreated( PAGE_ID, null, NEW_SCHEMA_NAME, 'Created subject' );
 		} );
 
 		it( 'passes edit summary to saveSchema on final save', async () => {
@@ -2835,8 +2809,8 @@ describe( 'SubjectCreatorDialog', () => {
 			);
 		} );
 
-		// A second pass over a root the first one created would make a second Subject, or be
-		// refused outright by a page title that is now taken.
+		// A second pass over a root the first one created would be refused: its id, and any page
+		// title it was given, are taken now.
 		it( 'updates rather than creates the Subject again after a save that stopped part way', async () => {
 			( subjectStore.createSubject as any ).mockRejectedValueOnce( new Error( 'Server error' ) );
 			sessionDrafts = [ { subject: draft(), pageId: 0 } ];

@@ -230,15 +230,14 @@ class SubjectDisplayNameTest extends TestCase {
 		$this->assertNull( $this->inPlaceOfPageTitle( new SubjectLabel( 'Stored' ), 'Standardization' ) );
 	}
 
-	/**
-	 * The id is all there is to show: the Schema name would make every unlabelled page of a Schema
-	 * look alike.
-	 */
-	public function testAPageTitledAfterAnUnlabelledMainSubjectKeepsItsTitle(): void {
-		$this->assertNull( SubjectDisplayName::inPlaceOfPageTitle(
-			$this->pageHolding( $this->newSubject( null ), true ),
-			ucfirst( self::SUBJECT_ID )
-		) );
+	public function testAPageTitledAfterAnUnlabelledMainSubjectStillShowsThatSubjectInstead(): void {
+		$this->assertSame(
+			self::SUBJECT_ID,
+			SubjectDisplayName::inPlaceOfPageTitle(
+				$this->pageHolding( $this->newSubject( null ), true ),
+				ucfirst( self::SUBJECT_ID )
+			)?->getId()->text
+		);
 	}
 
 	public function testAPageTitledAfterAnotherSubjectOnItShowsTheMainSubjectsLabelInstead(): void {

@@ -276,18 +276,25 @@ export class RestSubjectRepository implements SubjectRepository {
 		return { requestedId: data.requestedId, subjects: data.subjects };
 	}
 
+	/**
+	 * Unlike createOtherSubject, a 409 stays a failure even for a minted id: the endpoint also
+	 * answers 409 when the page has gained a Main Subject meanwhile, so it does not show that this
+	 * very create landed.
+	 */
 	public async createMainSubject(
 		pageId: number,
 		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
 		comment?: string,
+		id?: SubjectId,
 	): Promise<SubjectWriteResult> {
 		const payload = {
 			label: label,
 			schema: schemaName,
 			statements: statementsToJson( statements ),
 			comment,
+			id: id?.text,
 		};
 
 		const response = await this.httpClient.post(

@@ -179,7 +179,7 @@ export const useSubjectStore = defineStore( 'subject', {
 		async validateSubjectUpdate( id: SubjectId, label: string | null, statements: StatementList ): Promise<SubjectViolation[]> {
 			return NeoWikiExtension.getInstance().getSubjectRepository().validateSubjectUpdate( id, label, statements );
 		},
-		async createMainSubject( pageId: number, label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<SubjectId> {
+		async createMainSubject( pageId: number, label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string, id?: SubjectId ): Promise<SubjectId> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createMainSubject(
@@ -188,6 +188,7 @@ export const useSubjectStore = defineStore( 'subject', {
 				schemaName,
 				statements,
 				comment,
+				id,
 			);
 
 			this.recordWriteResult( result, schemaEpoch );

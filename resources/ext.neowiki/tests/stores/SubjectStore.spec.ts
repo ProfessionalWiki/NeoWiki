@@ -392,6 +392,15 @@ describe( 'SubjectStore write results', () => {
 		expect( schemaStore.getSchema( 'Person' ) ).toStrictEqual( savedElsewhere );
 	} );
 
+	it( 'creates the Subject under the id it was given', async () => {
+		const createMainSubject = vi.fn().mockResolvedValue( writeResult( newSubject( { id: id.text } ) ) );
+		withSubjectRepository( { createMainSubject } );
+
+		await useSubjectStore().createMainSubject( 7, null, 'Person', new StatementList( [] ), 'why', id );
+
+		expect( createMainSubject ).toHaveBeenCalledWith( 7, null, 'Person', expect.any( StatementList ), 'why', id );
+	} );
+
 	it( 'records the Subject the creation returned', async () => {
 		const created = newSubject( { id: id.text, label: 'as persisted' } );
 		withSubjectRepository( {

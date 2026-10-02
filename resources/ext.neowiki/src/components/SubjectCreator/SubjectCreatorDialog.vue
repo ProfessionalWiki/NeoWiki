@@ -926,9 +926,8 @@ async function handleCreate( subject: Subject, pageId: number, comment: string )
 }
 
 async function writeRootSubject( subject: Subject, comment: string ): Promise<void> {
-	// A save that stopped part way has created it already, and the answer it got carries the id the
-	// server minted for it. Creating it again would make a second Subject, or be refused outright
-	// by a page title that is now taken.
+	// A save that stopped part way has created it already, and the answer it got says where. Creating
+	// it again would be refused: its id, and any page title it was given, are taken now.
 	if ( writtenRoot !== null ) {
 		await subjectStore.updateSubject( asWrittenRoot( subject, writtenRoot ), comment );
 		return;
@@ -965,11 +964,11 @@ async function writeRootSubject( subject: Subject, comment: string ): Promise<vo
 	await saveDraftSchema( comment );
 
 	// A page that has a Main Subject already gets this one beside it; one that has none is being
-	// given its topic. Only the second route takes the id minted here, so a Subject created on the
-	// first can be pointed at it before either exists.
+	// given its topic. Both take the id minted here, so the Subject is saved under the id the pane
+	// has been showing.
 	const subjectId = answer.besideMainSubject ?
 		await createBesideMainSubject( pageId, label, schemaName, statements, comment, subject.getId() ) :
-		await subjectStore.createMainSubject( pageId, label, schemaName, statements, comment );
+		await subjectStore.createMainSubject( pageId, label, schemaName, statements, comment, subject.getId() );
 
 	writtenRoot = { subjectId, pageId, pageTitle: answer.pageTitle };
 }
@@ -989,8 +988,8 @@ async function saveDraftSchema( comment: string ): Promise<void> {
 }
 
 /**
- * The Subject as it now stands under the id the server gave it, for a second pass over a root the
- * first one created.
+ * The Subject as it now stands, placed where the first pass created it, for a second pass over
+ * that root.
  */
 function asWrittenRoot( subject: Subject, written: { subjectId: SubjectId; pageId: number | null; pageTitle: string | null } ): Subject {
 	return new SubjectWithContext(

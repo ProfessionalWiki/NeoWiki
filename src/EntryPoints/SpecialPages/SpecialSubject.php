@@ -6,10 +6,12 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages;
 
 use MediaWiki\Html\Html;
 use MediaWiki\Message\Message;
+use MediaWiki\Output\OutputPage;
 use MediaWiki\SpecialPage\SpecialPage;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
+use ProfessionalWiki\NeoWiki\Presentation\SubjectLabelHtml;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectNameMessage;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectNamePresenter;
 
@@ -32,11 +34,7 @@ class SpecialSubject extends SpecialPage {
 		$attributes = [ 'id' => 'ext-neowiki-subject' ];
 
 		if ( $subjectId !== null ) {
-			$name = $this->subjectName( $extension, $subjectId );
-
-			if ( $name !== null ) {
-				$out->setPageTitleMsg( $name );
-			}
+			$this->headBySubject( $out, $extension, $subjectId );
 
 			// What the Subject's own view reads. The picker shown without one reads none of it, and
 			// each read costs a permission check per Mapping page.
@@ -58,12 +56,13 @@ class SpecialSubject extends SpecialPage {
 	}
 
 	/**
-	 * The Subject's own name, for the H1 and with it the browser tab, a bookmark and a history entry:
-	 * this page is where a concept URI leads, so those should name the thing rather than the page
-	 * showing it. Null leaves the page's description standing, which is what a Subject this wiki does
-	 * not hold gets — and, indistinguishably, one on a page the reader may not read (#1046).
+	 * Heads the page by the Subject's own name, and with it the browser tab, a bookmark and a history
+	 * entry: this page is where a concept URI leads, so those should name the thing rather than the page
+	 * showing it. A Subject nobody named is headed by "No label defined" and its id. A Subject this wiki
+	 * does not hold leaves the page's description standing, and so, indistinguishably, does one on a
+	 * page the reader may not read (#1046).
 	 */
-	private function subjectName( NeoWikiExtension $extension, SubjectId $subjectId ): ?Message {
+	private function headBySubject( OutputPage $out, NeoWikiExtension $extension, SubjectId $subjectId ): void {
 		$presenter = new SubjectNamePresenter();
 
 		$extension->newGetSubjectQuery( $presenter, $this->getAuthority() )->execute(
@@ -75,10 +74,15 @@ class SpecialSubject extends SpecialPage {
 		$displayName = $presenter->getDisplayName();
 
 		if ( $displayName === null ) {
-			return null;
+			return;
 		}
 
-		return SubjectNameMessage::from( $this, $subjectId, $presenter->displayNameIsGenerated() ? null : $displayName );
+		if ( $presenter->displayNameIsGenerated() ) {
+			SubjectLabelHtml::headPage( $out, null, $subjectId );
+			return;
+		}
+
+		$out->setPageTitleMsg( SubjectNameMessage::from( $this, $subjectId, $displayName ) );
 	}
 
 	public function getGroupName(): string {

@@ -48,4 +48,16 @@ class SubjectLabelHtmlTest extends TestCase {
 		$this->assertStringContainsString( 'class="ext-neowiki-subject-label-id"', $this->withId( 'Ada Lovelace' ) );
 	}
 
+	public function testASubjectWithoutALabelReadsAsNoLabelDefinedWithTheId(): void {
+		$html = SubjectLabelHtml::withId( new MockMessageLocalizer( 'qqx' ), null, 's1zz1111111azz4' );
+
+		$this->assertSame( '(neowiki-subject-no-label)(word-separator)(parentheses: s1zz1111111azz4)', strip_tags( $html ) );
+	}
+
+	public function testNoLabelDefinedCarriesTheClassItIsStyledBy(): void {
+		$html = SubjectLabelHtml::withId( new MockMessageLocalizer( 'qqx' ), null, 's1zz1111111azz4' );
+
+		$this->assertStringContainsString( '<span class="ext-neowiki-subject-label-none">(neowiki-subject-no-label)</span>', $html );
+	}
+
 }

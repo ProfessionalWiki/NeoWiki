@@ -24,11 +24,13 @@ the choices worth recording are where the surfaces differ.
 the `neowiki-subject-generated-name` message — the bracketing MediaWiki documents on `blanknamespace`, "(Main)". Test
 users read a Schema name, even bracketed, as a demand to add a label; an id is expected to name the Subject without
 suggesting that anything is missing, and the brackets set it apart from the bare id a relation shows for a target that
-cannot be found. Since the id does not say what the Subject is, an infobox, a Manage Subjects row and an editor pane
-show the Schema beside it. A Main Subject's page name is left unmarked, having been chosen by whoever titled the page.
-The id is put in place by the presentation layer, so `rdfs:label`, Lua and `{{#neowiki_value}}` keep the bare Schema
-name; REST carries `displayNameIsGenerated`, which a client cannot derive, since a Main Subject on a page titled after
-its Schema is named its Schema name without anyone having generated it.
+cannot be found. Since the id does not say what the Subject is, an infobox and a Manage Subjects row show the Schema
+beside it. Where a label would head the Subject, in the editor pane and in the headings of Special:Subject and of a page
+titled by its id, “No label defined” stands in its place, with the id beside or above it. A Main Subject's page name is
+left unmarked, having been chosen by whoever titled the page. The id is put in place by the presentation layer, so
+`rdfs:label`, Lua and `{{#neowiki_value}}` keep the bare Schema name; REST carries `displayNameIsGenerated`, which a
+client cannot derive, since a Main Subject on a page titled after its Schema is named its Schema name without anyone
+having generated it.
 
 **The graph materializes the fallback for Main Subjects only.** Any other label-less Subject gets no `name`
 property: the Schema name there would make every unnamed Subject of a Schema indistinguishable in query results, and

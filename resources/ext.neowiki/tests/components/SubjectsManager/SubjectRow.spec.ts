@@ -39,7 +39,7 @@ function mountRow( props: Record<string, unknown> = {} ): VueWrapper {
 		props: { subject, expanded: true, ...props },
 		global: {
 			mocks: { $i18n: createI18nMock() },
-			stubs: { CdxIcon: true },
+			stubs: { CdxIcon: true, SubjectIdDisplay: false },
 		},
 	} );
 }
@@ -57,16 +57,12 @@ describe( 'SubjectRow', () => {
 
 	describe( 'the identifiers in the expanded footer', () => {
 
-		it( 'copies the Subject id and says what it copied', async () => {
+		it( 'copies the Subject id from the expanded footer', async () => {
 			const wrapper = mountRow();
 
-			await wrapper.find( '.ext-neowiki-subject-row__id-button' ).trigger( 'click' );
+			await wrapper.get( '.ext-neowiki-subject-row__id button' ).trigger( 'click' );
 
 			expect( writeText ).toHaveBeenCalledWith( SUBJECT_ID );
-			expect( mw.notify ).toHaveBeenCalledWith(
-				'neowiki-managesubjects-id-copied' + SUBJECT_ID,
-				{ type: 'success' },
-			);
 		} );
 
 		it( 'copies the concept URI, not the bare id', async () => {
@@ -105,18 +101,15 @@ describe( 'SubjectRow', () => {
 		} );
 
 		// A clipboard write is refused outright in some browsers and permission setups.
-		it.each( [
-			[ 'id', 'neowiki-managesubjects-id-copy-error' ],
-			[ 'iri', 'neowiki-managesubjects-iri-copy-error' ],
-		] )( 'reports a refused %s copy instead of claiming success', async ( which, message ) => {
+		it( 'reports a refused iri copy instead of claiming success', async () => {
 			vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 			writeText.mockRejectedValue( new Error( 'clipboard denied' ) );
 
 			const wrapper = mountRow();
-			await wrapper.find( `.ext-neowiki-subject-row__${ which }-button` ).trigger( 'click' );
+			await wrapper.find( '.ext-neowiki-subject-row__iri-button' ).trigger( 'click' );
 			await Promise.resolve();
 
-			expect( mw.notify ).toHaveBeenCalledWith( message, { type: 'error' } );
+			expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-managesubjects-iri-copy-error', { type: 'error' } );
 		} );
 
 	} );
