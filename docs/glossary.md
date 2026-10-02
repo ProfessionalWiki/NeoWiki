@@ -87,6 +87,8 @@ In this example Chapter and Section are Dependent Subjects. Book and Chapter are
 
 A Schema ([ADR 6](adr/006-schemas.md)) defines a type of Subject. Examples: Person, Company, Product, etc.
 
+![A Schema as its page shows it; callouts name its name, description and Property Definitions, and a Property Definition's property name and Property Type](schema.svg)
+
 Schemas have a name, description, and a list of Property Definitions, and declare whether their Subjects are [Dependent Subjects](#dependent-subject).
 
 #### Property Definition
