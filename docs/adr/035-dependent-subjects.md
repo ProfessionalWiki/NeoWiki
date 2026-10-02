@@ -27,6 +27,8 @@ is created and cannot be changed later; to switch, create a new Schema.
 A Dependent Subject is part of exactly one Host Subject, the Subject whose Relation points at it, as a Birth is part
 of its Person. 
 
+![A Person's editor and infobox, both showing its Birth's fields inline, and the Birth on its own on Special:Subject; callouts name the Host Subject, the Dependent Subject and a standalone Subject](035-dependent-subjects.svg)
+
 Each Dependent Subject:
 
 - Is referenced by exactly one Relation. Additional Relations to it are refused.
@@ -60,8 +62,6 @@ points at its participants, or a Dependent Subject of one side that points at th
 others find it under "Referenced by" on their `Special:Subject` page.
 
 ## Consequences
-
-![A Person's editor and infobox, both showing its Birth's fields inline, and the Birth on its own on Special:Subject; callouts name the Host Subject, the Dependent Subject and a standalone Subject](035-dependent-subjects.svg)
 
 - Editing: the Host Subject's editor shows a Dependent Subject's fields inline instead of a picker. If the relation
   property targets several Schemas, adding a Dependent Subject first asks which one.
