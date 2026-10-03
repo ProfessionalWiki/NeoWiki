@@ -45,15 +45,15 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 
 	private function upsertPageNode( TransactionInterface $transaction, Page $page ): void {
 		$properties = $page->getProperties()->asArray();
+		$properties['id'] = $page->getId()->id;
+		$properties['wiki_id'] = $this->wikiId;
 		[ $typedSetClauses, $typedParams, $properties ] = $this->extractTypedValues( $properties );
 
-		// Create or update the page. Page identity is scoped per wiki so that pages from different
-		// wikis sharing the same id do not collide in a shared graph. The wiki_id is persisted by
-		// the MERGE pattern itself.
+		// Page identity is scoped per wiki so that pages from different wikis sharing the same id do not
+		// collide in a shared graph.
 		$cypher = '
 			MERGE (page:Page {id: $pageId, wiki_id: $wikiId})
-			SET page += $properties
-			SET page.id = $pageId';
+			SET page = $properties';
 
 		if ( $typedSetClauses !== '' ) {
 			$cypher .= ',' . $typedSetClauses;

@@ -1287,6 +1287,21 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'hello', $page['customLabel'] );
 	}
 
+	public function testSavingPageWithoutAPagePropertyRemovesItFromThePageNode(): void {
+		$store = $this->newProjectionStore();
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			properties: TestPageProperties::build( extraProperties: [ 'customLabel' => 'hello' ] )
+		) );
+
+		$store->savePage( TestPage::build( id: 42 ) );
+
+		$result = $this->readGraph( 'MATCH (page:Page {id: 42}) RETURN properties(page) as page' );
+
+		$this->assertArrayNotHasKey( 'customLabel', $result->first()->toRecursiveArray()['page'] );
+	}
+
 	public function testSavesExtensionProvidedDateTimeAsNeo4jDatetime(): void {
 		$store = $this->newProjectionStore();
 
