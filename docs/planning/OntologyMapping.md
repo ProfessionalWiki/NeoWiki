@@ -223,7 +223,7 @@ native projection as the default target; the Mapping as a bidirectional definiti
   [RDF Export reference](../api/rdf-export.md) for what it emits.
 - The import *pipeline* mechanics and orchestration — T4.1.
 - Reconciliation / entity linking / `owl:sameAs` minting — WP4 (T4.2); mapped IRIs are its input.
-- Rich chain-of-production provenance and rights — T2.4 model and a T3.4 plug-in (see [ECHOLOT.md](ECHOLOT.md)).
+- Rich chain-of-production provenance and rights — T2.4 model and a T3.4 plug-in.
 - Global, ontology-shaped properties — rejected in [GlobalProperties.md](GlobalProperties.md).
 
 ## Open questions
@@ -320,9 +320,7 @@ Answered by the shipped implementation. Numbers are the original question number
 ## Related
 
 - Planning: [NativeRdfProjection](NativeRdfProjection.md) (why the native projection is shaped as it is),
-  [GlobalProperties](GlobalProperties.md) (why mapping is separate from the data model),
-  [SubjectSources](SubjectSources.md) (the `source → base-URI` registry that is also the RDF prefix/URI map),
-  [ECHOLOT](ECHOLOT.md).
+  [GlobalProperties](GlobalProperties.md) (why mapping is separate from the data model).
 - ADRs: [004 dedicated slot](../adr/004-use-dedicated-slot.md) (source of truth),
   [006 schemas](../adr/006-schemas.md), [010 relation IDs](../adr/010-add-guids-to-relations.md),
   [017 names as identifiers](../adr/017-names-as-identifiers.md),
