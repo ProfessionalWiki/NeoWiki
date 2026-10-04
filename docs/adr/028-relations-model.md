@@ -15,7 +15,7 @@ open:
 - Can a property point to Subjects of several Schemas, such as a Creator that is a Person or a Group?
 - What happens when a Relation points to a Subject that does not exist?
 - Are Subjects that share a page related ([ADR 7](007-multiple-subjects-per-page.md))?
-- Does a relation property need a second name?
+- Does a relation property need a second name for its graph edges?
 
 ## Decision
 
