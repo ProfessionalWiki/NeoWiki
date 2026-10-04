@@ -37,25 +37,9 @@ class CypherTest extends TestCase {
 		Cypher::escape( '' );
 	}
 
-	public function testBuildLabelList(): void {
-		$labels = [ 'Label1', 'Label2', 'Label3' ];
-		$expected = 'Label1:Label2:Label3';
-		$this->assertSame( $expected, Cypher::buildLabelList( $labels ) );
-	}
-
-	public function testBuildLabelListWithEmptyArray(): void {
-		$this->assertSame( '', Cypher::buildLabelList( [] ) );
-	}
-
-	public function testBuildLabelListEscapes(): void {
-		$labels = [ '_', 'Evil`', 'Label3' ];
-		$expected = '`_`:`Evil```:Label3';
-		$this->assertSame( $expected, Cypher::buildLabelList( $labels ) );
-	}
-
-	public function testBuildLabelListWithInvalidLabel(): void {
+	public function testNameHoldingABackslashIsRefused(): void {
 		$this->expectException( InvalidArgumentException::class );
-		Cypher::buildLabelList( [ 'ValidLabel', '' ] );
+		Cypher::escape( 'a' . chr( 92 ) . 'b' );
 	}
 
 }

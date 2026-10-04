@@ -8,8 +8,12 @@ use InvalidArgumentException;
 
 class Cypher {
 
+	/**
+	 * Throws for the empty name and for a name holding a backslash, which Neo4j does not read literally
+	 * inside backticks.
+	 */
 	public static function escape( string $name ): string {
-		if ( $name === '' ) {
+		if ( $name === '' || str_contains( $name, '\\' ) ) {
 			throw new InvalidArgumentException();
 		}
 
@@ -25,19 +29,6 @@ class Cypher {
 
 	private static function nameIsSafe( string $name ): bool {
 		return (bool)\preg_match( '/^\p{L}[\p{L}\d_]*$/u', $name );
-	}
-
-	/**
-	 * @param string[] $labels
-	 */
-	public static function buildLabelList( array $labels ): string {
-		return implode(
-			':',
-			array_map(
-				self::escape( ... ),
-				$labels
-			)
-		);
 	}
 
 }

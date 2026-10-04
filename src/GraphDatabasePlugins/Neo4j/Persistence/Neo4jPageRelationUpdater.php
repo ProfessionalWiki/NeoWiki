@@ -13,8 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
  * Reconciles the outgoing relations of a set of Subjects with the relations those Subjects hold.
  *
  * One query per concern rather than per relation: dropping relations that are gone, dropping those
- * whose type or target changed, and upserting the rest. Cypher cannot parameterize relationship
- * types, so the upserts are grouped by type, one query per distinct type.
+ * whose type or target changed, and upserting the rest.
  */
 class Neo4jPageRelationUpdater {
 
@@ -122,38 +121,41 @@ class Neo4jPageRelationUpdater {
 	 * @param array<string, TypedRelationList> $relationsBySubjectId
 	 */
 	private function createOrUpdateRelations( array $relationsBySubjectId ): void {
-		$rowsByType = [];
+		$rows = [];
 
 		foreach ( $this->eachRelation( $relationsBySubjectId ) as [ $subjectId, $relation ] ) {
-			$rowsByType[$relation->type->text][] = [
+			$rows[] = [
 				'subjectId' => $subjectId,
 				'relationId' => $relation->id->asString(),
+				'relationType' => $relation->type->text,
 				'targetId' => $relation->targetId->text,
 				'properties' => $this->relationProperties( $relation ),
 			];
 		}
 
-		foreach ( $rowsByType as $relationType => $rows ) {
-			// A relation whose target Subject does not exist yet creates it as a stub: a node with only
-			// the id and wiki_id properties and the Subject label. ON CREATE keeps an already-existing
-			// target (a real Subject or an earlier stub) untouched. The stub is upgraded in place when the
-			// real Subject is later saved, since the save path matches the same :Subject label and id.
-			// The source is stamped the same way rather than relying on the caller having created it:
-			// wiki_id is what scopes a node to its wiki, so no path may leave a node without one.
-			$this->transaction->run(
-				'UNWIND $relations AS row
-					MERGE (subject:Subject {id: row.subjectId})
-					ON CREATE SET subject.wiki_id = $wikiId
-					MERGE (target:Subject {id: row.targetId})
-					ON CREATE SET target.wiki_id = $wikiId
-					MERGE (subject)-[relation:' . Cypher::escape( (string)$relationType ) . ' {id: row.relationId}]->(target)
-					SET relation = row.properties',
-				[
-					'relations' => $rows,
-					'wikiId' => $this->wikiId,
-				]
-			);
+		if ( $rows === [] ) {
+			return;
 		}
+
+		// A relation whose target Subject does not exist yet creates it as a stub: a node with only
+		// the id and wiki_id properties and the Subject label. ON CREATE keeps an already-existing
+		// target (a real Subject or an earlier stub) untouched. The stub is upgraded in place when the
+		// real Subject is later saved, since the save path matches the same :Subject label and id.
+		// The source is stamped the same way rather than relying on the caller having created it:
+		// wiki_id is what scopes a node to its wiki, so no path may leave a node without one.
+		$this->transaction->run(
+			'UNWIND $relations AS row
+				MERGE (subject:Subject {id: row.subjectId})
+				ON CREATE SET subject.wiki_id = $wikiId
+				MERGE (target:Subject {id: row.targetId})
+				ON CREATE SET target.wiki_id = $wikiId
+				MERGE (subject)-[relation:$(row.relationType) {id: row.relationId}]->(target)
+				SET relation = row.properties',
+			[
+				'relations' => $rows,
+				'wikiId' => $this->wikiId,
+			]
+		);
 	}
 
 	private function relationProperties( TypedRelation $relation ): array {

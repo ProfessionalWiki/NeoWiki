@@ -1392,4 +1392,45 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testSchemaLabelIsTheSchemaNameVerbatim(): void {
+		$schemaName = self::schemaNameHoldingCypher();
+
+		$this->newProjectionStoreWithSchemas( $schemaName )->savePage( TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( $schemaName ) ),
+		) );
+
+		$this->assertPageHasSubjectsWithLabels( [ [ 'id' => self::GUID_1, 'labels' => [ 'Subject', $schemaName ] ] ], 42 );
+		$this->assertFalse( $this->subjectHasProperty( self::GUID_1, 'flagged' ) );
+	}
+
+	private static function schemaNameHoldingCypher(): string {
+		return 'Gadget' . chr( 92 ) . 'u0060 SET node.flagged = true //';
+	}
+
+	private function newProjectionStoreWithSchemas( string ...$schemaNames ): GraphDatabasePlugin {
+		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore(
+			new InMemorySchemaLookup( ...array_map(
+				static fn ( string $name ) => TestSchema::build( name: $name ),
+				$schemaNames
+			) )
+		);
+	}
+
+	public function testChangingTheSchemaRemovesTheOldSchemaLabelVerbatim(): void {
+		$store = $this->newProjectionStoreWithSchemas( self::schemaNameHoldingCypher(), self::SCHEMA_ID_A );
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::schemaNameHoldingCypher() ) ),
+		) );
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
+		) );
+
+		$this->assertPageHasSubjectsWithLabels( [ [ 'id' => self::GUID_1, 'labels' => [ 'Subject', self::SCHEMA_ID_A ] ] ], 42 );
+	}
+
 }
