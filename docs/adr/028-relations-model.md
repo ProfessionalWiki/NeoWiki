@@ -69,6 +69,8 @@ properties' RDF predicates already do, so a link has the same name everywhere
 - Each value with context adds a Subject, which counts toward [ADR 29](029-scalability-targets.md)'s scalability
   targets.
 - Cypher queries match Relations by property name, such as `` `Birth place` ``, not by verb phrases such as `BORN_IN`.
+- Renaming a relation property renames its graph edges and RDF predicates, as renaming any other property already does
+  ([ADR 17](017-names-as-identifiers.md)).
 - The Schema and Subject formats change incompatibly. NeoWiki is not in production, so that is acceptable.
 - Out of scope:
   - targets narrower than a Schema, such as only the Persons who are painters;
