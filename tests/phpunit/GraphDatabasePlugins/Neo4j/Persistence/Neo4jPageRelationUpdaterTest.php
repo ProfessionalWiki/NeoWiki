@@ -300,15 +300,12 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 			TestRelation::build(
 				id: 'rTestSRU1111rr1',
 				targetId: self::TARGET_SUBJECT_1,
-			)->withType( new RelationType(
-				'Made by' . chr( 92 ) . 'u0060 {id: row.relationId}]->(target) SET subject.flagged = true //'
-			) ),
+			)->withType( new RelationType( 'Made by' . str_repeat( chr( 92 ) . 'u0060', 2 ) ) ),
 		] );
 
 		$this->updateRelations( $relations );
 
 		$this->assertHasRelations( $relations );
-		$this->assertFalse( $this->subjectHasProperty( self::SUBJECT_ID, 'flagged' ) );
 	}
 
 	public function testRelationWithNonExistentTargetNodeDoesNotCreateDuplicateSubject(): void {

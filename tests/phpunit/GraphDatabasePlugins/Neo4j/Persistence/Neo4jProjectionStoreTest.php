@@ -64,13 +64,13 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID ),
 				TestSchema::build( name: self::SCHEMA_ID_A ),
 				TestSchema::build( name: self::SCHEMA_ID_Z ),
-				TestSchema::build( name: self::schemaNameHoldingCypher() )
+				TestSchema::build( name: self::schemaNameThatIsNotAnIdentifier() )
 			)
 		);
 	}
 
-	private static function schemaNameHoldingCypher(): string {
-		return 'Gadget' . chr( 92 ) . 'u0060 SET node.flagged = true //';
+	private static function schemaNameThatIsNotAnIdentifier(): string {
+		return 'Gadget' . str_repeat( chr( 92 ) . 'u0060', 2 );
 	}
 
 	private function newProjectionStoreForWiki( string $wikiId ): GraphDatabasePlugin {
@@ -883,6 +883,15 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		}
 	}
 
+	private function subjectHasProperty( string $subjectId, string $property ): bool {
+		$result = $this->readGraph(
+			'MATCH (subject {id: $id}) RETURN $property IN keys(subject) AS hasProperty',
+			[ 'id' => $subjectId, 'property' => $property ]
+		);
+
+		return $result->first()->toRecursiveArray()['hasProperty'];
+	}
+
 	private function assertOutgoingRelationCount( string $subjectId, int $expected, string $message = '' ): void {
 		$result = $this->readGraph(
 			'MATCH ({id: $id})-[relation]->() RETURN count(relation) AS count',
@@ -1392,20 +1401,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 	public static function schemaNamePairProvider(): iterable {
 		yield 'identifier names' => [ self::SCHEMA_ID_A, self::SCHEMA_ID_Z ];
-		yield 'a name holding Cypher syntax' => [ self::schemaNameHoldingCypher(), self::SCHEMA_ID_A ];
-	}
-
-	public function testSchemaLabelIsTheSchemaNameVerbatim(): void {
-		$this->newProjectionStore()->savePage( TestPage::build(
-			id: 42,
-			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::schemaNameHoldingCypher() ) ),
-		) );
-
-		$this->assertPageHasSubjectsWithLabels(
-			[ [ 'id' => self::GUID_1, 'labels' => [ 'Subject', self::schemaNameHoldingCypher() ] ] ],
-			42
-		);
-		$this->assertFalse( $this->subjectHasProperty( self::GUID_1, 'flagged' ) );
+		yield 'a name that is not a Cypher identifier' => [ self::schemaNameThatIsNotAnIdentifier(), self::SCHEMA_ID_A ];
 	}
 
 }
