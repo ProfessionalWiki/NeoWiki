@@ -120,6 +120,16 @@ describe( 'SubjectsTable', () => {
 		expect( findSchemaMenu( wrapper ).find( '.cdx-select-vue__handle' ).text() ).toBe( 'Unlisted' );
 	} );
 
+	it( 'offers the wiki\'s Schemas in the menu', async () => {
+		useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+			{ name: 'Gadget', description: '', propertyCount: 1 },
+		] );
+		const wrapper = mountTable();
+		await flushPromises();
+
+		expect( findSchemaMenu( wrapper ).text() ).toContain( 'Gadget' );
+	} );
+
 	it( 'shows an unnamed Subject by its bracketed id', async () => {
 		getSubjectSummaries.mockResolvedValue( {
 			subjects: [ summary( 's1demo1aaaaaaa1', { displayName: 'Computer', displayNameIsGenerated: true } ) ],

@@ -24,8 +24,8 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
  * cut short by hidden rows reads as the end of the listing.
  *
  * The node `name` is SubjectDisplayName::labelOrPageName, absent when that is null, so it is the chosen name as is.
- * Each fetch reads every Subject in scope, found by label: the Schema's when one is given. Only the lookup of a page
- * by id uses a property index, the Page (wiki_id, id) constraint.
+ * Every fetch but newest first over every Schema reads every Subject in scope, found by label: the Schema's when one
+ * is given.
  */
 readonly class Neo4jSubjectSummaryLookup implements SubjectSummaryLookup {
 
@@ -119,7 +119,7 @@ readonly class Neo4jSubjectSummaryLookup implements SubjectSummaryLookup {
 
 	/**
 	 * A Subject that several pages hold (ADR 32 duplicates) is listed once, under the lowest page id. Stub nodes have
-	 * no HasSubject edge, so they never match.
+	 * no page, so they are never listed.
 	 */
 	private function cypher( SubjectSummaryQuery $query, ?SubjectSummaryCursor $after ): string {
 		$sortValue = match ( $query->sort ) {
@@ -130,13 +130,8 @@ readonly class Neo4jSubjectSummaryLookup implements SubjectSummaryLookup {
 			SubjectSummarySort::Edited => 'lastEdited',
 		};
 
-		// A dynamic label takes the Schema name as a parameter, so no name can change the query.
-		$subjectLabels = $query->schemaName === null ? 'Subject' : 'Subject:$($schemaName)';
-
 		return "
-			MATCH (page:Page {wiki_id: \$wikiId})-[:HasSubject]->(subject:$subjectLabels {wiki_id: \$wikiId})
-			WITH subject, min(page.id) AS pageId
-			MATCH (page:Page {wiki_id: \$wikiId, id: pageId})
+			{$this->subjectsWithTheirPages( $query, $after )}
 			WITH subject, page, head([label IN labels(subject) WHERE label <> 'Subject']) AS schemaName,
 				coalesce(page.lastUpdated.epochSeconds, 0) AS lastEdited
 			WHERE \$search = ''
@@ -149,6 +144,34 @@ readonly class Neo4jSubjectSummaryLookup implements SubjectSummaryLookup {
 				lastEdited, sortValue
 			ORDER BY {$this->orderBy( $query )}
 			LIMIT \$limit";
+	}
+
+	/**
+	 * Newest first over every Schema walks the Subject id index from the cursor on and stops at the limit. Neo4j cannot
+	 * tell a rare Schema from a common one, so with a Schema such a walk could cover the whole index. A column sort
+	 * reads every Subject anyway, and with the walk's subquery Neo4j sorts them all in memory rather than keeping only
+	 * the rows it returns.
+	 */
+	private function subjectsWithTheirPages( SubjectSummaryQuery $query, ?SubjectSummaryCursor $after ): string {
+		if ( $query->sort === SubjectSummarySort::Newest && $query->schemaName === null ) {
+			$idCondition = $after === null ? 'subject.id IS NOT NULL' : 'subject.id < $afterId';
+
+			return "
+				MATCH (subject:Subject {wiki_id: \$wikiId})
+				WHERE $idCondition
+				CALL (subject) {
+					MATCH (page:Page {wiki_id: \$wikiId})-[:HasSubject]->(subject)
+					RETURN page ORDER BY page.id LIMIT 1
+				}";
+		}
+
+		// A dynamic label takes the Schema name as a parameter, so no name can change the query.
+		$subjectLabels = $query->schemaName === null ? 'Subject' : 'Subject:$($schemaName)';
+
+		return "
+			MATCH (page:Page {wiki_id: \$wikiId})-[:HasSubject]->(subject:$subjectLabels {wiki_id: \$wikiId})
+			WITH subject, min(page.id) AS pageId
+			MATCH (page:Page {wiki_id: \$wikiId, id: pageId})";
 	}
 
 	private function orderBy( SubjectSummaryQuery $query ): string {
