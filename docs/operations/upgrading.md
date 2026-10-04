@@ -72,8 +72,8 @@ If your Subjects predate the optional Subject label, run
 
 ## Neo4j 5.26 required, October 2026
 
-If you use Neo4j, NeoWiki now needs 5.26 or later. On an older Neo4j, new Subjects and Relations no longer reach the
-graph, and listing a Schema's Subjects fails, so upgrade Neo4j first.
+If you use Neo4j, NeoWiki now needs 5.26 or later. On an older Neo4j, saving Subjects to the graph fails, as does
+listing a Schema's Subjects, so upgrade Neo4j first.
 
 ## Removed setting, September 2026
 
