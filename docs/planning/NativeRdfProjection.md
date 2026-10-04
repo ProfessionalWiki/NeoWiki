@@ -15,10 +15,8 @@ Discussion: [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999).
 > [Person → EDM example](../guide/person-to-edm.md). The sync into a configured SPARQL 1.1 store (e.g. QLever) has
 > shipped too, as the per-page graph replacement this document specifies.
 
-## Still open (2026-09)
+## Still open (2026-10)
 
-- [Q1 — Property predicate scope](#q1-property-predicate-scope): flat or per-Schema predicates
-  ([#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163)).
 - [Q6 — Base URI conventions](#q6-base-uri-conventions): which base URI an ECCCH-integrated deployment mints under.
 - [Q8 — Writer's schema in RDF](#q8-writers-schema-in-rdf): whether a full-export mode carries it. Untracked.
 - [Q10 — Schema namespace page](#q10-schema-namespace-page): RDFS/OWL self-description of Schemas
@@ -96,16 +94,6 @@ that write path, and the targets it is held to, are in the
 Questions the implementation answered are listed under [Decided](#decided), keeping their original numbers so a
 thread that cites "Q7" still resolves.
 
-### Q1: Property predicate scope
-
-Should a property's predicate be flat (`$base/prop/Name`) or scoped per Schema (`$base/prop/Person/Name`)? Flat
-predicates cannot carry the per-Schema domains and ranges the RDFS export ([Q10](#q10-schema-namespace-page)) needs
-([#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163)).
-
-*As built: flat — more natural for RDF, and ontology alignment happens in the mapping either way. Recorded cost: a
-mapping rule reading the native projection needs an `rdf:type` constraint to select the right Schema's property
-(2026-07-03).*
-
 ### Q6: Base URI conventions
 
 Should the base URI be the wiki's URL, and is there a convention in the ECHOLOT/ECCCH context for how services
@@ -132,13 +120,21 @@ with domain/range)? This would make the RDF self-describing. Tentative answer: y
 not blocking the initial projection. Partner demand recorded (takin, 2026-07-03): an RDFS export of local Schemas is
 wanted as an input for authoring ontology mappings — a wiki's Schemas are effectively its own ontology, and the
 native projection should be able to say so in RDF. Tracked in
-[#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163); waits on [Q1](#q1-property-predicate-scope). See
-also the generated shape exports in [ShapeLanguages.md](ShapeLanguages.md).
+[#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163). See also the generated shape exports in
+[ShapeLanguages.md](ShapeLanguages.md).
 
 ## Decided
 
 Answered by shipping or by partner feedback. Numbers are the original question numbers.
 
+- **Q1 — property predicate scope.** Per Schema, `$base/prop/{Schema}/{Property}`, with `/` inside a name
+  percent-encoded (2026-10-04). A predicate shared by name would claim a sameness local Property Definitions lack, would
+  intersect the Schemas' domains and ranges in the RDFS export (Q10), and under [ADR 28](../adr/028-relations-model.md)
+  decision 6 would give a relation and a same-named literal property one predicate. Sharing across Schemas, when added,
+  uses `rdfs:subPropertyOf`, not a shared predicate; `$base/prop/{Name}` is reserved for such name-level
+  super-properties. Recorded cost: a query across Schemas must name each Schema's predicate.
+  [#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163) replaces today's flat predicates before the first
+  release.
 - **Q2 — standard vocabulary.** The native projection stays minimal — `rdf:type`, `rdfs:label`, and
   `dcterms:created`/`dcterms:modified`. Further standard-vocabulary alignment belongs to an ontology mapping.
 - **Q3 — relation representation.** Wikibase-style reification alongside the direct triple, as specified
