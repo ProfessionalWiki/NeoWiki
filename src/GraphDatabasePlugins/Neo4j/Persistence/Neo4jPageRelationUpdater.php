@@ -35,8 +35,15 @@ class Neo4jPageRelationUpdater {
 		$relationsBySubjectId = array_map( $this->withoutRepeatedIds( ... ), $relationsBySubjectId );
 
 		$this->removeNonexistentRelations( $relationsBySubjectId );
-		$this->removeRelationsWithChangedTypeOrTarget( $relationsBySubjectId );
-		$this->createOrUpdateRelations( $relationsBySubjectId );
+
+		$relationRows = $this->relationRows( $relationsBySubjectId );
+
+		if ( $relationRows === [] ) {
+			return;
+		}
+
+		$this->removeRelationsWithChangedTypeOrTarget( $relationRows );
+		$this->createOrUpdateRelations( $relationRows );
 	}
 
 	/**
@@ -78,23 +85,37 @@ class Neo4jPageRelationUpdater {
 
 	/**
 	 * @param array<string, TypedRelationList> $relationsBySubjectId
+	 * @return list<array<string, mixed>>
 	 */
-	private function removeRelationsWithChangedTypeOrTarget( array $relationsBySubjectId ): void {
+	private function relationRows( array $relationsBySubjectId ): array {
 		$rows = [];
 
-		foreach ( $this->eachRelation( $relationsBySubjectId ) as [ $subjectId, $relation ] ) {
-			$rows[] = [
-				'subjectId' => $subjectId,
-				'relationId' => $relation->id->asString(),
-				'relationType' => $relation->type->text,
-				'targetId' => $relation->targetId->text,
-			];
+		foreach ( $relationsBySubjectId as $subjectId => $relations ) {
+			foreach ( $relations->relations as $relation ) {
+				$rows[] = [
+					'subjectId' => (string)$subjectId,
+					'relationId' => $relation->id->asString(),
+					'relationType' => $relation->type->text,
+					'targetId' => $relation->targetId->text,
+					'properties' => $this->relationProperties( $relation ),
+				];
+			}
 		}
 
-		if ( $rows === [] ) {
-			return;
-		}
+		return $rows;
+	}
 
+	private function relationProperties( TypedRelation $relation ): array {
+		return array_merge(
+			$relation->properties->map,
+			[ 'id' => $relation->id->asString() ]
+		);
+	}
+
+	/**
+	 * @param list<array<string, mixed>> $relationRows
+	 */
+	private function removeRelationsWithChangedTypeOrTarget( array $relationRows ): void {
 		$this->collectOrphanCandidates( $this->transaction->run(
 			'UNWIND $relations AS row
 				MATCH (subject:Subject {id: row.subjectId})-[oldRelation {id: row.relationId}]->(oldTarget)
@@ -102,7 +123,7 @@ class Neo4jPageRelationUpdater {
 					OR NOT (subject)-[oldRelation]->(:Subject {id: row.targetId})
 				DELETE oldRelation
 				RETURN DISTINCT oldTarget.id AS id',
-			[ 'relations' => $rows ]
+			[ 'relations' => $relationRows ]
 		) );
 	}
 
@@ -118,25 +139,9 @@ class Neo4jPageRelationUpdater {
 	}
 
 	/**
-	 * @param array<string, TypedRelationList> $relationsBySubjectId
+	 * @param list<array<string, mixed>> $relationRows
 	 */
-	private function createOrUpdateRelations( array $relationsBySubjectId ): void {
-		$rows = [];
-
-		foreach ( $this->eachRelation( $relationsBySubjectId ) as [ $subjectId, $relation ] ) {
-			$rows[] = [
-				'subjectId' => $subjectId,
-				'relationId' => $relation->id->asString(),
-				'relationType' => $relation->type->text,
-				'targetId' => $relation->targetId->text,
-				'properties' => $this->relationProperties( $relation ),
-			];
-		}
-
-		if ( $rows === [] ) {
-			return;
-		}
-
+	private function createOrUpdateRelations( array $relationRows ): void {
 		// A relation whose target Subject does not exist yet creates it as a stub: a node with only
 		// the id and wiki_id properties and the Subject label. ON CREATE keeps an already-existing
 		// target (a real Subject or an earlier stub) untouched. The stub is upgraded in place when the
@@ -152,29 +157,10 @@ class Neo4jPageRelationUpdater {
 				MERGE (subject)-[relation:$(row.relationType) {id: row.relationId}]->(target)
 				SET relation = row.properties',
 			[
-				'relations' => $rows,
+				'relations' => $relationRows,
 				'wikiId' => $this->wikiId,
 			]
 		);
-	}
-
-	private function relationProperties( TypedRelation $relation ): array {
-		return array_merge(
-			$relation->properties->map,
-			[ 'id' => $relation->id->asString() ]
-		);
-	}
-
-	/**
-	 * @param array<string, TypedRelationList> $relationsBySubjectId
-	 * @return iterable<array{string, TypedRelation}>
-	 */
-	private function eachRelation( array $relationsBySubjectId ): iterable {
-		foreach ( $relationsBySubjectId as $subjectId => $relations ) {
-			foreach ( $relations->relations as $relation ) {
-				yield [ (string)$subjectId, $relation ];
-			}
-		}
 	}
 
 }
