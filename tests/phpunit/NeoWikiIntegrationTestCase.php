@@ -527,6 +527,15 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		}
 	}
 
+	protected function subjectHasProperty( string $subjectId, string $property ): bool {
+		$result = $this->readGraph(
+			'MATCH (subject {id: $id}) RETURN $property IN keys(subject) AS hasProperty',
+			[ 'id' => $subjectId, 'property' => $property ]
+		);
+
+		return $result->first()->toRecursiveArray()['hasProperty'];
+	}
+
 	protected function readPageNodeName( int $pageId ): ?string {
 		$result = $this->readGraph( 'MATCH (page:Page {id: $pageId}) RETURN page.name AS name', [ 'pageId' => $pageId ] );
 

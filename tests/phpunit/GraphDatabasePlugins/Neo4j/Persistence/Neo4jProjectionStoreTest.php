@@ -63,9 +63,14 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			new InMemorySchemaLookup(
 				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID ),
 				TestSchema::build( name: self::SCHEMA_ID_A ),
-				TestSchema::build( name: self::SCHEMA_ID_Z )
+				TestSchema::build( name: self::SCHEMA_ID_Z ),
+				TestSchema::build( name: self::schemaNameHoldingCypher() )
 			)
 		);
+	}
+
+	private static function schemaNameHoldingCypher(): string {
+		return 'Gadget' . chr( 92 ) . 'u0060 SET node.flagged = true //';
 	}
 
 	private function newProjectionStoreForWiki( string $wikiId ): GraphDatabasePlugin {
@@ -878,15 +883,6 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		}
 	}
 
-	private function subjectHasProperty( string $subjectId, string $property ): bool {
-		$result = $this->readGraph(
-			'MATCH (subject {id: $id}) RETURN $property IN keys(subject) AS hasProperty',
-			[ 'id' => $subjectId, 'property' => $property ]
-		);
-
-		return $result->first()->toRecursiveArray()['hasProperty'];
-	}
-
 	private function assertOutgoingRelationCount( string $subjectId, int $expected, string $message = '' ): void {
 		$result = $this->readGraph(
 			'MATCH ({id: $id})-[relation]->() RETURN count(relation) AS count',
@@ -1393,32 +1389,20 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSchemaLabelIsTheSchemaNameVerbatim(): void {
-		$schemaName = self::schemaNameHoldingCypher();
-
-		$this->newProjectionStoreWithSchemas( $schemaName )->savePage( TestPage::build(
+		$this->newProjectionStore()->savePage( TestPage::build(
 			id: 42,
-			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( $schemaName ) ),
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::schemaNameHoldingCypher() ) ),
 		) );
 
-		$this->assertPageHasSubjectsWithLabels( [ [ 'id' => self::GUID_1, 'labels' => [ 'Subject', $schemaName ] ] ], 42 );
+		$this->assertPageHasSubjectsWithLabels(
+			[ [ 'id' => self::GUID_1, 'labels' => [ 'Subject', self::schemaNameHoldingCypher() ] ] ],
+			42
+		);
 		$this->assertFalse( $this->subjectHasProperty( self::GUID_1, 'flagged' ) );
 	}
 
-	private static function schemaNameHoldingCypher(): string {
-		return 'Gadget' . chr( 92 ) . 'u0060 SET node.flagged = true //';
-	}
-
-	private function newProjectionStoreWithSchemas( string ...$schemaNames ): GraphDatabasePlugin {
-		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore(
-			new InMemorySchemaLookup( ...array_map(
-				static fn ( string $name ) => TestSchema::build( name: $name ),
-				$schemaNames
-			) )
-		);
-	}
-
 	public function testChangingTheSchemaRemovesTheOldSchemaLabelVerbatim(): void {
-		$store = $this->newProjectionStoreWithSchemas( self::schemaNameHoldingCypher(), self::SCHEMA_ID_A );
+		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,

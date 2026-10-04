@@ -308,14 +308,7 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		$this->updateRelations( $relations );
 
 		$this->assertHasRelations( $relations );
-		$this->assertFalse( $this->subjectHasProperty( 'flagged' ) );
-	}
-
-	private function subjectHasProperty( string $property ): bool {
-		return NeoWikiExtension::getInstance()->getNeo4jClient()->run(
-			'MATCH (subject {id: $subjectId}) RETURN $property IN keys(subject) AS hasProperty',
-			[ 'subjectId' => self::SUBJECT_ID, 'property' => $property ]
-		)->first()->get( 'hasProperty' );
+		$this->assertFalse( $this->subjectHasProperty( self::SUBJECT_ID, 'flagged' ) );
 	}
 
 	public function testRelationWithNonExistentTargetNodeDoesNotCreateDuplicateSubject(): void {
