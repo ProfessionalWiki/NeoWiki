@@ -68,14 +68,20 @@ class Neo4jSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testKeepsOnlyTheSubjectsOfTheRequestedSchema(): void {
+	/**
+	 * @dataProvider sortProvider
+	 */
+	public function testKeepsOnlyTheSubjectsOfTheRequestedSchema( SubjectSummarySort $sort, SortDirection $direction ): void {
 		$this->savePage( 1, 'Page one', [
 			self::subject( self::OLDEST, 'ZX Spectrum' ),
 			self::subject( self::OLDER, 'Mira Zupan', 'Person' ),
 			self::subject( self::NEWER, 'Galaksija' ),
 		] );
 
-		$this->assertSame( [ self::NEWER, self::OLDEST ], $this->idsOf( $this->summaries( schema: 'Computer' ) ) );
+		$this->assertEqualsCanonicalizing(
+			[ self::NEWER, self::OLDEST ],
+			$this->idsOf( $this->summaries( schema: 'Computer', sort: $sort, direction: $direction ) )
+		);
 	}
 
 	public function testKeepsOnlyTheSubjectsOfARequestedSchemaWhoseNameHasASpace(): void {
@@ -226,22 +232,30 @@ class Neo4jSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testLeavesOutSubjectsOfOtherWikis(): void {
+	/**
+	 * @dataProvider sortProvider
+	 */
+	public function testLeavesOutSubjectsOfOtherWikis( SubjectSummarySort $sort, SortDirection $direction ): void {
 		$this->savePage( 1, 'Page one', [ self::subject( self::OLDEST, 'Ours' ) ] );
+		// Page ids repeat across a farm's wikis, so the other wiki's page has our page's id.
 		$this->getClient()->run(
 			'CREATE (:Page {id: 1, wiki_id: "otherwiki"})-[:HasSubject {isMain: false}]->'
 				. '(:Subject:Computer {id: $id, name: "Theirs", wiki_id: "otherwiki"})',
 			[ 'id' => self::NEWEST ]
 		);
 
-		$this->assertSame( [ self::OLDEST ], $this->idsOf( $this->summaries() ) );
+		$this->assertSame( [ self::OLDEST ], $this->idsOf( $this->summaries( sort: $sort, direction: $direction ) ) );
 	}
 
-	public function testListsASubjectThatTwoPagesHoldOnceUnderTheLowerPageId(): void {
-		$this->savePage( 9, 'Later copy', [ self::subject( self::OLDEST, 'Shared' ) ] );
-		$this->savePage( 3, 'Earlier copy', [ self::subject( self::OLDEST, 'Shared' ) ] );
+	/**
+	 * @dataProvider sortProvider
+	 */
+	public function testListsASubjectThatSeveralPagesHoldOnceUnderTheLowestPageId( SubjectSummarySort $sort, SortDirection $direction ): void {
+		$this->savePage( 9, 'Latest copy', [ self::subject( self::OLDEST, 'Shared' ) ] );
+		$this->savePage( 3, 'Earliest copy', [ self::subject( self::OLDEST, 'Shared' ) ] );
+		$this->savePage( 5, 'Middle copy', [ self::subject( self::OLDEST, 'Shared' ) ] );
 
-		$summaries = $this->summaries()->summaries;
+		$summaries = $this->summaries( sort: $sort, direction: $direction )->summaries;
 
 		$this->assertCount( 1, $summaries );
 		$this->assertSame( 3, $summaries[0]->pageId );
