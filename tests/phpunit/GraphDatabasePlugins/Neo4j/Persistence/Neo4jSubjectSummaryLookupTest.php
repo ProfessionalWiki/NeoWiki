@@ -369,20 +369,23 @@ class Neo4jSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 	 * @dataProvider sortProvider
 	 */
 	public function testFollowingTheCursorVisitsEverySubjectOnce( SubjectSummarySort $sort, SortDirection $direction ): void {
+		// Each column sort has ties and changes of value, and with one Subject per page the walk crosses all of them.
 		$this->savePage( 1, 'Page one', [
-			self::subject( self::OLDEST, 'Same' ),
+			self::subject( self::OLDEST, 'Same', 'Zebra' ),
 			self::subject( self::OLDER, null ),
+		], modified: '20261001120000' );
+		$this->savePage( 2, 'Page two', [
 			self::subject( self::NEWER, 'Same' ),
-			self::subject( self::NEWEST, 'Other' ),
-			self::subject( 'sTestSSL1111115', null ),
-		] );
+			self::subject( self::NEWEST, 'Other', 'ant' ),
+		], modified: '20261002120000' );
+		$this->savePage( 3, 'Page three', [ self::subject( 'sTestSSL1111115', null, 'Zebra' ) ], modified: '20260901120000' );
 
 		$visited = [];
 		$after = null;
 
 		// Bounded, so a cursor that leads back fails the test rather than looping forever.
 		do {
-			$page = $this->summaries( sort: $sort, direction: $direction, after: $after, limit: 2 );
+			$page = $this->summaries( sort: $sort, direction: $direction, after: $after, limit: 1 );
 			$visited = array_merge( $visited, $this->idsOf( $page ) );
 			$after = $page->nextCursor;
 		} while ( $after !== null && count( $visited ) <= 5 );
