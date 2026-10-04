@@ -147,7 +147,7 @@ Answered by shipping or by partner feedback. Numbers are the original question n
   [#1263](https://github.com/ProfessionalWiki/NeoWiki/pull/1263)).
 - **Q5 — named graph conventions.** No CH convention exists; per-page named graphs are fine for operational purposes.
   They record data origin only — chain-of-production provenance is the T2.4 model and a T3.4 plug-in, not the
-  projection (see [ECHOLOT.md](ECHOLOT.md)).
+  projection.
 - **Q7 — URI design for Properties.** Underscores: spaces in a name become underscores in the IRI local name
   (`Has_author`), with partner concurrence that either convention works (George Bruseker, takin, 2026-07-06).
 - **Q9 — ordering of multi-valued properties.** Ordering loss is accepted; ordering is a display concern for Views.
