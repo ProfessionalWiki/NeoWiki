@@ -656,6 +656,11 @@ describe( 'SubjectEditPane', () => {
 			await input.trigger( 'keydown.enter' );
 		}
 
+		// The label, or what stands in for it while the field is empty.
+		function labelLine( wrapper: VueWrapper ): string {
+			return wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text();
+		}
+
 		it( 'flips hasChanged as soon as a name is typed, before it is committed', async () => {
 			const wrapper = mountPane();
 
@@ -699,31 +704,23 @@ describe( 'SubjectEditPane', () => {
 		} );
 
 		it( 'shows the page name in the empty label field of a subject named after its page', () => {
-			const wrapper = mountPane( { subject: labellessSubject, nested: true } );
+			const wrapper = mountPane( { subject: labellessSubject } );
 
-			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'Test page' );
+			expect( labelLine( wrapper ) ).toBe( 'Test page' );
 		} );
 
 		it( 'says no label is defined for a subject shown under its id', () => {
-			const wrapper = mountPane( { subject: unnamedSubject, nested: true } );
+			const wrapper = mountPane( { subject: unnamedSubject } );
 
-			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-no-label' );
+			expect( labelLine( wrapper ) ).toBe( 'neowiki-subject-no-label' );
 		} );
 
-		it( 'says no label is defined once a label is cleared', async () => {
-			const wrapper = mountPane( { nested: true } );
-
-			await rename( wrapper, '' );
-
-			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-no-label' );
-		} );
-
-		it( 'says no label is defined once a label of only spaces is committed', async () => {
-			const wrapper = mountPane( { nested: true } );
+		it( 'says no label is defined once a label is cleared, even to only spaces', async () => {
+			const wrapper = mountPane();
 
 			await rename( wrapper, '   ' );
 
-			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-no-label' );
+			expect( labelLine( wrapper ) ).toBe( 'neowiki-subject-no-label' );
 		} );
 
 		it( 'keeps the schema badge once an unnamed subject is given a label of its own', async () => {

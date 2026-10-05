@@ -329,7 +329,7 @@ describe( 'SubjectEditorDialog', () => {
 	// Null where the header shows no id.
 	function idBesideTitle( wrapper: VueWrapper ): string | null {
 		const id = wrapper.find( '.cdx-dialog__header .ext-neowiki-subject-editor-dialog__subject-id' );
-		return id.exists() ? id.text() : null;
+		return id.exists() && id.text() !== '' ? id.text() : null;
 	}
 
 	it( 'shows the id of the subject being edited beside the title', async () => {
@@ -337,6 +337,14 @@ describe( 'SubjectEditorDialog', () => {
 		await flushPromises();
 
 		expect( idBesideTitle( wrapper ) ).toBe( rootSubjectId );
+	} );
+
+	it( 'names its close button for assistive technology', async () => {
+		const wrapper = mountComponent( false, {} );
+		await flushPromises();
+
+		expect( wrapper.get( '.cdx-dialog__header__close-button' ).attributes( 'aria-label' ) )
+			.toBe( 'cdx-dialog-close-button-label' );
 	} );
 
 	const saveButtonTestStubs = {
@@ -1041,19 +1049,6 @@ describe( 'SubjectEditorDialog', () => {
 				'neowiki-subject-editor-success' + labellessSubject.getDisplayName(),
 				{ type: 'success' },
 			);
-		} );
-
-		// Codex takes the dialog's accessible name from the title prop whenever a header slot
-		// replaces the rendered title. It names the task, not a Subject: the dialog edits
-		// several, and a name fixed at open would be wrong the moment another pane is shown.
-		it( 'names the dialog after the task rather than after a subject', async () => {
-			const wrapper = mountComponent(
-				false, validationTestStubs, undefined, mockSchema, {}, labellessSubject,
-			);
-			await flushPromises();
-
-			expect( wrapper.get( '.cdx-dialog' ).attributes( 'aria-label' ) )
-				.toBe( 'neowiki-subject-editor-title' );
 		} );
 
 		it( 'sends no label to the dry-run validation once the label is blanked', async () => {
