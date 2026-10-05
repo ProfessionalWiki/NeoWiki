@@ -8,4 +8,6 @@ export interface SchemaPermissionHints {
 
 	canEditSchema( schemaName: string ): Promise<boolean>;
 
+	canDeleteSchema( schemaName: string ): Promise<boolean>;
+
 }

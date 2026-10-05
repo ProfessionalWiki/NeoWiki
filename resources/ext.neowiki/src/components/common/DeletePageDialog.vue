@@ -44,7 +44,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	'update:open': [ value: boolean ];
-	'deleted': [];
+	// The title of the page deleted, which the props may no longer name by the time the request is done.
+	'deleted': [ pageTitle: string ];
 }>();
 
 function onUpdateOpen( value: boolean ): void {
@@ -56,6 +57,8 @@ function onUpdateOpen( value: boolean ): void {
 async function executeDelete( summary: string ): Promise<void> {
 	emit( 'update:open', false );
 
+	const pageTitle = props.pageTitle;
+	const displayName = props.displayName;
 	const reason = summary || mw.msg( 'neowiki-delete-summary-default' );
 
 	try {
@@ -63,17 +66,17 @@ async function executeDelete( summary: string ): Promise<void> {
 		const token = await api.getEditToken();
 		await api.post( {
 			action: 'delete',
-			title: props.pageTitle,
+			title: pageTitle,
 			reason: reason,
 			token: token
 		} );
-		mw.notify( mw.msg( 'neowiki-delete-success', props.displayName ), { type: 'success' } );
-		emit( 'deleted' );
+		mw.notify( mw.msg( 'neowiki-delete-success', displayName ), { type: 'success' } );
+		emit( 'deleted', pageTitle );
 	} catch ( error ) {
 		mw.notify(
 			error instanceof Error ? error.message : String( error ),
 			{
-				title: mw.msg( 'neowiki-delete-error', props.displayName ),
+				title: mw.msg( 'neowiki-delete-error', displayName ),
 				type: 'error'
 			}
 		);

@@ -30,7 +30,7 @@ async function pageThroughSchemaSummaries(): Promise<SchemaSummary[]> {
 	let cursor: string | null = null;
 
 	do {
-		const page = await repository.getSchemaSummaries( cursor, pageSize );
+		const page = await repository.getSchemaSummaries( '', cursor, pageSize );
 		summaries.push( ...page.schemas );
 		cursor = page.nextCursor;
 	} while ( cursor !== null );
