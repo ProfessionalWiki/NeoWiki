@@ -39,14 +39,24 @@ class Neo4jNodeLabels {
 		string $cypherClause,
 		array $labelsBySubjectId
 	): void {
-		foreach ( Neo4jLabelGroups::build( $labelsBySubjectId ) as $group ) {
-			$transaction->run(
-				'UNWIND $subjectIds AS subjectId
-					MATCH (node:Subject {id: subjectId})
-					' . $cypherClause . ' node:' . Cypher::buildLabelList( $group['labels'] ),
-				[ 'subjectIds' => $group['subjectIds'] ]
-			);
+		$rows = [];
+
+		foreach ( $labelsBySubjectId as $subjectId => $labels ) {
+			if ( $labels !== [] ) {
+				$rows[] = [ 'subjectId' => (string)$subjectId, 'labels' => array_values( $labels ) ];
+			}
 		}
+
+		if ( $rows === [] ) {
+			return;
+		}
+
+		$transaction->run(
+			'UNWIND $rows AS row
+				MATCH (node:Subject {id: row.subjectId})
+				' . $cypherClause . ' node:$(row.labels)',
+			[ 'rows' => $rows ]
+		);
 	}
 
 }

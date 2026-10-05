@@ -63,9 +63,14 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			new InMemorySchemaLookup(
 				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID ),
 				TestSchema::build( name: self::SCHEMA_ID_A ),
-				TestSchema::build( name: self::SCHEMA_ID_Z )
+				TestSchema::build( name: self::SCHEMA_ID_Z ),
+				TestSchema::build( name: self::schemaNameThatIsNotAnIdentifier() )
 			)
 		);
+	}
+
+	private static function schemaNameThatIsNotAnIdentifier(): string {
+		return 'Gadget' . str_repeat( chr( 92 ) . 'u0060', 2 );
 	}
 
 	private function newProjectionStoreForWiki( string $wikiId ): GraphDatabasePlugin {
@@ -1378,33 +1383,40 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	 * The only case that exercises label removal: every other save either keeps the Schema or adds a
 	 * subject. The two Schemas are swapped rather than changed in one direction, so a save that mixed
 	 * up which labels belong to which subject would still produce the right label set overall.
+	 *
+	 * @dataProvider schemaNamePairProvider
 	 */
-	public function testChangingSubjectSchemasReplacesTheirSchemaLabels(): void {
+	public function testChangingSubjectSchemasReplacesTheirSchemaLabels( string $firstSchema, string $secondSchema ): void {
 		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
-			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( $firstSchema ) ),
 			otherSubjects: new SubjectMap(
-				TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( self::SCHEMA_ID_Z ) ),
+				TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( $secondSchema ) ),
 			)
 		) );
 
 		$store->savePage( TestPage::build(
 			id: 42,
-			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_Z ) ),
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( $secondSchema ) ),
 			otherSubjects: new SubjectMap(
-				TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
+				TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( $firstSchema ) ),
 			)
 		) );
 
 		$this->assertPageHasSubjectsWithLabels(
 			[
-				[ 'id' => self::GUID_1, 'labels' => [ 'Subject', self::SCHEMA_ID_Z ] ],
-				[ 'id' => self::GUID_2, 'labels' => [ 'Subject', self::SCHEMA_ID_A ] ],
+				[ 'id' => self::GUID_1, 'labels' => [ 'Subject', $secondSchema ] ],
+				[ 'id' => self::GUID_2, 'labels' => [ 'Subject', $firstSchema ] ],
 			],
 			42
 		);
+	}
+
+	public static function schemaNamePairProvider(): iterable {
+		yield 'identifier names' => [ self::SCHEMA_ID_A, self::SCHEMA_ID_Z ];
+		yield 'a name that is not a Cypher identifier' => [ self::schemaNameThatIsNotAnIdentifier(), self::SCHEMA_ID_A ];
 	}
 
 }

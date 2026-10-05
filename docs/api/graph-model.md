@@ -132,9 +132,9 @@ A page can have at most one Main Subject and any number of other Subjects
 
 ### Typed Relations
 
-Subject-to-Subject relationships represent Relations. The relationship type in Neo4j is the Relation Type defined in
-the Property Definition (e.g. `Has author`, `Has product`). Names that are not valid Cypher identifiers are
-backtick-escaped.
+Subject-to-Subject relationships represent Relations. The relationship type in Neo4j is the Relation Type defined in the
+Property Definition (e.g. `Has author`, `Has product`). A type that is not a valid Cypher identifier must be
+backtick-escaped when read (`` -[:`Has author`]-> ``).
 
 | Property | Neo4j Type | Description |
 |----------|------------|-------------|

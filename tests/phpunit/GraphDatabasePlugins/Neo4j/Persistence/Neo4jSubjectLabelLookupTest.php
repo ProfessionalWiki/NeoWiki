@@ -12,7 +12,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Cypher;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
@@ -172,9 +171,12 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		// page id that resolves against the wrong wiki, cannot surface.
 		$this->getClient()->run(
 			'CREATE (:Page { id: 500, wiki_id: $wikiId })-[:HasSubject { isMain: false }]->'
-				. '(:Subject:' . Cypher::escape( TestSubject::DEFAULT_SCHEMA_ID )
-				. ' { id: "sTestSLL4444441", name: "Apple Tart", wiki_id: $otherWikiId })',
-			[ 'wikiId' => $this->currentWikiId(), 'otherWikiId' => $this->currentWikiId() . '-other' ]
+				. '(:Subject:$($schemaName) { id: "sTestSLL4444441", name: "Apple Tart", wiki_id: $otherWikiId })',
+			[
+				'schemaName' => TestSubject::DEFAULT_SCHEMA_ID,
+				'wikiId' => $this->currentWikiId(),
+				'otherWikiId' => $this->currentWikiId() . '-other',
+			]
 		);
 
 		$this->assertEquals(
@@ -299,9 +301,12 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		}
 
 		$this->getClient()->run(
-			'CREATE (:Page $pageProperties)-[:HasSubject { isMain: false }]->'
-				. '(:Subject:' . Cypher::escape( TestSubject::DEFAULT_SCHEMA_ID ) . ' $subjectProperties)',
-			[ 'pageProperties' => $pageProperties, 'subjectProperties' => $subjectProperties ]
+			'CREATE (:Page $pageProperties)-[:HasSubject { isMain: false }]->(:Subject:$($schemaName) $subjectProperties)',
+			[
+				'pageProperties' => $pageProperties,
+				'schemaName' => TestSubject::DEFAULT_SCHEMA_ID,
+				'subjectProperties' => $subjectProperties,
+			]
 		);
 	}
 

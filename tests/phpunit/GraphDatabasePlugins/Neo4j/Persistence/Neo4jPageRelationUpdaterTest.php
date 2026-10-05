@@ -295,6 +295,19 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		return array_column( $rows, 'type' );
 	}
 
+	public function testRelationTypeIsStoredVerbatim(): void {
+		$relations = new TypedRelationList( [
+			TestRelation::build(
+				id: 'rTestSRU1111rr1',
+				targetId: self::TARGET_SUBJECT_1,
+			)->withType( new RelationType( 'Made by' . str_repeat( chr( 92 ) . 'u0060', 2 ) ) ),
+		] );
+
+		$this->updateRelations( $relations );
+
+		$this->assertHasRelations( $relations );
+	}
+
 	public function testRelationWithNonExistentTargetNodeDoesNotCreateDuplicateSubject(): void {
 		$this->updateRelations(
 			new TypedRelationList( [

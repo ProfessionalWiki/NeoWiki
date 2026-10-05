@@ -70,10 +70,10 @@ length of the run.
 If your Subjects predate the optional Subject label, run
 [clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before that rebuild.
 
-## Neo4j 5.26 required, October 2026
+## Neo4j 5.26.4 required, October 2026
 
-If you use Neo4j, NeoWiki now needs 5.26 or later. On an older Neo4j, listing a Schema's Subjects fails, so upgrade
-Neo4j first.
+If you use Neo4j, NeoWiki now needs 5.26.4 or later. Upgrade Neo4j first: on an older version, saving Subjects to the
+graph fails or gives their Relations the wrong type.
 
 ## Removed setting, September 2026
 
