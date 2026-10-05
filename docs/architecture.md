@@ -82,3 +82,4 @@ Every architectural decision on record, in the order it was made.
 * [ADR 33: Page-first and Subject-first Wikis](adr/033-page-first-and-subject-first-wikis.md)
 * [ADR 34: Monolingual Text Value Type](adr/034-monolingual-text-value-type.md)
 * [ADR 35: Dependent Subjects](adr/035-dependent-subjects.md)
+* [ADR 36: RDF IRIs](adr/036-rdf-iris.md)
