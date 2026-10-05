@@ -80,86 +80,82 @@ JSON
 		$this->assertSame( 1, $byName['Person']['propertyCount'] );
 	}
 
+	public function testListsSchemasByName(): void {
+		$this->createSchema( 'Zebra' );
+		$this->createSchema( 'Ant' );
+		$this->createSchema( 'Moth' );
+
+		$this->assertSame( [ 'Ant', 'Moth', 'Zebra' ], $this->namesOf( $this->get( [] ) ) );
+	}
+
 	public function testFollowingTheCursorWalksAllPages(): void {
-		$this->createSchema( 'Alpha', '{"title":"Alpha","description":"First","propertyDefinitions":{}}' );
-		$this->createSchema( 'Beta', '{"title":"Beta","description":"Second","propertyDefinitions":{}}' );
-		$this->createSchema( 'Gamma', '{"title":"Gamma","description":"Third","propertyDefinitions":{}}' );
+		$this->createSchema( 'Gamma' );
+		$this->createSchema( 'Alpha' );
+		$this->createSchema( 'Beta' );
 
-		$firstPage = json_decode( $this->executeHandler(
-			new GetSchemaSummariesApi(),
-			new RequestData( [
-				'method' => 'GET',
-				'queryParams' => [ 'limit' => '2' ],
-			] )
-		)->getBody()->getContents(), true );
+		$firstPage = $this->get( [ 'limit' => '2' ] );
 
-		$this->assertSame( [ 'Alpha', 'Beta' ], array_column( $firstPage['schemas'], 'name' ) );
+		$this->assertSame( [ 'Alpha', 'Beta' ], $this->namesOf( $firstPage ) );
 		$this->assertIsString( $firstPage['nextCursor'] );
 
-		$secondPage = json_decode( $this->executeHandler(
-			new GetSchemaSummariesApi(),
-			new RequestData( [
-				'method' => 'GET',
-				'queryParams' => [ 'limit' => '2', 'cursor' => $firstPage['nextCursor'] ],
-			] )
-		)->getBody()->getContents(), true );
+		$secondPage = $this->get( [ 'limit' => '2', 'cursor' => $firstPage['nextCursor'] ] );
 
-		$this->assertSame( [ 'Gamma' ], array_column( $secondPage['schemas'], 'name' ) );
+		$this->assertSame( [ 'Gamma' ], $this->namesOf( $secondPage ) );
 		$this->assertNull( $secondPage['nextCursor'] );
 	}
 
 	public function testExactPageBoundaryEndsPagination(): void {
-		$this->createSchema( 'Alpha', '{"title":"Alpha","description":"First","propertyDefinitions":{}}' );
-		$this->createSchema( 'Beta', '{"title":"Beta","description":"Second","propertyDefinitions":{}}' );
+		$this->createSchema( 'Alpha' );
+		$this->createSchema( 'Beta' );
 
-		$data = json_decode( $this->executeHandler(
-			new GetSchemaSummariesApi(),
-			new RequestData( [
-				'method' => 'GET',
-				'queryParams' => [ 'limit' => '2' ],
-			] )
-		)->getBody()->getContents(), true );
+		$data = $this->get( [ 'limit' => '2' ] );
 
 		$this->assertCount( 2, $data['schemas'] );
 		$this->assertNull( $data['nextCursor'] );
 	}
 
-	/**
-	 * @dataProvider cursorPastEndProvider
-	 */
-	public function testCursorPastTheEndReturnsAnEmptyLastPage( string $cursor ): void {
-		$this->createSchema( 'Alpha', '{"title":"Alpha","description":"First","propertyDefinitions":{}}' );
+	public function testACursorAfterADeletedLastSchemaReturnsAnEmptyLastPage(): void {
+		$this->createSchema( 'Alpha' );
+		$this->createSchema( 'Beta' );
+		$cursor = $this->get( [ 'limit' => '1' ] )['nextCursor'];
+		$this->deletePageByName( 'Schema:Beta' );
 
-		$data = json_decode( $this->executeHandler(
-			new GetSchemaSummariesApi(),
-			new RequestData( [
-				'method' => 'GET',
-				'queryParams' => [ 'cursor' => $cursor ],
-			] )
-		)->getBody()->getContents(), true );
+		$data = $this->get( [ 'limit' => '1', 'cursor' => $cursor ] );
 
 		$this->assertSame( [], $data['schemas'] );
 		$this->assertNull( $data['nextCursor'] );
 	}
 
-	public static function cursorPastEndProvider(): array {
-		return [
-			'past the last page id' => [ '999999' ],
-			'beyond integer range (saturates)' => [ '99999999999999999999999' ],
-		];
+	public function testListsOnlySchemasWhoseNameContainsTheSearch(): void {
+		$this->createSchema( 'Artwork' );
+		$this->createSchema( 'City' );
+		$this->createSchema( 'Martial art' );
+
+		$this->assertSame( [ 'Artwork', 'Martial art' ], $this->namesOf( $this->get( [ 'search' => 'art' ] ) ) );
 	}
 
-	public function testRejectsMalformedCursor(): void {
+	public function testFollowingTheCursorKeepsToTheSearch(): void {
+		$this->createSchema( 'Artwork' );
+		$this->createSchema( 'Bridge' );
+		$this->createSchema( 'Artist' );
+		$cursor = $this->get( [ 'search' => 'Art', 'limit' => '1' ] )['nextCursor'];
+
+		$this->assertSame( [ 'Artwork' ], $this->namesOf( $this->get( [ 'search' => 'Art', 'cursor' => $cursor ] ) ) );
+	}
+
+	/**
+	 * @dataProvider malformedCursorProvider
+	 */
+	public function testRejectsMalformedCursor( string $cursor ): void {
 		$this->expectException( HttpException::class );
 		$this->expectExceptionCode( 400 );
 
-		$this->executeHandler(
-			new GetSchemaSummariesApi(),
-			new RequestData( [
-				'method' => 'GET',
-				'queryParams' => [ 'cursor' => 'not-a-cursor' ],
-			] )
-		);
+		$this->get( [ 'cursor' => $cursor ] );
+	}
+
+	public static function malformedCursorProvider(): iterable {
+		yield 'not base64-encoded JSON' => [ 'not-a-cursor' ];
+		yield 'JSON that is no name' => [ rtrim( base64_encode( '123' ), '=' ) ];
 	}
 
 	public function testExcludesSchemasTheRequestUserCannotReadWithoutLeavingAGapInThePage(): void {
@@ -183,16 +179,29 @@ JSON
 			}
 		);
 
-		$data = json_decode( $this->executeHandler(
-			new GetSchemaSummariesApi(),
-			new RequestData( [
-				'method' => 'GET',
-				'queryParams' => [ 'limit' => '2' ],
-			] )
-		)->getBody()->getContents(), true );
+		$data = $this->get( [ 'limit' => '2' ] );
 
-		$this->assertSame( [ 'ReadableSchema', 'TrailingSchema' ], array_column( $data['schemas'], 'name' ) );
+		$this->assertSame( [ 'ReadableSchema', 'TrailingSchema' ], $this->namesOf( $data ) );
 		$this->assertNull( $data['nextCursor'] );
+	}
+
+	/**
+	 * @param array<string, string> $queryParams
+	 * @return array<string, mixed>
+	 */
+	private function get( array $queryParams ): array {
+		return json_decode( $this->executeHandler(
+			new GetSchemaSummariesApi(),
+			new RequestData( [ 'method' => 'GET', 'queryParams' => $queryParams ] )
+		)->getBody()->getContents(), true );
+	}
+
+	/**
+	 * @param array<string, mixed> $response
+	 * @return list<string>
+	 */
+	private function namesOf( array $response ): array {
+		return array_column( $response['schemas'], 'name' );
 	}
 
 }
