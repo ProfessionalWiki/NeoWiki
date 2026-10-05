@@ -59,13 +59,13 @@ Use this to add NeoWiki to a MediaWiki you already run. You provide the surround
 
 ### Requirements
 
-| Requirement                   | Notes |
-|-------------------------------|--|
-| MediaWiki 1.43.0 or later     | |
-| PHP 8.3 with `ext-json`       | |
-| Composer                      | Installs NeoWiki's runtime dependencies. No `vendor/` is shipped. |
-| Neo4j 5.26 or later over Bolt | Optional. Needed for Cypher queries, relation-target suggestions, and Subject lists. |
-| Node.js 24 or later           | Needed only to build the frontend bundle in step 2. |
+| Requirement                     | Notes |
+|---------------------------------|--|
+| MediaWiki 1.43.0 or later       | |
+| PHP 8.3 with `ext-json`         | |
+| Composer                        | Installs NeoWiki's runtime dependencies. No `vendor/` is shipped. |
+| Neo4j 5.26.4 or later over Bolt | Optional. Needed for Cypher queries, relation-target suggestions, and Subject lists. |
+| Node.js 24 or later             | Needed only to build the frontend bundle in step 2. |
 
 These extensions are recommended. NeoWiki runs without them, but you lose the matching functionality:
 
