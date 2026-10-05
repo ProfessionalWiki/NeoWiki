@@ -1,132 +1,123 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
+import SchemaCard from '@/components/SchemasPage/SchemaCard.vue';
 import SchemaCreatorDialog from '@/components/SchemasPage/SchemaCreatorDialog.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
-import { createI18nMock, findNextPageButton, setupMwMock } from '../../VueTestHelpers.ts';
-import { CdxButton } from '@wikimedia/codex';
+import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { newSchema } from '@/TestHelpers.ts';
+import type { SchemaSummaryPage } from '@/application/SchemaLookup.ts';
 
+// Each right reaches its ref only through its check, so a page that skips a check offers nothing
+// however the fixture is set.
+let mayCreateSchemas = false;
+let mayEditSchemas = false;
+let mayDeleteSchemas = false;
 const canCreateSchemasRef = ref( false );
 const canEditSchemaRef = ref( false );
-const checkCreatePermissionMock = vi.fn();
-const checkEditPermissionMock = vi.fn();
-
-let schemasResponse: { schemas: unknown[]; nextCursor: string | null } = { schemas: [], nextCursor: null };
-let pinia: ReturnType<typeof createPinia>;
-let schemaStore: ReturnType<typeof useSchemaStore>;
+const canDeleteSchemaRef = ref( false );
 
 vi.mock( '@/composables/useSchemaPermissions.ts', () => ( {
 	useSchemaPermissions: () => ( {
 		canCreateSchemas: canCreateSchemasRef,
 		canEditSchema: canEditSchemaRef,
-		checkCreatePermission: checkCreatePermissionMock,
-		checkEditPermission: checkEditPermissionMock,
+		canDeleteSchema: canDeleteSchemaRef,
+		checkCreatePermission: vi.fn( async (): Promise<void> => {
+			canCreateSchemasRef.value = mayCreateSchemas;
+		} ),
+		checkEditPermission: vi.fn( async (): Promise<void> => {
+			canEditSchemaRef.value = mayEditSchemas;
+		} ),
+		checkDeletePermission: vi.fn( async (): Promise<void> => {
+			canDeleteSchemaRef.value = mayDeleteSchemas;
+		} ),
 	} ),
 } ) );
 
-// The right only reaches the ref through the check, so a component that never runs the check
-// sees no permission however the fixture is set.
 let mayCreateSubjectPages = false;
 const canCreateSubjectPageRef = ref( false );
-const checkCreateSubjectPagePermissionMock = vi.fn( async (): Promise<void> => {
-	canCreateSubjectPageRef.value = mayCreateSubjectPages;
-} );
 
 vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 	useSubjectPermissions: () => ( {
 		canCreateSubjectPage: canCreateSubjectPageRef,
-		checkCreateSubjectPagePermission: checkCreateSubjectPagePermissionMock,
+		checkCreateSubjectPagePermission: vi.fn( async (): Promise<void> => {
+			canCreateSubjectPageRef.value = mayCreateSubjectPages;
+		} ),
 	} ),
 } ) );
 
-// The store is real (backed by Pinia) so removeSchema/getSchema exercise their actual
-// semantics. The editor reads through the repository, which is mocked here so the edit
-// path never reaches the network.
 const getSchemaMock = vi.fn();
+const saveSchemaMock = vi.fn();
+let getSchemaSummaries: ReturnType<typeof vi.fn>;
+let pinia: ReturnType<typeof createPinia>;
 
+// The store saves through the extension's repository.
 vi.mock( '@/NeoWikiExtension.ts', () => ( {
 	NeoWikiExtension: {
 		getInstance: () => ( {
-			getMediaWiki: () => ( {
-				util: { wikiScript: () => '/rest.php' },
-			} ),
-			newHttpClient: () => ( {
-				get: vi.fn().mockResolvedValue( {
-					ok: true,
-					json: () => Promise.resolve( schemasResponse ),
-				} ),
-			} ),
+			getSchemaRepository: () => ( { saveSchema: saveSchemaMock } ),
 		} ),
 	},
 } ) );
 
+// Each card asks for its Subjects when it mounts, so the names mounted say which cards asked.
+let mountedCardNames: string[] = [];
+
+const SchemaCardStub = {
+	name: 'SchemaCard',
+	template: '<div class="schema-card-stub"></div>',
+	props: [ 'summary', 'canEdit', 'canDelete', 'canCreateSubject', 'subjectListAvailable' ],
+	emits: [ 'edit', 'delete', 'create-subject' ],
+	mounted( this: { summary: { name: string } } ): void {
+		mountedCardNames.push( this.summary.name );
+	},
+};
+
 const SchemaCreatorDialogStub = {
-	template: '<div class="schema-creator-dialog-stub"></div>',
+	template: '<div></div>',
 	props: [ 'open' ],
 	emits: [ 'update:open', 'created' ],
 };
 
 const SubjectCreatorDialogStub = {
-	template: '<div class="subject-creator-dialog-stub"></div>',
+	template: '<div></div>',
 	props: [ 'open', 'hostPage', 'initialSchemaName' ],
 	emits: [ 'update:open' ],
 };
 
 const SchemaEditorDialogStub = {
-	template: '<div class="schema-editor-dialog-stub"></div>',
+	template: '<div></div>',
 	props: [ 'open', 'initialSchema', 'onSave' ],
 	emits: [ 'update:open', 'saved' ],
 };
 
-function findCreateButton( wrapper: VueWrapper ): VueWrapper | undefined {
-	return wrapper.findAllComponents( CdxButton )
-		.find( ( btn ) => btn.text().includes( 'neowiki-schema-creator-button' ) );
+function page( names: string[], nextCursor: string | null = null ): SchemaSummaryPage {
+	return { schemas: names.map( ( name ) => ( { name, description: '', propertyCount: 1 } ) ), nextCursor };
 }
 
-function findCreateSubjectButtons( wrapper: VueWrapper ): VueWrapper[] {
-	return wrapper.findAllComponents( CdxButton )
-		.filter( ( btn ) => btn.attributes( 'aria-label' )?.startsWith( 'neowiki-schema-create-subject' ) );
-}
-
-function findCreateSubjectButton( wrapper: VueWrapper, schemaName: string ): VueWrapper | undefined {
-	return findCreateSubjectButtons( wrapper )
-		.find( ( btn ) => btn.attributes( 'aria-label' ) === `neowiki-schema-create-subject${ schemaName }` );
-}
-
-function findEditButtons( wrapper: VueWrapper ): VueWrapper[] {
-	return wrapper.findAllComponents( CdxButton )
-		.filter( ( btn ) => btn.attributes( 'aria-label' ) === 'neowiki-edit-schema' );
-}
-
-function findDeleteButtons( wrapper: VueWrapper ): VueWrapper[] {
-	return wrapper.findAllComponents( CdxButton )
-		.filter( ( btn ) => btn.attributes( 'aria-label' ) === 'neowiki-schema-delete' );
-}
-
-function mountComponent( summaries: unknown[] = [], nextCursor: string | null = null ): VueWrapper {
-	schemasResponse = {
-		schemas: summaries,
-		nextCursor: nextCursor,
-	};
-	setupMwMock( { functions: [ 'msg', 'util', 'message', 'notify' ] } );
+function mountPage( subjectListAvailable = true ): VueWrapper {
+	setupMwMock( {
+		functions: [ 'config', 'msg', 'util', 'message', 'notify' ],
+		config: { wgNeoWikiSubjectListAvailable: subjectListAvailable },
+	} );
 
 	return mount( SchemasPage, {
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
 			provide: {
-				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
+				[ Service.SchemaRepository ]: { getSchema: getSchemaMock, getSchemaSummaries },
 			},
 			stubs: {
+				SchemaCard: SchemaCardStub,
 				SchemaCreatorDialog: SchemaCreatorDialogStub,
 				SchemaEditorDialog: SchemaEditorDialogStub,
 				SubjectCreatorDialog: SubjectCreatorDialogStub,
@@ -137,302 +128,418 @@ function mountComponent( summaries: unknown[] = [], nextCursor: string | null = 
 	} );
 }
 
+function cards( wrapper: VueWrapper ): VueWrapper<InstanceType<typeof SchemaCard>>[] {
+	return wrapper.findAllComponents( SchemaCard );
+}
+
+function cardNames( wrapper: VueWrapper ): string[] {
+	return cards( wrapper ).map( ( card ) => card.props( 'summary' ).name );
+}
+
+function findShowMore( wrapper: VueWrapper ): ReturnType<VueWrapper['find']> {
+	return wrapper.find( '.ext-neowiki-schemas-page__more' );
+}
+
+async function askToDelete( wrapper: VueWrapper, cardIndex: number ): Promise<void> {
+	cards( wrapper )[ cardIndex ].vm.$emit( 'delete' );
+	await flushPromises();
+}
+
+async function confirmDeleted( wrapper: VueWrapper, pageTitle: string ): Promise<void> {
+	wrapper.findComponent( DeletePageDialog ).vm.$emit( 'deleted', pageTitle );
+	await flushPromises();
+}
+
+async function searchFor( wrapper: VueWrapper, text: string ): Promise<void> {
+	await wrapper.find( 'input[type="search"]' ).setValue( text );
+	vi.advanceTimersByTime( 300 );
+	await flushPromises();
+}
+
 describe( 'SchemasPage', () => {
+
 	beforeEach( () => {
+		vi.useFakeTimers();
+		mayCreateSchemas = false;
+		mayEditSchemas = false;
+		mayDeleteSchemas = false;
 		canCreateSchemasRef.value = false;
 		canEditSchemaRef.value = false;
+		canDeleteSchemaRef.value = false;
 		mayCreateSubjectPages = false;
 		canCreateSubjectPageRef.value = false;
-		checkCreateSubjectPagePermissionMock.mockClear();
-		checkCreatePermissionMock.mockClear();
-		checkEditPermissionMock.mockClear();
 		getSchemaMock.mockReset();
-		schemasResponse = { schemas: [], nextCursor: null };
-
+		saveSchemaMock.mockReset().mockResolvedValue( undefined );
+		getSchemaSummaries = vi.fn().mockResolvedValue( page( [ 'Artist', 'Artwork', 'City' ] ) );
 		pinia = createPinia();
 		setActivePinia( pinia );
-		schemaStore = useSchemaStore();
+		mountedCardNames = [];
 	} );
 
-	it( 'shows create button when user has create permission', async () => {
-		canCreateSchemasRef.value = true;
-		const wrapper = mountComponent();
-		await flushPromises();
-
-		expect( findCreateButton( wrapper ) ).toBeDefined();
+	afterEach( () => {
+		vi.useRealTimers();
 	} );
 
-	it( 'hides create button when user lacks permission', async () => {
-		canCreateSchemasRef.value = false;
-		const wrapper = mountComponent();
+	it( 'asks for the first twelve Schemas', async () => {
+		mountPage();
 		await flushPromises();
 
-		expect( findCreateButton( wrapper ) ).toBeUndefined();
+		expect( getSchemaSummaries ).toHaveBeenCalledWith( '', null, 12 );
 	} );
 
-	it( 'opens SchemaCreatorDialog when button is clicked', async () => {
-		canCreateSchemasRef.value = true;
-		const wrapper = mountComponent();
+	it( 'shows a card for each Schema', async () => {
+		const wrapper = mountPage();
 		await flushPromises();
 
-		expect( wrapper.findComponent( SchemaCreatorDialog ).props( 'open' ) ).toBe( false );
+		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'Artwork', 'City' ] );
+	} );
 
-		await findCreateButton( wrapper )!.trigger( 'click' );
+	it( 'tells the cards whether the wiki can list Subjects', async () => {
+		const wrapper = mountPage( false );
+		await flushPromises();
+
+		expect( cards( wrapper )[ 0 ].props( 'subjectListAvailable' ) ).toBe( false );
+	} );
+
+	it( 'adds the next Schemas below the ones shown', async () => {
+		getSchemaSummaries
+			.mockResolvedValueOnce( page( [ 'Artist', 'Artwork' ], 'after-artwork' ) )
+			.mockResolvedValueOnce( page( [ 'City' ] ) );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		await findShowMore( wrapper ).trigger( 'click' );
+		await flushPromises();
+
+		expect( getSchemaSummaries ).toHaveBeenLastCalledWith( '', 'after-artwork', 12 );
+		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'Artwork', 'City' ] );
+	} );
+
+	it( 'offers no more Schemas once the listing ends', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( findShowMore( wrapper ).exists() ).toBe( false );
+	} );
+
+	it( 'shows the Schemas that contain the search once typing stops', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+		getSchemaSummaries.mockResolvedValue( page( [ 'Artist', 'Artwork' ] ) );
+
+		await wrapper.find( 'input[type="search"]' ).setValue( 'ar' );
+		vi.advanceTimersByTime( 299 );
+		await flushPromises();
+		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 1 );
+
+		await searchFor( wrapper, ' art ' );
+
+		expect( getSchemaSummaries ).toHaveBeenLastCalledWith( 'art', null, 12 );
+		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'Artwork' ] );
+	} );
+
+	it( 'keeps the cards a search still shows instead of mounting them again', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+		getSchemaSummaries.mockResolvedValue( page( [ 'Artist', 'Artwork' ] ) );
+		mountedCardNames = [];
+
+		await searchFor( wrapper, 'art' );
+
+		expect( mountedCardNames ).toEqual( [] );
+	} );
+
+	it( 'says nothing about an empty listing when the search failed', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+		getSchemaSummaries.mockRejectedValue( new Error( 'Error fetching schema summaries' ) );
+
+		await searchFor( wrapper, 'zz' );
+
+		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-no-match' );
+		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-empty' );
+	} );
+
+	it( 'says nothing about an empty listing while more Schemas can be shown', async () => {
+		mayDeleteSchemas = true;
+		getSchemaSummaries.mockResolvedValue( page( [ 'Artist' ], 'more' ) );
+		const wrapper = mountPage();
+		await flushPromises();
+		await askToDelete( wrapper, 0 );
+
+		await confirmDeleted( wrapper, 'Schema:Artist' );
+
+		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-empty' );
+		expect( findShowMore( wrapper ).exists() ).toBe( true );
+	} );
+
+	it( 'says nothing about an empty listing while the Schemas load', async () => {
+		getSchemaSummaries.mockReturnValue( new Promise( () => {
+			// Never lands.
+		} ) );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-empty' );
+	} );
+
+	it( 'asks once when typing pauses for less than the delay', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+		getSchemaSummaries.mockClear();
+
+		await wrapper.find( 'input[type="search"]' ).setValue( 'ar' );
+		vi.advanceTimersByTime( 200 );
+		await wrapper.find( 'input[type="search"]' ).setValue( 'art' );
+		vi.advanceTimersByTime( 300 );
+		await flushPromises();
+
+		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'drops more Schemas that arrive after a newer search', async () => {
+		let answerShowMore: ( value: SchemaSummaryPage ) => void = () => undefined;
+		getSchemaSummaries
+			.mockResolvedValueOnce( page( [ 'Artist', 'Artwork' ], 'after-artwork' ) )
+			.mockReturnValueOnce( new Promise( ( resolve ) => {
+				answerShowMore = resolve;
+			} ) )
+			.mockResolvedValueOnce( page( [ 'City' ] ) );
+		const wrapper = mountPage();
+		await flushPromises();
+		await findShowMore( wrapper ).trigger( 'click' );
+
+		await searchFor( wrapper, 'ci' );
+		answerShowMore( page( [ 'Bridge' ] ) );
+		await flushPromises();
+
+		expect( cardNames( wrapper ) ).toEqual( [ 'City' ] );
+	} );
+
+	it( 'shows the cards of the newest search when an older one answers last', async () => {
+		let answerFirst: ( value: SchemaSummaryPage ) => void = () => undefined;
+		getSchemaSummaries
+			.mockReturnValueOnce( new Promise( ( resolve ) => {
+				answerFirst = resolve;
+			} ) )
+			.mockResolvedValueOnce( page( [ 'City' ] ) );
+		const wrapper = mountPage();
+
+		await searchFor( wrapper, 'ci' );
+		answerFirst( page( [ 'Artist' ] ) );
+		await flushPromises();
+
+		expect( cardNames( wrapper ) ).toEqual( [ 'City' ] );
+	} );
+
+	it( 'says when no Schema matches the search', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+		getSchemaSummaries.mockResolvedValue( page( [] ) );
+
+		await searchFor( wrapper, 'zz' );
+
+		expect( wrapper.text() ).toContain( 'neowiki-schemas-no-matchzz' );
+	} );
+
+	it( 'says when the wiki has no Schemas', async () => {
+		getSchemaSummaries.mockResolvedValue( page( [] ) );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( wrapper.text() ).toContain( 'neowiki-schemas-empty' );
+	} );
+
+	it( 'reports Schemas that could not be loaded', async () => {
+		getSchemaSummaries.mockRejectedValue( new Error( 'Error fetching schema summaries' ) );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( mw.notify ).toHaveBeenCalledWith( 'Error fetching schema summaries', { type: 'error' } );
+		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-empty' );
+	} );
+
+	it( 'offers Schema creation to a user who may create Schemas', async () => {
+		mayCreateSchemas = true;
+		const wrapper = mountPage();
+		await flushPromises();
+
+		await wrapper.find( '.ext-neowiki-schemas-page__create' ).trigger( 'click' );
 
 		expect( wrapper.findComponent( SchemaCreatorDialog ).props( 'open' ) ).toBe( true );
 	} );
 
-	it( 'does not render SchemaCreatorDialog when user lacks permission', async () => {
-		canCreateSchemasRef.value = false;
-		const wrapper = mountComponent();
+	it( 'offers no Schema creation to a user who may not create Schemas', async () => {
+		const wrapper = mountPage();
 		await flushPromises();
 
+		expect( wrapper.find( '.ext-neowiki-schemas-page__create' ).exists() ).toBe( false );
 		expect( wrapper.findComponent( SchemaCreatorDialog ).exists() ).toBe( false );
 	} );
 
-	it( 'disables next when a full page ends the listing', async () => {
-		// A listing that ends exactly on a page boundary returns a full page with a null
-		// cursor. CdxTable's indeterminate mode would keep next enabled (its heuristic is a
-		// short page), so the component must switch the table to a known total.
-		const wrapper = mountComponent( Array.from( { length: 10 }, ( _value, index ) => (
-			{ name: `Schema${ index }`, description: '', propertyCount: 1 }
-		) ) );
+	it( 'lists the Schemas again after one is created', async () => {
+		mayCreateSchemas = true;
+		const wrapper = mountPage();
+		await flushPromises();
+		getSchemaSummaries.mockResolvedValue( page( [ 'Artist', 'Artwork', 'Bridge', 'City' ] ) );
+
+		wrapper.findComponent( SchemaCreatorDialog ).vm.$emit( 'created' );
 		await flushPromises();
 
-		const nextButton = findNextPageButton( wrapper );
-
-		expect( nextButton.attributes( 'disabled' ) ).toBeDefined();
-		expect( wrapper.text() ).toContain( 'of 10' );
+		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'Artwork', 'Bridge', 'City' ] );
 	} );
 
-	it( 'keeps next enabled while the listing continues', async () => {
-		// A full page with a non-null cursor means more rows follow. The component must leave
-		// totalRows undefined so CdxTable stays in its indeterminate mode (next enabled, "of many"
-		// label); a known total here would wrongly disable next and hide the remaining pages.
-		const wrapper = mountComponent( Array.from( { length: 10 }, ( _value, index ) => (
-			{ name: `Schema${ index }`, description: '', propertyCount: 1 }
-		) ), 'next-page-cursor' );
+	it( 'lets the cards offer editing to a user who may edit Schemas', async () => {
+		mayEditSchemas = true;
+		const wrapper = mountPage();
 		await flushPromises();
 
-		const nextButton = findNextPageButton( wrapper );
-
-		expect( nextButton.attributes( 'disabled' ) ).toBeUndefined();
-		expect( wrapper.text() ).toContain( 'of many' );
+		expect( cards( wrapper )[ 0 ].props( 'canEdit' ) ).toBe( true );
 	} );
 
-	it( 'shows empty value indicator for schemas without a description', async () => {
-		const wrapper = mountComponent( [
-			{ name: 'Person', description: '', propertyCount: 3 },
-		] );
+	it( 'lets the cards offer deleting to a user who may delete Schemas', async () => {
+		mayDeleteSchemas = true;
+		const wrapper = mountPage();
 		await flushPromises();
 
-		const emptyValue = wrapper.find( '.ext-neowiki-schemas-page__empty-value' );
-
-		expect( emptyValue.exists() ).toBe( true );
-		expect( emptyValue.text() ).toBe( '-' );
+		expect( cards( wrapper )[ 0 ].props( 'canDelete' ) ).toBe( true );
 	} );
 
-	it( 'does not show empty value indicator when description is present', async () => {
-		const wrapper = mountComponent( [
-			{ name: 'Person', description: 'A human being', propertyCount: 3 },
-		] );
+	it( 'opens the editor on the Schema of the card', async () => {
+		mayEditSchemas = true;
+		const artwork = newSchema( { title: 'Artwork' } );
+		getSchemaMock.mockResolvedValue( artwork );
+		const wrapper = mountPage();
 		await flushPromises();
 
-		expect( wrapper.find( '.ext-neowiki-schemas-page__empty-value' ).exists() ).toBe( false );
-		expect( wrapper.text() ).toContain( 'A human being' );
+		cards( wrapper )[ 1 ].vm.$emit( 'edit' );
+		await flushPromises();
+
+		expect( getSchemaMock ).toHaveBeenCalledWith( 'Artwork' );
+		const editor = wrapper.findComponent( SchemaEditorDialog );
+		expect( editor.props( 'open' ) ).toBe( true );
+		expect( editor.props( 'initialSchema' ) ).toStrictEqual( artwork );
 	} );
 
-	it( 'shows edit and delete buttons when user has edit permission', async () => {
-		canEditSchemaRef.value = true;
-		const wrapper = mountComponent( [
-			{ name: 'Person', description: '', propertyCount: 3 },
-			{ name: 'Company', description: '', propertyCount: 2 },
-		] );
+	it( 'reports a Schema that could not be fetched instead of opening the editor', async () => {
+		mayEditSchemas = true;
+		getSchemaMock.mockRejectedValue( new Error( 'Error fetching schema' ) );
+		const wrapper = mountPage();
 		await flushPromises();
 
-		expect( findEditButtons( wrapper ) ).toHaveLength( 2 );
-		expect( findDeleteButtons( wrapper ) ).toHaveLength( 2 );
-	} );
-
-	it( 'hides edit and delete buttons when user lacks edit permission', async () => {
-		canEditSchemaRef.value = false;
-		const wrapper = mountComponent( [
-			{ name: 'Person', description: '', propertyCount: 3 },
-		] );
+		cards( wrapper )[ 0 ].vm.$emit( 'edit' );
 		await flushPromises();
 
-		expect( findEditButtons( wrapper ) ).toHaveLength( 0 );
-		expect( findDeleteButtons( wrapper ) ).toHaveLength( 0 );
-	} );
-
-	it( 'opens the editor on the schema fetched from the repository', async () => {
-		canEditSchemaRef.value = true;
-		// A description the store copy does not have, so the assertion can only pass if the
-		// dialog received the repository's schema rather than a registry read.
-		const fetched = new Schema( 'Person', 'from the repository', new PropertyDefinitionList( [] ) );
-		getSchemaMock.mockResolvedValue( fetched );
-		schemaStore.setSchema( 'Person', new Schema( 'Person', 'stale', new PropertyDefinitionList( [] ) ) );
-
-		const wrapper = mountComponent( [
-			{ name: 'Person', description: '', propertyCount: 3 },
-		] );
-		await flushPromises();
-
-		await findEditButtons( wrapper )[ 0 ].trigger( 'click' );
-		await flushPromises();
-
-		expect( getSchemaMock ).toHaveBeenCalledWith( 'Person' );
-		const dialog = wrapper.findComponent( SchemaEditorDialog );
-		expect( dialog.props( 'open' ) ).toBe( true );
-		expect( dialog.props( 'initialSchema' ) ).toStrictEqual( fetched );
-	} );
-
-	it( 'reports a failed schema fetch instead of opening the editor', async () => {
-		canEditSchemaRef.value = true;
-		getSchemaMock.mockRejectedValue( new Error( 'Unknown schema: Person' ) );
-
-		const wrapper = mountComponent( [
-			{ name: 'Person', description: '', propertyCount: 3 },
-		] );
-		await flushPromises();
-
-		await findEditButtons( wrapper )[ 0 ].trigger( 'click' );
-		await flushPromises();
-
-		expect( wrapper.findComponent( SchemaEditorDialog ).exists() ).toBe( false );
-		expect( mw.notify ).toHaveBeenCalledWith( 'Unknown schema: Person', { type: 'error' } );
-	} );
-
-	it( 'does not render SchemaEditorDialog when user lacks edit permission', async () => {
-		canEditSchemaRef.value = true;
-		getSchemaMock.mockResolvedValue( new Schema( 'Person', '', new PropertyDefinitionList( [] ) ) );
-
-		const wrapper = mountComponent( [
-			{ name: 'Person', description: '', propertyCount: 3 },
-		] );
-		await flushPromises();
-
-		await findEditButtons( wrapper )[ 0 ].trigger( 'click' );
-		await flushPromises();
-
-		expect( wrapper.findComponent( SchemaEditorDialog ).exists() ).toBe( true );
-
-		canEditSchemaRef.value = false;
-		await flushPromises();
-
+		expect( mw.notify ).toHaveBeenCalledWith( 'Error fetching schema', { type: 'error' } );
 		expect( wrapper.findComponent( SchemaEditorDialog ).exists() ).toBe( false );
 	} );
 
-	it( 'opens the delete confirmation for the clicked schema', async () => {
-		canEditSchemaRef.value = true;
-		const wrapper = mountComponent( [
-			{ name: 'Person', description: '', propertyCount: 3 },
-		] );
+	it( 'shows the saved description on the card of the edited Schema', async () => {
+		mayEditSchemas = true;
+		getSchemaMock.mockResolvedValue( newSchema( { title: 'Artwork' } ) );
+		const wrapper = mountPage();
+		await flushPromises();
+		cards( wrapper )[ 1 ].vm.$emit( 'edit' );
 		await flushPromises();
 
-		await findDeleteButtons( wrapper )[ 0 ].trigger( 'click' );
+		await wrapper.findComponent( SchemaEditorDialog ).props( 'onSave' )(
+			new Schema( 'Artwork', 'A work of art.', new PropertyDefinitionList( [] ) ),
+			'comment',
+		);
+		await flushPromises();
+
+		expect( cards( wrapper )[ 1 ].props( 'summary' ).description ).toBe( 'A work of art.' );
+	} );
+
+	it( 'asks to confirm deleting the Schema of the card', async () => {
+		mayDeleteSchemas = true;
+		const wrapper = mountPage();
+		await flushPromises();
+
+		await askToDelete( wrapper, 1 );
 
 		const dialog = wrapper.findComponent( DeletePageDialog );
 		expect( dialog.props( 'open' ) ).toBe( true );
-		expect( dialog.props( 'pageTitle' ) ).toBe( 'Schema:Person' );
-		expect( dialog.props( 'displayName' ) ).toBe( 'Person' );
-		expect( dialog.props( 'typeLabel' ) ).toBe( 'neowiki-schema-noun' );
+		expect( dialog.props( 'pageTitle' ) ).toBe( 'Schema:Artwork' );
 	} );
 
-	it( 'removes the deleted schema from the store and refetches the list', async () => {
-		canEditSchemaRef.value = true;
-		const wrapper = mountComponent( [
-			{ name: 'Person', description: '', propertyCount: 3 },
-		] );
+	it( 'removes the card and the stored Schema once deleted', async () => {
+		mayDeleteSchemas = true;
+		const wrapper = mountPage();
 		await flushPromises();
+		const store = useSchemaStore();
+		store.setSchema( 'Artwork', newSchema( { title: 'Artwork' } ) );
+		await askToDelete( wrapper, 1 );
 
-		schemaStore.setSchema( 'Person', newSchema( { title: 'Person' } ) );
+		await confirmDeleted( wrapper, 'Schema:Artwork' );
 
-		await findDeleteButtons( wrapper )[ 0 ].trigger( 'click' );
-
-		// A different fixture than the initial mount proves the @deleted handler
-		// actually refetched rather than just closing the dialog.
-		schemasResponse = { schemas: [ { name: 'Company', description: '', propertyCount: 1 } ], nextCursor: null };
-
-		wrapper.findComponent( DeletePageDialog ).vm.$emit( 'deleted' );
-		await flushPromises();
-
-		expect( () => schemaStore.getSchema( 'Person' ) ).toThrow();
-		expect( wrapper.text() ).toContain( 'Company' );
-		expect( wrapper.text() ).not.toContain( 'Person' );
+		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'City' ] );
+		expect( () => store.getSchema( 'Artwork' ) ).toThrow();
 	} );
 
-	it( 'opens the subject creator on the schema of the clicked row', async () => {
+	it( 'removes the card of the Schema deleted, not of the one asked about meanwhile', async () => {
+		mayDeleteSchemas = true;
+		const wrapper = mountPage();
+		await flushPromises();
+		await askToDelete( wrapper, 1 );
+		await askToDelete( wrapper, 2 );
+
+		await confirmDeleted( wrapper, 'Schema:Artwork' );
+
+		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'City' ] );
+	} );
+
+	it( 'keeps the Schema editor from a user who may not edit Schemas', async () => {
+		getSchemaMock.mockResolvedValue( newSchema( { title: 'Artwork' } ) );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		cards( wrapper )[ 1 ].vm.$emit( 'edit' );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SchemaEditorDialog ).exists() ).toBe( false );
+	} );
+
+	it( 'lets the cards offer Subject creation to a user who may create Subject pages', async () => {
 		mayCreateSubjectPages = true;
-		// Rows on both sides of the clicked one, so pinning the first or the last row's schema fails.
-		const wrapper = mountComponent( [
-			{ name: 'Person', description: '', propertyCount: 3 },
-			{ name: 'Artist', description: '', propertyCount: 2 },
-			{ name: 'Company', description: '', propertyCount: 1 },
-		] );
+		const wrapper = mountPage();
 		await flushPromises();
 
-		await findCreateSubjectButton( wrapper, 'Artist' )!.trigger( 'click' );
+		expect( cards( wrapper )[ 0 ].props( 'canCreateSubject' ) ).toBe( true );
+	} );
+
+	it( 'opens the Subject creator on the Schema of the card', async () => {
+		mayCreateSubjectPages = true;
+		const wrapper = mountPage();
+		await flushPromises();
+
+		cards( wrapper )[ 2 ].vm.$emit( 'create-subject' );
+		await flushPromises();
 
 		const dialog = wrapper.findComponent( SubjectCreatorDialog );
 		expect( dialog.props( 'open' ) ).toBe( true );
-		expect( dialog.props( 'initialSchemaName' ) ).toBe( 'Artist' );
-		expect( dialog.props( 'hostPage' ) ).toBeNull();
+		expect( dialog.props( 'initialSchemaName' ) ).toBe( 'City' );
 	} );
 
-	it( 'closes the subject creator when the dialog asks to close', async () => {
+	it( 'closes the Subject creator when it asks to close', async () => {
 		mayCreateSubjectPages = true;
-		const wrapper = mountComponent( [
-			{ name: 'Person', description: '', propertyCount: 3 },
-		] );
+		const wrapper = mountPage();
 		await flushPromises();
-		await findCreateSubjectButton( wrapper, 'Person' )!.trigger( 'click' );
-
-		const dialog = wrapper.findComponent( SubjectCreatorDialog );
-		dialog.vm.$emit( 'update:open', false );
+		cards( wrapper )[ 0 ].vm.$emit( 'create-subject' );
 		await flushPromises();
 
-		expect( dialog.props( 'open' ) ).toBe( false );
+		wrapper.findComponent( SubjectCreatorDialog ).vm.$emit( 'update:open', false );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SubjectCreatorDialog ).props( 'open' ) ).toBe( false );
 	} );
 
-	it( 'hides the subject creator from a user who may not create subject pages', async () => {
-		mayCreateSubjectPages = false;
-		canEditSchemaRef.value = true;
-		const wrapper = mountComponent( [
-			{ name: 'Person', description: '', propertyCount: 3 },
-		] );
+	it( 'keeps the Subject creator from a user who may not create Subject pages', async () => {
+		const wrapper = mountPage();
 		await flushPromises();
 
-		expect( findCreateSubjectButtons( wrapper ) ).toHaveLength( 0 );
+		expect( cards( wrapper )[ 0 ].props( 'canCreateSubject' ) ).toBe( false );
 		expect( wrapper.findComponent( SubjectCreatorDialog ).exists() ).toBe( false );
-		expect( findEditButtons( wrapper ) ).toHaveLength( 1 );
-		expect( findDeleteButtons( wrapper ) ).toHaveLength( 1 );
 	} );
 
-	it( 'offers subject creation to a user who may not edit schemas', async () => {
-		mayCreateSubjectPages = true;
-		canEditSchemaRef.value = false;
-		const wrapper = mountComponent( [
-			{ name: 'Person', description: '', propertyCount: 3 },
-		] );
-		await flushPromises();
-
-		expect( findCreateSubjectButtons( wrapper ) ).toHaveLength( 1 );
-		expect( findEditButtons( wrapper ) ).toHaveLength( 0 );
-		expect( findDeleteButtons( wrapper ) ).toHaveLength( 0 );
-	} );
-
-	it( 'labels each row icon button with a title', async () => {
-		mayCreateSubjectPages = true;
-		canEditSchemaRef.value = true;
-		const wrapper = mountComponent( [
-			{ name: 'Person', description: '', propertyCount: 3 },
-		] );
-		await flushPromises();
-
-		expect( findCreateSubjectButton( wrapper, 'Person' )!.attributes( 'title' ) )
-			.toBe( 'neowiki-schema-create-subjectPerson' );
-		expect( findEditButtons( wrapper )[ 0 ].attributes( 'title' ) ).toBe( 'neowiki-edit-schema' );
-		expect( findDeleteButtons( wrapper )[ 0 ].attributes( 'title' ) ).toBe( 'neowiki-schema-delete' );
-	} );
 } );
