@@ -390,14 +390,14 @@ describe( 'SubjectEditPane', () => {
 			.toBe( 'Test page' );
 	} );
 
-	describe( 'The Schema above the name', () => {
-		it( 'shows the schema as a badge above a labelled subject', () => {
+	describe( 'The Schema beside the name', () => {
+		it( 'shows the schema as a badge beside a labelled subject', () => {
 			const wrapper = mountPane();
 
 			expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'TestSchema' );
 		} );
 
-		// The name below says the same word, but only the badge is a link to the Schema and the
+		// The name above says the same word, but only the badge is a link to the Schema and the
 		// way into its editor.
 		it( 'shows the badge for a subject labelled after its schema', () => {
 			const labelledAfterSchema = newSubject( { label: 'TestSchema', schemaName: 'TestSchema' } );
@@ -643,10 +643,6 @@ describe( 'SubjectEditPane', () => {
 		} );
 	} );
 
-	it( 'shows the subject id in the header', () => {
-		expect( mountPane().get( '.ext-neowiki-subject-edit-pane__header' ).text() ).toContain( 's11111111111111' );
-	} );
-
 	describe( 'Renaming from a pane', () => {
 		async function typeName( wrapper: VueWrapper, name: string ): Promise<Omit<DOMWrapper<Element>, 'exists'>> {
 			await wrapper.get( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
@@ -702,9 +698,14 @@ describe( 'SubjectEditPane', () => {
 			expect( wrapper.findComponent( EditableText ).exists() ).toBe( true );
 		} );
 
-		// Even a Main Subject shown elsewhere under its page's name: the line states the label.
-		it( 'says no label is defined while the subject has none', () => {
+		it( 'shows the page name in the empty label field of a subject named after its page', () => {
 			const wrapper = mountPane( { subject: labellessSubject, nested: true } );
+
+			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'Test page' );
+		} );
+
+		it( 'says no label is defined for a subject shown under its id', () => {
+			const wrapper = mountPane( { subject: unnamedSubject, nested: true } );
 
 			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-no-label' );
 		} );

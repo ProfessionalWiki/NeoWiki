@@ -8,9 +8,37 @@
 			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog cdx-dialog--dividers"
 			:class="{ 'ext-neowiki-subject-editor-dialog--wide': showsNavigator }"
 			:title="dialogTitle"
-			:use-close-button="true"
 			@update:open="onDialogUpdateOpen"
 		>
+			<!-- Slotted for the id beside the title, which follows the pane on screen: a CdxDialog
+				prop that did would re-render the dialog, and under the spec suite's teleport stub
+				that remounts every pane. -->
+			<template #header>
+				<div class="cdx-dialog__header__title-group">
+					<h2 class="cdx-dialog__header__title">
+						{{ dialogTitle }}
+					</h2>
+
+					<!-- Left to right: an id from another Source may end in punctuation, which a
+						right-to-left page would otherwise move to the front. -->
+					<span
+						v-if="headerSubjectId !== null"
+						class="ext-neowiki-subject-editor-dialog__subject-id"
+						dir="ltr"
+					>{{ headerSubjectId }}</span>
+				</div>
+
+				<CdxButton
+					class="cdx-dialog__header__close-button"
+					weight="quiet"
+					type="button"
+					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
+					@click="closeRequested"
+				>
+					<CdxIcon :icon="cdxIconClose" />
+				</CdxButton>
+			</template>
+
 			<!-- Only the navigator's surface is ever conditionally rendered, and the panes container
 				is deliberately unkeyed: a pane must never unmount, because its unsaved values live in
 				the ValueInput refs inside it. -->
@@ -125,7 +153,8 @@ import type { SubjectEditPaneExposes } from '@/components/SubjectEditor/SubjectE
 import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
-import { CdxDialog, CdxMessage, useGeneratedId } from '@wikimedia/codex';
+import { CdxButton, CdxDialog, CdxIcon, CdxMessage, useGeneratedId } from '@wikimedia/codex';
+import { cdxIconClose } from '@wikimedia/codex-icons';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
@@ -349,6 +378,16 @@ const hasUnsavedEdits = computed( (): boolean =>
 const dialogTitle = computed( (): string => mw.msg(
 	props.rootIsNew === true ? 'neowiki-subject-creator-title' : 'neowiki-subject-editor-title'
 ) );
+
+const headerSubjectId = computed( (): string | null => {
+	if ( props.rootIsNew === true ) {
+		return null;
+	}
+
+	const activePane = panes.value.find( ( pane ) => pane.id === activePaneId.value );
+
+	return activePane === undefined || activePane.isNew ? null : activePane.subject.getId().text;
+} );
 
 const saveButtonLabel = computed( (): string => mw.msg(
 	props.rootIsNew === true ? 'neowiki-subject-creator-save' : 'neowiki-subject-editor-save'
@@ -827,13 +866,30 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel } );
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-subject-editor-dialog {
-	/* Overrides, not replications: `.cdx-dialog__header`'s padding is unconditional in Codex,
-		and `align-items: baseline` comes from `--default`, which this header now carries again.
-		Both are deliberate departures — the header is one row of static text beside a 32px
-		close button, so the button sets the height and baseline sits the title high in it. */
+	/* Codex's `--default` header rules, which a slotted header does not get, with two
+		deliberate departures: centred rather than baseline, and less block padding than Codex's
+		unconditional rule gives. The header is one row of static text beside a 32px close
+		button, so the button sets the height and baseline sits the title high in it. */
 	.cdx-dialog__header {
+		display: flex;
 		align-items: center;
+		justify-content: flex-end;
+		box-sizing: @box-sizing-base;
+		width: @size-full;
 		padding-block: @spacing-50;
+	}
+
+	/* The id on the title's line, where Codex's title group would stack it below. */
+	.cdx-dialog__header__title-group {
+		flex-flow: row wrap;
+		align-items: baseline;
+		column-gap: @spacing-50;
+	}
+
+	&__subject-id {
+		color: @color-subtle;
+		font-family: @font-family-monospace;
+		font-size: @font-size-small;
 	}
 
 	&--wide.cdx-dialog {

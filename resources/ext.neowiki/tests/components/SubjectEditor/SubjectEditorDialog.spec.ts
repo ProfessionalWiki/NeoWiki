@@ -326,6 +326,19 @@ describe( 'SubjectEditorDialog', () => {
 			.toBe( 'neowiki-subject-editor-title' );
 	} );
 
+	// Null where the header shows no id.
+	function idBesideTitle( wrapper: VueWrapper ): string | null {
+		const id = wrapper.find( '.cdx-dialog__header .ext-neowiki-subject-editor-dialog__subject-id' );
+		return id.exists() ? id.text() : null;
+	}
+
+	it( 'shows the id of the subject being edited beside the title', async () => {
+		const wrapper = mountComponent( false, {} );
+		await flushPromises();
+
+		expect( idBesideTitle( wrapper ) ).toBe( rootSubjectId );
+	} );
+
 	const saveButtonTestStubs = {
 		SubjectEditor: SubjectEditorStub,
 		SchemaEditorDialog: true,
@@ -1039,12 +1052,8 @@ describe( 'SubjectEditorDialog', () => {
 			);
 			await flushPromises();
 
-			// Codex points the dialog at its own heading when nothing slots a header over it,
-			// so the announced name is the visible one rather than a parallel string.
-			const heading = wrapper.get( '.cdx-dialog__header__title' );
-			expect( wrapper.get( '.cdx-dialog' ).attributes( 'aria-labelledby' ) )
-				.toBe( heading.attributes( 'id' ) );
-			expect( heading.text() ).toBe( 'neowiki-subject-editor-title' );
+			expect( wrapper.get( '.cdx-dialog' ).attributes( 'aria-label' ) )
+				.toBe( 'neowiki-subject-editor-title' );
 		} );
 
 		it( 'sends no label to the dry-run validation once the label is blanked', async () => {
@@ -1341,6 +1350,12 @@ describe( 'SubjectEditorDialog', () => {
 			expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
 		} );
 
+		it( 'shows the id of a newly opened relation target beside the title', async () => {
+			const { wrapper } = await mountWithSecondPaneOpen();
+
+			expect( idBesideTitle( wrapper ) ).toBe( 's22222222222222' );
+		} );
+
 		it( 'opens a second pane with the freshly fetched target subject', async () => {
 			const { wrapper, mockSubjectRepository } = mountWithTargetRepos();
 			await flushPromises();
@@ -1420,6 +1435,14 @@ describe( 'SubjectEditorDialog', () => {
 			const panel = wrapper.find( '#ext-neowiki-panel-s99999999999999' );
 			expect( panel.exists() ).toBe( true );
 			expect( panel.isVisible() ).toBe( true );
+		} );
+
+		it( 'shows the id of the subject chosen from the list beside the title', async () => {
+			const { wrapper } = await mountWithSecondPaneOpen();
+
+			await selectInList( wrapper, rootSubjectId );
+
+			expect( idBesideTitle( wrapper ) ).toBe( rootSubjectId );
 		} );
 
 		it( 'switches the subject on screen when one is chosen from the list, keeping every pane mounted', async () => {
@@ -2746,6 +2769,14 @@ describe( 'SubjectEditorDialog', () => {
 				expect( visibleSubjectId( wrapper ) ).toBe( mintedId );
 			} );
 
+			it( 'shows no id beside the title while the created draft is on screen', async () => {
+				const { wrapper } = await mountReadyForCreation();
+
+				await createTarget( wrapper );
+
+				expect( idBesideTitle( wrapper ) ).toBeNull();
+			} );
+
 			it( 'edits the created draft against the schema it was asked for', async () => {
 				const { wrapper, mockSchemaRepository } = await mountReadyForCreation();
 
@@ -3235,6 +3266,15 @@ describe( 'SubjectEditorDialog', () => {
 						.toBe( 'neowiki-subject-creator-title' );
 					expect( wrapper.findComponent( SummaryAction ).props( 'saveButtonLabel' ) )
 						.toBe( 'neowiki-subject-creator-save' );
+				} );
+
+				it( 'shows no id beside the title, not even for a stored subject on screen', async () => {
+					const { wrapper } = await mountCreating();
+
+					await openStoredTarget( wrapper );
+
+					expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
+					expect( idBesideTitle( wrapper ) ).toBeNull();
 				} );
 
 				it( 'writes with the create summary where the user gave none', async () => {
