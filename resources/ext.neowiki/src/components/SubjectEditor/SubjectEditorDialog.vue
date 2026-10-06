@@ -855,6 +855,14 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel } );
 		align-items: center;
 		column-gap: @spacing-50;
 
+		/* Trimmed to the capitals and the baseline, so centring lines up the letters: the
+			monospace font leaves more room below its letters than the title's does, which
+			centred the id's line box with its letters high. */
+		.cdx-dialog__header__title,
+		.cdx-dialog__header__subtitle {
+			text-box: trim-both cap alphabetic;
+		}
+
 		/* Directed by its own first letter: an id from another Source may end in punctuation,
 			which a right-to-left page would otherwise move to the front. Sized like the id on
 			the Data tab. */
