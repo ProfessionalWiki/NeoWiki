@@ -17,10 +17,9 @@
 			</h3>
 
 			<div class="ext-neowiki-subject-edit-pane__meta">
-				<!-- The Schema the pane's Subject uses, beside the name it belongs to rather
-					than in the dialog's header. A real link, so it carries the badge's own
-					interactive styling and a destination; a plain click opens the Schema
-					editor instead, as the old header link did.
+				<!-- The Schema the pane's Subject uses, beside the name it belongs to. A real
+					link, so it carries the badge's own interactive styling and a destination;
+					a plain click opens the Schema editor instead.
 
 					A new tab, for the reason the storage link below gives: this dialog holds
 					unsaved edits for every open pane and nothing guards a navigation away
@@ -152,7 +151,7 @@ const storedLabel = computed( (): string | null => enteredSubjectLabel( label.va
 
 const paneName = computed( (): string => storedLabel.value ?? subjectDisplayName( props.subject ) );
 
-// Shown whether or not the name above already carries the Schema's name. Elsewhere that repeat is
+// Shown whether or not the name beside it already carries the Schema's name. Elsewhere that repeat is
 // worth suppressing, and `schemaNameToShow` does so; here the badge is the only link to the Schema
 // and the only way into its editor, so withholding it costs a way through rather than a word.
 const schemaBadge = computed( (): string => props.subject.getSchemaName() );

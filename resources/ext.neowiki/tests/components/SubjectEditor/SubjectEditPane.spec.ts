@@ -374,8 +374,8 @@ describe( 'SubjectEditPane', () => {
 			.toBe( 'Test Subject' );
 	} );
 
-	// The dialog's own header no longer names any Subject, so the root's region carries the
-	// name like every other pane's.
+	// The dialog's header shows only the Subject's id, so the root's region carries the name
+	// like every other pane's.
 	it( 'names the root pane\'s region after its subject too', () => {
 		const wrapper = mountPane();
 
@@ -397,7 +397,7 @@ describe( 'SubjectEditPane', () => {
 			expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'TestSchema' );
 		} );
 
-		// The name above says the same word, but only the badge is a link to the Schema and the
+		// The name beside it says the same word, but only the badge is a link to the Schema and the
 		// way into its editor.
 		it( 'shows the badge for a subject labelled after its schema', () => {
 			const labelledAfterSchema = newSubject( { label: 'TestSchema', schemaName: 'TestSchema' } );
@@ -695,8 +695,8 @@ describe( 'SubjectEditPane', () => {
 			expect( ( ( wrapper.vm as any ).buildUpdatedSubject() as Subject ).getLabel() ).toBe( 'Renamed' );
 		} );
 
-		// The dialog's header names no Subject now, so the root is renamed where every other
-		// pane is renamed: in the pane itself.
+		// The dialog's header shows only the Subject's id, so the root is renamed where every
+		// other pane is renamed: in the pane itself.
 		it( 'gives the root pane a rename control, like every other pane', () => {
 			const wrapper = mountPane();
 

@@ -58,8 +58,9 @@ class SpecialSubject extends SpecialPage {
 	/**
 	 * Heads the page by the Subject's own name, and with it the browser tab, a bookmark and a history
 	 * entry: this page is where a concept URI leads, so those should name the thing rather than the page
-	 * showing it. A Subject this wiki does not hold leaves the page's description standing, and so,
-	 * indistinguishably, does one on a page the reader may not read (#1046).
+	 * showing it. A Subject nobody named is headed by "No label defined" and its id. A Subject this wiki
+	 * does not hold leaves the page's description standing, and so, indistinguishably, does one on a
+	 * page the reader may not read (#1046).
 	 */
 	private function headBySubject( OutputPage $out, NeoWikiExtension $extension, SubjectId $subjectId ): void {
 		$presenter = new SubjectNamePresenter();
