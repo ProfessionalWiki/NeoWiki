@@ -206,10 +206,10 @@ class NeoWikiHooks {
 
 	/**
 	 * In Recent changes and watchlists, a link to a page titled by a Subject id reads as the page's
-	 * heading does: its Main Subject's label and id. Only rows the list read up front change, and only
-	 * links that would show the bare title, rendered where the list renders. The parser renders with a
-	 * link renderer of its own, and a list transcluded into a page reads nothing up front, so page
-	 * content never gets a label.
+	 * heading does when its Main Subject has a label: that label and the id. Only rows the list read up
+	 * front change, and only links that would show the bare title, rendered where the list renders. The
+	 * parser renders with a link renderer of its own, and a list transcluded into a page reads nothing
+	 * up front, so page content never gets a label.
 	 *
 	 * @param string|HtmlArmor|null &$text
 	 * @param string[] &$customAttribs
@@ -246,7 +246,7 @@ class NeoWikiHooks {
 
 		$text = new HtmlArmor( SubjectLabelHtml::withId(
 			$context,
-			$subject->getLabel()?->text ?? '',
+			$subject->getLabel()?->text,
 			$subject->getId()->text
 		) );
 
