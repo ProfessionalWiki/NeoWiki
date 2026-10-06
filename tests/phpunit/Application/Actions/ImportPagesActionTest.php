@@ -59,6 +59,7 @@ class ImportPagesActionTest extends \MediaWikiIntegrationTestCase {
 			$this->mediaWikiContentSource,
 			$this->layoutContentSource,
 			$this->mappingContentSource,
+			[],
 		);
 	}
 

@@ -89,6 +89,7 @@ class ImportPagesNamespaceTest extends MediaWikiIntegrationTestCase {
 			mediaWikiContentSource: $this->newPageContentSource( $mediaWikiFiles ),
 			layoutContentSource: $this->createMock( LayoutContentSource::class ),
 			mappingContentSource: $this->createMock( MappingContentSource::class ),
+			graphStoreProjections: [],
 		) )->import();
 
 		return $presenter;

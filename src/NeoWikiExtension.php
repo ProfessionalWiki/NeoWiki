@@ -1523,7 +1523,7 @@ class NeoWikiExtension {
 	 *
 	 * @return array<string, ?string> Keys are store names
 	 */
-	private function getMappingDefinedStoreProjections(): array {
+	public function getMappingDefinedStoreProjections(): array {
 		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
 
 		return array_map(

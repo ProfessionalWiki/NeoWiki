@@ -37,6 +37,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
+use Psr\Log\LogLevel;
 use RevisionDeleter;
 use TestLogger;
 use WikiExporter;
@@ -251,6 +252,19 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	 */
 	protected static function loggedText( TestLogger $logger ): string {
 		return implode( "\n", array_column( $logger->getBuffer(), 1 ) );
+	}
+
+	/**
+	 * @return string[]
+	 */
+	protected static function loggedErrors( TestLogger $logger ): array {
+		return array_column(
+			array_filter(
+				$logger->getBuffer(),
+				static fn ( array $record ): bool => $record[0] === LogLevel::ERROR
+			),
+			1
+		);
 	}
 
 	protected function createSchema( string $name, ?string $json = null ): ?RevisionRecord {
