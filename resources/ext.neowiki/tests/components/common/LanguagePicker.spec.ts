@@ -166,7 +166,7 @@ describe( 'LanguagePicker', () => {
 
 	it( 'lists the languages the reader reads first, then the others by name', async () => {
 		useLanguages(
-			{ an: 'Aragonese', cy: 'Welsh', de: 'German', en: 'English', es: 'Spanish', eu: 'Basque' },
+			{ an: 'aragonés', cy: 'Cymraeg', de: 'Deutsch', en: 'English', es: 'español', eu: 'euskara' },
 			{ wgUserLanguage: 'es', wgContentLanguage: 'eu' },
 		);
 		const picker = newWrapper( 'es' );
@@ -174,20 +174,74 @@ describe( 'LanguagePicker', () => {
 		await openPicker( picker );
 
 		expect( listedLanguages( picker ) )
-			.toEqual( [ 'Spanish', 'English', 'Basque', 'Aragonese', 'German', 'Welsh' ] );
+			.toEqual( [ 'español', 'inglés', 'euskera', 'alemán', 'aragonés', 'galés' ] );
 	} );
 
 	it.each( [
-		[ 'Ido', 'Ido' ],
-		[ 'eu', 'Basque' ],
-	] )( 'lists the language %s names, and no tag of its own', async ( typed, listed ) => {
-		useLanguages( { en: 'English', eu: 'Basque', io: 'Ido' } );
+		[ 'its name in the interface language', 'German' ],
+		[ 'MediaWiki\'s name for it', 'Deutsch' ],
+		[ 'the start of MediaWiki\'s name for it', 'Deut' ],
+	] )( 'finds a language by %s', async ( _, typed ) => {
+		useLanguages( { de: 'Deutsch', en: 'English' } );
+		const picker = newWrapper( 'en' );
+
+		await openPicker( picker );
+		await type( picker, typed );
+
+		expect( listedLanguages( picker ) ).toEqual( [ 'German' ] );
+	} );
+
+	// Spanish writes German with an accent, and the lowercase of Turkish's dotted capital I carries a
+	// combining dot.
+	it.each( [
+		[ 'es', 'aleman', 'alemán' ],
+		[ 'tr', 'ingilizce', 'İngilizce' ],
+	] )( 'finds a language in %s by its name typed without accents or dots', async ( userLanguage, typed, listed ) => {
+		useLanguages( { de: 'Deutsch', en: 'English' }, { wgUserLanguage: userLanguage } );
 		const picker = newWrapper( 'en' );
 
 		await openPicker( picker );
 		await type( picker, typed );
 
 		expect( listedLanguages( picker ) ).toEqual( [ listed ] );
+	} );
+
+	// Swedish sorts ö after w, where English sorts it with o.
+	it( 'lists the languages the reader does not read in the order of the reader\'s alphabet', async () => {
+		useLanguages(
+			{ cy: 'Cymraeg', 'de-at': 'Österreichisches Deutsch' },
+			{ wgUserLanguage: 'sv', wgContentLanguage: 'sv' },
+		);
+		const picker = newWrapper( 'cy' );
+
+		await openPicker( picker );
+
+		expect( listedLanguages( picker ) ).toEqual( [ 'walesiska', 'österrikisk tyska' ] );
+	} );
+
+	it( 'lists languages under the names MediaWiki gives for an interface language that is not a well-formed locale', async () => {
+		useLanguages( { de: 'Deutsch', en: 'English' }, { wgUserLanguage: 'x-xss' } );
+		const picker = newWrapper( 'en' );
+
+		await openPicker( picker );
+
+		expect( listedLanguages( picker ) ).toEqual( [ 'English', 'Deutsch' ] );
+	} );
+
+	// Russian names Ido идо, so typing `Ido` there names it only by MediaWiki's name for it.
+	it.each( [
+		[ 'Ewe', 'en', 'Ewe', 'EE' ],
+		[ 'Ido', 'ru', 'идо', 'IO' ],
+		[ 'eu', 'en', 'Basque', 'EU' ],
+	] )( 'lists the language %s names, and no tag of its own', async ( typed, userLanguage, listed, tag ) => {
+		useLanguages( { ee: 'eʋegbe', en: 'English', eu: 'Basque', io: 'Ido' }, { wgUserLanguage: userLanguage } );
+		const picker = newWrapper( 'en' );
+
+		await openPicker( picker );
+		await type( picker, typed );
+
+		expect( listedLanguages( picker ) ).toEqual( [ listed ] );
+		expect( listedTags( picker ) ).toEqual( [ tag ] );
 	} );
 
 	it( 'lists the language whose tag is typed before those whose name only starts or contains it', async () => {
@@ -200,6 +254,16 @@ describe( 'LanguagePicker', () => {
 		expect( listedLanguages( picker ) ).toEqual( [ 'Spanish', 'Estonian', 'Aragonese' ] );
 	} );
 
+	it( 'lists the language whose name in MediaWiki is typed before those whose name only starts with it', async () => {
+		useLanguages( { de: 'Deutsch', 'de-x-formal': 'Deutsch (Sie-Form)', en: 'English' } );
+		const picker = newWrapper( 'en' );
+
+		await openPicker( picker );
+		await type( picker, 'Deutsch' );
+
+		expect( listedLanguages( picker ) ).toEqual( [ 'German', 'Deutsch (Sie-Form)' ] );
+	} );
+
 	it( 'lists the language a MediaWiki code stands for', async () => {
 		useLanguages( { als: 'Alemannisch', en: 'English' } );
 		const picker = newWrapper( 'en' );
@@ -207,7 +271,7 @@ describe( 'LanguagePicker', () => {
 		await openPicker( picker );
 		await type( picker, 'als' );
 
-		expect( listedLanguages( picker ) ).toEqual( [ 'Alemannisch' ] );
+		expect( listedLanguages( picker ) ).toEqual( [ 'Swiss German' ] );
 		expect( listedTags( picker ) ).toEqual( [ 'GSW' ] );
 	} );
 
