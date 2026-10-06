@@ -2095,7 +2095,7 @@ describe( 'SubjectEditorDialog', () => {
 			it( 'leaves focus on the list when a row shows a subject', async () => {
 				const wrapper = await mountAttached( relationRootSchema, relationRootSubject, { teleport: false } );
 				await openTargetFromForm( wrapper, 's22222222222222' );
-				const row = wrapper.findComponent( OpenSubjectList ).find( '.ext-neowiki-open-subject-list__item' ).element as HTMLElement;
+				const row = listRow( wrapper, rootSubjectId ).element as HTMLElement;
 				row.focus();
 
 				await selectInList( wrapper, rootSubjectId );
