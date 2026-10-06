@@ -4,8 +4,7 @@
 		:aria-label="paneName"
 	>
 		<!-- Named here rather than in the dialog's header, for the root as well as a nested
-			pane: a header naming the root goes stale the moment another pane is opened, and
-			the dialog's accessible name cannot follow without re-rendering CdxDialog. -->
+			pane: a header naming the root goes stale the moment another pane is opened. -->
 		<div class="ext-neowiki-subject-edit-pane__header">
 			<h3 class="ext-neowiki-subject-edit-pane__name">
 				<EditableText
@@ -358,8 +357,7 @@ defineExpose( {
 .ext-neowiki-subject-edit-pane {
 	/* The name at the start, the Schema and where it is stored flush to the end. Baseline
 		rather than centre, because the three differ in size. A name too long to share the row
-		pushes the other two onto the line below, where the badge truncates once even that line
-		has no room. */
+		pushes the other two onto the line below. */
 	&__header {
 		display: flex;
 		align-items: baseline;

@@ -235,7 +235,7 @@ describe( 'SubjectEditorDialog', () => {
 		const wrapper = mountComponent( true, {} );
 		await flushPromises();
 
-		expect( wrapper.find( '.cdx-dialog__header__subtitle' ).exists() ).toBe( false );
+		expect( wrapper.get( '.cdx-dialog__header' ).text() ).not.toContain( 'TestSchema' );
 		expect( wrapper.get( '.ext-neowiki-subject-edit-pane__meta .ext-neowiki-schema-name__text' ).text() )
 			.toBe( 'TestSchema' );
 	} );
@@ -328,7 +328,7 @@ describe( 'SubjectEditorDialog', () => {
 
 	// Null where the header shows no id.
 	function idBesideTitle( wrapper: VueWrapper ): string | null {
-		const id = wrapper.find( '.cdx-dialog__header .ext-neowiki-subject-editor-dialog__subject-id' );
+		const id = wrapper.find( '.cdx-dialog__header__subtitle' );
 		return id.exists() && id.text() !== '' ? id.text() : null;
 	}
 
@@ -337,14 +337,6 @@ describe( 'SubjectEditorDialog', () => {
 		await flushPromises();
 
 		expect( idBesideTitle( wrapper ) ).toBe( rootSubjectId );
-	} );
-
-	it( 'names its close button for assistive technology', async () => {
-		const wrapper = mountComponent( false, {} );
-		await flushPromises();
-
-		expect( wrapper.get( '.cdx-dialog__header__close-button' ).attributes( 'aria-label' ) )
-			.toBe( 'cdx-dialog-close-button-label' );
 	} );
 
 	const saveButtonTestStubs = {
@@ -1051,6 +1043,23 @@ describe( 'SubjectEditorDialog', () => {
 			);
 		} );
 
+		// Codex takes the dialog's accessible name from the title prop whenever a header slot
+		// replaces the rendered title. It names the task, not a Subject: the dialog edits
+		// several, and a name fixed at open would be wrong the moment another pane is shown.
+		it( 'names the dialog after the task rather than after a subject', async () => {
+			const wrapper = mountComponent(
+				false, validationTestStubs, undefined, mockSchema, {}, labellessSubject,
+			);
+			await flushPromises();
+
+			// Codex points the dialog at its own heading when nothing slots a header over it,
+			// so the announced name is the visible one rather than a parallel string.
+			const heading = wrapper.get( '.cdx-dialog__header__title' );
+			expect( wrapper.get( '.cdx-dialog' ).attributes( 'aria-labelledby' ) )
+				.toBe( heading.attributes( 'id' ) );
+			expect( heading.text() ).toBe( 'neowiki-subject-editor-title' );
+		} );
+
 		it( 'sends no label to the dry-run validation once the label is blanked', async () => {
 			const validate = vi.fn().mockResolvedValue( [] );
 			useSubjectStore().validateSubjectUpdate = validate;
@@ -1457,6 +1466,7 @@ describe( 'SubjectEditorDialog', () => {
 			const { wrapper } = await mountWithSecondPaneOpen( {
 				rootSchema: relationRootSchema,
 				rootSubject: relationRootSubject,
+				stubs: { teleport: false },
 			} );
 			( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).setLabel( 'Edited child' );
 			await nextTick();
@@ -1464,7 +1474,7 @@ describe( 'SubjectEditorDialog', () => {
 			await selectInList( wrapper, rootSubjectId );
 			await selectInList( wrapper, 's22222222222222' );
 
-			expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
+			expect( teleportedVisibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
 			expect( ( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).label )
 				.toBe( 'Edited child' );
 			expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
@@ -1585,15 +1595,15 @@ describe( 'SubjectEditorDialog', () => {
 				const onSave = vi.fn()
 					.mockResolvedValueOnce( undefined )
 					.mockRejectedValueOnce( new Error( 'Boom' ) );
-				const { wrapper, target } = await mountWithSecondPaneOpen( { onSave } );
+				const { wrapper, target } = await mountWithSecondPaneOpen( { onSave, stubs: { teleport: false } } );
 				await makePaneDirty( wrapper, 0 );
 				await makePaneDirty( wrapper, 1 );
 				await selectInList( wrapper, mockSubject.getId().text );
-				expect( visibleSubjectId( wrapper ) ).toBe( mockSubject.getId().text );
+				expect( teleportedVisibleSubjectId( wrapper ) ).toBe( mockSubject.getId().text );
 
 				await triggerSave( wrapper, '' );
 
-				expect( visibleSubjectId( wrapper ) ).toBe( target.getId().text );
+				expect( teleportedVisibleSubjectId( wrapper ) ).toBe( target.getId().text );
 			} );
 
 			it( 'retry after partial failure only re-saves the still-dirty pane', async () => {
@@ -1645,7 +1655,7 @@ describe( 'SubjectEditorDialog', () => {
 
 				it( 'reports the Save button disabled', async () => {
 					const { onSave, settle } = deferredSave();
-					const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
+					const { wrapper } = await mountWithSecondPaneOpen( { onSave, stubs: { teleport: false } } );
 					await makePaneDirty( wrapper, 0 );
 
 					await triggerSave( wrapper, '' );
@@ -2090,9 +2100,13 @@ describe( 'SubjectEditorDialog', () => {
 			// As the listbox pattern expects: the row the reader chose stays the tab stop, so the
 			// next Tab leaves the navigator rather than restarting inside it.
 			it( 'leaves focus on the list when a row shows a subject', async () => {
-				const wrapper = await mountAttached( relationRootSchema, relationRootSubject );
+				const { wrapper } = mountWithTargetRepos(
+					undefined, { teleport: false }, relationRootSchema, relationRootSubject, document.body,
+				);
+				attached = wrapper;
+				await flushPromises();
 				await openTargetFromForm( wrapper, 's22222222222222' );
-				const row = wrapper.find( '.ext-neowiki-open-subject-list__item' ).element as HTMLElement;
+				const row = wrapper.findComponent( OpenSubjectList ).find( '.ext-neowiki-open-subject-list__item' ).element as HTMLElement;
 				row.focus();
 
 				await selectInList( wrapper, rootSubjectId );
@@ -2487,12 +2501,13 @@ describe( 'SubjectEditorDialog', () => {
 				const { wrapper } = await mountWithSecondPaneOpen( {
 					rootSchema: relationRootSchema,
 					rootSubject: relationRootSubject,
+					stubs: { teleport: false },
 				} );
 				await makePaneDirty( wrapper, 1 );
 
 				await selectInList( wrapper, rootSubjectId );
 
-				expect( visibleSubjectId( wrapper ) ).toBe( rootSubjectId );
+				expect( teleportedVisibleSubjectId( wrapper ) ).toBe( rootSubjectId );
 				expect( listRowHasDot( wrapper, 's22222222222222' ) ).toBe( true );
 			} );
 
