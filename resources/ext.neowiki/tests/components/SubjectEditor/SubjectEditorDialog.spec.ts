@@ -326,10 +326,9 @@ describe( 'SubjectEditorDialog', () => {
 			.toBe( 'neowiki-subject-editor-title' );
 	} );
 
-	// Null where the header shows no id.
 	function idBesideTitle( wrapper: VueWrapper ): string | null {
 		const id = wrapper.find( '.cdx-dialog__header__subtitle' );
-		return id.exists() && id.text() !== '' ? id.text() : null;
+		return id.exists() ? id.text() : null;
 	}
 
 	it( 'shows the id of the subject being edited beside the title', async () => {
@@ -1309,11 +1308,15 @@ describe( 'SubjectEditorDialog', () => {
 
 		// Every pane stays mounted behind v-show, so the one on screen is read off the panels.
 		// From the inline style rather than isVisible(): jsdom's getComputedStyle serves a stale
-		// answer once an element has been measured.
+		// answer once an element has been measured. Each pane is reached through its own component:
+		// the real Teleport moves the dialog to the document body, where a query rooted at the
+		// wrapper finds no panel, and one rooted at the document finds every dialog this file mounted.
 		function visibleSubjectId( wrapper: VueWrapper ): string {
-			const panel = wrapper.findAll( '.ext-neowiki-subject-editor-dialog__panels > div' )
-				.find( ( candidate ) => !( candidate.attributes( 'style' ) ?? '' ).includes( 'display: none' ) );
-			return ( panel?.attributes( 'id' ) ?? '' ).replace( 'ext-neowiki-panel-', '' );
+			const panel = wrapper.findAllComponents( SubjectEditPane )
+				.map( ( pane ) => pane.element.closest( '[id^="ext-neowiki-panel-"]' ) )
+				.find( ( element ) => element !== null &&
+					!( element.getAttribute( 'style' ) ?? '' ).includes( 'display: none' ) );
+			return ( panel?.id ?? '' ).replace( 'ext-neowiki-panel-', '' );
 		}
 
 		// Presses the row itself, so unlike selectInList below this fails when no row is
@@ -1321,17 +1324,6 @@ describe( 'SubjectEditorDialog', () => {
 		async function clickListRow( wrapper: VueWrapper, id: string ): Promise<void> {
 			await listRow( wrapper, id ).trigger( 'click' );
 			await flushPromises();
-		}
-
-		// The same reading under the real Teleport, which moves the dialog to the document body:
-		// a query rooted at the wrapper finds no panel, and one rooted at the document finds every
-		// dialog this file has ever mounted. Each pane is reached through its own component.
-		function teleportedVisibleSubjectId( wrapper: VueWrapper ): string {
-			const panel = wrapper.findAllComponents( SubjectEditPane )
-				.map( ( pane ) => pane.element.closest( '[id^="ext-neowiki-panel-"]' ) )
-				.find( ( element ) => element !== null &&
-					!( element.getAttribute( 'style' ) ?? '' ).includes( 'display: none' ) );
-			return ( panel?.id ?? '' ).replace( 'ext-neowiki-panel-', '' );
 		}
 
 		async function selectInList( wrapper: VueWrapper, id: string ): Promise<void> {
@@ -1474,7 +1466,7 @@ describe( 'SubjectEditorDialog', () => {
 			await selectInList( wrapper, rootSubjectId );
 			await selectInList( wrapper, 's22222222222222' );
 
-			expect( teleportedVisibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
+			expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
 			expect( ( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).label )
 				.toBe( 'Edited child' );
 			expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
@@ -1599,11 +1591,11 @@ describe( 'SubjectEditorDialog', () => {
 				await makePaneDirty( wrapper, 0 );
 				await makePaneDirty( wrapper, 1 );
 				await selectInList( wrapper, mockSubject.getId().text );
-				expect( teleportedVisibleSubjectId( wrapper ) ).toBe( mockSubject.getId().text );
+				expect( visibleSubjectId( wrapper ) ).toBe( mockSubject.getId().text );
 
 				await triggerSave( wrapper, '' );
 
-				expect( teleportedVisibleSubjectId( wrapper ) ).toBe( target.getId().text );
+				expect( visibleSubjectId( wrapper ) ).toBe( target.getId().text );
 			} );
 
 			it( 'retry after partial failure only re-saves the still-dirty pane', async () => {
@@ -2074,9 +2066,10 @@ describe( 'SubjectEditorDialog', () => {
 			async function mountAttached(
 				rootSchema: Schema = mockSchema,
 				rootSubject: Subject = mockSubject,
+				stubs: Record<string, unknown> = {},
 			): Promise<VueWrapper> {
 				const { wrapper } = mountWithTargetRepos(
-					undefined, {}, rootSchema, rootSubject, document.body,
+					undefined, stubs, rootSchema, rootSubject, document.body,
 				);
 				attached = wrapper;
 				await flushPromises();
@@ -2100,11 +2093,7 @@ describe( 'SubjectEditorDialog', () => {
 			// As the listbox pattern expects: the row the reader chose stays the tab stop, so the
 			// next Tab leaves the navigator rather than restarting inside it.
 			it( 'leaves focus on the list when a row shows a subject', async () => {
-				const { wrapper } = mountWithTargetRepos(
-					undefined, { teleport: false }, relationRootSchema, relationRootSubject, document.body,
-				);
-				attached = wrapper;
-				await flushPromises();
+				const wrapper = await mountAttached( relationRootSchema, relationRootSubject, { teleport: false } );
 				await openTargetFromForm( wrapper, 's22222222222222' );
 				const row = wrapper.findComponent( OpenSubjectList ).find( '.ext-neowiki-open-subject-list__item' ).element as HTMLElement;
 				row.focus();
@@ -2245,7 +2234,7 @@ describe( 'SubjectEditorDialog', () => {
 
 				await clickListRow( wrapper, 's22222222222222' );
 
-				expect( teleportedVisibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
+				expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
 				expect( ( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).label )
 					.toBe( 'Edited child' );
 			} );
@@ -2330,7 +2319,7 @@ describe( 'SubjectEditorDialog', () => {
 					await land();
 
 					expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
-					expect( teleportedVisibleSubjectId( wrapper ) ).toBe( mockSubject.getId().text );
+					expect( visibleSubjectId( wrapper ) ).toBe( mockSubject.getId().text );
 				} );
 
 				it( 'does not open a pane under a root the host replaced', async () => {
@@ -2343,7 +2332,7 @@ describe( 'SubjectEditorDialog', () => {
 					await land();
 
 					expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
-					expect( teleportedVisibleSubjectId( wrapper ) ).toBe( otherRoot.getId().text );
+					expect( visibleSubjectId( wrapper ) ).toBe( otherRoot.getId().text );
 				} );
 
 				it( 'does not stand in for the same target clicked in the next opening', async () => {
@@ -2490,7 +2479,7 @@ describe( 'SubjectEditorDialog', () => {
 
 				expect( mockSubjectRepository.getSubjectForEditing ).not.toHaveBeenCalled();
 				expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 2 );
-				expect( teleportedVisibleSubjectId( wrapper ) ).toBe( rootSubjectId );
+				expect( visibleSubjectId( wrapper ) ).toBe( rootSubjectId );
 			} );
 
 			// Asserted on the rendered dot rather than on the unsavedIds prop: that prop restates
@@ -2507,7 +2496,7 @@ describe( 'SubjectEditorDialog', () => {
 
 				await selectInList( wrapper, rootSubjectId );
 
-				expect( teleportedVisibleSubjectId( wrapper ) ).toBe( rootSubjectId );
+				expect( visibleSubjectId( wrapper ) ).toBe( rootSubjectId );
 				expect( listRowHasDot( wrapper, 's22222222222222' ) ).toBe( true );
 			} );
 

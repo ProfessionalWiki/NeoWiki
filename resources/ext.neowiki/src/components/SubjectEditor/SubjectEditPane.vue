@@ -3,8 +3,6 @@
 		class="ext-neowiki-subject-edit-pane"
 		:aria-label="paneName"
 	>
-		<!-- Named here rather than in the dialog's header, for the root as well as a nested
-			pane: a header naming the root goes stale the moment another pane is opened. -->
 		<div class="ext-neowiki-subject-edit-pane__header">
 			<h3 class="ext-neowiki-subject-edit-pane__name">
 				<EditableText

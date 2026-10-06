@@ -963,8 +963,6 @@ async function writeRootSubject( subject: Subject, comment: string ): Promise<vo
 
 	await saveDraftSchema( comment );
 
-	// A page that has a Main Subject already gets this one beside it; one that has none is being
-	// given its topic.
 	const subjectId = answer.besideMainSubject ?
 		await createBesideMainSubject( pageId, label, schemaName, statements, comment, subject.getId() ) :
 		await subjectStore.createMainSubject( pageId, label, schemaName, statements, comment, subject.getId() );

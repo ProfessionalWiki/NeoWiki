@@ -190,9 +190,6 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	/**
-	 * A tab reading "No label defined" would not say which Subject it is.
-	 */
 	public function testTheBrowserTitleNamesASubjectWithoutALabelByItsStandIn(): void {
 		$this->createSubjectWithoutLabel();
 

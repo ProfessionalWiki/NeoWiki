@@ -121,9 +121,6 @@ class SubjectIdTitledPageHeadingTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( self::SUBJECT_ID, $heading );
 	}
 
-	/**
-	 * A tab reading "No label defined" would not say which Subject it is.
-	 */
 	public function testTheBrowserTitleNamesTheSubjectWithoutALabelByItsBracketedId(): void {
 		$revisionId = $this->createPageLabelled( null, self::SUBJECT_NAMESPACE_PAGE )->getId();
 

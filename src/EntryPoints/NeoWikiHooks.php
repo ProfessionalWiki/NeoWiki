@@ -240,15 +240,15 @@ class NeoWikiHooks {
 			$context->getOutput()
 		);
 
-		$label = $subject?->getLabel();
-
-		// Unlike the page's heading, a link does not say "No label defined": that would not tell apart
-		// the pages it links to, and the title carries the id.
-		if ( $subject === null || $label === null ) {
+		if ( $subject === null ) {
 			return true;
 		}
 
-		$text = new HtmlArmor( SubjectLabelHtml::withId( $context, $label->text, $subject->getId()->text ) );
+		$text = new HtmlArmor( SubjectLabelHtml::withId(
+			$context,
+			$subject->getLabel()?->text ?? '',
+			$subject->getId()->text
+		) );
 
 		return true;
 	}
