@@ -385,7 +385,9 @@ defineExpose( {
 		min-width: 0;
 	}
 
+	/* A page title can run long with no space to wrap at. */
 	&__storage {
+		overflow-wrap: anywhere;
 		color: @color-subtle;
 		font-size: @font-size-small;
 	}
