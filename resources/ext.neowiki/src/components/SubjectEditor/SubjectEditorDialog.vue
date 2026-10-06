@@ -841,8 +841,8 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel } );
 .ext-neowiki-subject-editor-dialog {
 	/* Overrides, not replications: `.cdx-dialog__header`'s padding is unconditional in Codex,
 		and `align-items: baseline` comes from `--default`, which this header now carries again.
-		Both are deliberate departures — the header is one row of static text beside a 32px
-		close button, so the button sets the height and baseline sits the title high in it. */
+		Both are deliberate departures — the header is static text beside a 32px close button,
+		so on one line the button sets the height and baseline sits the title high in it. */
 	.cdx-dialog__header {
 		align-items: center;
 		padding-block: @spacing-50;
