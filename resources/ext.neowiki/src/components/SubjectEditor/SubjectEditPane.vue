@@ -357,8 +357,9 @@ defineExpose( {
 
 .ext-neowiki-subject-edit-pane {
 	/* The name at the start, the Schema and where it is stored flush to the end. Baseline
-		rather than centre, because the three differ in size. Wrapping is the last resort: the
-		badge truncates first, and the row only breaks when even that leaves no room. */
+		rather than centre, because the three differ in size. A name too long to share the row
+		pushes the other two onto the line below, where the badge truncates once even that line
+		has no room. */
 	&__header {
 		display: flex;
 		align-items: baseline;

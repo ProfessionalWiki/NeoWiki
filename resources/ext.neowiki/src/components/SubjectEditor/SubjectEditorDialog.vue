@@ -288,6 +288,9 @@ const panes = computed( (): EditPane[] => [
 	...extraPanes.value
 ] );
 
+const activePane = computed( (): EditPane | undefined =>
+	panes.value.find( ( pane ) => pane.id === activePaneId.value ) );
+
 // Subjects this session invented, as the panes editing them currently hold them, so a draft renamed
 // in its pane is renamed everywhere that names it. Read from the draft panes alone: going through
 // editedSubjects would make every rename and relation pick anywhere in the dialog rebuild the menu
@@ -384,9 +387,9 @@ const headerSubjectId = computed( (): string | null => {
 		return null;
 	}
 
-	const activePane = panes.value.find( ( pane ) => pane.id === activePaneId.value );
+	const pane = activePane.value;
 
-	return activePane === undefined || activePane.isNew ? null : activePane.subject.getId().text;
+	return pane === undefined || pane.isNew ? null : pane.subject.getId().text;
 } );
 
 const saveButtonLabel = computed( (): string => mw.msg(
@@ -490,9 +493,7 @@ async function openRelationTarget( targetId: SubjectId ): Promise<void> {
 // pages, so the dialog's own page would be the wrong answer as soon as the user has drilled in.
 // The root stands in for a pane whose Subject arrived without page context.
 function creationPage(): PageIdentifiers | null {
-	const activePane = panes.value.find( ( pane ) => pane.id === activePaneId.value );
-
-	for ( const subject of [ activePane?.subject, props.subject ] ) {
+	for ( const subject of [ activePane.value?.subject, props.subject ] ) {
 		if ( subject instanceof SubjectWithContext && Number.isInteger( subject.getPageIdentifiers().getPageId() ) ) {
 			return subject.getPageIdentifiers();
 		}
@@ -866,16 +867,13 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel } );
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-subject-editor-dialog {
-	/* Codex's `--default` header rules, which a slotted header does not get, with two
-		deliberate departures: centred rather than baseline, and less block padding than Codex's
-		unconditional rule gives. The header is one row of static text beside a 32px close
-		button, so the button sets the height and baseline sits the title high in it. */
+	/* Codex lays out only a header it builds itself, so a slotted one is laid out here, centred
+		rather than baseline-aligned, with less block padding than Codex's unconditional rule
+		gives. The header is one row of static text beside a 32px close button, so the button
+		sets the height and baseline sits the title high in it. */
 	.cdx-dialog__header {
 		display: flex;
 		align-items: center;
-		justify-content: flex-end;
-		box-sizing: @box-sizing-base;
-		width: @size-full;
 		padding-block: @spacing-50;
 	}
 
