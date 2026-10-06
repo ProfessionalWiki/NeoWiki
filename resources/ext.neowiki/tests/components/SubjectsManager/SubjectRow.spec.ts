@@ -69,6 +69,14 @@ describe( 'SubjectRow', () => {
 			);
 		} );
 
+		it( 'shows the Subject id on a control named for copying it', () => {
+			const button = mountRow().get( '.ext-neowiki-subject-row__id-button' );
+
+			expect( button.text() ).toBe( SUBJECT_ID );
+			expect( button.attributes( 'aria-label' ) ).toBe( 'neowiki-managesubjects-id-copy' + SUBJECT_ID );
+			expect( button.attributes( 'title' ) ).toBe( 'neowiki-managesubjects-id-copy' + SUBJECT_ID );
+		} );
+
 		it( 'copies the concept URI, not the bare id', async () => {
 			const wrapper = mountRow();
 
