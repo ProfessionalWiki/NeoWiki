@@ -22,8 +22,8 @@ class ApprovalRevisionPolicy implements RevisionPolicy {
 }
 ```
 
-Register with `NeoWikiRegistrar::setRevisionPolicy()`; a second policy is refused with a warning on the `NeoWiki`
-log channel.
+Register with `NeoWikiRegistrar::setRevisionPolicy()`; a second policy is refused with a warning on the [`NeoWiki` log
+channel](../operations/installation.md#logging).
 
 - `publishedRevision()` receives the page's current revision and returns the one to publish, of the same page, or
   `null`, which deletes the page's Page node and Subjects from the graph stores, makes the RDF export and the
