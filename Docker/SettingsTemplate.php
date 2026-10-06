@@ -35,7 +35,9 @@ if ( $mwIsDev ) {
 // Container stderr is where a Docker install's logs are read. No level floor, in either mode: a rebuild
 // records a skipped page at info, and that is a store left stale. Volume is bounded by the log driver's
 // rotation in docker-compose.yml rather than by dropping entries here.
-$wgDebugLogGroups['NeoWiki'] = 'php://stderr';
+if ( !defined( 'MW_PHPUNIT_TEST' ) ) {
+	$wgDebugLogGroups['NeoWiki'] = 'php://stderr';
+}
 
 ## Uncomment this to disable output compression
 # $wgDisableOutputCompression = true;
