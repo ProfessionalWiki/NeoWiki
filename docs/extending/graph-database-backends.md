@@ -31,10 +31,10 @@ Register with `NeoWikiRegistrar::addGraphDatabasePlugin( $name, $plugin )`. Exam
 
 ## Naming
 
-The name is what [`--store`](../operations/maintenance.md#rebuilding-one-store) addresses and what a rebuild files
-its run records under; namespace it to your extension. A name is refused with a warning on the `NeoWiki` channel
-when another backend already holds it, when it is `neo4j` in any casing, or when it is longer than 255 bytes. A
-refused backend receives no page changes and cannot be rebuilt.
+The name is what [`--store`](../operations/maintenance.md#rebuilding-one-store) addresses and what a rebuild files its
+run records under; namespace it to your extension. A name is refused with a warning on the [`NeoWiki`
+channel](../operations/installation.md#logging) when another backend already holds it, when it is `neo4j` in any casing,
+or when it is longer than 255 bytes. A refused backend receives no page changes and cannot be rebuilt.
 
 ## What NeoWiki calls
 

@@ -205,6 +205,26 @@ These are the settings you are most likely to change. For the full list with des
 On a subject-first wiki, `$wgNeoWikiSubjectPageNamespace` names the namespace each Subject's own page is created in,
 `NS_MAIN` included. It must be a content namespace, or the pages there get no heading, infobox or Data tab.
 
+## Logging
+
+NeoWiki logs on the `NeoWiki` channel: a graph store failing on save, the pages a rebuild could not project, a store
+entry or name it will not accept, and RDF a projection had to drop. Below `warning` it also records rebuild decisions
+and denied page reads. MediaWiki routes no channel anywhere by default, so none of it reaches you until you route it:
+
+```php
+$wgDebugLogGroups['NeoWiki'] = '/var/log/mediawiki/neowiki.log';
+```
+
+Add a `level` to drop everything below it:
+
+```php
+$wgDebugLogGroups['NeoWiki'] = [ 'destination' => '/var/log/mediawiki/neowiki.log', 'level' => 'warning' ];
+```
+
+The [Docker install](#method-a-docker) routes the channel to stderr: entries logged while serving requests appear in
+`make logs`, and those logged by a maintenance command, such as `make rebuild-graph-databases`, print only in the
+terminal that ran it.
+
 ## User rights
 
 `neowiki-admin` allows viewing and rebuilding the wiki's graph stores, through
@@ -267,13 +287,13 @@ $wgNeoWikiSparqlStores = [
 ];
 ```
 
-A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki.
-
 Each store's `name` identifies it when [rebuilding one store](maintenance.md#rebuilding-one-store), so no two entries
 may share one, and none may be `neo4j` in any casing — reserved for the bundled Neo4j backend. Since the name defaults
 to the projection, two entries holding the same projection — mirroring it to a second endpoint, say — collide until
-one of them sets an explicit `name`. An entry whose name cannot identify it is skipped with a warning, so its store
-receives no page changes.
+one of them sets an explicit `name`.
+
+An entry whose `updateUrl` is missing or empty, or whose name cannot identify it, is skipped with a warning on the
+[`NeoWiki` log channel](#logging) rather than failing the wiki, so its store receives no page changes.
 
 ### Oxigraph
 

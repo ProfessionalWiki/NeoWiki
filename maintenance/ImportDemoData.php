@@ -93,7 +93,8 @@ class ImportDemoData extends Maintenance {
 			mappingContentSource: new MappingContentSource(
 				NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/DemoData/Mapping',
 				new SimpleFileFetcher()
-			)
+			),
+			graphStoreProjections: array_filter( NeoWikiExtension::getInstance()->getMappingDefinedStoreProjections() ),
 		);
 	}
 
