@@ -1,4 +1,4 @@
-import { mount, VueWrapper, DOMWrapper, flushPromises } from '@vue/test-utils';
+import { mount, VueWrapper, DOMWrapper, enableAutoUnmount, flushPromises } from '@vue/test-utils';
 import { inject, nextTick, proxyRefs } from 'vue';
 import type { ComponentInternalInstance } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
@@ -38,6 +38,10 @@ import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import type { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 
 const $i18n = createI18nMock();
+
+// The real Teleport, which some tests run, moves each dialog into <body>, where it outlives its
+// test unless unmounted, ids and all.
+enableAutoUnmount( afterEach );
 
 // The reason the stubbed editor reports for holding the save. Reset per test by the
 // beforeEach below.
@@ -326,9 +330,13 @@ describe( 'SubjectEditorDialog', () => {
 			.toBe( 'neowiki-subject-editor-title' );
 	} );
 
+	// Reached through a pane: the real Teleport moves the dialog out of the wrapper's subtree, where
+	// a query rooted at the wrapper finds no header and so reads every id as absent.
 	function idBesideTitle( wrapper: VueWrapper ): string | null {
-		const id = wrapper.find( '.cdx-dialog__header__subtitle' );
-		return id.exists() ? id.text() : null;
+		const header = wrapper.findComponent( SubjectEditPane ).element
+			.closest( '.cdx-dialog' )?.querySelector( '.cdx-dialog__header' );
+		expect( header ).toBeTruthy();
+		return header?.querySelector( '.cdx-dialog__header__subtitle' )?.textContent?.trim() ?? null;
 	}
 
 	it( 'shows the id of the subject being edited beside the title', async () => {
@@ -1279,9 +1287,9 @@ describe( 'SubjectEditorDialog', () => {
 
 		// The last-opened target ends up on screen, so the root pane (index 0) is behind it.
 		async function mountWithThreePanesOpen(
-			{ onSave, rootSchema, rootSubject }: PaneStackOptions = {},
+			{ onSave, rootSchema, rootSubject, stubs = {} }: PaneStackOptions = {},
 		): Promise<TargetReposMount> {
-			const result = mountWithTargetRepos( onSave, {}, rootSchema, rootSubject );
+			const result = mountWithTargetRepos( onSave, stubs, rootSchema, rootSubject );
 			await flushPromises();
 			result.wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
 			await flushPromises();
@@ -1310,7 +1318,7 @@ describe( 'SubjectEditorDialog', () => {
 		// From the inline style rather than isVisible(): jsdom's getComputedStyle serves a stale
 		// answer once an element has been measured. Each pane is reached through its own component:
 		// the real Teleport moves the dialog to the document body, where a query rooted at the
-		// wrapper finds no panel, and one rooted at the document finds every dialog this file mounted.
+		// wrapper finds no panel.
 		function visibleSubjectId( wrapper: VueWrapper ): string {
 			const panel = wrapper.findAllComponents( SubjectEditPane )
 				.map( ( pane ) => pane.element.closest( '[id^="ext-neowiki-panel-"]' ) )
@@ -1441,10 +1449,13 @@ describe( 'SubjectEditorDialog', () => {
 			expect( idBesideTitle( wrapper ) ).toBe( rootSubjectId );
 		} );
 
+		// The real Teleport, because the stub remounts every pane whenever the dialog's header
+		// changes, which choosing another subject does.
 		it( 'switches the subject on screen when one is chosen from the list, keeping every pane mounted', async () => {
 			const { wrapper } = await mountWithThreePanesOpen( {
 				rootSchema: relationRootSchema,
 				rootSubject: relationRootSubject,
+				stubs: { teleport: false },
 			} );
 			expect( visibleSubjectId( wrapper ) ).toBe( 's33333333333333' );
 
@@ -2050,19 +2061,6 @@ describe( 'SubjectEditorDialog', () => {
 		// nothing may be left holding focus inside a display:none subtree. Mounted into the
 		// document throughout: a detached element cannot take focus at all.
 		describe( 'Focus on navigation', () => {
-			let attached: VueWrapper | null = null;
-
-			beforeEach( () => {
-				// Tests that run the real Teleport leave their dialog behind in <body>, ids and all, and
-				// focus is located by id here.
-				document.body.innerHTML = '';
-			} );
-
-			afterEach( () => {
-				attached?.unmount();
-				attached = null;
-			} );
-
 			async function mountAttached(
 				rootSchema: Schema = mockSchema,
 				rootSubject: Subject = mockSubject,
@@ -2071,7 +2069,6 @@ describe( 'SubjectEditorDialog', () => {
 				const { wrapper } = mountWithTargetRepos(
 					undefined, stubs, rootSchema, rootSubject, document.body,
 				);
-				attached = wrapper;
 				await flushPromises();
 				return wrapper;
 			}
