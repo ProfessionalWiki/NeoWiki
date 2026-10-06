@@ -848,18 +848,20 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel } );
 		padding-block: @spacing-50;
 	}
 
-	/* The id on the title's line, where Codex stacks a subtitle below it. */
+	/* The id on the title's line, where Codex stacks a subtitle below it, and centred on the
+		title as the header centres both on the close button. */
 	.cdx-dialog__header__title-group {
 		flex-flow: row wrap;
-		align-items: baseline;
+		align-items: center;
 		column-gap: @spacing-50;
 
 		/* Directed by its own first letter: an id from another Source may end in punctuation,
-			which a right-to-left page would otherwise move to the front. */
+			which a right-to-left page would otherwise move to the front. Sized like the id on
+			the Data tab. */
 		.cdx-dialog__header__subtitle {
 			unicode-bidi: plaintext;
 			font-family: @font-family-monospace;
-			font-size: @font-size-small;
+			font-size: @font-size-x-small;
 		}
 	}
 
