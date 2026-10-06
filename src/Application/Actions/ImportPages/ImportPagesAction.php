@@ -10,6 +10,7 @@ use MediaWiki\Content\CssContent;
 use MediaWiki\Content\TextContent;
 use MediaWiki\Content\WikitextContent;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\ImportedPageTitlesLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
@@ -29,6 +30,9 @@ class ImportPagesAction {
 	 */
 	private array $currentTitleKeys = [];
 
+	/**
+	 * @param string[] $graphStoreProjections
+	 */
 	public function __construct(
 		private readonly ImportPresenter $presenter,
 		private readonly PageContentSaver $pageContentSaver,
@@ -41,11 +45,21 @@ class ImportPagesAction {
 		private readonly PageContentSource $mediaWikiContentSource,
 		private readonly LayoutContentSource $layoutContentSource,
 		private readonly MappingContentSource $mappingContentSource,
+		private readonly array $graphStoreProjections,
 	) {
 	}
 
 	public function import(): void {
 		$this->currentTitleKeys = [];
+
+		foreach ( $this->getMappingsInImportOrder() as $mappingName => $mappingContent ) {
+			$this->createPage(
+				"Mapping:$mappingName",
+				[
+					'main' => $mappingContent,
+				]
+			);
+		}
 
 		foreach ( $this->schemaContentSource->getSchemas() as $schemaName => $schemaContent ) {
 			$this->createPage(
@@ -61,15 +75,6 @@ class ImportPagesAction {
 				"Layout:$layoutName",
 				[
 					'main' => $layoutContent,
-				]
-			);
-		}
-
-		foreach ( $this->mappingContentSource->getMappings() as $mappingName => $mappingContent ) {
-			$this->createPage(
-				"Mapping:$mappingName",
-				[
-					'main' => $mappingContent,
 				]
 			);
 		}
@@ -114,6 +119,17 @@ class ImportPagesAction {
 		$this->deleteRemovedPages();
 
 		$this->presenter->presentDone();
+	}
+
+	/**
+	 * A Graph Store cannot project any page until the Mapping defining its projection exists.
+	 *
+	 * @return array<string, MappingContent>
+	 */
+	private function getMappingsInImportOrder(): array {
+		$mappings = $this->mappingContentSource->getMappings();
+
+		return array_intersect_key( $mappings, array_flip( $this->graphStoreProjections ) ) + $mappings;
 	}
 
 	private static function stripFileExtension( string $fileName ): string {

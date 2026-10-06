@@ -128,6 +128,7 @@ class ImportPagesDeletionTest extends MediaWikiIntegrationTestCase {
 			mediaWikiContentSource: $this->createMock( PageContentSource::class ),
 			layoutContentSource: $this->createMock( LayoutContentSource::class ),
 			mappingContentSource: $this->createMock( MappingContentSource::class ),
+			graphStoreProjections: [],
 		) )->import();
 	}
 
