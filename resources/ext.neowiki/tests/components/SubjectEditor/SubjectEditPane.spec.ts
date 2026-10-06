@@ -374,8 +374,8 @@ describe( 'SubjectEditPane', () => {
 			.toBe( 'Test Subject' );
 	} );
 
-	// The dialog's own header no longer names any Subject, so the root's region carries the
-	// name like every other pane's.
+	// The dialog's header shows only the Subject's id, so the root's region carries the name
+	// like every other pane's.
 	it( 'names the root pane\'s region after its subject too', () => {
 		const wrapper = mountPane();
 
@@ -390,14 +390,14 @@ describe( 'SubjectEditPane', () => {
 			.toBe( 'Test page' );
 	} );
 
-	describe( 'The Schema above the name', () => {
-		it( 'shows the schema as a badge above a labelled subject', () => {
+	describe( 'The Schema beside the name', () => {
+		it( 'shows the schema as a badge beside a labelled subject', () => {
 			const wrapper = mountPane();
 
 			expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'TestSchema' );
 		} );
 
-		// The name below says the same word, but only the badge is a link to the Schema and the
+		// The name beside it says the same word, but only the badge is a link to the Schema and the
 		// way into its editor.
 		it( 'shows the badge for a subject labelled after its schema', () => {
 			const labelledAfterSchema = newSubject( { label: 'TestSchema', schemaName: 'TestSchema' } );
@@ -643,10 +643,6 @@ describe( 'SubjectEditPane', () => {
 		} );
 	} );
 
-	it( 'shows the subject id in the header', () => {
-		expect( mountPane().get( '.ext-neowiki-subject-edit-pane__header' ).text() ).toContain( 's11111111111111' );
-	} );
-
 	describe( 'Renaming from a pane', () => {
 		async function typeName( wrapper: VueWrapper, name: string ): Promise<Omit<DOMWrapper<Element>, 'exists'>> {
 			await wrapper.get( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
@@ -658,6 +654,11 @@ describe( 'SubjectEditPane', () => {
 		async function rename( wrapper: VueWrapper, name: string ): Promise<void> {
 			const input = await typeName( wrapper, name );
 			await input.trigger( 'keydown.enter' );
+		}
+
+		// The label, or what stands in for it while the field is empty.
+		function labelLine( wrapper: VueWrapper ): string {
+			return wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text();
 		}
 
 		it( 'flips hasChanged as soon as a name is typed, before it is committed', async () => {
@@ -694,35 +695,32 @@ describe( 'SubjectEditPane', () => {
 			expect( ( ( wrapper.vm as any ).buildUpdatedSubject() as Subject ).getLabel() ).toBe( 'Renamed' );
 		} );
 
-		// The dialog's header names no Subject now, so the root is renamed where every other
-		// pane is renamed: in the pane itself.
+		// The dialog's header shows only the Subject's id, so the root is renamed where every
+		// other pane is renamed: in the pane itself.
 		it( 'gives the root pane a rename control, like every other pane', () => {
 			const wrapper = mountPane();
 
 			expect( wrapper.findComponent( EditableText ).exists() ).toBe( true );
 		} );
 
-		// Even a Main Subject shown elsewhere under its page's name: the line states the label.
-		it( 'says no label is defined while the subject has none', () => {
-			const wrapper = mountPane( { subject: labellessSubject, nested: true } );
+		it( 'shows the page name in the empty label field of a subject named after its page', () => {
+			const wrapper = mountPane( { subject: labellessSubject } );
 
-			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-no-label' );
+			expect( labelLine( wrapper ) ).toBe( 'Test page' );
 		} );
 
-		it( 'says no label is defined once a label is cleared', async () => {
-			const wrapper = mountPane( { nested: true } );
+		it( 'says no label is defined for a subject shown under its id', () => {
+			const wrapper = mountPane( { subject: unnamedSubject } );
 
-			await rename( wrapper, '' );
-
-			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-no-label' );
+			expect( labelLine( wrapper ) ).toBe( 'neowiki-subject-no-label' );
 		} );
 
-		it( 'says no label is defined once a label of only spaces is committed', async () => {
-			const wrapper = mountPane( { nested: true } );
+		it( 'says no label is defined once a label is cleared, even to only spaces', async () => {
+			const wrapper = mountPane();
 
 			await rename( wrapper, '   ' );
 
-			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( 'neowiki-subject-no-label' );
+			expect( labelLine( wrapper ) ).toBe( 'neowiki-subject-no-label' );
 		} );
 
 		it( 'keeps the schema badge once an unnamed subject is given a label of its own', async () => {

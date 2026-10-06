@@ -239,8 +239,8 @@ describe( 'SubjectCreatorDialog', () => {
 	let mintSubjectIdMock: ReturnType<typeof vi.fn>;
 	let repositorySpy: ReturnType<typeof vi.spyOn>;
 
-	// Every route that makes the new Subject a page's Main Subject creates it under the id the
-	// editor showed for it.
+	// Every route that makes the new Subject a page's Main Subject creates it under the id minted
+	// for it.
 	function expectMainSubjectCreated( pageId: number, label: string | null, schemaName: string, comment: string ): void {
 		expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
 			pageId, label, schemaName, expect.any( StatementList ), comment, new SubjectId( MINTED_ID ),

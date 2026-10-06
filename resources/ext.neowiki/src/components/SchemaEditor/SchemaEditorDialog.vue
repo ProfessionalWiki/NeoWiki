@@ -203,9 +203,8 @@ defineExpose( { hasChanged } );
 			box-sizing: @box-sizing-base;
 			width: @size-full;
 
-			/* Secondary to the title, matching the subject editor's header.
-				Nested under the header to out-rank Codex's runtime-injected
-				two-class subtitle rule. */
+			/* Secondary to the title. Nested under the header to out-rank
+				Codex's runtime-injected two-class subtitle rule. */
 			.cdx-dialog__header__subtitle {
 				font-size: @font-size-small;
 			}

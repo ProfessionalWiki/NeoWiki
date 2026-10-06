@@ -61,6 +61,12 @@ class SubjectInPlaceOfPageTitleLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( self::MAIN_ID, $subject?->getId()->text );
 	}
 
+	public function testAPageWhoseMainSubjectHasNoLabelIsNotNamed(): void {
+		$this->savePage( self::MAIN_ID, null );
+
+		$this->assertNull( $this->subjectOf( $this->lookupListing( self::MAIN_ID ), self::MAIN_ID ) );
+	}
+
 	public function testAPageIsNamedByItsCurrentLabel(): void {
 		$this->savePage( self::MAIN_ID, 'Ada Lovelace' );
 		$this->changeSubjectsOfPage( self::MAIN_ID, TestSubject::build( id: self::MAIN_ID, label: 'Countess' ) );
@@ -232,7 +238,7 @@ class SubjectInPlaceOfPageTitleLookupTest extends NeoWikiIntegrationTestCase {
 		return $lookup->forListedPage( Title::newFromText( $pageName ), $reader, RequestContext::getMain()->getOutput() );
 	}
 
-	private function savePage( string $pageName, string $label, string $subjectId = self::MAIN_ID ): void {
+	private function savePage( string $pageName, ?string $label, string $subjectId = self::MAIN_ID ): void {
 		$this->createPageWithSubjects( $pageName, TestSubject::build( id: $subjectId, label: $label ) );
 	}
 

@@ -21,7 +21,7 @@ use Wikimedia\Rdbms\IReadableDatabase;
 use Wikimedia\Rdbms\IResultWrapper;
 
 /**
- * The Subject that stands in for the title of each page titled by a Subject id (ADR 31), as
+ * The Subject whose label stands in for the title of each page titled by a Subject id (ADR 31), as
  * the wiki publishes the page, for lists that link to many pages at once, such as Recent changes. A
  * list reads its pages up front, in one batch, and they are kept for the rendering of that list, so
  * its links read nothing of their own.
@@ -194,7 +194,9 @@ class SubjectInPlaceOfPageTitleLookup {
 			return;
 		}
 
-		if ( $subject !== null ) {
+		// Only a labelled one: a link saying "No label defined" would not tell apart the pages it links
+		// to, and the title carries the id.
+		if ( $subject?->getLabel() !== null ) {
 			$this->subjects[$title->getPrefixedDBkey()] = $subject;
 		}
 	}
