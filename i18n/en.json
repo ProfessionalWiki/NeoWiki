@@ -282,6 +282,8 @@
 	"neowiki-schemas-find": "Find a schema",
 	"neowiki-schemas-no-match": "No schemas match “$1”.",
 	"neowiki-schemas-load-error": "The schemas could not be loaded.",
+	"neowiki-schemas-view-list": "List view",
+	"neowiki-schemas-view-cards": "Card view",
 	"neowiki-schema-sidebar-all-schemas": "All schemas",
 	"neowiki-sidebar-create-subject": "Create subject",
 	"neowiki-schema-create-subject": "Create $1",

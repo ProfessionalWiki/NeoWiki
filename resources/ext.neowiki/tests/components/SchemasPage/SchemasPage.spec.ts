@@ -4,6 +4,7 @@ import { ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import SchemaCard from '@/components/SchemasPage/SchemaCard.vue';
+import SchemasTable from '@/components/SchemasPage/SchemasTable.vue';
 import SchemaCreatorDialog from '@/components/SchemasPage/SchemaCreatorDialog.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
@@ -62,6 +63,8 @@ let pinia: ReturnType<typeof createPinia>;
 let schemaStore: ReturnType<typeof useSchemaStore>;
 // The counts of a reader who sees none, which a page asking for them would get an error from.
 let absentCounts: SubjectCountLookup;
+// What the browser remembers between visits: the cards, for the tests of what both views share.
+let browserStorage: Map<string, string>;
 
 // The store saves through the extension's repository.
 vi.mock( '@/NeoWikiExtension.ts', () => ( {
@@ -131,6 +134,10 @@ function mountPage( options: PageOptions = {} ): VueWrapper {
 			wgNeoWikiSubjectCountsAvailable: options.subjectCountLookup !== undefined,
 		},
 	} );
+	Object.assign( mw, { storage: {
+		get: ( key: string ) => browserStorage.get( key ) ?? null,
+		set: ( key: string, value: string ) => browserStorage.set( key, value ),
+	} } );
 
 	return mount( SchemasPage, {
 		global: {
@@ -175,6 +182,12 @@ async function find( wrapper: VueWrapper, text: string ): Promise<void> {
 	await wrapper.find( 'input[type="search"]' ).setValue( text );
 }
 
+async function visit(): Promise<VueWrapper> {
+	const wrapper = mountPage();
+	await flushPromises();
+	return wrapper;
+}
+
 describe( 'SchemasPage', () => {
 
 	beforeEach( () => {
@@ -193,10 +206,69 @@ describe( 'SchemasPage', () => {
 		schemaStore = useSchemaStore();
 		listSchemas( [ 'Artist', 'Artwork', 'City' ] );
 		absentCounts = { getSubjectCounts: vi.fn().mockRejectedValue( new Error( 'This reader sees no counts' ) ) };
+		browserStorage = new Map( [ [ 'neowiki-schemas-view', 'cards' ] ] );
 	} );
 
 	afterEach( () => {
 		vi.restoreAllMocks();
+	} );
+
+	it( 'lists the Schemas in a table unless the cards were chosen', async () => {
+		browserStorage.clear();
+		const wrapper = await visit();
+
+		expect( wrapper.findComponent( SchemasTable ).props( 'schemas' ) ).toEqual( summaries( [ 'Artist', 'Artwork', 'City' ] ) );
+		expect( cards( wrapper ) ).toHaveLength( 0 );
+	} );
+
+	it( 'keeps the rows of the Schemas whose name contains the find text', async () => {
+		browserStorage.clear();
+		const wrapper = await visit();
+
+		await find( wrapper, 'art' );
+
+		expect( wrapper.findComponent( SchemasTable ).props( 'schemas' ) ).toEqual( summaries( [ 'Artist', 'Artwork' ] ) );
+	} );
+
+	it.each( [
+		[ 'create Subject pages', false, [ 'neowiki-schema-create-subjectArtist' ] ],
+		[ 'edit Schemas and create Subject pages', true, [ 'neowiki-edit-schema', 'neowiki-schema-create-subjectArtist' ] ],
+	] )( 'offers in each row only the buttons of a user who may %s', async ( _rights, mayEdit, buttons ) => {
+		browserStorage.clear();
+		mayEditSchemas = mayEdit;
+		mayCreateSubjectPages = true;
+		const wrapper = await visit();
+
+		expect( wrapper.findAll( 'tbody tr' )[ 0 ].findAll( 'button' ).map( ( button ) => button.attributes( 'aria-label' ) ?? button.text() ) )
+			.toEqual( buttons );
+	} );
+
+	it( 'switches to the cards, and opens in them on the next visit', async () => {
+		browserStorage.clear();
+		const wrapper = await visit();
+
+		await wrapper.find( 'button[aria-label="neowiki-schemas-view-cards"]' ).trigger( 'click' );
+
+		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'Artwork', 'City' ] );
+		expect( cardNames( await visit() ) ).toEqual( [ 'Artist', 'Artwork', 'City' ] );
+	} );
+
+	it( 'acts on the requests of the table as on those of the cards', async () => {
+		browserStorage.clear();
+		mayEditSchemas = true;
+		mayDeleteSchemas = true;
+		mayCreateSubjectPages = true;
+		const wrapper = await visit();
+		const table = wrapper.findComponent( SchemasTable );
+
+		table.vm.$emit( 'edit', 'Artwork' );
+		table.vm.$emit( 'delete', 'Artist' );
+		table.vm.$emit( 'create-subject', 'City' );
+		await flushPromises();
+
+		expect( getSchemaMock ).toHaveBeenCalledWith( 'Artwork' );
+		expect( wrapper.findComponent( DeletePageDialog ).props( 'pageTitle' ) ).toBe( 'Schema:Artist' );
+		expect( wrapper.findComponent( SubjectCreatorDialog ).props( 'initialSchemaName' ) ).toBe( 'City' );
 	} );
 
 	it( 'shows a card for every Schema', async () => {

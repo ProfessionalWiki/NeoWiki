@@ -542,7 +542,8 @@
 						"cdxIconExpand",
 						"cdxIconPushPin",
 						"cdxIconEllipsis",
-						"cdxIconLanguage"
+						"cdxIconLanguage",
+						"cdxIconViewCompact"
 					]
 				}
 			],
@@ -761,6 +762,8 @@
 				"neowiki-schemas-find",
 				"neowiki-schemas-no-match",
 				"neowiki-schemas-load-error",
+				"neowiki-schemas-view-list",
+				"neowiki-schemas-view-cards",
 				"neowiki-close-confirmation-title",
 				"neowiki-close-confirmation-message",
 				"neowiki-close-confirmation-discard",

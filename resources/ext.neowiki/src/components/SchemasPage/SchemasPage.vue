@@ -7,6 +7,18 @@
 				:placeholder="$i18n( 'neowiki-schemas-find' ).text()"
 				:aria-label="$i18n( 'neowiki-schemas-find' ).text()"
 			/>
+			<CdxToggleButtonGroup
+				v-model="view"
+				:buttons="viewButtons"
+			>
+				<!-- Only for the tooltip, which the group cannot give its buttons. -->
+				<template #default="{ button }">
+					<CdxIcon
+						:icon="button.icon"
+						:title="button.ariaLabel"
+					/>
+				</template>
+			</CdxToggleButtonGroup>
 			<CdxButton
 				v-if="canCreateSchemas"
 				class="ext-neowiki-schemas-page__create"
@@ -30,6 +42,19 @@
 		>
 			…
 		</p>
+		<SchemasTable
+			v-else-if="foundSchemas.length > 0 && view === 'list'"
+			:schemas="foundSchemas"
+			:can-edit="canEditSchema"
+			:can-delete="canDeleteSchema"
+			:can-create-subject="canCreateSubjectPage"
+			:subject-list-available="subjectListAvailable"
+			:subject-count-of="subjectCountOf"
+			:subject-count-pending="subjectCountsPending"
+			@edit="openEditor"
+			@delete="confirmDelete"
+			@create-subject="openSubjectCreator"
+		/>
 		<div
 			v-else-if="foundSchemas.length > 0"
 			class="ext-neowiki-schemas-page__grid"
@@ -91,9 +116,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, shallowRef } from 'vue';
-import { CdxButton, CdxIcon, CdxMessage, CdxSearchInput } from '@wikimedia/codex';
-import { cdxIconAdd } from '@wikimedia/codex-icons';
+import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue';
+import { type ButtonGroupItem, CdxButton, CdxIcon, CdxMessage, CdxSearchInput, CdxToggleButtonGroup } from '@wikimedia/codex';
+import { cdxIconAdd, cdxIconListBullet, cdxIconViewCompact } from '@wikimedia/codex-icons';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { useSubjectCounts } from '@/composables/useSubjectCounts.ts';
@@ -104,6 +129,7 @@ import { Schema } from '@/domain/Schema.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import { isSubjectListAvailable } from '@/subjectListAvailability.ts';
 import SchemaCard from './SchemaCard.vue';
+import SchemasTable from './SchemasTable.vue';
 import { SubjectPreviews } from './SubjectPreviews.ts';
 import SchemaCreatorDialog from './SchemaCreatorDialog.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
@@ -111,6 +137,7 @@ import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 
 const SCHEMA_PREFIX = 'Schema:';
+const VIEW_STORAGE_KEY = 'neowiki-schemas-view';
 
 const {
 	canEditSchema,
@@ -135,12 +162,20 @@ const findText = ref( '' );
 // Numbers the listings asked for, so one answered after a later one cannot replace its newer list.
 let listingSequence = 0;
 
+const viewButtons: ButtonGroupItem[] = [
+	{ value: 'list', label: null, icon: cdxIconListBullet, ariaLabel: mw.msg( 'neowiki-schemas-view-list' ) },
+	{ value: 'cards', label: null, icon: cdxIconViewCompact, ariaLabel: mw.msg( 'neowiki-schemas-view-cards' ) }
+];
+// The view last chosen in this browser: the cards if those, otherwise the list.
+const view = ref( mw.storage.get( VIEW_STORAGE_KEY ) === 'cards' ? 'cards' : 'list' );
+watch( view, ( chosen ) => mw.storage.set( VIEW_STORAGE_KEY, chosen ) );
+
 const isCreatorOpen = ref( false );
 const isEditorOpen = ref( false );
 const editingSchema = shallowRef<Schema | null>( null );
 const isDeleteConfirmOpen = ref( false );
 const deletingSchemaName = ref( '' );
-// The Schema the Subject creator opens on, which the clicked card decides.
+// The Schema the Subject creator opens on, which the clicked card or row decides.
 const pinnedSchema = ref<string | undefined>( undefined );
 
 // The Schema picker's rule: any part of the name, in any case.
@@ -175,14 +210,14 @@ async function loadSchemas(): Promise<void> {
 	}
 }
 
-// A find text the new Schema's name does not contain would hide its card.
+// A find text the new Schema's name does not contain would hide its card or row.
 function onSchemaCreated(): void {
 	findText.value = '';
 	loadSchemas();
 }
 
 // Vue patches the new pin onto the dialog before the dialog's pre-flush watcher on the open flag
-// reads it, so the creator opens on this card's Schema rather than the one clicked before it.
+// reads it, so the creator opens on this Schema rather than the one clicked before it.
 function openSubjectCreator( schemaName: string ): void {
 	pinnedSchema.value = schemaName;
 	subjectStore.openSubjectCreator();
