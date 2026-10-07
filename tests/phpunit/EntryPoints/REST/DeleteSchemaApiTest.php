@@ -33,6 +33,7 @@ class DeleteSchemaApiTest extends NeoWikiIntegrationTestCase {
 		$response = $this->delete( 'Person' );
 
 		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( '', $this->bodyOf( $response ) );
 		$this->assertFalse( $this->schemaPageExists( 'Person' ) );
 	}
 
@@ -68,9 +69,9 @@ class DeleteSchemaApiTest extends NeoWikiIntegrationTestCase {
 		$unreadable = $this->delete( 'Person' );
 		$missing = $this->delete( 'Nobody' );
 
+		$this->assertTrue( $this->schemaPageExists( 'Person' ) );
 		$this->assertSame( 404, $missing->getStatusCode() );
 		$this->assertSame( $this->bodyWithNameMasked( $missing, 'Nobody' ), $this->bodyWithNameMasked( $unreadable, 'Person' ) );
-		$this->assertTrue( $this->schemaPageExists( 'Person' ) );
 	}
 
 	public function testRequestWithoutCsrfTokenIsRefused(): void {
