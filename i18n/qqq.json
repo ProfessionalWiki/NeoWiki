@@ -139,7 +139,7 @@
 	"neowiki-page-picker-create-named": "Label of the option at the bottom of the page picker dropdown that picks a page which does not exist yet. Parameters:\n* $1 - the page title the user typed",
 
 	"neowiki-schema-creator-title": "Title of the dialog for creating a new schema.",
-	"neowiki-schema-creator-button": "Label for the button that opens the schema creation dialog on [[Special:Schemas]].",
+	"neowiki-schema-creator-button": "Label of the button in the toolbar of [[Special:Schemas]] that opens the dialog for creating a schema.",
 	"neowiki-schema-creator-name-field": "Label for the schema name input field in the schema creation dialog.",
 	"neowiki-schema-creator-name-placeholder": "Placeholder text for the schema name input field in the schema creation dialog.",
 	"neowiki-schema-creator-name-required": "Error shown when the schema name field is empty in the schema creation dialog.",

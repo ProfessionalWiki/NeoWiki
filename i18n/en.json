@@ -265,7 +265,7 @@
 	"neowiki-page-picker-create-named": "Use \"$1\" as a new page",
 
 	"neowiki-schema-creator-title": "Create schema",
-	"neowiki-schema-creator-button": "Create",
+	"neowiki-schema-creator-button": "Create schema",
 	"neowiki-schema-creator-name-field": "Schema name",
 	"neowiki-schema-creator-name-placeholder": "Enter a name for the schema",
 	"neowiki-schema-creator-name-required": "Please enter a schema name.",

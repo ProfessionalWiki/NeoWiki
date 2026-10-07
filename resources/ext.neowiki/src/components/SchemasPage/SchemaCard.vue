@@ -96,7 +96,7 @@
 				action="progressive"
 				@click="emit( 'create-subject' )"
 			>
-				<CdxIcon :icon="cdxIconArticleAdd" />
+				<CdxIcon :icon="cdxIconAdd" />
 				{{ $i18n( 'neowiki-schema-create-subject', summary.name ).text() }}
 			</CdxButton>
 		</div>
@@ -106,7 +106,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { CdxButton, CdxIcon, useGeneratedId, useIntersectionObserver } from '@wikimedia/codex';
-import { cdxIconArticleAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import SubjectSummaryCell from '@/components/SubjectsTable/SubjectSummaryCell.vue';
 import { SUBJECT_PREVIEW_SIZE, SubjectPreviews } from './SubjectPreviews.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';

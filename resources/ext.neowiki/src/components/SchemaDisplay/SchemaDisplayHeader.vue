@@ -17,7 +17,7 @@
 				weight="primary"
 				@click="emit( 'create-subject' )"
 			>
-				<CdxIcon :icon="cdxIconArticleAdd" />
+				<CdxIcon :icon="cdxIconAdd" />
 				{{ $i18n( 'neowiki-schema-create-subject', schema.getName() ).text() }}
 			</CdxButton>
 		</div>
@@ -37,7 +37,7 @@
 <script setup lang="ts">
 import { Schema } from '@/domain/Schema.ts';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
-import { cdxIconArticleAdd, cdxIconEdit } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconEdit } from '@wikimedia/codex-icons';
 
 defineProps( {
 	schema: {
