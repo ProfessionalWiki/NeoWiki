@@ -4,14 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\PropertyType\Types;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\NormalizationResult;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
-use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType
@@ -25,88 +24,75 @@ class SelectTypeNormalizeTest extends TestCase {
 				new SelectOption( id: 'opt1', label: 'Draft' ),
 				new SelectOption( id: 'opt2', label: 'In Review' ),
 				new SelectOption( id: 'opt3', label: 'Approved' ),
+				new SelectOption( id: 'opt4', label: 'Öl auf Leinwand' ),
 				new SelectOption( id: 'opt9', label: 'opt1' ),
 			],
 			multiple: false,
 		);
 	}
 
-	private function normalize( mixed $raw ): NormalizationResult {
+	private function normalize( mixed $raw ): mixed {
 		return ( new SelectType() )->normalizeRawValue( $raw, $this->newProperty() );
 	}
 
 	public function testAcceptsOptionId(): void {
-		$this->assertSame( 'opt2', $this->normalize( 'opt2' )->value );
+		$this->assertSame( 'opt2', $this->normalize( 'opt2' ) );
 	}
 
 	public function testMatchesABareStringAsAnIdBeforeALabel(): void {
-		$this->assertSame( 'opt1', $this->normalize( 'opt1' )->value );
+		$this->assertSame( 'opt1', $this->normalize( 'opt1' ) );
 	}
 
 	public function testResolvesLabelToId(): void {
-		$this->assertSame( 'opt2', $this->normalize( 'In Review' )->value );
+		$this->assertSame( 'opt2', $this->normalize( 'In Review' ) );
 	}
 
 	public function testResolvesLabelCaseInsensitively(): void {
-		$this->assertSame( 'opt3', $this->normalize( 'aPPRoVed' )->value );
+		$this->assertSame( 'opt3', $this->normalize( 'aPPRoVed' ) );
+	}
+
+	public function testResolvesNonAsciiLabelCaseInsensitively(): void {
+		$this->assertSame( 'opt4', $this->normalize( 'öl auf leinwand' ) );
 	}
 
 	public function testResolvesLabelWithSurroundingWhitespace(): void {
-		$this->assertSame( 'opt3', $this->normalize( '  Approved  ' )->value );
-	}
-
-	public function testReportsNoErrorForAResolvableValue(): void {
-		$this->assertNull( $this->normalize( 'Approved' )->violation );
+		$this->assertSame( 'opt3', $this->normalize( '  Approved  ' ) );
 	}
 
 	public function testResolvesConsistentIdLabelObject(): void {
-		$this->assertSame( 'opt2', $this->normalize( [ 'id' => 'opt2', 'label' => 'In Review' ] )->value );
+		$this->assertSame( 'opt2', $this->normalize( [ 'id' => 'opt2', 'label' => 'In Review' ] ) );
 	}
 
 	public function testResolvesIdLabelObjectWithCaseInsensitiveLabel(): void {
-		$this->assertSame( 'opt2', $this->normalize( [ 'id' => 'opt2', 'label' => 'in review' ] )->value );
+		$this->assertSame( 'opt2', $this->normalize( [ 'id' => 'opt2', 'label' => 'in review' ] ) );
 	}
 
 	public function testResolvesObjectWithOnlyId(): void {
-		$this->assertSame( 'opt3', $this->normalize( [ 'id' => 'opt3' ] )->value );
+		$this->assertSame( 'opt3', $this->normalize( [ 'id' => 'opt3' ] ) );
 	}
 
 	public function testResolvesObjectWithOnlyLabel(): void {
-		$this->assertSame( 'opt3', $this->normalize( [ 'label' => 'Approved' ] )->value );
+		$this->assertSame( 'opt3', $this->normalize( [ 'label' => 'Approved' ] ) );
 	}
 
-	public function testObjectWithOnlyIdDoesNotFallBackToLabelMatch(): void {
-		$this->assertSame( 'invalid-option', $this->normalize( [ 'id' => 'Approved' ] )->violation->code );
+	public function testTreatsANullObjectMemberAsAbsent(): void {
+		$this->assertSame( 'opt1', $this->normalize( [ 'id' => null, 'label' => 'Draft' ] ) );
 	}
 
-	public function testReportsObjectWithoutIdOrLabel(): void {
-		$this->assertSame( 'select-object-without-id-or-label', $this->normalize( [ 'colour' => 'red' ] )->violation->code );
+	public function testLeavesAStringNamingNoOptionAsSent(): void {
+		$this->assertSame( 'Nonexistent', $this->normalize( 'Nonexistent' ) );
 	}
 
-	public function testLeavesUnknownValueInPlace(): void {
-		$this->assertSame( 'Nonexistent', $this->normalize( 'Nonexistent' )->value );
+	public function testLeavesEmptyValueInPlace(): void {
+		$this->assertSame( '', $this->normalize( '' ) );
 	}
 
-	public function testLeavesEmptyValueInPlaceWithoutError(): void {
-		$result = $this->normalize( '' );
-
-		$this->assertSame( '', $result->value );
-		$this->assertNull( $result->violation );
-	}
-
-	public function testLeavesWhitespaceOnlyValueInPlaceWithoutError(): void {
-		$result = $this->normalize( '   ' );
-
-		$this->assertSame( '   ', $result->value );
-		$this->assertNull( $result->violation );
-	}
-
-	public function testReportsValueThatIsNeitherStringNorObject(): void {
-		$this->assertSame( 'select-value-not-string-or-object', $this->normalize( 42 )->violation->code );
+	public function testLeavesWhitespaceOnlyValueInPlace(): void {
+		$this->assertSame( '   ', $this->normalize( '   ' ) );
 	}
 
 	public function testResolvesListOfIds(): void {
-		$this->assertSame( [ 'opt1', 'opt3' ], $this->normalize( [ 'opt1', 'opt3' ] )->value );
+		$this->assertSame( [ 'opt1', 'opt3' ], $this->normalize( [ 'opt1', 'opt3' ] ) );
 	}
 
 	/**
@@ -114,27 +100,32 @@ class SelectTypeNormalizeTest extends TestCase {
 	 * the validator's job, under `single-value-only`.
 	 */
 	public function testNormalizesAListForASingleValueProperty(): void {
-		$this->assertSame( [ 'opt1', 'opt3' ], $this->normalize( [ 'Draft', 'Approved' ] )->value );
+		$this->assertSame( [ 'opt1', 'opt3' ], $this->normalize( [ 'Draft', 'Approved' ] ) );
 	}
 
 	public function testResolvesListOfMixedForms(): void {
-		$raw = [ 'opt1', 'Approved', [ 'id' => 'opt1', 'label' => 'Draft' ] ];
+		$raw = [ 'opt1', 'Approved', [ 'id' => 'opt2', 'label' => 'In Review' ] ];
 
-		$this->assertSame( [ 'opt1', 'opt3', 'opt1' ], $this->normalize( $raw )->value );
+		$this->assertSame( [ 'opt1', 'opt3', 'opt2' ], $this->normalize( $raw ) );
 	}
 
-	public function testAnEmptyListNormalizesWithoutAViolation(): void {
-		$result = $this->normalize( [] );
+	public function testResolvesTheOtherPartsOfAListThatHasPartsNamingNoOption(): void {
+		$this->assertSame(
+			[ 'opt1', 'Bogus1', 'opt3', 'Bogus2' ],
+			$this->normalize( [ 'Draft', 'Bogus1', 'Approved', 'Bogus2' ] )
+		);
+	}
 
-		$this->assertSame( [], $result->value );
-		$this->assertNull( $result->violation );
+	public function testDropsAPartNamingTheSameOptionAsAnEarlierPart(): void {
+		$this->assertSame( [ 'opt3', 'opt1', 'opt2' ], $this->normalize( [ 'opt3', 'opt1', 'Draft', 'opt2' ] ) );
+	}
+
+	public function testAnEmptyListStaysEmpty(): void {
+		$this->assertSame( [], $this->normalize( [] ) );
 	}
 
 	public function testResolvesListContainingAnEmptyValue(): void {
-		$result = $this->normalize( [ '', 'Approved' ] );
-
-		$this->assertSame( [ '', 'opt3' ], $result->value );
-		$this->assertNull( $result->violation );
+		$this->assertSame( [ '', 'opt3' ], $this->normalize( [ '', 'Approved' ] ) );
 	}
 
 	public function testLeavesTheValueAloneForAPropertyOfAnotherType(): void {
@@ -143,73 +134,55 @@ class SelectTypeNormalizeTest extends TestCase {
 			[]
 		);
 
-		$result = ( new SelectType() )->normalizeRawValue( 'Draft', $definition );
-
-		$this->assertSame( 'Draft', $result->value );
-		$this->assertNull( $result->violation );
+		$this->assertSame( 'Draft', ( new SelectType() )->normalizeRawValue( 'Draft', $definition ) );
 	}
 
-	public function testNamesAnUnknownValueByCodeAndArg(): void {
-		$violation = $this->normalize( 'Nonexistent' )->violation;
-
-		$this->assertSame( 'invalid-option', $violation->code );
-		$this->assertSame( [ 'Nonexistent' ], $violation->args );
+	public function testRejectsAValueThatIsNeitherStringNorObject(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->normalize( 42 );
 	}
 
-	public function testAScalarViolationIsAtPartZero(): void {
-		$this->assertSame( 0, $this->normalize( 'Nonexistent' )->violation->valuePartIndex );
+	public function testRejectsAListPartThatIsNeitherStringNorObject(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->normalize( [ 'Draft', 42 ] );
+	}
+
+	public function testRejectsAnObjectWithoutIdOrLabel(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->normalize( [ 'colour' => 'red' ] );
+	}
+
+	public function testRejectsAnObjectWhoseIdIsNotAString(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->normalize( [ 'id' => 42, 'label' => 'Draft' ] );
+	}
+
+	public function testRejectsAnObjectWhoseLabelIsNotAString(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->normalize( [ 'id' => 'opt1', 'label' => 42 ] );
+	}
+
+	public function testRejectsAnIdLabelObjectNamingTwoOptions(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'option "opt1" is not labelled "Approved"' );
+		$this->normalize( [ 'id' => 'opt1', 'label' => 'Approved' ] );
 	}
 
 	/**
-	 * The dry-run validate endpoints report per value part, so a part that cannot be canonicalized
-	 * must not cost the parts that can: leaving the whole list raw would make every good part look
-	 * like an invalid option too.
+	 * Unlike a bare string, an object naming an id never falls back to a label match, so a stale
+	 * id cannot silently become some other option.
 	 */
-	public function testLocatesTheFirstUnresolvablePartOfAList(): void {
-		$result = $this->normalize( [ 'Draft', 'Bogus1', 'Approved', 'Bogus2' ] );
-
-		$this->assertSame( [ 'opt1', 'Bogus1', 'opt3', 'Bogus2' ], $result->value );
-		$this->assertSame( 1, $result->violation->valuePartIndex );
-		$this->assertSame( [ 'Bogus1' ], $result->violation->args );
+	public function testRejectsAnObjectWhoseIdNamesNoOption(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->normalize( [ 'id' => 'Approved' ] );
 	}
 
-	public function testNamesAnIdLabelMismatchByBothArgs(): void {
-		$violation = $this->normalize( [ 'id' => 'opt1', 'label' => 'Approved' ] )->violation;
-
-		$this->assertSame( 'select-id-label-mismatch', $violation->code );
-		$this->assertSame( [ 'opt1', 'Approved' ], $violation->args );
-	}
-
-	public function testObjectWithOnlyLabelDoesNotFallBackToIdMatch(): void {
-		$result = $this->normalize( [ 'label' => 'opt2' ] );
-
-		$this->assertSame( 'invalid-option', $result->violation->code );
-		$this->assertSame( [ 'label' => 'opt2' ], $result->value );
-	}
-
-	public function testReportsObjectWhoseIdIsNotAString(): void {
-		$this->assertSame(
-			'select-id-label-not-strings',
-			$this->normalize( [ 'id' => 42 ] )->violation->code
-		);
-	}
-
-	public function testTreatsANullObjectMemberAsAbsent(): void {
-		$this->assertSame( 'opt1', $this->normalize( [ 'id' => null, 'label' => 'Draft' ] )->value );
-	}
-
-	public function testReportsObjectWhoseLabelIsNotAString(): void {
-		$this->assertSame(
-			'select-id-label-not-strings',
-			$this->normalize( [ 'id' => 'opt1', 'label' => 42 ] )->violation->code
-		);
-	}
-
-	public function testAViolationCarriesNoPropertyNameAndErrorSeverity(): void {
-		$violation = $this->normalize( 'Nonexistent' )->violation;
-
-		$this->assertNull( $violation->propertyName );
-		$this->assertSame( Severity::Error, $violation->severity );
+	/**
+	 * Storing the label as sent would read as the id of the option that has it as its id.
+	 */
+	public function testRejectsAnObjectWhoseLabelNamesNoOption(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->normalize( [ 'label' => 'opt2' ] );
 	}
 
 }

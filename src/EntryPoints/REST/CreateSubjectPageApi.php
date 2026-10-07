@@ -9,7 +9,6 @@ use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubjectPage\CreateSubjectPageRequest;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubjectPage\InvalidPageTitleException;
-use ProfessionalWiki\NeoWiki\Application\RejectedValueException;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
@@ -23,8 +22,6 @@ use Wikimedia\ParamValidator\ParamValidator;
  * /subjects.
  */
 class CreateSubjectPageApi extends SimpleHandler {
-
-	use RejectedValueResponse;
 
 	public function __construct(
 		private readonly CsrfValidator $csrfValidator
@@ -55,8 +52,6 @@ class CreateSubjectPageApi extends SimpleHandler {
 				'message' => $e->getMessage(),
 				'pageTitle' => $e->pageTitle,
 			] );
-		} catch ( RejectedValueException $e ) {
-			return $this->newRejectedValueResponse( $e );
 		} catch ( InvalidArgumentException $e ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'status' => 'error',

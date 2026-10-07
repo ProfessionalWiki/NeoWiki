@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\PropertyType;
 
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 
 /**
@@ -16,11 +17,12 @@ interface NormalizesRawValue {
 	/**
 	 * Canonicalize one Statement's raw input value, before it becomes a NeoValue.
 	 *
-	 * `$raw` is whatever the caller sent and has not been shape-checked. Never throw: report a part
-	 * you cannot canonicalize through {@see NormalizationResult::unresolvable()}, because the same
-	 * call serves writes, which refuse, and dry-run validation, which keeps the value. The Violation's
-	 * `args` must be strings or numbers: they become the message's parameters.
+	 * `$raw` is whatever the caller sent and has not been shape-checked. Return a value that names
+	 * nothing the definition knows as it was sent, so that {@see PropertyType::validate()} reports it
+	 * at the severity the Schema sets: the same call serves writes and dry-run validation.
+	 *
+	 * @throws InvalidArgumentException When `$raw` cannot be stored, canonicalized or as sent.
 	 */
-	public function normalizeRawValue( mixed $raw, PropertyDefinition $definition ): NormalizationResult;
+	public function normalizeRawValue( mixed $raw, PropertyDefinition $definition ): mixed;
 
 }

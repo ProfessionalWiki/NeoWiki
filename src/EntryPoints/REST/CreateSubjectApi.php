@@ -4,21 +4,16 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
-use InvalidArgumentException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
-use ProfessionalWiki\NeoWiki\Application\RejectedValueException;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 use ProfessionalWiki\NeoWiki\Presentation\RestCreateSubjectPresenter;
-use RuntimeException;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class CreateSubjectApi extends SimpleHandler {
-
-	use RejectedValueResponse;
 
 	public function __construct(
 		private readonly bool $isMainSubject,
@@ -45,14 +40,12 @@ class CreateSubjectApi extends SimpleHandler {
 					id: $body['id'] ?? null,
 				)
 			);
-		} catch ( RejectedValueException $e ) {
-			return $this->newRejectedValueResponse( $e );
-		} catch ( InvalidArgumentException $e ) {
+		} catch ( \InvalidArgumentException $e ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'status' => 'error',
 				'message' => $e->getMessage(),
 			] );
-		} catch ( RuntimeException $e ) {
+		} catch ( \RuntimeException $e ) {
 			return $this->getResponseFactory()->createHttpError( 403, [
 				'status' => 'error',
 				'message' => $e->getMessage(),

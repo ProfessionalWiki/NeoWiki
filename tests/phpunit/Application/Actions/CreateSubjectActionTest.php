@@ -457,9 +457,8 @@ class CreateSubjectActionTest extends TestCase {
 					'Status' => [
 						'propertyType' => 'select',
 						'value' => [
-							'opt_draft',
-							'Approved',
-							[ 'id' => 'opt_draft', 'label' => 'Draft' ],
+							'Draft',
+							[ 'id' => 'opt_approved', 'label' => 'Approved' ],
 						],
 					],
 				]
@@ -467,7 +466,7 @@ class CreateSubjectActionTest extends TestCase {
 		);
 
 		$this->assertSame(
-			[ 'opt_draft', 'opt_approved', 'opt_draft' ],
+			[ 'opt_draft', 'opt_approved' ],
 			$this->getStatusValueForCreatedSubject()->strings
 		);
 	}

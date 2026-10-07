@@ -4,10 +4,9 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Application\RejectedValueException;
 use ProfessionalWiki\NeoWiki\Application\StatementNormalizer;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\NormalizationResult;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\NormalizesRawValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
@@ -56,7 +55,7 @@ class StatementNormalizerTest extends TestCase {
 	public function testNormalizesScalarIdValue(): void {
 		$statements = [ 'Status' => [ 'propertyType' => 'select', 'value' => 'opt2' ] ];
 
-		$normalized = $this->newNormalizer()->normalizeOrThrow( $this->newSchemaWithSelect(), $statements );
+		$normalized = $this->newNormalizer()->normalize( $this->newSchemaWithSelect(), $statements );
 
 		$this->assertSame( 'opt2', $normalized['Status']['value'] );
 	}
@@ -64,7 +63,7 @@ class StatementNormalizerTest extends TestCase {
 	public function testNormalizesScalarLabelValue(): void {
 		$statements = [ 'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ] ];
 
-		$normalized = $this->newNormalizer()->normalizeOrThrow( $this->newSchemaWithSelect(), $statements );
+		$normalized = $this->newNormalizer()->normalize( $this->newSchemaWithSelect(), $statements );
 
 		$this->assertSame( 'opt2', $normalized['Status']['value'] );
 	}
@@ -73,22 +72,22 @@ class StatementNormalizerTest extends TestCase {
 		$statements = [
 			'Status' => [
 				'propertyType' => 'select',
-				'value' => [ 'opt1', 'Approved', [ 'id' => 'opt1', 'label' => 'Draft' ] ],
+				'value' => [ 'Approved', [ 'id' => 'opt1', 'label' => 'Draft' ] ],
 			],
 		];
 
-		$normalized = $this->newNormalizer()->normalizeOrThrow(
+		$normalized = $this->newNormalizer()->normalize(
 			$this->newSchemaWithSelect(),
 			$statements
 		);
 
-		$this->assertSame( [ 'opt1', 'opt2', 'opt1' ], $normalized['Status']['value'] );
+		$this->assertSame( [ 'opt2', 'opt1' ], $normalized['Status']['value'] );
 	}
 
 	public function testLeavesAPropertyWhoseTypeDoesNotNormalizeUntouched(): void {
 		$statements = [ 'Name' => [ 'propertyType' => 'text', 'value' => 'Some Name' ] ];
 
-		$normalized = $this->newNormalizer()->normalizeOrThrow( $this->newSchemaWithSelect(), $statements );
+		$normalized = $this->newNormalizer()->normalize( $this->newSchemaWithSelect(), $statements );
 
 		$this->assertSame( $statements, $normalized );
 	}
@@ -99,7 +98,7 @@ class StatementNormalizerTest extends TestCase {
 			'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ],
 		];
 
-		$normalized = $this->newNormalizer()->normalizeOrThrow( $this->newSchemaWithSelect(), $statements );
+		$normalized = $this->newNormalizer()->normalize( $this->newSchemaWithSelect(), $statements );
 
 		$this->assertSame( 'opt2', $normalized['Status']['value'] );
 	}
@@ -107,7 +106,7 @@ class StatementNormalizerTest extends TestCase {
 	public function testLeavesANullEntryUntouched(): void {
 		$statements = [ 'Status' => null ];
 
-		$normalized = $this->newNormalizer()->normalizeOrThrow( $this->newSchemaWithSelect(), $statements );
+		$normalized = $this->newNormalizer()->normalize( $this->newSchemaWithSelect(), $statements );
 
 		$this->assertSame( $statements, $normalized );
 	}
@@ -115,7 +114,7 @@ class StatementNormalizerTest extends TestCase {
 	public function testLeavesAnEntryWithoutAValueUntouched(): void {
 		$statements = [ 'Status' => [ 'propertyType' => 'select' ] ];
 
-		$normalized = $this->newNormalizer()->normalizeOrThrow( $this->newSchemaWithSelect(), $statements );
+		$normalized = $this->newNormalizer()->normalize( $this->newSchemaWithSelect(), $statements );
 
 		$this->assertSame( $statements, $normalized );
 	}
@@ -123,7 +122,7 @@ class StatementNormalizerTest extends TestCase {
 	public function testLeavesAPropertyTheSchemaDoesNotDeclareUntouched(): void {
 		$statements = [ 'Unknown' => [ 'propertyType' => 'select', 'value' => 'something' ] ];
 
-		$normalized = $this->newNormalizer()->normalizeOrThrow( $this->newSchemaWithSelect(), $statements );
+		$normalized = $this->newNormalizer()->normalize( $this->newSchemaWithSelect(), $statements );
 
 		$this->assertSame( $statements, $normalized );
 	}
@@ -136,7 +135,7 @@ class StatementNormalizerTest extends TestCase {
 	public function testLeavesAnEntryWhoseDeclaredTypeDiffersFromTheSchemaUntouched(): void {
 		$statements = [ 'Status' => [ 'propertyType' => 'text', 'value' => 'Approved' ] ];
 
-		$normalized = $this->newNormalizer()->normalizeOrThrow( $this->newSchemaWithSelect(), $statements );
+		$normalized = $this->newNormalizer()->normalize( $this->newSchemaWithSelect(), $statements );
 
 		$this->assertSame( $statements, $normalized );
 	}
@@ -148,17 +147,6 @@ class StatementNormalizerTest extends TestCase {
 	public function testNormalizesValueOfPropertyNamedLikeAnInteger(): void {
 		$statements = [ '2024' => [ 'propertyType' => 'select', 'value' => 'Draft' ] ];
 
-		$normalized = $this->newNormalizer()->normalizeOrThrow(
-			$this->newSchemaWithSelectNamed( '2024' ),
-			$statements
-		);
-
-		$this->assertSame( 'opt1', $normalized['2024']['value'] );
-	}
-
-	public function testNormalizeResolvesValueOfPropertyNamedLikeAnInteger(): void {
-		$statements = [ '2024' => [ 'propertyType' => 'select', 'value' => 'Draft' ] ];
-
 		$normalized = $this->newNormalizer()->normalize(
 			$this->newSchemaWithSelectNamed( '2024' ),
 			$statements
@@ -167,7 +155,7 @@ class StatementNormalizerTest extends TestCase {
 		$this->assertSame( 'opt1', $normalized['2024']['value'] );
 	}
 
-	public function testNormalizeDoesNotThrowOnAnUnresolvableValue(): void {
+	public function testLeavesAValueNamingNoOptionForTheValidator(): void {
 		$statements = [ 'Status' => [ 'propertyType' => 'select', 'value' => 'Nonexistent' ] ];
 
 		$normalized = $this->newNormalizer()->normalize( $this->newSchemaWithSelect(), $statements );
@@ -175,56 +163,30 @@ class StatementNormalizerTest extends TestCase {
 		$this->assertSame( 'Nonexistent', $normalized['Status']['value'] );
 	}
 
-	public function testNormalizeKeepsTheResolvablePartsOfAListThatHasAnUnresolvableOne(): void {
+	public function testNamesThePropertyWhoseValueItsTypeCannotRead(): void {
 		$statements = [
-			'Status' => [ 'propertyType' => 'select', 'value' => [ 'Draft', 'Nonexistent' ] ],
+			'Name' => [ 'propertyType' => 'text', 'value' => 'Some Name' ],
+			'Status' => [ 'propertyType' => 'select', 'value' => 42 ],
 		];
+		$normalizer = $this->newNormalizer();
 
-		$normalized = $this->newNormalizer()->normalize(
-			$this->newSchemaWithSelect(),
-			$statements
-		);
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Value of "Status" does not fit property type "select"' );
 
-		$this->assertSame( [ 'opt1', 'Nonexistent' ], $normalized['Status']['value'] );
-	}
-
-	public function testAttachesThePropertyToAScalarViolation(): void {
-		$statements = [ 'Status' => [ 'propertyType' => 'select', 'value' => 'Nonexistent' ] ];
-
-		try {
-			$this->newNormalizer()->normalizeOrThrow( $this->newSchemaWithSelect(), $statements );
-			$this->fail( 'Expected a RejectedValueException' );
-		} catch ( RejectedValueException $exception ) {
-			$this->assertSame( 'Status', $exception->violation->propertyName->text );
-			$this->assertSame( 0, $exception->violation->valuePartIndex );
-		}
-	}
-
-	public function testAttachesThePropertyAndPartIndexToAListViolation(): void {
-		$statements = [
-			'Status' => [ 'propertyType' => 'select', 'value' => [ 'Draft', 'Bogus1', 'Bogus2' ] ],
-		];
-
-		try {
-			$this->newNormalizer()->normalizeOrThrow( $this->newSchemaWithSelect(), $statements );
-			$this->fail( 'Expected a RejectedValueException' );
-		} catch ( RejectedValueException $exception ) {
-			$this->assertSame( 'Status', $exception->violation->propertyName->text );
-			$this->assertSame( 1, $exception->violation->valuePartIndex );
-		}
+		$normalizer->normalize( $this->newSchemaWithSelect(), $statements );
 	}
 
 	public function testPassesStatementsThroughWithoutASchema(): void {
 		$statements = [ 'Status' => [ 'propertyType' => 'select', 'value' => 'Nonexistent' ] ];
 
-		$this->assertSame( $statements, $this->newNormalizer()->normalizeOrThrow( null, $statements ) );
+		$this->assertSame( $statements, $this->newNormalizer()->normalize( null, $statements ) );
 	}
 
 	public function testAsksAnyTypeThatNormalizesNotOnlySelect(): void {
 		$statements = [ 'Name' => [ 'propertyType' => 'text', 'value' => 'raw' ] ];
 
 		$normalized = ( new StatementNormalizer( $this->newNormalizingTextTypeLookup() ) )
-			->normalizeOrThrow( $this->newSchemaWithSelect(), $statements );
+			->normalize( $this->newSchemaWithSelect(), $statements );
 
 		$this->assertSame( 'canonical:raw', $normalized['Name']['value'] );
 	}
@@ -242,8 +204,8 @@ class StatementNormalizerTest extends TestCase {
 
 				return new class() extends TextType implements NormalizesRawValue {
 
-					public function normalizeRawValue( mixed $raw, PropertyDefinition $definition ): NormalizationResult {
-						return NormalizationResult::normalized( 'canonical:' . $raw );
+					public function normalizeRawValue( mixed $raw, PropertyDefinition $definition ): mixed {
+						return 'canonical:' . $raw;
 					}
 
 				};

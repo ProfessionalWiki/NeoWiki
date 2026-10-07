@@ -24,13 +24,11 @@ about your type. For values held as a list of parts, `listValueSchema()` wraps t
 
 A type that accepts input shapes beyond the one it stores also implements
 [`NormalizesRawValue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/src/Domain/PropertyType/NormalizesRawValue.php).
-`normalizeRawValue()` returns a `NormalizationResult`: the value with every part that could be canonicalized
-canonical, plus a `Violation` for the first part that could not (no property name, `error` severity,
-`valuePartIndex` counted on the value as sent). Never throw from it, and keep the Violation's `args` to strings and
-numbers. The core
+`normalizeRawValue()` returns the value in the shape the type stores. A value that names nothing the definition knows
+is returned as sent, so that `validate()` reports it at the severity the Schema sets; one that cannot be stored even
+as sent throws `InvalidArgumentException`, which the API answers with `400`. The core
 [`SelectType`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/src/Domain/PropertyType/Types/SelectType.php)
-is the working example; how a refused value is answered is under
-[Refused values](../api/validation-codes.md#refused-values).
+is the working example.
 
 ## Projection
 

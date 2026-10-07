@@ -136,7 +136,7 @@ readonly class CreateSubjectAction {
 			label: SubjectLabel::fromText( $request->label ),
 			schema: $schemaReference,
 			statements: $this->statementListBuilder->build(
-				$this->statementNormalizer->normalizeOrThrow( $schema, $request->statements )
+				$this->statementNormalizer->normalize( $schema, $request->statements )
 			),
 		);
 	}

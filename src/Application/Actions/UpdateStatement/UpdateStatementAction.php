@@ -138,7 +138,7 @@ readonly class UpdateStatementAction {
 		];
 
 		return $this->statementListBuilder
-			->build( $this->statementNormalizer->normalizeOrThrow( $schema, $statements ) )
+			->build( $this->statementNormalizer->normalize( $schema, $statements ) )
 			->getStatement( $propertyName );
 	}
 

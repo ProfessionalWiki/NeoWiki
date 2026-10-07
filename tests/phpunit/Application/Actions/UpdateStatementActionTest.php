@@ -350,7 +350,7 @@ class UpdateStatementActionTest extends TestCase {
 		$this->assertSame( [ 'opt_approved' ], $this->getStoredValue( 'Status' ) );
 	}
 
-	public function testUnresolvableSelectValueThrows(): void {
+	public function testSelectValueNamingNoOptionIsStoredAsSent(): void {
 		$this->registerSchema( new PropertyDefinitions( [
 			'Status' => new SelectProperty(
 				core: new PropertyCore( description: '', required: false, default: null ),
@@ -360,17 +360,9 @@ class UpdateStatementActionTest extends TestCase {
 		] ) );
 		$this->storeSubject();
 
-		$action = $this->newAction();
+		$this->setStatement( 'Status', 'select', 'No such option' );
 
-		$this->expectException( InvalidArgumentException::class );
-
-		$action->setStatement(
-			new SubjectId( self::SUBJECT_ID ),
-			new PropertyName( 'Status' ),
-			'select',
-			'No such option',
-			null
-		);
+		$this->assertSame( [ 'No such option' ], $this->getStoredValue( 'Status' ) );
 	}
 
 	public function testCommentIsForwarded(): void {

@@ -66,7 +66,7 @@ readonly class ReplaceSubjectAction {
 
 		$subject->setLabel( SubjectLabel::fromText( $label ) );
 		$subject->setStatements(
-			$this->statementListBuilder->build( $this->statementNormalizer->normalizeOrThrow( $schema, $statements ) )
+			$this->statementListBuilder->build( $this->statementNormalizer->normalize( $schema, $statements ) )
 		);
 
 		$proposedViolations = $this->proposedSubjectValidator->validate( $subject );

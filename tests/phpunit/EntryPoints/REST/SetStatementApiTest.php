@@ -328,7 +328,7 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertNull( $this->getStoredValue( 'Founded at' ) );
 	}
 
-	public function testUnresolvableSelectValueReturns400LocatingTheValue(): void {
+	public function testSelectValueNamingNoOptionIsStoredWithAnInvalidOptionWarning(): void {
 		$this->createSubjectPageWithSelectProperty();
 
 		$response = $this->executeHandler(
@@ -337,21 +337,21 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 		);
 		$body = json_decode( $response->getBody()->getContents(), true );
 
-		$this->assertSame( 400, $response->getStatusCode() );
-		$this->assertSame( 'error', $body['status'] );
-		$this->assertSame(
-			[
-				'propertyName' => 'Status',
-				'code' => 'invalid-option',
-				'args' => [ 'Nonexistent' ],
-				'severity' => 'error',
-				'valuePartIndex' => 0,
-			],
-			$body['violation']
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( 'invalid-option', $body['violations'][0]['code'] );
+		$this->assertSame( 'warning', $body['violations'][0]['severity'] );
+		$this->assertSame( [ 'Nonexistent' ], $this->getStoredValue( 'Status' ) );
+	}
+
+	public function testSelectObjectWithANonStringIdReturns400(): void {
+		$this->createSubjectPageWithSelectProperty();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Status', [ 'statement' => [ 'propertyType' => 'select', 'value' => [ [ 'id' => 42 ] ] ] ] )
 		);
-		$this->assertArrayHasKey( 'qqx', $body['messageTranslations'] );
-		$this->assertSame( $body['messageTranslations']['qqx'], $body['message'] );
-		$this->assertStringContainsString( '<plaintext>Nonexistent</plaintext>', $body['messageTranslations']['qqx'] );
+
+		$this->assertSame( 400, $response->getStatusCode() );
 		$this->assertNull( $this->getStoredValue( 'Status' ) );
 	}
 

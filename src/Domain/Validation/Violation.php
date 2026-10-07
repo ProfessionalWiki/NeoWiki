@@ -33,16 +33,6 @@ readonly class Violation {
 		);
 	}
 
-	public function withValuePartIndex( int $valuePartIndex ): self {
-		return new self(
-			propertyName: $this->propertyName,
-			code: $this->code,
-			args: $this->args,
-			valuePartIndex: $valuePartIndex,
-			severity: $this->severity,
-		);
-	}
-
 	/**
 	 * Whether this Violation should block writes under enforcement (ADR 26).
 	 */

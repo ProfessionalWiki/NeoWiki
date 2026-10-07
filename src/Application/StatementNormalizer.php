@@ -4,10 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application;
 
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\NormalizesRawValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
-use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 
 /**
@@ -15,8 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
  *
  * The walk knows nothing about any particular type: a type that accepts input shapes beyond the one
  * it stores says so by implementing {@see NormalizesRawValue}, and every other entry is passed
- * through. What a type cannot canonicalize is reported rather than thrown, so one walk serves both
- * {@see self::normalize()} and {@see self::normalizeOrThrow()}.
+ * through.
  */
 readonly class StatementNormalizer {
 
@@ -26,35 +25,12 @@ readonly class StatementNormalizer {
 	}
 
 	/**
-	 * Leaves what no type could canonicalize in place, for the validator to report against the
-	 * Schema with a per-part index. Used by the dry-run validate endpoints, which answer 200 with
-	 * the violations rather than refusing the request.
-	 *
 	 * @param array<string, mixed> $statements
 	 * @return array<string, mixed>
+	 *
+	 * @throws InvalidArgumentException When a value cannot be stored, canonicalized or as sent.
 	 */
 	public function normalize( ?Schema $schema, array $statements ): array {
-		return $this->walk( $schema, $statements, throwOnUnresolvable: false );
-	}
-
-	/**
-	 * Refuses the whole write on the first value no type could canonicalize. Used by the write
-	 * paths, where an uncanonicalized value cannot be stored: it becomes a 400.
-	 *
-	 * @param array<string, mixed> $statements
-	 * @return array<string, mixed>
-	 *
-	 * @throws RejectedValueException
-	 */
-	public function normalizeOrThrow( ?Schema $schema, array $statements ): array {
-		return $this->walk( $schema, $statements, throwOnUnresolvable: true );
-	}
-
-	/**
-	 * @param array<string, mixed> $statements
-	 * @return array<string, mixed>
-	 */
-	private function walk( ?Schema $schema, array $statements, bool $throwOnUnresolvable ): array {
 		// Without a Schema there is no type to ask: the statements pass through as sent.
 		if ( $schema === null ) {
 			return $statements;
@@ -79,13 +55,7 @@ readonly class StatementNormalizer {
 				continue;
 			}
 
-			$result = $type->normalizeRawValue( $entry['value'], $definition );
-
-			if ( $result->violation !== null && $throwOnUnresolvable ) {
-				throw new RejectedValueException( $result->violation->withPropertyName( new PropertyName( $name ) ) );
-			}
-
-			$entry['value'] = $result->value;
+			$entry['value'] = $this->normalizeValue( $type, $name, $entry['value'], $definition );
 			$statements[$propertyName] = $entry;
 		}
 
@@ -114,6 +84,26 @@ readonly class StatementNormalizer {
 		}
 
 		return $definition;
+	}
+
+	/**
+	 * @throws InvalidArgumentException
+	 */
+	private function normalizeValue(
+		NormalizesRawValue $type,
+		string $propertyName,
+		mixed $raw,
+		PropertyDefinition $definition
+	): mixed {
+		try {
+			return $type->normalizeRawValue( $raw, $definition );
+		} catch ( InvalidArgumentException $e ) {
+			throw new InvalidArgumentException(
+				"Value of \"{$propertyName}\" does not fit property type \"{$definition->getPropertyType()}\": {$e->getMessage()}",
+				0,
+				$e
+			);
+		}
 	}
 
 }
