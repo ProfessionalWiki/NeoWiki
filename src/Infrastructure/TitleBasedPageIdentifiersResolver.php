@@ -37,14 +37,14 @@ class TitleBasedPageIdentifiersResolver implements PageIdentifiersResolver {
 		return $this->identifiersOf( $title, new PageId( $title->getId() ) );
 	}
 
-	public function getMainNamespaceTitle( string $text ): ?string {
-		$title = $this->titleFactory->newFromText( $text );
+	public function getTitleInNamespace( int $namespaceId, string $text ): ?string {
+		$title = $this->titleFactory->makeTitleSafe( $namespaceId, $text );
 
 		// canExist() rules out the empty, the invalid, the special and the interwiki - the last
 		// parses into the main namespace of another wiki and cannot be created here. hasFragment()
 		// rules out "Rembrandt#1642", whose fragment the title would silently drop.
 		if ( $title === null || !$title->canExist() || $title->hasFragment()
-			|| $title->getNamespace() !== NS_MAIN ) {
+			|| $title->getNamespace() !== $namespaceId ) {
 			return null;
 		}
 

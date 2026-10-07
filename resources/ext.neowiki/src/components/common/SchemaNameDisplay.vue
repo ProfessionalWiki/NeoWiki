@@ -51,6 +51,8 @@ const accessibleName = computed( (): string =>
 	align-items: center;
 	box-sizing: @box-sizing-base;
 	max-width: @size-full;
+	// As a flex item it shrinks to fit, so its text ellipsizes rather than overflowing the line.
+	min-width: 0;
 	min-height: @size-125;
 	border: @border-width-base @border-style-base @background-color-neutral;
 	border-radius: @border-radius-base;

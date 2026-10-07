@@ -5,18 +5,20 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualText;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
 /**
@@ -63,7 +65,7 @@ class StatementDeserializerTest extends TestCase {
 	 * Core types only: no extension is loaded, so "color" is an unregistered type.
 	 */
 	private function newDeserializer(): StatementDeserializer {
-		return new StatementDeserializer( PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ), TestSubjectIds::newParser() );
+		return new StatementDeserializer( TestSources::newPropertyTypeRegistry(), TestSubjectIds::newParser() );
 	}
 
 	public function testDeserializesText(): void {
@@ -93,6 +95,29 @@ class StatementDeserializerTest extends TestCase {
 		);
 
 		$this->assertSame( [ 'Foo' ], $statement->getValue()->toScalars() );
+	}
+
+	public function testDeserializesMonolingualText(): void {
+		$this->assertEquals(
+			new Statement(
+				property: new PropertyName( 'Original title' ),
+				propertyType: 'monolingualText',
+				value: new MonolingualTextValue(
+					new MonolingualText( 'Zinema', 'eu' ),
+					new MonolingualText( 'Cine', 'es' ),
+				)
+			),
+			$this->newDeserializer()->deserialize(
+				'Original title',
+				[
+					'propertyType' => 'monolingualText',
+					'value' => [
+						[ 'text' => 'Zinema', 'language' => 'eu' ],
+						[ 'text' => 'Cine', 'language' => 'es' ],
+					],
+				]
+			)
+		);
 	}
 
 	public function testDeserializesRelation(): void {

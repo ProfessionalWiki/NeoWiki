@@ -226,6 +226,22 @@ describe( 'MoveSubjectDialog', () => {
 		expect( textOf( wrapper ) ).toContain( 'The Night Watch' );
 	} );
 
+	it( 'names a main subject nobody named by its id when promoting would demote it', async () => {
+		getPageSubjectsMock.mockResolvedValue( {
+			pageSubjects: new PageSubjects( TARGET_PAGE_ID, new SubjectId( TARGET_MAIN_ID ), [
+				newSubject( { id: TARGET_MAIN_ID, label: null, displayNameIsGenerated: true } ),
+			] ),
+			referencedSubjects: [],
+			schemas: [],
+		} );
+		const wrapper = mountDialog();
+		await pick( wrapper, { pageId: TARGET_PAGE_ID, title: 'Rembrandt van Rijn' } );
+
+		await wrapper.find( 'input[type="checkbox"]' ).setValue( true );
+
+		expect( textOf( wrapper ) ).toContain( TARGET_MAIN_ID );
+	} );
+
 	it( 'says nothing about demotion while promoting is unchecked', async () => {
 		getPageSubjectsMock.mockResolvedValue( {
 			pageSubjects: new PageSubjects( TARGET_PAGE_ID, new SubjectId( TARGET_MAIN_ID ), [

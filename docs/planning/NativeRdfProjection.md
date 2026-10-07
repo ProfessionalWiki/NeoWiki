@@ -15,7 +15,7 @@ Discussion: [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999).
 > [Person → EDM example](../guide/person-to-edm.md). The sync into a configured SPARQL 1.1 store (e.g. QLever) has
 > shipped too, as the per-page graph replacement this document specifies.
 
-## Still open (2026-08)
+## Still open (2026-10)
 
 - [Q6 — Base URI conventions](#q6-base-uri-conventions): which base URI an ECCCH-integrated deployment mints under.
 - [Q8 — Writer's schema in RDF](#q8-writers-schema-in-rdf): whether a full-export mode carries it. Untracked.
@@ -73,7 +73,7 @@ that write path, and the targets it is held to, are in the
   [Person → EDM example](../guide/person-to-edm.md) walks a worked case.
   At the ECHOLOT meeting in Bilbao (March 2026), the consortium agreed that wiki admins should be able to define
   mappings between ontologies they care about and the NeoWiki Schemas of their wiki. This confirmed the
-  separate-mapping approach, and is why Q1, Q2 and Q4 resolved toward keeping the native projection minimal (see
+  separate-mapping approach, and is why Q2 and Q4 resolved toward keeping the native projection minimal (see
   [Decided](#decided)). The plan is that NeoWiki provides the mapping
   mechanism, data modellers in the project create standard mapping + Schema bundles (e.g., for CIDOC-CRM), and users
   can optionally install those bundles where relevant.
@@ -127,9 +127,14 @@ native projection should be able to say so in RDF. Tracked in
 
 Answered by shipping or by partner feedback. Numbers are the original question numbers.
 
-- **Q1 — property predicate scope.** Flat (`$base/prop/Name`), not scoped per Schema: more natural for RDF, and
-  ontology alignment happens in the mapping either way. Recorded cost: a mapping rule reading the native projection
-  needs an `rdf:type` constraint to select the right Schema's property (2026-07-03).
+- **Q1 — property predicate scope.** Per Schema, `$base/prop/{Schema}/{Property}`, with `/` inside a name
+  percent-encoded (2026-10-04). A predicate shared by name would claim a sameness local Property Definitions lack, would
+  intersect the Schemas' domains and ranges in the RDFS export (Q10), and under [ADR 28](../adr/028-relations-model.md)
+  decision 6 would give a relation and a same-named literal property one predicate. Sharing across Schemas, when added,
+  uses `rdfs:subPropertyOf`, not a shared predicate; `$base/prop/{Name}` is reserved for such name-level
+  super-properties. Recorded cost: a query across Schemas must name each Schema's predicate.
+  [#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163) replaces today's flat predicates before the first
+  release.
 - **Q2 — standard vocabulary.** The native projection stays minimal — `rdf:type`, `rdfs:label`, and
   `dcterms:created`/`dcterms:modified`. Further standard-vocabulary alignment belongs to an ontology mapping.
 - **Q3 — relation representation.** Wikibase-style reification alongside the direct triple, as specified
@@ -142,7 +147,7 @@ Answered by shipping or by partner feedback. Numbers are the original question n
   [#1263](https://github.com/ProfessionalWiki/NeoWiki/pull/1263)).
 - **Q5 — named graph conventions.** No CH convention exists; per-page named graphs are fine for operational purposes.
   They record data origin only — chain-of-production provenance is the T2.4 model and a T3.4 plug-in, not the
-  projection (see [ECHOLOT.md](ECHOLOT.md)).
+  projection.
 - **Q7 — URI design for Properties.** Underscores: spaces in a name become underscores in the IRI local name
   (`Has_author`), with partner concurrence that either convention works (George Bruseker, takin, 2026-07-06).
 - **Q9 — ordering of multi-valued properties.** Ordering loss is accepted; ordering is a display concern for Views.

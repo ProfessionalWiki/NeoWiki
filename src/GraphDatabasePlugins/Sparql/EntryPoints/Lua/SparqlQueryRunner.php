@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\Lua;
 
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryPermissionDeniedException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryLimits;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryRequest;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService;
@@ -25,12 +26,19 @@ class SparqlQueryRunner {
 	 * @return array<int|string, mixed> The results document with every JSON array re-indexed for Lua.
 	 */
 	public function run( string $sparql ): array {
-		$result = $this->queryService->execute(
-			new SparqlQueryRequest(
-				sparql: $sparql,
-				limits: $this->limits,
-			)
-		);
+		try {
+			$result = $this->queryService->execute(
+				new SparqlQueryRequest(
+					sparql: $sparql,
+					limits: $this->limits,
+				)
+			);
+		} catch ( SparqlQueryPermissionDeniedException ) {
+			// A LuaError would file the page under Scribunto's script-error category, for a wiki
+			// configuration no module can fix. Shaped like a SELECT result, so a module reading
+			// results.bindings finds an empty list.
+			return [ 'head' => [ 'vars' => [] ], 'results' => [ 'bindings' => [] ] ];
+		}
 
 		return self::toLuaTable( $result->document );
 	}

@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty
@@ -94,6 +95,10 @@ JSON
 		);
 
 		$this->assertFalse( $property->allowsMultipleValues() );
+	}
+
+	public function testValueIsABoolean(): void {
+		$this->assertSame( [ 'type' => 'boolean' ], TestProperty::buildBoolean()->toJsonSchema() );
 	}
 
 }

@@ -56,12 +56,12 @@ A run that finished but left individual pages behind has nothing to continue: re
 
 Pass `--batch-size` to change how many pages are projected between recordings; it defaults to 200.
 
-A page the store rejects is counted and the rebuild carries on; the `NeoWiki` channel says which pages failed and why.
-A store that stops answering partway is another matter: when a whole batch fails the rebuild reopens the store, and
-ends the run for `--resume` to retry that batch only if it cannot. A store that still opens means its pages were at
-fault, so they are counted and the walk goes on past them. The script exits non-zero whenever a store was left out of
-sync, which covers both a failed run and one that finished having left pages behind. Only the first has anything to
-resume; rebuild the store for the second.
+A page the store rejects is counted and the rebuild carries on; the [`NeoWiki` log channel](installation.md#logging)
+says which pages failed and why. A store that stops answering partway is another matter: when a whole batch fails the
+rebuild reopens the store, and ends the run for `--resume` to retry that batch only if it cannot. A store that still
+opens means its pages were at fault, so they are counted and the walk goes on past them. The script exits non-zero
+whenever a store was left out of sync, which covers both a failed run and one that finished having left pages behind.
+Only the first has anything to resume; rebuild the store for the second.
 
 A rebuild killed outright — `kill -9`, or the machine going down — leaves its run recorded as still going, and every
 later rebuild of that store refuses to start while it is. So does a background rebuild whose first batch never
@@ -134,9 +134,8 @@ saving anything, and reporting nothing means there is nothing to do. It walks th
 
 ## Making Subjects searchable
 
-Special:Search and the search API find a page by its Subjects: their labels, and their text, url, date, date-time,
-number and select values (select values by their option's label). Boolean and relation values are not indexed. A page
-matched only through a Subject value shows no matching text in its result snippet.
+Special:Search and the search API find a page by its Subjects' labels and by their text, url, date, date-time, number
+and select values. Boolean and relation values are not indexed.
 
 Pages are indexed as they are saved. With MediaWiki's built-in database search, cover the pages that already
 existed by rebuilding the wiki's search index:
@@ -145,17 +144,18 @@ existed by rebuilding the wiki's search index:
 php maintenance/run.php rebuildtextindex
 ```
 
-On PostgreSQL, the built-in database search does not index Subject values.
+Search finds nothing while it runs, which on a large wiki is hours. Run it when the wiki is quiet.
 
-With CirrusSearch, Subject values stay out of the index until it knows the field. Run this after installing NeoWiki
-and after every upgrade:
+On PostgreSQL the built-in database search does not index Subject values; use CirrusSearch.
+
+With CirrusSearch, run this after installing or upgrading NeoWiki:
 
 ```sh
 php maintenance/run.php CirrusSearch:UpdateSearchIndexConfig
 ```
 
 Only when that reports `different...corrected`, rebuild the index and re-index all pages. Both scale with the size
-of the wiki:
+of the wiki, and search stays available meanwhile:
 
 ```sh
 php maintenance/run.php CirrusSearch:UpdateSearchIndexConfig --reindexAndRemoveOk --indexIdentifier now --ignoreIndexChanged
@@ -165,14 +165,11 @@ php maintenance/run.php CirrusSearch:ForceSearchIndex
 ## What happens during a Neo4j outage
 
 - **Editing pages works.** Edits, deletions and undeletions all commit. NeoWiki logs the projection failure on the
-  `NeoWiki` channel.
+  [`NeoWiki` channel](installation.md#logging).
 - **Editing and displaying Subjects works.**
 - **Queries fail**, along with relation-target suggestions and anything else that reads the graph.
 
 Once Neo4j is back, [rebuild the graph](#rebuilding-the-graph): it repairs both a failed save and a failed delete.
-
-Route the `NeoWiki` log channel somewhere you read. On a default MediaWiki install it goes nowhere, and it carries
-both the outage and the pages a rebuild could not reconcile.
 
 ## Backups
 

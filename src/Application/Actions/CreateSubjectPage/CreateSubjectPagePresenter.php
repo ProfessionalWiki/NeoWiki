@@ -32,6 +32,13 @@ interface CreateSubjectPagePresenter {
 	public function presentPageTitleTaken( string $pageTitle ): void;
 
 	/**
+	 * Called when a Subject already holds the id the caller supplied. Nothing is created; only a
+	 * caller that minted the id up front can meet this, and for one minted for this very Subject it
+	 * means the create already landed.
+	 */
+	public function presentSubjectAlreadyExists(): void;
+
+	/**
 	 * Called when validation enforcement rejects the Subject the request would have created. No
 	 * page is created either.
 	 *

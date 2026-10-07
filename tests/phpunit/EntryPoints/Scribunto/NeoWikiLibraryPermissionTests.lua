@@ -28,26 +28,13 @@ local function testGetSchemaOnOpenPageStillReads()
 	return nw.getSchema( 'Employee' ) ~= nil
 end
 
--- The full sentence, not a fragment: the generic fallback message would carry the service's
--- "You do not have permission to run queries." as its detail and match a fragment too.
-local function isDeniedWith( message, call )
-	local ok, err = pcall( call )
-	if ok then
-		return 'unexpected success'
-	end
-	return type( err ) == 'string' and string.find( err, message, 1, true ) ~= nil
+local function testQueryReturnsNoRowsWithoutTheRight()
+	return next( nw.query( 'RETURN 1 AS n' ) ) == nil
 end
 
-local function testQueryIsDeniedWithoutTheRight()
-	return isDeniedWith( 'You do not have permission to run Cypher queries.', function()
-		return nw.query( 'RETURN 1 AS n' )
-	end )
-end
-
-local function testSparqlQueryIsDeniedWithoutTheRight()
-	return isDeniedWith( 'You do not have permission to run SPARQL queries.', function()
-		return nw.sparqlQuery( 'SELECT * WHERE { ?s ?p ?o }' )
-	end )
+local function testSparqlQueryReturnsNoVariablesBindingsOrBooleanWithoutTheRight()
+	local document = nw.sparqlQuery( 'SELECT * WHERE { ?s ?p ?o }' )
+	return #document.head.vars, #document.results.bindings, document.boolean == nil
 end
 
 local tests = {
@@ -63,10 +50,10 @@ local tests = {
 	  func = testGetSchemaOnRestrictedPageIsNil, expect = { nil } },
 	{ name = 'getSchema still reads a Schema page the parsing user may read',
 	  func = testGetSchemaOnOpenPageStillReads, expect = { true } },
-	{ name = 'query is denied without the neowiki-query right',
-	  func = testQueryIsDeniedWithoutTheRight, expect = { true } },
-	{ name = 'sparqlQuery is denied without the neowiki-query right',
-	  func = testSparqlQueryIsDeniedWithoutTheRight, expect = { true } },
+	{ name = 'query returns no rows without the neowiki-query right',
+	  func = testQueryReturnsNoRowsWithoutTheRight, expect = { true } },
+	{ name = 'sparqlQuery returns no variables, bindings or boolean without the neowiki-query right',
+	  func = testSparqlQueryReturnsNoVariablesBindingsOrBooleanWithoutTheRight, expect = { 0, 0, true } },
 }
 
 return testframework.getTestProvider( tests )

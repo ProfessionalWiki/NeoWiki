@@ -59,13 +59,13 @@ Use this to add NeoWiki to a MediaWiki you already run. You provide the surround
 
 ### Requirements
 
-| Requirement               | Notes |
-|---------------------------|--|
-| MediaWiki 1.43.0 or later | |
-| PHP 8.3 with `ext-json`   | |
-| Composer                  | Installs NeoWiki's runtime dependencies. No `vendor/` is shipped. |
-| Neo4j 5.x over Bolt       | Optional. The graph backend behind Cypher queries and relation-target suggestions. |
-| Node.js 24 or later       | Needed only to build the frontend bundle in step 2. |
+| Requirement                     | Notes |
+|---------------------------------|--|
+| MediaWiki 1.43.0 or later       | |
+| PHP 8.3 with `ext-json`         | |
+| Composer                        | Installs NeoWiki's runtime dependencies. No `vendor/` is shipped. |
+| Neo4j 5.26.4 or later over Bolt | Optional. Needed for Cypher queries, relation-target suggestions, and Subject lists. |
+| Node.js 24 or later             | Needed only to build the frontend bundle in step 2. |
 
 These extensions are recommended. NeoWiki runs without them, but you lose the matching functionality:
 
@@ -123,7 +123,8 @@ wfLoadExtension( 'ParserFunctions' );
 ```
 
 Without both Neo4j URLs set, NeoWiki's structured-data features still work. You lose the Cypher query surfaces
-(`{{#cypher_raw}}`, `nw.query`, `POST /neowiki/v0/query/cypher`) and relation-target suggestions.
+(`{{#cypher_raw}}`, `nw.query`, `POST /neowiki/v0/query/cypher`), relation-target suggestions, and the Subject lists:
+Special:Subjects, the list on each Schema page, and the newest Subjects on Special:NeoWiki.
 
 ### 4. Run the updater
 
@@ -175,8 +176,54 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiEnableLua` | Registers the `mw.neowiki` Lua library with Scribunto | `true` | No |
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new `error`-severity violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
+| `$wgNeoWikiSubjectFirst` | Puts Subjects before pages: see [Choosing page-first or subject-first](#choosing-page-first-or-subject-first) | `false` | No |
+| `$wgNeoWikiSubjectPageNamespace` | Namespace a subject-first wiki creates each Subject's own page in: see [Choosing page-first or subject-first](#choosing-page-first-or-subject-first) | `7480` (`Subject`) | No |
 | `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
 | `$wgNeoWikiAutoRebuildOnMappingChange` | Rebuilds every store holding a Mapping's projection when that Mapping changes | `false` | No |
+
+## Choosing page-first or subject-first
+
+`$wgNeoWikiSubjectFirst` selects whether this wiki is
+[page-first or subject-first](../glossary.md#page-first-and-subject-first-wikis): `false`, the default, is page-first;
+`true` is subject-first. It can also be set on `MediaWiki:NeoWiki` as `subjectFirst`
+([on-wiki configuration](#on-wiki-configuration)).
+
+| Behaviour | Page-first | Subject-first |
+|---|---|---|
+| Creator: "Store the subject on" | shown; defaults to the current page; a new page needs a title | hidden; always a new page |
+| Standalone target created inside the editor | non-main Subject on the edited Subject's page | its own page |
+| Landing after save | the page | Special:Subject |
+| Links to Subjects in infoboxes and views | the page | Special:Subject |
+| Links to Subjects on the Data tab | relation values lead to the target page's Data tab with the row highlighted; the row title is not a link; "Open" leads to Special:Subject | Special:Subject |
+| Concept URI in a browser | the page | Special:Subject |
+| "Move" on the Data tab | offered | not offered |
+| Deleting a Subject that is its page's only one | the Subject goes, the page stays | the page goes with it |
+| A Subject's own page | titled by the label, else by the id; in the main namespace | titled by the id; in the `Subject` namespace |
+| A page title asked for on creation (`pageTitle`, `page=` naming a page that does not exist) | used, in the main namespace | refused |
+| Moving a page titled by the id of a Subject on it | allowed | refused |
+
+On a subject-first wiki, `$wgNeoWikiSubjectPageNamespace` names the namespace each Subject's own page is created in,
+`NS_MAIN` included. It must be a content namespace, or the pages there get no heading, infobox or Data tab.
+
+## Logging
+
+NeoWiki logs on the `NeoWiki` channel: a graph store failing on save, the pages a rebuild could not project, a store
+entry or name it will not accept, and RDF a projection had to drop. Below `warning` it also records rebuild decisions
+and denied page reads. MediaWiki routes no channel anywhere by default, so none of it reaches you until you route it:
+
+```php
+$wgDebugLogGroups['NeoWiki'] = '/var/log/mediawiki/neowiki.log';
+```
+
+Add a `level` to drop everything below it:
+
+```php
+$wgDebugLogGroups['NeoWiki'] = [ 'destination' => '/var/log/mediawiki/neowiki.log', 'level' => 'warning' ];
+```
+
+The [Docker install](#method-a-docker) routes the channel to stderr: entries logged while serving requests appear in
+`make logs`, and those logged by a maintenance command, such as `make rebuild-graph-databases`, print only in the
+terminal that ran it.
 
 ## User rights
 
@@ -195,10 +242,9 @@ A wiki whose readers do not all see the same pages needs more than these default
 
 A wiki administrator without server access can set part of NeoWiki's configuration on the `MediaWiki:NeoWiki` page.
 It holds JSON and, like other site configuration, is editable only with the `editinterface` and `editsitejson`
-rights. Two settings are exposed: `dereferenceSubjectsToHostingPage` (overriding
-`$wgNeoWikiDereferenceSubjectsToHostingPage`) and `autoRenderMainSubject` (overriding
-`$wgNeoWikiAutoRenderMainSubject`). Editing the page shows a reference table of the exposed keys and their accepted
-values, and creating it preloads a working example.
+rights. Two settings are exposed: `subjectFirst` (overriding `$wgNeoWikiSubjectFirst`) and
+`autoRenderMainSubject` (overriding `$wgNeoWikiAutoRenderMainSubject`). Editing the page shows a reference table of
+the exposed keys and their accepted values, and creating it preloads a working example.
 
 A valid value on the page takes precedence over `LocalSettings.php`, per setting. A missing page, a
 wrong-shaped value, or an unavailable database falls back to the `LocalSettings.php` value, so a
@@ -241,13 +287,13 @@ $wgNeoWikiSparqlStores = [
 ];
 ```
 
-A store entry whose `updateUrl` is missing or empty is skipped with a warning rather than failing the wiki.
-
 Each store's `name` identifies it when [rebuilding one store](maintenance.md#rebuilding-one-store), so no two entries
 may share one, and none may be `neo4j` in any casing — reserved for the bundled Neo4j backend. Since the name defaults
 to the projection, two entries holding the same projection — mirroring it to a second endpoint, say — collide until
-one of them sets an explicit `name`. An entry whose name cannot identify it is skipped with a warning, so its store
-receives no page changes.
+one of them sets an explicit `name`.
+
+An entry whose `updateUrl` is missing or empty, or whose name cannot identify it, is skipped with a warning on the
+[`NeoWiki` log channel](#logging) rather than failing the wiki, so its store receives no page changes.
 
 ### Oxigraph
 

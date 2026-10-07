@@ -20,8 +20,8 @@ class SelectProperty extends PropertyDefinition {
 		private readonly bool $multiple,
 	) {
 		parent::__construct( $core );
-		$this->assertUniqueIds( $options );
-		$this->assertUniqueLabels( $options );
+		$this->assertUniqueIds();
+		$this->assertUniqueLabels();
 	}
 
 	public function getPropertyType(): string {
@@ -33,6 +33,13 @@ class SelectProperty extends PropertyDefinition {
 	 */
 	public function getOptions(): array {
 		return $this->options;
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public function getOptionIds(): array {
+		return array_map( fn( SelectOption $o ): string => $o->getId(), $this->options );
 	}
 
 	public function allowsMultipleValues(): bool {
@@ -65,22 +72,23 @@ class SelectProperty extends PropertyDefinition {
 		];
 	}
 
-	/**
-	 * @param SelectOption[] $options
-	 */
-	private function assertUniqueIds( array $options ): void {
-		$ids = array_map( fn( SelectOption $o ): string => $o->getId(), $options );
+	public function toJsonSchema(): array {
+		$ids = $this->getOptionIds();
+
+		// Without options no value is valid, which `items: false` says and an empty enum may not.
+		return $this->listValueSchema( $ids === [] ? false : [ 'enum' => $ids ] );
+	}
+
+	private function assertUniqueIds(): void {
+		$ids = $this->getOptionIds();
 
 		if ( count( $ids ) !== count( array_unique( $ids ) ) ) {
 			throw new InvalidArgumentException( 'Select option ids must be unique' );
 		}
 	}
 
-	/**
-	 * @param SelectOption[] $options
-	 */
-	private function assertUniqueLabels( array $options ): void {
-		$labels = array_map( fn( SelectOption $o ): string => $o->normalizedLabel(), $options );
+	private function assertUniqueLabels(): void {
+		$labels = array_map( fn( SelectOption $o ): string => $o->normalizedLabel(), $this->options );
 
 		if ( count( $labels ) !== count( array_unique( $labels ) ) ) {
 			throw new InvalidArgumentException( 'Select option labels must be unique' );

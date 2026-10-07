@@ -44,8 +44,8 @@ const getSchemaMock = vi.fn();
 
 let pinia: ReturnType<typeof createPinia>;
 
-function mountComponent( schema: Schema ): VueWrapper {
-	setupMwMock( { functions: [ 'msg' ] } );
+function mountComponent( schema: Schema, subjectListAvailable = false ): VueWrapper {
+	setupMwMock( { functions: [ 'msg', 'config' ], config: { wgNeoWikiSubjectListAvailable: subjectListAvailable } } );
 
 	return mount( SchemaDisplay, {
 		props: { schema },
@@ -62,6 +62,7 @@ function mountComponent( schema: Schema ): VueWrapper {
 				SchemaDisplayHeader: true,
 				SchemaEditorDialog: true,
 				SubjectCreatorDialog: true,
+				SubjectsTable: true,
 			},
 		},
 	} );
@@ -77,6 +78,20 @@ describe( 'SchemaDisplay', () => {
 		canCreateSubjectPageRef.value = false;
 		checkCreateSubjectPagePermissionMock.mockClear();
 		getSchemaMock.mockReset();
+	} );
+
+	it( 'lists the Schema\'s Subjects below its properties', () => {
+		const wrapper = mountComponent( newSchema( { title: 'Computer' } ), true );
+
+		const table = wrapper.findComponent( { name: 'SubjectsTable' } );
+		expect( table.exists() ).toBe( true );
+		expect( table.props( 'fixedSchema' ) ).toBe( 'Computer' );
+	} );
+
+	it( 'lists no Subjects on a wiki that cannot list them', () => {
+		const wrapper = mountComponent( newSchema( { title: 'Computer' } ), false );
+
+		expect( wrapper.findComponent( { name: 'SubjectsTable' } ).exists() ).toBe( false );
 	} );
 
 	it( 'passes schema and canEditSchema to header component', () => {

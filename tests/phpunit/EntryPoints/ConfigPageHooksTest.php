@@ -74,15 +74,15 @@ class ConfigPageHooksTest extends MediaWikiIntegrationTestCase {
 	public function testValidConfigIsAccepted(): void {
 		$this->assertSame(
 			'',
-			$this->editFilterError( $this->configTitle(), '{ "dereferenceSubjectsToHostingPage": true }' )
+			$this->editFilterError( $this->configTitle(), '{ "subjectFirst": true }' )
 		);
 	}
 
-	public function testWrongTypeForDereferenceIsRejectedWithItsMessage(): void {
-		$error = $this->editFilterError( $this->configTitle(), '{ "dereferenceSubjectsToHostingPage": "sidebar" }' );
+	public function testWrongTypeForSubjectFirstIsRejectedWithItsMessage(): void {
+		$error = $this->editFilterError( $this->configTitle(), '{ "subjectFirst": "sidebar" }' );
 
 		$this->assertNotSame( '', $error );
-		$this->assertStringContainsString( 'dereferenceSubjectsToHostingPage', $error );
+		$this->assertStringContainsString( 'subjectFirst', $error );
 	}
 
 	public function testUnknownKeyIsRejectedWithItsMessage(): void {
@@ -109,7 +109,7 @@ class ConfigPageHooksTest extends MediaWikiIntegrationTestCase {
 
 		$this->assertSame(
 			'',
-			$this->editFilterError( $this->configTitle(), '{ "dereferenceSubjectsToHostingPage": "sidebar" }' )
+			$this->editFilterError( $this->configTitle(), '{ "subjectFirst": "sidebar" }' )
 		);
 	}
 

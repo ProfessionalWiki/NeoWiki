@@ -31,10 +31,13 @@ export class RelationType extends BasePropertyType<RelationProperty, RelationVal
 		return new RelationValue( relations );
 	}
 
+	// The relation type is the edge label of the native projections, which the wiki requires and the
+	// editor does not show. A Schema loaded from the wiki always carries a non-empty one, so the
+	// property name only stands in where there is none: for a property just switched to this type.
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): RelationProperty {
 		return {
 			...base,
-			relation: json.relation,
+			relation: json.relation || base.name.toString(),
 			targetSchema: json.targetSchema,
 			multiple: json.multiple ?? false,
 		} as RelationProperty;

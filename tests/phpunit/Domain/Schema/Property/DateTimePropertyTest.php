@@ -8,20 +8,24 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\JsonSchemaAssertions;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty
  */
 class DateTimePropertyTest extends TestCase {
 
+	use JsonSchemaAssertions;
+
 	public function testPropertyTypeIsDateTime(): void {
-		$property = $this->buildProperty();
+		$property = TestProperty::buildDateTime();
 
 		$this->assertSame( 'dateTime', $property->getPropertyType() );
 	}
 
 	public function testMinimumAndMaximumAreNullByDefault(): void {
-		$property = $this->buildProperty();
+		$property = TestProperty::buildDateTime();
 
 		$this->assertNull( $property->getMinimum() );
 		$this->assertFalse( $property->hasMinimum() );
@@ -193,12 +197,66 @@ class DateTimePropertyTest extends TestCase {
 		$this->assertNull( $result );
 	}
 
-	private function buildProperty(): DateTimeProperty {
-		return new DateTimeProperty(
-			core: new PropertyCore( description: '', required: false, default: null ),
-			minimum: null,
-			maximum: null,
+	public function testValueIsOneFormattedString(): void {
+		$this->assertSame(
+			[
+				'type' => 'array',
+				'items' => [
+					'type' => 'string',
+					'format' => 'date-time',
+					'pattern' => DateTimeProperty::ISO_DATE_TIME_PATTERN,
+				],
+				'maxItems' => 1,
+			],
+			TestProperty::buildDateTime()->toJsonSchema()
 		);
+	}
+
+	public function testBoundsAreNotExpressed(): void {
+		$value = TestProperty::buildDateTime(
+			minimum: '2020-01-01T00:00:00Z',
+			maximum: '2030-12-31T23:59:59Z'
+		)->toJsonSchema();
+
+		$this->assertArrayNotHasKey( 'minimum', $value, 'Standard JSON Schema cannot order dates.' );
+		$this->assertArrayNotHasKey( 'maximum', $value, 'Standard JSON Schema cannot order dates.' );
+		$this->assertArrayNotHasKey( 'minimum', $value['items'] );
+		$this->assertArrayNotHasKey( 'maximum', $value['items'] );
+	}
+
+	/**
+	 * @dataProvider dateTimePatternProvider
+	 */
+	public function testPatternAloneJudgesADateTime( string $value, bool $valid ): void {
+		$this->assertSame( $valid, $this->jsonSchemaAccepts( $this->itemSchemaWithoutFormat(), $value ) );
+	}
+
+	public static function dateTimePatternProvider(): iterable {
+		yield 'an ISO dateTime' => [ '2025-06-15T14:30:00Z', true ];
+		yield 'an offset instead of Z' => [ '2025-06-15T14:30:00+02:00', true ];
+		yield 'fractional seconds' => [ '2025-06-15T14:30:00.123456789Z', true ];
+		yield 'ten fractional digits' => [ '2025-06-15T14:30:00.1234567890Z', false ];
+		yield 'no timezone' => [ '2025-06-15T14:30:00', false ];
+		yield 'an impossible hour' => [ '2025-06-15T25:00:00Z', false ];
+		yield 'hour twenty-four' => [ '2025-06-15T24:00:00Z', false ];
+		yield 'minute sixty' => [ '2025-06-15T14:60:00Z', false ];
+		// ISO 8601 has a leap second; the wiki's own regex does not.
+		yield 'second sixty' => [ '2025-06-15T14:30:60Z', false ];
+		yield 'an offset hour of twenty-four' => [ '2025-06-15T14:30:00+24:00', false ];
+		yield 'only a date' => [ '2025-06-15', false ];
+	}
+
+	/**
+	 * The dialect leaves `format` an annotation, so `pattern` is all a validator that does not
+	 * assert formats has to go on.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function itemSchemaWithoutFormat(): array {
+		$items = TestProperty::buildDateTime()->toJsonSchema()['items'];
+		unset( $items['format'] );
+
+		return $items;
 	}
 
 }

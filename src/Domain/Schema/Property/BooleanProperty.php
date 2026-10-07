@@ -31,4 +31,8 @@ class BooleanProperty extends PropertyDefinition {
 		return [];
 	}
 
+	public function toJsonSchema(): array {
+		return [ 'type' => 'boolean' ];
+	}
+
 }

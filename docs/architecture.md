@@ -7,6 +7,8 @@ order: 3
 NeoWiki is a MediaWiki extension. It adds structured data to ordinary wiki pages, keeps that data on the page it
 describes, and projects it into graph stores so it can be queried.
 
+![A page's Subjects projected into Neo4j and a SPARQL store, the native projection in both, an EDM projection defined by a Mapping page, and Cypher and SPARQL queries from parser functions, Lua and the REST API](architecture.svg)
+
 ## Data lives on the page
 
 A page's structured data sits in a dedicated content slot on the page itself, stored as JSON and versioned with the
@@ -77,3 +79,6 @@ Every architectural decision on record, in the order it was made.
 * [ADR 30: Frontend Stores Are Registries, Not Caches](adr/030-frontend-store-registry-semantics.md)
 * [ADR 31: Optional Subject Labels](adr/031-optional-subject-labels.md)
 * [ADR 32: Subject-to-Page Index](adr/032-subject-page-index.md)
+* [ADR 33: Page-first and Subject-first Wikis](adr/033-page-first-and-subject-first-wikis.md)
+* [ADR 34: Monolingual Text Value Type](adr/034-monolingual-text-value-type.md)
+* [ADR 35: Dependent Subjects](adr/035-dependent-subjects.md)

@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectPageApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndex;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -112,10 +113,124 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'Delft', $this->bodyOf( $response )['pageTitle'] );
 	}
 
+	public function testTitlesThePageByTheSubjectIdOnASubjectFirstWikiWhateverTheLabel(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+
+		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam' ] ) );
+
+		$this->assertSame( $this->subjectNamespaceTitleOf( $body['subjectId'] ), $body['pageTitle'] );
+		$this->assertSame( $body['subjectId'], $this->mainSubjectIdOf( $body['pageTitle'] ) );
+		$this->assertFalse( Title::newFromText( 'Amsterdam' )->exists() );
+	}
+
+	public function testAnswersTheSubjectNamespaceAsThePagesNamespaceOnASubjectFirstWiki(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+
+		$body = $this->bodyOf( $this->create( [] ) );
+
+		$this->assertSame( NeoWikiExtension::NS_SUBJECT, $body['subject']['pageNamespaceId'] );
+	}
+
+	public function testNamesAnUnlabelledSubjectAfterItsSchemaOnASubjectFirstWiki(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+
+		$body = $this->bodyOf( $this->create( [] ) );
+
+		$this->assertSame( self::SCHEMA, $body['subject']['displayName'] );
+		$this->assertTrue( $body['subject']['displayNameIsGenerated'] );
+	}
+
+	public function testCreatesThePageInTheMainNamespaceOnASubjectFirstWikiThatChoseIt(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$this->overrideConfigValue( 'NeoWikiSubjectPageNamespace', NS_MAIN );
+
+		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam' ] ) );
+
+		$this->assertSame( $this->titleOfSubjectId( $body['subjectId'] ), $body['pageTitle'] );
+		$this->assertSame( NS_MAIN, $body['subject']['pageNamespaceId'] );
+	}
+
+	public function testAnswersBadRequestForAPageTitleOnASubjectFirstWiki(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+
+		$response = $this->create( [ 'label' => 'Amsterdam', 'pageTitle' => 'Delft' ] );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertStringContainsString( 'pageTitle', $this->bodyOf( $response )['message'] );
+		$this->assertFalse( Title::newFromText( 'Delft' )->exists() );
+	}
+
+	public function testTakesAnEmptyPageTitleOnASubjectFirstWikiAsNoneAsked(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+
+		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam', 'pageTitle' => ' ' ] ) );
+
+		$this->assertSame( $this->subjectNamespaceTitleOf( $body['subjectId'] ), $body['pageTitle'] );
+	}
+
 	public function testStoresTheLabelThatTitledThePage(): void {
 		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam' ] ) );
 
 		$this->assertSame( 'Amsterdam', $this->storedLabelOf( $body['subjectId'] ) );
+	}
+
+	/**
+	 * Several spellings name one Schema page, and what gets written down is the name that Schema has.
+	 */
+	public function testStoresTheSchemaUnderTheNameOfTheSchemaItNames(): void {
+		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam', 'schema' => 'employee' ] ) );
+
+		$this->assertSame(
+			self::SCHEMA,
+			$this->storedSchemaJsonOf( 'Amsterdam', $body['subjectId'] )
+		);
+	}
+
+	/**
+	 * No page title can hold a "#", so a name carrying one names the page before it, and the Subject
+	 * instantiates the Schema the request resolved against rather than a Schema nothing else names.
+	 */
+	public function testStoresTheSchemaAFragmentPointsInto(): void {
+		$response = $this->create( [ 'label' => 'Amsterdam', 'schema' => self::SCHEMA . '#Details' ] );
+		$body = $this->bodyOf( $response );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertSame( [], $body['violations'] );
+		$this->assertSame( self::SCHEMA, $this->storedSchemaJsonOf( 'Amsterdam', $body['subjectId'] ) );
+	}
+
+	/**
+	 * A prefix naming another namespace stays in the name, so the lookup never leaves the Schema
+	 * namespace: a page of that title elsewhere is not read as a Schema but reported missing.
+	 */
+	public function testANameNamingAnotherNamespacesPageResolvesToNoSchema(): void {
+		$this->editPage( Title::newFromText( 'Category:Probe' ), 'A category, not a Schema' );
+
+		$response = $this->create( [ 'label' => 'Amsterdam', 'schema' => 'Category:Probe', 'statements' => [] ] );
+		$body = $this->bodyOf( $response );
+
+		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertSame( 'schema-not-found', $body['violations'][0]['code'] );
+	}
+
+	/**
+	 * The slot as written, rather than a Subject read back through the repository: reading normalizes
+	 * too, so a Subject fetched that way would look right even if nothing normalized on write.
+	 *
+	 * @return string|array<string, string>|null
+	 */
+	private function storedSchemaJsonOf( string $pageName, string $subjectId ): string|array|null {
+		$revision = $this->getServiceContainer()->getRevisionStore()->getRevisionByTitle(
+			Title::newFromText( $pageName )
+		);
+		$this->assertNotNull( $revision );
+
+		$content = $revision->getContent( MediaWikiSubjectRepository::SLOT_NAME );
+		$this->assertInstanceOf( SubjectContent::class, $content );
+
+		$slot = json_decode( $content->getText(), true );
+
+		return $slot['subjects'][$subjectId]['schema'] ?? null;
 	}
 
 	public function testWritesThePageAndItsSubjectInOneRevision(): void {
@@ -318,6 +433,58 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ 'bunny' ], $this->storedStatementValueOf( $body['subjectId'], 'animal' ) );
 	}
 
+	public function testCreatesTheSubjectUnderTheIdSupplied(): void {
+		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam', 'id' => 'sPreMintedAAAA1' ] ) );
+
+		$this->assertSame( 'sPreMintedAAAA1', $body['subjectId'] );
+		$this->assertSame( 'sPreMintedAAAA1', $this->mainSubjectIdOf( 'Amsterdam' ) );
+	}
+
+	public function testAnswersBadRequestForAMalformedSuppliedId(): void {
+		$response = $this->create( [ 'label' => 'Amsterdam', 'id' => 'not-a-subject-id' ] );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertFalse( Title::newFromText( 'Amsterdam' )->exists() );
+	}
+
+	public function testAnswersBadRequestForASuppliedIdFromAnotherSource(): void {
+		$response = $this->create( [ 'label' => 'Amsterdam', 'id' => 'otherwiki:sPreMintedAAAA2' ] );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertFalse( Title::newFromText( 'Amsterdam' )->exists() );
+	}
+
+	/**
+	 * Only a caller that minted the id up front can meet this, and it means their create already
+	 * landed, so the conflict names the Subject rather than the title it would have taken.
+	 */
+	public function testAnswersConflictForASuppliedIdAlreadyInUse(): void {
+		$this->createPageWithSubjects(
+			'CreateSubjectPageApiTest_Taken',
+			TestSubject::build( id: 'sPreMintedAAAA3' )
+		);
+
+		$response = $this->create( [ 'label' => 'Amsterdam', 'id' => 'sPreMintedAAAA3' ] );
+
+		$this->assertSame( 409, $response->getStatusCode() );
+		$this->assertSame( 'Subject already exists', $this->bodyOf( $response )['message'] );
+		$this->assertFalse( Title::newFromText( 'Amsterdam' )->exists() );
+	}
+
+	/**
+	 * A retry of a create that landed meets both conflicts: its Subject holds the id, and the page
+	 * it made holds the title. The id is the answer that lets the caller carry on, so it comes
+	 * first; the title conflict would send them looking for a page they made themselves.
+	 */
+	public function testAnswersTheIdConflictRatherThanTheTitleOneWhenBothStand(): void {
+		$this->createPageWithSubjects( 'Amsterdam', TestSubject::build( id: 'sPreMintedAAAA4' ) );
+
+		$response = $this->create( [ 'label' => 'Amsterdam', 'id' => 'sPreMintedAAAA4' ] );
+
+		$this->assertSame( 409, $response->getStatusCode() );
+		$this->assertSame( 'Subject already exists', $this->bodyOf( $response )['message'] );
+	}
+
 	public function testAnswersTheSchemaTheSubjectInstantiates(): void {
 		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam' ] ) );
 
@@ -383,6 +550,10 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 	 */
 	private function titleOfSubjectId( string $subjectId ): string {
 		return Title::newFromText( $subjectId )->getPrefixedText();
+	}
+
+	private function subjectNamespaceTitleOf( string $subjectId ): string {
+		return Title::makeTitleSafe( NeoWikiExtension::NS_SUBJECT, $subjectId )->getPrefixedText();
 	}
 
 	private function mainSubjectIdOf( string $pageName ): ?string {

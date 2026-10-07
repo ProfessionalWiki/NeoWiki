@@ -8,7 +8,6 @@ use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\WikitextContent;
 use MediaWiki\Extension\Scribunto\ScribuntoContent;
 use MediaWiki\Parser\ParserOptions;
-use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
@@ -34,6 +33,7 @@ class ParserAuthorityTest extends NeoWikiIntegrationTestCase {
 
 	use ParseTimePermissionFixtures;
 
+	private const string PARSED_PAGE = 'ParserAuthorityTestPage';
 	private const string SUBJECT_PAGE = 'ParserAuthorityTestSubjectPage';
 	private const string VALUE_FUNCTION = '{{#neowiki_value: Motto | page=' . self::SUBJECT_PAGE . ' }}';
 
@@ -50,18 +50,6 @@ class ParserAuthorityTest extends NeoWikiIntegrationTestCase {
 
 	private function sysopOptions(): ParserOptions {
 		return ParserOptions::newFromUser( $this->getTestSysop()->getUser() );
-	}
-
-	private function parse(
-		string $wikitext,
-		ParserOptions $parserOptions,
-		string $pageName = 'ParserAuthorityTestPage'
-	): ParserOutput {
-		return $this->getServiceContainer()->getParserFactory()->create()->parse(
-			$wikitext,
-			Title::newFromText( $pageName ),
-			$parserOptions
-		);
 	}
 
 	/**
@@ -93,7 +81,7 @@ class ParserAuthorityTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testReadingASubjectPutsTheAccessClassInThePagesCacheKey(): void {
-		$output = $this->parse( self::VALUE_FUNCTION, ParserOptions::newFromAnon() );
+		$output = $this->parserOutputOn( self::PARSED_PAGE, self::VALUE_FUNCTION, ParserOptions::newFromAnon() );
 
 		$this->assertContains( ParserAuthority::ACCESS_CLASS_OPTION, $output->getUsedOptions() );
 	}
@@ -102,7 +90,7 @@ class ParserAuthorityTest extends NeoWikiIntegrationTestCase {
 	 * The argument-less view reads its own page's Main Subject at parse time, and still only emits a marker.
 	 */
 	public function testRenderingAViewDoesNotFragmentTheCache(): void {
-		$output = $this->parse( '{{#view}}', ParserOptions::newFromAnon(), self::SUBJECT_PAGE );
+		$output = $this->parserOutputOn( self::SUBJECT_PAGE, '{{#view}}', ParserOptions::newFromAnon() );
 
 		$this->assertNotContains( ParserAuthority::ACCESS_CLASS_OPTION, $output->getUsedOptions() );
 	}
@@ -110,7 +98,7 @@ class ParserAuthorityTest extends NeoWikiIntegrationTestCase {
 	public function testRunningACypherQueryPutsTheAccessClassInThePagesCacheKey(): void {
 		$this->grantTheQueryRightToSysopsOnly();
 
-		$output = $this->parse( '{{#cypher_raw: RETURN 1 AS n }}', ParserOptions::newFromAnon() );
+		$output = $this->parserOutputOn( self::PARSED_PAGE, '{{#cypher_raw: RETURN 1 AS n }}', ParserOptions::newFromAnon() );
 
 		$this->assertContains( ParserAuthority::ACCESS_CLASS_OPTION, $output->getUsedOptions() );
 	}
@@ -119,7 +107,7 @@ class ParserAuthorityTest extends NeoWikiIntegrationTestCase {
 		$this->configureAnUnreachableSparqlStore();
 		$this->grantTheQueryRightToSysopsOnly();
 
-		$output = $this->parse( '{{#sparql_raw: SELECT * WHERE { ?s ?p ?o } }}', ParserOptions::newFromAnon() );
+		$output = $this->parserOutputOn( self::PARSED_PAGE, '{{#sparql_raw: SELECT * WHERE { ?s ?p ?o } }}', ParserOptions::newFromAnon() );
 
 		$this->assertContains( ParserAuthority::ACCESS_CLASS_OPTION, $output->getUsedOptions() );
 	}
@@ -136,7 +124,8 @@ class ParserAuthorityTest extends NeoWikiIntegrationTestCase {
 			)
 		);
 
-		$output = $this->parse(
+		$output = $this->parserOutputOn(
+			self::PARSED_PAGE,
 			'{{#invoke:ParserAuthorityTest|motto|' . self::SUBJECT_PAGE . '}}',
 			ParserOptions::newFromAnon()
 		);

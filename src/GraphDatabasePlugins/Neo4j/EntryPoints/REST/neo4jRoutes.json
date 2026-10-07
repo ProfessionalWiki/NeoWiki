@@ -5,5 +5,12 @@
 			"POST"
 		],
 		"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCypherQueryApi"
+	},
+	{
+		"path": "/neowiki/v0/subjects",
+		"method": [
+			"GET"
+		],
+		"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectSummariesApi"
 	}
 ]

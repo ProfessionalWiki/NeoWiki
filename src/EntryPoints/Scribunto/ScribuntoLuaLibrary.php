@@ -8,7 +8,6 @@ use Exception;
 use InvalidArgumentException;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
-use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\EntryPoints\ParserAuthority;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryException;
@@ -29,7 +28,7 @@ class ScribuntoLuaLibrary extends LibraryBase {
 	private function getSubjectDataLookup(): SubjectDataLookup {
 		if ( $this->subjectDataLookup === null ) {
 			$this->subjectDataLookup = new SubjectDataLookup(
-				NeoWikiExtension::getInstance()->newSubjectResolver( $this->getParserAuthority() ),
+				NeoWikiExtension::getInstance()->newSubjectResolver( $this->getParser() ),
 			);
 		}
 
@@ -49,15 +48,6 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		}
 
 		return $this->cypherQueryRunner;
-	}
-
-	/**
-	 * Every read this library performs runs against the user the page is parsed for
-	 * ({@see ParserAuthority}), so a module cannot read more than the reader may, and the parse
-	 * is keyed by that user's access class in the parser cache.
-	 */
-	private function getParserAuthority(): Authority {
-		return ParserAuthority::of( $this->getParser() );
 	}
 
 	private function getSparqlQueryRunner(): SparqlQueryRunner {
@@ -188,15 +178,12 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		$extension = NeoWikiExtension::getInstance();
 
 		try {
-			$reference = SchemaReference::fromJson(
-				$schemaReference,
-				$extension->getSubjectIdParser()->getLocalSourceKey()
-			);
+			$reference = $extension->getSchemaReferenceParser()->fromJson( $schemaReference );
 		} catch ( InvalidArgumentException ) {
 			return [ null ];
 		}
 
-		$schema = $extension->getSchemaResolverFor( $this->getParserAuthority() )->getSchema( $reference );
+		$schema = $extension->getSchemaResolverFor( ParserAuthority::of( $this->getParser() ) )->getSchema( $reference );
 
 		if ( $schema === null ) {
 			return [ null ];

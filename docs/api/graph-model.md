@@ -19,6 +19,8 @@ Two node types and two relationship categories:
 (:Subject)-[:RelationType {id, ...}]->(:Subject)
 ```
 
+![A Page node with HasSubject edges to a Museum Subject and an Attendance Subject, typed Relation edges from Attendance to Museum and from Museum to a City Subject and to a stub node, and Statement values as node properties](graph-model.svg)
+
 ## Page Nodes
 
 Every page is projected as a `:Page` node when it is saved and by
@@ -83,6 +85,7 @@ The PropertyType determines the value's Neo4j type:
 | `boolean` | boolean |
 | `date` | list of dates |
 | `dateTime` | list of datetimes |
+| `monolingualText` | list of `text@language` strings (`['Zinema@eu']`); split on the last `@` |
 | `relation` | stored as a [relationship](#typed-relations), not a node property |
 
 A Property Name that collides with a fixed property (`id`, `name`, `wiki_id`) does not override it: the fixed value
@@ -129,9 +132,9 @@ A page can have at most one Main Subject and any number of other Subjects
 
 ### Typed Relations
 
-Subject-to-Subject relationships represent Relations. The relationship type in Neo4j is the Relation Type defined in
-the Property Definition (e.g. `Has author`, `Has product`). Names that are not valid Cypher identifiers are
-backtick-escaped.
+Subject-to-Subject relationships represent Relations. The relationship type in Neo4j is the Relation Type defined in the
+Property Definition (e.g. `Has author`, `Has product`). A type that is not a valid Cypher identifier must be
+backtick-escaped when read (`` -[:`Has author`]-> ``).
 
 | Property | Neo4j Type | Description |
 |----------|------------|-------------|

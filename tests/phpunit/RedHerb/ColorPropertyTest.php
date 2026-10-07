@@ -6,13 +6,18 @@ namespace ProfessionalWiki\NeoWiki\Tests\RedHerb;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
+use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\Tests\JsonSchemaAssertions;
 use ProfessionalWiki\RedHerb\ColorProperty;
 use ProfessionalWiki\RedHerb\ColorType;
 
 /**
  * @covers \ProfessionalWiki\RedHerb\ColorProperty
+ * @covers \ProfessionalWiki\RedHerb\ColorType
  */
 class ColorPropertyTest extends TestCase {
+
+	use JsonSchemaAssertions;
 
 	public function testPropertyTypeIsColor(): void {
 		$property = $this->buildProperty();
@@ -134,10 +139,54 @@ class ColorPropertyTest extends TestCase {
 		yield 'not a string' => [ 42 ];
 	}
 
-	private function buildProperty(): ColorProperty {
+	public function testValuePartsAreHexColors(): void {
+		$this->assertSame(
+			[
+				'type' => 'array',
+				'items' => [ 'type' => 'string', 'pattern' => '^#[0-9a-fA-F]{6}$' ],
+				'maxItems' => 1,
+			],
+			$this->buildProperty()->toJsonSchema()
+		);
+	}
+
+	public function testAllowedColorsBecomeAnEnum(): void {
+		$value = $this->buildProperty( [ '#aabbcc', '#ddeeff' ] )->toJsonSchema();
+
+		$this->assertSame( [ '#aabbcc', '#ddeeff' ], $value['items']['enum'] );
+	}
+
+	/**
+	 * @dataProvider colorProvider
+	 */
+	public function testAColorIsJudgedAsValidateJudgesIt( string $color, bool $valid ): void {
+		$definition = $this->buildProperty( [ '#aabbcc' ] );
+
+		$this->assertSame(
+			$valid,
+			$this->jsonSchemaAccepts( $definition->toJsonSchema(), [ $color ] ),
+			'the JSON Schema'
+		);
+		$this->assertSame(
+			$valid,
+			( new ColorType() )->validate( new StringValue( $color ), $definition ) === [],
+			'validate()'
+		);
+	}
+
+	public static function colorProvider(): iterable {
+		yield 'an allowed color' => [ '#aabbcc', true ];
+		yield 'a color outside the allow list' => [ '#112233', false ];
+		yield 'not a color at all' => [ 'red', false ];
+	}
+
+	/**
+	 * @param list<string> $allowedColors
+	 */
+	private function buildProperty( array $allowedColors = [] ): ColorProperty {
 		return new ColorProperty(
 			core: new PropertyCore( description: '', required: false, default: null ),
-			allowedColors: [],
+			allowedColors: $allowedColors,
 		);
 	}
 

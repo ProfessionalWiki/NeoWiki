@@ -56,6 +56,7 @@ The first value of the property, type-converted for Lua:
 | `number` | number |
 | `boolean` | boolean |
 | `relation` | string (the target Subject's display name, or its Subject ID when the target cannot be looked up) |
+| `monolingualText` | string (the text, without its language) |
 
 Returns `nil` when the Subject does not exist or its page is not readable (see
 [Permissions](#permissions)), has no value for the property, or the value is empty.
@@ -186,8 +187,9 @@ is available only when a Neo4j graph backend is configured; on a wiki without on
 #### Returns
 
 A 1-indexed Lua table of rows. Each row is a string-keyed table where the keys are the Cypher
-`RETURN` aliases. An empty result is returned as `{}`, so it is safe to iterate with `ipairs`
-without a `nil` check.
+`RETURN` aliases. A query with no rows returns `{}`, and so does any query run without the `neowiki-query` right
+(see [Permissions](#permissions)), even one that always returns a row, such as a count. Iterating with `ipairs` needs
+no `nil` check; reading `rows[1]` does.
 
 Scalar values come back as strings, numbers, booleans, or `nil`. Nested Cypher lists become
 1-indexed tables; Cypher maps become string-keyed tables. Graph types convert as follows:
@@ -205,9 +207,8 @@ Scalar values come back as strings, numbers, booleans, or `nil`. Nested Cypher l
 
 #### Errors
 
-Always throws on failure; wrap in `pcall` if you need graceful degradation.
+With the `neowiki-query` right, always throws on failure; wrap in `pcall` if you need graceful degradation.
 
-- A missing `neowiki-query` right (see [Permissions](#permissions)).
 - Empty or whitespace-only `cypher`.
 - Write or non-read-only queries.
 - Cypher syntax errors, missing parameters, or database errors.
@@ -252,13 +253,14 @@ without one, `mw.neowiki.sparqlQuery` is nil.
 The W3C [`application/sparql-results+json`](https://www.w3.org/TR/sparql11-results-json/) document as a
 Lua table, preserving its standard structure: `head.vars` and `results.bindings` for a `SELECT`, or
 `boolean` for an `ASK`. Every JSON array (`head.vars`, `results.bindings`) is a 1-indexed Lua sequence;
-each binding is a string-keyed table of RDF terms (`{ type, value, datatype?, ['xml:lang']? }`).
+each binding is a string-keyed table of RDF terms (`{ type, value, datatype?, ['xml:lang']? }`). Without the
+`neowiki-query` right (see [Permissions](#permissions)), every query returns empty `head.vars` and `results.bindings`
+and no `boolean`.
 
 #### Errors
 
-Always throws on failure; wrap in `pcall` if you need graceful degradation.
+With the `neowiki-query` right, always throws on failure; wrap in `pcall` if you need graceful degradation.
 
-- A missing `neowiki-query` right (see [Permissions](#permissions)).
 - Empty or whitespace-only `sparql`.
 - A query the store rejects (e.g. a SPARQL syntax error), or the store being unavailable.
 
@@ -311,7 +313,7 @@ those are set. Beyond that core, the fields depend on `type`:
 
 | Property type | Always present | Present only when set |
 |---------------|----------------|------------------------|
-| `text` | `multiple`, `uniqueItems` | `minLength`, `maxLength` |
+| `text`, `monolingualText` | `multiple`, `uniqueItems` | `minLength`, `maxLength` |
 | `url` | `multiple`, `uniqueItems` | — |
 | `number` | — | `precision`, `minimum`, `maximum` |
 | `date`, `dateTime` | — | `minimum`, `maximum` |
@@ -385,6 +387,13 @@ structure:
         ['Status']       = { propertyType = 'select',   values = { [1] = 'Active' } },
         ['Websites']     = { propertyType = 'url',      values = { [1] = 'https://acme.com', [2] = 'https://acme.org' } },
         ['Active']       = { propertyType = 'boolean',  values = { [1] = true } },
+        ['Motto']        = {
+            propertyType = 'monolingualText',
+            values = {
+                [1] = { text = 'Onwards', language = 'en' },
+                [2] = { text = 'Vorwärts', language = 'de' },
+            },
+        },
         ['Products']     = {
             propertyType = 'relation',
             values = {
@@ -415,6 +424,7 @@ Notes:
   original type until they are re-saved.
 - A relation's `label` is the target's display name, and falls back to the target Subject ID when
   the target cannot be looked up at all (e.g. a broken reference).
+- Monolingual text keeps its languages here; `nw.getValue` and `nw.getAll` give the text alone.
 - Per-relation `properties` (qualifiers) are not currently exposed via Lua. Use the REST API if
   you need them.
 
@@ -423,7 +433,7 @@ Notes:
 The [parser function rules](parser-functions.md#permissions) apply: every function reads as the user
 the page is parsed for. In Lua, Subjects and Schemas that user cannot read come back as `nil` or an
 empty table, a relation to such a Subject shows the Subject ID as its label, and `nw.query` and
-`nw.sparqlQuery` throw without the `neowiki-query` right.
+`nw.sparqlQuery` return no results without the `neowiki-query` right.
 
 ## Performance
 

@@ -14,7 +14,7 @@ class ConfigExample {
 
 	public const string JSON = <<<'JSON'
 		{
-			"dereferenceSubjectsToHostingPage": false,
+			"subjectFirst": false,
 			"autoRenderMainSubject": true
 		}
 		JSON;

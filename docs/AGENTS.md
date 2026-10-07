@@ -21,7 +21,7 @@ Every page sits in one genre. Write to that genre's reader and register.
 | `authoring/` | Wiki authors and modellers looking up exact behavior | Contracts, signatures, examples; no narration |
 | `operations/` | Sysadmins keeping an instance healthy | Tasks and remedies; system model only where needed to act |
 | `extending/` | Extension developers, whose interface is our internal identifiers | Point at working RedHerb code over prose |
-| `adr/` | Maintainers recording a decision | A dated record: context, decision, consequences; not retro-edited apart from status links |
+| `adr/` | Maintainers recording a decision | A dated record: context, decision, consequences. A Draft is edited in place and carries no revision history or amendment sections; an accepted ADR changes only through a later ADR that names what it replaces, plus a status link back. A Related entry names the ADR it links: `ADR 28: Relations Model` |
 | `planning/` | Collaborators exploring an open question | A work-in-progress register, marked as such; not published to the site |
 
 ## Where a new page goes

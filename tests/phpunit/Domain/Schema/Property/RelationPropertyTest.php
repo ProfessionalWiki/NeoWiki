@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Relation\RelationType
@@ -163,6 +164,27 @@ JSON
 	"targetSchema": ""
 }
 JSON
+		);
+	}
+
+	public function testValueIsAnArrayOfTargetedRelations(): void {
+		$this->assertSame(
+			[
+				'type' => 'array',
+				'items' => [
+					'type' => 'object',
+					'required' => [ 'target' ],
+					'properties' => [
+						'id' => [ 'type' => 'string' ],
+						'target' => [ 'type' => 'string' ],
+						'properties' => [
+							'type' => 'object',
+							'additionalProperties' => [ 'type' => [ 'string', 'number', 'boolean', 'null' ] ],
+						],
+					],
+				],
+			],
+			TestProperty::buildRelation( multiple: true )->toJsonSchema()
 		);
 	}
 

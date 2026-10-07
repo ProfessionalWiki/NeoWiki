@@ -8,6 +8,7 @@
 			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog cdx-dialog--dividers"
 			:class="{ 'ext-neowiki-subject-editor-dialog--wide': showsNavigator }"
 			:title="dialogTitle"
+			:subtitle="headerSubjectId"
 			:use-close-button="true"
 			@update:open="onDialogUpdateOpen"
 		>
@@ -130,7 +131,7 @@ import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
 import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
-import type { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
+import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { SubjectCreationKey } from '@/components/common/SubjectCreation.ts';
@@ -148,6 +149,7 @@ import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
+import { isSubjectFirst } from '@/wikiMode.ts';
 import { reachableTargetIds, writeOrder } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 import type { HeldSubject } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 
@@ -258,13 +260,15 @@ const panes = computed( (): EditPane[] => [
 	...extraPanes.value
 ] );
 
+const activePane = computed( (): EditPane | undefined =>
+	panes.value.find( ( pane ) => pane.id === activePaneId.value ) );
+
 // Subjects this session invented, as the panes editing them currently hold them, so a draft renamed
 // in its pane is renamed everywhere that names it. Read from the draft panes alone: going through
 // editedSubjects would make every rename and relation pick anywhere in the dialog rebuild the menu
 // of every relation field.
-// The root is left out although it may be new: the ids of the other two creation routes are
-// minted by the server, so a relation pointing at the root here could name an id it never gets.
-// Pointing back at the root waits on those routes taking a pre-minted id (#1449).
+// The root is left out although it may be new: whether a Subject created alongside it may point
+// back at it is open (#1449).
 const draftSubjects = computed( (): Subject[] => panes.value
 	.filter( ( pane ) => pane.isNew && pane.id !== rootPaneId.value )
 	.map( ( pane ) => {
@@ -350,12 +354,22 @@ const dialogTitle = computed( (): string => mw.msg(
 	props.rootIsNew === true ? 'neowiki-subject-creator-title' : 'neowiki-subject-editor-title'
 ) );
 
+const headerSubjectId = computed( (): string | undefined => {
+	if ( props.rootIsNew === true ) {
+		return undefined;
+	}
+
+	const pane = activePane.value;
+
+	return pane === undefined || pane.isNew ? undefined : pane.subject.getId().text;
+} );
+
 const saveButtonLabel = computed( (): string => mw.msg(
 	props.rootIsNew === true ? 'neowiki-subject-creator-save' : 'neowiki-subject-editor-save'
 ) );
 
 // One copy per mounted pane. A pane's own copy is refreshed on relation changes alone, so
-// the live label is laid over it here and the navigator names a Subject the way its form does.
+// the live label is laid over it here and the navigator follows a rename as it is typed.
 const editedSubjects = computed( (): Map<string, Subject> => {
 	const subjects = new Map<string, Subject>();
 
@@ -376,6 +390,10 @@ function withLiveLabel( instance: SubjectEditPaneExposes ): Subject {
 	const label = enteredSubjectLabel( instance.label );
 	return edited.getLabel() === label ? edited : edited.withLabel( label );
 }
+
+// The root Subject's label as its form holds it, for a host that follows the name being given.
+const rootLabel = computed( (): string | null =>
+	( editedSubjects.value.get( rootPaneId.value ) as Subject ).getLabel() );
 
 // The Subjects the navigator lists, in the order their panes were opened.
 const openSubjects = computed( (): Subject[] => panes.value.map(
@@ -447,9 +465,7 @@ async function openRelationTarget( targetId: SubjectId ): Promise<void> {
 // pages, so the dialog's own page would be the wrong answer as soon as the user has drilled in.
 // The root stands in for a pane whose Subject arrived without page context.
 function creationPage(): PageIdentifiers | null {
-	const activePane = panes.value.find( ( pane ) => pane.id === activePaneId.value );
-
-	for ( const subject of [ activePane?.subject, props.subject ] ) {
+	for ( const subject of [ activePane.value?.subject, props.subject ] ) {
 		if ( subject instanceof SubjectWithContext && Number.isInteger( subject.getPageIdentifiers().getPageId() ) ) {
 			return subject.getPageIdentifiers();
 		}
@@ -467,7 +483,9 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 
 	// A Subject added while the write loop is running would be referenced by a Subject already
 	// written and yet never written itself, so creation is closed for the duration of a save.
-	if ( page === null || saving.value ) {
+	// A page is needed only where the Subject goes on one: a subject-first wiki gives it a page of
+	// its own, whatever the pane it was created from is stored on (ADR 33).
+	if ( saving.value || ( page === null && !isSubjectFirst() ) ) {
 		mw.notify( mw.msg( 'neowiki-subject-editor-create-target-error' ), { type: 'error' } );
 		return null;
 	}
@@ -495,7 +513,9 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 			label === null,
 			schemaName,
 			new StatementList( [] ),
-			page
+			// Only a subject-first wiki mints a draft with no page: the write that creates it
+			// creates its page too, so the pane carries one that is not there yet.
+			page ?? PageIdentifiers.notYetCreated()
 		);
 
 		extraPanes.value = [ ...extraPanes.value, { id: id.text, subject, schema, isNew: true } ];
@@ -811,7 +831,7 @@ const onSchemaSaved = ( schema: Schema ): void => {
 	currentSchema.value = schema;
 };
 
-defineExpose( { hasChanged: hasUnsavedEdits } );
+defineExpose( { hasChanged: hasUnsavedEdits, rootLabel } );
 
 </script>
 
@@ -821,11 +841,36 @@ defineExpose( { hasChanged: hasUnsavedEdits } );
 .ext-neowiki-subject-editor-dialog {
 	/* Overrides, not replications: `.cdx-dialog__header`'s padding is unconditional in Codex,
 		and `align-items: baseline` comes from `--default`, which this header now carries again.
-		Both are deliberate departures — the header is one row of static text beside a 32px
-		close button, so the button sets the height and baseline sits the title high in it. */
+		Both are deliberate departures — the header is static text beside a 32px close button,
+		so on one line the button sets the height and baseline sits the title high in it. */
 	.cdx-dialog__header {
 		align-items: center;
 		padding-block: @spacing-50;
+	}
+
+	/* The id on the title's line, where Codex stacks a subtitle below it, and centred on the
+		title as the header centres both on the close button. */
+	.cdx-dialog__header__title-group {
+		flex-flow: row wrap;
+		align-items: center;
+		column-gap: @spacing-50;
+
+		/* Trimmed to the capitals and the baseline, so centring lines up the letters: the
+			monospace font leaves more room below its letters than the title's does, which
+			centred the id's line box with its letters high. */
+		.cdx-dialog__header__title,
+		.cdx-dialog__header__subtitle {
+			text-box: trim-both cap alphabetic;
+		}
+
+		/* Directed by its own first letter: an id from another Source may end in punctuation,
+			which a right-to-left page would otherwise move to the front. Sized like the id on
+			the Data tab. */
+		.cdx-dialog__header__subtitle {
+			unicode-bidi: plaintext;
+			font-family: @font-family-monospace;
+			font-size: @font-size-x-small;
+		}
 	}
 
 	&--wide.cdx-dialog {

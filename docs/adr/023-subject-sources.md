@@ -15,7 +15,7 @@ Prior to this ADR, NeoWiki assumed every Subject is local, editable, versioned, 
 Several needed capabilities do not fit that assumption: cross-wiki metadata in a wiki farm, page and approval metadata, free-form (Confluence-style)
 tables, and structured data drawn from other systems (another NeoWiki, an on-wiki SMW or Wikibase store, external services).
 
-The detailed exploration is in [planning/SubjectSources.md](../planning/SubjectSources.md).
+The detailed exploration is in [planning/SubjectSources.md](https://github.com/ProfessionalWiki/NeoWiki/blob/36998d0039ae62f248f1ac87d00058ea027408aa/docs/planning/SubjectSources.md).
 
 ## Decision
 
@@ -142,7 +142,7 @@ Deferred and/or still being designed; consortium feedback is expected here.
 
 ## Related
 
-- [planning/SubjectSources.md](../planning/SubjectSources.md) — detailed exploration behind this ADR.
+- [planning/SubjectSources.md](https://github.com/ProfessionalWiki/NeoWiki/blob/36998d0039ae62f248f1ac87d00058ea027408aa/docs/planning/SubjectSources.md) — detailed exploration behind this ADR.
 - [ADR 22: Multi-wiki Graph Node Identity](022-multi-wiki-node-identity.md),
   [ADR 19: Graph Database Architecture](019-graph-database-architecture.md),
   [ADR 14: Improved Id Format](014-improved-id-format.md),

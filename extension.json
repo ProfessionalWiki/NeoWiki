@@ -51,6 +51,9 @@
 		"RevisionFromEditComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionFromEditComplete",
 		"SearchIndexFields": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSearchIndexFields",
 		"SearchDataForIndex2": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSearchDataForIndex2",
+		"ShowSearchHitTitle": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onShowSearchHitTitle",
+		"ShowSearchHit": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onShowSearchHit",
+		"SearchGetNearMatchComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSearchGetNearMatchComplete",
 		"PageDeleteComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageDeleteComplete",
 		"PageUndeleteComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageUndeleteComplete",
 		"AfterImportPage": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onAfterImportPage",
@@ -76,7 +79,12 @@
 
 		"SidebarBeforeOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSidebarBeforeOutput",
 		"SkinTemplateNavigation::Universal": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSkinTemplateNavigationUniversal",
-		"ScribuntoExternalLibraries": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onScribuntoExternalLibraries"
+		"ScribuntoExternalLibraries": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onScribuntoExternalLibraries",
+
+		"HtmlPageLinkRendererBegin": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onHtmlPageLinkRendererBegin",
+		"ChangesListInitRows": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onChangesListInitRows",
+		"getUserPermissionsErrors": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onGetUserPermissionsErrors",
+		"ChangesListSpecialPageStructuredFilters": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onChangesListSpecialPageStructuredFilters"
 	},
 
 	"JobClasses": {
@@ -149,6 +157,18 @@
 			"id": 7479,
 			"constant": "NS_NEOWIKI_MAPPING_TALK",
 			"name": "Mapping_talk"
+		},
+		{
+			"id": 7480,
+			"constant": "NS_NEOWIKI_SUBJECT",
+			"name": "Subject",
+			"subpages": false,
+			"content": true
+		},
+		{
+			"id": 7481,
+			"constant": "NS_NEOWIKI_SUBJECT_TALK",
+			"name": "Subject_talk"
 		}
 	],
 
@@ -196,6 +216,7 @@
 	"SpecialPages": {
 		"NeoJson": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialNeoJson",
 		"Schemas": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialSchemas",
+		"Subjects": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialSubjects",
 		"Layouts": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialLayouts",
 		"Mappings": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialMappings",
 		"GraphStores": "ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\SpecialGraphStores",
@@ -214,7 +235,7 @@
 			"value": false
 		},
 		"NeoWikiEnableInWikiConfig": {
-			"description": "Whether NeoWiki settings may also be set on the MediaWiki:NeoWiki JSON configuration page, which requires the editinterface and editsitejson rights to edit. When false, that page is never given the JSON content model, validated, or read, so only LocalSettings.php applies. The page exposes NeoWikiDereferenceSubjectsToHostingPage and NeoWikiAutoRenderMainSubject; its values take precedence over LocalSettings.php.",
+			"description": "Whether NeoWiki settings may also be set on the MediaWiki:NeoWiki JSON configuration page, which requires the editinterface and editsitejson rights to edit. When false, that page is never given the JSON content model, validated, or read, so only LocalSettings.php applies. The page exposes NeoWikiSubjectFirst and NeoWikiAutoRenderMainSubject; its values take precedence over LocalSettings.php.",
 			"value": true
 		},
 		"NeoWikiEnableLua": {
@@ -252,9 +273,13 @@
 			"description": "Base URI under which the RDF export mints all NeoWiki IRIs (entity, property, schema, page, etc.). When null, defaults to the wiki's canonical URL ($wgCanonicalServer). Wiki-level on purpose, so sibling projections describe the same entities with identical IRIs.",
 			"value": null
 		},
-		"NeoWikiDereferenceSubjectsToHostingPage": {
-			"description": "Whether a browser dereferencing a Subject's concept URI (Accept: text/html) is sent to the plain page the Subject is stored on. False by default, which sends it to Special:Subject, the view of that one Subject.",
+		"NeoWikiSubjectFirst": {
+			"description": "Whether this wiki puts Subjects before pages. False by default, which is page-first: a new Subject goes on the page it was created from, and links to Subjects lead to pages. True makes it subject-first: a new Subject gets a page of its own, and links lead to Special:Subject. See https://neowiki.ai/docs/operations/installation#choosing-page-first-or-subject-first",
 			"value": false
+		},
+		"NeoWikiSubjectPageNamespace": {
+			"description": "The namespace a subject-first wiki creates each Subject's own page in, titled by the Subject ID. The Subject namespace (7480) by default; NS_MAIN (0) puts those pages in the main namespace. Must be a content namespace. Page-first wikis ignore it.",
+			"value": 7480
 		},
 		"NeoWikiAutoRebuildOnMappingChange": {
 			"description": "Whether saving, deleting or restoring a Mapping page automatically rebuilds, in the background, every configured graph store that holds that Mapping's projection. False by default: such a rebuild reprojects every page on the wiki into that store, which on a large wiki is substantial work an administrator should choose to take on. While it is false, Special:GraphStores reports such a store as stale and offers the rebuild.",
@@ -287,6 +312,11 @@
 			"path": "/neowiki/v0/page/{pageId}/subjects",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetPageSubjectsApi"
+		},
+		{
+			"path": "/neowiki/v0/page/{pageId}/mainSubject",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetMainSubjectApi"
 		},
 		{
 			"path": "/neowiki/v0/page/{pageId}/editNotices",
@@ -352,6 +382,11 @@
 			"path": "/neowiki/v0/schema/{schemaName}",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaApi"
+		},
+		{
+			"path": "/neowiki/v0/schema/{schemaName}/json-schema",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetJsonSchemaApi"
 		},
 		{
 			"path": "/neowiki/v0/layout/{layoutName}",
@@ -438,7 +473,8 @@
 				"pinia",
 				"mediawiki.user",
 				"mediawiki.storage",
-				"mediawiki.jqueryMsg"
+				"mediawiki.jqueryMsg",
+				"mediawiki.language.names"
 			],
 			"codexComponents": [
 				"CdxAccordion",
@@ -504,7 +540,8 @@
 						"cdxIconCollapse",
 						"cdxIconExpand",
 						"cdxIconPushPin",
-						"cdxIconEllipsis"
+						"cdxIconEllipsis",
+						"cdxIconLanguage"
 					]
 				}
 			],
@@ -519,6 +556,15 @@
 				"neowiki-property-type-datetime",
 				"neowiki-property-type-date",
 				"neowiki-property-type-boolean",
+				"neowiki-property-type-monolingualtext",
+				"neowiki-monolingual-text-more-languages",
+				"neowiki-monolingual-text-fewer-languages",
+				"neowiki-monolingual-text-text-label",
+				"neowiki-monolingual-text-language-label",
+				"neowiki-language-picker-placeholder",
+				"neowiki-language-picker-button",
+				"neowiki-language-picker-no-results",
+				"neowiki-language-picker-tag",
 				"neowiki-property-type-unregistered",
 				"neowiki-property-type-unregistered-note",
 				"neowiki-property-type-unregistered-input-note",
@@ -567,8 +613,6 @@
 				"neowiki-property-editor-multiple",
 				"neowiki-property-editor-single-value",
 				"neowiki-property-editor-unique-items",
-				"neowiki-property-editor-relation",
-				"neowiki-property-editor-relation-required",
 				"neowiki-property-editor-target-schema",
 				"neowiki-property-editor-target-schema-required",
 				"neowiki-property-editor-options",
@@ -598,6 +642,7 @@
 				"neowiki-subject-editor-title",
 				"neowiki-subject-editor-save",
 				"neowiki-subject-editor-label-field",
+				"neowiki-subject-no-label",
 				"neowiki-subject-editor-rename",
 				"neowiki-subject-editor-open-target",
 				"neowiki-schema-editor-new-property",
@@ -646,13 +691,13 @@
 				"neowiki-subject-creator-page-another",
 				"neowiki-subject-creator-page-existing",
 				"neowiki-subject-creator-page-new",
+				"neowiki-subject-creator-page-new-denied",
 				"neowiki-subject-creator-page-picked",
 				"neowiki-subject-creator-page-has-main-subject",
 				"neowiki-subject-creator-page-title-field",
-				"neowiki-subject-creator-page-title-help",
+				"neowiki-subject-creator-page-title-required",
 				"neowiki-subject-creator-page-title-invalid",
 				"neowiki-subject-creator-page-taken",
-				"neowiki-subject-creator-page-taken-fixed",
 				"neowiki-subject-creator-page-read-error",
 				"neowiki-createsubject-button",
 				"neowiki-edit-schema",
@@ -841,6 +886,22 @@
 				"neowiki-special-subject-referenced-by-heading",
 				"neowiki-special-subject-referenced-by-properties",
 				"neowiki-special-subject-referenced-by-truncated",
+				"neowiki-subjects-column-name",
+				"neowiki-subjects-column-id",
+				"neowiki-subjects-column-schema",
+				"neowiki-subjects-column-page",
+				"neowiki-subjects-column-edited",
+				"neowiki-subjects-empty",
+				"neowiki-subjects-empty-schema",
+				"neowiki-subjects-no-match",
+				"neowiki-subjects-all-schemas",
+				"neowiki-subjects-schema-label",
+				"neowiki-subjects-search-placeholder",
+				"neowiki-subjects-load-error",
+				"neowiki-subjects-recent",
+				"neowiki-subjects-view-all",
+				"neowiki-overview-subjects-description",
+				"neowiki-special-subjects",
 				"comma-separator",
 				"neowiki-create-subject-default-label",
 				"neowiki-create-subject-denied",
@@ -860,6 +921,11 @@
 			"styles": [
 				"resources/ext.neowiki/dist/neowiki.css",
 				"resources/styles/mapping-page.css"
+			]
+		},
+		"ext.neowiki.subjectLabel.styles": {
+			"styles": [
+				"resources/styles/subject-label.less"
 			]
 		}
 	},

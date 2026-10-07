@@ -75,6 +75,8 @@ page is rejected on save.
 }
 ```
 
+![The Person example projected: the Subject IRI typed crm:E21_Person, linked by P98i_was_born to a birth node, which links by P4_has_time-span to a time-span node carrying the Birth date, and by P7_took_place_at to the Birth place Subject](mapping-format.svg)
+
 Top level:
 
 | Field | Required | Meaning |
@@ -115,8 +117,8 @@ Each **property** entry:
 |---|---|---|
 | `predicate` | yes | Target predicate for the property's values. A CURIE or an absolute IRI. |
 | `node` | no | A node key. The property's values then attach to that node's instance instead of to the Subject. |
-| `lang` | no | BCP-47-shaped language tag (`^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$`, e.g. `en`, `pt-BR`) applied to the produced literal **when it is a plain string** (text/select values). Ignored for typed literals (numbers, dates, …). Mutually exclusive with `datatype`. |
-| `datatype` | no | Absolute IRI or CURIE that overrides the literal's datatype. For a `url` value, which otherwise projects as an IRI object, setting `datatype` forces a literal with that datatype. Mutually exclusive with `lang`. |
+| `lang` | no | BCP-47-shaped language tag (`^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$`, e.g. `en`, `pt-BR`) applied to the produced literal **when it is a plain string** (text/select values). Ignored for typed literals (numbers, dates, …) and for monolingual text values. Mutually exclusive with `datatype`. |
+| `datatype` | no | Absolute IRI or CURIE that overrides the literal's datatype. For a `url` value, which otherwise projects as an IRI object, setting `datatype` forces a literal with that datatype. Ignored for monolingual text values. Mutually exclusive with `lang`. |
 
 Each **contribution** (an entry in `contributions`) is keyed by the name of a relation-typed property on
 *this* Schema, and every Subject that property points at receives the contributed values. The value is a
@@ -136,7 +138,8 @@ to an IRI containing an IRIREF-illegal character (`< > " { } | ^ \` backtick, sp
 
 The same checks re-run at **projection time**: a class, predicate, datatype, or prefix that does not re-expand
 safely is dropped, an unusable node takes everything below it with it, an invalid language tag falls back to a
-plain literal, and each is logged. The projection degrades rather than aborting the export.
+plain literal, and each is logged on the [`NeoWiki` channel](../operations/installation.md#logging). The projection
+degrades rather than aborting the export.
 
 ## What gets emitted
 

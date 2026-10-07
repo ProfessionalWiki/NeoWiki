@@ -137,8 +137,7 @@ something the boundary approach above cannot serve?
 ## Related
 
 - Planning: [OntologyMapping](OntologyMapping.md) (projection validation, mapping formalism),
-  [NativeRdfProjection](NativeRdfProjection.md) (native projection), [GlobalProperties](GlobalProperties.md),
-  [ECHOLOT](ECHOLOT.md).
+  [NativeRdfProjection](NativeRdfProjection.md) (native projection), [GlobalProperties](GlobalProperties.md).
 - ADRs: [006 schemas](../adr/006-schemas.md), [009 move away from JSON Schema](../adr/009-move-away-from-json-schema.md)
   (records ShEx/SHACL as considered alternatives), [011 writer's schema](../adr/011-include-writers-schema.md),
   [021 backend validation](../adr/021-add-backend-validation.md) and its amendment

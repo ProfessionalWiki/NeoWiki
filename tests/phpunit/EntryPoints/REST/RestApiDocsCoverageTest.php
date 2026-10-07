@@ -66,9 +66,9 @@ class RestApiDocsCoverageTest extends TestCase {
 		$extensionJson = $this->readJsonArray( __DIR__ . '/../../../../extension.json' );
 		$this->assertArrayHasKey( 'RestRoutes', $extensionJson );
 
-		// The Cypher route is registered per-plugin via a route file added to
+		// The Neo4j routes, Cypher queries and the Subject list, are registered via a route file added to
 		// $wgRestAPIAdditionalRouteFiles only when Neo4j is configured, not via extension.json.
-		// It is still a real, documented endpoint, so count it as registered here too.
+		// They are still real, documented endpoints, so count them as registered here too.
 		$pluginRouteFile = __DIR__
 			. '/../../../../src/GraphDatabasePlugins/Neo4j/EntryPoints/REST/neo4jRoutes.json';
 		$routes = array_merge( $extensionJson['RestRoutes'], $this->readJsonArray( $pluginRouteFile ) );

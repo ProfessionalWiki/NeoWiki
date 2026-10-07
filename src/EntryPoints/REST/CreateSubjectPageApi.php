@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubjectPage\InvalidPageTi
 use ProfessionalWiki\NeoWiki\Application\RejectedValueException;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 use ProfessionalWiki\NeoWiki\Presentation\RestCreateSubjectPagePresenter;
 use RuntimeException;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -46,6 +47,7 @@ class CreateSubjectPageApi extends SimpleHandler {
 					schemaName: $body['schema'],
 					statements: $body['statements'],
 					comment: $body['comment'] ?? null,
+					id: $body['id'] ?? null,
 				) );
 		} catch ( InvalidPageTitleException $e ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
@@ -78,10 +80,11 @@ class CreateSubjectPageApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => false,
-				self::PARAM_DESCRIPTION => 'Display label for the Subject, which also titles the page created '
-					. 'for it where no pageTitle is given. Optional: omit it, or pass an empty string, to create a Subject nobody named, '
-					. 'whose page is titled after its Subject ID. A label that is not a main-namespace page '
-					. 'title titles no page either, and is stored as the label all the same.',
+				self::PARAM_DESCRIPTION => 'Display label for the Subject, which on a page-first wiki also titles '
+					. 'the page created for it where no pageTitle is given. Optional: omit it, or pass an empty string, '
+					. 'to create a Subject nobody named, whose page is titled after its Subject ID. A label that is not '
+					. 'a main-namespace page title titles no page either, and is stored as the label all the same. '
+					. 'A subject-first wiki titles every page it creates after the Subject ID.',
 			],
 			'pageTitle' => [
 				self::PARAM_SOURCE => 'body',
@@ -90,7 +93,7 @@ class CreateSubjectPageApi extends SimpleHandler {
 				self::PARAM_DESCRIPTION => 'Title of the page created, which takes precedence over the label. '
 					. 'Optional: omit it, or pass an empty string, to leave the title to the label. A title that '
 					. 'names another namespace or is no title at all answers 400 rather than falling back to the '
-					. 'label; a title already taken answers 409.',
+					. 'label; a title already taken answers 409. A subject-first wiki answers 400 to any title.',
 			],
 			'schema' => [
 				self::PARAM_SOURCE => 'body',
@@ -102,13 +105,21 @@ class CreateSubjectPageApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'array',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'List of Statements (property/value pairs) for the Subject. Nested shape matches the subject JSON format documented at https://neowiki.ai/docs/api/subject-format.',
+				self::PARAM_DESCRIPTION => 'List of Statements (property/value pairs) for the Subject. Nested shape matches the subject JSON format documented at ' . DocumentationUrl::SubjectFormat->value . '.',
 			],
 			'comment' => [
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => false,
 				self::PARAM_DESCRIPTION => 'Optional edit summary.',
+			],
+			'id' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => false,
+				self::PARAM_DESCRIPTION => 'Optional Subject ID to assign. Must be a well-formed, unused '
+					. 'Subject ID (malformed is rejected with 400, in-use with 409). When omitted, the server '
+					. 'mints one. Pre-mint IDs with POST /neowiki/v0/subject-ids to wire relations across a batch.',
 			],
 		];
 	}

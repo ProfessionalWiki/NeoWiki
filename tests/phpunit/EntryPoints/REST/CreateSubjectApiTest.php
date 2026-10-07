@@ -503,6 +503,11 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$response = $this->executeCreate( $this->getIdOfExistingPage(), $body, isMainSubject: false );
 
 		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertStringContainsString(
+			'not-a-valid-subject-id',
+			$response->getBody()->getContents(),
+			'The refusal names the id the caller sent'
+		);
 	}
 
 	public function testSuppliedIdFromAnotherSourceReturns400(): void {
@@ -514,6 +519,11 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$response = $this->executeCreate( $this->getIdOfExistingPage(), $body, isMainSubject: false );
 
 		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertStringContainsString(
+			'otherwiki:sMintFFFFFFFFF6',
+			$response->getBody()->getContents(),
+			'The refusal names the id the caller sent'
+		);
 	}
 
 	public function testExplicitlyLocalSuppliedIdIsCreatedUnderItsBareForm(): void {

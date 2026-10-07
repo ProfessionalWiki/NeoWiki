@@ -9,6 +9,7 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import SchemaDisplay from '@/components/SchemaDisplay/SchemaDisplay.vue';
 import LayoutDisplay from '@/components/LayoutDisplay/LayoutDisplay.vue';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
+import SubjectsPage from '@/components/SubjectsPage/SubjectsPage.vue';
 import LayoutsPage from '@/components/LayoutsPage/LayoutsPage.vue';
 import MappingsPage from '@/components/MappingsPage/MappingsPage.vue';
 import SubjectsManagerPage from '@/components/SubjectsManager/SubjectsManagerPage.vue';
@@ -141,6 +142,23 @@ function initializeSchemasPage(): void {
 	} );
 }
 
+function initializeSubjectsPage(): void {
+	queueMicrotask( () => {
+		const subjectsPage = document.getElementById( 'ext-neowiki-subjects' );
+
+		if ( subjectsPage !== null ) {
+			const ext = NeoWikiExtension.getInstance();
+			const initialSchema = subjectsPage.dataset.mwNeowikiSchema ?? null;
+
+			// The Subject creator this page opens reaches value inputs that use v-tooltip.
+			const app = createMwApp( SubjectsPage, { initialSchema } ).directive( 'tooltip', CdxTooltip );
+			app.use( ext.getPinia() );
+			NeoWikiServices.registerServices( app );
+			mountNeoWikiApp( app, subjectsPage );
+		}
+	} );
+}
+
 function initializeLayoutView(): void {
 	queueMicrotask( async () => {
 		const viewLayout = document.querySelector( '#ext-neowiki-view-layout' );
@@ -238,11 +256,14 @@ function initializeSubjectPage(): void {
 	queueMicrotask( () => {
 		const subjectPage = document.getElementById( 'ext-neowiki-subject' );
 
-		if ( subjectPage !== null ) {
-			const ext = NeoWikiExtension.getInstance();
-			const subjectId = subjectPage.dataset.mwNeowikiSubjectId;
+		const subjectId = subjectPage?.dataset.mwNeowikiSubjectId;
 
-			const app = createMwApp( SubjectPage, { subjectId } ).directive( 'tooltip', CdxTooltip );
+		if ( subjectPage !== null && subjectId !== undefined ) {
+			const ext = NeoWikiExtension.getInstance();
+
+			const app = createMwApp( SubjectPage, { subjectId } );
+
+			app.directive( 'tooltip', CdxTooltip );
 			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
 			mountNeoWikiApp( app, subjectPage );
@@ -297,6 +318,7 @@ if ( !isTestEnvironment ) {
 	initializeSchemaView();
 	initializeLayoutView();
 	initializeSchemasPage();
+	initializeSubjectsPage();
 	initializeLayoutsPage();
 	initializeMappingsPage();
 	initializeSubjectsManagerPage();

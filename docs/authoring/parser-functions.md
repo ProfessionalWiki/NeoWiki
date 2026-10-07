@@ -102,6 +102,7 @@ Returns the value of a single property from a Subject, formatted as a string.
 | `number` | The number, e.g. `42` or `19.99`. |
 | `boolean` | `true` or `false`. |
 | `relation` | The target Subject's display name. Multiple targets joined with `separator`. Falls back to the target Subject ID when the target cannot be looked up or its page is not readable. |
+| `monolingualText` | Each part's text, without its language. Multiple parts joined with `separator`. |
 
 Boolean and number values are always rendered, even for `false` and `0` — these are not treated
 as "empty".
@@ -156,9 +157,9 @@ Renders a button that opens the Subject creator without leaving the page.
 | Parameter | Description |
 |-----------|-------------|
 | `schema=<schemaName>` | [Schema](../glossary.md#schema) to create the Subject with. Without it, the creator asks which Schema to use. |
-| `page=new` | Creates a page for the Subject, titled after the Subject. |
+| `page=new` | Stores the Subject on a new page: titled by its id on a subject-first wiki, and on a [page-first](../glossary.md#page-first-and-subject-first-wikis) wiki by the title the creator asks for, filled in from its label. |
 | `page=this` | Stores the Subject on the page holding the button. Outside the content namespaces, `new` applies instead. |
-| `page=<pageName>` | Stores the Subject on that page, creating it when it does not exist — which only the main namespace allows. |
+| `page=<pageName>` | Stores the Subject on that page, creating it when it does not exist — which only the main namespace of a page-first wiki allows. |
 | `text=<buttonLabel>` | The button's label. Defaults to `Create <schemaName>`, or `Create subject` without a Schema. |
 
 ### Notes

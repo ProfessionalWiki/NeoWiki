@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="330" viewBox="0 0 760 330"
+	font-family="sans-serif" font-size="17">
+<rect width="760" height="330" fill="#FFF"/>
+
+<!-- Schema (its page) -->
+<rect x="160" y="70" width="464" height="242" fill="none" stroke="#609" stroke-width="1.5"/>
+<text x="176" y="98" font-size="16" font-weight="bold" fill="#000">Museum</text>
+<text x="176" y="121" font-size="13" fill="#54595D">A museum or gallery</text>
+<path stroke="#A2A9B1" d="M160,134H624"/>
+
+<text x="176" y="155" font-size="12" font-weight="bold" fill="#54595D">Property</text>
+<text x="272" y="155" font-size="12" font-weight="bold" fill="#54595D">Type</text>
+<text x="351" y="155" font-size="12" font-weight="bold" fill="#54595D">Required</text>
+<text x="425" y="155" font-size="12" font-weight="bold" fill="#54595D">Initial value</text>
+<text x="516" y="155" font-size="12" font-weight="bold" fill="#54595D">Description</text>
+<path stroke="#A2A9B1" d="M166,164H618"/>
+
+<rect x="166" y="168" width="452" height="30" fill="none" stroke="#D00" stroke-width="1.5"/>
+<text x="176" y="188" font-size="13" font-weight="bold" fill="#000">Founded</text>
+<rect x="272" y="174" width="55" height="18" rx="3" fill="#EAECF0"/>
+<text x="299.5" y="187" font-size="11" text-anchor="middle" fill="#202122">Number</text>
+<text x="351" y="188" font-size="13" fill="#000">No</text>
+<text x="425" y="188" font-size="13" fill="#72777D">-</text>
+<text x="516" y="188" font-size="13" fill="#000">Founding year</text>
+<path stroke="#C8CCD1" d="M166,204H618"/>
+
+<text x="176" y="226" font-size="13" font-weight="bold" fill="#000">City</text>
+<rect x="272" y="212" width="55" height="18" rx="3" fill="#EAECF0"/>
+<text x="299.5" y="225" font-size="11" text-anchor="middle" fill="#202122">Relation</text>
+<text x="351" y="226" font-size="13" fill="#000">Yes</text>
+<text x="425" y="226" font-size="13" fill="#72777D">-</text>
+<text x="516" y="226" font-size="13" fill="#72777D">-</text>
+<path stroke="#C8CCD1" d="M166,242H618"/>
+
+<text x="176" y="264" font-size="13" font-weight="bold" fill="#000">Visitors</text>
+<rect x="272" y="250" width="55" height="18" rx="3" fill="#EAECF0"/>
+<text x="299.5" y="263" font-size="11" text-anchor="middle" fill="#202122">Number</text>
+<text x="351" y="264" font-size="13" fill="#000">No</text>
+<text x="425" y="264" font-size="13" fill="#72777D">-</text>
+<text x="516" y="264" font-size="13" fill="#000">Per year</text>
+<path stroke="#C8CCD1" d="M166,280H618"/>
+<text x="176" y="300" font-size="13" fill="#72777D">…</text>
+
+<!-- Callouts -->
+<text x="108" y="64" text-anchor="middle" fill="#609">Schema</text>
+<path stroke="#609" d="M132,70L160,80"/>
+
+<text x="146" y="103" text-anchor="end" fill="#777">Name</text>
+<path stroke="#777" d="M150,98H172"/>
+
+<text x="146" y="126" text-anchor="end" fill="#777">Description</text>
+<path stroke="#777" d="M150,121H172"/>
+
+<text x="146" y="193" text-anchor="end" fill="#00F">Property name</text>
+<path stroke="#00F" d="M150,188H172"/>
+
+<text x="318" y="36" text-anchor="middle" fill="#455A64">Property Type</text>
+<path stroke="#455A64" d="M318,42V172"/>
+
+<text x="640" y="185" fill="#D00">Property</text>
+<text x="640" y="204" fill="#D00">Definition</text>
+<path stroke="#D00" d="M636,183H620"/>
+</svg>

@@ -18,7 +18,6 @@ For an end-to-end example comparing the native and ontology-mapped output, see t
 | Setting | Default | Purpose |
 |---|---|---|
 | `$wgNeoWikiRdfBaseUri` | the wiki's canonical URL (`$wgCanonicalServer`) | Base URI under which all NeoWiki IRIs are minted. |
-| `$wgNeoWikiDereferenceSubjectsToHostingPage` | `false` | When `true`, sends a browser dereferencing a Subject IRI to the Subject's hosting page instead of to `Special:Subject`. |
 
 ## IRI scheme
 
@@ -53,12 +52,13 @@ the native projection accepts. The base URI is trusted admin config and is not e
 A `url` value projects as an **IRI object** (`<https://…>`); a value that is not a valid absolute IRI falls back to
 an `xsd:anyURI` literal, so nothing is lost. The other value types map to `xsd` datatypes: `text`/`select` →
 `xsd:string`, `number` → `xsd:decimal` (or `xsd:integer` when fractionless), `boolean` → `xsd:boolean`, `date` →
-`xsd:date`, `dateTime` → `xsd:dateTime`. Extensions map their own property types via
+`xsd:date`, `dateTime` → `xsd:dateTime`. A `monolingualText` value projects instead as one **language-tagged
+literal** per part (`"Zinema"@eu`, datatype `rdf:langString`). Extensions map their own property types via
 [`addRdfValueMapper`](../extending/property-types.md#projection). A Statement whose property type has no
 registered mapper — including an unregistered type — is omitted from the projection.
 
 A Subject whose Schema cannot be loaded (for example, its Schema page was deleted) is omitted from the projection; a
-warning is logged for each.
+warning is logged for each on the [`NeoWiki` channel](../operations/installation.md#logging).
 
 ## Projected triples
 
@@ -149,11 +149,11 @@ content-negotiates it and answers `303 See Other` with an absolute `Location`:
 |---|---|
 | `application/trig` | the Subject's TriG RDF (`.../subject/{id}/rdf?format=trig`) |
 | `text/turtle` | the Subject's Turtle RDF (`.../subject/{id}/rdf?format=turtle`) |
-| `text/html`, `*/*`, absent, anything else | `Special:Subject/{id}` |
+| `text/html`, `*/*`, absent, anything else | the Subject's hosting page in a page-first wiki, `Special:Subject/{id}` in a subject-first one |
 
 TriG wins when both RDF types are acceptable; the RDF redirects use the native projection.
 
-When `$wgNeoWikiDereferenceSubjectsToHostingPage` is `true`, the HTML target is the Subject's hosting page instead.
+The mode is the wiki operator's choice; see [Choosing page-first or subject-first](../operations/installation.md#choosing-page-first-or-subject-first).
 
 The negotiator is always reachable at the REST path, which needs no server configuration:
 

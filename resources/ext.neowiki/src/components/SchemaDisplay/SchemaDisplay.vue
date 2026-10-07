@@ -1,6 +1,7 @@
 <template>
 	<div class="ext-neowiki-schema-display">
 		<CdxTable
+			class="ext-neowiki-schema-display__properties"
 			:columns="hasProperties ? columns : []"
 			:data="properties"
 			:caption="currentSchema.getName()"
@@ -62,6 +63,12 @@
 			</template>
 		</CdxTable>
 
+		<SubjectsTable
+			v-if="subjectListAvailable"
+			class="ext-neowiki-schema-display__subjects"
+			:fixed-schema="currentSchema.getName()"
+		/>
+
 		<SchemaEditorDialog
 			v-if="canEditSchema"
 			:open="isEditorOpen"
@@ -89,6 +96,8 @@ import type { TableColumn } from '@wikimedia/codex';
 import type { Icon } from '@wikimedia/codex-icons';
 import SchemaDisplayHeader from './SchemaDisplayHeader.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
+import SubjectsTable from '@/components/SubjectsTable/SubjectsTable.vue';
+import { isSubjectListAvailable } from '@/subjectListAvailability.ts';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
@@ -111,6 +120,8 @@ const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPer
 onMounted( () => {
 	checkCreateSubjectPagePermission();
 } );
+
+const subjectListAvailable = isSubjectListAvailable();
 
 const isEditorOpen = shallowRef( false );
 const currentSchema = shallowRef<Schema>( props.schema );
@@ -183,13 +194,19 @@ const onSchemaSaved = ( schema: Schema ): void => {
 .ext-neowiki-schema-display {
 	max-width: 64rem;
 
-	// Required to align our custom header to the inline-start of the table header
-	.cdx-table__header__caption {
-		display: none;
+	&__properties {
+		// Required to align our custom header to the inline-start of the table header
+		.cdx-table__header__caption {
+			display: none;
+		}
+
+		.cdx-table__header__content {
+			flex-grow: 1;
+		}
 	}
 
-	.cdx-table__header__content {
-		flex-grow: 1;
+	&__subjects {
+		margin-top: @spacing-200;
 	}
 
 	&__empty-value {

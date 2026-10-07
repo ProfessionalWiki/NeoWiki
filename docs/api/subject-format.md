@@ -73,6 +73,7 @@ A property mapped to `null` instead of a Statement object is skipped when the JS
 | `number` | A single number (integer or float). |
 | `boolean` | A single boolean. |
 | `relation` | Array of [relation objects](#relations). |
+| `monolingualText` | Array of [monolingual text objects](#monolingual-text). |
 
 Each part of a `select` value may also be sent as an option label or as an `{ "id", "label" }` object; see
 [Select](schema-format.md#select-select).
@@ -83,7 +84,7 @@ A multi-part `text` value:
 { "propertyType": "text", "value": [ "First value", "Second value" ] }
 ```
 
-Every registered PropertyType uses one of these four `value` shapes. A `propertyType` whose PropertyType is not
+Every registered PropertyType uses one of these five `value` shapes. A `propertyType` whose PropertyType is not
 registered — its extension disabled — keeps the raw value that was stored
 ([`unregistered-type`](validation-codes.md#unregistered-type)).
 
@@ -118,6 +119,27 @@ With relation properties:
   }
 }
 ```
+
+### Monolingual text
+
+Each `monolingualText` value is an array of objects, one per value part:
+
+```json
+{
+  "propertyType": "monolingualText",
+  "value": [
+    { "text": "Zinema", "language": "eu" },
+    { "text": "Cine", "language": "es" }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `text` | string | Yes | The text. Stored trimmed; a part whose text is empty is dropped. |
+| `language` | string | Yes | BCP-47-shaped language tag (`^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$`, e.g. `eu`, `pt-BR`). Stored lowercase. |
+
+The same language may appear more than once. A `language` that does not match the pattern is rejected with `400`.
 
 ## IDs
 
@@ -155,18 +177,36 @@ name is used.
 - `?expand=relations` embeds the Subjects this one's relations target; see
   [REST API](rest-api.md#the-expand-parameter) for the shape.
 - `?revisionId=` returns the Subject as of that MediaWiki revision; an unknown or unreadable revision returns `404`.
+- `?latest=1` returns the Subject as of the hosting page's current revision rather than the one the wiki publishes,
+  for editing, when the viewer may see that revision. Combined with `revisionId` or `expand=relations` it returns `400`.
+
+### Referencing Subjects
+
+`GET /rest.php/neowiki/v0/subject/{subjectId}/referencingSubjects` returns
+`{referencingSubjects: [{subject, propertyNames}], truncated}`: the Subjects whose relations point at the given one,
+itself excluded, ordered by name, each `subject` carrying its page fields. `truncated` means more were left out;
+`false` does not promise there are none. `?limit=` caps the list, 10 by default. Without a Neo4j store the list is
+empty.
 
 ### Creating Subjects
 
-`POST /rest.php/neowiki/v0/page/{pageId}/mainSubject` and `.../subjects` create a Subject on a page. The body
-takes `schema` and [`statements`](#statement-object), both required, plus an optional `label` and an optional
-`comment` edit summary. Omitting `label`, or passing only whitespace, creates a Subject with no label.
+`POST /rest.php/neowiki/v0/page/{pageId}/mainSubject` and `.../{pageId}/subjects` create a Subject on a page, and
+`POST /rest.php/neowiki/v0/subjects` creates one together with a page of its own. The body takes `schema` and
+[`statements`](#statement-object), both required, plus an optional `label` and an optional `comment` edit summary.
+Omitting `label`, or passing only whitespace, creates a Subject with no label.
 
 The server mints the Subject ID unless you pass one:
 
 | Field | Required | Notes |
 |-------|----------|-------|
 | `id` | No | Subject ID to assign. Well-formed (`400` otherwise) and unused (`409` otherwise). Pre-mint a batch with `POST /rest.php/neowiki/v0/subject-ids` to wire relations before their targets exist. |
+
+`POST /rest.php/neowiki/v0/subjects` also takes an optional `pageTitle`. A page-first wiki titles the new page by
+`pageTitle`, else by the label, else by the Subject's ID when there is no label or the label cannot be a
+main-namespace title. A subject-first wiki titles it by the Subject's ID, in the `Subject` namespace
+[by default](../operations/installation.md#choosing-page-first-or-subject-first), and answers `400` to any
+`pageTitle`. A `pageTitle` that cannot be a main-namespace title also answers `400`; a title already taken answers
+`409` carrying `pageTitle`; an `id` in use answers `409` without it.
 
 ### Writing Subjects
 

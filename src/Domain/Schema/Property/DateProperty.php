@@ -17,9 +17,13 @@ class DateProperty extends PropertyDefinition {
 	 * Matches xsd:date-like strings: a calendar date with no time or timezone
 	 * component. Mirrors the regex used in the TypeScript DateType; a
 	 * subsequent calendar-overflow check rejects inputs like `2025-02-30`.
+	 *
+	 * Carries no delimiters and stays within ECMA-262, so that the JSON Schema
+	 * documents can use it as a `pattern`.
 	 */
-	private const ISO_DATE_REGEX =
-		'/^(-?\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/';
+	public const string ISO_DATE_PATTERN = '^(-?[0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$';
+
+	private const string ISO_DATE_REGEX = '/' . self::ISO_DATE_PATTERN . '/';
 
 	public function __construct(
 		PropertyCore $core,
@@ -109,6 +113,12 @@ class DateProperty extends PropertyDefinition {
 			'minimum' => $this->getMinimum(),
 			'maximum' => $this->getMaximum(),
 		];
+	}
+
+	public function toJsonSchema(): array {
+		return $this->listValueSchema(
+			[ 'type' => 'string', 'format' => 'date', 'pattern' => self::ISO_DATE_PATTERN ]
+		);
 	}
 
 }

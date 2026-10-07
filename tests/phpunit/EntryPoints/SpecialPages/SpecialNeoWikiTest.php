@@ -13,6 +13,8 @@ use SpecialPageTestBase;
  */
 class SpecialNeoWikiTest extends SpecialPageTestBase {
 
+	use HelpLinkAssertions;
+
 	private const string GRAPH_STORES_ATTRIBUTE = 'data-mw-neowiki-can-manage-graph-stores';
 	private const string CONFIGURATION_ATTRIBUTE = 'data-mw-neowiki-can-edit-configuration';
 
@@ -25,6 +27,12 @@ class SpecialNeoWikiTest extends SpecialPageTestBase {
 		[ $output ] = $this->executeSpecialPage( '', null, null, $this->getTestUser()->getUser() );
 
 		$this->assertStringContainsString( 'id="ext-neowiki-overview"', $output );
+	}
+
+	public function testTheHelpLinkLeadsToTheDocs(): void {
+		$output = $this->outputOf( $this->newSpecialPage(), $this->getTestUser()->getUser() );
+
+		$this->assertHelpLinkLeadsToTheDocs( $output );
 	}
 
 	public function testAnAdministratorIsOfferedTheGraphStores(): void {

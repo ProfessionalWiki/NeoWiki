@@ -40,4 +40,17 @@ class Neo4jRouteRegistrationTest extends TestCase {
 		);
 	}
 
+	public function testRouteFileDeclaresTheSubjectList(): void {
+		$routes = json_decode( file_get_contents( Neo4jRouteRegistration::routeFiles( 'r', 'w' )[0] ), true );
+
+		$this->assertContains(
+			[
+				'path' => '/neowiki/v0/subjects',
+				'method' => [ 'GET' ],
+				'factory' => 'ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectSummariesApi',
+			],
+			$routes
+		);
+	}
+
 }

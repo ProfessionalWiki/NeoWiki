@@ -7,12 +7,15 @@ namespace ProfessionalWiki\NeoWiki\Domain\Rdf;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\BooleanType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\MonolingualTextType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\UrlType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualText;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 
 /**
@@ -64,6 +67,7 @@ class RdfValueMapperRegistry {
 		$registry->registerMapper( BooleanType::NAME, self::mapBoolean( ... ) );
 		$registry->registerMapper( DateType::NAME, self::mapDate( ... ) );
 		$registry->registerMapper( DateTimeType::NAME, self::mapDateTime( ... ) );
+		$registry->registerMapper( MonolingualTextType::NAME, self::mapMonolingualText( ... ) );
 
 		return $registry;
 	}
@@ -119,6 +123,23 @@ class RdfValueMapperRegistry {
 		}
 
 		return $terms;
+	}
+
+	/**
+	 * Each part becomes a literal tagged with its own language, which is what an `rdf:langString`
+	 * is: `"Zinema"@eu`.
+	 *
+	 * @return Literal[]
+	 */
+	private static function mapMonolingualText( NeoValue $value ): array {
+		if ( !$value instanceof MonolingualTextValue ) {
+			return [];
+		}
+
+		return array_map(
+			static fn( MonolingualText $part ): Literal => RdfLiteralFactory::languageTagged( $part->text, $part->language ),
+			$value->parts
+		);
 	}
 
 	/**

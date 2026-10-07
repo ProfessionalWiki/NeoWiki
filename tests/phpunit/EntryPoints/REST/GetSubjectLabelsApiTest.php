@@ -7,7 +7,10 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
@@ -30,6 +33,33 @@ class GetSubjectLabelsApiTest extends NeoWikiIntegrationTestCase {
 				'queryParams' => [ 'schema' => 'Person', 'limit' => '100000' ],
 			] )
 		);
+	}
+
+	/**
+	 * What Special:Subject's own picker sends. A default standing in for the omitted `schema`
+	 * would name a Schema no Subject has, and find nothing.
+	 */
+	public function testASearchNamingNoSchemaFindsSubjectsOfEverySchema(): void {
+		$this->setUpNeo4j();
+		$this->createSchema( 'Recipe' );
+		$this->createSchema( 'Plant' );
+		$this->createPageWithSubjects(
+			'GetSubjectLabelsApiTest_Apples',
+			otherSubjects: new SubjectMap(
+				TestSubject::build( id: 'sTestGSL1111111', label: 'Apple Pie', schemaName: new SchemaName( 'Recipe' ) ),
+				TestSubject::build( id: 'sTestGSL1111112', label: 'Apple Tree', schemaName: new SchemaName( 'Plant' ) ),
+			)
+		);
+
+		$data = $this->executeHandlerAndGetBodyData(
+			new GetSubjectLabelsApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'search' => 'Apple' ],
+			] )
+		);
+
+		$this->assertSame( [ 'sTestGSL1111111', 'sTestGSL1111112' ], array_column( $data, 'id' ) );
 	}
 
 }

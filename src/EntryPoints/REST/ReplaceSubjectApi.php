@@ -13,6 +13,7 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthori
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 use ProfessionalWiki\NeoWiki\Presentation\RestReplaceSubjectPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -92,7 +93,7 @@ class ReplaceSubjectApi extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'array',
 				ParamValidator::PARAM_REQUIRED => true,
-				self::PARAM_DESCRIPTION => 'Map of property names to Statements. Replaces the Subject\'s statement list entirely; omitted property names are deleted. Pass `{}` to delete all statements. Nested shape matches the subject JSON format documented at https://neowiki.ai/docs/api/subject-format.',
+				self::PARAM_DESCRIPTION => 'Map of property names to Statements. Replaces the Subject\'s statement list entirely; omitted property names are deleted. Pass `{}` to delete all statements. Nested shape matches the subject JSON format documented at ' . DocumentationUrl::SubjectFormat->value . '.',
 			],
 			'comment' => [
 				self::PARAM_SOURCE => 'body',

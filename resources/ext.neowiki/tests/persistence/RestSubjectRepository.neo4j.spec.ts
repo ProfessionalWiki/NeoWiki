@@ -444,6 +444,35 @@ describe( 'RestSubjectRepository', () => {
 			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { label: null } );
 		} );
 
+		it( 'sends the id minted for the Subject', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/page/42/mainSubject':
+					new Response( JSON.stringify( writeResponseJson() ), { status: 200 } ),
+			} );
+			const postSpy = vi.spyOn( inMemoryHttpClient, 'post' );
+
+			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
+
+			await repository.createMainSubject( 42, null, 'Employee', new StatementList( [] ), undefined, new SubjectId( 's1ab2cd3ef4gh5i' ) );
+
+			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { id: 's1ab2cd3ef4gh5i' } );
+		} );
+
+		it( 'keeps a conflict a failure even for a minted id', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/page/42/mainSubject':
+					new Response( JSON.stringify( { httpCode: 409, httpReason: 'Conflict' } ), { status: 409 } ),
+			} );
+			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
+
+			const promise = repository.createMainSubject( 42, null, 'Employee', new StatementList( [] ), undefined, new SubjectId( 's1ab2cd3ef4gh5i' ) );
+
+			await expect( promise ).rejects.toThrowError( 'Error creating main subject' );
+			await expect( promise ).rejects.toSatisfy(
+				( err ) => !( err instanceof SubjectIdInUseError ),
+			);
+		} );
+
 	} );
 
 	describe( 'createSubjectPage', () => {
@@ -470,6 +499,26 @@ describe( 'RestSubjectRepository', () => {
 					...overrides,
 				} ),
 				{ status: 201 },
+			);
+		}
+
+		/** The conflict a taken page title answers with, which is the only one naming a title. */
+		function titleTaken(): Response {
+			return new Response(
+				JSON.stringify( {
+					status: 'error',
+					message: 'A page named "John Doe" already exists',
+					pageTitle: 'John Doe',
+				} ),
+				{ status: 409 },
+			);
+		}
+
+		/** The conflict a Subject id already in use answers with, which names no title. */
+		function idInUse(): Response {
+			return new Response(
+				JSON.stringify( { status: 'error', message: 'Subject already exists' } ),
+				{ status: 409 },
 			);
 		}
 
@@ -508,17 +557,49 @@ describe( 'RestSubjectRepository', () => {
 			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { pageTitle: 'Employee of the year' } );
 		} );
 
+		it( 'sends the id the caller minted for the subject', async () => {
+			const httpClient = new InMemoryHttpClient( { [ url ]: created() } );
+			const postSpy = vi.spyOn( httpClient, 'post' );
+
+			await newRepository( 'https://example.com/rest.php', httpClient )
+				.createSubjectPage(
+					'John Doe', 'Employee', new StatementList( [] ), undefined, undefined,
+					new SubjectId( 's33333333333333' ),
+				);
+
+			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { id: 's33333333333333' } );
+		} );
+
+		// The conflict that names no title is the id's, and only a caller that minted one can meet
+		// it: for one minted for this very Subject it means the create already landed.
+		it( 'throws SubjectIdInUseError when the conflict names no title', async () => {
+			const httpClient = new InMemoryHttpClient( { [ url ]: idInUse() } );
+
+			const error = await newRepository( 'https://example.com/rest.php', httpClient )
+				.createSubjectPage(
+					'John Doe', 'Employee', new StatementList( [] ), undefined, undefined,
+					new SubjectId( 's33333333333333' ),
+				)
+				.catch( ( thrown: unknown ) => thrown );
+
+			expect( error ).toBeInstanceOf( SubjectIdInUseError );
+		} );
+
+		it( 'throws PageTitleTakenError for a title conflict even when an id was minted', async () => {
+			const httpClient = new InMemoryHttpClient( { [ url ]: titleTaken() } );
+
+			const error = await newRepository( 'https://example.com/rest.php', httpClient )
+				.createSubjectPage(
+					'John Doe', 'Employee', new StatementList( [] ), undefined, undefined,
+					new SubjectId( 's33333333333333' ),
+				)
+				.catch( ( thrown: unknown ) => thrown );
+
+			expect( error ).toBeInstanceOf( PageTitleTakenError );
+		} );
+
 		it( 'throws PageTitleTakenError naming the page in the way', async () => {
-			const httpClient = new InMemoryHttpClient( {
-				[ url ]: new Response(
-					JSON.stringify( {
-						status: 'error',
-						message: 'A page named "John Doe" already exists',
-						pageTitle: 'John Doe',
-					} ),
-					{ status: 409 },
-				),
-			} );
+			const httpClient = new InMemoryHttpClient( { [ url ]: titleTaken() } );
 
 			const error = await newRepository( 'https://example.com/rest.php', httpClient )
 				.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) )

@@ -15,6 +15,10 @@ class RdfLiteralFactory {
 		return new Literal( $lexicalForm, new Iri( RdfNamespaces::XSD . $xsdLocalName ) );
 	}
 
+	public static function languageTagged( string $lexicalForm, string $languageTag ): Literal {
+		return new Literal( $lexicalForm, new Iri( RdfNamespaces::RDF . 'langString' ), $languageTag );
+	}
+
 	public static function boolean( bool $value ): Literal {
 		return self::typed( $value ? 'true' : 'false', 'boolean' );
 	}

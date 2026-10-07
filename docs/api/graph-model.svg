@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="810" height="560" viewBox="0 0 810 560"
+	font-family="sans-serif" font-size="16">
+<defs>
+<marker id="arrow-page" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+<path d="M0,0L10,5L0,10z" fill="#000"/>
+</marker>
+<marker id="arrow-relation" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+<path d="M0,0L10,5L0,10z" fill="#D96B00"/>
+</marker>
+</defs>
+<rect width="810" height="560" fill="#FFF"/>
+
+<!-- Page node -->
+<rect x="240" y="40" width="155" height="106" rx="8" fill="none" stroke="#000" stroke-width="1.5"/>
+<text x="251" y="61" font-family="monospace" font-size="12" font-weight="bold" fill="#202122">:Page</text>
+<path stroke="#A2A9B1" d="M240,71H395"/>
+<g font-family="monospace" font-size="11" xml:space="preserve">
+<text x="251" y="91"><tspan fill="#72777D">name: </tspan><tspan fill="#202122">"Rijksmuseum"</tspan></text>
+<text x="251" y="111"><tspan fill="#72777D">namespaceId: </tspan><tspan fill="#202122">0</tspan></text>
+<text x="251" y="131"><tspan fill="#72777D">wiki_id: </tspan><tspan fill="#202122">"demo"</tspan></text>
+</g>
+
+<!-- Attendance Subject node -->
+<rect x="585" y="40" width="180" height="126" rx="8" fill="none" stroke="#390" stroke-width="1.5"/>
+<text x="596" y="61" font-family="monospace" font-size="12" font-weight="bold" fill="#202122">:Subject:Attendance</text>
+<path stroke="#A2A9B1" d="M585,71H765"/>
+<g font-family="monospace" font-size="11" xml:space="preserve">
+<text x="596" y="91"><tspan fill="#72777D">id: </tspan><tspan fill="#202122">"sEpfwJLAtndAaaA"</tspan></text>
+<text x="596" y="111"><tspan fill="#72777D">name: </tspan><tspan fill="#202122">"Attendance 2024"</tspan></text>
+<text x="596" y="131"><tspan fill="#72777D">Year: </tspan><tspan fill="#202122">2024</tspan></text>
+<text x="596" y="151"><tspan fill="#72777D">Visitors: </tspan><tspan fill="#202122">2500000</tspan></text>
+</g>
+
+<!-- Museum Subject node -->
+<rect x="240" y="230" width="170" height="126" rx="8" fill="none" stroke="#039" stroke-width="1.5"/>
+<text x="251" y="251" font-family="monospace" font-size="12" font-weight="bold" fill="#202122">:Subject:Museum</text>
+<path stroke="#A2A9B1" d="M240,261H410"/>
+<rect x="246" y="308" width="158" height="18" fill="none" stroke="#D00" stroke-width="1.5"/>
+<g font-family="monospace" font-size="11" xml:space="preserve">
+<text x="251" y="281"><tspan fill="#72777D">id: </tspan><tspan fill="#202122">"sEpfwJLnxyQy6vR"</tspan></text>
+<text x="251" y="301"><tspan fill="#72777D">name: </tspan><tspan fill="#202122">"Rijksmuseum"</tspan></text>
+<text x="251" y="321"><tspan fill="#72777D">Founded: </tspan><tspan fill="#202122">1800</tspan></text>
+<text x="251" y="341"><tspan fill="#72777D">Visitors: </tspan><tspan fill="#202122">2700000</tspan></text>
+</g>
+
+<!-- City Subject node -->
+<rect x="615" y="300" width="170" height="86" rx="8" fill="none" stroke="#039" stroke-width="1.5"/>
+<text x="626" y="321" font-family="monospace" font-size="12" font-weight="bold" fill="#202122">:Subject:City</text>
+<path stroke="#A2A9B1" d="M615,331H785"/>
+<g font-family="monospace" font-size="11" xml:space="preserve">
+<text x="626" y="351"><tspan fill="#72777D">id: </tspan><tspan fill="#202122">"sEpfwJLnuwcxvuJ"</tspan></text>
+<text x="626" y="371"><tspan fill="#72777D">name: </tspan><tspan fill="#202122">"Amsterdam"</tspan></text>
+</g>
+
+<!-- Stub Subject node -->
+<rect x="240" y="450" width="170" height="86" rx="8" fill="none" stroke="#72777D" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="251" y="471" font-family="monospace" font-size="12" font-weight="bold" fill="#202122">:Subject</text>
+<path stroke="#A2A9B1" d="M240,481H410"/>
+<g font-family="monospace" font-size="11" xml:space="preserve">
+<text x="251" y="501"><tspan fill="#72777D">id: </tspan><tspan fill="#202122">"sEpfwJLdirector"</tspan></text>
+<text x="251" y="521"><tspan fill="#72777D">wiki_id: </tspan><tspan fill="#202122">"demo"</tspan></text>
+</g>
+
+<!-- HasSubject edges -->
+<path stroke="#000" stroke-width="1.5" fill="none" d="M270,146V228" marker-end="url(#arrow-page)"/>
+<text x="262" y="192" text-anchor="end" font-family="monospace" font-size="11" fill="#000">HasSubject {isMain: true}</text>
+<path stroke="#000" stroke-width="1.5" fill="none" d="M395,93H583" marker-end="url(#arrow-page)"/>
+<text x="404" y="85" font-family="monospace" font-size="11" fill="#000">HasSubject {isMain: false}</text>
+
+<!-- Relation edges -->
+<path stroke="#D96B00" stroke-width="1.5" fill="none" d="M675,166V273H412" marker-end="url(#arrow-relation)"/>
+<text x="420" y="264" font-family="monospace" font-size="11" fill="#D96B00">Museum {id: "rEpfwJLAtndAaaA"}</text>
+<path stroke="#D96B00" stroke-width="1.5" fill="none" d="M410,343H613" marker-end="url(#arrow-relation)"/>
+<text x="420" y="334" font-family="monospace" font-size="11" fill="#D96B00">City {id: "rEpfwJLoEB5UuQS"}</text>
+<path stroke="#D96B00" stroke-width="1.5" fill="none" d="M322,356V448" marker-end="url(#arrow-relation)"/>
+<text x="332" y="432" font-family="monospace" font-size="11" fill="#D96B00">Director {id: "rEpfwJLdirector"}</text>
+
+<!-- Callouts -->
+<text x="200" y="85" text-anchor="end" fill="#000">Page node</text>
+<path stroke="#000" d="M206,80H232"/>
+
+<text x="290" y="180" fill="#039">Subject node</text>
+<text x="290" y="196" font-size="12" fill="#039">two labels: Subject and its Schema</text>
+<path stroke="#039" d="M302,202V222"/>
+
+<text x="200" y="322" text-anchor="end" fill="#D00">Statement</text>
+<text x="200" y="338" text-anchor="end" font-size="12" fill="#D00">becomes a node property</text>
+<path stroke="#D00" d="M206,317H238"/>
+
+<text x="450" y="389" fill="#D96B00">Relation</text>
+<text x="450" y="405" font-size="12" fill="#D96B00">becomes a typed edge</text>
+<path stroke="#D96B00" d="M462,351V371"/>
+
+<text x="450" y="498" fill="#72777D">Stub</text>
+<text x="450" y="514" font-size="12" fill="#72777D">id only, target not yet created</text>
+<path stroke="#72777D" d="M444,493H418"/>
+</svg>

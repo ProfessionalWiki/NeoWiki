@@ -13,8 +13,6 @@ use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use Wikimedia\ObjectCache\WANObjectCache;
-use Wikimedia\Rdbms\Database;
-use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * Caches the JSON of Mapping pages in the shared WANObjectCache, so that the SPARQL store, which
@@ -36,7 +34,7 @@ class CachingMappingLookup implements MappingLookup {
 		private readonly WANObjectCache $cache,
 		private readonly TitleFactory $titleFactory,
 		private readonly PageReadAuthorizer $readAuthorizer,
-		private readonly IConnectionProvider $connectionProvider,
+		private readonly ReplicaCacheOptions $cacheOptions,
 	) {
 	}
 
@@ -70,7 +68,7 @@ class CachingMappingLookup implements MappingLookup {
 			$cacheKey,
 			WANObjectCache::TTL_DAY,
 			function ( mixed $oldValue, int &$ttl, array &$setOpts ) use ( $name ): ?string {
-				$setOpts += Database::getCacheSetOptions( $this->connectionProvider->getReplicaDatabase() );
+				$setOpts += $this->cacheOptions->forRead();
 				return $this->mappingJsonLookup->getMappingJson( $name );
 			}
 		);

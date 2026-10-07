@@ -12,9 +12,11 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialSubject;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\SubjectLabelHtml;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
+use SpecialPageExecutor;
 
 /**
  * The page is rendered in qqx, so what is asserted is which message the error box and the title use
@@ -27,6 +29,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
  */
 class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 
+	use HelpLinkAssertions;
 	use NeoWikiMockAuthorityTrait;
 
 	private const string SUBJECT_ID = 's1demo8aaaaaab5';
@@ -44,6 +47,13 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'id="ext-neowiki-subject"', $output );
 		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="' . self::SUBJECT_ID . '"', $output );
 		$this->assertStringNotContainsString( self::INVALID_ID_ERROR, $output );
+	}
+
+	public function testTheHelpLinkLeadsToTheDocs(): void {
+		$page = new SpecialSubject();
+		( new SpecialPageExecutor() )->executeSpecialPage( $page, self::SUBJECT_ID, null, 'en' );
+
+		$this->assertHelpLinkLeadsToTheDocs( $page->getOutput() );
 	}
 
 	public function testMountPointCarriesASubjectOfAnotherSource(): void {
@@ -65,18 +75,32 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="' . self::SUBJECT_ID . '"', $output );
 	}
 
-	public function testAMalformedSubjectIdIsRefusedWithoutAMountPoint(): void {
+	public function testAMalformedSubjectIdGetsTheErrorBoxAndNoSubjectToShow(): void {
 		$output = $this->outputFor( 'not-a-subject-id' );
 
 		$this->assertStringContainsString( self::INVALID_ID_ERROR, $output );
-		$this->assertStringNotContainsString( 'id="ext-neowiki-subject"', $output );
+		$this->assertStringContainsString( 'id="ext-neowiki-subject"', $output );
+		$this->assertStringNotContainsString( 'data-mw-neowiki-subject-id', $output );
 	}
 
-	public function testTheBareSpecialPageAsksForASubjectId(): void {
-		$output = $this->outputFor( null );
+	/**
+	 * With no Subject named, the reader is looking for one: the list is where Subjects are found.
+	 */
+	public function testTheBarePageRedirectsToTheSubjectList(): void {
+		$this->assertSame(
+			SpecialPage::getTitleFor( 'Subjects' )->getFullURL(),
+			$this->executeWith( null )->getRedirect()
+		);
+	}
 
-		$this->assertStringContainsString( self::INVALID_ID_ERROR, $output );
-		$this->assertStringNotContainsString( 'id="ext-neowiki-subject"', $output );
+	/**
+	 * `Special:Subject/` names no Subject either; MediaWiki hands the trailing slash on as an empty subpage.
+	 */
+	public function testAnEmptySubPageRedirectsToo(): void {
+		$this->assertSame(
+			SpecialPage::getTitleFor( 'Subjects' )->getFullURL(),
+			$this->executeWith( '' )->getRedirect()
+		);
 	}
 
 	/**
@@ -137,7 +161,31 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'ACME Inc', $this->executeWith( self::SUBJECT_ID )->getPageTitle() );
 	}
 
-	public function testTheTitleMarksANameNobodyChoseAsTheStandInItIs(): void {
+	public function testTheTitleSaysNoLabelIsDefinedBesideTheIdOfASubjectWithoutOne(): void {
+		$this->createSubjectWithoutLabel();
+
+		$this->assertSame(
+			'(neowiki-subject-no-label)(word-separator)(parentheses: ' . self::SUBJECT_ID . ')',
+			strip_tags( $this->executeWith( self::SUBJECT_ID )->getPageTitle() )
+		);
+	}
+
+	public function testTheBrowserTitleNamesASubjectWithoutALabelByItsStandIn(): void {
+		$this->createSubjectWithoutLabel();
+
+		$this->assertStringContainsString(
+			'(neowiki-subject-generated-name: ' . self::SUBJECT_ID . ')',
+			$this->executeWith( self::SUBJECT_ID )->getHTMLTitle()
+		);
+	}
+
+	public function testTheTitleOfASubjectWithoutALabelCarriesItsStyles(): void {
+		$this->createSubjectWithoutLabel();
+
+		$this->assertContains( SubjectLabelHtml::STYLE_MODULE, $this->executeWith( self::SUBJECT_ID )->getModuleStyles() );
+	}
+
+	private function createSubjectWithoutLabel(): void {
 		$this->createPageWithSubjects(
 			'SpecialSubjectTest_Unnamed',
 			otherSubjects: new SubjectMap( TestSubject::build(
@@ -145,11 +193,6 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 				label: null,
 				schemaName: new SchemaName( 'Company' )
 			) )
-		);
-
-		$this->assertSame(
-			'(neowiki-subject-generated-name: Company)',
-			$this->executeWith( self::SUBJECT_ID )->getPageTitle()
 		);
 	}
 

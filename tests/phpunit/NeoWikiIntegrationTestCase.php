@@ -13,6 +13,7 @@ use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
@@ -36,6 +37,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
+use Psr\Log\LogLevel;
 use RevisionDeleter;
 use TestLogger;
 use WikiExporter;
@@ -97,19 +99,32 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	protected function parseWikitextOn( string $pageName, string $wikitext, ?ParserOptions $parserOptions = null ): string {
 		$parserOptions ??= ParserOptions::newFromAnon();
 
+		return $this->parserOutputOn( $pageName, $wikitext, $parserOptions )
+			->runOutputPipeline( $parserOptions, [] )->getContentHolderText();
+	}
+
+	/**
+	 * The parse {@see self::parseWikitextOn()} renders, with what it recorded besides the text.
+	 */
+	protected function parserOutputOn( string $pageName, string $wikitext, ParserOptions $parserOptions ): ParserOutput {
 		return $this->getServiceContainer()->getParserFactory()->create()->parse(
 			$wikitext,
 			Title::newFromText( $pageName ),
 			$parserOptions
-		)->runOutputPipeline( $parserOptions, [] )->getContentHolderText();
+		);
 	}
 
+	/**
+	 * @param TextContent $mainContent What the page says of its own, empty by default as a page
+	 *   created for a Subject has it.
+	 */
 	protected function createPageWithSubjects(
 		string $pageName,
 		?Subject $mainSubject = null,
-		SubjectMap $otherSubjects = new SubjectMap()
+		SubjectMap $otherSubjects = new SubjectMap(),
+		TextContent $mainContent = new TextContent( '' )
 	): ?RevisionRecord {
-		return $this->saveSubjects( $pageName, $mainSubject, $otherSubjects, new TextContent( '' ) );
+		return $this->saveSubjects( $pageName, $mainSubject, $otherSubjects, $mainContent );
 	}
 
 	/**
@@ -237,6 +252,19 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	 */
 	protected static function loggedText( TestLogger $logger ): string {
 		return implode( "\n", array_column( $logger->getBuffer(), 1 ) );
+	}
+
+	/**
+	 * @return string[]
+	 */
+	protected static function loggedErrors( TestLogger $logger ): array {
+		return array_column(
+			array_filter(
+				$logger->getBuffer(),
+				static fn ( array $record ): bool => $record[0] === LogLevel::ERROR
+			),
+			1
+		);
 	}
 
 	protected function createSchema( string $name, ?string $json = null ): ?RevisionRecord {

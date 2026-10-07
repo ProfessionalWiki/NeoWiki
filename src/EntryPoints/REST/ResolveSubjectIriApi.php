@@ -21,8 +21,8 @@ use Wikimedia\ParamValidator\ParamValidator;
  *   - `Accept` includes `application/trig` → the Subject's TriG RDF export.
  *   - else `Accept` includes `text/turtle` → the Subject's Turtle RDF export (TriG wins a tie, matching
  *     {@see RdfFormatNegotiation}).
- *   - else (a browser's `text/html`, `*&#47;*`, an absent or unrecognized `Accept`) → `Special:Subject` for
- *     that Subject, or the page it is stored on when `$wgNeoWikiDereferenceSubjectsToHostingPage` is set.
+ *   - else (a browser's `text/html`, `*&#47;*`, an absent or unrecognized `Accept`) → the page the Subject
+ *     is stored on, or `Special:Subject` for that Subject on a subject-first wiki (ADR 33).
  *
  * The RDF branches target the native projection: selecting an ontology target or a specific
  * serialization stays on the per-Subject RDF endpoint, keeping this concept-URI surface Accept-only.
@@ -97,14 +97,14 @@ class ResolveSubjectIriApi extends SimpleHandler {
 	}
 
 	/**
-	 * The Subject's own view, or the page it is stored on when the wiki asks for that. The hosting page
-	 * is authorized either way: it is what the resolver above gated on.
+	 * The page the Subject is stored on, or the Subject's own view on a subject-first wiki. The
+	 * hosting page is authorized either way: it is what the resolver above gated on.
 	 *
 	 * The resolver already authorized that page, so it resolves here; a null only means it was deleted
 	 * within this same request, which takes the same not-found as any other unservable Subject.
 	 */
 	private function htmlUrl( SubjectId $id, PageIdentifiers $hostingPage ): ?string {
-		if ( !$this->dereferenceToHostingPage() ) {
+		if ( $this->isSubjectFirst() ) {
 			return SpecialPage::getTitleFor( 'Subject', $id->text )->getCanonicalURL();
 		}
 
@@ -123,10 +123,10 @@ class ResolveSubjectIriApi extends SimpleHandler {
 		return $response;
 	}
 
-	private function dereferenceToHostingPage(): bool {
-		// The effective flag combines the MediaWiki:NeoWiki page with $wgNeoWikiDereferenceSubjectsToHostingPage
-		// (the page wins when it sets a valid boolean; an invalid page value has already fallen back).
-		return NeoWikiExtension::getInstance()->dereferenceSubjectsToHostingPage();
+	private function isSubjectFirst(): bool {
+		// The effective flag combines the MediaWiki:NeoWiki page with $wgNeoWikiSubjectFirst (the page
+		// wins when it sets a valid boolean; an invalid page value has already fallen back).
+		return NeoWikiExtension::getInstance()->isSubjectFirst();
 	}
 
 	private function noDataResponse( string $subjectId ): Response {

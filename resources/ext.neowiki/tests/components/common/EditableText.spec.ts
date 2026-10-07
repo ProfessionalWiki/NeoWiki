@@ -81,6 +81,83 @@ describe( 'EditableText', () => {
 		expect( wrapper.find( '.ext-neowiki-editable-text__text' ).exists() ).toBe( true );
 	} );
 
+	it( 'reports a typed draft as dirty', async () => {
+		const wrapper = mountComponent();
+
+		const input = await startEditing( wrapper );
+		await input.setValue( 'Renamed Anvil' );
+
+		expect( wrapper.emitted( 'dirty' ) ).toEqual( [ [ true ] ] );
+	} );
+
+	it( 'reports the draft clean again once it is discarded', async () => {
+		const wrapper = mountComponent();
+
+		const input = await startEditing( wrapper );
+		await input.setValue( 'Renamed Anvil' );
+		await input.trigger( 'keyup.esc' );
+
+		expect( wrapper.emitted( 'dirty' ) ).toEqual( [ [ true ], [ false ] ] );
+	} );
+
+	it( 'reports nothing when the field is merely opened', async () => {
+		const wrapper = mountComponent();
+
+		await startEditing( wrapper );
+
+		expect( wrapper.emitted( 'dirty' ) ).toBeUndefined();
+	} );
+
+	it( 'keeps the input in place while the pointer press that blurred it lasts', async () => {
+		const wrapper = mountComponent();
+		const input = await startEditing( wrapper );
+		await input.setValue( 'Renamed Anvil' );
+
+		document.dispatchEvent( new Event( 'pointerdown' ) );
+		await input.trigger( 'blur' );
+
+		expect( wrapper.emitted( 'update:modelValue' ) ).toEqual( [ [ 'Renamed Anvil' ] ] );
+		expect( wrapper.find( 'input' ).exists() ).toBe( true );
+	} );
+
+	it( 'closes the input once that press ends', async () => {
+		const wrapper = mountComponent();
+		const input = await startEditing( wrapper );
+		document.dispatchEvent( new Event( 'pointerdown' ) );
+		await input.trigger( 'blur' );
+
+		document.dispatchEvent( new Event( 'pointerup' ) );
+		await new Promise( ( resolve ) => {
+			setTimeout( resolve );
+		} );
+		await nextTick();
+
+		expect( wrapper.find( 'input' ).exists() ).toBe( false );
+	} );
+
+	it( 'commits the draft when the host asks', async () => {
+		const wrapper = mountComponent();
+		const input = await startEditing( wrapper );
+		await input.setValue( 'Renamed Anvil' );
+
+		( wrapper.vm as any ).commit();
+		await nextTick();
+
+		expect( wrapper.emitted( 'update:modelValue' ) ).toEqual( [ [ 'Renamed Anvil' ] ] );
+		expect( wrapper.find( 'input' ).exists() ).toBe( false );
+	} );
+
+	it( 'reports the draft clean when it is taken down mid-edit', async () => {
+		const reports = vi.fn();
+		const wrapper = mountComponent( { onDirty: reports } );
+		const input = await startEditing( wrapper );
+		await input.setValue( 'Renamed Anvil' );
+
+		wrapper.unmount();
+
+		expect( reports.mock.calls ).toEqual( [ [ true ], [ false ] ] );
+	} );
+
 	it( 'does not emit when the draft equals the value', async () => {
 		const wrapper = mountComponent();
 
@@ -261,6 +338,20 @@ describe( 'EditableText', () => {
 			wrapper.unmount();
 		} );
 
+		it( 'stays closed once the Enter that committed it is released', async () => {
+			const wrapper = mountAttached();
+
+			const input = await startEditing( wrapper );
+			await input.trigger( 'keydown.enter' );
+			await flushPromises();
+			// The release goes to wherever the commit moved the focus.
+			document.activeElement?.dispatchEvent( new KeyboardEvent( 'keyup', { key: 'Enter', bubbles: true } ) );
+			await flushPromises();
+
+			expect( wrapper.find( 'input' ).exists() ).toBe( false );
+			wrapper.unmount();
+		} );
+
 		it( 'returns focus to the edit button after cancelling with Escape', async () => {
 			const wrapper = mountAttached();
 
@@ -272,6 +363,41 @@ describe( 'EditableText', () => {
 			wrapper.unmount();
 		} );
 	} );
+
+	describe( 'a held Enter', () => {
+		// jsdom does not click a button on Enter; a browser does, on every autorepeat, unless the keydown is cancelled.
+		function pressEnterOnEditButton( wrapper: VueWrapper, repeat: boolean ): KeyboardEvent {
+			const keydown = new KeyboardEvent( 'keydown', { key: 'Enter', repeat, bubbles: true, cancelable: true } );
+			editButton( wrapper ).element.dispatchEvent( keydown );
+			return keydown;
+		}
+
+		it( 'leaves the field open through the autorepeats of the Enter that opened it', async () => {
+			const wrapper = mountComponent();
+
+			const input = await startEditing( wrapper );
+			await input.trigger( 'keydown.enter', { repeat: true } );
+
+			expect( wrapper.find( 'input' ).exists() ).toBe( true );
+		} );
+
+		it( 'keeps the edit button from clicking on its autorepeats', () => {
+			const wrapper = mountComponent();
+
+			const autorepeat = pressEnterOnEditButton( wrapper, true );
+
+			expect( autorepeat.defaultPrevented ).toBe( true );
+		} );
+
+		it( 'lets the first press of Enter activate the edit button', () => {
+			const wrapper = mountComponent();
+
+			const press = pressEnterOnEditButton( wrapper, false );
+
+			expect( press.defaultPrevented ).toBe( false );
+		} );
+	} );
+
 	describe( 'multiline', () => {
 		const mountMultiline = ( props: Partial<InstanceType<typeof EditableText>['$props']> = {} ): VueWrapper =>
 			mountComponent( { multiline: true, ...props } );

@@ -8,6 +8,11 @@ use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\Source\LocalSource;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceNormalizer;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
@@ -25,6 +30,43 @@ class TestSources {
 		$registry->registerSource( TestSubjectIds::OTHER_SOURCE_KEY, self::newSource() );
 
 		return $registry;
+	}
+
+	/**
+	 * Reads Schema references the way this wiki does: local to it, and renamed per $schemaNames in place
+	 * of MediaWiki's page-name normalization, which {@see \ProfessionalWiki\NeoWiki\Tests\Infrastructure\TitleBasedSchemaReferenceNormalizerTest}
+	 * covers. A name outside the map is left alone.
+	 *
+	 * @param array<string, string> $schemaNames Name as written => the name of the Schema it names.
+	 */
+	public static function newSchemaReferenceParser( array $schemaNames = [] ): SchemaReferenceParser {
+		return new SchemaReferenceParser(
+			TestSubjectIds::LOCAL_SOURCE_KEY,
+			new class( $schemaNames ) implements SchemaReferenceNormalizer {
+				/**
+				 * @param array<string, string> $names
+				 */
+				public function __construct( private readonly array $names ) {
+				}
+
+				public function normalize( SchemaReference $reference ): SchemaReference {
+					if ( !$reference->isLocal() ) {
+						return $reference;
+					}
+
+					$written = $reference->name->getText();
+
+					return SchemaReference::local( new SchemaName( $this->names[$written] ?? $written ) );
+				}
+			}
+		);
+	}
+
+	/**
+	 * The core Property Types, reading Schema references the way {@see newSchemaReferenceParser()} does.
+	 */
+	public static function newPropertyTypeRegistry(): PropertyTypeRegistry {
+		return PropertyTypeRegistry::withCoreTypes( self::newSchemaReferenceParser() );
 	}
 
 	private static function newSource(): LocalSource {

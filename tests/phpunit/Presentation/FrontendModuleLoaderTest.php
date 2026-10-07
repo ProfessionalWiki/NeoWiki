@@ -104,6 +104,38 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $this->addedJsConfigVars['wgNeoWikiEnforceValidation'] ?? null );
 	}
 
+	public function testEmitsThatTheSubjectListIsAvailableAsJsConfigVar(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$this->newLoader( subjectListAvailable: true )->load( $this->newCapturingOutputPage(), $this->createMock( Skin::class ) );
+
+		$this->assertTrue( $this->addedJsConfigVars['wgNeoWikiSubjectListAvailable'] ?? null );
+	}
+
+	public function testEmitsThatTheSubjectListIsUnavailableAsJsConfigVar(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$this->newLoader( subjectListAvailable: false )->load( $this->newCapturingOutputPage(), $this->createMock( Skin::class ) );
+
+		$this->assertFalse( $this->addedJsConfigVars['wgNeoWikiSubjectListAvailable'] ?? null );
+	}
+
+	public function testEmitsThatTheWikiIsSubjectFirstAsJsConfigVar(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$this->newLoader( subjectFirst: true )->load( $this->newCapturingOutputPage(), $this->createMock( Skin::class ) );
+
+		$this->assertTrue( $this->addedJsConfigVars['wgNeoWikiSubjectFirst'] ?? null );
+	}
+
+	public function testEmitsFalseOnAPageFirstWiki(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$this->newLoader( subjectFirst: false )->load( $this->newCapturingOutputPage(), $this->createMock( Skin::class ) );
+
+		$this->assertFalse( $this->addedJsConfigVars['wgNeoWikiSubjectFirst'] ?? null );
+	}
+
 	public function testEmitsThatTheViewerMayEditThePagesSubjects(): void {
 		$this->clearHook( 'NeoWikiGetFrontendModules' );
 
@@ -216,11 +248,18 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 		return $out->getJsConfigVars()['wgNeoWikiCreateSubjectPageDeniedReason'];
 	}
 
-	private function newLoader( int $validationDebounceMs = 300, bool $validationEnforced = false ): FrontendModuleLoader {
+	private function newLoader(
+		int $validationDebounceMs = 300,
+		bool $validationEnforced = false,
+		bool $subjectFirst = false,
+		bool $subjectListAvailable = false
+	): FrontendModuleLoader {
 		return new FrontendModuleLoader(
 			$this->getServiceContainer()->getHookContainer(),
 			$validationDebounceMs,
 			$validationEnforced,
+			$subjectFirst,
+			$subjectListAvailable,
 		);
 	}
 

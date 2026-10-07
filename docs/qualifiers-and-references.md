@@ -11,6 +11,8 @@ that needs context becomes its own Subject with its own Schema, linked from the 
 hold any number of Subjects ([ADR 7](adr/007-multiple-subjects-per-page.md)), so this adds Subjects, not a page per
 value.
 
+![A Wikibase statement with a qualifier and a reference, and the same data in NeoWiki as a Relation to a Subject whose properties hold the qualifier and reference](qualifiers-and-references.svg)
+
 NeoWiki is a [Property Graph](https://en.wikipedia.org/wiki/Property_graph): Subjects are nodes with typed properties
 and Relations are edges.
 

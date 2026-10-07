@@ -20,6 +20,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 use Throwable;
 
 /**
@@ -69,6 +70,7 @@ class SpecialGraphStores extends SpecialPage {
 	 */
 	public function execute( $subPage ): void {
 		parent::execute( $subPage );
+		$this->addHelpLink( DocumentationUrl::GraphStoreRebuilds->value, true );
 
 		if ( $this->getRequest()->wasPosted() ) {
 			$this->checkReadOnly();

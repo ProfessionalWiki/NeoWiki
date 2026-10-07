@@ -17,7 +17,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubWikiConfigSource;
 class WikiConfigLookupTest extends TestCase {
 
 	private const PHP_CONFIG = [
-		'NeoWikiDereferenceSubjectsToHostingPage' => false,
+		'NeoWikiSubjectFirst' => false,
 		'NeoWikiAutoRenderMainSubject' => true,
 	];
 
@@ -36,19 +36,19 @@ class WikiConfigLookupTest extends TestCase {
 	}
 
 	public function testUsesThePhpValueWhenThereIsNoConfigPage(): void {
-		$this->assertFalse( $this->newLookup( null )->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) );
+		$this->assertFalse( $this->newLookup( null )->getEffectiveValue( 'subjectFirst' ) );
 	}
 
 	public function testUsesThePhpValueWhenTheKeyIsAbsentFromThePage(): void {
 		$lookup = $this->newLookup( [ 'autoRenderMainSubject' => false ] );
 
-		$this->assertFalse( $lookup->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) );
+		$this->assertFalse( $lookup->getEffectiveValue( 'subjectFirst' ) );
 	}
 
 	public function testAValidPageValueWinsOverThePhpValue(): void {
-		$lookup = $this->newLookup( [ 'dereferenceSubjectsToHostingPage' => true ] );
+		$lookup = $this->newLookup( [ 'subjectFirst' => true ] );
 
-		$this->assertTrue( $lookup->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) );
+		$this->assertTrue( $lookup->getEffectiveValue( 'subjectFirst' ) );
 	}
 
 	public function testEachSettingIsResolvedIndependently(): void {
@@ -58,16 +58,16 @@ class WikiConfigLookupTest extends TestCase {
 	}
 
 	public function testAnInvalidPageValueFallsBackToThePhpValue(): void {
-		$lookup = $this->newLookup( [ 'dereferenceSubjectsToHostingPage' => 'yes' ] );
+		$lookup = $this->newLookup( [ 'subjectFirst' => 'yes' ] );
 
-		$this->assertFalse( $lookup->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) );
+		$this->assertFalse( $lookup->getEffectiveValue( 'subjectFirst' ) );
 	}
 
 	public function testAnInvalidPageValueLogsAWarning(): void {
 		$logger = new TestLogger();
 
-		$this->newLookup( [ 'dereferenceSubjectsToHostingPage' => 'yes' ], logger: $logger )
-			->getEffectiveValue( 'dereferenceSubjectsToHostingPage' );
+		$this->newLookup( [ 'subjectFirst' => 'yes' ], logger: $logger )
+			->getEffectiveValue( 'subjectFirst' );
 
 		$this->assertTrue( $logger->hasWarningRecords() );
 	}
@@ -75,22 +75,22 @@ class WikiConfigLookupTest extends TestCase {
 	public function testUnknownPageKeysAreToleratedOnRead(): void {
 		$logger = new TestLogger();
 		$lookup = $this->newLookup(
-			[ 'dereferenceSubjectsToHostingPage' => true, 'someFutureKey' => 'whatever' ],
+			[ 'subjectFirst' => true, 'someFutureKey' => 'whatever' ],
 			logger: $logger
 		);
 
-		$this->assertTrue( $lookup->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) );
+		$this->assertTrue( $lookup->getEffectiveValue( 'subjectFirst' ) );
 		$this->assertFalse( $logger->hasWarningRecords() );
 	}
 
 	public function testThePageIsIgnoredWhenInWikiConfigIsDisabled(): void {
-		$lookup = $this->newLookup( [ 'dereferenceSubjectsToHostingPage' => true ], enabled: false );
+		$lookup = $this->newLookup( [ 'subjectFirst' => true ], enabled: false );
 
-		$this->assertFalse( $lookup->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) );
+		$this->assertFalse( $lookup->getEffectiveValue( 'subjectFirst' ) );
 	}
 
 	public function testTheConfigPageIsReadAtMostOncePerLookup(): void {
-		$source = new StubWikiConfigSource( [ 'dereferenceSubjectsToHostingPage' => true ] );
+		$source = new StubWikiConfigSource( [ 'subjectFirst' => true ] );
 		$lookup = new WikiConfigLookup(
 			new ConfigSchema(),
 			$source,
@@ -99,7 +99,7 @@ class WikiConfigLookupTest extends TestCase {
 			new TestLogger()
 		);
 
-		$lookup->getEffectiveValue( 'dereferenceSubjectsToHostingPage' );
+		$lookup->getEffectiveValue( 'subjectFirst' );
 		$lookup->getEffectiveValue( 'autoRenderMainSubject' );
 
 		$this->assertSame( 1, $source->readCount );

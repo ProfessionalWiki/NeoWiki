@@ -42,15 +42,19 @@ use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigSchema;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigValidator;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\WikiConfigLookup;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\WikiConfigSource;
+use ProfessionalWiki\NeoWiki\Application\NewSubjectIdResolver;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
+use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchHitBuilder;
 use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchTextBuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSchema\GetSchemaQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetLayout\GetLayoutPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetLayout\GetLayoutQuery;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetMainSubject\GetMainSubjectPresenter;
+use ProfessionalWiki\NeoWiki\Application\Queries\GetMainSubject\GetMainSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetReferencingSubjects\GetReferencingSubjectsPresenter;
@@ -78,6 +82,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\FailureIsolatingGraphDatabaseP
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\StatementNormalizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
@@ -133,6 +138,8 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\CancelGraphStoreRebuildApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectPageApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetJsonSchemaApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetMainSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectEditNoticesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
@@ -145,6 +152,8 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetReferencingSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectSummariesApi;
+use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryLookup;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\MintSubjectIdsApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQueryApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\Neo4jRouteRegistration;
@@ -157,9 +166,12 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\StartGraphStoreRebuildApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetSubjectsOrderingApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\ParserAuthority;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedSubjectAuthorizer;
+use ProfessionalWiki\NeoWiki\Infrastructure\ParserPageDependencyRecorder;
 use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedPageIdentifiersResolver;
+use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedSchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseDeletedPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdsLookup;
@@ -168,7 +180,9 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiWikiConfigSource;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\ReplicaCacheOptions;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Search\SubjectSearchHitLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Search\SubjectSearchTextLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
@@ -176,6 +190,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PointInTimeSubjectLoo
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PublishedSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectInPlaceOfPageTitleLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingMappingLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseMappingNameLookup;
@@ -188,6 +203,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jReferencingSubjectLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectSummaryLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\CallbackProjectionResolver;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService;
@@ -216,8 +232,10 @@ use ProfessionalWiki\NeoWiki\Presentation\ConfigDocumentationBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\FrontendModuleLoader;
 use ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder;
+use ProfessionalWiki\NeoWiki\Presentation\JsonSchemaSerializer;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Presentation\LayoutPresentationSerializer;
+use ProfessionalWiki\NeoWiki\Presentation\SubjectSearchHitHtmlBuilder;
 use Wikimedia\Rdbms\IDatabase;
 
 class NeoWikiExtension {
@@ -225,6 +243,7 @@ class NeoWikiExtension {
 	public const int NS_SCHEMA = 7474;
 	public const int NS_LAYOUT = 7476;
 	public const int NS_MAPPING = 7478;
+	public const int NS_SUBJECT = 7480;
 
 	/**
 	 * The page in the MediaWiki namespace holding the on-wiki JSON configuration (MediaWiki:NeoWiki).
@@ -239,6 +258,12 @@ class NeoWikiExtension {
 	public const string ADMIN_RIGHT = 'neowiki-admin';
 
 	public const string SUBJECT_SEARCH_FIELD = 'neowiki_text';
+
+	/**
+	 * Most rows one Subject listing request reads while dropping rows the caller may not read (ADR 27). A page of
+	 * 50 needs 51 readable rows, so this leaves room for many unreadable ones before a page ends short.
+	 */
+	private const int SUBJECT_SUMMARY_SCAN_BOUND = 1000;
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
@@ -259,6 +284,9 @@ class NeoWikiExtension {
 	private ClientInterface $readOnlyNeo4jClient;
 	private ?WikiConfigSource $wikiConfigSource = null;
 	private ?SchemaLookup $schemaLookup = null;
+	private ?SubjectSearchHitLookup $subjectSearchHitLookup = null;
+	private ?SchemaReferenceParser $schemaReferenceParser = null;
+	private ?SubjectInPlaceOfPageTitleLookup $subjectInPlaceOfPageTitleLookup = null;
 	/** @var array<string, SchemaLookup> */
 	private array $schemaLookupsByUser = [];
 	private static ?self $instance = null;
@@ -296,6 +324,11 @@ class NeoWikiExtension {
 
 		self::registerPoweredByBadge();
 		self::registerCirrusSearchWeight();
+		self::searchTheSubjectNamespaceByDefault();
+	}
+
+	private static function searchTheSubjectNamespaceByDefault(): void {
+		$GLOBALS['wgNamespacesToBeSearchedDefault'][self::NS_SUBJECT] ??= true;
 	}
 
 	/**
@@ -361,7 +394,7 @@ class NeoWikiExtension {
 
 	public function getPropertyTypeRegistry(): PropertyTypeRegistry {
 		if ( !isset( $this->propertyTypeRegistry ) ) {
-			$this->propertyTypeRegistry = PropertyTypeRegistry::withCoreTypes( $this->config->wikiId );
+			$this->propertyTypeRegistry = PropertyTypeRegistry::withCoreTypes( $this->getSchemaReferenceParser() );
 		}
 
 		$this->ensureExtensionsRegistered();
@@ -433,9 +466,22 @@ class NeoWikiExtension {
 	public function newSubjectContentDataDeserializer(): SubjectContentDataDeserializer {
 		return new SubjectContentDataDeserializer(
 			new StatementDeserializer( $this->getPropertyTypeLookup(), $this->getSubjectIdParser() ),
-			$this->getSubjectIdParser(),
-			LoggerFactory::getInstance( 'NeoWiki' )
+			LoggerFactory::getInstance( 'NeoWiki' ),
+			$this->getSchemaReferenceParser()
 		);
+	}
+
+	/**
+	 * Held for the process: the parser's normalizer remembers the Schema names it has resolved, and a
+	 * fresh one per read would throw that away, parsing every name again on every page.
+	 */
+	public function getSchemaReferenceParser(): SchemaReferenceParser {
+		$this->schemaReferenceParser ??= new SchemaReferenceParser(
+			$this->config->wikiId,
+			new TitleBasedSchemaReferenceNormalizer( MediaWikiServices::getInstance()->getTitleFactory() )
+		);
+
+		return $this->schemaReferenceParser;
 	}
 
 	/**
@@ -833,7 +879,7 @@ class NeoWikiExtension {
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
-			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
+			cacheOptions: $this->newReplicaCacheOptions(),
 		);
 	}
 
@@ -1157,12 +1203,26 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Whether a browser dereferencing a Subject concept URI is sent to the plain hosting page rather
-	 * than to Special:Subject, combining the on-wiki configuration page with
-	 * $wgNeoWikiDereferenceSubjectsToHostingPage (the page wins when it sets a valid boolean).
+	 * Whether this wiki puts Subjects before pages (ADR 33), combining
+	 * the on-wiki configuration page with $wgNeoWikiSubjectFirst (the page wins when it sets a valid
+	 * boolean).
 	 */
-	public function dereferenceSubjectsToHostingPage(): bool {
-		return $this->getWikiConfigLookup()->getEffectiveValue( 'dereferenceSubjectsToHostingPage' ) === true;
+	public function isSubjectFirst(): bool {
+		return $this->getWikiConfigLookup()->getEffectiveValue( 'subjectFirst' ) === true;
+	}
+
+	public function getSubjectPageNamespace(): int {
+		if ( !$this->isSubjectFirst() ) {
+			return NS_MAIN;
+		}
+
+		$namespace = MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiSubjectPageNamespace' );
+
+		if ( !is_int( $namespace ) ) {
+			throw new LogicException( '$wgNeoWikiSubjectPageNamespace must be a namespace id' );
+		}
+
+		return $namespace;
 	}
 
 	/**
@@ -1258,10 +1318,31 @@ class NeoWikiExtension {
 	public function newSubjectSearchTextLookup(): SubjectSearchTextLookup {
 		return new SubjectSearchTextLookup(
 			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
-			textBuilder: new SubjectSearchTextBuilder(
-				$this->getPropertyTypeLookup(),
-				$this->getSchemaResolver()
-			)
+			textBuilder: $this->newSubjectSearchTextBuilder()
+		);
+	}
+
+	private function newSubjectSearchTextBuilder(): SubjectSearchTextBuilder {
+		return new SubjectSearchTextBuilder(
+			$this->getPropertyTypeLookup(),
+			$this->getSchemaResolver()
+		);
+	}
+
+	public function getSubjectSearchHitLookup(): SubjectSearchHitLookup {
+		$this->subjectSearchHitLookup ??= new SubjectSearchHitLookup(
+			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
+			hitBuilder: new SubjectSearchHitBuilder( $this->newSubjectSearchTextBuilder() ),
+			logger: LoggerFactory::getInstance( 'NeoWiki' )
+		);
+
+		return $this->subjectSearchHitLookup;
+	}
+
+	public function newSubjectSearchHitHtmlBuilder( MessageLocalizer $messageLocalizer ): SubjectSearchHitHtmlBuilder {
+		return new SubjectSearchHitHtmlBuilder(
+			$messageLocalizer,
+			MediaWikiServices::getInstance()->getContentLanguage()
 		);
 	}
 
@@ -1272,6 +1353,8 @@ class NeoWikiExtension {
 			MediaWikiServices::getInstance()->getHookContainer(),
 			is_int( $debounceMs ) ? $debounceMs : 300,
 			$this->isValidationEnforced(),
+			$this->isSubjectFirst(),
+			$this->isSubjectListAvailable(),
 		);
 	}
 
@@ -1284,7 +1367,9 @@ class NeoWikiExtension {
 		);
 	}
 
-	public function newSubjectResolver( Authority $authority ): SubjectResolver {
+	public function newSubjectResolver( Parser $parser ): SubjectResolver {
+		$authority = ParserAuthority::of( $parser );
+
 		return new SubjectResolver(
 			subjectContentRepository: $this->newSubjectContentRepository( $authority ),
 			// Latest, deliberately: the parse-time surfaces read what the editor sees, and the page gate
@@ -1293,6 +1378,7 @@ class NeoWikiExtension {
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			subjectIdParser: $this->getSubjectIdParser(),
+			pageDependencyRecorder: new ParserPageDependencyRecorder( $parser ),
 		);
 	}
 
@@ -1436,7 +1522,7 @@ class NeoWikiExtension {
 	 *
 	 * @return array<string, ?string> Keys are store names
 	 */
-	private function getMappingDefinedStoreProjections(): array {
+	public function getMappingDefinedStoreProjections(): array {
 		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
 
 		return array_map(
@@ -1474,17 +1560,24 @@ class NeoWikiExtension {
 		return new CreateSubjectAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			idGenerator: $this->getIdGenerator(),
+			newSubjectIdResolver: $this->getNewSubjectIdResolver(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),
 			statementNormalizer: $this->getStatementNormalizer(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
-			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
-			subjectIdParser: $this->getSubjectIdParser(),
+			schemaReferenceParser: $this->getSchemaReferenceParser(),
 			validationEnforced: $this->isValidationEnforced(),
+		);
+	}
+
+	private function getNewSubjectIdResolver(): NewSubjectIdResolver {
+		return new NewSubjectIdResolver(
+			subjectIdParser: $this->getSubjectIdParser(),
+			idGenerator: $this->getIdGenerator(),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 		);
 	}
 
@@ -1492,14 +1585,17 @@ class NeoWikiExtension {
 		return new CreateSubjectPageAction(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			idGenerator: $this->getIdGenerator(),
+			newSubjectIdResolver: $this->getNewSubjectIdResolver(),
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),
 			statementNormalizer: $this->getStatementNormalizer(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
+			schemaReferenceParser: $this->getSchemaReferenceParser(),
 			validationEnforced: $this->isValidationEnforced(),
+			subjectFirst: $this->isSubjectFirst(),
+			subjectPageNamespace: $this->getSubjectPageNamespace(),
 		);
 	}
 
@@ -1546,6 +1642,21 @@ class NeoWikiExtension {
 			idGenerator: $this->getIdGenerator(),
 			subjectIdParser: $this->getSubjectIdParser()
 		);
+	}
+
+	/**
+	 * Kept for the request: links find only what a list read up front through this same instance.
+	 */
+	public function getSubjectInPlaceOfPageTitleLookup(): SubjectInPlaceOfPageTitleLookup {
+		$this->subjectInPlaceOfPageTitleLookup ??= new SubjectInPlaceOfPageTitleLookup(
+			MediaWikiServices::getInstance()->getRevisionStore(),
+			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
+			$this->getRevisionPolicy(),
+			fn ( Authority $reader ): PageReadAuthorizer => $this->newPageReadAuthorizer( $reader ),
+			maxPages: 250
+		);
+
+		return $this->subjectInPlaceOfPageTitleLookup;
 	}
 
 	public function getPageIdentifiersLookup(): PageIdentifiersLookup {
@@ -1676,12 +1787,23 @@ class NeoWikiExtension {
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
-			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
+			cacheOptions: $this->newReplicaCacheOptions(),
+		);
+	}
+
+	private function newReplicaCacheOptions(): ReplicaCacheOptions {
+		return new ReplicaCacheOptions(
+			MediaWikiServices::getInstance()->getConnectionProvider(),
+			MW_VERSION
 		);
 	}
 
 	public function getSchemaPresentationSerializer(): SchemaPresentationSerializer {
 		return new SchemaPresentationSerializer();
+	}
+
+	public function newJsonSchemaSerializer( string $documentUrl ): JsonSchemaSerializer {
+		return new JsonSchemaSerializer( documentUrl: $documentUrl );
 	}
 
 	private function getPersistenceSchemaDeserializer(): SchemaPersistenceDeserializer {
@@ -1701,7 +1823,7 @@ class NeoWikiExtension {
 	}
 
 	private function getLayoutPersistenceDeserializer(): LayoutPersistenceDeserializer {
-		return new LayoutPersistenceDeserializer();
+		return new LayoutPersistenceDeserializer( $this->getSchemaReferenceParser() );
 	}
 
 	public function getSchemaNameLookup(): SchemaNameLookup {
@@ -1710,6 +1832,22 @@ class NeoWikiExtension {
 			searchEngine: MediaWikiServices::getInstance()->newSearchEngine(),
 			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
+		);
+	}
+
+	/**
+	 * Whether this wiki can list its Subjects: the listing reads the Neo4j projection.
+	 */
+	public function isSubjectListAvailable(): bool {
+		return $this->config->hasNeo4jBackend();
+	}
+
+	public function newSubjectSummaryLookup(): SubjectSummaryLookup {
+		return new Neo4jSubjectSummaryLookup(
+			client: $this->getReadOnlyNeo4jClient(),
+			wikiId: $this->config->wikiId,
+			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
+			scanBound: self::SUBJECT_SUMMARY_SCAN_BOUND,
 		);
 	}
 
@@ -1764,6 +1902,15 @@ class NeoWikiExtension {
 			environment: new RequestContextSubjectEditNoticeEnvironment(
 				MediaWikiServices::getInstance()->getTitleFactory()
 			),
+		);
+	}
+
+	public function newGetMainSubjectQuery( GetMainSubjectPresenter $presenter, Authority $authority ): GetMainSubjectQuery {
+		return new GetMainSubjectQuery(
+			presenter: $presenter,
+			pageSubjectsLookup: $this->newPageSubjectsLookup(),
+			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 		);
 	}
 
@@ -1893,7 +2040,7 @@ class NeoWikiExtension {
 			subjectValidator: $this->newSubjectValidator( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			statementNormalizer: $this->getStatementNormalizer(),
-			localSourceKey: $this->config->wikiId,
+			schemaReferenceParser: $this->getSchemaReferenceParser(),
 		);
 	}
 
@@ -1949,6 +2096,10 @@ class NeoWikiExtension {
 		return new GetSubjectEditNoticesApi();
 	}
 
+	public static function newGetMainSubjectApi(): GetMainSubjectApi {
+		return new GetMainSubjectApi();
+	}
+
 	public static function newGetPageSubjectsApi(): GetPageSubjectsApi {
 		return new GetPageSubjectsApi();
 	}
@@ -1985,6 +2136,10 @@ class NeoWikiExtension {
 		return new GetSchemaApi();
 	}
 
+	public static function newGetJsonSchemaApi(): GetJsonSchemaApi {
+		return new GetJsonSchemaApi();
+	}
+
 	public static function newGetLayoutApi(): GetLayoutApi {
 		return new GetLayoutApi();
 	}
@@ -1995,6 +2150,10 @@ class NeoWikiExtension {
 
 	public static function newGetSchemaSummariesApi(): GetSchemaSummariesApi {
 		return new GetSchemaSummariesApi();
+	}
+
+	public static function newGetSubjectSummariesApi(): GetSubjectSummariesApi {
+		return new GetSubjectSummariesApi( self::getInstance()->newSubjectSummaryLookup() );
 	}
 
 	public function getLayoutNameLookup(): LayoutNameLookup {

@@ -27,9 +27,9 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 
 | Endpoint | Description |
 |---|---|
-| `GET /neowiki/v0/subject/{subjectId}` | Fetch a Subject as the wiki publishes it. `latest=1` returns the hosting page's current revision instead, for editing, when the viewer may see it; it takes no `revisionId` and no `expand=relations`. Optional `revisionId`; `expand` with `page` or `relations`. |
-| `GET /neowiki/v0/subject/{subjectId}/rdf` | Export one Subject as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or an ontology target. See [RDF export](rdf-export.md). |
-| `GET /neowiki/v0/entity/{subjectId}` | Dereference a Subject's concept URI. `303` to the Subject's RDF (`Accept: application/trig` or `text/turtle`), otherwise to `Special:Subject`. See [Dereferencing subject IRIs](rdf-export.md#dereferencing-subject-iris). |
+| `GET /neowiki/v0/subject/{subjectId}` | Fetch a Subject as the wiki publishes it, or at another revision. See [Reading Subjects](subject-format.md#reading-subjects). |
+| `GET /neowiki/v0/subject/{subjectId}/rdf` | Export one Subject as RDF. For `format` and `projection`, see [RDF export](rdf-export.md#endpoint). |
+| `GET /neowiki/v0/entity/{subjectId}` | Dereference a Subject's concept URI: `303` to its RDF or to a page showing it, depending on `Accept`. See [Dereferencing subject IRIs](rdf-export.md#dereferencing-subject-iris). |
 | `PUT /neowiki/v0/subject/{subjectId}` | Replace a Subject's label and statements. |
 | `DELETE /neowiki/v0/subject/{subjectId}` | Delete a Subject. |
 | `POST /neowiki/v0/subject/{subjectId}/move` | Move a Subject to another page, keeping its ID so relations targeting it keep resolving. Body `targetPageId`, optional `makeMainSubject` and `comment`. Edits both pages. |
@@ -38,9 +38,10 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 | `POST /neowiki/v0/subject/validate` | Check whether a new Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject/{subjectId}/validate` | Check whether a change to a Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject-ids` | Mint a batch of unused Subject IDs to assign on create, e.g. to wire relations across an interlinked import. Body `count` (1–1000). |
-| `POST /neowiki/v0/subjects` | Create a Subject together with a page of its own, in one revision, as that page's main Subject. Body `schema` and `statements`, optional `label`, `pageTitle` and `comment`. The page is titled by `pageTitle`, or by the label, or by the Subject's ID when there is no label or the label cannot be a main-namespace title. `400` for a `pageTitle` that cannot be one, `409` when the title is taken. |
-| `GET /neowiki/v0/subject-labels` | Find Subjects of a Schema by label; returns `id`/`label` pairs. A Subject with no label is absent. Query: `schema` (required), `search` (label prefix), `limit`. |
-| `GET /neowiki/v0/subject/{subjectId}/referencingSubjects` | List the Subjects whose relations point at this one, itself excluded, ordered by name. Returns `{referencingSubjects: [{subject, propertyNames}], truncated}`, each `subject` carrying its page identifiers. `truncated` means more were left out; `false` does not promise there are none. Needs a Neo4j store; without one the list is empty. Query: `limit` (default 10). |
+| `POST /neowiki/v0/subjects` | Create a Subject together with a page of its own, in one revision, as that page's main Subject. See [Creating Subjects](subject-format.md#creating-subjects). |
+| `GET /neowiki/v0/subjects` | List Subjects, newest first. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. Query: `schema` (only that Schema's Subjects), `search` (case-insensitive substring of the name or page title, or case-sensitive prefix of the ID), `sort` (`newest`, `name`, `schema`, `page`, `edited`) and `direction` (`asc`, `desc`; ignored by `newest`). Needs a Neo4j graph store. |
+| `GET /neowiki/v0/subject-labels` | Find Subjects by label; returns `id`/`label` pairs. A Subject with no label is absent. Query: `schema` (only Subjects of that Schema; omit for every Schema), `search` (label prefix), `limit`. |
+| `GET /neowiki/v0/subject/{subjectId}/referencingSubjects` | List the Subjects whose relations point at this one. See [Referencing Subjects](subject-format.md#referencing-subjects). |
 
 ### Pages and Subjects
 
@@ -50,11 +51,12 @@ Subjects and arrange them.
 | Endpoint | Description |
 |---|---|
 | `GET /neowiki/v0/page/{pageId}/subjects` | List all of the page's Subjects. `expand` with `schemas` or `relations`. |
+| `GET /neowiki/v0/page/{pageId}/mainSubject` | Fetch the page's main Subject. Returns `{pageId, subject}`, the Subject carrying its [page fields](subject-format.md#reading-subjects); `subject` is `null` when the page has none. |
 | `GET /neowiki/v0/page/{pageId}/editNotices` | List the notices to show before editing the page's Subjects, in display order. Optional `schema` adds notices scoped to that Schema. Returns `{notices: [{key, html}]}`. See [Edit notices](../authoring/edit-notices.md). |
-| `GET /neowiki/v0/page/{pageId}/rdf` | Export the page's Subjects and metadata as RDF. `format` is `trig` (default) or `turtle`; `projection` is `native` (default) or the name of a Mapping page. See [RDF export](rdf-export.md) and [Mapping Format](../authoring/mapping-format.md). |
-| `POST /neowiki/v0/page/{pageId}/mainSubject` | Create the page's main Subject. |
+| `GET /neowiki/v0/page/{pageId}/rdf` | Export the page's Subjects and metadata as RDF. For `format` and `projection`, see [RDF export](rdf-export.md#endpoint). |
+| `POST /neowiki/v0/page/{pageId}/mainSubject` | Create the page's main Subject. See [Creating Subjects](subject-format.md#creating-subjects). |
 | `PUT /neowiki/v0/page/{pageId}/mainSubject` | Promote one of the page's other Subjects to main, or clear it. |
-| `POST /neowiki/v0/page/{pageId}/subjects` | Create a Subject on the page. Use `POST .../mainSubject` for the main Subject. |
+| `POST /neowiki/v0/page/{pageId}/subjects` | Create one of the page's other Subjects. See [Creating Subjects](subject-format.md#creating-subjects). |
 | `PUT /neowiki/v0/page/{pageId}/subjectsOrdering` | Reorder the page's other Subjects and set the main Subject. |
 
 ### Schemas
@@ -66,6 +68,7 @@ A Schema defines a Subject type and its properties. For the body shape, see
 |---|---|
 | `GET /neowiki/v0/schemas` | List Schemas. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. |
 | `GET /neowiki/v0/schema/{schemaName}` | Fetch a Schema by name. |
+| `GET /neowiki/v0/schema/{schemaName}/json-schema` | Fetch a Schema as a [JSON Schema](json-schema.md) document describing its Subjects. |
 | `GET /neowiki/v0/schema-names/{search}` | Find Schema names by prefix. |
 
 ### Layouts
@@ -110,12 +113,13 @@ Report and rebuild the graph stores this wiki projects into. A rebuild's `202` m
 Where the wiki itself requires login to read, every endpoint answers an anonymous request with `403` and
 `"error": "rest-read-denied"`, before any of the per-page rules below apply.
 
-The Subject, page-subjects, edit-notices, subject-labels, referencing-subjects, Schema, Layout, Mapping, RDF export,
-and entity-dereference read endpoints enforce the caller's per-page `read` permission; page protection and
-`$wgNamespaceProtection` do not restrict them, because MediaWiki's `read` action ignores both. When you may not read a
-page they respond as if the data were absent — a `null` value, an empty list, or a `404` — never a `403`.
-`GET /subject-labels` and `GET /subject/{subjectId}/referencingSubjects` omit rows whose page you cannot read; because
-that filter runs per result, both cap `limit` at 50.
+The Subject, Subject list, page-subjects, main-subject, edit-notices, subject-labels, referencing-subjects, Schema,
+Layout, Mapping, RDF export, and entity-dereference read endpoints enforce the caller's per-page `read` permission; page
+protection and `$wgNamespaceProtection` do not restrict them, because MediaWiki's `read` action ignores both. When you
+may not read a page they respond as if the data were absent — a `null` value, an empty list, or a `404` — never a `403`.
+`GET /subject-labels`, `GET /subjects`, and `GET /subject/{subjectId}/referencingSubjects` omit rows whose page you
+cannot read; because that filter runs per result, all cap `limit` at 50. A `GET /subjects` request reads at most 1,000
+Subjects looking for ones you may read; on reaching that cap it ends the listing with a `null` `nextCursor`.
 
 The `GET /schemas`, `GET /layouts`, and `GET /mappings` list endpoints paginate with an opaque cursor over the rows you
 may read (see [Cursor pagination](#cursor-pagination)): a restricted Schema, Layout, or Mapping is skipped exactly like
@@ -137,15 +141,16 @@ The graph-store endpoints are gated by the `neowiki-admin` right.
 
 ## Cursor pagination
 
-The Schema, Layout, and Mapping list endpoints paginate with an opaque cursor. Request up to `limit` items (1–50,
-default 10); the response carries the items and a `nextCursor`:
+The Schema, Layout, Mapping, and Subject list endpoints paginate with an opaque cursor. Request up to `limit` items
+(1–50, default 10); the response carries the items and a `nextCursor`:
 
 ```json
 { "schemas": [ ... ], "nextCursor": "1462" }
 ```
 
-Pass that value back as `cursor` to fetch the next page; `null` marks the last page. Do not construct a cursor
-yourself — a malformed one is rejected with a `400`. Cursors stay valid while items are created and deleted.
+Pass that value back as `cursor` to fetch the next page; `null` marks the last page or, on a Subject list, an [early
+end](#permissions). Do not construct a cursor yourself — a malformed one is rejected with a `400`. Cursors stay valid
+while items are created and deleted.
 
 ## The `expand` parameter
 

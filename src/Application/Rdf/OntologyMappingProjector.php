@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Rdf;
 
 use LogicException;
+use ProfessionalWiki\NeoWiki\Domain\LanguageTag;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\CurieExpander;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\NodeMapping;
@@ -580,6 +581,10 @@ class OntologyMappingProjector implements PageProjector {
 	 * literal — it is ignored for a typed literal (number, date, …), whose datatype the writer's schema
 	 * already fixed, and for an IRI object, which is not a literal at all.
 	 *
+	 * Neither applies to a value that already carries its own language tag (a monolingual text value).
+	 * The tag is data there, not configuration, and it differs per value, so a property-wide override
+	 * could only replace it with something less specific.
+	 *
 	 * The language tag is re-validated here as well as at save time: a Mapping created outside the
 	 * save-time validator (importDump, a page authored before validation existed) could carry a
 	 * malformed tag, which would corrupt the serialized literal. An invalid tag is therefore dropped —
@@ -591,6 +596,10 @@ class OntologyMappingProjector implements PageProjector {
 		PropertyMapping $propertyMapping,
 		string $propertyName
 	): RdfTerm {
+		if ( $term instanceof Literal && $term->isLanguageTagged() ) {
+			return $term;
+		}
+
 		if ( $propertyMapping->datatype !== null ) {
 			$datatype = $this->expander->expand( $propertyMapping->datatype );
 
@@ -621,7 +630,7 @@ class OntologyMappingProjector implements PageProjector {
 	}
 
 	private function withLanguageTag( Literal $literal, string $language, string $propertyName ): Literal {
-		if ( !Literal::isValidLanguageTag( $language ) ) {
+		if ( !LanguageTag::isValid( $language ) ) {
 			$this->logger->warning(
 				'Mapping "' . $this->target . '" has an invalid language tag "' . $language
 				. '" for property "' . $propertyName . '"; emitting the literal without a language tag.'

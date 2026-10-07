@@ -98,11 +98,25 @@ export const CdxDialogStub = {
 	emits: [ 'update:open' ],
 };
 
+/**
+ * What MediaWiki's own bcp47() translates, from its own table: a MediaWiki code that is not a BCP 47
+ * tag, and in `be-x-old`'s case one that lands on a tag another code already carries. A few are
+ * enough for a spec to tell a translated code from one passed straight through, which a pass-through
+ * fake hides; every other code passes through.
+ */
+const BCP_47_TAGS: Record<string, string> = {
+	als: 'gsw',
+	'be-x-old': 'be-tarask',
+	simple: 'en-simple',
+};
+
 export interface MwMockOptions {
 	messages?: Record<string, string | ( ( ...params: string[] ) => string )>;
 	config?: Record<string, any>;
+	/** The languages mw.language.getData reports names for, keyed by language code. */
+	languageNames?: Record<string, string>;
 	functions?: (
-		'config' | 'message' | 'msg' | 'notify' | 'storage' | 'util'
+		'config' | 'message' | 'msg' | 'notify' | 'storage' | 'util' | 'language'
 	)[];
 }
 
@@ -112,11 +126,13 @@ export function setupMwMock(
 	const {
 		messages: customMessages = {},
 		config: customConfig = {},
+		languageNames: customLanguageNames = {},
 		functions = [
 			'config',
 			'message',
 			'msg',
 			'notify',
+			'language',
 		],
 	} = options;
 
@@ -126,7 +142,7 @@ export function setupMwMock(
 		// Rendered by real MediaWiki everywhere a Subject nobody named is shown, so the fake carries
 		// it rather than each spec restating the marker's shape.
 		if ( key === 'neowiki-subject-generated-name' && customMessages[ key ] === undefined ) {
-			return `(unnamed ${ params[ 0 ] })`;
+			return `(${ params[ 0 ] })`;
 		}
 
 		const message = customMessages[ key ];
@@ -166,6 +182,16 @@ export function setupMwMock(
 				set: vi.fn(),
 				remove: vi.fn(),
 			},
+		} ),
+		language: () => ( {
+			bcp47: vi.fn( ( code: string ) => BCP_47_TAGS[ code.toLowerCase() ] ?? code ),
+			getData: vi.fn(
+				( _langCode: string, dataKey: string ) => dataKey === 'languageNames' ? customLanguageNames : undefined,
+			),
+			// MediaWiki's own chain starts at the interface language and ends at English, which every
+			// wiki falls back to; the fake carries just that, so a spec setting a user language gets a
+			// chain of its own without configuring one.
+			getFallbackLanguageChain: vi.fn( () => [ customConfig.wgUserLanguage, 'en' ] ),
 		} ),
 		util: () => ( {
 			wikiScript: vi.fn( () => '/rest.php' ),

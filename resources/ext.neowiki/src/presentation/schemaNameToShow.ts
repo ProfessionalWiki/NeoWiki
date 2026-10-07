@@ -1,10 +1,9 @@
 import type { Subject } from '@/domain/Subject.ts';
 
 /**
- * The Schema name to show beside a Subject, or null when the Subject's own name is the Schema
- * name already: a Subject with no label is shown under its Schema name (ADR 31), and one
- * labelled after its Schema reads the same. Marked, "(unnamed <Schema>)" still names the
- * Schema, which is why this takes the Subject rather than the name a surface shows for it.
+ * The Schema name to show beside a Subject, or null when the Subject is shown under that name
+ * already, as one labelled after its Schema is. A Subject nobody named is shown under its id, which
+ * says nothing about what it is, so it always gets the Schema name.
  *
  * The badge does not apply this itself: a surface guards its own wrapper along with the
  * name, since an emptied wrapper carrying a role is worse than a repeat.
@@ -14,5 +13,9 @@ import type { Subject } from '@/domain/Subject.ts';
  * a repeated word is not.
  */
 export function schemaNameToShow( subject: Subject ): string | null {
+	if ( subject.hasGeneratedDisplayName() ) {
+		return subject.getSchemaName();
+	}
+
 	return subject.getDisplayName() === subject.getSchemaName() ? null : subject.getSchemaName();
 }

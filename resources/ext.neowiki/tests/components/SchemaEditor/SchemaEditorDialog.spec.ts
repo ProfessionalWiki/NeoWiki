@@ -111,6 +111,12 @@ describe( 'SchemaEditorDialog', () => {
 	} );
 
 	describe( 'Description', () => {
+		async function typeDescription( wrapper: VueWrapper, text: string ): Promise<void> {
+			const field = wrapper.findComponent( EditableText );
+			await field.get( 'button[aria-label="neowiki-schema-editor-description-edit"]' ).trigger( 'click' );
+			await field.get( 'textarea' ).setValue( text );
+		}
+
 		it( 'shows the description of the schema being edited', async () => {
 			const wrapper = mountComponent();
 			await flushPromises();
@@ -134,6 +140,58 @@ describe( 'SchemaEditorDialog', () => {
 			await wrapper.findComponent( EditableText ).vm.$emit( 'update:modelValue', 'Rewritten' );
 
 			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+		} );
+
+		it( 'enables save while a typed description is still open', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			await wrapper.findComponent( EditableText ).vm.$emit( 'dirty', true );
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+		} );
+
+		it( 'disables save again when the typed description is discarded', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			await wrapper.findComponent( EditableText ).vm.$emit( 'dirty', true );
+			await wrapper.findComponent( EditableText ).vm.$emit( 'dirty', false );
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+		} );
+
+		it( 'asks before closing while a typed description is still open', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+			await wrapper.findComponent( EditableText ).vm.$emit( 'dirty', true );
+
+			wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+			await flushPromises();
+
+			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( true );
+		} );
+
+		it( 'drops a dirty draft when the dialog reopens', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+			await typeDescription( wrapper, 'Rewr' );
+
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+		} );
+
+		it( 'saves a description still being typed', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+			await typeDescription( wrapper, 'Typed' );
+
+			wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'a summary' );
+			await flushPromises();
+
+			expect( onSave.mock.calls[ 0 ][ 0 ].getDescription() ).toBe( 'Typed' );
 		} );
 
 		it( 'saves the edited description', async () => {

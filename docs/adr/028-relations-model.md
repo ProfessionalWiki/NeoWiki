@@ -1,126 +1,90 @@
 # Relations Model
 
-Date: 2026-07-21
+Date: 2026-10-02
 
-Status: Draft; not fully reviewed by Jeroen yet
-
-Feedback welcome; the decisions are proposed as a set, and ratification (team and partner review) gates implementation.
+Status: Draft
 
 ## Context
 
-Relations — the Statement values that point one Subject at another — accumulated open design questions, collected in
-the Relations epic ([#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630)).
+Relations are the values that point to a Subject: Pablo Picasso's "Birth place" points to Málaga. The Relations epic
+([#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630)) collected questions about them that the model left
+open:
 
-An integrity pass landed first: referenced-but-absent Subjects are kept as stub nodes rather than dropped
-([#1080](https://github.com/ProfessionalWiki/NeoWiki/pull/1080)), relation targets are validated server-side
-([#1082](https://github.com/ProfessionalWiki/NeoWiki/pull/1082)), Neo4j node-uniqueness constraints are created on
-rebuild ([#1083](https://github.com/ProfessionalWiki/NeoWiki/pull/1083)), and target autocomplete is scoped to the
-current wiki ([#1084](https://github.com/ProfessionalWiki/NeoWiki/pull/1084)). With integrity in place, this ADR settles
-the model questions as one coherent set.
-
-Two earlier decisions left threads this one closes. [ADR 7](007-multiple-subjects-per-page.md) allowed multiple
-Subjects per page but left an automatic relation between the Main Subject and the page's other Subjects open.
-[ADR 10](010-add-guids-to-relations.md) gave Relations stable IDs and named edge properties as roadmap.
+- How does a value get context, such as the source of a birth date?
+- Does a Relation need an ID ([ADR 10](010-add-guids-to-relations.md)) if it carries no data of its own?
+- Can a property point to Subjects of several Schemas, such as a Creator that is a Person or a Group?
+- What happens when a Relation points to a Subject that does not exist?
+- Are Subjects that share a page related ([ADR 7](007-multiple-subjects-per-page.md))?
+- Does a relation property need a second name for its graph edges?
 
 ## Decision
 
-### Qualify with typed Subjects, not edge properties
+### 1. Context on a value is a Subject, not an edge property
 
-A Relation is `{id, target}`. The `properties` map on Relations (`RelationProperties`) is removed — from the domain
-model, the JSON serializations, the Neo4j edge writes, and the native-RDF qualifier triples.
+A value that needs context becomes a Subject with its own Schema
+([Qualifiers and References](../qualifiers-and-references.md)). If Picasso's birth date needs a source, his Subject
+points to a Birth that holds the date and the source. The Birth's Schema can declare its Subjects dependent, so that the
+Birth is edited, stored and removed with its Person ([ADR 35](035-dependent-subjects.md)).
 
-Qualification and references are already modeled as typed Subjects
-([Qualifiers and References](../qualifiers-and-references.md)): a qualified value becomes its own Subject under its own
-Schema, validated and rendered like any other data. Edge properties are a second, half-built path to the same end —
-scalar-only, with no editing UI, no Lua exposure, dropped by the ontology-mapping projection, and silently lost when a
-Subject carrying REST-written edge properties is re-saved through the editor. Finishing them would mean schema
-definitions for edge properties, an editor, and Lua and mapping support — duplicating what Subjects already provide.
-Schema-less qualifier bags are the Wikibase failure mode named in the epic
-([#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630)); removal is tracked in
-[#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119).
+Edge properties, the extra fields a Relation can carry, are removed: they add context only to a link, never to a date,
+and have no Schema and no editor. A Relation is an ID and a target
+([#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119)).
 
-### Keep per-relation IDs
+### 2. Each Relation keeps its ID
 
-Per-relation IDs stay, and multiple Relations of the same type to the same target remain legal — the ID, not the
-(type, target) pair, distinguishes them. It gives each edge a stable identity across edits and anchors the native-RDF
-reification node and the synthesized-node IRIs the ontology mapping mints. Global relation-ID uniqueness is not
-graph-enforceable over an open set of edge types ([#351](https://github.com/ProfessionalWiki/NeoWiki/issues/351)). This
-reaffirms [ADR 10](010-add-guids-to-relations.md) minus the edge-property roadmap that the previous decision drops.
+The ID gives a Relation a stable identity across edits. [Mappings](../authoring/mapping-format.md) use it to name the
+nodes they create for individual Relations.
 
-### Constrain targets to one or more Schemas
+### 3. A relation property targets one or more Schemas
 
-A relation property's target constraint is a list of Schemas: the single `targetSchema` widens to a list
-([#991](https://github.com/ProfessionalWiki/NeoWiki/issues/991)), and a target Subject must use one of them. This
-covers the concrete polymorphic cases — an artwork creator that may be a person, collective, or studio; a place that
-may be a city, province, or country — with no schema-inheritance machinery.
+A relation property lists one or more target Schemas ([#991](https://github.com/ProfessionalWiki/NeoWiki/issues/991)). A
+Relation to a Subject of another Schema is
+[`relation-target-schema-mismatch`](../api/validation-codes.md#relation-target-schema-mismatch), an error that can block
+the save ([ADR 26](026-validation-severity-levels.md)).
 
-Not taken: subclass-based target constraints, where a relation targets a supertype and accepts its subtypes. That needs
-a schema-inheritance system NeoWiki does not have and nothing else calls for; an explicit list covers the raised cases
-directly. Fully-unconstrained targets ("any Subject") stay out until a concrete need arrives.
+### 4. Missing targets are red links
 
-### Missing targets are red links
+A Relation may point to a Subject that does not exist, as a wiki link may point to a page nobody has written. Imports
+rely on this to create Subjects that point to each other
+([#1100](https://github.com/ProfessionalWiki/NeoWiki/issues/1100)). The server reports
+[`relation-target-not-found`](../api/validation-codes.md#relation-target-not-found) as a warning, and the UI shows a red
+link that offers to create the Subject ([#1120](https://github.com/ProfessionalWiki/NeoWiki/issues/1120)). Relations to
+Dependent Subjects are the exception ([ADR 35](035-dependent-subjects.md)).
 
-A Relation may point at a Subject that does not exist yet. Forward references are wiki-native — a red link to an
-unwritten page — and creating interlinked Subjects in a batch depends on them: client-supplied and pre-minted IDs
-([#1100](https://github.com/ProfessionalWiki/NeoWiki/issues/1100),
-[#1101](https://github.com/ProfessionalWiki/NeoWiki/pull/1101)) let a Subject be created referencing a target ID before
-that target is written.
+### 5. Sharing a page does not relate Subjects
 
-Server-side, [`relation-target-not-found`](../api/validation-codes.md#relation-target-not-found) is a non-blocking
-warning and [`relation-target-schema-mismatch`](../api/validation-codes.md#relation-target-schema-mismatch) a blocking
-error (both in [#1082](https://github.com/ProfessionalWiki/NeoWiki/pull/1082)); an absent target still exists in the
-graph as a stub node ([#1080](https://github.com/ProfessionalWiki/NeoWiki/pull/1080)). The UI direction is red-link
-rendering with a create affordance ([#1120](https://github.com/ProfessionalWiki/NeoWiki/issues/1120)), not error
-styling.
+Subjects that share a page are related only through relation properties, as Subjects on different pages are
+([#959](https://github.com/ProfessionalWiki/NeoWiki/issues/959)).
 
-### Same-page relationships are schema-defined
+The Main Subject stays: it says which Subject the page is about, and the page shows it automatically.
 
-No Relation is created automatically between Subjects that share a page. A Subject relates to the page's Main
-Subject only through an explicit relation property in its Schema. An unstated co-location link would carry no defined
-meaning, and the same relationship expressed across pages would then diverge from the same-page shortcut (positions in
-[#959](https://github.com/ProfessionalWiki/NeoWiki/issues/959)).
+### 6. A relation property has one name
 
-The Main Subject designation stays: it anchors the automatic display and the page-topic semantics, and the
-page/document-type pattern builds on it ([#959](https://github.com/ProfessionalWiki/NeoWiki/issues/959)). Pre-filling a
-new Subject's relation to the page's Main Subject during creation is editing convenience layered on this rule, not a
-model relation. This resolves the open question in [ADR 7](007-multiple-subjects-per-page.md).
-
-### Name a relation once, on the property
-
-**Least settled — needs team review before ratification; no other decision depends on it.**
-
-Drop the separate relation-type name (the `relation` attribute on a relation property) and key both the graph edge type
-and the native-RDF predicate on the property name. Today a relation property carries two names: the property name and a
-relation-type name used as the Neo4j edge label. One name removes a concept users must define and a divergence: the
-native RDF projection keys predicates on the relation-type name while ontology mappings key on the property name. It
-also halves the rename footgun: renaming either name silently re-types existing edges on the next graph rebuild
-([ADR 17](017-names-as-identifiers.md) territory).
-
-Cost: Cypher edge types then read as property names ("Birth place") rather than verb phrases ("Born in"). Demo data and
-docs migrate — trivial pre-production.
-
-Not taken (status quo): keep both names for better-reading graph queries, at the cost of the extra concept and the
-keying divergence.
+A relation property's `relation` field is removed: graph edges and RDF predicates take the property name, as other
+properties' RDF predicates already do, so a link has the same name everywhere
+([#1553](https://github.com/ProfessionalWiki/NeoWiki/issues/1553)).
 
 ## Consequences
 
-- Implementation is gated on ratification. Trackers:
-  [#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119) (remove edge properties),
-  [#991](https://github.com/ProfessionalWiki/NeoWiki/issues/991) (target-Schema list),
-  [#1120](https://github.com/ProfessionalWiki/NeoWiki/issues/1120) (red links).
-- What gets simpler: no schema-for-edge-properties design, no separate qualifier editor, and the RDF reification
-  question narrows to relation identity alone (see [planning/Relations.md](../planning/Relations.md)).
-- Breaking data-format changes are acceptable: NeoWiki is not in production.
-- Out of scope, mapped in [planning/Relations.md](../planning/Relations.md): nested-vs-flat authoring of intermediate
-  structures, unconstrained targets, cardinality beyond single/multiple, no-value/some-value markers
-  ([#937](https://github.com/ProfessionalWiki/NeoWiki/issues/937)), and inverse-display configuration
-  ([#904](https://github.com/ProfessionalWiki/NeoWiki/issues/904)).
+- Each value with context adds a Subject, which counts toward [ADR 29](029-scalability-targets.md)'s scalability
+  targets.
+- Cypher queries match Relations by property name, such as `` `Birth place` ``, not by verb phrases such as `BORN_IN`.
+- Renaming a relation property renames its graph edges and RDF predicates, as renaming any other property already does
+  ([ADR 17](017-names-as-identifiers.md)).
+- The Schema and Subject formats change incompatibly. NeoWiki is not in production, so that is acceptable.
+- Out of scope:
+  - targets narrower than a Schema, such as only the Persons who are painters;
+  - Relations to any Subject regardless of its Schema;
+  - cardinalities other than one or many;
+  - Schema hierarchies, such as Person and Group below an Actor Schema;
+  - "no value" and "unknown value" markers ([#937](https://github.com/ProfessionalWiki/NeoWiki/issues/937));
+  - showing referencing Subjects on pages and Views ([#1528](https://github.com/ProfessionalWiki/NeoWiki/issues/1528)),
+    and adding a referencing Subject from its target's editor
+    ([#1530](https://github.com/ProfessionalWiki/NeoWiki/issues/1530)).
 
 ## Related
 
-- [planning/Relations.md](../planning/Relations.md) — the remaining Relations work, open questions, and forward map.
-- [Qualifiers and References](../qualifiers-and-references.md), [Graph Model](../api/graph-model.md),
-  [Subject Format](../api/subject-format.md), [Validation Codes](../api/validation-codes.md).
-- [ADR 7](007-multiple-subjects-per-page.md), [ADR 10](010-add-guids-to-relations.md),
-  [ADR 17](017-names-as-identifiers.md), [ADR 26](026-validation-severity-levels.md).
-- [#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630) — the Relations epic.
+- [ADR 7: Multiple Subjects Per Page](007-multiple-subjects-per-page.md)
+- [ADR 10: Add GUIDs to Relations](010-add-guids-to-relations.md)
+- [ADR 35: Dependent Subjects](035-dependent-subjects.md)
+- [Qualifiers and References](../qualifiers-and-references.md)

@@ -79,4 +79,8 @@ JSON
 		);
 	}
 
+	public function testValueIsUnconstrained(): void {
+		$this->assertTrue( $this->fromJson( '{ "type": "color" }' )->toJsonSchema() );
+	}
+
 }

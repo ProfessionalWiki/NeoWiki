@@ -8,6 +8,7 @@ import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SubjectWriteResult } from '@/domain/SubjectRepository.ts';
+import { isSubjectFirst } from '@/wikiMode.ts';
 
 /**
  * A Subject created together with a page of its own: the page is the server's to title, so where
@@ -89,10 +90,17 @@ export const useSubjectStore = defineStore( 'subject', {
 			this.recordWriteResult( result, schemaEpoch );
 		},
 		/**
-		 * Writes a Subject the client built, under the id it already carries, as a Subject of the
-		 * given page. The counterpart to updateSubject for one the wiki does not have yet.
+		 * Writes a Subject the client built, under the id it already carries. The counterpart to
+		 * updateSubject for one the wiki does not have yet.
+		 *
+		 * Where it lands is the wiki's mode (ADR 33): a page-first wiki stores it on the page given,
+		 * a subject-first one gives it a page of its own and ignores that page.
 		 */
 		async createSubject( subject: Subject, pageId: number, comment?: string ): Promise<SubjectId> {
+			if ( isSubjectFirst() ) {
+				return ( await this.createSubjectOnOwnPage( subject, comment ) ).subjectId;
+			}
+
 			return this.createOtherSubject(
 				pageId,
 				subject.getLabel(),
@@ -171,7 +179,7 @@ export const useSubjectStore = defineStore( 'subject', {
 		async validateSubjectUpdate( id: SubjectId, label: string | null, statements: StatementList ): Promise<SubjectViolation[]> {
 			return NeoWikiExtension.getInstance().getSubjectRepository().validateSubjectUpdate( id, label, statements );
 		},
-		async createMainSubject( pageId: number, label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string ): Promise<SubjectId> {
+		async createMainSubject( pageId: number, label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string, id?: SubjectId ): Promise<SubjectId> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createMainSubject(
@@ -180,6 +188,7 @@ export const useSubjectStore = defineStore( 'subject', {
 				schemaName,
 				statements,
 				comment,
+				id,
 			);
 
 			this.recordWriteResult( result, schemaEpoch );
@@ -203,11 +212,22 @@ export const useSubjectStore = defineStore( 'subject', {
 			return result.subjectId;
 		},
 
+		async createSubjectOnOwnPage( subject: Subject, comment?: string ): Promise<CreatedSubjectPage> {
+			return this.createSubjectPage(
+				subject.getLabel(),
+				subject.getSchemaName(),
+				subject.getStatements(),
+				comment,
+				undefined,
+				subject.getId(),
+			);
+		},
+
 		/**
 		 * Creates a Subject together with a page of its own, and reports where it landed: the page
 		 * is the server's to title, so the caller learns its name only from the answer.
 		 */
-		async createSubjectPage( label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string, pageTitle?: string ): Promise<CreatedSubjectPage> {
+		async createSubjectPage( label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string, pageTitle?: string, id?: SubjectId ): Promise<CreatedSubjectPage> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createSubjectPage(
@@ -216,6 +236,7 @@ export const useSubjectStore = defineStore( 'subject', {
 				statements,
 				comment,
 				pageTitle,
+				id,
 			);
 
 			this.recordWriteResult( result, schemaEpoch );

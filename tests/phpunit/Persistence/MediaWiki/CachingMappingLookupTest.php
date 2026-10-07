@@ -13,6 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingMappingLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingJsonLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPersistenceDeserializer;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\ReplicaCacheOptions;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ObjectForgettingBagOStuff;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use Wikimedia\ObjectCache\HashBagOStuff;
@@ -112,7 +113,7 @@ class CachingMappingLookupTest extends TestCase {
 			cache: $cache ?? new WANObjectCache( [ 'cache' => new HashBagOStuff() ] ),
 			titleFactory: $this->newTitleFactory(),
 			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
-			connectionProvider: $this->newConnectionProvider()
+			cacheOptions: new ReplicaCacheOptions( $this->newConnectionProvider(), MW_VERSION )
 		);
 	}
 

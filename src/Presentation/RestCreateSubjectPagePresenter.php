@@ -68,6 +68,14 @@ class RestCreateSubjectPagePresenter implements CreateSubjectPagePresenter {
 		$this->statusCode = 409;
 	}
 
+	public function presentSubjectAlreadyExists(): void {
+		$this->apiResponse = [
+			'status' => 'error',
+			'message' => 'Subject already exists',
+		];
+		$this->statusCode = 409;
+	}
+
 	/**
 	 * @param Violation[] $violations
 	 */

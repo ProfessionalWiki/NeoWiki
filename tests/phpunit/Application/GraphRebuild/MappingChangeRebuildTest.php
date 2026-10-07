@@ -17,7 +17,6 @@ use ProfessionalWiki\NeoWiki\Persistence\RebuildRunRepository;
 use MediaWiki\Deferred\DeferredUpdates;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyRebuildJobQueue;
-use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
 use TestLogger;
 
@@ -234,19 +233,6 @@ class MappingChangeRebuildTest extends NeoWikiIntegrationTestCase {
 			self::loggedErrors( $logger ),
 			static fn ( string $message ): bool => str_contains( $message, 'rebuild graph store' )
 		) );
-	}
-
-	/**
-	 * @return string[]
-	 */
-	private static function loggedErrors( TestLogger $logger ): array {
-		return array_column(
-			array_filter(
-				$logger->getBuffer(),
-				static fn ( array $record ): bool => $record[0] === LogLevel::ERROR
-			),
-			1
-		);
 	}
 
 	/**

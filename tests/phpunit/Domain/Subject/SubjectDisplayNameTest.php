@@ -153,7 +153,7 @@ class SubjectDisplayNameTest extends TestCase {
 	}
 
 	/**
-	 * Entity-first creation titles a page after a Subject when no label names it, so that title was
+	 * Subject-first creation titles a page after a Subject when no label names it, so that title was
 	 * chosen by nobody.
 	 */
 	public function testAPageTitledAfterTheSubjectItselfHasNoChosenName(): void {
@@ -207,6 +207,79 @@ class SubjectDisplayNameTest extends TestCase {
 				ucfirst( self::OTHER_SUBJECT_ID )
 			)
 		);
+	}
+
+	private function inPlaceOfPageTitle( ?SubjectLabel $label, string $pageName ): ?string {
+		return SubjectDisplayName::inPlaceOfPageTitle(
+			$this->pageHolding( $this->newSubject( $label ), true ),
+			$pageName
+		)?->getLabel()?->text;
+	}
+
+	public function testAPageTitledAfterItsMainSubjectShowsItsLabelInstead(): void {
+		$this->assertSame(
+			'Stored',
+			$this->inPlaceOfPageTitle( new SubjectLabel( 'Stored' ), ucfirst( self::SUBJECT_ID ) )
+		);
+	}
+
+	/**
+	 * A chosen title can read like an id - fifteen letters starting with an s - and still be chosen.
+	 */
+	public function testAPageTitledByAnyoneKeepsItsTitle(): void {
+		$this->assertNull( $this->inPlaceOfPageTitle( new SubjectLabel( 'Stored' ), 'Standardization' ) );
+	}
+
+	public function testAPageTitledAfterAnUnlabelledMainSubjectStillShowsThatSubjectInstead(): void {
+		$this->assertSame(
+			self::SUBJECT_ID,
+			SubjectDisplayName::inPlaceOfPageTitle(
+				$this->pageHolding( $this->newSubject( null ), true ),
+				ucfirst( self::SUBJECT_ID )
+			)?->getId()->text
+		);
+	}
+
+	public function testAPageTitledAfterAnotherSubjectOnItShowsTheMainSubjectsLabelInstead(): void {
+		$this->assertSame(
+			'Main',
+			SubjectDisplayName::inPlaceOfPageTitle(
+				new PageSubjects(
+					$this->newSubject( new SubjectLabel( 'Main' ) ),
+					new SubjectMap( $this->newSubject( new SubjectLabel( 'Other' ), self::OTHER_SUBJECT_ID ) )
+				),
+				ucfirst( self::OTHER_SUBJECT_ID )
+			)?->getLabel()?->text
+		);
+	}
+
+	public function testAPageInTheSubjectNamespaceTitledAfterTheSubjectItselfHasNoChosenName(): void {
+		$this->assertNull( $this->chosenName( null, true, 'Subject:' . ucfirst( self::SUBJECT_ID ) ) );
+	}
+
+	public function testAPageInTheSubjectNamespaceTitledAfterItsMainSubjectShowsItsLabelInstead(): void {
+		$this->assertSame(
+			'Stored',
+			$this->inPlaceOfPageTitle( new SubjectLabel( 'Stored' ), 'Subject:' . ucfirst( self::SUBJECT_ID ) )
+		);
+	}
+
+	public function testAPageWhoseTitleEndsInTheIdOfASubjectItDoesNotHoldIsStillAChosenName(): void {
+		$this->assertSame(
+			'Notes:' . ucfirst( self::OTHER_SUBJECT_ID ),
+			$this->chosenName( null, true, 'Notes:' . ucfirst( self::OTHER_SUBJECT_ID ) )
+		);
+	}
+
+	public function testAPrefixedTitleWithAColonBeforeTheIdOfASubjectItHoldsIsStillAChosenName(): void {
+		$this->assertSame(
+			'Subject:Notes:' . ucfirst( self::SUBJECT_ID ),
+			$this->chosenName( null, true, 'Subject:Notes:' . ucfirst( self::SUBJECT_ID ) )
+		);
+	}
+
+	public function testANamespacePrefixDoesNotStopATitleFromBeingAnId(): void {
+		$this->assertTrue( SubjectDisplayName::mayBeTitledBySubjectId( 'Subject:' . ucfirst( self::SUBJECT_ID ) ) );
 	}
 
 }

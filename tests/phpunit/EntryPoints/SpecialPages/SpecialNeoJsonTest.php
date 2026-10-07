@@ -20,6 +20,7 @@ use WikiPage;
  */
 class SpecialNeoJsonTest extends SpecialPageTestBase {
 
+	use HelpLinkAssertions;
 	use MockAuthorityTrait;
 
 	protected function newSpecialPage(): SpecialNeoJson {
@@ -34,6 +35,10 @@ class SpecialNeoJsonTest extends SpecialPageTestBase {
 			'(neojson-summary)',
 			$output
 		);
+	}
+
+	public function testTheHelpLinkLeadsToTheDocs(): void {
+		$this->assertHelpLinkLeadsToTheDocs( $this->outputOf( $this->newSpecialPage() ) );
 	}
 
 	public function testAccessDeniedWhenUserCannotEditTargetPage(): void {

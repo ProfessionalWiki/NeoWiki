@@ -24,6 +24,9 @@ class InMemorySubjectContentRepository implements SubjectContentRepository {
 	/** @var array<int, ?SubjectContent> */
 	private array $contentByRevisionId = [];
 
+	/** How often Subject content was read, for tests of what a read costs. */
+	public int $readCount = 0;
+
 	public function __construct( ?PageSubjects $defaultPageSubjects = null ) {
 		if ( $defaultPageSubjects !== null ) {
 			$this->defaultContent = new InMemorySubjectContent( $defaultPageSubjects );
@@ -49,14 +52,17 @@ class InMemorySubjectContentRepository implements SubjectContentRepository {
 	}
 
 	public function getSubjectContentByPageId( PageId $pageId ): ?SubjectContent {
+		$this->readCount++;
 		return $this->contentByPageId[$pageId->id] ?? $this->defaultContent;
 	}
 
 	public function getSubjectContentByPageTitle( PageIdentity $pageIdentity ): ?SubjectContent {
+		$this->readCount++;
 		return $this->contentByPageDbKey[$pageIdentity->getDBkey()] ?? $this->defaultContent;
 	}
 
 	public function getSubjectContentByRevisionId( int $revisionId ): ?SubjectContent {
+		$this->readCount++;
 		return $this->contentByRevisionId[$revisionId] ?? $this->defaultContent;
 	}
 

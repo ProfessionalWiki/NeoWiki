@@ -1,6 +1,7 @@
 import { PropertyTypeRegistry } from '@/domain/PropertyType';
 import {
 	newBooleanValue,
+	newMonolingualTextValue,
 	newNumberValue,
 	newRelation,
 	newStringValue,
@@ -36,6 +37,12 @@ export class ValueDeserializer {
 				return newNumberValue( json );
 			case ValueType.Boolean:
 				return newBooleanValue( json );
+			case ValueType.MonolingualText:
+				if ( !Array.isArray( json ) || json.some( ( part: any ) => typeof part?.text !== 'string' || typeof part?.language !== 'string' ) ) {
+					throw new Error( 'Invalid monolingual text value: ' + JSON.stringify( json ) );
+				}
+
+				return newMonolingualTextValue( json );
 			case ValueType.Relation:
 				if ( !Array.isArray( json ) ) {
 					throw new Error( 'Invalid relation value: ' + JSON.stringify( json ) );

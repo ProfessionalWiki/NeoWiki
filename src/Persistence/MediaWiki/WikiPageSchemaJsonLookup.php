@@ -6,10 +6,9 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use LogicException;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\Schema\Exception\SchemaContentUnavailableException;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 class WikiPageSchemaJsonLookup implements SchemaJsonLookup {
 
@@ -19,22 +18,18 @@ class WikiPageSchemaJsonLookup implements SchemaJsonLookup {
 	) {
 	}
 
-	public function getSchemaJson( SchemaName $schemaName ): string {
-		$content = $this->getContent( $schemaName );
+	public function getSchemaJson( Title $schemaPage ): string {
+		$content = $this->getContent( $schemaPage );
 
 		if ( $content === null ) {
-			throw SchemaContentUnavailableException::forName( $schemaName->getText() );
+			throw SchemaContentUnavailableException::forName( $schemaPage->getText() );
 		}
 
 		return $content->getText();
 	}
 
-	private function getContent( SchemaName $schemaName ): ?SchemaContent {
-		$content = $this->pageContentFetcher->getPageContent(
-			$schemaName->getText(),
-			$this->authority,
-			NeoWikiExtension::NS_SCHEMA
-		);
+	private function getContent( Title $schemaPage ): ?SchemaContent {
+		$content = $this->pageContentFetcher->getPageContent( $schemaPage, $this->authority );
 
 		if ( $content instanceof SchemaContent ) {
 			return $content;

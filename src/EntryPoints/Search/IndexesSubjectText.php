@@ -24,8 +24,11 @@ trait IndexesSubjectText {
 			return $text;
 		}
 
-		// The page text arrives folded to lower case and normalized, and SQLite indexes what it is handed.
-		$folded = MediaWikiServices::getInstance()->getContentLanguage()->lc( $subjectText );
+		// The page text arrives normalized for search and folded to lower case, and SQLite indexes what it
+		// is handed. Queries are normalized the same way, so skipping either step hides the value: a
+		// full-width label would be indexed in full-width bytes while the query for it is folded.
+		$language = MediaWikiServices::getInstance()->getContentLanguage();
+		$folded = $language->lc( $language->normalizeForSearch( $subjectText ) );
 
 		return $text . "\n" . $this->normalizeText( $folded );
 	}

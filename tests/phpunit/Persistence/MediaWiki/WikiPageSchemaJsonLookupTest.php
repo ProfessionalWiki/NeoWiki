@@ -6,10 +6,11 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
 use MediaWiki\Content\Content;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Schema\Exception\SchemaContentUnavailableException;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaJsonLookup;
 
@@ -21,7 +22,7 @@ class WikiPageSchemaJsonLookupTest extends TestCase {
 	public function testReturnsTheStoredJson(): void {
 		$lookup = $this->newLookup( new SchemaContent( '{"description":"desc"}' ) );
 
-		$this->assertSame( '{"description":"desc"}', $lookup->getSchemaJson( new SchemaName( 'Person' ) ) );
+		$this->assertSame( '{"description":"desc"}', $lookup->getSchemaJson( $this->schemaPage() ) );
 	}
 
 	public function testThrowsWhenTheContentCouldNotBeRead(): void {
@@ -31,7 +32,11 @@ class WikiPageSchemaJsonLookupTest extends TestCase {
 
 		$this->expectException( SchemaContentUnavailableException::class );
 
-		$lookup->getSchemaJson( new SchemaName( 'Person' ) );
+		$lookup->getSchemaJson( $this->schemaPage() );
+	}
+
+	private function schemaPage(): Title {
+		return Title::makeTitle( NeoWikiExtension::NS_SCHEMA, 'Person' );
 	}
 
 	private function newLookup( ?Content $content ): WikiPageSchemaJsonLookup {

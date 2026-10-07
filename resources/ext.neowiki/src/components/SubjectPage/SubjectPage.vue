@@ -17,7 +17,7 @@
 					:can-delete="canDeleteSubject"
 					:page="hostingPage"
 					@toggle="toggleExpanded"
-					@edit="openEditor"
+					@edit="editSubject"
 					@delete="confirmDelete"
 					@copy-link="copySubjectLink"
 				/>
@@ -34,12 +34,13 @@
 						:key="referenced.getId().text"
 						:subject="referenced"
 						:subject-page-url="subjectPageUrl( referenced.getId().text )"
+						link-title
 						:expanded="expandedIds.has( referenced.getId().text )"
 						:can-edit="canEditSubject"
 						:can-delete="canDeleteSubject"
 						:page="pageOf( referenced )"
 						@toggle="toggleExpanded"
-						@edit="openEditor"
+						@edit="editSubject"
 						@delete="confirmDelete"
 						@copy-link="copySubjectLink"
 					/>
@@ -58,13 +59,14 @@
 						:subject="referencing.subject"
 						:dom-id="referencingSubjectRowDomId( referencing.subject.getId().text )"
 						:subject-page-url="subjectPageUrl( referencing.subject.getId().text )"
+						link-title
 						:caption="propertiesCaption( referencing.propertyNames )"
 						:expanded="expandedReferencingIds.has( referencing.subject.getId().text )"
 						:can-edit="canEditSubject"
 						:can-delete="canDeleteSubject"
 						:page="pageOf( referencing.subject )"
 						@toggle="toggleReferencingExpanded"
-						@edit="openEditor"
+						@edit="editSubject"
 						@delete="confirmDelete"
 						@copy-link="copySubjectLink"
 					/>
@@ -114,6 +116,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
+import { pageDeleteFormUrl } from '@/presentation/subjectDeletion.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -127,6 +130,7 @@ import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
 import SubjectDeleteDialog from '@/components/SubjectsManager/SubjectDeleteDialog.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import { useSubjectEditor } from '@/composables/useSubjectEditor.ts';
 
 const props = defineProps<{
 	subjectId: string;
@@ -387,26 +391,11 @@ function copySubjectLink( target: Subject ): Promise<void> {
 	);
 }
 
-// Editor state is component-local (ADR 16): the dialog opens on data fetched straight from the
-// repositories, not on the store this page renders from.
-const editingSubject = shallowRef<Subject | null>( null );
-const editingSchema = shallowRef<Schema | null>( null );
-const editorOpen = ref( false );
+const { editingSubject, editingSchema, editorOpen, openEditor } = useSubjectEditor( subjectRepo, schemaRepo );
 
-async function openEditor( subjectToEdit: Subject ): Promise<void> {
-	try {
-		// Both, so the editor never opens against data another tab has moved on from.
-		const [ freshSubject, schema ] = await Promise.all( [
-			subjectRepo.getSubjectForEditing( subjectToEdit.getId() ),
-			schemaRepo.getSchema( subjectToEdit.getSchemaName() )
-		] );
-
-		editingSubject.value = freshSubject;
-		editingSchema.value = schema;
-		editorOpen.value = true;
-	} catch ( error ) {
-		mw.notify( error instanceof Error ? error.message : String( error ), { type: 'error' } );
-	}
+// The rows emit the Subject they render; the opener reads its own copy and needs only the id.
+function editSubject( edited: Subject ): void {
+	openEditor( edited.getId() );
 }
 
 // Re-read rather than patch: a save can add or drop relations, so the referenced Subjects below are
@@ -432,7 +421,14 @@ const deletingSubject = shallowRef<Subject | null>( null );
 const deletingSubjectName = computed( () =>
 	deletingSubject.value === null ? '' : subjectDisplayName( deletingSubject.value ) );
 
-function confirmDelete( target: Subject ): void {
+async function confirmDelete( target: Subject ): Promise<void> {
+	const deleteForm = await pageDeleteFormUrl( pageOf( target ), subjectRepo );
+
+	if ( deleteForm !== null ) {
+		window.location.href = deleteForm;
+		return;
+	}
+
 	deletingSubject.value = target;
 	deleteConfirmOpen.value = true;
 }

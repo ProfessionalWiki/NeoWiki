@@ -7,6 +7,8 @@ namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 use DateTimeImmutable;
 use Laudis\Neo4j\Types\Date;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualText;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
@@ -51,6 +53,7 @@ class Neo4jValueBuilderRegistryTest extends TestCase {
 		$this->assertTrue( $registry->hasBuilder( 'number' ) );
 		$this->assertTrue( $registry->hasBuilder( 'dateTime' ) );
 		$this->assertTrue( $registry->hasBuilder( 'date' ) );
+		$this->assertTrue( $registry->hasBuilder( 'monolingualText' ) );
 	}
 
 	public function testHasBuilderReturnsFalseForUnregisteredType(): void {
@@ -77,6 +80,37 @@ class Neo4jValueBuilderRegistryTest extends TestCase {
 			[ 'hello' ],
 			$registry->buildNeo4jValue( 'text', new StringValue( 'hello' ) )
 		);
+	}
+
+	public function testMonolingualTextBuilderJoinsEachTextWithItsLanguage(): void {
+		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
+
+		$this->assertSame(
+			[ 'Zinema@eu', 'Cine@es' ],
+			$registry->buildNeo4jValue(
+				'monolingualText',
+				new MonolingualTextValue(
+					new MonolingualText( 'Zinema', 'eu' ),
+					new MonolingualText( 'Cine', 'es' ),
+				)
+			)
+		);
+	}
+
+	// The tag goes on the end whatever the text holds, which is why a reader splits on the last `@`.
+	public function testMonolingualTextBuilderTagsATextThatItselfHoldsAnAtSign(): void {
+		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
+
+		$this->assertSame(
+			[ 'a@b@eu' ],
+			$registry->buildNeo4jValue( 'monolingualText', new MonolingualTextValue( new MonolingualText( 'a@b', 'eu' ) ) )
+		);
+	}
+
+	public function testMonolingualTextBuilderGivenAnotherValueTypeBuildsNothing(): void {
+		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
+
+		$this->assertSame( [], $registry->buildNeo4jValue( 'monolingualText', new StringValue( 'Zinema' ) ) );
 	}
 
 	public function testDateTimeBuilderConvertsStringsToDateTimeObjects(): void {

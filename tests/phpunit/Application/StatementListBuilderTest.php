@@ -9,9 +9,9 @@ use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 
@@ -22,7 +22,7 @@ class StatementListBuilderTest extends TestCase {
 
 	private function newBuilder(): StatementListBuilder {
 		return new StatementListBuilder(
-			propertyTypeLookup: PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			propertyTypeLookup: TestSources::newPropertyTypeRegistry(),
 			idGenerator: new StubIdGenerator( '11111111111111' ),
 			subjectIdParser: TestSubjectIds::newParser()
 		);
@@ -181,6 +181,45 @@ class StatementListBuilderTest extends TestCase {
 		$this->assertNull( $list->getStatement( new PropertyName( 'Unwanted' ) ) );
 	}
 
+	public function testMonolingualTextStatementIsBuilt(): void {
+		$list = $this->newBuilder()->build( [
+			'Original title' => [
+				'propertyType' => 'monolingualText',
+				'value' => [
+					[ 'text' => ' Zinema ', 'language' => 'EU' ],
+					[ 'text' => 'Cine', 'language' => 'es' ],
+				],
+			],
+		] );
+
+		$this->assertSame(
+			[
+				[ 'text' => 'Zinema', 'language' => 'eu' ],
+				[ 'text' => 'Cine', 'language' => 'es' ],
+			],
+			$list->getStatement( new PropertyName( 'Original title' ) )?->getValue()->toScalars()
+		);
+	}
+
+	/**
+	 * A domain message names the rule the value broke, which the property name alone does not.
+	 */
+	public function testRejectionKeepsTheReasonTheValueWasRejectedFor(): void {
+		$builder = $this->newBuilder();
+
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage(
+			'Value of "Original title" does not fit property type "monolingualText": Invalid language tag: "not a tag".'
+		);
+
+		$builder->build( [
+			'Original title' => [
+				'propertyType' => 'monolingualText',
+				'value' => [ [ 'text' => 'Zinema', 'language' => 'not a tag' ] ],
+			],
+		] );
+	}
+
 	/**
 	 * @dataProvider valueNotFittingItsTypeProvider
 	 */
@@ -188,7 +227,7 @@ class StatementListBuilderTest extends TestCase {
 		$builder = $this->newBuilder();
 
 		$this->expectException( InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'Mismatched' );
+		$this->expectExceptionMessage( "Value of \"Mismatched\" does not fit property type \"{$propertyType}\"" );
 
 		$builder->build( [ 'Mismatched' => [ 'propertyType' => $propertyType, 'value' => $value ] ] );
 	}
@@ -201,6 +240,22 @@ class StatementListBuilderTest extends TestCase {
 		yield 'relation given a scalar' => [ 'relation', 'sTargetIdWanted' ];
 		yield 'relation target missing' => [ 'relation', [ [ 'properties' => [] ] ] ];
 		yield 'relation given a list of bare target ids' => [ 'relation', [ 'sTargetIdWanted' ] ];
+		yield 'relation target of the wrong form' => [ 'relation', [ [ 'target' => 'not a subject id' ] ] ];
+		yield 'relation id of the wrong form' => [
+			'relation',
+			[ [ 'id' => 'not a relation id', 'target' => 's11111111111111' ] ],
+		];
+		yield 'monolingual text given a list of bare strings' => [ 'monolingualText', [ 'Zinema' ] ];
+		yield 'monolingual text part without a language' => [ 'monolingualText', [ [ 'text' => 'Zinema' ] ] ];
+		yield 'monolingual text part without a text' => [ 'monolingualText', [ [ 'language' => 'eu' ] ] ];
+		yield 'monolingual text part with a non-string text' => [
+			'monolingualText',
+			[ [ 'text' => 2019, 'language' => 'eu' ] ],
+		];
+		yield 'monolingual text part with a malformed language' => [
+			'monolingualText',
+			[ [ 'text' => 'Zinema', 'language' => 'not a tag' ] ],
+		];
 	}
 
 	/**
@@ -242,7 +297,7 @@ class StatementListBuilderTest extends TestCase {
 		$builder = $this->newBuilder();
 
 		$this->expectException( InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'Objected' );
+		$this->expectExceptionMessage( 'Value of "Objected" must be a list, not an object' );
 
 		$builder->build( [ 'Objected' => [ 'propertyType' => $propertyType, 'value' => $value ] ] );
 	}
@@ -253,6 +308,10 @@ class StatementListBuilderTest extends TestCase {
 		yield 'relation given one relation rather than a list' => [
 			'relation',
 			[ 'target' => 'sTargetIdWanted' ],
+		];
+		yield 'monolingual text given one part rather than a list' => [
+			'monolingualText',
+			[ 'text' => 'Zinema', 'language' => 'eu' ],
 		];
 	}
 

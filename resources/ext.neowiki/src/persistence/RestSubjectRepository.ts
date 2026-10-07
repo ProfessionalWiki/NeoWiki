@@ -276,18 +276,25 @@ export class RestSubjectRepository implements SubjectRepository {
 		return { requestedId: data.requestedId, subjects: data.subjects };
 	}
 
+	/**
+	 * Unlike createOtherSubject, a 409 stays a failure even for a minted id: the endpoint also
+	 * answers 409 when the page has gained a Main Subject meanwhile, so it does not show that this
+	 * very create landed.
+	 */
 	public async createMainSubject(
 		pageId: number,
 		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
 		comment?: string,
+		id?: SubjectId,
 	): Promise<SubjectWriteResult> {
 		const payload = {
 			label: label,
 			schema: schemaName,
 			statements: statementsToJson( statements ),
 			comment,
+			id: id?.text,
 		};
 
 		const response = await this.httpClient.post(
@@ -356,6 +363,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		statements: StatementList,
 		comment?: string,
 		pageTitle?: string,
+		id?: SubjectId,
 	): Promise<SubjectPageWriteResult> {
 		let response: Response;
 
@@ -372,6 +380,7 @@ export class RestSubjectRepository implements SubjectRepository {
 					schema: schemaName,
 					statements: statementsToJson( statements ),
 					comment,
+					id: id?.text,
 				},
 				{
 					headers: {
@@ -392,7 +401,16 @@ export class RestSubjectRepository implements SubjectRepository {
 		await throwOn422IfPossible( response );
 
 		if ( response.status === 409 ) {
-			throw new PageTitleTakenError( await this.stringFieldOf( response, 'pageTitle' ) ?? '' );
+			// Both conflicts answer 409, and only the title one names a title. An id conflict can be
+			// met only by a caller that minted the id up front, and for one it minted for this very
+			// Subject it means the create already landed and its answer was lost.
+			const takenTitle = await this.stringFieldOf( response, 'pageTitle' );
+
+			if ( takenTitle === null && id !== undefined ) {
+				throw new SubjectIdInUseError( id.text );
+			}
+
+			throw new PageTitleTakenError( takenTitle ?? '' );
 		}
 
 		if ( !response.ok ) {

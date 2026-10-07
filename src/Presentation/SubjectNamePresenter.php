@@ -34,8 +34,7 @@ class SubjectNamePresenter implements GetSubjectPresenter {
 	}
 
 	/**
-	 * Whether that name is the Schema-derived stand-in rather than one somebody chose, which every
-	 * surface marks as such.
+	 * Whether that name is the Schema name the wiki fell back on rather than one somebody chose.
 	 */
 	public function displayNameIsGenerated(): bool {
 		return $this->requestedSubject?->displayNameIsGenerated ?? false;

@@ -57,16 +57,34 @@ whether the new version changed the projected shape, and rebuilds are quick at e
 
 If your wiki runs CirrusSearch, also [update its search index](maintenance.md#making-subjects-searchable).
 
-If your install predates September 2026 and holds restricted content, run `php maintenance/run.php refreshLinks`
-once: categories and page properties that earlier parses derived from Subject data were recorded without a
-permission check, and MediaWiki rewrites those tables only on an edit, not on a view.
+If your install predates September 2026, run `php maintenance/run.php refreshLinks` once: pages that read another
+page's Subjects recorded no dependency on it, and where the wiki holds restricted content, categories and page
+properties that earlier parses derived from Subject data were recorded without a permission check. MediaWiki
+rewrites those tables only on an edit, not on a view.
 
-If your wiki uses MediaWiki's built-in database search and has pages saved before September 2026, run
-`php maintenance/run.php rebuildtextindex` once, so that those pages are
-[findable by their Subjects](maintenance.md#making-subjects-searchable).
+If your wiki uses MediaWiki's built-in database search on MySQL or SQLite and has pages saved before September
+2026, run `php maintenance/run.php rebuildtextindex` once, so that those pages are
+[findable by their Subjects](maintenance.md#making-subjects-searchable). It takes the wiki's search down for the
+length of the run.
 
 If your Subjects predate the optional Subject label, run
 [clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before that rebuild.
+
+## Neo4j 5.26.4 required, October 2026
+
+If you use Neo4j, NeoWiki now needs 5.26.4 or later. Upgrade Neo4j first: on an older version, saving Subjects to the
+graph fails or gives their Relations the wrong type.
+
+## Removed setting, September 2026
+
+`$wgNeoWikiDereferenceSubjectsToHostingPage` is removed, and there is no alias: the wiki's mode answers its
+question. A browser dereferencing a Subject's concept URI now lands on the page the Subject is stored on, which the
+old setting did only when set to `true`. To keep sending browsers to `Special:Subject`, set `$wgNeoWikiSubjectFirst`
+to `true`, which also changes where new Subjects are created and where links to Subjects lead. See
+[Choosing page-first or subject-first](installation.md#choosing-page-first-or-subject-first).
+
+A `MediaWiki:NeoWiki` page still carrying `dereferenceSubjectsToHostingPage` keeps working, and the key does
+nothing; saving the page is refused until the key is removed.
 
 ## Renamed accessors, September 2026
 
@@ -79,7 +97,7 @@ your `Module:` namespace for both after upgrading. `make import-demo-data` cover
 
 `nw.getMainSubject` keeps its name and changes one answer. An unlabelled Main Subject on a page
 titled by the id of *another* Subject on that page now reads as its Schema name, where it took the
-page title before. Only entity-first creation makes such a title. The `displayName` of the REST API
+page title before. Only creation without a usable label, and every creation on a subject-first wiki, makes such a title. The `displayName` of the REST API
 and the `name` of the Subject's node in a graph store follow the same rule, and a page save or a
 rebuild refreshes an existing node.
 

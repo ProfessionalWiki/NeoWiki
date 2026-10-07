@@ -12,7 +12,6 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Cypher;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jReferencingSubjectLookup;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
@@ -205,10 +204,10 @@ class Neo4jReferencingSubjectLookupTest extends NeoWikiIntegrationTestCase {
 		$this->getClient()->run(
 			'MATCH (target:Subject { id: $targetId })
 			 CREATE (:Page { id: $pageId, wiki_id: $pageWikiId })-[:HasSubject { isMain: false }]->'
-				. '(:Subject:' . Cypher::escape( TestSubject::DEFAULT_SCHEMA_ID )
-				. ' { id: $sourceId, name: "Foreign", wiki_id: $subjectWikiId })'
+				. '(:Subject:$($schemaName) { id: $sourceId, name: "Foreign", wiki_id: $subjectWikiId })'
 				. '-[:Made_in { id: "rTestRSL222222" }]->(target)',
 			[
+				'schemaName' => TestSubject::DEFAULT_SCHEMA_ID,
 				'targetId' => self::TARGET_ID,
 				'sourceId' => $sourceId,
 				'pageId' => $pageId,

@@ -3,30 +3,27 @@
 		class="ext-neowiki-subject-edit-pane"
 		:aria-label="paneName"
 	>
-		<!-- Named here rather than in the dialog's header, for the root as well as a nested
-			pane: a header naming the root goes stale the moment another pane is opened, and
-			cannot follow without re-rendering CdxDialog. -->
 		<div class="ext-neowiki-subject-edit-pane__header">
 			<h3 class="ext-neowiki-subject-edit-pane__name">
 				<EditableText
+					ref="labelField"
 					:model-value="label"
 					:edit-button-label="$i18n( 'neowiki-subject-editor-rename' ).text()"
 					:input-aria-label="$i18n( 'neowiki-subject-editor-label-field' ).text()"
 					:placeholder="labelPlaceholder"
+					@dirty="labelDirty = $event"
 					@update:model-value="setLabel"
 				/>
 			</h3>
 
 			<div class="ext-neowiki-subject-edit-pane__meta">
-				<!-- The Schema the pane's Subject uses, beside the name it belongs to rather
-					than in a dialog header that cannot follow the pane. A real link, so it
-					carries the badge's own interactive styling and a destination; a plain
-					click opens the Schema editor instead, as the old header link did.
+				<!-- The Schema the pane's Subject uses, beside the name it belongs to. A real
+					link, so it carries the badge's own interactive styling and a destination;
+					a plain click opens the Schema editor instead.
 
 					A new tab, for the reason the storage link below gives: this dialog holds
 					unsaved edits for every open pane and nothing guards a navigation away
-					from it. Withheld while the Subject is named after its Schema, so it is
-					not named twice. -->
+					from it. -->
 				<SchemaNameDisplay
 					:schema-name="schemaBadge"
 					link="new-tab"
@@ -130,7 +127,14 @@ provide( RelationTargetEditingKey, true );
 const subjectStore = useSubjectStore();
 
 const subjectEditorRef = ref<SubjectEditorExposes | null>( null );
-const { hasChanged, markChanged, resetChanged } = useChangeDetection();
+const { hasChanged: committed, markChanged, resetChanged } = useChangeDetection();
+
+// A label still being typed is already something to save, and nothing once it is discarded.
+const labelDirty = ref( false );
+
+const labelField = ref<InstanceType<typeof EditableText> | null>( null );
+
+const hasChanged = computed( (): boolean => committed.value || labelDirty.value );
 
 // Refreshed when a relation field changes and on nothing else: the dialog's draft graph is its
 // only consumer and reads only relation statements, and harvesting per keystroke would re-walk
@@ -147,11 +151,9 @@ const storedLabel = computed( (): string | null => enteredSubjectLabel( label.va
 
 const paneName = computed( (): string => storedLabel.value ?? subjectDisplayName( props.subject ) );
 
-// Shown whether or not the name above already carries the Schema's name. Elsewhere that repeat is
+// Shown whether or not the name beside it already carries the Schema's name. Elsewhere that repeat is
 // worth suppressing, and `schemaNameToShow` does so; here the badge is the only link to the Schema
-// and the only way into its editor, so withholding it costs a way through rather than a word. A
-// Subject nobody has named is exactly the one being created, where the Schema most wants
-// confirming and where this row would otherwise render empty.
+// and the only way into its editor, so withholding it costs a way through rather than a word.
 const schemaBadge = computed( (): string => props.subject.getSchemaName() );
 
 // A Subject bound for a page the save has yet to settle carries the page it will be stored on
@@ -194,8 +196,9 @@ function openSchemaEditor( event: MouseEvent ): void {
 
 // EditableText commits once per edit, so a commit is both the change and the
 // end of the interaction: validate immediately rather than waiting for a blur.
+// A label of nothing but spaces is no label, so the field reads as empty rather than blank.
 function setLabel( value: string ): void {
-	label.value = value;
+	label.value = enteredSubjectLabel( value ) === null ? '' : value;
 	handleEditorChange();
 	handleEditorBlur();
 }
@@ -312,6 +315,13 @@ function buildUpdatedSubject(): Subject | null {
 		.withStatements( subjectEditorRef.value.getSubjectData().withNonEmptyValues() );
 }
 
+// The write reads the committed label, so a name still being typed is committed on the way to
+// the validation a save runs first; the Save click's own blur does the same for a pointer.
+async function flushValidation(): Promise<void> {
+	labelField.value?.commit();
+	await flush();
+}
+
 function saveBlocker(): SaveBlocker | null {
 	return subjectEditorRef.value?.saveBlocker() ?? null;
 }
@@ -334,7 +344,7 @@ defineExpose( {
 	buildUpdatedSubject,
 	setServerViolations,
 	saveBlocker,
-	flushValidation: flush
+	flushValidation
 } );
 </script>
 
@@ -343,8 +353,8 @@ defineExpose( {
 
 .ext-neowiki-subject-edit-pane {
 	/* The name at the start, the Schema and where it is stored flush to the end. Baseline
-		rather than centre, because the three differ in size. Wrapping is the last resort: the
-		badge truncates first, and the row only breaks when even that leaves no room. */
+		rather than centre, because the three differ in size. A name too long to share the row
+		pushes the other two onto the line below. */
 	&__header {
 		display: flex;
 		align-items: baseline;
@@ -375,7 +385,9 @@ defineExpose( {
 		min-width: 0;
 	}
 
+	/* A page title can run long with no space to wrap at. */
 	&__storage {
+		overflow-wrap: anywhere;
 		color: @color-subtle;
 		font-size: @font-size-small;
 	}

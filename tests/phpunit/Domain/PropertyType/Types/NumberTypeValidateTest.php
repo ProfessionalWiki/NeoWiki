@@ -4,9 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\PropertyType\Types;
 
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
@@ -109,7 +108,7 @@ class NumberTypeValidateTest extends TestCase {
 	public function testMaxValueViolationUsesErrorWhenMaximumAnnotated(): void {
 		$definition = PropertyDefinition::fromJson(
 			[ 'type' => 'number', 'maximum' => [ 'value' => 100, 'severity' => 'error' ] ],
-			PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			TestSources::newPropertyTypeRegistry(),
 		);
 
 		$violations = $this->type->validate( new NumberValue( 101 ), $definition );
@@ -121,7 +120,7 @@ class NumberTypeValidateTest extends TestCase {
 	public function testMinValueViolationUsesErrorWhenMinimumAnnotated(): void {
 		$definition = PropertyDefinition::fromJson(
 			[ 'type' => 'number', 'minimum' => [ 'value' => 0, 'severity' => 'error' ] ],
-			PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY ),
+			TestSources::newPropertyTypeRegistry(),
 		);
 
 		$violations = $this->type->validate( new NumberValue( -1 ), $definition );

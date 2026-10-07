@@ -71,5 +71,5 @@ re-key — cheap while not in production, but a real change the broader Subject 
 - [ADR 19: Graph Database Architecture](019-graph-database-architecture.md)
 - [ADR 14: Improved Id Format](014-improved-id-format.md)
 - [Graph Model reference](../api/graph-model.md)
-- [Subject Sources planning doc](../planning/SubjectSources.md); issue
+- [Subject Sources planning doc](https://github.com/ProfessionalWiki/NeoWiki/blob/36998d0039ae62f248f1ac87d00058ea027408aa/docs/planning/SubjectSources.md); issue
   [#905](https://github.com/ProfessionalWiki/NeoWiki/issues/905).

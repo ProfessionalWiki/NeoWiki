@@ -65,4 +65,18 @@ class NumberProperty extends PropertyDefinition {
 		];
 	}
 
+	public function toJsonSchema(): array {
+		$value = [ 'type' => 'number' ];
+
+		if ( $this->hasMinimum() ) {
+			$value['minimum'] = $this->getMinimum();
+		}
+
+		if ( $this->hasMaximum() ) {
+			$value['maximum'] = $this->getMaximum();
+		}
+
+		return $value;
+	}
+
 }

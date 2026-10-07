@@ -4,7 +4,6 @@ import { CdxTextInput } from '@wikimedia/codex';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Relation';
-import { PropertyName } from '@/domain/PropertyDefinition.ts';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { createI18nMock, FieldProps, setupMwMock } from '../../../VueTestHelpers.ts';
 
@@ -23,7 +22,6 @@ describe( 'RelationAttributesEditor', () => {
 	beforeEach( () => {
 		setupMwMock( {
 			messages: {
-				'neowiki-property-editor-relation-required': 'Relation type is required.',
 				'neowiki-property-editor-target-schema-required': 'Target schema is required.',
 			},
 			functions: [ 'config', 'message' ],
@@ -48,12 +46,20 @@ describe( 'RelationAttributesEditor', () => {
 	}
 
 	describe( 'rendering', () => {
-		it( 'renders the relation, target-schema and multiple controls', () => {
+		it( 'renders the target-schema and multiple controls', () => {
 			const wrapper = newWrapper();
 
-			expect( wrapper.find( '.relation-attributes__relation' ).exists() ).toBe( true );
 			expect( wrapper.findComponent( SchemaPickerStub ).exists() ).toBe( true );
 			expect( wrapper.find( 'input[type="checkbox"]' ).exists() ).toBe( true );
+		} );
+
+		// The relation type names the graph edge label, which is not a user-facing concept.
+		it( 'offers no field for the relation type', () => {
+			const wrapper = newWrapper( {
+				property: relationProperty( { relation: 'Has product' } ),
+			} );
+
+			expect( wrapper.find( '.relation-attributes__relation' ).exists() ).toBe( false );
 		} );
 
 		it( 'passes the current target schema to SchemaPicker', () => {
@@ -92,87 +98,9 @@ describe( 'RelationAttributesEditor', () => {
 			expect( input.props( 'modelValue' ) ).toBe( 'Person' );
 			expect( input.props( 'disabled' ) ).toBe( true );
 		} );
-
-		it( 'displays the stored relation in the input', () => {
-			const wrapper = newWrapper( {
-				property: relationProperty( { relation: 'Has gadget' } ),
-			} );
-
-			expect( wrapper.findComponent( CdxTextInput ).props( 'modelValue' ) ).toBe( 'Has gadget' );
-		} );
-
-		it( 'displays the property name when the relation is empty', () => {
-			const wrapper = newWrapper( {
-				property: relationProperty( { relation: '', name: new PropertyName( 'Main product' ) } ),
-			} );
-
-			expect( wrapper.findComponent( CdxTextInput ).props( 'modelValue' ) ).toBe( 'Main product' );
-		} );
-
-		it( 'clears the displayed relation when the stored relation is emptied', async () => {
-			const wrapper = newWrapper( {
-				property: relationProperty( { relation: 'Has product' } ),
-			} );
-
-			await wrapper.setProps( {
-				property: relationProperty( { relation: '' } ),
-			} );
-
-			expect( wrapper.findComponent( CdxTextInput ).props( 'modelValue' ) ).toBe( '' );
-		} );
-	} );
-
-	describe( 'relation default', () => {
-		it( 'emits the property name as relation on mount when relation is empty', () => {
-			const wrapper = newWrapper( {
-				property: relationProperty( { relation: '', name: new PropertyName( 'Main product' ) } ),
-			} );
-
-			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { relation: 'Main product' } ] );
-		} );
-
-		it( 'does not emit a default when relation is already set', () => {
-			const wrapper = newWrapper( {
-				property: relationProperty( { relation: 'Has product' } ),
-			} );
-
-			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
-		} );
 	} );
 
 	describe( 'emitting updates', () => {
-		it( 'emits relation when the relation input changes', async () => {
-			const wrapper = newWrapper();
-
-			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:modelValue', 'Owns' );
-
-			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { relation: 'Owns' } ] );
-		} );
-
-		it( 'emits the relation trimmed of surrounding whitespace', async () => {
-			const wrapper = newWrapper();
-
-			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:modelValue', '  Owns  ' );
-
-			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { relation: 'Owns' } ] );
-		} );
-
-		it( 'emits an empty relation when the field is cleared', async () => {
-			const wrapper = newWrapper();
-
-			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:modelValue', '' );
-
-			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { relation: '' } ] );
-		} );
-
-		it( 'emits an empty relation for whitespace-only input', async () => {
-			const wrapper = newWrapper();
-
-			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:modelValue', '   ' );
-
-			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { relation: '' } ] );
-		} );
-
 		it( 'emits targetSchema when the picker selects a schema', async () => {
 			const wrapper = newWrapper();
 
@@ -250,31 +178,10 @@ describe( 'RelationAttributesEditor', () => {
 	} );
 
 	describe( 'validation', () => {
-		it( 'shows no errors when relation and target schema are set', () => {
+		it( 'shows no error when the target schema is set', () => {
 			const wrapper = newWrapper();
 
-			expect( fieldProps( wrapper, '.relation-attributes__relation' ).status ).toBe( 'default' );
 			expect( fieldProps( wrapper, '.relation-attributes__target-schema' ).status ).toBe( 'default' );
-		} );
-
-		it( 'shows a required error when the relation is cleared', async () => {
-			const wrapper = newWrapper();
-
-			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:modelValue', '' );
-
-			const props = fieldProps( wrapper, '.relation-attributes__relation' );
-			expect( props.status ).toBe( 'error' );
-			expect( props.messages ).toEqual( { error: 'Relation type is required.' } );
-		} );
-
-		it( 'treats a whitespace-only relation as required', async () => {
-			const wrapper = newWrapper();
-
-			await wrapper.findComponent( CdxTextInput ).vm.$emit( 'update:modelValue', '   ' );
-
-			const props = fieldProps( wrapper, '.relation-attributes__relation' );
-			expect( props.status ).toBe( 'error' );
-			expect( props.messages ).toEqual( { error: 'Relation type is required.' } );
 		} );
 
 		it( 'shows a required error while no target schema is chosen', () => {

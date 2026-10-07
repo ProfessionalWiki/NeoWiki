@@ -72,11 +72,12 @@
 					:focused="focusedId === mainSubject.getId().text"
 					:can-edit="canEdit"
 					:can-delete="canDelete"
-					:can-move="canEdit"
+					:can-move="canMove"
 					:show-drag-handle="canEdit"
 					:subject-page-url="subjectPageUrl( mainSubject.getId().text )"
+					:link-title="subjectFirst"
 					@toggle="toggleExpanded"
-					@edit="openEditor"
+					@edit="editSubject"
 					@demote="demoteFromMain"
 					@move="openMoveDialog"
 					@delete="confirmDelete"
@@ -121,11 +122,12 @@
 					:focused="focusedId === subject.getId().text"
 					:can-edit="canEdit"
 					:can-delete="canDelete"
-					:can-move="canEdit"
+					:can-move="canMove"
 					:show-drag-handle="canEdit"
 					:subject-page-url="subjectPageUrl( subject.getId().text )"
+					:link-title="subjectFirst"
 					@toggle="toggleExpanded"
-					@edit="openEditor"
+					@edit="editSubject"
 					@promote="promoteToMain"
 					@move="openMoveDialog"
 					@delete="confirmDelete"
@@ -165,7 +167,7 @@
 			v-if="movingSubject !== null"
 			v-model:open="moveDialogOpen"
 			:subject-id="movingSubject.getId().text"
-			:subject-name="movingSubject.getDisplayName()"
+			:subject-name="movingSubjectName"
 			:current-page-id="pageId"
 			:current-page-title="currentPageTitle"
 			:subject-is-main-subject="isMainSubject( movingSubject as Subject )"
@@ -195,12 +197,17 @@ import { useSubjectDrag } from '@/composables/useSubjectDrag.ts';
 import { subjectRowDomId, subjectIdFromHash } from '@/presentation/subjectRowAnchor.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
+import { isSubjectFirst } from '@/wikiMode.ts';
+import { dataTabUrl } from '@/presentation/subjectRowUrl.ts';
+import { pageDeleteFormUrl } from '@/presentation/subjectDeletion.ts';
 import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
+import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { Subject } from '@/domain/Subject';
 import { Schema } from '@/domain/Schema';
 import { SubjectId } from '@/domain/SubjectId';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import { useSubjectEditor } from '@/composables/useSubjectEditor.ts';
 import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vue';
 import SubjectDeleteDialog from '@/components/SubjectsManager/SubjectDeleteDialog.vue';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
@@ -255,17 +262,18 @@ function scrollBehavior(): 'auto' | 'smooth' {
 	return window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches ? 'auto' : 'smooth';
 }
 
-// Editor state is component-local (ADR 16): the dialog opens on data fetched straight from the
-// repositories, not on the store the list below renders from.
-const editingSubject = shallowRef<Subject | null>( null );
-const editingSchema = shallowRef<Schema | null>( null );
-const editorOpen = ref( false );
+const { editingSubject, editingSchema, editorOpen, openEditor } = useSubjectEditor( subjectRepo, schemaRepo );
+
+// The rows emit the Subject they render; the opener reads its own copy and needs only the id.
+function editSubject( edited: Subject ): void {
+	openEditor( edited.getId() );
+}
 
 const deleteConfirmOpen = ref( false );
 const deletingSubject = shallowRef<Subject | null>( null );
 
 const moveDialogOpen = ref( false );
-const movingSubject = ref<Subject | null>( null );
+const movingSubject = shallowRef<Subject | null>( null );
 
 // The page the Data tab is showing, named for the warning a move of the Main Subject carries.
 const currentPageTitle = String( mw.config.get( 'wgPageName' ) ?? '' ).replace( /_/g, ' ' );
@@ -278,6 +286,13 @@ const subjects = computed<Subject[]>( () =>
 
 const canCreate = computed( () => canCreateMainSubject.value || canCreateOtherSubject.value );
 const canEdit = computed( () => canEditSubject.value );
+
+// A subject-first wiki gives every Subject a page of its own, so moving one between pages would
+// advertise a page model the wiki denies (ADR 33).
+// The wiki's mode, read once: it cannot change while this tab is open.
+const subjectFirst = isSubjectFirst();
+
+const canMove = computed( () => canEdit.value && !subjectFirst );
 const canDelete = computed( () => canDeleteSubject.value );
 
 const mainSubject = computed<Subject | null>( () => {
@@ -301,6 +316,7 @@ const hasOtherSubjects = computed( () => otherSubjects.value.length > 0 );
 const isCompletelyEmpty = computed( () => !hasMainSubject.value && !hasOtherSubjects.value );
 
 const deletingSubjectName = computed( () => deletingSubject.value === null ? '' : subjectDisplayName( deletingSubject.value ) );
+const movingSubjectName = computed( () => movingSubject.value === null ? '' : subjectDisplayName( movingSubject.value ) );
 
 function toggleExpanded( subject: Subject ): void {
 	const id = subject.getId().text;
@@ -469,26 +485,6 @@ async function demoteFromMain(): Promise<void> {
 	}
 }
 
-async function openEditor( subject: Subject ): Promise<void> {
-	try {
-		// Fetch both subject and schema so the editor never opens against stale data
-		// (e.g. after the subject or its schema was edited in another tab).
-		const [ freshSubject, schema ] = await Promise.all( [
-			subjectRepo.getSubjectForEditing( subject.getId() ),
-			schemaRepo.getSchema( subject.getSchemaName() )
-		] );
-
-		editingSubject.value = freshSubject;
-		editingSchema.value = schema;
-		editorOpen.value = true;
-	} catch ( error ) {
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{ type: 'error' }
-		);
-	}
-}
-
 async function handleEditSave( updatedSubject: Subject, comment: string ): Promise<void> {
 	await subjectStore.updateSubject( updatedSubject, comment );
 	await loadSubjects();
@@ -516,11 +512,11 @@ function openMoveDialog( subject: Subject ): void {
 // The listing needs no refresh here: moveSubject re-syncs it as part of the move, because dropping
 // the Subject from the registry before the listing stops naming it is what crashes the render.
 function onSubjectMoved( targetTitle: string ): void {
-	const subjectName = movingSubject.value?.getDisplayName() ?? '';
+	const subjectName = movingSubjectName.value;
 	movingSubject.value = null;
 
 	const link = document.createElement( 'a' );
-	link.href = mw.util.getUrl( targetTitle, { action: 'subjects' } );
+	link.href = dataTabUrl( targetTitle );
 	link.textContent = targetTitle;
 
 	// parseDom rather than a message string: it takes the link as a node, which leaves the subject
@@ -531,7 +527,14 @@ function onSubjectMoved( targetTitle: string ): void {
 	);
 }
 
-function confirmDelete( subject: Subject ): void {
+async function confirmDelete( subject: Subject ): Promise<void> {
+	const deleteForm = await pageDeleteFormUrl( new PageIdentifiers( pageId, currentPageTitle ), subjectRepo );
+
+	if ( deleteForm !== null ) {
+		window.location.href = deleteForm;
+		return;
+	}
+
 	deletingSubject.value = subject;
 	deleteConfirmOpen.value = true;
 }

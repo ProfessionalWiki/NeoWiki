@@ -159,6 +159,26 @@ describe( 'RelationInput', () => {
 			expect( wrapper.findComponent( SubjectPicker ).props( 'targetSchema' ) ).toBe( 'Person' );
 		} );
 
+		// Null rather than undefined: a picker given no target Schema offers Subjects of every Schema.
+		it( 'tells SubjectPicker a target Schema of another Source names nothing it can search', () => {
+			const wrapper = newWrapper( {
+				property: newRelationProperty( { targetSchema: { source: 'otherwiki', name: 'Person' } } ),
+			} );
+
+			expect( wrapper.findComponent( SubjectPicker ).props( 'targetSchema' ) ).toBeNull();
+		} );
+
+		// The state switching a property's type to Relation leaves its initial-value field in.
+		it( 'tells SubjectPicker a relation without a target Schema names nothing it can search', () => {
+			const noTarget: Partial<RelationProperty> = { targetSchema: undefined };
+
+			const wrapper = newWrapper( {
+				property: { ...newRelationProperty(), ...noTarget },
+			} );
+
+			expect( wrapper.findComponent( SubjectPicker ).props( 'targetSchema' ) ).toBeNull();
+		} );
+
 		it( 'emits RelationValue when subject is selected', async () => {
 			const wrapper = newWrapper();
 

@@ -65,21 +65,56 @@ class SubjectDisplayName {
 	}
 
 	/**
-	 * Whether the page was titled by the system rather than by anyone: entity-first creation titles a
-	 * page by the id of the Subject it creates when no label gives it a title (ADR 31). Any Subject
-	 * the page holds counts, not only the one being named: which Subject such a page carries can
-	 * change, while the title stays as unchosen as it was.
+	 * The Subject to show in place of the page's own title, or null to show the title: the Main Subject
+	 * of a page the system titled by a Subject id, since the id names nothing a reader knows.
+	 */
+	public static function inPlaceOfPageTitle( PageSubjects $pageSubjects, string $pageName ): ?Subject {
+		$mainSubject = $pageSubjects->getMainSubject();
+
+		if ( $mainSubject === null || !self::isTitledBySubjectOnIt( $pageName, $pageSubjects ) ) {
+			return null;
+		}
+
+		return $mainSubject;
+	}
+
+	/**
+	 * Whether a page of this name can be titled by a Subject id at all: cheap enough to ask before the
+	 * page is read, so every other page is spared the read. The first letter is set aside as below.
+	 */
+	public static function mayBeTitledBySubjectId( string $pageName ): bool {
+		return SubjectId::isValidLocalId( lcfirst( self::titleText( $pageName ) ) );
+	}
+
+	/**
+	 * Whether the page was titled by the system rather than by anyone: subject-first creation titles a
+	 * page by the id of the Subject it creates (ADR 33), page-first creation when no label gives it a
+	 * title (ADR 31). Any Subject the page holds counts, not only the one being named: which Subject
+	 * such a page carries can change, while the title stays as unchosen as it was.
 	 *
-	 * The comparison is against the ids the page holds rather than against the shape of an id,
-	 * because ordinary titles have that shape too - Standardization is fifteen letters starting with
-	 * an s - and naming a page after one must not unname its Subject.
+	 * The comparison is against the ids the page holds rather than against the shape of an id, which is
+	 * what keeps a person's title theirs: Standardization is fifteen letters starting with an s.
 	 *
 	 * The first letter is set aside, because a wiki that capitalizes page titles - the default -
 	 * stores such a page under an upper-case S. Nothing else of an id can differ: its grammar
 	 * (ADR 14) is ASCII that MediaWiki leaves alone.
 	 */
-	private static function isTitledBySubjectOnIt( string $pageName, PageSubjects $pageSubjects ): bool {
-		return in_array( lcfirst( $pageName ), $pageSubjects->getAllSubjects()->getIdsAsTextArray(), true );
+	public static function isTitledBySubjectOnIt( string $pageName, PageSubjects $pageSubjects ): bool {
+		return in_array(
+			lcfirst( self::titleText( $pageName ) ),
+			$pageSubjects->getAllSubjects()->getIdsAsTextArray(),
+			true
+		);
+	}
+
+	/**
+	 * The text after the first colon, and the whole name without one: a namespace name holds no colon,
+	 * and neither does an id (ADR 14), so a second colon means someone chose the title.
+	 */
+	private static function titleText( string $pageName ): string {
+		$colon = strpos( $pageName, ':' );
+
+		return $colon === false ? $pageName : substr( $pageName, $colon + 1 );
 	}
 
 }

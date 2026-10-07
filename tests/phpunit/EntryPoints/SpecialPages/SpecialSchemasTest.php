@@ -10,6 +10,8 @@ use SpecialPageTestBase;
  */
 class SpecialSchemasTest extends SpecialPageTestBase {
 
+	use HelpLinkAssertions;
+
 	protected function newSpecialPage(): SpecialSchemas {
 		return new SpecialSchemas();
 	}
@@ -22,6 +24,10 @@ class SpecialSchemasTest extends SpecialPageTestBase {
 			'id="ext-neowiki-schemas"',
 			$output
 		);
+	}
+
+	public function testTheHelpLinkLeadsToTheDocs(): void {
+		$this->assertHelpLinkLeadsToTheDocs( $this->outputOf( $this->newSpecialPage() ) );
 	}
 
 }

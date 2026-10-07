@@ -21,6 +21,8 @@ class FrontendModuleLoader {
 		private readonly HookContainer $hookContainer,
 		private readonly int $validationDebounceMs,
 		private readonly bool $validationEnforced,
+		private readonly bool $subjectFirst,
+		private readonly bool $subjectListAvailable,
 	) {
 	}
 
@@ -31,6 +33,8 @@ class FrontendModuleLoader {
 		$out->addJsConfigVars( [
 			'wgNeoWikiValidationDebounceMs' => $this->validationDebounceMs,
 			'wgNeoWikiEnforceValidation' => $this->validationEnforced,
+			'wgNeoWikiSubjectFirst' => $this->subjectFirst,
+			'wgNeoWikiSubjectListAvailable' => $this->subjectListAvailable,
 		] );
 
 		/** @var list<string> $modules populated by hook handlers */

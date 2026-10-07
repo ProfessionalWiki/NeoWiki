@@ -2,21 +2,6 @@
 	<!-- cdx-field class is used for spacing -->
 	<div class="relation-attributes cdx-field">
 		<CdxField
-			class="relation-attributes__relation"
-			:status="relationError === null ? 'default' : 'error'"
-			:messages="relationError === null ? {} : { error: relationError }"
-		>
-			<template #label>
-				{{ $i18n( 'neowiki-property-editor-relation' ).text() }}
-			</template>
-			<CdxTextInput
-				:model-value="relationInput"
-				input-type="text"
-				@update:model-value="updateRelation"
-			/>
-		</CdxField>
-
-		<CdxField
 			class="relation-attributes__target-schema"
 			:status="targetSchemaError === null ? 'default' : 'error'"
 			:messages="targetSchemaError === null ? {} : { error: targetSchemaError }"
@@ -59,7 +44,7 @@
 
 <script setup lang="ts">
 import { isLocalSchemaReference, schemaReferenceName } from '@/domain/SchemaReference';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { CdxCheckbox, CdxField, CdxTextInput } from '@wikimedia/codex';
 import { RelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { withConstraintSeverity } from '@/domain/PropertyDefinition.ts';
@@ -70,24 +55,6 @@ import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue'
 
 const props = defineProps<AttributesEditorProps<RelationProperty>>();
 const emit = defineEmits<AttributesEditorEmits<RelationProperty>>();
-
-const relationInput = ref( props.property.relation || props.property.name.toString() );
-
-watch( () => props.property.relation, ( newValue ) => {
-	relationInput.value = newValue;
-} );
-
-onMounted( () => {
-	if ( !props.property.relation ) {
-		emit( 'update:property', { relation: props.property.name.toString() } );
-	}
-} );
-
-const relationError = computed<string | null>( () =>
-	relationInput.value.trim() === '' ?
-		mw.message( 'neowiki-property-editor-relation-required' ).text() :
-		null
-);
 
 // A Schema of another Source is shown but not edited here: the picker offers this wiki's Schemas
 // alone, and selecting one from it would replace a reference the editor cannot express (ADR 23).
@@ -105,11 +72,6 @@ const targetSchemaError = computed<string | null>( () =>
 		mw.message( 'neowiki-property-editor-target-schema-required' ).text() :
 		null
 );
-
-const updateRelation = ( value: string ): void => {
-	relationInput.value = value;
-	emit( 'update:property', { relation: value.trim() } );
-};
 
 const updateTargetSchema = ( schemaName: string ): void => {
 	emit( 'update:property', { targetSchema: schemaName } );

@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="810" height="470" viewBox="0 0 810 470"
+	font-family="sans-serif" font-size="16">
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+<path d="M0,0L10,5L0,10z" fill="#202122"/>
+</marker>
+<marker id="arrow-node" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+<path d="M0,0L10,5L0,10z" fill="#609"/>
+</marker>
+<marker id="arrow-subject" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+<path d="M0,0L10,5L0,10z" fill="#039"/>
+</marker>
+<marker id="arrow-value" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+<path d="M0,0L10,5L0,10z" fill="#1D80C0"/>
+</marker>
+</defs>
+<rect width="810" height="470" fill="#FFF"/>
+
+<!-- Subject card -->
+<text x="152" y="36" text-anchor="middle" font-size="15" font-weight="bold" fill="#202122">Subject</text>
+<rect x="32" y="58" width="240" height="126" fill="none" stroke="#039" stroke-width="1.5"/>
+<text x="46" y="82" font-size="16" font-weight="bold" fill="#000">Ada Lovelace</text>
+<rect x="46" y="90" width="54" height="17" rx="3" fill="#EAECF0"/>
+<text x="73" y="102.5" font-size="10.5" text-anchor="middle" fill="#202122">Person</text>
+<path stroke="#A2A9B1" d="M32,116H272"/>
+<rect x="38" y="124" width="228" height="24" fill="#FFF3E0"/>
+<text x="46" y="141" font-size="13" font-weight="bold" fill="#000">Birth date</text>
+<text x="168" y="141" font-size="13" fill="#202122">1815-12-10</text>
+<rect x="38" y="152" width="228" height="24" fill="#E8F5E9"/>
+<text x="46" y="169" font-size="13" font-weight="bold" fill="#000">Birth place</text>
+<text x="168" y="169" font-size="13" fill="#36C">London</text>
+
+<!-- becomes -->
+<path stroke="#202122" stroke-width="1.5" d="M286,121H336" marker-end="url(#arrow)"/>
+
+<!-- Projection -->
+<text x="552" y="36" text-anchor="middle" font-size="15" font-weight="bold" fill="#202122">Projected with the Mapping</text>
+
+<rect x="348" y="58" width="278" height="76" rx="8" fill="none" stroke="#039" stroke-width="1.5"/>
+<text x="362" y="80" font-size="11" font-family="monospace" fill="#202122">neo-subj:…</text>
+<text x="362" y="100" font-size="11" font-family="monospace" fill="#202122">a crm:E21_Person</text>
+<text x="362" y="120" font-size="11" font-family="monospace" fill="#202122">rdaGr2:nameOfThePerson "Ada Lovelace"</text>
+
+<path stroke="#609" stroke-width="1.5" d="M388,134V200" marker-end="url(#arrow-node)"/>
+<text x="400" y="176" font-size="11" font-family="monospace" fill="#609">crm:P98i_was_born</text>
+
+<rect x="348" y="206" width="130" height="56" rx="8" fill="none" stroke="#609" stroke-width="1.5"/>
+<text x="362" y="228" font-size="11" font-family="monospace" fill="#72777D">nodes.birth</text>
+<text x="362" y="248" font-size="11" font-family="monospace" fill="#202122">a crm:E67_Birth</text>
+
+<path stroke="#039" stroke-width="1.5" d="M478,234H634" marker-end="url(#arrow-subject)"/>
+<text x="486" y="224" font-size="11" font-family="monospace" fill="#039">crm:P7_took_place_at</text>
+<rect x="640" y="206" width="96" height="56" rx="8" fill="#E8F5E9" stroke="#039" stroke-width="1.5"/>
+<text x="654" y="228" font-size="11" font-family="monospace" fill="#202122">neo-subj:…</text>
+<text x="654" y="248" font-size="11" font-family="monospace" fill="#72777D">(London)</text>
+
+<path stroke="#609" stroke-width="1.5" d="M388,262V300" marker-end="url(#arrow-node)"/>
+<text x="400" y="286" font-size="11" font-family="monospace" fill="#609">crm:P4_has_time-span</text>
+
+<rect x="348" y="306" width="158" height="56" rx="8" fill="none" stroke="#609" stroke-width="1.5"/>
+<text x="362" y="328" font-size="11" font-family="monospace" fill="#72777D">nodes.birthTimespan</text>
+<text x="362" y="348" font-size="11" font-family="monospace" fill="#202122">a crm:E52_Time-Span</text>
+
+<path stroke="#1D80C0" stroke-width="1.5" d="M388,362V400" marker-end="url(#arrow-value)"/>
+<text x="400" y="386" font-size="11" font-family="monospace" fill="#1D80C0">crm:P82_at_some_time_within</text>
+
+<rect x="348" y="406" width="112" height="26" fill="#FFF3E0"/>
+<text x="360" y="424" font-size="12" font-family="monospace" fill="#202122">"1815-12-10"</text>
+
+<!-- Callouts -->
+<text x="645" y="180" text-anchor="middle" fill="#039">Subject IRI stays native</text>
+<path stroke="#039" d="M610,162L598,142"/>
+
+<text x="324" y="228" text-anchor="end" fill="#609">node</text>
+<text x="324" y="246" text-anchor="end" font-size="12" fill="#609"><tspan font-family="monospace">linkPredicate</tspan> links it to its anchor</text>
+<path stroke="#609" d="M328,223L340,230"/>
+
+<text x="324" y="328" text-anchor="end" fill="#609">parent</text>
+<text x="324" y="346" text-anchor="end" font-size="12" fill="#609"><tspan font-family="monospace">parent: "birth"</tspan> hangs it off that node</text>
+<path stroke="#609" d="M328,323L340,330"/>
+
+<text x="324" y="420" text-anchor="end" fill="#00F">property</text>
+<text x="324" y="438" text-anchor="end" font-size="12" fill="#00F"><tspan font-family="monospace">node</tspan> attaches the value to that node</text>
+<path stroke="#00F" d="M328,415L340,419"/>
+</svg>

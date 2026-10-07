@@ -8,7 +8,6 @@ use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
-use ProfessionalWiki\NeoWiki\Infrastructure\IdGenerator;
 
 class Subject {
 
@@ -18,20 +17,6 @@ class Subject {
 		private readonly SchemaReference $schema,
 		private StatementList $statements,
 	) {
-	}
-
-	public static function createNew(
-		IdGenerator $idGenerator,
-		?SubjectLabel $label,
-		SchemaReference $schema,
-		?StatementList $statements = null,
-	): self {
-		return new self(
-			id: SubjectId::createNew( $idGenerator ),
-			label: $label,
-			schema: $schema,
-			statements: $statements ?? new StatementList( [] ),
-		);
 	}
 
 	public static function newSubject( SubjectId $id, ?SubjectLabel $label, SchemaReference $schema ): self {

@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty
@@ -185,6 +186,33 @@ JSON,
 }
 JSON
 			)
+		);
+	}
+
+	public function testValueIsANumber(): void {
+		$this->assertSame( [ 'type' => 'number' ], TestProperty::buildNumber()->toJsonSchema() );
+	}
+
+	public function testBoundsAreInclusive(): void {
+		$this->assertSame(
+			[ 'type' => 'number', 'minimum' => 0, 'maximum' => 100 ],
+			TestProperty::buildNumber( minimum: 0, maximum: 100 )->toJsonSchema()
+		);
+	}
+
+	public function testPrecisionIsNotExpressed(): void {
+		$this->assertSame(
+			[ 'type' => 'number' ],
+			TestProperty::buildNumber( precision: 2 )->toJsonSchema(),
+			'precision is a Display Attribute, not a Constraint.'
+		);
+	}
+
+	public function testRequiredValueIsStillJustANumber(): void {
+		$this->assertSame(
+			[ 'type' => 'number' ],
+			TestProperty::buildNumber( required: true )->toJsonSchema(),
+			'A number is one value, so the statements required list expresses required on its own.'
 		);
 	}
 

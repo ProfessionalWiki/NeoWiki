@@ -11,7 +11,6 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\NormalizationResult;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\NormalizesRawValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
@@ -21,7 +20,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\StatementNormalizer
@@ -29,9 +28,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 class StatementNormalizerTest extends TestCase {
 
 	private function newNormalizer(): StatementNormalizer {
-		return new StatementNormalizer(
-			PropertyTypeRegistry::withCoreTypes( TestSubjectIds::LOCAL_SOURCE_KEY )
-		);
+		return new StatementNormalizer( TestSources::newPropertyTypeRegistry() );
 	}
 
 	private function newSchemaWithSelect(): Schema {

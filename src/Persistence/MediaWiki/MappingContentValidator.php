@@ -5,7 +5,6 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use InvalidArgumentException;
-use MediaWiki\Title\MalformedTitleException;
 use MediaWiki\Title\TitleParser;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Errors\ValidationError;
@@ -136,15 +135,14 @@ class MappingContentValidator {
 			return [ $pointer => 'The Schema name "' . $schemaName . '" cannot be used: ' . $exception->getMessage() . '.' ];
 		}
 
-		try {
-			$canonical = $this->titleParser->parseTitle( $schemaName, NeoWikiExtension::NS_SCHEMA )->getText();
-		}
-		catch ( MalformedTitleException ) {
+		$page = $this->titleParser->makeTitleValueSafe( NeoWikiExtension::NS_SCHEMA, $schemaName );
+
+		if ( $page === null ) {
 			return [ $pointer => 'The Schema name "' . $schemaName . '" is not a valid page name.' ];
 		}
 
-		if ( $canonical !== $schemaName ) {
-			return [ $pointer => 'The Schema name "' . $schemaName . '" must be written as "' . $canonical . '", exactly as its Schema page is titled.' ];
+		if ( $page->getText() !== $schemaName ) {
+			return [ $pointer => 'The Schema name "' . $schemaName . '" must be written as "' . $page->getText() . '", exactly as its Schema page is titled.' ];
 		}
 
 		return [];

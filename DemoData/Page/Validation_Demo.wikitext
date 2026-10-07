@@ -32,3 +32,4 @@ Open the Data tab of [[Validation Clean]], choose '''Edit''', and break a value:
 
 * [[Schema:Validation Demo]]; the Schema editor sets the severity per constraint.
 * [https://neowiki.ai/docs/api/schema-format#constraint-severity Constraint severity] and [https://neowiki.ai/docs/api/validation-codes Validation codes] in the documentation.
+* [{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/schema/Validation_Demo/json-schema This Schema as a JSON Schema document], stating every constraint whatever its severity; [https://neowiki.ai/docs/api/json-schema JSON Schema] in the documentation.

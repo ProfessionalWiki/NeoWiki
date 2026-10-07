@@ -9,6 +9,8 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Literal;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Value\BooleanValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualText;
+use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 
@@ -125,6 +127,31 @@ class RdfValueMapperRegistryTest extends TestCase {
 		);
 	}
 
+	public function testMonolingualTextMapsEachPartToALiteralTaggedWithItsOwnLanguage(): void {
+		$langString = new Iri( 'http://www.w3.org/1999/02/22-rdf-syntax-ns#langString' );
+
+		$this->assertEquals(
+			[
+				new Literal( 'Zinema', $langString, 'eu' ),
+				new Literal( 'Cine', $langString, 'es' ),
+			],
+			RdfValueMapperRegistry::withCoreMappers()->mapValue(
+				'monolingualText',
+				new MonolingualTextValue(
+					new MonolingualText( 'Zinema', 'eu' ),
+					new MonolingualText( 'Cine', 'es' ),
+				)
+			)
+		);
+	}
+
+	public function testMonolingualTextMapperGivenAnotherValueTypeMapsNothing(): void {
+		$this->assertSame(
+			[],
+			RdfValueMapperRegistry::withCoreMappers()->mapValue( 'monolingualText', new StringValue( 'Zinema' ) )
+		);
+	}
+
 	public function testUnregisteredTypeReturnsNull(): void {
 		$this->assertNull(
 			RdfValueMapperRegistry::withCoreMappers()->mapValue( 'relation', new StringValue( 'x' ) )
@@ -139,6 +166,7 @@ class RdfValueMapperRegistryTest extends TestCase {
 
 		$this->assertTrue( $registry->hasMapper( 'text' ) );
 		$this->assertTrue( $registry->hasMapper( 'date' ) );
+		$this->assertTrue( $registry->hasMapper( 'monolingualText' ) );
 		$this->assertFalse( $registry->hasMapper( 'relation' ) );
 	}
 

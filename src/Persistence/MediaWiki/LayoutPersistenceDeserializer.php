@@ -11,8 +11,14 @@ use ProfessionalWiki\NeoWiki\Domain\Layout\DisplayRule;
 use ProfessionalWiki\NeoWiki\Domain\Layout\DisplayRules;
 use ProfessionalWiki\NeoWiki\Domain\Layout\Layout;
 use ProfessionalWiki\NeoWiki\Domain\Layout\LayoutName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 
 class LayoutPersistenceDeserializer {
+
+	public function __construct(
+		private readonly SchemaReferenceParser $schemaReferenceParser,
+	) {
+	}
 
 	/**
 	 * @throws InvalidArgumentException
@@ -26,7 +32,7 @@ class LayoutPersistenceDeserializer {
 
 		return new Layout(
 			name: $layoutName,
-			schema: new SchemaName( $data['schema'] ),
+			schema: $this->schemaReferenceParser->localName( $data['schema'] )->name,
 			type: $data['type'],
 			description: $data['description'] ?? '',
 			displayRules: $this->displayRulesFromJson( $data ),

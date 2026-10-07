@@ -32,6 +32,7 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\ParseTimePermissionFixtures;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySource;
 
@@ -160,6 +161,9 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 				),
 			),
 		);
+
+		// The test modules run on this page, so a read that fell back to it would find this Subject.
+		$this->createPageWithMainSubject( $this->getTestTitle()->getPrefixedText(), mainSubject: TestSubject::build() );
 	}
 
 	protected function createSchemaPage( string $name, string $json ): void {

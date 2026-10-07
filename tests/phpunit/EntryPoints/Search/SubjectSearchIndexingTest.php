@@ -9,6 +9,8 @@ use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -27,6 +29,7 @@ use Wikimedia\Rdbms\IDBAccessObject;
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Search\IndexesSubjectText
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onRevisionFromEditComplete
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onPageUndeleteComplete
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onAfterImportPage
  */
 class SubjectSearchIndexingTest extends NeoWikiIntegrationTestCase {
 
@@ -120,6 +123,72 @@ class SubjectSearchIndexingTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'rotterdam', $this->textIndexedFor( $this->idOfPage( 'Museum page' ) ) );
 	}
 
+	/**
+	 * Restoring history older than the page's current revision leaves that revision current, so nothing
+	 * the page is findable by changed and core indexes nothing. Indexing the last restored revision
+	 * instead would overwrite the page's text in the index with a stale one.
+	 */
+	public function testUndeletingOlderRevisionsOntoALivePageIndexesNothing(): void {
+		$this->createSubjectPage( $this->museumIn( 'Amsterdam' ) );
+		$this->changeSubjectsOfPage( 'Museum page', $this->museumIn( 'Rotterdam' ) );
+		DeferredUpdates::doUpdates();
+		$this->deletePageByName( 'Museum page' );
+
+		$pageId = $this->insertPage( 'Museum page', 'Concertgebouw' )['id'];
+		DeferredUpdates::doUpdates();
+		SpySubjectIndexingSearchEngine::forgetIndexedText();
+
+		$this->undeletePageByName( 'Museum page' );
+		DeferredUpdates::doUpdates();
+
+		$this->assertNull( SpySubjectIndexingSearchEngine::textIndexedForPage( $pageId ) );
+	}
+
+	/**
+	 * Imported revisions bypass the edit path, and the importer inherits the main slot when the imported
+	 * wikitext matches what the page already holds, which is the shape a Subject-editor save exports.
+	 */
+	public function testImportThatChangesOnlyTheSubjectsUpdatesTheIndex(): void {
+		$this->createPageWithSubjects( 'Import target', $this->museumIn( 'Amsterdam' ) );
+		$this->createPageWithSubjects( 'Import source', $this->museumIn( 'Rotterdam' ) );
+		DeferredUpdates::doUpdates();
+		$xml = $this->exportPageToXml( 'Import source' );
+		SpySubjectIndexingSearchEngine::forgetIndexedText();
+
+		$this->importXml( str_replace( 'Import source', 'Import target', $xml ) );
+
+		$this->assertStringContainsString(
+			'rotterdam',
+			$this->textIndexedFor( $this->idOfPage( 'Import target' ) )
+		);
+	}
+
+	/**
+	 * A Subject value is normalized the way MediaWiki normalizes page text and search queries, so that
+	 * what a reader types reaches the index in the same form. Without it a full-width label is indexed
+	 * in full-width bytes while the query for it is folded to half-width, and the two never meet.
+	 */
+	public function testSubjectTextIsNormalizedForSearchLikePageText(): void {
+		$pageId = $this->createSubjectPage( $this->museumIn( "\u{FF2E}\u{FF45}\u{FF4F}" ) );
+
+		$this->assertStringContainsString( 'neo', $this->textIndexedFor( $pageId ) );
+	}
+
+	/**
+	 * A Subject slot MediaWiki accepts but NeoWiki cannot read must not cost the page its own text in
+	 * the index, nor abort a rebuild of the whole wiki's index part way through.
+	 */
+	public function testUnreadableSubjectSlotStillIndexesThePageText(): void {
+		$pageId = $this->insertPage( 'Broken page', 'Concertgebouw' )['id'];
+		$this->writeRawSubjectSlot( 'Broken page', '"not an object"' );
+		DeferredUpdates::doUpdates();
+		SpySubjectIndexingSearchEngine::forgetIndexedText();
+
+		$this->reindex( $pageId, 'Broken page', 'concertgebouw' );
+
+		$this->assertStringContainsString( 'concertgebouw', $this->textIndexedFor( $pageId ) );
+	}
+
 	private function undeletePageByName( string $pageName ): void {
 		$undeletePage = MediaWikiServices::getInstance()->getUndeletePageFactory()->newUndeletePage(
 			MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) ),
@@ -178,6 +247,27 @@ class SubjectSearchIndexingTest extends NeoWikiIntegrationTestCase {
 		$pageId = $this->createSubjectPage( $this->museumIn( 'Ägypten' ) );
 
 		$this->assertStringContainsString( 'ägypten', $this->textIndexedFor( $pageId ) );
+	}
+
+	/**
+	 * A Subject slot holding JSON that MediaWiki's content model accepts but NeoWiki cannot read as
+	 * Subjects, which no NeoWiki write path produces but an import or a hand-edit can leave behind.
+	 */
+	private function writeRawSubjectSlot( string $pageName, string $json ): void {
+		$updater = MediaWikiServices::getInstance()->getWikiPageFactory()
+			->newFromTitle( Title::newFromText( $pageName ) )
+			->newPageUpdater( $this->getTestSysop()->getUser() );
+
+		$updater->setContent( MediaWikiSubjectRepository::SLOT_NAME, new SubjectContent( $json ) );
+		$updater->saveRevision( CommentStoreComment::newUnsavedComment( 'A raw Subject slot' ) );
+	}
+
+	/**
+	 * Indexes the page the way rebuildtextindex does, driving the engine directly rather than through
+	 * a deferred update, so a failure surfaces here instead of being logged and swallowed.
+	 */
+	private function reindex( int $pageId, string $pageName, string $text ): void {
+		MediaWikiServices::getInstance()->getSearchEngineFactory()->create()->update( $pageId, $pageName, $text );
 	}
 
 	private function saveRevisionInheritingEverySlot( string $pageName ): void {
