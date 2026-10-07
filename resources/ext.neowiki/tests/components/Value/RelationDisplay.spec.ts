@@ -7,21 +7,20 @@ import { Relation, RelationValue } from '@/domain/Value.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import { Subject } from '@/domain/Subject.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
+import { newSubject } from '@/TestHelpers.ts';
 
 vi.mock( '@/stores/SubjectStore.ts' );
 
-function createSubject( id: string, label: string | null, pageName: string, displayName?: string, generated = false ): SubjectWithContext {
-	return new SubjectWithContext(
-		new SubjectId( id ),
+function createSubject( id: string, label: string | null, pageName: string, displayName?: string, generated = false ): Subject {
+	return newSubject( {
+		id,
 		label,
-		displayName ?? label ?? '',
-		generated,
-		'' as any,
-		{} as any,
-		new PageIdentifiers( 42, pageName ),
-	);
+		displayName: displayName ?? label ?? '',
+		displayNameIsGenerated: generated,
+		pageIdentifiers: new PageIdentifiers( 42, pageName ),
+	} );
 }
 
 async function createWrapper( ...relations: Relation[] ): Promise<ReturnType<typeof mount>> {
@@ -121,7 +120,7 @@ describe( 'RelationDisplay.vue', () => {
 			new RelationValue( [ new Relation( 'not-important', new SubjectId( 's1111111111111A' ) ) ] ),
 			{
 				[ RelationTargetUrlKey as symbol ]:
-					( target: SubjectWithContext ) => '/elsewhere/' + target.getId().text,
+					( target: Subject ) => '/elsewhere/' + target.getId().text,
 			},
 		);
 
@@ -144,15 +143,13 @@ describe( 'RelationDisplay.vue', () => {
 	// too, not only in the editing UI.
 	it( 'marks a target whose name the server generated', async () => {
 		mockGetSubject.mockReturnValue(
-			new SubjectWithContext(
-				new SubjectId( 's1111111111111B' ),
-				null,
-				'Attendance',
-				true,
-				'Attendance' as any,
-				{} as any,
-				new PageIdentifiers( 42, 'Rijksmuseum' ),
-			),
+			newSubject( {
+				id: 's1111111111111B',
+				label: null,
+				displayNameIsGenerated: true,
+				schemaName: 'Attendance',
+				pageIdentifiers: new PageIdentifiers( 42, 'Rijksmuseum' ),
+			} ),
 		);
 		mockGetUrl.mockReturnValue( '/wiki/Rijksmuseum' );
 
@@ -366,7 +363,7 @@ describe( 'RelationDisplay.vue', () => {
 	// A row whose targets are fetched only when the reader opens it renders before they are in the
 	// registry, so resolving once would leave those targets showing their bare ids forever.
 	it( 'resolves a target that reaches the registry after the first render', async () => {
-		const registry = reactive( new Map<string, SubjectWithContext>() );
+		const registry = reactive( new Map<string, Subject>() );
 		vi.mocked( useSubjectStore ).mockReturnValue( {
 			$id: 'subject',
 			// What the real getter does with an id it does not hold, which is the state this row

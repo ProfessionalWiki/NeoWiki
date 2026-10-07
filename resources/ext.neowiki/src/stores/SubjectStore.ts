@@ -246,9 +246,9 @@ export const useSubjectStore = defineStore( 'subject', {
 
 		/**
 		 * What every Subject write does with its answer. The Subject recorded is the response's, not
-		 * the one sent: only the server's copy carries the page context and the normalisation the
-		 * write applied. A response without that context records nothing and leaves the previous copy
-		 * in place.
+		 * the one sent: only the server's copy carries the normalisation the write applied and the
+		 * page a create settled on. A response without page context records nothing and leaves the
+		 * previous copy in place.
 		 */
 		recordWriteResult( result: SubjectWriteResult, schemaEpochBeforeRequest: number ): void {
 			this.mutationEpoch++;

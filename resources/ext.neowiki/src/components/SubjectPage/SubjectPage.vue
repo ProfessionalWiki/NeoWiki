@@ -120,7 +120,6 @@ import { pageDeleteFormUrl } from '@/presentation/subjectDeletion.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
-import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import type { ReferencingSubject, ReferencingSubjects } from '@/domain/SubjectRepository.ts';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError.ts';
@@ -168,20 +167,16 @@ const expandedReferencingIds = ref<Set<string>>( new Set() );
 const hostingPage = computed<PageIdentifiers | null>( () => pageOf( subject.value ) );
 
 /**
- * The page a Subject is stored on, or null when the read served none. Every Subject the
- * deserializer builds carries PageIdentifiers, filled from a payload that omits both fields for a
- * Subject whose hosting page the server could not resolve — so the values, not the type, decide.
+ * The page a Subject is stored on, or null when the read served none.
  */
 function pageOf( each: Subject | null ): PageIdentifiers | null {
-	if ( !( each instanceof SubjectWithContext ) ) {
+	if ( each === null ) {
 		return null;
 	}
 
 	const page = each.getPageIdentifiers();
-	const pageId = page.getPageId() as number | undefined;
-	const pageName = page.getPageName() as string | undefined;
 
-	return pageId === undefined || pageName === undefined ? null : page;
+	return page.getPageId() === undefined || page.getPageName() === undefined ? null : page;
 }
 
 function toggleExpanded( toggled: Subject ): void {

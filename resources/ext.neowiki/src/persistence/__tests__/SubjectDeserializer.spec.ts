@@ -8,7 +8,7 @@ import { Statement } from '@/domain/Statement';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newNumberValue, newStringValue } from '@/domain/Value';
 import { NumberType } from '@/domain/propertyTypes/Number';
-import { SubjectWithContext } from '@/domain/SubjectWithContext';
+import { Subject } from '@/domain/Subject';
 
 describe( 'SubjectDeserializer', () => {
 
@@ -28,7 +28,7 @@ describe( 'SubjectDeserializer', () => {
 
 		const subject = deserializer.deserialize( json );
 
-		expect( subject ).toEqual( new SubjectWithContext(
+		expect( subject ).toEqual( new Subject(
 			new SubjectId( 's13333333333337' ),
 			'SubjectDeserializer',
 			'SubjectDeserializer',
@@ -145,7 +145,7 @@ describe( 'SubjectDeserializer', () => {
 
 		const subject = deserializer.deserialize( json );
 
-		expect( subject ).toEqual( new SubjectWithContext(
+		expect( subject ).toEqual( new Subject(
 			new SubjectId( 's13333333333337' ),
 			'SubjectDeserializer',
 			'SubjectDeserializer',

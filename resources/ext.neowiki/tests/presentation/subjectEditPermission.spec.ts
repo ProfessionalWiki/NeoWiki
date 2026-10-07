@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { canEditSubjectOnItsPage } from '@/presentation/subjectEditPermission';
 import { Subject } from '@/domain/Subject';
-import { SubjectWithContext } from '@/domain/SubjectWithContext';
-import { SubjectId } from '@/domain/SubjectId';
 import { PageIdentifiers } from '@/domain/PageIdentifiers';
-import { StatementList } from '@/domain/StatementList';
+import { newSubject, unresolvedPage } from '@/TestHelpers';
 import type { SubjectPermissionHints } from '@/application/SubjectPermissionHints';
 
 describe( 'canEditSubjectOnItsPage', () => {
@@ -27,27 +25,12 @@ describe( 'canEditSubjectOnItsPage', () => {
 		};
 	}
 
-	function subjectOnPage( pageId: number ): SubjectWithContext {
-		return new SubjectWithContext(
-			new SubjectId( 's11111111111117' ),
-			'Acme Rocket',
-			'Acme Rocket',
-			false,
-			'Product',
-			new StatementList( [] ),
-			new PageIdentifiers( pageId, 'Acme Rocket' ),
-		);
+	function subjectOnPage( pageId: number ): Subject {
+		return newSubject( { pageIdentifiers: new PageIdentifiers( pageId, 'Acme Rocket' ) } );
 	}
 
 	function subjectWithoutPage(): Subject {
-		return new Subject(
-			new SubjectId( 's11111111111117' ),
-			'Acme Rocket',
-			'Acme Rocket',
-			false,
-			'Product',
-			new StatementList( [] ),
-		);
+		return newSubject( { pageIdentifiers: unresolvedPage() } );
 	}
 
 	it( 'asks about the page holding the Subject', async () => {

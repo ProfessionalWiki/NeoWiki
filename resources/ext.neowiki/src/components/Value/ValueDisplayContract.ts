@@ -1,7 +1,7 @@
 import type { InjectionKey } from 'vue';
 import type { Value } from '@/domain/Value';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition';
-import type { SubjectWithContext } from '@/domain/SubjectWithContext';
+import type { Subject } from '@/domain/Subject';
 
 export interface ValueDisplayProps<T extends PropertyDefinition> {
 	value: Value;
@@ -13,4 +13,4 @@ export interface ValueDisplayProps<T extends PropertyDefinition> {
  * RelationDisplay links each relation to what this returns for its target. Without it, a
  * relation links to the page its target is stored on.
  */
-export const RelationTargetUrlKey: InjectionKey<( target: SubjectWithContext ) => string> = Symbol( 'NeoWikiRelationTargetUrl' );
+export const RelationTargetUrlKey: InjectionKey<( target: Subject ) => string> = Symbol( 'NeoWikiRelationTargetUrl' );

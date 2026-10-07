@@ -129,7 +129,6 @@ import EditNoticeList from '@/components/common/EditNoticeList.vue';
 import { CdxDialog, CdxMessage, useGeneratedId } from '@wikimedia/codex';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
-import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { StatementList } from '@/domain/StatementList.ts';
@@ -466,7 +465,7 @@ async function openRelationTarget( targetId: SubjectId ): Promise<void> {
 // The root stands in for a pane whose Subject arrived without page context.
 function creationPage(): PageIdentifiers | null {
 	for ( const subject of [ activePane.value?.subject, props.subject ] ) {
-		if ( subject instanceof SubjectWithContext && Number.isInteger( subject.getPageIdentifiers().getPageId() ) ) {
+		if ( subject !== undefined && Number.isInteger( subject.getPageIdentifiers().getPageId() ) ) {
 			return subject.getPageIdentifiers();
 		}
 	}
@@ -505,7 +504,7 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 			return null;
 		}
 
-		const subject = new SubjectWithContext(
+		const subject = new Subject(
 			id,
 			label,
 			// What the server would derive for a Subject with no label of its own (ADR 31).
@@ -642,8 +641,10 @@ const partialSaveMessage = computed( (): string => partialSave.value === null ?
 // Counted in pages as well as in Subjects, since each page written gets revisions of its own.
 // A Subject with no resolved page counts as a page of its own.
 function pageKeyOf( subject: Subject ): string {
-	return subject instanceof SubjectWithContext ?
-		`page:${ subject.getPageIdentifiers().getPageId() }` :
+	const pageId = subject.getPageIdentifiers().getPageId();
+
+	return Number.isInteger( pageId ) ?
+		`page:${ pageId }` :
 		`subject:${ subject.getId().text }`;
 }
 
@@ -692,8 +693,8 @@ async function writeSubject( pane: EditPane, subject: Subject, comment: string )
 		return;
 	}
 
-	if ( props.onCreate === undefined || !( pane.subject instanceof SubjectWithContext ) ) {
-		throw new Error( 'No page to create this Subject on' );
+	if ( props.onCreate === undefined ) {
+		throw new Error( 'No onCreate handler to create this Subject with' );
 	}
 
 	try {

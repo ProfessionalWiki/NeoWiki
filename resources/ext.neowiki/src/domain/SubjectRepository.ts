@@ -1,11 +1,8 @@
 import { SubjectId } from '@/domain/SubjectId';
-import type { SubjectLookup } from '@/domain/SubjectLookup';
-import { InMemorySubjectLookup } from '@/domain/SubjectLookup';
 import type { StatementList } from '@/domain/StatementList';
 import type { Schema, SchemaName } from '@/domain/Schema';
 import { PageSubjects } from '@/domain/PageSubjects';
-import type { Subject } from '@/domain/Subject';
-import { SubjectWithContext } from '@/domain/SubjectWithContext';
+import { Subject } from '@/domain/Subject';
 import { PageIdentifiers } from '@/domain/PageIdentifiers';
 import type { DeserializedPageSubjects } from '@/persistence/PageSubjectsDeserializer';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
@@ -37,12 +34,12 @@ export interface SubjectWriteResult {
 	/** The id the server assigned or confirmed. Always known. */
 	subjectId: SubjectId;
 	/**
-	 * The Subject as the server persisted it, carrying the page context and normalisation a
-	 * client-built copy cannot reproduce. Null when the response omitted the page identifiers,
+	 * The Subject as the server persisted it, carrying the normalisation, and for a create the page,
+	 * that a client-built copy cannot reproduce. Null when the response omitted the page identifiers,
 	 * which a Subject on an unresolvable page does: recording it would put a Subject with no page
 	 * behind links that need one, so callers keep whatever copy they already had.
 	 */
-	subject: SubjectWithContext | null;
+	subject: Subject | null;
 	/**
 	 * The Schema the Subject instantiates, so a display can render values saved against a
 	 * property the Schema gained out of band. Null when the server could not resolve it.
@@ -61,7 +58,9 @@ export interface SubjectPageWriteResult extends SubjectWriteResult {
 	pageId: number;
 }
 
-export interface SubjectRepository extends SubjectLookup {
+export interface SubjectRepository {
+
+	getSubject( id: SubjectId ): Promise<Subject>;
 
 	/**
 	 * The Subject as an editor must see it: the hosting page's current revision, rather than the
@@ -166,7 +165,25 @@ export interface SubjectRepository extends SubjectLookup {
 
 }
 
-export class StubSubjectRepository extends InMemorySubjectLookup implements SubjectRepository {
+export class StubSubjectRepository implements SubjectRepository {
+
+	private readonly subjects: Map<string, Subject> = new Map();
+
+	public constructor( subjects: Subject[] ) {
+		for ( const subject of subjects ) {
+			this.subjects.set( subject.getId().text, subject );
+		}
+	}
+
+	public async getSubject( id: SubjectId ): Promise<Subject> {
+		const subject = this.subjects.get( id.text );
+
+		if ( subject === undefined ) {
+			throw new Error( `Subject with id ${ id.text } not found` );
+		}
+
+		return subject;
+	}
 
 	public getSubjectForEditing( id: SubjectId ): Promise<Subject> {
 		return this.getSubject( id );
@@ -174,10 +191,15 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 
 	public async getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectWithReferencedSubjects> {
 		const subject = await this.getSubject( id );
+		const referencedIds = new Set(
+			[ ...subject.getStatements().getIdsOfReferencedSubjects() ].map( ( referencedId ) => referencedId.text ),
+		);
 
 		return {
 			requestedSubject: subject,
-			referencedSubjects: [ ...await subject.getReferencedSubjects( this ) ],
+			referencedSubjects: [ ...referencedIds ]
+				.map( ( referencedId ) => this.subjects.get( referencedId ) )
+				.filter( ( referenced ): referenced is Subject => referenced !== undefined ),
 		};
 	}
 
@@ -243,7 +265,7 @@ export class StubSubjectRepository extends InMemorySubjectLookup implements Subj
 	): SubjectWriteResult {
 		return {
 			subjectId: id,
-			subject: new SubjectWithContext( id, label, label ?? schemaName, label === null, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ) ),
+			subject: new Subject( id, label, label ?? schemaName, label === null, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ) ),
 			schema: null,
 		};
 	}

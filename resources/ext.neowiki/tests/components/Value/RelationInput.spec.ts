@@ -10,10 +10,9 @@ import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Re
 import { RelationTargetEditingKey, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import { Subject } from '@/domain/Subject.ts';
-import { StatementList } from '@/domain/StatementList.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers';
+import { newSubject } from '@/TestHelpers';
 
 // The same stub with no name resolved yet, for the control's id stand-in.
 const SubjectPickerWithoutName = {
@@ -390,9 +389,7 @@ describe( 'RelationInput', () => {
 			setActivePinia( pinia );
 			setupMwMock();
 			( useSubjectStore() as unknown as { getOrFetchSubject: unknown } ).getOrFetchSubject =
-				vi.fn().mockResolvedValue( new Subject(
-					new SubjectId( 's11111111111111' ), 'ACME Inc.', 'ACME Inc.', false, 'Company', new StatementList( [] ),
-				) );
+				vi.fn().mockResolvedValue( newSubject( { id: 's11111111111111', label: 'ACME Inc.', schemaName: 'Company' } ) );
 
 			const wrapper = mount( RelationInput, {
 				props: {

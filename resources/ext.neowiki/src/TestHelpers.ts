@@ -3,7 +3,7 @@ import { PageIdentifiers } from '@/domain/PageIdentifiers';
 import { Schema } from '@/domain/Schema';
 import { StatementList } from '@/domain/StatementList';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
-import { SubjectWithContext } from '@/domain/SubjectWithContext';
+import { Subject } from '@/domain/Subject';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import type { DisplayRule } from '@/domain/Layout';
 
@@ -29,8 +29,8 @@ export function newSubject( {
 	schemaName = DEFAULT_TEST_SCHEMA_NAME,
 	statements = new StatementList( [] ),
 	pageIdentifiers = new PageIdentifiers( 0, 'TestSubjectPage' ),
-}: NewTestSubjectOptions = {} ): SubjectWithContext {
-	return new SubjectWithContext(
+}: NewTestSubjectOptions = {} ): Subject {
+	return new Subject(
 		id instanceof SubjectId ? id : new SubjectId( id ),
 		label,
 		// Mirrors what the server derives: the stored label, or the Schema name without one.
@@ -40,6 +40,14 @@ export function newSubject( {
 		statements,
 		pageIdentifiers,
 	);
+}
+
+/**
+ * What SubjectDeserializer builds from a payload that omits both page fields, as one for a Subject
+ * whose page the server could not resolve does.
+ */
+export function unresolvedPage(): PageIdentifiers {
+	return new PageIdentifiers( undefined as unknown as number, undefined as unknown as string );
 }
 
 interface NewTestSchemaOptions {

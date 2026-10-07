@@ -14,7 +14,6 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
-import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { PageSubjects } from '@/domain/PageSubjects.ts';
@@ -27,7 +26,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError.ts';
 import { Service } from '@/NeoWikiServices.ts';
-import { newSchema, newSubject } from '@/TestHelpers.ts';
+import { newSchema, newSubject, unresolvedPage } from '@/TestHelpers.ts';
 
 const SUBJECT_ID = 's1aaaaaaaaaaaa1';
 const REFERENCED_ID = 's1bbbbbbbbbbbb1';
@@ -71,7 +70,7 @@ interface SubjectOptions {
 	relatesTo?: string;
 }
 
-function subject( options: SubjectOptions ): SubjectWithContext {
+function subject( options: SubjectOptions ): Subject {
 	return newSubject( {
 		id: options.id,
 		label: options.label,
@@ -322,19 +321,14 @@ describe( 'SubjectPage', () => {
 		expect( referenced.attributes( 'href' ) ).toBe( '/wiki/' + REFERENCED_PAGE_NAME );
 	} );
 
-	// The read omits both page fields for a Subject whose hosting page it could not resolve, and the
-	// deserializer puts them into PageIdentifiers unread, so the values decide rather than the type.
 	describe( 'a Subject served without a hosting page', () => {
 
-		const pagelessSubject = new SubjectWithContext(
-			new SubjectId( SUBJECT_ID ),
-			'Homeless',
-			'Homeless',
-			false,
-			'Company',
-			new StatementList( [] ),
-			new PageIdentifiers( undefined as unknown as number, undefined as unknown as string ),
-		);
+		const pagelessSubject = newSubject( {
+			id: SUBJECT_ID,
+			label: 'Homeless',
+			schemaName: 'Company',
+			pageIdentifiers: unresolvedPage(),
+		} );
 
 		beforeEach( () => {
 			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [], pagelessSubject ) );

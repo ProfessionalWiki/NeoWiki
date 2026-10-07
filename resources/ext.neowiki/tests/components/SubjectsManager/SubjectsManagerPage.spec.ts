@@ -8,7 +8,6 @@ import { CdxDialogStub, createI18nMock, setupMwMock } from '../../VueTestHelpers
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
-import { StatementList } from '@/domain/StatementList.ts';
 import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { subjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
 import SummaryAction from '@/components/common/SummaryAction.vue';
@@ -17,7 +16,7 @@ import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vu
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { Service } from '@/NeoWikiServices.ts';
-import { newSchema } from '@/TestHelpers.ts';
+import { newSchema, newSubject } from '@/TestHelpers.ts';
 
 // Two subject-id-shaped ids (s + 14 base58 chars), so the deep-link fragment parser accepts them.
 const ID_A = 's1aaaaaaaaaaaa1';
@@ -25,11 +24,11 @@ const ID_B = 's1bbbbbbbbbbbb1';
 const PAGE_ID = 42;
 
 function subject( id: string ): Subject {
-	return new Subject( new SubjectId( id ), 'Label ' + id, 'Label ' + id, false, 'Person', new StatementList( [] ) );
+	return newSubject( { id, label: 'Label ' + id, schemaName: 'Person' } );
 }
 
 function labellessSubject( id: string, displayName: string, generated: boolean ): Subject {
-	return new Subject( new SubjectId( id ), null, displayName, generated, 'Person', new StatementList( [] ) );
+	return newSubject( { id, label: null, displayName, displayNameIsGenerated: generated, schemaName: 'Person' } );
 }
 
 const loadPageSubjectsMock = vi.fn().mockResolvedValue( undefined );
@@ -462,14 +461,7 @@ describe( 'SubjectsManagerPage edit flow', () => {
 	it( 'opens the editor on the subject and schema fetched from the repositories', async () => {
 		// Values the store stub does not hold, so the assertions can only pass if the dialog was
 		// handed the repositories' data rather than a registry read.
-		const freshSubject = new Subject(
-			new SubjectId( ID_A ),
-			'Fetched label',
-			'Fetched label',
-			false,
-			'Person',
-			new StatementList( [] ),
-		);
+		const freshSubject = newSubject( { id: ID_A, label: 'Fetched label', schemaName: 'Person' } );
 		const freshSchema = newSchema( { title: 'Person' } );
 		getSubjectForEditingRepoMock.mockResolvedValue( freshSubject );
 		getSchemaRepoMock.mockResolvedValue( freshSchema );

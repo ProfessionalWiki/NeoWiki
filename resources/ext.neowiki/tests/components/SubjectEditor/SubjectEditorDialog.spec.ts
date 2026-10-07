@@ -30,12 +30,11 @@ import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
-import { newSubject } from '@/TestHelpers.ts';
+import { newSubject, unresolvedPage } from '@/TestHelpers.ts';
 import { StubSubjectRepository } from '@/domain/SubjectRepository.ts';
 import { SubjectCreationKey, type SubjectCreation } from '@/components/common/SubjectCreation.ts';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
-import type { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 
 const $i18n = createI18nMock();
 
@@ -107,23 +106,20 @@ describe( 'SubjectEditorDialog', () => {
 		new PropertyDefinitionList( [] ),
 	);
 
-	const mockSubject = new Subject(
-		new SubjectId( 's1demo5sssssss1' ),
-		'Test Subject',
-		'Test Subject',
-		false,
-		'TestSchema',
-		new StatementList( [] ),
-	);
+	const mockSubject = newSubject( {
+		id: 's1demo5sssssss1',
+		label: 'Test Subject',
+		schemaName: 'TestSchema',
+		pageIdentifiers: unresolvedPage(),
+	} );
 
-	const labellessSubject = new Subject(
-		new SubjectId( 's1demo5sssssss2' ),
-		null,
-		'Host Page',
-		false,
-		'TestSchema',
-		new StatementList( [] ),
-	);
+	const labellessSubject = newSubject( {
+		id: 's1demo5sssssss2',
+		label: null,
+		displayName: 'Host Page',
+		schemaName: 'TestSchema',
+		pageIdentifiers: unresolvedPage(),
+	} );
 
 	const rootSubjectId = mockSubject.getId().text;
 
@@ -1107,16 +1103,7 @@ describe( 'SubjectEditorDialog', () => {
 			const wrapper = mountComponent( false, validationTestStubs );
 			await flushPromises();
 
-			await wrapper.setProps( {
-				subject: new Subject(
-					new SubjectId( 's1demo5sssssss1' ),
-					'Renamed Subject',
-					'Renamed Subject',
-					false,
-					'TestSchema',
-					new StatementList( [] ),
-				),
-			} );
+			await wrapper.setProps( { subject: mockSubject.withLabel( 'Renamed Subject' ) } );
 
 			expect( titleText( wrapper ) ).toBe( 'Renamed Subject' );
 		} );
@@ -1170,14 +1157,7 @@ describe( 'SubjectEditorDialog', () => {
 
 		// mockSubject with the given Colleague targets stored.
 		function rootSubjectWithTargets( ...targetIds: string[] ): Subject {
-			return new Subject(
-				mockSubject.getId(),
-				mockSubject.getLabel(),
-				mockSubject.getDisplayName(),
-				false,
-				'TestSchema',
-				new StatementList( [ colleagueStatement( ...targetIds ) ] ),
-			);
+			return mockSubject.withStatements( new StatementList( [ colleagueStatement( ...targetIds ) ] ) );
 		}
 
 		const relationRootSubject = rootSubjectWithTargets( 's22222222222222' );
@@ -1221,7 +1201,7 @@ describe( 'SubjectEditorDialog', () => {
 
 		const paneStackStubs = saveButtonTestStubs;
 
-		function targetSubject( id: string, label: string ): SubjectWithContext {
+		function targetSubject( id: string, label: string ): Subject {
 			return newSubject( { id, label, schemaName: 'Person' } );
 		}
 
@@ -1229,7 +1209,7 @@ describe( 'SubjectEditorDialog', () => {
 			wrapper: VueWrapper;
 			mockSubjectRepository: { getSubjectForEditing: Mock; mintSubjectId: Mock };
 			mockSchemaRepository: { getSchema: Mock };
-			target: SubjectWithContext;
+			target: Subject;
 		}
 
 		type SaveHandler = ( subject: any, comment: string ) => Promise<void>;
@@ -1992,7 +1972,7 @@ describe( 'SubjectEditorDialog', () => {
 		// as its own revision. The note says so, and only when the screen does not.
 		describe( 'Save scope', () => {
 			// A root Subject that knows which page holds it, as the store's copy does.
-			function rootOnPage( pageId: number, pageName: string ): SubjectWithContext {
+			function rootOnPage( pageId: number, pageName: string ): Subject {
 				return newSubject( {
 					id: rootSubjectId,
 					label: mockSubject.getLabel(),
@@ -2039,6 +2019,28 @@ describe( 'SubjectEditorDialog', () => {
 				const { wrapper } = await mountWithSecondPaneOpen( {
 					rootSubject: rootOnPage( 7, 'Another page' ),
 				} );
+
+				await makePaneDirty( wrapper, 0 );
+				await makePaneDirty( wrapper, 1 );
+
+				expect( footerTextOf( wrapper ) ).toBe( 'neowiki-subject-editor-save-scope22' );
+			} );
+
+			it( 'counts each dirty subject without a resolved page as a page of its own', async () => {
+				const { wrapper, mockSubjectRepository } = mountWithTargetRepos(
+					undefined,
+					{},
+					mockSchema,
+					newSubject( { id: rootSubjectId, schemaName: 'TestSchema', pageIdentifiers: unresolvedPage() } ),
+				);
+				mockSubjectRepository.getSubjectForEditing.mockResolvedValue( newSubject( {
+					id: 's22222222222222',
+					schemaName: 'Person',
+					pageIdentifiers: unresolvedPage(),
+				} ) );
+				await flushPromises();
+				wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
+				await flushPromises();
 
 				await makePaneDirty( wrapper, 0 );
 				await makePaneDirty( wrapper, 1 );
@@ -2611,8 +2613,8 @@ describe( 'SubjectEditorDialog', () => {
 				Employer: employerSchema,
 			};
 
-			// mockSubject is a bare Subject, which is a Subject with nowhere to store one made
-			// beside it. The tests that expect a draft to be created need a page.
+			// mockSubject's page was not resolved, which leaves a Subject made beside it nowhere to be
+			// stored. The tests that expect a draft to be created need a page.
 			const rootOnHostPage = newSubject( {
 				id: rootSubjectId,
 				label: mockSubject.getLabel(),
@@ -2821,23 +2823,37 @@ describe( 'SubjectEditorDialog', () => {
 				expect( onCreate.mock.calls[ 0 ][ 1 ] ).toBe( hostPage.getPageId() );
 			} );
 
-			// The Subject whose relation is being filled in is the one the new Subject belongs
-			// beside, and panes routinely span pages.
-			it( 'creates the draft on the page of the subject being edited, not the dialog\'s root', async () => {
+			// The host's create handler, after a draft was created from a stored target on the given
+			// page and saved.
+			async function createHandlerAfterDraftFromTargetOn( page: PageIdentifiers ): Promise<Mock> {
 				const onCreate = vi.fn().mockResolvedValue( undefined );
 				const { wrapper, mockSubjectRepository } = await mountReadyForCreation( { onCreate } );
 				mockSubjectRepository.getSubjectForEditing.mockResolvedValue( newSubject( {
 					id: 's22222222222222',
 					label: 'Target subject',
 					schemaName: 'Person',
-					pageIdentifiers: otherPage,
+					pageIdentifiers: page,
 				} ) );
 				await openStoredTarget( wrapper );
 
 				await createReferencedTarget( wrapper, { from: 1 } );
 				await triggerSave( wrapper, '' );
 
-				expect( onCreate.mock.calls[ 0 ][ 1 ] ).toBe( otherPage.getPageId() );
+				return onCreate;
+			}
+
+			// The Subject whose relation is being filled in is the one the new Subject belongs
+			// beside, and panes routinely span pages.
+			it( 'creates the draft on the page of the subject being edited, not the dialog\'s root', async () => {
+				const onCreate = await createHandlerAfterDraftFromTargetOn( otherPage );
+
+				expect( onCreate ).toHaveBeenCalledWith( expect.anything(), otherPage.getPageId(), expect.anything() );
+			} );
+
+			it( 'creates the draft on the root\'s page when the subject being edited has no resolved page', async () => {
+				const onCreate = await createHandlerAfterDraftFromTargetOn( unresolvedPage() );
+
+				expect( onCreate ).toHaveBeenCalledWith( expect.anything(), hostPage.getPageId(), expect.anything() );
 			} );
 
 			it( 'updates the subject that refers to the draft with the host\'s save handler', async () => {

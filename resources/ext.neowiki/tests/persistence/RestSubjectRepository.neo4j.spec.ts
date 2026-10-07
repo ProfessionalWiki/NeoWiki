@@ -11,7 +11,7 @@ import { RelationType } from '@/domain/propertyTypes/Relation';
 import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClient';
 import { UrlType } from '@/domain/propertyTypes/Url';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
-import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import { Subject } from '@/domain/Subject.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError';
@@ -102,7 +102,7 @@ describe( 'RestSubjectRepository', () => {
 
 			const subject = await repository.getSubject( new SubjectId( 's11111111111111' ) );
 
-			expect( subject ).toEqual( new SubjectWithContext(
+			expect( subject ).toEqual( new Subject(
 				new SubjectId( subjectResponse.id ),
 				subjectResponse.label,
 				subjectResponse.displayName,
@@ -281,8 +281,7 @@ describe( 'RestSubjectRepository', () => {
 			const { referencedSubjects } =
 				await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
 
-			const referenced = referencedSubjects[ 0 ] as SubjectWithContext;
-			expect( referenced.getPageIdentifiers().getPageName() ).toBe( 'Product One' );
+			expect( referencedSubjects[ 0 ].getPageIdentifiers().getPageName() ).toBe( 'Product One' );
 		} );
 
 		it( 'issues a single request for the whole bundle', async () => {
@@ -700,7 +699,7 @@ describe( 'RestSubjectRepository', () => {
 				'Edit comment',
 			);
 
-			// The page context is what a client-built copy cannot reproduce, so it is the point.
+			// A write result is recorded only with its page context, so that is the point.
 			expect( result.subject?.getPageIdentifiers().getPageId() ).toEqual( 42 );
 			expect( result.schema?.getName() ).toEqual( 'Employee' );
 			expect( result.schema?.getDescription() ).toEqual( 'An employee' );

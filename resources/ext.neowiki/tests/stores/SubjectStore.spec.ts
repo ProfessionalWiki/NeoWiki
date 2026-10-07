@@ -342,8 +342,7 @@ describe( 'SubjectStore write results', () => {
 	} );
 
 	it( 'records the Subject the update returned, not the one it was given', async () => {
-		// The caller's copy is a plain Subject built by the editor; only the server's carries the
-		// page context and whatever normalisation the write applied.
+		// Only the server's copy carries whatever normalisation the write applied.
 		const sent = newSubject( { id: id.text, label: 'as typed' } );
 		const canonical = newSubject( { id: id.text, label: 'as persisted' } );
 		withSubjectRepository( {
