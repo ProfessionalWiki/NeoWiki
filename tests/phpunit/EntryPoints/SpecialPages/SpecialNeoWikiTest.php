@@ -35,6 +35,13 @@ class SpecialNeoWikiTest extends SpecialPageTestBase {
 		$this->assertHelpLinkLeadsToTheDocs( $output );
 	}
 
+	public function testLoadsTheFrontendModule(): void {
+		$this->assertContains(
+			'ext.neowiki',
+			$this->outputOf( $this->newSpecialPage(), $this->getTestUser()->getUser() )->getModules()
+		);
+	}
+
 	public function testAnAdministratorIsOfferedTheGraphStores(): void {
 		/** @var string $output */
 		[ $output ] = $this->executeSpecialPage( '', null, null, $this->getTestSysop()->getUser() );

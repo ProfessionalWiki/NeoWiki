@@ -85,6 +85,7 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 			$client->run( 'DROP CONSTRAINT `Page id` IF EXISTS' );
 			$client->run( 'DROP CONSTRAINT `Page wiki_id id` IF EXISTS' );
 			$client->run( 'DROP CONSTRAINT `Subject id` IF EXISTS' );
+			$client->run( 'DROP INDEX `Subject wiki_id` IF EXISTS' );
 		}
 		catch ( \Exception ) {
 			$this->markTestSkipped( 'Neo4j not available' );

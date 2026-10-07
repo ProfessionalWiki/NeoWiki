@@ -54,6 +54,17 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testIndexesTheWikiOfEachSubject(): void {
+		$this->newConstraintUpdater()->createDefaultConstraints();
+
+		$this->assertSame(
+			[ [ 'labelsOrTypes' => [ 'Subject' ], 'properties' => [ 'wiki_id' ] ] ],
+			$this->readGraph(
+				'SHOW INDEXES YIELD name, labelsOrTypes, properties WHERE name = "Subject wiki_id" RETURN labelsOrTypes, properties'
+			)->toRecursiveArray()
+		);
+	}
+
 	private function newConstraintUpdater(): Neo4jConstraintUpdater {
 		return new Neo4jConstraintUpdater(
 			NeoWikiExtension::getInstance()->getWriteQueryEngine()

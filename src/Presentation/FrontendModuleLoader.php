@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Presentation;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\PermissionStatus;
+use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedRawQueryAuthorizer;
 use Skin;
 
 class FrontendModuleLoader {
@@ -35,6 +36,9 @@ class FrontendModuleLoader {
 			'wgNeoWikiEnforceValidation' => $this->validationEnforced,
 			'wgNeoWikiSubjectFirst' => $this->subjectFirst,
 			'wgNeoWikiSubjectListAvailable' => $this->subjectListAvailable,
+			// The counts read the whole store, so only a viewer who may run queries gets them.
+			'wgNeoWikiSubjectCountsAvailable' => $this->subjectListAvailable
+				&& $out->getAuthority()->isAllowed( AuthorityBasedRawQueryAuthorizer::RIGHT ),
 		] );
 
 		/** @var list<string> $modules populated by hook handlers */
