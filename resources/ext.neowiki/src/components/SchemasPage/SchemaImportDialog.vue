@@ -109,8 +109,12 @@ const emit = defineEmits<{
 
 const schemaStore = useSchemaStore();
 
+const listedItems = [ ...props.items ].sort(
+	( a, b ) => a.schema.getName().localeCompare( b.schema.getName() )
+);
+
 function namesWith( status: SchemaImportStatus ): string[] {
-	return props.items.filter( ( item ) => item.status === status ).map( ( item ) => item.schema.getName() );
+	return listedItems.filter( ( item ) => item.status === status ).map( ( item ) => item.schema.getName() );
 }
 
 const selectableSections = [
@@ -153,7 +157,7 @@ async function importCheckedSchemas(): Promise<void> {
 	importing.value = true;
 
 	outcome.value = await importSchemas(
-		props.items.filter( ( item ) => checkedNames.value.includes( item.schema.getName() ) ),
+		listedItems.filter( ( item ) => checkedNames.value.includes( item.schema.getName() ) ),
 		( schema ) => schemaStore.saveSchema( schema, mw.msg( 'neowiki-schemas-import-summary' ) )
 	);
 

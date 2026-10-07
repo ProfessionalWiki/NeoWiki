@@ -121,6 +121,18 @@ describe( 'SchemaImportDialog', () => {
 		expect( rowsOf( wrapper, 'neowiki-schemas-import-changed1' ) ).toEqual( [ [ 'Person', false ] ] );
 	} );
 
+	it( 'lists the Schemas of each section alphabetically', () => {
+		const wrapper = mountDialog( [
+			item( 'museum' ), item( 'Zoo', 'changed' ), item( 'Artist' ), item( 'Place', 'unchanged' ),
+			item( 'Person', 'changed' ), item( 'City' ), item( 'Office', 'unchanged' ),
+		] );
+
+		expect( rowsOf( wrapper, 'neowiki-schemas-import-new3' ).map( ( [ name ] ) => name ) ).toEqual( [ 'Artist', 'City', 'museum' ] );
+		expect( rowsOf( wrapper, 'neowiki-schemas-import-changed2' ).map( ( [ name ] ) => name ) ).toEqual( [ 'Person', 'Zoo' ] );
+		expect( section( wrapper, 'neowiki-schemas-import-unchanged2' ).text() )
+			.toContain( 'neowiki-schemas-import-unchanged-namesOffice、Place' );
+	} );
+
 	it( 'says once, under its heading, that the changed Schemas replace the existing ones', () => {
 		const wrapper = mountDialog( [ item( 'Person', 'changed' ), item( 'Place', 'changed' ) ] );
 
@@ -180,15 +192,14 @@ describe( 'SchemaImportDialog', () => {
 		expect( primaryAction( wrapper ).element.disabled ).toBe( false );
 	} );
 
-	it( 'saves the checked Schemas in file order, with the import edit summary', async () => {
-		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', 'changed' ), item( 'Museum' ), item( 'Place', 'changed' ) ] );
-		// Checked after Museum, but before it in the file.
+	it( 'saves the checked Schemas in the order listed, with the import edit summary', async () => {
+		const wrapper = mountDialog( [ item( 'Person', 'changed' ), item( 'Museum' ), item( 'Artist' ), item( 'Place', 'changed' ) ] );
 		await setChecked( wrapper, 'Person', true );
 		await setChecked( wrapper, 'Artist', false );
 
 		await runImport( wrapper );
 
-		expect( savedNames() ).toEqual( [ 'Person', 'Museum' ] );
+		expect( savedNames() ).toEqual( [ 'Museum', 'Person' ] );
 		expect( useSchemaStore().saveSchema ).toHaveBeenCalledWith( expect.anything(), 'neowiki-schemas-import-summary' );
 	} );
 
