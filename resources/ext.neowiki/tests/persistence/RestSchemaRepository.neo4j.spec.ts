@@ -78,6 +78,21 @@ describe( 'RestSchemaRepository', () => {
 			expect( schema.getName() ).toBe( 'What? 100%' );
 		} );
 
+		it( 'has the browser revalidate a cached schema', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/v1/page/Schema:Employee':
+					new Response( JSON.stringify( { source: '{ "propertyDefinitions": {} }' } ), { status: 200 } ),
+			} );
+			const get = vi.spyOn( inMemoryHttpClient, 'get' );
+
+			await newSchemaRepository( inMemoryHttpClient ).getSchema( 'Employee' );
+
+			expect( get ).toHaveBeenCalledWith(
+				'https://example.com/rest.php/v1/page/Schema:Employee',
+				{ headers: { 'Cache-Control': 'no-cache' } },
+			);
+		} );
+
 	} );
 
 	describe( 'saveSchema', () => {
