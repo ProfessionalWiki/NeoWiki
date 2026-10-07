@@ -257,6 +257,8 @@ onMounted( async () => {
 		-webkit-box-orient: vertical;
 		-webkit-line-clamp: 1;
 		overflow: hidden;
+		-webkit-hyphens: none;
+		hyphens: none;
 	}
 
 	// Holds a two-digit count's width while the counts load, so the column does not widen when they arrive.
