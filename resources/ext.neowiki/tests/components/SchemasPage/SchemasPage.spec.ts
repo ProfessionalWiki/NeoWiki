@@ -4,6 +4,8 @@ import { ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import SchemaCreatorDialog from '@/components/SchemasPage/SchemaCreatorDialog.vue';
+import SchemaExportButton from '@/components/SchemasPage/SchemaExportButton.vue';
+import SchemaImportButton from '@/components/SchemasPage/SchemaImportButton.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
@@ -128,6 +130,8 @@ function mountComponent( summaries: unknown[] = [], nextCursor: string | null = 
 			},
 			stubs: {
 				SchemaCreatorDialog: SchemaCreatorDialogStub,
+				SchemaExportButton: true,
+				SchemaImportButton: true,
 				SchemaEditorDialog: SchemaEditorDialogStub,
 				SubjectCreatorDialog: SubjectCreatorDialogStub,
 				DeletePageDialog: true,
@@ -188,6 +192,27 @@ describe( 'SchemasPage', () => {
 		await flushPromises();
 
 		expect( wrapper.findComponent( SchemaCreatorDialog ).exists() ).toBe( false );
+	} );
+
+	it( 'offers the schema export to a user who may not create schemas, and no import', async () => {
+		canCreateSchemasRef.value = false;
+		const wrapper = mountComponent();
+		await flushPromises();
+
+		expect( wrapper.findComponent( SchemaExportButton ).exists() ).toBe( true );
+		expect( wrapper.findComponent( SchemaImportButton ).exists() ).toBe( false );
+	} );
+
+	it( 'refreshes the list once schemas were imported', async () => {
+		canCreateSchemasRef.value = true;
+		const wrapper = mountComponent( [ { name: 'Person', description: '', propertyCount: 3 } ] );
+		await flushPromises();
+
+		schemasResponse = { schemas: [ { name: 'Museum', description: '', propertyCount: 2 } ], nextCursor: null };
+		wrapper.findComponent( SchemaImportButton ).vm.$emit( 'imported' );
+		await flushPromises();
+
+		expect( wrapper.text() ).toContain( 'Museum' );
 	} );
 
 	it( 'disables next when a full page ends the listing', async () => {
