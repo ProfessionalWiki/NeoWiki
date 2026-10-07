@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialSubject;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\SubjectLabelHtml;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
@@ -160,7 +161,31 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'ACME Inc', $this->executeWith( self::SUBJECT_ID )->getPageTitle() );
 	}
 
-	public function testTheTitleMarksANameNobodyChoseAsTheStandInItIs(): void {
+	public function testTheTitleSaysNoLabelIsDefinedBesideTheIdOfASubjectWithoutOne(): void {
+		$this->createSubjectWithoutLabel();
+
+		$this->assertSame(
+			'(neowiki-subject-no-label)(word-separator)(parentheses: ' . self::SUBJECT_ID . ')',
+			strip_tags( $this->executeWith( self::SUBJECT_ID )->getPageTitle() )
+		);
+	}
+
+	public function testTheBrowserTitleNamesASubjectWithoutALabelByItsStandIn(): void {
+		$this->createSubjectWithoutLabel();
+
+		$this->assertStringContainsString(
+			'(neowiki-subject-generated-name: ' . self::SUBJECT_ID . ')',
+			$this->executeWith( self::SUBJECT_ID )->getHTMLTitle()
+		);
+	}
+
+	public function testTheTitleOfASubjectWithoutALabelCarriesItsStyles(): void {
+		$this->createSubjectWithoutLabel();
+
+		$this->assertContains( SubjectLabelHtml::STYLE_MODULE, $this->executeWith( self::SUBJECT_ID )->getModuleStyles() );
+	}
+
+	private function createSubjectWithoutLabel(): void {
 		$this->createPageWithSubjects(
 			'SpecialSubjectTest_Unnamed',
 			otherSubjects: new SubjectMap( TestSubject::build(
@@ -168,11 +193,6 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 				label: null,
 				schemaName: new SchemaName( 'Company' )
 			) )
-		);
-
-		$this->assertSame(
-			'(neowiki-subject-generated-name: ' . self::SUBJECT_ID . ')',
-			$this->executeWith( self::SUBJECT_ID )->getPageTitle()
 		);
 	}
 

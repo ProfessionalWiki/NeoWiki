@@ -155,6 +155,7 @@
 	"neowiki-subject-editor-title": "Edit subject",
 	"neowiki-subject-editor-save": "Save changes",
 	"neowiki-subject-editor-label-field": "Subject label",
+	"neowiki-subject-no-label": "No label defined",
 	"neowiki-subject-editor-rename": "Rename subject",
 	"neowiki-subject-editor-open-target": "Open $1",
 

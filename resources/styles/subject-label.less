@@ -1,9 +1,13 @@
 @import 'mediawiki.skin.variables.less';
 
-/* The Subject id beside a label that stands in for a page title (SubjectLabelHtml). */
+/* The Subject id beside the label, or beside "No label defined", that stands in for a title (SubjectLabelHtml). */
 
 .ext-neowiki-subject-label-id {
-	color: var( --color-subtle, #54595d );
+	color: @color-subtle;
 	font-family: @font-family-monospace;
 	font-size: @font-size-x-small;
+}
+
+.ext-neowiki-subject-label-none {
+	color: @color-subtle;
 }

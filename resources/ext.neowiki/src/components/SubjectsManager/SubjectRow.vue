@@ -584,11 +584,6 @@ function copySubjectIri(): Promise<void> {
 		color: @color-subtle;
 	}
 
-	/* The badge ellipsises its own text; the row only has to let it shrink. */
-	&__schema {
-		min-width: 0;
-	}
-
 	&__count {
 		white-space: nowrap;
 	}

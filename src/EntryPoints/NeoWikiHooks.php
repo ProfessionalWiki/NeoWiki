@@ -182,10 +182,10 @@ class NeoWikiHooks {
 	}
 
 	/**
-	 * Heads the page with its Main Subject's label and id. The label wins over a display title the
-	 * page's own wikitext sets, and is applied only where core would apply one: not on a diff, which is
-	 * headed by the diff, nor where an error stands in for the revision, which either leaves no revision
-	 * id or heads the page as an error. The browser tab gets the label alone.
+	 * Heads the page with its Main Subject's label and id, or "No label defined" and the id. The label
+	 * wins over a display title the page's own wikitext sets, and is applied only where core would apply
+	 * one: not on a diff, which is headed by the diff, nor where an error stands in for the revision,
+	 * which either leaves no revision id or heads the page as an error.
 	 */
 	private static function headByMainSubject( OutputPage $out, ViewHtmlBuilder $builder, ?int $revisionId ): void {
 		if ( $out->getRevisionId() === null
@@ -201,19 +201,15 @@ class NeoWikiHooks {
 			return;
 		}
 
-		$label = $subject->getLabel()?->text ?? '';
-
-		$out->setPageTitle( SubjectLabelHtml::withId( $out, $label, $subject->getId()->text ) );
-		$out->setHTMLTitle( $out->msg( 'pagetitle' )->plaintextParams( $label )->inContentLanguage() );
-		$out->addModuleStyles( [ SubjectLabelHtml::STYLE_MODULE ] );
+		SubjectLabelHtml::headPage( $out, $subject->getLabel()?->text, $subject->getId() );
 	}
 
 	/**
 	 * In Recent changes and watchlists, a link to a page titled by a Subject id reads as the page's
-	 * heading does: its Main Subject's label and id. Only rows the list read up front change, and only
-	 * links that would show the bare title, rendered where the list renders. The parser renders with a
-	 * link renderer of its own, and a list transcluded into a page reads nothing up front, so page
-	 * content never gets a label.
+	 * heading does when its Main Subject has a label: that label and the id. Only rows the list read up
+	 * front change, and only links that would show the bare title, rendered where the list renders. The
+	 * parser renders with a link renderer of its own, and a list transcluded into a page reads nothing
+	 * up front, so page content never gets a label.
 	 *
 	 * @param string|HtmlArmor|null &$text
 	 * @param string[] &$customAttribs
@@ -250,7 +246,7 @@ class NeoWikiHooks {
 
 		$text = new HtmlArmor( SubjectLabelHtml::withId(
 			$context,
-			$subject->getLabel()?->text ?? '',
+			$subject->getLabel()?->text,
 			$subject->getId()->text
 		) );
 

@@ -3,9 +3,6 @@
 		class="ext-neowiki-subject-edit-pane"
 		:aria-label="paneName"
 	>
-		<!-- Named here rather than in the dialog's header, for the root as well as a nested
-			pane: a header naming the root goes stale the moment another pane is opened, and
-			cannot follow without re-rendering CdxDialog. -->
 		<div class="ext-neowiki-subject-edit-pane__header">
 			<h3 class="ext-neowiki-subject-edit-pane__name">
 				<EditableText
@@ -20,10 +17,9 @@
 			</h3>
 
 			<div class="ext-neowiki-subject-edit-pane__meta">
-				<!-- The Schema the pane's Subject uses, beside the name it belongs to rather
-					than in a dialog header that cannot follow the pane. A real link, so it
-					carries the badge's own interactive styling and a destination; a plain
-					click opens the Schema editor instead, as the old header link did.
+				<!-- The Schema the pane's Subject uses, beside the name it belongs to. A real
+					link, so it carries the badge's own interactive styling and a destination;
+					a plain click opens the Schema editor instead.
 
 					A new tab, for the reason the storage link below gives: this dialog holds
 					unsaved edits for every open pane and nothing guards a navigation away
@@ -155,7 +151,7 @@ const storedLabel = computed( (): string | null => enteredSubjectLabel( label.va
 
 const paneName = computed( (): string => storedLabel.value ?? subjectDisplayName( props.subject ) );
 
-// Shown whether or not the name above already carries the Schema's name. Elsewhere that repeat is
+// Shown whether or not the name beside it already carries the Schema's name. Elsewhere that repeat is
 // worth suppressing, and `schemaNameToShow` does so; here the badge is the only link to the Schema
 // and the only way into its editor, so withholding it costs a way through rather than a word.
 const schemaBadge = computed( (): string => props.subject.getSchemaName() );
@@ -200,8 +196,9 @@ function openSchemaEditor( event: MouseEvent ): void {
 
 // EditableText commits once per edit, so a commit is both the change and the
 // end of the interaction: validate immediately rather than waiting for a blur.
+// A label of nothing but spaces is no label, so the field reads as empty rather than blank.
 function setLabel( value: string ): void {
-	label.value = value;
+	label.value = enteredSubjectLabel( value ) === null ? '' : value;
 	handleEditorChange();
 	handleEditorBlur();
 }
@@ -356,8 +353,8 @@ defineExpose( {
 
 .ext-neowiki-subject-edit-pane {
 	/* The name at the start, the Schema and where it is stored flush to the end. Baseline
-		rather than centre, because the three differ in size. Wrapping is the last resort: the
-		badge truncates first, and the row only breaks when even that leaves no room. */
+		rather than centre, because the three differ in size. A name too long to share the row
+		pushes the other two onto the line below. */
 	&__header {
 		display: flex;
 		align-items: baseline;
@@ -388,7 +385,9 @@ defineExpose( {
 		min-width: 0;
 	}
 
+	/* A page title can run long with no space to wrap at. */
 	&__storage {
+		overflow-wrap: anywhere;
 		color: @color-subtle;
 		font-size: @font-size-small;
 	}

@@ -194,7 +194,9 @@ class SubjectInPlaceOfPageTitleLookup {
 			return;
 		}
 
-		if ( $subject !== null ) {
+		// Only a labelled one: a link saying "No label defined" would not tell apart the pages it links
+		// to, and the title carries the id.
+		if ( $subject?->getLabel() !== null ) {
 			$this->subjects[$title->getPrefixedDBkey()] = $subject;
 		}
 	}

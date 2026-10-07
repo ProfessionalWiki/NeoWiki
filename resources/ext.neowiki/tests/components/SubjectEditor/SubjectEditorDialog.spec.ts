@@ -1,4 +1,4 @@
-import { mount, VueWrapper, DOMWrapper, flushPromises } from '@vue/test-utils';
+import { mount, VueWrapper, DOMWrapper, enableAutoUnmount, flushPromises } from '@vue/test-utils';
 import { inject, nextTick, proxyRefs } from 'vue';
 import type { ComponentInternalInstance } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
@@ -38,6 +38,10 @@ import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import type { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 
 const $i18n = createI18nMock();
+
+// The real Teleport, which some tests run, moves each dialog into <body>, where it outlives its
+// test unless unmounted, ids and all.
+enableAutoUnmount( afterEach );
 
 // The reason the stubbed editor reports for holding the save. Reset per test by the
 // beforeEach below.
@@ -235,7 +239,7 @@ describe( 'SubjectEditorDialog', () => {
 		const wrapper = mountComponent( true, {} );
 		await flushPromises();
 
-		expect( wrapper.find( '.cdx-dialog__header__subtitle' ).exists() ).toBe( false );
+		expect( wrapper.get( '.cdx-dialog__header' ).text() ).not.toContain( 'TestSchema' );
 		expect( wrapper.get( '.ext-neowiki-subject-edit-pane__meta .ext-neowiki-schema-name__text' ).text() )
 			.toBe( 'TestSchema' );
 	} );
@@ -324,6 +328,22 @@ describe( 'SubjectEditorDialog', () => {
 
 		expect( wrapper.get( '.cdx-dialog__header__title' ).text() )
 			.toBe( 'neowiki-subject-editor-title' );
+	} );
+
+	// Reached through a pane: the real Teleport moves the dialog out of the wrapper's subtree, where
+	// a query rooted at the wrapper finds no header and so reads every id as absent.
+	function idBesideTitle( wrapper: VueWrapper ): string | null {
+		const header = wrapper.findComponent( SubjectEditPane ).element
+			.closest( '.cdx-dialog' )?.querySelector( '.cdx-dialog__header' );
+		expect( header ).toBeTruthy();
+		return header?.querySelector( '.cdx-dialog__header__subtitle' )?.textContent?.trim() ?? null;
+	}
+
+	it( 'shows the id of the subject being edited beside the title', async () => {
+		const wrapper = mountComponent( false, {} );
+		await flushPromises();
+
+		expect( idBesideTitle( wrapper ) ).toBe( rootSubjectId );
 	} );
 
 	const saveButtonTestStubs = {
@@ -1030,20 +1050,6 @@ describe( 'SubjectEditorDialog', () => {
 			);
 		} );
 
-		it( 'shows the display name as the placeholder for a label-less subject', async () => {
-			const wrapper = mountComponent( false, validationTestStubs );
-			await wrapper.setProps( { subject: labellessSubject } );
-			await flushPromises();
-
-			expect( titleText( wrapper ) ).toBe( 'Host Page' );
-
-			await wrapper.find( 'button[aria-label="neowiki-subject-editor-rename"]' ).trigger( 'click' );
-
-			const input = wrapper.find( '.ext-neowiki-editable-text input' );
-			expect( input.attributes( 'placeholder' ) ).toBe( 'Host Page' );
-			expect( ( input.element as HTMLInputElement ).value ).toBe( '' );
-		} );
-
 		// Codex takes the dialog's accessible name from the title prop whenever a header slot
 		// replaces the rendered title. It names the task, not a Subject: the dialog edits
 		// several, and a name fixed at open would be wrong the moment another pane is shown.
@@ -1059,18 +1065,6 @@ describe( 'SubjectEditorDialog', () => {
 			expect( wrapper.get( '.cdx-dialog' ).attributes( 'aria-labelledby' ) )
 				.toBe( heading.attributes( 'id' ) );
 			expect( heading.text() ).toBe( 'neowiki-subject-editor-title' );
-		} );
-
-		it( 'does not preview the removed label once a labelled subject is cleared', async () => {
-			const wrapper = mountComponent( false, validationTestStubs );
-			await flushPromises();
-
-			await editLabel( wrapper, '' );
-			await flushPromises();
-
-			// The client cannot compute the name the server will fall back to, and the old label is
-			// the one name it is certain to no longer be.
-			expect( titleText( wrapper ) ).toBe( 'neowiki-subject-editor-label-field' );
 		} );
 
 		it( 'sends no label to the dry-run validation once the label is blanked', async () => {
@@ -1293,9 +1287,9 @@ describe( 'SubjectEditorDialog', () => {
 
 		// The last-opened target ends up on screen, so the root pane (index 0) is behind it.
 		async function mountWithThreePanesOpen(
-			{ onSave, rootSchema, rootSubject }: PaneStackOptions = {},
+			{ onSave, rootSchema, rootSubject, stubs = {} }: PaneStackOptions = {},
 		): Promise<TargetReposMount> {
-			const result = mountWithTargetRepos( onSave, {}, rootSchema, rootSubject );
+			const result = mountWithTargetRepos( onSave, stubs, rootSchema, rootSubject );
 			await flushPromises();
 			result.wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
 			await flushPromises();
@@ -1322,11 +1316,15 @@ describe( 'SubjectEditorDialog', () => {
 
 		// Every pane stays mounted behind v-show, so the one on screen is read off the panels.
 		// From the inline style rather than isVisible(): jsdom's getComputedStyle serves a stale
-		// answer once an element has been measured.
+		// answer once an element has been measured. Each pane is reached through its own component:
+		// the real Teleport moves the dialog to the document body, where a query rooted at the
+		// wrapper finds no panel.
 		function visibleSubjectId( wrapper: VueWrapper ): string {
-			const panel = wrapper.findAll( '.ext-neowiki-subject-editor-dialog__panels > div' )
-				.find( ( candidate ) => !( candidate.attributes( 'style' ) ?? '' ).includes( 'display: none' ) );
-			return ( panel?.attributes( 'id' ) ?? '' ).replace( 'ext-neowiki-panel-', '' );
+			const panel = wrapper.findAllComponents( SubjectEditPane )
+				.map( ( pane ) => pane.element.closest( '[id^="ext-neowiki-panel-"]' ) )
+				.find( ( element ) => element !== null &&
+					!( element.getAttribute( 'style' ) ?? '' ).includes( 'display: none' ) );
+			return ( panel?.id ?? '' ).replace( 'ext-neowiki-panel-', '' );
 		}
 
 		// Presses the row itself, so unlike selectInList below this fails when no row is
@@ -1334,17 +1332,6 @@ describe( 'SubjectEditorDialog', () => {
 		async function clickListRow( wrapper: VueWrapper, id: string ): Promise<void> {
 			await listRow( wrapper, id ).trigger( 'click' );
 			await flushPromises();
-		}
-
-		// The same reading under the real Teleport, which moves the dialog to the document body:
-		// a query rooted at the wrapper finds no panel, and one rooted at the document finds every
-		// dialog this file has ever mounted. Each pane is reached through its own component.
-		function teleportedVisibleSubjectId( wrapper: VueWrapper ): string {
-			const panel = wrapper.findAllComponents( SubjectEditPane )
-				.map( ( pane ) => pane.element.closest( '[id^="ext-neowiki-panel-"]' ) )
-				.find( ( element ) => element !== null &&
-					!( element.getAttribute( 'style' ) ?? '' ).includes( 'display: none' ) );
-			return ( panel?.id ?? '' ).replace( 'ext-neowiki-panel-', '' );
 		}
 
 		async function selectInList( wrapper: VueWrapper, id: string ): Promise<void> {
@@ -1365,6 +1352,12 @@ describe( 'SubjectEditorDialog', () => {
 			const { wrapper } = await mountWithSecondPaneOpen();
 
 			expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
+		} );
+
+		it( 'shows the id of a newly opened relation target beside the title', async () => {
+			const { wrapper } = await mountWithSecondPaneOpen();
+
+			expect( idBesideTitle( wrapper ) ).toBe( 's22222222222222' );
 		} );
 
 		it( 'opens a second pane with the freshly fetched target subject', async () => {
@@ -1448,10 +1441,21 @@ describe( 'SubjectEditorDialog', () => {
 			expect( panel.isVisible() ).toBe( true );
 		} );
 
+		it( 'shows the id of the subject chosen from the list beside the title', async () => {
+			const { wrapper } = await mountWithSecondPaneOpen();
+
+			await selectInList( wrapper, rootSubjectId );
+
+			expect( idBesideTitle( wrapper ) ).toBe( rootSubjectId );
+		} );
+
+		// The real Teleport, because the stub remounts every pane whenever the dialog's header
+		// changes, which choosing another subject does.
 		it( 'switches the subject on screen when one is chosen from the list, keeping every pane mounted', async () => {
 			const { wrapper } = await mountWithThreePanesOpen( {
 				rootSchema: relationRootSchema,
 				rootSubject: relationRootSubject,
+				stubs: { teleport: false },
 			} );
 			expect( visibleSubjectId( wrapper ) ).toBe( 's33333333333333' );
 
@@ -1465,6 +1469,7 @@ describe( 'SubjectEditorDialog', () => {
 			const { wrapper } = await mountWithSecondPaneOpen( {
 				rootSchema: relationRootSchema,
 				rootSubject: relationRootSubject,
+				stubs: { teleport: false },
 			} );
 			( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).setLabel( 'Edited child' );
 			await nextTick();
@@ -1593,7 +1598,7 @@ describe( 'SubjectEditorDialog', () => {
 				const onSave = vi.fn()
 					.mockResolvedValueOnce( undefined )
 					.mockRejectedValueOnce( new Error( 'Boom' ) );
-				const { wrapper, target } = await mountWithSecondPaneOpen( { onSave } );
+				const { wrapper, target } = await mountWithSecondPaneOpen( { onSave, stubs: { teleport: false } } );
 				await makePaneDirty( wrapper, 0 );
 				await makePaneDirty( wrapper, 1 );
 				await selectInList( wrapper, mockSubject.getId().text );
@@ -1653,7 +1658,7 @@ describe( 'SubjectEditorDialog', () => {
 
 				it( 'reports the Save button disabled', async () => {
 					const { onSave, settle } = deferredSave();
-					const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
+					const { wrapper } = await mountWithSecondPaneOpen( { onSave, stubs: { teleport: false } } );
 					await makePaneDirty( wrapper, 0 );
 
 					await triggerSave( wrapper, '' );
@@ -2056,27 +2061,14 @@ describe( 'SubjectEditorDialog', () => {
 		// nothing may be left holding focus inside a display:none subtree. Mounted into the
 		// document throughout: a detached element cannot take focus at all.
 		describe( 'Focus on navigation', () => {
-			let attached: VueWrapper | null = null;
-
-			beforeEach( () => {
-				// Tests that run the real Teleport leave their dialog behind in <body>, ids and all, and
-				// focus is located by id here.
-				document.body.innerHTML = '';
-			} );
-
-			afterEach( () => {
-				attached?.unmount();
-				attached = null;
-			} );
-
 			async function mountAttached(
 				rootSchema: Schema = mockSchema,
 				rootSubject: Subject = mockSubject,
+				stubs: Record<string, unknown> = {},
 			): Promise<VueWrapper> {
 				const { wrapper } = mountWithTargetRepos(
-					undefined, {}, rootSchema, rootSubject, document.body,
+					undefined, stubs, rootSchema, rootSubject, document.body,
 				);
-				attached = wrapper;
 				await flushPromises();
 				return wrapper;
 			}
@@ -2098,9 +2090,9 @@ describe( 'SubjectEditorDialog', () => {
 			// As the listbox pattern expects: the row the reader chose stays the tab stop, so the
 			// next Tab leaves the navigator rather than restarting inside it.
 			it( 'leaves focus on the list when a row shows a subject', async () => {
-				const wrapper = await mountAttached( relationRootSchema, relationRootSubject );
+				const wrapper = await mountAttached( relationRootSchema, relationRootSubject, { teleport: false } );
 				await openTargetFromForm( wrapper, 's22222222222222' );
-				const row = wrapper.find( '.ext-neowiki-open-subject-list__item' ).element as HTMLElement;
+				const row = listRow( wrapper, rootSubjectId ).element as HTMLElement;
 				row.focus();
 
 				await selectInList( wrapper, rootSubjectId );
@@ -2239,7 +2231,7 @@ describe( 'SubjectEditorDialog', () => {
 
 				await clickListRow( wrapper, 's22222222222222' );
 
-				expect( teleportedVisibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
+				expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
 				expect( ( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).label )
 					.toBe( 'Edited child' );
 			} );
@@ -2324,7 +2316,7 @@ describe( 'SubjectEditorDialog', () => {
 					await land();
 
 					expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
-					expect( teleportedVisibleSubjectId( wrapper ) ).toBe( mockSubject.getId().text );
+					expect( visibleSubjectId( wrapper ) ).toBe( mockSubject.getId().text );
 				} );
 
 				it( 'does not open a pane under a root the host replaced', async () => {
@@ -2337,7 +2329,7 @@ describe( 'SubjectEditorDialog', () => {
 					await land();
 
 					expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
-					expect( teleportedVisibleSubjectId( wrapper ) ).toBe( otherRoot.getId().text );
+					expect( visibleSubjectId( wrapper ) ).toBe( otherRoot.getId().text );
 				} );
 
 				it( 'does not stand in for the same target clicked in the next opening', async () => {
@@ -2484,7 +2476,7 @@ describe( 'SubjectEditorDialog', () => {
 
 				expect( mockSubjectRepository.getSubjectForEditing ).not.toHaveBeenCalled();
 				expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 2 );
-				expect( teleportedVisibleSubjectId( wrapper ) ).toBe( rootSubjectId );
+				expect( visibleSubjectId( wrapper ) ).toBe( rootSubjectId );
 			} );
 
 			// Asserted on the rendered dot rather than on the unsavedIds prop: that prop restates
@@ -2495,6 +2487,7 @@ describe( 'SubjectEditorDialog', () => {
 				const { wrapper } = await mountWithSecondPaneOpen( {
 					rootSchema: relationRootSchema,
 					rootSubject: relationRootSubject,
+					stubs: { teleport: false },
 				} );
 				await makePaneDirty( wrapper, 1 );
 
@@ -2770,6 +2763,14 @@ describe( 'SubjectEditorDialog', () => {
 				await createTarget( wrapper );
 
 				expect( visibleSubjectId( wrapper ) ).toBe( mintedId );
+			} );
+
+			it( 'shows no id beside the title while the created draft is on screen', async () => {
+				const { wrapper } = await mountReadyForCreation();
+
+				await createTarget( wrapper );
+
+				expect( idBesideTitle( wrapper ) ).toBeNull();
 			} );
 
 			it( 'edits the created draft against the schema it was asked for', async () => {
@@ -3261,6 +3262,15 @@ describe( 'SubjectEditorDialog', () => {
 						.toBe( 'neowiki-subject-creator-title' );
 					expect( wrapper.findComponent( SummaryAction ).props( 'saveButtonLabel' ) )
 						.toBe( 'neowiki-subject-creator-save' );
+				} );
+
+				it( 'shows no id beside the title, not even for a stored subject on screen', async () => {
+					const { wrapper } = await mountCreating();
+
+					await openStoredTarget( wrapper );
+
+					expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
+					expect( idBesideTitle( wrapper ) ).toBeNull();
 				} );
 
 				it( 'writes with the create summary where the user gave none', async () => {

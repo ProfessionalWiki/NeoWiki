@@ -112,7 +112,25 @@ class SubjectIdTitledPageHeadingTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( self::SUBJECT_ID, $heading );
 	}
 
-	private function createPageLabelled( string $label, string $pageName = self::SUBJECT_ID ): RevisionRecord {
+	public function testAPageTitledByTheIdOfASubjectWithoutALabelIsHeadedByNoLabelDefinedAndTheId(): void {
+		$revisionId = $this->createPageLabelled( null, self::SUBJECT_NAMESPACE_PAGE )->getId();
+
+		$heading = $this->viewContentPage( $revisionId, [], self::SUBJECT_NAMESPACE_PAGE )->getPageTitle();
+
+		$this->assertStringContainsString( 'No label defined', $heading );
+		$this->assertStringContainsString( self::SUBJECT_ID, $heading );
+	}
+
+	public function testTheBrowserTitleNamesTheSubjectWithoutALabelByItsBracketedId(): void {
+		$revisionId = $this->createPageLabelled( null, self::SUBJECT_NAMESPACE_PAGE )->getId();
+
+		$browserTitle = $this->viewContentPage( $revisionId, [], self::SUBJECT_NAMESPACE_PAGE )->getHTMLTitle();
+
+		$this->assertStringContainsString( '(' . self::SUBJECT_ID . ')', $browserTitle );
+		$this->assertStringNotContainsString( 'No label defined', $browserTitle );
+	}
+
+	private function createPageLabelled( ?string $label, string $pageName = self::SUBJECT_ID ): RevisionRecord {
 		return $this->createPageWithSubjects(
 			$pageName,
 			TestSubject::build( id: self::SUBJECT_ID, label: $label )
