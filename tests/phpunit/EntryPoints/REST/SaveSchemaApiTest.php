@@ -13,7 +13,6 @@ use MediaWiki\User\User;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SaveSchemaApi;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
-use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
@@ -27,7 +26,6 @@ use Wikimedia\Rdbms\IDBAccessObject;
 class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 
 	use HandlerTestTrait;
-	use NeoWikiMockAuthorityTrait;
 	use RunsSchemaPageActions;
 
 	private const string SCHEMA_JSON = <<<JSON
@@ -99,10 +97,14 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 	 * MediaWiki's REST layer decodes a JSON object into a PHP array, which would encode back as `[]`, a value
 	 * the Schema format refuses for `propertyDefinitions`.
 	 */
-	public function testSchemaWithoutPropertiesIsSaved(): void {
+	public function testSchemaWithoutPropertiesKeepsAnEmptyObject(): void {
 		$response = $this->save( 'Person', '{ "propertyDefinitions": {} }' );
 
 		$this->assertSame( 201, $response->getStatusCode() );
+		$this->assertJsonStringEqualsJsonString(
+			'{ "schema": { "description": "", "propertyDefinitions": {} } }',
+			$this->bodyOf( $response )
+		);
 	}
 
 	public function testInvalidSchemaIsRefusedWithTheValidatorsVerdict(): void {
@@ -131,6 +133,16 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( 403, $response->getStatusCode() );
 		$this->assertFalse( $this->schemaPageExists( 'Person' ) );
+	}
+
+	public function testUserWhoMayNotEditAProtectedSchemaIsRefused(): void {
+		$this->createSchema( 'Person', self::SCHEMA_JSON );
+		$this->protectSchemaPage( 'Person' );
+
+		$response = $this->saveAs( $this->getTestUser()->getUser(), 'Person', self::CHANGED_SCHEMA_JSON );
+
+		$this->assertSame( 403, $response->getStatusCode() );
+		$this->assertJsonStringEqualsJsonString( self::SCHEMA_JSON, $this->getSchemaPageText( 'Person' ) );
 	}
 
 	public function testEditFilterRefusalBlocksTheSave(): void {
@@ -164,7 +176,7 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 		$response = $this->save( 'Person', self::SCHEMA_JSON );
 
 		$this->assertSame( 400, $response->getStatusCode() );
-		$this->assertFalse( $this->schemaPageExists( 'Person' ) );
+		$this->assertSame( 'hookaborted', $this->errorKeyOf( $response ) );
 	}
 
 	public function testNameThatIsNoPageTitleIsRefused(): void {
@@ -188,11 +200,9 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSchemaYouMayNotReadAnswersNotFound(): void {
-		$response = $this->executeAs(
-			$this->authorityWithGlobalReadButNoPageRead(),
-			new SaveSchemaApi( csrfValidator: $this->newCsrfValidatorStub() ),
-			$this->newPutRequest( 'Person', self::SCHEMA_JSON )
-		);
+		$this->denyReadingSchemaPage( 'Person' );
+
+		$response = $this->save( 'Person', self::SCHEMA_JSON );
 
 		$this->assertSame( 404, $response->getStatusCode() );
 		$this->assertFalse( $this->schemaPageExists( 'Person' ) );
@@ -201,7 +211,7 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 	public function testCommentBecomesTheEditSummary(): void {
 		$this->executeAs(
 			$this->getTestSysop()->getUser(),
-			new SaveSchemaApi( csrfValidator: $this->newCsrfValidatorStub() ),
+			$this->newApi(),
 			$this->newPutRequest( 'Person', self::SCHEMA_JSON, comment: 'Track ages' )
 		);
 
@@ -218,11 +228,11 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function saveAs( User $user, string $schemaName, string $schemaJson ): ResponseInterface {
-		return $this->executeAs(
-			$user,
-			new SaveSchemaApi( csrfValidator: $this->newCsrfValidatorStub() ),
-			$this->newPutRequest( $schemaName, $schemaJson )
-		);
+		return $this->executeAs( $user, $this->newApi(), $this->newPutRequest( $schemaName, $schemaJson ) );
+	}
+
+	private function newApi(): SaveSchemaApi {
+		return new SaveSchemaApi( csrfValidator: $this->newCsrfValidatorStub() );
 	}
 
 	private function newPutRequest( string $schemaName, string $schemaJson, ?string $comment = null ): RequestData {
@@ -238,16 +248,26 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 		] );
 	}
 
+	private function protectSchemaPage( string $schemaName ): void {
+		$cascade = false;
+
+		$this->assertStatusGood(
+			$this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $this->schemaTitle( $schemaName ) )
+				->doUpdateRestrictions(
+					[ 'edit' => 'sysop' ],
+					[],
+					$cascade,
+					'Only administrators change this Schema',
+					$this->getTestSysop()->getUser()
+				)
+		);
+	}
+
 	private function readSchemaFromApi( string $schemaName ): string {
 		return $this->bodyOf( $this->executeHandler(
 			new GetSchemaApi(),
 			new RequestData( [ 'method' => 'GET', 'pathParams' => [ 'schemaName' => $schemaName ] ] )
 		) );
-	}
-
-	private function bodyOf( ResponseInterface $response ): string {
-		$response->getBody()->rewind();
-		return $response->getBody()->getContents();
 	}
 
 	private function errorKeyOf( ResponseInterface $response ): ?string {
