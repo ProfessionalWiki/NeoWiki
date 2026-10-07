@@ -17,7 +17,7 @@ reading ([Permissions](../api/rest-api.md#permissions)).
 | `{{#view}}` | The storing page's `read`, per viewer over REST | Nothing rendered |
 | Links in Recent changes and watchlists to a page titled by a Subject id, which show its Main Subject's label | The linked page's `read`, per viewer | The page title |
 | `{{#neowiki_value}}` and the `nw.` accessors | The storing page's `read`, as the parsing user | Empty output, `nil`, or an empty table |
-| `{{#cypher_raw}}`, `{{#sparql_raw}}`, `nw.query`, `nw.sparqlQuery` | The parsing user's [`neowiki-query`](../api/query-api.md#permissions), a whole-store read | An error box; Lua throws |
+| `{{#cypher_raw}}`, `{{#sparql_raw}}`, `nw.query`, `nw.sparqlQuery` | The parsing user's [`neowiki-query`](../api/query-api.md#permissions), a whole-store read | An error box; in Lua, no results |
 | `POST /query/cypher`, `POST /query/sparql` | The caller's `neowiki-query` | `403` |
 | Graph-store status and rebuilds | The caller's `neowiki-admin` (`sysop` by default) | `403` |
 | Subjects from a [Subject Source](../extending/subject-sources.md) | Nothing: no page to authorize against, so a Source must serve only what every reader may see | — |
@@ -38,10 +38,10 @@ Check `Special:ListGroupRights`, then load a page with a raw query while logged 
 passwords need no separate change.
 
 Saves, job-queue parses and Parsoid renders run as the anonymous user, so a page using `{{#cypher_raw}}` or
-`{{#sparql_raw}}` shows an error box in place of the results to readers without the right, and a page using
-`nw.query` or `nw.sparqlQuery` shows a script error and joins the pages-with-script-errors category unless the
-module wraps the call in `pcall`. Readers who hold the right get
-[their own cached parse](../authoring/parser-functions.md) and see results.
+`{{#sparql_raw}}` shows an error box in place of the results to readers without the right, and `nw.query` and
+`nw.sparqlQuery` return no rows to them. Category membership a module derives from query results is recorded from
+those empty results. Readers who hold the right get [their own cached parse](../authoring/parser-functions.md) and see
+results.
 
 ## Removing the Lua library
 
