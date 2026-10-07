@@ -29,6 +29,7 @@ abstract class SchemaPageActionApi extends ActionModuleBasedHandler {
 		'blocked' => 403,
 		'cantcreate' => 403,
 		'cantcreate-anon' => 403,
+		'cantchangecontentmodel' => 403,
 		'cantedit' => 403,
 		'cascadeprotected' => 403,
 		'confirmemail' => 403,

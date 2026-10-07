@@ -7,10 +7,10 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\Request\WebResponse;
 use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\Response;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
-use ProfessionalWiki\NeoWiki\Presentation\RestGetSchemaPresenter;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -34,7 +34,7 @@ class SaveSchemaApi extends SchemaPageActionApi {
 		return (string)json_encode( is_object( $body ) ? $body->schema ?? null : null );
 	}
 
-	protected function mapActionModuleResult( array $data ): mixed {
+	protected function mapActionModuleResult( array $data ): array {
 		if ( ( $data['edit']['result'] ?? null ) !== 'Success' ) {
 			// An extension can hold an edit back with a result instead of an error, as ConfirmEdit does to ask
 			// for a CAPTCHA.
@@ -45,11 +45,22 @@ class SaveSchemaApi extends SchemaPageActionApi {
 			);
 		}
 
-		$presenter = new RestGetSchemaPresenter();
+		return [ 'schema' => $this->presentSavedSchema() ];
+	}
 
-		NeoWikiExtension::getInstance()->newGetSchemaQuery( $presenter )->execute( $this->getSchemaPage()->getText() );
+	/**
+	 * Built from the JSON just saved rather than read back: until the request ends, a database replica still
+	 * serves the previous revision, and so does the wiki's revision policy until the new one is approved.
+	 */
+	private function presentSavedSchema(): array {
+		$extension = NeoWikiExtension::getInstance();
 
-		return json_decode( $presenter->getJson() );
+		return $extension->getSchemaPresentationSerializer()->toArray(
+			$extension->getPersistenceSchemaDeserializer()->deserialize(
+				new SchemaName( $this->getSchemaPage()->getText() ),
+				$this->getSchemaJson()
+			)
+		);
 	}
 
 	protected function mapActionModuleResponse(
