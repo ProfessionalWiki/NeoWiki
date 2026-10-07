@@ -247,8 +247,17 @@ and any `default` use the same format.
 ## REST API
 
 `GET /neowiki/v0/schema/{schemaName}` wraps this format as `{ "schema": ... }`, or `{ "schema": null }` when the Schema
-does not exist or you may not [read](rest-api.md#permissions) it. There is no write endpoint; create or edit a Schema by
-editing its page in the Schema namespace.
+does not exist or you may not [read](rest-api.md#permissions) it.
+
+`PUT /neowiki/v0/schema/{schemaName}` takes the Schema as `{ "schema": ... }`, plus an optional `comment` used as the
+edit summary, and replaces the whole Schema without checking for changes made since you read it:
+
+```json
+{ "schema": { "description": "...", "propertyDefinitions": { ... } }, "comment": "Add a Website property" }
+```
+
+It answers with `{ "schema": ... }` holding the Schema as stored. A body that is not a valid Schema is refused with
+`400`, the reason in `messageTranslations`.
 
 ## Complete Example
 

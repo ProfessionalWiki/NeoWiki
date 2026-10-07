@@ -139,6 +139,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CancelGraphStoreRebuildApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectPageApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetJsonSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetMainSubjectApi;
@@ -163,6 +164,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\Neo4jRo
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\RemoveStatementApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\MoveSubjectApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\SaveSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetMainSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SetStatementApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\StartGraphStoreRebuildApi;
@@ -2149,6 +2151,14 @@ class NeoWikiExtension {
 
 	public static function newGetSchemaApi(): GetSchemaApi {
 		return new GetSchemaApi();
+	}
+
+	public static function newSaveSchemaApi(): SaveSchemaApi {
+		return new SaveSchemaApi( csrfValidator: self::getCsrfValidator() );
+	}
+
+	public static function newDeleteSchemaApi(): DeleteSchemaApi {
+		return new DeleteSchemaApi( csrfValidator: self::getCsrfValidator() );
 	}
 
 	public static function newGetJsonSchemaApi(): GetJsonSchemaApi {
