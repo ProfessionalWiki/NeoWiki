@@ -69,15 +69,15 @@ A Schema defines a Subject type and its properties. For the body shape, see
 | `GET /neowiki/v0/schemas` | List Schemas. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. |
 | `GET /neowiki/v0/schema/{schemaName}` | Fetch a Schema by name. |
 | `PUT /neowiki/v0/schema/{schemaName}` | Create or replace a Schema: `201` for a new one, `200` for a replaced one. For the body, see [Schema format](schema-format.md#rest-api). |
-| `DELETE /neowiki/v0/schema/{schemaName}` | Delete a Schema, even one that Subjects still use: `200`, or `404` when there is none. Optional body `{ "comment": "..." }`, logged as the deletion reason. |
+| `DELETE /neowiki/v0/schema/{schemaName}` | Delete a Schema, even one that Subjects still use: `200`, or `404` when there is none. Optional body `comment`, logged as the deletion reason. |
 | `GET /neowiki/v0/schema/{schemaName}/json-schema` | Fetch a Schema as a [JSON Schema](json-schema.md) document describing its Subjects. |
 | `GET /neowiki/v0/schema-names/{search}` | Find Schema names by prefix. |
 
 ### Layouts
 
-A Layout defines how a Subject is displayed. To create, change, or delete one, edit or delete the page `Layout:<name>`,
-which holds the Layout as JSON, through MediaWiki's Action API:
-[`action=edit`](https://www.mediawiki.org/wiki/API:Edit), [`action=delete`](https://www.mediawiki.org/wiki/API:Delete).
+A Layout defines how a Subject is displayed. To create, change, or delete one, edit or delete the JSON page
+`Layout:<name>` through MediaWiki's Action API: [`action=edit`](https://www.mediawiki.org/wiki/API:Edit),
+[`action=delete`](https://www.mediawiki.org/wiki/API:Delete).
 
 | Endpoint | Description |
 |---|---|
@@ -140,8 +140,8 @@ page you may not read and for a Subject id that does not exist. `POST /neowiki/v
 supply rather than by an existing page: it answers `403` for a title you may not create, and `409` for one already
 taken, carrying that title and nothing about the page holding it.
 
-The Schema write endpoints need the same permissions as editing or deleting the Schema's page in the wiki. They answer
-`403` when you may read that page but not edit, create, or delete it, and `404` when you may not read it.
+The Schema write endpoints need the same permissions as creating, editing, or deleting the Schema's page in the wiki.
+They answer `403` when you may read that page but not make the change, and `404` when you may not read it.
 
 The Cypher query endpoint is gated only by the `neowiki-query` right, with no per-page filtering (see
 [Query API](query-api.md)).
