@@ -459,11 +459,16 @@ async function openRelationTarget( targetId: SubjectId ): Promise<void> {
 	}
 }
 
-// The page a Subject created here is stored on: the one holding the Subject whose relation is
-// being filled in, since that is the Subject the new one belongs beside. Panes routinely span
-// pages, so the dialog's own page would be the wrong answer as soon as the user has drilled in.
-// The root stands in for a pane whose Subject arrived without page context.
+// The page a Subject created here is stored on. A subject-first wiki gives it a page of its own,
+// whichever pane it was created from. A page-first wiki stores it on the page holding the Subject
+// whose relation is being filled in, since that is the Subject the new one belongs beside. Panes
+// routinely span pages, so the dialog's own page would be the wrong answer as soon as the user has
+// drilled in. The root stands in for a pane whose Subject arrived without page context.
 function creationPage(): PageIdentifiers | null {
+	if ( isSubjectFirst() ) {
+		return PageIdentifiers.notYetCreated();
+	}
+
 	for ( const subject of [ activePane.value?.subject, props.subject ] ) {
 		if ( subject !== undefined && Number.isInteger( subject.getPageIdentifiers().getPageId() ) ) {
 			return subject.getPageIdentifiers();
@@ -482,9 +487,7 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 
 	// A Subject added while the write loop is running would be referenced by a Subject already
 	// written and yet never written itself, so creation is closed for the duration of a save.
-	// A page is needed only where the Subject goes on one: a subject-first wiki gives it a page of
-	// its own, whatever the pane it was created from is stored on (ADR 33).
-	if ( saving.value || ( page === null && !isSubjectFirst() ) ) {
+	if ( saving.value || page === null ) {
 		mw.notify( mw.msg( 'neowiki-subject-editor-create-target-error' ), { type: 'error' } );
 		return null;
 	}
@@ -512,9 +515,7 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 			label === null,
 			schemaName,
 			new StatementList( [] ),
-			// Only a subject-first wiki mints a draft with no page: the write that creates it
-			// creates its page too, so the pane carries one that is not there yet.
-			page ?? PageIdentifiers.notYetCreated()
+			page
 		);
 
 		extraPanes.value = [ ...extraPanes.value, { id: id.text, subject, schema, isNew: true } ];
@@ -639,13 +640,15 @@ const partialSaveMessage = computed( (): string => partialSave.value === null ?
 );
 
 // Counted in pages as well as in Subjects, since each page written gets revisions of its own.
-// A Subject with no resolved page counts as a page of its own.
+// A Subject with no resolved page counts as a page of its own, and so does one whose page is not
+// created yet on a subject-first wiki, which gives every new Subject its own.
 function pageKeyOf( subject: Subject ): string {
 	const pageId = subject.getPageIdentifiers().getPageId();
+	const pageOfItsOwn = !Number.isInteger( pageId ) || ( pageId === 0 && isSubjectFirst() );
 
-	return Number.isInteger( pageId ) ?
-		`page:${ pageId }` :
-		`subject:${ subject.getId().text }`;
+	return pageOfItsOwn ?
+		`subject:${ subject.getId().text }` :
+		`page:${ pageId }`;
 }
 
 const dirtyPageCount = computed( (): number => new Set(

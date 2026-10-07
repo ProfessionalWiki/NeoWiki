@@ -283,10 +283,10 @@ const emit = defineEmits<{
 /**
  * The page the Subject being created is bound for, as the editor is handed it: unanswered. Which
  * page it lands on is asked in the footer and can still change, so no answer is written into the
- * Subject itself; the write handlers below read the answer as it stands when the save goes out. A
- * Subject created against this one inherits these identifiers, which is what marks it as bound for
- * the same place; one created while drilled into a Subject the wiki already holds carries that
- * Subject's own page instead.
+ * Subject itself; the write handlers below read the answer as it stands when the save goes out. On
+ * a page-first wiki, a Subject created against this one inherits these identifiers, which is what
+ * marks it as bound for the same place, and one created while drilled into a Subject the wiki
+ * already holds carries that Subject's own page instead.
  */
 const UNANSWERED_PAGE = PageIdentifiers.notYetCreated();
 
@@ -912,10 +912,11 @@ async function handleCreate( subject: Subject, pageId: number, comment: string )
 		return;
 	}
 
-	// A target created from a pane the user drilled into belongs on the page that pane's Subject is
-	// stored on, which the editor resolved. One created against the Subject being created carries
-	// no page of its own and follows it instead.
-	const page = pageId > 0 ? pageId : writtenRoot?.pageId ?? null;
+	// A subject-first wiki gives every new Subject a page of its own, whatever page it is handed. On
+	// a page-first wiki, a target created from a pane the user drilled into belongs on the page that
+	// pane's Subject is stored on, which the editor resolved, and one created against the Subject
+	// being created carries no page of its own and follows it instead.
+	const page = isSubjectFirst() || pageId > 0 ? pageId : writtenRoot?.pageId ?? null;
 
 	if ( page === null ) {
 		throw new Error( mw.msg( 'neowiki-subject-creator-error' ) );
