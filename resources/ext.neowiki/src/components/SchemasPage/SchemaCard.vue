@@ -72,7 +72,7 @@
 					class="ext-neowiki-schema-card__subjects ext-neowiki-schema-card__subjects--pending"
 				>
 					<li
-						v-for="row in SUBJECT_PREVIEW_SIZE"
+						v-for="row in pendingRows"
 						:key="row"
 					>
 						&nbsp;
@@ -88,7 +88,8 @@
 			<a
 				v-if="subjectListAvailable"
 				:href="subjectListUrl"
-			>{{ $i18n( 'neowiki-subjects-view-all' ).text() }}</a>
+				:aria-describedby="headingId"
+			>{{ subjectListLinkText }}</a>
 			<CdxButton
 				v-if="canCreateSubject"
 				class="ext-neowiki-schema-card__create"
@@ -108,7 +109,7 @@ import { computed, ref, watch } from 'vue';
 import { CdxButton, CdxIcon, useGeneratedId, useIntersectionObserver } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import SubjectSummaryCell from '@/components/SubjectsTable/SubjectSummaryCell.vue';
-import { SUBJECT_PREVIEW_SIZE, SubjectPreviews } from './SubjectPreviews.ts';
+import { SUBJECT_PREVIEW_SIZE, type SubjectPreview, SubjectPreviews } from './SubjectPreviews.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 
 const props = defineProps<{
@@ -119,6 +120,8 @@ const props = defineProps<{
 	/** False on a wiki without the Graph Store the Subject list reads. */
 	subjectListAvailable: boolean;
 	subjectPreviews: SubjectPreviews;
+	/** Null where the reader sees no counts. */
+	subjectCount: number | null;
 }>();
 
 const emit = defineEmits<{
@@ -127,13 +130,15 @@ const emit = defineEmits<{
 	'create-subject': [];
 }>();
 
-// Names the Schema to screen readers on the card's buttons, whose labels are the same on every card.
+// Names the Schema to screen readers on the card's buttons and link, whose labels can be the same on every card.
 const headingId = useGeneratedId( 'ext-neowiki-schema-card' );
 
 const cardElement = ref<HTMLElement>();
 const cardInView = useIntersectionObserver( cardElement, {} );
 
-const preview = computed( () => props.subjectPreviews.get( props.summary.name ) );
+// A Schema known to have no Subjects says so without asking for them, unless the card already has some to show.
+const preview = computed( (): SubjectPreview | undefined => props.subjectPreviews.get( props.summary.name ) ??
+	( props.subjectCount === 0 ? { state: 'loaded', subjects: [] } : undefined ) );
 const newestSubjects = computed( () => preview.value?.state === 'loaded' ? preview.value.subjects : [] );
 
 const subjectsNote = computed( () => {
@@ -149,10 +154,17 @@ const subjectsNote = computed( () => {
 
 const schemaUrl = computed( () => mw.util.getUrl( `Schema:${ props.summary.name }` ) );
 const subjectListUrl = computed( () => mw.util.getUrl( `Special:Subjects/${ props.summary.name }` ) );
+const subjectListLinkText = computed( () => props.subjectCount === null ?
+	mw.msg( 'neowiki-subjects-view-all' ) :
+	mw.msg( 'neowiki-schema-subject-count', mw.language.convertNumber( props.subjectCount ) ) );
 
-// A card asks only once seen, so a page of many Schemas does not ask for the Subjects of them all.
+// As many rows as the Schema has Subjects to show, so the card keeps its height as they arrive.
+const pendingRows = computed( () => Math.min( props.subjectCount ?? SUBJECT_PREVIEW_SIZE, SUBJECT_PREVIEW_SIZE ) );
+
+// A card asks only once seen, so a page of many Schemas does not ask for the Subjects of them all. The previews
+// decide whether a Schema needs asking again.
 watch( cardInView, ( inView ) => {
-	if ( inView && props.subjectListAvailable ) {
+	if ( inView && props.subjectListAvailable && props.subjectCount !== 0 ) {
 		props.subjectPreviews.load( props.summary.name );
 	}
 } );

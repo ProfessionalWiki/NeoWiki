@@ -277,6 +277,7 @@
 
 	"neowiki-schemas-column-name": "Name",
 	"neowiki-schemas-column-description": "Description",
+	"neowiki-schemas-column-subjects": "Subjects",
 	"neowiki-schemas-empty": "No schemas have been created yet.",
 	"neowiki-schemas-find": "Find a schema",
 	"neowiki-schemas-no-match": "No schemas match “$1”.",
@@ -284,6 +285,7 @@
 	"neowiki-schema-sidebar-all-schemas": "All schemas",
 	"neowiki-sidebar-create-subject": "Create subject",
 	"neowiki-schema-create-subject": "Create $1",
+	"neowiki-schema-subject-count": "{{PLURAL:$1|$1 subject|$1 subjects}}",
 
 	"neowiki-schema-delete": "Delete schema",
 

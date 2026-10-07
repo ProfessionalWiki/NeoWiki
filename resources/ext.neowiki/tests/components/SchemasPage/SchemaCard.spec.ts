@@ -26,10 +26,14 @@ interface CardOptions {
 	canDelete?: boolean;
 	canCreateSubject?: boolean;
 	subjectListAvailable?: boolean;
+	subjectCount?: number | null;
 }
 
 function mountCard( options: CardOptions = {} ): VueWrapper {
-	setupMwMock( { functions: [ 'config', 'msg', 'message', 'util' ], config: { wgNeoWikiSubjectFirst: false } } );
+	setupMwMock( {
+		functions: [ 'config', 'msg', 'message', 'util', 'language' ],
+		config: { wgNeoWikiSubjectFirst: false },
+	} );
 
 	return mount( SchemaCard, {
 		props: {
@@ -40,6 +44,7 @@ function mountCard( options: CardOptions = {} ): VueWrapper {
 			subjectListAvailable: options.subjectListAvailable ?? true,
 			// Raw, so the card sees only the reactivity the previews bring themselves, not what mounting adds.
 			subjectPreviews: markRaw( subjectPreviews ),
+			subjectCount: options.subjectCount ?? null,
 		},
 		global: {
 			mocks: { $i18n: createI18nMock() },
@@ -53,6 +58,10 @@ async function scrollIntoView( wrapper: VueWrapper ): Promise<void> {
 	await flushPromises();
 	scroll.setInView( wrapper.element, true );
 	await flushPromises();
+}
+
+function findSubjectListLink( wrapper: VueWrapper ): ReturnType<VueWrapper['find']> {
+	return wrapper.find( '.ext-neowiki-schema-card__footer a' );
 }
 
 function subjectNames( wrapper: VueWrapper ): string[] {
@@ -174,12 +183,53 @@ describe( 'SchemaCard', () => {
 		expect( subjectNames( wrapper ) ).toEqual( [ 'Johannes Vermeer', 'Gustav Klimt' ] );
 	} );
 
-	it( 'links to all the Subjects of its Schema', () => {
-		const link = mountCard().find( '.ext-neowiki-schema-card__footer a' );
+	it( 'says how many Subjects its Schema has in the link to them', () => {
+		const link = findSubjectListLink( mountCard( { subjectCount: 1234 } ) );
+
+		expect( link.text() ).toBe( 'neowiki-schema-subject-count1,234' );
+		expect( link.attributes( 'href' ) ).toBe( '/wiki/Special:Subjects/Artist' );
+		expect( findSubjectListLink( mountCard( { subjectCount: 0 } ) ).text() ).toBe( 'neowiki-schema-subject-count0' );
+	} );
+
+	it( 'links to all the Subjects of its Schema where the reader sees no counts', () => {
+		const link = findSubjectListLink( mountCard( { subjectCount: null } ) );
 
 		expect( link.text() ).toBe( 'neowiki-subjects-view-all' );
 		expect( link.attributes( 'href' ) ).toBe( '/wiki/Special:Subjects/Artist' );
 	} );
+
+	it( 'ties the link to its Subjects to the Schema they belong to', () => {
+		const wrapper = mountCard( { subjectCount: 2 } );
+
+		expect( findSubjectListLink( wrapper ).attributes( 'aria-describedby' ) )
+			.toBe( wrapper.find( 'h2' ).attributes( 'id' ) );
+	} );
+
+	it( 'says its Schema has no Subjects yet without asking, when it counts none', async () => {
+		const wrapper = mountCard( { subjectCount: 0 } );
+
+		await scrollIntoView( wrapper );
+
+		expect( getSubjectSummaries ).not.toHaveBeenCalled();
+		expect( wrapper.text() ).toContain( 'neowiki-subjects-empty-schemaArtist' );
+	} );
+
+	it( 'keeps showing the Subjects it loaded when its count arrives as 0', async () => {
+		const wrapper = mountCard();
+		await scrollIntoView( wrapper );
+
+		await wrapper.setProps( { subjectCount: 0 } );
+
+		expect( subjectNames( wrapper ) ).toEqual( [ 'Johannes Vermeer', 'Gustav Klimt' ] );
+	} );
+
+	it.each( [ [ 2, 2 ], [ 3, 12 ], [ 3, null ] ] )(
+		'holds the room of %s rows for a Schema counting %s Subjects until they arrive',
+		( rows, subjectCount ) => {
+			expect( mountCard( { subjectCount } ).findAll( '.ext-neowiki-schema-card__subjects--pending li' ) )
+				.toHaveLength( rows );
+		},
+	);
 
 	it( 'shows no Subjects and asks for none without a Subject list', async () => {
 		const wrapper = mountCard( { subjectListAvailable: false, canCreateSubject: true } );

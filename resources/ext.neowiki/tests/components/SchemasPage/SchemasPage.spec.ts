@@ -16,6 +16,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { newSchema } from '@/TestHelpers.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import type { SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
+import type { SubjectCountLookup } from '@/application/SubjectCountLookup.ts';
 
 // Each right reaches its ref only through its check, so a page that skips a check offers nothing
 // however the fixture is set.
@@ -59,6 +60,8 @@ const getSchemaMock = vi.fn();
 const saveSchemaMock = vi.fn();
 let pinia: ReturnType<typeof createPinia>;
 let schemaStore: ReturnType<typeof useSchemaStore>;
+// The counts of a reader who sees none, which a page asking for them would get an error from.
+let absentCounts: SubjectCountLookup;
 
 // The store saves through the extension's repository.
 vi.mock( '@/NeoWikiExtension.ts', () => ( {
@@ -72,7 +75,7 @@ vi.mock( '@/NeoWikiExtension.ts', () => ( {
 const SchemaCardStub = {
 	name: 'SchemaCard',
 	template: '<div class="schema-card-stub"></div>',
-	props: [ 'summary', 'canEdit', 'canDelete', 'canCreateSubject', 'subjectListAvailable', 'subjectPreviews' ],
+	props: [ 'summary', 'canEdit', 'canDelete', 'canCreateSubject', 'subjectListAvailable', 'subjectPreviews', 'subjectCount' ],
 	emits: [ 'edit', 'delete', 'create-subject' ],
 };
 
@@ -107,12 +110,17 @@ interface PageOptions {
 	/** Mounts the cards themselves rather than stand-ins, for what only a card shows. */
 	realCards?: boolean;
 	subjectSummaryLookup?: SubjectSummaryLookup;
+	/** The counts of a reader who sees them; a reader who sees none without it. */
+	subjectCountLookup?: SubjectCountLookup;
 }
 
 function mountPage( options: PageOptions = {} ): VueWrapper {
 	setupMwMock( {
-		functions: [ 'config', 'msg', 'util', 'message', 'notify' ],
-		config: { wgNeoWikiSubjectListAvailable: options.subjectListAvailable ?? true },
+		functions: [ 'config', 'msg', 'util', 'message', 'notify', 'language' ],
+		config: {
+			wgNeoWikiSubjectListAvailable: options.subjectListAvailable ?? true,
+			wgNeoWikiSubjectCountsAvailable: options.subjectCountLookup !== undefined,
+		},
 	} );
 
 	return mount( SchemasPage, {
@@ -122,6 +130,7 @@ function mountPage( options: PageOptions = {} ): VueWrapper {
 			provide: {
 				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
 				[ Service.SubjectSummaryLookup ]: options.subjectSummaryLookup ?? { getSubjectSummaries: vi.fn() },
+				[ Service.SubjectCountLookup ]: options.subjectCountLookup ?? absentCounts,
 			},
 			stubs: {
 				...( options.realCards ? {} : { SchemaCard: SchemaCardStub } ),
@@ -174,6 +183,7 @@ describe( 'SchemasPage', () => {
 		setActivePinia( pinia );
 		schemaStore = useSchemaStore();
 		listSchemas( [ 'Artist', 'Artwork', 'City' ] );
+		absentCounts = { getSubjectCounts: vi.fn().mockRejectedValue( new Error( 'This reader sees no counts' ) ) };
 	} );
 
 	afterEach( () => {
@@ -194,6 +204,31 @@ describe( 'SchemasPage', () => {
 		await flushPromises();
 
 		expect( cards( wrapper )[ 0 ].props( 'subjectListAvailable' ) ).toBe( false );
+	} );
+
+	it( 'tells each card how many Subjects its Schema has', async () => {
+		const getSubjectCounts = vi.fn().mockResolvedValue( new Map( [ [ 'Artist', 2 ] ] ) );
+		const wrapper = mountPage( { subjectCountLookup: { getSubjectCounts } } );
+		await flushPromises();
+
+		expect( cards( wrapper ).map( ( card ) => card.props( 'subjectCount' ) ) ).toEqual( [ 2, 0, 0 ] );
+	} );
+
+	it( 'gives the cards no counts where the reader sees none', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( cards( wrapper )[ 0 ].props( 'subjectCount' ) ).toBeNull();
+		expect( absentCounts.getSubjectCounts ).not.toHaveBeenCalled();
+	} );
+
+	it( 'shows the cards without counts when the counts could not be loaded', async () => {
+		vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+		const getSubjectCounts = vi.fn().mockRejectedValue( new Error( 'Error fetching subject counts' ) );
+		const wrapper = mountPage( { subjectCountLookup: { getSubjectCounts } } );
+		await flushPromises();
+
+		expect( cards( wrapper ).map( ( card ) => card.props( 'subjectCount' ) ) ).toEqual( [ null, null, null ] );
 	} );
 
 	it( 'keeps the Schemas whose name contains the find text in any case', async () => {

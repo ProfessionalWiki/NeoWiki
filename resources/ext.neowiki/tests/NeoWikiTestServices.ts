@@ -5,6 +5,7 @@ import { InMemoryLayoutLookup } from '@/application/LayoutLookup.ts';
 import { StubSubjectRepository } from '@/domain/SubjectRepository.ts';
 import type { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 import type { SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
+import type { SubjectCountLookup } from '@/application/SubjectCountLookup.ts';
 import type { PageTitleSearch } from '@/domain/PageTitleSearch.ts';
 
 export class NeoWikiTestServices extends NeoWikiServices {
@@ -23,6 +24,9 @@ export class NeoWikiTestServices extends NeoWikiServices {
 			[ Service.SubjectSummaryLookup ]: {
 				getSubjectSummaries: () => Promise.resolve( { subjects: [], nextCursor: null } ),
 			} as SubjectSummaryLookup,
+			[ Service.SubjectCountLookup ]: {
+				getSubjectCounts: () => Promise.resolve( new Map() ),
+			} as SubjectCountLookup,
 			[ Service.PageTitleSearch ]: { searchPageTitles: () => Promise.resolve( [] ) } as PageTitleSearch,
 			[ Service.ViewTypeRegistry ]: neoWiki.getViewTypeRegistry(),
 			[ Service.LayoutPermissionHints ]: neoWiki.newLayoutPermissionHints(),

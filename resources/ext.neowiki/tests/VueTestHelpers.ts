@@ -247,6 +247,9 @@ export function setupMwMock(
 			// wiki falls back to; the fake carries just that, so a spec setting a user language gets a
 			// chain of its own without configuring one.
 			getFallbackLanguageChain: vi.fn( () => [ customConfig.wgUserLanguage, 'en' ] ),
+			// MediaWiki formats a number the way the interface language writes it; the fake groups its digits the
+			// English way, so a spec can tell a formatted number from a bare one.
+			convertNumber: vi.fn( ( number: number ) => number.toLocaleString( 'en-US' ) ),
 		} ),
 		util: () => ( {
 			wikiScript: vi.fn( () => '/rest.php' ),
