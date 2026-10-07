@@ -1,10 +1,11 @@
 import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+import { markRaw } from 'vue';
 import SchemaCard from '@/components/SchemasPage/SchemaCard.vue';
-import { Service } from '@/NeoWikiServices.ts';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { SubjectPreviews } from '@/components/SchemasPage/SubjectPreviews.ts';
+import { createI18nMock, type ScrollStub, setupMwMock, stubIntersectionObserver } from '../../VueTestHelpers.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
-import type { SubjectSummary } from '@/application/SubjectSummaryLookup.ts';
+import type { SubjectSummary, SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
 
 const ARTIST: SchemaSummary = { name: 'Artist', description: 'A person who creates works of art.', propertyCount: 4 };
 
@@ -15,7 +16,9 @@ function subject( id: string, displayName: string ): SubjectSummary {
 	};
 }
 
-let getSubjectSummaries: ReturnType<typeof vi.fn>;
+let getSubjectSummaries: Mock<SubjectSummaryLookup['getSubjectSummaries']>;
+let scroll: ScrollStub;
+let subjectPreviews: SubjectPreviews;
 
 interface CardOptions {
 	summary?: SchemaSummary;
@@ -35,13 +38,25 @@ function mountCard( options: CardOptions = {} ): VueWrapper {
 			canDelete: options.canDelete ?? false,
 			canCreateSubject: options.canCreateSubject ?? false,
 			subjectListAvailable: options.subjectListAvailable ?? true,
+			// Raw, so the card sees only the reactivity the previews bring themselves, not what mounting adds.
+			subjectPreviews: markRaw( subjectPreviews ),
 		},
 		global: {
 			mocks: { $i18n: createI18nMock() },
-			provide: { [ Service.SubjectSummaryLookup ]: { getSubjectSummaries } },
 			stubs: { CdxIcon: true },
 		},
 	} );
+}
+
+// Codex observes the card afresh once its template ref settles after mounting, forgetting what it saw before.
+async function scrollIntoView( wrapper: VueWrapper ): Promise<void> {
+	await flushPromises();
+	scroll.setInView( wrapper.element, true );
+	await flushPromises();
+}
+
+function subjectNames( wrapper: VueWrapper ): string[] {
+	return wrapper.findAll( '.ext-neowiki-schema-card__subjects li a' ).map( ( link ) => link.text() );
 }
 
 function findButton( wrapper: VueWrapper, label: string ): ReturnType<VueWrapper['find']> {
@@ -51,10 +66,12 @@ function findButton( wrapper: VueWrapper, label: string ): ReturnType<VueWrapper
 describe( 'SchemaCard', () => {
 
 	beforeEach( () => {
-		getSubjectSummaries = vi.fn().mockResolvedValue( {
+		getSubjectSummaries = vi.fn<SubjectSummaryLookup['getSubjectSummaries']>().mockResolvedValue( {
 			subjects: [ subject( 's1demo1aaaaaaa3', 'Johannes Vermeer' ), subject( 's1demo1aaaaaaa2', 'Gustav Klimt' ) ],
 			nextCursor: null,
 		} );
+		scroll = stubIntersectionObserver();
+		subjectPreviews = new SubjectPreviews( { getSubjectSummaries } );
 	} );
 
 	it( 'links the Schema name to its page', () => {
@@ -74,46 +91,87 @@ describe( 'SchemaCard', () => {
 		expect( wrapper.find( '.ext-neowiki-schema-card__description' ).exists() ).toBe( false );
 	} );
 
-	it( 'asks for the three newest Subjects of its Schema', async () => {
+	it( 'asks for no Subjects before it is scrolled into view', async () => {
 		mountCard();
 		await flushPromises();
 
-		expect( getSubjectSummaries ).toHaveBeenCalledWith( {
-			schema: 'Artist', search: '', sort: 'newest', direction: 'desc', cursor: null, limit: 3,
-		} );
+		expect( getSubjectSummaries ).not.toHaveBeenCalled();
+	} );
+
+	it( 'asks for the three newest Subjects of its Schema once scrolled into view', async () => {
+		await scrollIntoView( mountCard() );
+
+		expect( getSubjectSummaries ).toHaveBeenCalledWith( expect.objectContaining( { schema: 'Artist', sort: 'newest', limit: 3 } ) );
 	} );
 
 	it( 'lists the newest Subjects with links to them', async () => {
 		const wrapper = mountCard();
-		await flushPromises();
 
-		expect( wrapper.findAll( '.ext-neowiki-schema-card__subjects li a' ).map( ( a ) => a.text() ) )
+		await scrollIntoView( wrapper );
+
+		expect( subjectNames( wrapper ) ).toEqual( [ 'Johannes Vermeer', 'Gustav Klimt' ] );
+	} );
+
+	it( 'shows the newest Subjects by name alone', async () => {
+		const wrapper = mountCard();
+
+		await scrollIntoView( wrapper );
+
+		expect( wrapper.findAll( '.ext-neowiki-schema-card__subjects li' ).map( ( row ) => row.text() ) )
 			.toEqual( [ 'Johannes Vermeer', 'Gustav Klimt' ] );
-		expect( wrapper.findAll( '.ext-neowiki-schema-card__subjects li time' ) ).toHaveLength( 2 );
+	} );
+
+	it( 'asks once however often it is scrolled into view', async () => {
+		getSubjectSummaries.mockReturnValue( new Promise( () => {
+			// Never lands.
+		} ) );
+		const wrapper = mountCard();
+		await scrollIntoView( wrapper );
+		scroll.setInView( wrapper.element, false );
+
+		await scrollIntoView( wrapper );
+
+		expect( getSubjectSummaries ).toHaveBeenCalledTimes( 1 );
 	} );
 
 	it( 'says when the Schema has no Subjects yet', async () => {
 		getSubjectSummaries.mockResolvedValue( { subjects: [], nextCursor: null } );
 		const wrapper = mountCard();
-		await flushPromises();
+
+		await scrollIntoView( wrapper );
 
 		expect( wrapper.text() ).toContain( 'neowiki-subjects-empty-schemaArtist' );
 	} );
 
-	it( 'says nothing about Subjects while they load', () => {
+	it( 'says nothing about Subjects while they load', async () => {
 		getSubjectSummaries.mockReturnValue( new Promise( () => {
 			// Never lands.
 		} ) );
+		const wrapper = mountCard();
 
-		expect( mountCard().text() ).not.toContain( 'neowiki-subjects-empty-schema' );
+		await scrollIntoView( wrapper );
+
+		expect( wrapper.text() ).not.toContain( 'neowiki-subjects-empty-schema' );
 	} );
 
 	it( 'says when the Subjects could not be loaded', async () => {
 		getSubjectSummaries.mockRejectedValue( new Error( 'boom' ) );
 		const wrapper = mountCard();
-		await flushPromises();
+
+		await scrollIntoView( wrapper );
 
 		expect( wrapper.text() ).toContain( 'neowiki-subjects-load-error' );
+	} );
+
+	it( 'asks again once scrolled back into view after its Subjects could not be loaded', async () => {
+		getSubjectSummaries.mockRejectedValueOnce( new Error( 'boom' ) );
+		const wrapper = mountCard();
+		await scrollIntoView( wrapper );
+		scroll.setInView( wrapper.element, false );
+
+		await scrollIntoView( wrapper );
+
+		expect( subjectNames( wrapper ) ).toEqual( [ 'Johannes Vermeer', 'Gustav Klimt' ] );
 	} );
 
 	it( 'links to all the Subjects of its Schema', () => {
@@ -125,7 +183,7 @@ describe( 'SchemaCard', () => {
 
 	it( 'shows no Subjects and asks for none without a Subject list', async () => {
 		const wrapper = mountCard( { subjectListAvailable: false, canCreateSubject: true } );
-		await flushPromises();
+		await scrollIntoView( wrapper );
 
 		expect( getSubjectSummaries ).not.toHaveBeenCalled();
 		expect( wrapper.find( '.ext-neowiki-schema-card__subjects' ).exists() ).toBe( false );

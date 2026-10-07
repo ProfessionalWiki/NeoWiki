@@ -1,5 +1,5 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
@@ -8,13 +8,14 @@ import SchemaCreatorDialog from '@/components/SchemasPage/SchemaCreatorDialog.vu
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, setupMwMock, stubIntersectionObserver } from '../../VueTestHelpers.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { newSchema } from '@/TestHelpers.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
+import type { SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
 
 // Each right reaches its ref only through its check, so a page that skips a check offers nothing
 // however the fixture is set.
@@ -71,7 +72,7 @@ vi.mock( '@/NeoWikiExtension.ts', () => ( {
 const SchemaCardStub = {
 	name: 'SchemaCard',
 	template: '<div class="schema-card-stub"></div>',
-	props: [ 'summary', 'canEdit', 'canDelete', 'canCreateSubject', 'subjectListAvailable' ],
+	props: [ 'summary', 'canEdit', 'canDelete', 'canCreateSubject', 'subjectListAvailable', 'subjectPreviews' ],
 	emits: [ 'edit', 'delete', 'create-subject' ],
 };
 
@@ -101,10 +102,17 @@ function listSchemas( names: string[] ): void {
 	schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( summaries( names ) );
 }
 
-function mountPage( subjectListAvailable = true ): VueWrapper {
+interface PageOptions {
+	subjectListAvailable?: boolean;
+	/** Mounts the cards themselves rather than stand-ins, for what only a card shows. */
+	realCards?: boolean;
+	subjectSummaryLookup?: SubjectSummaryLookup;
+}
+
+function mountPage( options: PageOptions = {} ): VueWrapper {
 	setupMwMock( {
 		functions: [ 'config', 'msg', 'util', 'message', 'notify' ],
-		config: { wgNeoWikiSubjectListAvailable: subjectListAvailable },
+		config: { wgNeoWikiSubjectListAvailable: options.subjectListAvailable ?? true },
 	} );
 
 	return mount( SchemasPage, {
@@ -113,9 +121,10 @@ function mountPage( subjectListAvailable = true ): VueWrapper {
 			mocks: { $i18n: createI18nMock() },
 			provide: {
 				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
+				[ Service.SubjectSummaryLookup ]: options.subjectSummaryLookup ?? { getSubjectSummaries: vi.fn() },
 			},
 			stubs: {
-				SchemaCard: SchemaCardStub,
+				...( options.realCards ? {} : { SchemaCard: SchemaCardStub } ),
 				SchemaCreatorDialog: SchemaCreatorDialogStub,
 				SchemaEditorDialog: SchemaEditorDialogStub,
 				SubjectCreatorDialog: SubjectCreatorDialogStub,
@@ -167,6 +176,10 @@ describe( 'SchemasPage', () => {
 		listSchemas( [ 'Artist', 'Artwork', 'City' ] );
 	} );
 
+	afterEach( () => {
+		vi.restoreAllMocks();
+	} );
+
 	it( 'shows a card for every Schema', async () => {
 		const names = [ 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M' ];
 		listSchemas( names );
@@ -177,7 +190,7 @@ describe( 'SchemasPage', () => {
 	} );
 
 	it( 'tells the cards whether the wiki can list Subjects', async () => {
-		const wrapper = mountPage( false );
+		const wrapper = mountPage( { subjectListAvailable: false } );
 		await flushPromises();
 
 		expect( cards( wrapper )[ 0 ].props( 'subjectListAvailable' ) ).toBe( false );
@@ -228,23 +241,49 @@ describe( 'SchemasPage', () => {
 		expect( wrapper.text() ).toContain( 'neowiki-schemas-empty' );
 	} );
 
-	it( 'says nothing about an empty listing while the Schemas load', async () => {
+	it( 'shows that the Schemas are loading, rather than that there are none', async () => {
 		schemaStore.fetchAllSchemaSummaries = vi.fn().mockReturnValue( new Promise( () => {
 			// Never lands.
 		} ) );
 		const wrapper = mountPage();
 		await flushPromises();
 
+		expect( wrapper.find( '.ext-neowiki-schemas-page__loading' ).exists() ).toBe( true );
 		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-empty' );
 	} );
 
-	it( 'reports Schemas that could not be loaded', async () => {
+	it( 'says the Schemas could not be loaded where their cards would be', async () => {
+		vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 		schemaStore.fetchAllSchemaSummaries = vi.fn().mockRejectedValue( new Error( 'Error fetching schema summaries' ) );
 		const wrapper = mountPage();
 		await flushPromises();
 
-		expect( mw.notify ).toHaveBeenCalledWith( 'Error fetching schema summaries', { type: 'error' } );
+		expect( wrapper.text() ).toContain( 'neowiki-schemas-load-error' );
 		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-empty' );
+	} );
+
+	it( 'shows the newest Subjects of a card found again without asking for them again', async () => {
+		const scroll = stubIntersectionObserver();
+		const getSubjectSummaries = vi.fn().mockResolvedValue( {
+			subjects: [ {
+				id: 's1demo1aaaaaaa3', displayName: 'Johannes Vermeer', displayNameIsGenerated: false, schema: 'Artist',
+				pageId: 1, pageTitle: 'Johannes Vermeer', lastEdited: '2026-10-01T14:02:00Z',
+			} ],
+			nextCursor: null,
+		} );
+		const wrapper = mountPage( { realCards: true, subjectSummaryLookup: { getSubjectSummaries } } );
+		await flushPromises();
+		scroll.setInView( cards( wrapper )[ 0 ].element, true );
+		await flushPromises();
+
+		await find( wrapper, 'City' );
+		await find( wrapper, '' );
+		await flushPromises();
+		scroll.setInView( cards( wrapper )[ 0 ].element, true );
+		await flushPromises();
+
+		expect( cards( wrapper )[ 0 ].text() ).toContain( 'Johannes Vermeer' );
+		expect( getSubjectSummaries ).toHaveBeenCalledTimes( 1 );
 	} );
 
 	it( 'offers Schema creation to a user who may create Schemas', async () => {

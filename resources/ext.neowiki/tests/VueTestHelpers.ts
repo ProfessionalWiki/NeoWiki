@@ -98,6 +98,61 @@ export const CdxDialogStub = {
 	emits: [ 'update:open' ],
 };
 
+export interface ScrollStub {
+	/** Tells whoever observes the element that it is now in view, or out of it. */
+	setInView( element: Element, inView: boolean ): void;
+}
+
+/**
+ * Stands in for the browser's IntersectionObserver, which jsdom lacks, so a spec decides when an element
+ * scrolls into view. Codex's useIntersectionObserver looks for the entry type as well before it observes.
+ */
+export function stubIntersectionObserver(): ScrollStub {
+	const observers: { callback: IntersectionObserverCallback; elements: Set<Element> }[] = [];
+
+	vi.stubGlobal( 'IntersectionObserver', class {
+
+		private readonly observer: { callback: IntersectionObserverCallback; elements: Set<Element> };
+
+		public constructor( callback: IntersectionObserverCallback ) {
+			this.observer = { callback, elements: new Set() };
+			observers.push( this.observer );
+		}
+
+		public observe( element: Element ): void {
+			this.observer.elements.add( element );
+		}
+
+		public unobserve( element: Element ): void {
+			this.observer.elements.delete( element );
+		}
+
+		public disconnect(): void {
+			this.observer.elements.clear();
+		}
+
+	} );
+
+	vi.stubGlobal( 'IntersectionObserverEntry', class {
+
+		public get intersectionRatio(): number {
+			return 0;
+		}
+
+	} );
+
+	return {
+		setInView( element: Element, inView: boolean ): void {
+			for ( const { callback, elements } of observers ) {
+				if ( elements.has( element ) ) {
+					const entry = { target: element, isIntersecting: inView } as IntersectionObserverEntry;
+					callback( [ entry ], {} as IntersectionObserver );
+				}
+			}
+		},
+	};
+}
+
 /**
  * What MediaWiki's own bcp47() translates, from its own table: a MediaWiki code that is not a BCP 47
  * tag, and in `be-x-old`'s case one that lands on a tag another code already carries. A few are

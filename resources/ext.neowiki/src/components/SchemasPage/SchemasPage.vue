@@ -17,8 +17,21 @@
 			</CdxButton>
 		</div>
 
+		<CdxMessage
+			v-if="listState === 'failed'"
+			type="error"
+			:inline="true"
+		>
+			{{ $i18n( 'neowiki-schemas-load-error' ).text() }}
+		</CdxMessage>
+		<p
+			v-else-if="listState === 'loading'"
+			class="ext-neowiki-schemas-page__loading"
+		>
+			…
+		</p>
 		<div
-			v-if="foundSchemas.length > 0"
+			v-else-if="foundSchemas.length > 0"
 			class="ext-neowiki-schemas-page__grid"
 		>
 			<SchemaCard
@@ -29,13 +42,14 @@
 				:can-delete="canDeleteSchema"
 				:can-create-subject="canCreateSubjectPage"
 				:subject-list-available="subjectListAvailable"
+				:subject-previews="subjectPreviews"
 				@edit="openEditor( summary.name )"
 				@delete="confirmDelete( summary.name )"
 				@create-subject="openSubjectCreator( summary.name )"
 			/>
 		</div>
 		<p
-			v-else-if="listState === 'loaded'"
+			v-else
 			class="ext-neowiki-schemas-page__empty"
 		>
 			{{ emptyText }}
@@ -76,7 +90,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, shallowRef } from 'vue';
-import { CdxButton, CdxIcon, CdxSearchInput } from '@wikimedia/codex';
+import { CdxButton, CdxIcon, CdxMessage, CdxSearchInput } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
@@ -87,6 +101,7 @@ import { Schema } from '@/domain/Schema.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import { isSubjectListAvailable } from '@/subjectListAvailability.ts';
 import SchemaCard from './SchemaCard.vue';
+import { SubjectPreviews } from './SubjectPreviews.ts';
 import SchemaCreatorDialog from './SchemaCreatorDialog.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
@@ -107,6 +122,8 @@ const schemaStore = useSchemaStore();
 const subjectStore = useSubjectStore();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 const subjectListAvailable = isSubjectListAvailable();
+// Kept for the whole page view, so a card filtered out and back in shows its Subjects without asking again.
+const subjectPreviews = new SubjectPreviews( NeoWikiServices.getSubjectSummaryLookup() );
 
 const schemas = ref<SchemaSummary[]>( [] );
 const listState = ref<'loading' | 'loaded' | 'failed'>( 'loading' );
@@ -149,8 +166,8 @@ async function loadSchemas(): Promise<void> {
 			return;
 		}
 
+		console.error( 'Failed to load schemas:', error );
 		listState.value = 'failed';
-		mw.notify( error instanceof Error ? error.message : String( error ), { type: 'error' } );
 	}
 }
 
@@ -243,6 +260,11 @@ onMounted( () => {
 		// Never wider than the page, which a phone's can be narrower than 18rem.
 		grid-template-columns: repeat( auto-fill, minmax( min( 18rem, 100% ), 1fr ) );
 		gap: @spacing-100;
+	}
+
+	&__loading {
+		color: @color-subtle;
+		font-style: italic;
 	}
 
 	&__empty {
