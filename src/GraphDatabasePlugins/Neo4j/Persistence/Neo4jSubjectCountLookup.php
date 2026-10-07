@@ -35,10 +35,12 @@ readonly class Neo4jSubjectCountLookup implements SubjectCountLookup {
 				$counts = [];
 
 				foreach ( $result as $row ) {
-					foreach ( $row->get( 'labels' ) as $label ) {
-						if ( $label !== 'Subject' ) {
-							$counts[$label] = ( $counts[$label] ?? 0 ) + (int)$row->get( 'subjectCount' );
-						}
+					/** @var list<string> $labels */
+					$labels = $row->getAsCypherList( 'labels' )->toArray();
+					$subjectCount = $row->getAsInt( 'subjectCount' );
+
+					foreach ( array_diff( $labels, [ 'Subject' ] ) as $schemaName ) {
+						$counts[$schemaName] = ( $counts[$schemaName] ?? 0 ) + $subjectCount;
 					}
 				}
 
