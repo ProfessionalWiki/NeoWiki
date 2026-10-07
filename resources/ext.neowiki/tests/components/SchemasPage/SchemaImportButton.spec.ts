@@ -5,7 +5,11 @@ import { CdxButton } from '@wikimedia/codex';
 import SchemaImportButton from '@/components/SchemasPage/SchemaImportButton.vue';
 import SchemaImportDialog from '@/components/SchemasPage/SchemaImportDialog.vue';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
+import { InMemorySchemaRepository } from '@/application/SchemaRepository.ts';
+import type { SchemaImportItem } from '@/components/SchemasPage/schemaImport.ts';
+import { Service } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { newSchema } from '@/TestHelpers.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
 enableAutoUnmount( afterEach );
@@ -26,11 +30,12 @@ function exportFile( ...names: string[] ): string {
 	} );
 }
 
-function mountButton(): VueWrapper {
+function mountButton( repository = new InMemorySchemaRepository( [] ) ): VueWrapper {
 	return mount( SchemaImportButton, {
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
+			provide: { [ Service.SchemaRepository ]: repository },
 			stubs: { CdxIcon: true, teleport: true },
 		},
 	} );
@@ -50,11 +55,9 @@ async function chooseFile( wrapper: VueWrapper, content: string ): Promise<void>
 	await flushPromises();
 }
 
-function checkedState( wrapper: VueWrapper ): [ string, boolean ][] {
-	return wrapper.findAll( '.cdx-checkbox' ).map( ( checkbox ) => [
-		checkbox.find( '.cdx-label__label__text' ).text(),
-		( checkbox.find( 'input' ).element as HTMLInputElement ).checked,
-	] );
+function plannedImport( wrapper: VueWrapper ): [ string, string ][] {
+	return ( wrapper.findComponent( SchemaImportDialog ).props( 'items' ) as SchemaImportItem[] )
+		.map( ( item ) => [ item.schema.getName(), item.status ] );
 }
 
 describe( 'SchemaImportButton', () => {
@@ -76,13 +79,16 @@ describe( 'SchemaImportButton', () => {
 		expect( fileInput( wrapper ).attributes( 'accept' ) ).toContain( '.json' );
 	} );
 
-	it( 'lists the Schemas of the chosen file, leaving the ones this wiki has unchecked', async () => {
+	it( 'offers the Schemas of the chosen file, compared with the wiki\'s', async () => {
 		listSchemas( 'Company', 'Person' );
-		const wrapper = mountButton();
+		const wrapper = mountButton( new InMemorySchemaRepository( [
+			newSchema( { title: 'Company' } ),
+			newSchema( { title: 'Person', description: 'A human being' } ),
+		] ) );
 
 		await chooseFile( wrapper, exportFile( 'Person', 'Museum' ) );
 
-		expect( checkedState( wrapper ) ).toEqual( [ [ 'Person', false ], [ 'Museum', true ] ] );
+		expect( plannedImport( wrapper ) ).toEqual( [ [ 'Person', 'changed' ], [ 'Museum', 'new' ] ] );
 	} );
 
 	it( 'reports a file it cannot import, and opens no dialog', async () => {

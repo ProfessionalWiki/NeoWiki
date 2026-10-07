@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { CdxDialog } from '@wikimedia/codex';
 import SchemaImportDialog from '@/components/SchemasPage/SchemaImportDialog.vue';
-import type { SchemaImportItem } from '@/components/SchemasPage/schemaImport.ts';
+import type { SchemaImportItem, SchemaImportStatus } from '@/components/SchemasPage/schemaImport.ts';
 import type { Schema } from '@/domain/Schema.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { newSchema } from '@/TestHelpers.ts';
@@ -13,8 +13,8 @@ enableAutoUnmount( afterEach );
 
 let pinia: ReturnType<typeof createPinia>;
 
-function item( name: string, replacesExisting = false ): SchemaImportItem {
-	return { schema: newSchema( { title: name } ), replacesExisting };
+function item( name: string, status: SchemaImportStatus = 'new' ): SchemaImportItem {
+	return { schema: newSchema( { title: name } ), status };
 }
 
 function mountDialog( items: SchemaImportItem[] ): VueWrapper {
@@ -29,18 +29,34 @@ function mountDialog( items: SchemaImportItem[] ): VueWrapper {
 	} );
 }
 
-interface Row {
-	name: string;
-	checked: boolean;
-	replaces: boolean;
+function headings( wrapper: VueWrapper ): string[] {
+	return wrapper.findAll( '.ext-neowiki-schema-import-dialog__section' ).map( headingOf );
 }
 
-function rows( wrapper: VueWrapper ): Row[] {
-	return wrapper.findAll( '.cdx-checkbox' ).map( ( checkbox ) => ( {
-		name: checkbox.find( '.cdx-label__label__text' ).text(),
-		checked: ( checkbox.find( 'input' ).element as HTMLInputElement ).checked,
-		replaces: checkbox.find( '.cdx-label__description' ).exists(),
-	} ) );
+function headingOf( section: DOMWrapper<Element> ): string {
+	const heading = section.find( '.ext-neowiki-schema-import-dialog__heading' );
+	const label = heading.find( '.cdx-label__label__text' );
+
+	return ( label.exists() ? label : heading ).text();
+}
+
+function section( wrapper: VueWrapper, heading: string ): DOMWrapper<Element> {
+	const found = wrapper.findAll( '.ext-neowiki-schema-import-dialog__section' )
+		.find( ( candidate ) => headingOf( candidate ) === heading );
+
+	expect( found ).toBeDefined();
+	return found!;
+}
+
+function rowsOf( wrapper: VueWrapper, heading: string ): [ string, boolean ][] {
+	return section( wrapper, heading ).findAll( '.ext-neowiki-schema-import-dialog__items .cdx-checkbox' ).map( ( row ) => [
+		row.find( '.cdx-label__label__text' ).text(),
+		( row.find( 'input' ).element as HTMLInputElement ).checked,
+	] );
+}
+
+function headingCheckbox( wrapper: VueWrapper, heading: string ): DOMWrapper<HTMLInputElement> {
+	return section( wrapper, heading ).find<HTMLInputElement>( '.ext-neowiki-schema-import-dialog__heading input' );
 }
 
 function checkboxOf( wrapper: VueWrapper, name: string ): DOMWrapper<HTMLInputElement> {
@@ -97,29 +113,53 @@ describe( 'SchemaImportDialog', () => {
 		useSchemaStore().saveSchema = vi.fn().mockResolvedValue( undefined );
 	} );
 
-	it( 'checks the Schemas this wiki lacks, and leaves the ones it has unchecked', () => {
-		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', true ), item( 'Museum' ) ] );
+	it( 'lists new Schemas checked and changed ones unchecked, each under its own heading', () => {
+		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', 'changed' ), item( 'Museum' ) ] );
 
-		expect( rows( wrapper ).map( ( row ) => [ row.name, row.checked ] ) ).toEqual( [
-			[ 'Artist', true ],
-			[ 'Person', false ],
-			[ 'Museum', true ],
-		] );
+		expect( headings( wrapper ) ).toEqual( [ 'neowiki-schemas-import-new2', 'neowiki-schemas-import-changed1' ] );
+		expect( rowsOf( wrapper, 'neowiki-schemas-import-new2' ) ).toEqual( [ [ 'Artist', true ], [ 'Museum', true ] ] );
+		expect( rowsOf( wrapper, 'neowiki-schemas-import-changed1' ) ).toEqual( [ [ 'Person', false ] ] );
 	} );
 
-	it( 'marks each Schema that would replace the one this wiki has', () => {
-		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', true ), item( 'Museum' ) ] );
+	it( 'says once, under its heading, that the changed Schemas replace the existing ones', () => {
+		const wrapper = mountDialog( [ item( 'Person', 'changed' ), item( 'Place', 'changed' ) ] );
 
-		expect( rows( wrapper ).map( ( row ) => [ row.name, row.replaces ] ) ).toEqual( [
-			[ 'Artist', false ],
-			[ 'Person', true ],
-			[ 'Museum', false ],
-		] );
-		expect( wrapper.find( '.cdx-label__description' ).text() ).toBe( 'neowiki-schemas-import-replaces' );
+		expect( wrapper.findAll( '.cdx-label__description' ).map( ( description ) => description.text() ) )
+			.toEqual( [ 'neowiki-schemas-import-replaces2' ] );
+	} );
+
+	it( 'names the unchanged Schemas without offering to import them', () => {
+		const wrapper = mountDialog( [ item( 'Person', 'unchanged' ), item( 'Artist' ), item( 'Place', 'unchanged' ) ] );
+
+		expect( section( wrapper, 'neowiki-schemas-import-unchanged2' ).text() )
+			.toContain( 'neowiki-schemas-import-unchanged-namesPerson、Place' );
+		expect( section( wrapper, 'neowiki-schemas-import-unchanged2' ).find( 'input' ).exists() ).toBe( false );
+	} );
+
+	it( 'checks or unchecks every Schema of a section from its heading', async () => {
+		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', 'changed' ), item( 'Place', 'changed' ) ] );
+
+		await headingCheckbox( wrapper, 'neowiki-schemas-import-changed2' ).setValue( true );
+
+		expect( rowsOf( wrapper, 'neowiki-schemas-import-changed2' ) ).toEqual( [ [ 'Person', true ], [ 'Place', true ] ] );
+
+		await headingCheckbox( wrapper, 'neowiki-schemas-import-new1' ).setValue( false );
+
+		expect( rowsOf( wrapper, 'neowiki-schemas-import-new1' ) ).toEqual( [ [ 'Artist', false ] ] );
+		expect( rowsOf( wrapper, 'neowiki-schemas-import-changed2' ) ).toEqual( [ [ 'Person', true ], [ 'Place', true ] ] );
+	} );
+
+	it( 'shows a section with only some Schemas checked as partly checked', async () => {
+		const wrapper = mountDialog( [ item( 'Person', 'changed' ), item( 'Place', 'changed' ) ] );
+
+		await setChecked( wrapper, 'Place', true );
+
+		expect( headingCheckbox( wrapper, 'neowiki-schemas-import-changed2' ).element.indeterminate ).toBe( true );
+		expect( headingCheckbox( wrapper, 'neowiki-schemas-import-changed2' ).element.checked ).toBe( false );
 	} );
 
 	it( 'counts the checked Schemas on the import action', async () => {
-		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', true ), item( 'Museum' ) ] );
+		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', 'changed' ), item( 'Museum' ) ] );
 
 		expect( primaryAction( wrapper ).text() ).toBe( 'neowiki-schemas-import-confirm2' );
 
@@ -129,7 +169,7 @@ describe( 'SchemaImportDialog', () => {
 	} );
 
 	it( 'disables the import action while no Schema is checked', async () => {
-		const wrapper = mountDialog( [ item( 'Person', true ), item( 'Museum' ) ] );
+		const wrapper = mountDialog( [ item( 'Person', 'changed' ), item( 'Museum' ) ] );
 
 		await setChecked( wrapper, 'Museum', false );
 
@@ -141,7 +181,7 @@ describe( 'SchemaImportDialog', () => {
 	} );
 
 	it( 'saves the checked Schemas in file order, with the import edit summary', async () => {
-		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', true ), item( 'Museum' ), item( 'Place', true ) ] );
+		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', 'changed' ), item( 'Museum' ), item( 'Place', 'changed' ) ] );
 		// Checked after Museum, but before it in the file.
 		await setChecked( wrapper, 'Person', true );
 		await setChecked( wrapper, 'Artist', false );
@@ -158,7 +198,7 @@ describe( 'SchemaImportDialog', () => {
 				throw new Error( 'The page is protected' );
 			}
 		} );
-		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', true ), item( 'Museum' ), item( 'Place' ) ] );
+		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', 'changed' ), item( 'Museum' ), item( 'Place' ) ] );
 		await setChecked( wrapper, 'Person', true );
 
 		await runImport( wrapper );
@@ -172,7 +212,7 @@ describe( 'SchemaImportDialog', () => {
 
 	it( 'reports nothing as created or replaced when every save fails', async () => {
 		useSchemaStore().saveSchema = vi.fn().mockRejectedValue( new Error( 'The wiki is read-only' ) );
-		const wrapper = mountDialog( [ item( 'Person', true ), item( 'Museum' ) ] );
+		const wrapper = mountDialog( [ item( 'Person', 'changed' ), item( 'Museum' ) ] );
 		await setChecked( wrapper, 'Person', true );
 
 		await runImport( wrapper );

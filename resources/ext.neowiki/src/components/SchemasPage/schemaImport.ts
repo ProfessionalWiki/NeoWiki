@@ -1,9 +1,13 @@
 import type { Schema } from '@/domain/Schema.ts';
+import type { SchemaLookup } from '@/application/SchemaLookup.ts';
+import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
 import { normalizeSchemaName } from '@/stores/SchemaStore.ts';
+
+export type SchemaImportStatus = 'new' | 'changed' | 'unchanged';
 
 export interface SchemaImportItem {
 	readonly schema: Schema;
-	readonly replacesExisting: boolean;
+	readonly status: SchemaImportStatus;
 }
 
 interface SchemaImportFailure {
@@ -18,19 +22,50 @@ export interface SchemaImportOutcome {
 }
 
 /**
- * A Schema replaces an existing one when its name resolves to the same page title as one of the
- * existing names, or as a Schema before it in the list, which importing that one creates.
+ * A Schema is new when its name resolves to the page title of no existing Schema and of no Schema
+ * before it in the list. Otherwise it is unchanged when it equals the wiki's Schema, and changed when
+ * it differs, follows a Schema of the same title in the list, or the wiki's Schema fails to load.
  */
-export function planSchemaImport( schemas: Schema[], existingNames: string[] ): SchemaImportItem[] {
-	const existing = new Set( existingNames.map( normalizeSchemaName ) );
+export async function planSchemaImport(
+	schemas: Schema[],
+	existingNames: string[],
+	schemaLookup: Pick<SchemaLookup, 'getSchema'>,
+): Promise<SchemaImportItem[]> {
+	const existing = new Map( existingNames.map( ( name ) => [ normalizeSchemaName( name ), name ] ) );
+	const listed = new Set<string>();
 
-	return schemas.map( ( schema ) => {
+	return Promise.all( schemas.map( async ( schema ): Promise<SchemaImportItem> => {
 		const name = normalizeSchemaName( schema.getName() );
-		const replacesExisting = existing.has( name );
-		existing.add( name );
+		const listedBefore = listed.has( name );
+		listed.add( name );
 
-		return { schema, replacesExisting };
-	} );
+		if ( listedBefore ) {
+			return { schema, status: 'changed' };
+		}
+
+		const existingName = existing.get( name );
+
+		if ( existingName === undefined ) {
+			return { schema, status: 'new' };
+		}
+
+		return { schema, status: await compareWithWiki( schema, existingName, schemaLookup ) };
+	} ) );
+}
+
+async function compareWithWiki(
+	schema: Schema,
+	existingName: string,
+	schemaLookup: Pick<SchemaLookup, 'getSchema'>,
+): Promise<SchemaImportStatus> {
+	try {
+		const serializer = new SchemaSerializer();
+		const wikiSchema = await schemaLookup.getSchema( existingName );
+
+		return serializer.serializeSchema( wikiSchema ) === serializer.serializeSchema( schema ) ? 'unchanged' : 'changed';
+	} catch ( _error ) {
+		return 'changed';
+	}
 }
 
 /**
@@ -42,10 +77,10 @@ export async function importSchemas(
 ): Promise<SchemaImportOutcome> {
 	const outcome: SchemaImportOutcome = { created: [], replaced: [], failed: [] };
 
-	for ( const { schema, replacesExisting } of items ) {
+	for ( const { schema, status } of items ) {
 		try {
 			await save( schema );
-			( replacesExisting ? outcome.replaced : outcome.created ).push( schema.getName() );
+			( status === 'new' ? outcome.created : outcome.replaced ).push( schema.getName() );
 		} catch ( error ) {
 			outcome.failed.push( {
 				name: schema.getName(),

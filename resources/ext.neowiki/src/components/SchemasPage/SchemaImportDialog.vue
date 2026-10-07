@@ -11,21 +11,50 @@
 		@update:open="onUpdateOpen"
 	>
 		<template v-if="outcome === null">
-			<CdxCheckbox
-				v-for="item in items"
-				:key="item.schema.getName()"
-				v-model="checkedNames"
-				:input-value="item.schema.getName()"
-				:disabled="importing"
+			<div
+				v-for="section in selectableSections"
+				:key="section.heading"
+				class="ext-neowiki-schema-import-dialog__section"
 			>
-				{{ item.schema.getName() }}
-				<template
-					v-if="item.replacesExisting"
-					#description
+				<CdxCheckbox
+					class="ext-neowiki-schema-import-dialog__heading"
+					:model-value="section.names.every( isChecked )"
+					:indeterminate="isPartlyChecked( section.names )"
+					:disabled="importing"
+					@update:model-value="setChecked( section.names, $event )"
 				>
-					{{ $i18n( 'neowiki-schemas-import-replaces' ).text() }}
-				</template>
-			</CdxCheckbox>
+					<strong>{{ $i18n( section.heading, section.names.length ).text() }}</strong>
+					<template
+						v-if="section.description !== null"
+						#description
+					>
+						{{ $i18n( section.description, section.names.length ).text() }}
+					</template>
+				</CdxCheckbox>
+				<div class="ext-neowiki-schema-import-dialog__items">
+					<CdxCheckbox
+						v-for="name in section.names"
+						:key="name"
+						v-model="checkedNames"
+						:input-value="name"
+						:disabled="importing"
+					>
+						{{ name }}
+					</CdxCheckbox>
+				</div>
+			</div>
+
+			<div
+				v-if="unchangedNames.length > 0"
+				class="ext-neowiki-schema-import-dialog__section"
+			>
+				<p class="ext-neowiki-schema-import-dialog__heading">
+					<strong>{{ $i18n( 'neowiki-schemas-import-unchanged', unchangedNames.length ).text() }}</strong>
+				</p>
+				<p>
+					{{ $i18n( 'neowiki-schemas-import-unchanged-names', nameList( unchangedNames ) ).text() }}
+				</p>
+			</div>
 		</template>
 
 		<div
@@ -64,7 +93,8 @@ import type { DialogAction, PrimaryDialogAction } from '@wikimedia/codex';
 import {
 	importSchemas,
 	type SchemaImportItem,
-	type SchemaImportOutcome
+	type SchemaImportOutcome,
+	type SchemaImportStatus
 } from '@/components/SchemasPage/schemaImport.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
@@ -79,9 +109,18 @@ const emit = defineEmits<{
 
 const schemaStore = useSchemaStore();
 
-const checkedNames = ref<string[]>(
-	props.items.filter( ( item ) => !item.replacesExisting ).map( ( item ) => item.schema.getName() )
-);
+function namesWith( status: SchemaImportStatus ): string[] {
+	return props.items.filter( ( item ) => item.status === status ).map( ( item ) => item.schema.getName() );
+}
+
+const selectableSections = [
+	{ heading: 'neowiki-schemas-import-new', description: null, names: namesWith( 'new' ) },
+	{ heading: 'neowiki-schemas-import-changed', description: 'neowiki-schemas-import-replaces', names: namesWith( 'changed' ) }
+].filter( ( section ) => section.names.length > 0 );
+
+const unchangedNames = namesWith( 'unchanged' );
+
+const checkedNames = ref<string[]>( namesWith( 'new' ) );
 const importing = ref( false );
 const outcome = shallowRef<SchemaImportOutcome | null>( null );
 const outcomeElement = ref<HTMLElement | null>( null );
@@ -126,6 +165,19 @@ async function importCheckedSchemas(): Promise<void> {
 	outcomeElement.value?.focus();
 }
 
+function isChecked( name: string ): boolean {
+	return checkedNames.value.includes( name );
+}
+
+function isPartlyChecked( names: string[] ): boolean {
+	return names.some( isChecked ) && !names.every( isChecked );
+}
+
+function setChecked( names: string[], checked: boolean ): void {
+	const others = checkedNames.value.filter( ( name ) => !names.includes( name ) );
+	checkedNames.value = checked ? [ ...others, ...names ] : others;
+}
+
 function nameList( names: string[] ): string {
 	return names.join( mw.msg( 'comma-separator' ) );
 }
@@ -134,9 +186,19 @@ function nameList( names: string[] ): string {
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
-.ext-neowiki-schema-import-dialog__outcome {
-	display: flex;
-	flex-direction: column;
-	gap: @spacing-75;
+.ext-neowiki-schema-import-dialog {
+	&__section + &__section {
+		margin-top: @spacing-100;
+	}
+
+	&__items {
+		padding-inline-start: calc( @min-size-input-binary + @spacing-50 );
+	}
+
+	&__outcome {
+		display: flex;
+		flex-direction: column;
+		gap: @spacing-75;
+	}
 }
 </style>

@@ -1,47 +1,84 @@
 import { describe, expect, it, vi } from 'vitest';
 import { flushPromises } from '@vue/test-utils';
-import { importSchemas, planSchemaImport, type SchemaImportItem } from '@/components/SchemasPage/schemaImport.ts';
+import {
+	importSchemas,
+	planSchemaImport,
+	type SchemaImportItem,
+	type SchemaImportStatus,
+} from '@/components/SchemasPage/schemaImport.ts';
+import { InMemorySchemaLookup } from '@/application/SchemaLookup.ts';
 import type { Schema } from '@/domain/Schema.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
-function item( name: string, replacesExisting = false ): SchemaImportItem {
-	return { schema: newSchema( { title: name } ), replacesExisting };
+function item( name: string, status: SchemaImportStatus = 'new' ): SchemaImportItem {
+	return { schema: newSchema( { title: name } ), status };
+}
+
+function statuses( plan: SchemaImportItem[] ): [ string, SchemaImportStatus ][] {
+	return plan.map( ( planned ) => [ planned.schema.getName(), planned.status ] );
 }
 
 describe( 'planSchemaImport', () => {
-	it( 'marks the Schemas the wiki has as replacing them, and only those', () => {
-		const plan = planSchemaImport(
-			[ newSchema( { title: 'Artist' } ), newSchema( { title: 'Person' } ), newSchema( { title: 'Museum' } ) ],
-			[ 'Company', 'Person' ],
+	it( 'marks each Schema as new, changed or unchanged against the wiki', async () => {
+		const wiki = new InMemorySchemaLookup( [
+			newSchema( { title: 'Person', description: 'A human being' } ),
+			newSchema( { title: 'Museum', description: 'A place with art' } ),
+		] );
+
+		const plan = await planSchemaImport(
+			[
+				newSchema( { title: 'Artist', description: 'A maker of art' } ),
+				newSchema( { title: 'Person', description: 'A person' } ),
+				newSchema( { title: 'Museum', description: 'A place with art' } ),
+			],
+			[ 'Person', 'Museum' ],
+			wiki,
 		);
 
-		expect( plan.map( ( planned ) => [ planned.schema.getName(), planned.replacesExisting ] ) ).toEqual( [
-			[ 'Artist', false ],
-			[ 'Person', true ],
-			[ 'Museum', false ],
+		expect( statuses( plan ) ).toEqual( [
+			[ 'Artist', 'new' ],
+			[ 'Person', 'changed' ],
+			[ 'Museum', 'unchanged' ],
 		] );
 	} );
 
-	it( 'recognises a Schema the wiki has under another spelling of its page title', () => {
-		const plan = planSchemaImport( [ newSchema( { title: 'person_of interest' } ) ], [ 'Person of interest' ] );
+	it( 'recognises a Schema the wiki has under another spelling of its page title', async () => {
+		const wiki = new InMemorySchemaLookup( [ newSchema( { title: 'Person of interest', description: 'Old' } ) ] );
 
-		expect( plan[ 0 ].replacesExisting ).toBe( true );
-	} );
-
-	it( 'marks a Schema the file names twice, under two spellings, as replacing the first', () => {
-		const plan = planSchemaImport(
-			[ newSchema( { title: 'foo_bar' } ), newSchema( { title: 'Museum' } ), newSchema( { title: 'Foo bar' } ) ],
-			[],
+		const plan = await planSchemaImport(
+			[ newSchema( { title: 'person_of interest', description: 'New' } ) ],
+			[ 'Person of interest' ],
+			wiki,
 		);
 
-		expect( plan.map( ( planned ) => planned.replacesExisting ) ).toEqual( [ false, false, true ] );
+		expect( plan[ 0 ].status ).toBe( 'changed' );
+	} );
+
+	it( 'marks a Schema the file names twice, under two spellings, as changed the second time', async () => {
+		const plan = await planSchemaImport(
+			[ newSchema( { title: 'foo_bar' } ), newSchema( { title: 'Museum' } ), newSchema( { title: 'Foo bar' } ) ],
+			[],
+			new InMemorySchemaLookup( [] ),
+		);
+
+		expect( plan.map( ( planned ) => planned.status ) ).toEqual( [ 'new', 'new', 'changed' ] );
+	} );
+
+	it( 'marks a Schema as changed when the wiki\'s version fails to load', async () => {
+		const plan = await planSchemaImport(
+			[ newSchema( { title: 'Person' } ) ],
+			[ 'Person' ],
+			new InMemorySchemaLookup( [] ),
+		);
+
+		expect( plan[ 0 ].status ).toBe( 'changed' );
 	} );
 } );
 
 describe( 'importSchemas', () => {
 	it( 'reports the Schemas it saved as created or replaced', async () => {
 		const outcome = await importSchemas(
-			[ item( 'Artist' ), item( 'Person', true ), item( 'Museum' ) ],
+			[ item( 'Artist' ), item( 'Person', 'changed' ), item( 'Museum' ) ],
 			vi.fn().mockResolvedValue( undefined ),
 		);
 
@@ -54,7 +91,7 @@ describe( 'importSchemas', () => {
 			.mockRejectedValueOnce( new Error( 'The page is protected' ) )
 			.mockResolvedValueOnce( undefined );
 
-		const outcome = await importSchemas( [ item( 'Artist' ), item( 'Person', true ), item( 'Museum' ) ], save );
+		const outcome = await importSchemas( [ item( 'Artist' ), item( 'Person', 'changed' ), item( 'Museum' ) ], save );
 
 		expect( outcome ).toEqual( {
 			created: [ 'Artist', 'Museum' ],
