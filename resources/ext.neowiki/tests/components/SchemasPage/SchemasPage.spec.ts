@@ -1,5 +1,5 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
@@ -14,7 +14,7 @@ import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { newSchema } from '@/TestHelpers.ts';
-import type { SchemaSummaryPage } from '@/application/SchemaLookup.ts';
+import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 
 // Each right reaches its ref only through its check, so a page that skips a check offers nothing
 // however the fixture is set.
@@ -56,8 +56,8 @@ vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 
 const getSchemaMock = vi.fn();
 const saveSchemaMock = vi.fn();
-let getSchemaSummaries: ReturnType<typeof vi.fn>;
 let pinia: ReturnType<typeof createPinia>;
+let schemaStore: ReturnType<typeof useSchemaStore>;
 
 // The store saves through the extension's repository.
 vi.mock( '@/NeoWikiExtension.ts', () => ( {
@@ -68,17 +68,11 @@ vi.mock( '@/NeoWikiExtension.ts', () => ( {
 	},
 } ) );
 
-// Each card asks for its Subjects when it mounts, so the names mounted say which cards asked.
-let mountedCardNames: string[] = [];
-
 const SchemaCardStub = {
 	name: 'SchemaCard',
 	template: '<div class="schema-card-stub"></div>',
 	props: [ 'summary', 'canEdit', 'canDelete', 'canCreateSubject', 'subjectListAvailable' ],
 	emits: [ 'edit', 'delete', 'create-subject' ],
-	mounted( this: { summary: { name: string } } ): void {
-		mountedCardNames.push( this.summary.name );
-	},
 };
 
 const SchemaCreatorDialogStub = {
@@ -99,8 +93,12 @@ const SchemaEditorDialogStub = {
 	emits: [ 'update:open', 'saved' ],
 };
 
-function page( names: string[], nextCursor: string | null = null ): SchemaSummaryPage {
-	return { schemas: names.map( ( name ) => ( { name, description: '', propertyCount: 1 } ) ), nextCursor };
+function summaries( names: string[] ): SchemaSummary[] {
+	return names.map( ( name ) => ( { name, description: '', propertyCount: 1 } ) );
+}
+
+function listSchemas( names: string[] ): void {
+	schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( summaries( names ) );
 }
 
 function mountPage( subjectListAvailable = true ): VueWrapper {
@@ -114,7 +112,7 @@ function mountPage( subjectListAvailable = true ): VueWrapper {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
 			provide: {
-				[ Service.SchemaRepository ]: { getSchema: getSchemaMock, getSchemaSummaries },
+				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
 			},
 			stubs: {
 				SchemaCard: SchemaCardStub,
@@ -136,10 +134,6 @@ function cardNames( wrapper: VueWrapper ): string[] {
 	return cards( wrapper ).map( ( card ) => card.props( 'summary' ).name );
 }
 
-function findShowMore( wrapper: VueWrapper ): ReturnType<VueWrapper['find']> {
-	return wrapper.find( '.ext-neowiki-schemas-page__more' );
-}
-
 async function askToDelete( wrapper: VueWrapper, cardIndex: number ): Promise<void> {
 	cards( wrapper )[ cardIndex ].vm.$emit( 'delete' );
 	await flushPromises();
@@ -150,16 +144,13 @@ async function confirmDeleted( wrapper: VueWrapper, pageTitle: string ): Promise
 	await flushPromises();
 }
 
-async function searchFor( wrapper: VueWrapper, text: string ): Promise<void> {
+async function find( wrapper: VueWrapper, text: string ): Promise<void> {
 	await wrapper.find( 'input[type="search"]' ).setValue( text );
-	vi.advanceTimersByTime( 300 );
-	await flushPromises();
 }
 
 describe( 'SchemasPage', () => {
 
 	beforeEach( () => {
-		vi.useFakeTimers();
 		mayCreateSchemas = false;
 		mayEditSchemas = false;
 		mayDeleteSchemas = false;
@@ -170,28 +161,19 @@ describe( 'SchemasPage', () => {
 		canCreateSubjectPageRef.value = false;
 		getSchemaMock.mockReset();
 		saveSchemaMock.mockReset().mockResolvedValue( undefined );
-		getSchemaSummaries = vi.fn().mockResolvedValue( page( [ 'Artist', 'Artwork', 'City' ] ) );
 		pinia = createPinia();
 		setActivePinia( pinia );
-		mountedCardNames = [];
+		schemaStore = useSchemaStore();
+		listSchemas( [ 'Artist', 'Artwork', 'City' ] );
 	} );
 
-	afterEach( () => {
-		vi.useRealTimers();
-	} );
-
-	it( 'asks for the first twelve Schemas', async () => {
-		mountPage();
-		await flushPromises();
-
-		expect( getSchemaSummaries ).toHaveBeenCalledWith( '', null, 12 );
-	} );
-
-	it( 'shows a card for each Schema', async () => {
+	it( 'shows a card for every Schema', async () => {
+		const names = [ 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M' ];
+		listSchemas( names );
 		const wrapper = mountPage();
 		await flushPromises();
 
-		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'Artwork', 'City' ] );
+		expect( cardNames( wrapper ) ).toEqual( names );
 	} );
 
 	it( 'tells the cards whether the wiki can list Subjects', async () => {
@@ -201,80 +183,53 @@ describe( 'SchemasPage', () => {
 		expect( cards( wrapper )[ 0 ].props( 'subjectListAvailable' ) ).toBe( false );
 	} );
 
-	it( 'adds the next Schemas below the ones shown', async () => {
-		getSchemaSummaries
-			.mockResolvedValueOnce( page( [ 'Artist', 'Artwork' ], 'after-artwork' ) )
-			.mockResolvedValueOnce( page( [ 'City' ] ) );
+	it( 'keeps the Schemas whose name contains the find text in any case', async () => {
+		listSchemas( [ 'Artist', 'Artwork', 'City', 'Department' ] );
 		const wrapper = mountPage();
 		await flushPromises();
 
-		await findShowMore( wrapper ).trigger( 'click' );
-		await flushPromises();
+		await find( wrapper, 'ART' );
 
-		expect( getSchemaSummaries ).toHaveBeenLastCalledWith( '', 'after-artwork', 12 );
-		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'Artwork', 'City' ] );
+		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'Artwork', 'Department' ] );
 	} );
 
-	it( 'offers no more Schemas once the listing ends', async () => {
+	it( 'ignores spaces around the find text', async () => {
 		const wrapper = mountPage();
 		await flushPromises();
 
-		expect( findShowMore( wrapper ).exists() ).toBe( false );
+		await find( wrapper, ' City ' );
+
+		expect( cardNames( wrapper ) ).toEqual( [ 'City' ] );
 	} );
 
-	it( 'shows the Schemas that contain the search once typing stops', async () => {
+	it( 'finds among the Schemas it has without asking the wiki again', async () => {
 		const wrapper = mountPage();
 		await flushPromises();
-		getSchemaSummaries.mockResolvedValue( page( [ 'Artist', 'Artwork' ] ) );
 
-		await wrapper.find( 'input[type="search"]' ).setValue( 'ar' );
-		vi.advanceTimersByTime( 299 );
-		await flushPromises();
-		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 1 );
+		await find( wrapper, 'art' );
 
-		await searchFor( wrapper, ' art ' );
-
-		expect( getSchemaSummaries ).toHaveBeenLastCalledWith( 'art', null, 12 );
-		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'Artwork' ] );
+		expect( schemaStore.fetchAllSchemaSummaries ).toHaveBeenCalledTimes( 1 );
 	} );
 
-	it( 'keeps the cards a search still shows instead of mounting them again', async () => {
+	it( 'says when no Schema matches the find text', async () => {
 		const wrapper = mountPage();
 		await flushPromises();
-		getSchemaSummaries.mockResolvedValue( page( [ 'Artist', 'Artwork' ] ) );
-		mountedCardNames = [];
 
-		await searchFor( wrapper, 'art' );
+		await find( wrapper, ' zzq ' );
 
-		expect( mountedCardNames ).toEqual( [] );
+		expect( wrapper.text() ).toContain( 'neowiki-schemas-no-matchzzq' );
 	} );
 
-	it( 'says nothing about an empty listing when the search failed', async () => {
+	it( 'says when the wiki has no Schemas', async () => {
+		listSchemas( [] );
 		const wrapper = mountPage();
 		await flushPromises();
-		getSchemaSummaries.mockRejectedValue( new Error( 'Error fetching schema summaries' ) );
 
-		await searchFor( wrapper, 'zz' );
-
-		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-no-match' );
-		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-empty' );
-	} );
-
-	it( 'says nothing about an empty listing while more Schemas can be shown', async () => {
-		mayDeleteSchemas = true;
-		getSchemaSummaries.mockResolvedValue( page( [ 'Artist' ], 'more' ) );
-		const wrapper = mountPage();
-		await flushPromises();
-		await askToDelete( wrapper, 0 );
-
-		await confirmDeleted( wrapper, 'Schema:Artist' );
-
-		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-empty' );
-		expect( findShowMore( wrapper ).exists() ).toBe( true );
+		expect( wrapper.text() ).toContain( 'neowiki-schemas-empty' );
 	} );
 
 	it( 'says nothing about an empty listing while the Schemas load', async () => {
-		getSchemaSummaries.mockReturnValue( new Promise( () => {
+		schemaStore.fetchAllSchemaSummaries = vi.fn().mockReturnValue( new Promise( () => {
 			// Never lands.
 		} ) );
 		const wrapper = mountPage();
@@ -283,75 +238,8 @@ describe( 'SchemasPage', () => {
 		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-empty' );
 	} );
 
-	it( 'asks once when typing pauses for less than the delay', async () => {
-		const wrapper = mountPage();
-		await flushPromises();
-		getSchemaSummaries.mockClear();
-
-		await wrapper.find( 'input[type="search"]' ).setValue( 'ar' );
-		vi.advanceTimersByTime( 200 );
-		await wrapper.find( 'input[type="search"]' ).setValue( 'art' );
-		vi.advanceTimersByTime( 300 );
-		await flushPromises();
-
-		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 1 );
-	} );
-
-	it( 'drops more Schemas that arrive after a newer search', async () => {
-		let answerShowMore: ( value: SchemaSummaryPage ) => void = () => undefined;
-		getSchemaSummaries
-			.mockResolvedValueOnce( page( [ 'Artist', 'Artwork' ], 'after-artwork' ) )
-			.mockReturnValueOnce( new Promise( ( resolve ) => {
-				answerShowMore = resolve;
-			} ) )
-			.mockResolvedValueOnce( page( [ 'City' ] ) );
-		const wrapper = mountPage();
-		await flushPromises();
-		await findShowMore( wrapper ).trigger( 'click' );
-
-		await searchFor( wrapper, 'ci' );
-		answerShowMore( page( [ 'Bridge' ] ) );
-		await flushPromises();
-
-		expect( cardNames( wrapper ) ).toEqual( [ 'City' ] );
-	} );
-
-	it( 'shows the cards of the newest search when an older one answers last', async () => {
-		let answerFirst: ( value: SchemaSummaryPage ) => void = () => undefined;
-		getSchemaSummaries
-			.mockReturnValueOnce( new Promise( ( resolve ) => {
-				answerFirst = resolve;
-			} ) )
-			.mockResolvedValueOnce( page( [ 'City' ] ) );
-		const wrapper = mountPage();
-
-		await searchFor( wrapper, 'ci' );
-		answerFirst( page( [ 'Artist' ] ) );
-		await flushPromises();
-
-		expect( cardNames( wrapper ) ).toEqual( [ 'City' ] );
-	} );
-
-	it( 'says when no Schema matches the search', async () => {
-		const wrapper = mountPage();
-		await flushPromises();
-		getSchemaSummaries.mockResolvedValue( page( [] ) );
-
-		await searchFor( wrapper, 'zz' );
-
-		expect( wrapper.text() ).toContain( 'neowiki-schemas-no-matchzz' );
-	} );
-
-	it( 'says when the wiki has no Schemas', async () => {
-		getSchemaSummaries.mockResolvedValue( page( [] ) );
-		const wrapper = mountPage();
-		await flushPromises();
-
-		expect( wrapper.text() ).toContain( 'neowiki-schemas-empty' );
-	} );
-
 	it( 'reports Schemas that could not be loaded', async () => {
-		getSchemaSummaries.mockRejectedValue( new Error( 'Error fetching schema summaries' ) );
+		schemaStore.fetchAllSchemaSummaries = vi.fn().mockRejectedValue( new Error( 'Error fetching schema summaries' ) );
 		const wrapper = mountPage();
 		await flushPromises();
 
@@ -377,16 +265,37 @@ describe( 'SchemasPage', () => {
 		expect( wrapper.findComponent( SchemaCreatorDialog ).exists() ).toBe( false );
 	} );
 
-	it( 'lists the Schemas again after one is created', async () => {
+	it( 'shows the card of a created Schema whatever the find text was', async () => {
 		mayCreateSchemas = true;
 		const wrapper = mountPage();
 		await flushPromises();
-		getSchemaSummaries.mockResolvedValue( page( [ 'Artist', 'Artwork', 'Bridge', 'City' ] ) );
+		await find( wrapper, 'art' );
+		listSchemas( [ 'Artist', 'Artwork', 'Bridge', 'City' ] );
 
 		wrapper.findComponent( SchemaCreatorDialog ).vm.$emit( 'created' );
 		await flushPromises();
 
 		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'Artwork', 'Bridge', 'City' ] );
+		expect( wrapper.find<HTMLInputElement>( 'input[type="search"]' ).element.value ).toBe( '' );
+	} );
+
+	it( 'keeps the Schemas listed after a create when the first listing arrives later', async () => {
+		mayCreateSchemas = true;
+		let answerFirstListing: ( listing: SchemaSummary[] ) => void = () => undefined;
+		schemaStore.fetchAllSchemaSummaries = vi.fn()
+			.mockReturnValueOnce( new Promise( ( resolve ) => {
+				answerFirstListing = resolve;
+			} ) )
+			.mockResolvedValueOnce( summaries( [ 'Artist', 'Bridge' ] ) );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		wrapper.findComponent( SchemaCreatorDialog ).vm.$emit( 'created' );
+		await flushPromises();
+		answerFirstListing( summaries( [ 'Artist' ] ) );
+		await flushPromises();
+
+		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'Bridge' ] );
 	} );
 
 	it( 'lets the cards offer editing to a user who may edit Schemas', async () => {

@@ -11,7 +11,6 @@ use MediaWiki\Title\TitleValue;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use Wikimedia\ParamValidator\ParamValidator;
 
 class GetSchemaSummariesApi extends SimpleHandler {
 
@@ -24,10 +23,7 @@ class GetSchemaSummariesApi extends SimpleHandler {
 		$schemaLookup = $extension->getSchemaLookup();
 
 		$page = $this->buildPage(
-			$extension->getSchemaNameLookup()->getReadableSchemaNames(
-				$params['search'],
-				$this->nameFromCursor( $params['cursor'] )
-			),
+			$extension->getSchemaNameLookup()->getReadableSchemaNames( $this->pageIdFromCursor( $params['cursor'] ) ),
 			$params['limit'],
 			function ( TitleValue $title ) use ( $schemaLookup ): ?array {
 				$schema = $schemaLookup->getSchema( new SchemaName( $title->getText() ) );
@@ -37,7 +33,7 @@ class GetSchemaSummariesApi extends SimpleHandler {
 
 		$result = [
 			'schemas' => $page['items'],
-			'nextCursor' => $page['nextCursor'] === null ? null : $this->cursorForName( $page['nextCursor'] ),
+			'nextCursor' => $page['nextCursor'],
 		];
 
 		$response = $this->getResponseFactory()->create();
@@ -48,16 +44,7 @@ class GetSchemaSummariesApi extends SimpleHandler {
 	}
 
 	public function getParamSettings(): array {
-		return [
-			'search' => [
-				self::PARAM_SOURCE => 'query',
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => false,
-				ParamValidator::PARAM_DEFAULT => '',
-				self::PARAM_DESCRIPTION => 'Keeps the Schemas whose name contains it, in any case.',
-			],
-			...$this->paginationParamSettings(),
-		];
+		return $this->paginationParamSettings();
 	}
 
 	/**

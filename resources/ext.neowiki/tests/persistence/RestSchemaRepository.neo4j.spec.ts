@@ -69,34 +69,6 @@ describe( 'RestSchemaRepository', () => {
 
 	} );
 
-	describe( 'getSchemaSummaries', () => {
-
-		const PAGE = { schemas: [ { name: 'Artist', description: '', propertyCount: 2 } ], nextCursor: 'next' };
-
-		function repositoryAnswering( url: string ): RestSchemaRepository {
-			return new RestSchemaRepository(
-				'https://example.com/rest.php',
-				new InMemoryHttpClient( { [ url ]: new Response( JSON.stringify( PAGE ), { status: 200 } ) } ),
-				new SchemaSerializer(),
-				new SchemaDeserializer(),
-				new SucceedingPageSaver(),
-			);
-		}
-
-		it( 'asks for the first page of the Schemas whose name contains the search', async () => {
-			const repository = repositoryAnswering( 'https://example.com/rest.php/neowiki/v0/schemas?limit=12&search=art+gal' );
-
-			expect( await repository.getSchemaSummaries( 'art gal', null, 12 ) ).toEqual( PAGE );
-		} );
-
-		it( 'asks for the page after the cursor', async () => {
-			const repository = repositoryAnswering( 'https://example.com/rest.php/neowiki/v0/schemas?limit=12&cursor=abc%2B%3D' );
-
-			expect( await repository.getSchemaSummaries( '', 'abc+=', 12 ) ).toEqual( PAGE );
-		} );
-
-	} );
-
 	describe( 'saveSchema', () => {
 		let repository: RestSchemaRepository;
 		let mockHttpClient: HttpClient;

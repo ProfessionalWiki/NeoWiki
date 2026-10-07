@@ -154,7 +154,6 @@
 	"neowiki-schemas-empty": "Message shown when no schemas exist yet on [[Special:Schemas]] and on [[Special:NeoWiki]].",
 	"neowiki-schemas-find": "Placeholder and accessible name of the field on [[Special:Schemas]] that finds schemas by any part of their name.",
 	"neowiki-schemas-no-match": "Shown on [[Special:Schemas]] when no schema name contains the text in the find field.\n\nParameters:\n* $1 - the text in the find field",
-	"neowiki-schemas-show-more": "Button below the schema cards on [[Special:Schemas]] that loads the next schemas.",
 	"neowiki-schema-sidebar-all-schemas": "Label for the link in the NeoWiki section of the sidebar on Schema pages that navigates to [[Special:Schemas]].",
 	"neowiki-sidebar-create-subject": "Label for the link in the NeoWiki section of the sidebar that navigates to [[Special:CreateSubject]], where a Subject is created together with a page of its own by default, or added to a page picked there. Shown only where {{msg-mw|neowiki-page-tools-create-subject}} is not, so a page carries one Create subject entry rather than two; the two read the same.",
 	"neowiki-schema-create-subject": "Label of the button that opens the 'create subject' dialog with a Schema chosen. Used on the Schema's own page, on each Schema card on [[Special:Schemas]], in each row of the Schema table on [[Special:NeoWiki]], and where {{#create_subject}} names a Schema.\nParameters:\n* $1 - the Schema name",

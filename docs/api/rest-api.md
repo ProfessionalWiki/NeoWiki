@@ -66,7 +66,7 @@ A Schema defines a Subject type and its properties. For the body shape, see
 
 | Endpoint | Description |
 |---|---|
-| `GET /neowiki/v0/schemas` | List Schemas by name. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. Query: `search` (case-insensitive substring of the name). |
+| `GET /neowiki/v0/schemas` | List Schemas. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. |
 | `GET /neowiki/v0/schema/{schemaName}` | Fetch a Schema by name. |
 | `GET /neowiki/v0/schema/{schemaName}/json-schema` | Fetch a Schema as a [JSON Schema](json-schema.md) document describing its Subjects. |
 | `GET /neowiki/v0/schema-names/{search}` | Find Schema names by prefix. |
@@ -145,7 +145,7 @@ The Schema, Layout, Mapping, and Subject list endpoints paginate with an opaque 
 (1–50, default 10); the response carries the items and a `nextCursor`:
 
 ```json
-{ "schemas": [ ... ], "nextCursor": "IkFydHdvcmsi" }
+{ "schemas": [ ... ], "nextCursor": "1462" }
 ```
 
 Pass that value back as `cursor` to fetch the next page; `null` marks the last page or, on a Subject list, an [early

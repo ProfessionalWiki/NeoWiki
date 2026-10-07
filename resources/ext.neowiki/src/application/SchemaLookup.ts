@@ -15,8 +15,7 @@ export interface SchemaLookup {
 
 	getSchema( schemaName: SchemaName ): Promise<Schema>;
 	getSchemaNames( search: string ): Promise<string[]>;
-	/** By name. `search` keeps the Schemas whose name contains it in any case; empty keeps all. */
-	getSchemaSummaries( search: string, cursor: string | null, limit: number ): Promise<SchemaSummaryPage>;
+	getSchemaSummaries( cursor: string | null, limit: number ): Promise<SchemaSummaryPage>;
 
 }
 
@@ -44,15 +43,12 @@ export class InMemorySchemaLookup implements SchemaLookup {
 		return [ ...this.schemaNames ];
 	}
 
-	public async getSchemaSummaries( search: string, cursor: string | null, limit: number ): Promise<SchemaSummaryPage> {
-		const summaries = [ ...this.schemas.values() ]
-			.filter( ( schema ) => schema.getName().toLowerCase().includes( search.toLowerCase() ) )
-			.sort( ( a, b ) => a.getName() < b.getName() ? -1 : 1 )
-			.map( ( schema ) => ( {
-				name: schema.getName(),
-				description: schema.getDescription(),
-				propertyCount: [ ...schema.getPropertyDefinitions() ].length,
-			} ) );
+	public async getSchemaSummaries( cursor: string | null, limit: number ): Promise<SchemaSummaryPage> {
+		const summaries = [ ...this.schemas.values() ].map( ( schema ) => ( {
+			name: schema.getName(),
+			description: schema.getDescription(),
+			propertyCount: [ ...schema.getPropertyDefinitions() ].length,
+		} ) );
 
 		// The cursor is opaque to callers; this fake encodes the next start index in it.
 		const start = cursor === null ? 0 : parseInt( cursor, 10 );

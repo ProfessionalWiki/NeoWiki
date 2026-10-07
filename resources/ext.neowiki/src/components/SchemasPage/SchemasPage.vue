@@ -2,7 +2,7 @@
 	<div class="ext-neowiki-schemas-page">
 		<div class="ext-neowiki-schemas-page__toolbar">
 			<CdxSearchInput
-				v-model="searchText"
+				v-model="findText"
 				class="ext-neowiki-schemas-page__find"
 				:placeholder="$i18n( 'neowiki-schemas-find' ).text()"
 				:aria-label="$i18n( 'neowiki-schemas-find' ).text()"
@@ -18,11 +18,11 @@
 		</div>
 
 		<div
-			v-if="schemas.length > 0"
+			v-if="foundSchemas.length > 0"
 			class="ext-neowiki-schemas-page__grid"
 		>
 			<SchemaCard
-				v-for="summary in schemas"
+				v-for="summary in foundSchemas"
 				:key="summary.name"
 				:summary="summary"
 				:can-edit="canEditSchema"
@@ -35,26 +35,17 @@
 			/>
 		</div>
 		<p
-			v-else-if="listingIsEmpty"
+			v-else-if="listState === 'loaded'"
 			class="ext-neowiki-schemas-page__empty"
 		>
 			{{ emptyText }}
 		</p>
 
-		<CdxButton
-			v-if="nextCursor !== null"
-			class="ext-neowiki-schemas-page__more"
-			:disabled="loading"
-			@click="load( nextCursor )"
-		>
-			{{ $i18n( 'neowiki-schemas-show-more' ).text() }}
-		</CdxButton>
-
 		<SchemaCreatorDialog
 			v-if="canCreateSchemas"
 			:open="isCreatorOpen"
 			@update:open="isCreatorOpen = $event"
-			@created="listFromStart"
+			@created="onSchemaCreated"
 		/>
 
 		<SchemaEditorDialog
@@ -84,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onScopeDispose, ref, shallowRef, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, shallowRef } from 'vue';
 import { CdxButton, CdxIcon, CdxSearchInput } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
@@ -101,10 +92,7 @@ import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue
 import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 
-// Fills rows of three, two or one card.
-const SCHEMAS_PER_LOAD = 12;
 const SCHEMA_PREFIX = 'Schema:';
-const SEARCH_DELAY_MS = 300;
 
 const {
 	canEditSchema,
@@ -121,13 +109,10 @@ const schemaRepo = NeoWikiServices.getSchemaRepository();
 const subjectListAvailable = isSubjectListAvailable();
 
 const schemas = ref<SchemaSummary[]>( [] );
-const nextCursor = ref<string | null>( null );
-const loading = ref( true );
-const loadFailed = ref( false );
-const searchText = ref( '' );
-const appliedSearch = ref( '' );
-let searchTimer: ReturnType<typeof setTimeout> | null = null;
-let requestSequence = 0;
+const listState = ref<'loading' | 'loaded' | 'failed'>( 'loading' );
+const findText = ref( '' );
+// Numbers the listings asked for, so one answered after a later one cannot replace its newer list.
+let listingSequence = 0;
 
 const isCreatorOpen = ref( false );
 const isEditorOpen = ref( false );
@@ -137,65 +122,43 @@ const deletingSchemaName = ref( '' );
 // The Schema the Subject creator opens on, which the clicked card decides.
 const pinnedSchema = ref<string | undefined>( undefined );
 
-const listingIsEmpty = computed( () => !loading.value && !loadFailed.value && nextCursor.value === null );
-
-const emptyText = computed( () => appliedSearch.value === '' ?
-	mw.msg( 'neowiki-schemas-empty' ) :
-	mw.msg( 'neowiki-schemas-no-match', appliedSearch.value ) );
-
-async function load( cursor: string | null ): Promise<void> {
-	const sequence = ++requestSequence;
-	loading.value = true;
-
-	try {
-		const page = await schemaRepo.getSchemaSummaries( appliedSearch.value, cursor, SCHEMAS_PER_LOAD );
-
-		if ( sequence !== requestSequence ) {
-			return;
-		}
-
-		// Replacing the list without clearing it first keeps the cards of Schemas still listed mounted.
-		schemas.value = cursor === null ? page.schemas : [ ...schemas.value, ...page.schemas ];
-		nextCursor.value = page.nextCursor;
-		loadFailed.value = false;
-	} catch ( error ) {
-		if ( sequence !== requestSequence ) {
-			return;
-		}
-
-		if ( cursor === null ) {
-			schemas.value = [];
-			nextCursor.value = null;
-		}
-
-		loadFailed.value = true;
-		mw.notify( error instanceof Error ? error.message : String( error ), { type: 'error' } );
-	}
-
-	loading.value = false;
-}
-
-function listFromStart(): void {
-	load( null );
-}
-
-function clearSearchTimer(): void {
-	if ( searchTimer !== null ) {
-		clearTimeout( searchTimer );
-		searchTimer = null;
-	}
-}
-
-watch( searchText, ( text ) => {
-	clearSearchTimer();
-	searchTimer = setTimeout( () => {
-		appliedSearch.value = text.trim();
-	}, SEARCH_DELAY_MS );
+// The Schema picker's rule: any part of the name, in any case.
+const foundSchemas = computed( () => {
+	const query = findText.value.trim().toLowerCase();
+	return schemas.value.filter( ( summary ) => summary.name.toLowerCase().includes( query ) );
 } );
 
-watch( appliedSearch, listFromStart );
+const emptyText = computed( () => schemas.value.length === 0 ?
+	mw.msg( 'neowiki-schemas-empty' ) :
+	mw.msg( 'neowiki-schemas-no-match', findText.value.trim() ) );
 
-onScopeDispose( clearSearchTimer );
+async function loadSchemas(): Promise<void> {
+	const sequence = ++listingSequence;
+
+	try {
+		const listing = await schemaStore.fetchAllSchemaSummaries();
+
+		if ( sequence !== listingSequence ) {
+			return;
+		}
+
+		schemas.value = listing;
+		listState.value = 'loaded';
+	} catch ( error ) {
+		if ( sequence !== listingSequence ) {
+			return;
+		}
+
+		listState.value = 'failed';
+		mw.notify( error instanceof Error ? error.message : String( error ), { type: 'error' } );
+	}
+}
+
+// A find text the new Schema's name does not contain would hide its card.
+function onSchemaCreated(): void {
+	findText.value = '';
+	loadSchemas();
+}
 
 // Vue patches the new pin onto the dialog before the dialog's pre-flush watcher on the open flag
 // reads it, so the creator opens on this card's Schema rather than the one clicked before it.
@@ -249,7 +212,7 @@ onMounted( () => {
 	checkCreatePermission();
 	checkEditPermission( '' );
 	checkDeletePermission( '' );
-	listFromStart();
+	loadSchemas();
 } );
 </script>
 
@@ -284,11 +247,6 @@ onMounted( () => {
 
 	&__empty {
 		color: @color-subtle;
-	}
-
-	// Scoped under the page for the same reason as the Create button.
-	& &__more {
-		margin-top: @spacing-125;
 	}
 }
 </style>

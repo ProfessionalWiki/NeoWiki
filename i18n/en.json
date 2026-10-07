@@ -280,7 +280,6 @@
 	"neowiki-schemas-empty": "No schemas have been created yet.",
 	"neowiki-schemas-find": "Find a schema",
 	"neowiki-schemas-no-match": "No schemas match “$1”.",
-	"neowiki-schemas-show-more": "Show more schemas",
 	"neowiki-schema-sidebar-all-schemas": "All schemas",
 	"neowiki-sidebar-create-subject": "Create subject",
 	"neowiki-schema-create-subject": "Create $1",
