@@ -1,5 +1,5 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
@@ -75,7 +75,10 @@ vi.mock( '@/NeoWikiExtension.ts', () => ( {
 const SchemaCardStub = {
 	name: 'SchemaCard',
 	template: '<div class="schema-card-stub"></div>',
-	props: [ 'summary', 'canEdit', 'canDelete', 'canCreateSubject', 'subjectListAvailable', 'subjectPreviews', 'subjectCount' ],
+	props: [
+		'summary', 'canEdit', 'canDelete', 'canCreateSubject', 'subjectListAvailable', 'subjectPreviews', 'subjectCount',
+		'subjectCountPending',
+	],
 	emits: [ 'edit', 'delete', 'create-subject' ],
 };
 
@@ -99,6 +102,12 @@ const SchemaEditorDialogStub = {
 
 function summaries( names: string[] ): SchemaSummary[] {
 	return names.map( ( name ) => ( { name, description: '', propertyCount: 1 } ) );
+}
+
+function neverLands(): Mock<() => Promise<never>> {
+	return vi.fn( () => new Promise<never>( () => {
+		// Never lands.
+	} ) );
 }
 
 function listSchemas( names: string[] ): void {
@@ -219,6 +228,7 @@ describe( 'SchemasPage', () => {
 		await flushPromises();
 
 		expect( cards( wrapper )[ 0 ].props( 'subjectCount' ) ).toBeNull();
+		expect( cards( wrapper )[ 0 ].props( 'subjectCountPending' ) ).toBe( false );
 		expect( absentCounts.getSubjectCounts ).not.toHaveBeenCalled();
 	} );
 
@@ -229,6 +239,31 @@ describe( 'SchemasPage', () => {
 		await flushPromises();
 
 		expect( cards( wrapper ).map( ( card ) => card.props( 'subjectCount' ) ) ).toEqual( [ null, null, null ] );
+		expect( cards( wrapper )[ 0 ].props( 'subjectCountPending' ) ).toBe( false );
+	} );
+
+	it( 'shows the cards before the counts arrive, telling them the counts are on the way', async () => {
+		const wrapper = mountPage( { subjectCountLookup: { getSubjectCounts: neverLands() } } );
+		await flushPromises();
+
+		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'Artwork', 'City' ] );
+		expect( cards( wrapper )[ 0 ].props( 'subjectCountPending' ) ).toBe( true );
+	} );
+
+	it( 'asks for the newest Subjects of a card in view before the counts arrive', async () => {
+		const scroll = stubIntersectionObserver();
+		const getSubjectSummaries = vi.fn().mockResolvedValue( { subjects: [], nextCursor: null } );
+		const wrapper = mountPage( {
+			realCards: true,
+			subjectSummaryLookup: { getSubjectSummaries },
+			subjectCountLookup: { getSubjectCounts: neverLands() },
+		} );
+		await flushPromises();
+
+		scroll.setInView( cards( wrapper )[ 0 ].element, true );
+		await flushPromises();
+
+		expect( getSubjectSummaries ).toHaveBeenCalledOnce();
 	} );
 
 	it( 'keeps the Schemas whose name contains the find text in any case', async () => {

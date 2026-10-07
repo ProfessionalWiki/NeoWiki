@@ -85,11 +85,16 @@
 			v-if="subjectListAvailable || canCreateSubject"
 			class="ext-neowiki-schema-card__footer"
 		>
+			<span
+				v-if="subjectListAvailable && subjectCountPending"
+				class="ext-neowiki-schema-card__subject-count"
+			/>
 			<a
-				v-if="subjectListAvailable"
+				v-else-if="subjectListAvailable"
+				class="ext-neowiki-schema-card__subject-count"
 				:href="subjectListUrl"
 				:aria-describedby="headingId"
-			>{{ subjectListLinkText }}</a>
+			>{{ subjectListLinkText( subjectCount ) }}</a>
 			<CdxButton
 				v-if="canCreateSubject"
 				class="ext-neowiki-schema-card__create"
@@ -109,6 +114,7 @@ import { computed, ref, watch } from 'vue';
 import { CdxButton, CdxIcon, useGeneratedId, useIntersectionObserver } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import SubjectSummaryCell from '@/components/SubjectsTable/SubjectSummaryCell.vue';
+import { subjectListLinkText } from '@/composables/useSubjectCounts.ts';
 import { SUBJECT_PREVIEW_SIZE, type SubjectPreview, SubjectPreviews } from './SubjectPreviews.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 
@@ -120,8 +126,10 @@ const props = defineProps<{
 	/** False on a wiki without the Graph Store the Subject list reads. */
 	subjectListAvailable: boolean;
 	subjectPreviews: SubjectPreviews;
-	/** Null where the reader sees no counts. */
+	/** Null while the count is not known. */
 	subjectCount: number | null;
+	/** True while the counts are on their way. */
+	subjectCountPending: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -154,9 +162,6 @@ const subjectsNote = computed( () => {
 
 const schemaUrl = computed( () => mw.util.getUrl( `Schema:${ props.summary.name }` ) );
 const subjectListUrl = computed( () => mw.util.getUrl( `Special:Subjects/${ props.summary.name }` ) );
-const subjectListLinkText = computed( () => props.subjectCount === null ?
-	mw.msg( 'neowiki-subjects-view-all' ) :
-	mw.msg( 'neowiki-schema-subject-count', mw.language.convertNumber( props.subjectCount ) ) );
 
 // As many rows as the Schema has Subjects to show, so the card keeps its height as they arrive.
 const pendingRows = computed( () => Math.min( props.subjectCount ?? SUBJECT_PREVIEW_SIZE, SUBJECT_PREVIEW_SIZE ) );

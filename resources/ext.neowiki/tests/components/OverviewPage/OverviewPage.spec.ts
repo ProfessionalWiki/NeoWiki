@@ -107,6 +107,10 @@ describe( 'OverviewPage', () => {
 		listSchemas( [ PERSON, PAINTING, MUSEUM ] );
 	} );
 
+	afterEach( () => {
+		vi.restoreAllMocks();
+	} );
+
 	it( 'lists every schema with its description and a link to its page', async () => {
 		const wrapper = mountPage();
 		await flushPromises();
@@ -121,6 +125,28 @@ describe( 'OverviewPage', () => {
 
 		expect( findLink( wrapper, '/wiki/Special:Subjects/Painting' )!.text() ).toBe( 'neowiki-schema-subject-count3' );
 		expect( findLink( wrapper, '/wiki/Special:Subjects/Person' )!.text() ).toBe( 'neowiki-schema-subject-count0' );
+	} );
+
+	it( 'shows the schemas before their counts arrive, with a blank Subjects column', async () => {
+		getSubjectCounts = vi.fn().mockReturnValue( new Promise( () => {
+			// Never lands.
+		} ) );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( findLink( wrapper, '/wiki/Schema:Painting' ) ).toBeDefined();
+		expect( wrapper.text() ).toContain( 'neowiki-schemas-column-subjects' );
+		expect( findLink( wrapper, '/wiki/Special:Subjects/Painting' ) ).toBeUndefined();
+	} );
+
+	it( 'drops the Subjects column when the counts could not be loaded', async () => {
+		vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+		getSubjectCounts = vi.fn().mockRejectedValue( new Error( 'Error fetching subject counts' ) );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-column-subjects' );
+		expect( findLink( wrapper, '/wiki/Special:Subjects/Painting' ) ).toBeUndefined();
 	} );
 
 	it( 'has no Subjects column for a reader who sees no counts', async () => {

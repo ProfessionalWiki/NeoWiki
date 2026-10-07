@@ -44,6 +44,7 @@
 				:subject-list-available="subjectListAvailable"
 				:subject-previews="subjectPreviews"
 				:subject-count="subjectCountOf( summary.name )"
+				:subject-count-pending="subjectCountsPending"
 				@edit="openEditor( summary.name )"
 				@delete="confirmDelete( summary.name )"
 				@create-subject="openSubjectCreator( summary.name )"
@@ -120,7 +121,7 @@ const {
 	checkCreatePermission
 } = useSchemaPermissions();
 const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
-const { subjectCountOf, loadSubjectCounts } = useSubjectCounts();
+const { subjectCountsPending, subjectCountOf, loadSubjectCounts } = useSubjectCounts();
 const schemaStore = useSchemaStore();
 const subjectStore = useSubjectStore();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
@@ -152,12 +153,11 @@ const emptyText = computed( () => schemas.value.length === 0 ?
 	mw.msg( 'neowiki-schemas-empty' ) :
 	mw.msg( 'neowiki-schemas-no-match', findText.value.trim() ) );
 
-// The cards wait for the counts too, so a count does not replace "View all subjects" under the reader's eyes.
 async function loadSchemas(): Promise<void> {
 	const sequence = ++listingSequence;
 
 	try {
-		const [ listing ] = await Promise.all( [ schemaStore.fetchAllSchemaSummaries(), loadSubjectCounts() ] );
+		const listing = await schemaStore.fetchAllSchemaSummaries();
 
 		if ( sequence !== listingSequence ) {
 			return;
@@ -234,6 +234,7 @@ onMounted( () => {
 	checkEditPermission( '' );
 	checkDeletePermission( '' );
 	loadSchemas();
+	loadSubjectCounts();
 } );
 </script>
 

@@ -60,11 +60,16 @@
 			</template>
 
 			<template #item-subjects="{ row }">
+				<span
+					v-if="subjectCountsPending"
+					class="ext-neowiki-overview__subject-count"
+				/>
 				<a
+					v-else
 					class="ext-neowiki-overview__subject-count"
 					:href="pageUrl( `Special:Subjects/${ row.name }` )"
 					:aria-describedby="nameId( row.name )"
-				>{{ subjectCountText( row.name ) }}</a>
+				>{{ subjectListLinkText( subjectCountOf( row.name ) ) }}</a>
 			</template>
 
 			<template #item-actions="{ row }">
@@ -100,7 +105,7 @@ import { cdxIconAdd } from '@wikimedia/codex-icons';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import RecentSubjectsTable from '@/components/SubjectsTable/RecentSubjectsTable.vue';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
-import { useSubjectCounts } from '@/composables/useSubjectCounts.ts';
+import { subjectListLinkText, useSubjectCounts } from '@/composables/useSubjectCounts.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
@@ -145,7 +150,7 @@ const props = defineProps<{
 const schemaStore = useSchemaStore();
 const subjectStore = useSubjectStore();
 const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
-const { subjectCountsKnown, subjectCountOf, loadSubjectCounts } = useSubjectCounts();
+const { subjectCountsShown, subjectCountsPending, subjectCountOf, loadSubjectCounts } = useSubjectCounts();
 
 const loading = ref( true );
 const rows = ref<SchemaSummary[]>( [] );
@@ -174,16 +179,12 @@ const columns = computed( (): TableColumn[] => [
 		id: 'description',
 		label: mw.msg( 'neowiki-schemas-column-description' )
 	},
-	...( subjectCountsKnown.value ? [ { id: 'subjects', label: mw.msg( 'neowiki-schemas-column-subjects' ) } ] : [] ),
+	...( subjectCountsShown.value ? [ { id: 'subjects', label: mw.msg( 'neowiki-schemas-column-subjects' ) } ] : [] ),
 	{
 		id: 'actions',
 		label: ''
 	}
 ] );
-
-function subjectCountText( schemaName: string ): string {
-	return mw.msg( 'neowiki-schema-subject-count', mw.language.convertNumber( subjectCountOf( schemaName ) ?? 0 ) );
-}
 
 // Names the Schema to screen readers on the link to its Subjects. Encoded: an id holds no spaces, a name can.
 function nameId( schemaName: string ): string {
@@ -206,10 +207,10 @@ function openCreator( schemaName: string | undefined ): void {
 
 onMounted( async () => {
 	checkCreateSubjectPagePermission();
+	loadSubjectCounts();
 
 	try {
-		const [ summaries ] = await Promise.all( [ schemaStore.fetchAllSchemaSummaries(), loadSubjectCounts() ] );
-		rows.value = summaries;
+		rows.value = await schemaStore.fetchAllSchemaSummaries();
 	} catch ( error ) {
 		// Said out loud, because the table it leaves behind reads as a wiki without Schemas.
 		mw.notify( error instanceof Error ? error.message : String( error ), { type: 'error' } );
@@ -256,6 +257,12 @@ onMounted( async () => {
 		-webkit-box-orient: vertical;
 		-webkit-line-clamp: 1;
 		overflow: hidden;
+	}
+
+	// Holds a two-digit count's width while the counts load, so the column does not widen when they arrive.
+	&__subject-count {
+		display: inline-block;
+		min-width: 5.5em;
 	}
 }
 </style>

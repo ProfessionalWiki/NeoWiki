@@ -27,6 +27,7 @@ interface CardOptions {
 	canCreateSubject?: boolean;
 	subjectListAvailable?: boolean;
 	subjectCount?: number | null;
+	subjectCountPending?: boolean;
 }
 
 function mountCard( options: CardOptions = {} ): VueWrapper {
@@ -45,6 +46,7 @@ function mountCard( options: CardOptions = {} ): VueWrapper {
 			// Raw, so the card sees only the reactivity the previews bring themselves, not what mounting adds.
 			subjectPreviews: markRaw( subjectPreviews ),
 			subjectCount: options.subjectCount ?? null,
+			subjectCountPending: options.subjectCountPending ?? false,
 		},
 		global: {
 			mocks: { $i18n: createI18nMock() },
@@ -196,6 +198,10 @@ describe( 'SchemaCard', () => {
 
 		expect( link.text() ).toBe( 'neowiki-subjects-view-all' );
 		expect( link.attributes( 'href' ) ).toBe( '/wiki/Special:Subjects/Artist' );
+	} );
+
+	it( 'offers no link to its Subjects until the counts arrive', () => {
+		expect( findSubjectListLink( mountCard( { subjectCount: null, subjectCountPending: true } ) ).exists() ).toBe( false );
 	} );
 
 	it( 'ties the link to its Subjects to the Schema they belong to', () => {
