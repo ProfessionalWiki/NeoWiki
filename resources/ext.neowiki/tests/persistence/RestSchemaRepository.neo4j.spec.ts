@@ -67,6 +67,17 @@ describe( 'RestSchemaRepository', () => {
 			} );
 		} );
 
+		it( 'reads a schema whose name holds characters that mean something in a URL', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/v1/page/Schema:What%3F%20100%25':
+					new Response( JSON.stringify( { source: '{ "propertyDefinitions": {} }' } ), { status: 200 } ),
+			} );
+
+			const schema = await newSchemaRepository( inMemoryHttpClient ).getSchema( 'What? 100%' );
+
+			expect( schema.getName() ).toBe( 'What? 100%' );
+		} );
+
 	} );
 
 	describe( 'saveSchema', () => {

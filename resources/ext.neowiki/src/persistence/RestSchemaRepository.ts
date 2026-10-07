@@ -19,7 +19,7 @@ export class RestSchemaRepository implements SchemaRepository {
 
 	public async getSchema( schemaName: SchemaName ): Promise<Schema> {
 		const response = await this.httpClient.get(
-			`${ this.mediaWikiRestApiUrl }/v1/page/Schema:${ schemaName }`,
+			`${ this.mediaWikiRestApiUrl }/v1/page/Schema:${ encodeURIComponent( schemaName ) }`,
 		);
 
 		if ( !response.ok ) {
