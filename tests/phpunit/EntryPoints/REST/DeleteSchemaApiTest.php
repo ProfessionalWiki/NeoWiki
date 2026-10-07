@@ -7,10 +7,12 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\ResponseInterface;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSchemaApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
-use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
+use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
  * Deletes through MediaWiki's real delete path in the test database: behaving exactly like that path is the
@@ -23,7 +25,6 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 class DeleteSchemaApiTest extends NeoWikiIntegrationTestCase {
 
 	use HandlerTestTrait;
-	use NeoWikiMockAuthorityTrait;
 	use RunsSchemaPageActions;
 
 	public function testDeletesTheSchemaPage(): void {
@@ -38,54 +39,36 @@ class DeleteSchemaApiTest extends NeoWikiIntegrationTestCase {
 	public function testCommentBecomesTheDeletionReason(): void {
 		$this->createSchema( 'Person' );
 
-		$this->executeAs(
-			$this->getTestSysop()->getUser(),
-			new DeleteSchemaApi( csrfValidator: $this->newCsrfValidatorStub() ),
-			$this->newDeleteRequest( 'Person', comment: 'Merged into Contact' )
-		);
+		$this->delete( 'Person', comment: 'Merged into Contact' );
 
 		$this->assertSame( 'Merged into Contact', $this->getDeletionReason( 'Person' ) );
+	}
+
+	public function testDeletionWithoutCommentGetsTheGeneratedReason(): void {
+		$this->createSchema( 'Person' );
+
+		$this->delete( 'Person' );
+
+		$this->assertNotEmpty( $this->getDeletionReason( 'Person' ) );
 	}
 
 	public function testUserWithoutTheDeleteRightIsRefused(): void {
 		$this->createSchema( 'Person' );
 
-		$response = $this->executeAs(
-			$this->getTestUser()->getUser(),
-			new DeleteSchemaApi( csrfValidator: $this->newCsrfValidatorStub() ),
-			$this->newDeleteRequest( 'Person' )
-		);
+		$response = $this->deleteAs( $this->getTestUser()->getUser(), 'Person' );
 
 		$this->assertSame( 403, $response->getStatusCode() );
 		$this->assertTrue( $this->schemaPageExists( 'Person' ) );
 	}
 
-	public function testMissingSchemaAnswersNotFound(): void {
-		$response = $this->delete( 'Person' );
-
-		$this->assertSame( 404, $response->getStatusCode() );
-	}
-
 	public function testSchemaYouMayNotReadAnswersLikeAMissingOne(): void {
 		$this->createSchema( 'Person' );
+		$this->denyReadingSchemaPage( 'Person' );
 
-		// One Authority for both requests: comparing responses obtained under two different Authorities says
-		// nothing about what any single caller can tell apart. It may read every other page, the missing one
-		// included, as under an access control that restricts pages one by one.
-		$authority = $this->authorityThatCannotReadPageId( $this->schemaTitle( 'Person' )->getArticleID() );
+		$unreadable = $this->delete( 'Person' );
+		$missing = $this->delete( 'Nobody' );
 
-		$unreadable = $this->executeAs(
-			$authority,
-			new DeleteSchemaApi( csrfValidator: $this->newCsrfValidatorStub() ),
-			$this->newDeleteRequest( 'Person' )
-		);
-		$missing = $this->executeAs(
-			$authority,
-			new DeleteSchemaApi( csrfValidator: $this->newCsrfValidatorStub() ),
-			$this->newDeleteRequest( 'Nobody' )
-		);
-
-		$this->assertSame( 404, $unreadable->getStatusCode() );
+		$this->assertSame( 404, $missing->getStatusCode() );
 		$this->assertSame( $this->bodyWithNameMasked( $missing, 'Nobody' ), $this->bodyWithNameMasked( $unreadable, 'Person' ) );
 		$this->assertTrue( $this->schemaPageExists( 'Person' ) );
 	}
@@ -103,11 +86,32 @@ class DeleteSchemaApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertTrue( $this->schemaPageExists( 'Person' ) );
 	}
 
-	private function delete( string $schemaName ): ResponseInterface {
+	public function testNameWithASectionDoesNotReachThePage(): void {
+		$this->createSchema( 'Person' );
+
+		$response = $this->delete( 'Person#Contact' );
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertTrue( $this->schemaPageExists( 'Person' ) );
+	}
+
+	public function testNameCannotReachAPageOutsideTheSchemaNamespace(): void {
+		$this->editPage( Title::makeTitle( NS_HELP, 'Person' ), 'Not a Schema' );
+
+		$this->delete( 'Help:Person' );
+
+		$this->assertTrue( Title::makeTitle( NS_HELP, 'Person' )->exists( IDBAccessObject::READ_LATEST ) );
+	}
+
+	private function delete( string $schemaName, ?string $comment = null ): ResponseInterface {
+		return $this->deleteAs( $this->getTestSysop()->getUser(), $schemaName, $comment );
+	}
+
+	private function deleteAs( User $user, string $schemaName, ?string $comment = null ): ResponseInterface {
 		return $this->executeAs(
-			$this->getTestSysop()->getUser(),
+			$user,
 			new DeleteSchemaApi( csrfValidator: $this->newCsrfValidatorStub() ),
-			$this->newDeleteRequest( $schemaName )
+			$this->newDeleteRequest( $schemaName, $comment )
 		);
 	}
 
@@ -125,8 +129,7 @@ class DeleteSchemaApiTest extends NeoWikiIntegrationTestCase {
 	 * two answers apart.
 	 */
 	private function bodyWithNameMasked( ResponseInterface $response, string $schemaName ): array {
-		$response->getBody()->rewind();
-		return json_decode( str_replace( $schemaName, '<name>', $response->getBody()->getContents() ), true );
+		return json_decode( str_replace( $schemaName, '<name>', $this->bodyOf( $response ) ), true );
 	}
 
 	private function getDeletionReason( string $schemaName ): string|false {
