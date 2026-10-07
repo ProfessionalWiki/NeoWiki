@@ -92,7 +92,6 @@ import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
-import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
@@ -157,14 +156,9 @@ const paneName = computed( (): string => storedLabel.value ?? subjectDisplayName
 const schemaBadge = computed( (): string => props.subject.getSchemaName() );
 
 // A Subject bound for a page the save has yet to settle carries the page it will be stored on
-// without a title for it, and a Subject whose page the API could not resolve carries none at all
-// (PageIdentifiers types the fields as present; the payload may omit them). Either way there is
-// nothing to point at and nothing to name.
+// without a title for it, and a Subject whose page the API could not resolve carries none at all.
+// Either way there is nothing to point at and nothing to name.
 const pageName = computed( (): string | null => {
-	if ( !( props.subject instanceof SubjectWithContext ) ) {
-		return null;
-	}
-
 	const name = props.subject.getPageIdentifiers().getPageName();
 
 	return name === undefined || name === '' ? null : name;

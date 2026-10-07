@@ -2,7 +2,6 @@ import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Infobox from '@/components/Views/Infobox.vue';
 import { Subject } from '@/domain/Subject.ts';
-import { SubjectId } from '@/domain/SubjectId.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition.ts';
@@ -17,12 +16,11 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
-import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import type { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { CdxButton } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { newSubject } from '@/TestHelpers.ts';
 
 const $i18n = createI18nMock();
 
@@ -53,13 +51,11 @@ describe( 'Infobox', () => {
 		] ),
 	);
 
-	const mockSubject = new Subject(
-		new SubjectId( 's1demo5sssssss1' ),
-		'Test Subject',
-		'Test Subject',
-		false,
-		'TestSchema',
-		new StatementList( [
+	const mockSubject = newSubject( {
+		id: 's1demo5sssssss1',
+		label: 'Test Subject',
+		schemaName: 'TestSchema',
+		statements: new StatementList( [
 			new Statement(
 				new PropertyName( 'name' ), TextType.typeName, newStringValue( 'John Doe', 'Jane Doe' ),
 			),
@@ -70,7 +66,7 @@ describe( 'Infobox', () => {
 				new PropertyName( 'website' ), UrlType.typeName, newStringValue( 'https://example.com' ),
 			),
 		] ),
-	);
+	} );
 
 	const mountComponent = ( subject: Subject, canEditSubject: boolean ): VueWrapper => mount( Infobox, {
 		props: {
@@ -130,14 +126,12 @@ describe( 'Infobox', () => {
 	// The infobox heading is article content a reader sees, and is ADR 31's own example of a name
 	// nobody chose.
 	it( 'marks a title the server generated', () => {
-		const generated = new Subject(
-			new SubjectId( 's1demo5sssssss2' ),
-			null,
-			'TestSchema',
-			true,
-			'TestSchema',
-			new StatementList( [] ),
-		);
+		const generated = newSubject( {
+			id: 's1demo5sssssss2',
+			label: null,
+			displayNameIsGenerated: true,
+			schemaName: 'TestSchema',
+		} );
 
 		subjectStore.setSubject( generated );
 
@@ -170,14 +164,7 @@ describe( 'Infobox', () => {
 	} );
 
 	it( 'renders without statements when subject has no statements', () => {
-		const emptySubject = new Subject(
-			new SubjectId( 's1demo6sssssss1' ),
-			'Empty Subject',
-			'Empty Subject',
-			false,
-			'TestSchema',
-			new StatementList( [] ),
-		);
+		const emptySubject = newSubject( { id: 's1demo6sssssss1', label: 'Empty Subject', schemaName: 'TestSchema' } );
 
 		subjectStore.setSubject( emptySubject );
 
@@ -203,14 +190,7 @@ describe( 'Infobox', () => {
 	it( 'opens the dialog on the subject and schema fetched from the repositories', async () => {
 		// Values the stores do not hold, so the assertions can only pass if the dialog was
 		// handed the repositories' data rather than a registry read.
-		const freshSubject = new Subject(
-			mockSubject.getId(),
-			'Fetched Subject',
-			'Fetched Subject',
-			false,
-			'TestSchema',
-			new StatementList( [] ),
-		);
+		const freshSubject = newSubject( { id: mockSubject.getId(), label: 'Fetched Subject', schemaName: 'TestSchema' } );
 		const freshSchema = new Schema( 'TestSchema', 'Fetched schema', new PropertyDefinitionList( [] ) );
 		getSubjectForEditingMock.mockResolvedValue( freshSubject );
 		getSchemaMock.mockResolvedValue( freshSchema );
@@ -232,14 +212,7 @@ describe( 'Infobox', () => {
 	} );
 
 	it( 'shows no schema badge for a subject already named after its schema', () => {
-		const labelledAfterSchema = new Subject(
-			new SubjectId( 's1demo5sssssss2' ),
-			'TestSchema',
-			'TestSchema',
-			false,
-			'TestSchema',
-			new StatementList( [] ),
-		);
+		const labelledAfterSchema = newSubject( { id: 's1demo5sssssss2', label: 'TestSchema', schemaName: 'TestSchema' } );
 		subjectStore.setSubject( labelledAfterSchema );
 
 		const wrapper = mountComponent( labelledAfterSchema, false );
@@ -275,22 +248,16 @@ describe( 'Infobox', () => {
 				createPropertyDefinitionFromJson( 'Cost centre', { type: TextType.typeName } ),
 			] ),
 		);
-		// What the editor hands to onSave: a plain Subject, without the page context the registry
-		// entry carries, and here also without the statement the server ends up storing.
-		const clientCopy = new Subject(
-			mockSubject.getId(), 'Test Subject', 'Test Subject', false, 'TestSchema', new StatementList( [] ),
-		);
-		const persistedSubject = new SubjectWithContext(
-			mockSubject.getId(),
-			'Test Subject',
-			'Test Subject',
-			false,
-			'TestSchema',
-			new StatementList( [
+		// What the editor hands to onSave, here without the statement the server ends up storing.
+		const clientCopy = mockSubject.withStatements( new StatementList( [] ) );
+		const persistedSubject = newSubject( {
+			id: mockSubject.getId(),
+			label: 'Test Subject',
+			schemaName: 'TestSchema',
+			statements: new StatementList( [
 				new Statement( new PropertyName( 'Cost centre' ), TextType.typeName, newStringValue( 'CC-42' ) ),
 			] ),
-			new PageIdentifiers( 7, 'Some page' ),
-		);
+		} );
 
 		async function openEditorAndSave( wrapper: VueWrapper ): Promise<void> {
 			await wrapper.findComponent(
@@ -323,10 +290,11 @@ describe( 'Infobox', () => {
 		} );
 
 		it( 'renders the Subject the save returned, not the one handed to it', async () => {
-			const canonical = new SubjectWithContext(
-				mockSubject.getId(), 'Server label', 'Server label', false, 'TestSchema', new StatementList( [] ),
-				new PageIdentifiers( 7, 'Some page' ),
-			);
+			const canonical = newSubject( {
+				id: mockSubject.getId(),
+				label: 'Server label',
+				schemaName: 'TestSchema',
+			} );
 			getSubjectForEditingMock.mockResolvedValue( clientCopy );
 			getSchemaMock.mockResolvedValue( mockSchema );
 			updateSubjectMock.mockResolvedValue( {

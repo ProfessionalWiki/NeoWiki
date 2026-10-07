@@ -233,7 +233,6 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
-import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import type { SubjectId } from '@/domain/SubjectId.ts';
 import type { SubjectRepository } from '@/domain/SubjectRepository.ts';
@@ -306,7 +305,7 @@ const draftSchema = shallowRef<Schema | null>( null );
  * navigator can name it and a relation can be recorded against it, and no label until someone types one.
  * Non-null is what puts the dialog on its second step.
  */
-const rootSubject = shallowRef<SubjectWithContext | null>( null );
+const rootSubject = shallowRef<Subject | null>( null );
 
 // Guards loadedSchema against a stale schema fetch: picking a different schema, and leaving the
 // picked one (going back, or the dialog closing), both invalidate an in-flight response.
@@ -823,7 +822,7 @@ function openSubjectStep( schema: Schema, id: SubjectId ): void {
 	cancelClose();
 
 	loadedSchema.value = schema;
-	rootSubject.value = new SubjectWithContext(
+	rootSubject.value = new Subject(
 		id,
 		null,
 		// What the server derives for a Subject nobody has named (ADR 31).
@@ -989,7 +988,7 @@ async function saveDraftSchema( comment: string ): Promise<void> {
  * that root.
  */
 function asWrittenRoot( subject: Subject, written: { subjectId: SubjectId; pageId: number | null; pageTitle: string | null } ): Subject {
-	return new SubjectWithContext(
+	return new Subject(
 		written.subjectId,
 		subject.getLabel(),
 		subject.getDisplayName(),

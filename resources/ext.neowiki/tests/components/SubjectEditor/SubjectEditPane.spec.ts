@@ -17,10 +17,8 @@ import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { newRelation, newStringValue, RelationValue } from '@/domain/Value.ts';
 import { newRelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
-import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
-import { SubjectId } from '@/domain/SubjectId.ts';
-import { newSchema, newSubject } from '@/TestHelpers.ts';
+import { newSchema, newSubject, unresolvedPage } from '@/TestHelpers.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
@@ -28,29 +26,13 @@ import type { SubjectViolation } from '@/domain/SubjectViolation';
 
 const $i18n = createI18nMock();
 
-// Built directly rather than through TestHelpers.newSubject, so it carries the page
-// context a Subject read from the server has.
-const defaultSubject = new SubjectWithContext(
-	new SubjectId( 's11111111111111' ),
-	'Test Subject',
-	'Test Subject',
-	false,
-	'TestSchema',
-	new StatementList( [] ),
-	new PageIdentifiers( 42, 'Test page' ),
-);
+const testPage = new PageIdentifiers( 42, 'Test page' );
 
-function subjectStoredOn( page: PageIdentifiers ): SubjectWithContext {
-	return new SubjectWithContext(
-		defaultSubject.getId(),
-		defaultSubject.getLabel(),
-		defaultSubject.getDisplayName(),
-		false,
-		defaultSubject.getSchemaName(),
-		new StatementList( [] ),
-		page,
-	);
+function subjectStoredOn( page: PageIdentifiers ): Subject {
+	return newSubject( { id: 's11111111111111', label: 'Test Subject', schemaName: 'TestSchema', pageIdentifiers: page } );
 }
+
+const defaultSubject = subjectStoredOn( testPage );
 
 const defaultSchema = newSchema();
 
@@ -62,35 +44,25 @@ const schemaWithNameAndAge = new Schema(
 
 // Stores no label (ADR 31), so its name on screen is the server's derived one: here the
 // page it is the Main Subject of.
-const labellessSubject = new SubjectWithContext(
-	new SubjectId( 's11111111111111' ),
-	null,
-	'Test page',
-	false,
-	'TestSchema',
-	new StatementList( [] ),
-	new PageIdentifiers( 42, 'Test page' ),
-);
+const labellessSubject = newSubject( {
+	id: 's11111111111111',
+	label: null,
+	displayName: 'Test page',
+	schemaName: 'TestSchema',
+	pageIdentifiers: testPage,
+} );
 
 // Stores no label and is not a page's Main Subject (ADR 31) - the shape a Subject invented mid-edit has.
-const unnamedSubject = new SubjectWithContext(
-	new SubjectId( 's33333333333333' ),
-	null,
-	'TestSchema',
-	true,
-	'TestSchema',
-	new StatementList( [] ),
-	new PageIdentifiers( 42, 'Test page' ),
-);
+const unnamedSubject = newSubject( {
+	id: 's33333333333333',
+	label: null,
+	displayNameIsGenerated: true,
+	schemaName: 'TestSchema',
+	pageIdentifiers: testPage,
+} );
 
-const subjectWithOnlyName = new SubjectWithContext(
-	new SubjectId( 's11111111111111' ),
-	'Test Subject',
-	'Test Subject',
-	false,
-	'TestSchema',
+const subjectWithOnlyName = defaultSubject.withStatements(
 	new StatementList( [ new Statement( new PropertyName( 'Name' ), TextType.typeName, newStringValue( 'Alice' ) ) ] ),
-	new PageIdentifiers( 42, 'Test page' ),
 );
 
 interface MountPaneOptions {
@@ -156,19 +128,11 @@ const relationSchema = new Schema(
 	new PropertyDefinitionList( [ newRelationProperty( { name: 'Author' } ) ] ),
 );
 
-const subjectWithAuthor = new SubjectWithContext(
-	new SubjectId( 's11111111111111' ),
-	'Test Subject',
-	'Test Subject',
-	false,
-	'TestSchema',
-	new StatementList( [ new Statement(
-		new PropertyName( 'Author' ),
-		RelationType.typeName,
-		new RelationValue( [ newRelation( undefined, 's22222222222222' ) ] ),
-	) ] ),
-	new PageIdentifiers( 42, 'Test page' ),
-);
+const subjectWithAuthor = defaultSubject.withStatements( new StatementList( [ new Statement(
+	new PropertyName( 'Author' ),
+	RelationType.typeName,
+	new RelationValue( [ newRelation( undefined, 's22222222222222' ) ] ),
+) ] ) );
 
 describe( 'SubjectEditPane', () => {
 	beforeEach( () => {
@@ -326,10 +290,7 @@ describe( 'SubjectEditPane', () => {
 		// nowhere.
 		it( 'names no storage page the API could not resolve', () => {
 			const wrapper = mountPane( {
-				subject: subjectStoredOn( new PageIdentifiers(
-					undefined as unknown as number,
-					undefined as unknown as string,
-				) ),
+				subject: subjectStoredOn( unresolvedPage() ),
 				nested: true,
 			} );
 

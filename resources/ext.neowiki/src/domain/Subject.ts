@@ -1,8 +1,7 @@
 import { SubjectId } from '@/domain/SubjectId';
 import { StatementList } from '@/domain/StatementList';
-import type { SubjectLookup } from '@/domain/SubjectLookup';
 import type { SchemaName } from '@/domain/Schema';
-import type { SubjectMap } from '@/domain/SubjectMap';
+import type { PageIdentifiers } from '@/domain/PageIdentifiers';
 import type { PropertyName } from '@/domain/PropertyDefinition';
 import type { Value } from '@/domain/Value';
 
@@ -15,6 +14,7 @@ export class Subject {
 		private readonly displayNameIsGenerated: boolean,
 		private readonly schemaName: SchemaName,
 		private readonly statements: StatementList,
+		private readonly pageIdentifiers: PageIdentifiers,
 	) {
 	}
 
@@ -56,12 +56,16 @@ export class Subject {
 		return this.statements;
 	}
 
-	public getStatementValue( propertyName: PropertyName ): Value | undefined {
-		return this.statements.get( propertyName ).value;
+	/**
+	 * The page the Subject is stored on. A read that could not resolve it can leave both fields
+	 * undefined, whatever their types say.
+	 */
+	public getPageIdentifiers(): PageIdentifiers {
+		return this.pageIdentifiers;
 	}
 
-	public async getReferencedSubjects( lookup: SubjectLookup ): Promise<SubjectMap> {
-		return this.statements?.getReferencedSubjects( lookup );
+	public getStatementValue( propertyName: PropertyName ): Value | undefined {
+		return this.statements.get( propertyName ).value;
 	}
 
 	// TODO: test
@@ -82,15 +86,12 @@ export class Subject {
 			label === null && this.displayNameIsGenerated,
 			this.schemaName,
 			this.statements,
+			this.pageIdentifiers,
 		);
 	}
 
 	public withStatements( statements: StatementList ): Subject {
-		return new Subject( this.id, this.label, this.displayName, this.displayNameIsGenerated, this.schemaName, statements );
-	}
-
-	public withSchemaName( schemaName: SchemaName ): Subject {
-		return new Subject( this.id, this.label, this.displayName, this.displayNameIsGenerated, schemaName, this.statements );
+		return new Subject( this.id, this.label, this.displayName, this.displayNameIsGenerated, this.schemaName, statements, this.pageIdentifiers );
 	}
 
 }

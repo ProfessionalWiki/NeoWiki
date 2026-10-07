@@ -1,5 +1,4 @@
 import type { Subject } from '@/domain/Subject';
-import { SubjectWithContext } from '@/domain/SubjectWithContext';
 import type { SubjectPermissionHints } from '@/application/SubjectPermissionHints';
 
 /**
@@ -13,7 +12,7 @@ export async function canEditSubjectOnItsPage(
 	subject: Subject | undefined,
 	hints: SubjectPermissionHints,
 ): Promise<boolean> {
-	const pageId = subject instanceof SubjectWithContext ? subject.getPageIdentifiers().getPageId() : undefined;
+	const pageId = subject?.getPageIdentifiers().getPageId();
 
 	if ( !Number.isInteger( pageId ) ) {
 		return false;

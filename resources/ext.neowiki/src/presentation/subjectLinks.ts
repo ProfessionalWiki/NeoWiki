@@ -1,4 +1,4 @@
-import type { SubjectWithContext } from '@/domain/SubjectWithContext';
+import type { Subject } from '@/domain/Subject';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl';
 import { subjectRowUrl } from '@/presentation/subjectRowUrl';
 import { isSubjectFirst } from '@/wikiMode';
@@ -12,7 +12,7 @@ import { isSubjectFirst } from '@/wikiMode';
 /**
  * From a View: the page the Subject is stored on, since that is what a page-first wiki is about.
  */
-export function subjectLinkUrl( target: SubjectWithContext ): string {
+export function subjectLinkUrl( target: Subject ): string {
 	return isSubjectFirst() ?
 		subjectPageUrl( target.getId().text ) :
 		mw.util.getUrl( target.getPageIdentifiers().getPageName() );
@@ -22,7 +22,7 @@ export function subjectLinkUrl( target: SubjectWithContext ): string {
  * From a row listing Subjects: the target's own row on its page's Data tab, since a reader already
  * browsing Subjects means that one, not whatever else its page is about.
  */
-export function subjectLinkUrlFromRow( target: SubjectWithContext ): string {
+export function subjectLinkUrlFromRow( target: Subject ): string {
 	return subjectRowLinkUrl( target.getPageIdentifiers().getPageName(), target.getId().text );
 }
 

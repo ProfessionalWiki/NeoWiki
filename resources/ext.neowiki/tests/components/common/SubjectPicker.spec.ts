@@ -7,9 +7,8 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { CdxLookup, CdxMessage } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { newSubject } from '@/TestHelpers.ts';
 import { Subject } from '@/domain/Subject.ts';
-import { SubjectId } from '@/domain/SubjectId.ts';
-import { StatementList } from '@/domain/StatementList.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import type { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 import { SubjectCreationKey, type SubjectCreation } from '@/components/common/SubjectCreation.ts';
@@ -84,7 +83,7 @@ describe( 'SubjectPicker', () => {
 	}
 
 	function labellessSubject( id: string, displayName: string, schemaName: string ): Subject {
-		return new Subject( new SubjectId( id ), null, displayName, false, schemaName, new StatementList( [] ) );
+		return newSubject( { id, label: null, displayName, schemaName } );
 	}
 
 	function wikiHolds( subject: Subject ): void {
@@ -226,14 +225,7 @@ describe( 'SubjectPicker', () => {
 	} );
 
 	it( 'displays label for a pre-selected subject', async () => {
-		const subject = new Subject(
-			new SubjectId( 's1demo1aaaaaaa1' ),
-			'ACME Inc.',
-			'ACME Inc.',
-			false,
-			'Company',
-			new StatementList( [] ),
-		);
+		const subject = newSubject( { id: 's1demo1aaaaaaa1', label: 'ACME Inc.', schemaName: 'Company' } );
 		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue( subject );
 
 		const wrapper = createWrapper( { selected: 's1demo1aaaaaaa1' } );
@@ -244,14 +236,7 @@ describe( 'SubjectPicker', () => {
 	} );
 
 	it( 'displays the derived name for a pre-selected subject that has no label', async () => {
-		const subject = new Subject(
-			new SubjectId( 's1demo1aaaaaaa1' ),
-			null,
-			'Acme Anvil',
-			false,
-			'Company',
-			new StatementList( [] ),
-		);
+		const subject = newSubject( { id: 's1demo1aaaaaaa1', label: null, displayName: 'Acme Anvil', schemaName: 'Company' } );
 		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue( subject );
 
 		const wrapper = createWrapper( { selected: 's1demo1aaaaaaa1' } );
@@ -302,7 +287,7 @@ describe( 'SubjectPicker', () => {
 
 	it( 'does not propagate a null selection reported by Codex', async () => {
 		subjectStore.getOrFetchSubject = vi.fn().mockResolvedValue(
-			new Subject( new SubjectId( 's1demo1aaaaaaa1' ), 'ACME Inc.', 'ACME Inc.', false, 'Company', new StatementList( [] ) ),
+			newSubject( { id: 's1demo1aaaaaaa1', label: 'ACME Inc.', schemaName: 'Company' } ),
 		);
 
 		const wrapper = createWrapperWithVModel( { selected: 's1demo1aaaaaaa1' } );
@@ -737,18 +722,11 @@ describe( 'SubjectPicker', () => {
 		} );
 
 		function subjectNamed( id: string, name: string, schemaName: string ): Subject {
-			return new Subject( new SubjectId( id ), name, name, false, schemaName, new StatementList( [] ) );
+			return newSubject( { id, label: name, schemaName } );
 		}
 
 		function createdSubject( label: string | null, displayName: string ): Subject {
-			return new Subject(
-				new SubjectId( 's1demo1aaaaaaa1' ),
-				label,
-				displayName,
-				false,
-				'Product',
-				new StatementList( [] ),
-			);
+			return newSubject( { id: 's1demo1aaaaaaa1', label, displayName, schemaName: 'Product' } );
 		}
 
 		type SubjectCreator = ( schemaName: string, label: string | null ) => Promise<Subject | null>;
@@ -1289,7 +1267,7 @@ describe( 'SubjectPicker', () => {
 			// Marking it would put the bracketed id on the way into a stored label.
 			it( 'names a label-less draft bare, without the generated-name marker', async () => {
 				const drafts = draftsHolding(
-					new Subject( new SubjectId( DRAFT_ID ), null, 'Company', true, 'Company', new StatementList( [] ) ),
+					newSubject( { id: DRAFT_ID, label: null, displayNameIsGenerated: true, schemaName: 'Company' } ),
 				);
 				const wrapper = await createWrapperOffering(
 					hostOffering( creatorReturning( null ), drafts ),

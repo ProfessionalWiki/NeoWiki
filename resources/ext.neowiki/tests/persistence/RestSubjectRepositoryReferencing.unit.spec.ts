@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository';
 import { SubjectId } from '@/domain/SubjectId';
-import { SubjectWithContext } from '@/domain/SubjectWithContext';
 import { PageIdentifiers } from '@/domain/PageIdentifiers';
-import { StatementList } from '@/domain/StatementList';
+import { newSubject } from '@/TestHelpers';
 import type { SubjectDeserializer } from '@/persistence/SubjectDeserializer';
 import type { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
@@ -15,18 +14,6 @@ const REFERENCING_URL = `${ REST_URL }/neowiki/v0/subject/s11111111111maa/refere
 const ANVIL_JSON = { id: 's11111111111aa1', label: 'Anvil' };
 const BELLOWS_JSON = { id: 's11111111111aa2', label: 'Bellows' };
 
-function newSubject( id: string, label: string ): SubjectWithContext {
-	return new SubjectWithContext(
-		new SubjectId( id ),
-		label,
-		label,
-		false,
-		'Product',
-		new StatementList( [] ),
-		new PageIdentifiers( 7, label ),
-	);
-}
-
 /**
  * Deserializes the two entries above and rejects anything else, so a test can hand the repository a
  * payload entry it cannot read.
@@ -37,7 +24,7 @@ const deserializer = {
 			throw new Error( `Cannot deserialize ${ json.id }` );
 		}
 
-		return newSubject( json.id, json.label );
+		return newSubject( { id: json.id, label: json.label, schemaName: 'Product', pageIdentifiers: new PageIdentifiers( 7, json.label ) } );
 	},
 } as unknown as SubjectDeserializer;
 

@@ -27,7 +27,7 @@ import { RelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { computed, inject } from 'vue';
 import { Value, RelationValue, Relation } from '@/domain/Value.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import { SubjectWithContext } from '@/domain/SubjectWithContext.ts';
+import type { Subject } from '@/domain/Subject.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { subjectLinkUrl } from '@/presentation/subjectLinks.ts';
 
@@ -53,9 +53,9 @@ function getDisplayedValues( value: Value | undefined ): RelationDisplayValueDat
 	}
 
 	return value.relations.map( ( relation: Relation ): RelationDisplayValueData => {
-		let subject: SubjectWithContext | undefined;
+		let subject: Subject | undefined;
 		try {
-			subject = subjectStore.getSubject( relation.target ) as SubjectWithContext;
+			subject = subjectStore.getSubject( relation.target );
 			if ( !subject ) {
 				return getInvalidValueDisplay(
 					relation.target.text,
@@ -72,7 +72,7 @@ function getDisplayedValues( value: Value | undefined ): RelationDisplayValueDat
 	} );
 }
 
-function getValueDisplay( subject: SubjectWithContext ): RelationDisplayValueData {
+function getValueDisplay( subject: Subject ): RelationDisplayValueData {
 	return {
 		text: subjectDisplayName( subject ),
 		url: relationTargetUrl( subject )

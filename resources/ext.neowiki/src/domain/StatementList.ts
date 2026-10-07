@@ -1,10 +1,7 @@
-import type { SubjectLookup } from '@/domain/SubjectLookup';
-import { SubjectMap } from '@/domain/SubjectMap';
 import { SubjectId } from '@/domain/SubjectId';
 import { Statement } from '@/domain/Statement';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { RelationValue, type Value, valueToJson } from '@/domain/Value';
-import type { Subject } from '@/domain/Subject';
 
 export class StatementList implements Iterable<Statement> {
 
@@ -62,23 +59,6 @@ export class StatementList implements Iterable<Statement> {
 		}
 
 		return record;
-	}
-
-	public async getReferencedSubjects( lookup: SubjectLookup ): Promise<SubjectMap> {
-		const ids = [ ...this.getIdsOfReferencedSubjects() ];
-
-		// TODO: Replace lookup with BatchSubjectLookup
-		return new SubjectMap(
-			...( await Promise.all(
-				ids.map( async ( id ) => {
-					try {
-						return await lookup.getSubject( id );
-					} catch ( _error ) {
-						return null;
-					}
-				} ),
-			) ).filter( ( subject ): subject is Subject => subject !== null ),
-		);
 	}
 
 	public getIdsOfReferencedSubjects(): Set<SubjectId> {
