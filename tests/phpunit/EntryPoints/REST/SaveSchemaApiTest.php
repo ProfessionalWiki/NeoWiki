@@ -13,6 +13,7 @@ use MediaWiki\User\User;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SaveSchemaApi;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
@@ -67,6 +68,21 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 		$response = $this->save( 'Person', self::SCHEMA_JSON );
 
 		$this->assertJsonStringEqualsJsonString( $this->readSchemaFromApi( 'Person' ), $this->bodyOf( $response ) );
+	}
+
+	/**
+	 * As on a wiki whose approval extension keeps serving the approved revision until the new one is approved.
+	 */
+	public function testRespondsWithTheSavedSchemaWhileAnotherRevisionIsPublished(): void {
+		$approved = $this->createSchema( 'Person', self::SCHEMA_JSON );
+		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $approved ) );
+
+		$response = $this->save( 'Person', self::CHANGED_SCHEMA_JSON );
+
+		$this->assertSame(
+			[ 'Website' ],
+			array_keys( json_decode( $this->bodyOf( $response ), true )['schema']['propertyDefinitions'] )
+		);
 	}
 
 	/**

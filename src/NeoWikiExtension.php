@@ -1809,7 +1809,7 @@ class NeoWikiExtension {
 		return new JsonSchemaSerializer( documentUrl: $documentUrl );
 	}
 
-	private function getPersistenceSchemaDeserializer(): SchemaPersistenceDeserializer {
+	public function getPersistenceSchemaDeserializer(): SchemaPersistenceDeserializer {
 		return new SchemaPersistenceDeserializer(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
 		);
