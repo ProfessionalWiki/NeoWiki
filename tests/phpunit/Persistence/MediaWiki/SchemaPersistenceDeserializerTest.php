@@ -119,10 +119,18 @@ class SchemaPersistenceDeserializerTest extends TestCase {
 		$this->assertSame( '', $this->deserialize( $json )->getProperty( 'Name' )->getDescription() );
 	}
 
-	public function testReadsNonBooleanRequiredAsNotRequired(): void {
-		$json = '{"propertyDefinitions": {"Name": {"type": "text", "required": "yes"}}}';
+	/**
+	 * @dataProvider nonBooleanRequiredProvider
+	 */
+	public function testReadsNonBooleanRequiredAsAbsent( string $requiredJson ): void {
+		$json = '{"propertyDefinitions": {"Name": {"type": "text", "required": ' . $requiredJson . '}}}';
 
-		$this->assertFalse( $this->deserialize( $json )->getProperty( 'Name' )->isRequired() );
+		$this->assertFalse( $this->deserialize( $json )->getProperty( 'Name' )->toJson()['required'] );
+	}
+
+	public function nonBooleanRequiredProvider(): iterable {
+		yield 'string' => [ '"yes"' ];
+		yield 'object form with a string value' => [ '{"value": "yes", "severity": "error"}' ];
 	}
 
 	private function deserialize( string $json = self::SCHEMA_JSON ): Schema {

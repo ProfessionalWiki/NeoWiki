@@ -108,10 +108,6 @@ abstract class PropertyDefinition {
 
 		[ $values, $severities ] = SeverityNormalizer::extract( $json );
 
-		// An imported page skipped the validation a save runs, so these can hold a value of the wrong type.
-		$description = is_string( $values['description'] ?? null ) ? $values['description'] : '';
-		$required = ( $values['required'] ?? false ) === true;
-
 		$propertyType = $propertyTypeLookup->getType( $json['type'] );
 
 		// Severity is a Constraint concept. Display Attributes are explicitly not Constraints
@@ -124,12 +120,7 @@ abstract class PropertyDefinition {
 			}
 		}
 
-		$propertyCore = new PropertyCore(
-			description: $description,
-			required: $required,
-			default: $values['default'] ?? null,
-			constraintSeverities: $severities,
-		);
+		$propertyCore = self::coreFromJson( $values, $severities );
 
 		// The extension owning the type is disabled or failed to load. Preserve the property
 		// (incl. its object-form constraint severities) so the Schema still serves it and a
@@ -145,6 +136,29 @@ abstract class PropertyDefinition {
 		} catch ( Throwable $e ) {
 			throw new InvalidArgumentException( 'Invalid property definition: ' . json_encode( $json ), 0, $e );
 		}
+	}
+
+	/**
+	 * An imported page skipped the validation a save runs, so a field can hold a value of the wrong type,
+	 * which reads as absent.
+	 *
+	 * @param array<string, mixed> $values
+	 * @param array<string, Severity> $severities
+	 */
+	private static function coreFromJson( array $values, array $severities ): PropertyCore {
+		$required = ( $values['required'] ?? false ) === true;
+
+		if ( !$required ) {
+			// A save refuses a severity on a false required.
+			unset( $severities['required'] );
+		}
+
+		return new PropertyCore(
+			description: is_string( $values['description'] ?? null ) ? $values['description'] : '',
+			required: $required,
+			default: $values['default'] ?? null,
+			constraintSeverities: $severities,
+		);
 	}
 
 }
