@@ -150,11 +150,14 @@ readonly class Neo4jSubjectSummaryLookup implements SubjectSummaryLookup {
 		$subjectLabels = $query->schemaName === null ? 'Subject' : 'Subject:$($schemaName)';
 
 		if ( $query->sort === SubjectSummarySort::Newest ) {
-			// Neo4j walks the index in order, from the cursor on, only when this WHERE holds a condition on the id.
+			// Neo4j walks the index in order, from the cursor on, only when this WHERE holds a condition on the id. The
+			// hint keeps it on the id index once a graph holds the Subjects of enough wikis that the Subject wiki_id index
+			// looks cheaper, which would read and sort every Subject of the wiki.
 			$idCondition = $after === null ? 'subject.id IS NOT NULL' : 'subject.id < $afterId';
 
 			return "
 				MATCH (subject:$subjectLabels {wiki_id: \$wikiId})
+				USING INDEX subject:Subject(id)
 				WHERE $idCondition
 				CALL (subject) {
 					MATCH (page:Page {wiki_id: \$wikiId})-[:HasSubject]->(subject)
