@@ -67,6 +67,32 @@ describe( 'RestSchemaRepository', () => {
 			} );
 		} );
 
+		it( 'reads a schema whose name holds characters that mean something in a URL', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/v1/page/Schema:What%3F%20100%25':
+					new Response( JSON.stringify( { source: '{ "propertyDefinitions": {} }' } ), { status: 200 } ),
+			} );
+
+			const schema = await newSchemaRepository( inMemoryHttpClient ).getSchema( 'What? 100%' );
+
+			expect( schema.getName() ).toBe( 'What? 100%' );
+		} );
+
+		it( 'has the browser revalidate a cached schema', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/v1/page/Schema:Employee':
+					new Response( JSON.stringify( { source: '{ "propertyDefinitions": {} }' } ), { status: 200 } ),
+			} );
+			const get = vi.spyOn( inMemoryHttpClient, 'get' );
+
+			await newSchemaRepository( inMemoryHttpClient ).getSchema( 'Employee' );
+
+			expect( get ).toHaveBeenCalledWith(
+				'https://example.com/rest.php/v1/page/Schema:Employee',
+				{ headers: { 'Cache-Control': 'no-cache' } },
+			);
+		} );
+
 	} );
 
 	describe( 'saveSchema', () => {

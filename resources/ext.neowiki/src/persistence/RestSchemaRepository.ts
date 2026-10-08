@@ -18,8 +18,11 @@ export class RestSchemaRepository implements SchemaRepository {
 	}
 
 	public async getSchema( schemaName: SchemaName ): Promise<Schema> {
+		// MediaWiki sends a page with a Last-Modified date but no max-age, so browsers may answer
+		// a read from their cache with a version older than the latest edit.
 		const response = await this.httpClient.get(
-			`${ this.mediaWikiRestApiUrl }/v1/page/Schema:${ schemaName }`,
+			`${ this.mediaWikiRestApiUrl }/v1/page/Schema:${ encodeURIComponent( schemaName ) }`,
+			{ headers: { 'Cache-Control': 'no-cache' } },
 		);
 
 		if ( !response.ok ) {

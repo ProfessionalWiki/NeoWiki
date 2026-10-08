@@ -13,13 +13,20 @@
 			@load-more="onLoadMore"
 		>
 			<template #header>
-				<CdxButton
-					v-if="canCreateSchemas"
-					@click="isCreatorOpen = true"
-				>
-					<CdxIcon :icon="cdxIconAdd" />
-					{{ $i18n( 'neowiki-schema-creator-button' ).text() }}
-				</CdxButton>
+				<div class="ext-neowiki-schemas-page__header-actions">
+					<CdxButton
+						v-if="canCreateSchemas"
+						@click="isCreatorOpen = true"
+					>
+						<CdxIcon :icon="cdxIconAdd" />
+						{{ $i18n( 'neowiki-schema-creator-button' ).text() }}
+					</CdxButton>
+					<SchemaExportButton />
+					<SchemaImportButton
+						v-if="canCreateSchemas"
+						@imported="onSchemaSaved"
+					/>
+				</div>
 			</template>
 
 			<template #item-name="{ item }">
@@ -123,6 +130,8 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import SchemaCreatorDialog from './SchemaCreatorDialog.vue';
+import SchemaExportButton from './SchemaExportButton.vue';
+import SchemaImportButton from './SchemaImportButton.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
@@ -300,6 +309,12 @@ onMounted( async () => {
 	&__actions {
 		display: inline-flex;
 		gap: @spacing-25;
+	}
+
+	&__header-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: @spacing-50;
 	}
 }
 </style>

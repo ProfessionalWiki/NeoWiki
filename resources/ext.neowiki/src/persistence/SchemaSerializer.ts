@@ -7,14 +7,14 @@ import { valueToJson } from '@/domain/Value';
 export class SchemaSerializer {
 
 	public serializeSchema( schema: Schema ): string {
-		return JSON.stringify(
-			{
-				description: schema.getDescription(),
-				propertyDefinitions: this.serializePropertyDefinitions( schema.getPropertyDefinitions() ),
-			},
-			null,
-			4,
-		);
+		return JSON.stringify( this.schemaToJson( schema ), null, 4 );
+	}
+
+	public schemaToJson( schema: Schema ): Record<string, unknown> {
+		return {
+			description: schema.getDescription(),
+			propertyDefinitions: this.serializePropertyDefinitions( schema.getPropertyDefinitions() ),
+		};
 	}
 
 	private serializePropertyDefinitions( propertyDefinitions: PropertyDefinitionList ): Record<string, any> {

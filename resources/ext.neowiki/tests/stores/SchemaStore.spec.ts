@@ -59,6 +59,15 @@ describe( 'normalizeSchemaName', () => {
 		expect( normalizeSchemaName( '  Person  ' ) ).toBe( 'Person' );
 	} );
 
+	it.each( [
+		[ 'a fragment', 'Museum#History', 'Museum' ],
+		[ 'underscores around it', '_Person_', 'Person' ],
+		[ 'an invisible direction mark', 'Person\u200F', 'Person' ],
+		[ 'a decomposed accent', 'Cafe\u0301', 'Caf\u00E9' ],
+	] )( 'resolves a name with %s to the page a save writes', ( _case, name, page ) => {
+		expect( normalizeSchemaName( name ) ).toBe( page );
+	} );
+
 	it( 'leaves an already-canonical name unchanged', () => {
 		expect( normalizeSchemaName( 'Validation Demo' ) ).toBe( 'Validation Demo' );
 	} );
