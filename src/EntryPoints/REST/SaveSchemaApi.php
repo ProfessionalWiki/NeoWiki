@@ -16,12 +16,15 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class SaveSchemaApi extends SchemaPageActionApi {
 
+	private ?string $schemaJson = null;
+
 	protected function getActionParameters(): array {
 		return [
 			'action' => 'edit',
 			'contentmodel' => SchemaContent::CONTENT_MODEL_ID,
 			'text' => $this->getSchemaJson(),
-		] + $this->getCommentAs( 'summary' );
+			'summary' => $this->getComment(),
+		];
 	}
 
 	/**
@@ -29,9 +32,12 @@ class SaveSchemaApi extends SchemaPageActionApi {
 	 * object, such as an empty `propertyDefinitions`, would come back out as a list.
 	 */
 	private function getSchemaJson(): string {
-		$body = json_decode( (string)$this->getRequest()->getBody() );
+		if ( $this->schemaJson === null ) {
+			$body = json_decode( (string)$this->getRequest()->getBody() );
+			$this->schemaJson = (string)json_encode( is_object( $body ) ? $body->schema ?? null : null );
+		}
 
-		return (string)json_encode( is_object( $body ) ? $body->schema ?? null : null );
+		return $this->schemaJson;
 	}
 
 	protected function mapActionModuleResult( array $data ): array {
@@ -49,8 +55,9 @@ class SaveSchemaApi extends SchemaPageActionApi {
 	}
 
 	/**
-	 * Built from the JSON just saved rather than read back: until the request ends, a database replica still
-	 * serves the previous revision, and so does the wiki's revision policy until the new one is approved.
+	 * Built from the JSON just saved, which the page stores reformatted but unchanged. The Schema lookup would
+	 * serve the revision before it: a database replica's until the request ends, or the revision policy's until
+	 * the new one is approved.
 	 */
 	private function presentSavedSchema(): array {
 		$extension = NeoWikiExtension::getInstance();

@@ -6,7 +6,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\ResponseInterface;
-use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSchemaApi;
@@ -24,7 +23,6 @@ use Wikimedia\Rdbms\IDBAccessObject;
  */
 class DeleteSchemaApiTest extends NeoWikiIntegrationTestCase {
 
-	use HandlerTestTrait;
 	use RunsSchemaPageActions;
 
 	public function testDeletesTheSchemaPage(): void {
