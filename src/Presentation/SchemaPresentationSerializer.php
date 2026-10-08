@@ -36,7 +36,7 @@ class SchemaPresentationSerializer {
 	}
 
 	/**
-	 * An object when there are no properties: an empty array would encode as `[]`, which a Schema page refuses.
+	 * An empty PHP array encodes as `[]`, not the object keyed by property name that the Schema format specifies.
 	 */
 	private function propertiesToJson( PropertyDefinitions $properties ): array|stdClass {
 		$json = [];
