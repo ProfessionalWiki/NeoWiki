@@ -9,6 +9,7 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler\ActionModuleBasedHandler;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Response;
+use MediaWiki\Rest\ResponseException;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
@@ -59,33 +60,29 @@ abstract class SchemaPageActionApi extends ActionModuleBasedHandler {
 		$schemaPage = $this->newSchemaPage();
 
 		if ( $schemaPage === null ) {
-			return $this->newErrorResponse( 400, 'Invalid Schema name: ' . $this->getSchemaName() );
+			$this->refuse( 400, 'Invalid Schema name: ' . $this->getSchemaName() );
 		}
 
 		if ( !$this->mayActOn( $schemaPage ) ) {
-			return $this->newErrorResponse( 404, 'Schema not found: ' . $this->getSchemaName() );
+			$this->refuse( 404, 'Schema not found: ' . $this->getSchemaName() );
 		}
 
 		$this->schemaPage = $schemaPage;
 
-		return $this->executeActionModule();
+		return parent::execute();
 	}
 
 	private function getSchemaName(): string {
 		return $this->getValidatedParams()['schemaName'];
 	}
 
-	/**
-	 * The namespace is fixed, so no name reaches a page outside it. A fragment is refused rather than dropped:
-	 * "Person#x" would otherwise act on "Person".
-	 */
 	private function newSchemaPage(): ?Title {
-		$title = MediaWikiServices::getInstance()->getTitleFactory()->makeTitleSafe(
+		$pageTitle = NeoWikiExtension::getInstance()->getPageIdentifiersResolver()->getTitleInNamespace(
 			NeoWikiExtension::NS_SCHEMA,
 			$this->getSchemaName()
 		);
 
-		return $title === null || $title->hasFragment() ? null : $title;
+		return $pageTitle === null ? null : MediaWikiServices::getInstance()->getTitleFactory()->newFromText( $pageTitle );
 	}
 
 	/**
@@ -97,15 +94,14 @@ abstract class SchemaPageActionApi extends ActionModuleBasedHandler {
 			->authorizeReadByPageTitle( $schemaPage );
 	}
 
-	protected function executeActionModule(): Response {
-		return parent::execute();
-	}
-
-	private function newErrorResponse( int $status, string $message ): Response {
-		return $this->getResponseFactory()->createHttpError( $status, [
+	/**
+	 * @throws ResponseException
+	 */
+	private function refuse( int $status, string $message ): never {
+		throw new ResponseException( $this->getResponseFactory()->createHttpError( $status, [
 			'status' => 'error',
 			'message' => $message,
-		] );
+		] ) );
 	}
 
 	protected function getSchemaPage(): Title {
@@ -121,22 +117,15 @@ abstract class SchemaPageActionApi extends ActionModuleBasedHandler {
 	}
 
 	/**
-	 * The action module to run and its parameters, other than the page and the token.
+	 * The action module to run and its parameters, other than the page and the token. A null parameter is
+	 * left out, so that the module's own default applies, such as the generated deletion reason.
 	 *
-	 * @return array<string, string>
+	 * @return array<string, ?string>
 	 */
 	abstract protected function getActionParameters(): array;
 
-	/**
-	 * Empty without a comment, so that the action module's own default applies, such as the generated
-	 * deletion reason.
-	 *
-	 * @return array<string, string>
-	 */
-	protected function getCommentAs( string $parameterName ): array {
-		$comment = ( $this->getValidatedBody() ?? [] )['comment'] ?? null;
-
-		return $comment === null ? [] : [ $parameterName => $comment ];
+	protected function getComment(): ?string {
+		return ( $this->getValidatedBody() ?? [] )['comment'] ?? null;
 	}
 
 	protected function throwHttpExceptionForActionModuleError( IApiMessage $msg, $statusCode = 400 ): never {

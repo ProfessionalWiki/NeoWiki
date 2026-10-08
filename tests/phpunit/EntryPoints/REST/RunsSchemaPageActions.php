@@ -10,6 +10,7 @@ use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\ResponseInterface;
 use MediaWiki\Session\CsrfTokenSet;
+use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\SchemaPageActionApi;
@@ -18,9 +19,11 @@ use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
- * Runs the Schema write endpoints as their callers do. For test cases that also use HandlerTestTrait.
+ * Runs the Schema write endpoints as their callers do.
  */
 trait RunsSchemaPageActions {
+
+	use HandlerTestTrait;
 
 	/**
 	 * The user is both the handler's Authority and the main request context's user, whom the action module
@@ -48,7 +51,7 @@ trait RunsSchemaPageActions {
 					&& $title->getNamespace() === NeoWikiExtension::NS_SCHEMA
 					&& $title->getDBkey() === $schemaName
 				) {
-					$result = 'badaccess-group0';
+					$result = [ 'badaccess-group0' ];
 					return false;
 				}
 

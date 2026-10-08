@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\ResponseInterface;
 use MediaWiki\Status\Status;
-use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaApi;
@@ -26,7 +25,6 @@ use Wikimedia\Rdbms\IDBAccessObject;
  */
 class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 
-	use HandlerTestTrait;
 	use RunsSchemaPageActions;
 
 	private const string SCHEMA_JSON = <<<JSON
@@ -225,11 +223,7 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testCommentBecomesTheEditSummary(): void {
-		$this->executeAs(
-			$this->getTestSysop()->getUser(),
-			$this->newApi(),
-			$this->newPutRequest( 'Person', self::SCHEMA_JSON, comment: 'Track ages' )
-		);
+		$this->save( 'Person', self::SCHEMA_JSON, comment: 'Track ages' );
 
 		$this->assertSame(
 			'Track ages',
@@ -239,16 +233,16 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function save( string $schemaName, string $schemaJson ): ResponseInterface {
-		return $this->saveAs( $this->getTestSysop()->getUser(), $schemaName, $schemaJson );
+	private function save( string $schemaName, string $schemaJson, ?string $comment = null ): ResponseInterface {
+		return $this->saveAs( $this->getTestSysop()->getUser(), $schemaName, $schemaJson, $comment );
 	}
 
-	private function saveAs( User $user, string $schemaName, string $schemaJson ): ResponseInterface {
-		return $this->executeAs( $user, $this->newApi(), $this->newPutRequest( $schemaName, $schemaJson ) );
-	}
-
-	private function newApi(): SaveSchemaApi {
-		return new SaveSchemaApi( csrfValidator: $this->newCsrfValidatorStub() );
+	private function saveAs( User $user, string $schemaName, string $schemaJson, ?string $comment = null ): ResponseInterface {
+		return $this->executeAs(
+			$user,
+			new SaveSchemaApi( csrfValidator: $this->newCsrfValidatorStub() ),
+			$this->newPutRequest( $schemaName, $schemaJson, $comment )
+		);
 	}
 
 	private function newPutRequest( string $schemaName, string $schemaJson, ?string $comment = null ): RequestData {

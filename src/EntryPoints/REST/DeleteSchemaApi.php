@@ -15,14 +15,17 @@ class DeleteSchemaApi extends SchemaPageActionApi {
 		return $schemaPage->exists( IDBAccessObject::READ_LATEST ) && parent::mayActOn( $schemaPage );
 	}
 
-	protected function executeActionModule(): Response {
-		parent::executeActionModule();
+	public function execute(): Response {
+		parent::execute();
 
 		return new Response();
 	}
 
 	protected function getActionParameters(): array {
-		return [ 'action' => 'delete' ] + $this->getCommentAs( 'reason' );
+		return [
+			'action' => 'delete',
+			'reason' => $this->getComment(),
+		];
 	}
 
 	protected function mapActionModuleResult( array $data ): array {

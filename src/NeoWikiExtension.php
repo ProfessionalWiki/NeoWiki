@@ -1606,7 +1606,7 @@ class NeoWikiExtension {
 		);
 	}
 
-	private function getPageIdentifiersResolver(): PageIdentifiersResolver {
+	public function getPageIdentifiersResolver(): PageIdentifiersResolver {
 		return new TitleBasedPageIdentifiersResolver(
 			MediaWikiServices::getInstance()->getTitleFactory()
 		);
