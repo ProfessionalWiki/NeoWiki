@@ -55,7 +55,7 @@ use Psr\Log\LoggerInterface;
  * Subject's native IRI, which may be untyped when that Subject has no entry of its own.
  *
  * Every quad is placed in the page's named graph for this projection's target (`{$base}/graph/{target}/page/{id}`,
- * #1053), so the per-page sync used by the native projection (NativeRdfProjection.md) works for an ontology
+ * #1053), so the per-page sync used by the native projection (installation.md) works for an ontology
  * store too, and the native and ontology projections of a page can share one store without colliding. No
  * page-metadata triples are emitted.
  */

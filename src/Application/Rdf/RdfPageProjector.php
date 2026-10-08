@@ -26,7 +26,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use Psr\Log\LoggerInterface;
 
 /**
- * Projects a {@see Page} to the native RDF quads specified in NativeRdfProjection.md: page metadata,
+ * Projects a {@see Page} to the native RDF quads specified in rdf-export.md: page metadata,
  * one resource per Subject (rdf:type from the Schema, rdfs:label, one predicate per Statement value),
  * and the two-layer relation reification. Every quad is placed in the page's native named graph
  * (`{$base}/graph/native/page/{id}`, #1053); the page *resource* IRI (`neo-page:`) that appears inside the

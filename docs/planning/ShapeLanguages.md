@@ -36,7 +36,7 @@ properties. Schemas define Subject types via Property Definitions. Subject valid
 validator behind REST endpoints returns structured violations ([ADR 21](../adr/021-add-backend-validation.md),
 amended by [ADR 25](../adr/025-backend-driven-frontend-validation.md); [codes reference](../api/validation-codes.md)),
 and the editing UI renders what the server returns. For RDF, the wiki's data is *projected*: a native projection
-([NativeRdfProjection](NativeRdfProjection.md)) and per-store ontology projections
+([RDF Export](../api/rdf-export.md)) and per-store ontology projections
 ([OntologyMapping](OntologyMapping.md); shipped, see the [reference](../authoring/mapping-format.md)).
 
 ## Why not as the internal format or engine
@@ -77,11 +77,12 @@ where they fit:
 
 ### Generated shape exports
 
-Generate SHACL (and, given demand, ShEx) from native Schemas, expressed over the projection vocabularies. Consumers
-of NeoWiki RDF get a machine-readable contract for the data's structure; the Wikibase-adjacent community gets
-artifacts in a familiar form. This complements the self-description question in [NativeRdfProjection](NativeRdfProjection.md) (Q10) and
-the possible JSON Schema output mentioned in [ADR 9](../adr/009-move-away-from-json-schema.md) — one
-schema-translation surface with several output formats. Cheap to build: a serializer, no engine.
+Generate SHACL (and, given demand, ShEx) from native Schemas, expressed over the projection vocabularies. Consumers of
+NeoWiki RDF get a machine-readable contract for the data's structure; the Wikibase-adjacent community gets artifacts in
+a familiar form. This complements the self-description question in
+[#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163) and the possible JSON Schema output mentioned in
+[ADR 9](../adr/009-move-away-from-json-schema.md) — one schema-translation surface with several output formats. Cheap to
+build: a serializer, no engine.
 
 ### Conformance validation of ontology projections
 
@@ -137,11 +138,13 @@ something the boundary approach above cannot serve?
 ## Related
 
 - Planning: [OntologyMapping](OntologyMapping.md) (projection validation, mapping formalism),
-  [NativeRdfProjection](NativeRdfProjection.md) (native projection), [GlobalProperties](GlobalProperties.md).
+  [GlobalProperties](GlobalProperties.md).
 - ADRs: [006 schemas](../adr/006-schemas.md), [009 move away from JSON Schema](../adr/009-move-away-from-json-schema.md)
   (records ShEx/SHACL as considered alternatives), [011 writer's schema](../adr/011-include-writers-schema.md),
   [021 backend validation](../adr/021-add-backend-validation.md) and its amendment
-  [025 backend-driven frontend validation](../adr/025-backend-driven-frontend-validation.md).
-- Reference: [schema format](../api/schema-format.md), [validation codes](../api/validation-codes.md).
+  [025 backend-driven frontend validation](../adr/025-backend-driven-frontend-validation.md),
+  [036 RDF IRIs](../adr/036-rdf-iris.md).
+- Reference: [schema format](../api/schema-format.md), [validation codes](../api/validation-codes.md),
+  [RDF export](../api/rdf-export.md).
 - ECHOLOT tasks: T3.1 (structured data, constraints and validation), T3.2 (RDF import/export), T2.3 (semantic
   interoperability / ontology patterns), T4.1 (import pipelines), T4.5 (quality checks, names SHACL).

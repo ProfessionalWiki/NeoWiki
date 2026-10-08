@@ -7,8 +7,7 @@ order: 7
 NeoWiki projects its data to RDF in its own vocabulary — the **native projection**. Each wiki page becomes a named
 graph holding its page metadata and its Subjects (one RDF resource each) with their Statements and Relations.
 
-This page is the reference for what NeoWiki emits. Why the projection is shaped this way, and what is still open
-about it, is in [NativeRdfProjection.md](../planning/NativeRdfProjection.md).
+This page is the reference for what NeoWiki emits. Why the IRIs look as they do is in [ADR 36](../adr/036-rdf-iris.md).
 
 For an end-to-end example comparing the native and ontology-mapped output, see the
 [Person-to-EDM worked example](../guide/person-to-edm.md).
@@ -65,7 +64,7 @@ warning is logged for each on the [`NeoWiki` channel](../operations/installation
 A Subject becomes one RDF resource: its `rdf:type` is its Schema's `neo-schema:` class, and `rdfs:label` is always
 emitted. A Subject with no label takes the page name when it is that page's Main Subject and its Schema
 name otherwise ([ADR 31](../adr/031-optional-subject-labels.md)). Each Statement adds triples whose predicate is the
-property's `neo-prop:` IRI, one per part of a multi-part Value.
+property's `neo-prop:` IRI, one per part of a multi-part Value. The order of the parts is not kept.
 
 A Relation is emitted twice, so that a simple query never has to navigate reification:
 
@@ -76,7 +75,9 @@ A Relation is emitted twice, so that a simple query never has to navigate reific
 
 Both are always present, including for a Relation carrying no properties: the reified node is what preserves the
 Relation ID. The direct predicate is the **Relation type** declared in the Schema, which need not match the property
-name, and `neo:relationType`'s object is that same predicate IRI. Non-scalar Relation property values are dropped.
+name, and `neo:relationType`'s object is that same predicate IRI. Non-scalar Relation property values are dropped. A
+Relation targeting a Subject from another Source ([ADR 23](../adr/023-subject-sources.md)) names it with that Source's
+base URI followed by the Subject's local ID, and is omitted when this wiki does not have that Source.
 
 Page metadata describes the `neo-page:` resource, in the same named graph as the page's Subjects:
 

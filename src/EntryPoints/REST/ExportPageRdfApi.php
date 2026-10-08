@@ -18,7 +18,7 @@ use Wikimedia\RequestTimeout\TimeoutException;
 
 /**
  * Exports one page's Subjects and metadata as RDF. The `projection` query parameter selects the
- * vocabulary: "native" (default, NativeRdfProjection.md) or the name of a Mapping page
+ * vocabulary: "native" (default, rdf-export.md) or the name of a Mapping page
  * (OntologyMapping.md) — an unknown projection is a 400. The `format` query parameter picks
  * the serialization, falling back to the Accept header, then to TriG. TriG keeps the per-page named
  * graph; Turtle emits the same triples without it.
