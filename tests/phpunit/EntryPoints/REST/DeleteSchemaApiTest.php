@@ -135,12 +135,11 @@ class DeleteSchemaApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function newDeleteRequest( string $schemaName, ?string $comment = null ): RequestData {
-		return new RequestData( [
-			'method' => 'DELETE',
-			'pathParams' => [ 'schemaName' => $schemaName ],
-			'bodyContents' => json_encode( $comment === null ? (object)[] : [ 'comment' => $comment ] ),
-			'headers' => [ 'Content-Type' => 'application/json' ],
-		] );
+		return $this->newJsonRequest(
+			'DELETE',
+			$schemaName,
+			(string)json_encode( $comment === null ? (object)[] : [ 'comment' => $comment ] )
+		);
 	}
 
 	/**

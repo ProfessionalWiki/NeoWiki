@@ -9,20 +9,19 @@ use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Title\Title;
 use Wikimedia\Message\MessageValue;
-use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 class DeleteSchemaApi extends SchemaPageWriteApi {
-
-	protected function mayActOn( Title $schemaPage ): bool {
-		return $schemaPage->exists( IDBAccessObject::READ_LATEST ) && parent::mayActOn( $schemaPage );
-	}
 
 	public function execute(): Response {
 		$response = new Response();
 		$response->setStatus( parent::execute()->getStatusCode() );
 
 		return $response;
+	}
+
+	protected function mayActOn( Title $schemaPage ): bool {
+		return $schemaPage->exists( IDBAccessObject::READ_LATEST ) && parent::mayActOn( $schemaPage );
 	}
 
 	protected function getActionParameters(): array {
@@ -58,15 +57,8 @@ class DeleteSchemaApi extends SchemaPageWriteApi {
 		}
 	}
 
-	public function getBodyParamSettings(): array {
-		return [
-			'comment' => [
-				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => false,
-				self::PARAM_DESCRIPTION => 'Optional reason for the deletion.',
-			],
-		];
+	protected function getCommentDescription(): string {
+		return 'Optional reason for the deletion.';
 	}
 
 }

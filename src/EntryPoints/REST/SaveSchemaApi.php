@@ -93,13 +93,11 @@ class SaveSchemaApi extends SchemaPageWriteApi {
 				self::PARAM_DESCRIPTION => 'The whole Schema, in the shape GET /neowiki/v0/schema/{schemaName} returns under '
 					. '`schema`. Format documented at ' . DocumentationUrl::SchemaFormat->value . '.',
 			],
-			'comment' => [
-				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => false,
-				self::PARAM_DESCRIPTION => 'Optional edit summary.',
-			],
-		];
+		] + parent::getBodyParamSettings();
+	}
+
+	protected function getCommentDescription(): string {
+		return 'Optional edit summary.';
 	}
 
 }

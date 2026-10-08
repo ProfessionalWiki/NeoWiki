@@ -37,6 +37,15 @@ trait RunsSchemaWriteEndpoints {
 		}
 	}
 
+	private function newJsonRequest( string $method, string $schemaName, string $body ): RequestData {
+		return new RequestData( [
+			'method' => $method,
+			'pathParams' => [ 'schemaName' => $schemaName ],
+			'bodyContents' => $body,
+			'headers' => [ 'Content-Type' => 'application/json' ],
+		] );
+	}
+
 	private function denyReadingSchemaPage( string $schemaName ): void {
 		$this->setTemporaryHook(
 			'getUserPermissionsErrors',
@@ -74,8 +83,7 @@ trait RunsSchemaWriteEndpoints {
 	}
 
 	private function bodyOf( ResponseInterface $response ): string {
-		$response->getBody()->rewind();
-		return $response->getBody()->getContents();
+		return (string)$response->getBody();
 	}
 
 }
