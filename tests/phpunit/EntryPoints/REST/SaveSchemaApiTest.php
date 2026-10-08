@@ -226,7 +226,7 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function save( string $schemaName, string $schemaJson, ?string $comment = null ): ResponseInterface {
-		return $this->saveAs( $this->getTestSysop()->getUser(), $schemaName, $schemaJson, $comment );
+		return $this->saveAs( $this->getTestUser()->getUser(), $schemaName, $schemaJson, $comment );
 	}
 
 	private function saveAs( User $user, string $schemaName, string $schemaJson, ?string $comment = null ): ResponseInterface {
