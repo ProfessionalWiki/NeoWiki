@@ -69,26 +69,17 @@ abstract class SchemaPageWriteApi extends ActionModuleBasedHandler {
 		return parent::execute();
 	}
 
+	private function newSchemaPage(): ?Title {
+		return MediaWikiServices::getInstance()->getTitleFactory()->newFromText(
+			NeoWikiExtension::getInstance()->getPageIdentifiersResolver()->getTitleInNamespace(
+				NeoWikiExtension::NS_SCHEMA,
+				$this->getSchemaName()
+			)
+		);
+	}
+
 	private function getSchemaName(): string {
 		return $this->getValidatedParams()['schemaName'];
-	}
-
-	private function newSchemaPage(): ?Title {
-		$pageTitle = NeoWikiExtension::getInstance()->getPageIdentifiersResolver()->getTitleInNamespace(
-			NeoWikiExtension::NS_SCHEMA,
-			$this->getSchemaName()
-		);
-
-		return $pageTitle === null ? null : MediaWikiServices::getInstance()->getTitleFactory()->newFromText( $pageTitle );
-	}
-
-	/**
-	 * A Schema the caller may not read is answered exactly like one that does not exist.
-	 */
-	protected function mayActOn( Title $schemaPage ): bool {
-		return NeoWikiExtension::getInstance()
-			->newPageReadAuthorizer( $this->getAuthority() )
-			->authorizeReadByPageTitle( $schemaPage );
 	}
 
 	/**
@@ -99,6 +90,15 @@ abstract class SchemaPageWriteApi extends ActionModuleBasedHandler {
 			'status' => 'error',
 			'message' => $message,
 		] ) );
+	}
+
+	/**
+	 * Returning false answers the request with 404.
+	 */
+	protected function mayActOn( Title $schemaPage ): bool {
+		return NeoWikiExtension::getInstance()
+			->newPageReadAuthorizer( $this->getAuthority() )
+			->authorizeReadByPageTitle( $schemaPage );
 	}
 
 	protected function getSchemaPage(): Title {
@@ -142,5 +142,18 @@ abstract class SchemaPageWriteApi extends ActionModuleBasedHandler {
 			],
 		];
 	}
+
+	public function getBodyParamSettings(): array {
+		return [
+			'comment' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => false,
+				self::PARAM_DESCRIPTION => $this->getCommentDescription(),
+			],
+		];
+	}
+
+	abstract protected function getCommentDescription(): string;
 
 }

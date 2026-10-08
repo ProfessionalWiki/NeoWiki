@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\SaveSchemaApi;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 use Wikimedia\Rdbms\IDBAccessObject;
+use WikiPage;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\SaveSchemaApi
@@ -242,26 +243,20 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 			. ( $comment === null ? '' : ', "comment": ' . json_encode( $comment ) )
 			. ' }';
 
-		return new RequestData( [
-			'method' => 'PUT',
-			'pathParams' => [ 'schemaName' => $schemaName ],
-			'bodyContents' => $body,
-			'headers' => [ 'Content-Type' => 'application/json' ],
-		] );
+		return $this->newJsonRequest( 'PUT', $schemaName, $body );
 	}
 
 	private function protectSchemaPage( string $schemaName ): void {
 		$cascade = false;
 
 		$this->assertStatusGood(
-			$this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $this->schemaTitle( $schemaName ) )
-				->doUpdateRestrictions(
-					[ 'edit' => 'sysop' ],
-					[],
-					$cascade,
-					'Only administrators change this Schema',
-					$this->getTestSysop()->getUser()
-				)
+			$this->schemaWikiPage( $schemaName )->doUpdateRestrictions(
+				[ 'edit' => 'sysop' ],
+				[],
+				$cascade,
+				'Only administrators change this Schema',
+				$this->getTestSysop()->getUser()
+			)
 		);
 	}
 
@@ -277,16 +272,15 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function getSchemaPageText( string $schemaName ): string {
-		return $this->getServiceContainer()->getWikiPageFactory()
-			->newFromTitle( $this->schemaTitle( $schemaName ) )
-			->getContent()
-			?->serialize() ?? '';
+		return $this->schemaWikiPage( $schemaName )->getContent()?->serialize() ?? '';
 	}
 
 	private function getSchemaPageContentModel( string $schemaName ): string {
-		return $this->getServiceContainer()->getWikiPageFactory()
-			->newFromTitle( $this->schemaTitle( $schemaName ) )
-			->getContentModel();
+		return $this->schemaWikiPage( $schemaName )->getContentModel();
+	}
+
+	private function schemaWikiPage( string $schemaName ): WikiPage {
+		return $this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $this->schemaTitle( $schemaName ) );
 	}
 
 }
