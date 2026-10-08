@@ -8,6 +8,12 @@ order: 1
 NeoWiki's REST API lives under `/rest.php/neowiki/v0/*`. Requests and responses are JSON; the RDF export endpoints
 return TriG or Turtle instead.
 
+Endpoints that change data act as the user of your session. To log in from a script, use a
+[bot password](https://www.mediawiki.org/wiki/Manual:Bot_passwords) with the Action API's
+[`action=login`](https://www.mediawiki.org/wiki/API:Login). These endpoints also need the session's CSRF token, from
+[`meta=tokens`](https://www.mediawiki.org/wiki/API:Tokens), in an `X-CSRF-TOKEN` header; without a valid one they
+answer `403`.
+
 **Pre-1.0.** Endpoints and payloads may change without notice; do not build third-party integrations on
 `/neowiki/v0/*` yet.
 
@@ -75,8 +81,8 @@ A Schema defines a Subject type and its properties. For the body shape, see
 
 ### Layouts
 
-A Layout defines how a Subject is displayed. To create, change, or delete one, edit or delete the JSON page
-`Layout:<name>` through MediaWiki's Action API: [`action=edit`](https://www.mediawiki.org/wiki/API:Edit),
+A Layout defines how a Subject is displayed. To create, change, or delete one, use MediaWiki's Action API on the page
+`Layout:<name>`: [`action=edit`](https://www.mediawiki.org/wiki/API:Edit),
 [`action=delete`](https://www.mediawiki.org/wiki/API:Delete).
 
 | Endpoint | Description |
@@ -87,8 +93,8 @@ A Layout defines how a Subject is displayed. To create, change, or delete one, e
 ### Mappings
 
 An ontology Mapping defines one projection: it projects native Schemas into a target ontology. For the format
-and concepts, see [Mapping Format](../authoring/mapping-format.md). To create, change, or delete one, edit or delete the
-page `Mapping:<name>` through MediaWiki's Action API: [`action=edit`](https://www.mediawiki.org/wiki/API:Edit),
+and concepts, see [Mapping Format](../authoring/mapping-format.md). To create, change, or delete one, use MediaWiki's
+Action API on the page `Mapping:<name>`: [`action=edit`](https://www.mediawiki.org/wiki/API:Edit),
 [`action=delete`](https://www.mediawiki.org/wiki/API:Delete).
 
 | Endpoint | Description |
