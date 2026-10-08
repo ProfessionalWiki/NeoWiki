@@ -62,7 +62,7 @@ interface PartView {
 	part: MonolingualText;
 	/** The part's tag, the way the editor writes it; null when the reader reads that language. */
 	tag: string | null;
-	/** The part's language, named for anyone who cannot place its tag, when MediaWiki names it. */
+	/** The part's language, named for anyone who cannot place its tag, when MediaWiki lists it. */
 	languageName?: string;
 }
 
