@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
+use MediaWiki\MainConfigNames;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\ResponseInterface;
 use MediaWiki\Title\Title;
@@ -11,6 +12,7 @@ use MediaWiki\User\User;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSchemaApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use StatusValue;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
@@ -46,6 +48,27 @@ class DeleteSchemaApiTest extends NeoWikiIntegrationTestCase {
 		$this->delete( 'Person' );
 
 		$this->assertNotEmpty( $this->getDeletionReason( 'Person' ) );
+	}
+
+	public function testDeletionLeftToABackgroundJobAnswersAccepted(): void {
+		$this->overrideConfigValue( MainConfigNames::DeleteRevisionsBatchSize, 1 );
+		$this->createSchema( 'Person', '{ "propertyDefinitions": {} }' );
+		$this->createSchema( 'Person', '{ "description": "Someone", "propertyDefinitions": {} }' );
+
+		$response = $this->delete( 'Person' );
+
+		$this->assertSame( 202, $response->getStatusCode() );
+		$this->assertSame( '', $this->bodyOf( $response ) );
+	}
+
+	public function testDeletionThatDidNotHappenIsNotReportedAsDone(): void {
+		$this->createSchema( 'Person' );
+		$this->makeDeletionEndWithoutDeleting();
+
+		$response = $this->delete( 'Person' );
+
+		$this->assertSame( 409, $response->getStatusCode() );
+		$this->assertTrue( $this->schemaPageExists( 'Person' ) );
 	}
 
 	public function testUserWithoutTheDeleteRightIsRefused(): void {
@@ -118,6 +141,20 @@ class DeleteSchemaApiTest extends NeoWikiIntegrationTestCase {
 			'bodyContents' => json_encode( $comment === null ? (object)[] : [ 'comment' => $comment ] ),
 			'headers' => [ 'Content-Type' => 'application/json' ],
 		] );
+	}
+
+	/**
+	 * A hook's non-fatal error ends the deletion as a concurrent edit or deletion does: reported as done, without a
+	 * log entry.
+	 */
+	private function makeDeletionEndWithoutDeleting(): void {
+		$this->setTemporaryHook(
+			'PageDelete',
+			static function ( $page, $deleter, $reason, StatusValue $status ): bool {
+				$status->error( 'cannotdelete', $page->getDBkey() );
+				return false;
+			}
+		);
 	}
 
 	/**

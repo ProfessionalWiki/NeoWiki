@@ -4,8 +4,11 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 
+use MediaWiki\Request\WebResponse;
+use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Title\Title;
+use Wikimedia\Message\MessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\Rdbms\IDBAccessObject;
 
@@ -16,9 +19,10 @@ class DeleteSchemaApi extends SchemaPageWriteApi {
 	}
 
 	public function execute(): Response {
-		parent::execute();
+		$response = new Response();
+		$response->setStatus( parent::execute()->getStatusCode() );
 
-		return new Response();
+		return $response;
 	}
 
 	protected function getActionParameters(): array {
@@ -29,7 +33,29 @@ class DeleteSchemaApi extends SchemaPageWriteApi {
 	}
 
 	protected function mapActionModuleResult( array $data ): array {
+		$deletion = $data['delete'] ?? [];
+
+		if ( !isset( $deletion['logid'] ) && !( $deletion['scheduled'] ?? false ) ) {
+			// The module reports a deletion that a concurrent edit or deletion stopped as done, without a log entry.
+			throw new LocalizedHttpException(
+				new MessageValue( 'cannotdelete', [ $this->getSchemaPage()->getPrefixedText() ] ),
+				409
+			);
+		}
+
 		return [];
+	}
+
+	protected function mapActionModuleResponse(
+		WebResponse $actionModuleResponse,
+		array $actionModuleResult,
+		Response $response
+	): void {
+		parent::mapActionModuleResponse( $actionModuleResponse, $actionModuleResult, $response );
+
+		if ( $actionModuleResult['delete']['scheduled'] ?? false ) {
+			$response->setStatus( 202 );
+		}
 	}
 
 	public function getBodyParamSettings(): array {
