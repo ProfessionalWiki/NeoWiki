@@ -19,11 +19,8 @@ use Wikimedia\ParamValidator\ParamValidator;
  * Changes a Schema page through one of MediaWiki's action modules rather than a NeoWiki save path, so that
  * the change is authorized, validated and filtered exactly like editing or deleting the page in MediaWiki.
  */
-abstract class SchemaPageActionApi extends ActionModuleBasedHandler {
+abstract class SchemaPageWriteApi extends ActionModuleBasedHandler {
 
-	/**
-	 * The action modules report a refusal by error code only. These codes fit a status other than 400.
-	 */
 	private const array STATUS_BY_ERROR_CODE = [
 		'autoblocked' => 403,
 		'bigdelete' => 403,

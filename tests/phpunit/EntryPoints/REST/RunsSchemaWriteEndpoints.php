@@ -13,15 +13,12 @@ use MediaWiki\Session\CsrfTokenSet;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
-use ProfessionalWiki\NeoWiki\EntryPoints\REST\SchemaPageActionApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\SchemaPageWriteApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use Wikimedia\Rdbms\IDBAccessObject;
 
-/**
- * Runs the Schema write endpoints as their callers do.
- */
-trait RunsSchemaPageActions {
+trait RunsSchemaWriteEndpoints {
 
 	use HandlerTestTrait;
 
@@ -30,7 +27,7 @@ trait RunsSchemaPageActions {
 	 * acts as; on the wiki they are one requesting user. An error comes back as the response the caller
 	 * would get.
 	 */
-	private function executeAs( User $user, SchemaPageActionApi $api, RequestData $request ): ResponseInterface {
+	private function executeAs( User $user, SchemaPageWriteApi $api, RequestData $request ): ResponseInterface {
 		RequestContext::getMain()->setUser( $user );
 
 		try {
@@ -40,9 +37,6 @@ trait RunsSchemaPageActions {
 		}
 	}
 
-	/**
-	 * Denies everyone reading that one Schema page, as an access control restricting pages one by one does.
-	 */
 	private function denyReadingSchemaPage( string $schemaName ): void {
 		$this->setTemporaryHook(
 			'getUserPermissionsErrors',

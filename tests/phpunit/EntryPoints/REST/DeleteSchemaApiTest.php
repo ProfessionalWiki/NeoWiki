@@ -14,16 +14,13 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
- * Deletes through MediaWiki's real delete path in the test database: behaving exactly like that path is the
- * endpoint's contract.
- *
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\DeleteSchemaApi
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\SchemaPageActionApi
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\SchemaPageWriteApi
  * @group Database
  */
 class DeleteSchemaApiTest extends NeoWikiIntegrationTestCase {
 
-	use RunsSchemaPageActions;
+	use RunsSchemaWriteEndpoints;
 
 	public function testDeletesTheSchemaPage(): void {
 		$this->createSchema( 'Person' );
