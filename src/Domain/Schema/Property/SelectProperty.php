@@ -88,7 +88,7 @@ class SelectProperty extends PropertyDefinition {
 	}
 
 	private function assertUniqueLabels(): void {
-		$labels = array_map( fn( SelectOption $o ): string => $o->normalizedLabel(), $this->options );
+		$labels = array_map( fn( SelectOption $o ): string => $o->foldedLabel(), $this->options );
 
 		if ( count( $labels ) !== count( array_unique( $labels ) ) ) {
 			throw new InvalidArgumentException( 'Select option labels must be unique' );

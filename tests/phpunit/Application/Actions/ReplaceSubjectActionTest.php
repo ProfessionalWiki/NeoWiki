@@ -7,8 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
+use ProfessionalWiki\NeoWiki\Application\StatementNormalizer;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
@@ -82,7 +81,7 @@ class ReplaceSubjectActionTest extends TestCase {
 			writeAuthorizer: $authorizer ?? new SpySubjectWriteAuthorizer( allowed: true ),
 			statementListBuilder: $builder,
 			schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
-			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
+			statementNormalizer: new StatementNormalizer( $registry ),
 			proposedSubjectValidator: new ProposedSubjectValidator(
 				schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
 				subjectValidator: new SubjectValidator(
@@ -214,12 +213,25 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	private function registerSchemaWithSelect(): void {
+		$this->registerSchemaWithSelectOf( new PropertyCore( description: '', required: false, default: null ) );
+	}
+
+	private function registerSchemaWithSelectWhoseOptionsAreAnError(): void {
+		$this->registerSchemaWithSelectOf( new PropertyCore(
+			description: '',
+			required: false,
+			default: null,
+			constraintSeverities: [ 'options' => Severity::Error ],
+		) );
+	}
+
+	private function registerSchemaWithSelectOf( PropertyCore $core ): void {
 		$this->schemaLookup->updateSchema( new Schema(
 			name: new SchemaName( self::SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
 				'Status' => new SelectProperty(
-					core: new PropertyCore( description: '', required: false, default: null ),
+					core: $core,
 					options: [
 						new SelectOption( id: 'opt_draft', label: 'Draft' ),
 						new SelectOption( id: 'opt_approved', label: 'Approved' ),
@@ -524,6 +536,49 @@ class ReplaceSubjectActionTest extends TestCase {
 		);
 
 		$this->assertSame( [ 'opt_approved' ], $this->getStatusValue( new SubjectId( self::SUBJECT_ID ) )->strings );
+	}
+
+	/**
+	 * The editor sends back every stored value, so an option the Schema has since dropped arrives
+	 * with every edit of the Subject. It is an existing violation, which never blocks (ADR 21).
+	 */
+	public function testAnOptionTheSchemaNoLongerHasDoesNotBlockSavingTheSubject(): void {
+		$this->registerSchemaWithSelectWhoseOptionsAreAnError();
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+			statements: new StatementList( [
+				TestStatement::build( property: 'Status', value: 'opt_retired', propertyType: 'select' ),
+			] ),
+		) );
+		$updatesBeforeAction = $this->subjectRepository->updateSubjectCallCount;
+
+		$this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'New label',
+			[ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'opt_retired' ] ] ],
+			null
+		);
+
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+		$this->assertSame( $updatesBeforeAction + 1, $this->subjectRepository->updateSubjectCallCount );
+	}
+
+	public function testANewOptionNamingNothingIsRejectedUnderEnforcementWhenOptionsAreAnError(): void {
+		$this->registerSchemaWithSelectWhoseOptionsAreAnError();
+		$this->subjectRepository->updateSubject( TestSubject::build(
+			id: new SubjectId( self::SUBJECT_ID ),
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		) );
+
+		$this->newAction( validationEnforced: true )->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'Label',
+			[ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'Bogus' ] ] ],
+			null
+		);
+
+		$this->assertTrue( $this->presenterSpy->validationFailed );
 	}
 
 	public function testSelectValuePassesThroughWhenNoSchemaRegistered(): void {

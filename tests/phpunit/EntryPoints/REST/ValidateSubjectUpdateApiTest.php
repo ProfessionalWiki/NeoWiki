@@ -104,6 +104,35 @@ class ValidateSubjectUpdateApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'max-value', $responseBody['violations'][0]['code'] );
 	}
 
+	public function testSelectLabelIsResolvedBeforeValidation(): void {
+		$this->createSchema(
+			TestSubject::DEFAULT_SCHEMA_ID,
+			'{"title":"' . TestSubject::DEFAULT_SCHEMA_ID . '","propertyDefinitions":{"Status":{"type":"select","options":[{"id":"opt_draft","label":"Draft"}]}}}'
+		);
+		$this->createPageWithSubjects(
+			'ValidateSubjectUpdateApiSelectTest',
+			mainSubject: TestSubject::build(
+				id: 'sTestSU11111111',
+				label: new SubjectLabel( 'Test subject sTestSU11111111' ),
+			)
+		);
+
+		$body = $this->validBody();
+		$body['statements'] = [
+			'Status' => [ 'propertyType' => 'select', 'value' => [ 'Draft' ] ],
+		];
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'sTestSU11111111', $body )
+		);
+
+		$responseBody = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( [], $responseBody['violations'] );
+	}
+
 	public function testNonExistentSubjectReturns404(): void {
 		$response = $this->executeHandler(
 			$this->newValidateSubjectUpdateApi(),

@@ -75,6 +75,9 @@ A property mapped to `null` instead of a Statement object is skipped when the JS
 | `relation` | Array of [relation objects](#relations). |
 | `monolingualText` | Array of [monolingual text objects](#monolingual-text). |
 
+Each part of a `select` value may also be sent as an option label or as an `{ "id", "label" }` object; see
+[Select](schema-format.md#select-select).
+
 A multi-part `text` value:
 
 ```json

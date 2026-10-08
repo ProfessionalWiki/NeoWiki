@@ -9,9 +9,8 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
 use ProfessionalWiki\NeoWiki\Application\NewSubjectIdResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use ProfessionalWiki\NeoWiki\Application\StatementNormalizer;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -113,7 +112,7 @@ class CreateSubjectActionTest extends TestCase {
 				TestSubjectIds::newParser()
 			),
 			TestSources::newSchemaResolver( $this->schemaLookup ),
-			new SelectStatementResolver( new SelectValueResolver() ),
+			new StatementNormalizer( $registry ),
 			new ProposedSubjectValidator(
 				schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
 				subjectValidator: new SubjectValidator(
@@ -458,9 +457,8 @@ class CreateSubjectActionTest extends TestCase {
 					'Status' => [
 						'propertyType' => 'select',
 						'value' => [
-							'opt_draft',
-							'Approved',
-							[ 'id' => 'opt_draft', 'label' => 'Draft' ],
+							'Draft',
+							[ 'id' => 'opt_approved', 'label' => 'Approved' ],
 						],
 					],
 				]
@@ -468,7 +466,7 @@ class CreateSubjectActionTest extends TestCase {
 		);
 
 		$this->assertSame(
-			[ 'opt_draft', 'opt_approved', 'opt_draft' ],
+			[ 'opt_draft', 'opt_approved' ],
 			$this->getStatusValueForCreatedSubject()->strings
 		);
 	}

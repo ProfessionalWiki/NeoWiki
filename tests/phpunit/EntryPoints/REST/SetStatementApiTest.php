@@ -50,6 +50,21 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	private function createSubjectPageWithSelectProperty(): void {
+		$this->createSchema(
+			'SetStatementSchema',
+			'{"title":"SetStatementSchema","propertyDefinitions":{"Status":{"type":"select","options":[{"id":"opt_draft","label":"Draft"}]}}}'
+		);
+		$this->createPageWithSubjects(
+			'SetStatementApiTest',
+			mainSubject: TestSubject::build(
+				id: self::SUBJECT_ID,
+				label: new SubjectLabel( 'Professional Wiki' ),
+				schemaName: new SchemaName( 'SetStatementSchema' ),
+			)
+		);
+	}
+
 	private function createLabellessSubjectPage(): void {
 		$this->createSchema(
 			'SetStatementSchema',
@@ -311,6 +326,33 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( 400, $response->getStatusCode() );
 		$this->assertNull( $this->getStoredValue( 'Founded at' ) );
+	}
+
+	public function testSelectValueNamingNoOptionIsStoredWithAnInvalidOptionWarning(): void {
+		$this->createSubjectPageWithSelectProperty();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Status', [ 'statement' => [ 'propertyType' => 'select', 'value' => 'Nonexistent' ] ] )
+		);
+		$body = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( 'invalid-option', $body['violations'][0]['code'] );
+		$this->assertSame( 'warning', $body['violations'][0]['severity'] );
+		$this->assertSame( [ 'Nonexistent' ], $this->getStoredValue( 'Status' ) );
+	}
+
+	public function testSelectObjectWithANonStringIdReturns400(): void {
+		$this->createSubjectPageWithSelectProperty();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Status', [ 'statement' => [ 'propertyType' => 'select', 'value' => [ [ 'id' => 42 ] ] ] ] )
+		);
+
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertNull( $this->getStoredValue( 'Status' ) );
 	}
 
 	/**

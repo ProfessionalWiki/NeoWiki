@@ -22,6 +22,14 @@ Your `PropertyDefinition` class implements `toJsonSchema()` beside `nonCoreToJso
 about your type. For values held as a list of parts, `listValueSchema()` wraps the schema of one part in the
 `maxItems` and `minItems` the definition implies.
 
+A type that accepts input shapes beyond the one it stores also implements
+[`NormalizesRawValue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/src/Domain/PropertyType/NormalizesRawValue.php).
+`normalizeRawValue()` returns the value in the shape the type stores. A value that names nothing the definition knows
+is returned as sent, so that `validate()` reports it at the severity the Schema sets; one that cannot be stored even
+as sent throws `InvalidArgumentException`, which the API answers with `400`. The core
+[`SelectType`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/src/Domain/PropertyType/Types/SelectType.php)
+is the working example.
+
 ## Projection
 
 Statements of a Property Type without a Neo4j value builder are omitted from the Neo4j projection; without an RDF

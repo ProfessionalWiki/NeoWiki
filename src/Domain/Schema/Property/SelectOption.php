@@ -29,8 +29,16 @@ class SelectOption {
 		return $this->label;
 	}
 
-	public function normalizedLabel(): string {
-		return strtolower( trim( $this->label ) );
+	public function foldedLabel(): string {
+		return self::foldLabel( $this->label );
+	}
+
+	/**
+	 * The form a label is matched in: what a caller writes need not be cased or spaced as the
+	 * Schema writes it.
+	 */
+	public static function foldLabel( string $label ): string {
+		return mb_strtolower( trim( $label ) );
 	}
 
 	public function equals( self $other ): bool {

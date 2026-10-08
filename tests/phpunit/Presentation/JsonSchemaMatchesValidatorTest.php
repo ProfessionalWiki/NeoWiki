@@ -9,9 +9,8 @@ use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubject\ValidateSubjectQuery;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use ProfessionalWiki\NeoWiki\Application\StatementNormalizer;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
@@ -552,7 +551,7 @@ class JsonSchemaMatchesValidatorTest extends TestCase {
 				idGenerator: new StubIdGenerator( 'Generated11111' ),
 				subjectIdParser: TestSubjectIds::newParser(),
 			),
-			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
+			statementNormalizer: new StatementNormalizer( $this->propertyTypeLookup() ),
 			schemaReferenceParser: TestSources::newSchemaReferenceParser(),
 		);
 	}
