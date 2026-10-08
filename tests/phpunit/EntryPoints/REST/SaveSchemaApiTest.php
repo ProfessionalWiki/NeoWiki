@@ -121,6 +121,15 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testDecomposedCharactersAreStoredComposed(): void {
+		$this->save( 'Person', '{ "propertyDefinitions": { "Cafe' . "\u{0301}" . '": { "type": "text" } } }' );
+
+		$this->assertSame(
+			[ "Caf\u{00E9}" ],
+			array_keys( json_decode( $this->getSchemaPageText( 'Person' ), true )['propertyDefinitions'] )
+		);
+	}
+
 	public function testInvalidSchemaIsRefusedWithTheValidatorsVerdict(): void {
 		$response = $this->save( 'Person', '{ "propertyDefinitions": { "Age": { "minimum": 0 } } }' );
 
