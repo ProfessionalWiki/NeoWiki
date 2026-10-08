@@ -40,6 +40,7 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 | `POST /neowiki/v0/subject-ids` | Mint a batch of unused Subject IDs to assign on create, e.g. to wire relations across an interlinked import. Body `count` (1–1000). |
 | `POST /neowiki/v0/subjects` | Create a Subject together with a page of its own, in one revision, as that page's main Subject. See [Creating Subjects](subject-format.md#creating-subjects). |
 | `GET /neowiki/v0/subjects` | List Subjects, newest first. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. Query: `schema` (only that Schema's Subjects), `search` (case-insensitive substring of the name or page title, or case-sensitive prefix of the ID), `sort` (`newest`, `name`, `schema`, `page`, `edited`) and `direction` (`asc`, `desc`; ignored by `newest`). Needs a Neo4j graph store. |
+| `GET /neowiki/v0/subject-counts` | Count the Subjects of each Schema: `{"counts": {"Artist": 12}}`. A Schema with no Subjects is absent; one whose page is deleted or unreadable can be present. A count can lag a change by up to a minute. Needs a Neo4j graph store. |
 | `GET /neowiki/v0/subject-labels` | Find Subjects by label; returns `id`/`label` pairs. A Subject with no label is absent. Query: `schema` (only Subjects of that Schema; omit for every Schema), `search` (label prefix), `limit`. |
 | `GET /neowiki/v0/subject/{subjectId}/referencingSubjects` | List the Subjects whose relations point at this one. See [Referencing Subjects](subject-format.md#referencing-subjects). |
 
@@ -120,6 +121,9 @@ may not read a page they respond as if the data were absent — a `null` value, 
 `GET /subject-labels`, `GET /subjects`, and `GET /subject/{subjectId}/referencingSubjects` omit rows whose page you
 cannot read; because that filter runs per result, all cap `limit` at 50. A `GET /subjects` request reads at most 1,000
 Subjects looking for ones you may read; on reaching that cap it ends the listing with a `null` `nextCursor`.
+
+`GET /subject-counts` is gated by the `neowiki-query` right instead of per-page `read`: its counts include Subjects on
+pages you may not read. Without the right it answers `403`.
 
 The `GET /schemas`, `GET /layouts`, and `GET /mappings` list endpoints paginate with an opaque cursor over the rows you
 may read (see [Cursor pagination](#cursor-pagination)): a restricted Schema, Layout, or Mapping is skipped exactly like

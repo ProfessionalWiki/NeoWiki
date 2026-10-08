@@ -111,6 +111,17 @@ describe( 'SchemaStore fetchAllSchemaSummaries', () => {
 		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
 	} );
 
+	it( 'lists the summaries of every page by name', async () => {
+		const getSchemaSummaries = vi.fn()
+			.mockResolvedValueOnce( { schemas: [ summary( 'Zebra' ), summary( 'Écrivain' ) ], nextCursor: 'cursor-1' } )
+			.mockResolvedValueOnce( lastPage( [ summary( 'Artist' ) ] ) );
+		withRepository( { getSchemaSummaries } );
+
+		const result = await useSchemaStore().fetchAllSchemaSummaries();
+
+		expect( result.map( ( schema ) => schema.name ) ).toEqual( [ 'Artist', 'Écrivain', 'Zebra' ] );
+	} );
+
 	it( 'shares one in-flight request across concurrent callers', async () => {
 		const getSchemaSummaries = vi.fn().mockResolvedValue( { schemas: [ summary( 'A' ) ], nextCursor: null } );
 		withRepository( { getSchemaSummaries } );

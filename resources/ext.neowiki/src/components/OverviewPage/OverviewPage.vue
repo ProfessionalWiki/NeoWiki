@@ -48,7 +48,28 @@
 			</template>
 
 			<template #item-name="{ item }">
-				<a :href="schemaUrl( item )">{{ item }}</a>
+				<a
+					:id="nameId( item )"
+					class="ext-neowiki-overview__schema-name"
+					:href="schemaUrl( item )"
+				>{{ item }}</a>
+			</template>
+
+			<template #item-description="{ item }">
+				<span class="ext-neowiki-overview__description">{{ item }}</span>
+			</template>
+
+			<template #item-subjects="{ row }">
+				<span
+					v-if="subjectCountsPending"
+					class="ext-neowiki-overview__subject-count"
+				/>
+				<a
+					v-else
+					class="ext-neowiki-overview__subject-count"
+					:href="pageUrl( `Special:Subjects/${ row.name }` )"
+					:aria-describedby="nameId( row.name )"
+				>{{ subjectListLinkText( subjectCountOf( row.name ) ) }}</a>
 			</template>
 
 			<template #item-actions="{ row }">
@@ -78,12 +99,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { CdxButton, CdxCard, CdxIcon, CdxTable } from '@wikimedia/codex';
+import { CdxButton, CdxCard, CdxIcon, CdxTable, useGeneratedId } from '@wikimedia/codex';
 import type { TableColumn } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import RecentSubjectsTable from '@/components/SubjectsTable/RecentSubjectsTable.vue';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
+import { subjectListLinkText, useSubjectCounts } from '@/composables/useSubjectCounts.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
@@ -128,6 +150,7 @@ const props = defineProps<{
 const schemaStore = useSchemaStore();
 const subjectStore = useSubjectStore();
 const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
+const { subjectCountsShown, subjectCountsPending, subjectCountOf, loadSubjectCounts } = useSubjectCounts();
 
 const loading = ref( true );
 const rows = ref<SchemaSummary[]>( [] );
@@ -136,6 +159,7 @@ const rows = ref<SchemaSummary[]>( [] );
 const pinnedSchema = ref<string | undefined>( undefined );
 
 const subjectListAvailable = isSubjectListAvailable();
+const idPrefix = useGeneratedId( 'ext-neowiki-overview' );
 
 const hasSchemas = computed( () => rows.value.length > 0 );
 
@@ -146,7 +170,7 @@ const pageLinks = computed( () => [
 	...( props.canEditConfiguration ? [ CONFIGURATION_LINK ] : [] )
 ] );
 
-const columns: TableColumn[] = [
+const columns = computed( (): TableColumn[] => [
 	{
 		id: 'name',
 		label: mw.msg( 'neowiki-schemas-column-name' )
@@ -155,11 +179,17 @@ const columns: TableColumn[] = [
 		id: 'description',
 		label: mw.msg( 'neowiki-schemas-column-description' )
 	},
+	...( subjectCountsShown.value ? [ { id: 'subjects', label: mw.msg( 'neowiki-schemas-column-subjects' ) } ] : [] ),
 	{
 		id: 'actions',
 		label: ''
 	}
-];
+] );
+
+// Names the Schema to screen readers on the link to its Subjects. Encoded: an id holds no spaces, a name can.
+function nameId( schemaName: string ): string {
+	return `${ idPrefix }-${ encodeURIComponent( schemaName ) }`;
+}
 
 function schemaUrl( name: string ): string {
 	return mw.util.getUrl( `Schema:${ name }` );
@@ -177,6 +207,7 @@ function openCreator( schemaName: string | undefined ): void {
 
 onMounted( async () => {
 	checkCreateSubjectPagePermission();
+	loadSubjectCounts();
 
 	try {
 		rows.value = await schemaStore.fetchAllSchemaSummaries();
@@ -213,6 +244,27 @@ onMounted( async () => {
 
 	&__recent-subjects {
 		margin-bottom: @spacing-150;
+	}
+
+	// One line per Schema: the description gives way, cut with an ellipsis.
+	&__schema-name,
+	&__subject-count {
+		white-space: nowrap;
+	}
+
+	&__description {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 1;
+		overflow: hidden;
+		-webkit-hyphens: none;
+		hyphens: none;
+	}
+
+	// Holds a two-digit count's width while the counts load, so the column does not widen when they arrive.
+	&__subject-count {
+		display: inline-block;
+		min-width: 5.5em;
 	}
 }
 </style>

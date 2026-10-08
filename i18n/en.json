@@ -266,7 +266,7 @@
 	"neowiki-page-picker-create-named": "Use \"$1\" as a new page",
 
 	"neowiki-schema-creator-title": "Create schema",
-	"neowiki-schema-creator-button": "Create",
+	"neowiki-schema-creator-button": "Create schema",
 	"neowiki-schema-creator-name-field": "Schema name",
 	"neowiki-schema-creator-name-placeholder": "Enter a name for the schema",
 	"neowiki-schema-creator-name-required": "Please enter a schema name.",
@@ -278,7 +278,7 @@
 
 	"neowiki-schemas-column-name": "Name",
 	"neowiki-schemas-column-description": "Description",
-	"neowiki-schemas-column-properties": "Properties",
+	"neowiki-schemas-column-subjects": "Subjects",
 	"neowiki-schemas-empty": "No schemas have been created yet.",
 	"neowiki-schemas-export-button": "Export",
 	"neowiki-schemas-export-error": "Failed to export schemas.",
@@ -301,9 +301,15 @@
 	"neowiki-schemas-import-replaced": "Replaced {{PLURAL:$1|schema|schemas}}: $2",
 	"neowiki-schemas-import-failed": "Failed to import the $1 schema: $2",
 	"neowiki-schemas-import-summary": "Import schema via NeoWiki UI",
+	"neowiki-schemas-find": "Find a schema",
+	"neowiki-schemas-no-match": "No schemas match “$1”.",
+	"neowiki-schemas-load-error": "The schemas could not be loaded.",
+	"neowiki-schemas-view-list": "List view",
+	"neowiki-schemas-view-cards": "Card view",
 	"neowiki-schema-sidebar-all-schemas": "All schemas",
 	"neowiki-sidebar-create-subject": "Create subject",
 	"neowiki-schema-create-subject": "Create $1",
+	"neowiki-schema-subject-count": "{{PLURAL:$1|$1 subject|$1 subjects}}",
 
 	"neowiki-schema-delete": "Delete schema",
 

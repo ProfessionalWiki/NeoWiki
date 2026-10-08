@@ -35,7 +35,7 @@ async function pageThroughSchemaSummaries(): Promise<SchemaSummary[]> {
 		cursor = page.nextCursor;
 	} while ( cursor !== null );
 
-	return summaries;
+	return summaries.sort( ( a, b ) => a.name.localeCompare( b.name ) );
 }
 
 export const useSchemaStore = defineStore( 'schema', {

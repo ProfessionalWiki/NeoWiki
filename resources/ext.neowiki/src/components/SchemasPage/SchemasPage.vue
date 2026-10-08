@@ -1,91 +1,99 @@
 <template>
 	<div class="ext-neowiki-schemas-page">
-		<CdxTable
-			:columns="columns"
-			:data="rows"
-			:caption="$i18n( 'neowiki-special-schemas' ).text()"
-			:pending="loading"
-			:paginate="true"
-			:server-pagination="true"
-			:total-rows="totalRows"
-			:pagination-size-default="paginationSizeOptions[ 0 ].value"
-			:pagination-size-options="paginationSizeOptions"
-			@load-more="onLoadMore"
-		>
-			<template #header>
-				<div class="ext-neowiki-schemas-page__header-actions">
-					<CdxButton
-						v-if="canCreateSchemas"
-						@click="isCreatorOpen = true"
-					>
-						<CdxIcon :icon="cdxIconAdd" />
-						{{ $i18n( 'neowiki-schema-creator-button' ).text() }}
-					</CdxButton>
-					<SchemaExportButton />
-					<SchemaImportButton
-						v-if="canCreateSchemas"
-						@imported="onSchemaSaved"
+		<div class="ext-neowiki-schemas-page__toolbar">
+			<CdxSearchInput
+				v-model="findText"
+				class="ext-neowiki-schemas-page__find"
+				:placeholder="$i18n( 'neowiki-schemas-find' ).text()"
+				:aria-label="$i18n( 'neowiki-schemas-find' ).text()"
+			/>
+			<CdxToggleButtonGroup
+				v-model="view"
+				:buttons="viewButtons"
+			>
+				<!-- Only for the tooltip, which the group cannot give its buttons. -->
+				<template #default="{ button }">
+					<CdxIcon
+						:icon="button.icon"
+						:title="button.ariaLabel"
 					/>
-				</div>
-			</template>
-
-			<template #item-name="{ item }">
-				<a :href="schemaUrl( item )">{{ item }}</a>
-			</template>
-
-			<template #item-description="{ item }">
-				<span
-					v-if="!item"
-					class="ext-neowiki-schemas-page__empty-value"
-				>-</span>
-				<template v-else>
-					{{ item }}
 				</template>
-			</template>
+			</CdxToggleButtonGroup>
+			<div class="ext-neowiki-schemas-page__actions">
+				<CdxButton
+					v-if="canCreateSchemas"
+					class="ext-neowiki-schemas-page__create"
+					@click="isCreatorOpen = true"
+				>
+					<CdxIcon :icon="cdxIconAdd" />
+					{{ $i18n( 'neowiki-schema-creator-button' ).text() }}
+				</CdxButton>
+				<SchemaExportButton />
+				<SchemaImportButton
+					v-if="canCreateSchemas"
+					@imported="loadSchemas"
+				/>
+			</div>
+		</div>
 
-			<template #item-actions="{ row }">
-				<span class="ext-neowiki-schemas-page__actions">
-					<CdxButton
-						v-if="canCreateSubjectPage"
-						weight="quiet"
-						:aria-label="$i18n( 'neowiki-schema-create-subject', row.name ).text()"
-						:title="$i18n( 'neowiki-schema-create-subject', row.name ).text()"
-						@click="openSubjectCreator( row.name )"
-					>
-						<CdxIcon :icon="cdxIconAdd" />
-					</CdxButton>
-					<template v-if="canEditSchema">
-						<CdxButton
-							weight="quiet"
-							:aria-label="$i18n( 'neowiki-edit-schema' ).text()"
-							:title="$i18n( 'neowiki-edit-schema' ).text()"
-							@click="openEditor( row.name )"
-						>
-							<CdxIcon :icon="cdxIconEdit" />
-						</CdxButton>
-						<CdxButton
-							weight="quiet"
-							action="destructive"
-							:aria-label="$i18n( 'neowiki-schema-delete' ).text()"
-							:title="$i18n( 'neowiki-schema-delete' ).text()"
-							@click="confirmDelete( row.name )"
-						>
-							<CdxIcon :icon="cdxIconTrash" />
-						</CdxButton>
-					</template>
-				</span>
-			</template>
-
-			<template #empty-state>
-				{{ $i18n( 'neowiki-schemas-empty' ).text() }}
-			</template>
-		</CdxTable>
+		<CdxMessage
+			v-if="listState === 'failed'"
+			type="error"
+			:inline="true"
+		>
+			{{ $i18n( 'neowiki-schemas-load-error' ).text() }}
+		</CdxMessage>
+		<p
+			v-else-if="listState === 'loading'"
+			class="ext-neowiki-schemas-page__loading"
+		>
+			…
+		</p>
+		<SchemasTable
+			v-else-if="foundSchemas.length > 0 && view === 'list'"
+			:schemas="foundSchemas"
+			:can-edit="canEditSchema"
+			:can-delete="canDeleteSchema"
+			:can-create-subject="canCreateSubjectPage"
+			:subject-list-available="subjectListAvailable"
+			:subject-count-of="subjectCountOf"
+			:subject-count-pending="subjectCountsPending"
+			@edit="openEditor"
+			@delete="confirmDelete"
+			@create-subject="openSubjectCreator"
+		/>
+		<div
+			v-else-if="foundSchemas.length > 0"
+			class="ext-neowiki-schemas-page__grid"
+		>
+			<SchemaCard
+				v-for="summary in foundSchemas"
+				:key="summary.name"
+				:summary="summary"
+				:can-edit="canEditSchema"
+				:can-delete="canDeleteSchema"
+				:can-create-subject="canCreateSubjectPage"
+				:subject-list-available="subjectListAvailable"
+				:subject-previews="subjectPreviews"
+				:subject-count="subjectCountOf( summary.name )"
+				:subject-count-pending="subjectCountsPending"
+				@edit="openEditor( summary.name )"
+				@delete="confirmDelete( summary.name )"
+				@create-subject="openSubjectCreator( summary.name )"
+			/>
+		</div>
+		<p
+			v-else
+			class="ext-neowiki-schemas-page__empty"
+		>
+			{{ emptyText }}
+		</p>
 
 		<SchemaCreatorDialog
 			v-if="canCreateSchemas"
 			:open="isCreatorOpen"
 			@update:open="isCreatorOpen = $event"
-			@created="fetchSchemas( 0, pageSize )"
+			@created="onSchemaCreated"
 		/>
 
 		<SchemaEditorDialog
@@ -93,13 +101,12 @@
 			:open="isEditorOpen"
 			:initial-schema="editingSchema"
 			:on-save="handleSaveSchema"
-			@saved="onSchemaSaved"
 			@update:open="onEditorOpenChange"
 		/>
 
 		<DeletePageDialog
 			:open="isDeleteConfirmOpen"
-			:page-title="`Schema:${ deletingSchemaName }`"
+			:page-title="SCHEMA_PREFIX + deletingSchemaName"
 			:display-name="deletingSchemaName"
 			:type-label="$i18n( 'neowiki-schema-noun' ).text()"
 			@update:open="isDeleteConfirmOpen = $event"
@@ -116,19 +123,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, onMounted, nextTick } from 'vue';
-import { CdxButton, CdxIcon, CdxTable } from '@wikimedia/codex';
-import type { TableColumn } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
-import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
-import { useCursorPagination } from '@/composables/useCursorPagination.ts';
+import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue';
+import { type ButtonGroupItem, CdxButton, CdxIcon, CdxMessage, CdxSearchInput, CdxToggleButtonGroup } from '@wikimedia/codex';
+import { cdxIconAdd, cdxIconListBullet, cdxIconViewCompact } from '@wikimedia/codex-icons';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
+import { useSubjectCounts } from '@/composables/useSubjectCounts.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
+import { isSubjectListAvailable } from '@/subjectListAvailability.ts';
+import SchemaCard from './SchemaCard.vue';
+import SchemasTable from './SchemasTable.vue';
+import { SubjectPreviews } from './SubjectPreviews.ts';
 import SchemaCreatorDialog from './SchemaCreatorDialog.vue';
 import SchemaExportButton from './SchemaExportButton.vue';
 import SchemaImportButton from './SchemaImportButton.vue';
@@ -136,107 +145,88 @@ import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue
 import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 
-const paginationSizeOptions: { value: number }[] = [
-	{ value: 10 },
-	{ value: 20 },
-	{ value: 50 }
-];
+const SCHEMA_PREFIX = 'Schema:';
+const VIEW_STORAGE_KEY = 'neowiki-schemas-view';
 
-const loading = ref( true );
-const isCreatorOpen = ref( false );
-const pageSize = ref( paginationSizeOptions[ 0 ].value );
-const lastOffset = ref( 0 );
-// Undefined while the end of the listing is unknown, which keeps CdxTable in its indeterminate
-// pagination. Once a response carries a null cursor the exact count is known, and the table needs
-// it: its indeterminate next-button heuristic (a short page) misses a listing that ends exactly on
-// a page boundary. The count covers only rows this client has itself paged through, so it reveals
-// nothing the row listing did not already.
-const totalRows = ref<number | undefined>( undefined );
-const { cursorFor, recordNextCursor } = useCursorPagination();
-const { canEditSchema, canCreateSchemas, checkEditPermission, checkCreatePermission } = useSchemaPermissions();
+const {
+	canEditSchema,
+	canDeleteSchema,
+	canCreateSchemas,
+	checkEditPermission,
+	checkDeletePermission,
+	checkCreatePermission
+} = useSchemaPermissions();
 const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
+const { subjectCountsPending, subjectCountOf, loadSubjectCounts } = useSubjectCounts();
 const schemaStore = useSchemaStore();
 const subjectStore = useSubjectStore();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
+const subjectListAvailable = isSubjectListAvailable();
+// Kept for the whole page view, so a card filtered out and back in shows its Subjects without asking again.
+const subjectPreviews = new SubjectPreviews( NeoWikiServices.getSubjectSummaryLookup() );
 
+const schemas = ref<SchemaSummary[]>( [] );
+const listState = ref<'loading' | 'loaded' | 'failed'>( 'loading' );
+const findText = ref( '' );
+// Numbers the listings asked for, so one answered after a later one cannot replace its newer list.
+let listingSequence = 0;
+
+const viewButtons: ButtonGroupItem[] = [
+	{ value: 'list', label: null, icon: cdxIconListBullet, ariaLabel: mw.msg( 'neowiki-schemas-view-list' ) },
+	{ value: 'cards', label: null, icon: cdxIconViewCompact, ariaLabel: mw.msg( 'neowiki-schemas-view-cards' ) }
+];
+// The view last chosen in this browser: the cards if those, otherwise the list.
+const view = ref( mw.storage.get( VIEW_STORAGE_KEY ) === 'cards' ? 'cards' : 'list' );
+watch( view, ( chosen ) => mw.storage.set( VIEW_STORAGE_KEY, chosen ) );
+
+const isCreatorOpen = ref( false );
 const isEditorOpen = ref( false );
 const editingSchema = shallowRef<Schema | null>( null );
-
 const isDeleteConfirmOpen = ref( false );
 const deletingSchemaName = ref( '' );
-
-// The Schema the creator opens on, which the clicked row decides.
+// The Schema the Subject creator opens on, which the clicked card or row decides.
 const pinnedSchema = ref<string | undefined>( undefined );
 
-interface SchemaRow {
-	name: string;
-	description: string;
-	properties: number;
-}
+// The Schema picker's rule: any part of the name, in any case.
+const foundSchemas = computed( () => {
+	const query = findText.value.trim().toLowerCase();
+	return schemas.value.filter( ( summary ) => summary.name.toLowerCase().includes( query ) );
+} );
 
-const rows = ref<SchemaRow[]>( [] );
+const emptyText = computed( () => schemas.value.length === 0 ?
+	mw.msg( 'neowiki-schemas-empty' ) :
+	mw.msg( 'neowiki-schemas-no-match', findText.value.trim() ) );
 
-const columns: TableColumn[] = [
-	{
-		id: 'name',
-		label: mw.msg( 'neowiki-schemas-column-name' )
-	},
-	{
-		id: 'description',
-		label: mw.msg( 'neowiki-schemas-column-description' )
-	},
-	{
-		id: 'properties',
-		label: mw.msg( 'neowiki-schemas-column-properties' )
-	},
-	{
-		id: 'actions',
-		label: ''
+async function loadSchemas(): Promise<void> {
+	const sequence = ++listingSequence;
+
+	try {
+		const listing = await schemaStore.fetchAllSchemaSummaries();
+
+		if ( sequence !== listingSequence ) {
+			return;
+		}
+
+		schemas.value = listing;
+		listState.value = 'loaded';
+	} catch ( error ) {
+		if ( sequence !== listingSequence ) {
+			return;
+		}
+
+		console.error( 'Failed to load schemas:', error );
+		listState.value = 'failed';
 	}
-];
-
-function schemaUrl( name: string ): string {
-	return mw.util.getUrl( `Schema:${ name }` );
 }
 
-async function fetchSchemas( offset: number, limit: number ): Promise<void> {
-	loading.value = true;
-	pageSize.value = limit;
-	lastOffset.value = offset;
-
-	const cursor = cursorFor( offset );
-	const cursorParam = cursor === null ? '' : `&cursor=${ encodeURIComponent( cursor ) }`;
-	const restApiUrl = NeoWikiExtension.getInstance().getMediaWiki().util.wikiScript( 'rest' );
-	const httpClient = NeoWikiExtension.getInstance().newHttpClient();
-
-	const response = await httpClient.get(
-		`${ restApiUrl }/neowiki/v0/schemas?limit=${ limit }${ cursorParam }`
-	);
-
-	if ( !response.ok ) {
-		loading.value = false;
-		return;
-	}
-
-	const result: { schemas: SchemaSummary[]; nextCursor: string | null } = await response.json();
-
-	rows.value = result.schemas.map( ( summary ) => ( {
-		name: summary.name,
-		description: summary.description,
-		properties: summary.propertyCount
-	} ) );
-
-	recordNextCursor( offset, limit, result.nextCursor );
-	totalRows.value = result.nextCursor === null ? offset + result.schemas.length : undefined;
-	loading.value = false;
-}
-
-function onLoadMore( offset: number, limit: number ): void {
-	fetchSchemas( offset, limit );
+// A find text the new Schema's name does not contain would hide its card or row.
+function onSchemaCreated(): void {
+	findText.value = '';
+	loadSchemas();
 }
 
 // Vue patches the new pin onto the dialog before the dialog's pre-flush watcher on the open flag
-// reads it, so the creator opens on this row's Schema rather than the one clicked before it.
+// reads it, so the creator opens on this Schema rather than the one clicked before it.
 function openSubjectCreator( schemaName: string ): void {
 	pinnedSchema.value = schemaName;
 	subjectStore.openSubjectCreator();
@@ -247,31 +237,24 @@ async function openEditor( schemaName: string ): Promise<void> {
 		editingSchema.value = null;
 		await nextTick();
 
-		const [ schema ] = await Promise.all( [
-			schemaRepo.getSchema( schemaName ),
-			fetchSchemas( lastOffset.value, pageSize.value )
-		] );
-
-		editingSchema.value = schema;
+		editingSchema.value = await schemaRepo.getSchema( schemaName );
 		isEditorOpen.value = true;
 	} catch ( error ) {
-		mw.notify(
-			error instanceof Error ? error.message : String( error ),
-			{ type: 'error' }
-		);
+		mw.notify( error instanceof Error ? error.message : String( error ), { type: 'error' } );
 	}
 }
 
 const handleSaveSchema = async ( updatedSchema: Schema, comment: string ): Promise<void> => {
 	await schemaStore.saveSchema( updatedSchema, comment );
-};
 
-function onSchemaSaved(): void {
-	fetchSchemas( lastOffset.value, pageSize.value );
-}
+	schemas.value = schemas.value.map( ( summary ) => summary.name === updatedSchema.getName() ?
+		{ ...summary, description: updatedSchema.getDescription() } :
+		summary );
+};
 
 function onEditorOpenChange( value: boolean ): void {
 	isEditorOpen.value = value;
+
 	if ( !value ) {
 		editingSchema.value = null;
 	}
@@ -282,16 +265,20 @@ function confirmDelete( schemaName: string ): void {
 	isDeleteConfirmOpen.value = true;
 }
 
-function onSchemaDeleted(): void {
-	schemaStore.removeSchema( deletingSchemaName.value );
-	fetchSchemas( lastOffset.value, pageSize.value );
+function onSchemaDeleted( pageTitle: string ): void {
+	const schemaName = pageTitle.slice( SCHEMA_PREFIX.length );
+
+	schemaStore.removeSchema( schemaName );
+	schemas.value = schemas.value.filter( ( summary ) => summary.name !== schemaName );
 }
 
-onMounted( async () => {
+onMounted( () => {
 	checkCreateSubjectPagePermission();
-	await checkCreatePermission();
-	await checkEditPermission( '' );
-	await fetchSchemas( 0, paginationSizeOptions[ 0 ].value );
+	checkCreatePermission();
+	checkEditPermission( '' );
+	checkDeletePermission( '' );
+	loadSchemas();
+	loadSubjectCounts();
 } );
 </script>
 
@@ -299,22 +286,40 @@ onMounted( async () => {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-schemas-page {
-	max-width: 64rem;
+	&__toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: @spacing-50;
+		margin-bottom: @spacing-125;
+	}
 
-	&__empty-value {
-		color: @color-subtle;
-		user-select: none;
+	&__find {
+		flex: 0 1 22rem;
+		min-width: @size-1600;
 	}
 
 	&__actions {
-		display: inline-flex;
-		gap: @spacing-25;
-	}
-
-	&__header-actions {
 		display: flex;
 		flex-wrap: wrap;
 		gap: @spacing-50;
+		margin-inline-start: auto;
+	}
+
+	&__grid {
+		display: grid;
+		// Never wider than the page, which a phone's can be narrower than 18rem.
+		grid-template-columns: repeat( auto-fill, minmax( min( 18rem, 100% ), 1fr ) );
+		gap: @spacing-100;
+	}
+
+	&__loading {
+		color: @color-subtle;
+		font-style: italic;
+	}
+
+	&__empty {
+		color: @color-subtle;
 	}
 }
 </style>

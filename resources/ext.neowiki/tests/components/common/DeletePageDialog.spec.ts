@@ -80,6 +80,23 @@ describe( 'DeletePageDialog', () => {
 		expect( wrapper.emitted( 'update:open' ) ).toContainEqual( [ false ] );
 	} );
 
+	it( 'tells which page it deleted, even when asked about another one meanwhile', async () => {
+		let answerPost: ( value: unknown ) => void = () => undefined;
+		postMock.mockReturnValue( new Promise( ( resolve ) => {
+			answerPost = resolve;
+		} ) );
+		const wrapper = mountDialog();
+		wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+		await flushPromises();
+
+		await wrapper.setProps( { pageTitle: 'Schema:City', displayName: 'City' } );
+		answerPost( {} );
+		await flushPromises();
+
+		expect( wrapper.emitted( 'deleted' ) ).toEqual( [ [ 'Schema:Person' ] ] );
+		expect( notifyMock ).toHaveBeenCalledWith( 'neowiki-delete-successPerson', { type: 'success' } );
+	} );
+
 	it( 'falls back to the default summary when no reason is entered', async () => {
 		const wrapper = mountDialog();
 

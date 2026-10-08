@@ -26,6 +26,10 @@ class SpecialSchemasTest extends SpecialPageTestBase {
 		);
 	}
 
+	public function testLoadsTheFrontendModule(): void {
+		$this->assertContains( 'ext.neowiki', $this->outputOf( $this->newSpecialPage() )->getModules() );
+	}
+
 	public function testTheHelpLinkLeadsToTheDocs(): void {
 		$this->assertHelpLinkLeadsToTheDocs( $this->outputOf( $this->newSpecialPage() ) );
 	}

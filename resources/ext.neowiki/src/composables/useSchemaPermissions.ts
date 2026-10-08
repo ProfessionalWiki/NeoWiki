@@ -4,13 +4,16 @@ import type { SchemaPermissionHints } from '@/application/SchemaPermissionHints.
 
 export interface SchemaPermissions {
 	canEditSchema: Ref<boolean>;
+	canDeleteSchema: Ref<boolean>;
 	canCreateSchemas: Ref<boolean>;
 	checkEditPermission: ( schemaName: string ) => Promise<void>;
+	checkDeletePermission: ( schemaName: string ) => Promise<void>;
 	checkCreatePermission: () => Promise<void>;
 }
 
 export function useSchemaPermissions(): SchemaPermissions {
 	const canEditSchema = ref( false );
+	const canDeleteSchema = ref( false );
 	const canCreateSchemas = ref( false );
 	const hints: SchemaPermissionHints = NeoWikiServices.getSchemaPermissionHints();
 
@@ -20,6 +23,15 @@ export function useSchemaPermissions(): SchemaPermissions {
 		} catch ( error ) {
 			console.error( 'Failed to check schema permissions:', error );
 			canEditSchema.value = false;
+		}
+	}
+
+	async function checkDeletePermission( schemaName: string ): Promise<void> {
+		try {
+			canDeleteSchema.value = await hints.canDeleteSchema( schemaName );
+		} catch ( error ) {
+			console.error( 'Failed to check schema deletion permissions:', error );
+			canDeleteSchema.value = false;
 		}
 	}
 
@@ -34,8 +46,10 @@ export function useSchemaPermissions(): SchemaPermissions {
 
 	return {
 		canEditSchema,
+		canDeleteSchema,
 		canCreateSchemas,
 		checkEditPermission,
+		checkDeletePermission,
 		checkCreatePermission,
 	};
 }

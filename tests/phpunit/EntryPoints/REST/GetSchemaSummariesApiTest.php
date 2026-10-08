@@ -9,6 +9,7 @@ use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
@@ -160,6 +161,25 @@ JSON
 				'queryParams' => [ 'cursor' => 'not-a-cursor' ],
 			] )
 		);
+	}
+
+	public function testListsTheSchemasPastAPageWhoseTitleNamesNoSchema(): void {
+		$this->createSchema( 'Company' );
+		// A reserved title can be neither saved nor moved to, but an import can still leave one in the namespace.
+		$this->createSchema( 'Placeholder' );
+		$this->getDb()->newUpdateQueryBuilder()
+			->update( 'page' )
+			->set( [ 'page_title' => 'Subject' ] )
+			->where( [ 'page_namespace' => NeoWikiExtension::NS_SCHEMA, 'page_title' => 'Placeholder' ] )
+			->caller( __METHOD__ )
+			->execute();
+
+		$data = json_decode( $this->executeHandler(
+			new GetSchemaSummariesApi(),
+			new RequestData( [ 'method' => 'GET' ] )
+		)->getBody()->getContents(), true );
+
+		$this->assertSame( [ 'Company' ], array_column( $data['schemas'], 'name' ) );
 	}
 
 	public function testExcludesSchemasTheRequestUserCannotReadWithoutLeavingAGapInThePage(): void {
