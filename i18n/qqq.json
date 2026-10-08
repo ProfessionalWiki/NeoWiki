@@ -31,7 +31,7 @@
 	"neowiki-subjects-search-placeholder": "Placeholder and accessible name of the search field of the subject tables, which matches subject names, page titles and the start of subject IDs.",
 	"neowiki-subjects-load-error": "Shown in a subject table in place of its rows, and on a Schema card on [[Special:Schemas]] in place of its subjects, when they could not be loaded.",
 	"neowiki-subjects-recent": "Caption of the table of the five newest subjects on [[Special:NeoWiki]].",
-	"neowiki-subjects-view-all": "Link to [[Special:Subjects]]: from the table of the newest subjects on [[Special:NeoWiki]], and from each Schema card and table row on [[Special:Schemas]] to that schema's subjects where the reader sees no subject counts ({{msg-mw|neowiki-schema-subject-count}} otherwise).",
+	"neowiki-subjects-view-all": "Link to [[Special:Subjects]]: from the table of the newest subjects on [[Special:NeoWiki]], and from each Schema card and table row on [[Special:Schemas]] to that schema's subjects, replacing {{msg-mw|neowiki-schema-subject-count}} for readers who see no counts.",
 	"neowiki-overview-subjects-description": "Description of the card on [[Special:NeoWiki]] that leads to [[Special:Subjects]].",
 	"neowiki-special-schemas": "Title and description of the [[Special:Schemas]] page. Also the caption of the Schema table on that page and on [[Special:NeoWiki]].",
 	"neowiki-special-createsubject": "Title and description of the [[Special:CreateSubject]] page, which creates a page together with its Main Subject. A subpage names the Schema to use, e.g. Special:CreateSubject/Person.",
@@ -151,7 +151,7 @@
 
 	"neowiki-schemas-column-name": "Column header for schema name in the schemas tables on [[Special:Schemas]] and [[Special:NeoWiki]].",
 	"neowiki-schemas-column-description": "Column header for schema description in the schemas tables on [[Special:Schemas]] and [[Special:NeoWiki]].",
-	"neowiki-schemas-column-subjects": "Column header for the number of subjects of each schema in the schemas tables on [[Special:Schemas]] and [[Special:NeoWiki]].\n{{Identical|Subjects}}",
+	"neowiki-schemas-column-subjects": "Header of the column in the schema tables on [[Special:Schemas]] and [[Special:NeoWiki]] that links to each schema's subjects, saying how many there are for readers who may see counts. On [[Special:Schemas]] it also holds the button that creates a subject of that schema.\n{{Identical|Subjects}}",
 	"neowiki-schemas-empty": "Message shown when no schemas exist yet on [[Special:Schemas]] and on [[Special:NeoWiki]].",
 	"neowiki-schemas-find": "Placeholder and accessible name of the field on [[Special:Schemas]] that finds schemas by any part of their name.",
 	"neowiki-schemas-no-match": "Shown on [[Special:Schemas]] when no schema name contains the text in the find field.\n\nParameters:\n* $1 - the text in the find field",
@@ -161,7 +161,7 @@
 	"neowiki-schema-sidebar-all-schemas": "Label for the link in the NeoWiki section of the sidebar on Schema pages that navigates to [[Special:Schemas]].",
 	"neowiki-sidebar-create-subject": "Label for the link in the NeoWiki section of the sidebar that navigates to [[Special:CreateSubject]], where a Subject is created together with a page of its own by default, or added to a page picked there. Shown only where {{msg-mw|neowiki-page-tools-create-subject}} is not, so a page carries one Create subject entry rather than two; the two read the same.",
 	"neowiki-schema-create-subject": "Label of the button that opens the 'create subject' dialog with a Schema chosen. Used on the Schema's own page, on each Schema card and table row on [[Special:Schemas]], in each row of the Schema table on [[Special:NeoWiki]], and where {{#create_subject}} names a Schema.\nParameters:\n* $1 - the Schema name",
-	"neowiki-schema-subject-count": "Link to [[Special:Subjects]] for one schema, saying how many subjects it has. Shown on each Schema card and table row on [[Special:Schemas]] and in the Subjects column of the schemas table on [[Special:NeoWiki]], for readers who may see subject counts.\n\nParameters:\n* $1 - the number of subjects, formatted for the user's language",
+	"neowiki-schema-subject-count": "Link to [[Special:Subjects]] for one schema, saying how many subjects it has. Shown on each Schema card and table row on [[Special:Schemas]] and in the Subjects column of the schemas table on [[Special:NeoWiki]].\n\nParameters:\n* $1 - the number of subjects, formatted for the user's language",
 
 	"neowiki-schema-delete": "Accessible name and tooltip of the delete button on each Schema card and table row on [[Special:Schemas]].",
 	"neowiki-edit-schema": "Label of the button that opens the schema editor on a schema's own page, and the accessible name and tooltip of the edit button on each Schema card and table row on [[Special:Schemas]].",

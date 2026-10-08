@@ -20,7 +20,7 @@ reading ([Permissions](../api/rest-api.md#permissions)).
 | `{{#cypher_raw}}`, `{{#sparql_raw}}`, `nw.query`, `nw.sparqlQuery` | The parsing user's [`neowiki-query`](../api/query-api.md#permissions), a whole-store read | An error box; Lua throws |
 | `POST /query/cypher`, `POST /query/sparql` | The caller's `neowiki-query` | `403` |
 | Graph-store status and rebuilds | The caller's `neowiki-admin` (`sysop` by default) | `403` |
-| Subject counts on Special:Schemas and Special:NeoWiki, and `GET /subject-counts` | The reader's `neowiki-query`, a whole-store read like raw queries, so the counts include Subjects on pages they cannot read | No counts; `GET /subject-counts` answers `403` |
+| Subject counts on Special:Schemas and Special:NeoWiki, and `GET /subject-counts` | The reader's `neowiki-query`, a whole-store read, so the counts include Subjects on pages they cannot read | No counts; `GET /subject-counts` answers `403` |
 | Subjects from a [Subject Source](../extending/subject-sources.md) | Nothing: no page to authorize against, so a Source must serve only what every reader may see | — |
 
 On a wiki that requires login to read, `{{#view}}` renders nothing for anonymous readers on a page opened through
@@ -28,8 +28,7 @@ On a wiki that requires login to read, `{{#view}}` renders nothing for anonymous
 
 ## Narrowing `neowiki-query`
 
-NeoWiki grants the right to `*`; it also gates the Subject counts. Withdrawing it helps only where anonymous readers can
-reach a query surface.
+NeoWiki grants the right to `*`. Withdrawing it helps only where anonymous readers can reach a query surface.
 
 ```php
 $wgGroupPermissions['*']['neowiki-query'] = false;
