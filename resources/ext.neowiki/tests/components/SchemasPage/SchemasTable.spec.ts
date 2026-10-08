@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import SchemasTable from '@/components/SchemasPage/SchemasTable.vue';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
+const SUBJECT_COUNTS = new Map( [ [ 'Artist', 4 ], [ 'Artwork', 30 ] ] );
+
 function mountTable( props: Partial<InstanceType<typeof SchemasTable>['$props']> = {} ): VueWrapper {
 	setupMwMock( { functions: [ 'msg', 'util', 'language' ] } );
 
@@ -16,7 +18,7 @@ function mountTable( props: Partial<InstanceType<typeof SchemasTable>['$props']>
 			canDelete: false,
 			canCreateSubject: false,
 			subjectListAvailable: true,
-			subjectCountOf: () => 12,
+			subjectCountOf: ( schemaName: string ) => SUBJECT_COUNTS.get( schemaName ) ?? null,
 			subjectCountPending: false,
 			...props,
 		},
@@ -41,7 +43,7 @@ describe( 'SchemasTable', () => {
 		const artwork = row( mountTable(), 1 );
 
 		expect( artwork.find( 'a[href="/wiki/Schema:Artwork"]' ).text() ).toBe( 'Artwork' );
-		expect( artwork.find( 'a[href="/wiki/Special:Subjects/Artwork"]' ).text() ).toBe( 'neowiki-schema-subject-count12' );
+		expect( artwork.find( 'a[href="/wiki/Special:Subjects/Artwork"]' ).text() ).toBe( 'neowiki-schema-subject-count30' );
 	} );
 
 	it( 'links to all the Subjects of a Schema whose count it does not know', () => {
@@ -80,6 +82,7 @@ describe( 'SchemasTable', () => {
 		const artist = row( mountTable( { subjectListAvailable: false, canCreateSubject: true } ), 0 );
 
 		expect( findButton( artist, 'neowiki-schema-create-subjectArtist' ) ).toBeDefined();
+		expect( artist.find( 'a[href^="/wiki/Special:Subjects/"]' ).exists() ).toBe( false );
 	} );
 
 	it( 'ties the edit and delete buttons and the Subjects link of each row to its Schema', () => {
