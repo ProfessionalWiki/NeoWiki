@@ -1,5 +1,8 @@
 <template>
-	<section class="ext-neowiki-schema-card">
+	<section
+		ref="cardElement"
+		class="ext-neowiki-schema-card"
+	>
 		<div class="ext-neowiki-schema-card__body">
 			<div class="ext-neowiki-schema-card__head">
 				<h2
@@ -45,29 +48,36 @@
 
 			<template v-if="subjectListAvailable">
 				<ul
-					v-if="subjects.length > 0"
+					v-if="newestSubjects.length > 0"
 					class="ext-neowiki-schema-card__subjects"
 				>
 					<li
-						v-for="subject in subjects"
+						v-for="subject in newestSubjects"
 						:key="subject.id"
 					>
 						<SubjectSummaryCell
 							column="name"
 							:summary="subject"
 						/>
-						<SubjectSummaryCell
-							column="edited"
-							:summary="subject"
-						/>
 					</li>
 				</ul>
 				<p
-					v-else-if="subjectsState !== 'loading'"
+					v-else-if="subjectsNote !== null"
 					class="ext-neowiki-schema-card__note"
 				>
 					{{ subjectsNote }}
 				</p>
+				<ul
+					v-else
+					class="ext-neowiki-schema-card__subjects ext-neowiki-schema-card__subjects--pending"
+				>
+					<li
+						v-for="row in pendingRows"
+						:key="row"
+					>
+						&nbsp;
+					</li>
+				</ul>
 			</template>
 		</div>
 
@@ -75,10 +85,16 @@
 			v-if="subjectListAvailable || canCreateSubject"
 			class="ext-neowiki-schema-card__footer"
 		>
+			<span
+				v-if="subjectListAvailable && subjectCountPending"
+				class="ext-neowiki-schema-card__subject-count"
+			/>
 			<a
-				v-if="subjectListAvailable"
+				v-else-if="subjectListAvailable"
+				class="ext-neowiki-schema-card__subject-count"
 				:href="subjectListUrl"
-			>{{ $i18n( 'neowiki-subjects-view-all' ).text() }}</a>
+				:aria-describedby="headingId"
+			>{{ subjectListLinkText( subjectCount ) }}</a>
 			<CdxButton
 				v-if="canCreateSubject"
 				class="ext-neowiki-schema-card__create"
@@ -86,7 +102,7 @@
 				action="progressive"
 				@click="emit( 'create-subject' )"
 			>
-				<CdxIcon :icon="cdxIconArticleAdd" />
+				<CdxIcon :icon="cdxIconAdd" />
 				{{ $i18n( 'neowiki-schema-create-subject', summary.name ).text() }}
 			</CdxButton>
 		</div>
@@ -94,15 +110,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { CdxButton, CdxIcon, useGeneratedId } from '@wikimedia/codex';
-import { cdxIconArticleAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
+import { computed, ref, watch } from 'vue';
+import { CdxButton, CdxIcon, useGeneratedId, useIntersectionObserver } from '@wikimedia/codex';
+import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
 import SubjectSummaryCell from '@/components/SubjectsTable/SubjectSummaryCell.vue';
-import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { subjectListLinkText } from '@/composables/useSubjectCounts.ts';
+import { SUBJECT_PREVIEW_SIZE, type SubjectPreview, SubjectPreviews } from './SubjectPreviews.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
-import type { SubjectSummary } from '@/application/SubjectSummaryLookup.ts';
-
-const NEWEST_SUBJECT_COUNT = 3;
 
 const props = defineProps<{
 	summary: SchemaSummary;
@@ -111,6 +125,11 @@ const props = defineProps<{
 	canCreateSubject: boolean;
 	/** False on a wiki without the Graph Store the Subject list reads. */
 	subjectListAvailable: boolean;
+	subjectPreviews: SubjectPreviews;
+	/** Null while the count is not known. */
+	subjectCount: number | null;
+	/** True while the counts are on their way. */
+	subjectCountPending: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -119,35 +138,39 @@ const emit = defineEmits<{
 	'create-subject': [];
 }>();
 
-// Names the Schema to screen readers on the card's buttons, whose labels are the same on every card.
+// Names the Schema to screen readers on the card's buttons and link, whose labels can be the same on every card.
 const headingId = useGeneratedId( 'ext-neowiki-schema-card' );
 
-const subjects = ref<SubjectSummary[]>( [] );
-const subjectsState = ref<'loading' | 'loaded' | 'failed'>( 'loading' );
+const cardElement = ref<HTMLElement>();
+const cardInView = useIntersectionObserver( cardElement, {} );
+
+// A Schema known to have no Subjects says so without asking for them, unless the card already has some to show.
+const preview = computed( (): SubjectPreview | undefined => props.subjectPreviews.get( props.summary.name ) ??
+	( props.subjectCount === 0 ? { state: 'loaded', subjects: [] } : undefined ) );
+const newestSubjects = computed( () => preview.value?.state === 'loaded' ? preview.value.subjects : [] );
+
+const subjectsNote = computed( () => {
+	switch ( preview.value?.state ) {
+		case 'failed':
+			return mw.msg( 'neowiki-subjects-load-error' );
+		case 'loaded':
+			return mw.msg( 'neowiki-subjects-empty-schema', props.summary.name );
+		default:
+			return null;
+	}
+} );
 
 const schemaUrl = computed( () => mw.util.getUrl( `Schema:${ props.summary.name }` ) );
 const subjectListUrl = computed( () => mw.util.getUrl( `Special:Subjects/${ props.summary.name }` ) );
-const subjectsNote = computed( () => subjectsState.value === 'failed' ?
-	mw.msg( 'neowiki-subjects-load-error' ) :
-	mw.msg( 'neowiki-subjects-empty-schema', props.summary.name ) );
 
-onMounted( async () => {
-	if ( !props.subjectListAvailable ) {
-		return;
-	}
+// As many rows as the Schema has Subjects to show, so the card keeps its height as they arrive.
+const pendingRows = computed( () => Math.min( props.subjectCount ?? SUBJECT_PREVIEW_SIZE, SUBJECT_PREVIEW_SIZE ) );
 
-	try {
-		subjects.value = ( await NeoWikiServices.getSubjectSummaryLookup().getSubjectSummaries( {
-			schema: props.summary.name,
-			search: '',
-			sort: 'newest',
-			direction: 'desc',
-			cursor: null,
-			limit: NEWEST_SUBJECT_COUNT
-		} ) ).subjects;
-		subjectsState.value = 'loaded';
-	} catch {
-		subjectsState.value = 'failed';
+// A card asks only once seen, so a page of many Schemas does not ask for the Subjects of them all. The previews
+// decide whether a Schema needs asking again.
+watch( cardInView, ( inView ) => {
+	if ( inView && props.subjectListAvailable && props.subjectCount !== 0 ) {
+		props.subjectPreviews.load( props.summary.name );
 	}
 } );
 </script>
@@ -209,8 +232,6 @@ onMounted( async () => {
 
 		li {
 			display: flex;
-			justify-content: space-between;
-			gap: @spacing-75;
 			margin: 0;
 			padding: @spacing-35 0;
 			border-top: @border-width-base @border-style-base @border-color-muted;
@@ -221,12 +242,12 @@ onMounted( async () => {
 				text-overflow: ellipsis;
 				white-space: nowrap;
 			}
-
-			time {
-				flex-shrink: 0;
-				color: @color-subtle;
-			}
 		}
+	}
+
+	// Holds the room of the rows to come, so the cards keep their height as the Subjects arrive.
+	&__subjects--pending {
+		visibility: hidden;
 	}
 
 	&__note {

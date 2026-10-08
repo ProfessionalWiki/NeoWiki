@@ -144,7 +144,7 @@ Defaults shipped by NeoWiki:
 
 | Right | Default groups | Purpose |
 |---|---|---|
-| `neowiki-query` | `*` (everyone, including anonymous visitors) | Required to call the query endpoints and to run queries from wikitext or Lua. A holder reads everything the wiki projects into the store; results are not filtered per page. |
+| `neowiki-query` | `*` (everyone, including anonymous visitors) | Required to call the query endpoints, to run queries from wikitext or Lua, and to see Subject counts. A holder reads everything the wiki projects into the store; results are not filtered per page. |
 | `apihighlimits` | `bot`, `sysop` (core defaults) | Grants the `expensive` resource tier. |
 
 ## SPARQL query endpoint

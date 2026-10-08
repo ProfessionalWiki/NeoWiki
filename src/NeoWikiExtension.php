@@ -86,6 +86,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
+use ProfessionalWiki\NeoWiki\Application\SubjectCountLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\ReferencingSubjectLookup;
@@ -153,6 +154,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetReferencingSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectCountsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectSummariesApi;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryLookup;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\MintSubjectIdsApi;
@@ -194,6 +196,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDes
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectInPlaceOfPageTitleLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingMappingLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSubjectCountLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseMappingNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPersistenceDeserializer;
@@ -204,6 +207,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jReferencingSubjectLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectCountLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectSummaryLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\CallbackProjectionResolver;
@@ -1351,11 +1355,11 @@ class NeoWikiExtension {
 		$debounceMs = MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiValidationDebounceMs' );
 
 		return new FrontendModuleLoader(
-			MediaWikiServices::getInstance()->getHookContainer(),
-			is_int( $debounceMs ) ? $debounceMs : 300,
-			$this->isValidationEnforced(),
-			$this->isSubjectFirst(),
-			$this->isSubjectListAvailable(),
+			hookContainer: MediaWikiServices::getInstance()->getHookContainer(),
+			validationDebounceMs: is_int( $debounceMs ) ? $debounceMs : 300,
+			validationEnforced: $this->isValidationEnforced(),
+			subjectFirst: $this->isSubjectFirst(),
+			subjectListAvailable: $this->isSubjectListAvailable(),
 		);
 	}
 
@@ -1843,6 +1847,16 @@ class NeoWikiExtension {
 		return $this->config->hasNeo4jBackend();
 	}
 
+	public function newSubjectCountLookup(): SubjectCountLookup {
+		return new CachingSubjectCountLookup(
+			lookup: new Neo4jSubjectCountLookup(
+				client: $this->getReadOnlyNeo4jClient(),
+				wikiId: $this->config->wikiId,
+			),
+			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
+		);
+	}
+
 	public function newSubjectSummaryLookup(): SubjectSummaryLookup {
 		return new Neo4jSubjectSummaryLookup(
 			client: $this->getReadOnlyNeo4jClient(),
@@ -2155,6 +2169,10 @@ class NeoWikiExtension {
 
 	public static function newGetSubjectSummariesApi(): GetSubjectSummariesApi {
 		return new GetSubjectSummariesApi( self::getInstance()->newSubjectSummaryLookup() );
+	}
+
+	public static function newGetSubjectCountsApi(): GetSubjectCountsApi {
+		return new GetSubjectCountsApi( self::getInstance()->newSubjectCountLookup() );
 	}
 
 	public function getLayoutNameLookup(): LayoutNameLookup {

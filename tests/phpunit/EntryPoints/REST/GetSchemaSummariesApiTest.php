@@ -9,6 +9,7 @@ use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSchemaSummariesApi;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
@@ -80,82 +81,105 @@ JSON
 		$this->assertSame( 1, $byName['Person']['propertyCount'] );
 	}
 
-	public function testListsSchemasByName(): void {
-		$this->createSchema( 'Zebra' );
-		$this->createSchema( 'Ant' );
-		$this->createSchema( 'Moth' );
-
-		$this->assertSame( [ 'Ant', 'Moth', 'Zebra' ], $this->namesOf( $this->get( [] ) ) );
-	}
-
 	public function testFollowingTheCursorWalksAllPages(): void {
-		$this->createSchema( 'Gamma' );
-		$this->createSchema( 'Alpha' );
-		$this->createSchema( 'Beta' );
+		$this->createSchema( 'Alpha', '{"title":"Alpha","description":"First","propertyDefinitions":{}}' );
+		$this->createSchema( 'Beta', '{"title":"Beta","description":"Second","propertyDefinitions":{}}' );
+		$this->createSchema( 'Gamma', '{"title":"Gamma","description":"Third","propertyDefinitions":{}}' );
 
-		$firstPage = $this->get( [ 'limit' => '2' ] );
+		$firstPage = json_decode( $this->executeHandler(
+			new GetSchemaSummariesApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'limit' => '2' ],
+			] )
+		)->getBody()->getContents(), true );
 
-		$this->assertSame( [ 'Alpha', 'Beta' ], $this->namesOf( $firstPage ) );
+		$this->assertSame( [ 'Alpha', 'Beta' ], array_column( $firstPage['schemas'], 'name' ) );
 		$this->assertIsString( $firstPage['nextCursor'] );
 
-		$secondPage = $this->get( [ 'limit' => '2', 'cursor' => $firstPage['nextCursor'] ] );
+		$secondPage = json_decode( $this->executeHandler(
+			new GetSchemaSummariesApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'limit' => '2', 'cursor' => $firstPage['nextCursor'] ],
+			] )
+		)->getBody()->getContents(), true );
 
-		$this->assertSame( [ 'Gamma' ], $this->namesOf( $secondPage ) );
+		$this->assertSame( [ 'Gamma' ], array_column( $secondPage['schemas'], 'name' ) );
 		$this->assertNull( $secondPage['nextCursor'] );
 	}
 
 	public function testExactPageBoundaryEndsPagination(): void {
-		$this->createSchema( 'Alpha' );
-		$this->createSchema( 'Beta' );
+		$this->createSchema( 'Alpha', '{"title":"Alpha","description":"First","propertyDefinitions":{}}' );
+		$this->createSchema( 'Beta', '{"title":"Beta","description":"Second","propertyDefinitions":{}}' );
 
-		$data = $this->get( [ 'limit' => '2' ] );
+		$data = json_decode( $this->executeHandler(
+			new GetSchemaSummariesApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'limit' => '2' ],
+			] )
+		)->getBody()->getContents(), true );
 
 		$this->assertCount( 2, $data['schemas'] );
 		$this->assertNull( $data['nextCursor'] );
 	}
 
-	public function testACursorAfterADeletedLastSchemaReturnsAnEmptyLastPage(): void {
-		$this->createSchema( 'Alpha' );
-		$this->createSchema( 'Beta' );
-		$cursor = $this->get( [ 'limit' => '1' ] )['nextCursor'];
-		$this->deletePageByName( 'Schema:Beta' );
+	/**
+	 * @dataProvider cursorPastEndProvider
+	 */
+	public function testCursorPastTheEndReturnsAnEmptyLastPage( string $cursor ): void {
+		$this->createSchema( 'Alpha', '{"title":"Alpha","description":"First","propertyDefinitions":{}}' );
 
-		$data = $this->get( [ 'limit' => '1', 'cursor' => $cursor ] );
+		$data = json_decode( $this->executeHandler(
+			new GetSchemaSummariesApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'cursor' => $cursor ],
+			] )
+		)->getBody()->getContents(), true );
 
 		$this->assertSame( [], $data['schemas'] );
 		$this->assertNull( $data['nextCursor'] );
 	}
 
-	public function testListsOnlySchemasWhoseNameContainsTheSearch(): void {
-		$this->createSchema( 'Artwork' );
-		$this->createSchema( 'City' );
-		$this->createSchema( 'Martial art' );
-
-		$this->assertSame( [ 'Artwork', 'Martial art' ], $this->namesOf( $this->get( [ 'search' => 'art' ] ) ) );
+	public static function cursorPastEndProvider(): array {
+		return [
+			'past the last page id' => [ '999999' ],
+			'beyond integer range (saturates)' => [ '99999999999999999999999' ],
+		];
 	}
 
-	public function testFollowingTheCursorKeepsToTheSearch(): void {
-		$this->createSchema( 'Artwork' );
-		$this->createSchema( 'Bridge' );
-		$this->createSchema( 'Artist' );
-		$cursor = $this->get( [ 'search' => 'Art', 'limit' => '1' ] )['nextCursor'];
-
-		$this->assertSame( [ 'Artwork' ], $this->namesOf( $this->get( [ 'search' => 'Art', 'cursor' => $cursor ] ) ) );
-	}
-
-	/**
-	 * @dataProvider malformedCursorProvider
-	 */
-	public function testRejectsMalformedCursor( string $cursor ): void {
+	public function testRejectsMalformedCursor(): void {
 		$this->expectException( HttpException::class );
 		$this->expectExceptionCode( 400 );
 
-		$this->get( [ 'cursor' => $cursor ] );
+		$this->executeHandler(
+			new GetSchemaSummariesApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'cursor' => 'not-a-cursor' ],
+			] )
+		);
 	}
 
-	public static function malformedCursorProvider(): iterable {
-		yield 'not base64-encoded JSON' => [ 'not-a-cursor' ];
-		yield 'JSON that is no name' => [ rtrim( base64_encode( '123' ), '=' ) ];
+	public function testListsTheSchemasPastAPageWhoseTitleNamesNoSchema(): void {
+		$this->createSchema( 'Company' );
+		// A reserved title can be neither saved nor moved to, but an import can still leave one in the namespace.
+		$this->createSchema( 'Placeholder' );
+		$this->getDb()->newUpdateQueryBuilder()
+			->update( 'page' )
+			->set( [ 'page_title' => 'Subject' ] )
+			->where( [ 'page_namespace' => NeoWikiExtension::NS_SCHEMA, 'page_title' => 'Placeholder' ] )
+			->caller( __METHOD__ )
+			->execute();
+
+		$data = json_decode( $this->executeHandler(
+			new GetSchemaSummariesApi(),
+			new RequestData( [ 'method' => 'GET' ] )
+		)->getBody()->getContents(), true );
+
+		$this->assertSame( [ 'Company' ], array_column( $data['schemas'], 'name' ) );
 	}
 
 	public function testExcludesSchemasTheRequestUserCannotReadWithoutLeavingAGapInThePage(): void {
@@ -179,29 +203,16 @@ JSON
 			}
 		);
 
-		$data = $this->get( [ 'limit' => '2' ] );
-
-		$this->assertSame( [ 'ReadableSchema', 'TrailingSchema' ], $this->namesOf( $data ) );
-		$this->assertNull( $data['nextCursor'] );
-	}
-
-	/**
-	 * @param array<string, string> $queryParams
-	 * @return array<string, mixed>
-	 */
-	private function get( array $queryParams ): array {
-		return json_decode( $this->executeHandler(
+		$data = json_decode( $this->executeHandler(
 			new GetSchemaSummariesApi(),
-			new RequestData( [ 'method' => 'GET', 'queryParams' => $queryParams ] )
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'limit' => '2' ],
+			] )
 		)->getBody()->getContents(), true );
-	}
 
-	/**
-	 * @param array<string, mixed> $response
-	 * @return list<string>
-	 */
-	private function namesOf( array $response ): array {
-		return array_column( $response['schemas'], 'name' );
+		$this->assertSame( [ 'ReadableSchema', 'TrailingSchema' ], array_column( $data['schemas'], 'name' ) );
+		$this->assertNull( $data['nextCursor'] );
 	}
 
 }

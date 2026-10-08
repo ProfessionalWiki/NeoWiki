@@ -12,5 +12,12 @@
 			"GET"
 		],
 		"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectSummariesApi"
+	},
+	{
+		"path": "/neowiki/v0/subject-counts",
+		"method": [
+			"GET"
+		],
+		"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectCountsApi"
 	}
 ]

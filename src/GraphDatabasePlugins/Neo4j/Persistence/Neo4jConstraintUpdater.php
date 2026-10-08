@@ -24,6 +24,11 @@ class Neo4jConstraintUpdater {
 		$this->queryEngine->runWriteQuery(
 			'CREATE CONSTRAINT `Subject id` IF NOT EXISTS FOR (node:Subject) REQUIRE (node.id) IS UNIQUE'
 		);
+
+		// Lets the Subject counts read the wiki's own Subjects instead of every Subject in a shared graph.
+		$this->queryEngine->runWriteQuery(
+			'CREATE INDEX `Subject wiki_id` IF NOT EXISTS FOR (node:Subject) ON (node.wiki_id)'
+		);
 	}
 
 }

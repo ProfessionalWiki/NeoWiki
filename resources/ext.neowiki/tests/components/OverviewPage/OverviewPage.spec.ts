@@ -1,5 +1,5 @@
-import { mount, DOMWrapper, VueWrapper, flushPromises } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { enableAutoUnmount, mount, DOMWrapper, VueWrapper, flushPromises } from '@vue/test-utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { CdxButton, CdxCard } from '@wikimedia/codex';
@@ -10,6 +10,7 @@ import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { Service } from '@/NeoWikiServices.ts';
 
 let grantedRight = true;
 const canCreateSubjectPageRef = ref( false );
@@ -23,6 +24,9 @@ vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 		checkCreateSubjectPagePermission: checkCreateSubjectPagePermissionMock,
 	} ),
 } ) );
+
+// A page left mounted would re-render under the next test's mw, which may lack what the page reads.
+enableAutoUnmount( afterEach );
 
 const SubjectCreatorDialogStub = {
 	template: '<div class="subject-creator-stub" />',
@@ -43,6 +47,7 @@ const MUSEUM = summary( 'Museum', 'Somewhere paintings hang' );
 
 let pinia: ReturnType<typeof createPinia>;
 let schemaStore: ReturnType<typeof useSchemaStore>;
+let getSubjectCounts: ReturnType<typeof vi.fn>;
 
 interface OverviewProps {
 	canManageGraphStores: boolean;
@@ -55,6 +60,7 @@ function mountPage( offered: Partial<OverviewProps> = {} ): VueWrapper {
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
+			provide: { [ Service.SubjectCountLookup ]: { getSubjectCounts } },
 			stubs: { SubjectCreatorDialog: SubjectCreatorDialogStub, RecentSubjectsTable: true, CdxIcon: true },
 		},
 	} );
@@ -88,7 +94,11 @@ function mappedPages( wrapper: VueWrapper ): ( string | undefined )[] {
 
 describe( 'OverviewPage', () => {
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'msg', 'util', 'notify', 'config' ], config: { wgNeoWikiSubjectListAvailable: true } } );
+		setupMwMock( {
+			functions: [ 'msg', 'util', 'notify', 'config', 'language' ],
+			config: { wgNeoWikiSubjectListAvailable: true, wgNeoWikiSubjectCountsAvailable: true },
+		} );
+		getSubjectCounts = vi.fn().mockResolvedValue( new Map( [ [ 'Painting', 3 ] ] ) );
 		grantedRight = true;
 		canCreateSubjectPageRef.value = false;
 		pinia = createPinia();
@@ -97,12 +107,58 @@ describe( 'OverviewPage', () => {
 		listSchemas( [ PERSON, PAINTING, MUSEUM ] );
 	} );
 
+	afterEach( () => {
+		vi.restoreAllMocks();
+	} );
+
 	it( 'lists every schema with its description and a link to its page', async () => {
 		const wrapper = mountPage();
 		await flushPromises();
 
 		expect( findLink( wrapper, '/wiki/Schema:Painting' )!.text() ).toBe( 'Painting' );
 		expect( wrapper.text() ).toContain( 'Something hung on a wall' );
+	} );
+
+	it( 'says how many Subjects each schema has, linking to them', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( findLink( wrapper, '/wiki/Special:Subjects/Painting' )!.text() ).toBe( 'neowiki-schema-subject-count3' );
+		expect( findLink( wrapper, '/wiki/Special:Subjects/Person' )!.text() ).toBe( 'neowiki-schema-subject-count0' );
+	} );
+
+	it( 'shows the schemas before their counts arrive, with a blank Subjects column', async () => {
+		getSubjectCounts = vi.fn().mockReturnValue( new Promise( () => {
+			// Never lands.
+		} ) );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( findLink( wrapper, '/wiki/Schema:Painting' ) ).toBeDefined();
+		expect( wrapper.text() ).toContain( 'neowiki-schemas-column-subjects' );
+		expect( findLink( wrapper, '/wiki/Special:Subjects/Painting' ) ).toBeUndefined();
+	} );
+
+	it( 'drops the Subjects column when the counts could not be loaded', async () => {
+		vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+		getSubjectCounts = vi.fn().mockRejectedValue( new Error( 'Error fetching subject counts' ) );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-column-subjects' );
+		expect( findLink( wrapper, '/wiki/Special:Subjects/Painting' ) ).toBeUndefined();
+	} );
+
+	it( 'has no Subjects column for a reader who sees no counts', async () => {
+		setupMwMock( {
+			functions: [ 'msg', 'util', 'notify', 'config', 'language' ],
+			config: { wgNeoWikiSubjectListAvailable: true, wgNeoWikiSubjectCountsAvailable: false },
+		} );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-column-subjects' );
+		expect( findLink( wrapper, '/wiki/Special:Subjects/Painting' ) ).toBeUndefined();
 	} );
 
 	it( 'opens the creator pinned to the schema whose button was clicked', async () => {
@@ -192,6 +248,16 @@ describe( 'OverviewPage', () => {
 		await flushPromises();
 
 		expect( mappedPages( wrapper ) ).toEqual( [ ...ALWAYS_MAPPED, '/wiki/MediaWiki:NeoWiki' ] );
+	} );
+
+	it( 'ties the link to the Subjects of each schema to that schema, for screen readers', async () => {
+		listSchemas( [ PERSON, summary( 'Validation Demo' ) ] );
+		const wrapper = mountPage();
+		await flushPromises();
+		const link = findLink( wrapper, '/wiki/Special:Subjects/Validation Demo' )!;
+
+		expect( link.attributes( 'aria-describedby' )!.split( ' ' ).map( ( id ) => wrapper.find( `[id="${ id }"]` ).text() ) )
+			.toEqual( [ 'Validation Demo' ] );
 	} );
 
 	it( 'reaches Special:Schemas from the table header rather than from the map', async () => {

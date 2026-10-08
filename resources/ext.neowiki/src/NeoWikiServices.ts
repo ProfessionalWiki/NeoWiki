@@ -8,6 +8,7 @@ import { SchemaRepository } from '@/application/SchemaRepository.ts';
 import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 import type { SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
+import type { SubjectCountLookup } from '@/application/SubjectCountLookup.ts';
 import { PageTitleSearch } from '@/domain/PageTitleSearch.ts';
 import { ViewTypeRegistry } from '@/ViewTypeRegistry.ts';
 import { LayoutPermissionHints } from '@/application/LayoutPermissionHints.ts';
@@ -23,6 +24,7 @@ export enum Service { // TODO: make private
 	SubjectRepository = 'SubjectRepository',
 	SubjectLabelSearch = 'SubjectLabelSearch',
 	SubjectSummaryLookup = 'SubjectSummaryLookup',
+	SubjectCountLookup = 'SubjectCountLookup',
 	PageTitleSearch = 'PageTitleSearch',
 	ViewTypeRegistry = 'ViewTypeRegistry',
 	LayoutPermissionHints = 'LayoutPermissionHints',
@@ -50,6 +52,7 @@ export class NeoWikiServices {
 			[ Service.SubjectRepository ]: neoWiki.getSubjectRepository(),
 			[ Service.SubjectLabelSearch ]: neoWiki.getSubjectLabelSearch(),
 			[ Service.SubjectSummaryLookup ]: neoWiki.getSubjectSummaryLookup(),
+			[ Service.SubjectCountLookup ]: neoWiki.getSubjectCountLookup(),
 			[ Service.PageTitleSearch ]: neoWiki.getPageTitleSearch(),
 			[ Service.ViewTypeRegistry ]: neoWiki.getViewTypeRegistry(),
 			[ Service.LayoutPermissionHints ]: neoWiki.newLayoutPermissionHints(),
@@ -88,6 +91,10 @@ export class NeoWikiServices {
 
 	public static getSubjectSummaryLookup(): SubjectSummaryLookup {
 		return inject( Service.SubjectSummaryLookup ) as SubjectSummaryLookup;
+	}
+
+	public static getSubjectCountLookup(): SubjectCountLookup {
+		return inject( Service.SubjectCountLookup ) as SubjectCountLookup;
 	}
 
 	public static getPageTitleSearch(): PageTitleSearch {

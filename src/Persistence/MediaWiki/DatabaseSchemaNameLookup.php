@@ -57,61 +57,41 @@ class DatabaseSchemaNameLookup implements SchemaNameLookup {
 	}
 
 	/**
-	 * Keyset pagination over the page title: each batch seeks past the last seen title instead of
+	 * Keyset pagination over page_id: each batch seeks past the last seen page ID instead of
 	 * re-walking the namespace, so a request costs the batches it consumes, not the whole
 	 * namespace, and pages stay stable when Schemas are created or deleted between requests.
 	 * Unreadable Schemas are never yielded, so a cursor built from the yielded keys pages over
 	 * readable Schemas only (#1062).
 	 *
-	 * @return iterable<string, TitleValue> Readable Schema names keyed by database key, in name order.
+	 * @return iterable<int, TitleValue> Readable Schema names keyed by page ID, in page-ID order.
 	 */
-	public function getReadableSchemaNames( string $search, string $afterName ): iterable {
-		$searchKey = self::searchKey( $search );
-		$lastName = $afterName;
+	public function getReadableSchemaNames( int $afterPageId = 0 ): iterable {
+		$lastPageId = $afterPageId;
 
 		do {
 			$res = $this->db->select(
 				'page',
-				[ 'page_title' ],
+				[ 'page_id', 'page_title' ],
 				[
 					'page_namespace' => NeoWikiExtension::NS_SCHEMA,
-					$this->db->expr( 'page_title', '>', $lastName ),
+					$this->db->expr( 'page_id', '>', $lastPageId ),
 				],
 				__METHOD__,
 				[
-					'ORDER BY' => 'page_title ASC',
+					'ORDER BY' => 'page_id ASC',
 					'LIMIT' => self::READABLE_NAMES_BATCH_SIZE,
 				]
 			);
 
 			foreach ( $res as $row ) {
-				$lastName = (string)$row->page_title;
-				$title = new TitleValue( NeoWikiExtension::NS_SCHEMA, $lastName );
+				$lastPageId = (int)$row->page_id;
+				$title = new TitleValue( NeoWikiExtension::NS_SCHEMA, $row->page_title );
 
-				if ( self::nameContains( $lastName, $searchKey ) && $this->isReadable( $title ) ) {
-					yield $lastName => $title;
+				if ( $this->readAuthorizer->authorizeReadByPageTitle( $this->titleFactory->newFromLinkTarget( $title ) ) ) {
+					yield $lastPageId => $title;
 				}
 			}
 		} while ( $res->numRows() === self::READABLE_NAMES_BATCH_SIZE );
-	}
-
-	/**
-	 * The search in database key form, where a title holds each run of spaces as one underscore.
-	 */
-	private static function searchKey( string $search ): string {
-		return trim( (string)preg_replace( '/[\s_]+/u', '_', $search ), '_' );
-	}
-
-	/**
-	 * Matched here because the title column is binary and SQL has no portable case-insensitive match
-	 * on it; a wiki holds hundreds of Schemas, so scanning their names stays cheap.
-	 */
-	private static function nameContains( string $name, string $searchKey ): bool {
-		return $searchKey === '' || mb_stripos( $name, $searchKey ) !== false;
-	}
-
-	private function isReadable( TitleValue $title ): bool {
-		return $this->readAuthorizer->authorizeReadByPageTitle( $this->titleFactory->newFromLinkTarget( $title ) );
 	}
 
 	private function getSearchSuggestions( string $search, int $limit, int $offset ): SearchSuggestionSet {

@@ -12,6 +12,7 @@ use MediaWiki\Permissions\SimpleAuthority;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedRawQueryAuthorizer;
 use ProfessionalWiki\NeoWiki\Presentation\FrontendModuleLoader;
 use Skin;
 
@@ -118,6 +119,39 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 		$this->newLoader( subjectListAvailable: false )->load( $this->newCapturingOutputPage(), $this->createMock( Skin::class ) );
 
 		$this->assertFalse( $this->addedJsConfigVars['wgNeoWikiSubjectListAvailable'] ?? null );
+	}
+
+	public function testEmitsThatSubjectCountsAreAvailableToAViewerWhoMayQuery(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$this->newLoader( subjectListAvailable: true )->load(
+			$this->newCapturingOutputPage( self::viewerWith( [ AuthorityBasedRawQueryAuthorizer::RIGHT ] ) ),
+			$this->createMock( Skin::class )
+		);
+
+		$this->assertTrue( $this->addedJsConfigVars['wgNeoWikiSubjectCountsAvailable'] ?? null );
+	}
+
+	public function testEmitsThatSubjectCountsAreUnavailableToAViewerWhoMayNotQuery(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$this->newLoader( subjectListAvailable: true )->load(
+			$this->newCapturingOutputPage( self::viewerWith( [] ) ),
+			$this->createMock( Skin::class )
+		);
+
+		$this->assertFalse( $this->addedJsConfigVars['wgNeoWikiSubjectCountsAvailable'] ?? null );
+	}
+
+	public function testEmitsThatSubjectCountsAreUnavailableWithoutTheSubjectList(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$this->newLoader( subjectListAvailable: false )->load(
+			$this->newCapturingOutputPage( self::viewerWith( [ AuthorityBasedRawQueryAuthorizer::RIGHT ] ) ),
+			$this->createMock( Skin::class )
+		);
+
+		$this->assertFalse( $this->addedJsConfigVars['wgNeoWikiSubjectCountsAvailable'] ?? null );
 	}
 
 	public function testEmitsThatTheWikiIsSubjectFirstAsJsConfigVar(): void {
@@ -263,8 +297,16 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
-	private function newCapturingOutputPage(): OutputPage {
+	/**
+	 * @param string[] $rights
+	 */
+	private static function viewerWith( array $rights ): Authority {
+		return new SimpleAuthority( new UserIdentityValue( 0, 'Anonymous' ), $rights );
+	}
+
+	private function newCapturingOutputPage( ?Authority $viewer = null ): OutputPage {
 		$out = $this->createMock( OutputPage::class );
+		$out->method( 'getAuthority' )->willReturn( $viewer ?? self::viewerWith( [] ) );
 		$out->method( 'addModules' )->willReturnCallback(
 			function ( string|array $modules ): void {
 				$this->addedModules = array_merge( $this->addedModules, (array)$modules );

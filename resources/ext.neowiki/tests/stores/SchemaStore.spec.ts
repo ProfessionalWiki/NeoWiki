@@ -92,8 +92,8 @@ describe( 'SchemaStore fetchAllSchemaSummaries', () => {
 		const result = await useSchemaStore().fetchAllSchemaSummaries();
 
 		expect( result ).toHaveLength( 60 );
-		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 1, '', null, 50 );
-		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 2, '', 'cursor-1', 50 );
+		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 1, null, 50 );
+		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 2, 'cursor-1', 50 );
 	} );
 
 	it( 'keeps following the cursor when a page omits unloadable schemas', async () => {
@@ -107,8 +107,19 @@ describe( 'SchemaStore fetchAllSchemaSummaries', () => {
 		const result = await useSchemaStore().fetchAllSchemaSummaries();
 
 		expect( result ).toHaveLength( 59 );
-		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 2, '', 'cursor-1', 50 );
+		expect( getSchemaSummaries ).toHaveBeenNthCalledWith( 2, 'cursor-1', 50 );
 		expect( getSchemaSummaries ).toHaveBeenCalledTimes( 2 );
+	} );
+
+	it( 'lists the summaries of every page by name', async () => {
+		const getSchemaSummaries = vi.fn()
+			.mockResolvedValueOnce( { schemas: [ summary( 'Zebra' ), summary( 'Écrivain' ) ], nextCursor: 'cursor-1' } )
+			.mockResolvedValueOnce( lastPage( [ summary( 'Artist' ) ] ) );
+		withRepository( { getSchemaSummaries } );
+
+		const result = await useSchemaStore().fetchAllSchemaSummaries();
+
+		expect( result.map( ( schema ) => schema.name ) ).toEqual( [ 'Artist', 'Écrivain', 'Zebra' ] );
 	} );
 
 	it( 'shares one in-flight request across concurrent callers', async () => {

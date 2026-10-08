@@ -497,6 +497,7 @@
 				"useResizeObserver",
 				"useFloatingMenu",
 				"useGeneratedId",
+				"useIntersectionObserver",
 				"CdxMessage",
 				"CdxToggleSwitch",
 				"CdxToggleButtonGroup",
@@ -524,7 +525,6 @@
 						"cdxIconUpload",
 						"cdxIconLink",
 						"cdxIconArticleRedirect",
-						"cdxIconArticleAdd",
 						"cdxIconCheck",
 						"cdxIconSearchCaseSensitive",
 						"cdxIconArticles",
@@ -543,7 +543,8 @@
 						"cdxIconExpand",
 						"cdxIconPushPin",
 						"cdxIconEllipsis",
-						"cdxIconLanguage"
+						"cdxIconLanguage",
+						"cdxIconViewCompact"
 					]
 				}
 			],
@@ -704,6 +705,7 @@
 				"neowiki-createsubject-button",
 				"neowiki-edit-schema",
 				"neowiki-schema-create-subject",
+				"neowiki-schema-subject-count",
 				"neowiki-schema-delete",
 				"neowiki-schema-editor-summary-default",
 				"neowiki-schema-editor-success",
@@ -757,6 +759,7 @@
 				"neowiki-schema-creator-summary-default",
 				"neowiki-schemas-column-name",
 				"neowiki-schemas-column-description",
+				"neowiki-schemas-column-subjects",
 				"neowiki-schemas-empty",
 				"neowiki-schemas-export-button",
 				"neowiki-schemas-export-error",
@@ -782,7 +785,9 @@
 				"cancel",
 				"neowiki-schemas-find",
 				"neowiki-schemas-no-match",
-				"neowiki-schemas-show-more",
+				"neowiki-schemas-load-error",
+				"neowiki-schemas-view-list",
+				"neowiki-schemas-view-cards",
 				"neowiki-close-confirmation-title",
 				"neowiki-close-confirmation-message",
 				"neowiki-close-confirmation-discard",

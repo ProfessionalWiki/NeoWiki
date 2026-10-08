@@ -2,11 +2,23 @@
 	<div class="ext-neowiki-schemas-page">
 		<div class="ext-neowiki-schemas-page__toolbar">
 			<CdxSearchInput
-				v-model="searchText"
+				v-model="findText"
 				class="ext-neowiki-schemas-page__find"
 				:placeholder="$i18n( 'neowiki-schemas-find' ).text()"
 				:aria-label="$i18n( 'neowiki-schemas-find' ).text()"
 			/>
+			<CdxToggleButtonGroup
+				v-model="view"
+				:buttons="viewButtons"
+			>
+				<!-- Only for the tooltip, which the group cannot give its buttons. -->
+				<template #default="{ button }">
+					<CdxIcon
+						:icon="button.icon"
+						:title="button.ariaLabel"
+					/>
+				</template>
+			</CdxToggleButtonGroup>
 			<div class="ext-neowiki-schemas-page__actions">
 				<CdxButton
 					v-if="canCreateSchemas"
@@ -19,49 +31,69 @@
 				<SchemaExportButton />
 				<SchemaImportButton
 					v-if="canCreateSchemas"
-					@imported="listFromStart"
+					@imported="loadSchemas"
 				/>
 			</div>
 		</div>
 
+		<CdxMessage
+			v-if="listState === 'failed'"
+			type="error"
+			:inline="true"
+		>
+			{{ $i18n( 'neowiki-schemas-load-error' ).text() }}
+		</CdxMessage>
+		<p
+			v-else-if="listState === 'loading'"
+			class="ext-neowiki-schemas-page__loading"
+		>
+			…
+		</p>
+		<SchemasTable
+			v-else-if="foundSchemas.length > 0 && view === 'list'"
+			:schemas="foundSchemas"
+			:can-edit="canEditSchema"
+			:can-delete="canDeleteSchema"
+			:can-create-subject="canCreateSubjectPage"
+			:subject-list-available="subjectListAvailable"
+			:subject-count-of="subjectCountOf"
+			:subject-count-pending="subjectCountsPending"
+			@edit="openEditor"
+			@delete="confirmDelete"
+			@create-subject="openSubjectCreator"
+		/>
 		<div
-			v-if="schemas.length > 0"
+			v-else-if="foundSchemas.length > 0"
 			class="ext-neowiki-schemas-page__grid"
 		>
 			<SchemaCard
-				v-for="summary in schemas"
+				v-for="summary in foundSchemas"
 				:key="summary.name"
 				:summary="summary"
 				:can-edit="canEditSchema"
 				:can-delete="canDeleteSchema"
 				:can-create-subject="canCreateSubjectPage"
 				:subject-list-available="subjectListAvailable"
+				:subject-previews="subjectPreviews"
+				:subject-count="subjectCountOf( summary.name )"
+				:subject-count-pending="subjectCountsPending"
 				@edit="openEditor( summary.name )"
 				@delete="confirmDelete( summary.name )"
 				@create-subject="openSubjectCreator( summary.name )"
 			/>
 		</div>
 		<p
-			v-else-if="listingIsEmpty"
+			v-else
 			class="ext-neowiki-schemas-page__empty"
 		>
 			{{ emptyText }}
 		</p>
 
-		<CdxButton
-			v-if="nextCursor !== null"
-			class="ext-neowiki-schemas-page__more"
-			:disabled="loading"
-			@click="load( nextCursor )"
-		>
-			{{ $i18n( 'neowiki-schemas-show-more' ).text() }}
-		</CdxButton>
-
 		<SchemaCreatorDialog
 			v-if="canCreateSchemas"
 			:open="isCreatorOpen"
 			@update:open="isCreatorOpen = $event"
-			@created="listFromStart"
+			@created="onSchemaCreated"
 		/>
 
 		<SchemaEditorDialog
@@ -91,11 +123,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onScopeDispose, ref, shallowRef, watch } from 'vue';
-import { CdxButton, CdxIcon, CdxSearchInput } from '@wikimedia/codex';
-import { cdxIconAdd } from '@wikimedia/codex-icons';
+import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue';
+import { type ButtonGroupItem, CdxButton, CdxIcon, CdxMessage, CdxSearchInput, CdxToggleButtonGroup } from '@wikimedia/codex';
+import { cdxIconAdd, cdxIconListBullet, cdxIconViewCompact } from '@wikimedia/codex-icons';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
+import { useSubjectCounts } from '@/composables/useSubjectCounts.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
@@ -103,6 +136,8 @@ import { Schema } from '@/domain/Schema.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import { isSubjectListAvailable } from '@/subjectListAvailability.ts';
 import SchemaCard from './SchemaCard.vue';
+import SchemasTable from './SchemasTable.vue';
+import { SubjectPreviews } from './SubjectPreviews.ts';
 import SchemaCreatorDialog from './SchemaCreatorDialog.vue';
 import SchemaExportButton from './SchemaExportButton.vue';
 import SchemaImportButton from './SchemaImportButton.vue';
@@ -110,10 +145,8 @@ import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue
 import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 
-// Fills rows of three, two or one card.
-const SCHEMAS_PER_LOAD = 12;
 const SCHEMA_PREFIX = 'Schema:';
-const SEARCH_DELAY_MS = 300;
+const VIEW_STORAGE_KEY = 'neowiki-schemas-view';
 
 const {
 	canEditSchema,
@@ -124,90 +157,76 @@ const {
 	checkCreatePermission
 } = useSchemaPermissions();
 const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
+const { subjectCountsPending, subjectCountOf, loadSubjectCounts } = useSubjectCounts();
 const schemaStore = useSchemaStore();
 const subjectStore = useSubjectStore();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 const subjectListAvailable = isSubjectListAvailable();
+// Kept for the whole page view, so a card filtered out and back in shows its Subjects without asking again.
+const subjectPreviews = new SubjectPreviews( NeoWikiServices.getSubjectSummaryLookup() );
 
 const schemas = ref<SchemaSummary[]>( [] );
-const nextCursor = ref<string | null>( null );
-const loading = ref( true );
-const loadFailed = ref( false );
-const searchText = ref( '' );
-const appliedSearch = ref( '' );
-let searchTimer: ReturnType<typeof setTimeout> | null = null;
-let requestSequence = 0;
+const listState = ref<'loading' | 'loaded' | 'failed'>( 'loading' );
+const findText = ref( '' );
+// Numbers the listings asked for, so one answered after a later one cannot replace its newer list.
+let listingSequence = 0;
+
+const viewButtons: ButtonGroupItem[] = [
+	{ value: 'list', label: null, icon: cdxIconListBullet, ariaLabel: mw.msg( 'neowiki-schemas-view-list' ) },
+	{ value: 'cards', label: null, icon: cdxIconViewCompact, ariaLabel: mw.msg( 'neowiki-schemas-view-cards' ) }
+];
+// The view last chosen in this browser: the cards if those, otherwise the list.
+const view = ref( mw.storage.get( VIEW_STORAGE_KEY ) === 'cards' ? 'cards' : 'list' );
+watch( view, ( chosen ) => mw.storage.set( VIEW_STORAGE_KEY, chosen ) );
 
 const isCreatorOpen = ref( false );
 const isEditorOpen = ref( false );
 const editingSchema = shallowRef<Schema | null>( null );
 const isDeleteConfirmOpen = ref( false );
 const deletingSchemaName = ref( '' );
-// The Schema the Subject creator opens on, which the clicked card decides.
+// The Schema the Subject creator opens on, which the clicked card or row decides.
 const pinnedSchema = ref<string | undefined>( undefined );
 
-const listingIsEmpty = computed( () => !loading.value && !loadFailed.value && nextCursor.value === null );
-
-const emptyText = computed( () => appliedSearch.value === '' ?
-	mw.msg( 'neowiki-schemas-empty' ) :
-	mw.msg( 'neowiki-schemas-no-match', appliedSearch.value ) );
-
-async function load( cursor: string | null ): Promise<void> {
-	const sequence = ++requestSequence;
-	loading.value = true;
-
-	try {
-		const page = await schemaRepo.getSchemaSummaries( appliedSearch.value, cursor, SCHEMAS_PER_LOAD );
-
-		if ( sequence !== requestSequence ) {
-			return;
-		}
-
-		// Replacing the list without clearing it first keeps the cards of Schemas still listed mounted.
-		schemas.value = cursor === null ? page.schemas : [ ...schemas.value, ...page.schemas ];
-		nextCursor.value = page.nextCursor;
-		loadFailed.value = false;
-	} catch ( error ) {
-		if ( sequence !== requestSequence ) {
-			return;
-		}
-
-		if ( cursor === null ) {
-			schemas.value = [];
-			nextCursor.value = null;
-		}
-
-		loadFailed.value = true;
-		mw.notify( error instanceof Error ? error.message : String( error ), { type: 'error' } );
-	}
-
-	loading.value = false;
-}
-
-function listFromStart(): void {
-	load( null );
-}
-
-function clearSearchTimer(): void {
-	if ( searchTimer !== null ) {
-		clearTimeout( searchTimer );
-		searchTimer = null;
-	}
-}
-
-watch( searchText, ( text ) => {
-	clearSearchTimer();
-	searchTimer = setTimeout( () => {
-		appliedSearch.value = text.trim();
-	}, SEARCH_DELAY_MS );
+// The Schema picker's rule: any part of the name, in any case.
+const foundSchemas = computed( () => {
+	const query = findText.value.trim().toLowerCase();
+	return schemas.value.filter( ( summary ) => summary.name.toLowerCase().includes( query ) );
 } );
 
-watch( appliedSearch, listFromStart );
+const emptyText = computed( () => schemas.value.length === 0 ?
+	mw.msg( 'neowiki-schemas-empty' ) :
+	mw.msg( 'neowiki-schemas-no-match', findText.value.trim() ) );
 
-onScopeDispose( clearSearchTimer );
+async function loadSchemas(): Promise<void> {
+	const sequence = ++listingSequence;
+
+	try {
+		const listing = await schemaStore.fetchAllSchemaSummaries();
+
+		if ( sequence !== listingSequence ) {
+			return;
+		}
+
+		schemas.value = listing;
+		listState.value = 'loaded';
+	} catch ( error ) {
+		if ( sequence !== listingSequence ) {
+			return;
+		}
+
+		console.error( 'Failed to load schemas:', error );
+		listState.value = 'failed';
+	}
+}
+
+// A find text the new Schema's name does not contain would hide its card or row.
+function onSchemaCreated(): void {
+	findText.value = '';
+	loadSchemas();
+}
 
 // Vue patches the new pin onto the dialog before the dialog's pre-flush watcher on the open flag
-// reads it, so the creator opens on this card's Schema rather than the one clicked before it.
+// reads it, so the creator opens on this Schema rather than the one clicked before it.
 function openSubjectCreator( schemaName: string ): void {
 	pinnedSchema.value = schemaName;
 	subjectStore.openSubjectCreator();
@@ -258,7 +277,8 @@ onMounted( () => {
 	checkCreatePermission();
 	checkEditPermission( '' );
 	checkDeletePermission( '' );
-	listFromStart();
+	loadSchemas();
+	loadSubjectCounts();
 } );
 </script>
 
@@ -293,13 +313,13 @@ onMounted( () => {
 		gap: @spacing-100;
 	}
 
-	&__empty {
+	&__loading {
 		color: @color-subtle;
+		font-style: italic;
 	}
 
-	// Scoped under the page to outrank `.cdx-button`'s margin, which MediaWiki's Codex loads after this.
-	& &__more {
-		margin-top: @spacing-125;
+	&__empty {
+		color: @color-subtle;
 	}
 }
 </style>
