@@ -37,6 +37,30 @@
 				}
 			}
 		},
+		"datePrecisionConstraint": {
+			"if": { "type": "object" },
+			"then": {
+				"required": [ "value", "severity" ],
+				"additionalProperties": false,
+				"properties": {
+					"value": { "enum": [ "month", "day" ] },
+					"severity": { "$ref": "#/$defs/severity" }
+				}
+			},
+			"else": { "enum": [ "month", "day", null ] }
+		},
+		"dateBoundConstraint": {
+			"if": { "type": "object" },
+			"then": {
+				"required": [ "value", "severity" ],
+				"additionalProperties": false,
+				"properties": {
+					"value": { "type": "string" },
+					"severity": { "$ref": "#/$defs/severity" }
+				}
+			},
+			"else": { "type": [ "string", "null" ] }
+		},
 		"customConstraint": {
 			"if": {
 				"type": "object",
@@ -79,6 +103,25 @@
 						"options": { "$ref": "#/$defs/scalarConstraint" }
 					},
 					"allOf": [
+						{
+							"if": {
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"const": "date"
+									}
+								}
+							},
+							"then": {
+								"properties": {
+									"minimum": { "$ref": "#/$defs/dateBoundConstraint" },
+									"maximum": { "$ref": "#/$defs/dateBoundConstraint" },
+									"minPrecision": { "$ref": "#/$defs/datePrecisionConstraint" }
+								}
+							}
+						},
 						{
 							"if": {
 								"required": [

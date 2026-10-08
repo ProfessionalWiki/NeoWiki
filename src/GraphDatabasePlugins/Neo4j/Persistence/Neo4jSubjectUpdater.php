@@ -11,6 +11,8 @@ use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
@@ -117,7 +119,8 @@ class Neo4jSubjectUpdater {
 	private function nodeProperties( Neo4jPageSubject $pageSubject, Page $page ): array {
 		$subject = $pageSubject->subject;
 
-		$properties = $this->statementsToNodeProperties( $subject->getStatements() );
+		$properties = $this->statementsToNodeProperties( $subject->getStatements() )
+			+ $this->companionProperties( $subject->getStatements(), $pageSubject->schema );
 
 		// Assigned rather than array_merge()d: a property named like a decimal integer is an int
 		// key by then, and array_merge() renumbers those, which would file its value under a
@@ -197,6 +200,35 @@ class Neo4jSubjectUpdater {
 			. $statement->getPropertyName()->text . '" on page ' . $this->pageId->id
 			. ' when projecting to the graph'
 		);
+	}
+
+	/**
+	 * The second node property some Property Types store next to a Statement's own, such as the
+	 * latest day of a date. A Property can carry the name a companion would get. The Property
+	 * keeps the name. The Schema is asked as well as the Statements, so that a Subject leaving
+	 * that Property empty does not get the companion under its name.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function companionProperties( StatementList $statements, Schema $schema ): array {
+		$companionProps = [];
+
+		foreach ( $statements->asArray() as $statement ) {
+			$companionValues = $this->valueBuilderRegistry->buildCompanionValues(
+				$statement->getPropertyType(),
+				$statement->getValue()
+			);
+
+			foreach ( $companionValues as $suffix => $companionValue ) {
+				$name = $statement->getPropertyName()->text . $suffix;
+
+				if ( !$schema->hasProperty( $name ) && $statements->getStatement( new PropertyName( $name ) ) === null ) {
+					$companionProps[$name] = $companionValue;
+				}
+			}
+		}
+
+		return $companionProps;
 	}
 
 	/**

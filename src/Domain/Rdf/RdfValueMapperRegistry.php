@@ -12,8 +12,9 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\UrlType;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DatePrecision;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\PartialDate;
 use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualText;
 use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
@@ -171,35 +172,45 @@ class RdfValueMapperRegistry {
 	}
 
 	/**
+	 * The datatype follows each part's precision, so a date of year or month precision is not
+	 * exported as a day nobody entered.
+	 *
 	 * @return Literal[]
 	 */
 	private static function mapDate( NeoValue $value ): array {
-		return self::mapValidatedStrings(
+		return self::mapTypedStrings(
 			$value,
-			'date',
-			static fn( string $string ): bool => DateProperty::parseStrictDate( $string ) !== null
+			static fn( string $string ): ?string => self::xsdDateType( PartialDate::tryParse( $string )?->precision )
 		);
+	}
+
+	private static function xsdDateType( ?DatePrecision $precision ): ?string {
+		return match ( $precision ) {
+			DatePrecision::Year => 'gYear',
+			DatePrecision::Month => 'gYearMonth',
+			DatePrecision::Day => 'date',
+			null => null,
+		};
 	}
 
 	/**
 	 * @return Literal[]
 	 */
 	private static function mapDateTime( NeoValue $value ): array {
-		return self::mapValidatedStrings(
+		return self::mapTypedStrings(
 			$value,
-			'dateTime',
-			static fn( string $string ): bool => DateTimeProperty::parseStrictDateTime( $string ) !== null
+			static fn( string $string ): ?string => DateTimeProperty::parseStrictDateTime( $string ) === null ? null : 'dateTime'
 		);
 	}
 
 	/**
-	 * Keeps only the parts that are valid lexical forms for the given xsd datatype, so the projection
-	 * stays well-typed. Invalid parts are dropped, as the Neo4j projection drops unparseable dateTimes.
+	 * Keeps only the parts that are valid lexical forms of an xsd datatype, so the projection stays
+	 * well-typed. Invalid parts are dropped, as the Neo4j projection drops unparseable dateTimes.
 	 *
-	 * @param callable(string): bool $isValid
+	 * @param callable(string): ?string $xsdTypeOf The part's xsd datatype, or null when it has none
 	 * @return Literal[]
 	 */
-	private static function mapValidatedStrings( NeoValue $value, string $xsdType, callable $isValid ): array {
+	private static function mapTypedStrings( NeoValue $value, callable $xsdTypeOf ): array {
 		$scalars = $value->toScalars();
 
 		if ( !is_array( $scalars ) ) {
@@ -209,7 +220,9 @@ class RdfValueMapperRegistry {
 		$literals = [];
 
 		foreach ( $scalars as $part ) {
-			if ( is_string( $part ) && $isValid( $part ) ) {
+			$xsdType = is_string( $part ) ? $xsdTypeOf( $part ) : null;
+
+			if ( $xsdType !== null ) {
 				$literals[] = RdfLiteralFactory::typed( $part, $xsdType );
 			}
 		}
