@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
+use UtfNormal\Validator as UtfNormalValidator;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -29,11 +30,12 @@ class SaveSchemaApi extends SchemaPageActionApi {
 
 	/**
 	 * Read from the raw body because MediaWiki's REST layer decodes JSON objects into PHP arrays, and an empty
-	 * object, such as an empty `propertyDefinitions`, would come back out as a list.
+	 * object, such as an empty `propertyDefinitions`, would come back out as a list. Unicode-normalized here as that
+	 * layer does before decoding: the edit cannot, as the JSON passed to it escapes all non-ASCII text.
 	 */
 	private function getSchemaJson(): string {
 		if ( $this->schemaJson === null ) {
-			$body = json_decode( (string)$this->getRequest()->getBody() );
+			$body = json_decode( UtfNormalValidator::cleanUp( (string)$this->getRequest()->getBody() ) );
 			$this->schemaJson = (string)json_encode( is_object( $body ) ? $body->schema ?? null : null );
 		}
 
