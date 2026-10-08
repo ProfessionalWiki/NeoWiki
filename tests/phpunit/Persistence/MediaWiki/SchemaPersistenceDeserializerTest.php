@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition
  * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty
  */
 class SchemaPersistenceDeserializerTest extends TestCase {
@@ -105,6 +106,23 @@ class SchemaPersistenceDeserializerTest extends TestCase {
 		yield 'null type' => [ '{"type": null}' ];
 		yield 'non-string type' => [ '{"type": 42}' ];
 		yield 'empty type' => [ '{"type": ""}' ];
+		yield 'not an object' => [ '"text"' ];
+	}
+
+	public function testReadsNonStringSchemaDescriptionAsEmpty(): void {
+		$this->assertSame( '', $this->deserialize( '{"description": 5}' )->getDescription() );
+	}
+
+	public function testReadsNonStringPropertyDescriptionAsEmpty(): void {
+		$json = '{"propertyDefinitions": {"Name": {"type": "text", "description": 5}}}';
+
+		$this->assertSame( '', $this->deserialize( $json )->getProperty( 'Name' )->getDescription() );
+	}
+
+	public function testReadsNonBooleanRequiredAsNotRequired(): void {
+		$json = '{"propertyDefinitions": {"Name": {"type": "text", "required": "yes"}}}';
+
+		$this->assertFalse( $this->deserialize( $json )->getProperty( 'Name' )->isRequired() );
 	}
 
 	private function deserialize( string $json = self::SCHEMA_JSON ): Schema {

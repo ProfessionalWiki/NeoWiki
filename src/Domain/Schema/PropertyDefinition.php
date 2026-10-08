@@ -108,10 +108,9 @@ abstract class PropertyDefinition {
 
 		[ $values, $severities ] = SeverityNormalizer::extract( $json );
 
-		/** @var string $description */
-		$description = $values['description'] ?? '';
-		/** @var bool $required */
-		$required = $values['required'] ?? false;
+		// An imported page skipped the validation a save runs, so these can hold a value of the wrong type.
+		$description = is_string( $values['description'] ?? null ) ? $values['description'] : '';
+		$required = ( $values['required'] ?? false ) === true;
 
 		$propertyType = $propertyTypeLookup->getType( $json['type'] );
 
