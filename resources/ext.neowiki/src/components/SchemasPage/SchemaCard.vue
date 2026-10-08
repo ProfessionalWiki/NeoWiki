@@ -144,9 +144,14 @@ const headingId = useGeneratedId( 'ext-neowiki-schema-card' );
 const cardElement = ref<HTMLElement>();
 const cardInView = useIntersectionObserver( cardElement, {} );
 
-// A Schema known to have no Subjects says so without asking for them, unless the card already has some to show.
-const preview = computed( (): SubjectPreview | undefined => props.subjectPreviews.get( props.summary.name ) ??
-	( props.subjectCount === 0 ? { state: 'loaded', subjects: [] } : undefined ) );
+// A Schema known to have no Subjects says so without asking for them, unless the card has asked and not failed.
+const preview = computed( (): SubjectPreview | undefined => {
+	const asked = props.subjectPreviews.get( props.summary.name );
+
+	return props.subjectCount === 0 && ( asked === undefined || asked.state === 'failed' ) ?
+		{ state: 'loaded', subjects: [] } :
+		asked;
+} );
 const newestSubjects = computed( () => preview.value?.state === 'loaded' ? preview.value.subjects : [] );
 
 const subjectsNote = computed( () => {
