@@ -104,6 +104,15 @@ class CachingSchemaLookupTest extends TestCase {
 		$this->assertSame( 1, $inner->calls );
 	}
 
+	/**
+	 * An import stores a page without the validation a save runs, and every listing of the Schemas reaches here.
+	 */
+	public function testWronglyTypedSchemaJsonResolvesToNull(): void {
+		$lookup = $this->newLookup( $this->newSpyLookup( json: '{"description": 5}' ) );
+
+		$this->assertNull( $lookup->getSchema( new SchemaName( 'Broken' ) ) );
+	}
+
 	public function testResolvesEachSchemaSeparately(): void {
 		$inner = $this->newSpyLookup();
 

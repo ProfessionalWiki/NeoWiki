@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
+use TypeError;
 
 /**
  * MediaWiki revision SPECIFIC deserializer. Not for general use such as in the presentation layer.
@@ -34,16 +35,23 @@ class SchemaPersistenceDeserializer {
 			throw new InvalidArgumentException( 'Invalid JSON' );
 		}
 
-		return new Schema(
-			name: $schemaName,
-			description: $json['description'] ?? '',
-			properties: $this->propertiesFromJson( $json ),
-		);
+		// A value of the wrong type, which a save refuses but an import can store, arrives as a TypeError.
+		try {
+			return new Schema(
+				name: $schemaName,
+				description: $json['description'] ?? '',
+				properties: $this->propertiesFromJson( $json ),
+			);
+		}
+		catch ( TypeError $error ) {
+			throw new InvalidArgumentException( 'Invalid Schema JSON', 0, $error );
+		}
 	}
 
 	/**
 	 * Properties of an unregistered type are not dropped here: PropertyDefinition::fromJson
-	 * preserves them. Only structurally invalid definitions are skipped.
+	 * preserves them. Only structurally invalid definitions are skipped, such as one with a field
+	 * of the wrong type.
 	 */
 	private function propertiesFromJson( array $json ): PropertyDefinitions {
 		$properties = [];
@@ -53,7 +61,7 @@ class SchemaPersistenceDeserializer {
 				try {
 					$properties[$propertyName] = PropertyDefinition::fromJson( $property, $this->propertyTypeLookup );
 				}
-				catch ( InvalidArgumentException ) {
+				catch ( InvalidArgumentException | TypeError ) {
 					// TODO: log error
 				}
 			}
