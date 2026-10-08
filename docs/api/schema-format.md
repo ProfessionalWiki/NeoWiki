@@ -256,7 +256,7 @@ It takes the Schema and an optional `comment`, used as the edit summary:
 { "schema": { "description": "...", "propertyDefinitions": { ... } }, "comment": "Add a Website property" }
 ```
 
-It answers with `{ "schema": ... }` holding the Schema as stored. A body that is not a valid Schema is rejected with
+It answers with `{ "schema": ... }`, the saved Schema in the same form as GET. An invalid `schema` is rejected with
 `400`, the reason in `messageTranslations`.
 
 ## Complete Example
