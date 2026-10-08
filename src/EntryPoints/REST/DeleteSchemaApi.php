@@ -9,7 +9,7 @@ use MediaWiki\Title\Title;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\Rdbms\IDBAccessObject;
 
-class DeleteSchemaApi extends SchemaPageActionApi {
+class DeleteSchemaApi extends SchemaPageWriteApi {
 
 	protected function mayActOn( Title $schemaPage ): bool {
 		return $schemaPage->exists( IDBAccessObject::READ_LATEST ) && parent::mayActOn( $schemaPage );

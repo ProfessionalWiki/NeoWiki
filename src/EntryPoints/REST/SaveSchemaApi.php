@@ -15,7 +15,7 @@ use UtfNormal\Validator as UtfNormalValidator;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
 
-class SaveSchemaApi extends SchemaPageActionApi {
+class SaveSchemaApi extends SchemaPageWriteApi {
 
 	private ?string $schemaJson = null;
 

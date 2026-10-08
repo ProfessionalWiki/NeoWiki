@@ -16,16 +16,13 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
- * Saves through MediaWiki's real edit path into the test database: behaving exactly like that path is the
- * endpoint's contract.
- *
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\SaveSchemaApi
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\SchemaPageActionApi
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\SchemaPageWriteApi
  * @group Database
  */
 class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 
-	use RunsSchemaPageActions;
+	use RunsSchemaWriteEndpoints;
 
 	private const string SCHEMA_JSON = <<<JSON
 		{
@@ -68,9 +65,6 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertJsonStringEqualsJsonString( $this->readSchemaFromApi( 'Person' ), $this->bodyOf( $response ) );
 	}
 
-	/**
-	 * As on a wiki whose approval extension keeps serving the approved revision until the new one is approved.
-	 */
 	public function testRespondsWithTheSavedSchemaWhileAnotherRevisionIsPublished(): void {
 		$approved = $this->createSchema( 'Person', self::SCHEMA_JSON );
 		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $approved ) );
@@ -83,10 +77,6 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	/**
-	 * What the read endpoint serves is the canonical form, with every default spelled out, rather than the
-	 * stored JSON, so it must be a valid Schema in its own right.
-	 */
 	public function testSchemaReadFromTheReadEndpointSavesBackUnchanged(): void {
 		$this->createSchema( 'Person', <<<JSON
 			{
@@ -107,10 +97,6 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertJsonStringEqualsJsonString( $servedBefore, $this->readSchemaFromApi( 'Person' ) );
 	}
 
-	/**
-	 * MediaWiki's REST layer decodes a JSON object into a PHP array, which would encode back as `[]`, a value
-	 * the Schema format refuses for `propertyDefinitions`.
-	 */
 	public function testSchemaWithoutPropertiesKeepsAnEmptyObject(): void {
 		$response = $this->save( 'Person', '{ "propertyDefinitions": {} }' );
 
@@ -184,9 +170,6 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertFalse( $this->schemaPageExists( 'Person' ) );
 	}
 
-	/**
-	 * ConfirmEdit asks for a CAPTCHA this way: the edit module reports a result instead of an error.
-	 */
 	public function testEditAnExtensionHoldsBackIsNotReportedAsSaved(): void {
 		$this->setTemporaryHook(
 			'EditFilterMergedContent',
