@@ -229,6 +229,16 @@ describe( 'SchemaCard', () => {
 		expect( subjectNames( wrapper ) ).toEqual( [ 'Johannes Vermeer', 'Gustav Klimt' ] );
 	} );
 
+	it( 'says its Schema has no Subjects yet when its count arrives as 0 after asking failed', async () => {
+		getSubjectSummaries.mockRejectedValue( new Error( 'boom' ) );
+		const wrapper = mountCard( { subjectCountPending: true } );
+		await scrollIntoView( wrapper );
+
+		await wrapper.setProps( { subjectCount: 0, subjectCountPending: false } );
+
+		expect( wrapper.text() ).toContain( 'neowiki-subjects-empty-schemaArtist' );
+	} );
+
 	it.each( [ [ 2, 2 ], [ 3, 12 ], [ 3, null ] ] )(
 		'holds the room of %s rows for a Schema counting %s Subjects until they arrive',
 		( rows, subjectCount ) => {
