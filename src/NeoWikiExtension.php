@@ -858,18 +858,15 @@ class NeoWikiExtension {
 	 * @return list<array{name: string, schemas: list<string>}>
 	 */
 	private function getReadableMappingSummaries( Authority $authority ): array {
-		$mappingNames = array_map(
-			static fn ( MappingName $name ): string => $name->getText(),
-			$this->getMappingNameLookup()->getMappingNames()
-		);
+		$mappingLookup = $this->newMappingLookup( $authority );
 		$summaries = [];
 
-		foreach ( $this->filterReadableProjectionNames( $mappingNames, $authority ) as $name ) {
-			$mapping = $this->loadMappingByName( $name );
+		foreach ( $this->getMappingNameLookup()->getMappingNames() as $name ) {
+			$mapping = $mappingLookup->getMapping( $name );
 
 			if ( $mapping !== null ) {
 				$summaries[] = [
-					'name' => $name,
+					'name' => $name->getText(),
 					// PHP turns a Schema name of digits alone into an integer key, which JSON would carry as a number.
 					'schemas' => array_map( strval( ... ), array_keys( $mapping->schemas ) ),
 				];
@@ -900,15 +897,19 @@ class NeoWikiExtension {
 	}
 
 	public function getMappingLookup(): MappingLookup {
+		return $this->newMappingLookup( $this->getRequestAuthority() );
+	}
+
+	private function newMappingLookup( Authority $authority ): MappingLookup {
 		return new CachingMappingLookup(
 			mappingJsonLookup: new WikiPageMappingJsonLookup(
 				pageContentFetcher: $this->getPageContentFetcher(),
-				authority: $this->getRequestAuthority(),
+				authority: $authority,
 			),
 			mappingDeserializer: $this->getMappingPersistenceDeserializer(),
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
-			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			cacheOptions: $this->newReplicaCacheOptions(),
 		);
 	}
