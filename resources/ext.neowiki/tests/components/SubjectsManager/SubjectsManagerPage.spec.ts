@@ -16,7 +16,6 @@ import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vu
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import DataExportButtons from '@/components/SubjectsManager/DataExportButtons.vue';
-import type { MappingSummary } from '@/presentation/DataExportMenu.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { newSchema, newSubject } from '@/TestHelpers.ts';
 
@@ -38,7 +37,7 @@ const getPageSubjectsRepoMock = vi.fn();
 const deleteSubjectMock = vi.fn().mockResolvedValue( undefined );
 const setPageMainSubjectMock = vi.fn().mockResolvedValue( undefined );
 let storeSubjects: Subject[] = [];
-let mappings: MappingSummary[] = [];
+let mappings: { name: string; schemas: string[] }[] = [];
 let mainSubjectId: SubjectId | null = null;
 
 // Every describe below except 'delete flow' runs against this plain-object stub: fast,

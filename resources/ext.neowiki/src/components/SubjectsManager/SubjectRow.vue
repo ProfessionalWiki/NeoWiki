@@ -250,7 +250,6 @@ import { RelationTargetUrlKey } from '@/components/Value/ValueDisplayContract.ts
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
 import { rdfProjectionsFor, subjectExportUrls } from '@/presentation/DataExportMenu.ts';
-import type { MappingSummary } from '@/presentation/DataExportMenu.ts';
 import { subjectIri } from '@/presentation/subjectIri.ts';
 import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
@@ -336,10 +335,6 @@ const emit = defineEmits<{
 	'copy-link': [ subject: Subject ];
 }>();
 
-// The Mappings the viewing user may read, permission-filtered server-side. Set by whichever surface
-// mounts the row: the Data tab's action and Special:Subject alike.
-const mappings = ( mw.config.get( 'wgNeoWikiMappings' ) as MappingSummary[] | null ) ?? [];
-
 // A reader of these rows is browsing Subjects, so a relation in one leads where a link from a row
 // leads, on every surface that mounts the row.
 provide( RelationTargetUrlKey, subjectLinkUrlFromRow );
@@ -348,7 +343,7 @@ const displayName = computed( () => subjectDisplayName( props.subject ) );
 const schemaName = computed( () => schemaNameToShow( props.subject ) );
 const statementCount = computed( () => props.subject.getNamesOfNonEmptyProperties().length );
 const exportUrls = computed( () => subjectExportUrls( props.subject.getId().text ) );
-const rdfProjections = computed( () => rdfProjectionsFor( [ props.subject.getSchemaName() ], mappings ) );
+const rdfProjections = computed( () => rdfProjectionsFor( [ props.subject.getSchemaName() ] ) );
 
 /**
  * The Subject's concept URI, shown and copyable in the expanded footer. Empty for a Subject of another

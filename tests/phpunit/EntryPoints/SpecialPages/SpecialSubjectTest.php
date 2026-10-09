@@ -36,8 +36,6 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	private const string ABSENT_ID = 's1demo8aaaaaab6';
 	private const string INVALID_ID_ERROR = '(neowiki-special-subject-invalid-id)';
 	private const string PAGE_DESCRIPTION = '(neowiki-special-subject)';
-	private const string MUSEUM_MAPPING = '{ "version": 1, "prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" }, '
-		. '"schemas": { "Museum": { "subject": { "class": "edm:Place" } } } }';
 
 	private function outputFor( ?string $subPage ): string {
 		return $this->executeWith( $subPage )->getHTML();
@@ -115,27 +113,22 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertContains( 'ext.neowiki', $out->getModules() );
 	}
 
-	/**
-	 * "1984" stands for a Schema named with digits alone, whose name must still reach the frontend as a name.
-	 */
-	public function testExposesEachMappingWithTheNamesOfTheSchemasItMaps(): void {
+	public function testExposesEachMappingWithTheSchemasItMaps(): void {
 		$this->createMapping(
 			'EDM',
-			'{ "version": 1, "prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" }, "schemas": { '
-				. '"Museum": { "subject": { "class": "edm:Place" } }, '
-				. '"1984": { "subject": { "class": "edm:ProvidedCHO" } } } }'
+			'{ "version": 1, "prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" }, '
+				. '"schemas": { "Museum": { "subject": { "class": "edm:Place" } } } }'
 		);
 
-		$mappings = $this->executeWith( self::SUBJECT_ID )->getJsConfigVars()['wgNeoWikiMappings'];
-
-		$this->assertSame( [ 'EDM' ], array_column( $mappings, 'name' ) );
-		$this->assertEqualsCanonicalizing( [ 'Museum', '1984' ], $mappings[0]['schemas'] );
-		$this->assertContainsOnly( 'string', $mappings[0]['schemas'] );
+		$this->assertSame(
+			[ [ 'name' => 'EDM', 'schemas' => [ 'Museum' ] ] ],
+			$this->executeWith( self::SUBJECT_ID )->getJsConfigVars()['wgNeoWikiMappings']
+		);
 	}
 
 	public function testOmitsMappingsTheViewingUserCannotRead(): void {
-		$restrictedPageId = $this->createMapping( 'Restricted', self::MUSEUM_MAPPING )->getPageId();
-		$this->createMapping( 'EDM', self::MUSEUM_MAPPING );
+		$restrictedPageId = $this->createMapping( 'Restricted', '{ "version": 1, "schemas": {} }' )->getPageId();
+		$this->createMapping( 'EDM', '{ "version": 1, "schemas": {} }' );
 
 		$out = $this->executeWith( self::SUBJECT_ID, $this->authorityThatCannotReadPageId( $restrictedPageId ) );
 

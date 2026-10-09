@@ -42,7 +42,7 @@ class SpecialSubject extends SpecialPage {
 		if ( $subjectId !== null ) {
 			$this->headBySubject( $out, $extension, $subjectId );
 
-			// What the Subject's own view reads; each read costs a permission check per Mapping page.
+			// What the Subject's own view reads; it loads every Mapping the viewer may read.
 			$out->addJsConfigVars( $extension->getSubjectUiJsConfigVars( $this->getAuthority() ) );
 			$attributes['data-mw-neowiki-subject-id'] = $subjectId->text;
 		}

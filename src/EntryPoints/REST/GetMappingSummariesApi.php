@@ -50,7 +50,7 @@ class GetMappingSummariesApi extends SimpleHandler {
 	 * @return array{name: string, schemas: list<string>}
 	 */
 	private function mappingToSummary( Mapping $mapping ): array {
-		$schemaNames = array_keys( $mapping->schemas );
+		$schemaNames = $mapping->getSchemaNames();
 		sort( $schemaNames, SORT_STRING );
 
 		return [

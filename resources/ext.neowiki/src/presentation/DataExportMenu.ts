@@ -2,13 +2,12 @@ import type { MenuItemData } from '@wikimedia/codex';
 
 /**
  * What the Subject UI's export controls offer, for a single Subject or for all Subjects on a page: the
- * JSON URL, the projections worth offering RDF in, and the RDF menu's items. Kept as pure functions so
- * this is unit-tested independently of the Vue component.
+ * JSON URL, the projections worth offering RDF in, and the RDF menu's items.
  */
 
 const NATIVE_PROJECTION = 'native';
 
-export type RdfFormat = 'turtle' | 'trig';
+type RdfFormat = 'turtle' | 'trig';
 
 const RDF_FORMATS: readonly { format: RdfFormat; messageKey: string }[] = [
 	{ format: 'turtle', messageKey: 'neowiki-managesubjects-export-format-turtle' },
@@ -18,7 +17,7 @@ const RDF_FORMATS: readonly { format: RdfFormat; messageKey: string }[] = [
 /**
  * A Mapping as the export menus see it: its name, which names its projection, and the Schemas it maps.
  */
-export interface MappingSummary {
+interface MappingSummary {
 	readonly name: string;
 	readonly schemas: readonly string[];
 }
@@ -57,11 +56,14 @@ export function pageExportUrls( pageId: number ): ExportUrls {
 }
 
 /**
- * The projections that hold data for Subjects of the given Schemas: native always, and each Mapping that
- * maps one of the Schemas. A Mapping projects only the Subjects whose Schema it maps, so any other
- * Mapping's export of them would be empty.
+ * The projections that hold data for Subjects of the given Schemas: native always, and each Mapping the
+ * viewing user may read that maps one of the Schemas. A Mapping projects only the Subjects whose Schema it
+ * maps, so any other Mapping's export of them would be empty.
  */
-export function rdfProjectionsFor( schemaNames: readonly string[], mappings: readonly MappingSummary[] ): string[] {
+export function rdfProjectionsFor( schemaNames: readonly string[] ): string[] {
+	// Set, filtered to what the viewer may read, by every surface that shows the export buttons.
+	const mappings = ( mw.config.get( 'wgNeoWikiMappings' ) as MappingSummary[] | null ) ?? [];
+
 	return [
 		NATIVE_PROJECTION,
 		...mappings

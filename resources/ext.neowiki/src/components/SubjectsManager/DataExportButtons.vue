@@ -52,11 +52,9 @@ import {
 import type { MenuItemValue } from '@wikimedia/codex';
 import { cdxIconDownload } from '@wikimedia/codex-icons';
 import { rdfMenuItems } from '@/presentation/DataExportMenu.ts';
-import type { RdfFormat } from '@/presentation/DataExportMenu.ts';
+import type { ExportUrls } from '@/presentation/DataExportMenu.ts';
 
-const props = defineProps<{
-	jsonUrl: string;
-	rdfUrl( projection: string, format: RdfFormat ): string;
+const props = defineProps<ExportUrls & {
 	projections: readonly string[];
 }>();
 
@@ -87,7 +85,7 @@ const menuItems = computed( () => rdfMenuItems( props.projections, props.rdfUrl 
 function onTriggerClick( event: MouseEvent ): void {
 	// Enter/Space on a native button also dispatch a click, but with detail 0; those are handled
 	// in onTriggerKeydown, so only genuine pointer clicks (detail > 0) toggle the menu here.
-	// Without this guard, keyboard activation would both open (here) and act (keydown) -- the flash.
+	// Without this guard, keyboard activation would both open (here) and act (keydown).
 	if ( event.detail === 0 ) {
 		return;
 	}
@@ -99,7 +97,6 @@ function onSelect( url: MenuItemValue | null ): void {
 		return;
 	}
 	window.open( String( url ), '_blank', 'noopener' );
-	expanded.value = false;
 }
 
 function onTriggerKeydown( event: KeyboardEvent ): void {

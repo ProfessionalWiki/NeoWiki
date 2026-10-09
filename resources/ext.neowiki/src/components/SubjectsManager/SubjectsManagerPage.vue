@@ -12,7 +12,7 @@
 				<DataExportButtons
 					v-if="!loading && subjects.length > 0"
 					:projections="rdfProjections"
-					v-bind="pageExportUrls( pageId )"
+					v-bind="exportUrls"
 				/>
 				<CdxButton
 					v-if="canCreate && !isCompletelyEmpty"
@@ -212,12 +212,9 @@ import SubjectDeleteDialog from '@/components/SubjectsManager/SubjectDeleteDialo
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
 import DataExportButtons from '@/components/SubjectsManager/DataExportButtons.vue';
 import { pageExportUrls, rdfProjectionsFor } from '@/presentation/DataExportMenu.ts';
-import type { MappingSummary } from '@/presentation/DataExportMenu.ts';
 
 const pageId = Number( mw.config.get( 'wgNeoWikiManageSubjectsPageId' ) );
-
-// The Mappings the viewing user may read, permission-filtered server-side.
-const mappings = ( mw.config.get( 'wgNeoWikiMappings' ) as MappingSummary[] | null ) ?? [];
+const exportUrls = pageExportUrls( pageId );
 
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
@@ -284,8 +281,7 @@ const subjects = computed<Subject[]>( () =>
 );
 
 const rdfProjections = computed( () => rdfProjectionsFor(
-	subjects.value.map( ( subject ) => subject.getSchemaName() ),
-	mappings
+	subjects.value.map( ( subject ) => subject.getSchemaName() )
 ) );
 
 const canCreate = computed( () => canCreateMainSubject.value || canCreateOtherSubject.value );

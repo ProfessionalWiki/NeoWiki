@@ -844,9 +844,8 @@ class NeoWikiExtension {
 	 */
 	public function getSubjectUiJsConfigVars( Authority $authority ): array {
 		return [
-			// Drives the RDF export menus, which offer a Mapping's projection for the Subjects whose Schema
-			// it maps. Filtered by the viewing user's read authority so restricted Mapping page titles never
-			// reach a reader who cannot see them.
+			// Drives the RDF export menus. Filtered by the viewing user's read authority so restricted
+			// Mapping page titles never reach a reader who cannot see them.
 			'wgNeoWikiMappings' => $this->getReadableMappingSummaries( $authority ),
 			// The copy-IRI control appends the Subject id to this base to show the full neo-subj:
 			// concept URI, deriving it from the same server-side rule the RDF export mints IRIs with.
@@ -867,8 +866,7 @@ class NeoWikiExtension {
 			if ( $mapping !== null ) {
 				$summaries[] = [
 					'name' => $name->getText(),
-					// PHP turns a Schema name of digits alone into an integer key, which JSON would carry as a number.
-					'schemas' => array_map( strval( ... ), array_keys( $mapping->schemas ) ),
+					'schemas' => $mapping->getSchemaNames(),
 				];
 			}
 		}
