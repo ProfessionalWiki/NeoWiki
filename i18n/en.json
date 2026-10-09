@@ -326,6 +326,9 @@
 
 	"neowiki-schema-invalid": "Schema content is invalid ({{PLURAL:$1|$1 error|$1 errors}}): $2",
 	"neowiki-schema-invalid-detail": "$1: $2",
+	"neowiki-schema-invalid-notice": "This Schema does not match the Schema format, so parts of it may be ignored or misread. Edit the page to fix {{PLURAL:$1|this problem|these problems}}:",
+	"neowiki-schema-invalid-category": "Invalid Schemas",
+	"neowiki-schema-invalid-category-desc": "Schema pages whose JSON does not match the Schema format, for example after an import.",
 	"neowiki-schema-name-invalid": "Invalid schema name: $1",
 	"neowiki-layout-invalid": "Layout content is invalid ({{PLURAL:$1|$1 error|$1 errors}}): $2",
 	"neowiki-layout-invalid-detail": "$1: $2",
