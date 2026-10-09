@@ -63,7 +63,12 @@ class SchemaContentValidator {
 	 * @return array<string, string>
 	 */
 	private function formatErrors( ValidationError $error ): array {
-		return ( new ErrorFormatter() )->format( $error, false );
+		return ( new ErrorFormatter() )->format(
+			$error,
+			false,
+			null,
+			static fn ( ValidationError $error ): string => '/' . implode( '/', $error->data()->fullPath() )
+		);
 	}
 
 }

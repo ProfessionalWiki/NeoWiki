@@ -9,6 +9,8 @@ use MediaWiki\Content\Content;
 use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Content\ValidationParams;
+use MediaWiki\Html\Html;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use MediaWiki\Parser\ParserOutput;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -53,12 +55,55 @@ class SchemaContentHandler extends JsonContentHandler {
 		return $status;
 	}
 
+	/**
+	 * The Schema itself renders client-side. An import can store JSON that a save would refuse.
+	 */
 	protected function fillParserOutput(
 		Content $content,
 		ContentParseParams $cpoParams,
 		ParserOutput &$parserOutput
 	): void {
 		$parserOutput->setContentHolderText( '' );
+
+		$validator = SchemaContentValidator::newInstance();
+
+		if ( $validator->validate( $content->getText() ) ) {
+			return;
+		}
+
+		MediaWikiServices::getInstance()->getTrackingCategories()->addTrackingCategory(
+			$parserOutput,
+			'neowiki-schema-invalid-category',
+			$cpoParams->getPage()
+		);
+
+		if ( $cpoParams->getGenerateHtml() ) {
+			$parserOutput->setContentHolderText( $this->invalidSchemaNotice( $validator->getErrors() ) );
+			$parserOutput->addModuleStyles( [ 'mediawiki.codex.messagebox.styles' ] );
+		}
+	}
+
+	/**
+	 * @param array<string, string> $errors Validation message by JSON pointer
+	 */
+	private function invalidSchemaNotice( array $errors ): string {
+		$items = '';
+
+		foreach ( $errors as $pointer => $message ) {
+			$items .= Html::element(
+				'li',
+				[],
+				wfMessage( 'neowiki-schema-invalid-detail' )
+					->plaintextParams( $pointer, $message )
+					->inContentLanguage()
+					->text()
+			);
+		}
+
+		return Html::warningBox(
+			wfMessage( 'neowiki-schema-invalid-notice' )->numParams( count( $errors ) )->inContentLanguage()->escaped()
+			. Html::rawElement( 'ul', [], $items )
+		);
 	}
 
 	public function makeEmptyContent(): SchemaContent {

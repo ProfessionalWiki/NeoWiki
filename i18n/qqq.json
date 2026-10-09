@@ -201,6 +201,9 @@
 
 	"neowiki-schema-invalid": "Error message shown when saving a structurally invalid Schema. Parameters:\n* $1 - number of validation errors\n* $2 - semicolon-separated list of {{msg-mw|neowiki-schema-invalid-detail}}, one per error",
 	"neowiki-schema-invalid-detail": "One line of detail for a single Schema validation error. Parameters:\n* $1 - JSON pointer to the location of the error\n* $2 - the validation error message",
+	"neowiki-schema-invalid-notice": "Warning shown at the top of a Schema page whose stored JSON does not match the Schema format, for example after an XML import. Followed by a list of {{msg-mw|neowiki-schema-invalid-detail}}, one per problem. Parameters:\n* $1 - number of problems",
+	"neowiki-schema-invalid-category": "{{tracking category name}}\nLists Schema pages whose stored JSON does not match the Schema format.",
+	"neowiki-schema-invalid-category-desc": "{{tracking category description}}\nDescription of {{msg-mw|neowiki-schema-invalid-category}}.",
 	"neowiki-schema-name-invalid": "Error message shown when a Schema page title is not a valid schema name (empty or reserved). Parameters:\n* $1 - the reason the name is invalid",
 	"neowiki-layout-invalid": "Error message shown when saving an invalid Layout. Parameters:\n* $1 - number of validation errors\n* $2 - semicolon-separated list of {{msg-mw|neowiki-layout-invalid-detail}}, one per error",
 	"neowiki-layout-invalid-detail": "One line of detail for a single Layout validation error. Parameters:\n* $1 - JSON pointer to the location of the error\n* $2 - the validation error message",
