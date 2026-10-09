@@ -166,6 +166,16 @@ class SchemaPresentationSerializerTest extends TestCase {
 		$this->assertSerializesTo( $expectedJson, $schema );
 	}
 
+	public function testSchemaWithoutPropertiesHasAnEmptyPropertyDefinitionsObject(): void {
+		$schema = new Schema(
+			name: new SchemaName( 'testSchema' ),
+			description: '',
+			properties: new PropertyDefinitions( [] )
+		);
+
+		$this->assertSerializesTo( '{ "description": "", "propertyDefinitions": {} }', $schema );
+	}
+
 	/**
 	 * @dataProvider exampleSchemaProvider
 	 */

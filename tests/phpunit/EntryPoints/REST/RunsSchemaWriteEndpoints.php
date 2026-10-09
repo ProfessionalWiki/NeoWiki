@@ -1,0 +1,89 @@
+<?php
+
+declare( strict_types = 1 );
+
+namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
+
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Request\FauxRequest;
+use MediaWiki\Rest\HttpException;
+use MediaWiki\Rest\RequestData;
+use MediaWiki\Rest\ResponseInterface;
+use MediaWiki\Session\CsrfTokenSet;
+use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\SchemaPageWriteApi;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
+use Wikimedia\Rdbms\IDBAccessObject;
+
+trait RunsSchemaWriteEndpoints {
+
+	use HandlerTestTrait;
+
+	/**
+	 * The user is both the handler's Authority and the main request context's user, whom the action module
+	 * acts as; on the wiki they are one requesting user. An error comes back as the response the caller
+	 * would get.
+	 */
+	private function executeAs( User $user, SchemaPageWriteApi $api, RequestData $request ): ResponseInterface {
+		RequestContext::getMain()->setUser( $user );
+
+		try {
+			return $this->executeHandler( $api, $request, authority: $user );
+		} catch ( HttpException $exception ) {
+			return $api->getResponseFactory()->createFromException( $exception );
+		}
+	}
+
+	private function newJsonRequest( string $method, string $schemaName, string $body ): RequestData {
+		return new RequestData( [
+			'method' => $method,
+			'pathParams' => [ 'schemaName' => $schemaName ],
+			'bodyContents' => $body,
+			'headers' => [ 'Content-Type' => 'application/json' ],
+		] );
+	}
+
+	private function denyReadingSchemaPage( string $schemaName ): void {
+		$this->setTemporaryHook(
+			'getUserPermissionsErrors',
+			static function ( $title, $user, $action, &$result ) use ( $schemaName ): bool {
+				if ( $action === 'read'
+					&& $title->getNamespace() === NeoWikiExtension::NS_SCHEMA
+					&& $title->getDBkey() === $schemaName
+				) {
+					$result = [ 'badaccess-group0' ];
+					return false;
+				}
+
+				return true;
+			}
+		);
+	}
+
+	private function newCsrfValidatorStub(): CsrfValidator {
+		$csrfValidator = $this->createStub( CsrfValidator::class );
+		$csrfValidator->method( 'verifyCsrfToken' )->willReturn( true );
+		return $csrfValidator;
+	}
+
+	private function newTokenlessCsrfValidator(): CsrfValidator {
+		$request = new FauxRequest();
+		return new CsrfValidator( $request, new CsrfTokenSet( $request ) );
+	}
+
+	private function schemaTitle( string $schemaName ): Title {
+		return Title::makeTitle( NeoWikiExtension::NS_SCHEMA, $schemaName );
+	}
+
+	private function schemaPageExists( string $schemaName ): bool {
+		return $this->schemaTitle( $schemaName )->exists( IDBAccessObject::READ_LATEST );
+	}
+
+	private function bodyOf( ResponseInterface $response ): string {
+		return (string)$response->getBody();
+	}
+
+}

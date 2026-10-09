@@ -211,13 +211,12 @@ describe( 'SchemaCard', () => {
 			.toBe( wrapper.find( 'h2' ).attributes( 'id' ) );
 	} );
 
-	it( 'says its Schema has no Subjects yet without asking, when it counts none', async () => {
+	it( 'shows the newest Subjects of a Schema whose count says it has none', async () => {
 		const wrapper = mountCard( { subjectCount: 0 } );
 
 		await scrollIntoView( wrapper );
 
-		expect( getSubjectSummaries ).not.toHaveBeenCalled();
-		expect( wrapper.text() ).toContain( 'neowiki-subjects-empty-schemaArtist' );
+		expect( subjectNames( wrapper ) ).toEqual( [ 'Johannes Vermeer', 'Gustav Klimt' ] );
 	} );
 
 	it( 'keeps showing the Subjects it loaded when its count arrives as 0', async () => {

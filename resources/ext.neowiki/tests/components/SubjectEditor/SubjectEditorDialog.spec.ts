@@ -51,6 +51,8 @@ let editorSaveBlockerBySchema: Record<string, SaveBlocker | null> = {};
 // What the stubbed editor reports its fields hold, keyed by Schema name, so a test can make
 // one pane's form yield a real relation. Empty means no values at all.
 let editorStatementsBySchema: Record<string, Statement[]> = {};
+// What mw.config answers, read at each call, so a test can switch the wiki to subject-first.
+let wikiConfig: Record<string, unknown> = {};
 
 const SubjectEditorStub = {
 	template: '<div class="subject-editor-stub"></div>',
@@ -88,12 +90,13 @@ describe( 'SubjectEditorDialog', () => {
 		editorSaveBlocker = null;
 		editorSaveBlockerBySchema = {};
 		editorStatementsBySchema = {};
+		// Debounce 0 is blur-only mode: the dry-run fires on blur / pre-save
+		// (via flush()), which runs synchronously in tests.
+		wikiConfig = { wgNeoWikiValidationDebounceMs: 0, wgArticleId: 42 };
 		setupMwMock( {
 			// 'util' for the relation fields and a nested pane's storage line: both call mw.util.getUrl.
 			functions: [ 'message', 'msg', 'notify', 'config', 'util' ],
-			// Debounce 0 is blur-only mode: the dry-run fires on blur / pre-save
-			// (via flush()), which runs synchronously in tests.
-			config: { wgNeoWikiValidationDebounceMs: 0, wgArticleId: 42 },
+			config: wikiConfig,
 		} );
 	} );
 
@@ -1981,6 +1984,24 @@ describe( 'SubjectEditorDialog', () => {
 				} );
 			}
 
+			async function mountWithBothSubjectsOn( page: PageIdentifiers ): Promise<VueWrapper> {
+				const { wrapper, mockSubjectRepository } = mountWithTargetRepos(
+					undefined,
+					{},
+					mockSchema,
+					newSubject( { id: rootSubjectId, schemaName: 'TestSchema', pageIdentifiers: page } ),
+				);
+				mockSubjectRepository.getSubjectForEditing.mockResolvedValue( newSubject( {
+					id: 's22222222222222',
+					schemaName: 'Person',
+					pageIdentifiers: page,
+				} ) );
+				await flushPromises();
+				wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
+				await flushPromises();
+				return wrapper;
+			}
+
 			it( 'says nothing while nothing is dirty', async () => {
 				const { wrapper } = await mountWithSecondPaneOpen();
 
@@ -2026,21 +2047,18 @@ describe( 'SubjectEditorDialog', () => {
 				expect( footerTextOf( wrapper ) ).toBe( 'neowiki-subject-editor-save-scope22' );
 			} );
 
+			it( 'counts two dirty subjects stored on one page as a single page on a subject-first wiki too', async () => {
+				wikiConfig.wgNeoWikiSubjectFirst = true;
+				const wrapper = await mountWithBothSubjectsOn( new PageIdentifiers( 7, 'Shared page' ) );
+
+				await makePaneDirty( wrapper, 0 );
+				await makePaneDirty( wrapper, 1 );
+
+				expect( footerTextOf( wrapper ) ).toBe( 'neowiki-subject-editor-save-scope21' );
+			} );
+
 			it( 'counts each dirty subject without a resolved page as a page of its own', async () => {
-				const { wrapper, mockSubjectRepository } = mountWithTargetRepos(
-					undefined,
-					{},
-					mockSchema,
-					newSubject( { id: rootSubjectId, schemaName: 'TestSchema', pageIdentifiers: unresolvedPage() } ),
-				);
-				mockSubjectRepository.getSubjectForEditing.mockResolvedValue( newSubject( {
-					id: 's22222222222222',
-					schemaName: 'Person',
-					pageIdentifiers: unresolvedPage(),
-				} ) );
-				await flushPromises();
-				wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
-				await flushPromises();
+				const wrapper = await mountWithBothSubjectsOn( unresolvedPage() );
 
 				await makePaneDirty( wrapper, 0 );
 				await makePaneDirty( wrapper, 1 );
@@ -3059,20 +3077,32 @@ describe( 'SubjectEditorDialog', () => {
 			// A subject-first wiki gives the draft a page of its own, so the pane it was created
 			// from needs none to store it on (ADR 33).
 			it( 'drafts a target for a pageless subject on a subject-first wiki', async () => {
-				setupMwMock( {
-					functions: [ 'message', 'msg', 'notify', 'config', 'util' ],
-					config: {
-						wgNeoWikiValidationDebounceMs: 0,
-						wgArticleId: 42,
-						wgNeoWikiSubjectFirst: true,
-					},
-				} );
+				wikiConfig.wgNeoWikiSubjectFirst = true;
 				const { wrapper } = await mountReadyForCreation( { rootSubject: mockSubject } );
 
 				const created = await createTarget( wrapper );
 
 				expect( created?.getId().text ).toBe( mintedId );
 				expect( mw.notify ).not.toHaveBeenCalled();
+			} );
+
+			it( 'names no storage page for a draft created from a subject stored on one, on a subject-first wiki', async () => {
+				wikiConfig.wgNeoWikiSubjectFirst = true;
+				const { wrapper } = await mountReadyForCreation();
+
+				await createTarget( wrapper );
+
+				expect( paneFor( wrapper, mintedId ).text() ).not.toContain( hostPage.getPageName() );
+			} );
+
+			it( 'counts a draft as a page of its own beside the subject it was created from, on a subject-first wiki', async () => {
+				wikiConfig.wgNeoWikiSubjectFirst = true;
+				const { wrapper } = await mountReadyForCreation();
+				await createReferencedTarget( wrapper );
+
+				await makePaneDirty( wrapper, 0 );
+
+				expect( footerTextOf( wrapper ) ).toBe( 'neowiki-subject-editor-save-scope22' );
 			} );
 
 			// A relation naming a draft is sound in the editor and unresolvable to the server,
@@ -3300,6 +3330,23 @@ describe( 'SubjectEditorDialog', () => {
 						expect.any( Number ),
 						'neowiki-subject-editor-summary-default-create',
 					);
+				} );
+
+				it( 'counts the root and a draft as two pages on a subject-first wiki', async () => {
+					wikiConfig.wgNeoWikiSubjectFirst = true;
+					const { wrapper } = await mountCreating( { rootSubject: rootOnPageToCome } );
+
+					await createReferencedTarget( wrapper );
+
+					expect( footerTextOf( wrapper ) ).toBe( 'neowiki-subject-editor-save-scope22' );
+				} );
+
+				it( 'counts the root and a draft as one page on a page-first wiki', async () => {
+					const { wrapper } = await mountCreating( { rootSubject: rootOnPageToCome } );
+
+					await createReferencedTarget( wrapper );
+
+					expect( footerTextOf( wrapper ) ).toBe( 'neowiki-subject-editor-save-scope21' );
 				} );
 			} );
 		} );

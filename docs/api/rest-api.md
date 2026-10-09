@@ -8,6 +8,12 @@ order: 1
 NeoWiki's REST API lives under `/rest.php/neowiki/v0/*`. Requests and responses are JSON; the RDF export endpoints
 return TriG or Turtle instead.
 
+Endpoints that change data act as the user of your session. To log in from a script, use a
+[bot password](https://www.mediawiki.org/wiki/Manual:Bot_passwords) with the Action API's
+[`action=login`](https://www.mediawiki.org/wiki/API:Login). These endpoints also need the session's CSRF token, from
+[`meta=tokens`](https://www.mediawiki.org/wiki/API:Tokens), in an `X-CSRF-TOKEN` header; without a valid one they
+answer `403`.
+
 **Pre-1.0.** Endpoints and payloads may change without notice; do not build third-party integrations on
 `/neowiki/v0/*` yet.
 
@@ -69,12 +75,16 @@ A Schema defines a Subject type and its properties. For the body shape, see
 |---|---|
 | `GET /neowiki/v0/schemas` | List Schemas. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. |
 | `GET /neowiki/v0/schema/{schemaName}` | Fetch a Schema by name. |
+| `PUT /neowiki/v0/schema/{schemaName}` | Create or replace a Schema: `201` for a new one, `200` for a replaced one. For the body, see [Schema format](schema-format.md#rest-api). |
+| `DELETE /neowiki/v0/schema/{schemaName}` | Delete a Schema, even one that Subjects still use: `200`, `202` when the deletion completes later, or `404` when there is none. Optional body `comment`, logged as the deletion reason. |
 | `GET /neowiki/v0/schema/{schemaName}/json-schema` | Fetch a Schema as a [JSON Schema](json-schema.md) document describing its Subjects. |
 | `GET /neowiki/v0/schema-names/{search}` | Find Schema names by prefix. |
 
 ### Layouts
 
-A Layout defines how a Subject is displayed.
+A Layout defines how a Subject is displayed. To create, change, or delete one, use MediaWiki's Action API on the page
+`Layout:<name>`: [`action=edit`](https://www.mediawiki.org/wiki/API:Edit),
+[`action=delete`](https://www.mediawiki.org/wiki/API:Delete).
 
 | Endpoint | Description |
 |---|---|
@@ -84,7 +94,9 @@ A Layout defines how a Subject is displayed.
 ### Mappings
 
 An ontology Mapping defines one projection: it projects native Schemas into a target ontology. For the format
-and concepts, see [Mapping Format](../authoring/mapping-format.md).
+and concepts, see [Mapping Format](../authoring/mapping-format.md). To create, change, or delete one, use MediaWiki's
+Action API on the page `Mapping:<name>`: [`action=edit`](https://www.mediawiki.org/wiki/API:Edit),
+[`action=delete`](https://www.mediawiki.org/wiki/API:Delete).
 
 | Endpoint | Description |
 |---|---|
@@ -137,6 +149,9 @@ not read and for a page id that does not exist; the write endpoints keyed by Sub
 page you may not read and for a Subject id that does not exist. `POST /neowiki/v0/subjects` is keyed by a title you
 supply rather than by an existing page: it answers `403` for a title you may not create, and `409` for one already
 taken, carrying that title and nothing about the page holding it.
+
+The Schema write endpoints need the same permissions as creating, editing, or deleting the Schema's page in the wiki.
+They answer `403` when you may read that page but not make the change, and `404` when you may not read it.
 
 The Cypher query endpoint is gated only by the `neowiki-query` right, with no per-page filtering (see
 [Query API](query-api.md)).

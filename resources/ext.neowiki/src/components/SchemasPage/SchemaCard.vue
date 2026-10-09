@@ -144,9 +144,7 @@ const headingId = useGeneratedId( 'ext-neowiki-schema-card' );
 const cardElement = ref<HTMLElement>();
 const cardInView = useIntersectionObserver( cardElement, {} );
 
-// A Schema known to have no Subjects says so without asking for them, unless the card already has some to show.
-const preview = computed( (): SubjectPreview | undefined => props.subjectPreviews.get( props.summary.name ) ??
-	( props.subjectCount === 0 ? { state: 'loaded', subjects: [] } : undefined ) );
+const preview = computed( (): SubjectPreview | undefined => props.subjectPreviews.get( props.summary.name ) );
 const newestSubjects = computed( () => preview.value?.state === 'loaded' ? preview.value.subjects : [] );
 
 const subjectsNote = computed( () => {
@@ -167,9 +165,9 @@ const subjectListUrl = computed( () => mw.util.getUrl( `Special:Subjects/${ prop
 const pendingRows = computed( () => Math.min( props.subjectCount ?? SUBJECT_PREVIEW_SIZE, SUBJECT_PREVIEW_SIZE ) );
 
 // A card asks only once seen, so a page of many Schemas does not ask for the Subjects of them all. The previews
-// decide whether a Schema needs asking again.
+// decide whether a Schema needs asking again. A count of 0 does not spare the asking: it can be a minute old.
 watch( cardInView, ( inView ) => {
-	if ( inView && props.subjectListAvailable && props.subjectCount !== 0 ) {
+	if ( inView && props.subjectListAvailable ) {
 		props.subjectPreviews.load( props.summary.name );
 	}
 } );

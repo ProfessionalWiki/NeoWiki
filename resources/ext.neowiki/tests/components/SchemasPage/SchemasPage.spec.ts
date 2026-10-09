@@ -234,6 +234,32 @@ describe( 'SchemasPage', () => {
 		expect( wrapper.findComponent( SchemasTable ).props( 'schemas' ) ).toEqual( summaries( [ 'Artist', 'Artwork' ] ) );
 	} );
 
+	it( 'says when no Schema matches the find text in place of the table', async () => {
+		browserStorage.clear();
+		const wrapper = await visit();
+
+		await find( wrapper, 'zzq' );
+
+		expect( wrapper.text() ).toContain( 'neowiki-schemas-no-matchzzq' );
+	} );
+
+	it( 'links no row to its Subjects on a wiki without a Subject list', async () => {
+		browserStorage.clear();
+		mayCreateSubjectPages = true;
+		const wrapper = mountPage( { subjectListAvailable: false } );
+		await flushPromises();
+
+		expect( wrapper.find( 'a[href^="/wiki/Special:Subjects/"]' ).exists() ).toBe( false );
+	} );
+
+	it( 'links no row to its Subjects until the counts arrive', async () => {
+		browserStorage.clear();
+		const wrapper = mountPage( { subjectCountLookup: { getSubjectCounts: neverLands() } } );
+		await flushPromises();
+
+		expect( wrapper.find( 'a[href^="/wiki/Special:Subjects/"]' ).exists() ).toBe( false );
+	} );
+
 	it.each( [
 		[ 'create Subject pages', false, [ 'neowiki-schema-create-subjectArtist' ] ],
 		[ 'edit Schemas and create Subject pages', true, [ 'neowiki-edit-schema', 'neowiki-schema-create-subjectArtist' ] ],

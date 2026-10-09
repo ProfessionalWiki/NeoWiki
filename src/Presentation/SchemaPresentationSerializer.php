@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Presentation;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
+use stdClass;
 
 /**
  * Not for general use such as in the persistence layer.
@@ -34,14 +35,17 @@ class SchemaPresentationSerializer {
 		];
 	}
 
-	private function propertiesToJson( PropertyDefinitions $properties ): array {
+	/**
+	 * An empty PHP array encodes as `[]`, not the object keyed by property name that the Schema format specifies.
+	 */
+	private function propertiesToJson( PropertyDefinitions $properties ): array|stdClass {
 		$json = [];
 
 		foreach ( $properties->asMap() as $propertyName => $property ) {
 			$json[$propertyName] = $property->toJson();
 		}
 
-		return $json;
+		return $json === [] ? new stdClass() : $json;
 	}
 
 }

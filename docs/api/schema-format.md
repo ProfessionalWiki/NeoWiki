@@ -4,7 +4,7 @@ order: 2
 ---
 # Schema JSON Format
 
-Schemas are stored as the JSON content of pages in the Schema namespace (7474), and returned by the
+Schemas are stored as the JSON content of pages in the Schema namespace (7474), and returned and accepted by the
 [Schema REST endpoints](rest-api.md#schemas). For terms like Schema and Property Definition, see the
 [Glossary](../glossary.md). A machine-readable JSON Schema for this format is at
 [`schemaContentSchema.json`](../../src/Persistence/MediaWiki/schemaContentSchema.json); it checks structure only.
@@ -247,8 +247,17 @@ and any `default` use the same format.
 ## REST API
 
 `GET /neowiki/v0/schema/{schemaName}` wraps this format as `{ "schema": ... }`, or `{ "schema": null }` when the Schema
-does not exist or you may not [read](rest-api.md#permissions) it. There is no write endpoint; create or edit a Schema by
-editing its page in the Schema namespace.
+does not exist or you may not [read](rest-api.md#permissions) it.
+
+`PUT /neowiki/v0/schema/{schemaName}` replaces the whole Schema without checking for changes made since you read it.
+It takes the Schema and an optional `comment`, used as the edit summary:
+
+```json
+{ "schema": { "description": "...", "propertyDefinitions": { ... } }, "comment": "Add a Website property" }
+```
+
+It answers with `{ "schema": ... }`, the saved Schema in the same form as GET. An invalid `schema` is rejected with
+`400`, the reason in `messageTranslations`.
 
 ## Complete Example
 

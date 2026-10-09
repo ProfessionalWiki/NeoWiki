@@ -155,6 +155,17 @@ const SubjectEditorDialogStub = {
 	setup( props: Record<string, any> ) {
 		const saving = ref( false );
 
+		// As the real write loop does, an id the server already holds counts as a create that landed.
+		async function create( subject: Subject, pageId: number, comment: string ): Promise<void> {
+			try {
+				await props.onCreate( subject, pageId, comment );
+			} catch ( error ) {
+				if ( !( error instanceof SubjectIdInUseError ) ) {
+					throw error;
+				}
+			}
+		}
+
 		async function runSave( summary: string ): Promise<void> {
 			// The real footer's button is disabled rather than ignored, which comes to the same
 			// thing: nothing is written while the host still has a question outstanding.
@@ -169,10 +180,10 @@ const SubjectEditorDialogStub = {
 			try {
 				await beforeFirstWrite;
 
-				await props.onCreate( editedRoot( props.subject as Subject ), 0, comment );
+				await create( editedRoot( props.subject as Subject ), 0, comment );
 
 				for ( const draft of sessionDrafts ) {
-					await props.onCreate( draft.subject, draft.pageId, comment );
+					await create( draft.subject, draft.pageId, comment );
 				}
 			} catch ( error ) {
 				lastSaveError = error;
@@ -2865,6 +2876,18 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( subjectStore.createSubject ).toHaveBeenCalledWith(
 				expect.any( Subject ), PAGE_ID, DEFAULT_CREATE_SUMMARY,
 			);
+		} );
+
+		it( 'writes them on a subject-first wiki even when the answer to its own create was lost', async () => {
+			stubMw( { wgNeoWikiSubjectFirst: true } );
+			( subjectStore.createSubjectPage as any ).mockRejectedValueOnce( new SubjectIdInUseError( MINTED_ID ) );
+			sessionDrafts = [ { subject: draft(), pageId: 0 } ];
+			const wrapper = await openOn();
+
+			await save( wrapper );
+
+			expect( lastSaveError ).toBeNull();
+			expect( subjectStore.createSubject ).toHaveBeenCalledOnce();
 		} );
 
 		// The whole save is through before anyone leaves the page: a Subject created alongside is
