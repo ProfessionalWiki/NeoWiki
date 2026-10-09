@@ -21,16 +21,26 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 class SchemaContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase {
 
 	private const VALID_SCHEMA = '{"propertyDefinitions": {"Name": {"type": "text"}}}';
-	private const INVALID_SCHEMA = '{"description": 5, "propertyDefinitions": {"Name": {"type": "text"}}}';
+	private const INVALID_SCHEMA = '{"description": 5, "propertyDefinitions": {"Name": {"type": 5}}}';
 
 	public function testInvalidSchemaNamesEachProblemOnThePage(): void {
-		$this->assertStringContainsString( '/description', $this->render( self::INVALID_SCHEMA ) );
+		$html = $this->render( self::INVALID_SCHEMA );
+
+		$this->assertStringContainsString( '/description', $html );
+		$this->assertStringContainsString( '/propertyDefinitions/Name/type', $html );
+	}
+
+	public function testProblemsShowPropertyNamesLiterally(): void {
+		$html = $this->render( '{"propertyDefinitions": {"{{SITENAME}}<b>": {"type": 5}}}' );
+
+		$this->assertStringContainsString( '/propertyDefinitions/{{SITENAME}}', $html );
+		$this->assertStringNotContainsString( '<b>', $html );
 	}
 
 	public function testInvalidSchemaIsInTheTrackingCategory(): void {
 		$this->assertContains(
 			$this->trackingCategory(),
-			$this->parserOutput( self::INVALID_SCHEMA )->getCategoryNames()
+			$this->parserOutput( self::INVALID_SCHEMA, generateHtml: true )->getCategoryNames()
 		);
 	}
 
@@ -48,15 +58,15 @@ class SchemaContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase 
 	public function testValidSchemaIsNotInTheTrackingCategory(): void {
 		$this->assertNotContains(
 			$this->trackingCategory(),
-			$this->parserOutput( self::VALID_SCHEMA )->getCategoryNames()
+			$this->parserOutput( self::VALID_SCHEMA, generateHtml: true )->getCategoryNames()
 		);
 	}
 
 	private function render( string $json ): string {
-		return $this->parserOutput( $json )->getContentHolderText();
+		return $this->parserOutput( $json, generateHtml: true )->getContentHolderText();
 	}
 
-	private function parserOutput( string $json, bool $generateHtml = true ): ParserOutput {
+	private function parserOutput( string $json, bool $generateHtml ): ParserOutput {
 		$page = Title::makeTitle( NeoWikiExtension::NS_SCHEMA, 'Person' )->toPageIdentity();
 
 		return ( new SchemaContentHandler( SchemaContent::CONTENT_MODEL_ID ) )->getParserOutput(

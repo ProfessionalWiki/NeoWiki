@@ -56,8 +56,7 @@ class SchemaContentHandler extends JsonContentHandler {
 	}
 
 	/**
-	 * The Schema itself renders client-side. A page that does not match the format, which an import can store,
-	 * says so and joins the tracking category.
+	 * The Schema itself renders client-side. An import can store JSON that a save would refuse.
 	 */
 	protected function fillParserOutput(
 		Content $content,
@@ -85,7 +84,7 @@ class SchemaContentHandler extends JsonContentHandler {
 	}
 
 	/**
-	 * @param array<string, string> $errors Validation message by JSON pointer
+	 * @param array<string, string> $errors Validation message by JSON pointer, which the validator percent-encodes
 	 */
 	private function invalidSchemaNotice( array $errors ): string {
 		$items = '';
@@ -94,7 +93,10 @@ class SchemaContentHandler extends JsonContentHandler {
 			$items .= Html::element(
 				'li',
 				[],
-				wfMessage( 'neowiki-schema-invalid-detail' )->params( $pointer, $message )->inContentLanguage()->text()
+				wfMessage( 'neowiki-schema-invalid-detail' )
+					->plaintextParams( rawurldecode( $pointer ), $message )
+					->inContentLanguage()
+					->text()
 			);
 		}
 
