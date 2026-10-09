@@ -113,25 +113,28 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertContains( 'ext.neowiki', $out->getModules() );
 	}
 
-	public function testExposesReadableRdfProjectionsAsConfigVar(): void {
-		$this->createMapping( 'EDM', '{ "version": 1, "schemas": {} }' );
-
-		$out = $this->executeWith( self::SUBJECT_ID );
+	public function testExposesEachMappingWithTheSchemasItMaps(): void {
+		$this->createMapping(
+			'EDM',
+			'{ "version": 1, "prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" }, '
+				. '"schemas": { "Museum": { "subject": { "class": "edm:Place" } } } }'
+		);
 
 		$this->assertSame(
-			[ 'native', 'EDM' ],
-			$out->getJsConfigVars()['wgNeoWikiRdfProjections']
+			[ [ 'name' => 'EDM', 'schemas' => [ 'Museum' ] ] ],
+			$this->executeWith( self::SUBJECT_ID )->getJsConfigVars()['wgNeoWikiMappings']
 		);
 	}
 
-	public function testOmitsRdfProjectionsTheViewingUserCannotRead(): void {
+	public function testOmitsMappingsTheViewingUserCannotRead(): void {
+		$restrictedPageId = $this->createMapping( 'Restricted', '{ "version": 1, "schemas": {} }' )->getPageId();
 		$this->createMapping( 'EDM', '{ "version": 1, "schemas": {} }' );
 
-		$out = $this->executeWith( self::SUBJECT_ID, $this->authorityWithGlobalReadButNoPageRead() );
+		$out = $this->executeWith( self::SUBJECT_ID, $this->authorityThatCannotReadPageId( $restrictedPageId ) );
 
 		$this->assertSame(
-			[ 'native' ],
-			$out->getJsConfigVars()['wgNeoWikiRdfProjections'],
+			[ 'EDM' ],
+			array_column( $out->getJsConfigVars()['wgNeoWikiMappings'], 'name' ),
 			'A read-restricted Mapping page name must not reach a reader who cannot see it.'
 		);
 	}

@@ -844,16 +844,34 @@ class NeoWikiExtension {
 	 */
 	public function getSubjectUiJsConfigVars( Authority $authority ): array {
 		return [
-			// Drives the export menus. Filtered by the viewing user's read authority so restricted
+			// Drives the RDF export menus. Filtered by the viewing user's read authority so restricted
 			// Mapping page titles never reach a reader who cannot see them.
-			'wgNeoWikiRdfProjections' => $this->filterReadableProjectionNames(
-				$this->getRdfProjectionNames(),
-				$authority
-			),
+			'wgNeoWikiMappings' => $this->getReadableMappingSummaries( $authority ),
 			// The copy-IRI control appends the Subject id to this base to show the full neo-subj:
 			// concept URI, deriving it from the same server-side rule the RDF export mints IRIs with.
 			'wgNeoWikiSubjectIriBase' => $this->getRdfNamespaces()->subjectIriBase(),
 		];
+	}
+
+	/**
+	 * @return list<array{name: string, schemas: list<string>}>
+	 */
+	private function getReadableMappingSummaries( Authority $authority ): array {
+		$mappingLookup = $this->newMappingLookup( $authority );
+		$summaries = [];
+
+		foreach ( $this->getMappingNameLookup()->getMappingNames() as $name ) {
+			$mapping = $mappingLookup->getMapping( $name );
+
+			if ( $mapping !== null ) {
+				$summaries[] = [
+					'name' => $name->getText(),
+					'schemas' => $mapping->getSchemaNames(),
+				];
+			}
+		}
+
+		return $summaries;
 	}
 
 	/**
@@ -877,15 +895,19 @@ class NeoWikiExtension {
 	}
 
 	public function getMappingLookup(): MappingLookup {
+		return $this->newMappingLookup( $this->getRequestAuthority() );
+	}
+
+	private function newMappingLookup( Authority $authority ): MappingLookup {
 		return new CachingMappingLookup(
 			mappingJsonLookup: new WikiPageMappingJsonLookup(
 				pageContentFetcher: $this->getPageContentFetcher(),
-				authority: $this->getRequestAuthority(),
+				authority: $authority,
 			),
 			mappingDeserializer: $this->getMappingPersistenceDeserializer(),
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
-			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			cacheOptions: $this->newReplicaCacheOptions(),
 		);
 	}

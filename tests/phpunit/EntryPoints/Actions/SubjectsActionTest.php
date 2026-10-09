@@ -52,32 +52,6 @@ class SubjectsActionTest extends NeoWikiIntegrationTestCase {
 		$this->assertTrue( SubjectsAction::isEligibleTitle( $title ) );
 	}
 
-	public function testExposesReadableRdfProjectionsAsConfigVar(): void {
-		$this->createMapping( 'EDM', '{ "version": 1, "schemas": {} }' );
-
-		$out = $this->runOnView( 'SubjectsActionTest projections', $this->getTestSysop()->getAuthority() );
-
-		$this->assertSame(
-			[ 'native', 'EDM' ],
-			$out->getJsConfigVars()['wgNeoWikiRdfProjections']
-		);
-	}
-
-	public function testOmitsRdfProjectionsTheViewingUserCannotRead(): void {
-		$this->createMapping( 'EDM', '{ "version": 1, "schemas": {} }' );
-
-		$out = $this->runOnView(
-			'SubjectsActionTest restricted',
-			$this->authorityWithGlobalReadButNoPageRead()
-		);
-
-		$this->assertSame(
-			[ 'native' ],
-			$out->getJsConfigVars()['wgNeoWikiRdfProjections'],
-			'A read-restricted Mapping page name must not reach a reader who cannot see it.'
-		);
-	}
-
 	public function testExposesThatTheViewerMayEditTheSubjects(): void {
 		$out = $this->runOnView( 'SubjectsActionTest editable', $this->getTestSysop()->getAuthority() );
 

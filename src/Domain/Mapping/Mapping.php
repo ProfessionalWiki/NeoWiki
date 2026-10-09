@@ -44,4 +44,12 @@ readonly class Mapping {
 		return $this->schemas[$schema->getText()] ?? null;
 	}
 
+	/**
+	 * @return list<string>
+	 */
+	public function getSchemaNames(): array {
+		// PHP turns a Schema name of digits alone into an integer key.
+		return array_map( strval( ... ), array_keys( $this->schemas ) );
+	}
+
 }
