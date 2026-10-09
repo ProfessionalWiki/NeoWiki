@@ -538,6 +538,14 @@ JSON
 	 * Wraps the property under test between two valid siblings so a regression that only
 	 * inspects the first or last property definition is caught.
 	 */
+	public function testErrorsNamePropertiesAsWritten(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$validator->validate( '{"propertyDefinitions": {"Date of birth": {"type": 5}}}' );
+
+		$this->assertArrayHasKey( '/propertyDefinitions/Date of birth/type', $validator->getErrors() );
+	}
+
 	private function schemaWithProperty( string $propertyJson ): string {
 		return <<<JSON
 {

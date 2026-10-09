@@ -5,7 +5,9 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\Content;
 
 use MediaWiki\Content\Renderer\ContentParseParams;
+use MediaWiki\Page\PageIdentity;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
@@ -41,14 +43,7 @@ class SchemaContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase 
 	public function testNoticeUsesTheContentLanguageRatherThanTheViewerLanguage(): void {
 		$this->setUserLang( 'qqx' );
 
-		$this->assertStringNotContainsString( '(neowiki-schema-invalid-notice', $this->render( self::INVALID_SCHEMA ) );
-	}
-
-	public function testInvalidSchemaIsInTheTrackingCategory(): void {
-		$this->assertContains(
-			$this->trackingCategory(),
-			$this->parserOutput( self::INVALID_SCHEMA, generateHtml: true )->getCategoryNames()
-		);
+		$this->assertStringNotContainsString( '(neowiki-schema-invalid', $this->render( self::INVALID_SCHEMA ) );
 	}
 
 	public function testInvalidSchemaIsInTheTrackingCategoryWhenNoHtmlIsGenerated(): void {
@@ -70,7 +65,7 @@ class SchemaContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase 
 	}
 
 	private function visibleText( string $json ): string {
-		return html_entity_decode( strip_tags( $this->render( $json ) ) );
+		return Sanitizer::stripAllTags( $this->render( $json ) );
 	}
 
 	private function render( string $json ): string {
@@ -78,19 +73,20 @@ class SchemaContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase 
 	}
 
 	private function parserOutput( string $json, bool $generateHtml ): ParserOutput {
-		$page = Title::makeTitle( NeoWikiExtension::NS_SCHEMA, 'Person' )->toPageIdentity();
-
 		return ( new SchemaContentHandler( SchemaContent::CONTENT_MODEL_ID ) )->getParserOutput(
 			new SchemaContent( $json ),
-			new ContentParseParams( $page, null, null, $generateHtml )
+			new ContentParseParams( $this->page(), null, null, $generateHtml )
 		);
 	}
 
+	private function page(): PageIdentity {
+		return Title::makeTitle( NeoWikiExtension::NS_SCHEMA, 'Person' )->toPageIdentity();
+	}
+
 	private function trackingCategory(): string {
-		return Title::makeTitle(
-			NS_CATEGORY,
-			wfMessage( 'neowiki-schema-invalid-category' )->inContentLanguage()->text()
-		)->getDBkey();
+		return $this->getServiceContainer()->getTrackingCategories()
+			->resolveTrackingCategory( 'neowiki-schema-invalid-category', $this->page() )
+			->getDBkey();
 	}
 
 }

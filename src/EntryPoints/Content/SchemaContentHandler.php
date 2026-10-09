@@ -84,7 +84,7 @@ class SchemaContentHandler extends JsonContentHandler {
 	}
 
 	/**
-	 * @param array<string, string> $errors Validation message by JSON pointer, which the validator percent-encodes
+	 * @param array<string, string> $errors Validation message by JSON pointer
 	 */
 	private function invalidSchemaNotice( array $errors ): string {
 		$items = '';
@@ -94,7 +94,7 @@ class SchemaContentHandler extends JsonContentHandler {
 				'li',
 				[],
 				wfMessage( 'neowiki-schema-invalid-detail' )
-					->plaintextParams( rawurldecode( $pointer ), $message )
+					->plaintextParams( $pointer, $message )
 					->inContentLanguage()
 					->text()
 			);
