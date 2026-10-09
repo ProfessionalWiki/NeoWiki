@@ -71,8 +71,8 @@ export function rdfProjectionsFor( schemaNames: readonly string[], mappings: rea
 }
 
 /**
- * One item per projection and format, its value the URL it downloads. Items name their projection only
- * when there is more than one to choose from.
+ * One item per projection and format, its value the URL it opens. Items name their projection only when
+ * there is more than one to choose from.
  */
 export function rdfMenuItems(
 	projections: readonly string[],

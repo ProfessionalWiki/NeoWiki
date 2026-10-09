@@ -87,7 +87,7 @@ describe( 'DataExportButtons', () => {
 		expect( menuValues( wrapper ) ).toContain( 'RDF:EDM:trig' );
 	} );
 
-	it( 'downloads the picked RDF in a new tab and closes', async () => {
+	it( 'opens the picked RDF in a new tab and closes', async () => {
 		const wrapper = mountButtons();
 		await click( wrapper );
 
@@ -97,7 +97,7 @@ describe( 'DataExportButtons', () => {
 		expect( menuIsOpen( wrapper ) ).toBe( false );
 	} );
 
-	it( 'downloads the RDF picked with the keyboard', async () => {
+	it( 'opens the RDF picked with the keyboard', async () => {
 		const wrapper = mountButtons();
 
 		await press( wrapper, 'ArrowDown' );

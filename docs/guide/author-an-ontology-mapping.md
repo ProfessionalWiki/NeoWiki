@@ -27,9 +27,9 @@ and reports errors, and the page's read view shows a summary of the mapped Schem
 
 ## 3. See the projection
 
-Exports are produced on demand from current data, so a new or edited Mapping takes effect right away.
-On a page with Subjects of a mapped Schema, the **RDF** button of the **Data** tab offers the projection as Turtle or
-TriG. Per-Subject exports, the REST endpoint, and the bulk dump are in [RDF Export](../api/rdf-export.md).
+Exports are produced on demand from current data, so a new or edited Mapping takes effect right away. On a page with
+Subjects of a mapped Schema, the **Data** tab's **RDF** button offers the projection as Turtle or TriG. Per-Subject
+exports, the REST endpoint, and the bulk dump are in [RDF Export](../api/rdf-export.md).
 
 ## 4. Query the projection over SPARQL
 
