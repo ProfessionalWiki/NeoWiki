@@ -389,7 +389,7 @@ describe( 'SubjectRow', () => {
 					plugins: [ pinia ],
 					provide: NeoWikiTestServices.getServices(),
 					mocks: { $i18n: createI18nMock() },
-					stubs: { CdxIcon: true, CdxMenuButton: true, DataExportButton: true },
+					stubs: { CdxIcon: true, CdxMenuButton: true, DataExportButtons: true },
 				},
 			} );
 		}

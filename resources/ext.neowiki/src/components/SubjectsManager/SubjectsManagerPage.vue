@@ -9,9 +9,8 @@
 			</span>
 			<span v-else class="ext-neowiki-subjects-manager__count" />
 			<div class="ext-neowiki-subjects-manager__controls-actions">
-				<DataExportButton
+				<DataExportButtons
 					v-if="!loading && subjects.length > 0"
-					:label="$i18n( 'neowiki-managesubjects-export-all-button' ).text()"
 					:projections="rdfProjections"
 					v-bind="pageExportUrls( pageId )"
 				/>
@@ -211,14 +210,14 @@ import { useSubjectEditor } from '@/composables/useSubjectEditor.ts';
 import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vue';
 import SubjectDeleteDialog from '@/components/SubjectsManager/SubjectDeleteDialog.vue';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
-import DataExportButton from '@/components/SubjectsManager/DataExportButton.vue';
-import { pageExportUrls } from '@/presentation/DataExportMenu.ts';
+import DataExportButtons from '@/components/SubjectsManager/DataExportButtons.vue';
+import { pageExportUrls, rdfProjectionsFor } from '@/presentation/DataExportMenu.ts';
+import type { MappingSummary } from '@/presentation/DataExportMenu.ts';
 
 const pageId = Number( mw.config.get( 'wgNeoWikiManageSubjectsPageId' ) );
 
-// RDF projections readable by the viewing user (native + ontology mappings), permission-filtered
-// server-side. Drives the export-all menu; native is always present, so this is never truly empty.
-const rdfProjections = ( mw.config.get( 'wgNeoWikiRdfProjections' ) as string[] | null ) ?? [];
+// The Mappings the viewing user may read, permission-filtered server-side.
+const mappings = ( mw.config.get( 'wgNeoWikiMappings' ) as MappingSummary[] | null ) ?? [];
 
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
@@ -283,6 +282,11 @@ const subjects = computed<Subject[]>( () =>
 	subjectStore.pageSubjects?.getSubjects()
 		.map( ( s ) => subjectStore.getSubject( s.getId() ) ) ?? []
 );
+
+const rdfProjections = computed( () => rdfProjectionsFor(
+	subjects.value.map( ( subject ) => subject.getSchemaName() ),
+	mappings
+) );
 
 const canCreate = computed( () => canCreateMainSubject.value || canCreateOtherSubject.value );
 const canEdit = computed( () => canEditSubject.value );

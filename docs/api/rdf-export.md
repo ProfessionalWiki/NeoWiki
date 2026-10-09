@@ -175,12 +175,12 @@ the operator's own routing concern.
 
 ### Finding these exports
 
-These exports are surfaced in the UI. A page's Data tab (`action=subjects`) carries an **Export** menu on each
-Subject row, and an **Export all** menu for the page once it holds at least one Subject. Both offer JSON, Turtle and
-TriG; the two RDF formats then ask which projection, listing `native` plus every Mapping the viewing user may read.
-A row menu targets that Subject's [JSON](../api/rest-api.md#subjects) and [RDF](#subject) endpoints; the page menu
-targets the page's [Subjects JSON](../api/rest-api.md#pages-and-subjects) and [RDF](#page). Each Subject row also
-shows that Subject's `neo-subj:` IRI with a control that copies it.
+These exports are surfaced in the UI. A page's Data tab (`action=subjects`) carries **JSON** and **RDF** buttons on
+each Subject row, and for the whole page once it holds at least one Subject. **RDF** offers Turtle and TriG in
+`native`, and in the projection of each Mapping that maps the Schema of an exported Subject and that the viewing user
+may read. A row's buttons target that Subject's [JSON](../api/rest-api.md#subjects) and [RDF](#subject) endpoints;
+the page's target the page's [Subjects JSON](../api/rest-api.md#pages-and-subjects) and [RDF](#page). Each Subject
+row also shows that Subject's `neo-subj:` IRI with a control that copies it.
 
 Content pages that exist also emit `<link rel="alternate">` autodiscovery tags (Turtle and TriG, native
 projection) in the HTML head, on a wiki with a graph database configured.

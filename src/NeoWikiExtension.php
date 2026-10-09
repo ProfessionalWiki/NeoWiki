@@ -844,16 +844,39 @@ class NeoWikiExtension {
 	 */
 	public function getSubjectUiJsConfigVars( Authority $authority ): array {
 		return [
-			// Drives the export menus. Filtered by the viewing user's read authority so restricted
-			// Mapping page titles never reach a reader who cannot see them.
-			'wgNeoWikiRdfProjections' => $this->filterReadableProjectionNames(
-				$this->getRdfProjectionNames(),
-				$authority
-			),
+			// Drives the RDF export menus, which offer a Mapping's projection for the Subjects whose Schema
+			// it maps. Filtered by the viewing user's read authority so restricted Mapping page titles never
+			// reach a reader who cannot see them.
+			'wgNeoWikiMappings' => $this->getReadableMappingSummaries( $authority ),
 			// The copy-IRI control appends the Subject id to this base to show the full neo-subj:
 			// concept URI, deriving it from the same server-side rule the RDF export mints IRIs with.
 			'wgNeoWikiSubjectIriBase' => $this->getRdfNamespaces()->subjectIriBase(),
 		];
+	}
+
+	/**
+	 * @return list<array{name: string, schemas: list<string>}>
+	 */
+	private function getReadableMappingSummaries( Authority $authority ): array {
+		$mappingNames = array_map(
+			static fn ( MappingName $name ): string => $name->getText(),
+			$this->getMappingNameLookup()->getMappingNames()
+		);
+		$summaries = [];
+
+		foreach ( $this->filterReadableProjectionNames( $mappingNames, $authority ) as $name ) {
+			$mapping = $this->loadMappingByName( $name );
+
+			if ( $mapping !== null ) {
+				$summaries[] = [
+					'name' => $name,
+					// PHP turns a Schema name of digits alone into an integer key, which JSON would carry as a number.
+					'schemas' => array_map( strval( ... ), array_keys( $mapping->schemas ) ),
+				];
+			}
+		}
+
+		return $summaries;
 	}
 
 	/**

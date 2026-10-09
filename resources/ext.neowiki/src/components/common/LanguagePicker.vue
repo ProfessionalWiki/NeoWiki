@@ -217,7 +217,7 @@ const floatingPanel = computed( () => panelRef.value === null ?
  *
  * The button goes in as the component rather than as its element: handed an element, Codex passes
  * the ref object itself on to floating-ui's autoUpdate, which resolves it to nothing, so nothing
- * watches the button. The cast is DataExportButton.vue's, which explains it.
+ * watches the button. The cast is DataExportButtons.vue's, which explains it.
  */
 useFloatingMenu(
 	buttonRef as unknown as Parameters<typeof useFloatingMenu>[0],

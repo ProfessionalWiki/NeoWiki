@@ -1,14 +1,20 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
-	subjectExportUrls, pageExportUrls, projectionLabel,
+	subjectExportUrls, pageExportUrls, rdfProjectionsFor, rdfMenuItems,
 } from '@/presentation/DataExportMenu';
+
+const MESSAGES: Record<string, ( ...params: string[] ) => string> = {
+	'neowiki-managesubjects-export-native': () => 'Native',
+	'neowiki-managesubjects-export-format-turtle': () => 'Turtle',
+	'neowiki-managesubjects-export-format-trig': () => 'TriG',
+	'neowiki-managesubjects-export-projection-format': ( projection, format ) => `${ projection } · ${ format }`,
+};
 
 describe( 'DataExportMenu', () => {
 	beforeEach( () => {
 		vi.stubGlobal( 'mw', {
 			util: { wikiScript: vi.fn( () => '/w/rest.php' ) },
-			msg: vi.fn( ( key: string, ...params: string[] ) =>
-				params.length > 0 ? `[${ key }|${ params.join( ',' ) }]` : `[${ key }]` ),
+			msg: vi.fn( ( key: string, ...params: string[] ) => MESSAGES[ key ]( ...params ) ),
 		} );
 	} );
 
@@ -36,10 +42,43 @@ describe( 'DataExportMenu', () => {
 		} );
 	} );
 
-	describe( 'projectionLabel', () => {
-		it( 'maps native to the Native message and passes other names through', () => {
-			expect( projectionLabel( 'native' ) ).toBe( '[neowiki-managesubjects-export-native]' );
-			expect( projectionLabel( 'EDM' ) ).toBe( 'EDM' );
+	describe( 'rdfProjectionsFor', () => {
+		const MAPPINGS = [
+			{ name: 'EDM', schemas: [ 'Artwork', 'Person' ] },
+			{ name: 'CIDOC-CRM', schemas: [ 'Museum' ] },
+			{ name: 'Linked Art', schemas: [ 'Artwork', 'Place' ] },
+		];
+
+		it( 'offers only native when no Mapping maps the Schemas', () => {
+			expect( rdfProjectionsFor( [ 'Attendance' ], MAPPINGS ) ).toEqual( [ 'native' ] );
+		} );
+
+		it( 'offers native and the Mapping that maps the Schema', () => {
+			expect( rdfProjectionsFor( [ 'Museum' ], MAPPINGS ) ).toEqual( [ 'native', 'CIDOC-CRM' ] );
+		} );
+
+		it( 'offers every Mapping that maps one of the Schemas, in the order the Mappings come in', () => {
+			expect( rdfProjectionsFor( [ 'Place', 'Person' ], MAPPINGS ) ).toEqual( [ 'native', 'EDM', 'Linked Art' ] );
+		} );
+	} );
+
+	describe( 'rdfMenuItems', () => {
+		const rdfUrl = ( projection: string, format: string ): string => `RDF:${ projection }:${ format }`;
+
+		it( 'names the formats alone when native is the only projection', () => {
+			expect( rdfMenuItems( [ 'native' ], rdfUrl ) ).toEqual( [
+				{ value: 'RDF:native:turtle', label: 'Turtle' },
+				{ value: 'RDF:native:trig', label: 'TriG' },
+			] );
+		} );
+
+		it( 'names the projection of each format when there are several projections', () => {
+			expect( rdfMenuItems( [ 'native', 'EDM' ], rdfUrl ) ).toEqual( [
+				{ value: 'RDF:native:turtle', label: 'Native · Turtle' },
+				{ value: 'RDF:native:trig', label: 'Native · TriG' },
+				{ value: 'RDF:EDM:turtle', label: 'EDM · Turtle' },
+				{ value: 'RDF:EDM:trig', label: 'EDM · TriG' },
+			] );
 		} );
 	} );
 } );

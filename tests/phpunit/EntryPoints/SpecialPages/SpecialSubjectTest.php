@@ -113,25 +113,37 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertContains( 'ext.neowiki', $out->getModules() );
 	}
 
-	public function testExposesReadableRdfProjectionsAsConfigVar(): void {
-		$this->createMapping( 'EDM', '{ "version": 1, "schemas": {} }' );
+	/**
+	 * "1984" stands for a Schema named with digits alone, whose name must still reach the frontend as a name.
+	 */
+	public function testExposesEachReadableMappingWithTheSchemasItMaps(): void {
+		$this->createMapping(
+			'EDM',
+			'{ "version": 1, "prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" }, "schemas": { '
+				. '"Museum": { "subject": { "class": "edm:Place" } }, '
+				. '"1984": { "subject": { "class": "edm:ProvidedCHO" } } } }'
+		);
 
 		$out = $this->executeWith( self::SUBJECT_ID );
 
 		$this->assertSame(
-			[ 'native', 'EDM' ],
-			$out->getJsConfigVars()['wgNeoWikiRdfProjections']
+			[ [ 'name' => 'EDM', 'schemas' => [ 'Museum', '1984' ] ] ],
+			$out->getJsConfigVars()['wgNeoWikiMappings']
 		);
 	}
 
-	public function testOmitsRdfProjectionsTheViewingUserCannotRead(): void {
-		$this->createMapping( 'EDM', '{ "version": 1, "schemas": {} }' );
+	public function testOmitsMappingsTheViewingUserCannotRead(): void {
+		$this->createMapping(
+			'EDM',
+			'{ "version": 1, "prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" }, '
+				. '"schemas": { "Museum": { "subject": { "class": "edm:Place" } } } }'
+		);
 
 		$out = $this->executeWith( self::SUBJECT_ID, $this->authorityWithGlobalReadButNoPageRead() );
 
 		$this->assertSame(
-			[ 'native' ],
-			$out->getJsConfigVars()['wgNeoWikiRdfProjections'],
+			[],
+			$out->getJsConfigVars()['wgNeoWikiMappings'],
 			'A read-restricted Mapping page name must not reach a reader who cannot see it.'
 		);
 	}

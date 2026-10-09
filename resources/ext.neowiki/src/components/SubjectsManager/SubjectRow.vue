@@ -216,8 +216,7 @@
 							</dd>
 						</div>
 					</dl>
-					<DataExportButton
-						:label="$i18n( 'neowiki-managesubjects-export-button' ).text()"
+					<DataExportButtons
 						:projections="rdfProjections"
 						v-bind="exportUrls"
 					/>
@@ -250,12 +249,13 @@ import { subjectLinkUrlFromRow } from '@/presentation/subjectLinks.ts';
 import { RelationTargetUrlKey } from '@/components/Value/ValueDisplayContract.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
-import { subjectExportUrls } from '@/presentation/DataExportMenu.ts';
+import { rdfProjectionsFor, subjectExportUrls } from '@/presentation/DataExportMenu.ts';
+import type { MappingSummary } from '@/presentation/DataExportMenu.ts';
 import { subjectIri } from '@/presentation/subjectIri.ts';
 import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import SubjectStatementsView from '@/components/SubjectsManager/SubjectStatementsView.vue';
-import DataExportButton from '@/components/SubjectsManager/DataExportButton.vue';
+import DataExportButtons from '@/components/SubjectsManager/DataExportButtons.vue';
 
 /**
  * Which Main Subject control the row carries: the pin that demotes the page's Main Subject, the pin
@@ -336,9 +336,9 @@ const emit = defineEmits<{
 	'copy-link': [ subject: Subject ];
 }>();
 
-// The projections the expanded footer's export menu offers, permission-filtered server-side. Set by
-// whichever surface mounts the row: the Data tab's action and Special:Subject alike.
-const rdfProjections = ( mw.config.get( 'wgNeoWikiRdfProjections' ) as string[] | null ) ?? [];
+// The Mappings the viewing user may read, permission-filtered server-side. Set by whichever surface
+// mounts the row: the Data tab's action and Special:Subject alike.
+const mappings = ( mw.config.get( 'wgNeoWikiMappings' ) as MappingSummary[] | null ) ?? [];
 
 // A reader of these rows is browsing Subjects, so a relation in one leads where a link from a row
 // leads, on every surface that mounts the row.
@@ -348,6 +348,7 @@ const displayName = computed( () => subjectDisplayName( props.subject ) );
 const schemaName = computed( () => schemaNameToShow( props.subject ) );
 const statementCount = computed( () => props.subject.getNamesOfNonEmptyProperties().length );
 const exportUrls = computed( () => subjectExportUrls( props.subject.getId().text ) );
+const rdfProjections = computed( () => rdfProjectionsFor( [ props.subject.getSchemaName() ], mappings ) );
 
 /**
  * The Subject's concept URI, shown and copyable in the expanded footer. Empty for a Subject of another

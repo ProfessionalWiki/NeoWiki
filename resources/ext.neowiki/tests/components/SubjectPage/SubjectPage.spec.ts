@@ -6,7 +6,7 @@ import { CdxMenuButton } from '@wikimedia/codex';
 import SubjectPage from '@/components/SubjectPage/SubjectPage.vue';
 import SubjectStatementsView from '@/components/SubjectsManager/SubjectStatementsView.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
-import DataExportButton from '@/components/SubjectsManager/DataExportButton.vue';
+import DataExportButtons from '@/components/SubjectsManager/DataExportButtons.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import { CdxDialogStub, createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
@@ -39,7 +39,8 @@ const PAGE_NAME = 'ACME Inc';
 const REFERENCED_PAGE_ID = 77;
 const REFERENCED_PAGE_NAME = 'Anvil (product)';
 
-const PROJECTIONS = [ 'native', 'EDM' ];
+// EDM maps the requested Subject's Schema and not the referenced Subject's.
+const MAPPINGS = [ { name: 'EDM', schemas: [ 'Person', 'Company' ] }, { name: 'CIDOC-CRM', schemas: [ 'Place' ] } ];
 const IRI_BASE = 'https://data.example.org/entity/';
 
 const REQUESTED_ROW = '.ext-neowiki-subject-page__subject .ext-neowiki-subject-row';
@@ -161,7 +162,7 @@ function mountPage( subjectFirst = false ): VueWrapper {
 		// Core's own separator, which the row captions join property names with.
 		messages: { 'comma-separator': ', ' },
 		config: {
-			wgNeoWikiRdfProjections: PROJECTIONS,
+			wgNeoWikiMappings: MAPPINGS,
 			wgNeoWikiSubjectIriBase: IRI_BASE,
 			wgNeoWikiSubjectFirst: subjectFirst,
 		},
@@ -862,12 +863,20 @@ describe( 'SubjectPage', () => {
 		expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-managesubjects-link-copy-error', { type: 'error' } );
 	} );
 
-	it( 'shows the wiki\'s export projections and each Subject\'s own IRI', async () => {
+	it( 'offers each Subject RDF in the projections whose Mapping maps its Schema', async () => {
 		getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [ referencedSubject ] ) );
 
 		const wrapper = await mountLoadedPage();
 
-		expect( wrapper.findComponent( DataExportButton ).props( 'projections' ) ).toEqual( PROJECTIONS );
+		expect( wrapper.findAllComponents( DataExportButtons ).map( ( buttons ) => buttons.props( 'projections' ) ) )
+			.toEqual( [ [ 'native', 'EDM' ], [ 'native' ] ] );
+	} );
+
+	it( 'shows each Subject\'s own IRI', async () => {
+		getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [ referencedSubject ] ) );
+
+		const wrapper = await mountLoadedPage();
+
 		const iris = wrapper.findAll( '.ext-neowiki-subject-row__iri-value data' )
 			.map( ( element ) => element.attributes( 'value' ) );
 		expect( iris ).toEqual( [ IRI_BASE + SUBJECT_ID, IRI_BASE + REFERENCED_ID ] );

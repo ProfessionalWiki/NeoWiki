@@ -15,6 +15,8 @@ import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.
 import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
+import DataExportButtons from '@/components/SubjectsManager/DataExportButtons.vue';
+import type { MappingSummary } from '@/presentation/DataExportMenu.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { newSchema, newSubject } from '@/TestHelpers.ts';
 
@@ -36,6 +38,7 @@ const getPageSubjectsRepoMock = vi.fn();
 const deleteSubjectMock = vi.fn().mockResolvedValue( undefined );
 const setPageMainSubjectMock = vi.fn().mockResolvedValue( undefined );
 let storeSubjects: Subject[] = [];
+let mappings: MappingSummary[] = [];
 let mainSubjectId: SubjectId | null = null;
 
 // Every describe below except 'delete flow' runs against this plain-object stub: fast,
@@ -122,7 +125,7 @@ async function mountPage( subjectFirst = false ): Promise<VueWrapper> {
 		functions: [ 'config', 'msg', 'message', 'notify', 'util' ],
 		config: {
 			wgNeoWikiManageSubjectsPageId: PAGE_ID,
-			wgNeoWikiRdfProjections: [],
+			wgNeoWikiMappings: mappings,
 			wgNeoWikiSubjectIriBase: '',
 			wgNeoWikiSubjectFirst: subjectFirst,
 			// Every real view of this tab carries it, and the page it names is the one a deletion
@@ -336,6 +339,39 @@ describe( 'SubjectsManagerPage rows and the Subject pages behind them', () => {
 		const wrapper = await mountPage();
 
 		expect( wrapper.find( '.ext-neowiki-subject-row__page' ).exists() ).toBe( false );
+	} );
+
+} );
+
+describe( 'SubjectsManagerPage export of all Subjects', () => {
+
+	beforeEach( () => {
+		storeSubjects = [
+			newSubject( { id: ID_A, label: 'Rijksmuseum', schemaName: 'Museum' } ),
+			newSubject( { id: ID_B, label: 'Rembrandt', schemaName: 'Person' } ),
+		];
+		mappings = [
+			{ name: 'EDM', schemas: [ 'Artwork' ] },
+			{ name: 'CIDOC-CRM', schemas: [ 'Museum' ] },
+			{ name: 'Linked Art', schemas: [ 'Person', 'Place' ] },
+		];
+		mainSubjectId = new SubjectId( ID_A );
+		window.location.hash = '';
+		Element.prototype.scrollIntoView = vi.fn();
+		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+	} );
+
+	afterEach( () => {
+		mappings = [];
+		document.body.innerHTML = '';
+		vi.restoreAllMocks();
+	} );
+
+	it( 'offers RDF in the projections whose Mapping maps the Schema of any Subject on the page', async () => {
+		const wrapper = await mountPage();
+
+		expect( wrapper.get( '.ext-neowiki-subjects-manager__controls' ).findComponent( DataExportButtons )
+			.props( 'projections' ) ).toEqual( [ 'native', 'CIDOC-CRM', 'Linked Art' ] );
 	} );
 
 } );
