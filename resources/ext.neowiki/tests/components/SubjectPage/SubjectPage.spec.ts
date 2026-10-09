@@ -877,8 +877,7 @@ describe( 'SubjectPage', () => {
 
 		const wrapper = await mountLoadedPage();
 
-		const iris = wrapper.findAll( '.ext-neowiki-subject-row__iri-value data' )
-			.map( ( element ) => element.attributes( 'value' ) );
+		const iris = wrapper.findAll( '.ext-neowiki-subject-row__iri-value' ).map( ( element ) => element.text() );
 		expect( iris ).toEqual( [ IRI_BASE + SUBJECT_ID, IRI_BASE + REFERENCED_ID ] );
 	} );
 

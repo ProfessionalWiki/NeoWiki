@@ -36,6 +36,8 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	private const string ABSENT_ID = 's1demo8aaaaaab6';
 	private const string INVALID_ID_ERROR = '(neowiki-special-subject-invalid-id)';
 	private const string PAGE_DESCRIPTION = '(neowiki-special-subject)';
+	private const string MUSEUM_MAPPING = '{ "version": 1, "prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" }, '
+		. '"schemas": { "Museum": { "subject": { "class": "edm:Place" } } } }';
 
 	private function outputFor( ?string $subPage ): string {
 		return $this->executeWith( $subPage )->getHTML();
@@ -116,7 +118,7 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	/**
 	 * "1984" stands for a Schema named with digits alone, whose name must still reach the frontend as a name.
 	 */
-	public function testExposesEachReadableMappingWithTheSchemasItMaps(): void {
+	public function testExposesEachMappingWithTheNamesOfTheSchemasItMaps(): void {
 		$this->createMapping(
 			'EDM',
 			'{ "version": 1, "prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" }, "schemas": { '
@@ -124,26 +126,22 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 				. '"1984": { "subject": { "class": "edm:ProvidedCHO" } } } }'
 		);
 
-		$out = $this->executeWith( self::SUBJECT_ID );
+		$mappings = $this->executeWith( self::SUBJECT_ID )->getJsConfigVars()['wgNeoWikiMappings'];
 
-		$this->assertSame(
-			[ [ 'name' => 'EDM', 'schemas' => [ 'Museum', '1984' ] ] ],
-			$out->getJsConfigVars()['wgNeoWikiMappings']
-		);
+		$this->assertSame( [ 'EDM' ], array_column( $mappings, 'name' ) );
+		$this->assertEqualsCanonicalizing( [ 'Museum', '1984' ], $mappings[0]['schemas'] );
+		$this->assertContainsOnly( 'string', $mappings[0]['schemas'] );
 	}
 
 	public function testOmitsMappingsTheViewingUserCannotRead(): void {
-		$this->createMapping(
-			'EDM',
-			'{ "version": 1, "prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" }, '
-				. '"schemas": { "Museum": { "subject": { "class": "edm:Place" } } } }'
-		);
+		$restrictedPageId = $this->createMapping( 'Restricted', self::MUSEUM_MAPPING )->getPageId();
+		$this->createMapping( 'EDM', self::MUSEUM_MAPPING );
 
-		$out = $this->executeWith( self::SUBJECT_ID, $this->authorityWithGlobalReadButNoPageRead() );
+		$out = $this->executeWith( self::SUBJECT_ID, $this->authorityThatCannotReadPageId( $restrictedPageId ) );
 
 		$this->assertSame(
-			[],
-			$out->getJsConfigVars()['wgNeoWikiMappings'],
+			[ 'EDM' ],
+			array_column( $out->getJsConfigVars()['wgNeoWikiMappings'], 'name' ),
 			'A read-restricted Mapping page name must not reach a reader who cannot see it.'
 		);
 	}

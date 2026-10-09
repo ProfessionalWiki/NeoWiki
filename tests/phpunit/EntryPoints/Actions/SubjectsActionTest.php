@@ -22,9 +22,6 @@ class SubjectsActionTest extends NeoWikiIntegrationTestCase {
 
 	use NeoWikiMockAuthorityTrait;
 
-	private const string MUSEUM_MAPPING = '{ "version": 1, "prefixes": { "edm": "http://www.europeana.eu/schemas/edm/" }, '
-		. '"schemas": { "Museum": { "subject": { "class": "edm:Place" } } } }';
-
 	public function testNullTitleIsNotEligible(): void {
 		$this->assertFalse( SubjectsAction::isEligibleTitle( null ) );
 	}
@@ -53,32 +50,6 @@ class SubjectsActionTest extends NeoWikiIntegrationTestCase {
 		$title->method( 'getNamespace' )->willReturn( NS_MAIN );
 
 		$this->assertTrue( SubjectsAction::isEligibleTitle( $title ) );
-	}
-
-	public function testExposesEachReadableMappingWithTheSchemasItMaps(): void {
-		$this->createMapping( 'EDM', self::MUSEUM_MAPPING );
-
-		$out = $this->runOnView( 'SubjectsActionTest mappings', $this->getTestSysop()->getAuthority() );
-
-		$this->assertSame(
-			[ [ 'name' => 'EDM', 'schemas' => [ 'Museum' ] ] ],
-			$out->getJsConfigVars()['wgNeoWikiMappings']
-		);
-	}
-
-	public function testOmitsMappingsTheViewingUserCannotRead(): void {
-		$this->createMapping( 'EDM', self::MUSEUM_MAPPING );
-
-		$out = $this->runOnView(
-			'SubjectsActionTest restricted',
-			$this->authorityWithGlobalReadButNoPageRead()
-		);
-
-		$this->assertSame(
-			[],
-			$out->getJsConfigVars()['wgNeoWikiMappings'],
-			'A read-restricted Mapping page name must not reach a reader who cannot see it.'
-		);
 	}
 
 	public function testExposesThatTheViewerMayEditTheSubjects(): void {

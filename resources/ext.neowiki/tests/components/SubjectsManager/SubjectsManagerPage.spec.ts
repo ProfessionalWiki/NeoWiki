@@ -356,15 +356,11 @@ describe( 'SubjectsManagerPage export of all Subjects', () => {
 			{ name: 'Linked Art', schemas: [ 'Person', 'Place' ] },
 		];
 		mainSubjectId = new SubjectId( ID_A );
-		window.location.hash = '';
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
 	} );
 
 	afterEach( () => {
 		mappings = [];
 		document.body.innerHTML = '';
-		vi.restoreAllMocks();
 	} );
 
 	it( 'offers RDF in the projections whose Mapping maps the Schema of any Subject on the page', async () => {

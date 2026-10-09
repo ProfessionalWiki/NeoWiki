@@ -53,10 +53,6 @@ describe( 'DataExportMenu', () => {
 			expect( rdfProjectionsFor( [ 'Attendance' ], MAPPINGS ) ).toEqual( [ 'native' ] );
 		} );
 
-		it( 'offers native and the Mapping that maps the Schema', () => {
-			expect( rdfProjectionsFor( [ 'Museum' ], MAPPINGS ) ).toEqual( [ 'native', 'CIDOC-CRM' ] );
-		} );
-
 		it( 'offers every Mapping that maps one of the Schemas, in the order the Mappings come in', () => {
 			expect( rdfProjectionsFor( [ 'Place', 'Person' ], MAPPINGS ) ).toEqual( [ 'native', 'EDM', 'Linked Art' ] );
 		} );

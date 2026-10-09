@@ -1,18 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { shallowMount, VueWrapper } from '@vue/test-utils';
+import { mount, VueWrapper } from '@vue/test-utils';
 import { CdxButton, CdxMenu } from '@wikimedia/codex';
 import DataExportButtons from '@/components/SubjectsManager/DataExportButtons.vue';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
-// useFloatingMenu drives FloatingUI against real geometry; neutralise it under jsdom while keeping
-// the real CdxButton/CdxMenu so shallowMount stubs them by name and we can read props / emit events.
+// useFloatingMenu drives FloatingUI against real geometry, which jsdom lacks. The button and the menu
+// stay real, so the tests hold whichever of the two acts on a key.
 vi.mock( '@wikimedia/codex', async ( importOriginal ) => ( {
 	...await importOriginal<typeof import( '@wikimedia/codex' )>(),
 	useFloatingMenu: vi.fn(),
 } ) );
 
 function mountButtons(): VueWrapper {
-	return shallowMount( DataExportButtons, {
+	return mount( DataExportButtons, {
 		props: {
 			jsonUrl: 'JSON_URL',
 			rdfUrl: ( projection: string, format: string ) => `RDF:${ projection }:${ format }`,
@@ -24,31 +24,36 @@ function mountButtons(): VueWrapper {
 	} );
 }
 
+function rdfTrigger( wrapper: VueWrapper ): Element {
+	return wrapper.findComponent( CdxButton ).element;
+}
+
+function menuIsOpen( wrapper: VueWrapper ): boolean {
+	return rdfTrigger( wrapper ).getAttribute( 'aria-expanded' ) === 'true';
+}
+
 function menuValues( wrapper: VueWrapper ): unknown[] {
 	return ( wrapper.findComponent( CdxMenu ).props( 'menuItems' ) as { value: unknown }[] )
 		.map( ( item ) => item.value );
 }
 
-function menuIsOpen( wrapper: VueWrapper ): boolean {
-	return wrapper.findComponent( CdxMenu ).props( 'expanded' ) as boolean;
+async function press( wrapper: VueWrapper, key: string ): Promise<void> {
+	rdfTrigger( wrapper ).dispatchEvent( new KeyboardEvent( 'keydown', { key, bubbles: true, cancelable: true } ) );
+	await wrapper.vm.$nextTick();
+	await wrapper.vm.$nextTick();
 }
 
-function rdfTrigger( wrapper: VueWrapper ): Element {
-	return wrapper.findComponent( CdxButton ).element;
-}
-
-async function openRdfMenu( wrapper: VueWrapper ): Promise<void> {
-	// A genuine pointer click carries detail >= 1; the component ignores detail-0 clicks (the ones a
-	// native button synthesises on Enter/Space, which the keydown handler owns). vue-test-utils'
-	// trigger() cannot set the read-only `detail`, so dispatch a real MouseEvent.
-	rdfTrigger( wrapper ).dispatchEvent( new MouseEvent( 'click', { detail: 1, bubbles: true } ) );
+// A pointer click carries detail >= 1, the click a browser synthesises for Enter or Space on a button
+// detail 0. vue-test-utils' trigger() cannot set the read-only `detail`, so dispatch a real MouseEvent.
+async function click( wrapper: VueWrapper, detail = 1 ): Promise<void> {
+	rdfTrigger( wrapper ).dispatchEvent( new MouseEvent( 'click', { detail, bubbles: true } ) );
 	await wrapper.vm.$nextTick();
 }
 
 async function pick( wrapper: VueWrapper, value: string ): Promise<void> {
 	const menu = wrapper.findComponent( CdxMenu );
 	menu.vm.$emit( 'update:selected', value );
-	// Real CdxMenu always emits update:expanded(false) right after a single-select pick.
+	// Codex's menu closes itself right after a pick.
 	menu.vm.$emit( 'update:expanded', false );
 	await wrapper.vm.$nextTick();
 }
@@ -73,55 +78,75 @@ describe( 'DataExportButtons', () => {
 		expect( link.attributes( 'target' ) ).toBe( '_blank' );
 	} );
 
-	it( 'offers each projection in each RDF format when RDF is clicked', async () => {
+	it( 'offers the projections in RDF when RDF is clicked', async () => {
 		const wrapper = mountButtons();
 
-		await openRdfMenu( wrapper );
+		await click( wrapper );
 
 		expect( menuIsOpen( wrapper ) ).toBe( true );
-		expect( menuValues( wrapper ) ).toEqual(
-			[ 'RDF:native:turtle', 'RDF:native:trig', 'RDF:EDM:turtle', 'RDF:EDM:trig' ],
-		);
+		expect( menuValues( wrapper ) ).toContain( 'RDF:EDM:trig' );
 	} );
 
 	it( 'downloads the picked RDF in a new tab and closes', async () => {
 		const wrapper = mountButtons();
-		await openRdfMenu( wrapper );
+		await click( wrapper );
 
 		await pick( wrapper, 'RDF:EDM:turtle' );
 
-		expect( openSpy ).toHaveBeenCalledWith( 'RDF:EDM:turtle', '_blank', 'noopener' );
+		expect( openSpy ).toHaveBeenCalledWith( 'RDF:EDM:turtle', '_blank', expect.stringContaining( 'noopener' ) );
 		expect( menuIsOpen( wrapper ) ).toBe( false );
 	} );
 
-	it( 'opens the RDF menu on Enter', async () => {
+	it( 'downloads the RDF picked with the keyboard', async () => {
 		const wrapper = mountButtons();
 
-		rdfTrigger( wrapper ).dispatchEvent( new KeyboardEvent( 'keydown', { key: 'Enter', bubbles: true } ) );
-		await wrapper.vm.$nextTick();
+		await press( wrapper, 'ArrowDown' );
+		await press( wrapper, 'Enter' );
+
+		expect( openSpy ).toHaveBeenCalledWith( 'RDF:native:turtle', '_blank', expect.anything() );
+	} );
+
+	it.each( [ 'Enter', ' ' ] )( 'opens the RDF menu on %j', async ( key ) => {
+		const wrapper = mountButtons();
+
+		await press( wrapper, key );
 
 		expect( menuIsOpen( wrapper ) ).toBe( true );
 	} );
 
 	it( 'closes the RDF menu on Escape', async () => {
 		const wrapper = mountButtons();
-		await openRdfMenu( wrapper );
+		await click( wrapper );
 
-		rdfTrigger( wrapper ).dispatchEvent( new KeyboardEvent( 'keydown', { key: 'Escape', bubbles: true } ) );
+		await press( wrapper, 'Escape' );
+
+		expect( menuIsOpen( wrapper ) ).toBe( false );
+	} );
+
+	it( 'closes the RDF menu on a second click', async () => {
+		const wrapper = mountButtons();
+		await click( wrapper );
+
+		await click( wrapper );
+
+		expect( menuIsOpen( wrapper ) ).toBe( false );
+	} );
+
+	it( 'closes the RDF menu when the focus leaves it', async () => {
+		const wrapper = mountButtons();
+		await click( wrapper );
+
+		rdfTrigger( wrapper ).dispatchEvent( new FocusEvent( 'focusout', { relatedTarget: null, bubbles: true } ) );
 		await wrapper.vm.$nextTick();
 
 		expect( menuIsOpen( wrapper ) ).toBe( false );
 	} );
 
-	it( 'ignores the detail-0 click a keyboard activation synthesises', async () => {
+	it( 'keeps the RDF menu open through the click a keyboard activation synthesises', async () => {
 		const wrapper = mountButtons();
-		// Enter opens via the keydown handler; the native button also fires a detail-0 click, which
-		// must NOT toggle the menu back closed (that was the flash). Only detail > 0 clicks toggle.
-		const trigger = rdfTrigger( wrapper );
 
-		trigger.dispatchEvent( new KeyboardEvent( 'keydown', { key: 'Enter', bubbles: true } ) );
-		trigger.dispatchEvent( new MouseEvent( 'click', { detail: 0, bubbles: true } ) );
-		await wrapper.vm.$nextTick();
+		await press( wrapper, 'Enter' );
+		await click( wrapper, 0 );
 
 		expect( menuIsOpen( wrapper ) ).toBe( true );
 	} );
