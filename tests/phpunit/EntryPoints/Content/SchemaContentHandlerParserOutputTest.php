@@ -24,17 +24,24 @@ class SchemaContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase 
 	private const INVALID_SCHEMA = '{"description": 5, "propertyDefinitions": {"Name": {"type": 5}}}';
 
 	public function testInvalidSchemaNamesEachProblemOnThePage(): void {
-		$html = $this->render( self::INVALID_SCHEMA );
+		$text = $this->visibleText( self::INVALID_SCHEMA );
 
-		$this->assertStringContainsString( '/description', $html );
-		$this->assertStringContainsString( '/propertyDefinitions/Name/type', $html );
+		$this->assertStringContainsString( '/description', $text );
+		$this->assertStringContainsString( '/propertyDefinitions/Name/type', $text );
+		$this->assertStringContainsString( 'must match the type', $text );
 	}
 
 	public function testProblemsShowPropertyNamesLiterally(): void {
-		$html = $this->render( '{"propertyDefinitions": {"{{SITENAME}}<b>": {"type": 5}}}' );
+		$this->assertStringContainsString(
+			'/propertyDefinitions/{{SITENAME}}<b>/type',
+			$this->visibleText( '{"propertyDefinitions": {"{{SITENAME}}<b>": {"type": 5}}}' )
+		);
+	}
 
-		$this->assertStringContainsString( '/propertyDefinitions/{{SITENAME}}', $html );
-		$this->assertStringNotContainsString( '<b>', $html );
+	public function testNoticeUsesTheContentLanguageRatherThanTheViewerLanguage(): void {
+		$this->setUserLang( 'qqx' );
+
+		$this->assertStringNotContainsString( '(neowiki-schema-invalid-notice', $this->render( self::INVALID_SCHEMA ) );
 	}
 
 	public function testInvalidSchemaIsInTheTrackingCategory(): void {
@@ -52,7 +59,7 @@ class SchemaContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase 
 	}
 
 	public function testValidSchemaShowsNoNotice(): void {
-		$this->assertSame( '', $this->render( self::VALID_SCHEMA ) );
+		$this->assertStringNotContainsString( 'cdx-message', $this->render( self::VALID_SCHEMA ) );
 	}
 
 	public function testValidSchemaIsNotInTheTrackingCategory(): void {
@@ -60,6 +67,10 @@ class SchemaContentHandlerParserOutputTest extends MediaWikiIntegrationTestCase 
 			$this->trackingCategory(),
 			$this->parserOutput( self::VALID_SCHEMA, generateHtml: true )->getCategoryNames()
 		);
+	}
+
+	private function visibleText( string $json ): string {
+		return html_entity_decode( strip_tags( $this->render( $json ) ) );
 	}
 
 	private function render( string $json ): string {
