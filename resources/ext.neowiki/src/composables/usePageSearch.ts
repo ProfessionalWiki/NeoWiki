@@ -42,7 +42,7 @@ export interface PageSearchOptions {
 	 */
 	pinnedPages?: Ref<PinnedPage[]>;
 	/** Left out of the results, such as the page a Subject is already on. */
-	excludedPageId: Ref<number | undefined>;
+	excludedPageId?: Ref<number | undefined>;
 }
 
 export interface PageSearch {
@@ -91,8 +91,20 @@ export function usePageSearch( options: PageSearchOptions ): PageSearch {
 		} ) );
 	} );
 
+	// A result under the very title typed is that page, so offering to create it would only be
+	// refused as taken. The typed text is read as the wiki titles a page, as the results are.
+	const typedPageExists = computed( (): boolean => {
+		if ( results.value.length === 0 ) {
+			return false;
+		}
+
+		const title = mw.Title.newFromText( options.typedText.value )?.getPrefixedText();
+
+		return results.value.some( ( result ) => result.label === title );
+	} );
+
 	const createItem = computed( (): MenuItemData | null => {
-		if ( options.existingPagesOnly?.value === true ) {
+		if ( options.existingPagesOnly?.value === true || typedPageExists.value ) {
 			return null;
 		}
 
@@ -157,7 +169,7 @@ export function usePageSearch( options: PageSearchOptions ): PageSearch {
 			}
 
 			results.value = found
-				.filter( ( result ) => result.pageId !== options.excludedPageId.value )
+				.filter( ( result ) => result.pageId !== options.excludedPageId?.value )
 				.map( ( result ) => ( {
 					label: result.title,
 					value: String( result.pageId ),

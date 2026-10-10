@@ -33,10 +33,12 @@ import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { Subject } from '@/domain/Subject.ts';
 import type { InitialPage } from '@/components/SubjectCreator/InitialPage.ts';
+import type { PinnedPage } from '@/composables/usePageSearch.ts';
+import { WriteRefusedError } from '@/components/SubjectEditor/WriteRefusedError.ts';
 
 const PAGE_ID = 123;
 const PAGE_TITLE = 'Test Page';
-// wgPageName carries the prefixed title with underscores, which is what the placeholder reads.
+// wgPageName carries the prefixed title with underscores, which is what names the "this page" shortcut.
 const PAGE_NAME = 'Test_Page';
 const SCHEMA_NAME = 'TestSchema';
 const NEW_SCHEMA_NAME = 'NewSchema';
@@ -237,16 +239,6 @@ const SchemaAbandonmentDialogStub = {
 	emits: [ 'abandon', 'save-schema', 'keep-editing' ],
 };
 
-const CdxRadioStub = {
-	name: 'CdxRadio',
-	template: '<label class="cdx-radio-stub" :data-value="inputValue">' +
-		'<input type="radio" :checked="modelValue === inputValue" :disabled="disabled"' +
-		' @change="$emit( \'update:modelValue\', inputValue )">' +
-		'<slot /><slot name="description" /></label>',
-	props: [ 'modelValue', 'inputValue', 'name', 'inline', 'disabled' ],
-	emits: [ 'update:modelValue' ],
-};
-
 const CdxToggleButtonGroupStub = {
 	name: 'CdxToggleButtonGroup',
 	template: '<div class="cdx-toggle-button-group-stub"></div>',
@@ -309,22 +301,7 @@ describe( 'SubjectCreatorDialog', () => {
 					CdxButton: true,
 					CdxDialog: CdxDialogStub,
 					CdxToggleButtonGroup: CdxToggleButtonGroupStub,
-					CdxRadio: CdxRadioStub,
 					CdxMessage: true,
-					CdxField: {
-						template: '<div class="cdx-field-stub"><slot /><slot name="label" /><slot name="messages" /></div>',
-					},
-					CdxTextInput: {
-						template: '<input class="cdx-text-input-stub" :value="modelValue" :placeholder="placeholder" @input="$emit( \'update:modelValue\', $event.target.value )" />',
-						props: [ 'modelValue', 'placeholder', 'status' ],
-						emits: [ 'update:modelValue' ],
-						// Codex exposes focus(), which focuses the input; here that is the root.
-						methods: {
-							focus(): void {
-								( this.$el as HTMLInputElement ).focus();
-							},
-						},
-					},
 					teleport: true,
 					...stubs,
 				},
@@ -718,24 +695,15 @@ describe( 'SubjectCreatorDialog', () => {
 		const EXISTING_PAGE_ID = 12;
 		const OTHER_PAGE_ID = 13;
 		const MAIN_ID = 's11111111111taa';
-		// Renders the field's error so the page-choice failures below are visible as text.
-		const CdxFieldWithMessagesStub = {
-			template: '<div class="cdx-field-stub"><slot name="label" /><slot />' +
-				'<span>{{ messages?.error }}</span></div>',
-			props: [ 'status', 'messages', 'isFieldset' ],
-		};
-
 		const I18nSlotStub = {
 			template: '<span>{{ messageKey }}<slot /></span>',
 			props: [ 'messageKey' ],
 		};
 
-		// Carries an input of its own, so that the picker being focused can be told from any
-		// other field being focused.
 		const PagePickerPanelStub = {
 			name: 'PagePickerPanel',
 			template: '<div class="page-picker-panel-stub"></div>',
-			props: [ 'pinnedPages', 'existingPagesOnly', 'newPageOnly', 'excludedPageId', 'ariaLabel' ],
+			props: [ 'pinnedPages', 'existingPagesOnly', 'newPageOnly', 'ariaLabel', 'error' ],
 			emits: [ 'update:selected' ],
 		};
 
@@ -753,27 +721,13 @@ describe( 'SubjectCreatorDialog', () => {
 			props: [ 'action', 'weight', 'disabled' ],
 		};
 
-		const PagePickerStub = {
-			name: 'PagePicker',
-			template: '<div class="page-picker-stub"><input ref="fieldRef" /></div>',
-			props: [ 'excludedPageId', 'existingPagesOnly', 'disabled', 'ariaLabel' ],
-			emits: [ 'update:selected' ],
-			setup() {
-				const fieldRef = ref<HTMLInputElement | null>( null );
-
-				return { fieldRef, focus: (): void => fieldRef.value?.focus() };
-			},
-		};
-
 		function mountDialog(
 			props: Record<string, any> = {},
 			options: Record<string, any> = {},
 		): VueWrapper {
 			return mountComponent(
 				{
-					PagePicker: PagePickerStub,
 					PagePickerPanel: PagePickerPanelStub,
-					CdxField: CdxFieldWithMessagesStub,
 					I18nSlot: I18nSlotStub,
 					CdxMessage: CdxMessageWithSlotStub,
 					CdxButton: CdxButtonWithSlotStub,
@@ -800,16 +754,14 @@ describe( 'SubjectCreatorDialog', () => {
 		}
 
 		/** The shortcuts the popover offers above its search, in the order it offers them. */
-		function pinnedDestinations( wrapper: VueWrapper ): {
-			label: string; description?: string; disabled?: boolean;
-		}[] {
-			return destinationPanel( wrapper ).props( 'pinnedPages' ) as
-				{ label: string; description?: string; disabled?: boolean }[];
+		function pinnedDestinations( wrapper: VueWrapper ): PinnedPage[] {
+			return destinationPanel( wrapper ).props( 'pinnedPages' ) as PinnedPage[];
 		}
 
-		/** Which destination each shortcut is, said under the page it leads to. */
-		function pinnedKinds( wrapper: VueWrapper ): ( string | undefined )[] {
-			return pinnedDestinations( wrapper ).map( ( pinned ) => pinned.description );
+		/** Which destination each shortcut is: the page being viewed, or a page to create. */
+		function pinnedKinds( wrapper: VueWrapper ): string[] {
+			return pinnedDestinations( wrapper ).map( ( pinned ) =>
+				pinned.page.pageId === null ? 'newPage' : 'thisPage' );
 		}
 
 		/** The page each shortcut leads to, named as the results are. */
@@ -817,12 +769,13 @@ describe( 'SubjectCreatorDialog', () => {
 			return pinnedDestinations( wrapper ).map( ( pinned ) => pinned.label );
 		}
 
-		function pinnedNewPage( wrapper: VueWrapper ): {
-			label: string; description?: string; disabled?: boolean;
-		} | undefined {
-			return pinnedDestinations( wrapper ).find( ( pinned ) =>
-				pinned.description === 'neowiki-subject-creator-page-new' ||
-				pinned.description === 'neowiki-subject-creator-page-new-denied' );
+		function pinnedNewPage( wrapper: VueWrapper ): PinnedPage | undefined {
+			return pinnedDestinations( wrapper ).find( ( pinned ) => pinned.page.pageId === null );
+		}
+
+		/** Why the save was refused over the page to create, as the popover says it. */
+		function statedRefusal( wrapper: VueWrapper ): string | null {
+			return destinationPanel( wrapper ).props( 'error' ) as string | null;
 		}
 
 		/** The title the popover says a page of the Subject's own will be given. */
@@ -863,10 +816,9 @@ describe( 'SubjectCreatorDialog', () => {
 
 		/**
 		 * The answers the dialog holds underneath, each reached the way the popover reaches it.
-		 * "Another page" is not an answer of its own: it is what picking a page other than this one
-		 * makes, so the pick that follows a test's `choose` is what says it.
+		 * Another page is reached by picking it.
 		 */
-		async function choose( wrapper: VueWrapper, value: string ): Promise<void> {
+		async function choose( wrapper: VueWrapper, value: 'thisPage' | 'newPage' ): Promise<void> {
 			if ( value === 'thisPage' ) {
 				await pickPage( wrapper, { pageId: PAGE_ID, title: PAGE_TITLE } );
 			}
@@ -895,8 +847,6 @@ describe( 'SubjectCreatorDialog', () => {
 			await createButton( wrapper ).trigger( 'click' );
 			await flushPromises();
 		}
-
-		/** The title the one page created was sent with. */
 
 		function deferred<T>(): Deferred<T> {
 			let resolve!: ( value: T ) => void;
@@ -973,6 +923,61 @@ describe( 'SubjectCreatorDialog', () => {
 
 				expect( isOpen( wrapper ) ).toBe( false );
 			} );
+
+			/** Opening it is left a task, until the save has let go of the footer. */
+			async function afterTheSaveLetsGo(): Promise<void> {
+				await new Promise( ( resolve ) => {
+					setTimeout( resolve );
+				} );
+				await flushPromises();
+			}
+
+			// It is where a title is given, so a save that wants one leads there.
+			it( 'opens when a save is refused for want of a title', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+
+				await save( wrapper );
+				await afterTheSaveLetsGo();
+
+				expect( isOpen( wrapper ) ).toBe( true );
+			} );
+
+			it( 'opens when a save is refused for a title already taken', async () => {
+				( subjectStore.createSubjectPage as any ).mockRejectedValue( new PageTitleTakenError( 'Amsterdam' ) );
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await typeLabel( wrapper, 'Amsterdam' );
+
+				await save( wrapper );
+				await afterTheSaveLetsGo();
+
+				expect( isOpen( wrapper ) ).toBe( true );
+			} );
+
+			// Said once, in the popover, since the popover stands over where the footer says it.
+			it( 'says there why the save was refused', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+
+				await save( wrapper );
+				await afterTheSaveLetsGo();
+
+				expect( statedRefusal( wrapper ) ).toBe( 'neowiki-subject-creator-page-title-required' );
+				expect( wrapper.find( '.cdx-message-stub' ).exists() ).toBe( false );
+			} );
+
+			it( 'leaves why to the footer once it is closed', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await save( wrapper );
+				await afterTheSaveLetsGo();
+
+				await openDestination( wrapper );
+
+				expect( wrapper.find( '.cdx-message-stub' ).text() )
+					.toBe( 'neowiki-subject-creator-page-title-required' );
+			} );
 		} );
 
 		describe( 'opened on a page', () => {
@@ -982,10 +987,7 @@ describe( 'SubjectCreatorDialog', () => {
 				const wrapper = mountDialog();
 				await pickSchema( wrapper );
 
-				expect( pinnedKinds( wrapper ) ).toEqual( [
-					'neowiki-subject-creator-page-this',
-					'neowiki-subject-creator-page-new',
-				] );
+				expect( pinnedKinds( wrapper ) ).toEqual( [ 'thisPage', 'newPage' ] );
 			} );
 
 			/**
@@ -1037,7 +1039,7 @@ describe( 'SubjectCreatorDialog', () => {
 				const wrapper = mountWithoutHostPage();
 				await pickSchema( wrapper );
 
-				expect( pinnedKinds( wrapper ) ).toEqual( [ 'neowiki-subject-creator-page-new' ] );
+				expect( pinnedKinds( wrapper ) ).toEqual( [ 'newPage' ] );
 			} );
 
 			it( 'starts on a new page', async () => {
@@ -1079,7 +1081,6 @@ describe( 'SubjectCreatorDialog', () => {
 			it( 'goes to the existing page it was saved onto', async () => {
 				const wrapper = mountWithoutHostPage();
 				await pickSchema( wrapper );
-				await choose( wrapper, 'anotherPage' );
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
 				await save( wrapper );
@@ -1092,7 +1093,6 @@ describe( 'SubjectCreatorDialog', () => {
 			it( 'goes to the page it joined where that page has a main subject', async () => {
 				const wrapper = mountWithoutHostPage();
 				await pickSchema( wrapper );
-				await choose( wrapper, 'anotherPage' );
 				await pickPageWithMainSubject( wrapper );
 
 				await save( wrapper );
@@ -1303,17 +1303,24 @@ describe( 'SubjectCreatorDialog', () => {
 
 			// Here the page is the entity, so it is never titled after a Subject id: with nothing to
 			// title it, the question comes back rather than a page nobody can read the name of.
-			// A page-first wiki names a Subject's page after its label, and has nothing else to
-			// name it after, so a Subject nobody has named leaves the question open.
 			it( 'refuses a new page with nothing to title it after, writing nothing', async () => {
 				const wrapper = mountWithoutHostPage();
 				await pickSchema( wrapper );
 
 				await save( wrapper );
 
-				expect( wrapper.find( '.cdx-message-stub' ).text() )
-					.toContain( 'neowiki-subject-creator-page-title-required' );
+				expect( statedRefusal( wrapper ) ).toBe( 'neowiki-subject-creator-page-title-required' );
 				expect( subjectStore.createSubjectPage ).not.toHaveBeenCalled();
+			} );
+
+			// The dialog says why where the title is given, so the editor need not say it again.
+			it( 'stops the save as a refusal it reports itself', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+
+				await save( wrapper );
+
+				expect( lastSaveError ).toBeInstanceOf( WriteRefusedError );
 			} );
 
 			// Every row needs a name, so with no title to show the shortcut falls back to saying
@@ -1325,6 +1332,15 @@ describe( 'SubjectCreatorDialog', () => {
 				await openDestination( wrapper );
 
 				expect( statedNewPageTitle( wrapper ) ).toBe( 'neowiki-subject-creator-page-new' );
+			} );
+
+			it( 'says nothing under a shortcut named by what it is', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+
+				await openDestination( wrapper );
+
+				expect( pinnedNewPage( wrapper )?.description ).toBeUndefined();
 			} );
 
 			it( 'saves the drafted Schema before the new page that uses it', async () => {
@@ -1377,7 +1393,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( wrapper.text() ).toContain( 'neowiki-subject-creator-page-takenAmsterdam' );
+				expect( statedRefusal( wrapper ) ).toBe( 'neowiki-subject-creator-page-takenAmsterdam' );
 				expect( location.href ).toBe( '' );
 			} );
 
@@ -1388,14 +1404,12 @@ describe( 'SubjectCreatorDialog', () => {
 				await typeLabel( wrapper, 'Amsterdam' );
 				await save( wrapper );
 
-				expect( wrapper.text() ).toContain( 'neowiki-subject-creator-page-taken' );
+				expect( statedRefusal( wrapper ) ).toBe( 'neowiki-subject-creator-page-takenAmsterdam' );
 				expect( wrapper.findComponent( { name: 'SummaryAction' } ).props( 'saveDisabled' ) ).toBe( false );
 			} );
 
 		} );
 
-		// The title is no longer a field of its own: it is what the popover says a page of the
-		// Subject's own will be called, and what typing a name into that popover asks for.
 		describe( 'the title of the page to create', () => {
 			it( 'is stated where a page is to be created', async () => {
 				const wrapper = mountDialog();
@@ -1435,9 +1449,21 @@ describe( 'SubjectCreatorDialog', () => {
 				await typePageTitle( wrapper, 'Delft' );
 
 				await typeLabel( wrapper, 'Delft Blue pottery' );
+
+				expect( statedDestination( wrapper ) )
+					.toBe( 'neowiki-subject-creator-save-on-new-pageDelft' );
+			} );
+
+			// Picking the shortcut titles the page after the label, so that is what it is named after.
+			it( 'names the shortcut after the label rather than a title asked for since', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await typeLabel( wrapper, 'Delft Blue' );
+				await typePageTitle( wrapper, 'Delft' );
+
 				await openDestination( wrapper );
 
-				expect( statedNewPageTitle( wrapper ) ).toBe( 'Delft' );
+				expect( statedNewPageTitle( wrapper ) ).toBe( 'Delft Blue' );
 			} );
 
 			// Picking the shortcut is asking for no title of its own, which hands the naming back.
@@ -1448,9 +1474,9 @@ describe( 'SubjectCreatorDialog', () => {
 				await typePageTitle( wrapper, 'Delft' );
 
 				await choose( wrapper, 'newPage' );
-				await openDestination( wrapper );
 
-				expect( statedNewPageTitle( wrapper ) ).toBe( 'Delft Blue' );
+				expect( statedDestination( wrapper ) )
+					.toBe( 'neowiki-subject-creator-save-on-new-pageDelft Blue' );
 			} );
 
 			it( 'follows the label again once the dialog is reopened', async () => {
@@ -1461,9 +1487,9 @@ describe( 'SubjectCreatorDialog', () => {
 				await pickSchema( wrapper );
 
 				await typeLabel( wrapper, 'Amsterdam' );
-				await openDestination( wrapper );
 
-				expect( statedNewPageTitle( wrapper ) ).toBe( 'Amsterdam' );
+				expect( statedDestination( wrapper ) )
+					.toBe( 'neowiki-subject-creator-save-on-new-pageAmsterdam' );
 			} );
 
 			it( 'titles the page created', async () => {
@@ -1501,8 +1527,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( wrapper.find( '.cdx-message-stub' ).text() )
-					.toContain( 'neowiki-subject-creator-page-takenAmsterdam' );
+				expect( statedRefusal( wrapper ) ).toBe( 'neowiki-subject-creator-page-takenAmsterdam' );
 			} );
 
 			it( 'complains about a title that titles no page', async () => {
@@ -1514,8 +1539,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( wrapper.find( '.cdx-message-stub' ).text() )
-					.toContain( 'neowiki-subject-creator-page-title-invalidHelp:Amsterdam' );
+				expect( statedRefusal( wrapper ) ).toBe( 'neowiki-subject-creator-page-title-invalidHelp:Amsterdam' );
 				expect( location.href ).toBe( '' );
 			} );
 
@@ -1529,7 +1553,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await typePageTitle( wrapper, 'Amsterdam' );
 
-				expect( wrapper.text() ).not.toContain( 'neowiki-subject-creator-page-title-invalid' );
+				expect( statedRefusal( wrapper ) ).toBeNull();
 				expect( wrapper.findComponent( { name: 'SummaryAction' } ).props( 'saveDisabled' ) ).toBe( false );
 			} );
 
@@ -1537,7 +1561,6 @@ describe( 'SubjectCreatorDialog', () => {
 				getPageSubjectsMock.mockRejectedValue( new Error( 'Graph store unavailable' ) );
 				const wrapper = mountDialog();
 				await pickSchema( wrapper );
-				await choose( wrapper, 'anotherPage' );
 
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
@@ -1549,11 +1572,6 @@ describe( 'SubjectCreatorDialog', () => {
 		} );
 
 		describe( 'on another page', () => {
-			async function chooseAnotherPage( wrapper: VueWrapper ): Promise<void> {
-				await pickSchema( wrapper );
-				await choose( wrapper, 'anotherPage' );
-			}
-
 			it( 'keeps save unavailable until a page is picked', async () => {
 				canCreateSubjectPage.value = false;
 				const wrapper = mountWithoutHostPage();
@@ -1568,7 +1586,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			it( 'makes the subject the main subject of a page that has none, and goes there', async () => {
 				const wrapper = mountDialog();
-				await chooseAnotherPage( wrapper );
+				await pickSchema( wrapper );
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
 				await save( wrapper );
@@ -1580,7 +1598,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			it( 'adds the subject alongside an existing main subject, under the label given', async () => {
 				const wrapper = mountDialog();
-				await chooseAnotherPage( wrapper );
+				await pickSchema( wrapper );
 				await pickPageWithMainSubject( wrapper );
 
 				await typeLabel( wrapper, 'Second opinion' );
@@ -1599,7 +1617,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			it( 'names the main subject the new one will sit beside', async () => {
 				const wrapper = mountDialog();
-				await chooseAnotherPage( wrapper );
+				await pickSchema( wrapper );
 
 				await pickPageWithMainSubject( wrapper );
 
@@ -1610,7 +1628,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			it( 'says the subject joins the page picked, which has no main subject to name it', async () => {
 				const wrapper = mountDialog();
-				await chooseAnotherPage( wrapper );
+				await pickSchema( wrapper );
 
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
@@ -1630,7 +1648,7 @@ describe( 'SubjectCreatorDialog', () => {
 				const slowRead = deferred<unknown>();
 				getPageSubjectsMock.mockReturnValueOnce( slowRead.promise );
 				const wrapper = mountDialog();
-				await chooseAnotherPage( wrapper );
+				await pickSchema( wrapper );
 
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
@@ -1649,7 +1667,7 @@ describe( 'SubjectCreatorDialog', () => {
 			it( 'names no page whose subjects could not be read', async () => {
 				getPageSubjectsMock.mockRejectedValue( new Error( 'Graph store unavailable' ) );
 				const wrapper = mountDialog();
-				await chooseAnotherPage( wrapper );
+				await pickSchema( wrapper );
 
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
@@ -1663,7 +1681,7 @@ describe( 'SubjectCreatorDialog', () => {
 			it( 'keeps a page that could not be read blocking while the rest of the form is edited', async () => {
 				getPageSubjectsMock.mockRejectedValue( new Error( 'Graph store unavailable' ) );
 				const wrapper = mountDialog();
-				await chooseAnotherPage( wrapper );
+				await pickSchema( wrapper );
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
 				wrapper.findComponent( SubjectEditorDialog ).vm.$emit( 'change' );
@@ -1679,7 +1697,7 @@ describe( 'SubjectCreatorDialog', () => {
 				const flush = deferred<void>();
 				beforeFirstWrite = flush.promise;
 				const wrapper = mountDialog();
-				await chooseAnotherPage( wrapper );
+				await pickSchema( wrapper );
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
 				const saved = save( wrapper );
@@ -1704,7 +1722,6 @@ describe( 'SubjectCreatorDialog', () => {
 				const wrapper = mountDialog();
 				await draftNewSchema( wrapper );
 				await clickContinue( wrapper );
-				await choose( wrapper, 'anotherPage' );
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
 				const saved = save( wrapper );
@@ -1722,7 +1739,7 @@ describe( 'SubjectCreatorDialog', () => {
 			it( 'blocks saving when the chosen page could not be read', async () => {
 				getPageSubjectsMock.mockRejectedValue( new Error( 'Graph store unavailable' ) );
 				const wrapper = mountDialog();
-				await chooseAnotherPage( wrapper );
+				await pickSchema( wrapper );
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
 				expect( wrapper.findComponent( { name: 'SummaryAction' } ).props( 'saveDisabled' ) ).toBe( true );
@@ -1737,7 +1754,7 @@ describe( 'SubjectCreatorDialog', () => {
 				const slowRead = deferred<unknown>();
 				getPageSubjectsMock.mockReturnValueOnce( slowRead.promise );
 				const wrapper = mountDialog();
-				await chooseAnotherPage( wrapper );
+				await pickSchema( wrapper );
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
 				await pickPage( wrapper, { pageId: OTHER_PAGE_ID, title: 'Other Page' } );
@@ -1753,7 +1770,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			it( 'drops the page picked once the choice moves back to a new page', async () => {
 				const wrapper = mountDialog();
-				await chooseAnotherPage( wrapper );
+				await pickSchema( wrapper );
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
 				await choose( wrapper, 'newPage' );
@@ -1806,31 +1823,14 @@ describe( 'SubjectCreatorDialog', () => {
 			await wrapper.setProps( { open: true } );
 			await flushPromises();
 
-			await choose( wrapper, 'anotherPage' );
 			await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 
 			expect( closeWouldDiscard( wrapper ) ).toBe( true );
 		} );
 
 		describe( 'initialPage', () => {
-			// Renders its slot, so the error text is assertable.
-			const CdxMessageStub = {
-				template: '<div class="cdx-message-stub"><slot /></div>',
-				props: [ 'type', 'inline' ],
-			};
-
 			function mountWithInitialPage( initialPage: InitialPage, props: Record<string, any> = {} ): VueWrapper {
-				return mountComponent(
-					{
-						PagePicker: PagePickerStub,
-						PagePickerPanel: PagePickerPanelStub,
-						CdxButton: CdxButtonWithSlotStub,
-						CdxField: CdxFieldWithMessagesStub,
-						I18nSlot: I18nSlotStub,
-						CdxMessage: CdxMessageStub,
-					},
-					{ initialSchemaName: SCHEMA_NAME, initialPage, ...props },
-				);
+				return mountDialog( { initialSchemaName: SCHEMA_NAME, initialPage, ...props } );
 			}
 
 			async function open( wrapper: VueWrapper ): Promise<void> {
@@ -1874,8 +1874,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( wrapper.find( '.cdx-message-stub' ).text() )
-					.toContain( 'neowiki-subject-creator-page-title-required' );
+				expect( statedRefusal( wrapper ) ).toBe( 'neowiki-subject-creator-page-title-required' );
 				expect( subjectStore.createSubjectPage ).not.toHaveBeenCalled();
 			} );
 
@@ -1910,6 +1909,18 @@ describe( 'SubjectCreatorDialog', () => {
 
 					expect( pinnedDestinations( wrapper ) ).toEqual( [] );
 					expect( destinationPanel( wrapper ).props( 'newPageOnly' ) ).toBe( true );
+				} );
+
+				// Choosing the page that has the title is no answer where only the title may change.
+				it( 'asks for another title where the one given is taken', async () => {
+					( subjectStore.createSubjectPage as any ).mockRejectedValue( new PageTitleTakenError( 'Ada Lovelace' ) );
+					const wrapper = mountFixedNewPage();
+					await open( wrapper );
+					await typeLabel( wrapper, 'Ada Lovelace' );
+
+					await save( wrapper );
+
+					expect( statedRefusal( wrapper ) ).toBe( 'neowiki-subject-creator-page-taken-retitleAda Lovelace' );
 				} );
 
 				it( 'takes the title given there', async () => {
@@ -2028,10 +2039,7 @@ describe( 'SubjectCreatorDialog', () => {
 				expect( statedDestination( wrapper ) )
 					.toBe( 'neowiki-subject-creator-save-on-a-new-page' );
 				expect( destinationIsOffered( wrapper ) ).toBe( true );
-				expect( pinnedKinds( wrapper ) ).toEqual( [
-					'neowiki-subject-creator-page-this',
-					'neowiki-subject-creator-page-new',
-				] );
+				expect( pinnedKinds( wrapper ) ).toEqual( [ 'thisPage', 'newPage' ] );
 			} );
 
 			it( 'reports a taken title of the fixed page\'s own as before', async () => {

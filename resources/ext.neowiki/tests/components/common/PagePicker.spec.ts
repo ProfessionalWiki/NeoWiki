@@ -244,7 +244,7 @@ describe( 'PagePicker', () => {
 			.mockImplementationOnce( () => new Promise( ( resolve ) => {
 				resolveFirst = resolve;
 			} ) )
-			.mockResolvedValueOnce( [ { pageId: 34, title: 'Second' } ] );
+			.mockResolvedValueOnce( [ { pageId: 34, title: 'Second Avenue' } ] );
 
 		const wrapper = createWrapper();
 

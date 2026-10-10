@@ -127,6 +127,8 @@ function onToggleKeydown( event: KeyboardEvent ): void {
 		border-start-end-radius: 0;
 		border-end-end-radius: 0;
 		min-width: 0;
+		/* Room above and below a label that wraps; one line still sits inside the minimum height. */
+		padding-block: @spacing-25;
 	}
 
 	&__toggle.cdx-button {
@@ -166,6 +168,8 @@ function onToggleKeydown( event: KeyboardEvent ): void {
 		an ellipsis - which at phone width is where the page name sits. */
 	&__label {
 		text-align: start;
+		/* Codex keeps a button's text on one line. */
+		white-space: normal;
 		overflow-wrap: anywhere;
 	}
 }

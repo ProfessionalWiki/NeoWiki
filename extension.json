@@ -484,7 +484,8 @@
 				"mediawiki.user",
 				"mediawiki.storage",
 				"mediawiki.jqueryMsg",
-				"mediawiki.language.names"
+				"mediawiki.language.names",
+				"mediawiki.Title"
 			],
 			"codexComponents": [
 				"CdxAccordion",
@@ -698,6 +699,7 @@
 				"neowiki-subject-creator-page-title-required",
 				"neowiki-subject-creator-page-title-invalid",
 				"neowiki-subject-creator-page-taken",
+				"neowiki-subject-creator-page-taken-retitle",
 				"neowiki-subject-creator-page-read-error",
 				"neowiki-subject-creator-page-change",
 				"neowiki-subject-creator-page-retitle",
@@ -734,6 +736,7 @@
 				"neowiki-subject-picker-create",
 				"neowiki-subject-picker-create-named",
 				"neowiki-page-picker-placeholder",
+				"neowiki-page-picker-title-placeholder",
 				"neowiki-page-picker-no-results",
 				"neowiki-page-picker-create-hint",
 				"neowiki-page-picker-create-named",
