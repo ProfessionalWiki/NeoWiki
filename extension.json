@@ -910,6 +910,8 @@
 				"neowiki-managesubjects-link-copy-error",
 				"neowiki-managesubjects-export-json",
 				"neowiki-managesubjects-export-rdf",
+				"neowiki-managesubjects-export-all-json",
+				"neowiki-managesubjects-export-all-rdf",
 				"neowiki-managesubjects-export-format-turtle",
 				"neowiki-managesubjects-export-format-trig",
 				"neowiki-managesubjects-export-projection-format",
