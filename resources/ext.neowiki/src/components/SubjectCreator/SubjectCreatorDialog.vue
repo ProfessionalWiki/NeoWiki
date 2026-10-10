@@ -1064,7 +1064,13 @@ async function createOnNewPage(
 		);
 	} catch ( error ) {
 		if ( error instanceof PageTitleTakenError ) {
-			pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-taken', error.pageTitle );
+			// A caller that fixed a new page leaves only its title to change: that page is no answer.
+			pageTitleError.value = mw.msg(
+				pageFixed.value && asksPageTitle.value ?
+					'neowiki-subject-creator-page-taken-retitle' :
+					'neowiki-subject-creator-page-taken',
+				error.pageTitle
+			);
 			throw new WriteRefusedError( pageTitleError.value );
 		}
 

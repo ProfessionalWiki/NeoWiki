@@ -89,7 +89,8 @@
 	"neowiki-subject-creator-page-title-field": "Label of the field in the 'create subject' dialog that titles the page created for the Subject.",
 	"neowiki-subject-creator-page-title-required": "Error shown at the page-title field of the 'create subject' dialog when a new page is saved with the field empty.",
 	"neowiki-subject-creator-page-title-invalid": "Error shown at the page-title field of the 'create subject' dialog when the title given can title no page. Parameters:\n* $1 - the page title given",
-	"neowiki-subject-creator-page-taken": "Error shown at the page-title field of the 'create subject' dialog, in its \"Store the subject on\" section or below a fixed new page's summary line, when the title chosen for the new page is already taken. Parameters:\n* $1 - the page title",
+	"neowiki-subject-creator-page-taken": "Error shown at the page-title field of the 'create subject' dialog, in its \"Store the subject on\" section or below the summary line of a new page a {{#create_subject}} button named, when the title chosen for the new page is already taken. See also {{msg-mw|neowiki-subject-creator-page-taken-retitle}}. Parameters:\n* $1 - the page title",
+	"neowiki-subject-creator-page-taken-retitle": "Error shown at the page-title field below the summary line of a new page a {{#create_subject}} button asked for without naming it (page=new), when the title chosen is already taken: only the title can change there. See also {{msg-mw|neowiki-subject-creator-page-taken}}. Parameters:\n* $1 - the page title",
 	"neowiki-subject-creator-page-read-error": "Error shown at the page field of the 'create subject' dialog when the chosen page's Subjects could not be read. Parameters:\n* $1 - the page title",
 	"neowiki-createsubject-button": "Label of the button that opens the 'create subject' dialog: the main button on [[Special:NeoWiki]], and the button on [[Special:CreateSubject]] that reopens the dialog after it was closed.",
 

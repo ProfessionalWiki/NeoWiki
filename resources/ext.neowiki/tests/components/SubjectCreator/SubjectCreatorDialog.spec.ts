@@ -2229,7 +2229,8 @@ describe( 'SubjectCreatorDialog', () => {
 				expect( sectionIsOpen( wrapper ) ).toBe( true );
 			} );
 
-			it( 'reports a taken title at the title field of a fixed new page', async () => {
+			// The caller fixed a new page, so choosing the page that has the title is no answer.
+			it( 'asks for another title where a fixed new page\'s is taken', async () => {
 				( subjectStore.createSubjectPage as any ).mockRejectedValue( new PageTitleTakenError( 'Paris' ) );
 				const wrapper = mountWithInitialPage( { choice: 'newPage', fixed: true } );
 				await open( wrapper );
@@ -2237,7 +2238,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( pageTitleField( wrapper ).text() ).toContain( 'neowiki-subject-creator-page-takenParis' );
+				expect( pageTitleField( wrapper ).text() ).toContain( 'neowiki-subject-creator-page-taken-retitleParis' );
 			} );
 
 			it( 'reports a taken title of the fixed page\'s own as before', async () => {

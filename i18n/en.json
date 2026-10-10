@@ -201,6 +201,7 @@
 	"neowiki-subject-creator-page-title-required": "Give the page a title.",
 	"neowiki-subject-creator-page-title-invalid": "\"$1\" is not a valid page title. It cannot name another namespace, and some punctuation is not allowed in a title.",
 	"neowiki-subject-creator-page-taken": "A page named \"$1\" already exists. Choose it as an existing page, or use a different title.",
+	"neowiki-subject-creator-page-taken-retitle": "A page named \"$1\" already exists. Use a different title.",
 	"neowiki-subject-creator-page-read-error": "The page \"$1\" could not be read. Pick it again to retry.",
 	"neowiki-createsubject-button": "Create subject",
 
