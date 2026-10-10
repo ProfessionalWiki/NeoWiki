@@ -172,16 +172,13 @@ function createNewProperty(): PropertyDefinition {
 }
 
 function generateUniquePropertyName(): PropertyName {
-	const existingProps = Object.keys( currentSchema.value.getPropertyDefinitions().asRecord() );
 	let counter = 1;
-	let name = `New Property ${ counter }`;
 
-	while ( existingProps.includes( name ) ) {
+	while ( propertyExists( `New Property ${ counter }` ) ) {
 		counter++;
-		name = `New Property ${ counter }`;
 	}
 
-	return new PropertyName( name );
+	return new PropertyName( `New Property ${ counter }` );
 }
 
 function onPropertyDeleted( name: PropertyName ): void {
