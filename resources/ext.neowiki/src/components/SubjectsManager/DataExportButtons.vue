@@ -7,7 +7,7 @@
 			rel="noopener"
 		>
 			<CdxIcon :icon="cdxIconDownload" />
-			{{ $i18n( 'neowiki-managesubjects-export-json' ).text() }}
+			{{ props.jsonLabel }}
 		</a>
 		<div
 			ref="rdfRef"
@@ -23,7 +23,7 @@
 				@keydown="onTriggerKeydown"
 			>
 				<CdxIcon :icon="cdxIconDownload" />
-				{{ $i18n( 'neowiki-managesubjects-export-rdf' ).text() }}
+				{{ props.rdfLabel }}
 			</CdxButton>
 			<div class="ext-neowiki-data-export__menu">
 				<CdxMenu
@@ -55,6 +55,8 @@ import { rdfMenuItems } from '@/presentation/DataExportMenu.ts';
 import type { ExportUrls } from '@/presentation/DataExportMenu.ts';
 
 const props = defineProps<ExportUrls & {
+	jsonLabel: string;
+	rdfLabel: string;
 	projections: readonly string[];
 }>();
 

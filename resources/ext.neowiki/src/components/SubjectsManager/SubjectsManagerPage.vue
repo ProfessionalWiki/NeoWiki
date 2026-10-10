@@ -11,6 +11,8 @@
 			<div class="ext-neowiki-subjects-manager__controls-actions">
 				<DataExportButtons
 					v-if="!loading && subjects.length > 0"
+					:json-label="$i18n( 'neowiki-managesubjects-export-all-json' ).text()"
+					:rdf-label="$i18n( 'neowiki-managesubjects-export-all-rdf' ).text()"
 					:projections="rdfProjections"
 					v-bind="exportUrls"
 				/>

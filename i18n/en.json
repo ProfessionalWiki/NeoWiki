@@ -474,6 +474,8 @@
 	"neowiki-managesubjects-link-copy-error": "Couldn't copy the link.",
 	"neowiki-managesubjects-export-json": "JSON",
 	"neowiki-managesubjects-export-rdf": "RDF",
+	"neowiki-managesubjects-export-all-json": "All as JSON",
+	"neowiki-managesubjects-export-all-rdf": "All as RDF",
 	"neowiki-managesubjects-export-format-turtle": "Turtle",
 	"neowiki-managesubjects-export-format-trig": "TriG",
 	"neowiki-managesubjects-export-projection-format": "$1 · $2",

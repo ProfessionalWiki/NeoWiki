@@ -217,6 +217,8 @@
 						</div>
 					</dl>
 					<DataExportButtons
+						:json-label="$i18n( 'neowiki-managesubjects-export-json' ).text()"
+						:rdf-label="$i18n( 'neowiki-managesubjects-export-rdf' ).text()"
 						:projections="rdfProjections"
 						v-bind="exportUrls"
 					/>

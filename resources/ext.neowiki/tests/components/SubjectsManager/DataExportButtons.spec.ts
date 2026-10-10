@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount, VueWrapper } from '@vue/test-utils';
 import { CdxButton, CdxMenu } from '@wikimedia/codex';
 import DataExportButtons from '@/components/SubjectsManager/DataExportButtons.vue';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { setupMwMock } from '../../VueTestHelpers.ts';
 
 // useFloatingMenu drives FloatingUI against real geometry, which jsdom lacks. The button and the menu
 // stay real, so the tests hold whichever of the two acts on a key.
@@ -16,10 +16,9 @@ function mountButtons(): VueWrapper {
 		props: {
 			jsonUrl: 'JSON_URL',
 			rdfUrl: ( projection: string, format: string ) => `RDF:${ projection }:${ format }`,
+			jsonLabel: 'JSON',
+			rdfLabel: 'RDF',
 			projections: [ 'native', 'EDM' ],
-		},
-		global: {
-			mocks: { $i18n: createI18nMock() },
 		},
 	} );
 }
@@ -73,7 +72,7 @@ describe( 'DataExportButtons', () => {
 	it( 'links JSON to the JSON export in a new tab', () => {
 		const link = mountButtons().get( 'a' );
 
-		expect( link.text() ).toBe( 'neowiki-managesubjects-export-json' );
+		expect( link.text() ).toBe( 'JSON' );
 		expect( link.attributes( 'href' ) ).toBe( 'JSON_URL' );
 		expect( link.attributes( 'target' ) ).toBe( '_blank' );
 	} );
