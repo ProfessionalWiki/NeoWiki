@@ -7,13 +7,34 @@
 			@keydown="onKeydown"
 		>
 			<li
+				role="option"
+				class="ext-neowiki-property-list__item ext-neowiki-property-list__item--subject-label"
+				:class="{ 'ext-neowiki-property-list__item--selected': labelSelected }"
+				:aria-selected="labelSelected"
+				:tabindex="labelSelected ? 0 : -1"
+				@click="emit( 'labelSelected' )"
+			>
+				<CdxIcon
+					class="ext-neowiki-property-list__item__icon"
+					:icon="cdxIconTag"
+				/>
+				<span class="ext-neowiki-property-list__item__text">
+					<span class="ext-neowiki-property-list__item__text__label">
+						{{ $i18n( 'neowiki-schema-editor-label' ).text() }}
+					</span>
+					<span class="ext-neowiki-property-list__item__text__description">
+						{{ $i18n( 'neowiki-schema-editor-label-description' ).text() }}
+					</span>
+				</span>
+			</li>
+			<li
 				v-for="property in propertyArray"
 				:key="property.name.toString()"
 				role="option"
 				class="ext-neowiki-property-list__item"
-				:class="{ 'ext-neowiki-property-list__item--selected': property.name.toString() === selectedValue }"
-				:aria-selected="property.name.toString() === selectedValue"
-				:tabindex="property.name.toString() === selectedValue ? 0 : -1"
+				:class="{ 'ext-neowiki-property-list__item--selected': isSelected( property ) }"
+				:aria-selected="isSelected( property )"
+				:tabindex="isSelected( property ) ? 0 : -1"
 				@click="onItemClick( property.name.toString() )"
 			>
 				<CdxIcon
@@ -54,7 +75,7 @@
 		<button
 			class="ext-neowiki-property-list__add-item"
 			type="button"
-			@click="addNewProperty"
+			@click="emit( 'addProperty' )"
 		>
 			<CdxIcon
 				class="ext-neowiki-property-list__item__icon"
@@ -70,9 +91,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconDraggable, cdxIconTrash } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconDraggable, cdxIconTag, cdxIconTrash } from '@wikimedia/codex-icons';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -81,28 +102,29 @@ import type { Icon } from '@wikimedia/codex-icons';
 
 const props = defineProps<{
 	properties: PropertyDefinitionList;
+	/** The property whose row is selected. Without one, the Label row is. */
 	selectedPropertyName?: string;
 }>();
 
 const emit = defineEmits<{
+	labelSelected: [];
 	propertySelected: [ name: PropertyName ];
-	propertyCreated: [ property: PropertyDefinition ];
+	addProperty: [];
 	propertyDeleted: [ name: PropertyName ];
 	propertyReordered: [ names: PropertyName[] ];
 }>();
 
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
-const selectedValue = ref( props.selectedPropertyName ?? '' );
 const listRef = ref<HTMLElement | null>( null );
 
-watch( () => props.selectedPropertyName, ( newProperty ) => {
-	if ( newProperty !== undefined ) {
-		selectedValue.value = newProperty;
-	}
-} );
-
 const propertyArray = computed( (): PropertyDefinition[] => [ ...props.properties ] );
+
+const labelSelected = computed( (): boolean => props.selectedPropertyName === undefined );
+
+function isSelected( property: PropertyDefinition ): boolean {
+	return property.name.toString() === props.selectedPropertyName;
+}
 
 function getPropertyIcon( property: PropertyDefinition ): Icon | undefined {
 	return componentRegistry.getIcon( property.type );
@@ -114,7 +136,6 @@ function getPropertyDescription( property: PropertyDefinition ): string {
 }
 
 function onItemClick( propertyName: string ): void {
-	selectedValue.value = propertyName;
 	emit( 'propertySelected', new PropertyName( propertyName ) );
 }
 
@@ -122,51 +143,24 @@ function onDeleteProperty( propertyName: string ): void {
 	emit( 'propertyDeleted', new PropertyName( propertyName ) );
 }
 
-function addNewProperty(): void {
-	const newProperty = createNewProperty();
-	selectedValue.value = newProperty.name.toString();
-	emit( 'propertyCreated', newProperty );
-	emit( 'propertySelected', newProperty.name );
-}
-
-function createNewProperty(): PropertyDefinition {
-	return {
-		name: generateUniquePropertyName(),
-		type: 'text',
-		description: '',
-		required: false,
-		default: undefined
-	} as PropertyDefinition;
-}
-
-function generateUniquePropertyName(): PropertyName {
-	const existingProps = Object.keys( props.properties.asRecord() );
-	let counter = 1;
-	let name = `New Property ${ counter }`;
-
-	while ( existingProps.includes( name ) ) {
-		counter++;
-		name = `New Property ${ counter }`;
-	}
-
-	return new PropertyName( name );
-}
-
+// Indexes below are into the properties, with the Label row before them as -1.
 function getSelectedIndex(): number {
-	return propertyArray.value.findIndex( ( p ) => p.name.toString() === selectedValue.value );
+	return propertyArray.value.findIndex( isSelected );
 }
 
 function focusItem( index: number ): void {
 	const items = listRef.value?.querySelectorAll<HTMLElement>( '[role="option"]' );
-	items?.[ index ]?.focus();
+	items?.[ index + 1 ]?.focus();
 }
 
 function selectAndFocus( index: number ): void {
-	const property = propertyArray.value[ index ];
-	if ( property ) {
-		onItemClick( property.name.toString() );
-		focusItem( index );
+	if ( index === -1 ) {
+		emit( 'labelSelected' );
+	} else {
+		onItemClick( propertyArray.value[ index ].name.toString() );
 	}
+
+	focusItem( index );
 }
 
 function moveProperty( fromIndex: number, toIndex: number ): void {
@@ -178,15 +172,11 @@ function moveProperty( fromIndex: number, toIndex: number ): void {
 
 function onKeydown( event: KeyboardEvent ): void {
 	const currentIndex = getSelectedIndex();
-	if ( currentIndex === -1 ) {
-		return;
-	}
-
 	const lastIndex = propertyArray.value.length - 1;
 
 	if ( event.key === 'ArrowDown' ) {
 		event.preventDefault();
-		if ( event.altKey && currentIndex < lastIndex ) {
+		if ( event.altKey && currentIndex > -1 && currentIndex < lastIndex ) {
 			moveProperty( currentIndex, currentIndex + 1 );
 			selectAndFocus( currentIndex + 1 );
 		} else if ( !event.altKey && currentIndex < lastIndex ) {
@@ -197,15 +187,17 @@ function onKeydown( event: KeyboardEvent ): void {
 		if ( event.altKey && currentIndex > 0 ) {
 			moveProperty( currentIndex, currentIndex - 1 );
 			selectAndFocus( currentIndex - 1 );
-		} else if ( !event.altKey && currentIndex > 0 ) {
+		} else if ( !event.altKey && currentIndex > -1 ) {
 			selectAndFocus( currentIndex - 1 );
 		}
 	}
 }
 
 useSortable( listRef, {
+	draggable: '.ext-neowiki-property-list__item:not(.ext-neowiki-property-list__item--subject-label)',
 	onReorder( oldIndex: number, newIndex: number ): void {
-		moveProperty( oldIndex, newIndex );
+		// SortableJS indexes count the Label row, which stays first.
+		moveProperty( oldIndex - 1, newIndex - 1 );
 	}
 } );
 </script>
@@ -235,6 +227,10 @@ useSortable( listRef, {
 
 		&--selected {
 			background-color: @background-color-progressive-subtle;
+		}
+
+		&--subject-label {
+			cursor: pointer;
 		}
 
 		&--ghost {
