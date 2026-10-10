@@ -13,13 +13,6 @@
 			/>
 		</template>
 
-		<template #item-id="{ row }">
-			<SubjectSummaryCell
-				column="id"
-				:summary="row"
-			/>
-		</template>
-
 		<template #item-schema="{ row }">
 			<SubjectSummaryCell
 				column="schema"
@@ -72,7 +65,7 @@ const rows = ref<SubjectSummary[]>( [] );
 const loading = ref( true );
 const loadFailed = ref( false );
 
-const columns = subjectColumns( { showSchema: true, showPage: !isSubjectFirst(), sortable: false } );
+const columns = subjectColumns( { showId: false, showSchema: true, showPage: !isSubjectFirst(), sortable: false } );
 const listUrl = mw.util.getUrl( 'Special:Subjects' );
 const emptyText = computed( () => mw.msg( loadFailed.value ? 'neowiki-subjects-load-error' : 'neowiki-subjects-empty' ) );
 

@@ -46,6 +46,13 @@ describe( 'RecentSubjectsTable', () => {
 		expect( wrapper.find( 'thead button' ).exists() ).toBe( false );
 	} );
 
+	it( 'leaves the Subject IDs out', async () => {
+		const wrapper = mountTable();
+		await flushPromises();
+
+		expect( wrapper.text() ).not.toContain( 's1demo1aaaaaaa1' );
+	} );
+
 	it( 'links to the full list below the rows', async () => {
 		const wrapper = mountTable();
 		await flushPromises();

@@ -25,10 +25,12 @@ const COLUMN_SORTS: readonly ColumnSort[] = [ 'name', 'schema', 'page', 'edited'
  * The fixed columns of a Subject table. The ID is there to tell Subjects apart and to search by, not to sort by:
  * its order is the creation order the table shows when no column is sorted.
  */
-export function subjectColumns( options: { showSchema: boolean; showPage: boolean; sortable: boolean } ): SubjectColumn[] {
+export function subjectColumns(
+	options: { showId: boolean; showSchema: boolean; showPage: boolean; sortable: boolean },
+): SubjectColumn[] {
 	const ids: SubjectColumnId[] = [
 		'name',
-		'id',
+		...( options.showId ? [ 'id' as const ] : [] ),
 		...( options.showSchema ? [ 'schema' as const ] : [] ),
 		...( options.showPage ? [ 'page' as const ] : [] ),
 		'edited',
