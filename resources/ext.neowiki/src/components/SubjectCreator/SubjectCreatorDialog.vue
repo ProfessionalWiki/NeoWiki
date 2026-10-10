@@ -250,6 +250,7 @@ import type { InitialPage, SubjectPageChoice } from '@/components/SubjectCreator
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError.ts';
 import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError.ts';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError.ts';
+import { WriteRefusedError } from '@/components/SubjectEditor/WriteRefusedError.ts';
 import SchemaAbandonmentDialog from '@/components/SubjectCreator/SchemaAbandonmentDialog.vue';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
@@ -1028,8 +1029,8 @@ async function createBesideMainSubject(
 }
 
 /**
- * The two ways the server refuses a title are answered at the field it was typed in, and reported
- * as the save's own failure too: the writes stop there, and the toast is what says so.
+ * A title missing, or one the server refuses, is answered at the field it is given in, and stops
+ * the save as a refusal the dialog says itself: the writes stop there, with no toast to repeat it.
  */
 async function createOnNewPage(
 	subject: Subject,
@@ -1047,7 +1048,7 @@ async function createOnNewPage(
 	if ( title === null ) {
 		pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-required' );
 
-		throw new Error( pageTitleError.value );
+		throw new WriteRefusedError( pageTitleError.value );
 	}
 
 	await saveDraftSchema( comment );
@@ -1064,12 +1065,12 @@ async function createOnNewPage(
 	} catch ( error ) {
 		if ( error instanceof PageTitleTakenError ) {
 			pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-taken', error.pageTitle );
-			throw new Error( pageTitleError.value );
+			throw new WriteRefusedError( pageTitleError.value );
 		}
 
 		if ( error instanceof InvalidPageTitleError ) {
 			pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-invalid', error.pageTitle );
-			throw new Error( pageTitleError.value );
+			throw new WriteRefusedError( pageTitleError.value );
 		}
 
 		throw error;

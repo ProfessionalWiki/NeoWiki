@@ -34,6 +34,7 @@ import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { Subject } from '@/domain/Subject.ts';
 import type { InitialPage } from '@/components/SubjectCreator/InitialPage.ts';
+import { WriteRefusedError } from '@/components/SubjectEditor/WriteRefusedError.ts';
 
 const PAGE_ID = 123;
 const PAGE_TITLE = 'Test Page';
@@ -1219,6 +1220,38 @@ describe( 'SubjectCreatorDialog', () => {
 					.toContain( 'neowiki-subject-creator-page-title-required' );
 				expect( subjectStore.createSubjectPage ).not.toHaveBeenCalled();
 				expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+			} );
+
+			// The field says why, so the editor need not say it again.
+			it( 'stops the save over a missing title as a refusal it reports itself', async () => {
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+
+				await save( wrapper );
+
+				expect( lastSaveError ).toBeInstanceOf( WriteRefusedError );
+			} );
+
+			it( 'stops the save over a taken title as a refusal it reports itself', async () => {
+				( subjectStore.createSubjectPage as any ).mockRejectedValue( new PageTitleTakenError( 'Amsterdam' ) );
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await typeLabel( wrapper, 'Amsterdam' );
+
+				await save( wrapper );
+
+				expect( lastSaveError ).toBeInstanceOf( WriteRefusedError );
+			} );
+
+			it( 'stops the save over a title that titles no page as a refusal it reports itself', async () => {
+				( subjectStore.createSubjectPage as any ).mockRejectedValue( new InvalidPageTitleError( 'Help:Amsterdam' ) );
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await typeLabel( wrapper, 'Help:Amsterdam' );
+
+				await save( wrapper );
+
+				expect( lastSaveError ).toBeInstanceOf( WriteRefusedError );
 			} );
 
 			it( 'refuses a new page whose title was cleared, though the Subject has a label', async () => {

@@ -34,6 +34,7 @@ import { newSubject, unresolvedPage } from '@/TestHelpers.ts';
 import { StubSubjectRepository } from '@/domain/SubjectRepository.ts';
 import { SubjectCreationKey, type SubjectCreation } from '@/components/common/SubjectCreation.ts';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
+import { WriteRefusedError } from '@/components/SubjectEditor/WriteRefusedError.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 
 const $i18n = createI18nMock();
@@ -3003,6 +3004,17 @@ describe( 'SubjectEditorDialog', () => {
 				await triggerSave( wrapper, '' );
 
 				expect( subjectIdsPassedTo( onSave ) ).toEqual( [ rootSubjectId ] );
+			} );
+
+			// The host says why where it can be answered, so a toast would only say it twice.
+			it( 'adds no message of its own to a refusal the host reports itself', async () => {
+				const onCreate = vi.fn().mockRejectedValue( new WriteRefusedError( 'Give the page a title.' ) );
+				const { wrapper } = await mountReadyForCreation( { onCreate } );
+				await createReferencedTarget( wrapper );
+
+				await triggerSave( wrapper, '' );
+
+				expect( mw.notify ).not.toHaveBeenCalled();
 			} );
 
 			// Offering the same id again would be refused forever.
