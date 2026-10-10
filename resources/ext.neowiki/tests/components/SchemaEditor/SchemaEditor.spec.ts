@@ -74,6 +74,10 @@ function createWrapperWithPropertyEditor( schema: Schema ): VueWrapper {
 
 const LABEL_PANE_TEXT = 'neowiki-schema-editor-label-help';
 
+function selectedPropertyName( wrapper: VueWrapper ): string | undefined {
+	return wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' );
+}
+
 function findPaneAddButton( wrapper: VueWrapper ): DOMWrapper<Element> {
 	return wrapper.findAll( 'button' ).find( ( button ) => button.text() === 'neowiki-schema-editor-new-property' )!;
 }
@@ -110,8 +114,9 @@ describe( 'SchemaEditor', () => {
 
 		const wrapper = createWrapper( schema );
 
-		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'firstProp' );
+		expect( selectedPropertyName( wrapper ) ).toBe( 'firstProp' );
 		expect( wrapper.findComponent( { name: 'PropertyDefinitionEditor' } ).props( 'property' ).name.toString() ).toBe( 'firstProp' );
+		expect( wrapper.text() ).not.toContain( LABEL_PANE_TEXT );
 	} );
 
 	it( 'opens a schema without properties on the label pane', () => {
@@ -123,7 +128,7 @@ describe( 'SchemaEditor', () => {
 
 		const wrapper = createWrapper( schema );
 
-		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( undefined );
+		expect( selectedPropertyName( wrapper ) ).toBe( undefined );
 		expect( wrapper.text() ).toContain( LABEL_PANE_TEXT );
 		expect( wrapper.findComponent( { name: 'PropertyDefinitionEditor' } ).exists() ).toBe( false );
 	} );
@@ -144,7 +149,7 @@ describe( 'SchemaEditor', () => {
 
 		await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'labelSelected' );
 
-		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( undefined );
+		expect( selectedPropertyName( wrapper ) ).toBe( undefined );
 		expect( wrapper.text() ).toContain( LABEL_PANE_TEXT );
 		expect( wrapper.findComponent( { name: 'PropertyDefinitionEditor' } ).exists() ).toBe( false );
 	} );
@@ -184,7 +189,7 @@ describe( 'SchemaEditor', () => {
 
 		await propertyList.vm.$emit( 'propertyDeleted', schema.getPropertyDefinition( 'firstProp' ).name );
 
-		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'secondProp' );
+		expect( selectedPropertyName( wrapper ) ).toBe( 'secondProp' );
 	} );
 
 	it( 'maintains selection when non-selected property is deleted', async () => {
@@ -194,16 +199,17 @@ describe( 'SchemaEditor', () => {
 			new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
+				createPropertyDefinitionFromJson( 'thirdProp', { type: TextType.typeName } ),
 			] ),
 		);
 
 		const wrapper = createWrapper( schema );
 		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
 
-		await propertyList.vm.$emit( 'propertySelected', schema.getPropertyDefinition( 'secondProp' ).name );
+		await propertyList.vm.$emit( 'propertySelected', schema.getPropertyDefinition( 'thirdProp' ).name );
 		await propertyList.vm.$emit( 'propertyDeleted', schema.getPropertyDefinition( 'firstProp' ).name );
 
-		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'secondProp' );
+		expect( selectedPropertyName( wrapper ) ).toBe( 'thirdProp' );
 	} );
 
 	it( 'returns to the label pane when the last property is deleted', async () => {
@@ -213,7 +219,7 @@ describe( 'SchemaEditor', () => {
 
 		await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertyDeleted', new PropertyName( 'Alpha' ) );
 
-		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( undefined );
+		expect( selectedPropertyName( wrapper ) ).toBe( undefined );
 		expect( wrapper.text() ).toContain( LABEL_PANE_TEXT );
 	} );
 
@@ -281,15 +287,17 @@ describe( 'SchemaEditor', () => {
 		expect( wrapper.emitted( 'change' ) ).toHaveLength( 1 );
 	} );
 
-	it( 'names an added property after the New Property names already taken', async () => {
+	it( 'names each added property after the New Property names already taken', async () => {
 		const wrapper = createWrapper( newSchema( {
 			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'New Property 1' } ) ] ),
 		} ) );
 
 		await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'addProperty' );
+		await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'addProperty' );
 
 		const schema = ( wrapper.vm as unknown as SchemaEditorExposes ).getSchema();
-		expect( Object.keys( schema.getPropertyDefinitions().asRecord() ) ).toEqual( [ 'New Property 1', 'New Property 2' ] );
+		expect( Object.keys( schema.getPropertyDefinitions().asRecord() ) )
+			.toEqual( [ 'New Property 1', 'New Property 2', 'New Property 3' ] );
 	} );
 
 	it( 'emits change when a property is deleted', async () => {
@@ -385,7 +393,7 @@ describe( 'SchemaEditor', () => {
 
 		const wrapper = createWrapper( schema );
 
-		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'firstProp' );
+		expect( selectedPropertyName( wrapper ) ).toBe( 'firstProp' );
 
 		const newSchema = new Schema(
 			'UpdatedSchema',
@@ -399,7 +407,7 @@ describe( 'SchemaEditor', () => {
 		await wrapper.setProps( { initialSchema: newSchema } );
 
 		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getName() ).toBe( 'UpdatedSchema' );
-		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'alphaProperty' );
+		expect( selectedPropertyName( wrapper ) ).toBe( 'alphaProperty' );
 	} );
 
 	it( 'does not emit change when a property is selected', async () => {
@@ -505,7 +513,7 @@ describe( 'SchemaEditor', () => {
 			await findPaneAddButton( wrapper ).trigger( 'click' );
 			await flushPromises();
 
-			expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'New Property 1' );
+			expect( selectedPropertyName( wrapper ) ).toBe( 'New Property 1' );
 			expect( selectedText( findPropertyNameInput( wrapper ).element ) ).toBe( 'New Property 1' );
 		} );
 
@@ -517,7 +525,7 @@ describe( 'SchemaEditor', () => {
 			await findPaneAddButton( wrapper ).trigger( 'click' );
 			await flushPromises();
 
-			expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' ) ).toBe( 'New Property 1' );
+			expect( selectedPropertyName( wrapper ) ).toBe( 'New Property 1' );
 			expect( selectedText( findPropertyNameInput( wrapper ).element ) ).toBe( 'New Property 1' );
 		} );
 
