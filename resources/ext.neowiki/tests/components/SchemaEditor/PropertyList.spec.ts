@@ -136,6 +136,14 @@ describe( 'PropertyList', () => {
 		expect( highlightedRowTitles( wrapper ) ).toEqual( [ LABEL_ROW_TITLE ] );
 	} );
 
+	it( 'moves the selection to the Label row once no property is selected', async () => {
+		const wrapper = createWrapper( properties, 'Alpha' );
+
+		await wrapper.setProps( { selectedPropertyName: undefined } );
+
+		expect( selectedRowTitles( wrapper ) ).toEqual( [ LABEL_ROW_TITLE ] );
+	} );
+
 	it( 'selects a property named Label as that property, not as the Label row', () => {
 		const wrapper = createWrapper(
 			new PropertyDefinitionList( [ property1, createPropertyDefinitionFromJson( 'Label', { type: TextType.typeName } ) ] ),
