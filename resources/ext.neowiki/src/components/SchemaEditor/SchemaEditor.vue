@@ -8,7 +8,7 @@
 			:id="propertyListId"
 			:properties="currentSchema.getPropertyDefinitions()"
 			:selected-property-name="selectedPropertyName"
-			@label-selected="onLabelSelected"
+			@subject-label-selected="onSubjectLabelSelected"
 			@property-selected="onPropertySelected"
 			@add-property="addProperty"
 			@property-deleted="onPropertyDeleted"
@@ -36,11 +36,11 @@
 				@update:property-definition="onPropertyUpdated"
 			/>
 			<template v-else>
-				<h3 class="ext-neowiki-schema-editor__label-heading">
-					{{ $i18n( 'neowiki-schema-editor-label' ).text() }}
+				<h3 class="ext-neowiki-schema-editor__subject-label-heading">
+					{{ $i18n( 'neowiki-schema-editor-subject-label' ).text() }}
 				</h3>
-				<p class="ext-neowiki-schema-editor__label-help">
-					{{ $i18n( 'neowiki-schema-editor-label-help' ).text() }}
+				<p class="ext-neowiki-schema-editor__subject-label-help">
+					{{ $i18n( 'neowiki-schema-editor-subject-label-help' ).text() }}
 				</p>
 			</template>
 			<CdxButton
@@ -145,7 +145,7 @@ const otherPropertyNames = computed( (): string[] =>
 		.filter( ( name ) => name !== selectedPropertyName.value )
 );
 
-function onLabelSelected(): void {
+function onSubjectLabelSelected(): void {
 	selectProperty( undefined );
 }
 
@@ -322,13 +322,13 @@ defineExpose<SchemaEditorExposes>( {
 			}
 		}
 
-		&__label-heading {
+		&__subject-label-heading {
 			margin: 0;
 			padding-block: 0;
 			font-size: @font-size-medium;
 		}
 
-		&__label-help {
+		&__subject-label-help {
 			margin: @spacing-50 0 0;
 		}
 

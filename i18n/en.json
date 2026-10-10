@@ -161,9 +161,9 @@
 
 	"neowiki-schema-editor-new-property": "Add property definition",
 	"neowiki-schema-editor-delete-property": "Delete property definition",
-	"neowiki-schema-editor-label": "Label",
-	"neowiki-schema-editor-label-description": "Built-in subject name",
-	"neowiki-schema-editor-label-help": "Each subject can have a label: the name it is shown under. You do not need a Name or Title property for this. You set the label in the heading of the subject editor.",
+	"neowiki-schema-editor-subject-label": "Label",
+	"neowiki-schema-editor-subject-label-description": "Built-in subject name",
+	"neowiki-schema-editor-subject-label-help": "Each subject can have a label: the name it is shown under. You do not need a Name or Title property for this. You set the label in the heading of the subject editor.",
 	"neowiki-schema-editor-optional": "Optional",
 	"neowiki-schema-editor-description": "Description",
 	"neowiki-schema-editor-resize-property-list": "Resize property list",

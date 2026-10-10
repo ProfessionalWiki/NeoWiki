@@ -72,7 +72,7 @@ function createWrapperWithPropertyEditor( schema: Schema ): VueWrapper {
 	} );
 }
 
-const LABEL_PANE_TEXT = 'neowiki-schema-editor-label-help';
+const LABEL_PANE_TEXT = 'neowiki-schema-editor-subject-label-help';
 
 function selectedPropertyName( wrapper: VueWrapper ): string | undefined {
 	return wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' );
@@ -147,7 +147,7 @@ describe( 'SchemaEditor', () => {
 			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Alpha' } ) ] ),
 		} ) );
 
-		await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'labelSelected' );
+		await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'subjectLabelSelected' );
 
 		expect( selectedPropertyName( wrapper ) ).toBe( undefined );
 		expect( wrapper.text() ).toContain( LABEL_PANE_TEXT );
@@ -605,7 +605,7 @@ describe( 'SchemaEditor', () => {
 		it( 'names an incomplete property while the label pane is shown', async () => {
 			const wrapper = createWrapper( schemaWith( relationPropertyWithoutTarget( 'Maker' ) ) );
 
-			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'labelSelected' );
+			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'subjectLabelSelected' );
 
 			expect( saveBlocker( wrapper )?.propertyName ).toBe( 'Maker' );
 		} );

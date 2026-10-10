@@ -9,10 +9,10 @@
 			<li
 				role="option"
 				class="ext-neowiki-property-list__item ext-neowiki-property-list__item--subject-label"
-				:class="{ 'ext-neowiki-property-list__item--selected': labelSelected }"
-				:aria-selected="labelSelected"
-				:tabindex="labelSelected ? 0 : -1"
-				@click="emit( 'labelSelected' )"
+				:class="{ 'ext-neowiki-property-list__item--selected': isSubjectLabelSelected }"
+				:aria-selected="isSubjectLabelSelected"
+				:tabindex="isSubjectLabelSelected ? 0 : -1"
+				@click="emit( 'subjectLabelSelected' )"
 			>
 				<CdxIcon
 					class="ext-neowiki-property-list__item__icon"
@@ -20,10 +20,10 @@
 				/>
 				<span class="ext-neowiki-property-list__item__text">
 					<span class="ext-neowiki-property-list__item__text__label">
-						{{ $i18n( 'neowiki-schema-editor-label' ).text() }}
+						{{ $i18n( 'neowiki-schema-editor-subject-label' ).text() }}
 					</span>
 					<span class="ext-neowiki-property-list__item__text__description">
-						{{ $i18n( 'neowiki-schema-editor-label-description' ).text() }}
+						{{ $i18n( 'neowiki-schema-editor-subject-label-description' ).text() }}
 					</span>
 				</span>
 			</li>
@@ -35,7 +35,7 @@
 				:class="{ 'ext-neowiki-property-list__item--selected': isSelected( property ) }"
 				:aria-selected="isSelected( property )"
 				:tabindex="isSelected( property ) ? 0 : -1"
-				@click="onItemClick( property.name.toString() )"
+				@click="emit( 'propertySelected', property.name )"
 			>
 				<CdxIcon
 					v-if="getPropertyIcon( property )"
@@ -59,7 +59,7 @@
 						:aria-label="$i18n( 'neowiki-schema-editor-delete-property' ).text()"
 						weight="quiet"
 						action="destructive"
-						@click.stop="onDeleteProperty( property.name.toString() )"
+						@click.stop="emit( 'propertyDeleted', property.name )"
 					>
 						<CdxIcon :icon="cdxIconTrash" />
 					</CdxButton>
@@ -107,7 +107,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-	labelSelected: [];
+	subjectLabelSelected: [];
 	propertySelected: [ name: PropertyName ];
 	addProperty: [];
 	propertyDeleted: [ name: PropertyName ];
@@ -120,7 +120,7 @@ const listRef = ref<HTMLElement | null>( null );
 
 const propertyArray = computed( (): PropertyDefinition[] => [ ...props.properties ] );
 
-const labelSelected = computed( (): boolean => props.selectedPropertyName === undefined );
+const isSubjectLabelSelected = computed( (): boolean => props.selectedPropertyName === undefined );
 
 function isSelected( property: PropertyDefinition ): boolean {
 	return property.name.toString() === props.selectedPropertyName;
@@ -135,14 +135,6 @@ function getPropertyDescription( property: PropertyDefinition ): string {
 	return property.required ? typeLabel : `${ typeLabel }・${ mw.msg( 'neowiki-schema-editor-optional' ) }`;
 }
 
-function onItemClick( propertyName: string ): void {
-	emit( 'propertySelected', new PropertyName( propertyName ) );
-}
-
-function onDeleteProperty( propertyName: string ): void {
-	emit( 'propertyDeleted', new PropertyName( propertyName ) );
-}
-
 // Indexes below are into the properties, with the Label row before them as -1.
 function getSelectedIndex(): number {
 	return propertyArray.value.findIndex( isSelected );
@@ -155,9 +147,9 @@ function focusItem( index: number ): void {
 
 function selectAndFocus( index: number ): void {
 	if ( index === -1 ) {
-		emit( 'labelSelected' );
+		emit( 'subjectLabelSelected' );
 	} else {
-		onItemClick( propertyArray.value[ index ].name.toString() );
+		emit( 'propertySelected', propertyArray.value[ index ].name );
 	}
 
 	focusItem( index );

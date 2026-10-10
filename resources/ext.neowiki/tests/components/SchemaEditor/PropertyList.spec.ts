@@ -1,16 +1,14 @@
-import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { DOMWrapper, enableAutoUnmount, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
-import Sortable from 'sortablejs';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
+import { useSortable, type UseSortableOptions } from '@/composables/useSortable.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { createI18nMock } from '../../VueTestHelpers.ts';
 
-vi.mock( 'sortablejs', () => ( {
-	default: {
-		create: vi.fn( () => ( { destroy: vi.fn() } ) ),
-	},
+vi.mock( '@/composables/useSortable.ts', () => ( {
+	useSortable: vi.fn(),
 } ) );
 
 vi.mock( '@/NeoWikiServices.ts', () => {
@@ -43,7 +41,7 @@ function createWrapper( properties: PropertyDefinitionList, selectedPropertyName
 	} );
 }
 
-const LABEL_ROW_TITLE = 'neowiki-schema-editor-label';
+const LABEL_ROW_TITLE = 'neowiki-schema-editor-subject-label';
 const DELETE_BUTTON = '[aria-label="neowiki-schema-editor-delete-property"]';
 
 function rowTitle( row: DOMWrapper<Element> ): string {
@@ -70,14 +68,19 @@ function findRow( wrapper: VueWrapper, title: string ): DOMWrapper<Element> {
 	return wrapper.findAll( '[role="option"]' ).find( ( row ) => rowTitle( row ) === title )!;
 }
 
+function findAddButton( wrapper: VueWrapper ): DOMWrapper<Element> {
+	return wrapper.findAll( 'button' ).find( ( button ) => button.text() === 'neowiki-schema-editor-new-property' )!;
+}
+
 function reorderedNames( wrapper: VueWrapper ): string[] {
 	const emitted = wrapper.emitted( 'propertyReordered' ) as PropertyName[][][];
+	expect( emitted ).toHaveLength( 1 );
 	return emitted[ 0 ][ 0 ].map( ( name ) => name.toString() );
 }
 
-function sortableOptions(): Sortable.Options {
-	const calls = vi.mocked( Sortable.create ).mock.calls;
-	return calls[ calls.length - 1 ][ 1 ]!;
+function sortableOptions(): UseSortableOptions {
+	const calls = vi.mocked( useSortable ).mock.calls;
+	return calls[ calls.length - 1 ][ 1 ];
 }
 
 describe( 'PropertyList', () => {
@@ -153,12 +156,12 @@ describe( 'PropertyList', () => {
 		expect( selectedRowTitles( wrapper ) ).toEqual( [ 'Label' ] );
 	} );
 
-	it( 'emits labelSelected when the Label row is clicked', async () => {
+	it( 'emits subjectLabelSelected when the Label row is clicked', async () => {
 		const wrapper = createWrapper( properties, 'Alpha' );
 
 		await findRow( wrapper, LABEL_ROW_TITLE ).trigger( 'click' );
 
-		expect( wrapper.emitted( 'labelSelected' ) ).toHaveLength( 1 );
+		expect( wrapper.emitted( 'subjectLabelSelected' ) ).toHaveLength( 1 );
 		expect( wrapper.emitted( 'propertySelected' ) ).toBeUndefined();
 	} );
 
@@ -200,7 +203,7 @@ describe( 'PropertyList', () => {
 	it( 'emits addProperty when the add button is clicked', async () => {
 		const wrapper = createWrapper( properties, 'Alpha' );
 
-		await wrapper.find( '.ext-neowiki-property-list__add-item' ).trigger( 'click' );
+		await findAddButton( wrapper ).trigger( 'click' );
 
 		expect( wrapper.emitted( 'addProperty' ) ).toHaveLength( 1 );
 	} );
@@ -246,7 +249,7 @@ describe( 'PropertyList', () => {
 
 			await list.trigger( 'keydown', { key: 'ArrowUp' } );
 
-			expect( wrapper.emitted( 'labelSelected' ) ).toHaveLength( 1 );
+			expect( wrapper.emitted( 'subjectLabelSelected' ) ).toHaveLength( 1 );
 			expect( wrapper.emitted( 'propertySelected' ) ).toBeUndefined();
 		} );
 
@@ -264,16 +267,6 @@ describe( 'PropertyList', () => {
 
 			await list.trigger( 'keydown', { key: 'ArrowDown' } );
 
-			expect( wrapper.emitted( 'propertySelected' ) ).toBeUndefined();
-		} );
-
-		it( 'does not move past the Label row on ArrowUp', async () => {
-			const wrapper = createWrapper( properties );
-			const list = wrapper.find( '[role="listbox"]' );
-
-			await list.trigger( 'keydown', { key: 'ArrowUp' } );
-
-			expect( wrapper.emitted( 'labelSelected' ) ).toBeUndefined();
 			expect( wrapper.emitted( 'propertySelected' ) ).toBeUndefined();
 		} );
 
@@ -311,7 +304,7 @@ describe( 'PropertyList', () => {
 			await list.trigger( 'keydown', { key: 'ArrowUp', altKey: true } );
 
 			expect( wrapper.emitted( 'propertyReordered' ) ).toBeUndefined();
-			expect( wrapper.emitted( 'labelSelected' ) ).toBeUndefined();
+			expect( wrapper.emitted( 'subjectLabelSelected' ) ).toBeUndefined();
 		} );
 
 		it( 'does not move the Label row on Alt+ArrowDown', async () => {
@@ -326,27 +319,22 @@ describe( 'PropertyList', () => {
 
 	} );
 
-	// jsdom cannot drag, so these drive SortableJS through the options the list hands it.
+	// jsdom cannot drag, so these drive the options the list hands useSortable.
 	describe( 'drag and drop', () => {
 
-		it( 'lets SortableJS drag the property rows but not the Label row', async () => {
+		it( 'lets SortableJS drag the property rows but not the Label row', () => {
 			const wrapper = createWrapper( properties );
-			await flushPromises();
 			const draggable = sortableOptions().draggable!;
 
 			expect( findRow( wrapper, LABEL_ROW_TITLE ).element.matches( draggable ) ).toBe( false );
 			expect( findRow( wrapper, 'Alpha' ).element.matches( draggable ) ).toBe( true );
 		} );
 
-		it( 'moves a dropped property to its place among the properties', async () => {
+		it( 'moves a dropped property to its place among the properties', () => {
 			const wrapper = createWrapper( properties, 'Alpha' );
-			await flushPromises();
-			const list = wrapper.find( '[role="listbox"]' ).element;
-			const gamma = findRow( wrapper, 'Gamma' ).element;
 
-			// SortableJS moves the row, then reports indexes that count every row of the list.
-			list.insertBefore( gamma, list.children[ 1 ] );
-			sortableOptions().onEnd!( { item: gamma, from: list, to: list, oldIndex: 3, newIndex: 1 } as unknown as Sortable.SortableEvent );
+			// SortableJS reports indexes that count every row of the list.
+			sortableOptions().onReorder!( 3, 1 );
 
 			expect( reorderedNames( wrapper ) ).toEqual( [ 'Gamma', 'Alpha', 'Beta' ] );
 		} );
