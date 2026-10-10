@@ -379,7 +379,7 @@ install-db:
 	$(EXEC_MW_ROOT) rm LocalSettings.php
 	$(EXEC_MW_ROOT) mv __LocalSettings.php LocalSettings.php
 	$(EXEC_MW_ROOT) php maintenance/run.php update --quick
-	echo '{{subst:int:neowiki-main-page-text}}' | $(DC) exec -T -e QLEVER_URL= mediawiki \
+	echo '{{subst:int:neowiki-main-page-text}}' | $(EXEC_MW_ROOT) env QLEVER_URL= \
 		php maintenance/run.php edit --user 'MediaWiki default' --summary 'NeoWiki starter page' 'Main Page'
 
 load-neo4j-users:
