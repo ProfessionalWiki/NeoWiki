@@ -83,11 +83,11 @@
 	>
 		<template #before-actions>
 			<CdxMessage
-				v-if="pageError !== null"
+				v-if="footerError !== null"
 				type="error"
 				:inline="true"
 			>
-				{{ pageError }}
+				{{ footerError }}
 			</CdxMessage>
 
 			<!-- Which of the two it is decides whether the Subject becomes the page's topic or joins
@@ -134,10 +134,11 @@
 				@update:open="onDestinationOpenChanged( $event )"
 			>
 				<PagePickerPanel
-					:pinned-pages="destinationIsOpenToChange ? pinnedPages : []"
+					:pinned-pages="pinnedPages"
 					:existing-pages-only="destinationIsOpenToChange && onlyExistingPagesMayBeChosen"
 					:new-page-only="newPageTitleIsOpenToChange"
 					:aria-label="$i18n( 'neowiki-subject-creator-page-field' ).text()"
+					:error="pageTitleError"
 					@update:selected="onDestinationPicked"
 				/>
 			</NeoSplitButton>
@@ -187,6 +188,7 @@ import type { InitialPage, SubjectPageChoice } from '@/components/SubjectCreator
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError.ts';
 import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError.ts';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError.ts';
+import { WriteRefusedError } from '@/components/SubjectEditor/WriteRefusedError.ts';
 import SchemaAbandonmentDialog from '@/components/SubjectCreator/SchemaAbandonmentDialog.vue';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
@@ -265,7 +267,7 @@ const chosenPageMainSubjectName = ref<string | null>( null );
 
 const editorRef = ref<InstanceType<typeof SubjectEditorDialog> | null>( null );
 
-// The title typed, cleared included, or the caller's; while null, the title follows the label.
+// The title given in the popover, or by the caller; while null, the title follows the label.
 const typedPageTitle = ref<string | null>( null );
 
 // What was refused about the title of the page to create: none given, one already taken, or
@@ -309,13 +311,6 @@ function defaultPageChoice(): SubjectPageChoice {
 // and drop whatever they had answered with it.
 const pageChoice = ref<SubjectPageChoice | null>( null );
 
-// The answer the page question starts from. On a page-first wiki the section starts open where
-// that answer still needs something filled in, a title or a page to pick, rather than leaving it
-// for a save to refuse.
-function startPageQuestion(): void {
-	pageChoice.value = defaultPageChoice();
-}
-
 // A new page is titled here, unless the caller titled it, or the wiki is subject-first and titles
 // a Subject's own page itself (ADR 33).
 const asksPageTitle = computed( (): boolean =>
@@ -323,17 +318,12 @@ const asksPageTitle = computed( (): boolean =>
 
 // Where a title is asked for, it follows the label of the Subject being created, so its name is
 // typed once, until the user types a title of their own.
-const pageTitle = computed( {
-	get: (): string => {
-		if ( typedPageTitle.value !== null ) {
-			return typedPageTitle.value;
-		}
-
-		return asksPageTitle.value ? editorRef.value?.rootLabel ?? '' : '';
-	},
-	set: ( title: string ): void => {
-		typedPageTitle.value = title;
+const pageTitle = computed( (): string => {
+	if ( typedPageTitle.value !== null ) {
+		return typedPageTitle.value;
 	}
+
+	return asksPageTitle.value ? editorRef.value?.rootLabel ?? '' : '';
 } );
 
 // The destination is stated by the button; this is the picker it opens to change it.
@@ -345,23 +335,6 @@ function hostPageId(): number {
 
 function hostPageName(): string {
 	return String( mw.config.get( 'wgPageName' ) ?? '' ).replace( /_/g, ' ' );
-}
-
-/**
- * The title asked for a page to create, or the label it would otherwise be named after. What the
- * button says, where it has something short to say.
- */
-function askedOrLabelledTitle( rootLabel: string ): string | undefined {
-	return enteredPageTitle() ?? ( rootLabel.trim() || undefined );
-}
-
-/**
- * What the page created for this Subject will be titled: the title asked for, else the label it is
- * named after. Nothing where there is neither, a page-first wiki having no other name to give it -
- * which the save says rather than inventing one.
- */
-function newPageTitle( rootLabel: string ): string | undefined {
-	return askedOrLabelledTitle( rootLabel );
 }
 
 /**
@@ -380,6 +353,10 @@ const labelWhenDestinationOpened = ref( '' );
 const pinnedPages = computed( (): PinnedPage[] => {
 	const pinned: PinnedPage[] = [];
 
+	if ( !destinationIsOpenToChange.value ) {
+		return pinned;
+	}
+
 	if ( props.hostPage !== null ) {
 		pinned.push( {
 			label: hostPageName(),
@@ -388,20 +365,21 @@ const pinnedPages = computed( (): PinnedPage[] => {
 		} );
 	}
 
-	// Named after the Subject once there is one, which there is whenever this footer is rendered.
-	const newPage = newPageTitle( labelWhenDestinationOpened.value ) ??
-		mw.msg( 'neowiki-subject-creator-page-new' );
+	// Picking it titles the page after the label, so it is named after the label, whatever title
+	// was typed since: that title is the button's to state. Without a label it is named by what it
+	// is, which then needs no saying underneath.
+	const label = labelWhenDestinationOpened.value.trim();
+	const newPage = mw.msg( 'neowiki-subject-creator-page-new' );
 
 	if ( canCreateSubjectPage.value ) {
-		// An empty title leaves the naming to the label, as the page title field did.
 		pinned.push( {
-			label: newPage,
-			description: mw.msg( 'neowiki-subject-creator-page-new' ),
+			label: label || newPage,
+			description: label === '' ? undefined : newPage,
 			page: { pageId: null, title: '' }
 		} );
 	} else if ( !isSubjectFirst() ) {
 		pinned.push( {
-			label: newPage,
+			label: label || newPage,
 			description: mw.msg( 'neowiki-subject-creator-page-new-denied' ),
 			disabled: true,
 			page: { pageId: null, title: '' }
@@ -413,10 +391,16 @@ const pinnedPages = computed( (): PinnedPage[] => {
 
 function onDestinationOpenChanged( open: boolean ): void {
 	if ( open ) {
-		labelWhenDestinationOpened.value = editorRef.value?.rootLabel ?? '';
+		openDestination();
+		return;
 	}
 
-	destinationOpen.value = open;
+	destinationOpen.value = false;
+}
+
+function openDestination(): void {
+	labelWhenDestinationOpened.value = editorRef.value?.rootLabel ?? '';
+	destinationOpen.value = true;
 }
 
 /**
@@ -480,9 +464,9 @@ const createButtonLabel = computed( (): string => {
 			mw.msg( 'neowiki-subject-creator-save-on-page', title );
 	}
 
-	const title = askedOrLabelledTitle( editorRef.value?.rootLabel ?? '' );
+	const title = enteredPageTitle();
 
-	return title === undefined ?
+	return title === null ?
 		mw.msg( 'neowiki-subject-creator-save-on-a-new-page' ) :
 		mw.msg( 'neowiki-subject-creator-save-on-new-page', title );
 } );
@@ -509,7 +493,7 @@ async function onDestinationPicked( picked: PageChoice | null ): Promise<void> {
 		await nextTick();
 
 		if ( picked.title !== '' ) {
-			pageTitle.value = picked.title;
+			typedPageTitle.value = picked.title;
 		}
 
 		return;
@@ -534,9 +518,11 @@ const shownNotices = computed( () => pageChoice.value === 'thisPage' ? notices.v
 // Each choice answers the page question its own way, so what the previous one answered is gone.
 watch( pageChoice, resetPageChoice );
 
-// One message per field: each of these belongs to a different page choice, so no two of them can
-// be standing at once.
-const pageError = computed( (): string | null => pageTitleError.value ?? pageReadError.value );
+// One message at a time: each of these belongs to a different page choice, so no two of them can
+// be standing at once. A refused title is shown in the popover instead while that is open, since
+// the popover stands over the footer.
+const footerError = computed( (): string | null =>
+	destinationOpen.value ? pageReadError.value : pageTitleError.value ?? pageReadError.value );
 
 // Answered, and answerable: a page still to be picked leaves the question open, and a page that
 // could not be read leaves it unanswerable — what that page holds decides whether the Subject
@@ -620,7 +606,7 @@ async function applyInitialPageTarget(): Promise<void> {
 	await nextTick();
 
 	if ( named.pageId === null ) {
-		pageTitle.value = named.title;
+		typedPageTitle.value = named.title;
 		return;
 	}
 
@@ -631,7 +617,7 @@ async function applyInitialPageTarget(): Promise<void> {
 // dialog fetches them itself. These are the page's, for the step that comes first.
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen && props.hostPage !== null ) {
-		loadNotices( Number( mw.config.get( 'wgArticleId' ) ) );
+		loadNotices( hostPageId() );
 	}
 } );
 
@@ -728,7 +714,7 @@ const toggleButtons = [
 
 onMounted( async () => {
 	await Promise.all( [ checkCreatePermission(), checkCreateSubjectPagePermission() ] );
-	startPageQuestion();
+	pageChoice.value = defaultPageChoice();
 
 	// Already open: the open watcher ran before pageChoice existed.
 	if ( props.open ) {
@@ -863,7 +849,7 @@ async function handleCreateSchema(): Promise<void> {
  */
 function answeredPageId(): number | null {
 	if ( pageChoice.value === 'thisPage' ) {
-		return Number( mw.config.get( 'wgArticleId' ) );
+		return hostPageId();
 	}
 
 	return pageChoice.value === 'anotherPage' ? chosenPage.value?.pageId ?? null : null;
@@ -872,7 +858,7 @@ function answeredPageId(): number | null {
 /**
  * Where the root's write put it, once it has landed. Taken from the write rather than read again
  * from the footer, which stays live while the rest of the save is out: a Subject created alongside
- * the root goes where the root went, whatever the fields say by then.
+ * the root goes where the root went, whatever the footer says by then.
  */
 let writtenRoot: { subjectId: SubjectId; pageId: number | null; pageTitle: string | null } | null = null;
 
@@ -997,8 +983,8 @@ async function createBesideMainSubject(
 }
 
 /**
- * The two ways the server refuses a title are answered at the field it was typed in, and reported
- * as the save's own failure too: the writes stop there, and the toast is what says so.
+ * A title missing, or one the server refuses, stops the save as a refusal the dialog says itself,
+ * where a title is given.
  */
 async function createOnNewPage(
 	subject: Subject,
@@ -1016,9 +1002,7 @@ async function createOnNewPage(
 	// A page-first wiki names a page after the Subject, so a Subject nobody has named leaves it
 	// nothing to be called and the question comes back rather than a page titled by an id.
 	if ( title === null ) {
-		pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-required' );
-
-		throw new Error( pageTitleError.value );
+		refuseTitle( mw.msg( 'neowiki-subject-creator-page-title-required' ) );
 	}
 
 	await saveDraftSchema( comment );
@@ -1034,17 +1018,35 @@ async function createOnNewPage(
 		);
 	} catch ( error ) {
 		if ( error instanceof PageTitleTakenError ) {
-			pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-taken', error.pageTitle );
-			throw new Error( pageTitleError.value );
+			// Where only the title is the user's to change, choosing that page instead is no answer.
+			refuseTitle( mw.msg(
+				newPageTitleIsOpenToChange.value ?
+					'neowiki-subject-creator-page-taken-retitle' :
+					'neowiki-subject-creator-page-taken',
+				error.pageTitle
+			) );
 		}
 
 		if ( error instanceof InvalidPageTitleError ) {
-			pageTitleError.value = mw.msg( 'neowiki-subject-creator-page-title-invalid', error.pageTitle );
-			throw new Error( pageTitleError.value );
+			refuseTitle( mw.msg( 'neowiki-subject-creator-page-title-invalid', error.pageTitle ) );
 		}
 
 		throw error;
 	}
+}
+
+/**
+ * Stops the save over the title of the page to create, saying why where a title is given: in the
+ * popover, opened a task later, once the save has let go of the footer.
+ */
+function refuseTitle( reason: string ): never {
+	pageTitleError.value = reason;
+
+	if ( destinationPopoverOffered.value ) {
+		setTimeout( openDestination );
+	}
+
+	throw new WriteRefusedError( reason );
 }
 
 // A changed title answers the one refused, whichever way it was refused, typed or filled in from
@@ -1136,7 +1138,7 @@ function resetForm(): void {
 	// Back to where a fresh open starts, unless the permission answer that decides it has yet to
 	// land, in which case no choice is being offered to reset.
 	if ( pageChoice.value !== null ) {
-		startPageQuestion();
+		pageChoice.value = defaultPageChoice();
 	}
 
 	resetPageChoice();
@@ -1163,10 +1165,6 @@ defineExpose( { hasChanged } );
 		.cdx-toggle-button {
 			flex-grow: 1;
 		}
-	}
-
-	&-page-title-field {
-		margin-top: @spacing-75;
 	}
 
 	&-page-note {

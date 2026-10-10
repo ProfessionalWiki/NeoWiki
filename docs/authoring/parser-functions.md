@@ -164,7 +164,8 @@ Renders a button that opens the Subject creator without leaving the page.
 
 ### Notes
 
-- With `page`, the user cannot change where the Subject goes. Without it, the creator asks, starting from a new page.
+- With `page`, the user cannot change where the Subject goes. Without it, the creator asks on a page-first wiki, starting
+  from a new page.
 - The Subject becomes the page's Main Subject where that page has none, and joins the existing Subjects otherwise.
 - A user who may not create the Subject is told why on clicking the button.
 - The button appears once the page's JavaScript has loaded.

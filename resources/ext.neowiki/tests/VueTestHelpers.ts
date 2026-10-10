@@ -171,7 +171,7 @@ export interface MwMockOptions {
 	/** The languages mw.language.getData reports names for, keyed by language code. */
 	languageNames?: Record<string, string>;
 	functions?: (
-		'config' | 'message' | 'msg' | 'notify' | 'storage' | 'util' | 'language'
+		'config' | 'message' | 'msg' | 'notify' | 'storage' | 'util' | 'language' | 'Title'
 	)[];
 }
 
@@ -188,6 +188,7 @@ export function setupMwMock(
 			'msg',
 			'notify',
 			'language',
+			'Title',
 		],
 	} = options;
 
@@ -250,6 +251,17 @@ export function setupMwMock(
 			// MediaWiki formats a number the way the interface language writes it; the fake groups its digits the
 			// English way, so a spec can tell a formatted number from a bare one.
 			convertNumber: vi.fn( ( number: number ) => number.toLocaleString( 'en-US' ) ),
+		} ),
+		// MediaWiki's title rules as far as specs ask about them: underscores read as spaces, and a
+		// title starts upper case, as on a wiki with the default $wgCapitalLinks.
+		Title: () => ( {
+			newFromText: vi.fn( ( text: string ) => {
+				const spaced = text.replace( /[\s_]+/g, ' ' ).trim();
+
+				return spaced === '' ? null : {
+					getPrefixedText: () => spaced.charAt( 0 ).toUpperCase() + spaced.slice( 1 ),
+				};
+			} ),
 		} ),
 		util: () => ( {
 			wikiScript: vi.fn( () => '/rest.php' ),

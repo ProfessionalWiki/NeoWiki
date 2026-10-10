@@ -40,7 +40,7 @@ let delegatedKeys: string[] = [];
 const CdxSearchInputWithVModel = {
 	name: 'CdxSearchInput',
 	template: '<input class="search" :value="modelValue" @keydown="$emit( \'keydown\', $event )">',
-	props: [ 'modelValue', 'placeholder', 'ariaLabel' ],
+	props: [ 'modelValue', 'placeholder', 'ariaLabel', 'status' ],
 	emits: [ 'update:modelValue', 'keydown' ],
 };
 
@@ -156,6 +156,25 @@ describe( 'PagePickerPanel', () => {
 		await pick( wrapper, CREATE_PAGE );
 
 		expect( lastSelection( wrapper ) ).toEqual( { pageId: null, title: 'Vermeer' } );
+	} );
+
+	// Created under that title, it would only be refused as taken: the page found is the answer.
+	it( 'offers no page to create under the title of a page it found', async () => {
+		foundPages( [ { pageId: 12, title: 'Amsterdam Museum' }, { pageId: 34, title: 'Amsterdam' } ] );
+		const wrapper = createWrapper();
+
+		await search( wrapper, 'amsterdam' );
+
+		expect( footerOf( wrapper ) ).toBeUndefined();
+	} );
+
+	it( 'offers a page to create beside pages whose titles only begin with what was typed', async () => {
+		foundPages( [ { pageId: 12, title: 'Amsterdam Museum' } ] );
+		const wrapper = createWrapper();
+
+		await search( wrapper, 'Amsterdam' );
+
+		expect( footerOf( wrapper )?.value ).toBe( CREATE_PAGE );
 	} );
 
 	it( 'offers no page to create where the host allows only pages that exist', async () => {
@@ -386,6 +405,21 @@ describe( 'PagePickerPanel', () => {
 	 * For a host whose destination is fixed at a page to create and open only as to what that page
 	 * is called: offering any other page would unfix what the host fixed, so none is looked for.
 	 */
+	describe( 'a refusal its host reports', () => {
+		it( 'says why with the field', () => {
+			const wrapper = createWrapper( { error: 'Give the page a title.' } );
+
+			expect( wrapper.find( '.cdx-message' ).text() ).toBe( 'Give the page a title.' );
+			expect( wrapper.findComponent( CdxSearchInputWithVModel ).props( 'status' ) ).toBe( 'error' );
+		} );
+
+		it( 'says nothing while nothing was refused', () => {
+			const wrapper = createWrapper();
+
+			expect( wrapper.find( '.cdx-message' ).exists() ).toBe( false );
+		} );
+	} );
+
 	describe( 'asked for nothing but a page to create', () => {
 		it( 'offers that option alone', async () => {
 			foundPages( [ { pageId: 12, title: 'Amsterdam Museum' } ] );
@@ -413,6 +447,14 @@ describe( 'PagePickerPanel', () => {
 			expect( mockPageTitleSearch.searchPageTitles ).not.toHaveBeenCalled();
 		} );
 
+		// What is typed is no search but the title of the page to create.
+		it( 'asks for a page title', () => {
+			const wrapper = createWrapper( { newPageOnly: true } );
+
+			expect( wrapper.findComponent( CdxSearchInputWithVModel ).props( 'placeholder' ) )
+				.toBe( 'neowiki-page-picker-title-placeholder' );
+		} );
+
 		it( 'reports the title typed as the page to create', async () => {
 			const wrapper = createWrapper( { newPageOnly: true } );
 			await search( wrapper, 'Ada Lovelace' );
@@ -421,20 +463,6 @@ describe( 'PagePickerPanel', () => {
 
 			expect( lastSelection( wrapper ) ).toEqual( { pageId: null, title: 'Ada Lovelace' } );
 		} );
-	} );
-
-	it( 'leaves out the page its host excluded', async () => {
-		foundPages( [
-			{ pageId: 12, title: 'Amsterdam Museum' },
-			{ pageId: 7, title: 'Rembrandt van Rijn' },
-			{ pageId: 34, title: 'Amsterdam' },
-		] );
-		const wrapper = createWrapper( { excludedPageId: 7 } );
-
-		await search( wrapper, 'a' );
-
-		expect( menuItemsOf( wrapper ).map( ( item ) => item.label ) )
-			.toEqual( [ 'Amsterdam Museum', 'Amsterdam' ] );
 	} );
 
 	// It reports a choice and its host closes it, so there is no selection to keep - and the same
