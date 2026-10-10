@@ -25,7 +25,7 @@ function testContains {
 
 mainPage=`curl -fsSL http://localhost:${MW_SERVER_PORT}/index.php/Main_Page`
 
-testContains "$mainPage" "MediaWiki has been installed" "Main page requires login"
+testContains "$mainPage" "ext-neowiki-create-subject-button" "Main Page has NeoWiki's starter content"
 
 apiPhp=`curl -fsSL http://localhost:${MW_SERVER_PORT}/api.php`
 

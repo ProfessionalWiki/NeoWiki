@@ -541,5 +541,6 @@
 	"neowiki-overview-graph-stores-description": "The databases this wiki's data is projected into for querying.",
 	"neowiki-overview-configuration": "Configuration",
 	"neowiki-overview-configuration-description": "NeoWiki settings that can be changed on the wiki, without server access.",
-	"neowiki-overview-manage-schemas": "Manage schemas"
+	"neowiki-overview-manage-schemas": "Manage schemas",
+	"neowiki-main-page-text": "This wiki records structured data with [https://neowiki.ai NeoWiki]: each Subject describes one thing, such as a person or an artwork, with the properties its Schema defines.\n\n{{#create_subject: page=new}}\n\n== Getting started ==\n* Start by creating a Subject with the button above. If no Schema fits yet, create one in the dialog it opens.\n* [[Special:Subjects|All Subjects]] lists every Subject created so far, and the [[Special:NeoWiki|NeoWiki overview]] leads to Schemas and the rest of NeoWiki.\n* The [https://neowiki.ai/docs/guide/getting-started Getting started guide] walks through a Schema, a Subject, a View and a query.\n\nAdministrators: choose whether this wiki is [https://neowiki.ai/docs/operations/installation#choosing-page-first-or-subject-first page-first or subject-first] before adding data, then edit this page to introduce your wiki. Questions and feedback about NeoWiki go to its [https://github.com/ProfessionalWiki/NeoWiki/issues issue tracker]."
 }

@@ -364,6 +364,9 @@ _first-run-seed-demo:
 
 # --dbserver must match MARIADB_HOST: a literal here installs the schema on a different server
 # than SettingsTemplate.php points the wiki at.
+#
+# The Main Page is saved with the SPARQL stores off: their EDM projection has no Mapping page until
+# the demo data is imported, and a save before then logs an unknown-projection error.
 install-db:
 	$(EXEC_MW_ROOT) mv LocalSettings.php __LocalSettings.php
 	$(EXEC_MW_ROOT) \
@@ -375,6 +378,8 @@ install-db:
 	$(EXEC_MW_ROOT) rm LocalSettings.php
 	$(EXEC_MW_ROOT) mv __LocalSettings.php LocalSettings.php
 	$(EXEC_MW_ROOT) php maintenance/run.php update --quick
+	echo '{{subst:int:neowiki-main-page-text}}' | $(DC) exec -T -e QLEVER_URL= mediawiki \
+		php maintenance/run.php edit --user 'MediaWiki default' 'Main Page'
 
 load-neo4j-users:
 	$(DC) exec -T neo bash -c \
