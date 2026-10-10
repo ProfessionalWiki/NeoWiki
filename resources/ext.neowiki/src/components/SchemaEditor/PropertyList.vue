@@ -7,14 +7,35 @@
 			@keydown="onKeydown"
 		>
 			<li
+				role="option"
+				class="ext-neowiki-property-list__item ext-neowiki-property-list__item--subject-label"
+				:class="{ 'ext-neowiki-property-list__item--selected': isSubjectLabelSelected }"
+				:aria-selected="isSubjectLabelSelected"
+				:tabindex="isSubjectLabelTabStop ? 0 : -1"
+				@click="emit( 'subjectLabelSelected' )"
+			>
+				<CdxIcon
+					class="ext-neowiki-property-list__item__icon"
+					:icon="cdxIconTag"
+				/>
+				<span class="ext-neowiki-property-list__item__text">
+					<span class="ext-neowiki-property-list__item__text__label">
+						{{ $i18n( 'neowiki-schema-editor-subject-label' ).text() }}
+					</span>
+					<span class="ext-neowiki-property-list__item__text__description">
+						{{ describeType( TextType.typeName, false ) }}
+					</span>
+				</span>
+			</li>
+			<li
 				v-for="property in propertyArray"
 				:key="property.name.toString()"
 				role="option"
 				class="ext-neowiki-property-list__item"
-				:class="{ 'ext-neowiki-property-list__item--selected': property.name.toString() === selectedValue }"
-				:aria-selected="property.name.toString() === selectedValue"
-				:tabindex="property.name.toString() === selectedValue ? 0 : -1"
-				@click="onItemClick( property.name.toString() )"
+				:class="{ 'ext-neowiki-property-list__item--selected': isSelected( property ) }"
+				:aria-selected="isSelected( property )"
+				:tabindex="isSelected( property ) ? 0 : -1"
+				@click="emit( 'propertySelected', property.name )"
 			>
 				<CdxIcon
 					v-if="getPropertyIcon( property )"
@@ -26,10 +47,10 @@
 						{{ property.name.toString() }}
 					</span>
 					<span
-						v-if="getPropertyDescription( property )"
+						v-if="describeType( property.type, property.required )"
 						class="ext-neowiki-property-list__item__text__description"
 					>
-						{{ getPropertyDescription( property ) }}
+						{{ describeType( property.type, property.required ) }}
 					</span>
 				</span>
 				<span class="ext-neowiki-property-list__item__actions">
@@ -38,7 +59,7 @@
 						:aria-label="$i18n( 'neowiki-schema-editor-delete-property' ).text()"
 						weight="quiet"
 						action="destructive"
-						@click.stop="onDeleteProperty( property.name.toString() )"
+						@click.stop="emit( 'propertyDeleted', property.name )"
 					>
 						<CdxIcon :icon="cdxIconTrash" />
 					</CdxButton>
@@ -54,7 +75,9 @@
 		<button
 			class="ext-neowiki-property-list__add-item"
 			type="button"
-			@click="addNewProperty"
+			:title="$i18n( 'neowiki-schema-editor-new-property-shortcut' ).text()"
+			aria-keyshortcuts="Control+Enter Meta+Enter"
+			@click="emit( 'addProperty' )"
 		>
 			<CdxIcon
 				class="ext-neowiki-property-list__item__icon"
@@ -70,103 +93,72 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconDraggable, cdxIconTrash } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconDraggable, cdxIconTag, cdxIconTrash } from '@wikimedia/codex-icons';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
+import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useSortable } from '@/composables/useSortable.ts';
 import type { Icon } from '@wikimedia/codex-icons';
 
 const props = defineProps<{
 	properties: PropertyDefinitionList;
+	/** The property whose row is selected. Without one, the Label row is. */
 	selectedPropertyName?: string;
 }>();
 
 const emit = defineEmits<{
+	subjectLabelSelected: [];
 	propertySelected: [ name: PropertyName ];
-	propertyCreated: [ property: PropertyDefinition ];
+	addProperty: [];
 	propertyDeleted: [ name: PropertyName ];
 	propertyReordered: [ names: PropertyName[] ];
 }>();
 
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
-const selectedValue = ref( props.selectedPropertyName ?? '' );
 const listRef = ref<HTMLElement | null>( null );
 
-watch( () => props.selectedPropertyName, ( newProperty ) => {
-	if ( newProperty !== undefined ) {
-		selectedValue.value = newProperty;
-	}
-} );
-
 const propertyArray = computed( (): PropertyDefinition[] => [ ...props.properties ] );
+
+const isSubjectLabelSelected = computed( (): boolean => props.selectedPropertyName === undefined );
+
+// Alone, the Label row has no other row to move to, so Tab passes the list.
+const isSubjectLabelTabStop = computed( (): boolean => isSubjectLabelSelected.value && propertyArray.value.length > 0 );
+
+function isSelected( property: PropertyDefinition ): boolean {
+	return property.name.toString() === props.selectedPropertyName;
+}
 
 function getPropertyIcon( property: PropertyDefinition ): Icon | undefined {
 	return componentRegistry.getIcon( property.type );
 }
 
-function getPropertyDescription( property: PropertyDefinition ): string {
-	const typeLabel = mw.msg( componentRegistry.getLabel( property.type ) );
-	return property.required ? typeLabel : `${ typeLabel }・${ mw.msg( 'neowiki-schema-editor-optional' ) }`;
+function describeType( type: string, required: boolean ): string {
+	const typeLabel = mw.msg( componentRegistry.getLabel( type ) );
+	return required ? typeLabel : `${ typeLabel }・${ mw.msg( 'neowiki-schema-editor-optional' ) }`;
 }
 
-function onItemClick( propertyName: string ): void {
-	selectedValue.value = propertyName;
-	emit( 'propertySelected', new PropertyName( propertyName ) );
-}
-
-function onDeleteProperty( propertyName: string ): void {
-	emit( 'propertyDeleted', new PropertyName( propertyName ) );
-}
-
-function addNewProperty(): void {
-	const newProperty = createNewProperty();
-	selectedValue.value = newProperty.name.toString();
-	emit( 'propertyCreated', newProperty );
-	emit( 'propertySelected', newProperty.name );
-}
-
-function createNewProperty(): PropertyDefinition {
-	return {
-		name: generateUniquePropertyName(),
-		type: 'text',
-		description: '',
-		required: false,
-		default: undefined
-	} as PropertyDefinition;
-}
-
-function generateUniquePropertyName(): PropertyName {
-	const existingProps = Object.keys( props.properties.asRecord() );
-	let counter = 1;
-	let name = `New Property ${ counter }`;
-
-	while ( existingProps.includes( name ) ) {
-		counter++;
-		name = `New Property ${ counter }`;
-	}
-
-	return new PropertyName( name );
-}
-
+// Indexes below are into the properties, with the Label row before them as -1.
 function getSelectedIndex(): number {
-	return propertyArray.value.findIndex( ( p ) => p.name.toString() === selectedValue.value );
+	return propertyArray.value.findIndex( isSelected );
 }
 
 function focusItem( index: number ): void {
 	const items = listRef.value?.querySelectorAll<HTMLElement>( '[role="option"]' );
-	items?.[ index ]?.focus();
+	items?.[ index + 1 ]?.focus();
 }
 
 function selectAndFocus( index: number ): void {
-	const property = propertyArray.value[ index ];
-	if ( property ) {
-		onItemClick( property.name.toString() );
-		focusItem( index );
+	if ( index === -1 ) {
+		emit( 'subjectLabelSelected' );
+	} else {
+		emit( 'propertySelected', propertyArray.value[ index ].name );
 	}
+
+	focusItem( index );
 }
 
 function moveProperty( fromIndex: number, toIndex: number ): void {
@@ -178,15 +170,11 @@ function moveProperty( fromIndex: number, toIndex: number ): void {
 
 function onKeydown( event: KeyboardEvent ): void {
 	const currentIndex = getSelectedIndex();
-	if ( currentIndex === -1 ) {
-		return;
-	}
-
 	const lastIndex = propertyArray.value.length - 1;
 
 	if ( event.key === 'ArrowDown' ) {
 		event.preventDefault();
-		if ( event.altKey && currentIndex < lastIndex ) {
+		if ( event.altKey && currentIndex > -1 && currentIndex < lastIndex ) {
 			moveProperty( currentIndex, currentIndex + 1 );
 			selectAndFocus( currentIndex + 1 );
 		} else if ( !event.altKey && currentIndex < lastIndex ) {
@@ -197,15 +185,17 @@ function onKeydown( event: KeyboardEvent ): void {
 		if ( event.altKey && currentIndex > 0 ) {
 			moveProperty( currentIndex, currentIndex - 1 );
 			selectAndFocus( currentIndex - 1 );
-		} else if ( !event.altKey && currentIndex > 0 ) {
+		} else if ( !event.altKey && currentIndex > -1 ) {
 			selectAndFocus( currentIndex - 1 );
 		}
 	}
 }
 
 useSortable( listRef, {
+	draggable: '.ext-neowiki-property-list__item:not(.ext-neowiki-property-list__item--subject-label)',
 	onReorder( oldIndex: number, newIndex: number ): void {
-		moveProperty( oldIndex, newIndex );
+		// SortableJS indexes count the Label row, which stays first.
+		moveProperty( oldIndex - 1, newIndex - 1 );
 	}
 } );
 </script>
@@ -235,6 +225,10 @@ useSortable( listRef, {
 
 		&--selected {
 			background-color: @background-color-progressive-subtle;
+		}
+
+		&--subject-label {
+			cursor: pointer;
 		}
 
 		&--ghost {
