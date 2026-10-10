@@ -97,23 +97,9 @@
 					help-text=""
 					:footer-text="saveScopeText"
 					:save-button-label="saveButtonLabel"
-					:save-disabled="saveIsUnavailable"
+					:save-disabled="!anyChanged || saving || props.saveDisabled === true"
 					@save="handleSave"
-				>
-					<!-- Passed straight on: what replaces the save button is the host's business,
-						and this dialog has no opinion about destinations. -->
-					<template
-						v-if="$slots.action"
-						#action="{ save }"
-					>
-						<slot
-							name="action"
-							:save="save"
-							:saving="saving"
-							:disabled="saveIsUnavailable"
-						/>
-					</template>
-				</SummaryAction>
+				/>
 			</template>
 		</CdxDialog>
 
@@ -403,9 +389,6 @@ function withLiveLabel( instance: SubjectEditPaneExposes ): Subject {
 	const label = enteredSubjectLabel( instance.label );
 	return edited.getLabel() === label ? edited : edited.withLabel( label );
 }
-
-const saveIsUnavailable = computed( (): boolean =>
-	!anyChanged.value || saving.value || props.saveDisabled === true );
 
 // The root Subject's label as its form holds it, for a host that follows the name being given.
 const rootLabel = computed( (): string | null =>

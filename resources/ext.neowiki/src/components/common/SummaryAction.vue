@@ -44,22 +44,15 @@
 				{{ props.footerText }}
 			</p>
 
-			<!-- A host with more to put here than a button — a destination to choose alongside it,
-				say — replaces it and calls `save` itself. -->
-			<slot
-				name="action"
-				:save="onSaveClick"
+			<CdxButton
+				:action="props.saveButtonAction"
+				weight="primary"
+				:disabled="props.saveDisabled"
+				@click="onSaveClick"
 			>
-				<CdxButton
-					:action="props.saveButtonAction"
-					weight="primary"
-					:disabled="props.saveDisabled"
-					@click="onSaveClick"
-				>
-					<CdxIcon :icon="props.saveButtonIcon" />
-					{{ props.saveButtonLabel }}
-				</CdxButton>
-			</slot>
+				<CdxIcon :icon="props.saveButtonIcon" />
+				{{ props.saveButtonLabel }}
+			</CdxButton>
 		</div>
 	</div>
 </template>
@@ -167,7 +160,7 @@ defineExpose( { submit: onSaveClick } );
 		margin-top: @spacing-50;
 		gap: @spacing-75;
 
-		> .cdx-button {
+		.cdx-button {
 			width: @size-full;
 			max-width: @max-width-base;
 		}
@@ -176,9 +169,7 @@ defineExpose( { submit: onSaveClick } );
 			align-items: center;
 			justify-content: space-between;
 
-			/* Whatever the host put here, not only a bare button: a split button's root is a
-				container, and left unsized it fills the row and squeezes the note to nothing. */
-			> :not( .ext-neowiki-summary-action__footer-text ) {
+			.cdx-button {
 				width: auto;
 				flex-shrink: 0;
 			}
