@@ -183,6 +183,14 @@ defineExpose<SchemaCreatorExposes>( { validate, getSchema, saveBlocker, reset, f
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-schema-creator {
+	/* The Schema editor takes the height the name section leaves it, so its columns scroll on
+		their own. Only where they are side by side: stacked, the dialog body scrolls them. */
+	@media ( min-width: @min-width-breakpoint-desktop ) {
+		display: grid;
+		grid-template-rows: auto minmax( 0, 1fr );
+		min-height: 0;
+	}
+
 	&__name-section {
 		padding: @spacing-100;
 		border-block-end: @border-subtle;

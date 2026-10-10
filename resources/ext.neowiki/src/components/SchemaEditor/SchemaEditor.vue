@@ -43,13 +43,15 @@
 					{{ $i18n( 'neowiki-schema-editor-subject-label-help' ).text() }}
 				</p>
 			</template>
-			<CdxButton
-				class="ext-neowiki-schema-editor__add-property"
-				@click="addProperty"
-			>
-				<CdxIcon :icon="cdxIconAdd" />
-				{{ $i18n( 'neowiki-schema-editor-new-property' ).text() }}
-			</CdxButton>
+			<div class="ext-neowiki-schema-editor__add-property-bar">
+				<CdxButton
+					class="ext-neowiki-schema-editor__add-property"
+					@click="addProperty"
+				>
+					<CdxIcon :icon="cdxIconAdd" />
+					{{ $i18n( 'neowiki-schema-editor-new-property' ).text() }}
+				</CdxButton>
+			</div>
 		</div>
 	</div>
 </template>
@@ -304,7 +306,7 @@ defineExpose<SchemaEditorExposes>( {
 			padding: @spacing-100;
 
 			@media ( min-width: @min-width-breakpoint-desktop ) {
-				padding: @spacing-150;
+				padding: @spacing-150 @spacing-150 0;
 			}
 		}
 
@@ -390,6 +392,28 @@ defineExpose<SchemaEditorExposes>( {
 			&__property-list,
 			&__detail {
 				overflow-y: auto;
+			}
+
+			/* The add bar and the gap above it, so a field scrolled into view lands clear of it. */
+			&__detail {
+				scroll-padding-block-end: ( 3 * @spacing-100 + @border-width-base + @min-size-interactive-pointer );
+			}
+
+			/* As wide as the column, so its rule does not pass for the bottom border of a field
+				cut off under it. Above the checkbox inputs Codex stacks at z-index 1, which would
+				otherwise take its clicks. */
+			&__add-property-bar {
+				position: sticky;
+				inset-block-end: 0;
+				z-index: 1;
+				margin: @spacing-100 -@spacing-150 0;
+				padding: @spacing-100 @spacing-150;
+				border-block-start: @border-subtle;
+				background-color: @background-color-base;
+			}
+
+			&__add-property {
+				margin-block-start: 0;
 			}
 		}
 	}
