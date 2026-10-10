@@ -62,6 +62,10 @@ function focusableRowTitles( wrapper: VueWrapper ): string[] {
 	return wrapper.findAll( '[role="option"][tabindex="0"]' ).map( rowTitle );
 }
 
+function highlightedRowTitles( wrapper: VueWrapper ): string[] {
+	return wrapper.findAll( '.ext-neowiki-property-list__item--selected' ).map( rowTitle );
+}
+
 function findRow( wrapper: VueWrapper, title: string ): DOMWrapper<Element> {
 	return wrapper.findAll( '[role="option"]' ).find( ( row ) => rowTitle( row ) === title )!;
 }
@@ -104,7 +108,7 @@ describe( 'PropertyList', () => {
 	it( 'highlights only the selected property', () => {
 		const wrapper = createWrapper( properties, 'Beta' );
 
-		expect( wrapper.findAll( '.ext-neowiki-property-list__item--selected' ).map( rowTitle ) ).toEqual( [ 'Beta' ] );
+		expect( highlightedRowTitles( wrapper ) ).toEqual( [ 'Beta' ] );
 	} );
 
 	it( 'sets tabindex 0 on selected item and -1 on others', () => {
@@ -114,12 +118,22 @@ describe( 'PropertyList', () => {
 		expect( findRow( wrapper, 'Alpha' ).attributes( 'tabindex' ) ).toBe( '-1' );
 	} );
 
-	it( 'selects the Label row while no property is selected', () => {
+	it( 'marks the Label row with aria-selected while no property is selected', () => {
 		const wrapper = createWrapper( properties );
 
 		expect( selectedRowTitles( wrapper ) ).toEqual( [ LABEL_ROW_TITLE ] );
+	} );
+
+	it( 'sets tabindex 0 on the Label row while no property is selected', () => {
+		const wrapper = createWrapper( properties );
+
 		expect( focusableRowTitles( wrapper ) ).toEqual( [ LABEL_ROW_TITLE ] );
-		expect( wrapper.findAll( '.ext-neowiki-property-list__item--selected' ).map( rowTitle ) ).toEqual( [ LABEL_ROW_TITLE ] );
+	} );
+
+	it( 'highlights the Label row while no property is selected', () => {
+		const wrapper = createWrapper( properties );
+
+		expect( highlightedRowTitles( wrapper ) ).toEqual( [ LABEL_ROW_TITLE ] );
 	} );
 
 	it( 'selects a property named Label as that property, not as the Label row', () => {

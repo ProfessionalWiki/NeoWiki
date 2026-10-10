@@ -1,5 +1,5 @@
 <template>
-	<div class="ext-neowiki-schema-editor__property-editor">
+	<div class="ext-neowiki-property-editor">
 		<CdxField
 			class="ext-neowiki-property-editor__name"
 			:status="nameError === null ? 'default' : 'error'"
