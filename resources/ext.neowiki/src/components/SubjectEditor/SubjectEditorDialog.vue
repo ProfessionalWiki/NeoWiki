@@ -159,7 +159,6 @@ import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { useEditNotices } from '@/composables/useEditNotices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
-import { WriteRefusedError } from '@/components/SubjectEditor/WriteRefusedError.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
@@ -171,8 +170,7 @@ type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>
 
 /**
  * Writes a Subject this session invented, carrying the id minted for it, as a Subject of the
- * given page. Hosts that leave it out get no create affordance in the relation fields. A
- * WriteRefusedError stops the save without a message from this dialog.
+ * given page. Hosts that leave it out get no create affordance in the relation fields.
  */
 type SubjectCreateHandler = ( subject: Subject, pageId: number, comment: string ) => Promise<void>;
 
@@ -794,7 +792,22 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 			failed = true;
 			// The toast naming the refused Subject vanishes; its pane is what stays.
 			await showSubject( id );
-			reportWriteFailure( error, id, subjectName );
+
+			if ( error instanceof ValidationFailedError ) {
+				paneRefs.get( id )?.setServerViolations( error.violations );
+				mw.notify(
+					mw.msg( 'neowiki-subject-editor-validation-failed', subjectName ),
+					{ type: 'error' }
+				);
+			} else {
+				mw.notify(
+					error instanceof Error ? error.message : String( error ),
+					{
+						title: mw.msg( 'neowiki-subject-editor-error', subjectName ),
+						type: 'error'
+					}
+				);
+			}
 
 			break;
 		}
@@ -825,27 +838,6 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 		{ type: 'success' }
 	);
 	close();
-}
-
-function reportWriteFailure( error: unknown, paneId: string, subjectName: string ): void {
-	// The host has said why, where it can be answered.
-	if ( error instanceof WriteRefusedError ) {
-		return;
-	}
-
-	if ( error instanceof ValidationFailedError ) {
-		paneRefs.get( paneId )?.setServerViolations( error.violations );
-		mw.notify( mw.msg( 'neowiki-subject-editor-validation-failed', subjectName ), { type: 'error' } );
-		return;
-	}
-
-	mw.notify(
-		error instanceof Error ? error.message : String( error ),
-		{
-			title: mw.msg( 'neowiki-subject-editor-error', subjectName ),
-			type: 'error'
-		}
-	);
 }
 
 // Said of the write it is attached to, not of the save as a whole: one save can create a Subject

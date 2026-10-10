@@ -1,20 +1,9 @@
 <template>
 	<div class="ext-neowiki-page-picker-panel">
-		<CdxMessage
-			v-if="props.error !== null"
-			class="ext-neowiki-page-picker-panel__error"
-			type="error"
-			:inline="true"
-		>
-			{{ props.error }}
-		</CdxMessage>
-
-		<!-- Where nothing is searched for, what is typed is the title of the page to create. -->
 		<CdxSearchInput
 			v-model="entered"
 			class="ext-neowiki-page-picker-panel__search"
-			:placeholder="$i18n( props.newPageOnly ? 'neowiki-page-picker-title-placeholder' : 'neowiki-page-picker-placeholder' ).text()"
-			:status="props.error === null ? 'default' : 'error'"
+			:placeholder="$i18n( 'neowiki-page-picker-placeholder' ).text()"
 			:aria-label="props.ariaLabel"
 			:aria-controls="menuId"
 			:aria-activedescendant="highlightedId"
@@ -47,19 +36,19 @@
 
 <script setup lang="ts">
 import { ref, computed, toRef, watch, onMounted } from 'vue';
-import { CdxMenu, CdxMessage, CdxSearchInput, useGeneratedId } from '@wikimedia/codex';
+import { CdxMenu, CdxSearchInput, useGeneratedId } from '@wikimedia/codex';
 import { usePageSearch } from '@/composables/usePageSearch.ts';
 import type { PinnedPage } from '@/composables/usePageSearch.ts';
 import type { PageChoice } from '@/components/common/PageChoice.ts';
 
 interface PagePickerPanelProps {
+	/** Left out of the results, such as the page a Subject is already on. */
+	excludedPageId?: number;
 	/** Offer only pages that exist, leaving out the option to create the text as a new page. */
 	existingPagesOnly?: boolean;
 	/** Offer nothing but the page to create, naming it rather than choosing among pages. */
 	newPageOnly?: boolean;
 	ariaLabel?: string;
-	/** Why the host refused what was picked or typed here, said with the field that answers it. */
-	error?: string | null;
 	/**
 	 * Pages offered above the results while nothing has been typed, such as the one the dialog was
 	 * opened on. The wording is the host's, since only the host knows why a page is worth a
@@ -71,10 +60,10 @@ interface PagePickerPanelProps {
 const props = withDefaults(
 	defineProps<PagePickerPanelProps>(),
 	{
+		excludedPageId: undefined,
 		existingPagesOnly: false,
 		newPageOnly: false,
 		ariaLabel: undefined,
-		error: null,
 		pinnedPages: () => []
 	}
 );
@@ -107,7 +96,8 @@ const pageSearch = usePageSearch( {
 	typedText: trimmedText,
 	existingPagesOnly: toRef( props, 'existingPagesOnly' ),
 	newPageOnly: toRef( props, 'newPageOnly' ),
-	pinnedPages: toRef( props, 'pinnedPages' )
+	pinnedPages: toRef( props, 'pinnedPages' ),
+	excludedPageId: toRef( props, 'excludedPageId' )
 } );
 
 watch( trimmedText, ( text ) => {
@@ -205,10 +195,6 @@ function onSelected( value: string | null ): void {
 .ext-neowiki-page-picker-panel {
 	display: flex;
 	flex-direction: column;
-
-	&__error {
-		padding: @spacing-50 @spacing-75;
-	}
 
 	/* The field is the top of one shape and the menu the bottom of it, so the corners where they
 		meet are squared and the two borders between them collapse into the one line. Codex already
