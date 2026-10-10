@@ -26,6 +26,40 @@ describe( 'SummaryAction', () => {
 		} );
 	}
 
+	/**
+	 * A host with more to put in the footer than a button - a destination to choose alongside it -
+	 * replaces the button and saves through the binding it is handed, so what it renders has to
+	 * reach the user and what it calls has to reach the host.
+	 */
+	describe( 'the action a host puts in place of the save button', () => {
+		function mountWithAction(): VueWrapper {
+			return mount( SummaryAction, {
+				props: { helpText: '', saveButtonLabel: 'Save', saveDisabled: false },
+				slots: {
+					action: '<template #action="{ save }">' +
+						'<button class="host-action" @click="save">Create on this page</button>' +
+						'</template>',
+				},
+				global: { mocks: { $i18n } },
+			} );
+		}
+
+		it( 'is shown in place of the save button', () => {
+			const wrapper = mountWithAction();
+
+			expect( wrapper.find( '.host-action' ).exists() ).toBe( true );
+			expect( wrapper.findComponent( CdxButton ).exists() ).toBe( false );
+		} );
+
+		it( 'saves through the binding it is handed', async () => {
+			const wrapper = mountWithAction();
+
+			await wrapper.find( '.host-action' ).trigger( 'click' );
+
+			expect( wrapper.emitted( 'save' ) ).toHaveLength( 1 );
+		} );
+	} );
+
 	it( 'disables save button when saveDisabled is true', () => {
 		const wrapper = mountComponent( { saveDisabled: true } );
 

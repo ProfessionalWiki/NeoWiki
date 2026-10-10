@@ -27,8 +27,9 @@ A Subject is one thing described with a Schema.
 2. Name it with the pencil beside its name, and fill in the values.
 3. To point at a Subject that is not there yet, type a name in a relation field and pick **Create "Ada" as a new
    Person**. It opens in place, with the tree beside it to move back.
-4. Under **Store the subject on**, choose **This page** where you opened the creator on one, **Another page** you
-   pick, or **A new page**, titled after the Subject's name unless you change the **Page title**.
+4. The **Create** button says which page the Subject is going on. Use the chevron beside it to go somewhere else:
+   the page you opened the creator on, a new page titled after the Subject's name, or any page you search for. Typing
+   a name no page has offers to create that page under it.
 5. Save. Everything made along the way is saved with it.
 
 A page's Main Subject renders automatically as an infobox, and its **Data** tab lets you view and edit all its
