@@ -1029,6 +1029,15 @@ describe( 'SubjectCreatorDialog', () => {
 				expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
 			} );
 
+			it( 'asks nothing of a caller that preselected a new page but named none', async () => {
+				const wrapper = mountSubjectFirst( {
+					initialPage: { choice: 'newPage', fixed: false } as InitialPage,
+				} );
+				await pickSchema( wrapper );
+
+				expect( wrapper.find( '.ext-neowiki-subject-creator-page-section' ).exists() ).toBe( false );
+			} );
+
 			// The wiki titles a Subject's own page by its id, so a caller asking which page
 			// still leaves nothing to title.
 			it( 'asks for no page title where a caller asks which page', async () => {
@@ -1100,17 +1109,6 @@ describe( 'SubjectCreatorDialog', () => {
 				await pickSchema( wrapper );
 
 				expect( pageTitleField( wrapper ).exists() ).toBe( false );
-			} );
-
-			it( 'names no title for a new page the caller preselected, whatever the label', async () => {
-				const wrapper = mountSubjectFirst( {
-					initialPage: { choice: 'newPage', fixed: false } as InitialPage,
-				} );
-				await pickSchema( wrapper );
-
-				await typeLabel( wrapper, 'Amsterdam' );
-
-				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-new' );
 			} );
 
 			it( 'saves the drafted Schema with the Subject\'s own page', async () => {

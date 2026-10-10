@@ -389,12 +389,13 @@ function newPageOption(): PageOption | null {
 
 /**
  * Whether the dialog asks which page the Subject goes on. A subject-first wiki gives it a page of
- * its own, so there is nothing to ask - unless the caller named the page, or this user cannot
- * create one and so could not be given it either way (ADR 33).
+ * its own, so there is nothing to ask - unless the caller named a page, or this user cannot create
+ * one and so could not be given it either way (ADR 33). A caller that passed no page= named no
+ * page, whatever choice it preselected.
  */
 const pageQuestionAsked = computed( (): boolean =>
 	!isSubjectFirst() ||
-	props.initialPage !== undefined ||
+	props.initialPage?.page !== undefined ||
 	!canCreateSubjectPage.value );
 
 // The page being viewed where there is one, and a page of the Subject's own where there is not, or
