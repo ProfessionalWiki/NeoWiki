@@ -552,7 +552,8 @@
 						"cdxIconPushPin",
 						"cdxIconEllipsis",
 						"cdxIconLanguage",
-						"cdxIconViewCompact"
+						"cdxIconViewCompact",
+						"cdxIconTag"
 					]
 				}
 			],
@@ -658,6 +659,9 @@
 				"neowiki-subject-editor-open-target",
 				"neowiki-schema-editor-new-property",
 				"neowiki-schema-editor-delete-property",
+				"neowiki-schema-editor-subject-label",
+				"neowiki-schema-editor-subject-label-description",
+				"neowiki-schema-editor-subject-label-help",
 				"neowiki-schema-editor-optional",
 				"neowiki-schema-editor-description",
 				"neowiki-schema-editor-description-placeholder",

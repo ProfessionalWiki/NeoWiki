@@ -1156,6 +1156,26 @@ defineExpose( { hasChanged } );
 		max-width: @size-5600;
 	}
 
+	/* The new-Schema step gives the Schema creator the height left below the content above
+		it, which keeps its natural height, so the Schema editor's columns scroll on their own.
+		Only where they are side by side: stacked, the body scrolls the whole step. */
+	&-dialog--wide .cdx-dialog__body {
+		@media ( min-width: @min-width-breakpoint-desktop ) {
+			display: flex;
+			flex-direction: column;
+			padding-block-end: 0;
+
+			> :not( .ext-neowiki-subject-creator-new ) {
+				flex-shrink: 0;
+			}
+
+			> .ext-neowiki-subject-creator-new {
+				display: grid;
+				min-height: 0;
+			}
+		}
+	}
+
 	&-schema-options.cdx-toggle-button-group {
 		margin-bottom: @spacing-150;
 		width: inherit;

@@ -2,23 +2,19 @@
 	<div
 		ref="root"
 		class="ext-neowiki-schema-editor"
-		:class="{ 'ext-neowiki-schema-editor--has-selected-property': selectedProperty !== undefined }"
 		:style="{ '--ext-neowiki-pane-size': paneSize.cssSize.value }"
 	>
 		<PropertyList
 			:id="propertyListId"
 			:properties="currentSchema.getPropertyDefinitions()"
 			:selected-property-name="selectedPropertyName"
+			@subject-label-selected="onSubjectLabelSelected"
 			@property-selected="onPropertySelected"
-			@property-created="onPropertyCreated"
+			@add-property="addProperty"
 			@property-deleted="onPropertyDeleted"
 			@property-reordered="onPropertyReordered"
 		/>
-		<!-- Rendered on the same condition as the editor beside it: the three-track list
-			below appears only with a property selected, and a divider outside that condition
-			would leave a track for a column that is not there. -->
 		<PaneDivider
-			v-if="selectedProperty !== undefined"
 			class="ext-neowiki-schema-editor__divider"
 			:label="$i18n( 'neowiki-schema-editor-resize-property-list' ).text()"
 			:controls="propertyListId"
@@ -29,15 +25,34 @@
 			@resize="paneSize.resizeTo"
 			@commit="paneSize.persist"
 		/>
-		<PropertyDefinitionEditor
-			v-if="selectedProperty !== undefined"
-			ref="propertyDefinitionEditor"
-			:key="propertyEditorKey"
-			:property="selectedProperty as PropertyDefinition"
-			:other-property-names="otherPropertyNames"
-			:select-name="selectedPropertyName === createdPropertyName"
-			@update:property-definition="onPropertyUpdated"
-		/>
+		<div class="ext-neowiki-schema-editor__detail">
+			<PropertyDefinitionEditor
+				v-if="selectedProperty !== undefined"
+				ref="propertyDefinitionEditor"
+				:key="propertyEditorKey"
+				:property="selectedProperty as PropertyDefinition"
+				:other-property-names="otherPropertyNames"
+				:select-name="selectedPropertyName === createdPropertyName"
+				@update:property-definition="onPropertyUpdated"
+			/>
+			<template v-else>
+				<h3 class="ext-neowiki-schema-editor__subject-label-heading">
+					{{ $i18n( 'neowiki-schema-editor-subject-label' ).text() }}
+				</h3>
+				<p class="ext-neowiki-schema-editor__subject-label-help">
+					{{ $i18n( 'neowiki-schema-editor-subject-label-help' ).text() }}
+				</p>
+			</template>
+			<div class="ext-neowiki-schema-editor__add-property-bar">
+				<CdxButton
+					class="ext-neowiki-schema-editor__add-property"
+					@click="addProperty"
+				>
+					<CdxIcon :icon="cdxIconAdd" />
+					{{ $i18n( 'neowiki-schema-editor-new-property' ).text() }}
+				</CdxButton>
+			</div>
+		</div>
 	</div>
 </template>
 
@@ -50,7 +65,8 @@ import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import PaneDivider, { PANE_DIVIDER_SIZE } from '@/components/common/PaneDivider.vue';
 import { usePaneSize } from '@/composables/usePaneSize.ts';
-import { useGeneratedId } from '@wikimedia/codex';
+import { CdxButton, CdxIcon, useGeneratedId } from '@wikimedia/codex';
+import { cdxIconAdd } from '@wikimedia/codex-icons';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { missingRelationAttribute } from '@/components/SchemaEditor/Property/missingRelationAttribute.ts';
 
@@ -89,6 +105,8 @@ const paneSize = usePaneSize( root, {
 } );
 
 const currentSchema = ref<Schema>( props.initialSchema );
+
+// Undefined while the Label row is selected.
 const selectedPropertyName = ref<string | undefined>();
 
 // Gives each selected property an editor of its own. Not the name: renaming the property
@@ -129,14 +147,40 @@ const otherPropertyNames = computed( (): string[] =>
 		.filter( ( name ) => name !== selectedPropertyName.value )
 );
 
+function onSubjectLabelSelected(): void {
+	selectProperty( undefined );
+}
+
 function onPropertySelected( name: PropertyName ): void {
 	selectProperty( name.toString() );
 }
 
-function onPropertyCreated( newProperty: PropertyDefinition ): void {
+function addProperty(): void {
+	const newProperty = createNewProperty();
 	currentSchema.value = currentSchema.value.withAddedPropertyDefinition( newProperty );
 	createdPropertyName.value = newProperty.name.toString();
+	selectProperty( newProperty.name.toString() );
 	emit( 'change' );
+}
+
+function createNewProperty(): PropertyDefinition {
+	return {
+		name: generateUniquePropertyName(),
+		type: 'text',
+		description: '',
+		required: false,
+		default: undefined
+	} as PropertyDefinition;
+}
+
+function generateUniquePropertyName(): PropertyName {
+	let counter = 1;
+
+	while ( propertyExists( `New Property ${ counter }` ) ) {
+		counter++;
+	}
+
+	return new PropertyName( `New Property ${ counter }` );
 }
 
 function onPropertyDeleted( name: PropertyName ): void {
@@ -258,11 +302,11 @@ defineExpose<SchemaEditorExposes>( {
 	}
 
 	.ext-neowiki-schema-editor {
-		&__property-editor {
+		&__detail {
 			padding: @spacing-100;
 
 			@media ( min-width: @min-width-breakpoint-desktop ) {
-				padding: @spacing-150;
+				padding: @spacing-150 @spacing-150 0;
 			}
 		}
 
@@ -279,63 +323,97 @@ defineExpose<SchemaEditorExposes>( {
 				}
 			}
 		}
+
+		&__subject-label-heading {
+			margin: 0;
+			padding-block: 0;
+			font-size: @font-size-medium;
+		}
+
+		&__subject-label-help {
+			margin: @spacing-50 0 0;
+		}
+
+		&__add-property {
+			margin-block-start: @spacing-150;
+		}
 	}
 
 	.cdx-select-vue {
 		display: block; /* Make the select element take the full width of the parent element */
 	}
 
-	&--has-selected-property {
-		/*
-			TODO: Temporary solution for responsive layout.
-			Property list and editor should be in multiple steps for mobile.
-		*/
-		@media ( max-width: @max-width-breakpoint-tablet ) {
-			.ext-neowiki-schema-editor {
-				&__property-list {
-					overflow-x: auto;
-					padding: 0;
-					display: flex;
+	/*
+		TODO: Temporary solution for responsive layout.
+		Property list and editor should be in multiple steps for mobile.
+	*/
+	@media ( max-width: @max-width-breakpoint-tablet ) {
+		.ext-neowiki-schema-editor {
+			&__property-list {
+				overflow-x: auto;
+				padding: 0;
+				display: flex;
+			}
+
+			&__property-list .ext-neowiki-property-list {
+				display: flex;
+				white-space: nowrap;
+
+				.ext-neowiki-property-list__item {
+					border-radius: 0;
 				}
 
-				&__property-list .ext-neowiki-property-list {
-					display: flex;
-					white-space: nowrap;
-
-					.ext-neowiki-property-list__item {
-						border-radius: 0;
-					}
-
-					.ext-neowiki-property-list__add-item {
-						margin-block-start: 0;
-					}
-				}
-
-				&__property-editor {
-					border-block-start: @border-subtle;
+				.ext-neowiki-property-list__add-item {
+					margin-block-start: 0;
 				}
 			}
+
+			&__detail {
+				border-block-start: @border-subtle;
+			}
 		}
+	}
 
-		@media ( min-width: @min-width-breakpoint-desktop ) {
-			min-height: 0;
-			/* The reader's width, bounded in script rather than here: the observed width
-				this is divided against is a border box, which `100%` in a track is not.
-				`minmax( 0, 1fr )` rather than `auto`, or the editor's min-content would
-				claim space back out of a width the reader set. This grid takes no inline
-				padding or border of its own, for the same reason. */
-			grid-template-columns: var( --ext-neowiki-pane-size, 20rem ) @spacing-75 minmax( 0, 1fr );
-			grid-template-rows: minmax( 0, 1fr );
+	@media ( min-width: @min-width-breakpoint-desktop ) {
+		min-height: 0;
+		/* The reader's width, bounded in script rather than here: the observed width
+			this is divided against is a border box, which `100%` in a track is not.
+			`minmax( 0, 1fr )` rather than `auto`, or the editor's min-content would
+			claim space back out of a width the reader set. This grid takes no inline
+			padding or border of its own, for the same reason. */
+		grid-template-columns: var( --ext-neowiki-pane-size, 20rem ) @spacing-75 minmax( 0, 1fr );
+		grid-template-rows: minmax( 0, 1fr );
 
-			.ext-neowiki-schema-editor {
-				&__divider {
-					display: flex;
-				}
+		.ext-neowiki-schema-editor {
+			&__divider {
+				display: flex;
+			}
 
-				&__property-list,
-				&__property-editor {
-					overflow-y: auto;
-				}
+			&__property-list,
+			&__detail {
+				overflow-y: auto;
+			}
+
+			/* The add bar and the gap above it, so a field scrolled into view lands clear of it. */
+			&__detail {
+				scroll-padding-block-end: ( 3 * @spacing-100 + @border-width-base + @min-size-interactive-pointer );
+			}
+
+			/* As wide as the column, so its rule does not pass for the bottom border of a field
+				cut off under it. Above the checkbox inputs Codex stacks at z-index 1, which would
+				otherwise take its clicks. */
+			&__add-property-bar {
+				position: sticky;
+				inset-block-end: 0;
+				z-index: 1;
+				margin: @spacing-100 -@spacing-150 0;
+				padding: @spacing-100 @spacing-150;
+				border-block-start: @border-subtle;
+				background-color: @background-color-base;
+			}
+
+			&__add-property {
+				margin-block-start: 0;
 			}
 		}
 	}
