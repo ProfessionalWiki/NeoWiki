@@ -2,25 +2,15 @@
 	<!-- cdx-field class is used for spacing -->
 	<div class="relation-attributes cdx-field">
 		<CdxField
-			class="relation-attributes__target-schema"
-			:status="targetSchemaError === null ? 'default' : 'error'"
-			:messages="targetSchemaError === null ? {} : { error: targetSchemaError }"
+			:status="targetSchemasError === null ? 'default' : 'error'"
+			:messages="targetSchemasError === null ? {} : { error: targetSchemasError }"
 		>
 			<template #label>
 				{{ $i18n( 'neowiki-property-editor-target-schema' ).text() }}
 			</template>
-			<SchemaPicker
-				v-if="targetSchemaIsEditable"
-				:selected="localTargetSchemaName || null"
-				:offers-creation="canCreateSchemas && schemaCreation !== undefined"
-				@select="updateTargetSchema"
-				@create="createTargetSchema"
-			/>
-			<CdxTextInput
-				v-else
-				:model-value="schemaReferenceName( property.targetSchema )"
-				:disabled="true"
-				input-type="text"
+			<TargetSchemasInput
+				:model-value="property.targetSchemas"
+				@update:model-value="updateTargetSchemas"
 			/>
 		</CdxField>
 
@@ -45,57 +35,29 @@
 </template>
 
 <script setup lang="ts">
-import { isLocalSchemaReference, schemaReferenceName } from '@/domain/SchemaReference';
-import { computed, inject, onMounted } from 'vue';
-import { CdxCheckbox, CdxField, CdxTextInput } from '@wikimedia/codex';
+import { computed } from 'vue';
+import { CdxCheckbox, CdxField } from '@wikimedia/codex';
 import { RelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { withConstraintSeverity } from '@/domain/PropertyDefinition.ts';
+import type { SchemaReference } from '@/domain/SchemaReference';
 import type { Severity } from '@/domain/Severity.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import SchemaPicker from '@/components/common/SchemaPicker.vue';
-import { SchemaCreationKey } from '@/components/common/SchemaCreation.ts';
+import { missingRelationAttribute } from '@/components/SchemaEditor/Property/missingRelationAttribute.ts';
+import TargetSchemasInput from '@/components/SchemaEditor/Property/TargetSchemasInput.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
-import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
-import { normalizeSchemaName } from '@/stores/SchemaStore.ts';
 
 const props = defineProps<AttributesEditorProps<RelationProperty>>();
 const emit = defineEmits<AttributesEditorEmits<RelationProperty>>();
 
-const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();
+const targetSchemasError = computed<string | null>( () => {
+	const message = missingRelationAttribute( props.property );
 
-onMounted( checkCreatePermission );
+	return message === null ? null : mw.message( message ).text();
+} );
 
-const schemaCreation = inject( SchemaCreationKey, undefined );
-
-// A Schema of another Source is shown but not edited here: the picker offers this wiki's Schemas
-// alone, and selecting one from it would replace a reference the editor cannot express (ADR 23).
-// A property that has no target yet gets the picker, which is how it comes by one.
-const targetSchemaIsEditable = computed<boolean>( () =>
-	props.property.targetSchema === undefined || isLocalSchemaReference( props.property.targetSchema )
-);
-
-const localTargetSchemaName = computed<string>( () =>
-	targetSchemaIsEditable.value ? schemaReferenceName( props.property.targetSchema ) : ''
-);
-
-const targetSchemaError = computed<string | null>( () =>
-	schemaReferenceName( props.property.targetSchema ) === '' ?
-		mw.message( 'neowiki-property-editor-target-schema-required' ).text() :
-		null
-);
-
-const updateTargetSchema = ( schemaName: string ): void => {
-	emit( 'update:property', { targetSchema: schemaName } );
+const updateTargetSchemas = ( targetSchemas: SchemaReference[] ): void => {
+	emit( 'update:property', { targetSchemas } );
 };
-
-async function createTargetSchema( schemaName: string ): Promise<void> {
-	const schema = await schemaCreation?.create( schemaName ) ?? null;
-
-	// The wiki saved the Schema under its page title, which is the name the picker would list it by.
-	if ( schema !== null ) {
-		updateTargetSchema( normalizeSchemaName( schema.getName() ) );
-	}
-}
 
 const updateMultiple = ( value: boolean ): void => {
 	emit( 'update:property', { multiple: value } );

@@ -9,7 +9,7 @@
 		},
 		"City": {
 			"type": "relation",
-			"targetSchema": "City"
+			"targetSchemas": [ "City" ]
 		},
 		"Website": {
 			"type": "url",

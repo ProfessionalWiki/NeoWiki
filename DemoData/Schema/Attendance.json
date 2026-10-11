@@ -3,7 +3,7 @@
 	"propertyDefinitions": {
 		"Museum": {
 			"type": "relation",
-			"targetSchema": "Museum",
+			"targetSchemas": [ "Museum" ],
 			"required": true
 		},
 		"Year": {

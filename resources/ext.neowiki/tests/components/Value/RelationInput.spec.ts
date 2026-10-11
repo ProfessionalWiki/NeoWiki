@@ -7,6 +7,7 @@ import SubjectPicker from '@/components/common/SubjectPicker.vue';
 import NeoMultiLookupInput from '@/components/common/NeoMultiLookupInput.vue';
 import { RelationValue, newRelation } from '@/domain/Value';
 import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Relation';
+import { newTextProperty } from '@/domain/propertyTypes/Text';
 import { RelationTargetEditingKey, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
@@ -18,7 +19,7 @@ import { newSubject } from '@/TestHelpers';
 const SubjectPickerWithoutName = {
 	props: {
 		selected: { type: String, default: null },
-		targetSchema: { type: String, default: '' },
+		targetSchemas: { type: Array, default: undefined },
 		startIcon: { type: [ String, Object ], default: undefined },
 		status: { type: String, default: 'default' },
 		ariaLabel: { type: String, default: '' },
@@ -30,7 +31,7 @@ const SubjectPickerWithoutName = {
 const SubjectPickerShowingNoTarget = {
 	props: {
 		selected: { type: String, default: null },
-		targetSchema: { type: String, default: '' },
+		targetSchemas: { type: Array, default: undefined },
 		startIcon: { type: [ String, Object ], default: undefined },
 		status: { type: String, default: 'default' },
 		ariaLabel: { type: String, default: '' },
@@ -41,7 +42,7 @@ const SubjectPickerShowingNoTarget = {
 const SubjectPickerWithSlots = {
 	props: {
 		selected: { type: String, default: null },
-		targetSchema: { type: String, default: '' },
+		targetSchemas: { type: Array, default: undefined },
 		// A Codex icon is a path string, or an object carrying its language and direction variants.
 		startIcon: { type: [ String, Object ], default: undefined },
 		status: { type: String, default: 'default' },
@@ -81,22 +82,22 @@ describe( 'RelationInput', () => {
 		setupMwMock( { functions: [ 'message' ] } );
 	} );
 
-	function newWrapper( props: Partial<ValueInputProps<RelationProperty>> = {} ): VueWrapper {
+	function newWrapper(
+		props: Partial<ValueInputProps<RelationProperty>> = {},
+		stubs: Record<string, any> = { SubjectPicker: true, NeoMultiLookupInput: true },
+	): VueWrapper {
 		return mount( RelationInput, {
 			props: {
 				modelValue: undefined,
 				label: 'Test Relation',
-				property: newRelationProperty( { targetSchema: 'Company' } ),
+				property: newRelationProperty( { targetSchemas: [ 'Company' ] } ),
 				...props,
 			},
 			global: {
 				provide: NeoWikiTestServices.getServices(),
 				directives: { tooltip: {} },
 				mocks: { $i18n: createI18nMock() },
-				stubs: {
-					SubjectPicker: true,
-					NeoMultiLookupInput: true,
-				},
+				stubs,
 			},
 		} );
 	}
@@ -150,32 +151,41 @@ describe( 'RelationInput', () => {
 			expect( wrapper.findComponent( SubjectPicker ).props( 'selected' ) ).toBeNull();
 		} );
 
-		it( 'passes targetSchema to SubjectPicker', () => {
+		it( 'passes the target Schemas to SubjectPicker', () => {
 			const wrapper = newWrapper( {
-				property: newRelationProperty( { targetSchema: 'Person' } ),
+				property: newRelationProperty( { targetSchemas: [ 'Person', 'Group' ] } ),
 			} );
 
-			expect( wrapper.findComponent( SubjectPicker ).props( 'targetSchema' ) ).toBe( 'Person' );
+			expect( wrapper.findComponent( SubjectPicker ).props( 'targetSchemas' ) ).toEqual( [ 'Person', 'Group' ] );
 		} );
 
-		// Null rather than undefined: a picker given no target Schema offers Subjects of every Schema.
-		it( 'tells SubjectPicker a target Schema of another Source names nothing it can search', () => {
+		it( 'passes SubjectPicker only the target Schemas of this wiki', () => {
 			const wrapper = newWrapper( {
-				property: newRelationProperty( { targetSchema: { source: 'otherwiki', name: 'Person' } } ),
+				property: newRelationProperty( {
+					targetSchemas: [ { source: 'otherwiki', name: 'Person' }, 'Group', { source: 'otherwiki', name: 'Place' } ],
+				} ),
 			} );
 
-			expect( wrapper.findComponent( SubjectPicker ).props( 'targetSchema' ) ).toBeNull();
+			expect( wrapper.findComponent( SubjectPicker ).props( 'targetSchemas' ) ).toEqual( [ 'Group' ] );
 		} );
 
-		// The state switching a property's type to Relation leaves its initial-value field in.
-		it( 'tells SubjectPicker a relation without a target Schema names nothing it can search', () => {
-			const noTarget: Partial<RelationProperty> = { targetSchema: undefined };
-
+		// An empty list rather than none: a picker given no target Schemas offers Subjects of every Schema.
+		it( 'tells SubjectPicker that target Schemas of another Source leave it nothing to search', () => {
 			const wrapper = newWrapper( {
-				property: { ...newRelationProperty(), ...noTarget },
+				property: newRelationProperty( { targetSchemas: [ { source: 'otherwiki', name: 'Person' } ] } ),
 			} );
 
-			expect( wrapper.findComponent( SubjectPicker ).props( 'targetSchema' ) ).toBeNull();
+			expect( wrapper.findComponent( SubjectPicker ).props( 'targetSchemas' ) ).toEqual( [] );
+		} );
+
+		// The editor picks the field by the type the Statement was written with, and hands it the
+		// property as the Schema now defines it.
+		it( 'gives SubjectPicker nothing to search for a property the Schema has since made another type', () => {
+			const wrapper = newWrapper( {
+				property: newTextProperty( { name: 'Owner' } ) as unknown as RelationProperty,
+			} );
+
+			expect( wrapper.findComponent( SubjectPicker ).props( 'targetSchemas' ) ).toEqual( [] );
 		} );
 
 		it( 'emits RelationValue when subject is selected', async () => {
@@ -226,12 +236,12 @@ describe( 'RelationInput', () => {
 
 		it( 'passes field status to SubjectPicker', () => {
 			const clean = newWrapper( {
-				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				property: newRelationProperty( { name: 'Owner', targetSchemas: [ 'Company' ] } ),
 			} );
 			expect( clean.findComponent( SubjectPicker ).props( 'status' ) ).toBe( 'default' );
 
 			const withViolation = newWrapper( {
-				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				property: newRelationProperty( { name: 'Owner', targetSchemas: [ 'Company' ] } ),
 				serverViolations: [
 					{ propertyName: 'Owner', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 				],
@@ -255,7 +265,7 @@ describe( 'RelationInput', () => {
 		it( 'surfaces a server violation on an untouched single relation', () => {
 			const wrapper = newWrapper( {
 				// The message can only originate from the server-sourced violation.
-				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				property: newRelationProperty( { name: 'Owner', targetSchemas: [ 'Company' ] } ),
 				serverViolations: [
 					{ propertyName: 'Owner', code: 'type-mismatch', args: [], severity: 'error', valuePartIndex: null },
 				],
@@ -268,7 +278,7 @@ describe( 'RelationInput', () => {
 
 		it( 'surfaces an unresolvable-source violation, which only the server can detect', () => {
 			const wrapper = newWrapper( {
-				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				property: newRelationProperty( { name: 'Owner', targetSchemas: [ 'Company' ] } ),
 				serverViolations: [
 					{
 						propertyName: 'Owner',
@@ -289,7 +299,7 @@ describe( 'RelationInput', () => {
 
 		it( 'keeps a server violation suppressed while the lookup reports unmatched text', async () => {
 			const wrapper = newWrapper( {
-				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				property: newRelationProperty( { name: 'Owner', targetSchemas: [ 'Company' ] } ),
 				serverViolations: [
 					{ propertyName: 'Owner', code: 'type-mismatch', args: [], severity: 'error', valuePartIndex: null },
 				],
@@ -502,6 +512,22 @@ describe( 'RelationInput', () => {
 			expect( wrapper.findComponent( NeoMultiLookupInput ).props( 'modelValue' ) ).toEqual( [] );
 		} );
 
+		it( 'passes the picker of each value the target Schemas of this wiki', () => {
+			const wrapper = newWrapper(
+				{
+					modelValue: new RelationValue( [ newRelation( undefined, 's1demo1aaaaaaa1' ) ] ),
+					property: newRelationProperty( {
+						multiple: true,
+						targetSchemas: [ 'Company', { source: 'otherwiki', name: 'Person' } ],
+					} ),
+				},
+				{ SubjectPicker: SubjectPickerWithSlots, NeoMultiLookupInput: NeoMultiLookupInputWithSlots },
+			);
+
+			expect( wrapper.findAllComponents( SubjectPicker ).map( ( picker ) => picker.props( 'targetSchemas' ) ) )
+				.toEqual( [ [ 'Company' ], [ 'Company' ] ] );
+		} );
+
 		it( 'emits RelationValue when selections change', async () => {
 			const wrapper = newWrapper( {
 				property: newRelationProperty( { multiple: true } ),
@@ -569,7 +595,7 @@ describe( 'RelationInput', () => {
 
 		it( 'shows a warning violation with the warning status on a single relation', () => {
 			const wrapper = newWrapper( {
-				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				property: newRelationProperty( { name: 'Owner', targetSchemas: [ 'Company' ] } ),
 				serverViolations: [
 					{ propertyName: 'Owner', code: 'relation-target-not-found', args: [], severity: 'warning', valuePartIndex: null },
 				],
@@ -622,7 +648,7 @@ describe( 'RelationInput', () => {
 	describe( 'clearing server violations', () => {
 		it( 'clears a part-indexed violation using its own index', async () => {
 			const wrapper = newWrapper( {
-				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				property: newRelationProperty( { name: 'Owner', targetSchemas: [ 'Company' ] } ),
 				serverViolations: [
 					{
 						propertyName: 'Owner',
@@ -646,7 +672,7 @@ describe( 'RelationInput', () => {
 
 		it( 'clears every violation on the property, one emit per index', async () => {
 			const wrapper = newWrapper( {
-				property: newRelationProperty( { name: 'Owners', targetSchema: 'Company', multiple: true } ),
+				property: newRelationProperty( { name: 'Owners', targetSchemas: [ 'Company' ], multiple: true } ),
 				serverViolations: [
 					{ propertyName: 'Owners', code: 'relation-target-not-found', args: [ 'x' ], severity: 'error', valuePartIndex: 0 },
 					{ propertyName: 'Owners', code: 'relation-target-schema-mismatch', args: [], severity: 'error', valuePartIndex: 1 },
@@ -666,7 +692,7 @@ describe( 'RelationInput', () => {
 
 		it( 'does not emit when the property has no violation', async () => {
 			const wrapper = newWrapper( {
-				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				property: newRelationProperty( { name: 'Owner', targetSchemas: [ 'Company' ] } ),
 				serverViolations: [
 					{ propertyName: 'Other', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 				],
@@ -680,7 +706,7 @@ describe( 'RelationInput', () => {
 
 		it( 'clears a field-level (null-index) violation on the property', async () => {
 			const wrapper = newWrapper( {
-				property: newRelationProperty( { name: 'Owner', targetSchema: 'Company' } ),
+				property: newRelationProperty( { name: 'Owner', targetSchemas: [ 'Company' ] } ),
 				serverViolations: [
 					{ propertyName: 'Owner', code: 'required', args: [], severity: 'error', valuePartIndex: null },
 				],
@@ -698,7 +724,7 @@ describe( 'RelationInput', () => {
 
 		it( 'uses the violation index rather than the array position on a gapped multi', async () => {
 			const wrapper = newWrapper( {
-				property: newRelationProperty( { name: 'Owners', targetSchema: 'Company', multiple: true } ),
+				property: newRelationProperty( { name: 'Owners', targetSchemas: [ 'Company' ], multiple: true } ),
 				serverViolations: [
 					{ propertyName: 'Owners', code: 'relation-target-not-found', args: [ 'x' ], severity: 'error', valuePartIndex: 0 },
 					{ propertyName: 'Owners', code: 'relation-target-schema-mismatch', args: [], severity: 'error', valuePartIndex: 2 },

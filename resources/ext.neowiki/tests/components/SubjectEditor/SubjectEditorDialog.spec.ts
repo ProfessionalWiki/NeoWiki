@@ -1148,7 +1148,7 @@ describe( 'SubjectEditorDialog', () => {
 			'TestSchema',
 			'A test schema',
 			new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'Colleague', { type: 'relation', targetSchema: 'Person' } ),
+				createPropertyDefinitionFromJson( 'Colleague', { type: 'relation', targetSchemas: [ 'Person' ] } ),
 			] ),
 		);
 
@@ -2625,7 +2625,7 @@ describe( 'SubjectEditorDialog', () => {
 			// The schemas the drafts of these tests are edited against. Person carries a relation
 			// of its own, so a draft can point at another draft; Employer ends the chain.
 			const personCreationSchema = new Schema( 'Person', 'A person', new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'Colleague', { type: 'relation', targetSchema: 'Employer' } ),
+				createPropertyDefinitionFromJson( 'Colleague', { type: 'relation', targetSchemas: [ 'Employer' ] } ),
 			] ) );
 			const employerSchema = new Schema( 'Employer', 'An employer', new PropertyDefinitionList( [] ) );
 			const creationSchemas: Record<string, Schema> = {

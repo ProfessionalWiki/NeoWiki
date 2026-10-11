@@ -16,7 +16,7 @@ import { createTestWrapper, FieldProps, findPropertyNameInput, reportUnparseable
 
 describe( 'PropertyDefinitionEditor', () => {
 	beforeEach( () => {
-		// The relation attributes editor reaches SchemaPicker, which calls useSchemaStore() at setup.
+		// The relation attributes editor reaches TargetSchemasInput, which calls useSchemaStore() at setup.
 		setActivePinia( createPinia() );
 		setupMwMock();
 	} );

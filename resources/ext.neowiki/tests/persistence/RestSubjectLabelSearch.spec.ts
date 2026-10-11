@@ -15,14 +15,14 @@ function jsonResponse( body: unknown ): Response {
 
 describe( 'RestSubjectLabelSearch', () => {
 
-	it( 'asks for the Subjects of the Schema it is given', async () => {
+	it( 'asks for the Subjects of the Schemas it is given', async () => {
 		const search = newSearch( {
-			[ `${ SEARCH_URL }&schema=Company` ]: jsonResponse( [
+			[ `${ SEARCH_URL }&schema=Company%7CPerson` ]: jsonResponse( [
 				{ id: 's1demo1aaaaaaa1', label: 'ACME Inc.' },
 			] ),
 		} );
 
-		expect( await search.searchSubjectLabels( 'acme', 'Company' ) ).toEqual( [
+		expect( await search.searchSubjectLabels( 'acme', [ 'Company', 'Person' ] ) ).toEqual( [
 			{ id: 's1demo1aaaaaaa1', label: 'ACME Inc.' },
 		] );
 	} );

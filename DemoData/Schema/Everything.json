@@ -94,11 +94,11 @@
 		},
 		"relation/relation": {
 			"type": "relation",
-			"targetSchema": "Product"
+			"targetSchemas": [ "Product" ]
 		},
 		"relation/relation (many)": {
 			"type": "relation",
-			"targetSchema": "Product",
+			"targetSchemas": [ "Product" ],
 			"multiple": true
 		}
 	}

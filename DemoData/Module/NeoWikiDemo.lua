@@ -222,6 +222,14 @@ function p.productsFoundedSince( frame )
 	) )
 end
 
+-- A Schema of this wiki arrives as its name, one from another Source as a { source, name } table.
+local function schemaReferenceText( reference )
+	if type( reference ) == 'table' then
+		return reference.source .. ':' .. reference.name
+	end
+	return reference
+end
+
 local function propertyDetails( prop )
 	local details = {}
 
@@ -242,7 +250,11 @@ local function propertyDetails( prop )
 			details[#details + 1] = 'precision: ' .. tostring( prop.precision )
 		end
 	elseif prop.type == 'relation' then
-		details[#details + 1] = 'targetSchema: ' .. prop.targetSchema
+		local targetSchemas = {}
+		for _, reference in ipairs( prop.targetSchemas ) do
+			targetSchemas[#targetSchemas + 1] = schemaReferenceText( reference )
+		end
+		details[#details + 1] = 'targetSchemas: ' .. table.concat( targetSchemas, ', ' )
 	elseif prop.type == 'text' or prop.type == 'url' then
 		if prop.multiple then
 			details[#details + 1] = 'multiple: true'

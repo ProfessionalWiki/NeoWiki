@@ -185,7 +185,7 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$violations = $this->validateRelationToTheTarget( $this->mockRegisteredUltimateAuthority() );
 
 		$this->assertSame( [ 'relation-target-schema-mismatch' ], array_column( $violations, 'code' ) );
-		$this->assertSame( [ 'Person', self::TARGET_SCHEMA ], $violations[0]['args'] );
+		$this->assertSame( [ self::TARGET_SCHEMA ], $violations[0]['args'] );
 	}
 
 	/**
@@ -228,7 +228,7 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 			json_encode( [
 				'title' => TestSubject::DEFAULT_SCHEMA_ID,
 				'propertyDefinitions' => [
-					'Owner' => [ 'type' => 'relation', 'targetSchema' => 'Person' ],
+					'Owner' => [ 'type' => 'relation', 'targetSchemas' => [ 'Person' ] ],
 				],
 			] )
 		);

@@ -15,7 +15,7 @@ class NullSubjectLabelLookupTest extends TestCase {
 	public function testReturnsNoMatches(): void {
 		$lookup = new NullSubjectLabelLookup();
 
-		$this->assertSame( [], $lookup->getSubjectLabelsMatching( 'Al', 10, 'Person' ) );
+		$this->assertSame( [], $lookup->getSubjectLabelsMatching( 'Al', 10, [ 'Person' ] ) );
 	}
 
 }

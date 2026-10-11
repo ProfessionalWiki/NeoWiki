@@ -124,7 +124,7 @@ JSON
 		$validator = SchemaContentValidator::newInstance();
 
 		$valid = $validator->validate(
-			$this->schemaWithProperty( '{ "type": "relation", "targetSchema": "Person" }' )
+			$this->schemaWithProperty( '{ "type": "relation", "targetSchemas": [ "Person" ] }' )
 		);
 
 		if ( !$valid ) {
@@ -139,16 +139,42 @@ JSON
 
 		$this->assertTrue(
 			$validator->validate(
-				$this->schemaWithProperty( '{ "type": "relation", "relation": "", "targetSchema": "Person" }' )
+				$this->schemaWithProperty( '{ "type": "relation", "relation": "", "targetSchemas": [ "Person" ] }' )
 			)
 		);
 	}
 
-	public function testRelationPropertyWithoutTargetSchemaFailsValidation(): void {
+	public function testRelationPropertyWithoutTargetSchemasFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();
 
 		$this->assertFalse(
-			$validator->validate( $this->schemaWithProperty( '{ "type": "relation" }' ) )
+			$validator->validate( $this->schemaWithProperty( '{ "type": "relation", "targetSchema": "Person" }' ) )
+		);
+	}
+
+	public function testEmptyListOfTargetSchemasFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate( $this->schemaWithProperty( '{ "type": "relation", "targetSchemas": [] }' ) )
+		);
+	}
+
+	public function testTargetSchemasThatAreNoListFailValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate( $this->schemaWithProperty( '{ "type": "relation", "targetSchemas": "Person" }' ) )
+		);
+	}
+
+	public function testRepeatedTargetSchemaFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty( '{ "type": "relation", "targetSchemas": [ "Person", "Group", "Person" ] }' )
+			)
 		);
 	}
 
@@ -157,12 +183,12 @@ JSON
 
 		$this->assertFalse(
 			$validator->validate(
-				$this->schemaWithProperty( '{ "type": "relation", "targetSchema": "" }' )
+				$this->schemaWithProperty( '{ "type": "relation", "targetSchemas": [ "Person", "" ] }' )
 			)
 		);
 
 		$this->assertContains(
-			'The target schema must be a Schema name, or an object with a source key and a name. Neither may be empty or have surrounding whitespace.',
+			'A target schema must be a Schema name, or an object with a source key and a name. Neither may be empty or have surrounding whitespace.',
 			$validator->getErrors()
 		);
 	}
@@ -172,12 +198,12 @@ JSON
 
 		$this->assertFalse(
 			$validator->validate(
-				$this->schemaWithProperty( '{ "type": "relation", "targetSchema": " Person" }' )
+				$this->schemaWithProperty( '{ "type": "relation", "targetSchemas": [ "Person", " Group" ] }' )
 			)
 		);
 
 		$this->assertContains(
-			'The target schema must be a Schema name, or an object with a source key and a name. Neither may be empty or have surrounding whitespace.',
+			'A target schema must be a Schema name, or an object with a source key and a name. Neither may be empty or have surrounding whitespace.',
 			$validator->getErrors()
 		);
 	}
@@ -187,7 +213,7 @@ JSON
 
 		$this->assertTrue(
 			$validator->validate(
-				$this->schemaWithProperty( '{ "type": "relation", "targetSchema": "ISO:9001" }' )
+				$this->schemaWithProperty( '{ "type": "relation", "targetSchemas": [ "ISO:9001" ] }' )
 			)
 		);
 	}
@@ -198,7 +224,7 @@ JSON
 		$this->assertTrue(
 			$validator->validate(
 				$this->schemaWithProperty(
-					'{ "type": "relation", "targetSchema": { "source": "otherwiki", "name": "Person" } }'
+					'{ "type": "relation", "targetSchemas": [ "Person", { "source": "otherwiki", "name": "Group" } ] }'
 				)
 			)
 		);
@@ -216,7 +242,7 @@ JSON
 		$this->assertFalse(
 			$validator->validate(
 				$this->schemaWithProperty(
-					'{ "type": "relation", "targetSchema": { "source": "otherwiki\n", "name": "Person" } }'
+					'{ "type": "relation", "targetSchemas": [ { "source": "otherwiki\n", "name": "Person" } ] }'
 				)
 			)
 		);
@@ -228,7 +254,7 @@ JSON
 		$this->assertFalse(
 			$validator->validate(
 				$this->schemaWithProperty(
-					'{ "type": "relation", "targetSchema": { "source": "otherwiki" } }'
+					'{ "type": "relation", "targetSchemas": [ { "source": "otherwiki" } ] }'
 				)
 			)
 		);
@@ -240,7 +266,7 @@ JSON
 		$this->assertFalse(
 			$validator->validate(
 				$this->schemaWithProperty(
-					'{ "type": "relation", "targetSchema": { "source": "2wiki", "name": "Person" } }'
+					'{ "type": "relation", "targetSchemas": [ { "source": "2wiki", "name": "Person" } ] }'
 				)
 			)
 		);

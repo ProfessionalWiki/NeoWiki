@@ -44,7 +44,7 @@ describe( 'SubjectPicker', () => {
 		return mount( SubjectPicker, {
 			props: {
 				selected: null,
-				targetSchema: 'Product',
+				targetSchemas: [ 'Product' ],
 				...props,
 			},
 			global: {
@@ -67,7 +67,7 @@ describe( 'SubjectPicker', () => {
 		return mount( SubjectPicker, {
 			props: {
 				selected: null,
-				targetSchema: 'Product',
+				targetSchemas: [ 'Product' ],
 				...props,
 			},
 			global: {
@@ -123,30 +123,30 @@ describe( 'SubjectPicker', () => {
 		};
 	} );
 
-	it( 'calls searchSubjectLabels with input and targetSchema', async () => {
-		const wrapper = createWrapper( { targetSchema: 'Company' } );
+	it( 'searches the Subjects of every target Schema', async () => {
+		const wrapper = createWrapper( { targetSchemas: [ 'Company', 'Person' ] } );
 
 		await type( wrapper, 'acme' );
 
-		expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenCalledWith( 'acme', 'Company' );
+		expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenCalledWith( 'acme', [ 'Company', 'Person' ] );
 	} );
 
 	// An omitted prop arrives as undefined, which is what the picker reads as "no Schema in
 	// particular" — the state Special:Subject's own picker is in.
 	it( 'searches every Schema when it is given no target Schema', async () => {
-		const wrapper = createWrapper( { targetSchema: undefined } );
+		const wrapper = createWrapper( { targetSchemas: undefined } );
 
 		await type( wrapper, 'acme' );
 
 		expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenCalledWith( 'acme', undefined );
 	} );
 
-	// Null is a Schema of another Source, which is a different thing from no Schema at all: this
-	// wiki holds no Subject of it and has nothing to search.
-	it( 'searches nothing when the target Schema is another Source\'s', async () => {
+	// No Schema is a different thing from no Schema in particular: a relation whose target Schemas
+	// are all another Source's leaves this wiki no Subject to search.
+	it( 'searches nothing when it is given no target Schema of this wiki', async () => {
 		searchReturns( [ { id: 's1demo1aaaaaaa1', label: 'ACME Inc.' } ] );
 
-		const wrapper = createWrapper( { targetSchema: null } );
+		const wrapper = createWrapper( { targetSchemas: [] } );
 
 		await type( wrapper, 'acme' );
 
@@ -160,7 +160,7 @@ describe( 'SubjectPicker', () => {
 			{ id: 's1demo5sssssss1', label: 'Professional Wiki GmbH' },
 		] );
 
-		const wrapper = createWrapper( { targetSchema: 'Company' } );
+		const wrapper = createWrapper( { targetSchemas: [ 'Company' ] } );
 		const lookup = wrapper.findComponent( CdxLookup );
 
 		await type( wrapper, 'a' );
@@ -267,7 +267,7 @@ describe( 'SubjectPicker', () => {
 				{ id: 's1demo5sssssss1', label: 'Second Result' },
 			] );
 
-		const wrapper = createWrapper( { targetSchema: 'Company' } );
+		const wrapper = createWrapper( { targetSchemas: [ 'Company' ] } );
 		const lookup = wrapper.findComponent( CdxLookup );
 
 		await type( wrapper, 'first' );
@@ -405,7 +405,7 @@ describe( 'SubjectPicker', () => {
 		const wrapper = mount( SubjectPicker, {
 			props: {
 				selected: null,
-				targetSchema: 'Product',
+				targetSchemas: [ 'Product' ],
 			},
 			global: {
 				mocks: { $i18n },
@@ -440,7 +440,7 @@ describe( 'SubjectPicker', () => {
 
 		function mountWithSelectedProbe( selected: string ): VueWrapper {
 			return mount( SubjectPicker, {
-				props: { selected, targetSchema: 'Company' },
+				props: { selected, targetSchemas: [ 'Company' ] },
 				global: {
 					plugins: [ pinia ],
 					provide: { [ Service.SubjectLabelSearch ]: mockSubjectLabelSearch },
@@ -534,7 +534,7 @@ describe( 'SubjectPicker', () => {
 
 		function mountWithNameProbe( selected: string ): VueWrapper {
 			return mount( SubjectPicker, {
-				props: { selected, targetSchema: 'Company' },
+				props: { selected, targetSchemas: [ 'Company' ] },
 				global: {
 					plugins: [ pinia ],
 					provide: { [ Service.SubjectLabelSearch ]: mockSubjectLabelSearch },
@@ -605,7 +605,7 @@ describe( 'SubjectPicker', () => {
 
 		it( 'offers the Subject an entered id names, under its display name', async () => {
 			wikiHolds( labellessSubject( TARGET_ID, 'ACME Inc.', 'Company' ) );
-			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+			const wrapper = createWrapperWithVModel( { targetSchemas: [ 'Company' ] } );
 
 			await type( wrapper, TARGET_ID );
 
@@ -614,7 +614,7 @@ describe( 'SubjectPicker', () => {
 
 		it( 'searches no labels once an id has named a usable Subject', async () => {
 			wikiHolds( labellessSubject( TARGET_ID, 'ACME Inc.', 'Company' ) );
-			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+			const wrapper = createWrapperWithVModel( { targetSchemas: [ 'Company' ] } );
 
 			await type( wrapper, TARGET_ID );
 
@@ -625,7 +625,7 @@ describe( 'SubjectPicker', () => {
 		// one must still search labels, or a Subject named after such a word becomes unfindable.
 		it( 'searches labels for an id-shaped word that names no Subject', async () => {
 			searchReturns( [ { id: TARGET_ID, label: 'Straightforward Solutions' } ] );
-			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+			const wrapper = createWrapperWithVModel( { targetSchemas: [ 'Company' ] } );
 
 			await type( wrapper, 'straightforward' );
 
@@ -637,16 +637,25 @@ describe( 'SubjectPicker', () => {
 		it( 'searches labels for an id naming a Subject of another Schema', async () => {
 			wikiHolds( labellessSubject( TARGET_ID, 'Ada Lovelace', 'Person' ) );
 			searchReturns( [ { id: OTHER_ID, label: 'Acme Anvils' } ] );
-			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+			const wrapper = createWrapperWithVModel( { targetSchemas: [ 'Company' ] } );
 
 			await type( wrapper, TARGET_ID );
 
 			expect( menuItemsOf( wrapper ) ).toEqual( [ { label: 'Acme Anvils', value: OTHER_ID } ] );
 		} );
 
+		it( 'offers the Subject an entered id names when it follows any of the target Schemas', async () => {
+			wikiHolds( labellessSubject( TARGET_ID, 'Ada Lovelace', 'Person' ) );
+			const wrapper = createWrapperWithVModel( { targetSchemas: [ 'Company', 'Person', 'Organization' ] } );
+
+			await type( wrapper, TARGET_ID );
+
+			expect( menuItemsOf( wrapper ) ).toEqual( [ { label: 'Ada Lovelace', value: TARGET_ID } ] );
+		} );
+
 		it( 'offers nothing for an id naming a Subject of another Schema', async () => {
 			wikiHolds( labellessSubject( TARGET_ID, 'Ada Lovelace', 'Person' ) );
-			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+			const wrapper = createWrapperWithVModel( { targetSchemas: [ 'Company' ] } );
 
 			await type( wrapper, TARGET_ID );
 
@@ -656,7 +665,7 @@ describe( 'SubjectPicker', () => {
 		// With no Schema to match against, there is no Schema an id can name the wrong Subject of.
 		it( 'offers the Subject an id names whatever its Schema, given no target Schema', async () => {
 			wikiHolds( labellessSubject( TARGET_ID, 'Ada Lovelace', 'Person' ) );
-			const wrapper = createWrapperWithVModel( { targetSchema: undefined } );
+			const wrapper = createWrapperWithVModel( { targetSchemas: undefined } );
 
 			await type( wrapper, TARGET_ID );
 
@@ -664,16 +673,16 @@ describe( 'SubjectPicker', () => {
 		} );
 
 		it( 'searches labels for a padded name without its padding', async () => {
-			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+			const wrapper = createWrapperWithVModel( { targetSchemas: [ 'Company' ] } );
 
 			await type( wrapper, '  Acme  ' );
 
-			expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenCalledWith( 'Acme', 'Company' );
+			expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenCalledWith( 'Acme', [ 'Company' ] );
 		} );
 
 		it( 'reads the Subject named by a pasted id despite the whitespace around it', async () => {
 			wikiHolds( labellessSubject( TARGET_ID, 'ACME Inc.', 'Company' ) );
-			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+			const wrapper = createWrapperWithVModel( { targetSchemas: [ 'Company' ] } );
 
 			await type( wrapper, `  ${ TARGET_ID }\n` );
 
@@ -687,7 +696,7 @@ describe( 'SubjectPicker', () => {
 					answerLookup = resolve;
 				} ),
 			);
-			const wrapper = createWrapperWithVModel( { targetSchema: 'Company' } );
+			const wrapper = createWrapperWithVModel( { targetSchemas: [ 'Company' ] } );
 
 			await type( wrapper, TARGET_ID );
 			await type( wrapper, '' );
@@ -788,7 +797,7 @@ describe( 'SubjectPicker', () => {
 				subjectNamed( EXISTING_TARGET_ID, targetName, 'Company' ),
 			);
 
-			return createWrapperOffering( subjectCreation, { selected: EXISTING_TARGET_ID, targetSchema: 'Company' } );
+			return createWrapperOffering( subjectCreation, { selected: EXISTING_TARGET_ID, targetSchemas: [ 'Company' ] } );
 		}
 
 		function lastMenuLabelOf( wrapper: VueWrapper ): string {
@@ -814,6 +823,13 @@ describe( 'SubjectPicker', () => {
 		async function chooseLastMenuItem( wrapper: VueWrapper ): Promise<void> {
 			const items = menuItemsOf( wrapper );
 			wrapper.findComponent( CdxLookupWithVModel ).vm.$emit( 'update:selected', items[ items.length - 1 ].value );
+			await flushPromises();
+		}
+
+		async function chooseMenuItemLabelled( wrapper: VueWrapper, label: string ): Promise<void> {
+			const item = menuItemsOf( wrapper ).find( ( candidate ) => candidate.label === label );
+			expect( item, `no menu item labelled ${ label }` ).toBeDefined();
+			wrapper.findComponent( CdxLookupWithVModel ).vm.$emit( 'update:selected', item!.value );
 			await flushPromises();
 		}
 
@@ -865,18 +881,18 @@ describe( 'SubjectPicker', () => {
 		it( 'offers no create option without a target Schema', async () => {
 			const wrapper = await createWrapperOffering(
 				hostOffering( creatorReturning( null ) ),
-				{ targetSchema: undefined },
+				{ targetSchemas: undefined },
 			);
 
 			expect( menuLabelsOf( wrapper ) ).toEqual( [] );
 		} );
 
 		// What the host would mint is a local Subject, which is not of the Schema referenced. The
-		// offer would name no Schema at all, the picker holding only another Source's.
-		it( 'offers no create option for a Schema of another Source', async () => {
+		// offer would name no Schema at all, the relation targeting only another Source's.
+		it( 'offers no create option without a target Schema of this wiki', async () => {
 			const wrapper = await createWrapperOffering(
 				hostOffering( creatorReturning( null ) ),
-				{ targetSchema: null },
+				{ targetSchemas: [] },
 			);
 
 			expect( menuLabelsOf( wrapper ) ).toEqual( [] );
@@ -910,10 +926,34 @@ describe( 'SubjectPicker', () => {
 			] );
 		} );
 
+		it( 'offers creating a Subject of each target Schema', async () => {
+			const wrapper = await createWrapperOffering(
+				hostOffering( creatorReturning( null ) ),
+				{ targetSchemas: [ 'Company', 'Person' ] },
+			);
+
+			expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Create a new Company', 'Create a new Person' ] );
+		} );
+
+		it( 'names the typed text in the create option of each target Schema', async () => {
+			const wrapper = await createWrapperOffering(
+				hostOffering( creatorReturning( null ) ),
+				{ targetSchemas: [ 'Company', 'Person' ] },
+			);
+
+			await type( wrapper, 'Ada' );
+
+			expect( menuLabelsOf( wrapper ) ).toEqual( [
+				'No matches found',
+				'Create "Ada" as a new Company',
+				'Create "Ada" as a new Person',
+			] );
+		} );
+
 		it( 'names the typed text and the schema in the create option once the user has typed', async () => {
 			const wrapper = await createWrapperOffering(
 				hostOffering( creatorReturning( null ) ),
-				{ targetSchema: 'Company' },
+				{ targetSchemas: [ 'Company' ] },
 			);
 
 			await type( wrapper, 'Widget Co' );
@@ -973,12 +1013,25 @@ describe( 'SubjectPicker', () => {
 
 		it( 'creates a Subject of the target Schema named after the typed text', async () => {
 			const create = creatorReturning( createdSubject( 'Widget X', 'Widget X' ) );
-			const wrapper = await createWrapperOffering( hostOffering( create ), { targetSchema: 'Company' } );
+			const wrapper = await createWrapperOffering( hostOffering( create ), { targetSchemas: [ 'Company' ] } );
 
 			await type( wrapper, 'Widget X' );
 			await chooseLastMenuItem( wrapper );
 
 			expect( create ).toHaveBeenCalledWith( 'Company', 'Widget X' );
+		} );
+
+		it( 'creates a Subject of the target Schema whose create option is chosen', async () => {
+			const create = creatorReturning( createdSubject( 'Ada', 'Ada' ) );
+			const wrapper = await createWrapperOffering(
+				hostOffering( create ),
+				{ targetSchemas: [ 'Company', 'Person', 'Organization' ] },
+			);
+
+			await type( wrapper, 'Ada' );
+			await chooseMenuItemLabelled( wrapper, 'Create "Ada" as a new Person' );
+
+			expect( create ).toHaveBeenCalledWith( 'Person', 'Ada' );
 		} );
 
 		it( 'trims the typed text before naming the new Subject', async () => {
@@ -1166,7 +1219,7 @@ describe( 'SubjectPicker', () => {
 				await type( wrapper, 'Widget Co' );
 				await type( wrapper, 'ACME Inc.' );
 
-				expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenLastCalledWith( 'ACME Inc.', 'Company' );
+				expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenLastCalledWith( 'ACME Inc.', [ 'Company' ] );
 			} );
 
 			it( 'names the create option after text typed over the target', async () => {
@@ -1254,7 +1307,7 @@ describe( 'SubjectPicker', () => {
 				const drafts = draftsHolding( subjectNamed( DRAFT_ID, 'Anvil Co', 'Company' ) );
 				const wrapper = await createWrapperOffering(
 					hostOffering( creatorReturning( null ), drafts ),
-					{ targetSchema: 'Company' },
+					{ targetSchemas: [ 'Company' ] },
 				);
 
 				await type( wrapper, 'a' );
@@ -1271,10 +1324,28 @@ describe( 'SubjectPicker', () => {
 				);
 				const wrapper = await createWrapperOffering(
 					hostOffering( creatorReturning( null ), drafts ),
-					{ targetSchema: 'Company' },
+					{ targetSchemas: [ 'Company' ] },
 				);
 
 				expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Company', 'Create a new Company' ] );
+			} );
+
+			it( 'lists the session drafts of every target Schema', async () => {
+				const drafts = draftsHolding(
+					subjectNamed( DRAFT_ID, 'Anvil Co', 'Company' ),
+					subjectNamed( OTHER_DRAFT_ID, 'Ada', 'Person' ),
+				);
+				const wrapper = await createWrapperOffering(
+					hostOffering( creatorReturning( null ), drafts ),
+					{ targetSchemas: [ 'Company', 'Person' ] },
+				);
+
+				expect( menuLabelsOf( wrapper ) ).toEqual( [
+					'Anvil Co',
+					'Ada',
+					'Create a new Company',
+					'Create a new Person',
+				] );
 			} );
 
 			it( 'leaves out the session drafts of another Schema', async () => {
@@ -1284,7 +1355,7 @@ describe( 'SubjectPicker', () => {
 				);
 				const wrapper = await createWrapperOffering(
 					hostOffering( creatorReturning( null ), drafts ),
-					{ targetSchema: 'Company' },
+					{ targetSchemas: [ 'Company' ] },
 				);
 
 				expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Anvil Co', 'Create a new Company' ] );
@@ -1294,7 +1365,7 @@ describe( 'SubjectPicker', () => {
 				const drafts = draftsHolding( subjectNamed( DRAFT_ID, 'Anvil Co', 'Company' ) );
 				const wrapper = await createWrapperOffering(
 					hostOffering( creatorReturning( null ), drafts ),
-					{ targetSchema: 'Company' },
+					{ targetSchemas: [ 'Company' ] },
 				);
 
 				await chooseFirstMenuItem( wrapper );
@@ -1309,7 +1380,7 @@ describe( 'SubjectPicker', () => {
 				);
 				const wrapper = await createWrapperOffering(
 					hostOffering( creatorReturning( null ), drafts ),
-					{ targetSchema: 'Company' },
+					{ targetSchemas: [ 'Company' ] },
 				);
 
 				await type( wrapper, 'anv' );
@@ -1321,7 +1392,7 @@ describe( 'SubjectPicker', () => {
 				const drafts = draftsHolding( subjectNamed( DRAFT_ID, 'Company', 'Company' ) );
 				const wrapper = await createWrapperOffering(
 					hostOffering( creatorReturning( null ), drafts ),
-					{ selected: DRAFT_ID, targetSchema: 'Company' },
+					{ selected: DRAFT_ID, targetSchemas: [ 'Company' ] },
 				);
 
 				drafts.value = [ subjectNamed( DRAFT_ID, 'Anvil Co', 'Company' ) ];
@@ -1338,7 +1409,7 @@ describe( 'SubjectPicker', () => {
 			props: Partial<InstanceType<typeof SubjectPicker>['$props']> = {},
 		): Promise<VueWrapper> {
 			const wrapper = mount( SubjectPicker, {
-				props: { selected: null, targetSchema: 'Product', ...props },
+				props: { selected: null, targetSchemas: [ 'Product' ], ...props },
 				attachTo: document.body,
 				global: {
 					mocks: { $i18n },

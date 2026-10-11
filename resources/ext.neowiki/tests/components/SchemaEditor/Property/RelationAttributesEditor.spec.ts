@@ -1,47 +1,30 @@
-import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CdxTextInput } from '@wikimedia/codex';
+import { mount, VueWrapper } from '@vue/test-utils';
+import { beforeEach, describe, expect, it } from 'vitest';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
-import SchemaPicker from '@/components/common/SchemaPicker.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Relation';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { SchemaCreation, SchemaCreationKey } from '@/components/common/SchemaCreation.ts';
-import { Service } from '@/NeoWikiServices.ts';
-import { Schema } from '@/domain/Schema.ts';
-import { newSchema } from '@/TestHelpers.ts';
-import { createI18nMock, FieldProps, setupMwMock } from '../../../VueTestHelpers.ts';
+import { createI18nMock, setupMwMock } from '../../../VueTestHelpers.ts';
 
-const SchemaPickerStub = {
-	props: { selected: null, offersCreation: Boolean },
-	emits: [ 'select', 'create' ],
-	template: '<div class="schema-lookup-stub"></div>',
+const TargetSchemasInputStub = {
+	props: [ 'modelValue' ],
+	emits: [ 'update:modelValue' ],
+	template: '<div class="target-schemas-input-stub"></div>',
 };
 
 function relationProperty( overrides: Partial<RelationProperty> = {} ): RelationProperty {
-	return { ...newRelationProperty( {} ), targetSchema: 'Product', ...overrides };
+	return { ...newRelationProperty( {} ), targetSchemas: [ 'Product' ], ...overrides };
 }
 
 describe( 'RelationAttributesEditor', () => {
-	let canCreateSchemas: boolean;
-	// What the dialog holding the editor provides; undefined where none does.
-	let schemaCreation: SchemaCreation | undefined;
-	let finishCreation: ( schema: Schema | null ) => void;
 
 	beforeEach( () => {
 		setupMwMock( {
 			messages: {
-				'neowiki-property-editor-target-schema-required': 'Target schema is required.',
+				'neowiki-property-editor-target-schema-required': 'At least one target schema is required.',
 			},
-			functions: [ 'config', 'message', 'msg' ],
+			functions: [ 'config', 'message' ],
 		} );
-
-		canCreateSchemas = true;
-		schemaCreation = {
-			create: vi.fn( () => new Promise<Schema | null>( ( resolve ) => {
-				finishCreation = resolve;
-			} ) ),
-		};
 	} );
 
 	function newWrapper( props: Partial<AttributesEditorProps<RelationProperty>> = {} ): VueWrapper {
@@ -52,80 +35,36 @@ describe( 'RelationAttributesEditor', () => {
 			},
 			global: {
 				mocks: { $i18n: createI18nMock() },
-				stubs: { SchemaPicker: SchemaPickerStub },
-				provide: {
-					[ Service.SchemaPermissionHints ]: { canCreateSchemas: async () => canCreateSchemas },
-					...( schemaCreation === undefined ? {} : { [ SchemaCreationKey as symbol ]: schemaCreation } ),
-				},
+				stubs: { TargetSchemasInput: TargetSchemasInputStub },
 			},
 		} );
 	}
 
-	function fieldProps( wrapper: VueWrapper, selector: string ): FieldProps {
-		return ( wrapper.findComponent( selector ) as VueWrapper ).props() as unknown as FieldProps;
-	}
-
 	describe( 'rendering', () => {
-		it( 'renders the target-schema and multiple controls', () => {
+		it( 'renders the target-schemas and multiple controls', () => {
 			const wrapper = newWrapper();
 
-			expect( wrapper.findComponent( SchemaPickerStub ).exists() ).toBe( true );
+			expect( wrapper.findComponent( TargetSchemasInputStub ).exists() ).toBe( true );
 			expect( wrapper.find( 'input[type="checkbox"]' ).exists() ).toBe( true );
 		} );
 
-		it( 'passes the current target schema to SchemaPicker', () => {
+		it( 'passes the current target schemas to the target-schemas field', () => {
+			const targetSchemas = [ 'Office', { source: 'otherwiki', name: 'Person' } ];
 			const wrapper = newWrapper( {
-				property: relationProperty( { targetSchema: 'Office' } ),
+				property: relationProperty( { targetSchemas } ),
 			} );
 
-			expect( wrapper.findComponent( SchemaPickerStub ).props( 'selected' ) ).toBe( 'Office' );
-		} );
-
-		it( 'passes null to SchemaPicker when no target schema is set', () => {
-			const wrapper = newWrapper( {
-				property: relationProperty( { targetSchema: '' } ),
-			} );
-
-			expect( wrapper.findComponent( SchemaPickerStub ).props( 'selected' ) ).toBe( null );
-		} );
-
-		it( 'offers the picker to a property that has no target schema yet', () => {
-			const wrapper = newWrapper( {
-				property: relationProperty( { targetSchema: undefined } ),
-			} );
-
-			expect( wrapper.findComponent( SchemaPickerStub ).exists() ).toBe( true );
-		} );
-
-		it( 'shows a target schema from another Source read-only', () => {
-			const wrapper = newWrapper( {
-				property: relationProperty( { targetSchema: { source: 'otherwiki', name: 'Person' } } ),
-			} );
-
-			const input = wrapper.findComponent( '.relation-attributes__target-schema' )
-				.findComponent( CdxTextInput );
-
-			expect( wrapper.findComponent( SchemaPickerStub ).exists() ).toBe( false );
-			expect( input.props( 'modelValue' ) ).toBe( 'Person' );
-			expect( input.props( 'disabled' ) ).toBe( true );
+			expect( wrapper.findComponent( TargetSchemasInputStub ).props( 'modelValue' ) ).toEqual( targetSchemas );
 		} );
 	} );
 
 	describe( 'emitting updates', () => {
-		it( 'emits targetSchema when the picker selects a schema', async () => {
+		it( 'emits the target schemas the field reports', async () => {
 			const wrapper = newWrapper();
 
-			await wrapper.findComponent( SchemaPickerStub ).vm.$emit( 'select', 'Office' );
+			await wrapper.findComponent( TargetSchemasInputStub ).vm.$emit( 'update:modelValue', [ 'Product', 'Office' ] );
 
-			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { targetSchema: 'Office' } ] );
-		} );
-
-		it( 'leaves a target schema from another Source alone', () => {
-			const wrapper = newWrapper( {
-				property: relationProperty( { targetSchema: { source: 'otherwiki', name: 'Person' } } ),
-			} );
-
-			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
+			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { targetSchemas: [ 'Product', 'Office' ] } ] );
 		} );
 
 		it( 'emits multiple when the checkbox is toggled', async () => {
@@ -134,74 +73,6 @@ describe( 'RelationAttributesEditor', () => {
 			await wrapper.find( 'input[type="checkbox"]' ).setValue( true );
 
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { multiple: true } ] );
-		} );
-	} );
-
-	describe( 'creating the target schema from the picker', () => {
-		async function chooseCreateOffer( wrapper: VueWrapper, typedName: string ): Promise<void> {
-			await flushPromises();
-			wrapper.findComponent( SchemaPicker ).vm.$emit( 'create', typedName );
-			await flushPromises();
-		}
-
-		it( 'is offered to a user who may create schemas', async () => {
-			const wrapper = newWrapper();
-			await flushPromises();
-
-			expect( wrapper.findComponent( SchemaPicker ).props( 'offersCreation' ) ).toBe( true );
-		} );
-
-		it( 'is not offered to a user who may not create schemas', async () => {
-			canCreateSchemas = false;
-			const wrapper = newWrapper();
-			await flushPromises();
-
-			expect( wrapper.findComponent( SchemaPicker ).props( 'offersCreation' ) ).toBe( false );
-		} );
-
-		it( 'is not offered where no dialog can stack the schema creator', async () => {
-			schemaCreation = undefined;
-			const wrapper = newWrapper();
-			await flushPromises();
-
-			expect( wrapper.findComponent( SchemaPicker ).props( 'offersCreation' ) ).toBe( false );
-		} );
-
-		it( 'opens the schema creator on the name typed in the picker', async () => {
-			const wrapper = newWrapper();
-
-			await chooseCreateOffer( wrapper, 'Artist' );
-
-			expect( schemaCreation!.create ).toHaveBeenCalledWith( 'Artist' );
-		} );
-
-		it( 'opens the schema creator when nothing was typed', async () => {
-			const wrapper = newWrapper();
-
-			await chooseCreateOffer( wrapper, '' );
-
-			expect( schemaCreation!.create ).toHaveBeenCalledWith( '' );
-		} );
-
-		// The name typed in the picker may have been changed in the creator since.
-		it( 'targets the schema created there, under the name the wiki gave it', async () => {
-			const wrapper = newWrapper();
-			await chooseCreateOffer( wrapper, 'sculpture' );
-
-			finishCreation( newSchema( { title: 'statue' } ) );
-			await flushPromises();
-
-			expect( wrapper.emitted( 'update:property' ) ).toEqual( [ [ { targetSchema: 'Statue' } ] ] );
-		} );
-
-		it( 'leaves the target alone when the schema creator is closed without creating one', async () => {
-			const wrapper = newWrapper();
-			await chooseCreateOffer( wrapper, 'Artist' );
-
-			finishCreation( null );
-			await flushPromises();
-
-			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 	} );
 
@@ -256,21 +127,21 @@ describe( 'RelationAttributesEditor', () => {
 		} );
 	} );
 
+	// Codex shows a field's message only while the field is in that message's status, so the text
+	// on screen also stands for the status.
 	describe( 'validation', () => {
-		it( 'shows no error when the target schema is set', () => {
+		it( 'shows no error when a target schema is set', () => {
 			const wrapper = newWrapper();
 
-			expect( fieldProps( wrapper, '.relation-attributes__target-schema' ).status ).toBe( 'default' );
+			expect( wrapper.text() ).not.toContain( 'At least one target schema is required.' );
 		} );
 
 		it( 'shows a required error while no target schema is chosen', () => {
 			const wrapper = newWrapper( {
-				property: relationProperty( { targetSchema: undefined } ),
+				property: relationProperty( { targetSchemas: [] } ),
 			} );
 
-			const props = fieldProps( wrapper, '.relation-attributes__target-schema' );
-			expect( props.status ).toBe( 'error' );
-			expect( props.messages ).toEqual( { error: 'Target schema is required.' } );
+			expect( wrapper.text() ).toContain( 'At least one target schema is required.' );
 		} );
 	} );
 

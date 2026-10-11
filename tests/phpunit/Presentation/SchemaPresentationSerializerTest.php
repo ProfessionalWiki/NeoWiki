@@ -107,7 +107,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 					description: 'Test relation property',
 					required: false,
 					default: null,
-					targetSchema: SchemaReference::local( new SchemaName( 'targetSchema' ) ),
+					targetSchemas: [ SchemaReference::local( new SchemaName( 'targetSchema' ) ) ],
 					multiple: false
 				)
 			] )
@@ -120,7 +120,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 					'description' => 'Test relation property',
 					'required' => false,
 					'default' => null,
-					'targetSchema' => 'targetSchema',
+					'targetSchemas' => [ 'targetSchema' ],
 					'multiple' => false,
 					'type' => 'relation'
 				]

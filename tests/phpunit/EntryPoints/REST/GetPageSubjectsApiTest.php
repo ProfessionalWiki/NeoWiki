@@ -155,7 +155,7 @@ JSON
 	"propertyDefinitions": {
 		"partner": {
 			"type": "relation",
-			"targetSchema": "GetPageSubjectsApiTestSchema"
+			"targetSchemas": [ "GetPageSubjectsApiTestSchema" ]
 		}
 	}
 }
@@ -228,7 +228,7 @@ JSON
 	"propertyDefinitions": {
 		"partner": {
 			"type": "relation",
-			"targetSchema": "GetPageSubjectsApiTestSchema"
+			"targetSchemas": [ "GetPageSubjectsApiTestSchema" ]
 		}
 	}
 }
@@ -348,7 +348,7 @@ JSON
 	"propertyDefinitions": {
 		"MyRelation": {
 			"type": "relation",
-			"targetSchema": "GetPageSubjectsApiTestSchema"
+			"targetSchemas": [ "GetPageSubjectsApiTestSchema" ]
 		}
 	}
 }

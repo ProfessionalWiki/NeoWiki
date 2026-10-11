@@ -109,27 +109,24 @@ class RelationTypeTest extends TestCase {
 	}
 
 	/**
-	 * A targetSchema is a Schema reference like the one on a Subject, so several spellings name one
+	 * A target Schema is a Schema reference like the one on a Subject, so several spellings name one
 	 * Schema. Left as written it would not match the Subject it points at, whose own reference is
 	 * normalized, and every relation to that Subject would be reported as the wrong target type.
 	 */
-	public function testTargetSchemaIsReadAsTheNameOfTheSchemaItNames(): void {
+	public function testTargetSchemasAreReadAsTheNamesOfTheSchemasTheyName(): void {
 		$property = ( new RelationType( TestSources::newSchemaReferenceParser( [ 'person' => 'Person' ] ) ) )
 			->buildPropertyDefinitionFromJson(
 				new PropertyCore( description: '', required: false, default: null ),
-				[ 'targetSchema' => 'person' ]
+				[ 'targetSchemas' => [ 'Group', 'person' ] ]
 			);
 
-		$this->assertEquals(
-			SchemaReference::local( new SchemaName( 'Person' ) ),
-			$property->getTargetSchema()
-		);
+		$this->assertTrue( $property->hasTargetSchema( SchemaReference::local( new SchemaName( 'Person' ) ) ) );
 	}
 
 	private function newRelationProperty( bool $multiple, bool $required = false ): RelationProperty {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: $required, default: null ),
-			[ 'targetSchema' => 'Person', 'multiple' => $multiple ],
+			[ 'targetSchemas' => [ 'Person' ], 'multiple' => $multiple ],
 			TestSources::newSchemaReferenceParser(),
 		);
 	}
@@ -138,7 +135,7 @@ class RelationTypeTest extends TestCase {
 		return PropertyDefinition::fromJson(
 			[
 				'type' => 'relation',
-				'targetSchema' => 'Person',
+				'targetSchemas' => [ 'Person' ],
 				'multiple' => [ 'value' => false, 'severity' => 'error' ],
 			],
 			TestSources::newPropertyTypeRegistry(),
@@ -148,7 +145,7 @@ class RelationTypeTest extends TestCase {
 	private function newRelationPropertyWithoutMultipleKey(): RelationProperty {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: false, default: null ),
-			[ 'targetSchema' => 'Person' ],
+			[ 'targetSchemas' => [ 'Person' ] ],
 			TestSources::newSchemaReferenceParser(),
 		);
 	}

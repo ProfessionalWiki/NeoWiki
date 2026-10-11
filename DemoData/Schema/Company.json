@@ -9,26 +9,26 @@
 		},
 		"Main product": {
 			"type": "relation",
-			"targetSchema": "Product"
+			"targetSchemas": [ "Product" ]
 		},
 		"Products": {
 			"type": "relation",
-			"targetSchema": "Product",
+			"targetSchemas": [ "Product" ],
 			"multiple": true
 		},
 		"Departments": {
 			"type": "relation",
-			"targetSchema": "Department",
+			"targetSchemas": [ "Department" ],
 			"multiple": true
 		},
 		"Offices": {
 			"type": "relation",
-			"targetSchema": "Office",
+			"targetSchemas": [ "Office" ],
 			"multiple": true
 		},
 		"Headquarters": {
 			"type": "relation",
-			"targetSchema": "Office"
+			"targetSchemas": [ "Office" ]
 		},
 		"Status": {
 			"type": "select",

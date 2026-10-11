@@ -84,21 +84,28 @@ it( 'creates a number property definition with all fields', () => {
 it( 'creates a relation property definition with defaults', () => {
 	const json = {
 		type: 'relation',
-		targetSchema: 'Company',
+		targetSchemas: [ 'Company', { source: 'otherwiki', name: 'Group' } ],
 	};
 
 	const property = serializer.propertyDefinitionFromJson( 'test', json ) as RelationProperty;
 
 	expect( property.type ).toBe( RelationType.typeName );
 
-	expect( property.targetSchema ).toBe( 'Company' );
+	expect( property.targetSchemas ).toEqual( [ 'Company', { source: 'otherwiki', name: 'Group' } ] );
 	expect( property.multiple ).toBe( false );
+} );
+
+// What switching a property's type to Relation hands the editors of the new type.
+it( 'creates a relation property definition without target schemas from JSON naming none', () => {
+	const property = serializer.propertyDefinitionFromJson( 'test', { type: 'relation' } ) as RelationProperty;
+
+	expect( property.targetSchemas ).toEqual( [] );
 } );
 
 it( 'creates a relation property definition with all fields', () => {
 	const json = {
 		type: 'relation',
-		targetSchema: 'Company',
+		targetSchemas: [ 'Company' ],
 		multiple: true,
 		uniqueItems: false,
 	};

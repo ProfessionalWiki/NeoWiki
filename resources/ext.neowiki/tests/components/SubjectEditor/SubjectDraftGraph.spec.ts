@@ -23,7 +23,7 @@ const C_ID = 'sCdraft31111111';
 const linkSchema = newSchema( {
 	title: 'Link',
 	properties: new PropertyDefinitionList( [
-		createPropertyDefinitionFromJson( 'Link', { type: 'relation', targetSchema: 'Link' } ),
+		createPropertyDefinitionFromJson( 'Link', { type: 'relation', targetSchemas: [ 'Link' ] } ),
 	] ),
 } );
 

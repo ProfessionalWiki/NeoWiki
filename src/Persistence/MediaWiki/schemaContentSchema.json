@@ -92,35 +92,40 @@
 							},
 							"then": {
 								"required": [
-									"targetSchema"
+									"targetSchemas"
 								],
 								"properties": {
-									"targetSchema": {
-										"oneOf": [
-											{
-												"type": "string",
-												"pattern": "^\\S(.*\\S)?$"
-											},
-											{
-												"type": "object",
-												"required": [
-													"source",
-													"name"
-												],
-												"properties": {
-													"source": {
-														"type": "string",
-														"pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
-													},
-													"name": {
-														"type": "string",
-														"pattern": "^\\S(.*\\S)?$"
-													}
+									"targetSchemas": {
+										"type": "array",
+										"minItems": 1,
+										"uniqueItems": true,
+										"items": {
+											"oneOf": [
+												{
+													"type": "string",
+													"pattern": "^\\S(.*\\S)?$"
 												},
-												"additionalProperties": false
-											}
-										],
-										"$error": "The target schema must be a Schema name, or an object with a source key and a name. Neither may be empty or have surrounding whitespace."
+												{
+													"type": "object",
+													"required": [
+														"source",
+														"name"
+													],
+													"properties": {
+														"source": {
+															"type": "string",
+															"pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+														},
+														"name": {
+															"type": "string",
+															"pattern": "^\\S(.*\\S)?$"
+														}
+													},
+													"additionalProperties": false
+												}
+											],
+											"$error": "A target schema must be a Schema name, or an object with a source key and a name. Neither may be empty or have surrounding whitespace."
+										}
 									}
 								}
 							}

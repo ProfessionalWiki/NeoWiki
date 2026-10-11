@@ -16,7 +16,7 @@
 			</template>
 			<subject-picker
 				:selected="selectedSubjectId"
-				:target-schema="trimmedSchemaName"
+				:target-schemas="targetSchemas"
 				@update:selected="onSelected"
 			></subject-picker>
 		</cdx-field>
@@ -54,6 +54,7 @@ module.exports = exports = {
 		const loadedSubjectId = vue.ref( null );
 
 		const trimmedSchemaName = vue.computed( () => schemaName.value.trim() );
+		const targetSchemas = vue.computed( () => [ trimmedSchemaName.value ] );
 
 		const renderableSubjectId = vue.computed( () => {
 			if ( loadedSubjectId.value === null ) {
@@ -86,6 +87,7 @@ module.exports = exports = {
 			schemaName: schemaName,
 			selectedSubjectId: selectedSubjectId,
 			trimmedSchemaName: trimmedSchemaName,
+			targetSchemas: targetSchemas,
 			renderableSubjectId: renderableSubjectId,
 			onSelected: onSelected,
 			schemaLabel: mw.message( 'redherb-subject-finder-schema-label' ).text(),

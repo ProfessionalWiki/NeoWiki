@@ -180,7 +180,10 @@ class SchemaLuaSerializerTest extends TestCase {
 		$schema = $this->schemaWith( [
 			'Employer' => new RelationProperty(
 				$this->coreOptional(),
-				SchemaReference::local( new SchemaName( 'Company' ) ),
+				[
+					SchemaReference::local( new SchemaName( 'Company' ) ),
+					SchemaReference::sourced( 'otherwiki', new SchemaName( 'Group' ) ),
+				],
 				multiple: false
 			),
 		] );
@@ -188,7 +191,10 @@ class SchemaLuaSerializerTest extends TestCase {
 		$prop = $this->newSerializer()->toLuaTable( $schema )['properties'][1];
 
 		$this->assertSame( 'relation', $prop['type'] );
-		$this->assertSame( 'Company', $prop['targetSchema'] );
+		$this->assertEquals(
+			[ 1 => 'Company', 2 => [ 'source' => 'otherwiki', 'name' => 'Group' ] ],
+			$prop['targetSchemas']
+		);
 		$this->assertFalse( $prop['multiple'] );
 	}
 

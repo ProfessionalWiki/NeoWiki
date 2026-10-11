@@ -6,7 +6,11 @@ import type { SchemaReference } from '@/domain/SchemaReference';
 
 export interface RelationProperty extends PropertyDefinition {
 
-	readonly targetSchema: SchemaReference;
+	/**
+	 * Empty for a property that has none, such as one whose type was just switched to Relation, which
+	 * the wiki refuses to save.
+	 */
+	readonly targetSchemas: readonly SchemaReference[];
 	readonly multiple?: boolean;
 
 }
@@ -33,7 +37,7 @@ export class RelationType extends BasePropertyType<RelationProperty, RelationVal
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): RelationProperty {
 		return {
 			...base,
-			targetSchema: json.targetSchema,
+			targetSchemas: json.targetSchemas ?? [],
 			multiple: json.multiple ?? false,
 		} as RelationProperty;
 	}
@@ -51,7 +55,7 @@ export function newRelationProperty( attributes: RelationPropertyAttributes = {}
 		description: attributes.description ?? '',
 		required: attributes.required ?? false,
 		default: attributes.default,
-		targetSchema: attributes.targetSchema || 'MyTargetSchema',
+		targetSchemas: attributes.targetSchemas ?? [ 'MyTargetSchema' ],
 		multiple: attributes.multiple ?? false,
 	};
 }

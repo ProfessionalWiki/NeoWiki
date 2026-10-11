@@ -208,7 +208,7 @@ class ReplaceSubjectActionTest extends TestCase {
 			name: new SchemaName( self::SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
-				'Knows' => TestProperty::buildRelation( targetSchema: TestSubject::DEFAULT_SCHEMA_ID ),
+				'Knows' => TestProperty::buildRelation( targetSchemas: [ TestSubject::DEFAULT_SCHEMA_ID ] ),
 			] )
 		) );
 	}

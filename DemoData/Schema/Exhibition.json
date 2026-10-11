@@ -10,12 +10,12 @@
 		},
 		"Venue": {
 			"type": "relation",
-			"targetSchema": "Museum",
+			"targetSchemas": [ "Museum" ],
 			"required": true
 		},
 		"Featured artists": {
 			"type": "relation",
-			"targetSchema": "Artist",
+			"targetSchemas": [ "Artist" ],
 			"multiple": true
 		},
 		"Website": {

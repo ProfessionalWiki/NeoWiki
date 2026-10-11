@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isLocalSchemaReference, schemaReferenceName } from '@/domain/SchemaReference';
+import { isLocalSchemaReference, schemaReferenceName, schemaReferenceText } from '@/domain/SchemaReference';
 
 describe( 'schemaReferenceName', () => {
 
@@ -15,8 +15,16 @@ describe( 'schemaReferenceName', () => {
 		expect( schemaReferenceName( { source: 'otherwiki', name: 'Person' } ) ).toBe( 'Person' );
 	} );
 
-	it( 'has no name to give for an absent reference', () => {
-		expect( schemaReferenceName( undefined ) ).toBe( '' );
+} );
+
+describe( 'schemaReferenceText', () => {
+
+	it( 'reads a Schema of this wiki as its name', () => {
+		expect( schemaReferenceText( 'ISO:9001' ) ).toBe( 'ISO:9001' );
+	} );
+
+	it( 'prefixes the name of a Schema of another Source with its source key', () => {
+		expect( schemaReferenceText( { source: 'otherwiki', name: 'Person' } ) ).toBe( 'otherwiki:Person' );
 	} );
 
 } );
@@ -29,10 +37,6 @@ describe( 'isLocalSchemaReference', () => {
 
 	it( 'is false for a reference carrying a Source', () => {
 		expect( isLocalSchemaReference( { source: 'otherwiki', name: 'Person' } ) ).toBe( false );
-	} );
-
-	it( 'is false when there is no reference at all', () => {
-		expect( isLocalSchemaReference( undefined ) ).toBe( false );
 	} );
 
 } );

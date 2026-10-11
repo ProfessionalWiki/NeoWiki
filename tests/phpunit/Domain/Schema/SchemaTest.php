@@ -33,8 +33,8 @@ class SchemaTest extends TestCase {
 	}
 
 	public function testGetRelationProperties(): void {
-		$ceoProperty = TestProperty::buildRelation( description: 'The company CEO', targetSchema: new SchemaName( 'Person' ) );
-		$barProperty = TestProperty::buildRelation( targetSchema: new SchemaName( 'Tomato' ) );
+		$ceoProperty = TestProperty::buildRelation( description: 'The company CEO', targetSchemas: [ new SchemaName( 'Person' ) ] );
+		$barProperty = TestProperty::buildRelation( targetSchemas: [ new SchemaName( 'Tomato' ) ] );
 
 		$schema = $this->newSchemaWithProperties( [
 			'name' => TestProperty::buildText(),

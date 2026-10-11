@@ -20,8 +20,8 @@
 		},
 		"Birth place": {
 			"type": "relation",
-			"targetSchema": "City",
-			"description": "Place of birth, as a relation to a City (EDM rdaGr2:placeOfBirth; the City projects as edm:Place)."
+			"targetSchemas": [ "City", "Place" ],
+			"description": "Place of birth, as a relation to a City or a Place (EDM rdaGr2:placeOfBirth; both project as edm:Place)."
 		},
 		"Source": {
 			"type": "text",

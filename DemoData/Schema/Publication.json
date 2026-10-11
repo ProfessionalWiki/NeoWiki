@@ -18,13 +18,13 @@
 		},
 		"Authors": {
 			"type": "relation",
-			"targetSchema": "Author",
+			"targetSchemas": [ "Author" ],
 			"multiple": true,
 			"required": true
 		},
 		"Project": {
 			"type": "relation",
-			"targetSchema": "Project"
+			"targetSchemas": [ "Project" ]
 		},
 		"URL": {
 			"type": "url"

@@ -12,7 +12,7 @@
 		},
 		"Lead institution": {
 			"type": "relation",
-			"targetSchema": "Institution"
+			"targetSchemas": [ "Institution" ]
 		}
 	}
 }

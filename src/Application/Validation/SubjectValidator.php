@@ -11,7 +11,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
@@ -140,14 +139,14 @@ readonly class SubjectValidator {
 
 	/**
 	 * Server-side relation-target checks. Schema-scoped by necessity: both need the writer's-schema
-	 * RelationProperty (for its declared targetSchema) and a Subject lookup, neither of which
+	 * RelationProperty (for its target Schemas) and a Subject lookup, neither of which
 	 * PropertyType::validate() has access to. This runs after the per-type dispatch, so the
 	 * Statement's type still matches the Schema's relation property here; a type-mismatched
 	 * Statement returned earlier and is not treated as a relation.
 	 *
 	 * A missing target is a non-blocking `relation-target-not-found` warning (red-link philosophy: the
-	 * target may be minted later, e.g. during import); a resolvable target whose own Schema is not the
-	 * declared targetSchema is a blocking `relation-target-schema-mismatch` error. A target whose
+	 * target may be minted later, e.g. during import); a resolvable target whose own Schema is none of
+	 * the target Schemas is a blocking `relation-target-schema-mismatch` error. A target whose
 	 * Source this wiki cannot reach is left to {@see validateRelationTargetSources()}.
 	 *
 	 * The Schema compared is the target's own writer's-schema, read from its revision slot rather
@@ -178,7 +177,7 @@ readonly class SubjectValidator {
 			$violation = $this->validateRelationTarget(
 				$relation,
 				$statement->getPropertyName(),
-				$definition->getTargetSchema(),
+				$definition,
 				(int)$index,
 				$relationTargets
 			);
@@ -199,7 +198,7 @@ readonly class SubjectValidator {
 	private function validateRelationTarget(
 		Relation $relation,
 		PropertyName $propertyName,
-		SchemaReference $targetSchema,
+		RelationProperty $definition,
 		int $valuePartIndex,
 		SubjectMap $relationTargets
 	): ?Violation {
@@ -221,11 +220,11 @@ readonly class SubjectValidator {
 			);
 		}
 
-		if ( !$target->getSchemaReference()->equals( $targetSchema ) ) {
+		if ( !$definition->hasTargetSchema( $target->getSchemaReference() ) ) {
 			return new Violation(
 				propertyName: $propertyName,
 				code: 'relation-target-schema-mismatch',
-				args: [ $targetSchema->getText(), $target->getSchemaReference()->getText() ],
+				args: [ $target->getSchemaReference()->getText() ],
 				valuePartIndex: $valuePartIndex,
 				severity: Severity::Error,
 			);

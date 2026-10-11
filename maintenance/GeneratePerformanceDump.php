@@ -217,7 +217,7 @@ class GeneratePerformanceDump extends Maintenance {
 		foreach ( self::RELATION_PROPERTY_NAMES as $propertyName ) {
 			$propertyDefinitions[$propertyName] = [
 				'type' => 'relation',
-				'targetSchema' => self::SCHEMA_NAME,
+				'targetSchemas' => [ self::SCHEMA_NAME ],
 			];
 		}
 

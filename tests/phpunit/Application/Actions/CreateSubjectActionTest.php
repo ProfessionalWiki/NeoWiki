@@ -694,7 +694,7 @@ class CreateSubjectActionTest extends TestCase {
 			name: new SchemaName( 'PersonSchema' ),
 			description: '',
 			properties: new PropertyDefinitions( [
-				'Knows' => TestProperty::buildRelation( targetSchema: 'PersonSchema' ),
+				'Knows' => TestProperty::buildRelation( targetSchemas: [ 'PersonSchema' ] ),
 			] )
 		) );
 	}

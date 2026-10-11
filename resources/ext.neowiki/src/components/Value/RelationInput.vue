@@ -24,7 +24,7 @@
 			<template #input="{ value, onUpdate, onBlur, onFocus, status, ariaLabel }">
 				<SubjectPicker
 					:selected="value"
-					:target-schema="localTargetSchemaName"
+					:target-schemas="localTargetSchemaNames"
 					:start-icon="startIcon"
 					:status="status"
 					:aria-label="ariaLabel"
@@ -46,7 +46,7 @@
 		<SubjectPicker
 			v-else
 			:selected="selectedId"
-			:target-schema="localTargetSchemaName"
+			:target-schemas="localTargetSchemaNames"
 			:start-icon="startIcon"
 			:status="fieldStatus"
 			@update:selected="onSingleSelectionChanged"
@@ -65,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import { isLocalSchemaReference, schemaReferenceName } from '@/domain/SchemaReference';
+import { isLocalSchemaReference } from '@/domain/SchemaReference';
 import { ref, watch, computed, toRef, inject } from 'vue';
 import { CdxField, CdxIcon, ValidationMessages } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
@@ -87,13 +87,13 @@ const props = withDefaults(
 );
 
 /**
- * The picker searches this wiki's Subjects, so it can only be given a Schema of this wiki. A
- * target Schema from another Source names nothing searchable here, and the picker is told so.
+ * The picker searches and creates this wiki's Subjects, so it can only be given Schemas of this wiki.
+ * A target Schema from another Source is left out: what the picker would create is a local Subject,
+ * not one of that Schema. A property whose type the Schema has changed since the Statement was
+ * written has no target Schemas at all.
  */
-const localTargetSchemaName = computed<string | null>( () =>
-	isLocalSchemaReference( props.property.targetSchema ) ?
-		schemaReferenceName( props.property.targetSchema ) :
-		null
+const localTargetSchemaNames = computed<string[]>( () =>
+	( props.property.targetSchemas ?? [] ).filter( isLocalSchemaReference )
 );
 
 const startIcon = NeoWikiServices.getComponentRegistry().getIcon( RelationType.typeName );

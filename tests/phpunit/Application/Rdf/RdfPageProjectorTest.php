@@ -74,7 +74,7 @@ class RdfPageProjectorTest extends TestCase {
 			TestSchema::build(
 				name: 'Company',
 				properties: new PropertyDefinitions( [
-					'CEO' => TestProperty::buildRelation( targetSchema: 'Person' ),
+					'CEO' => TestProperty::buildRelation( targetSchemas: [ 'Person' ] ),
 				] )
 			),
 			TestSchema::build( name: 'Person', properties: new PropertyDefinitions( [] ) ),
@@ -607,7 +607,7 @@ class RdfPageProjectorTest extends TestCase {
 		return TestSchema::build(
 			name: 'Company',
 			properties: new PropertyDefinitions( [
-				'CEO' => TestProperty::buildRelation( targetSchema: 'Person' ),
+				'CEO' => TestProperty::buildRelation( targetSchemas: [ 'Person' ] ),
 			] )
 		);
 	}

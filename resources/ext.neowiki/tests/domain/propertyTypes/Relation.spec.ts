@@ -20,7 +20,7 @@ describe( 'newRelationProperty', () => {
 		expect( property.description ).toBe( '' );
 		expect( property.required ).toBe( false );
 		expect( property.default ).toBeUndefined();
-		expect( property.targetSchema ).toBe( 'MyTargetSchema' );
+		expect( property.targetSchemas ).toEqual( [ 'MyTargetSchema' ] );
 		expect( property.multiple ).toBe( false );
 	} );
 
@@ -51,7 +51,7 @@ describe( 'newRelationProperty', () => {
 			description: 'A relation property',
 			required: true,
 			default: relation,
-			targetSchema: 'CustomSchema',
+			targetSchemas: [ 'CustomSchema', 'OtherSchema' ],
 			multiple: true,
 		} );
 
@@ -60,7 +60,7 @@ describe( 'newRelationProperty', () => {
 		expect( property.description ).toBe( 'A relation property' );
 		expect( property.required ).toBe( true );
 		expect( property.default ).toStrictEqual( relation );
-		expect( property.targetSchema ).toBe( 'CustomSchema' );
+		expect( property.targetSchemas ).toEqual( [ 'CustomSchema', 'OtherSchema' ] );
 		expect( property.multiple ).toBe( true );
 	} );
 
@@ -75,7 +75,7 @@ describe( 'newRelationProperty', () => {
 		expect( property.description ).toBe( 'A partial relation property' );
 		expect( property.required ).toBe( false );
 		expect( property.default ).toBeUndefined();
-		expect( property.targetSchema ).toBe( 'MyTargetSchema' );
+		expect( property.targetSchemas ).toEqual( [ 'MyTargetSchema' ] );
 		expect( property.multiple ).toBe( false );
 	} );
 } );

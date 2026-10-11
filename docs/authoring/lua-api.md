@@ -318,7 +318,7 @@ those are set. Beyond that core, the fields depend on `type`:
 | `number` | — | `precision`, `minimum`, `maximum` |
 | `date`, `dateTime` | — | `minimum`, `maximum` |
 | `select` | `multiple`, `options` (1-indexed list of `{ id, label }` entries) | — |
-| `relation` | `multiple`, `targetSchema` | — |
+| `relation` | `multiple`, `targetSchemas` (1-indexed list, each entry like a Subject's [`schema`](#subject-table-format)) | — |
 | `boolean` | — | — |
 
 Optional fields are **omitted entirely** when unset, so check with `if prop.description then …`.

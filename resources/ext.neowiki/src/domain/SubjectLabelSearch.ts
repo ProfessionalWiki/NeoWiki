@@ -5,7 +5,10 @@ export interface SubjectLabelResult {
 
 export interface SubjectLabelSearch {
 
-	/** Undefined as the schema searches Subjects of every Schema. */
-	searchSubjectLabels( search: string, schema: string | undefined ): Promise<SubjectLabelResult[]>;
+	/**
+	 * Searches the Subjects of the given Schemas, or of every Schema when given none at all. An empty
+	 * list finds nothing.
+	 */
+	searchSubjectLabels( search: string, schemas: readonly string[] | undefined ): Promise<SubjectLabelResult[]>;
 
 }

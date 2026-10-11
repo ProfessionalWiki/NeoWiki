@@ -22,6 +22,7 @@ import type { MenuConfig, MenuItemData } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
+import { schemaMenuItems } from '@/presentation/schemaMenuItems.ts';
 
 const props = defineProps<{
 	/**
@@ -69,17 +70,7 @@ const takenNames = computed( (): Set<string> => {
 const creationOffered = computed( (): boolean =>
 	props.offersCreation && !takenNames.value.has( normalizeSchemaName( typedName.value ) ) );
 
-const matchingItems = computed<MenuItemData[]>( () => {
-	const matches = query.value === '' ?
-		summaries.value :
-		summaries.value.filter( ( summary ) => summary.name.toLowerCase().includes( query.value ) );
-
-	return matches.map( ( summary ) => ( {
-		label: summary.name,
-		value: summary.name,
-		description: summary.description || undefined
-	} ) );
-} );
+const matchingItems = computed<MenuItemData[]>( () => schemaMenuItems( summaries.value, query.value ) );
 
 // Below Schemas, the offer is the menu's footer, which Codex keeps in view while the list scrolls.
 // Alone, it is the list's one item: CdxLookup neither opens a menu nor moves through it by keyboard
@@ -142,7 +133,7 @@ function selectableSchema( schemaName: string | null ): string | null {
 }
 
 function filterSchemas( value: string ): void {
-	query.value = value.trim().toLowerCase();
+	query.value = value;
 }
 
 // CdxLookup reports a selection only for a menu entry the user picks, and null while
@@ -192,12 +183,11 @@ defineExpose( { focus } );
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
-/* The field is withheld until the schemas arrive (see above), and this picker is
-	remounted whenever the property being edited changes, so without a reserved height
-	every remount paints one frame with nothing here. A dialog sized to its content
-	resizes twice per click on that frame. Holding the control's height keeps the box
-	the same before and after the schemas land. The token is the Codex control height, so
-	the reservation tracks the field it stands in for. */
+/* The field is withheld until the schemas arrive (see above), so without a reserved
+	height the picker paints a frame with nothing here, and a dialog sized to its content
+	resizes twice. Holding the control's height keeps the box the same before and after
+	the schemas land. The token is the Codex control height, so the reservation tracks the
+	field it stands in for. */
 .ext-neowiki-schema-picker {
 	min-height: @min-size-interactive-pointer;
 

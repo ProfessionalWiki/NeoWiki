@@ -50,7 +50,7 @@ readonly class SchemaReference implements Stringable {
 	 * so a Schema has one identity however it was written down — the same rule Subject ids follow, and
 	 * what keeps {@see equals()} agreeing with what the resolver hands back.
 	 *
-	 * @param mixed $json The value of a `schema` or `targetSchema` field.
+	 * @param mixed $json The value of a `schema` field or of a `targetSchemas` entry.
 	 *
 	 * @throws InvalidArgumentException When $json is not a well-formed reference.
 	 */

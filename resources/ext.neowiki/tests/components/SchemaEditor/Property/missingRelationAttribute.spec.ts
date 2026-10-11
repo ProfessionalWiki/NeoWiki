@@ -5,7 +5,7 @@ import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
 
 describe( 'missingRelationAttribute', () => {
 	function relationProperty( overrides: Partial<RelationProperty> = {} ): RelationProperty {
-		return { ...newRelationProperty(), targetSchema: 'Product', ...overrides };
+		return { ...newRelationProperty(), targetSchemas: [ 'Product' ], ...overrides };
 	}
 
 	it( 'finds nothing missing from a complete definition', () => {
@@ -16,13 +16,13 @@ describe( 'missingRelationAttribute', () => {
 		expect( missingRelationAttribute( newNumberProperty( { name: 'Score' } ) ) ).toBeNull();
 	} );
 
-	it( 'names the target schema when it was never chosen', () => {
-		expect( missingRelationAttribute( relationProperty( { targetSchema: undefined } ) ) )
+	it( 'names the target schemas when none was chosen', () => {
+		expect( missingRelationAttribute( relationProperty( { targetSchemas: [] } ) ) )
 			.toBe( 'neowiki-property-editor-target-schema-required' );
 	} );
 
 	it( 'accepts a target schema from another Source', () => {
-		expect( missingRelationAttribute( relationProperty( { targetSchema: { source: 'otherwiki', name: 'Person' } } ) ) )
+		expect( missingRelationAttribute( relationProperty( { targetSchemas: [ { source: 'otherwiki', name: 'Person' } ] } ) ) )
 			.toBeNull();
 	} );
 } );

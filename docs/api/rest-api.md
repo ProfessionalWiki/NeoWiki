@@ -47,7 +47,7 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 | `POST /neowiki/v0/subjects` | Create a Subject together with a page of its own, in one revision, as that page's main Subject. See [Creating Subjects](subject-format.md#creating-subjects). |
 | `GET /neowiki/v0/subjects` | List Subjects, newest first. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. Query: `schema` (only that Schema's Subjects), `search` (case-insensitive substring of the name or page title, or case-sensitive prefix of the ID), `sort` (`newest`, `name`, `schema`, `page`, `edited`) and `direction` (`asc`, `desc`; ignored by `newest`). Needs a Neo4j graph store. |
 | `GET /neowiki/v0/subject-counts` | Count the Subjects of each Schema: `{"counts": {"Artist": 12}}`. A Schema with no Subjects is absent; one whose page is deleted or unreadable can be present. A count can lag a change by up to a minute. Needs a Neo4j graph store. |
-| `GET /neowiki/v0/subject-labels` | Find Subjects by label; returns `id`/`label` pairs. A Subject with no label is absent. Query: `schema` (only Subjects of that Schema; omit for every Schema), `search` (label prefix), `limit`. |
+| `GET /neowiki/v0/subject-labels` | Find Subjects by label; returns `id`/`label` pairs. A Subject with no label is absent. Query: `schema` (only Subjects of these Schemas, pipe-separated; omit for every Schema), `search` (label prefix), `limit`. |
 | `GET /neowiki/v0/subject/{subjectId}/referencingSubjects` | List the Subjects whose relations point at this one. See [Referencing Subjects](subject-format.md#referencing-subjects). |
 
 ### Pages and Subjects

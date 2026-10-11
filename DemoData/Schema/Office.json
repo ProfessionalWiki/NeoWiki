@@ -6,7 +6,7 @@
 		},
 		"City": {
 			"type": "relation",
-			"targetSchema": "City"
+			"targetSchemas": [ "City" ]
 		},
 		"Address": {
 			"type": "text"

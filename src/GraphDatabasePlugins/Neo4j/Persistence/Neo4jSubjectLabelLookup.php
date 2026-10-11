@@ -29,9 +29,10 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 	}
 
 	/**
+	 * @param ?string[] $schemaNames
 	 * @return SubjectLabelLookupResult[]
 	 */
-	public function getSubjectLabelsMatching( string $search, int $limit, ?string $schemaName ): array {
+	public function getSubjectLabelsMatching( string $search, int $limit, ?array $schemaNames ): array {
 		if ( trim( $search ) === '' ) {
 			return [];
 		}
@@ -41,7 +42,7 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 		// Authorize rows one at a time and stop once the limit is filled, so when readable rows are
 		// plentiful the expensive per-page check runs about `limit` times rather than across the
 		// whole over-fetched window. A mostly-unreadable search still checks the whole window.
-		foreach ( $this->fetchLabels( $search, $limit * self::OVERFETCH_FACTOR, $schemaName ) as $row ) {
+		foreach ( $this->fetchLabels( $search, $limit * self::OVERFETCH_FACTOR, $schemaNames ) as $row ) {
 			if ( count( $results ) >= $limit ) {
 				break;
 			}
@@ -59,18 +60,19 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 	 * per-page read access and the returned page id always resolves within this wiki (page ids
 	 * are unique only per wiki).
 	 *
+	 * @param ?string[] $schemaNames
 	 * @return list<array{id: string, name: string, pageId: int}>
 	 */
-	private function fetchLabels( string $search, int $limit, ?string $schemaName ): array {
+	private function fetchLabels( string $search, int $limit, ?array $schemaNames ): array {
 		return $this->client->readTransaction(
-			function ( TransactionInterface $transaction ) use ( $search, $limit, $schemaName ): array {
+			function ( TransactionInterface $transaction ) use ( $search, $limit, $schemaNames ): array {
 				/**
 				 * @var SummarizedResult $result
 				 */
 				$result = $transaction->run(
 					"MATCH (page:Page { wiki_id: \$wikiId })-[:HasSubject]->(n:Subject)
 					 WHERE toLower(n.name) STARTS WITH toLower(\$search)
-					 AND ( \$schemaName IS NULL OR \$schemaName IN labels(n) )
+					 AND ( \$schemaNames IS NULL OR any( label IN labels(n) WHERE label IN \$schemaNames ) )
 					 AND n.wiki_id = \$wikiId
 					 RETURN n.id AS id, n.name AS name, page.id AS pageId
 					 ORDER BY n.name
@@ -78,7 +80,7 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 					[
 						'search' => $search,
 						'limit' => $limit,
-						'schemaName' => $schemaName,
+						'schemaNames' => $schemaNames,
 						'wikiId' => $this->wikiId,
 					]
 				);

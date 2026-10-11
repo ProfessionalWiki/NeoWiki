@@ -340,7 +340,7 @@ class JsonSchemaMatchesValidatorTest extends TestCase {
 	}
 
 	private static function relationRows(): iterable {
-		$relation = [ 'type' => 'relation', 'targetSchema' => 'Target' ];
+		$relation = [ 'type' => 'relation', 'targetSchemas' => [ 'Target' ] ];
 
 		yield 'one relation' => [ $relation, self::value( 'relation', [ self::relationTo( self::TARGET_ID ) ] ) ];
 		yield 'relation required and empty' => [

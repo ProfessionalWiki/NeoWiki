@@ -47,11 +47,14 @@ class TestProperty {
 		);
 	}
 
+	/**
+	 * @param array<SchemaName|SchemaReference|string> $targetSchemas
+	 */
 	public static function buildRelation(
 		string $description = '',
 		bool $required = false,
 		$default = null,
-		SchemaName|SchemaReference|string $targetSchema = 'TestPropSchema',
+		array $targetSchemas = [ 'TestPropSchema' ],
 		bool $multiple = false
 	): RelationProperty {
 		return new RelationProperty(
@@ -60,7 +63,7 @@ class TestProperty {
 				required: $required,
 				default: $default
 			),
-			targetSchema: TestSchema::reference( $targetSchema ),
+			targetSchemas: array_map( TestSchema::reference( ... ), $targetSchemas ),
 			multiple: $multiple
 		);
 	}

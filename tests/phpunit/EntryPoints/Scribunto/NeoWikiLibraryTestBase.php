@@ -122,7 +122,7 @@ abstract class NeoWikiLibraryTestBase extends LuaEngineTestBase {
 				],
 				'Employer' => [
 					'type' => 'relation',
-					'targetSchema' => 'Company',
+					'targetSchemas' => [ 'Company', 'Organization' ],
 				],
 			],
 		] ) );

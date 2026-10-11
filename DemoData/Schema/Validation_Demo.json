@@ -74,7 +74,7 @@
 		},
 		"Related product": {
 			"type": "relation",
-			"targetSchema": "Product",
+			"targetSchemas": [ "Product" ],
 			"description": "relation to a Product subject."
 		}
 	}

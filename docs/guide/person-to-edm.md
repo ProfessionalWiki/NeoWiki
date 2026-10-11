@@ -40,7 +40,7 @@ fields. Abbreviated (property descriptions and the multi-valued `Also known as` 
     "propertyDefinitions": {
         "Gender":      { "type": "text" },
         "Birth date":  { "type": "date" },
-        "Birth place": { "type": "relation", "targetSchema": "City" },
+        "Birth place": { "type": "relation", "targetSchemas": [ "City", "Place" ] },
         "Source":      { "type": "text" },
         "Description": { "type": "text" }
     }

@@ -45,7 +45,7 @@ class GetSubjectApiTest extends NeoWikiIntegrationTestCase {
 	"propertyDefinitions": {
 		"MyRelation": {
 			"type": "relation",
-			"targetSchema": "GetSubjectApiTestSchema"
+			"targetSchemas": [ "GetSubjectApiTestSchema" ]
 		}
 	}
 }

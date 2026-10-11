@@ -7,8 +7,8 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 use InvalidArgumentException;
 
 /**
- * Turns a written Schema reference — a `schema` or `targetSchema` field, a name from a form — into a
- * {@see SchemaReference} that names one Schema however it was written down.
+ * Turns a written Schema reference — a `schema` field, a `targetSchemas` entry, a name from a form —
+ * into a {@see SchemaReference} that names one Schema however it was written down.
  *
  * Two rules make it one: a reference naming this wiki's own Source becomes a local one (ADR 23), and a
  * local name becomes the name of the Schema's page (ADR 17).
@@ -26,7 +26,7 @@ readonly class SchemaReferenceParser {
 	}
 
 	/**
-	 * @param mixed $json The value of a `schema` or `targetSchema` field.
+	 * @param mixed $json The value of a `schema` field or of a `targetSchemas` entry.
 	 *
 	 * @throws InvalidArgumentException When $json is not a well-formed reference.
 	 */

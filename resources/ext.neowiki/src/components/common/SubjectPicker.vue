@@ -1,8 +1,5 @@
 <template>
-	<div
-		class="ext-neowiki-subject-picker"
-		:class="{ 'ext-neowiki-subject-picker--offers-create': creationOffered }"
-	>
+	<div class="ext-neowiki-subject-picker">
 		<div class="ext-neowiki-subject-picker__row">
 			<CdxLookup
 				ref="lookupRef"
@@ -16,7 +13,7 @@
 				@update:selected="onSubjectSelected"
 				@blur="onBlur"
 			>
-				<!-- Codex shows this only for an empty menu. With the create option present the
+				<!-- Codex shows this only for an empty menu. With create options present the
 					menu never is, so that case carries the same message as an unpickable item. -->
 				<template v-if="searching && !creationOffered" #no-results>
 					{{ $i18n( 'neowiki-subject-picker-no-results' ).text() }}
@@ -60,10 +57,10 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 interface SubjectPickerProps {
 	selected: string | null;
 	/**
-	 * The Schema the picked Subject must follow. Omitted, Subjects of every Schema are on offer;
-	 * null names no Schema this wiki can search: another Source's, or none chosen yet.
+	 * The Schemas of this wiki the picked Subject may follow. Omitted, Subjects of every Schema are on
+	 * offer; an empty list offers none, as for a relation whose target Schemas are all another Source's.
 	 */
-	targetSchema?: string | null;
+	targetSchemas?: readonly string[];
 	startIcon?: Icon;
 	status?: ValidationStatusType | 'default';
 	ariaLabel?: string;
@@ -72,7 +69,7 @@ interface SubjectPickerProps {
 const props = withDefaults(
 	defineProps<SubjectPickerProps>(),
 	{
-		targetSchema: undefined,
+		targetSchemas: undefined,
 		startIcon: undefined,
 		status: 'default',
 		ariaLabel: undefined
@@ -80,7 +77,8 @@ const props = withDefaults(
 );
 
 // Codex has no value of its own for either of these, so each is an ordinary menu item carrying a
-// value no Subject id can take: an id is 's' followed by 14 base58 characters.
+// value no Subject id can take: an id is 's' followed by 14 base58 characters. A create option
+// carries its Schema's name after the prefix.
 const CREATE_SUBJECT = '__create__';
 const NO_RESULTS = '__no_results__';
 
@@ -96,12 +94,12 @@ const subjectLabelSearch = NeoWikiServices.getSubjectLabelSearch();
 // picker offering only Subjects that already exist.
 const subjectCreation = inject( SubjectCreationKey, undefined );
 
-// Creation needs one Schema to create under, which a picker offering every Schema does not name.
-// A target Schema from another Source is not this wiki's to create a Subject of either: what the
-// host would mint is a local Subject under a bare local name, not the Schema referenced.
-const creationOffered = computed( (): boolean =>
-	subjectCreation !== undefined && typeof props.targetSchema === 'string'
+// Creation needs a Schema to create under, which a picker offering every Schema does not name.
+const creatableSchemas = computed( (): readonly string[] =>
+	subjectCreation === undefined ? [] : props.targetSchemas ?? []
 );
+
+const creationOffered = computed( (): boolean => creatableSchemas.value.length > 0 );
 
 const selectedSubject = ref<string | null>( props.selected );
 // The selected target's own name, for a suffix to say what it acts on. Dropped as soon as the
@@ -132,11 +130,15 @@ const selectedName = ref( '' );
 // Named bare here and at the two sites below, without the generated-name marker every display uses:
 // picking an item writes the string into this field's own text input, where the user can edit it and
 // where it feeds the offer to create a Subject under the text they typed.
-const draftItems = computed( (): MenuItemData[] =>
-	typeof props.targetSchema === 'string' ?
-		( subjectCreation?.drafts( props.targetSchema ) ?? [] ).map( menuItemFor ) :
-		[]
-);
+const draftItems = computed( (): MenuItemData[] => {
+	const drafts: Subject[] = [];
+
+	for ( const schemaName of creatableSchemas.value ) {
+		drafts.push( ...( subjectCreation?.drafts( schemaName ) ?? [] ) );
+	}
+
+	return drafts.map( menuItemFor );
+} );
 
 function menuItemFor( subject: Subject ): MenuItemData {
 	return { value: subject.getId().text, label: subject.getDisplayName() };
@@ -155,15 +157,13 @@ const typedText = computed( (): string => {
 	return text === selectedName.value ? '' : text;
 } );
 
-// Read only where creation is offered, which is the only state in which targetSchema names a
-// Schema this wiki can create a Subject of.
-const createItem = computed( (): MenuItemData => ( {
-	value: CREATE_SUBJECT,
+const createItems = computed( (): MenuItemData[] => creatableSchemas.value.map( ( schemaName ) => ( {
+	value: CREATE_SUBJECT + schemaName,
 	label: typedText.value === '' ?
-		mw.msg( 'neowiki-subject-picker-create', props.targetSchema ?? '' ) :
-		mw.msg( 'neowiki-subject-picker-create-named', typedText.value, props.targetSchema ?? '' ),
+		mw.msg( 'neowiki-subject-picker-create', schemaName ) :
+		mw.msg( 'neowiki-subject-picker-create-named', typedText.value, schemaName ),
 	icon: cdxIconAdd
-} ) );
+} ) ) );
 
 // Matched here rather than by the search: these Subjects exist only in the editor.
 const matchingDraftItems = computed( (): MenuItemData[] => {
@@ -174,7 +174,7 @@ const matchingDraftItems = computed( (): MenuItemData[] => {
 	);
 } );
 
-// The create option is present from the first render and never leaves, which is what opens the
+// The create options are present from the first render and never leave, which is what opens the
 // menu on focus before anything is typed: Codex expands an empty input's menu only when the
 // Lookup was built with items, and collapses it again the moment the list runs empty.
 const menuItems = computed( (): MenuItemData[] => {
@@ -184,7 +184,7 @@ const menuItems = computed( (): MenuItemData[] => {
 
 	const items = [ ...matchingDraftItems.value, ...searchResults.value ];
 
-	// Codex's own no-results slot is shown only for an empty menu, which the create option rules
+	// Codex's own no-results slot is shown only for an empty menu, which the create options rule
 	// out, so that case carries the same message as an item nobody can pick.
 	if ( searchStatus.value === 'done' && items.length === 0 ) {
 		items.push( {
@@ -194,7 +194,7 @@ const menuItems = computed( (): MenuItemData[] => {
 		} );
 	}
 
-	items.push( createItem.value );
+	items.push( ...createItems.value );
 
 	return items;
 } );
@@ -314,7 +314,7 @@ async function onFieldTextChanged( value: string ): Promise<void> {
 async function candidatesFor( value: string ): Promise<MenuItemData[]> {
 	// A target Schema from another Source names nothing here: neither the label search nor the
 	// Schema an id-lookup would be matched against is this wiki's to answer with.
-	if ( props.targetSchema === null ) {
+	if ( props.targetSchemas?.length === 0 ) {
 		return [];
 	}
 
@@ -327,18 +327,18 @@ async function candidatesFor( value: string ): Promise<MenuItemData[]> {
 		// offer. One the user may not read never reaches here at all: the read fails instead of
 		// answering.
 		if ( subject !== null &&
-			( props.targetSchema === undefined || subject.getSchemaName() === props.targetSchema )
+			( props.targetSchemas === undefined || props.targetSchemas.includes( subject.getSchemaName() ) )
 		) {
 			return [ menuItemFor( subject ) ];
 		}
 	}
 
-	return searchLabels( text, props.targetSchema );
+	return searchLabels( text, props.targetSchemas );
 }
 
-async function searchLabels( value: string, targetSchema: string | undefined ): Promise<MenuItemData[]> {
+async function searchLabels( value: string, targetSchemas: readonly string[] | undefined ): Promise<MenuItemData[]> {
 	try {
-		const results = await subjectLabelSearch.searchSubjectLabels( value, targetSchema );
+		const results = await subjectLabelSearch.searchSubjectLabels( value, targetSchemas );
 
 		return results.map( ( result ) => ( {
 			label: result.label,
@@ -354,8 +354,10 @@ async function searchLabels( value: string, targetSchema: string | undefined ): 
 // create option's label would replace the typed name, and putting back a target the user typed
 // over would blank the field.
 function onSubjectSelected( subjectId: string | null ): void {
-	if ( subjectId === CREATE_SUBJECT ) {
-		createFromTypedText();
+	const schemaToCreate = creatableSchemas.value.find( ( schemaName ) => subjectId === CREATE_SUBJECT + schemaName );
+
+	if ( schemaToCreate !== undefined ) {
+		createFromTypedText( schemaToCreate );
 		return;
 	}
 
@@ -391,8 +393,8 @@ function onSubjectSelected( subjectId: string | null ): void {
 	emit( 'update:selected', subjectId );
 }
 
-async function createFromTypedText(): Promise<void> {
-	if ( subjectCreation === undefined || typeof props.targetSchema !== 'string' ) {
+async function createFromTypedText( schemaName: string ): Promise<void> {
+	if ( subjectCreation === undefined ) {
 		return;
 	}
 
@@ -402,7 +404,7 @@ async function createFromTypedText(): Promise<void> {
 		// What the user typed names the new Subject, which is the only way it becomes findable
 		// again once saved: a Subject with no label is left out of the label search (ADR 31).
 		const subject = await subjectCreation.create(
-			props.targetSchema,
+			schemaName,
 			typedText.value === '' ? null : typedText.value
 		);
 
@@ -476,12 +478,13 @@ defineExpose( { focus } );
 		padding-inline-end: @size-200;
 	}
 
-	/* The create option is the last item, and it offers an action rather than a result. Codex
-		sets its own pinned footer item apart the same way, and skips the rule when that item is
-		the only one — a line above a lone entry reads as a mistake. This menu draws the line
-		itself: `menuConfig`, all CdxLookup passes on to CdxMenu, has no footer in its type, and
-		a footer item is selectable like any other anyway. */
-	&--offers-create .cdx-menu__listbox > .cdx-menu-item:last-child:not( :first-child ) {
+	/* The create options are the last items, and they offer an action rather than a result.
+		Codex sets its own pinned footer item apart the same way, and skips the rule when that item
+		is the only one — a line above a lone entry reads as a mistake. This menu draws the line
+		itself, above the first of them: `menuConfig`, all CdxLookup passes on to CdxMenu, has no
+		footer in its type, and a footer item is selectable like any other anyway. A create option
+		is told by its icon, which no other item of this menu has. */
+	.cdx-menu__listbox > .cdx-menu-item:not( :has( .cdx-menu-item__icon ) ) + .cdx-menu-item:has( .cdx-menu-item__icon ) {
 		border-top: @border-subtle;
 	}
 }

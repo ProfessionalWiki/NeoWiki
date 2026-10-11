@@ -62,7 +62,7 @@ class RelationTypeValidateTest extends TestCase {
 	private function newProperty( bool $required ): RelationProperty {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: $required, default: null ),
-			[ 'targetSchema' => 'Person', 'multiple' => false ],
+			[ 'targetSchemas' => [ 'Person' ], 'multiple' => false ],
 			TestSources::newSchemaReferenceParser(),
 		);
 	}

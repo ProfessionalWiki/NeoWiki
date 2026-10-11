@@ -20,7 +20,7 @@ use InvalidArgumentException;
  * inert: apply() would re-emit that key in object form. Two guards keep that from
  * corrupting non-Constraints — PropertyDefinition::fromJson drops severities on declared
  * Display Attributes, and `schemaContentSchema.json` rejects them on the shape-declaring
- * key `targetSchema` at authoring time.
+ * key `targetSchemas` at authoring time.
  */
 final class SeverityNormalizer {
 

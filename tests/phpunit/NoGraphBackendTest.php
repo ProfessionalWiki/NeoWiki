@@ -204,7 +204,7 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 	public function testRelationTargetSuggestionsAreEmptyWithoutBackend(): void {
 		$suggestions = $this->runWithoutGraphBackend(
 			static fn() => NeoWikiExtension::getInstance()->getSubjectLabelLookup()
-				->getSubjectLabelsMatching( 'anything', 10, TestSubject::DEFAULT_SCHEMA_ID )
+				->getSubjectLabelsMatching( 'anything', 10, [ TestSubject::DEFAULT_SCHEMA_ID ] )
 		);
 
 		$this->assertSame( [], $suggestions );

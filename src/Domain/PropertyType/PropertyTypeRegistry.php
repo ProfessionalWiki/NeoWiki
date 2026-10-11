@@ -23,8 +23,8 @@ class PropertyTypeRegistry implements PropertyTypeLookup {
 	private array $types = [];
 
 	/**
-	 * @param SchemaReferenceParser $schemaReferenceParser Reads the `targetSchema` of a relation
-	 *   property, which is a Schema reference like any other and names one Schema however written.
+	 * @param SchemaReferenceParser $schemaReferenceParser Reads the `targetSchemas` of a relation
+	 *   property, each a Schema reference like any other that names one Schema however written.
 	 */
 	public static function withCoreTypes( SchemaReferenceParser $schemaReferenceParser ): self {
 		$registry = new self();

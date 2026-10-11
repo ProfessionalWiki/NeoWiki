@@ -9,7 +9,7 @@ import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { newTextProperty } from '@/domain/propertyTypes/Text.ts';
 import { newSchema } from '@/TestHelpers.ts';
-import { newRelationProperty, type RelationProperty } from '@/domain/propertyTypes/Relation.ts';
+import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import { createI18nMock, findPropertyNameInput, reportUnparseableNumber, selectedText } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
@@ -610,17 +610,14 @@ describe( 'SchemaEditor', () => {
 			return new Schema( 'Test', '', new PropertyDefinitionList( properties ) );
 		}
 
-		// newRelationProperty() fills a placeholder target in, which is not the state
-		// switching a property's type to Relation leaves behind.
+		// The state switching a property's type to Relation leaves behind.
 		function relationPropertyWithoutTarget( name: string ): PropertyDefinition {
-			const noTarget: Partial<RelationProperty> = { targetSchema: undefined };
-
-			return { ...newRelationProperty( { name } ), ...noTarget };
+			return newRelationProperty( { name, targetSchemas: [] } );
 		}
 
 		it( 'reports nothing when every relation property has what it needs', () => {
 			const wrapper = createWrapper( schemaWith(
-				newRelationProperty( { name: 'Maker', targetSchema: 'Company' } ),
+				newRelationProperty( { name: 'Maker', targetSchemas: [ 'Company' ] } ),
 			) );
 
 			expect( saveBlocker( wrapper ) ).toBeNull();

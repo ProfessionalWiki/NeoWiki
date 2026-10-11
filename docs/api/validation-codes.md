@@ -175,12 +175,11 @@ resource.
 
 ### `relation-target-schema-mismatch`
 
-On `relation` properties. The relation targets a Subject that exists but whose own Schema is not the
-property's declared `targetSchema`. A target that cannot be resolved is reported as
+On `relation` properties. The relation targets a Subject that exists but whose own Schema is none of
+the property's `targetSchemas`. A target that cannot be resolved is reported as
 [`relation-target-not-found`](#relation-target-not-found) instead.
 
-`args`: `[expectedSchema, actualSchema]`. `valuePartIndex`: the offending target. `severity`: `error`
-(fixed).
+`args`: `[actualSchema]`. `valuePartIndex`: the offending target. `severity`: `error` (fixed).
 
 ### `relation-target-not-found`
 

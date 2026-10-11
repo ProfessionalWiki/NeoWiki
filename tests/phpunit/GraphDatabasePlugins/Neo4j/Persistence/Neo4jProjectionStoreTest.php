@@ -822,7 +822,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 					TestSchema::build(
 						name: TestSubject::DEFAULT_SCHEMA_ID,
 						properties: new PropertyDefinitions( [
-							self::LOCATION_PROPERTY => TestProperty::buildRelation( targetSchema: TestSubject::DEFAULT_SCHEMA_ID ),
+							self::LOCATION_PROPERTY => TestProperty::buildRelation( targetSchemas: [ TestSubject::DEFAULT_SCHEMA_ID ] ),
 						] ),
 					),
 				) ),
@@ -1134,7 +1134,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 				TestSchema::build(
 					name: TestSubject::DEFAULT_SCHEMA_ID,
 					properties: new PropertyDefinitions( [
-						self::LOCATION_PROPERTY => TestProperty::buildRelation( targetSchema: TestSubject::DEFAULT_SCHEMA_ID ),
+						self::LOCATION_PROPERTY => TestProperty::buildRelation( targetSchemas: [ TestSubject::DEFAULT_SCHEMA_ID ] ),
 					] ),
 				),
 			)

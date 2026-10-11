@@ -199,12 +199,12 @@ local function testGetSchemaReturnsNilForMalformedReference()
 	return nw.getSchema( { nope = 'Widget' } )
 end
 
-local function testGetSchemaRelationPropertyTargetSchema()
+local function testGetSchemaRelationPropertyTargetSchemas()
 	local s = nw.getSchema( 'Employee' )
 	if not s then return 'nil' end
 	for _, p in ipairs( s.properties ) do
 		if p.name == 'Employer' then
-			return p.type, p.targetSchema
+			return p.type, table.concat( p.targetSchemas, ', ' )
 		end
 	end
 	return 'not-found'
@@ -286,8 +286,8 @@ local tests = {
 	  func = testGetSchemaReturnsNilForReservedName, expect = { nil } },
 	{ name = 'getSchema number property exposes bounds and default',
 	  func = testGetSchemaNumberPropertyBoundsAndDefault, expect = { 'number', 0, 100, 100 } },
-	{ name = 'getSchema relation property exposes targetSchema',
-	  func = testGetSchemaRelationPropertyTargetSchema, expect = { 'relation', 'Company' } },
+	{ name = 'getSchema relation property exposes targetSchemas',
+	  func = testGetSchemaRelationPropertyTargetSchemas, expect = { 'relation', 'Company, Organization' } },
 	{ name = 'getSchema resolves the reference form a sourced Subject carries',
 	  func = testGetSchemaResolvesSourcedReference, expect = { 'Widget' } },
 	{ name = 'getSchema returns nil for a reference to an unregistered Source',

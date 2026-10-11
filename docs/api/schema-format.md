@@ -30,8 +30,8 @@ Per-type value constraints (`options`, ranges, string formats, `uniqueItems`) ar
 
 ## Schema references
 
-Wherever a Schema is named — a Subject's [`schema`](subject-format.md#subject-object) field, a relation property's
-`targetSchema` — the value is a reference.
+Wherever a Schema is named — a Subject's [`schema`](subject-format.md#subject-object) field, an entry of a relation
+property's `targetSchemas` — the value is a reference.
 
 A string names a Schema of this wiki by its page title in the Schema namespace, without the namespace prefix. Any
 spelling of that title is stored as the title itself — `person` as `Person`, `Person_name` as `Person name` — so a
@@ -86,7 +86,7 @@ The Constraints that accept a severity are `required`, `multiple`, `minimum`, `m
 `maxLength`, `uniqueItems`, and `options`. Only `select`, `relation` and `monolingualText` check
 `multiple`, so a severity on it is inert elsewhere. Severity is a Constraint concept, so it does not
 apply to Display Attributes such as `precision`, where it is discarded, nor to the shape-declaring
-fields `type` and `targetSchema`, where it is rejected when the Schema is saved.
+fields `type` and `targetSchemas`, where it is rejected when the Schema is saved.
 
 Canonical output emits the bare form whenever the severity is the default, so a Schema that sets no
 severities round-trips unchanged. Which violation each Constraint produces, and the fixed severities
@@ -199,13 +199,13 @@ References to other Subjects.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `targetSchema` | string or object | Yes | - | [Reference](#schema-references) to the Schema that target Subjects must follow |
+| `targetSchemas` | array | Yes | - | One or more distinct [references](#schema-references) to the Schemas a target Subject may follow |
 | `multiple` | boolean or object | No | `false` | Allow multiple relations |
 
 ```json
 {
   "type": "relation",
-  "targetSchema": "Product",
+  "targetSchemas": [ "Person", "Group" ],
   "multiple": true
 }
 ```
@@ -275,11 +275,11 @@ A "Company" schema with various property types:
     },
     "Main product": {
       "type": "relation",
-      "targetSchema": "Product"
+      "targetSchemas": [ "Product" ]
     },
     "Products": {
       "type": "relation",
-      "targetSchema": "Product",
+      "targetSchemas": [ "Product" ],
       "multiple": true
     },
     "Status": {

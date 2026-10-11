@@ -368,7 +368,7 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertCount( 1, $violations );
 		$this->assertSame( 'relation-target-schema-mismatch', $violations[0]->code );
 		$this->assertEquals( new PropertyName( 'Links' ), $violations[0]->propertyName );
-		$this->assertSame( [ self::TARGET_SCHEMA, 'Company' ], $violations[0]->args );
+		$this->assertSame( [ 'Company' ], $violations[0]->args );
 		$this->assertTrue( $violations[0]->isBlocking() );
 	}
 
@@ -595,7 +595,7 @@ class SubjectValidatorTest extends TestCase {
 				new Violation(
 					propertyName: new PropertyName( 'Links' ),
 					code: 'relation-target-schema-mismatch',
-					args: [ self::TARGET_SCHEMA, 'Company' ],
+					args: [ 'Company' ],
 					valuePartIndex: 1,
 					severity: Severity::Error,
 				),
@@ -609,7 +609,7 @@ class SubjectValidatorTest extends TestCase {
 				new Violation(
 					propertyName: new PropertyName( 'Employers' ),
 					code: 'relation-target-schema-mismatch',
-					args: [ self::TARGET_SCHEMA, 'DecoySchema' ],
+					args: [ 'DecoySchema' ],
 					valuePartIndex: 1,
 					severity: Severity::Error,
 				),
@@ -623,7 +623,7 @@ class SubjectValidatorTest extends TestCase {
 	private function newRelationProperty( bool $multiple = true ): RelationProperty {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: false, default: null ),
-			[ 'targetSchema' => self::TARGET_SCHEMA, 'multiple' => $multiple ],
+			[ 'targetSchemas' => [ self::TARGET_SCHEMA ], 'multiple' => $multiple ],
 			TestSources::newSchemaReferenceParser(),
 		);
 	}

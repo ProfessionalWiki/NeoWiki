@@ -62,4 +62,32 @@ class GetSubjectLabelsApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ 'sTestGSL1111111', 'sTestGSL1111112' ], array_column( $data, 'id' ) );
 	}
 
+	/**
+	 * What the picker of a relation with several target Schemas sends.
+	 */
+	public function testASearchNamingSeveralSchemasFindsSubjectsOfEachOfThem(): void {
+		$this->setUpNeo4j();
+		$this->createSchema( 'Recipe' );
+		$this->createSchema( 'Plant' );
+		$this->createSchema( 'Company' );
+		$this->createPageWithSubjects(
+			'GetSubjectLabelsApiTest_SeveralSchemas',
+			otherSubjects: new SubjectMap(
+				TestSubject::build( id: 'sTestGSL1111121', label: 'Apple Pie', schemaName: new SchemaName( 'Recipe' ) ),
+				TestSubject::build( id: 'sTestGSL1111122', label: 'Apple Tree', schemaName: new SchemaName( 'Plant' ) ),
+				TestSubject::build( id: 'sTestGSL1111123', label: 'Apple Inc.', schemaName: new SchemaName( 'Company' ) ),
+			)
+		);
+
+		$data = $this->executeHandlerAndGetBodyData(
+			new GetSubjectLabelsApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'queryParams' => [ 'search' => 'Apple', 'schema' => 'Recipe|Company' ],
+			] )
+		);
+
+		$this->assertSame( [ 'sTestGSL1111123', 'sTestGSL1111121' ], array_column( $data, 'id' ) );
+	}
+
 }

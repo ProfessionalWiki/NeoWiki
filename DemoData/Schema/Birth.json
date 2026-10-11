@@ -3,23 +3,23 @@
 	"propertyDefinitions": {
 		"Brought into life": {
 			"type": "relation",
-			"targetSchema": "Person",
+			"targetSchemas": [ "Person" ],
 			"required": true,
 			"description": "The person born. CIDOC P98 brought into life (inverse P98i was born)."
 		},
 		"By mother": {
 			"type": "relation",
-			"targetSchema": "Person",
+			"targetSchemas": [ "Person" ],
 			"description": "The mother. CIDOC P96 by mother."
 		},
 		"From father": {
 			"type": "relation",
-			"targetSchema": "Person",
+			"targetSchemas": [ "Person" ],
 			"description": "The father. CIDOC P97 from father."
 		},
 		"Took place at": {
 			"type": "relation",
-			"targetSchema": "Place",
+			"targetSchemas": [ "Place" ],
 			"description": "Where the birth happened. CIDOC P7 took place at."
 		},
 		"Date": {

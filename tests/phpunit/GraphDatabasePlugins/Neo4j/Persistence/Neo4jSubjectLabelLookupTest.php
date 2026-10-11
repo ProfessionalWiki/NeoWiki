@@ -100,10 +100,34 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 			TestSubject::build( id: 'sTestSLL1111118', label: new SubjectLabel( 'Apple Inc.' ), schemaName: new SchemaName( 'Company' ) ),
 		) );
 
-		$results = $this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, 'Recipe' );
+		$results = $this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, [ 'Recipe' ] );
 
 		$this->assertCount( 1, $results );
 		$this->assertContainsEquals( new SubjectLabelLookupResult( 'sTestSLL1111116', 'Apple Pie' ), $results );
+	}
+
+	public function testFindsSubjectsOfEachListedSchemaInLabelOrder(): void {
+		$this->saveSubjects( new SubjectMap(
+			TestSubject::build( id: 'sTestSLL1111131', label: new SubjectLabel( 'Apple Pie' ), schemaName: new SchemaName( 'Recipe' ) ),
+			TestSubject::build( id: 'sTestSLL1111132', label: new SubjectLabel( 'Apple Tree' ), schemaName: new SchemaName( 'Plant' ) ),
+			TestSubject::build( id: 'sTestSLL1111133', label: new SubjectLabel( 'Apple Inc.' ), schemaName: new SchemaName( 'Company' ) ),
+		) );
+
+		$this->assertEquals(
+			[
+				new SubjectLabelLookupResult( 'sTestSLL1111133', 'Apple Inc.' ),
+				new SubjectLabelLookupResult( 'sTestSLL1111131', 'Apple Pie' ),
+			],
+			$this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, [ 'Recipe', 'Company' ] )
+		);
+	}
+
+	public function testFindsNothingWithinNoSchema(): void {
+		$this->saveSubjects( new SubjectMap(
+			TestSubject::build( id: 'sTestSLL1111137', label: new SubjectLabel( 'Apple Pie' ), schemaName: new SchemaName( 'Recipe' ) ),
+		) );
+
+		$this->assertSame( [], $this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, [] ) );
 	}
 
 	public function testFindsSubjectsOfEverySchemaWithoutASchema(): void {
@@ -128,7 +152,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 			TestSubject::build( id: 'sTestSLL1111119', label: new SubjectLabel( 'Apple Tree' ), schemaName: new SchemaName( 'Plant' ) ),
 		) );
 
-		$this->assertSame( [], $this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, 'Recipe' ) );
+		$this->assertSame( [], $this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, [ 'Recipe' ] ) );
 	}
 
 	public function testExcludesSubjectsFromOtherWikis(): void {
@@ -212,7 +236,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame(
 			[],
 			$this->newLookup( readAuthorizer: new StubPageReadAuthorizer( allowed: false ) )
-				->getSubjectLabelsMatching( 'Apple', 10, TestSubject::DEFAULT_SCHEMA_ID )
+				->getSubjectLabelsMatching( 'Apple', 10, [ TestSubject::DEFAULT_SCHEMA_ID ] )
 		);
 	}
 
@@ -224,7 +248,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		// Page 2 is hidden and sorts between the two readable rows, so a naive "LIMIT 2 then
 		// filter" would return only Apple 1. Over-fetching then re-limiting must still yield two.
 		$results = $this->newLookup( readAuthorizer: new SelectivePageReadAuthorizer( deniedPageIds: [ 2 ] ) )
-			->getSubjectLabelsMatching( 'Apple', 2, TestSubject::DEFAULT_SCHEMA_ID );
+			->getSubjectLabelsMatching( 'Apple', 2, [ TestSubject::DEFAULT_SCHEMA_ID ] );
 
 		$this->assertEquals(
 			[
@@ -265,7 +289,7 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function getSubjectLabelsMatching( string $search, int $limit = 10 ): array {
-		return $this->newLookup()->getSubjectLabelsMatching( $search, $limit, TestSubject::DEFAULT_SCHEMA_ID );
+		return $this->newLookup()->getSubjectLabelsMatching( $search, $limit, [ TestSubject::DEFAULT_SCHEMA_ID ] );
 	}
 
 	private function newLookup(

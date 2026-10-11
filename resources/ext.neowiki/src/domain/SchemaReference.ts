@@ -10,21 +10,26 @@
 export type SchemaReference = string | { readonly source: string; readonly name: string };
 
 /**
- * The Schema's name without its Source, for the surfaces that name a Schema of this wiki: the
- * Schema picker's selection and the local Schema lookups behind it.
+ * The Schema's name without its Source, for the code that knows a Schema by its bare name.
  */
-export function schemaReferenceName( reference: SchemaReference | undefined ): string {
-	if ( reference === undefined ) {
-		return '';
-	}
-
+export function schemaReferenceName( reference: SchemaReference ): string {
 	return typeof reference === 'string' ? reference : reference.name;
+}
+
+/**
+ * How a reference reads to a person: a Schema of another Source is prefixed with its source key. Not
+ * a serialization: `sourceKey:Name` is ambiguous with a colon-bearing local name, so nothing parses it.
+ *
+ * Mirrors SchemaReference::getText() in src/Domain/Schema/SchemaReference.php.
+ */
+export function schemaReferenceText( reference: SchemaReference ): string {
+	return typeof reference === 'string' ? reference : `${ reference.source }:${ reference.name }`;
 }
 
 /**
  * Whether the reference names a Schema of this wiki, which is the only kind anything here can
  * resolve, search against, or offer in a picker.
  */
-export function isLocalSchemaReference( reference: SchemaReference | undefined ): boolean {
+export function isLocalSchemaReference( reference: SchemaReference ): reference is string {
 	return typeof reference === 'string';
 }
