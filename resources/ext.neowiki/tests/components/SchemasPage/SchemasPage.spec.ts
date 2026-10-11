@@ -11,7 +11,7 @@ import SchemaImportButton from '@/components/SchemasPage/SchemaImportButton.vue'
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import DeletePageDialog from '@/components/common/DeletePageDialog.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
-import { createI18nMock, setupMwMock, stubIntersectionObserver } from '../../VueTestHelpers.ts';
+import { createI18nMock, offeredActions, setupMwMock, stubIntersectionObserver } from '../../VueTestHelpers.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { Service } from '@/NeoWikiServices.ts';
@@ -282,9 +282,7 @@ describe( 'SchemasPage', () => {
 		mayCreateSubjectPages = rights.createSubjectPages ?? false;
 		const wrapper = await visit();
 
-		expect( wrapper.findAll( 'tbody tr' )[ 0 ].findAll( 'button, .cdx-menu-item' )
-			.map( ( control ) => control.attributes( 'aria-label' ) ?? control.text() ) )
-			.toEqual( actions );
+		expect( offeredActions( wrapper.findAll( 'tbody tr' )[ 0 ] ) ).toEqual( actions );
 	} );
 
 	it( 'switches to the cards, and opens in them on the next visit', async () => {

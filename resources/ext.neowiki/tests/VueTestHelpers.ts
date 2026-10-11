@@ -60,6 +60,12 @@ export function describedAs( wrapper: VueWrapper, element: DOMWrapper<Element> )
 		.map( ( id ) => wrapper.find( `[id="${ id }"]` ).text() );
 }
 
+/** The buttons and menu items in an element, in order, each by its accessible name or, lacking one, its text. */
+export function offeredActions( element: VueWrapper | DOMWrapper<Element> ): string[] {
+	return element.findAll( 'button, .cdx-menu-item' )
+		.map( ( control ) => control.attributes( 'aria-label' ) ?? control.text() );
+}
+
 export async function chooseFromMenu( element: VueWrapper | DOMWrapper<Element>, buttonLabel: string, itemText: string ): Promise<void> {
 	await element.find( `button[aria-label="${ buttonLabel }"]` ).trigger( 'click' );
 	const item = element.findAll( '.cdx-menu-item' ).find( ( menuItem ) => menuItem.text() === itemText );

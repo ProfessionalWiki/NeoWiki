@@ -1,7 +1,7 @@
 import { DOMWrapper, mount, VueWrapper } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import SchemasTable from '@/components/SchemasPage/SchemasTable.vue';
-import { chooseFromMenu, createI18nMock, describedAs, setupMwMock } from '../../VueTestHelpers.ts';
+import { chooseFromMenu, createI18nMock, describedAs, offeredActions, setupMwMock } from '../../VueTestHelpers.ts';
 
 const SUBJECT_COUNTS = new Map( [ [ 'Artist', 4 ], [ 'Artwork', 30 ] ] );
 const MORE_ACTIONS = 'neowiki-schemas-more-actions';
@@ -42,11 +42,6 @@ function label( control: DOMWrapper<Element> ): string {
 
 function findButton( element: DOMWrapper<Element>, buttonLabel: string ): DOMWrapper<Element> {
 	return element.findAll( 'button' ).find( ( button ) => label( button ) === buttonLabel )!;
-}
-
-// The buttons and the menu items, in the order they stand.
-function offeredActions( element: DOMWrapper<Element> ): string[] {
-	return element.findAll( 'button, .cdx-menu-item' ).map( label );
 }
 
 describe( 'SchemasTable', () => {
