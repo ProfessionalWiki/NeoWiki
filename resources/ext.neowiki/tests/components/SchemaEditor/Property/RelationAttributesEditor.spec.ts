@@ -1,14 +1,18 @@
-import { mount, VueWrapper } from '@vue/test-utils';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Relation';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
+import { SchemaCreation, SchemaCreationKey } from '@/components/common/SchemaCreation.ts';
+import { Service } from '@/NeoWikiServices.ts';
+import { Schema } from '@/domain/Schema.ts';
+import { newSchema } from '@/TestHelpers.ts';
 import { createI18nMock, setupMwMock } from '../../../VueTestHelpers.ts';
 
 const TargetSchemasInputStub = {
-	props: [ 'modelValue' ],
-	emits: [ 'update:modelValue' ],
+	props: { modelValue: Array, offersCreation: Boolean },
+	emits: [ 'update:modelValue', 'create' ],
 	template: '<div class="target-schemas-input-stub"></div>',
 };
 
@@ -17,6 +21,10 @@ function relationProperty( overrides: Partial<RelationProperty> = {} ): Relation
 }
 
 describe( 'RelationAttributesEditor', () => {
+	let canCreateSchemas: boolean;
+	// What the dialog holding the editor provides; undefined where none does.
+	let schemaCreation: SchemaCreation | undefined;
+	let finishCreation: ( schema: Schema | null ) => void;
 
 	beforeEach( () => {
 		setupMwMock( {
@@ -25,6 +33,13 @@ describe( 'RelationAttributesEditor', () => {
 			},
 			functions: [ 'config', 'message' ],
 		} );
+
+		canCreateSchemas = true;
+		schemaCreation = {
+			create: vi.fn( () => new Promise<Schema | null>( ( resolve ) => {
+				finishCreation = resolve;
+			} ) ),
+		};
 	} );
 
 	function newWrapper( props: Partial<AttributesEditorProps<RelationProperty>> = {} ): VueWrapper {
@@ -36,6 +51,10 @@ describe( 'RelationAttributesEditor', () => {
 			global: {
 				mocks: { $i18n: createI18nMock() },
 				stubs: { TargetSchemasInput: TargetSchemasInputStub },
+				provide: {
+					[ Service.SchemaPermissionHints ]: { canCreateSchemas: async () => canCreateSchemas },
+					...( schemaCreation === undefined ? {} : { [ SchemaCreationKey as symbol ]: schemaCreation } ),
+				},
 			},
 		} );
 	}
@@ -73,6 +92,78 @@ describe( 'RelationAttributesEditor', () => {
 			await wrapper.find( 'input[type="checkbox"]' ).setValue( true );
 
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { multiple: true } ] );
+		} );
+	} );
+
+	describe( 'creating a target schema from the field', () => {
+		async function chooseCreateOffer( wrapper: VueWrapper, typedName: string ): Promise<void> {
+			await flushPromises();
+			wrapper.findComponent( TargetSchemasInputStub ).vm.$emit( 'create', typedName );
+			await flushPromises();
+		}
+
+		it( 'is offered to a user who may create schemas', async () => {
+			const wrapper = newWrapper();
+			await flushPromises();
+
+			expect( wrapper.findComponent( TargetSchemasInputStub ).props( 'offersCreation' ) ).toBe( true );
+		} );
+
+		it( 'is not offered to a user who may not create schemas', async () => {
+			canCreateSchemas = false;
+			const wrapper = newWrapper();
+			await flushPromises();
+
+			expect( wrapper.findComponent( TargetSchemasInputStub ).props( 'offersCreation' ) ).toBe( false );
+		} );
+
+		it( 'is not offered where no dialog can stack the schema creator', async () => {
+			schemaCreation = undefined;
+			const wrapper = newWrapper();
+			await flushPromises();
+
+			expect( wrapper.findComponent( TargetSchemasInputStub ).props( 'offersCreation' ) ).toBe( false );
+		} );
+
+		it( 'opens the schema creator on the name typed in the field', async () => {
+			const wrapper = newWrapper();
+
+			await chooseCreateOffer( wrapper, 'Artist' );
+
+			expect( schemaCreation!.create ).toHaveBeenCalledWith( 'Artist' );
+		} );
+
+		it( 'opens the schema creator when nothing was typed', async () => {
+			const wrapper = newWrapper();
+
+			await chooseCreateOffer( wrapper, '' );
+
+			expect( schemaCreation!.create ).toHaveBeenCalledWith( '' );
+		} );
+
+		// The name typed in the field may have been changed in the creator since.
+		it( 'adds the schema created there to the target schemas, under the name the wiki gave it', async () => {
+			const wrapper = newWrapper( {
+				property: relationProperty( { targetSchemas: [ 'Product', { source: 'otherwiki', name: 'Person' } ] } ),
+			} );
+			await chooseCreateOffer( wrapper, 'sculpture' );
+
+			finishCreation( newSchema( { title: 'statue' } ) );
+			await flushPromises();
+
+			expect( wrapper.emitted( 'update:property' ) ).toEqual( [
+				[ { targetSchemas: [ 'Product', { source: 'otherwiki', name: 'Person' }, 'Statue' ] } ],
+			] );
+		} );
+
+		it( 'leaves the target schemas alone when the schema creator is closed without creating one', async () => {
+			const wrapper = newWrapper();
+			await chooseCreateOffer( wrapper, 'Artist' );
+
+			finishCreation( null );
+			await flushPromises();
+
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 	} );
 

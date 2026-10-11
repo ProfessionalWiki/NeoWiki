@@ -10,7 +10,9 @@
 			</template>
 			<TargetSchemasInput
 				:model-value="property.targetSchemas"
+				:offers-creation="canCreateSchemas && schemaCreation !== undefined"
 				@update:model-value="updateTargetSchemas"
+				@create="createTargetSchema"
 			/>
 		</CdxField>
 
@@ -35,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, inject, onMounted } from 'vue';
 import { CdxCheckbox, CdxField } from '@wikimedia/codex';
 import { RelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { withConstraintSeverity } from '@/domain/PropertyDefinition.ts';
@@ -44,10 +46,19 @@ import type { Severity } from '@/domain/Severity.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { missingRelationAttribute } from '@/components/SchemaEditor/Property/missingRelationAttribute.ts';
 import TargetSchemasInput from '@/components/SchemaEditor/Property/TargetSchemasInput.vue';
+import { SchemaCreationKey } from '@/components/common/SchemaCreation.ts';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
+import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
+import { normalizeSchemaName } from '@/stores/SchemaStore.ts';
 
 const props = defineProps<AttributesEditorProps<RelationProperty>>();
 const emit = defineEmits<AttributesEditorEmits<RelationProperty>>();
+
+const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();
+
+onMounted( checkCreatePermission );
+
+const schemaCreation = inject( SchemaCreationKey, undefined );
 
 const targetSchemasError = computed<string | null>( () => {
 	const message = missingRelationAttribute( props.property );
@@ -58,6 +69,15 @@ const targetSchemasError = computed<string | null>( () => {
 const updateTargetSchemas = ( targetSchemas: SchemaReference[] ): void => {
 	emit( 'update:property', { targetSchemas } );
 };
+
+async function createTargetSchema( schemaName: string ): Promise<void> {
+	const schema = await schemaCreation?.create( schemaName ) ?? null;
+
+	// The wiki saved the Schema under its page title, which is the name the field would list it by.
+	if ( schema !== null ) {
+		updateTargetSchemas( [ ...props.property.targetSchemas, normalizeSchemaName( schema.getName() ) ] );
+	}
+}
 
 const updateMultiple = ( value: boolean ): void => {
 	emit( 'update:property', { multiple: value } );

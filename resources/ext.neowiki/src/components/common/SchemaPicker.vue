@@ -5,8 +5,8 @@
 			ref="lookupRef"
 			v-model:selected="selectedSchema"
 			v-model:input-value="inputText"
-			:menu-items="menuItems"
-			:menu-config="menuConfig"
+			:menu-items="menu.items"
+			:menu-config="menu.config"
 			:placeholder="$i18n( 'neowiki-schema-picker-placeholder' ).text()"
 			@input="filterSchemas"
 			@update:selected="onSelect"
@@ -18,11 +18,9 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 import { CdxLookup } from '@wikimedia/codex';
-import type { MenuConfig, MenuItemData } from '@wikimedia/codex';
-import { cdxIconAdd } from '@wikimedia/codex-icons';
 import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
-import { schemaMenuItems } from '@/presentation/schemaMenuItems.ts';
+import { CREATE_SCHEMA, schemaMenu, type SchemaMenu } from '@/presentation/schemaMenu.ts';
 
 const props = defineProps<{
 	/**
@@ -43,13 +41,6 @@ const emit = defineEmits<{
 	'select': [ schemaName: string ];
 	'create': [ schemaName: string ];
 }>();
-
-// Codex has no value of its own for the offer, so it carries a value no Schema name can take: a name
-// is a page title, and a title never starts with an underscore.
-const CREATE_SCHEMA = '__create__';
-
-// CdxLookup hands its whole menuConfig to its CdxMenu, whose footer Codex's MenuConfig type leaves out.
-type MenuConfigWithFooter = MenuConfig & { footer: MenuItemData | null };
 
 const schemaStore = useSchemaStore();
 const selectedSchema = ref<string | null>( props.selected ?? null );
@@ -76,27 +67,8 @@ const offeredSummaries = computed( (): SchemaSummary[] => props.schemaNames === 
 	summaries.value :
 	summaries.value.filter( ( summary ) => props.schemaNames?.includes( summary.name ) ) );
 
-const matchingItems = computed<MenuItemData[]>( () => schemaMenuItems( offeredSummaries.value, query.value ) );
-
-// Below Schemas, the offer is the menu's footer, which Codex keeps in view while the list scrolls.
-// Alone, it is the list's one item: CdxLookup neither opens a menu nor moves through it by keyboard
-// while it has no items.
-const menuItems = computed<MenuItemData[]>( () =>
-	creationOffered.value && matchingItems.value.length === 0 ? [ createItem() ] : matchingItems.value );
-
-const menuConfig = computed( (): MenuConfigWithFooter => ( {
-	footer: creationOffered.value && matchingItems.value.length > 0 ? createItem() : null
-} ) );
-
-function createItem(): MenuItemData {
-	return {
-		value: CREATE_SCHEMA,
-		label: typedName.value === '' ?
-			mw.msg( 'neowiki-schema-picker-create' ) :
-			mw.msg( 'neowiki-schema-picker-create-named', typedName.value ),
-		icon: cdxIconAdd
-	};
-}
+const menu = computed( (): SchemaMenu =>
+	schemaMenu( offeredSummaries.value, query.value, creationOffered.value ? typedName.value : null ) );
 
 // CdxLookup decides whether focus opens the menu from the menu items it was created
 // with, so the field is only rendered once the schemas have arrived. Loading them is

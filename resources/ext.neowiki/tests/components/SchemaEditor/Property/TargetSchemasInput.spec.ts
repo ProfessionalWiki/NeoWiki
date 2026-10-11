@@ -5,7 +5,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import TargetSchemasInput from '@/components/SchemaEditor/Property/TargetSchemasInput.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SchemaReference } from '@/domain/SchemaReference';
-import { createI18nMock } from '../../../VueTestHelpers.ts';
+import { createI18nMock, setupMwMock } from '../../../VueTestHelpers.ts';
 
 type TargetSchemasInputWrapper = VueWrapper<InstanceType<typeof TargetSchemasInput>>;
 
@@ -22,6 +22,8 @@ describe( 'TargetSchemasInput', () => {
 	const wrappers: VueWrapper[] = [];
 
 	beforeEach( () => {
+		setupMwMock();
+
 		pinia = createPinia();
 		setActivePinia( pinia );
 
@@ -32,11 +34,22 @@ describe( 'TargetSchemasInput', () => {
 		wrappers.splice( 0 ).forEach( ( wrapper ) => wrapper.unmount() );
 	} );
 
-	// Focused, as the field is when a user picks from it, and attached so that focus lands at all.
 	async function mountInput( targetSchemas: SchemaReference[] ): Promise<TargetSchemasInputWrapper> {
+		return mountFocused( { modelValue: targetSchemas } );
+	}
+
+	// As under a dialog that can stack the Create schema dialog in front of its own.
+	async function mountCreatingInput( targetSchemas: SchemaReference[] ): Promise<TargetSchemasInputWrapper> {
+		return mountFocused( { modelValue: targetSchemas, offersCreation: true } );
+	}
+
+	// Focused, as the field is when a user picks from it, and attached so that focus lands at all.
+	async function mountFocused(
+		props: { modelValue: SchemaReference[]; offersCreation?: boolean },
+	): Promise<TargetSchemasInputWrapper> {
 		const wrapper: TargetSchemasInputWrapper = mount( TargetSchemasInput, {
 			props: {
-				modelValue: targetSchemas,
+				...props,
 				'onUpdate:modelValue': ( value: SchemaReference[] ) => wrapper.setProps( { modelValue: value } ),
 			},
 			attachTo: document.body,
@@ -198,6 +211,123 @@ describe( 'TargetSchemasInput', () => {
 		await flushPromises();
 
 		expect( chipTexts( wrapper ) ).toEqual( boundTargetSchemas( wrapper ) );
+	} );
+
+	it( 'lists and checks a target schema created after the list was fetched', async () => {
+		const wrapper = await mountInput( [ 'Office' ] );
+		useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue(
+			[ ...SUMMARIES, { name: 'Artwork', description: '', propertyCount: 0 } ],
+		);
+
+		await wrapper.setProps( { modelValue: [ 'Office', 'Artwork' ] } );
+		await flushPromises();
+
+		expect( checkedSchemas( wrapper ) ).toEqual( [ 'Office', 'Artwork' ] );
+	} );
+
+	describe( 'offering to create a schema', () => {
+		const OFFER = 'neowiki-schema-picker-create';
+
+		function offerFor( typed: string ): string {
+			return 'neowiki-schema-picker-create-named' + typed;
+		}
+
+		async function type( wrapper: VueWrapper, text: string ): Promise<void> {
+			await field( wrapper ).setValue( text );
+			await flushPromises();
+		}
+
+		function menuShown( wrapper: VueWrapper ): boolean {
+			return field( wrapper ).attributes( 'aria-expanded' ) === 'true';
+		}
+
+		// Codex's stylesheet pins the last item of a menu with this class below the list, in view while
+		// the list scrolls.
+		function pinnedItem( wrapper: VueWrapper ): string | null {
+			const labels = wrapper.findAll( '.cdx-menu--has-footer .cdx-menu-item__text__label' );
+
+			return labels.length === 0 ? null : labels[ labels.length - 1 ].text();
+		}
+
+		it( 'makes no offer unless asked to', async () => {
+			const wrapper = await mountInput( [] );
+
+			await type( wrapper, 'Artwork' );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [] );
+		} );
+
+		it( 'shows the offer alone for typed text no schema matches', async () => {
+			const wrapper = await mountCreatingInput( [] );
+
+			await type( wrapper, 'Artwork' );
+
+			expect( menuShown( wrapper ) ).toBe( true );
+			expect( listedSchemas( wrapper ) ).toEqual( [ offerFor( 'Artwork' ) ] );
+		} );
+
+		it( 'pins the offer for the typed text below the schemas it matches', async () => {
+			const wrapper = await mountCreatingInput( [] );
+
+			await type( wrapper, 'o' );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', offerFor( 'o' ) ] );
+			expect( pinnedItem( wrapper ) ).toBe( offerFor( 'o' ) );
+		} );
+
+		it( 'makes no offer for typed text naming a schema that exists', async () => {
+			const wrapper = await mountCreatingInput( [] );
+
+			await type( wrapper, 'office' );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Office' ] );
+		} );
+
+		it( 'makes no offer for typed text naming a target schema the list leaves out', async () => {
+			const wrapper = await mountCreatingInput( [ 'Archived' ] );
+
+			await type( wrapper, 'archived' );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [] );
+		} );
+
+		it( 'offers to create a schema named like a target schema of another Source', async () => {
+			const wrapper = await mountCreatingInput( [ { source: 'otherwiki', name: 'Person' } ] );
+
+			await type( wrapper, 'Person' );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ offerFor( 'Person' ) ] );
+		} );
+
+		describe( 'chosen', () => {
+			async function chooseOffer(): Promise<TargetSchemasInputWrapper> {
+				const wrapper = await mountCreatingInput( [ 'Office' ] );
+				await type( wrapper, 'Prod' );
+
+				await pickSchema( wrapper, offerFor( 'Prod' ) );
+
+				return wrapper;
+			}
+
+			it( 'hands the typed text on', async () => {
+				const wrapper = await chooseOffer();
+
+				expect( wrapper.emitted( 'create' ) ).toEqual( [ [ 'Prod' ] ] );
+			} );
+
+			it( 'adds no target schema', async () => {
+				const wrapper = await chooseOffer();
+
+				expect( chipTexts( wrapper ) ).toEqual( [ 'Office' ] );
+			} );
+
+			it( 'starts a fresh search', async () => {
+				const wrapper = await chooseOffer();
+
+				expect( field( wrapper ).element.value ).toBe( '' );
+				expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City', OFFER ] );
+			} );
+		} );
 	} );
 
 } );

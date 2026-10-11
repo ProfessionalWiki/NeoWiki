@@ -8,7 +8,7 @@ import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
-import SchemaPicker from '@/components/common/SchemaPicker.vue';
+import TargetSchemasInput from '@/components/SchemaEditor/Property/TargetSchemasInput.vue';
 import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
@@ -319,7 +319,7 @@ describe( 'SchemaEditorDialog', () => {
 			props: [ 'initialSchema', 'description' ],
 			emits: [ 'change' ],
 			setup() {
-				const property = ref<RelationProperty>( newRelationProperty( { targetSchema: 'Person' } ) );
+				const property = ref<RelationProperty>( newRelationProperty( { targetSchemas: [ 'Person' ] } ) );
 				const update = ( attributes: Partial<RelationProperty> ): void => {
 					property.value = { ...property.value, ...attributes };
 				};
@@ -366,7 +366,11 @@ describe( 'SchemaEditorDialog', () => {
 		} );
 
 		function targetSchemaField(): HTMLInputElement {
-			return wrapper.findComponent( SchemaPicker ).find<HTMLInputElement>( 'input' ).element;
+			return wrapper.findComponent( TargetSchemasInput ).find<HTMLInputElement>( 'input' ).element;
+		}
+
+		function targetSchemaChips(): string[] {
+			return wrapper.findComponent( TargetSchemasInput ).findAll( '.cdx-input-chip__text' ).map( ( chip ) => chip.text() );
 		}
 
 		function schemaCreator(): VueWrapper<InstanceType<typeof SchemaCreatorDialog>> {
@@ -377,7 +381,7 @@ describe( 'SchemaEditorDialog', () => {
 		async function chooseCreateOffer( typedName: string ): Promise<void> {
 			await flushPromises();
 			targetSchemaField().focus();
-			wrapper.findComponent( SchemaPicker ).vm.$emit( 'create', typedName );
+			wrapper.findComponent( TargetSchemasInput ).vm.$emit( 'create', typedName );
 			await flushPromises();
 		}
 
@@ -411,7 +415,7 @@ describe( 'SchemaEditorDialog', () => {
 			schemaCreator().vm.$emit( 'update:open', false );
 			await flushPromises();
 
-			expect( targetSchemaField().value ).toBe( 'Artist' );
+			expect( targetSchemaChips() ).toEqual( [ 'Person', 'Artist' ] );
 			expect( document.activeElement ).toBe( targetSchemaField() );
 		} );
 	} );

@@ -5,10 +5,11 @@
 			v-model:input-value="inputText"
 			:input-chips="chips"
 			:selected="localTargets"
-			:menu-items="menuItems"
+			:menu-items="menu.items"
+			:menu-config="menu.config"
 			:placeholder="$i18n( 'neowiki-schema-picker-placeholder' ).text()"
 			:aria-label="$i18n( 'neowiki-property-editor-target-schema' ).text()"
-			@update:selected="setLocalTargets"
+			@update:selected="onSelect"
 			@update:input-chips="keepTargetsOfChips"
 			@input="onInput"
 		/>
@@ -29,20 +30,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { CdxInfoChip, CdxMultiselectLookup } from '@wikimedia/codex';
-import type { ChipInputItem, MenuItemData } from '@wikimedia/codex';
-import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import type { ChipInputItem } from '@wikimedia/codex';
+import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import { isLocalSchemaReference, schemaReferenceText, type SchemaReference } from '@/domain/SchemaReference';
-import { schemaMenuItems } from '@/presentation/schemaMenuItems.ts';
+import { CREATE_SCHEMA, schemaMenu, type SchemaMenu } from '@/presentation/schemaMenu.ts';
 
 const props = defineProps<{
 	modelValue: readonly SchemaReference[];
+	/**
+	 * Ends the list with an offer to create a Schema named after the typed text, unless a Schema or a
+	 * target has that name already. Choosing the offer emits `create` with the text.
+	 */
+	offersCreation?: boolean;
 }>();
 
 const emit = defineEmits<{
 	'update:modelValue': [ targetSchemas: SchemaReference[] ];
+	'create': [ schemaName: string ];
 }>();
 
 const schemaStore = useSchemaStore();
@@ -62,7 +69,19 @@ function chipFor( schemaName: string ): ChipInputItem {
 
 const chips = computed( (): ChipInputItem[] => localTargets.value.map( chipFor ) );
 
-const menuItems = computed( (): MenuItemData[] => schemaMenuItems( summaries.value, query.value ) );
+const typedName = computed( (): string => String( inputText.value ).trim() );
+
+// Schema names are unique, so a name that is taken can only be picked. A target's name is taken even
+// while the list leaves it out.
+const takenNames = computed( (): Set<string> => new Set(
+	[ ...summaries.value.map( ( summary ) => summary.name ), ...localTargets.value ].map( normalizeSchemaName )
+) );
+
+const creationOffered = computed( (): boolean =>
+	props.offersCreation && !takenNames.value.has( normalizeSchemaName( typedName.value ) ) );
+
+const menu = computed( (): SchemaMenu =>
+	schemaMenu( summaries.value, query.value, creationOffered.value ? typedName.value : null ) );
 
 // CdxMultiselectLookup opens its menu on focus only when it has items by then, so the field is
 // rendered once the Schemas have arrived, or a failure to load them has been reported.
@@ -78,12 +97,34 @@ async function loadSchemas(): Promise<void> {
 
 loadSchemas();
 
+// A target the list leaves out, such as a Schema created from the offer, may be newer than the list.
+watch( localTargets, ( names, previousNames ) => {
+	const listedNames = summaries.value.map( ( summary ) => summary.name );
+
+	if ( names.some( ( name ) => !previousNames.includes( name ) && !listedNames.includes( name ) ) ) {
+		loadSchemas();
+	}
+} );
+
 function onInput( value: string | number ): void {
 	query.value = String( value );
 }
 
 function sameNames( names: readonly string[], otherNames: readonly string[] ): boolean {
 	return names.length === otherNames.length && names.every( ( name, index ) => name === otherNames[ index ] );
+}
+
+// Codex adds the value of a chosen menu item to the selection, the offer's too, which is no target.
+function onSelect( names: readonly string[] ): void {
+	if ( names.includes( CREATE_SCHEMA ) ) {
+		const schemaName = typedName.value;
+		// Cleared as a pick clears it: the Schema the offer creates comes back as a target.
+		clearSearch();
+		emit( 'create', schemaName );
+		return;
+	}
+
+	setLocalTargets( names );
 }
 
 function setLocalTargets( names: readonly string[] ): void {
@@ -93,11 +134,15 @@ function setLocalTargets( names: readonly string[] ): void {
 
 	// Codex clears the search only for a chip it adds itself, and these chips follow the targets.
 	if ( names.some( ( name ) => !localTargets.value.includes( name ) ) ) {
-		inputText.value = '';
-		query.value = '';
+		clearSearch();
 	}
 
 	emit( 'update:modelValue', [ ...names, ...otherSourceTargets.value ] );
+}
+
+function clearSearch(): void {
+	inputText.value = '';
+	query.value = '';
 }
 
 // Only a pick from the menu adds a target. A chip the field removes takes its target with it; one it adds
