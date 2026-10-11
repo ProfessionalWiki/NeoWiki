@@ -280,7 +280,8 @@ describe( 'SchemaCard', () => {
 	it( 'ties the controls of each card to that card alone', () => {
 		const describedBy = ( card: VueWrapper ): string | undefined => findSubjectListLink( card ).attributes( 'aria-describedby' );
 
-		expect( describedBy( mountCard( { subjectCount: 2 } ) ) ).not.toBe( describedBy( mountCard( { subjectCount: 2 } ) ) );
+		expect( describedBy( mountCard( { subjectCount: 2 } ) ) )
+			.not.toBe( describedBy( mountCard( { summary: { ...ARTIST, name: 'Artwork' }, subjectCount: 2 } ) ) );
 	} );
 
 	it( 'offers duplicating to a user who may duplicate Schemas', async () => {

@@ -40,6 +40,10 @@ describe( 'SchemaActionsMenu', () => {
 		expect( mountMenu( { canDuplicate: false, canDelete: false } ).find( 'button' ).exists() ).toBe( false );
 	} );
 
+	it( 'shows its name as the tooltip of its button', () => {
+		expect( mountMenu( { canDuplicate: true, canDelete: true } ).find( 'button' ).attributes( 'title' ) ).toBe( MORE_ACTIONS );
+	} );
+
 	it( 'marks Delete as destructive', () => {
 		const wrapper = mountMenu( { canDuplicate: true, canDelete: true } );
 

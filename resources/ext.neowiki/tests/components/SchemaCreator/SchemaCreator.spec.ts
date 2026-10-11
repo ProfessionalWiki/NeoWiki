@@ -96,8 +96,9 @@ describe( 'SchemaCreator', () => {
 		vi.useRealTimers();
 	} );
 
-	it( 'does not show error on initially empty field', () => {
+	it( 'does not show error on initially empty field', async () => {
 		const wrapper = mountComponent();
+		await flushPromises();
 
 		const field = wrapper.findComponent( { name: 'CdxField' } );
 		expect( field.props( 'status' ) ).toBe( 'default' );
@@ -279,7 +280,8 @@ describe( 'SchemaCreator', () => {
 			expect( [ ...schema.getPropertyDefinitions() ].map( ( property ) => property.name.toString() ) ).toEqual( [ 'Founded' ] );
 		} );
 
-		it( 'returns an empty description when none was entered', async () => {
+		it( 'returns an empty description when the field is empty, even where the editor holds one', async () => {
+			editorSchema = new Schema( '', 'The description of the Schema duplicated', new PropertyDefinitionList( [] ) );
 			const wrapper = mountComponent();
 
 			const nameInput = wrapper.find( '.cdx-text-input-stub' );

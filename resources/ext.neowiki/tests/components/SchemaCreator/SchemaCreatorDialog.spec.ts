@@ -17,6 +17,12 @@ import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const NEW_SCHEMA_NAME = 'Company';
 
+const COMPANY = new Schema(
+	'Company',
+	'An organisation that sells things',
+	new PropertyDefinitionList( [ newTextProperty( { name: 'Name' } ), newNumberProperty( { name: 'Founded' } ) ] ),
+);
+
 // The reason the stubbed creator reports for holding the save. Reset per test by
 // the beforeEach below.
 let creatorSaveBlocker: SaveBlocker | null = null;
@@ -212,13 +218,16 @@ describe( 'SchemaCreatorDialog', () => {
 		expect( mountComponent().findComponent( CdxDialog ).props( 'title' ) ).toBe( 'neowiki-schema-creator-title' );
 	} );
 
-	describe( 'Duplicating', () => {
-		const COMPANY = new Schema(
-			'Company',
-			'An organisation that sells things',
-			new PropertyDefinitionList( [ newTextProperty( { name: 'Name' } ), newNumberProperty( { name: 'Founded' } ) ] ),
-		);
+	// Special:Schemas keeps the dialog mounted, opening it on one Schema after another.
+	it( 'is titled after the Schema it duplicates when it opens on one', async () => {
+		const wrapper = mountComponent( { open: false } );
 
+		await wrapper.setProps( { open: true, duplicateOf: COMPANY } );
+
+		expect( wrapper.findComponent( CdxDialog ).props( 'title' ) ).toBe( 'neowiki-schema-creator-duplicate-titleCompany' );
+	} );
+
+	describe( 'Duplicating', () => {
 		// With the real creator and Schema editor, which are what fill the dialog with the copy. Attached, for
 		// the focus they move.
 		function mountDuplicating( schema: Schema ): VueWrapper {
@@ -263,11 +272,6 @@ describe( 'SchemaCreatorDialog', () => {
 		beforeEach( () => {
 			setupMwMock();
 			schemaStore.schemaNameExists = vi.fn().mockResolvedValue( false );
-		} );
-
-		it( 'is titled after the Schema it duplicates', () => {
-			expect( mountDuplicating( COMPANY ).findComponent( CdxDialog ).props( 'title' ) )
-				.toBe( 'neowiki-schema-creator-duplicate-titleCompany' );
 		} );
 
 		it( 'opens on the description and property definitions of that Schema, with no name', () => {
