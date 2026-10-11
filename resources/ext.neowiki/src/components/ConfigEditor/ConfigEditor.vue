@@ -1,9 +1,9 @@
 <template>
 	<div class="ext-neowiki-config-editor">
-		<p>
+		<p v-if="props.canEdit">
 			{{ $i18n( 'neowiki-config-editor-intro' ).text() }}
 		</p>
-		<p v-if="!props.canEdit">
+		<p v-else>
 			{{ $i18n( 'neowiki-config-editor-read-only' ).text() }}
 		</p>
 

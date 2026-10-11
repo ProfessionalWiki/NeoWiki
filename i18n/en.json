@@ -494,7 +494,7 @@
 	"neowiki-config-setting-data-languages": "Data languages",
 	"neowiki-config-setting-data-languages-help": "Languages of the wiki's data, offered in this order when entering text with a language.",
 	"neowiki-config-editor-intro": "Values set on this page override the server's LocalSettings.php.",
-	"neowiki-config-editor-read-only": "You do not have permission to change these settings.",
+	"neowiki-config-editor-read-only": "You do not have permission to change NeoWiki's settings.",
 	"neowiki-config-editor-reset": "Reset to default",
 	"neowiki-config-editor-reset-label": "Reset $1 to default",
 	"neowiki-config-editor-save": "Save settings",

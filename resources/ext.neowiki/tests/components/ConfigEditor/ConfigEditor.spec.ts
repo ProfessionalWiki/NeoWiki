@@ -98,7 +98,8 @@ describe( 'ConfigEditor', () => {
 				'neowiki-config-editor-reset-label': ( label: string ) => `Reset ${ label } to default`,
 				'neowiki-config-editor-saved': 'Settings saved.',
 				'neowiki-config-editor-save': 'Save settings',
-				'neowiki-config-editor-read-only': 'You do not have permission to change these settings.',
+				'neowiki-config-editor-intro': 'Values set on this page override the server\'s LocalSettings.php.',
+				'neowiki-config-editor-read-only': 'You do not have permission to change NeoWiki\'s settings.',
 				'neowiki-config-editor-save-failed': ( reason: string ) => `The settings were not saved: ${ reason }`,
 				'neowiki-config-editor-changed-meanwhile': 'This page was also changed after the form was loaded.',
 			},
@@ -416,10 +417,16 @@ describe( 'ConfigEditor', () => {
 		expect( editor.find( '.cdx-message--error' ).exists() ).toBe( false );
 	} );
 
+	it( 'tells someone who may not change the settings only that they cannot', () => {
+		const editor = newEditor( [ AUTO_RENDER ], { canEdit: false } );
+
+		expect( editor.text() ).toContain( 'You do not have permission to change NeoWiki\'s settings.' );
+		expect( editor.text() ).not.toContain( 'LocalSettings.php' );
+	} );
+
 	it( 'shows the settings read-only to someone who may not change them', () => {
 		const editor = newEditor( [ AUTO_RENDER, DATA_LANGUAGES ], { canEdit: false } );
 
-		expect( editor.text() ).toContain( 'You do not have permission to change these settings.' );
 		expect( checkbox( editor, 'Show Main Subjects' ).element.disabled ).toBe( true );
 		expect( editor.findAll( 'button' ) ).toHaveLength( 0 );
 	} );
