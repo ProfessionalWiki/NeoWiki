@@ -70,6 +70,21 @@ length of the run.
 If your Subjects predate the optional Subject label, run
 [clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before that rebuild.
 
+## Relations model changed, October 2026
+
+A relation property now lists its target Schemas in `targetSchemas` and has no `relation` field
+([Schema format](../api/schema-format.md#relation-relation)). NeoWiki no longer reads one that still holds
+`targetSchema`, though its Relations stay: change `"targetSchema": "City"` to `"targetSchemas": [ "City" ]`, or pick its
+target Schemas again in the Schema editor. `nw.getSchema` gives Lua modules `targetSchemas`, a list, in place of
+`targetSchema` and `relation`, and `SubjectPicker` takes `targetSchemas` in place of `targetSchema`.
+
+Relation edges in Neo4j and relation predicates in the native RDF now take the property's name instead of the
+`relation` field's. Cypher and SPARQL that use an old name return nothing until edited: `` -[:`Born in`]-> `` becomes
+`` -[:`Birth place`]-> ``, and `neo-prop:Born_in` becomes `neo-prop:Birth_place`. `make import-demo-data` covers the
+demo content.
+
+A Relation's `properties` are no longer read, and are dropped when its Subject is next saved.
+
 ## Neo4j 5.26.4 required, October 2026
 
 If you use Neo4j, NeoWiki now needs 5.26.4 or later. Upgrade Neo4j first: on an older version, saving Subjects to the
