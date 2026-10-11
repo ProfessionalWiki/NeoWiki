@@ -1,6 +1,5 @@
 import { DOMWrapper, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CdxMenu } from '@wikimedia/codex';
 import LanguagePicker from '@/components/common/LanguagePicker.vue';
 import {
 	emittedTags,
@@ -70,26 +69,18 @@ describe( 'LanguagePicker', () => {
 		return picker.findAll( '.cdx-menu-item__text__description' ).map( ( description ) => description.text() );
 	}
 
-	// More than one page of them, so the list both scrolls and has a page left to load.
-	function manyLanguages(): Record<string, string> {
-		return Object.fromEntries( Array.from( { length: 60 }, ( _, i ) => [ `l${ i }`, `Language ${ i }` ] ) );
-	}
-
 	// Opens the languages, searches them and picks the first entry the list then offers.
 	async function chooseLanguage( picker: VueWrapper, text: string ): Promise<void> {
 		await openPicker( picker );
 		await pickInLanguageSearch( picker, text );
 	}
 
-	function useLanguages( languageNames: Record<string, string>, config: Record<string, string> = {} ): void {
-		setupMwMock( {
-			config: { wgUserLanguage: 'en', wgContentLanguage: 'en', ...config },
-			languageNames: languageNames,
-		} );
+	function readsIn( userLanguage: string ): void {
+		setupMwMock( { config: { wgUserLanguage: userLanguage, wgContentLanguage: 'en' } } );
 	}
 
 	beforeEach( () => {
-		useLanguages( { en: 'English', eu: 'Basque', es: 'Spanish', an: 'Aragonese' } );
+		readsIn( 'en' );
 	} );
 
 	afterEach( () => {
@@ -121,51 +112,49 @@ describe( 'LanguagePicker', () => {
 		expect( document.activeElement ).toBe( search( picker ).element );
 	} );
 
-	it( 'lists the languages the reader reads first, then the others by name', async () => {
-		useLanguages(
-			{ an: 'Aragonese', cy: 'Welsh', de: 'German', en: 'English', es: 'Spanish', eu: 'Basque' },
-			{ wgUserLanguage: 'es', wgContentLanguage: 'eu' },
-		);
-		const picker = newWrapper( 'es' );
+	it( 'lists the languages by their name in the interface language', async () => {
+		readsIn( 'de' );
+		const picker = newWrapper( 'de' );
 
 		await openPicker( picker );
 
-		expect( listedLanguages( picker ) )
-			.toEqual( [ 'Spanish', 'English', 'Basque', 'Aragonese', 'German', 'Welsh' ] );
+		const listed = listedLanguages( picker );
+		expect( listed ).toContain( 'Deutsch' );
+		expect( listed ).toContain( 'Englisch' );
+		expect( listed ).toEqual( [ ...listed ].sort( ( a, b ) => a.localeCompare( b, 'de' ) ) );
 	} );
 
 	it.each( [
-		[ 'Ido', 'Ido' ],
-		[ 'eu', 'Basque' ],
-	] )( 'lists the language %s names, and no tag of its own', async ( typed, listed ) => {
-		useLanguages( { en: 'English', eu: 'Basque', io: 'Ido' } );
+		[ 'German', 'German' ],
+		[ 'de', 'German' ],
+	] )( 'lists first the language %s names or tags, and no tag of its own', async ( typed, first ) => {
 		const picker = newWrapper( 'en' );
 
 		await openPicker( picker );
 		await type( picker, typed );
 
-		expect( listedLanguages( picker ) ).toEqual( [ listed ] );
+		expect( listedLanguages( picker )[ 0 ] ).toBe( first );
+		expect( listedDescriptions( picker ) ).toEqual( [] );
 	} );
 
 	it( 'lists the language whose tag is typed before those whose name only starts or contains it', async () => {
-		useLanguages( { an: 'Aragonese', es: 'Spanish', et: 'Estonian' } );
 		const picker = newWrapper( 'en' );
 
 		await openPicker( picker );
 		await type( picker, 'es' );
 
-		expect( listedLanguages( picker ) ).toEqual( [ 'Spanish', 'Estonian', 'Aragonese' ] );
+		const listed = listedLanguages( picker );
+		expect( listed[ 0 ] ).toBe( 'Spanish' );
+		expect( listed.indexOf( 'Estonian' ) ).toBeLessThan( listed.indexOf( 'Portuguese' ) );
 	} );
 
-	it( 'lists the language a MediaWiki code stands for', async () => {
-		useLanguages( { als: 'Alemannisch', en: 'English' } );
+	it( 'offers no tag for typed text naming a listed language', async () => {
 		const picker = newWrapper( 'en' );
 
 		await openPicker( picker );
-		await type( picker, 'als' );
+		await type( picker, 'ewe' );
 
-		expect( listedLanguages( picker ) ).toEqual( [ 'Alemannisch' ] );
-		expect( listedTags( picker ) ).toEqual( [ 'GSW' ] );
+		expect( listedLanguages( picker ) ).toEqual( [ 'Ewe' ] );
 	} );
 
 	it( 'offers a typed tag alongside the languages whose name it only starts', async () => {
@@ -174,8 +163,10 @@ describe( 'LanguagePicker', () => {
 		await openPicker( picker );
 		await type( picker, 'ara' );
 
-		expect( listedLanguages( picker ) ).toEqual( [ 'Aragonese', 'ara' ] );
-		expect( listedTags( picker ) ).toEqual( [ 'AN' ] );
+		const listed = listedLanguages( picker );
+		expect( listed.slice( 0, 2 ) ).toEqual( [ 'Arabic', 'Aragonese' ] );
+		expect( listedTags( picker ).slice( 0, 2 ) ).toEqual( [ 'AR', 'AN' ] );
+		expect( listed[ listed.length - 1 ] ).toBe( 'ara' );
 		expect( listedDescriptions( picker ) ).toEqual( [ 'neowiki-language-picker-tag' ] );
 	} );
 
@@ -191,7 +182,7 @@ describe( 'LanguagePicker', () => {
 		const picker = newWrapper( 'en' );
 
 		await openPicker( picker );
-		await type( picker, 'German' );
+		await type( picker, 'Klingon' );
 
 		expect( listedLanguages( picker ) ).toEqual( [] );
 	} );
@@ -200,22 +191,9 @@ describe( 'LanguagePicker', () => {
 		const picker = newWrapper( 'en' );
 
 		await openPicker( picker );
-		await type( picker, 'German' );
+		await type( picker, 'Klingon' );
 
 		expect( picker.find( '.cdx-menu__no-results' ).text() ).toBe( 'neowiki-language-picker-no-results' );
-	} );
-
-	it( 'lists more languages once the list is scrolled to its end', async () => {
-		useLanguages( manyLanguages() );
-		const picker = newWrapper( 'en' );
-
-		await openPicker( picker );
-
-		expect( listedLanguages( picker ) ).toHaveLength( 50 );
-
-		await picker.findComponent( CdxMenu ).vm.$emit( 'load-more' );
-
-		expect( listedLanguages( picker ) ).toHaveLength( 60 );
 	} );
 
 	it( 'reports the tag of the language chosen by its name, closing and handing the focus back', async () => {
@@ -331,20 +309,6 @@ describe( 'LanguagePicker', () => {
 
 		expect( space.defaultPrevented ).toBe( false );
 		expect( emittedTags( picker ) ).toEqual( [] );
-	} );
-
-	it( 'points its search field at an entry that is still listed once more languages are', async () => {
-		useLanguages( manyLanguages() );
-		const picker = newWrapper( 'en' );
-
-		await openPicker( picker );
-		await pressKey( 'ArrowDown' );
-		await picker.findComponent( CdxMenu ).vm.$emit( 'load-more' );
-		await picker.vm.$nextTick();
-		const highlighted = picker.find( '.cdx-menu-item--highlighted' );
-
-		expect( highlighted.exists() ).toBe( true );
-		expect( search( picker ).attributes( 'aria-activedescendant' ) ).toBe( highlighted.attributes( 'id' ) );
 	} );
 
 	it( 'points its search field at the entry the arrow keys reach, for a screen reader', async () => {

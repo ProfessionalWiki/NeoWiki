@@ -97,7 +97,6 @@ describe( 'MonolingualTextInput', () => {
 				wgContentLanguage: contentLanguage,
 				wgNeoWikiDataLanguages: dataLanguages,
 			},
-			languageNames: { de: 'German', en: 'English', eu: 'Basque', es: 'Spanish', fr: 'French', it: 'Italian' },
 			messages: {
 				'neowiki-monolingual-text-text-label': ( property, position ) => `${ property } text ${ position }`,
 				'neowiki-monolingual-text-language-label': ( property, position ) =>

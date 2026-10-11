@@ -6,7 +6,24 @@ export interface LanguageOption {
 }
 
 /**
- * The stored form of a language: the BCP 47 tag of a MediaWiki language code, lowercased.
+ * The languages the search lists: those with an ISO 639-1 code. Any other is entered by its tag.
+ */
+const LISTED_TAGS: readonly string[] = [
+	'aa', 'ab', 'ae', 'af', 'ak', 'am', 'an', 'ar', 'as', 'av', 'ay', 'az', 'ba', 'be', 'bg', 'bi', 'bm', 'bn',
+	'bo', 'br', 'bs', 'ca', 'ce', 'ch', 'co', 'cr', 'cs', 'cu', 'cv', 'cy', 'da', 'de', 'dv', 'dz', 'ee', 'el',
+	'en', 'eo', 'es', 'et', 'eu', 'fa', 'ff', 'fi', 'fj', 'fo', 'fr', 'fy', 'ga', 'gd', 'gl', 'gn', 'gu', 'gv',
+	'ha', 'he', 'hi', 'ho', 'hr', 'ht', 'hu', 'hy', 'hz', 'ia', 'id', 'ie', 'ig', 'ii', 'ik', 'io', 'is', 'it',
+	'iu', 'ja', 'jv', 'ka', 'kg', 'ki', 'kj', 'kk', 'kl', 'km', 'kn', 'ko', 'kr', 'ks', 'ku', 'kv', 'kw', 'ky',
+	'la', 'lb', 'lg', 'li', 'ln', 'lo', 'lt', 'lu', 'lv', 'mg', 'mh', 'mi', 'mk', 'ml', 'mn', 'mr', 'ms', 'mt',
+	'my', 'na', 'nb', 'nd', 'ne', 'ng', 'nl', 'nn', 'no', 'nr', 'nv', 'ny', 'oc', 'oj', 'om', 'or', 'os', 'pa',
+	'pi', 'pl', 'ps', 'pt', 'qu', 'rm', 'rn', 'ro', 'ru', 'rw', 'sa', 'sc', 'sd', 'se', 'sg', 'si', 'sk', 'sl',
+	'sm', 'sn', 'so', 'sq', 'sr', 'ss', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'ti', 'tk', 'tl', 'tn',
+	'to', 'tr', 'ts', 'tt', 'tw', 'ty', 'ug', 'uk', 'ur', 'uz', 've', 'vi', 'vo', 'wa', 'wo', 'xh', 'yi', 'yo',
+	'za', 'zh', 'zu',
+];
+
+/**
+ * The stored form of a MediaWiki language code: its BCP 47 tag, lowercased.
  */
 function toLanguageTag( code: string ): string {
 	return mw.language.bcp47( code ).toLowerCase();
@@ -44,76 +61,69 @@ export function newPartLanguageTag( partLanguageTags: readonly string[] ): strin
 	return dataLanguageTags().find( ( tag ) => !partLanguageTags.includes( tag ) ) ?? contentLanguageTag();
 }
 
-// Kept from one call to the next, since MediaWiki hands out the same names every time and listing
-// them takes a bcp47() call for each of several hundred languages.
-let listedNames: Record<string, string> | undefined;
-let listedOptions: readonly LanguageOption[] = [];
+let namesIn: { userLanguage: string; names: Intl.DisplayNames | null } | undefined;
+
+function displayNames(): Intl.DisplayNames | null {
+	const userLanguage = userLanguageTag();
+
+	if ( namesIn?.userLanguage !== userLanguage ) {
+		let names: Intl.DisplayNames | null;
+
+		try {
+			names = new Intl.DisplayNames( [ userLanguage ], { type: 'language', fallback: 'none' } );
+		} catch {
+			names = null;
+		}
+
+		namesIn = { userLanguage: userLanguage, names: names };
+	}
+
+	return namesIn.names;
+}
 
 /**
- * Every language MediaWiki has a name for, named in the user's interface language. Several
- * MediaWiki codes can share one BCP 47 tag; the first name wins, so each tag is listed once.
+ * The language's name in the interface language, or undefined where the browser has none. A browser
+ * without names in the interface language gives them in English. A tag the browser reads as another
+ * language's, such as `sh`, which it would name Serbian, gets no name.
+ */
+export function languageName( tag: string ): string | undefined {
+	try {
+		return Intl.getCanonicalLocales( tag )[ 0 ].toLowerCase() === tag ? displayNames()?.of( tag ) : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+let listed: { userLanguage: string; options: readonly LanguageOption[] } | undefined;
+
+/**
+ * The listed languages the browser can name, by name, each name once: browsers name `tw` Akan,
+ * like `ak`, which comes first.
  */
 export function languageOptions(): readonly LanguageOption[] {
-	const names = mw.language.getData( mw.config.get( 'wgUserLanguage' ), 'languageNames' ) as
-		Record<string, string> | undefined;
+	const userLanguage = userLanguageTag();
 
-	if ( names === listedNames ) {
-		return listedOptions;
-	}
+	if ( listed?.userLanguage !== userLanguage ) {
+		const options: LanguageOption[] = [];
 
-	const byTag = new Map<string, LanguageOption>();
+		for ( const tag of LISTED_TAGS ) {
+			const name = languageName( tag );
 
-	for ( const [ code, name ] of Object.entries( names ?? {} ) ) {
-		const tag = toLanguageTag( code );
-
-		if ( !byTag.has( tag ) ) {
-			byTag.set( tag, { tag: tag, name: name } );
+			if ( name !== undefined && !options.some( ( option ) => option.name === name ) ) {
+				options.push( { tag: tag, name: name } );
+			}
 		}
+
+		listed = { userLanguage: userLanguage, options: options.sort( ( a, b ) => a.name.localeCompare( b.name, userLanguage ) ) };
 	}
 
-	listedNames = names;
-	listedOptions = [ ...byTag.values() ];
-
-	return listedOptions;
-}
-
-// Ordered once per set of names: every row of a monolingual text field has a picker, and each one
-// opened would otherwise sort several hundred names again.
-let orderedFrom: readonly LanguageOption[] | undefined;
-let orderedOptions: readonly LanguageOption[] = [];
-
-/**
- * The languages in the order a picker lists them: the ones the reader reads, best first, then the
- * rest by name.
- */
-export function languagesByPreference(): readonly LanguageOption[] {
-	const options = languageOptions();
-
-	if ( options !== orderedFrom ) {
-		orderedFrom = options;
-		orderedOptions = inPreferenceOrder( options, readerLanguageTags() );
-	}
-
-	return orderedOptions;
-}
-
-function inPreferenceOrder( options: readonly LanguageOption[], readerTags: string[] ): LanguageOption[] {
-	const readerOptions = readerTags
-		.map( ( tag ) => options.find( ( option ) => option.tag === tag ) )
-		.filter( ( option ) => option !== undefined );
-
-	const otherOptions = options
-		.filter( ( option ) => !readerTags.includes( option.tag ) )
-		.sort( ( a, b ) => a.name.localeCompare( b.name ) );
-
-	return [ ...readerOptions, ...otherOptions ];
+	return listed.options;
 }
 
 /**
  * The languages the typed text matches, best match first: a language it names or tags exactly, then
- * one whose name or tag it starts, then one whose name or tag it contains. A MediaWiki code counts
- * as the tag it stands for, so `als` finds Alemannic under `gsw`. Languages matching equally well
- * keep their order.
+ * one whose name or tag it starts, then one whose name or tag it contains. Languages matching equally
+ * well keep their order.
  */
 export function matchingLanguages( options: readonly LanguageOption[], typed: string ): readonly LanguageOption[] {
 	const text = typed.trim().toLowerCase();
@@ -122,12 +132,10 @@ export function matchingLanguages( options: readonly LanguageOption[], typed: st
 		return options;
 	}
 
-	const tag = toLanguageTag( text );
-
 	const rankOf = ( option: LanguageOption ): number | undefined => {
 		const name = option.name.toLowerCase();
 
-		if ( option.tag === text || option.tag === tag || name === text ) {
+		if ( option.tag === text || name === text ) {
 			return 0;
 		}
 
@@ -147,39 +155,28 @@ export function matchingLanguages( options: readonly LanguageOption[], typed: st
 
 // Typed text offered as a tag of its own: a language subtag of two or three letters, the length
 // of every one registered for BCP 47, then any further subtags. A longer first subtag is a word on
-// its way to a name: without the CLDR extension MediaWiki names languages in their own language,
-// so `German` names nothing, and taking it for a tag would store `german`. The backend accepts
-// every tag this does. Each repetition has to start with a hyphen, so there is nothing ambiguous to
+// its way to a name, and taking it for a tag would store `german`. The backend accepts every tag
+// this does. Each repetition has to start with a hyphen, so there is nothing ambiguous to
 // backtrack over.
 // eslint-disable-next-line security/detect-unsafe-regex
 const TYPED_TAG = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$/;
 
 /**
  * The tag the typed text is also offered as, or undefined when it is not offered as one. Text that
- * names a language MediaWiki knows is the user naming that language rather than writing a tag, and
- * offering both would put two entries reading `Ido` in the menu, one of them storing `ido`. Text on
- * its way to such a name is not that name: `ara` is a language of its own as well as the start of
- * `aragonés`.
+ * names or tags a listed language is the user choosing that language, and offering both would put
+ * two entries reading `Ewe` in the menu. Text on its way to a name is not that name: `ara` is a
+ * language of its own as well as the start of `Aragonese`.
  */
 export function typedLanguageTag( options: readonly LanguageOption[], typed: string ): string | undefined {
 	if ( !TYPED_TAG.test( typed ) ) {
 		return undefined;
 	}
 
-	const tag = toLanguageTag( typed );
-	const name = typed.toLowerCase();
+	const text = typed.toLowerCase();
 
-	return options.some( ( option ) => option.tag === tag || option.name.toLowerCase() === name ) ?
+	return options.some( ( option ) => option.tag === text || option.name.toLowerCase() === text ) ?
 		undefined :
-		tag;
-}
-
-/**
- * The name MediaWiki lists for a language, or undefined when it lists none. Without the CLDR
- * extension MediaWiki names a language in that language, so it has no name for many of them.
- */
-export function languageName( tag: string ): string | undefined {
-	return languageOptions().find( ( option ) => option.tag === tag )?.name;
+		text;
 }
 
 // In script rather than by `text-transform`, which follows the page's language and turns `it`

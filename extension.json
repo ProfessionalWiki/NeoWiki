@@ -488,7 +488,6 @@
 				"mediawiki.user",
 				"mediawiki.storage",
 				"mediawiki.jqueryMsg",
-				"mediawiki.language.names",
 				"mediawiki.util"
 			],
 			"codexComponents": [

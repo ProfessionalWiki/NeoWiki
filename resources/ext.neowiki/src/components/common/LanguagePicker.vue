@@ -47,7 +47,6 @@
 				:expanded="open"
 				:visible-item-limit="VISIBLE_ITEMS"
 				@update:selected="onSelect"
-				@load-more="listMore"
 			>
 				<template #no-results>
 					{{ noResultsLabel }}
@@ -62,15 +61,11 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { CdxMenu, CdxSearchInput, useFloatingMenu, useGeneratedId } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
 import {
-	languagesByPreference,
+	languageOptions,
 	matchingLanguages,
 	shownLanguageTag,
 	typedLanguageTag
-} from '@/presentation/mediaWikiLanguages.ts';
-
-// Codex renders every menu item it is given, open or closed, so the menu is handed MediaWiki's
-// several hundred languages a page at a time, the next page once the list is scrolled to its end.
-const MENU_PAGE_SIZE = 50;
+} from '@/presentation/languages.ts';
 
 // Enough that the list scrolls rather than growing the panel past the dialog it opens inside.
 const VISIBLE_ITEMS = 8;
@@ -116,14 +111,13 @@ const menuRef = ref<InstanceType<typeof CdxMenu> | null>( null );
 
 const open = ref( false );
 const query = ref( '' );
-const menuLength = ref( MENU_PAGE_SIZE );
 
 /**
  * The languages to choose from, narrowed by what the user is typing, and none while the panel is
  * closed, since Codex renders every entry it is given, shown or not. A well-formed tag none of
- * them carries is offered as an entry of its own, which is how a language MediaWiki has no name
- * for (`und`) is entered. Every language is therefore chosen rather than typed, so text on its way
- * to a name can never be mistaken for a tag.
+ * them carries is offered as an entry of its own, which is how a language the list lacks (`gsw`)
+ * is entered. Every language is therefore chosen rather than typed, so text on its way to a name
+ * can never be mistaken for a tag.
  */
 const menuItems = computed<MenuItemData[]>( () => {
 	if ( !open.value ) {
@@ -131,10 +125,9 @@ const menuItems = computed<MenuItemData[]>( () => {
 	}
 
 	const typed = query.value.trim();
-	const options = languagesByPreference();
+	const options = languageOptions();
 
 	const items: MenuItemData[] = matchingLanguages( options, typed )
-		.slice( 0, menuLength.value )
 		.map( ( option ) => ( {
 			value: option.tag,
 			label: option.name,
@@ -154,19 +147,11 @@ const menuItems = computed<MenuItemData[]>( () => {
 	return items;
 } );
 
-watch( query, () => {
-	menuLength.value = MENU_PAGE_SIZE;
-} );
-
-function listMore(): void {
-	menuLength.value += MENU_PAGE_SIZE;
-}
-
 /**
  * Which entry the arrow keys have reached, for a screen reader to announce while focus stays in
  * the search field. Read back from the rendered list rather than asked of the menu: Codex mints a
  * fresh id for every entry whenever the list changes, so the id it holds for the entry the arrow
- * keys reached names an element that a later page of languages has already replaced. Watched
+ * keys reached names an element the search has already replaced. Watched
  * rather than read in `onUpdated`, which the arrow keys never reach: they move the menu's own
  * state, and the picker around it does not re-render.
  */
@@ -217,7 +202,6 @@ async function toggle(): Promise<void> {
 
 	// A search half typed and then dismissed is not an answer to come back to.
 	query.value = '';
-	menuLength.value = MENU_PAGE_SIZE;
 	open.value = true;
 
 	await nextTick();

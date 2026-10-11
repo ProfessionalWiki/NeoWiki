@@ -1,44 +1,60 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
 	dataLanguageTags,
+	languageName,
 	languageOptions,
 	newPartLanguageTag,
 	partsForReader,
 	userLanguageTag,
-} from '@/presentation/mediaWikiLanguages';
+} from '@/presentation/languages';
 import { setupMwMock } from '../VueTestHelpers.ts';
 
-describe( 'mediaWikiLanguages', () => {
+describe( 'languages', () => {
+
+	describe( 'languageName', () => {
+
+		it( 'names a language in the interface language', () => {
+			setupMwMock( { config: { wgUserLanguage: 'de' } } );
+
+			expect( languageName( 'en' ) ).toBe( 'Englisch' );
+		} );
+
+		it( 'names no language for a tag the browser reads as another language\'s', () => {
+			setupMwMock( { config: { wgUserLanguage: 'en' } } );
+
+			expect( languageName( 'sh' ) ).toBeUndefined();
+		} );
+
+		it( 'names no language for a tag the browser does not accept', () => {
+			setupMwMock( { config: { wgUserLanguage: 'en' } } );
+
+			expect( languageName( 'x-private' ) ).toBeUndefined();
+		} );
+
+	} );
 
 	describe( 'languageOptions', () => {
 
-		beforeEach( () => {
-			setupMwMock( {
-				config: { wgUserLanguage: 'en' },
-				languageNames: {
-					'be-tarask': 'Belarusian (Taraskievica)',
-					'be-x-old': 'Belarusian (old)',
-					EU: 'Basque',
-				},
-			} );
+		it( 'lists the ISO 639-1 languages, each under its tag and its name in the interface language', () => {
+			setupMwMock( { config: { wgUserLanguage: 'en' } } );
+
+			expect( languageOptions() ).toContainEqual( { tag: 'de', name: 'German' } );
+			expect( languageOptions() ).toContainEqual( { tag: 'rm', name: 'Romansh' } );
+			expect( languageOptions().map( ( option ) => option.tag ) ).not.toContain( 'gsw' );
 		} );
 
-		// MediaWiki maps be-x-old onto be-tarask, so the two codes are one language here.
-		it( 'lists each tag once, lowercased, under the first name given for it', () => {
-			expect( languageOptions() ).toEqual( [
-				{ tag: 'be-tarask', name: 'Belarusian (Taraskievica)' },
-				{ tag: 'eu', name: 'Basque' },
-			] );
+		it( 'lists a name two tags share once, under the first tag', () => {
+			setupMwMock( { config: { wgUserLanguage: 'en' } } );
+
+			expect( languageOptions().filter( ( option ) => option.name === 'Akan' ) ).toEqual( [ { tag: 'ak', name: 'Akan' } ] );
 		} );
 
-		it( 'lists nothing when MediaWiki has no table of language names', () => {
-			// Asserted first, so the empty result below is this call's rather than a cache the
-			// names above never filled.
-			expect( languageOptions() ).not.toEqual( [] );
+		it( 'lists the languages anew for another interface language', () => {
+			setupMwMock( { config: { wgUserLanguage: 'en' } } );
+			languageOptions();
+			setupMwMock( { config: { wgUserLanguage: 'nl' } } );
 
-			mw.language.getData = vi.fn( () => undefined );
-
-			expect( languageOptions() ).toEqual( [] );
+			expect( languageOptions() ).toContainEqual( { tag: 'de', name: 'Duits' } );
 		} );
 
 	} );

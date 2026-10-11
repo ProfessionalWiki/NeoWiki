@@ -18,7 +18,6 @@ describe( 'MonolingualTextDisplay', () => {
 	function readsIn( userLanguage: string, contentLanguage: string ): void {
 		setupMwMock( {
 			config: { wgUserLanguage: userLanguage, wgContentLanguage: contentLanguage },
-			languageNames: { en: 'English', de: 'Deutsch', eu: 'euskara', es: 'español' },
 			messages: {
 				'neowiki-monolingual-text-more-languages': ( count ) =>
 					Number( count ) === 1 ? '1 more language' : `${ count } more languages`,
@@ -90,10 +89,10 @@ describe( 'MonolingualTextDisplay', () => {
 
 		const language = newWrapperFor( CINE, ZINEMA ).find( '.ext-neowiki-monolingual-text-display__language' );
 
-		expect( language.attributes( 'title' ) ).toBe( 'español' );
+		expect( language.attributes( 'title' ) ).toBe( 'Spanisch' );
 		expect( language.find( '[aria-hidden="true"]' ).text() ).toBe( 'ES' );
 		expect( language.find( '.ext-neowiki-monolingual-text-display__language-name' ).element.textContent )
-			.toMatch( /^\s+español$/ );
+			.toMatch( /^\s+Spanisch$/ );
 	} );
 
 	it( 'marks the text of every part with the language it is in', async () => {
@@ -107,14 +106,14 @@ describe( 'MonolingualTextDisplay', () => {
 		expect( texts.map( ( text ) => text.attributes( 'dir' ) ) ).toEqual( [ 'auto', 'auto' ] );
 	} );
 
-	it( 'shows the bare tag of a language MediaWiki has no name for, there being no name to read out', () => {
+	it( 'shows the bare tag of a language the browser has no name for, there being no name to read out', () => {
 		readsIn( 'de', 'de' );
 
-		const language = newWrapperFor( { text: 'فيلم', language: 'ar' }, CINE )
+		const language = newWrapperFor( { text: 'Kino', language: 'und' }, CINE )
 			.find( '.ext-neowiki-monolingual-text-display__language' );
 
-		expect( language.text() ).toBe( 'AR' );
-		expect( language.element.textContent ).toBe( 'AR\u00a0' );
+		expect( language.text() ).toBe( 'UND' );
+		expect( language.element.textContent ).toBe( 'UND\u00a0' );
 		expect( language.attributes( 'title' ) ).toBeUndefined();
 		expect( language.find( '[aria-hidden]' ).exists() ).toBe( false );
 	} );

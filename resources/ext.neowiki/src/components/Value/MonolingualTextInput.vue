@@ -65,7 +65,7 @@ import { MonolingualTextProperty } from '@/domain/propertyTypes/MonolingualText.
 import LanguageInput from '@/components/common/LanguageInput.vue';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { preferErrorViolation, useServerViolations, violationStatus } from '@/composables/useServerViolations.ts';
-import { newPartLanguageTag } from '@/presentation/mediaWikiLanguages.ts';
+import { newPartLanguageTag } from '@/presentation/languages.ts';
 
 /**
  * One editable part.

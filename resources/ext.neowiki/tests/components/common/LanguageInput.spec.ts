@@ -20,7 +20,6 @@ describe( 'LanguageInput', () => {
 	function wikiWith( dataLanguages: string[] ): void {
 		setupMwMock( {
 			config: { wgUserLanguage: 'en', wgContentLanguage: 'en', wgNeoWikiDataLanguages: dataLanguages },
-			languageNames: { de: 'Deutsch', en: 'English', es: 'español', eu: 'euskara', fr: 'français', it: 'italiano' },
 			messages: {
 				'neowiki-language-input-other': 'Other language…',
 			},
@@ -64,20 +63,20 @@ describe( 'LanguageInput', () => {
 	it( 'offers the data languages in their configured order, then the other languages', () => {
 		wikiWith( [ 'it', 'de', 'fr' ] );
 
-		expect( listedLanguages( newWrapper( 'it' ) ) ).toEqual( [ 'italiano', 'Deutsch', 'français', 'Other language…' ] );
+		expect( listedLanguages( newWrapper( 'it' ) ) ).toEqual( [ 'Italian', 'German', 'French', 'Other language…' ] );
 	} );
 
 	it( 'offers the language of a text in none of the data languages as one more entry', () => {
 		wikiWith( [ 'de', 'fr', 'it' ] );
 
 		expect( listedLanguages( newWrapper( 'es' ) ) )
-			.toEqual( [ 'Deutsch', 'français', 'italiano', 'español', 'Other language…' ] );
+			.toEqual( [ 'German', 'French', 'Italian', 'Spanish', 'Other language…' ] );
 	} );
 
 	it( 'shows the language the text is in by its name', () => {
 		wikiWith( [ 'de', 'fr', 'it' ] );
 
-		expect( shownLanguage( newWrapper( 'fr' ).element ) ).toBe( 'français' );
+		expect( shownLanguage( newWrapper( 'fr' ).element ) ).toBe( 'French' );
 	} );
 
 	it( 'shows a language MediaWiki has no name for by its tag', () => {
@@ -96,21 +95,21 @@ describe( 'LanguageInput', () => {
 		wikiWith( [ 'de' ] );
 		const input = newWrapper( 'de' );
 
-		expect( shownLanguage( input.element ) ).toBe( 'Deutsch' );
-		expect( listedLanguages( input ) ).toEqual( [ 'Deutsch', 'Other language…' ] );
+		expect( shownLanguage( input.element ) ).toBe( 'German' );
+		expect( listedLanguages( input ) ).toEqual( [ 'German', 'Other language…' ] );
 	} );
 
 	it( 'lists the one data language for a text in another, to switch it back to', () => {
 		wikiWith( [] );
 
-		expect( listedLanguages( newWrapper( 'de' ) ) ).toEqual( [ 'English', 'Deutsch', 'Other language…' ] );
+		expect( listedLanguages( newWrapper( 'de' ) ) ).toEqual( [ 'English', 'German', 'Other language…' ] );
 	} );
 
 	it( 'reports the language picked from its list', async () => {
 		wikiWith( [ 'de', 'fr', 'it' ] );
 		const input = newWrapper( 'fr' );
 
-		await chooseFromLanguageList( input, 'italiano' );
+		await chooseFromLanguageList( input, 'Italian' );
 
 		expect( emittedTags( input ) ).toEqual( [ 'it' ] );
 	} );
@@ -119,7 +118,7 @@ describe( 'LanguageInput', () => {
 		wikiWith( [ 'de', 'fr', 'it' ] );
 		const input = newWrapper( 'fr' );
 
-		await chooseFromLanguageList( input, 'français' );
+		await chooseFromLanguageList( input, 'French' );
 
 		expect( emittedTags( input ) ).toEqual( [] );
 	} );
@@ -139,7 +138,7 @@ describe( 'LanguageInput', () => {
 		const input = newWrapper( 'fr' );
 
 		await chooseFromLanguageList( input, 'Other language…' );
-		await pickInLanguageSearch( input, 'eusk' );
+		await pickInLanguageSearch( input, 'Basq' );
 
 		expect( emittedTags( input ) ).toEqual( [ 'eu' ] );
 	} );
@@ -149,7 +148,7 @@ describe( 'LanguageInput', () => {
 		const input = newWrapper( 'en' );
 
 		await chooseFromLanguageList( input, 'Other language…' );
-		await pickInLanguageSearch( input, 'Deut' );
+		await pickInLanguageSearch( input, 'Germ' );
 
 		expect( document.activeElement ).toBe( list( input ).element );
 	} );

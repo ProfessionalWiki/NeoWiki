@@ -44,7 +44,7 @@ import { computed } from 'vue';
 import { CdxSelect } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
 import LanguagePicker from '@/components/common/LanguagePicker.vue';
-import { dataLanguageTags, languageName } from '@/presentation/mediaWikiLanguages.ts';
+import { dataLanguageTags, languageName } from '@/presentation/languages.ts';
 
 // Never a language tag, which has no spaces.
 const OTHER_LANGUAGE = 'other language';
