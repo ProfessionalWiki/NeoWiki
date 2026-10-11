@@ -78,6 +78,49 @@ class KeywordCypherQueryValidatorTest extends TestCase {
 		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow write keyword in a string' );
 	}
 
+	public function testAllowsWriteKeywordInQuotedName(): void {
+		$query = 'MATCH (a)-[:`Part of set`]->(b) RETURN a';
+		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow a write keyword in a quoted name' );
+	}
+
+	public function testAllowsWriteKeywordInStringHoldingEscapedQuote(): void {
+		$query = "MATCH (n) WHERE n.title = 'Don\\'t set' RETURN n";
+		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow a write keyword after an escaped quote' );
+	}
+
+	public function testAllowsWriteKeywordInDoubleQuotedString(): void {
+		$query = 'MATCH (n) WHERE n.label = "Data set" RETURN n';
+		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow a write keyword in a double-quoted string' );
+	}
+
+	public function testAllowsWriteKeywordInLongString(): void {
+		$query = "MATCH (n) WHERE n.text = '" . str_repeat( 'Lorem ipsum ', 1000 ) . "set' RETURN n";
+		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow a write keyword at the end of a long string' );
+	}
+
+	public function testAllowsWriteKeywordAfterManyEscapes(): void {
+		$text = str_repeat( chr( 92 ) . 'n', 10000 ) . 'set';
+		$name = str_repeat( 'a``', 10000 ) . 'set';
+		$query = "MATCH (n) WHERE n.text = '$text' OR n.title = \"$text\" OR n.`$name` = 1 RETURN n";
+		$this->assertTrue(
+			$this->queryIsAllowed( $query ),
+			'Filter should allow a write keyword after many escapes in a string or quoted name'
+		);
+	}
+
+	public function testAllowsPropertyNamedAfterAKeywordAndAnEscapedZero(): void {
+		$query = 'MATCH (n) RETURN n.set' . chr( 92 ) . 'u0030';
+		$this->assertTrue(
+			$this->queryIsAllowed( $query ),
+			'Filter should allow a keyword that an escaped digit extends into a longer name'
+		);
+	}
+
+	public function testAllowsWriteKeywordInCommentSpanningLines(): void {
+		$query = "MATCH (n) /* set the\nflag later */ RETURN n";
+		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow a write keyword in a block comment over two lines' );
+	}
+
 	public function testAllowsAdminKeywordInString(): void {
 		$query = "MATCH (n) WHERE n.action = 'GRANT' RETURN n";
 		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow admin keyword in a string' );
@@ -323,6 +366,11 @@ class KeywordCypherQueryValidatorTest extends TestCase {
 			'Should reject FOREACH hidden after unicode escape'
 		];
 
+		yield 'Unicode escape inside a keyword' => [
+			'MATCH (n) \u0053ET n.checked = true',
+			'Should reject SET spelled with a unicode escape'
+		];
+
 		yield 'CREATE in subquery' => [
 			"MATCH (n) WHERE n.id IN [x IN range(1,10) | HEAD([(WITH x CREATE (m:Hidden) RETURN x)[0]])] RETURN n",
 			'Should reject CREATE in subquery'
@@ -429,6 +477,83 @@ class KeywordCypherQueryValidatorTest extends TestCase {
 		yield 'CREATE after block comment' => [
 			"MATCH (n) /* block comment */ CREATE (m)",
 			'Should reject CREATE after block comment'
+		];
+
+		// Quoted names, strings and comments, whose delimiters must not hide what follows them. Most of
+		// these queries hold a later quote, which one misread would pair with.
+		yield 'SET between quoted names' => [
+			'MATCH (a)-[:`Part of set`]->(b) SET a.checked = true RETURN a.`Name`',
+			'Should reject SET between quoted names'
+		];
+
+		yield 'SET after a quoted name holding a quote' => [
+			"MATCH (n:`O'Brien`) SET n.name = 'Alice'",
+			'Should reject SET after a quoted name holding a quote'
+		];
+
+		yield 'SET after a string holding a backtick' => [
+			"MATCH (n) WHERE n.quote = '`' SET n.`Part of collection` = 1",
+			'Should reject SET after a string holding a backtick'
+		];
+
+		yield 'SET after a string holding a comment marker' => [
+			"MATCH (c) WHERE c.Website = 'https://pro.wiki' SET c.checked = true",
+			'Should reject SET after a string holding a comment marker'
+		];
+
+		yield 'SET after a comment holding quotes' => [
+			"MATCH (n) // don't quote `\nSET n.name = 'Alice', n.`Part of collection` = 1",
+			'Should reject SET after a comment holding quotes'
+		];
+
+		yield 'SET after a unicode escape that closes a quoted name' => [
+			'MATCH (n) WHERE n.`Part of collection\u0060 = 1 SET n.checked = true RETURN n.`Name`',
+			'Should reject SET after a unicode escape that closes a quoted name'
+		];
+
+		yield 'SET after a quoted name holding an escaped backslash before u0060' => [
+			'MATCH (n) WHERE n.`Part\\\\u0060 of collection` = 1 SET n.checked = true RETURN n.`Name`',
+			'Should reject SET after a quoted name whose backslash before u0060 is escaped'
+		];
+
+		yield 'SET after a quoted name closed by an escape after a backslash pair' => [
+			'MATCH (n) WHERE n.`Part\\\\\\u0060 = 1 SET n.checked = true RETURN n.`Name`',
+			'Should reject SET after a unicode escape that follows an escaped backslash'
+		];
+
+		yield 'SET after a quoted name ending in a backslash' => [
+			'MATCH (n) WHERE n.`Part\\` = 1 SET n.checked = true RETURN n.`Name`',
+			'Should reject SET after a quoted name ending in a backslash, which escapes nothing there'
+		];
+
+		yield 'SET after an escaped character beyond ASCII' => [
+			'MATCH (n) WITH n, 1 AS \u0127 SET n.checked = true RETURN \'done\'',
+			'Should reject SET after an escaped character that is no quote'
+		];
+
+		yield 'SET spelled with an escape after a comment of many backslashes' => [
+			'MATCH (n) // ' . str_repeat( chr( 92 ), 100000 ) . "\n" . chr( 92 ) . 'u0053ET n.checked = true RETURN n',
+			'Should reject SET spelled with a unicode escape after a comment too long to decode in one go'
+		];
+
+		yield 'SET after a string ending in an escaped backslash and an escaped surrogate' => [
+			"MATCH (n) WITH n, '" . chr( 92 ) . 'u005C' . chr( 92 ) . "uD800' AS x SET n.checked = true RETURN 'done'",
+			'Should reject SET after a string whose last escape names a surrogate, which is no character'
+		];
+
+		yield 'SET glued to a word by a comment' => [
+			'MATCH (n) WITH n/**/SET n.checked = true',
+			'Should reject SET that only a comment separates from the word before it'
+		];
+
+		yield 'SET after a line comment ended by a carriage return' => [
+			"MATCH (n) // comment\rSET n.checked = true",
+			'Should reject SET on the line after a comment ended by a carriage return'
+		];
+
+		yield 'SET between two block comments' => [
+			'MATCH (n) /* a */ SET n.checked = true /* b */',
+			'Should reject SET between two block comments'
 		];
 	}
 

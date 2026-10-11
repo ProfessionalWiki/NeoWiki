@@ -226,21 +226,6 @@ parameters:
 			path: src/Application/StatementListBuilder.php
 
 		-
-			message: "#^Parameter \\#1 \\$string of function strtoupper expects string, string\\|null given\\.$#"
-			count: 1
-			path: src/GraphDatabasePlugins/Neo4j/Application/KeywordCypherQueryValidator.php
-
-		-
-			message: "#^Parameter \\#2 \\$subject of function preg_match expects string, string\\|null given\\.$#"
-			count: 2
-			path: src/GraphDatabasePlugins/Neo4j/Application/KeywordCypherQueryValidator.php
-
-		-
-			message: "#^Parameter \\#3 \\$subject of function preg_replace expects array\\|string, string\\|null given\\.$#"
-			count: 1
-			path: src/GraphDatabasePlugins/Neo4j/Application/KeywordCypherQueryValidator.php
-
-		-
 			message: "#^Cannot access property \\$page_id on array\\|stdClass\\|false\\.$#"
 			count: 1
 			path: src/Persistence/MediaWiki/DatabaseLayoutNameLookup.php
