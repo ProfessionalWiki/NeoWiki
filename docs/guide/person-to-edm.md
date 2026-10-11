@@ -40,7 +40,7 @@ fields. Abbreviated (property descriptions and the multi-valued `Also known as` 
     "propertyDefinitions": {
         "Gender":      { "type": "text" },
         "Birth date":  { "type": "date" },
-        "Birth place": { "type": "relation", "relation": "Born in", "targetSchema": "City" },
+        "Birth place": { "type": "relation", "targetSchema": "City" },
         "Source":      { "type": "text" },
         "Description": { "type": "text" }
     }
@@ -127,11 +127,11 @@ neo-subj:s2picasso2aaaa2 a neo-schema:Person;
     neo-prop:Gender "Male";
     neo-prop:Birth_date "1881-10-25"^^xsd:date;
     neo-prop:Source "A Life of Picasso I: The Prodigy: 1881-1906 by John Richardson (ISBN 978-0375711497)";
-    neo-prop:Born_in neo-subj:s2birthcity2aa2.
+    neo-prop:Birth_place neo-subj:s2birthcity2aa2.
 neo-rel:r2picasso2city2 a neo:Relation;
     neo:source neo-subj:s2picasso2aaaa2;
     neo:target neo-subj:s2birthcity2aa2;
-    neo:relationType neo-prop:Born_in.
+    neo:relationType neo-prop:Birth_place.
 ```
 
 The **EDM** projection of the same page — target vocabulary only, no page metadata, no relation reification:
@@ -161,8 +161,6 @@ What changed, native → EDM:
   `labelPredicate` repeats it as EDM's own `foaf:name`.
 - The datatype comes from the value mapper, not the Mapping: `"1881-10-25"^^xsd:date` is identical in both. A Mapping
   property may override it with `datatype`.
-- The birth-place relation becomes one direct triple. Its EDM predicate keys on the **property name** `Birth place`
-  (`rdaGr2:placeOfBirth`); the native predicate keys on the **relation-type name** `Born in` (`neo-prop:Born_in`).
 - Absent from EDM: page metadata, the `neo:Relation` reification node, and unmapped properties (`Source`, and any
   native-only property).
 

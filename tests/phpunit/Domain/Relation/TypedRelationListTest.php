@@ -5,8 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Relation;
 
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 
 /**
@@ -21,8 +21,8 @@ class TypedRelationListTest extends TestCase {
 				'r11111111111114'
 			],
 			( new TypedRelationList( [
-				TestRelation::build( id: 'r11111111111113' )->withType( new RelationType( 'FriendOf' ) ),
-				TestRelation::build( id: 'r11111111111114' )->withType( new RelationType( 'FriendOf' ) ),
+				TestRelation::build( id: 'r11111111111113' )->withPropertyName( new PropertyName( 'Friends' ) ),
+				TestRelation::build( id: 'r11111111111114' )->withPropertyName( new PropertyName( 'Friends' ) ),
 			] ) )->getIdsAsStringArray()
 		);
 	}

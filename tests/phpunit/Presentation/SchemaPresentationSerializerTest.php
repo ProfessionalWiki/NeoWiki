@@ -5,7 +5,6 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Presentation;
 
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -108,7 +107,6 @@ class SchemaPresentationSerializerTest extends TestCase {
 					description: 'Test relation property',
 					required: false,
 					default: null,
-					relationType: new RelationType( 'testRelationType' ),
 					targetSchema: SchemaReference::local( new SchemaName( 'targetSchema' ) ),
 					multiple: false
 				)
@@ -122,7 +120,6 @@ class SchemaPresentationSerializerTest extends TestCase {
 					'description' => 'Test relation property',
 					'required' => false,
 					'default' => null,
-					'relation' => 'testRelationType',
 					'targetSchema' => 'targetSchema',
 					'multiple' => false,
 					'type' => 'relation'

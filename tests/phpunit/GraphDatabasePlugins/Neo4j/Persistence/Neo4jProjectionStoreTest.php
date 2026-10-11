@@ -11,10 +11,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageDateTime;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
-use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -27,6 +24,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubject
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
 use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPageProperties;
@@ -34,7 +32,6 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
-use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jProjectionStore
@@ -51,6 +48,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	private const SCHEMA_ID_A = 'sTestNQS111111A';
 	private const SCHEMA_ID_Z = 'sTestNQS111111Z';
 	private const WIKI_ID = 'my_wiki';
+	private const LOCATION_PROPERTY = 'Located in';
 
 	public function setUp(): void {
 		// No Schema pages: these tests drive the store directly, with the Schemas their subjects reference
@@ -312,7 +310,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 		$store->savePage( TestPage::build( id: 1 ) );
 
-		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1, 'rTestNQS1111rr1' );
+		$this->assertRelationExists( self::GUID_2, self::LOCATION_PROPERTY, self::GUID_1, 'rTestNQS1111rr1' );
 	}
 
 	public function testSavingPageWithoutAReferencedSubjectReducesItToAStub(): void {
@@ -368,7 +366,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->deletePage( new PageId( 1 ) );
 
 		$this->assertSubjectIsStub( self::GUID_1 );
-		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1, 'rTestNQS1111rr1' );
+		$this->assertRelationExists( self::GUID_2, self::LOCATION_PROPERTY, self::GUID_1, 'rTestNQS1111rr1' );
 	}
 
 	public function testSavingASubjectUpgradesItsStubInPlace(): void {
@@ -397,7 +395,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( [ 'Subject', TestSubject::DEFAULT_SCHEMA_ID ], $labels );
 		$this->assertSame( 'Real subject', $row['name'] );
-		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1, 'rTestNQS1111rr1' );
+		$this->assertRelationExists( self::GUID_2, self::LOCATION_PROPERTY, self::GUID_1, 'rTestNQS1111rr1' );
 	}
 
 	/**
@@ -434,8 +432,8 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		) );
 
 		$this->assertSingleNodeWithId( self::GUID_3 );
-		$this->assertRelationExists( self::GUID_1, 'LocatedIn', self::GUID_3, 'rTestNQS1111rr1' );
-		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_3, 'rTestNQS1111rr2' );
+		$this->assertRelationExists( self::GUID_1, self::LOCATION_PROPERTY, self::GUID_3, 'rTestNQS1111rr1' );
+		$this->assertRelationExists( self::GUID_2, self::LOCATION_PROPERTY, self::GUID_3, 'rTestNQS1111rr2' );
 	}
 
 	/**
@@ -479,7 +477,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 				statements: new StatementList( [
 					TestStatement::build( property: 'nickname', value: 'Ada' ),
 					TestStatement::buildRelation(
-						property: 'locatedIn',
+						property: self::LOCATION_PROPERTY,
 						relations: [
 							TestRelation::build( id: 'rTestNQS1111rrB', targetId: self::GUID_3 ),
 							TestRelation::build( id: 'rTestNQS1111rrE', targetId: self::GUID_4 ),
@@ -510,8 +508,8 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSubjectIsStub( self::GUID_1 );
 		$this->assertOutgoingRelationCount( self::GUID_1, 0 );
-		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_1, 'rTestNQS1111rCA' );
-		$this->assertRelationExists( self::GUID_5, 'LocatedIn', self::GUID_1, 'rTestNQS1111rDA' );
+		$this->assertRelationExists( self::GUID_2, self::LOCATION_PROPERTY, self::GUID_1, 'rTestNQS1111rCA' );
+		$this->assertRelationExists( self::GUID_5, self::LOCATION_PROPERTY, self::GUID_1, 'rTestNQS1111rDA' );
 	}
 
 	public function testFlippingASubjectBetweenMainAndOtherLeavesASingleHasSubjectEdge(): void {
@@ -762,7 +760,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->savePage( TestPage::build( id: 1, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
 
 		$this->assertSubjectIsStub( self::GUID_3 );
-		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_3, 'rTestNQS1111rr2' );
+		$this->assertRelationExists( self::GUID_2, self::LOCATION_PROPERTY, self::GUID_3, 'rTestNQS1111rr2' );
 	}
 
 	public function testDeletingOneOfTwoPagesReferencingAStubKeepsIt(): void {
@@ -775,7 +773,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$store->deletePage( new PageId( 1 ) );
 
 		$this->assertSubjectIsStub( self::GUID_3 );
-		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_3, 'rTestNQS1111rr2' );
+		$this->assertRelationExists( self::GUID_2, self::LOCATION_PROPERTY, self::GUID_3, 'rTestNQS1111rr2' );
 	}
 
 	public function testStubbingOneOfTwoSubjectsReferencingAStubKeepsIt(): void {
@@ -794,7 +792,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSubjectIsStub( self::GUID_1 );
 		$this->assertSubjectIsStub( self::GUID_3 );
-		$this->assertRelationExists( self::GUID_2, 'LocatedIn', self::GUID_3, 'rTestNQS1111rr2' );
+		$this->assertRelationExists( self::GUID_2, self::LOCATION_PROPERTY, self::GUID_3, 'rTestNQS1111rr2' );
 	}
 
 	/**
@@ -824,12 +822,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 					TestSchema::build(
 						name: TestSubject::DEFAULT_SCHEMA_ID,
 						properties: new PropertyDefinitions( [
-							'locatedIn' => new RelationProperty(
-								core: new PropertyCore( description: '', required: false, default: null ),
-								relationType: new RelationType( 'LocatedIn' ),
-								targetSchema: SchemaReference::local( new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
-								multiple: false,
-							),
+							self::LOCATION_PROPERTY => TestProperty::buildRelation( targetSchema: TestSubject::DEFAULT_SCHEMA_ID ),
 						] ),
 					),
 				) ),
@@ -847,7 +840,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			id: $id,
 			statements: new StatementList( [
 				TestStatement::buildRelation(
-					property: 'locatedIn',
+					property: self::LOCATION_PROPERTY,
 					relations: [
 						TestRelation::build( id: $relationId, targetId: $targetId ),
 					],
@@ -863,8 +856,8 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		?string $expectedRelationId = null
 	): void {
 		$result = $this->readGraph(
-			'MATCH ({id: $from})-[relation:' . $relationType . ']->({id: $to}) RETURN relation.id AS id',
-			[ 'from' => $fromSubjectId, 'to' => $toSubjectId ]
+			'MATCH ({id: $from})-[relation]->({id: $to}) WHERE type(relation) = $type RETURN relation.id AS id',
+			[ 'from' => $fromSubjectId, 'type' => $relationType, 'to' => $toSubjectId ]
 		);
 
 		$this->assertFalse(
@@ -1136,20 +1129,12 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testDeletingPagePreservesSubjectReferencedByOtherSubject(): void {
-		$relationPropertyName = 'locatedIn';
-		$relationType = 'LocatedIn';
-
 		$store = NeoWikiExtension::getInstance()->newNeo4jProjectionStore(
 			new InMemorySchemaLookup(
 				TestSchema::build(
 					name: TestSubject::DEFAULT_SCHEMA_ID,
 					properties: new PropertyDefinitions( [
-						$relationPropertyName => new RelationProperty(
-							core: new PropertyCore( description: '', required: false, default: null ),
-							relationType: new RelationType( $relationType ),
-							targetSchema: SchemaReference::local( new SchemaName( TestSubject::DEFAULT_SCHEMA_ID ) ),
-							multiple: false,
-						),
+						self::LOCATION_PROPERTY => TestProperty::buildRelation( targetSchema: TestSubject::DEFAULT_SCHEMA_ID ),
 					] ),
 				),
 			)
@@ -1166,7 +1151,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 				id: self::GUID_2,
 				statements: new StatementList( [
 					TestStatement::buildRelation(
-						property: $relationPropertyName,
+						property: self::LOCATION_PROPERTY,
 						relations: [
 							TestRelation::build( id: 'rTestNQS1111rr1', targetId: self::GUID_1 ),
 						],
@@ -1182,10 +1167,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		);
 		$this->assertFalse( $result->isEmpty(), 'Subject referenced by another subject should not be deleted' );
 
-		$relationResult = $this->readGraph(
-			'MATCH ({id: "' . self::GUID_2 . '"})-[r:' . $relationType . ']->({id: "' . self::GUID_1 . '"}) RETURN r'
-		);
-		$this->assertFalse( $relationResult->isEmpty(), 'Relation to preserved subject should still exist' );
+		$this->assertRelationExists( self::GUID_2, self::LOCATION_PROPERTY, self::GUID_1 );
 	}
 
 	private function assertPageHasSubjectsWithLabels( array $expectedSubjects, int $pageId ): void {

@@ -318,7 +318,7 @@ those are set. Beyond that core, the fields depend on `type`:
 | `number` | — | `precision`, `minimum`, `maximum` |
 | `date`, `dateTime` | — | `minimum`, `maximum` |
 | `select` | `multiple`, `options` (1-indexed list of `{ id, label }` entries) | — |
-| `relation` | `multiple`, `relation`, `targetSchema` | — |
+| `relation` | `multiple`, `targetSchema` | — |
 | `boolean` | — | — |
 
 Optional fields are **omitted entirely** when unset, so check with `if prop.description then …`.
@@ -425,8 +425,6 @@ Notes:
 - A relation's `label` is the target's display name, and falls back to the target Subject ID when
   the target cannot be looked up at all (e.g. a broken reference).
 - Monolingual text keeps its languages here; `nw.getValue` and `nw.getAll` give the text alone.
-- Per-relation `properties` (qualifiers) are not currently exposed via Lua. Use the REST API if
-  you need them.
 
 ## Permissions
 

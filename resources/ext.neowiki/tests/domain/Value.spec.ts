@@ -7,7 +7,7 @@ import {
 	newRelation,
 	newStringValue,
 	newUnregisteredTypeValue,
-	relationValuesHaveSameTargets,
+	relationValueWithTargets,
 	RelationValue,
 	type Value,
 	valueToJson,
@@ -175,54 +175,56 @@ describe( 'newMonolingualTextValue', () => {
 
 } );
 
-describe( 'relationValuesHaveSameTargets', () => {
+describe( 'relationValueWithTargets', () => {
 
-	it( 'returns true when both are undefined', () => {
-		expect( relationValuesHaveSameTargets( undefined, undefined ) ).toBe( true );
-	} );
-
-	it( 'returns false when only one is undefined', () => {
-		const value = new RelationValue( [ newRelation( undefined, 's11111111111111' ) ] );
-
-		expect( relationValuesHaveSameTargets( value, undefined ) ).toBe( false );
-		expect( relationValuesHaveSameTargets( undefined, value ) ).toBe( false );
-	} );
-
-	it( 'returns true when both have the same targets', () => {
-		const a = new RelationValue( [ newRelation( 'id-a', 's11111111111111' ) ] );
-		const b = new RelationValue( [ newRelation( 'id-b', 's11111111111111' ) ] );
-
-		expect( relationValuesHaveSameTargets( a, b ) ).toBe( true );
-	} );
-
-	it( 'returns false when targets differ', () => {
-		const a = new RelationValue( [ newRelation( undefined, 's11111111111111' ) ] );
-		const b = new RelationValue( [ newRelation( undefined, 's22222222222222' ) ] );
-
-		expect( relationValuesHaveSameTargets( a, b ) ).toBe( false );
-	} );
-
-	it( 'returns false when lengths differ', () => {
-		const a = new RelationValue( [
-			newRelation( undefined, 's11111111111111' ),
-			newRelation( undefined, 's22222222222222' ),
-		] );
-		const b = new RelationValue( [ newRelation( undefined, 's11111111111111' ) ] );
-
-		expect( relationValuesHaveSameTargets( a, b ) ).toBe( false );
-	} );
-
-	it( 'compares targets regardless of relation IDs', () => {
-		const a = new RelationValue( [
-			newRelation( 'first-id', 's11111111111111' ),
-			newRelation( 'second-id', 's22222222222222' ),
-		] );
-		const b = new RelationValue( [
-			newRelation( 'different-id', 's11111111111111' ),
-			newRelation( 'another-id', 's22222222222222' ),
+	it( 'keeps the Relation of each target the value already points at, in the order of the targets', () => {
+		const current = new RelationValue( [
+			newRelation( 'r11111111111111', 's11111111111111' ),
+			newRelation( 'r22222222222222', 's22222222222222' ),
 		] );
 
-		expect( relationValuesHaveSameTargets( a, b ) ).toBe( true );
+		expect( relationValueWithTargets( current, [ 's22222222222222', 's11111111111111' ] ).relations ).toEqual( [
+			newRelation( 'r22222222222222', 's22222222222222' ),
+			newRelation( 'r11111111111111', 's11111111111111' ),
+		] );
+	} );
+
+	it( 'gives a newly listed target a new Relation in place of an unlisted one', () => {
+		const current = new RelationValue( [
+			newRelation( 'r11111111111111', 's11111111111111' ),
+			newRelation( 'r22222222222222', 's22222222222222' ),
+		] );
+
+		expect( relationValueWithTargets( current, [ 's11111111111111', 's33333333333333' ] ).relations ).toEqual( [
+			newRelation( 'r11111111111111', 's11111111111111' ),
+			newRelation( undefined, 's33333333333333' ),
+		] );
+	} );
+
+	it( 'leaves the current value as it was', () => {
+		const current = new RelationValue( [
+			newRelation( 'r11111111111111', 's11111111111111' ),
+			newRelation( 'r22222222222222', 's22222222222222' ),
+		] );
+
+		relationValueWithTargets( current, [ 's11111111111111', 's22222222222222' ] );
+
+		expect( current.relations ).toEqual( [
+			newRelation( 'r11111111111111', 's11111111111111' ),
+			newRelation( 'r22222222222222', 's22222222222222' ),
+		] );
+	} );
+
+	it( 'keeps both Relations to a target the value points at twice', () => {
+		const current = new RelationValue( [
+			newRelation( 'r11111111111111', 's11111111111111' ),
+			newRelation( 'r22222222222222', 's11111111111111' ),
+		] );
+
+		expect( relationValueWithTargets( current, [ 's11111111111111', 's11111111111111' ] ).relations ).toEqual( [
+			newRelation( 'r11111111111111', 's11111111111111' ),
+			newRelation( 'r22222222222222', 's11111111111111' ),
+		] );
 	} );
 
 } );

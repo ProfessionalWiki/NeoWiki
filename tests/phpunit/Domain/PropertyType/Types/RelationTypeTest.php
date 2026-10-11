@@ -117,7 +117,7 @@ class RelationTypeTest extends TestCase {
 		$property = ( new RelationType( TestSources::newSchemaReferenceParser( [ 'person' => 'Person' ] ) ) )
 			->buildPropertyDefinitionFromJson(
 				new PropertyCore( description: '', required: false, default: null ),
-				[ 'relation' => 'has', 'targetSchema' => 'person' ]
+				[ 'targetSchema' => 'person' ]
 			);
 
 		$this->assertEquals(
@@ -129,7 +129,7 @@ class RelationTypeTest extends TestCase {
 	private function newRelationProperty( bool $multiple, bool $required = false ): RelationProperty {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: $required, default: null ),
-			[ 'relation' => 'has', 'targetSchema' => 'Person', 'multiple' => $multiple ],
+			[ 'targetSchema' => 'Person', 'multiple' => $multiple ],
 			TestSources::newSchemaReferenceParser(),
 		);
 	}
@@ -138,7 +138,6 @@ class RelationTypeTest extends TestCase {
 		return PropertyDefinition::fromJson(
 			[
 				'type' => 'relation',
-				'relation' => 'has',
 				'targetSchema' => 'Person',
 				'multiple' => [ 'value' => false, 'severity' => 'error' ],
 			],
@@ -149,7 +148,7 @@ class RelationTypeTest extends TestCase {
 	private function newRelationPropertyWithoutMultipleKey(): RelationProperty {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: false, default: null ),
-			[ 'relation' => 'has', 'targetSchema' => 'Person' ],
+			[ 'targetSchema' => 'Person' ],
 			TestSources::newSchemaReferenceParser(),
 		);
 	}

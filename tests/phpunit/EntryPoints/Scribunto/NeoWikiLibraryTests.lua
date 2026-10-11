@@ -204,7 +204,7 @@ local function testGetSchemaRelationPropertyTargetSchema()
 	if not s then return 'nil' end
 	for _, p in ipairs( s.properties ) do
 		if p.name == 'Employer' then
-			return p.type, p.relation, p.targetSchema
+			return p.type, p.targetSchema
 		end
 	end
 	return 'not-found'
@@ -286,8 +286,8 @@ local tests = {
 	  func = testGetSchemaReturnsNilForReservedName, expect = { nil } },
 	{ name = 'getSchema number property exposes bounds and default',
 	  func = testGetSchemaNumberPropertyBoundsAndDefault, expect = { 'number', 0, 100, 100 } },
-	{ name = 'getSchema relation property exposes relation and targetSchema',
-	  func = testGetSchemaRelationPropertyTargetSchema, expect = { 'relation', 'Works for', 'Company' } },
+	{ name = 'getSchema relation property exposes targetSchema',
+	  func = testGetSchemaRelationPropertyTargetSchema, expect = { 'relation', 'Company' } },
 	{ name = 'getSchema resolves the reference form a sourced Subject carries',
 	  func = testGetSchemaResolvesSourcedReference, expect = { 'Widget' } },
 	{ name = 'getSchema returns nil for a reference to an unregistered Source',

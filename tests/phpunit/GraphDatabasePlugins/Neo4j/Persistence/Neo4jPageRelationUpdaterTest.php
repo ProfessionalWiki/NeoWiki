@@ -4,9 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Neo4j\Persistence;
 
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jOrphanCandidates;
@@ -52,12 +51,11 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 			TestRelation::build(
 				id: 'rTestSRU1111rr1',
 				targetId: self::TARGET_SUBJECT_1,
-				properties: new RelationProperties( [ 'foo' => 'bar', 'baz' => 42 ] ),
-			)->withType( new RelationType( 'Type1' ) ),
+			)->withPropertyName( new PropertyName( 'Type1' ) ),
 			TestRelation::build(
 				id: 'rTestSRU1111rr2',
 				targetId: self::TARGET_SUBJECT_2,
-			)->withType( new RelationType( 'Type2' ) ),
+			)->withPropertyName( new PropertyName( 'Type2' ) ),
 		] );
 
 		$this->updateRelations( $relations );
@@ -97,11 +95,8 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		foreach ( $expected->relations as $relation ) {
 			$expectedRelations[$relation->id->asString()] = [
 				'targetId' => $relation->targetId->text,
-				'type' => $relation->type->getText(),
-				'properties' => array_merge(
-					$relation->properties->map,
-					[ 'id' => $relation->id->asString() ]
-				),
+				'type' => $relation->propertyName->text,
+				'properties' => [ 'id' => $relation->id->asString() ],
 			];
 		}
 
@@ -128,16 +123,15 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 				TestRelation::build(
 					id: 'rTestSRU1111rr1',
 					targetId: self::TARGET_SUBJECT_1,
-					properties: new RelationProperties( [ 'foo' => 'bar', 'baz' => 42 ] ),
-				)->withType( new RelationType( 'Type1' ) ),
+				)->withPropertyName( new PropertyName( 'Type1' ) ),
 				TestRelation::build(
 					id: 'rTestSRU1111rr2',
 					targetId: self::TARGET_SUBJECT_2,
-				)->withType( new RelationType( 'Type2' ) ),
+				)->withPropertyName( new PropertyName( 'Type2' ) ),
 				TestRelation::build(
 					id: 'rTestSRU1111rr3',
 					targetId: self::TARGET_SUBJECT_2,
-				)->withType( new RelationType( 'Type2' ) ),
+				)->withPropertyName( new PropertyName( 'Type2' ) ),
 			] )
 		);
 
@@ -145,49 +139,7 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 			TestRelation::build(
 				id: 'rTestSRU1111rr2',
 				targetId: self::TARGET_SUBJECT_2,
-			)->withType( new RelationType( 'Type2' ) ),
-		] );
-
-		$this->updateRelations( $expectedRelations );
-
-		$this->assertHasRelations( $expectedRelations );
-	}
-
-	public function testUpdatesRelationProperties(): void {
-		$this->updateRelations(
-			new TypedRelationList( [
-				TestRelation::build(
-					id: 'rTestSRU1111rr1',
-					targetId: self::TARGET_SUBJECT_1,
-					properties: new RelationProperties( [ 'foo' => 'bar', 'baz' => 42 ] ),
-				)->withType( new RelationType( 'Type1' ) ),
-				TestRelation::build(
-					id: 'rTestSRU1111rr2',
-					targetId: self::TARGET_SUBJECT_2,
-					properties: new RelationProperties( [ 'hello' => 'there' ] ),
-				)->withType( new RelationType( 'Type2' ) ),
-				TestRelation::build(
-					id: 'rTestSRU1111rr3',
-					targetId: self::TARGET_SUBJECT_2,
-				)->withType( new RelationType( 'Type2' ) ),
-			] )
-		);
-
-		$expectedRelations = new TypedRelationList( [
-			TestRelation::build(
-				id: 'rTestSRU1111rr1',
-				targetId: self::TARGET_SUBJECT_1,
-				properties: new RelationProperties( [ 'bah' => 1337, 'foo' => 'bar' ] ),
-			)->withType( new RelationType( 'Type1' ) ),
-			TestRelation::build(
-				id: 'rTestSRU1111rr2',
-				targetId: self::TARGET_SUBJECT_2,
-			)->withType( new RelationType( 'Type2' ) ),
-			TestRelation::build(
-				id: 'rTestSRU1111rr4',
-				targetId: self::TARGET_SUBJECT_2,
-				properties: new RelationProperties( [ 'neo' => 'wiki' ] ),
-			)->withType( new RelationType( 'Type2' ) ),
+			)->withPropertyName( new PropertyName( 'Type2' ) ),
 		] );
 
 		$this->updateRelations( $expectedRelations );
@@ -202,13 +154,13 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		$lastRelationWithTheId = TestRelation::build(
 			id: 'rTestSRU1111rr1',
 			targetId: self::TARGET_SUBJECT_2,
-		)->withType( new RelationType( 'Type2' ) );
+		)->withPropertyName( new PropertyName( 'Type2' ) );
 
 		$this->updateRelations( new TypedRelationList( [
 			TestRelation::build(
 				id: 'rTestSRU1111rr1',
 				targetId: self::TARGET_SUBJECT_1,
-			)->withType( new RelationType( 'Type1' ) ),
+			)->withPropertyName( new PropertyName( 'Type1' ) ),
 			$lastRelationWithTheId,
 		] ) );
 
@@ -221,13 +173,11 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 				TestRelation::build(
 					id: 'rTestSRU1111rr1',
 					targetId: self::TARGET_SUBJECT_1,
-					properties: new RelationProperties( [ 'foo' => 'bar', 'baz' => 42 ] ),
-				)->withType( new RelationType( 'Type1' ) ),
+				)->withPropertyName( new PropertyName( 'Type1' ) ),
 				TestRelation::build(
 					id: 'rTestSRU1111rr2',
 					targetId: self::TARGET_SUBJECT_2,
-					properties: new RelationProperties( [ 'hello' => 'there' ] ),
-				)->withType( new RelationType( 'Type2' ) ),
+				)->withPropertyName( new PropertyName( 'Type2' ) ),
 			] )
 		);
 
@@ -235,13 +185,11 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 			TestRelation::build(
 				id: 'rTestSRU1111rr1',
 				targetId: self::TARGET_SUBJECT_2,
-				properties: new RelationProperties( [ 'foo' => 'bar', 'new' => 1337 ] ),
-			)->withType( new RelationType( 'Type1' ) ),
+			)->withPropertyName( new PropertyName( 'Type1' ) ),
 			TestRelation::build(
 				id: 'rTestSRU1111rr2',
 				targetId: self::SUBJECT_ID,
-				properties: new RelationProperties( [ 'hello' => 'there' ] ),
-			)->withType( new RelationType( 'Type2' ) ),
+			)->withPropertyName( new PropertyName( 'Type2' ) ),
 		] );
 
 		$this->updateRelations( $expectedRelations );
@@ -255,34 +203,20 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 				TestRelation::build(
 					id: 'rTestSRU1111rr1',
 					targetId: self::TARGET_SUBJECT_1,
-				)->withType( new RelationType( 'Type1' ) ),
+				)->withPropertyName( new PropertyName( 'Type1' ) ),
 			] )
 		);
 
-		$this->updateRelations(
-			new TypedRelationList( [
-				TestRelation::build(
-					id: 'rTestSRU1111rr1',
-					targetId: self::TARGET_SUBJECT_1,
-				)->withType( new RelationType( 'Type1v2' ) ),
-			] )
-		);
+		$retypedRelations = new TypedRelationList( [
+			TestRelation::build(
+				id: 'rTestSRU1111rr1',
+				targetId: self::TARGET_SUBJECT_1,
+			)->withPropertyName( new PropertyName( 'Type1v2' ) ),
+		] );
 
-		$this->assertSame( [ 'Type1v2' ], $this->relationTypesOf( 'rTestSRU1111rr1' ) );
-	}
+		$this->updateRelations( $retypedRelations );
 
-	/**
-	 * @return string[]
-	 */
-	private function relationTypesOf( string $relationId ): array {
-		$rows = NeoWikiExtension::getInstance()->getNeo4jClient()->run(
-			'MATCH ({id: $subjectId})-[relation {id: $relationId}]->()
-       		RETURN type(relation) AS type
-       		ORDER BY type',
-			[ 'subjectId' => self::SUBJECT_ID, 'relationId' => $relationId ]
-		)->getResults()->toRecursiveArray();
-
-		return array_column( $rows, 'type' );
+		$this->assertHasRelations( $retypedRelations );
 	}
 
 	public function testRelationTypeIsStoredVerbatim(): void {
@@ -290,7 +224,7 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 			TestRelation::build(
 				id: 'rTestSRU1111rr1',
 				targetId: self::TARGET_SUBJECT_1,
-			)->withType( new RelationType( 'Made by' . str_repeat( chr( 92 ) . 'u0060', 2 ) ) ),
+			)->withPropertyName( new PropertyName( 'Made by' . str_repeat( chr( 92 ) . 'u0060', 2 ) ) ),
 		] );
 
 		$this->updateRelations( $relations );
@@ -304,8 +238,7 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 				TestRelation::build(
 					id: 'rTestSRU1111rr1',
 					targetId: 'sTestSRU111nope',
-					properties: new RelationProperties( [] ),
-				)->withType( new RelationType( 'RelationType' ) )
+				)->withPropertyName( new PropertyName( 'Owner' ) )
 			] )
 		);
 
@@ -326,8 +259,7 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 				TestRelation::build(
 					id: 'rTestSRU1111rr1',
 					targetId: $targetId,
-					properties: new RelationProperties( [] ),
-				)->withType( new RelationType( 'RelationType' ) )
+				)->withPropertyName( new PropertyName( 'Owner' ) )
 			] )
 		);
 

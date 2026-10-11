@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Data;
 
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
@@ -52,7 +51,6 @@ class TestProperty {
 		string $description = '',
 		bool $required = false,
 		$default = null,
-		RelationType|string $relationType = 'TestPropRelation',
 		SchemaName|SchemaReference|string $targetSchema = 'TestPropSchema',
 		bool $multiple = false
 	): RelationProperty {
@@ -62,7 +60,6 @@ class TestProperty {
 				required: $required,
 				default: $default
 			),
-			relationType: $relationType instanceof RelationType ? $relationType : new RelationType( $relationType ),
 			targetSchema: TestSchema::reference( $targetSchema ),
 			multiple: $multiple
 		);

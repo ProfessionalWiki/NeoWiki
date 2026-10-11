@@ -12,7 +12,7 @@ data is curated for demonstration and is not authoritative.
 
 == Browse ==
 
-{{#invoke:NeoWikiDemo|query|MATCH (m:Museum)-[:`Located in`]->(c:City) RETURN m.name AS Museum, c.name AS City, m.Founded AS Founded, m.`Annual visitors` AS `Annual visitors` ORDER BY Museum|columns=Museum, City, Founded, Annual visitors|linkColumns=Museum, City}}
+{{#invoke:NeoWikiDemo|query|MATCH (m:Museum)-[:City]->(c:City) RETURN m.name AS Museum, c.name AS City, m.Founded AS Founded, m.`Annual visitors` AS `Annual visitors` ORDER BY Museum|columns=Museum, City, Founded, Annual visitors|linkColumns=Museum, City}}
 
 == Add your own ==
 

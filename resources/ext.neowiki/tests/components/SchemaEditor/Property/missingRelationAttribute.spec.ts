@@ -5,7 +5,7 @@ import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
 
 describe( 'missingRelationAttribute', () => {
 	function relationProperty( overrides: Partial<RelationProperty> = {} ): RelationProperty {
-		return { ...newRelationProperty(), relation: 'Has product', targetSchema: 'Product', ...overrides };
+		return { ...newRelationProperty(), targetSchema: 'Product', ...overrides };
 	}
 
 	it( 'finds nothing missing from a complete definition', () => {

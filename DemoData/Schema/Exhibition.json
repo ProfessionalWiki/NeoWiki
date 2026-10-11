@@ -10,13 +10,11 @@
 		},
 		"Venue": {
 			"type": "relation",
-			"relation": "Hosted at",
 			"targetSchema": "Museum",
 			"required": true
 		},
 		"Featured artists": {
 			"type": "relation",
-			"relation": "Features",
 			"targetSchema": "Artist",
 			"multiple": true
 		},

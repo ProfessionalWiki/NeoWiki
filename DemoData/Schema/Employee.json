@@ -21,7 +21,6 @@
 		},
 		"Employer": {
 			"type": "relation",
-			"relation": "Employer",
 			"targetSchema": "Company",
 			"multiple": false
 		}

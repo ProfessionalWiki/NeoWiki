@@ -223,8 +223,8 @@ class Neo4jReferencingSubjectLookupTest extends NeoWikiIntegrationTestCase {
 				TestSchema::build(
 					name: TestSubject::DEFAULT_SCHEMA_ID,
 					properties: new PropertyDefinitions( [
-						'Made in' => TestProperty::buildRelation( relationType: 'Made in' ),
-						'Sold in' => TestProperty::buildRelation( relationType: 'Sold in' ),
+						'Made in' => TestProperty::buildRelation(),
+						'Sold in' => TestProperty::buildRelation(),
 					] )
 				)
 			)

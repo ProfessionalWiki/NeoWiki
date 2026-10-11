@@ -1,42 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { newRelationProperty, RelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
-import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
+import { newRelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
+import { PropertyName } from '@/domain/PropertyDefinition';
 import { newRelation, RelationValue } from '@/domain/Value';
 
 describe( 'RelationType', () => {
 
 	it( 'has no display attributes', () => {
 		expect( new RelationType().getDisplayAttributeNames() ).toEqual( [] );
-	} );
-
-	describe( 'createPropertyDefinitionFromJson', () => {
-
-		const relationPropertyNamed = ( name: string, json: object ): RelationProperty =>
-			new RelationType().createPropertyDefinitionFromJson(
-				{
-					name: new PropertyName( name ),
-					type: RelationType.typeName,
-					description: '',
-					required: false,
-					default: undefined,
-				} as PropertyDefinition,
-				{ targetSchema: 'Artist', ...json },
-			);
-
-		it( 'keeps the stored relation type', () => {
-			expect( relationPropertyNamed( 'Creator', { relation: 'Created by' } ).relation )
-				.toBe( 'Created by' );
-		} );
-
-		it( 'names the relation type after the property when the JSON has none', () => {
-			expect( relationPropertyNamed( 'Creator', {} ).relation ).toBe( 'Creator' );
-		} );
-
-		// A Schema the wiki stored never has one: an empty relation type fails content validation.
-		it( 'names the relation type after the property when the JSON has an empty one', () => {
-			expect( relationPropertyNamed( 'Creator', { relation: '' } ).relation ).toBe( 'Creator' );
-		} );
-
 	} );
 
 } );
@@ -50,7 +20,6 @@ describe( 'newRelationProperty', () => {
 		expect( property.description ).toBe( '' );
 		expect( property.required ).toBe( false );
 		expect( property.default ).toBeUndefined();
-		expect( property.relation ).toBe( 'MyRelation' );
 		expect( property.targetSchema ).toBe( 'MyTargetSchema' );
 		expect( property.multiple ).toBe( false );
 	} );
@@ -82,7 +51,6 @@ describe( 'newRelationProperty', () => {
 			description: 'A relation property',
 			required: true,
 			default: relation,
-			relation: 'CustomRelation',
 			targetSchema: 'CustomSchema',
 			multiple: true,
 		} );
@@ -92,7 +60,6 @@ describe( 'newRelationProperty', () => {
 		expect( property.description ).toBe( 'A relation property' );
 		expect( property.required ).toBe( true );
 		expect( property.default ).toStrictEqual( relation );
-		expect( property.relation ).toBe( 'CustomRelation' );
 		expect( property.targetSchema ).toBe( 'CustomSchema' );
 		expect( property.multiple ).toBe( true );
 	} );
@@ -101,7 +68,6 @@ describe( 'newRelationProperty', () => {
 		const property = newRelationProperty( {
 			name: 'PartialRelation',
 			description: 'A partial relation property',
-			relation: 'CustomRelation',
 		} );
 
 		expect( property.name ).toEqual( new PropertyName( 'PartialRelation' ) );
@@ -109,7 +75,6 @@ describe( 'newRelationProperty', () => {
 		expect( property.description ).toBe( 'A partial relation property' );
 		expect( property.required ).toBe( false );
 		expect( property.default ).toBeUndefined();
-		expect( property.relation ).toBe( 'CustomRelation' );
 		expect( property.targetSchema ).toBe( 'MyTargetSchema' );
 		expect( property.multiple ).toBe( false );
 	} );

@@ -92,7 +92,7 @@ Each **schema** entry (a value in `schemas`) needs at least one of `subject` and
 | `subject` | with `properties`/`nodes` | How the Subject itself projects (see below). Leave it out for an entry that only contributes to other Subjects. |
 | `nodes` | no | Node key → an intermediate node the projection synthesizes (see below). Keys match `^[A-Za-z_][A-Za-z0-9_-]*$` and appear in the node's IRI. At most 64. |
 | `properties` | no | NeoWiki property name → how to project it (see below). At most 500. |
-| `contributions` | no | Relation name → values this Schema sends to the Subjects that relation points at (see below). At most 32. |
+| `contributions` | no | Relation property name → values this Schema sends to the Subjects that property points at (see below). At most 32. |
 
 Each **subject** entry:
 
@@ -150,7 +150,7 @@ For each Subject on a page whose Schema has an entry on the requested projection
 - One triple per mapped property **value**, on the Subject or on the node the entry attaches it to;
   multi-valued properties repeat the predicate. Unmapped properties are absent.
 - A **relation** value becomes a direct triple to the target Subject's IRI. No `neo:Relation` reification node
-  and no relation qualifiers are projected.
+  is projected.
 - A node instance, with its `rdf:type` and its link triple, **only where a value reached it** — pulling in
   every node on the way down to it, so the output carries no empty event nodes.
 - One triple per contributed value, **about each target** of the contribution's relation.

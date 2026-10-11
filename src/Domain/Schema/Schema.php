@@ -5,7 +5,6 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
 use OutOfBoundsException;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 
 readonly class Schema {
 
@@ -33,11 +32,6 @@ readonly class Schema {
 
 	public function hasProperty( string|PropertyName $name ): bool {
 		return $this->properties->hasProperty( $name );
-	}
-
-	public function isRelationProperty( string $name ): bool {
-		return $this->hasProperty( $name )
-			&& $this->properties->getProperty( $name )->getPropertyType() === RelationType::NAME;
 	}
 
 	public function getRelationProperties(): PropertyDefinitions {

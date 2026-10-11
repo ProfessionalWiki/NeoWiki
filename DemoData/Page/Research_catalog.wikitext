@@ -6,7 +6,7 @@ A fictional research-output catalog showing NeoWiki's relations across instituti
 
 == Publications per project ==
 
-{{#invoke:NeoWikiDemo|query|MATCH (p:Publication)-[:`Part of project`]->(pr:Project) RETURN pr.name AS Project, count(p) AS Publications ORDER BY Publications DESC|columns=Project, Publications|linkColumns=Project}}
+{{#invoke:NeoWikiDemo|query|MATCH (p:Publication)-[:Project]->(pr:Project) RETURN pr.name AS Project, count(p) AS Publications ORDER BY Publications DESC|columns=Project, Publications|linkColumns=Project}}
 
 == Browse ==
 

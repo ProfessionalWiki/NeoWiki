@@ -86,7 +86,7 @@ The Constraints that accept a severity are `required`, `multiple`, `minimum`, `m
 `maxLength`, `uniqueItems`, and `options`. Only `select`, `relation` and `monolingualText` check
 `multiple`, so a severity on it is inert elsewhere. Severity is a Constraint concept, so it does not
 apply to Display Attributes such as `precision`, where it is discarded, nor to the shape-declaring
-fields `type`, `relation`, and `targetSchema`, where it is rejected when the Schema is saved.
+fields `type` and `targetSchema`, where it is rejected when the Schema is saved.
 
 Canonical output emits the bare form whenever the severity is the default, so a Schema that sets no
 severities round-trips unchanged. Which violation each Constraint produces, and the fixed severities
@@ -199,14 +199,12 @@ References to other Subjects.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `relation` | string | Yes | - | The relation type name |
 | `targetSchema` | string or object | Yes | - | [Reference](#schema-references) to the Schema that target Subjects must follow |
 | `multiple` | boolean or object | No | `false` | Allow multiple relations |
 
 ```json
 {
   "type": "relation",
-  "relation": "Has product",
   "targetSchema": "Product",
   "multiple": true
 }
@@ -277,12 +275,10 @@ A "Company" schema with various property types:
     },
     "Main product": {
       "type": "relation",
-      "relation": "Has main product",
       "targetSchema": "Product"
     },
     "Products": {
       "type": "relation",
-      "relation": "Has product",
       "targetSchema": "Product",
       "multiple": true
     },

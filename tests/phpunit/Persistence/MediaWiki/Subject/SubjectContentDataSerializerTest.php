@@ -10,7 +10,6 @@ use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
@@ -129,11 +128,7 @@ class SubjectContentDataSerializerTest extends TestCase {
                     "value": [
                         {
                             "id": "rTestSCDST11rr2",
-                            "target": "sTestSCDST11113",
-                            "properties": {
-                                "level": "Expert",
-                                "years": "10"
-                            }
+                            "target": "sTestSCDST11113"
                         }
                     ]
                 },
@@ -171,10 +166,6 @@ class SubjectContentDataSerializerTest extends TestCase {
 							new Relation(
 								id: new RelationId( 'rTestSCDST11rr2' ),
 								targetId: new SubjectId( 'sTestSCDST11113' ),
-								properties: new RelationProperties( [
-									'level' => 'Expert',
-									'years' => '10'
-								] )
 							)
 						)
 					),
@@ -185,7 +176,6 @@ class SubjectContentDataSerializerTest extends TestCase {
 							new Relation(
 								id: new RelationId( 'rTestSCDST11rr5' ),
 								targetId: new SubjectId( 'sTestSCDST11115' ),
-								properties: new RelationProperties( [] )
 							)
 						)
 					),
@@ -278,10 +268,7 @@ class SubjectContentDataSerializerTest extends TestCase {
                     "value": [
                         {
                             "id": "rTestSCDS111111",
-                            "target": "sTestSCDS111112",
-                            "properties": {
-                                "since": "2023"
-                            }
+                            "target": "sTestSCDS111112"
                         }
                     ]
                 }

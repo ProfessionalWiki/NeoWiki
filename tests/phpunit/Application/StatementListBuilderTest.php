@@ -85,6 +85,22 @@ class StatementListBuilderTest extends TestCase {
 		return $value->relations[0]->targetId->text;
 	}
 
+	public function testPropertiesOfARelationAreNotStored(): void {
+		$list = $this->newBuilder()->build( [
+			'Owner' => [
+				'propertyType' => 'relation',
+				'value' => [
+					[ 'id' => 'r11111111111112', 'target' => 's11111111111111', 'properties' => [ 'Since' => 2019 ] ],
+				],
+			],
+		] );
+
+		$this->assertEquals(
+			[ [ 'id' => 'r11111111111112', 'target' => 's11111111111111' ] ],
+			$list->getStatement( new PropertyName( 'Owner' ) )?->getValue()->toScalars()
+		);
+	}
+
 	public function testUnregisteredTypePreservesRawValue(): void {
 		$list = $this->newBuilder()->build( [
 			'Swatch' => [ 'propertyType' => 'color', 'value' => [ '#ff5733' ] ],
@@ -238,7 +254,7 @@ class StatementListBuilderTest extends TestCase {
 		yield 'number with no value' => [ 'number', null ];
 		yield 'boolean given a string' => [ 'boolean', 'yes' ];
 		yield 'relation given a scalar' => [ 'relation', 'sTargetIdWanted' ];
-		yield 'relation target missing' => [ 'relation', [ [ 'properties' => [] ] ] ];
+		yield 'relation target missing' => [ 'relation', [ [ 'id' => 'r11111111111111' ] ] ];
 		yield 'relation given a list of bare target ids' => [ 'relation', [ 'sTargetIdWanted' ] ];
 		yield 'relation target of the wrong form' => [ 'relation', [ [ 'target' => 'not a subject id' ] ] ];
 		yield 'relation id of the wrong form' => [

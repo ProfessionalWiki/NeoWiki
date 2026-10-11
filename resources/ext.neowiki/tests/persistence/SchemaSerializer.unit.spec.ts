@@ -60,7 +60,6 @@ describe( 'SchemaSerializer', () => {
 						name: new PropertyName( 'relationProperty' ),
 						description: 'Relation property',
 						required: false,
-						relation: 'TestRelation',
 						targetSchema: 'TestTargetSchema',
 						multiple: true,
 					} ),
@@ -99,13 +98,25 @@ describe( 'SchemaSerializer', () => {
 						type: 'relation',
 						description: 'Relation property',
 						required: false,
-						relation: 'TestRelation',
 						targetSchema: 'TestTargetSchema',
 						multiple: true,
 					},
 				},
 			} );
 		} );
+	} );
+
+	it( 'drops a stored relation name', () => {
+		const schema = new SchemaDeserializer().deserialize( 'Employee', {
+			description: '',
+			propertyDefinitions: {
+				Employer: { type: 'relation', relation: 'Works for', targetSchema: 'Company' },
+			},
+		} );
+
+		const parsed = JSON.parse( serializer.serializeSchema( schema ) );
+
+		expect( parsed.propertyDefinitions.Employer ).not.toHaveProperty( 'relation' );
 	} );
 
 	describe( 'unregistered-type round-trip', () => {
@@ -212,7 +223,6 @@ describe( 'SchemaSerializer', () => {
 						type: 'relation',
 						description: '',
 						required: false,
-						relation: 'has author',
 						targetSchema: 'Person',
 						multiple: { value: false, severity: 'error' },
 					},

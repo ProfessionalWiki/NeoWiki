@@ -92,15 +92,9 @@
 							},
 							"then": {
 								"required": [
-									"relation",
 									"targetSchema"
 								],
 								"properties": {
-									"relation": {
-										"type": "string",
-										"pattern": "^\\S(.*\\S)?$",
-										"$error": "The relation type must not be empty or have surrounding whitespace."
-									},
 									"targetSchema": {
 										"oneOf": [
 											{

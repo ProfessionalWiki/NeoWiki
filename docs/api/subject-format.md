@@ -102,20 +102,6 @@ Each `relation` value is an array of objects pointing at other Subjects:
 |-------|------|----------|-------------|
 | `id` | string | Yes | ID of this relation. |
 | `target` | string | Yes | ID of the target Subject. |
-| `properties` | object | No | Key-value relation properties. Present only when non-empty. |
-
-With relation properties:
-
-```json
-{
-  "id": "r1demo5rrrrrrr1",
-  "target": "s1demo4sssssss1",
-  "properties": {
-    "role": "CEO",
-    "since": 2019
-  }
-}
-```
 
 ### Monolingual text
 

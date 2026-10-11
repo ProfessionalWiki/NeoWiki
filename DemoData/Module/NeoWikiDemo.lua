@@ -243,7 +243,6 @@ local function propertyDetails( prop )
 		end
 	elseif prop.type == 'relation' then
 		details[#details + 1] = 'targetSchema: ' .. prop.targetSchema
-		details[#details + 1] = 'relation: ' .. prop.relation
 	elseif prop.type == 'text' or prop.type == 'url' then
 		if prop.multiple then
 			details[#details + 1] = 'multiple: true'

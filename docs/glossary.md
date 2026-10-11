@@ -66,7 +66,6 @@ Each Relation has
 
 - An `id`: persistent identifier. Relation IDs start with `r` and are always 15 characters long
 - A `target`: Subject ID of the referenced Subject
-- `properties`: possibly empty collection of property-value pairs
 
 #### Dependent Subject
 
@@ -236,8 +235,6 @@ These terms are current but contested; expect them to change:
 
 - **View Type** may be renamed to "Layout Type"
   ([#925](https://github.com/ProfessionalWiki/NeoWiki/issues/925)).
-- `RelationType` names two different things in the code: the graph edge label and the `relation` Property Type
-  ([#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630)).
 - "Allow multiple values", the `multiple` schema field, and multi-part Values name one concept three ways
   ([#712](https://github.com/ProfessionalWiki/NeoWiki/issues/712)).
 - Subjects have a `label` while Schemas, Layouts, and Mappings have a `name`, and a Subject without a label is shown

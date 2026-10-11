@@ -84,7 +84,6 @@ it( 'creates a number property definition with all fields', () => {
 it( 'creates a relation property definition with defaults', () => {
 	const json = {
 		type: 'relation',
-		relation: 'Employer',
 		targetSchema: 'Company',
 	};
 
@@ -92,7 +91,6 @@ it( 'creates a relation property definition with defaults', () => {
 
 	expect( property.type ).toBe( RelationType.typeName );
 
-	expect( property.relation ).toBe( 'Employer' );
 	expect( property.targetSchema ).toBe( 'Company' );
 	expect( property.multiple ).toBe( false );
 } );
@@ -100,7 +98,6 @@ it( 'creates a relation property definition with defaults', () => {
 it( 'creates a relation property definition with all fields', () => {
 	const json = {
 		type: 'relation',
-		relation: 'Employer',
 		targetSchema: 'Company',
 		multiple: true,
 		uniqueItems: false,

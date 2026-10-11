@@ -12,7 +12,6 @@
 		},
 		"Lead institution": {
 			"type": "relation",
-			"relation": "Led by",
 			"targetSchema": "Institution"
 		}
 	}

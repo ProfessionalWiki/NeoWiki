@@ -4,12 +4,11 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType as RelationPropertyType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 
 class RelationProperty extends PropertyDefinition {
 
@@ -19,16 +18,11 @@ class RelationProperty extends PropertyDefinition {
 		'properties' => [
 			'id' => [ 'type' => 'string' ],
 			'target' => [ 'type' => 'string' ],
-			'properties' => [
-				'type' => 'object',
-				'additionalProperties' => [ 'type' => [ 'string', 'number', 'boolean', 'null' ] ],
-			],
 		],
 	];
 
 	public function __construct(
 		PropertyCore $core,
-		private readonly RelationType $relationType,
 		private readonly SchemaReference $targetSchema,
 		private readonly bool $multiple
 
@@ -37,11 +31,7 @@ class RelationProperty extends PropertyDefinition {
 	}
 
 	public function getPropertyType(): string {
-		return RelationPropertyType::NAME;
-	}
-
-	public function getRelationType(): RelationType {
-		return $this->relationType;
+		return RelationType::NAME;
 	}
 
 	public function getTargetSchema(): SchemaReference {
@@ -55,7 +45,6 @@ class RelationProperty extends PropertyDefinition {
 	public static function fromPartialJson( PropertyCore $core, array $property, SchemaReferenceParser $schemaReferenceParser ): self {
 		return new self(
 			core: $core,
-			relationType: new RelationType( $property['relation'] ?? null ), // Required field, constructor throws on null
 			targetSchema: $schemaReferenceParser->fromJson( $property['targetSchema'] ?? '' ), // Required field, SchemaName throws on empty
 			multiple: $property['multiple'] ?? false,
 		);
@@ -63,7 +52,6 @@ class RelationProperty extends PropertyDefinition {
 
 	public function nonCoreToJson(): array {
 		return [
-			'relation' => $this->relationType->getText(),
 			'targetSchema' => $this->targetSchema->toJson(),
 			'multiple' => $this->multiple,
 		];

@@ -228,7 +228,7 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 			json_encode( [
 				'title' => TestSubject::DEFAULT_SCHEMA_ID,
 				'propertyDefinitions' => [
-					'Owner' => [ 'type' => 'relation', 'relation' => 'ownedBy', 'targetSchema' => 'Person' ],
+					'Owner' => [ 'type' => 'relation', 'targetSchema' => 'Person' ],
 				],
 			] )
 		);

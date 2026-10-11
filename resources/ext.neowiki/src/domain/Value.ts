@@ -54,7 +54,6 @@ export class Relation {
 	public constructor(
 		public readonly id: string | undefined,
 		public readonly target: SubjectId,
-		// TODO: add relation properties (like on backend)
 	) {
 	}
 
@@ -130,25 +129,18 @@ export function newUnregisteredTypeValue( typeName: string, raw: unknown ): Unre
 	};
 }
 
-export function relationValuesHaveSameTargets(
-	a: RelationValue | undefined,
-	b: RelationValue | undefined,
-): boolean {
-	if ( !a && !b ) {
-		return true;
-	}
-	if ( !a || !b ) {
-		return false;
-	}
+/**
+ * Keeps the Relation, and with it the ID, of each target the current value points at. A target it does not
+ * point at gets a new Relation.
+ */
+export function relationValueWithTargets( current: RelationValue | undefined, targets: string[] ): RelationValue {
+	const unclaimed = [ ...( current?.relations ?? [] ) ];
 
-	const aTargets = a.targetIds;
-	const bTargets = b.targetIds;
+	return new RelationValue( targets.map( ( target ) => {
+		const index = unclaimed.findIndex( ( relation ) => relation.target.text === target );
 
-	if ( aTargets.length !== bTargets.length ) {
-		return false;
-	}
-
-	return aTargets.every( ( target, i ) => target.text === bTargets[ i ].text );
+		return index === -1 ? newRelation( undefined, target ) : unclaimed.splice( index, 1 )[ 0 ];
+	} ) );
 }
 
 export function valueToJson( value: Value ): unknown {

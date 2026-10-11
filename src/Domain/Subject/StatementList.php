@@ -7,9 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
@@ -38,38 +36,24 @@ readonly class StatementList {
 		$this->statements = $statementsByPropertyName;
 	}
 
-	public function getTypedRelations( Schema $readerSchema ): TypedRelationList {
+	public function getTypedRelations(): TypedRelationList {
 		/**
 		 * @var TypedRelation[] $relations
 		 */
 		$relations = [];
 
 		foreach ( $this->statements as $statement ) {
-			if ( $statement->getPropertyType() === RelationType::NAME ) {
-				/**
-				 * @var RelationValue $value
-				 */
-				$value = $statement->getValue();
+			if ( $statement->getPropertyType() !== RelationType::NAME ) {
+				continue;
+			}
 
-				if ( $readerSchema->hasProperty( $statement->getPropertyName() ) ) {
-					$propertyDefinition = $readerSchema->getProperty( $statement->getPropertyName() );
+			/**
+			 * @var RelationValue $value
+			 */
+			$value = $statement->getValue();
 
-					// Writer's-schema drift: the Schema property is no longer a relation,
-					// so there is no relation type to project. Skipping keeps the graph
-					// projection from failing on data it cannot express.
-					if ( !$propertyDefinition instanceof RelationProperty ) {
-						continue;
-					}
-
-					foreach ( $value->relations as $relation ) {
-						$relations[] = new TypedRelation(
-							id: $relation->id,
-							targetId: $relation->targetId,
-							properties: $relation->properties,
-							type: $propertyDefinition->getRelationType()
-						);
-					}
-				}
+			foreach ( $value->relations as $relation ) {
+				$relations[] = $relation->withPropertyName( $statement->getPropertyName() );
 			}
 		}
 

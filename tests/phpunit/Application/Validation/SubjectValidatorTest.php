@@ -623,7 +623,7 @@ class SubjectValidatorTest extends TestCase {
 	private function newRelationProperty( bool $multiple = true ): RelationProperty {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: false, default: null ),
-			[ 'relation' => 'has', 'targetSchema' => self::TARGET_SCHEMA, 'multiple' => $multiple ],
+			[ 'targetSchema' => self::TARGET_SCHEMA, 'multiple' => $multiple ],
 			TestSources::newSchemaReferenceParser(),
 		);
 	}

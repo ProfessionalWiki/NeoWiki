@@ -23,18 +23,10 @@ readonly class RelationValue implements NeoValue {
 
 	public function toScalars(): array {
 		return array_map(
-			static function ( Relation $relation ): array {
-				$array = [
-					'id' => $relation->id->asString(),
-					'target' => $relation->targetId->text,
-				];
-
-				if ( $relation->hasProperties() ) {
-					$array['properties'] = $relation->properties->map;
-				}
-
-				return $array;
-			},
+			static fn ( Relation $relation ): array => [
+				'id' => $relation->id->asString(),
+				'target' => $relation->targetId->text,
+			],
 			$this->relations
 		);
 	}

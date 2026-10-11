@@ -39,21 +39,4 @@ class RdfLiteralFactoryTest extends TestCase {
 		$this->assertNull( RdfLiteralFactory::number( NAN ) );
 	}
 
-	public function testForScalarStringIsXsdString(): void {
-		$this->assertEquals( new Literal( 'Editor', $this->xsd( 'string' ) ), RdfLiteralFactory::forScalar( 'Editor' ) );
-	}
-
-	public function testForScalarBooleanIsXsdBoolean(): void {
-		$this->assertEquals( new Literal( 'false', $this->xsd( 'boolean' ) ), RdfLiteralFactory::forScalar( false ) );
-	}
-
-	public function testForScalarIntegerIsXsdInteger(): void {
-		$this->assertEquals( new Literal( '2019', $this->xsd( 'integer' ) ), RdfLiteralFactory::forScalar( 2019 ) );
-	}
-
-	public function testForScalarRejectsNullAndArrays(): void {
-		$this->assertNull( RdfLiteralFactory::forScalar( null ) );
-		$this->assertNull( RdfLiteralFactory::forScalar( [ 'x' ] ) );
-	}
-
 }

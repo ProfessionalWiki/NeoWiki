@@ -5,7 +5,6 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\Subject;
 
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
@@ -59,8 +58,8 @@ class Subject {
 		return $this->statements;
 	}
 
-	public function getTypedRelations( Schema $readerSchema ): TypedRelationList {
-		return $this->statements->getTypedRelations( $readerSchema );
+	public function getTypedRelations(): TypedRelationList {
+		return $this->statements->getTypedRelations();
 	}
 
 	public function getReferencedSubjects(): SubjectIdList {

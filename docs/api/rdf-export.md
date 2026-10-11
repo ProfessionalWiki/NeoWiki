@@ -28,7 +28,7 @@ All NeoWiki IRIs live under `$base` (`$wgNeoWikiRdfBaseUri`). Standard vocabular
 |---|---|---|
 | `neo:` | `$base/ontology/` | NeoWiki vocabulary terms (`neo:Page`, `neo:Relation`, `neo:hasSubject`, `neo:source`, …) |
 | `neo-subj:` | `$base/entity/` | Subject IRIs (`neo-subj:s1demo8aaaaaab5`) |
-| `neo-prop:` | `$base/prop/` | Property and Relation-type predicates (`neo-prop:Has_author`) |
+| `neo-prop:` | `$base/prop/` | Property predicates (`neo-prop:Has_author`) |
 | `neo-schema:` | `$base/schema/` | Schema classes (`neo-schema:Person`) |
 | `neo-rel:` | `$base/relation/` | Relation node IRIs (`neo-rel:r1demo8aaaaaaD6`) |
 | `neo-page:` | `$base/page/` | Page resource IRIs (`neo-page:42`) — the subject of the page-metadata triples |
@@ -43,11 +43,11 @@ QLever always does, and Oxigraph does with `--union-default-graph` — and on a 
 page data only through `GRAPH`. Scope each pattern by the graph holding it rather than wrapping a whole query in one
 `GRAPH` block: patterns sharing a block must match within a single page.
 
-Property, Schema, and Relation-type names, and Relation-property keys, form the local part of their IRI: spaces become
-underscores (`Has author` → `neo-prop:Has_author`), and characters illegal in an IRI (`%`, `< > " { } | ^ \`, backtick,
-control characters) are percent-encoded. Non-ASCII Unicode is kept raw. **Caveat:** the space→underscore step collides
-when a name already contains an underscore — `Has author` and `Has_author` share the `neo-prop:Has_author` IRI, which
-the native projection accepts. The base URI is trusted admin config and is not encoded.
+Property and Schema names form the local part of their IRI: spaces become underscores (`Has author` →
+`neo-prop:Has_author`), and characters illegal in an IRI (`%`, `< > " { } | ^ \`, backtick, control characters) are
+percent-encoded. Non-ASCII Unicode is kept raw. **Caveat:** the space→underscore step collides when a name already
+contains an underscore — `Has author` and `Has_author` share the `neo-prop:Has_author` IRI, which the native projection
+accepts. The base URI is trusted admin config and is not encoded.
 
 A `url` value projects as an **IRI object** (`<https://…>`); a value that is not a valid absolute IRI falls back to
 an `xsd:anyURI` literal, so nothing is lost. The other value types map to `xsd` datatypes: `text`/`select` →
@@ -71,12 +71,8 @@ A Relation is emitted twice, so that a simple query never has to navigate reific
 
 | Layer | Triples |
 |---|---|
-| Direct | `neo-subj:<source> neo-prop:<RelationType> neo-subj:<target>` |
-| Reified | `neo-rel:<relationId> a neo:Relation`, carrying `neo:source`, `neo:target`, `neo:relationType`, and each scalar Relation property as `neo-prop:<key>` |
-
-Both are always present, including for a Relation carrying no properties: the reified node is what preserves the
-Relation ID. The direct predicate is the **Relation type** declared in the Schema, which need not match the property
-name, and `neo:relationType`'s object is that same predicate IRI. Non-scalar Relation property values are dropped.
+| Direct | `neo-subj:<source> neo-prop:<property> neo-subj:<target>` |
+| Reified | `neo-rel:<relationId> a neo:Relation`, carrying `neo:source`, `neo:target`, and `neo:relationType neo-prop:<property>` |
 
 Page metadata describes the `neo-page:` resource, in the same named graph as the page's Subjects:
 

@@ -94,12 +94,10 @@
 		},
 		"relation/relation": {
 			"type": "relation",
-			"relation": "Has product",
 			"targetSchema": "Product"
 		},
 		"relation/relation (many)": {
 			"type": "relation",
-			"relation": "Has product",
 			"targetSchema": "Product",
 			"multiple": true
 		}

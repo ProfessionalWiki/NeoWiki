@@ -6,7 +6,6 @@ namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence;
 
 use Laudis\Neo4j\Contracts\TransactionInterface;
 use Laudis\Neo4j\Databags\SummarizedResult;
-use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
 
 /**
@@ -95,21 +94,13 @@ class Neo4jPageRelationUpdater {
 				$rows[] = [
 					'subjectId' => (string)$subjectId,
 					'relationId' => $relation->id->asString(),
-					'relationType' => $relation->type->text,
+					'relationType' => $relation->propertyName->text,
 					'targetId' => $relation->targetId->text,
-					'properties' => $this->relationProperties( $relation ),
 				];
 			}
 		}
 
 		return $rows;
-	}
-
-	private function relationProperties( TypedRelation $relation ): array {
-		return array_merge(
-			$relation->properties->map,
-			[ 'id' => $relation->id->asString() ]
-		);
 	}
 
 	/**
@@ -154,8 +145,7 @@ class Neo4jPageRelationUpdater {
 				ON CREATE SET subject.wiki_id = $wikiId
 				MERGE (target:Subject {id: row.targetId})
 				ON CREATE SET target.wiki_id = $wikiId
-				MERGE (subject)-[relation:$(row.relationType) {id: row.relationId}]->(target)
-				SET relation = row.properties',
+				MERGE (subject)-[relation:$(row.relationType) {id: row.relationId}]->(target)',
 			[
 				'relations' => $relationRows,
 				'wikiId' => $this->wikiId,

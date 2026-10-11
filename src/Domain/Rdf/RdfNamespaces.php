@@ -144,10 +144,10 @@ readonly class RdfNamespaces {
 	}
 
 	/**
-	 * Turns a user-authored name (a Property, Schema or Relation-Type name, or a Relation-property
-	 * key) into the local part of its IRI. Every string that enters an IRI here is untrusted, so the
-	 * encoding is a security boundary, not just cosmetics: without it a name like `Rev>2020` would
-	 * close the IRIREF early and a crafted name could forge extra triples.
+	 * Turns a user-authored name (a Property or Schema name) into the local part of its IRI. Every
+	 * string that enters an IRI here is untrusted, so the encoding is a security boundary, not just
+	 * cosmetics: without it a name like `Rev>2020` would close the IRIREF early and a crafted name could
+	 * forge extra triples.
 	 *
 	 * The rule (NativeRdfProjection.md Q7):
 	 * 1. Spaces become underscores, keeping the spec's readable `neo-prop:Has_author` convention.

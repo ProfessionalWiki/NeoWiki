@@ -57,7 +57,6 @@ class GetSubjectQueryTest extends TestCase {
 							new RelationValue( TestRelation::build(
 								id: 'r11111111111129',
 								targetId: 's11111111111131',
-								properties: [ 'relation property' => 'relation value' ]
 							) ),
 							RelationType::NAME,
 						),
@@ -101,9 +100,6 @@ class GetSubjectQueryTest extends TestCase {
 									[
 										'id' => 'r11111111111129',
 										'target' => 's11111111111131',
-										'properties' => [
-											'relation property' => 'relation value'
-										],
 									]
 								]
 							]
@@ -297,7 +293,6 @@ class GetSubjectQueryTest extends TestCase {
 					new RelationValue( TestRelation::build(
 						id: 'r11111111111134',
 						targetId: 's11111111111133',
-						properties: [ 'relation property' => 'relation value' ]
 					) ),
 					RelationType::NAME,
 				),

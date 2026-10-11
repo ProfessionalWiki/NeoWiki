@@ -56,15 +56,15 @@ class SchemaContentHandlerValidateSaveTest extends MediaWikiIntegrationTestCase 
 	 */
 	public function testFirstMessageNamesEveryErrorAndCountsThem(): void {
 		$status = $this->validate( '{ "propertyDefinitions": {
-			"Owner": { "type": "relation", "relation": "Owner" },
-			"Maker": { "type": "relation", "relation": " ", "targetSchema": "Company" }
+			"Owner": { "type": "relation" },
+			"Maker": { "type": "relation", "targetSchema": " Company" }
 		} }' );
 
 		$text = wfMessage( $status->getMessages()[0] )->text();
 
 		$this->assertStringContainsString( '2 errors', $text );
 		$this->assertStringContainsString( '/propertyDefinitions/Owner', $text );
-		$this->assertStringContainsString( '/propertyDefinitions/Maker/relation', $text );
+		$this->assertStringContainsString( '/propertyDefinitions/Maker/targetSchema', $text );
 	}
 
 }

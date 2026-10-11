@@ -18,14 +18,12 @@
 		},
 		"Authors": {
 			"type": "relation",
-			"relation": "Authored by",
 			"targetSchema": "Author",
 			"multiple": true,
 			"required": true
 		},
 		"Project": {
 			"type": "relation",
-			"relation": "Part of project",
 			"targetSchema": "Project"
 		},
 		"URL": {

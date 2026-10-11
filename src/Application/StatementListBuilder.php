@@ -8,7 +8,6 @@ use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
@@ -142,7 +141,6 @@ readonly class StatementListBuilder {
 			$relations[] = new Relation(
 				id: $this->buildRelationId( $relation ),
 				targetId: $this->subjectIdParser->parseOrThrow( $relation['target'] ?? null ),
-				properties: new RelationProperties( $relation['properties'] ?? [] )
 			);
 		}
 

@@ -615,12 +615,12 @@ describe( 'SchemaEditor', () => {
 		function relationPropertyWithoutTarget( name: string ): PropertyDefinition {
 			const noTarget: Partial<RelationProperty> = { targetSchema: undefined };
 
-			return { ...newRelationProperty( { name, relation: 'Made by' } ), ...noTarget };
+			return { ...newRelationProperty( { name } ), ...noTarget };
 		}
 
 		it( 'reports nothing when every relation property has what it needs', () => {
 			const wrapper = createWrapper( schemaWith(
-				newRelationProperty( { name: 'Maker', relation: 'Made by', targetSchema: 'Company' } ),
+				newRelationProperty( { name: 'Maker', targetSchema: 'Company' } ),
 			) );
 
 			expect( saveBlocker( wrapper ) ).toBeNull();

@@ -155,7 +155,6 @@ JSON
 	"propertyDefinitions": {
 		"partner": {
 			"type": "relation",
-			"relation": "Partner",
 			"targetSchema": "GetPageSubjectsApiTestSchema"
 		}
 	}
@@ -229,7 +228,6 @@ JSON
 	"propertyDefinitions": {
 		"partner": {
 			"type": "relation",
-			"relation": "Partner",
 			"targetSchema": "GetPageSubjectsApiTestSchema"
 		}
 	}
@@ -350,7 +348,6 @@ JSON
 	"propertyDefinitions": {
 		"MyRelation": {
 			"type": "relation",
-			"relation": "MyRelation",
 			"targetSchema": "GetPageSubjectsApiTestSchema"
 		}
 	}

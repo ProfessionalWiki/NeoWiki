@@ -74,7 +74,7 @@ import NeoMultiLookupInput from '@/components/common/NeoMultiLookupInput.vue';
 import SubjectPicker from '@/components/common/SubjectPicker.vue';
 import { RelationTargetEditingKey, ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/components/Value/ValueInputContract';
 import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
-import { Value, ValueType, RelationValue, newRelation, relationValuesHaveSameTargets } from '@/domain/Value';
+import { Value, ValueType, RelationValue, relationValueWithTargets } from '@/domain/Value';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useServerViolations, violationStatus } from '@/composables/useServerViolations.ts';
 
@@ -157,20 +157,7 @@ const selectedIds = computed( (): ( string | null )[] => {
 
 function onSingleSelectionChanged( id: string | null ): void {
 	singleHasUnmatchedText.value = false;
-
-	let newRelationValue: RelationValue | undefined;
-	if ( id !== null ) {
-		newRelationValue = new RelationValue( [ newRelation( undefined, id ) ] );
-	} else {
-		newRelationValue = undefined;
-	}
-
-	if ( !relationValuesHaveSameTargets( internalValue.value, newRelationValue ) ) {
-		internalValue.value = newRelationValue;
-	}
-
-	emit( 'update:modelValue', newRelationValue );
-	emitClears( 'all' );
+	onSelectionsChanged( [ id ] );
 }
 
 function onSingleBlur( hasUnmatchedText: boolean ): void {
@@ -178,19 +165,10 @@ function onSingleBlur( hasUnmatchedText: boolean ): void {
 }
 
 function onSelectionsChanged( ids: ( string | null )[] ): void {
-	const nonNullIds = ids.filter( ( id ): id is string => id !== null );
+	const targets = ids.filter( ( id ): id is string => id !== null );
+	const newRelationValue = targets.length > 0 ? relationValueWithTargets( internalValue.value, targets ) : undefined;
 
-	let newRelationValue: RelationValue | undefined;
-	if ( nonNullIds.length > 0 ) {
-		const relations = nonNullIds.map( ( id ) => newRelation( undefined, id ) );
-		newRelationValue = new RelationValue( relations );
-	} else {
-		newRelationValue = undefined;
-	}
-
-	if ( !relationValuesHaveSameTargets( internalValue.value, newRelationValue ) ) {
-		internalValue.value = newRelationValue;
-	}
+	internalValue.value = newRelationValue;
 
 	emit( 'update:modelValue', newRelationValue );
 	emitClears( 'all' );

@@ -16,13 +16,11 @@
 		},
 		"Creator": {
 			"type": "relation",
-			"relation": "Created by",
 			"targetSchema": "Artist",
 			"required": true
 		},
 		"Located at": {
 			"type": "relation",
-			"relation": "Held at",
 			"targetSchema": "Museum"
 		},
 		"Image": {

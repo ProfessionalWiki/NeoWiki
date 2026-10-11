@@ -51,12 +51,10 @@ class GetReferencingSubjectsApiTest extends NeoWikiIntegrationTestCase {
 	"propertyDefinitions": {
 		"Made in": {
 			"type": "relation",
-			"relation": "Made in",
 			"targetSchema": "GetReferencingSubjectsTestSchema"
 		},
 		"Sold in": {
 			"type": "relation",
-			"relation": "Sold in",
 			"targetSchema": "GetReferencingSubjectsTestSchema"
 		}
 	}

@@ -6,7 +6,6 @@
 		},
 		"Affiliation": {
 			"type": "relation",
-			"relation": "Affiliated with",
 			"targetSchema": "Institution"
 		},
 		"ORCID": {

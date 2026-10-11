@@ -6,7 +6,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
@@ -15,7 +14,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\Domain\Relation\RelationType
  * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition
  * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty
  */
@@ -28,7 +26,6 @@ class RelationPropertyTest extends PropertyTestCase {
 				required: true,
 				default: null
 			),
-			relationType: new RelationType( 'Type' ),
 			targetSchema: SchemaReference::local( new SchemaName( 'Schema' ) ),
 			multiple: true
 		);
@@ -36,7 +33,6 @@ class RelationPropertyTest extends PropertyTestCase {
 		$this->assertSame( 'foo', $property->getDescription() );
 		$this->assertTrue( $property->isRequired() );
 		$this->assertNull( $property->getDefault() );
-		$this->assertSame( 'Type', $property->getRelationType()->getText() );
 		$this->assertSame( 'Schema', $property->getTargetSchema()->getText() );
 		$this->assertTrue( $property->allowsMultipleValues() );
 	}
@@ -49,7 +45,6 @@ class RelationPropertyTest extends PropertyTestCase {
 	"description": "",
 	"required": false,
 	"default": null,
-	"relation": "type",
 	"targetSchema": "otherwiki:Company",
 	"multiple": false
 }
@@ -65,7 +60,6 @@ JSON
 	"description": "",
 	"required": false,
 	"default": null,
-	"relation": "type",
 	"targetSchema": "schema",
 	"multiple": false
 }
@@ -74,7 +68,6 @@ JSON,
 				<<<JSON
 {
 	"type": "relation",
-	"relation": "type",
 	"targetSchema": "schema"
 }
 JSON
@@ -90,7 +83,6 @@ JSON
 	"description": "foo",
 	"required": true,
 	"default": null,
-	"relation": "type",
 	"targetSchema": "schema",
 	"multiple": true
 }
@@ -106,7 +98,6 @@ JSON
 	"description": "",
 	"required": false,
 	"default": null,
-	"relation": "type",
 	"targetSchema": "schema",
 	"multiple": false
 }
@@ -122,7 +113,6 @@ JSON
 	"description": "",
 	"required": false,
 	"default": null,
-	"relation": "type",
 	"targetSchema": "schema",
 	"multiple": { "value": false, "severity": "error" }
 }
@@ -130,15 +120,10 @@ JSON
 		);
 	}
 
-	public function testExceptionOnMissingRelationType(): void {
-		$this->expectException( InvalidArgumentException::class );
-		$this->fromJson(
-			<<<JSON
-{
-	"type": "relation",
-	"targetSchema": "schema"
-}
-JSON
+	public function testIgnoresALeftoverRelationName(): void {
+		$this->assertArrayNotHasKey(
+			'relation',
+			$this->fromJson( '{ "type": "relation", "relation": "Works for", "targetSchema": "Company" }' )->toJson()
 		);
 	}
 
@@ -147,8 +132,7 @@ JSON
 		$this->fromJson(
 			<<<JSON
 {
-	"type": "relation",
-	"relation": "type"
+	"type": "relation"
 }
 JSON
 		);
@@ -160,7 +144,6 @@ JSON
 			<<<JSON
 {
 	"type": "relation",
-	"relation": "type",
 	"targetSchema": ""
 }
 JSON
@@ -168,7 +151,7 @@ JSON
 	}
 
 	public function testValueIsAnArrayOfTargetedRelations(): void {
-		$this->assertSame(
+		$this->assertEquals(
 			[
 				'type' => 'array',
 				'items' => [
@@ -177,10 +160,6 @@ JSON
 					'properties' => [
 						'id' => [ 'type' => 'string' ],
 						'target' => [ 'type' => 'string' ],
-						'properties' => [
-							'type' => 'object',
-							'additionalProperties' => [ 'type' => [ 'string', 'number', 'boolean', 'null' ] ],
-						],
 					],
 				],
 			],

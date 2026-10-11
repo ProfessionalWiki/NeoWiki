@@ -32,16 +32,6 @@ class SchemaTest extends TestCase {
 		);
 	}
 
-	public function testIsRelationProperty(): void {
-		$schema = $this->newSchemaWithProperties( [
-			'name' => TestProperty::buildText(),
-			'ceo' => TestProperty::buildRelation(),
-		] );
-
-		$this->assertFalse( $schema->isRelationProperty( 'name' ) );
-		$this->assertTrue( $schema->isRelationProperty( 'ceo' ) );
-	}
-
 	public function testGetRelationProperties(): void {
 		$ceoProperty = TestProperty::buildRelation( description: 'The company CEO', targetSchema: new SchemaName( 'Person' ) );
 		$barProperty = TestProperty::buildRelation( targetSchema: new SchemaName( 'Tomato' ) );

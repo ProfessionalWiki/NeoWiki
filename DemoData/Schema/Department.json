@@ -11,7 +11,6 @@
 		},
 		"Lead": {
 			"type": "relation",
-			"relation": "Led by",
 			"targetSchema": "Employee"
 		}
 	}

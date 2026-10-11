@@ -6,7 +6,6 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
@@ -66,7 +65,6 @@ class StatementDeserializer {
 			$relations[] = new Relation(
 				id: new RelationId( $relation['id'] ),
 				targetId: $this->subjectIdParser->parseOrThrow( $relation['target'] ),
-				properties: new RelationProperties( $relation['properties'] ?? [] )
 			);
 		}
 

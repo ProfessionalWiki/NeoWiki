@@ -17,7 +17,6 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -299,7 +298,6 @@ class SubjectResolverTest extends TestCase {
 		return new Relation(
 			id: new RelationId( 'r1test5cccccccc' ),
 			targetId: new SubjectId( self::TARGET_SUBJECT_ID ),
-			properties: new RelationProperties( [] ),
 		);
 	}
 

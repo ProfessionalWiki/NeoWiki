@@ -16,7 +16,7 @@ Two node types and two relationship categories:
 
 ```
 (:Page)-[:HasSubject {isMain}]->(:Subject:SchemaName)
-(:Subject)-[:RelationType {id, ...}]->(:Subject)
+(:Subject)-[:PropertyName {id}]->(:Subject)
 ```
 
 ![A Page node with HasSubject edges to a Museum Subject and an Attendance Subject, typed Relation edges from Attendance to Museum and from Museum to a City Subject and to a stub node, and Statement values as node properties](graph-model.svg)
@@ -132,14 +132,13 @@ A page can have at most one Main Subject and any number of other Subjects
 
 ### Typed Relations
 
-Subject-to-Subject relationships represent Relations. The relationship type in Neo4j is the Relation Type defined in the
-Property Definition (e.g. `Has author`, `Has product`). A type that is not a valid Cypher identifier must be
-backtick-escaped when read (`` -[:`Has author`]-> ``).
+Subject-to-Subject relationships represent Relations. The relationship type in Neo4j is the name of the property
+holding the Relation (e.g. `Authors`, `Birth place`). A type that is not a valid Cypher identifier must be
+backtick-escaped when read (`` -[:`Birth place`]-> ``).
 
 | Property | Neo4j Type | Description |
 |----------|------------|-------------|
 | `id` | string | Relation ID, 15 characters starting with `r` |
-| *(additional)* | scalar | Any properties from the Relation's property map |
 
 When a Subject is removed while other Subjects still reference it, its node is kept as a
 [stub](#stub-subject-nodes) for as long as those references last.

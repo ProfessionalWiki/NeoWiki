@@ -192,6 +192,17 @@ describe( 'RelationInput', () => {
 			expect( value.relations[ 0 ].target.text ).toBe( 's1demo1aaaaaaa1' );
 		} );
 
+		it( 'keeps the Relation ID when its target is picked again', async () => {
+			const relation = newRelation( 'r1demo1aaaaaaa1', 's1demo1aaaaaaa1' );
+			const wrapper = newWrapper( { modelValue: new RelationValue( [ relation ] ) } );
+
+			wrapper.findComponent( SubjectPicker ).vm.$emit( 'update:selected', 's1demo1aaaaaaa1' );
+			await wrapper.vm.$nextTick();
+
+			expect( ( wrapper.emitted( 'update:modelValue' )![ 0 ][ 0 ] as RelationValue ).relations )
+				.toEqual( [ relation ] );
+		} );
+
 		it( 'emits undefined when selection is cleared', async () => {
 			const wrapper = newWrapper( {
 				modelValue: new RelationValue( [ newRelation( undefined, 's1demo1aaaaaaa1' ) ] ),
@@ -508,6 +519,27 @@ describe( 'RelationInput', () => {
 			expect( value.relations ).toHaveLength( 2 );
 			expect( value.relations[ 0 ].target.text ).toBe( 's1demo1aaaaaaa1' );
 			expect( value.relations[ 1 ].target.text ).toBe( 's1demo5sssssss1' );
+		} );
+
+		it( 'keeps the IDs of the Relations whose targets stay selected', async () => {
+			const wrapper = newWrapper( {
+				modelValue: new RelationValue( [
+					newRelation( 'r1demo1aaaaaaa1', 's1demo1aaaaaaa1' ),
+					newRelation( 'r1demo5rrrrrrr1', 's1demo5sssssss1' ),
+				] ),
+				property: newRelationProperty( { multiple: true } ),
+			} );
+
+			wrapper.findComponent( NeoMultiLookupInput ).vm.$emit(
+				'update:modelValue', [ 's1demo1aaaaaaa1', 's1demo5sssssss1', 's1demo9sssssss1' ],
+			);
+			await wrapper.vm.$nextTick();
+
+			expect( ( wrapper.emitted( 'update:modelValue' )![ 0 ][ 0 ] as RelationValue ).relations ).toEqual( [
+				newRelation( 'r1demo1aaaaaaa1', 's1demo1aaaaaaa1' ),
+				newRelation( 'r1demo5rrrrrrr1', 's1demo5sssssss1' ),
+				newRelation( undefined, 's1demo9sssssss1' ),
+			] );
 		} );
 
 		it( 'emits undefined when all selections are null', async () => {

@@ -42,7 +42,7 @@ describe( 'exportSchemas', () => {
 						type: 'select',
 						options: [ { id: 'o1aaaaaaaaaaaa1', label: 'Alive' }, { id: 'o1aaaaaaaaaaaa2', label: 'Dead' } ],
 					},
-					Employer: { type: 'relation', relation: 'Works at', targetSchema: 'Company', multiple: true },
+					Employer: { type: 'relation', targetSchema: 'Company', multiple: true },
 					Signature: { type: 'notRegisteredHere', strokes: 3 },
 				},
 			} ),

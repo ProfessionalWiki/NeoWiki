@@ -19,7 +19,7 @@ const SchemaPickerStub = {
 };
 
 function relationProperty( overrides: Partial<RelationProperty> = {} ): RelationProperty {
-	return { ...newRelationProperty( {} ), relation: 'Has product', targetSchema: 'Product', ...overrides };
+	return { ...newRelationProperty( {} ), targetSchema: 'Product', ...overrides };
 }
 
 describe( 'RelationAttributesEditor', () => {
@@ -71,15 +71,6 @@ describe( 'RelationAttributesEditor', () => {
 
 			expect( wrapper.findComponent( SchemaPickerStub ).exists() ).toBe( true );
 			expect( wrapper.find( 'input[type="checkbox"]' ).exists() ).toBe( true );
-		} );
-
-		// The relation type names the graph edge label, which is not a user-facing concept.
-		it( 'offers no field for the relation type', () => {
-			const wrapper = newWrapper( {
-				property: relationProperty( { relation: 'Has product' } ),
-			} );
-
-			expect( wrapper.find( '.relation-attributes__relation' ).exists() ).toBe( false );
 		} );
 
 		it( 'passes the current target schema to SchemaPicker', () => {

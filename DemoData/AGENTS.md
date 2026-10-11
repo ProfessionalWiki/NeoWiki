@@ -85,11 +85,11 @@ Subject, relation, and option IDs:
 - **Text properties land in Neo4j as arrays even when declared `"multiple": false`.** Cypher queries
   on text properties must index: `p.Venue[0] AS Venue`. Otherwise the cell renders as the literal
   string `table` (Lua `tostring()` on a list).
-- Use backticks for property and relation names with spaces:
+- A relation is an edge named after its property. Use backticks for property names with spaces:
 
   ```cypher
   MATCH (m:Museum) RETURN m.`Annual visitors`
-  MATCH (p:Publication)-[:`Part of project`]->(pr:Project) RETURN pr.name
+  MATCH (a:Artwork)-[:`Located at`]->(m:Museum) RETURN m.name
   ```
 
 - The Neo4j projection can lag after edits. If a query returns 0 rows when you expect data, run

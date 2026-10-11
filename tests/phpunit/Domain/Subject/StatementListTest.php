@@ -5,17 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty;
-use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
-use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 
 /**
@@ -25,60 +19,33 @@ class StatementListTest extends TestCase {
 
 	public function testGetRelationsReturnsEmptyArrayWhenThereAreNoStatements(): void {
 		$statements = new StatementList( [] );
-		$schema = $this->newSchemaWithSomeRelations();
 
-		$this->assertSame( [], $statements->getTypedRelations( $schema )->relations );
+		$this->assertSame( [], $statements->getTypedRelations()->relations );
 	}
 
-	private function newSchemaWithSomeRelations(): Schema {
-		return TestSchema::build(
-			properties: new PropertyDefinitions( [
-				'string1' => TestProperty::buildText(),
-				'relation1' => TestProperty::buildRelation( relationType: 'Type1', targetSchema: 'Schema1' ),
-				'string2' => TestProperty::buildText(),
-				'relation2' => TestProperty::buildRelation( relationType: 'Type2', targetSchema: 'Schema2', multiple: true ),
-			] )
-		);
-	}
+	public function testGetTypedRelationsTypesEachRelationWithItsPropertyName(): void {
+		$employer = TestRelation::build( targetId: 's11111111111111' );
+		$firstFriend = TestRelation::build( targetId: 's11111111111112' );
+		$secondFriend = TestRelation::build( targetId: 's11111111111113' );
 
-	public function testGetTypedRelationsBuildsRelationsFromMatchingSchemaProperties(): void {
 		$statements = new StatementList( [
+			TestStatement::build( property: 'Employer', value: new RelationValue( $employer ), propertyType: RelationType::NAME ),
+			TestStatement::build( property: 'Nickname', value: 'Joe' ),
 			TestStatement::build(
-				property: 'relation1',
-				value: new RelationValue( TestRelation::build( targetId: 's11111111111111' ) ),
+				property: 'Close friends',
+				value: new RelationValue( $firstFriend, $secondFriend ),
 				propertyType: RelationType::NAME
 			),
 		] );
 
-		$relations = $statements->getTypedRelations( $this->newSchemaWithSomeRelations() )->relations;
-
-		$this->assertCount( 1, $relations );
-		$this->assertSame( 'Type1', $relations[0]->type->text );
-	}
-
-	/**
-	 * Writer's-schema drift: the Statement is still a relation but the Schema property is
-	 * no longer one. The graph projection must skip it rather than fail.
-	 */
-	public function testGetTypedRelationsSkipsRelationWhoseSchemaPropertyIsNotARelation(): void {
-		$statements = new StatementList( [
-			TestStatement::build(
-				property: 'Swatch',
-				value: new RelationValue( TestRelation::build( targetId: 's11111111111111' ) ),
-				propertyType: RelationType::NAME
-			),
-		] );
-
-		$schema = TestSchema::build(
-			properties: new PropertyDefinitions( [
-				'Swatch' => UnregisteredTypeProperty::fromPartialJson(
-					new PropertyCore( description: '', required: false, default: null ),
-					[ 'type' => 'color' ],
-				),
-			] )
+		$this->assertEquals(
+			[
+				$employer->withPropertyName( new PropertyName( 'Employer' ) ),
+				$firstFriend->withPropertyName( new PropertyName( 'Close friends' ) ),
+				$secondFriend->withPropertyName( new PropertyName( 'Close friends' ) ),
+			],
+			$statements->getTypedRelations()->relations
 		);
-
-		$this->assertSame( [], $statements->getTypedRelations( $schema )->relations );
 	}
 
 	public function testGetReferencedSubjectsReturnsEmptyArrayForEmptyList(): void {

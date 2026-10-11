@@ -46,7 +46,5 @@ Components are named noun-first with a role suffix:
 
 Do not add new uses of these names until the linked decision lands:
 
-- `RelationType` currently names both the graph edge label and the `relation` Property Type
-  ([#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630)).
 - `Neo4jPlugin` vs `GraphDatabasePlugin`: which concept "Plugin" names is unsettled
   ([#1001](https://github.com/ProfessionalWiki/NeoWiki/pull/1001)).

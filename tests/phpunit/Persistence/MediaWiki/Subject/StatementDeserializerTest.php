@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -129,12 +128,10 @@ class StatementDeserializerTest extends TestCase {
 					new Relation(
 						id: new RelationId( 'rTestSDT1111rr1' ),
 						targetId: new SubjectId( 'sTestSDT1111111' ),
-						properties: new RelationProperties( [] ),
 					),
 					new Relation(
 						id: new RelationId( 'rTestSDT1111rr2' ),
 						targetId: new SubjectId( 'sTestSDT1111112' ),
-						properties: new RelationProperties( [ 'Foo' => 'Bar' ] ),
 					),
 				)
 			),
@@ -150,13 +147,27 @@ class StatementDeserializerTest extends TestCase {
 						[
 							'id' => 'rTestSDT1111rr2',
 							'target' => 'sTestSDT1111112',
-							'properties' => [
-								'Foo' => 'Bar',
-							],
 						],
 					],
 				]
 			)
+		);
+	}
+
+	public function testIgnoresPropertiesStoredOnARelation(): void {
+		$statement = $this->newDeserializer()->deserialize(
+			'MyRelation',
+			[
+				'propertyType' => 'relation',
+				'value' => [
+					[ 'id' => 'rTestSDT1111rr1', 'target' => 'sTestSDT1111111', 'properties' => [ 'Since' => 2019 ] ],
+				],
+			]
+		);
+
+		$this->assertEquals(
+			[ [ 'id' => 'rTestSDT1111rr1', 'target' => 'sTestSDT1111111' ] ],
+			$statement->getValue()->toScalars()
 		);
 	}
 

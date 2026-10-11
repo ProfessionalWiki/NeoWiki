@@ -3,7 +3,6 @@
 	"propertyDefinitions": {
 		"Museum": {
 			"type": "relation",
-			"relation": "Recorded at",
 			"targetSchema": "Museum",
 			"required": true
 		},

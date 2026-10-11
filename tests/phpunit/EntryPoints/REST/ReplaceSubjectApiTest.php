@@ -682,7 +682,7 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->createSchema(
 			'RelationEnforcementSchema',
 			'{"title":"RelationEnforcementSchema","propertyDefinitions":'
-				. '{"Owner":{"type":"relation","relation":"ownedBy","targetSchema":"Person"}}}'
+				. '{"Owner":{"type":"relation","targetSchema":"Person"}}}'
 		);
 
 		$this->createPageWithSubjects(

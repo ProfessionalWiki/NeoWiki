@@ -16,7 +16,6 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
@@ -293,7 +292,6 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 					new Relation(
 						id: new RelationId( 'r1test5cccccccc' ),
 						targetId: new SubjectId( self::TARGET_SUBJECT_ID ),
-						properties: new RelationProperties( [] ),
 					)
 				)
 			)
@@ -316,7 +314,6 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 					new Relation(
 						id: new RelationId( 'r1test5cccccccc' ),
 						targetId: new SubjectId( self::TARGET_SUBJECT_ID ),
-						properties: new RelationProperties( [] ),
 					)
 				)
 			)
@@ -350,12 +347,10 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 					new Relation(
 						id: new RelationId( 'r1test5dddddddd' ),
 						targetId: new SubjectId( 's1test5bbbbbbbb' ),
-						properties: new RelationProperties( [] ),
 					),
 					new Relation(
 						id: new RelationId( 'r1test5eeeeeeee' ),
 						targetId: new SubjectId( 's1test5cccccccc' ),
-						properties: new RelationProperties( [] ),
 					),
 				)
 			)

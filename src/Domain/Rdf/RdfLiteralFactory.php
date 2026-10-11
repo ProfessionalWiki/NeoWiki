@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Domain\Rdf;
 /**
  * Builds {@see Literal}s with the correct xsd datatype for the native projection. Centralizes the
  * numeric lexical rules (fractionless floats project as xsd:integer; decimals avoid scientific
- * notation) so the value mappers and the relation-property projection share one implementation.
+ * notation).
  */
 class RdfLiteralFactory {
 
@@ -38,19 +38,6 @@ class RdfLiteralFactory {
 		}
 
 		return self::typed( self::decimalLexical( $number ), 'decimal' );
-	}
-
-	/**
-	 * Maps a raw scalar (as found in a Relation's property map) to a Literal, or null when it cannot
-	 * be represented (e.g. null, or a non-finite float).
-	 */
-	public static function forScalar( mixed $value ): ?Literal {
-		return match ( true ) {
-			is_string( $value ) => self::typed( $value, 'string' ),
-			is_bool( $value ) => self::boolean( $value ),
-			is_int( $value ), is_float( $value ) => self::number( $value ),
-			default => null,
-		};
 	}
 
 	private static function decimalLexical( float $number ): string {

@@ -11,7 +11,6 @@ use Psr\Log\NullLogger;
 use Psr\Log\Test\TestLogger;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
@@ -273,12 +272,10 @@ JSON
 						new Relation(
 							id: new RelationId( 'rTestSCDDrrrrr1' ),
 							targetId: new SubjectId( 'sTestSCDD111112' ),
-							properties: new RelationProperties( [] )
 						),
 						new Relation(
 							id: new RelationId( 'rTestSCDDrrrrr2' ),
 							targetId: new SubjectId( 'sTestSCDD111113' ),
-							properties: new RelationProperties( [] )
 						)
 					)
 				),

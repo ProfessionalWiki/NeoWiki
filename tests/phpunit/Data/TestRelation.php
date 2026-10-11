@@ -6,7 +6,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\Data;
 
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\IncrementalIdGenerator;
 
@@ -20,12 +19,10 @@ class TestRelation {
 	public static function build(
 		string|RelationId|null $id = null,
 		string $targetId = self::DEFAULT_TARGET_ID, // TODO: also generate predictable IDs
-		array|RelationProperties $properties = []
 	): Relation {
 		return new Relation(
 			self::defaultId( $id ),
 			new SubjectId( $targetId ),
-			is_array( $properties ) ? new RelationProperties( $properties ) : $properties
 		);
 	}
 

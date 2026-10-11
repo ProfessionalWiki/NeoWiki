@@ -9,7 +9,6 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -53,7 +52,6 @@ class RelationTypeValidateTest extends TestCase {
 		$relation = new Relation(
 			id: new RelationId( 'r123456789abcde' ),
 			targetId: new SubjectId( 's12345678abcdef' ),
-			properties: new RelationProperties( [] ),
 		);
 
 		$violations = $this->type->validate( new RelationValue( $relation ), $this->newProperty( required: true ) );
@@ -64,7 +62,7 @@ class RelationTypeValidateTest extends TestCase {
 	private function newProperty( bool $required ): RelationProperty {
 		return RelationProperty::fromPartialJson(
 			new PropertyCore( description: '', required: $required, default: null ),
-			[ 'relation' => 'has', 'targetSchema' => 'Person', 'multiple' => false ],
+			[ 'targetSchema' => 'Person', 'multiple' => false ],
 			TestSources::newSchemaReferenceParser(),
 		);
 	}

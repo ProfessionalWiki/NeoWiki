@@ -74,7 +74,7 @@ class RdfPageProjectorTest extends TestCase {
 			TestSchema::build(
 				name: 'Company',
 				properties: new PropertyDefinitions( [
-					'CEO' => TestProperty::buildRelation( relationType: 'CEO', targetSchema: 'Person' ),
+					'CEO' => TestProperty::buildRelation( targetSchema: 'Person' ),
 				] )
 			),
 			TestSchema::build( name: 'Person', properties: new PropertyDefinitions( [] ) ),
@@ -102,7 +102,6 @@ class RdfPageProjectorTest extends TestCase {
 					TestRelation::build(
 						id: self::CEO_RELATION_ID,
 						targetId: self::JANE_ID,
-						properties: [ 'Since' => 2022 ],
 					),
 				] ),
 			] )
@@ -163,8 +162,7 @@ class RdfPageProjectorTest extends TestCase {
 				neo-rel:r1ceoaaaaaaaaa3 a neo:Relation ;
 					neo:source neo-subj:s1acmeaaaaaaaa1 ;
 					neo:target neo-subj:s1janeaaaaaaaa2 ;
-					neo:relationType neo-prop:CEO ;
-					neo-prop:Since 2022 .
+					neo:relationType neo-prop:CEO .
 
 				neo-subj:s1janeaaaaaaaa2 a neo-schema:Person ;
 					rdfs:label "Jane Smith" ;
@@ -420,6 +418,18 @@ class RdfPageProjectorTest extends TestCase {
 		$this->assertSame( LogLevel::WARNING, $this->logger->getFirstLogCall()->getLevel() );
 	}
 
+	public function testProjectsARelationItsSchemaNoLongerDefines(): void {
+		$quads = $this->newProjector( new InMemorySchemaLookup(
+			TestSchema::build( name: 'Company', properties: new PropertyDefinitions( [] ) )
+		) )->projectSubject( TestPage::build( id: 42, mainSubject: $this->acmeWithCeo() ), new SubjectId( self::ACME_ID ) );
+
+		$this->assertTrue( $quads->contains( $this->quad(
+			$this->ns->subject( new SubjectId( self::ACME_ID ) ),
+			$this->ns->property( 'CEO' ),
+			$this->ns->subject( new SubjectId( self::JANE_ID ) )
+		) ) );
+	}
+
 	private function acmeWithCeo( string $ceoId = self::JANE_ID ): Subject {
 		return TestSubject::build(
 			id: self::ACME_ID,
@@ -431,7 +441,6 @@ class RdfPageProjectorTest extends TestCase {
 					TestRelation::build(
 						id: self::CEO_RELATION_ID,
 						targetId: $ceoId,
-						properties: [ 'Since' => 2022 ],
 					),
 				] ),
 			] )
@@ -488,8 +497,7 @@ class RdfPageProjectorTest extends TestCase {
 				neo-rel:r1ceoaaaaaaaaa3 a neo:Relation ;
 					neo:source neo-subj:s1acmeaaaaaaaa1 ;
 					neo:target neo-subj:s1janeaaaaaaaa2 ;
-					neo:relationType neo-prop:CEO ;
-					neo-prop:Since 2022 .
+					neo:relationType neo-prop:CEO .
 			}
 			TRIG;
 	}
@@ -599,7 +607,7 @@ class RdfPageProjectorTest extends TestCase {
 		return TestSchema::build(
 			name: 'Company',
 			properties: new PropertyDefinitions( [
-				'CEO' => TestProperty::buildRelation( relationType: 'CEO', targetSchema: 'Person' ),
+				'CEO' => TestProperty::buildRelation( targetSchema: 'Person' ),
 			] )
 		);
 	}

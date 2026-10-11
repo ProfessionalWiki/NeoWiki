@@ -33,7 +33,7 @@ class Neo4jSubjectUpdater {
 	}
 
 	public function updateSubjects( Page $page ): void {
-		$subjects = $this->resolveSchemas( $page->getSubjects() );
+		$subjects = $this->subjectsWithSchema( $page->getSubjects() );
 
 		if ( $subjects === [] ) {
 			return;
@@ -50,25 +50,23 @@ class Neo4jSubjectUpdater {
 	}
 
 	/**
-	 * Subjects whose Schema cannot be found are left out of the write: without it their Statements
-	 * cannot be read, and there is nothing to project. Resolution goes through the Schema's own Source
-	 * (ADR 23), so a Schema this wiki cannot reach drops its Subjects the same way a deleted one does.
+	 * Subjects whose Schema cannot be found are left out of the write. Resolution goes through the
+	 * Schema's own Source (ADR 23), so a Schema this wiki cannot reach drops its Subjects the same way a
+	 * deleted one does.
 	 *
 	 * @return Neo4jPageSubject[]
 	 */
-	private function resolveSchemas( PageSubjects $pageSubjects ): array {
+	private function subjectsWithSchema( PageSubjects $pageSubjects ): array {
 		$mainSubjectId = $pageSubjects->getMainSubject()?->id->text;
 		$subjects = [];
 
 		foreach ( $pageSubjects->getAllSubjects()->asArray() as $subject ) {
-			$schema = $this->schemaResolver->getSchema( $subject->getSchemaReference() );
-
-			if ( $schema === null ) {
+			if ( $this->schemaResolver->getSchema( $subject->getSchemaReference() ) === null ) {
 				$this->logger->warning( 'Schema not found: ' . $subject->getSchemaReference()->getText() );
 				continue;
 			}
 
-			$subjects[] = new Neo4jPageSubject( $subject, $schema, $subject->id->text === $mainSubjectId );
+			$subjects[] = new Neo4jPageSubject( $subject, $subject->id->text === $mainSubjectId );
 		}
 
 		return $subjects;
@@ -206,9 +204,7 @@ class Neo4jSubjectUpdater {
 		$relations = [];
 
 		foreach ( $subjects as $pageSubject ) {
-			$relations[$pageSubject->getId()] = $this->withoutForeignTargets(
-				$pageSubject->subject->getTypedRelations( $pageSubject->schema )
-			);
+			$relations[$pageSubject->getId()] = $this->withoutForeignTargets( $pageSubject->subject->getTypedRelations() );
 		}
 
 		( new Neo4jPageRelationUpdater( $this->transaction, $this->wikiId, $this->orphanCandidates ) )

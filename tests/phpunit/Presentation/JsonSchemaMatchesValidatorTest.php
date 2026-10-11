@@ -340,7 +340,7 @@ class JsonSchemaMatchesValidatorTest extends TestCase {
 	}
 
 	private static function relationRows(): iterable {
-		$relation = [ 'type' => 'relation', 'relation' => 'Has target', 'targetSchema' => 'Target' ];
+		$relation = [ 'type' => 'relation', 'targetSchema' => 'Target' ];
 
 		yield 'one relation' => [ $relation, self::value( 'relation', [ self::relationTo( self::TARGET_ID ) ] ) ];
 		yield 'relation required and empty' => [
@@ -377,12 +377,7 @@ class JsonSchemaMatchesValidatorTest extends TestCase {
 			'the document describes a relation id as any string, for the same reason.',
 		];
 
-		yield 'a relation property holding a scalar' => [
-			$relation,
-			self::value( 'relation', [ self::relationTo( self::TARGET_ID ) + [ 'properties' => [ 'note' => 'a' ] ] ] ),
-		];
-
-		yield 'a relation property holding a list' => [
+		yield 'a relation carrying properties' => [
 			$relation,
 			self::value( 'relation', [ self::relationTo( self::TARGET_ID ) + [ 'properties' => [ 'note' => [ 'a' ] ] ] ] ),
 		];

@@ -10,7 +10,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\RelationProperty;
-use ProfessionalWiki\NeoWiki\Domain\Relation\RelationType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty;
@@ -181,7 +180,6 @@ class SchemaLuaSerializerTest extends TestCase {
 		$schema = $this->schemaWith( [
 			'Employer' => new RelationProperty(
 				$this->coreOptional(),
-				new RelationType( 'Works for' ),
 				SchemaReference::local( new SchemaName( 'Company' ) ),
 				multiple: false
 			),
@@ -190,7 +188,6 @@ class SchemaLuaSerializerTest extends TestCase {
 		$prop = $this->newSerializer()->toLuaTable( $schema )['properties'][1];
 
 		$this->assertSame( 'relation', $prop['type'] );
-		$this->assertSame( 'Works for', $prop['relation'] );
 		$this->assertSame( 'Company', $prop['targetSchema'] );
 		$this->assertFalse( $prop['multiple'] );
 	}

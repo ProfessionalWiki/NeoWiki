@@ -84,7 +84,7 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 				"propertyDefinitions": {
 					"Name": { "type": "text", "required": { "severity": "error" }, "maxLength": 80 },
 					"Status": { "type": "select", "options": [ { "id": "o1", "label": "Active" } ] },
-					"Employer": { "type": "relation", "relation": "Works for", "targetSchema": "Company" },
+					"Employer": { "type": "relation", "targetSchema": "Company" },
 					"Retired": { "type": "boolean", "default": false }
 				}
 			}
