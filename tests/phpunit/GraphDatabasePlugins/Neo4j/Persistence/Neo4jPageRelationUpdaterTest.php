@@ -249,21 +249,12 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 		$this->assertHasRelations( $expectedRelations );
 	}
 
-	/**
-	 * Changing a relation's type does not replace its edge. The removal pass compares the requested
-	 * type against a `type` property that the projection itself never writes, so the comparison is
-	 * null and the old edge survives; the upsert then adds the new edge alongside it, both carrying
-	 * the same relation id. Asserted as it is rather than as it should be.
-	 *
-	 * @see https://github.com/ProfessionalWiki/NeoWiki/issues/1135 Fixing that flips this expectation.
-	 */
-	public function testChangingARelationTypeAddsTheNewEdgeAndKeepsTheOld(): void {
+	public function testChangingARelationTypeReplacesItsEdge(): void {
 		$this->updateRelations(
 			new TypedRelationList( [
 				TestRelation::build(
 					id: 'rTestSRU1111rr1',
 					targetId: self::TARGET_SUBJECT_1,
-					properties: new RelationProperties( [ 'foo' => 'bar' ] ),
 				)->withType( new RelationType( 'Type1' ) ),
 			] )
 		);
@@ -273,12 +264,11 @@ class Neo4jPageRelationUpdaterTest extends NeoWikiIntegrationTestCase {
 				TestRelation::build(
 					id: 'rTestSRU1111rr1',
 					targetId: self::TARGET_SUBJECT_1,
-					properties: new RelationProperties( [ 'foo' => 'bar' ] ),
 				)->withType( new RelationType( 'Type1v2' ) ),
 			] )
 		);
 
-		$this->assertSame( [ 'Type1', 'Type1v2' ], $this->relationTypesOf( 'rTestSRU1111rr1' ) );
+		$this->assertSame( [ 'Type1v2' ], $this->relationTypesOf( 'rTestSRU1111rr1' ) );
 	}
 
 	/**

@@ -119,7 +119,7 @@ class Neo4jPageRelationUpdater {
 		$this->collectOrphanCandidates( $this->transaction->run(
 			'UNWIND $relations AS row
 				MATCH (subject:Subject {id: row.subjectId})-[oldRelation {id: row.relationId}]->(oldTarget)
-				WHERE oldRelation.type <> row.relationType
+				WHERE type(oldRelation) <> row.relationType
 					OR NOT (subject)-[oldRelation]->(:Subject {id: row.targetId})
 				DELETE oldRelation
 				RETURN DISTINCT oldTarget.id AS id',
