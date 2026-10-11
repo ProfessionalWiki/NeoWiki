@@ -6,7 +6,6 @@
 				:messages="nameError ? { error: nameError } : {}"
 			>
 				<CdxTextInput
-					ref="nameInputRef"
 					v-model="schemaName"
 					:placeholder="$i18n( 'neowiki-schema-creator-name-placeholder' ).text()"
 					@input="onNameInput"
@@ -37,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import type { ValidationStatusType } from '@wikimedia/codex';
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
@@ -48,9 +47,9 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const props = withDefaults( defineProps<{
-	initialSchema?: Schema;
+	initialName?: string;
 }>(), {
-	initialSchema: undefined
+	initialName: ''
 } );
 
 const emit = defineEmits<{
@@ -61,15 +60,12 @@ const schemaStore = useSchemaStore();
 
 const DEBOUNCE_DELAY = 300;
 
-const baseSchema = computed( () =>
-	props.initialSchema ?? new Schema( '', '', new PropertyDefinitionList( [] ) )
-);
+const baseSchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
 
-const schemaName = ref( props.initialSchema?.getName() ?? '' );
-const schemaDescription = ref( props.initialSchema?.getDescription() ?? '' );
+const schemaName = ref( props.initialName );
+const schemaDescription = ref( '' );
 const nameError = ref( '' );
 const nameStatus = ref<ValidationStatusType>( 'default' );
-const nameInputRef = ref<InstanceType<typeof CdxTextInput> | null>( null );
 const schemaEditorRef = ref<SchemaEditorExposes | null>( null );
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let requestSequence = 0;
@@ -155,28 +151,13 @@ function saveBlocker(): SaveBlocker | null {
 	return schemaEditorRef.value?.saveBlocker() ?? null;
 }
 
-function reset(): void {
-	clearDebounceTimer();
-	requestSequence++;
-	schemaName.value = '';
-	schemaDescription.value = '';
-	nameError.value = '';
-	nameStatus.value = 'default';
-}
-
-function focus(): void {
-	nameInputRef.value?.focus();
-}
-
 export interface SchemaCreatorExposes {
 	validate: () => Promise<boolean>;
 	getSchema: () => Schema | null;
 	saveBlocker: () => SaveBlocker | null;
-	reset: () => void;
-	focus: () => void;
 }
 
-defineExpose<SchemaCreatorExposes>( { validate, getSchema, saveBlocker, reset, focus } );
+defineExpose<SchemaCreatorExposes>( { validate, getSchema, saveBlocker } );
 </script>
 
 <style lang="less">

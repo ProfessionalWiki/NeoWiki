@@ -8,7 +8,7 @@ import { AttributesEditorProps } from '@/components/SchemaEditor/Property/Attrib
 import { createI18nMock, FieldProps, setupMwMock } from '../../../VueTestHelpers.ts';
 
 const SchemaPickerStub = {
-	props: [ 'selected' ],
+	props: { selected: null, offersCreation: Boolean },
 	emits: [ 'select' ],
 	template: '<div class="schema-lookup-stub"></div>',
 };

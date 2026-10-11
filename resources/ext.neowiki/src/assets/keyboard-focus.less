@@ -57,10 +57,10 @@
 		box-shadow: none;
 	}
 
-	// Codex rings toggle buttons on bare `:focus` too (the CdxToggleButtonGroup schema picker and
-	// the CdxMenuButton row-action triggers). Same treatment: drop the inset ring and restore each
-	// variant's resting border-color. `--toggled-on` is the persistent selected state and is kept,
-	// distinct from the `--is-active` pressed state that these guards leave alone as above.
+	// Codex rings toggle buttons on bare `:focus` too (the CdxToggleButtonGroup view switch on the
+	// Schemas page and the CdxMenuButton row-action triggers). Same treatment: drop the inset ring and
+	// restore each variant's resting border-color. `--toggled-on` is the persistent selected state and
+	// is kept, distinct from the `--is-active` pressed state that these guards leave alone as above.
 
 	// Framed toggle, unselected: grey resting border.
 	.cdx-toggle-button--framed:enabled:focus:not( :focus-visible ):not( :active ):not( .cdx-toggle-button--is-active ):not( .cdx-toggle-button--toggled-on ) {

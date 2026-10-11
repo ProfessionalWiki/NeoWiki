@@ -40,10 +40,9 @@ describe( 'SchemaCreator', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let schemaStore: ReturnType<typeof useSchemaStore>;
 
-	function mountComponent( { attachTo, initialSchema }: { attachTo?: Element; initialSchema?: Schema } = {} ): VueWrapper {
+	function mountComponent( { initialName }: { initialName?: string } = {} ): VueWrapper {
 		return mount( SchemaCreator, {
-			attachTo,
-			props: initialSchema ? { initialSchema } : {},
+			props: initialName === undefined ? {} : { initialName },
 			global: {
 				plugins: [ pinia ],
 				stubs: {
@@ -57,11 +56,6 @@ describe( 'SchemaCreator', () => {
 						template: '<input class="cdx-text-input-stub" :value="modelValue" @input="$emit( \'update:modelValue\', $event.target.value ); $emit( \'input\' )" />',
 						props: [ 'modelValue', 'placeholder' ],
 						emits: [ 'update:modelValue', 'input' ],
-						methods: {
-							focus() {
-								this.$el.focus();
-							},
-						},
 					},
 				},
 				provide: {
@@ -297,56 +291,13 @@ describe( 'SchemaCreator', () => {
 		} );
 	} );
 
-	describe( 'reset', () => {
-		it( 'clears name and errors', async () => {
-			const wrapper = mountComponent();
+	it( 'reports a change when the description is typed, so the dialog can offer to save', async () => {
+		const wrapper = mountComponent();
 
-			const nameInput = wrapper.find( '.cdx-text-input-stub' );
-			await nameInput.setValue( 'Something' );
-			await nameInput.setValue( '' );
+		const descriptionInput = wrapper.findAll( '.cdx-text-input-stub' )[ 1 ];
+		await descriptionInput.setValue( 'Something worth saving' );
 
-			const field = wrapper.findComponent( { name: 'CdxField' } );
-			expect( field.props( 'status' ) ).toBe( 'error' );
-
-			( wrapper.vm as any ).reset();
-			await flushPromises();
-
-			expect( field.props( 'status' ) ).toBe( 'default' );
-		} );
-
-		it( 'reports a change when the description is typed, so the dialog can offer to save', async () => {
-			const wrapper = mountComponent();
-
-			const descriptionInput = wrapper.findAll( '.cdx-text-input-stub' )[ 1 ];
-			await descriptionInput.setValue( 'Something worth saving' );
-
-			expect( wrapper.emitted( 'change' ) ).toBeTruthy();
-		} );
-
-		it( 'clears the description', async () => {
-			const wrapper = mountComponent();
-
-			const [ nameInput, descriptionInput ] = wrapper.findAll( '.cdx-text-input-stub' );
-			await nameInput.setValue( NEW_SCHEMA_NAME );
-			await descriptionInput.setValue( 'Left over from the last one' );
-
-			( wrapper.vm as any ).reset();
-			await flushPromises();
-			await nameInput.setValue( NEW_SCHEMA_NAME );
-
-			expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getDescription() ).toBe( '' );
-		} );
-	} );
-
-	it( 'focuses name input on focus()', () => {
-		const wrapper = mountComponent( { attachTo: document.body } );
-
-		( wrapper.vm as any ).focus();
-
-		const nameInput = wrapper.find( '.cdx-text-input-stub' );
-		expect( nameInput.element ).toBe( document.activeElement );
-
-		wrapper.unmount();
+		expect( wrapper.emitted( 'change' ) ).toBeTruthy();
 	} );
 
 	it( 'emits change when name is typed', async () => {
@@ -358,42 +309,10 @@ describe( 'SchemaCreator', () => {
 		expect( wrapper.emitted( 'change' ) ).toBeTruthy();
 	} );
 
-	describe( 'initialSchema prop', () => {
-		it( 'pre-populates name from initialSchema', () => {
-			const wrapper = mountComponent( {
-				initialSchema: new Schema( 'PreFilledName', 'A desc', new PropertyDefinitionList( [] ) ),
-			} );
+	it( 'starts with the name it is given', () => {
+		const wrapper = mountComponent( { initialName: 'Artwork' } );
 
-			const nameInput = wrapper.find( '.cdx-text-input-stub' );
-			expect( ( nameInput.element as HTMLInputElement ).value ).toBe( 'PreFilledName' );
-		} );
-
-		it( 'passes initialSchema to SchemaEditor', () => {
-			const wrapper = mountComponent( {
-				initialSchema: new Schema( 'PreFilledName', 'A desc', new PropertyDefinitionList( [] ) ),
-			} );
-
-			const schemaEditor = wrapper.findComponent( { name: 'SchemaEditor' } );
-			expect( schemaEditor.props( 'initialSchema' ).getName() ).toBe( 'PreFilledName' );
-		} );
-
-		it( 'uses empty schema when no initialSchema provided', () => {
-			const wrapper = mountComponent();
-
-			const schemaEditor = wrapper.findComponent( { name: 'SchemaEditor' } );
-			expect( schemaEditor.props( 'initialSchema' ).getName() ).toBe( '' );
-		} );
-
-		it( 'reset clears to empty state even with initialSchema', async () => {
-			const wrapper = mountComponent( {
-				initialSchema: new Schema( 'PreFilledName', 'A desc', new PropertyDefinitionList( [] ) ),
-			} );
-
-			( wrapper.vm as any ).reset();
-			await flushPromises();
-
-			const nameInput = wrapper.find( '.cdx-text-input-stub' );
-			expect( ( nameInput.element as HTMLInputElement ).value ).toBe( '' );
-		} );
+		const nameInput = wrapper.find( '.cdx-text-input-stub' );
+		expect( ( nameInput.element as HTMLInputElement ).value ).toBe( 'Artwork' );
 	} );
 } );

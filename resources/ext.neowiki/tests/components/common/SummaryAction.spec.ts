@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { nextTick } from 'vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
-import SchemaAbandonmentDialog from '@/components/SubjectCreator/SchemaAbandonmentDialog.vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconCheck, cdxIconTrash } from '@wikimedia/codex-icons';
 import { createI18nMock, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
@@ -218,17 +217,14 @@ describe( 'SummaryAction', () => {
 				expect( button( wrapper, 'Save schema' ).attributes( 'title' ) ).toBe( 'Save schema [alt-shift-s]' );
 			} );
 
-			describe.each( [
-				[ 'CloseConfirmationDialog', CloseConfirmationDialog ],
-				[ 'SchemaAbandonmentDialog', SchemaAbandonmentDialog ],
-			] )( 'under a %s', ( _name, confirmation ) => {
+			describe( 'under a CloseConfirmationDialog', () => {
 				// Hosts write the question after the footer of the dialog it asks about, and mount it closed.
 				async function mountAskingDialog(): Promise<VueWrapper> {
 					const wrapper = mount(
 						{
-							components: { Confirmation: confirmation, SummaryAction },
+							components: { CloseConfirmationDialog, SummaryAction },
 							template: '<SummaryAction help-text="" save-button-label="Save changes" :save-disabled="false" />' +
-								'<Confirmation :open="asking" />',
+								'<CloseConfirmationDialog :open="asking" />',
 							props: [ 'asking' ],
 						},
 						{ props: { asking: false }, global: { mocks: { $i18n } } },

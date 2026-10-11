@@ -6,62 +6,18 @@
 		v-if="rootSubject === null"
 		:open="props.open"
 		class="ext-neowiki-ui ext-neowiki-subject-creator-dialog cdx-dialog--dividers"
-		:class="{ 'ext-neowiki-subject-creator-dialog--wide': selectedSchemaOption === 'new' }"
 		:title="$i18n( 'neowiki-subject-creator-title' ).text()"
-		:subtitle="headerSubtitle"
 		:use-close-button="true"
 		@update:open="onSchemaStepUpdateOpen"
 	>
 		<EditNoticeList :notices="shownNotices" />
 
-		<p>
-			{{ $i18n( 'neowiki-subject-creator-schema-title' ).text() }}
-		</p>
-
-		<CdxToggleButtonGroup
-			v-if="canCreateSchemas"
-			v-model="selectedSchemaOption"
-			class="ext-neowiki-subject-creator-schema-options"
-			:buttons="toggleButtons"
+		<SchemaPicker
+			ref="schemaLookupRef"
+			:offers-creation="canCreateSchemas"
+			@select="onSchemaSelected"
+			@create="openSchemaCreator"
 		/>
-
-		<div
-			v-if="selectedSchemaOption === 'existing'"
-			class="ext-neowiki-subject-creator-existing"
-		>
-			<SchemaPicker
-				ref="schemaLookupRef"
-				@select="onSchemaSelected"
-			/>
-		</div>
-
-		<div
-			v-if="selectedSchemaOption === 'new'"
-			class="ext-neowiki-subject-creator-new"
-		>
-			<SchemaCreator
-				ref="schemaCreatorRef"
-				:initial-schema="draftSchema ?? undefined"
-				@change="markChanged"
-			/>
-		</div>
-
-		<template
-			v-if="selectedSchemaOption === 'new'"
-			#footer
-		>
-			<div class="ext-neowiki-subject-creator-continue">
-				<CdxButton
-					action="progressive"
-					weight="primary"
-					:disabled="!hasChanged"
-					@click="handleCreateSchema"
-				>
-					{{ $i18n( 'neowiki-subject-creator-continue' ).text() }}
-					<CdxIcon :icon="cdxIconArrowNext" />
-				</CdxButton>
-			</div>
-		</template>
 	</CdxDialog>
 
 	<!-- The Subject itself is filled in by the editor, opened on a Subject the wiki does not hold
@@ -214,22 +170,24 @@
 		@keep-editing="cancelClose"
 	/>
 
-	<SchemaAbandonmentDialog
-		:open="schemaAbandonmentOpen"
-		@abandon="abandonAll"
-		@save-schema="saveSchemaAndClose"
-		@keep-editing="cancelSchemaAbandonment"
+	<!-- Mounted only while open, as the confirmations are: Codex stacks dialogs in mount order, and
+		the Schema step it stands in front of is mounted afresh each time the creator starts over. -->
+	<SchemaCreatorDialog
+		v-if="newSchemaName !== null"
+		:open="true"
+		:initial-name="newSchemaName"
+		@update:open="newSchemaName = null"
+		@created="onSchemaCreated"
 	/>
 </template>
 
 <script setup lang="ts">
 import { ref, shallowRef, computed, watch, nextTick, onMounted } from 'vue';
-import { CdxAccordion, CdxButton, CdxDialog, CdxField, CdxIcon, CdxMessage, CdxRadio, CdxToggleButtonGroup } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconArrowNext, cdxIconSearch } from '@wikimedia/codex-icons';
-import type { ButtonGroupItem, ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
+import { CdxAccordion, CdxDialog, CdxField, CdxMessage, CdxRadio } from '@wikimedia/codex';
+import type { ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import type { CreatedSubjectPage } from '@/stores/SubjectStore.ts';
-import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
@@ -238,8 +196,7 @@ import type { SubjectId } from '@/domain/SubjectId.ts';
 import type { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
-import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
-import type { SchemaCreatorExposes } from '@/components/SchemaCreator/SchemaCreator.vue';
+import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
 import SchemaPicker from '@/components/common/SchemaPicker.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import PagePicker from '@/components/common/PagePicker.vue';
@@ -251,7 +208,6 @@ import { PageTitleTakenError } from '@/persistence/PageTitleTakenError.ts';
 import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError.ts';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError.ts';
 import { WriteRefusedError } from '@/components/SubjectEditor/WriteRefusedError.ts';
-import SchemaAbandonmentDialog from '@/components/SubjectCreator/SchemaAbandonmentDialog.vue';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
@@ -291,15 +247,14 @@ const emit = defineEmits<{
  */
 const UNANSWERED_PAGE = PageIdentifiers.notYetCreated();
 
-const selectedSchemaOption = ref( 'existing' );
 const { notices, loadNotices } = useEditNotices( () => NeoWikiExtension.getInstance().getEditNoticeRepository() );
 
 const loadedSchema = ref<Schema | null>( null );
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const schemaLookupRef = ref<any | null>( null );
-const schemaCreatorRef = ref<SchemaCreatorExposes | null>( null );
 
-const draftSchema = shallowRef<Schema | null>( null );
+// The name the Schema creator stacked on the Schema step opened with, null while it is closed.
+const newSchemaName = ref<string | null>( null );
 
 /**
  * The Subject being created, as the editor dialog holds it: an id of its own, so the panes and the
@@ -308,8 +263,9 @@ const draftSchema = shallowRef<Schema | null>( null );
  */
 const rootSubject = shallowRef<Subject | null>( null );
 
-// Guards loadedSchema against a stale schema fetch: picking a different schema, and leaving the
-// picked one (going back, or the dialog closing), both invalidate an in-flight response.
+// Guards loadedSchema against a stale schema fetch: picking a different schema, opening the Schema
+// creator, and leaving the picked one (going back, or the dialog closing) all invalidate an
+// in-flight response.
 let requestSequence = 0;
 
 const subjectStore = useSubjectStore();
@@ -687,37 +643,7 @@ function close(): void {
 	emit( 'update:open', false );
 }
 
-const hasDraftSchema = computed( () => draftSchema.value !== null );
-
-const {
-	confirmationOpen,
-	alternateConfirmationOpen: schemaAbandonmentOpen,
-	requestClose,
-	confirmClose,
-	cancelClose,
-	confirmAlternateClose: abandonAll,
-	cancelAlternateClose: cancelSchemaAbandonment
-} = useCloseConfirmation( hasChanged, close, hasDraftSchema );
-
-async function saveSchemaAndClose(): Promise<void> {
-	if ( draftSchema.value ) {
-		try {
-			await schemaStore.saveSchema( draftSchema.value );
-			mw.notify( mw.msg( 'neowiki-subject-creator-schema-created' ), { type: 'success' } );
-		} catch ( error ) {
-			mw.notify(
-				error instanceof Error ? error.message : String( error ),
-				{
-					title: mw.msg( 'neowiki-subject-creator-error' ),
-					type: 'error'
-				}
-			);
-			cancelSchemaAbandonment();
-			return;
-		}
-	}
-	abandonAll();
-}
+const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseConfirmation( hasChanged, close );
 
 function onSchemaStepUpdateOpen( value: boolean ): void {
 	if ( !value ) {
@@ -725,38 +651,12 @@ function onSchemaStepUpdateOpen( value: boolean ): void {
 	}
 }
 
-// The editor runs the discard confirmation, for the answer given in its footer as much as for the
-// Subject, so the only question left is the one it cannot ask: a Schema drafted in the step before,
-// which closing would throw away alongside the Subject that was to use it.
+// The editor has asked about discarding already.
 function onEditorUpdateOpen( value: boolean ): void {
-	if ( value ) {
-		return;
+	if ( !value ) {
+		close();
 	}
-
-	if ( hasDraftSchema.value ) {
-		schemaAbandonmentOpen.value = true;
-		return;
-	}
-
-	close();
 }
-
-const headerSubtitle = computed( (): string =>
-	selectedSchemaOption.value === 'new' ? mw.msg( 'neowiki-subject-creator-creating-schema' ) : ''
-);
-
-const toggleButtons = [
-	{
-		value: 'existing',
-		label: mw.msg( 'neowiki-subject-creator-existing-schema' ),
-		icon: cdxIconSearch
-	},
-	{
-		value: 'new',
-		label: mw.msg( 'neowiki-subject-creator-new-schema' ),
-		icon: cdxIconAdd
-	}
-] as ButtonGroupItem[];
 
 onMounted( async () => {
 	await Promise.all( [ checkCreatePermission(), checkCreateSubjectPagePermission() ] );
@@ -768,17 +668,14 @@ onMounted( async () => {
 	}
 } );
 
-watch( selectedSchemaOption, ( newValue: string ) => {
-	focusInitialInput( newValue );
-} );
+function openSchemaCreator( schemaName: string ): void {
+	requestSequence++;
+	newSchemaName.value = schemaName;
+}
 
-async function focusInitialInput( schemaOption: string ): Promise<void> {
-	await nextTick();
-	if ( schemaOption === 'existing' && schemaLookupRef.value ) {
-		schemaLookupRef.value.focus();
-	} else if ( schemaOption === 'new' && schemaCreatorRef.value ) {
-		schemaCreatorRef.value.focus();
-	}
+// The wiki saved the Schema under its page title, which is the name the picker would list it by.
+async function onSchemaCreated( schema: Schema ): Promise<void> {
+	await onSchemaSelected( normalizeSchemaName( schema.getName() ) );
 }
 
 async function onSchemaSelected( schemaName: string ): Promise<void> {
@@ -834,59 +731,6 @@ function openSubjectStep( schema: Schema, id: SubjectId ): void {
 		new StatementList( [] ),
 		UNANSWERED_PAGE
 	);
-}
-
-async function handleCreateSchema(): Promise<void> {
-	if ( !schemaCreatorRef.value ) {
-		return;
-	}
-
-	// Continuing now would freeze a draft schema with the unparseable text dropped, or
-	// one the wiki refuses once the Subject is saved.
-	const blocker = schemaCreatorRef.value.saveBlocker();
-
-	if ( blocker !== null ) {
-		mw.notify( blocker.message, { title: blocker.propertyName, type: 'error' } );
-		return;
-	}
-
-	const valid = await schemaCreatorRef.value.validate();
-
-	if ( !valid ) {
-		return;
-	}
-
-	const schema = schemaCreatorRef.value.getSchema();
-
-	if ( !schema ) {
-		return;
-	}
-
-	// Takes its turn in the same sequence as a Schema being fetched, so neither can land on the
-	// other. Nothing is written here: the Schema reaches the wiki when the Subject is saved.
-	const currentSequence = ++requestSequence;
-
-	let id: SubjectId;
-
-	try {
-		id = await subjectRepository().mintSubjectId();
-	} catch ( error ) {
-		if ( currentSequence !== requestSequence ) {
-			return;
-		}
-
-		console.error( 'Failed to mint a subject id:', error );
-		mw.notify( mw.msg( 'neowiki-subject-creator-error' ), { type: 'error' } );
-		return;
-	}
-
-	if ( currentSequence !== requestSequence ) {
-		return;
-	}
-
-	draftSchema.value = schema;
-	openSubjectStep( schema, id );
-	markChanged();
 }
 
 /**
@@ -963,27 +807,11 @@ async function writeRootSubject( subject: Subject, comment: string ): Promise<vo
 		throw new Error( mw.msg( 'neowiki-subject-creator-error' ) );
 	}
 
-	await saveDraftSchema( comment );
-
 	const subjectId = answer.besideMainSubject ?
 		await createBesideMainSubject( pageId, label, schemaName, statements, comment, subject.getId() ) :
 		await subjectStore.createMainSubject( pageId, label, schemaName, statements, comment, subject.getId() );
 
 	writtenRoot = { subjectId, pageId, pageTitle: answer.pageTitle };
-}
-
-/**
- * The Schema drafted in the step before goes onto the wiki with the Subject that uses it, and only
- * once nothing is left to refuse ahead of that Subject's write: refused, the save would leave it
- * behind, no longer offered for abandoning.
- */
-async function saveDraftSchema( comment: string ): Promise<void> {
-	if ( draftSchema.value === null ) {
-		return;
-	}
-
-	await schemaStore.saveSchema( draftSchema.value, comment );
-	draftSchema.value = null;
 }
 
 /**
@@ -1038,7 +866,6 @@ async function createOnNewPage(
 	title: string | null
 ): Promise<CreatedSubjectPage> {
 	if ( isSubjectFirst() ) {
-		await saveDraftSchema( comment );
 		return await subjectStore.createSubjectOnOwnPage( subject, comment );
 	}
 
@@ -1050,8 +877,6 @@ async function createOnNewPage(
 
 		throw new WriteRefusedError( pageTitleError.value );
 	}
-
-	await saveDraftSchema( comment );
 
 	try {
 		return await subjectStore.createSubjectPage(
@@ -1094,16 +919,8 @@ async function handleSaveExisting( subject: Subject, comment: string ): Promise<
 	await subjectStore.updateSubject( subject, comment );
 }
 
-/**
- * The editor offers the Schema editor from the root pane, for a Schema still being drafted as much
- * as for one the wiki holds. Once it is saved there it is on the wiki, so it stops being a draft:
- * writing the drafted copy over it on save would drop whatever was added, and closing would offer
- * to abandon a Schema that is already there.
- */
 async function handleSchemaSave( updatedSchema: Schema, comment: string ): Promise<void> {
 	await schemaStore.saveSchema( updatedSchema, comment );
-
-	draftSchema.value = null;
 	loadedSchema.value = updatedSchema;
 }
 
@@ -1142,7 +959,7 @@ watch( () => props.open, async ( isOpen ) => {
 
 		await pinInitialSchema();
 		await nextTick();
-		focusInitialInput( selectedSchemaOption.value );
+		schemaLookupRef.value?.focus();
 	} else {
 		resetForm();
 	}
@@ -1164,10 +981,7 @@ function resetForm(): void {
 	requestSequence++;
 	loadedSchema.value = null;
 	rootSubject.value = null;
-	draftSchema.value = null;
 	writtenRoot = null;
-	selectedSchemaOption.value = 'existing';
-	schemaCreatorRef.value?.reset();
 
 	// Back to where a fresh open starts, unless the permission answer that decides it has yet to
 	// land, in which case no choice is being offered to reset.
@@ -1186,21 +1000,6 @@ defineExpose( { hasChanged } );
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-subject-creator {
-	&-dialog--wide.cdx-dialog {
-		max-width: @size-5600;
-	}
-
-	&-schema-options.cdx-toggle-button-group {
-		margin-bottom: @spacing-150;
-		width: inherit;
-		display: flex;
-		flex-wrap: wrap;
-
-		.cdx-toggle-button {
-			flex-grow: 1;
-		}
-	}
-
 	/* Sibling of the edit-summary section below it, and built to read as one. */
 	&-page-section.cdx-accordion {
 		border-bottom: 0;
@@ -1255,25 +1054,6 @@ defineExpose( { hasChanged } );
 	&-page-note {
 		margin: @spacing-50 0 0;
 		color: @color-subtle;
-	}
-
-	&-continue {
-		display: flex;
-
-		.cdx-button {
-			flex-grow: 1;
-			max-width: none;
-		}
-	}
-
-	&-new {
-		.ext-neowiki-schema-creator {
-			margin-inline: -@spacing-100;
-
-			@media ( min-width: @min-width-breakpoint-desktop ) {
-				margin-inline: -@spacing-150;
-			}
-		}
 	}
 }
 </style>

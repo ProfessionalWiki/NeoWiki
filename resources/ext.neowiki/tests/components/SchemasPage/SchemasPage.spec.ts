@@ -5,7 +5,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import SchemaCard from '@/components/SchemasPage/SchemaCard.vue';
 import SchemasTable from '@/components/SchemasPage/SchemasTable.vue';
-import SchemaCreatorDialog from '@/components/SchemasPage/SchemaCreatorDialog.vue';
+import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
 import SchemaExportButton from '@/components/SchemasPage/SchemaExportButton.vue';
 import SchemaImportButton from '@/components/SchemasPage/SchemaImportButton.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';

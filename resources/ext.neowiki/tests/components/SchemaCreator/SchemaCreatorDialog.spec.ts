@@ -1,7 +1,7 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import SchemaCreatorDialog from '@/components/SchemasPage/SchemaCreatorDialog.vue';
+import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
@@ -20,6 +20,7 @@ let creatorSaveBlocker: SaveBlocker | null = null;
 
 const SchemaCreatorStub = {
 	template: '<div class="schema-creator-stub"></div>',
+	props: [ 'initialName' ],
 	emits: [ 'change' ],
 	setup() {
 		let valid = true;
@@ -28,15 +29,11 @@ const SchemaCreatorStub = {
 		const validate = vi.fn( async (): Promise<boolean> => valid );
 		const getSchema = vi.fn( (): Schema | null => schema );
 		const saveBlocker = (): SaveBlocker | null => creatorSaveBlocker;
-		const reset = vi.fn();
-		const focus = vi.fn();
 
 		return {
 			validate,
 			getSchema,
 			saveBlocker,
-			reset,
-			focus,
 			setStubValid( v: boolean ) {
 				valid = v;
 			},
@@ -66,9 +63,9 @@ describe( 'SchemaCreatorDialog', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let schemaStore: ReturnType<typeof useSchemaStore>;
 
-	function mountComponent( open = true ): VueWrapper {
+	function mountComponent( props: Record<string, unknown> = {} ): VueWrapper {
 		return mount( SchemaCreatorDialog, {
-			props: { open },
+			props: { open: true, ...props },
 			global: {
 				plugins: [ pinia ],
 				stubs: {
@@ -102,6 +99,38 @@ describe( 'SchemaCreatorDialog', () => {
 
 		schemaStore = useSchemaStore();
 		schemaStore.saveSchema = vi.fn().mockResolvedValue( undefined );
+	} );
+
+	it( 'starts the schema on the name it is given', () => {
+		const wrapper = mountComponent( { initialName: 'Artwork' } );
+
+		expect( wrapper.findComponent( SchemaCreatorStub ).props( 'initialName' ) ).toBe( 'Artwork' );
+	} );
+
+	describe( 'Offering the save', () => {
+		function saveDisabled( wrapper: VueWrapper ): boolean {
+			return wrapper.findComponent( SummaryAction ).props( 'saveDisabled' );
+		}
+
+		it( 'holds it back while nothing has been entered', () => {
+			const wrapper = mountComponent();
+
+			expect( saveDisabled( wrapper ) ).toBe( true );
+		} );
+
+		it( 'offers it once something is entered', async () => {
+			const wrapper = mountComponent();
+
+			await wrapper.findComponent( SchemaCreatorStub ).vm.$emit( 'change' );
+
+			expect( saveDisabled( wrapper ) ).toBe( false );
+		} );
+
+		it( 'offers it at once for a schema it is given a name for', () => {
+			const wrapper = mountComponent( { initialName: 'Artwork' } );
+
+			expect( saveDisabled( wrapper ) ).toBe( false );
+		} );
 	} );
 
 	it( 'does not save when validation fails', async () => {

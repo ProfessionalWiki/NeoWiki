@@ -12,6 +12,7 @@
 		>
 			<SchemaCreator
 				ref="schemaCreatorRef"
+				:initial-name="props.initialName"
 				@change="markChanged"
 			/>
 
@@ -19,7 +20,7 @@
 				<SummaryAction
 					help-text=""
 					:save-button-label="$i18n( 'neowiki-schema-creator-save' ).text()"
-					:save-disabled="!hasChanged"
+					:save-disabled="!hasChanged && !props.initialName"
 					@save="handleSave"
 				/>
 			</template>
@@ -47,6 +48,7 @@ import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 
 const props = defineProps<{
 	open: boolean;
+	initialName?: string;
 }>();
 
 const emit = defineEmits<{
@@ -74,7 +76,6 @@ function onDialogUpdateOpen( value: boolean ): void {
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
 		resetChanged();
-		schemaCreatorRef.value?.reset();
 	}
 } );
 

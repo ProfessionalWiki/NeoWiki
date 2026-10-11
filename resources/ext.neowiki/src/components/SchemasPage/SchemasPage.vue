@@ -138,7 +138,7 @@ import { isSubjectListAvailable } from '@/subjectListAvailability.ts';
 import SchemaCard from './SchemaCard.vue';
 import SchemasTable from './SchemasTable.vue';
 import { SubjectPreviews } from './SubjectPreviews.ts';
-import SchemaCreatorDialog from './SchemaCreatorDialog.vue';
+import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
 import SchemaExportButton from './SchemaExportButton.vue';
 import SchemaImportButton from './SchemaImportButton.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';

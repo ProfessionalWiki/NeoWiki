@@ -112,6 +112,7 @@ export { default as LayoutCreatorDialog } from './components/LayoutsPage/LayoutC
 export { default as LayoutsPage } from './components/LayoutsPage/LayoutsPage.vue';
 export { default as NeoWikiApp } from './components/NeoWikiApp.vue';
 export { default as SchemaCreator } from './components/SchemaCreator/SchemaCreator.vue';
+export { default as SchemaCreatorDialog } from './components/SchemaCreator/SchemaCreatorDialog.vue';
 export { default as SchemaDisplay } from './components/SchemaDisplay/SchemaDisplay.vue';
 export { default as SchemaDisplayHeader } from './components/SchemaDisplay/SchemaDisplayHeader.vue';
 export { default as BooleanAttributesEditor } from './components/SchemaEditor/Property/BooleanAttributesEditor.vue';
@@ -126,9 +127,7 @@ export { default as PropertyDefinitionEditor } from './components/SchemaEditor/P
 export { default as PropertyList } from './components/SchemaEditor/PropertyList.vue';
 export { default as SchemaEditor } from './components/SchemaEditor/SchemaEditor.vue';
 export { default as SchemaEditorDialog } from './components/SchemaEditor/SchemaEditorDialog.vue';
-export { default as SchemaCreatorDialog } from './components/SchemasPage/SchemaCreatorDialog.vue';
 export { default as SchemasPage } from './components/SchemasPage/SchemasPage.vue';
-export { default as SchemaAbandonmentDialog } from './components/SubjectCreator/SchemaAbandonmentDialog.vue';
 export { default as SchemaPicker } from './components/common/SchemaPicker.vue';
 export { default as SubjectCreatorDialog } from './components/SubjectCreator/SubjectCreatorDialog.vue';
 export { default as SubjectEditor } from './components/SubjectEditor/SubjectEditor.vue';

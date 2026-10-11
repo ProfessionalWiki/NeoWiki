@@ -4,7 +4,7 @@ import { nextTick } from 'vue';
 import SchemaPicker from '@/components/common/SchemaPicker.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { createI18nMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
 const $i18n = createI18nMock();
 
@@ -23,6 +23,8 @@ describe( 'SchemaPicker', () => {
 	const wrappers: VueWrapper[] = [];
 
 	beforeEach( () => {
+		setupMwMock();
+
 		pinia = createPinia();
 		setActivePinia( pinia );
 
@@ -72,6 +74,23 @@ describe( 'SchemaPicker', () => {
 
 	function listedDescriptions( wrapper: VueWrapper ): string[] {
 		return wrapper.findAll( '.cdx-menu-item__text__description' ).map( ( d ) => d.text() );
+	}
+
+	// Codex's stylesheet pins the last item of a menu with this class below the list, in view while
+	// the list scrolls.
+	function pinnedItem( wrapper: VueWrapper ): string | null {
+		const menu = wrapper.find( '.cdx-menu--has-footer' );
+
+		if ( !menu.exists() ) {
+			return null;
+		}
+
+		const labels = menu.findAll( '.cdx-menu-item__text__label' );
+		return labels[ labels.length - 1 ].text();
+	}
+
+	function menuShown( wrapper: VueWrapper ): boolean {
+		return field( wrapper ).attributes( 'aria-expanded' ) === 'true';
 	}
 
 	function chosenSchema( wrapper: VueWrapper ): string | null {
@@ -235,6 +254,102 @@ describe( 'SchemaPicker', () => {
 			await clickSchema( wrapper, 'Office' );
 
 			expect( fieldText( wrapper ) ).toBe( 'Office' );
+		} );
+	} );
+
+	describe( 'offering to create a schema', () => {
+		const CREATE_ITEM = 'neowiki-schema-picker-create';
+
+		function createItemFor( typed: string ): string {
+			return 'neowiki-schema-picker-create-named' + typed;
+		}
+
+		async function mountCreatingPicker(): Promise<VueWrapper> {
+			return mountLoadedPicker( { offersCreation: true } );
+		}
+
+		it( 'makes no offer unless asked to', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			await type( wrapper, 'o' );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office' ] );
+		} );
+
+		it( 'pins the offer for no name below every schema before anything is typed', async () => {
+			const wrapper = await mountCreatingPicker();
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City', CREATE_ITEM ] );
+			expect( pinnedItem( wrapper ) ).toBe( CREATE_ITEM );
+		} );
+
+		it( 'pins the offer for the typed text below the schemas it matches', async () => {
+			const wrapper = await mountCreatingPicker();
+
+			await type( wrapper, 'o' );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', createItemFor( 'o' ) ] );
+			expect( pinnedItem( wrapper ) ).toBe( createItemFor( 'o' ) );
+		} );
+
+		it( 'shows the offer alone for typed text no schema matches', async () => {
+			const wrapper = await mountCreatingPicker();
+
+			await type( wrapper, 'Artwork' );
+
+			expect( menuShown( wrapper ) ).toBe( true );
+			expect( listedSchemas( wrapper ) ).toEqual( [ createItemFor( 'Artwork' ) ] );
+		} );
+
+		it( 'reaches the offer for typed text no schema matches with the keyboard', async () => {
+			const wrapper = await mountCreatingPicker();
+			await type( wrapper, 'Artwork' );
+
+			await pressKey( wrapper, 'ArrowDown' );
+			await pressKey( wrapper, 'Enter' );
+
+			expect( wrapper.emitted( 'create' ) ).toEqual( [ [ 'Artwork' ] ] );
+		} );
+
+		it( 'makes no offer for typed text naming a schema that exists', async () => {
+			const wrapper = await mountCreatingPicker();
+
+			await type( wrapper, 'office' );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Office' ] );
+		} );
+
+		describe.each( [
+			[ 'alone', 'Artwork' ],
+			[ 'pinned below the schemas the text matches', 'Prod' ],
+		] )( 'chosen %s', ( _shown, typed ) => {
+			async function chooseOffer(): Promise<VueWrapper> {
+				const wrapper = await mountCreatingPicker();
+				await type( wrapper, typed );
+
+				await clickSchema( wrapper, createItemFor( typed ) );
+
+				return wrapper;
+			}
+
+			it( 'hands the typed text on', async () => {
+				const wrapper = await chooseOffer();
+
+				expect( wrapper.emitted( 'create' ) ).toEqual( [ [ typed ] ] );
+			} );
+
+			it( 'picks no schema', async () => {
+				const wrapper = await chooseOffer();
+
+				expect( wrapper.emitted( 'select' ) ).toBeFalsy();
+				expect( chosenSchema( wrapper ) ).toBeNull();
+			} );
+
+			it( 'keeps the typed text in the field', async () => {
+				const wrapper = await chooseOffer();
+
+				expect( fieldText( wrapper ) ).toBe( typed );
+			} );
 		} );
 	} );
 

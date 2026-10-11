@@ -6,6 +6,7 @@
 			v-model:selected="selectedSchema"
 			v-model:input-value="inputText"
 			:menu-items="menuItems"
+			:menu-config="menuConfig"
 			:placeholder="$i18n( 'neowiki-schema-picker-placeholder' ).text()"
 			@input="filterSchemas"
 			@update:selected="onSelect"
@@ -17,17 +18,31 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 import { CdxLookup } from '@wikimedia/codex';
-import type { MenuItemData } from '@wikimedia/codex';
-import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import type { MenuConfig, MenuItemData } from '@wikimedia/codex';
+import { cdxIconAdd } from '@wikimedia/codex-icons';
+import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 
 const props = defineProps<{
 	selected?: string | null;
+	/**
+	 * Ends the list with an offer to create a Schema named after the typed text, unless a Schema has
+	 * that name already. Choosing the offer emits `create` with the text.
+	 */
+	offersCreation?: boolean;
 }>();
 
 const emit = defineEmits<{
 	'select': [ schemaName: string ];
+	'create': [ schemaName: string ];
 }>();
+
+// Codex has no value of its own for the offer, so it carries a value no Schema name can take: a name
+// is a page title, and a title never starts with an underscore.
+const CREATE_SCHEMA = '__create__';
+
+// CdxLookup hands its whole menuConfig to its CdxMenu, whose footer Codex's MenuConfig type leaves out.
+type MenuConfigWithFooter = MenuConfig & { footer: MenuItemData | null };
 
 const schemaStore = useSchemaStore();
 const selectedSchema = ref<string | null>( props.selected ?? null );
@@ -37,16 +52,46 @@ const schemasLoaded = ref( false );
 const query = ref<string>( '' );
 const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
 
-const menuItems = computed<MenuItemData[]>( () => {
+const typedName = computed( (): string => String( inputText.value ).trim() );
+
+// Schema names are unique, so a name that is taken can only be picked.
+const takenNames = computed( (): Set<string> =>
+	new Set( summaries.value.map( ( summary ) => normalizeSchemaName( summary.name ) ) ) );
+
+const creationOffered = computed( (): boolean =>
+	props.offersCreation && !takenNames.value.has( normalizeSchemaName( typedName.value ) ) );
+
+const matchingItems = computed<MenuItemData[]>( () => {
 	const matches = query.value === '' ?
 		summaries.value :
 		summaries.value.filter( ( summary ) => summary.name.toLowerCase().includes( query.value ) );
+
 	return matches.map( ( summary ) => ( {
 		label: summary.name,
 		value: summary.name,
 		description: summary.description || undefined
 	} ) );
 } );
+
+// Below Schemas, the offer is the menu's footer, which Codex keeps in view while the list scrolls.
+// Alone, it is the list's one item: CdxLookup neither opens a menu nor moves through it by keyboard
+// while it has no items.
+const menuItems = computed<MenuItemData[]>( () =>
+	creationOffered.value && matchingItems.value.length === 0 ? [ createItem() ] : matchingItems.value );
+
+const menuConfig = computed( (): MenuConfigWithFooter => ( {
+	footer: creationOffered.value && matchingItems.value.length > 0 ? createItem() : null
+} ) );
+
+function createItem(): MenuItemData {
+	return {
+		value: CREATE_SCHEMA,
+		label: typedName.value === '' ?
+			mw.msg( 'neowiki-schema-picker-create' ) :
+			mw.msg( 'neowiki-schema-picker-create-named', typedName.value ),
+		icon: cdxIconAdd
+	};
+}
 
 // CdxLookup decides whether focus opens the menu from the menu items it was created
 // with, so the field is only rendered once the schemas have arrived. Loading them is
@@ -90,6 +135,13 @@ function filterSchemas( value: string ): void {
 // Restoring the full menu means reopening the picker without leaving the field browses
 // every schema again rather than the last filter.
 function onSelect( schemaName: string | null ): void {
+	if ( schemaName === CREATE_SCHEMA ) {
+		// Taken back before Codex sees it as the selection, which would replace the typed text in the field.
+		selectedSchema.value = selectableSchema( props.selected ?? null );
+		emit( 'create', typedName.value );
+		return;
+	}
+
 	if ( schemaName === null ) {
 		return;
 	}
