@@ -54,6 +54,12 @@ export async function chooseFromLanguageList( languageInput: VueWrapper | DOMWra
 		?.trigger( 'click' );
 }
 
+/** The texts of the elements an element's `aria-describedby` names, which a screen reader reads after its name. */
+export function describedAs( wrapper: VueWrapper, element: DOMWrapper<Element> ): string[] {
+	return ( element.attributes( 'aria-describedby' ) ?? '' ).split( ' ' ).filter( ( id ) => id !== '' )
+		.map( ( id ) => wrapper.find( `[id="${ id }"]` ).text() );
+}
+
 /** Opens the menu of the menu button with the given accessible name, and clicks its item reading the given text. */
 export async function chooseFromMenu( element: VueWrapper | DOMWrapper<Element>, buttonLabel: string, itemText: string ): Promise<void> {
 	await element.find( `button[aria-label="${ buttonLabel }"]` ).trigger( 'click' );

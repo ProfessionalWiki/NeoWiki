@@ -619,17 +619,24 @@ describe( 'SchemasPage', () => {
 
 	it( 'opens the Schema creator on a duplicate of the Schema of the card', async () => {
 		mayCreateSchemas = true;
-		const artwork = newSchema( { title: 'Artwork' } );
-		getSchemaMock.mockResolvedValue( artwork );
+		getSchemaMock.mockImplementation( async ( name: string ) => newSchema( { title: name } ) );
 		const wrapper = mountPage();
 		await flushPromises();
 
 		await askToDuplicate( wrapper, 1 );
 
-		expect( getSchemaMock ).toHaveBeenCalledWith( 'Artwork' );
 		const creator = wrapper.findComponent( SchemaCreatorDialog );
 		expect( creator.props( 'open' ) ).toBe( true );
-		expect( creator.props( 'duplicateOf' ) ).toStrictEqual( artwork );
+		expect( creator.props( 'duplicateOf' ) ).toStrictEqual( newSchema( { title: 'Artwork' } ) );
+	} );
+
+	it( 'keeps duplicating from a user who may not create Schemas', async () => {
+		mayEditSchemas = true;
+		mayDeleteSchemas = true;
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( cards( wrapper )[ 0 ].props( 'canDuplicate' ) ).toBe( false );
 	} );
 
 	it( 'reports a Schema that could not be fetched instead of opening the Schema creator', async () => {

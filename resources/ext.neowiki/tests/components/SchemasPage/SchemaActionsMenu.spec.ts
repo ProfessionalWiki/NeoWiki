@@ -6,7 +6,7 @@ import { chooseFromMenu, createI18nMock, setupMwMock } from '../../VueTestHelper
 const MORE_ACTIONS = 'neowiki-schemas-more-actions';
 
 function mountMenu( rights: { canDuplicate: boolean; canDelete: boolean } ): VueWrapper {
-	setupMwMock( { functions: [ 'msg' ] } );
+	setupMwMock( { functions: [ 'msg', 'message' ] } );
 
 	return mount( SchemaActionsMenu, {
 		props: rights,

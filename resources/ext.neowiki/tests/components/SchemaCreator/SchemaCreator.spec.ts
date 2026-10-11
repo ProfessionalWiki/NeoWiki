@@ -9,15 +9,17 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import { newTextProperty } from '@/domain/propertyTypes/Text.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const EXISTING_SCHEMA_NAME = 'Person';
 const NEW_SCHEMA_NAME = 'Company';
 const DEBOUNCE_DELAY = 300;
 
-// The reason the stubbed editor reports for holding the save. Reset per test by
-// the beforeEach below.
+// The reason the stubbed editor reports for holding the save, and the Schema it holds. Reset per
+// test by the beforeEach below.
 let editorSaveBlocker: SaveBlocker | null = null;
+let editorSchema: Schema;
 
 const SchemaEditorStub = defineComponent( {
 	name: 'SchemaEditor',
@@ -28,7 +30,7 @@ const SchemaEditorStub = defineComponent( {
 	emits: [ 'change' ],
 	methods: {
 		getSchema(): Schema {
-			return new Schema( '', '', new PropertyDefinitionList( [] ) );
+			return editorSchema;
 		},
 		saveBlocker(): SaveBlocker | null {
 			return editorSaveBlocker;
@@ -76,6 +78,7 @@ describe( 'SchemaCreator', () => {
 
 	beforeEach( () => {
 		editorSaveBlocker = null;
+		editorSchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
 		vi.useFakeTimers();
 
 		setupMwMock( {
@@ -264,6 +267,16 @@ describe( 'SchemaCreator', () => {
 
 			expect( schema.getName() ).toBe( NEW_SCHEMA_NAME );
 			expect( schema.getDescription() ).toBe( 'What this schema is for' );
+		} );
+
+		it( 'returns the property definitions made in the schema editor', async () => {
+			editorSchema = new Schema( '', '', new PropertyDefinitionList( [ newTextProperty( { name: 'Founded' } ) ] ) );
+			const wrapper = mountComponent();
+
+			await wrapper.find( '.cdx-text-input-stub' ).setValue( NEW_SCHEMA_NAME );
+
+			const schema = ( wrapper.vm as any ).getSchema() as Schema;
+			expect( [ ...schema.getPropertyDefinitions() ].map( ( property ) => property.name.toString() ) ).toEqual( [ 'Founded' ] );
 		} );
 
 		it( 'returns an empty description when none was entered', async () => {

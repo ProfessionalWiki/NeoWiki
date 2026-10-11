@@ -1,9 +1,16 @@
-import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { markRaw } from 'vue';
 import SchemaCard from '@/components/SchemasPage/SchemaCard.vue';
 import { SubjectPreviews } from '@/components/SchemasPage/SubjectPreviews.ts';
-import { chooseFromMenu, createI18nMock, type ScrollStub, setupMwMock, stubIntersectionObserver } from '../../VueTestHelpers.ts';
+import {
+	chooseFromMenu,
+	createI18nMock,
+	describedAs,
+	type ScrollStub,
+	setupMwMock,
+	stubIntersectionObserver,
+} from '../../VueTestHelpers.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import type { SubjectSummary, SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
 
@@ -65,7 +72,7 @@ async function scrollIntoView( wrapper: VueWrapper ): Promise<void> {
 	await flushPromises();
 }
 
-function findSubjectListLink( wrapper: VueWrapper ): ReturnType<VueWrapper['find']> {
+function findSubjectListLink( wrapper: VueWrapper ): DOMWrapper<Element> {
 	return wrapper.find( '.ext-neowiki-schema-card__footer a' );
 }
 
@@ -214,8 +221,7 @@ describe( 'SchemaCard', () => {
 	it( 'ties the link to its Subjects to the Schema they belong to', () => {
 		const wrapper = mountCard( { subjectCount: 2 } );
 
-		expect( findSubjectListLink( wrapper ).attributes( 'aria-describedby' ) )
-			.toBe( wrapper.find( 'h2' ).attributes( 'id' ) );
+		expect( describedAs( wrapper, findSubjectListLink( wrapper ) ) ).toEqual( [ 'Artist' ] );
 	} );
 
 	it( 'shows the newest Subjects of a Schema whose count says it has none', async () => {
@@ -266,15 +272,15 @@ describe( 'SchemaCard', () => {
 
 	it( 'ties its buttons to the Schema they act on', () => {
 		const wrapper = mountCard( { canEdit: true, canDelete: true, canCreateSubject: true } );
-		const headingId = wrapper.find( 'h2' ).attributes( 'id' );
 
-		expect( headingId ).toBeTruthy();
-		expect( wrapper.findAll( 'button' ).map( ( button ) => button.attributes( 'aria-describedby' ) ) )
-			.toEqual( [ headingId, headingId, headingId ] );
+		expect( wrapper.findAll( 'button' ).map( ( button ) => describedAs( wrapper, button ) ) )
+			.toEqual( [ [ 'Artist' ], [ 'Artist' ], [ 'Artist' ] ] );
 	} );
 
-	it( 'gives each card a heading id of its own', () => {
-		expect( mountCard().find( 'h2' ).attributes( 'id' ) ).not.toBe( mountCard().find( 'h2' ).attributes( 'id' ) );
+	it( 'ties the controls of each card to that card alone', () => {
+		const describedBy = ( card: VueWrapper ): string | undefined => findSubjectListLink( card ).attributes( 'aria-describedby' );
+
+		expect( describedBy( mountCard( { subjectCount: 2 } ) ) ).not.toBe( describedBy( mountCard( { subjectCount: 2 } ) ) );
 	} );
 
 	it( 'offers duplicating to a user who may duplicate Schemas', async () => {

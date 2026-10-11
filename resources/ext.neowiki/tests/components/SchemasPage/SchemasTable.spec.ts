@@ -1,14 +1,14 @@
 import { DOMWrapper, mount, VueWrapper } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import SchemasTable from '@/components/SchemasPage/SchemasTable.vue';
-import { chooseFromMenu, createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { chooseFromMenu, createI18nMock, describedAs, setupMwMock } from '../../VueTestHelpers.ts';
 
 const SUBJECT_COUNTS = new Map( [ [ 'Artist', 4 ], [ 'Artwork', 30 ] ] );
 const MORE_ACTIONS = 'neowiki-schemas-more-actions';
 const CREATE_SUBJECT = 'neowiki-schemas-create-subject';
 
 function mountTable( props: Partial<InstanceType<typeof SchemasTable>['$props']> = {} ): VueWrapper {
-	setupMwMock( { functions: [ 'msg', 'util', 'language' ] } );
+	setupMwMock( { functions: [ 'msg', 'message', 'util', 'language' ] } );
 
 	return mount( SchemasTable, {
 		props: {
@@ -145,13 +145,12 @@ describe( 'SchemasTable', () => {
 			canCreateSubject: true,
 		} );
 		const demo = row( wrapper, 1 );
-		const describedAs = ( element: DOMWrapper<Element> ): string[] => element.attributes( 'aria-describedby' )!
-			.split( ' ' ).map( ( id ) => wrapper.find( `[id="${ id }"]` ).text() );
 
-		expect( describedAs( findButton( demo, 'neowiki-edit-schema' ) ) ).toEqual( [ 'Validation Demo' ] );
-		expect( describedAs( findButton( demo, MORE_ACTIONS ) ) ).toEqual( [ 'Validation Demo' ] );
-		expect( describedAs( findButton( demo, CREATE_SUBJECT ) ) ).toEqual( [ 'Validation Demo' ] );
-		expect( describedAs( demo.find( 'a[href="/wiki/Special:Subjects/Validation Demo"]' ) ) ).toEqual( [ 'Validation Demo' ] );
+		expect( describedAs( wrapper, findButton( demo, 'neowiki-edit-schema' ) ) ).toEqual( [ 'Validation Demo' ] );
+		expect( describedAs( wrapper, findButton( demo, MORE_ACTIONS ) ) ).toEqual( [ 'Validation Demo' ] );
+		expect( describedAs( wrapper, findButton( demo, CREATE_SUBJECT ) ) ).toEqual( [ 'Validation Demo' ] );
+		expect( describedAs( wrapper, demo.find( 'a[href="/wiki/Special:Subjects/Validation Demo"]' ) ) )
+			.toEqual( [ 'Validation Demo' ] );
 	} );
 
 } );
