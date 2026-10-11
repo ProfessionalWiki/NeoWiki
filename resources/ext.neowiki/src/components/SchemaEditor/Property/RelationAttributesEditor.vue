@@ -12,7 +12,9 @@
 			<SchemaPicker
 				v-if="targetSchemaIsEditable"
 				:selected="localTargetSchemaName || null"
+				:offers-creation="canCreateSchemas && schemaCreation !== undefined"
 				@select="updateTargetSchema"
+				@create="createTargetSchema"
 			/>
 			<CdxTextInput
 				v-else
@@ -44,17 +46,26 @@
 
 <script setup lang="ts">
 import { isLocalSchemaReference, schemaReferenceName } from '@/domain/SchemaReference';
-import { computed } from 'vue';
+import { computed, inject, onMounted } from 'vue';
 import { CdxCheckbox, CdxField, CdxTextInput } from '@wikimedia/codex';
 import { RelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { withConstraintSeverity } from '@/domain/PropertyDefinition.ts';
 import type { Severity } from '@/domain/Severity.ts';
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import SchemaPicker from '@/components/common/SchemaPicker.vue';
+import { SchemaCreationKey } from '@/components/common/SchemaCreation.ts';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
+import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
+import { normalizeSchemaName } from '@/stores/SchemaStore.ts';
 
 const props = defineProps<AttributesEditorProps<RelationProperty>>();
 const emit = defineEmits<AttributesEditorEmits<RelationProperty>>();
+
+const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();
+
+onMounted( checkCreatePermission );
+
+const schemaCreation = inject( SchemaCreationKey, undefined );
 
 // A Schema of another Source is shown but not edited here: the picker offers this wiki's Schemas
 // alone, and selecting one from it would replace a reference the editor cannot express (ADR 23).
@@ -76,6 +87,15 @@ const targetSchemaError = computed<string | null>( () =>
 const updateTargetSchema = ( schemaName: string ): void => {
 	emit( 'update:property', { targetSchema: schemaName } );
 };
+
+async function createTargetSchema( schemaName: string ): Promise<void> {
+	const schema = await schemaCreation?.create( schemaName ) ?? null;
+
+	// The wiki saved the Schema under its page title, which is the name the picker would list it by.
+	if ( schema !== null ) {
+		updateTargetSchema( normalizeSchemaName( schema.getName() ) );
+	}
+}
 
 const updateMultiple = ( value: boolean ): void => {
 	emit( 'update:property', { multiple: value } );

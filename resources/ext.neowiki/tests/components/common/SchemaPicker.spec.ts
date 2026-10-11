@@ -116,6 +116,17 @@ describe( 'SchemaPicker', () => {
 		await flushPromises();
 	}
 
+	// Holds the schemas back, as the network does, until the returned function delivers them.
+	function holdSchemas(): ( summaries: typeof SUMMARIES ) => void {
+		let deliverSchemas: ( summaries: typeof SUMMARIES ) => void = () => undefined;
+		schemaStore.fetchAllSchemaSummaries = vi.fn().mockReturnValue(
+			new Promise( ( resolve ) => {
+				deliverSchemas = resolve;
+			} ),
+		);
+		return ( summaries ) => deliverSchemas( summaries );
+	}
+
 	async function pressKey( wrapper: VueWrapper, key: string ): Promise<void> {
 		await field( wrapper ).trigger( 'keydown', { key } );
 		await flushPromises();
@@ -319,6 +330,14 @@ describe( 'SchemaPicker', () => {
 			expect( listedSchemas( wrapper ) ).toEqual( [ 'Office' ] );
 		} );
 
+		it( 'makes no offer for the committed schema, which the list leaves out', async () => {
+			const wrapper = await mountCreatingPicker();
+
+			await wrapper.setProps( { selected: 'Archived' } );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City' ] );
+		} );
+
 		describe.each( [
 			[ 'alone', 'Artwork' ],
 			[ 'pinned below the schemas the text matches', 'Prod' ],
@@ -401,6 +420,46 @@ describe( 'SchemaPicker', () => {
 			expect( chosenSchema( wrapper ) ).toBe( 'City' );
 		} );
 
+		describe( 'that the list, fetched before it was created, leaves out', () => {
+			const ARTWORK = { name: 'Artwork', description: '', propertyCount: 0 };
+
+			async function mountPickerTargetingProduct(): Promise<VueWrapper> {
+				const wrapper = await mountLoadedPicker( { selected: 'Product' } );
+				schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [ ...SUMMARIES, ARTWORK ] );
+				return wrapper;
+			}
+
+			it( 'lists it', async () => {
+				const wrapper = await mountPickerTargetingProduct();
+
+				await wrapper.setProps( { selected: 'Artwork' } );
+				await flushPromises();
+
+				expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City', 'Artwork' ] );
+			} );
+
+			it( 'marks it as the chosen one', async () => {
+				const wrapper = await mountPickerTargetingProduct();
+
+				await wrapper.setProps( { selected: 'Artwork' } );
+				await flushPromises();
+
+				expect( chosenSchema( wrapper ) ).toBe( 'Artwork' );
+			} );
+
+			it( 'keeps text typed while the list is fetched again', async () => {
+				const wrapper = await mountLoadedPicker( { selected: 'Product' } );
+				const deliverSchemas = holdSchemas();
+				await wrapper.setProps( { selected: 'Artwork' } );
+
+				await type( wrapper, 'off' );
+				deliverSchemas( [ ...SUMMARIES, ARTWORK ] );
+				await flushPromises();
+
+				expect( fieldText( wrapper ) ).toBe( 'off' );
+			} );
+		} );
+
 		it( 'shows a committed schema that is missing from the list', async () => {
 			const wrapper = await mountLoadedPicker();
 
@@ -432,12 +491,7 @@ describe( 'SchemaPicker', () => {
 		// The schemas are delivered only after focus() has been called, as they are over the
 		// network: the field must end up focused with its list open regardless.
 		it( 'lists every schema straight away when focused, without waiting for a second focus', async () => {
-			let deliverSchemas: ( summaries: typeof SUMMARIES ) => void = () => undefined;
-			schemaStore.fetchAllSchemaSummaries = vi.fn().mockReturnValue(
-				new Promise( ( resolve ) => {
-					deliverSchemas = resolve;
-				} ),
-			);
+			const deliverSchemas = holdSchemas();
 			const wrapper = mountPicker();
 
 			const focusing = ( wrapper.vm as unknown as { focus: () => Promise<void> } ).focus();

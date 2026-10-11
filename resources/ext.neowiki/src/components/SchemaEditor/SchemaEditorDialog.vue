@@ -65,6 +65,15 @@
 			@discard="confirmClose"
 			@keep-editing="cancelClose"
 		/>
+
+		<!-- Mounted only while open: Codex stacks dialogs in mount order. -->
+		<SchemaCreatorDialog
+			v-if="stackedSchemaName !== null"
+			:open="true"
+			:initial-name="stackedSchemaName"
+			@update:open="closeStackedSchemaCreator"
+			@created="stackedSchemaCreated"
+		/>
 	</div>
 </template>
 
@@ -73,12 +82,14 @@ import SchemaEditor, { SchemaEditorExposes } from '@/components/SchemaEditor/Sch
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import EditableText from '@/components/common/EditableText.vue';
+import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
 import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
 import { cdxIconClose } from '@wikimedia/codex-icons';
 import { Schema } from '@/domain/Schema.ts';
 import { computed, nextTick, ref, watch } from 'vue';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
+import { useSchemaCreation } from '@/composables/useSchemaCreation.ts';
 
 export type SchemaSaveHandler = ( schema: Schema, comment: string ) => Promise<void>;
 
@@ -120,6 +131,12 @@ function close(): void {
 }
 
 const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseConfirmation( hasChanged, close );
+
+const {
+	initialName: stackedSchemaName,
+	created: stackedSchemaCreated,
+	closed: closeStackedSchemaCreator
+} = useSchemaCreation();
 
 function onDialogUpdateOpen( value: boolean ): void {
 	if ( !value ) {

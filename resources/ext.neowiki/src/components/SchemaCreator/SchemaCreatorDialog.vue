@@ -31,6 +31,15 @@
 			@discard="confirmClose"
 			@keep-editing="cancelClose"
 		/>
+
+		<!-- Mounted only while open: Codex stacks dialogs in mount order. -->
+		<SchemaCreatorDialog
+			v-if="stackedSchemaName !== null"
+			:open="true"
+			:initial-name="stackedSchemaName"
+			@update:open="closeStackedSchemaCreator"
+			@created="stackedSchemaCreated"
+		/>
 	</div>
 </template>
 
@@ -45,6 +54,7 @@ import { Schema } from '@/domain/Schema.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
+import { useSchemaCreation } from '@/composables/useSchemaCreation.ts';
 
 const props = defineProps<{
 	open: boolean;
@@ -66,6 +76,12 @@ function close(): void {
 }
 
 const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseConfirmation( hasChanged, close );
+
+const {
+	initialName: stackedSchemaName,
+	created: stackedSchemaCreated,
+	closed: closeStackedSchemaCreator
+} = useSchemaCreation();
 
 function onDialogUpdateOpen( value: boolean ): void {
 	if ( !value ) {

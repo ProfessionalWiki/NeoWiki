@@ -2,6 +2,9 @@ import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
+import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
+import SchemaPicker from '@/components/common/SchemaPicker.vue';
+import { newRelationProperty } from '@/domain/propertyTypes/Relation';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
@@ -235,5 +238,41 @@ describe( 'SchemaCreatorDialog', () => {
 
 			expect( schemaStore.saveSchema ).toHaveBeenCalledTimes( 1 );
 		} );
+	} );
+
+	// From Codex 2.3 a dialog mounted inside another is teleported into it, where Escape closes both.
+	it( 'stacks the schema creator a relation property asks for next to its own dialog', async () => {
+		const wrapper = mount( SchemaCreatorDialog, {
+			props: { open: true },
+			global: {
+				plugins: [ pinia ],
+				stubs: {
+					SchemaCreator: {
+						components: { RelationAttributesEditor },
+						setup: () => ( { property: newRelationProperty( {} ) } ),
+						template: '<RelationAttributesEditor :property="property" />',
+					},
+					SchemaPicker: { template: '<div></div>', emits: [ 'select', 'create' ] },
+					SeverityInput: true,
+					SummaryAction: SummaryActionStub,
+					CloseConfirmationDialog: CloseConfirmationDialogStub,
+					CdxDialog: CdxDialogStub,
+				},
+				provide: {
+					[ Service.SchemaPermissionHints ]: { canCreateSchemas: async () => true },
+				},
+				mocks: {
+					$i18n: createI18nMock(),
+				},
+			},
+		} );
+		await flushPromises();
+
+		wrapper.findComponent( SchemaPicker ).vm.$emit( 'create', 'Artist' );
+		await flushPromises();
+
+		const stacked = wrapper.findAllComponents( SchemaCreatorDialog ).filter( ( dialog ) => dialog.vm !== wrapper.vm );
+		expect( stacked.map( ( dialog ) => dialog.props( 'initialName' ) ) ).toEqual( [ 'Artist' ] );
+		expect( wrapper.findComponent( CdxDialog ).findAllComponents( SchemaCreatorDialog ) ).toHaveLength( 0 );
 	} );
 } );

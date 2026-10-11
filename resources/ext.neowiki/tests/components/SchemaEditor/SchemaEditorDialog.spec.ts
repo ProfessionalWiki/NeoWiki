@@ -1,14 +1,22 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { defineComponent } from 'vue';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { defineComponent, ref } from 'vue';
+import { createPinia, setActivePinia } from 'pinia';
 import SchemaEditorDialog, { type SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import EditableText from '@/components/common/EditableText.vue';
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
+import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
+import SchemaPicker from '@/components/common/SchemaPicker.vue';
+import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Relation';
+import { Service } from '@/NeoWikiServices.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { newSchema } from '@/TestHelpers.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
@@ -300,6 +308,111 @@ describe( 'SchemaEditorDialog', () => {
 			await save( wrapper );
 
 			expect( onSave ).toHaveBeenCalledTimes( 1 );
+		} );
+	} );
+
+	describe( 'Creating the target schema of a relation property', () => {
+		// The editor reduced to one relation property, which takes the target it is handed back the
+		// way the property editor does.
+		const RelationEditorStub = {
+			components: { RelationAttributesEditor },
+			props: [ 'initialSchema', 'description' ],
+			emits: [ 'change' ],
+			setup() {
+				const property = ref<RelationProperty>( newRelationProperty( { targetSchema: 'Person' } ) );
+				const update = ( attributes: Partial<RelationProperty> ): void => {
+					property.value = { ...property.value, ...attributes };
+				};
+				return { property, update };
+			},
+			template: '<RelationAttributesEditor :property="property" @update:property="update" />',
+		};
+
+		// A Codex dialog like the real one, which takes focus when it opens and hands it back when it closes.
+		const SchemaCreatorDialogStub = {
+			name: 'SchemaCreatorDialog',
+			components: { CdxDialog },
+			props: [ 'open', 'initialName' ],
+			emits: [ 'update:open', 'created' ],
+			template: '<CdxDialog :open="open" title="schema-creator" />',
+		};
+
+		let wrapper: VueWrapper;
+
+		beforeEach( () => {
+			const pinia = createPinia();
+			setActivePinia( pinia );
+			const person = { name: 'Person', description: '', propertyCount: 1 };
+			useSchemaStore().fetchAllSchemaSummaries = vi.fn()
+				.mockResolvedValueOnce( [ person ] )
+				.mockResolvedValue( [ person, { name: 'Artist', description: '', propertyCount: 0 } ] );
+
+			wrapper = mount( SchemaEditorDialog, {
+				props: { initialSchema: mockSchema, open: true, onSave },
+				attachTo: document.body,
+				global: {
+					plugins: [ pinia ],
+					mocks: { $i18n },
+					stubs: { ...stubs, SchemaEditor: RelationEditorStub, SchemaCreatorDialog: SchemaCreatorDialogStub, SeverityInput: true },
+					provide: {
+						[ Service.SchemaPermissionHints ]: { canCreateSchemas: async () => true },
+					},
+				},
+			} );
+		} );
+
+		afterEach( () => {
+			wrapper.unmount();
+		} );
+
+		function targetSchemaField(): HTMLInputElement {
+			return wrapper.findComponent( SchemaPicker ).find<HTMLInputElement>( 'input' ).element;
+		}
+
+		function schemaCreator(): VueWrapper<InstanceType<typeof SchemaCreatorDialog>> {
+			return wrapper.findComponent( SchemaCreatorDialog );
+		}
+
+		// Chosen from the field, which is where the stacked dialog takes focus from.
+		async function chooseCreateOffer( typedName: string ): Promise<void> {
+			await flushPromises();
+			targetSchemaField().focus();
+			wrapper.findComponent( SchemaPicker ).vm.$emit( 'create', typedName );
+			await flushPromises();
+		}
+
+		// From Codex 2.3 a dialog mounted inside another is teleported into it, where Escape closes both.
+		it( 'stacks the schema creator next to its own dialog rather than inside it', async () => {
+			await chooseCreateOffer( 'Artist' );
+
+			expect( schemaCreator().props( 'initialName' ) ).toBe( 'Artist' );
+			expect( wrapper.findComponent( CdxDialog ).findComponent( SchemaCreatorDialog ).exists() ).toBe( false );
+		} );
+
+		it( 'stacks the schema creator when nothing was typed', async () => {
+			await chooseCreateOffer( '' );
+
+			expect( schemaCreator().props( 'initialName' ) ).toBe( '' );
+		} );
+
+		it( 'closes the schema creator when it is closed without creating one', async () => {
+			await chooseCreateOffer( 'Artist' );
+
+			schemaCreator().vm.$emit( 'update:open', false );
+			await flushPromises();
+
+			expect( schemaCreator().exists() ).toBe( false );
+		} );
+
+		it( 'returns focus to the target field once the schema is created', async () => {
+			await chooseCreateOffer( 'Artist' );
+
+			schemaCreator().vm.$emit( 'created', newSchema( { title: 'Artist' } ) );
+			schemaCreator().vm.$emit( 'update:open', false );
+			await flushPromises();
+
+			expect( targetSchemaField().value ).toBe( 'Artist' );
+			expect( document.activeElement ).toBe( targetSchemaField() );
 		} );
 	} );
 } );

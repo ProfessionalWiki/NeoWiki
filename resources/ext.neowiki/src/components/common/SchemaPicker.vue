@@ -24,6 +24,10 @@ import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 
 const props = defineProps<{
+	/**
+	 * The committed Schema. Changing it to one the list leaves out makes the picker fetch the list
+	 * again, so a Schema created since is listed.
+	 */
 	selected?: string | null;
 	/**
 	 * Ends the list with an offer to create a Schema named after the typed text, unless a Schema has
@@ -54,9 +58,13 @@ const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
 
 const typedName = computed( (): string => String( inputText.value ).trim() );
 
-// Schema names are unique, so a name that is taken can only be picked.
-const takenNames = computed( (): Set<string> =>
-	new Set( summaries.value.map( ( summary ) => normalizeSchemaName( summary.name ) ) ) );
+// Schema names are unique, so a name that is taken can only be picked. The committed Schema's name is
+// taken even while the list leaves it out.
+const takenNames = computed( (): Set<string> => {
+	const names = summaries.value.map( ( summary ) => summary.name );
+
+	return new Set( ( props.selected ? [ ...names, props.selected ] : names ).map( normalizeSchemaName ) );
+} );
 
 const creationOffered = computed( (): boolean =>
 	props.offersCreation && !takenNames.value.has( normalizeSchemaName( typedName.value ) ) );
@@ -110,10 +118,20 @@ const schemasReady = loadSchemas();
 
 // The filter is reset alongside the field: CdxLookup resolves a selection against the
 // menu as it currently stands, and would empty the field for a schema the filter hides.
-watch( () => props.selected, ( value ) => {
+// A committed schema the list leaves out, such as one created from the offer, may be newer
+// than the list, so the list is fetched again. Text typed in the meantime is not overwritten.
+watch( () => props.selected, async ( value ) => {
 	selectedSchema.value = selectableSchema( value ?? null );
 	inputText.value = value ?? '';
 	query.value = '';
+
+	if ( value && selectedSchema.value === null ) {
+		await loadSchemas();
+
+		if ( inputText.value === value ) {
+			selectedSchema.value = selectableSchema( value );
+		}
+	}
 } );
 
 // CdxLookup takes the field's text for a selection from the matching menu entry and
@@ -136,8 +154,8 @@ function filterSchemas( value: string ): void {
 // every schema again rather than the last filter.
 function onSelect( schemaName: string | null ): void {
 	if ( schemaName === CREATE_SCHEMA ) {
-		// Taken back before Codex sees it as the selection, which would replace the typed text in the field.
-		selectedSchema.value = selectableSchema( props.selected ?? null );
+		// Cleared before Codex sees it as the selection, which would replace the typed text in the field.
+		selectedSchema.value = null;
 		emit( 'create', typedName.value );
 		return;
 	}
