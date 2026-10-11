@@ -436,6 +436,16 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertRelationExists( self::GUID_2, self::LOCATION_PROPERTY, self::GUID_3, 'rTestNQS1111rr2' );
 	}
 
+	// The Schemas newProjectionStore() serves define no properties, like one whose relation property was renamed.
+	public function testSavesARelationItsSchemaNoLongerDefines(): void {
+		$this->newProjectionStore()->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
+		) );
+
+		$this->assertRelationExists( self::GUID_2, self::LOCATION_PROPERTY, self::GUID_1 );
+	}
+
 	/**
 	 * Only an XML import can store such a target, the write guard refusing it on every API path. The
 	 * edge is dropped rather than MERGEd, which would stamp a foreign Subject's stub with this wiki's

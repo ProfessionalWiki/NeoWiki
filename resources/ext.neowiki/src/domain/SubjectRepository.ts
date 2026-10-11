@@ -10,6 +10,8 @@ import type { SubjectViolation } from '@/domain/SubjectViolation';
 export interface SubjectWithReferencedSubjects {
 	requestedSubject: Subject;
 	referencedSubjects: Subject[];
+	/** The targets of the requested Subject's relations that the read found no Subject for. */
+	notFoundTargetIds: SubjectId[];
 }
 
 /**
@@ -191,15 +193,14 @@ export class StubSubjectRepository implements SubjectRepository {
 
 	public async getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectWithReferencedSubjects> {
 		const subject = await this.getSubject( id );
-		const referencedIds = new Set(
-			[ ...subject.getStatements().getIdsOfReferencedSubjects() ].map( ( referencedId ) => referencedId.text ),
-		);
+		const referencedIds = [ ...subject.getStatements().getIdsOfReferencedSubjects() ];
 
 		return {
 			requestedSubject: subject,
-			referencedSubjects: [ ...referencedIds ]
+			referencedSubjects: [ ...new Set( referencedIds.map( ( referencedId ) => referencedId.text ) ) ]
 				.map( ( referencedId ) => this.subjects.get( referencedId ) )
 				.filter( ( referenced ): referenced is Subject => referenced !== undefined ),
+			notFoundTargetIds: referencedIds.filter( ( referencedId ) => !this.subjects.has( referencedId.text ) ),
 		};
 	}
 
@@ -211,6 +212,7 @@ export class StubSubjectRepository implements SubjectRepository {
 		return Promise.resolve( {
 			pageSubjects: new PageSubjects( pageId, null, [] ),
 			referencedSubjects: [],
+			notFoundTargetIds: [],
 			schemas: [],
 		} );
 	}

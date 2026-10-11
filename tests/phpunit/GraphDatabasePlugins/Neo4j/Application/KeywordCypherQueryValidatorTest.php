@@ -89,23 +89,40 @@ class KeywordCypherQueryValidatorTest extends TestCase {
 	}
 
 	public function testAllowsWriteKeywordInDoubleQuotedString(): void {
-		$query = 'MATCH (n) WHERE n.label = "Data set" RETURN n';
+		$query = 'MATCH (n) WHERE n.label = "Data \\"set\\"" RETURN n';
 		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow a write keyword in a double-quoted string' );
 	}
 
 	public function testAllowsWriteKeywordInLongString(): void {
-		$query = "MATCH (n) WHERE n.text = '" . str_repeat( 'Lorem ipsum ', 1000 ) . "set' RETURN n";
+		$text = str_repeat( 'Lorem ipsum ', 1000 ) . 'set';
+		$query = "MATCH (n) WHERE n.text = '$text' OR n.title = \"$text\" RETURN n";
 		$this->assertTrue( $this->queryIsAllowed( $query ), 'Filter should allow a write keyword at the end of a long string' );
 	}
 
 	public function testAllowsWriteKeywordAfterManyEscapes(): void {
-		$text = str_repeat( chr( 92 ) . 'n', 10000 ) . 'set';
-		$name = str_repeat( 'a``', 10000 ) . 'set';
+		$text = str_repeat( chr( 92 ) . 'n', 50000 ) . 'set';
+		$name = str_repeat( 'a``', 50000 ) . 'set';
 		$query = "MATCH (n) WHERE n.text = '$text' OR n.title = \"$text\" OR n.`$name` = 1 RETURN n";
 		$this->assertTrue(
 			$this->queryIsAllowed( $query ),
 			'Filter should allow a write keyword after many escapes in a string or quoted name'
 		);
+	}
+
+	/**
+	 * PCRE without its JIT gives up on a query long enough, which a backtrack limit of 1 stands in for.
+	 */
+	public function testRefusesAQueryWhoseEscapesItCannotDecode(): void {
+		$backtrackLimit = (string)ini_get( 'pcre.backtrack_limit' );
+		ini_set( 'pcre.backtrack_limit', '1' );
+
+		try {
+			$allowed = $this->queryIsAllowed( 'MATCH (n) WITH n ' . chr( 92 ) . 'u0053ET n.checked = true' );
+		} finally {
+			ini_set( 'pcre.backtrack_limit', $backtrackLimit );
+		}
+
+		$this->assertFalse( $allowed );
 	}
 
 	public function testAllowsPropertyNamedAfterAKeywordAndAnEscapedZero(): void {
@@ -132,7 +149,7 @@ class KeywordCypherQueryValidatorTest extends TestCase {
 	}
 
 	public function testAllowsPartialKeywordMatch(): void {
-		$query = "MATCH (n) WHERE n.name CONTAINS 'create' RETURN n";
+		$query = 'MATCH (n) WHERE n.created > 0 RETURN n.callNumber';
 		$this->assertTrue(
 			$this->queryIsAllowed( $query ),
 			'Filter should allow partial matches of write operation keywords'

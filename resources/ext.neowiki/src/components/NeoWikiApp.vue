@@ -17,13 +17,14 @@
 		<SubjectCreatorDialog
 			v-model:open="subjectStore.subjectCreatorOpen"
 			:host-page="hostPage"
+			:relation-target="subjectStore.subjectCreatorTarget"
 		/>
 	</teleport>
 </template>
 
 <script setup lang="ts">
 import type { Component } from 'vue';
-import { onMounted, ref } from 'vue';
+import { onMounted, provide, ref } from 'vue';
 import { SubjectId } from '@/domain/SubjectId';
 import Infobox from '@/components/Views/Infobox.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
@@ -33,6 +34,7 @@ import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { canEditSubjectOnItsPage } from '@/presentation/subjectEditPermission.ts';
+import { RelationTargetCreationKey } from '@/components/Value/ValueDisplayContract.ts';
 
 /** A View placeholder on the page, before its Subject is known. */
 interface View {
@@ -58,6 +60,8 @@ const shouldShowSubjectCreator = ref( props.showSubjectCreator );
 const hostPage = ref( { hasMainSubject: props.pageHasMainSubject } );
 const subjectStore = useSubjectStore();
 const subjectPermissionHints = NeoWikiServices.getSubjectPermissionHints();
+
+provide( RelationTargetCreationKey, shouldShowSubjectCreator );
 const viewTypeRegistry = NeoWikiServices.getViewTypeRegistry();
 
 function resolveViewComponent( viewData: ViewData ): Component {

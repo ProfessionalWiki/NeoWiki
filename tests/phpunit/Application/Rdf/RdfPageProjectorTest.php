@@ -418,9 +418,12 @@ class RdfPageProjectorTest extends TestCase {
 		$this->assertSame( LogLevel::WARNING, $this->logger->getFirstLogCall()->getLevel() );
 	}
 
-	public function testProjectsARelationItsSchemaNoLongerDefines(): void {
+	/**
+	 * @dataProvider provideCompanyPropertiesWithoutTheCeoRelation
+	 */
+	public function testProjectsARelationItsSchemaNoLongerDefines( array $companyProperties ): void {
 		$quads = $this->newProjector( new InMemorySchemaLookup(
-			TestSchema::build( name: 'Company', properties: new PropertyDefinitions( [] ) )
+			TestSchema::build( name: 'Company', properties: new PropertyDefinitions( $companyProperties ) )
 		) )->projectSubject( TestPage::build( id: 42, mainSubject: $this->acmeWithCeo() ), new SubjectId( self::ACME_ID ) );
 
 		$this->assertTrue( $quads->contains( $this->quad(
@@ -428,6 +431,11 @@ class RdfPageProjectorTest extends TestCase {
 			$this->ns->property( 'CEO' ),
 			$this->ns->subject( new SubjectId( self::JANE_ID ) )
 		) ) );
+	}
+
+	public static function provideCompanyPropertiesWithoutTheCeoRelation(): iterable {
+		yield 'CEO removed' => [ [] ];
+		yield 'CEO given another type' => [ [ 'CEO' => TestProperty::buildText() ] ];
 	}
 
 	private function acmeWithCeo( string $ceoId = self::JANE_ID ): Subject {

@@ -26,6 +26,7 @@ import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError';
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
 import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError';
 import { parseViolations } from '@/persistence/violationParsing';
+import { notFoundTargetIds } from '@/persistence/notFoundTargetIds';
 
 async function throwOn422IfPossible( response: Response ): Promise<void> {
 	if ( response.status !== 422 ) {
@@ -192,10 +193,15 @@ export class RestSubjectRepository implements SubjectRepository {
 	 */
 	public async getSubjectWithReferencedSubjects( id: SubjectId ): Promise<SubjectWithReferencedSubjects> {
 		const bundle = await this.fetchSubjectBundle( id, false );
+		const requestedSubject = this.deserializeRequested( bundle );
 
 		return {
-			requestedSubject: this.deserializeRequested( bundle ),
+			requestedSubject,
 			referencedSubjects: this.deserializeReferencedSubjects( bundle ),
+			// A read of an earlier revision leaves out the targets created since, which exist all the same.
+			notFoundTargetIds: this.revisionId === undefined ?
+				notFoundTargetIds( [ requestedSubject ], Object.keys( bundle.subjects ) ) :
+				[],
 		};
 	}
 
@@ -344,8 +350,6 @@ export class RestSubjectRepository implements SubjectRepository {
 
 		await throwOn422IfPossible( response );
 
-		// Only a caller that minted the id up front can meet this, and for one it minted for this
-		// very Subject it means the create already landed and its answer was lost.
 		if ( response.status === 409 && id !== undefined ) {
 			throw new SubjectIdInUseError( id.text );
 		}
@@ -401,9 +405,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		await throwOn422IfPossible( response );
 
 		if ( response.status === 409 ) {
-			// Both conflicts answer 409, and only the title one names a title. An id conflict can be
-			// met only by a caller that minted the id up front, and for one it minted for this very
-			// Subject it means the create already landed and its answer was lost.
+			// Both conflicts answer 409, and only the title one names a title.
 			const takenTitle = await this.stringFieldOf( response, 'pageTitle' );
 
 			if ( takenTitle === null && id !== undefined ) {

@@ -152,6 +152,7 @@
 			v-if="canCreate"
 			v-model:open="subjectStore.subjectCreatorOpen"
 			:host-page="{ hasMainSubject }"
+			:relation-target="subjectStore.subjectCreatorTarget"
 		/>
 
 		<SubjectEditorDialog
@@ -184,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, shallowRef, nextTick } from 'vue';
+import { computed, onMounted, onUnmounted, provide, ref, shallowRef, nextTick } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import {
 	cdxIconAdd,
@@ -209,6 +210,7 @@ import { SubjectId } from '@/domain/SubjectId';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { useSubjectEditor } from '@/composables/useSubjectEditor.ts';
+import { RelationTargetCreationKey } from '@/components/Value/ValueDisplayContract.ts';
 import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vue';
 import SubjectDeleteDialog from '@/components/SubjectsManager/SubjectDeleteDialog.vue';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
@@ -288,6 +290,8 @@ const rdfProjections = computed( () => rdfProjectionsFor(
 
 const canCreate = computed( () => canCreateMainSubject.value || canCreateOtherSubject.value );
 const canEdit = computed( () => canEditSubject.value );
+
+provide( RelationTargetCreationKey, canCreate );
 
 // A subject-first wiki gives every Subject a page of its own, so moving one between pages would
 // advertise a page model the wiki denies (ADR 33).

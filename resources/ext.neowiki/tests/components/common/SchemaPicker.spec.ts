@@ -140,6 +140,12 @@ describe( 'SchemaPicker', () => {
 			expect( listedDescriptions( wrapper ) ).toEqual( [ 'A product', 'A physical location' ] );
 		} );
 
+		it( 'lists only the schemas it is limited to', async () => {
+			const wrapper = await mountLoadedPicker( { schemaNames: [ 'City', 'Product' ] } );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'City' ] );
+		} );
+
 		it( 'lists only the schemas matching the typed text', async () => {
 			const wrapper = await mountLoadedPicker();
 

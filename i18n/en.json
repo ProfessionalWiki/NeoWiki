@@ -149,6 +149,7 @@
 	"neowiki-delete-error": "Failed to delete $1",
 
 	"neowiki-subject-generated-name": "($1)",
+	"neowiki-relation-target-not-found-title": "$1 (subject not found)",
 	"neowiki-search-hit-subject": "$1 ($2)",
 
 	"neowiki-subject-editor-title": "Edit subject",
@@ -200,6 +201,7 @@
 	"neowiki-subject-creator-page-taken": "A page named \"$1\" already exists. Choose it as an existing page, or use a different title.",
 	"neowiki-subject-creator-page-taken-retitle": "A page named \"$1\" already exists. Use a different title.",
 	"neowiki-subject-creator-page-read-error": "The page \"$1\" could not be read. Pick it again to retry.",
+	"neowiki-subject-creator-id-in-use": "The ID $1 is already in use, so this subject cannot be created.",
 	"neowiki-createsubject-button": "Create subject",
 
 	"neowiki-schema-display-property-name": "Property",

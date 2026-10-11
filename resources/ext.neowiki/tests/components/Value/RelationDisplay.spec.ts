@@ -1,403 +1,274 @@
-import { mount } from '@vue/test-utils';
-import { reactive } from 'vue';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { mount, VueWrapper } from '@vue/test-utils';
+import { describe, expect, it, beforeEach } from 'vitest';
+import { ref, type Ref } from 'vue';
+import { createPinia, setActivePinia, type Pinia } from 'pinia';
 import RelationDisplay from '@/components/Value/RelationDisplay.vue';
-import { RelationTargetUrlKey } from '@/components/Value/ValueDisplayContract.ts';
-import { Relation, RelationValue } from '@/domain/Value.ts';
+import { RelationTargetCreationKey, RelationTargetUrlKey } from '@/components/Value/ValueDisplayContract.ts';
+import { newRelation, newStringValue, RelationValue, type Value } from '@/domain/Value.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
-import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import { Subject } from '@/domain/Subject.ts';
+import type { RelationProperty } from '@/domain/propertyTypes/Relation.ts';
+import { useSubjectStore, type SubjectCreatorTarget } from '@/stores/SubjectStore.ts';
+import type { Subject } from '@/domain/Subject.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { newSubject } from '@/TestHelpers.ts';
+import { clickIsFollowed, setupMwMock } from '../../VueTestHelpers.ts';
 
-vi.mock( '@/stores/SubjectStore.ts' );
+const FOUND_ID = 's1111111111111A';
+const MISSING_ID = 's1111111111111B';
 
-function createSubject( id: string, label: string | null, pageName: string, displayName?: string, generated = false ): Subject {
-	return newSubject( {
+function storeSubject( id: string, label: string | null, pageName: string, displayName?: string ): void {
+	useSubjectStore().setSubject( newSubject( {
 		id,
 		label,
 		displayName: displayName ?? label ?? '',
-		displayNameIsGenerated: generated,
 		pageIdentifiers: new PageIdentifiers( 42, pageName ),
-	} );
+	} ) );
 }
 
-async function createWrapper( ...relations: Relation[] ): Promise<ReturnType<typeof mount>> {
-	const wrapper = createWrapperWithValue( new RelationValue( relations ) );
-	return wrapper;
+function readAsNotFound( ...ids: string[] ): void {
+	useSubjectStore().setSubjectsWithTargets( [], [], ids.map( ( id ) => new SubjectId( id ) ) );
 }
 
-function createWrapperWithValue(
-	value: RelationValue,
-	provide: Record<symbol, unknown> = {},
-): ReturnType<typeof mount> {
-	return mount( RelationDisplay, {
-		props: {
-			value: value,
-			property: newRelationProperty(),
-		},
-		global: {
-			provide: provide,
-		},
-	} );
+function relationsTo( ...ids: string[] ): RelationValue {
+	return new RelationValue( ids.map( ( id ) => newRelation( 'not-important', id ) ) );
 }
 
 describe( 'RelationDisplay.vue', () => {
-	let mockGetSubject: ReturnType<typeof vi.fn>;
-	let mockGetUrl: ReturnType<typeof vi.fn>;
-	let wikiConfig: Record<string, unknown>;
+	let pinia: Pinia;
+
+	function mountDisplay(
+		value: Value,
+		provide: Record<symbol, unknown> = {},
+		property: RelationProperty = newRelationProperty(),
+	): VueWrapper {
+		return mount( RelationDisplay, {
+			props: {
+				value: value,
+				property: property,
+			},
+			global: {
+				plugins: [ pinia ],
+				provide: provide,
+			},
+		} );
+	}
+
+	function useWikiMode( subjectFirst: boolean ): void {
+		setupMwMock( {
+			functions: [ 'config', 'message', 'msg', 'util' ],
+			config: { wgNeoWikiSubjectFirst: subjectFirst },
+		} );
+	}
 
 	beforeEach( () => {
-		mockGetSubject = vi.fn();
-		vi.mocked( useSubjectStore ).mockReturnValue( {
-			$id: 'subject',
-			getSubject: mockGetSubject,
-		} as any );
-
-		mockGetUrl = vi.fn();
-		wikiConfig = {};
-		vi.stubGlobal( 'mw', {
-			config: {
-				get: ( key: string ) => wikiConfig[ key ],
-			},
-			util: {
-				getUrl: mockGetUrl,
-			},
-			message: vi.fn( ( str: string ) => ( {
-				text: () => str,
-				parse: () => str,
-			} ) ),
-			msg: vi.fn( ( key: string, ...params: string[] ) =>
-				key === 'neowiki-subject-generated-name' ? `(${ params[ 0 ] })` : key + params.join( '' ) ),
-		} );
+		useWikiMode( false );
+		pinia = createPinia();
+		setActivePinia( pinia );
 	} );
 
-	it( 'renders a single relation correctly as a link', async () => {
-		mockGetSubject.mockReturnValue( createSubject( 's1111111111111A', 'Test Subject 1', 'Page_Name_1' ) );
-		mockGetUrl.mockReturnValue( '/wiki/Page_Name_1' );
+	it( 'links a target to the page it is stored on on a page-first wiki', () => {
+		storeSubject( FOUND_ID, 'Test Subject 1', 'Page_Name_1' );
 
-		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111A' ) ) );
+		const wrapper = mountDisplay( relationsTo( FOUND_ID ) );
 
-		const element = wrapper.find( 'a' );
-		expect( element.exists() ).toBe( true );
-		expect( element.text() ).toBe( 'Test Subject 1' );
-		expect( element.attributes( 'href' ) ).toBe( '/wiki/Page_Name_1' );
-		expect( element.classes().includes( 'error' ) ).toBe( false );
-
-		expect( mockGetSubject ).toHaveBeenCalledWith( new SubjectId( 's1111111111111A' ) );
-		expect( mockGetUrl ).toHaveBeenCalledWith( 'Page_Name_1' );
+		const link = wrapper.find( 'a' );
+		expect( link.text() ).toBe( 'Test Subject 1' );
+		expect( link.attributes( 'href' ) ).toBe( '/wiki/Page_Name_1' );
 	} );
 
 	// Where a relation leads without a host to say otherwise follows the wiki's mode (ADR 33): the
 	// page the target is stored on where the page is the entity, the target itself where it is not.
-	it( 'links a relation to the target Subject itself on a subject-first wiki', async () => {
-		wikiConfig.wgNeoWikiSubjectFirst = true;
-		mockGetSubject.mockReturnValue( createSubject( 's1111111111111A', 'Test Subject 1', 'Page_Name_1' ) );
-		mockGetUrl.mockImplementation( ( title: string ) => '/wiki/' + title );
+	it( 'links a relation to the target Subject itself on a subject-first wiki', () => {
+		useWikiMode( true );
+		storeSubject( FOUND_ID, 'Test Subject 1', 'Page_Name_1' );
 
-		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111A' ) ) );
+		const wrapper = mountDisplay( relationsTo( FOUND_ID ) );
 
-		expect( wrapper.find( 'a' ).attributes( 'href' ) ).toBe( '/wiki/Special:Subject/s1111111111111A' );
-	} );
-
-	it( 'links a relation to the page the target is stored on on a page-first wiki', async () => {
-		wikiConfig.wgNeoWikiSubjectFirst = false;
-		mockGetSubject.mockReturnValue( createSubject( 's1111111111111A', 'Test Subject 1', 'Page_Name_1' ) );
-		mockGetUrl.mockImplementation( ( title: string ) => '/wiki/' + title );
-
-		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111A' ) ) );
-
-		expect( wrapper.find( 'a' ).attributes( 'href' ) ).toBe( '/wiki/Page_Name_1' );
+		expect( wrapper.find( 'a' ).attributes( 'href' ) ).toBe( `/wiki/Special:Subject/${ FOUND_ID }` );
 	} );
 
 	// A host that says where relations lead outranks the mode: it is showing Subjects, not pages.
 	it( 'links a relation where the host says, rather than to the target\'s page', () => {
-		wikiConfig.wgNeoWikiSubjectFirst = true;
-		mockGetSubject.mockReturnValue( createSubject( 's1111111111111A', 'Test Subject 1', 'Page_Name_1' ) );
+		useWikiMode( true );
+		storeSubject( FOUND_ID, 'Test Subject 1', 'Page_Name_1' );
 
-		const wrapper = createWrapperWithValue(
-			new RelationValue( [ new Relation( 'not-important', new SubjectId( 's1111111111111A' ) ) ] ),
-			{
-				[ RelationTargetUrlKey as symbol ]:
-					( target: Subject ) => '/elsewhere/' + target.getId().text,
-			},
+		const wrapper = mountDisplay(
+			relationsTo( FOUND_ID ),
+			{ [ RelationTargetUrlKey as symbol ]: ( target: Subject ) => '/elsewhere/' + target.getId().text },
 		);
 
-		expect( wrapper.find( 'a' ).attributes( 'href' ) ).toBe( '/elsewhere/s1111111111111A' );
-		expect( mockGetUrl ).not.toHaveBeenCalled();
+		expect( wrapper.find( 'a' ).attributes( 'href' ) ).toBe( `/elsewhere/${ FOUND_ID }` );
 	} );
 
-	it( 'renders the display name of a target that has no label, rather than its id', async () => {
-		mockGetSubject.mockReturnValue(
-			createSubject( 's1111111111111A', null, 'Page_Name_1', 'Page Name 1' ),
-		);
-		mockGetUrl.mockReturnValue( '/wiki/Page_Name_1' );
+	it( 'renders the display name of a target that has no label, rather than its id', () => {
+		storeSubject( FOUND_ID, null, 'Page_Name_1', 'Page Name 1' );
 
-		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111A' ) ) );
+		const wrapper = mountDisplay( relationsTo( FOUND_ID ) );
 
 		expect( wrapper.find( 'a' ).text() ).toBe( 'Page Name 1' );
 	} );
 
 	// A relation link is article content a reader sees, so a target nobody named must say so there
 	// too, not only in the editing UI.
-	it( 'marks a target whose name the server generated', async () => {
-		mockGetSubject.mockReturnValue(
-			newSubject( {
-				id: 's1111111111111B',
-				label: null,
-				displayNameIsGenerated: true,
-				schemaName: 'Attendance',
-				pageIdentifiers: new PageIdentifiers( 42, 'Rijksmuseum' ),
-			} ),
-		);
-		mockGetUrl.mockReturnValue( '/wiki/Rijksmuseum' );
+	it( 'marks a target whose name the server generated', () => {
+		useSubjectStore().setSubject( newSubject( {
+			id: FOUND_ID,
+			label: null,
+			displayNameIsGenerated: true,
+			schemaName: 'Attendance',
+			pageIdentifiers: new PageIdentifiers( 42, 'Rijksmuseum' ),
+		} ) );
 
-		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111B' ) ) );
+		const wrapper = mountDisplay( relationsTo( FOUND_ID ) );
 
-		expect( wrapper.find( 'a' ).text() ).toBe( '(s1111111111111B)' );
+		expect( wrapper.find( 'a' ).text() ).toBe( `(${ FOUND_ID })` );
 	} );
 
-	it( 'renders a span with error info when subject is not found', async () => {
-		mockGetSubject.mockReturnValue( undefined );
-		mockGetUrl.mockReturnValue( undefined );
+	it( 'shows a target that was not found as a red link to its Special:Subject page', () => {
+		readAsNotFound( MISSING_ID );
 
-		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111B' ) ) );
+		const wrapper = mountDisplay( relationsTo( MISSING_ID ) );
 
-		const element = wrapper.find( 'span' );
-		expect( element.exists() ).toBe( true );
-		expect( element.text() ).toBe( 's1111111111111B' );
-		expect( element.attributes( 'title' ) ).toContain( 'Subject not found: s1111111111111B' );
-		expect( element.classes() ).toContain( 'error' );
-
-		expect( mockGetSubject ).toHaveBeenCalledWith( new SubjectId( 's1111111111111B' ) );
+		const link = wrapper.find( 'a.new' );
+		expect( link.text() ).toBe( MISSING_ID );
+		expect( link.attributes( 'href' ) ).toBe( `/wiki/Special:Subject/${ MISSING_ID }` );
 	} );
 
-	it( 'renders a span with error info when fetching subject fails', async () => {
-		mockGetSubject.mockImplementation( () => {
-			const err = new Error( 'Network Connection Error' );
-			err.name = 'NetworkError';
-			throw err;
-		} );
-		mockGetUrl.mockReturnValue( undefined );
+	it( 'says on a red link that its target was not found', () => {
+		readAsNotFound( MISSING_ID );
 
-		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111C' ) ) );
+		const wrapper = mountDisplay( relationsTo( MISSING_ID ) );
 
-		const element = wrapper.find( 'span' );
-		expect( element.exists() ).toBe( true );
-		expect( element.text() ).toBe( 's1111111111111C' );
-		expect( element.attributes( 'title' ) ).toContain( 'NetworkError: Network Connection Error' );
-		expect( element.classes() ).toContain( 'error' );
-
-		expect( mockGetSubject ).toHaveBeenCalledWith( new SubjectId( 's1111111111111C' ) );
+		expect( wrapper.find( 'a.new' ).attributes( 'title' ) )
+			.toBe( `neowiki-relation-target-not-found-title${ MISSING_ID }` );
 	} );
 
-	it( 'renders a span (not link) if mw.util.getUrl returns undefined for a subject', async () => {
-		mockGetSubject.mockReturnValue( createSubject( 's1111111111111D', 'No Valid Url Subject', 'No_Url_Page' ) );
-		mockGetUrl.mockReturnValue( undefined );
-
-		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111D' ) ) );
-
-		const element = wrapper.find( 'span' );
-		expect( element.exists() ).toBe( true );
-		expect( element.text() ).toBe( 'No Valid Url Subject' );
-		expect( element.attributes( 'title' ) ).toContain( '' );
-		expect( element.classes().includes( 'error' ) ).toBe( false );
-
-		expect( mockGetSubject ).toHaveBeenCalledWith( new SubjectId( 's1111111111111D' ) );
-		expect( mockGetUrl ).toHaveBeenCalledWith( 'No_Url_Page' );
-	} );
-
-	it( 'renders multiple relations correctly as links', async () => {
-		const TEST_DATA = [
-			{
-				ID: 's2222222222222A',
-				LABEL: 'Subject Alpha',
-				PAGE_NAME: 'Page_Alpha',
-				URL: '/wiki/Page_Alpha',
-			},
-			{
-				ID: 's2222222222222B',
-				LABEL: 'Subject Beta',
-				PAGE_NAME: 'Page_Beta',
-				URL: '/wiki/Page_Beta',
-			},
-		];
-
-		mockGetSubject
-			.mockReturnValueOnce(
-				createSubject( TEST_DATA[ 0 ].ID, TEST_DATA[ 0 ].LABEL, TEST_DATA[ 0 ].PAGE_NAME ),
-			)
-			.mockReturnValueOnce(
-				createSubject( TEST_DATA[ 1 ].ID, TEST_DATA[ 1 ].LABEL, TEST_DATA[ 1 ].PAGE_NAME ),
-			);
-		mockGetUrl
-			.mockReturnValueOnce( TEST_DATA[ 0 ].URL )
-			.mockReturnValueOnce( TEST_DATA[ 1 ].URL );
-
-		const wrapper = await createWrapper(
-			new Relation( 'not-important', new SubjectId( TEST_DATA[ 0 ].ID ) ),
-			new Relation( 'not-important', new SubjectId( TEST_DATA[ 1 ].ID ) ),
-		);
-
-		const links = wrapper.findAll( 'a' );
-		expect( links ).toHaveLength( 2 );
-		expect( links[ 0 ].attributes( 'href' ) ).toBe( TEST_DATA[ 0 ].URL );
-		expect( links[ 0 ].text() ).toBe( TEST_DATA[ 0 ].LABEL );
-		expect( links[ 1 ].attributes( 'href' ) ).toBe( TEST_DATA[ 1 ].URL );
-		expect( links[ 1 ].text() ).toBe( TEST_DATA[ 1 ].LABEL );
-	} );
-
-	it( 'renders nothing when there are no relations', async () => {
-		const wrapper = await createWrapper();
+	// Only a read that found nothing makes a red link. A target that was never read, or whose read
+	// failed, may well exist.
+	it( 'shows a target not read as its id, marked as an error', () => {
+		const wrapper = mountDisplay( relationsTo( MISSING_ID ) );
 
 		expect( wrapper.find( 'a' ).exists() ).toBe( false );
-		expect( wrapper.find( 'span' ).exists() ).toBe( false );
-	} );
-
-	describe( 'when rendering a mix of relation types', () => {
-		let wrapper: ReturnType<typeof mount>;
-		const TEST_DATA = {
-			LINKABLE: {
-				ID: 's3333333333333A',
-				LABEL: 'Linkable Subject',
-				PAGE_NAME: 'Link_Page',
-				URL: '/wiki/Link_Page',
-			},
-			ERROR_FETCH: {
-				ID: 's3333333333333B',
-				MESSAGE: 'Fetch s3333333333333B Failed',
-			},
-			NOT_FOUND: {
-				ID: 's3333333333333C',
-				MESSAGE: 'Subject not found: s3333333333333C',
-			},
-			NO_URL: {
-				ID: 's3333333333333D',
-				LABEL: 'NoUrl Mixed Subject',
-				PAGE_NAME: 'NoUrl_Mixed_Page',
-			},
-		};
-
-		beforeEach( async () => {
-			const subjectLink = createSubject( TEST_DATA.LINKABLE.ID, TEST_DATA.LINKABLE.LABEL, TEST_DATA.LINKABLE.PAGE_NAME );
-			const noUrlSubject = createSubject( TEST_DATA.NO_URL.ID, TEST_DATA.NO_URL.LABEL, TEST_DATA.NO_URL.PAGE_NAME );
-
-			mockGetSubject.mockImplementation( ( target: SubjectId ) => {
-				if ( target.text === TEST_DATA.LINKABLE.ID ) {
-					return subjectLink;
-				}
-				if ( target.text === TEST_DATA.ERROR_FETCH.ID ) {
-					const err = new Error( TEST_DATA.ERROR_FETCH.MESSAGE );
-					err.name = 'Error';
-					throw err;
-				}
-				if ( target.text === TEST_DATA.NOT_FOUND.ID ) {
-					return undefined;
-				}
-				if ( target.text === TEST_DATA.NO_URL.ID ) {
-					return noUrlSubject;
-				}
-				return undefined;
-			} );
-
-			mockGetUrl.mockImplementation( ( pageName: string ) => {
-				if ( pageName === TEST_DATA.LINKABLE.PAGE_NAME ) {
-					return TEST_DATA.LINKABLE.URL;
-				}
-				if ( pageName === TEST_DATA.NO_URL.PAGE_NAME ) {
-					return undefined;
-				}
-				return '/wiki/' + pageName;
-			} );
-
-			wrapper = await createWrapper(
-				new Relation( 'not-important', new SubjectId( TEST_DATA.LINKABLE.ID ) ),
-				new Relation( 'not-important', new SubjectId( TEST_DATA.ERROR_FETCH.ID ) ),
-				new Relation( 'not-important', new SubjectId( TEST_DATA.NOT_FOUND.ID ) ),
-				new Relation( 'not-important', new SubjectId( TEST_DATA.NO_URL.ID ) ),
-			);
-		} );
-
-		it( 'renders the linkable subject correctly', () => {
-			const children = wrapper.findAll( 'div > :is(a, span)' );
-			const linkChild = children[ 0 ];
-			expect( linkChild.element.tagName ).toBe( 'A' );
-			expect( linkChild.attributes( 'href' ) ).toBe( TEST_DATA.LINKABLE.URL );
-			expect( linkChild.text() ).toBe( TEST_DATA.LINKABLE.LABEL );
-		} );
-
-		it( 'renders the subject that causes a fetch error correctly', () => {
-			const children = wrapper.findAll( 'div > :is(a, span)' );
-			const errorChild = children[ 1 ];
-			expect( errorChild.element.tagName ).toBe( 'SPAN' );
-			expect( errorChild.text() ).toBe( TEST_DATA.ERROR_FETCH.ID );
-			expect( errorChild.classes() ).toContain( 'error' );
-			expect( errorChild.attributes( 'title' ) ).toContain( 'Error: ' + TEST_DATA.ERROR_FETCH.MESSAGE );
-		} );
-
-		it( 'renders the not-found subject correctly', () => {
-			const children = wrapper.findAll( 'div > :is(a, span)' );
-			const notFoundChild = children[ 2 ];
-			expect( notFoundChild.element.tagName ).toBe( 'SPAN' );
-			expect( notFoundChild.text() ).toBe( TEST_DATA.NOT_FOUND.ID );
-			expect( notFoundChild.classes() ).toContain( 'error' );
-			expect( notFoundChild.attributes( 'title' ) ).toContain( TEST_DATA.NOT_FOUND.MESSAGE );
-		} );
-
-		it( 'renders the subject with no URL correctly', () => {
-			const children = wrapper.findAll( 'div > :is(a, span)' );
-			const noUrlChild = children[ 3 ];
-			expect( noUrlChild.element.tagName ).toBe( 'SPAN' );
-			expect( noUrlChild.text() ).toBe( TEST_DATA.NO_URL.LABEL );
-			expect( noUrlChild.classes().includes( 'error' ) ).toBe( false );
-			expect( noUrlChild.attributes( 'title' ) ).toBe( '' );
-		} );
-
-		it( 'renders all four items', () => {
-			const children = wrapper.findAll( 'div > :is(a, span)' );
-			expect( children ).toHaveLength( 4 );
-		} );
+		expect( wrapper.find( 'span.error' ).text() ).toBe( MISSING_ID );
 	} );
 
 	// A row whose targets are fetched only when the reader opens it renders before they are in the
 	// registry, so resolving once would leave those targets showing their bare ids forever.
 	it( 'resolves a target that reaches the registry after the first render', async () => {
-		const registry = reactive( new Map<string, Subject>() );
-		vi.mocked( useSubjectStore ).mockReturnValue( {
-			$id: 'subject',
-			// What the real getter does with an id it does not hold, which is the state this row
-			// renders in until its targets are fetched.
-			getSubject: ( id: SubjectId ) => {
-				const subject = registry.get( id.text );
-
-				if ( subject === undefined ) {
-					throw new Error( 'Unknown subject: ' + id.text );
-				}
-
-				return subject;
-			},
-		} as any );
-		mockGetUrl.mockReturnValue( '/wiki/Page_Name_1' );
-
-		const wrapper = await createWrapper( new Relation( 'not-important', new SubjectId( 's1111111111111A' ) ) );
+		const wrapper = mountDisplay( relationsTo( FOUND_ID ) );
 		expect( wrapper.find( 'span' ).classes() ).toContain( 'error' );
 
-		registry.set( 's1111111111111A', createSubject( 's1111111111111A', 'Test Subject 1', 'Page_Name_1' ) );
+		storeSubject( FOUND_ID, 'Test Subject 1', 'Page_Name_1' );
 		await wrapper.vm.$nextTick();
 
 		expect( wrapper.find( 'a' ).text() ).toBe( 'Test Subject 1' );
 	} );
 
-	it( 'does not render items if value prop is not a RelationValue', async () => {
-		const wrapper = mount( RelationDisplay, {
-			props: {
-				value: { notARelationValue: true } as any,
-				property: newRelationProperty(),
-			},
+	// Someone may create the target between the read that missed it and one that finds it.
+	it( 'links a target that a later read found', () => {
+		readAsNotFound( FOUND_ID );
+		storeSubject( FOUND_ID, 'Test Subject 1', 'Page_Name_1' );
+
+		const wrapper = mountDisplay( relationsTo( FOUND_ID ) );
+
+		expect( wrapper.find( 'a' ).text() ).toBe( 'Test Subject 1' );
+	} );
+
+	it( 'turns a target into a red link once a read finds nothing for it', async () => {
+		const wrapper = mountDisplay( relationsTo( MISSING_ID ) );
+
+		readAsNotFound( MISSING_ID );
+		await wrapper.vm.$nextTick();
+
+		expect( wrapper.find( 'a.new' ).text() ).toBe( MISSING_ID );
+	} );
+
+	describe( 'a red link whose target can be created', () => {
+
+		const birthPlace = newRelationProperty( {
+			name: 'Birth place',
+			targetSchemas: [ 'City', { source: 'geo', name: 'Region' }, 'Place' ],
 		} );
 
-		await wrapper.vm.$nextTick();
+		function mountRedLinkTo(
+			target: string,
+			creationAllowed: Ref<boolean> = ref( true ),
+			property: RelationProperty = birthPlace,
+		): VueWrapper {
+			readAsNotFound( target );
+
+			return mountDisplay( relationsTo( target ), { [ RelationTargetCreationKey as symbol ]: creationAllowed }, property );
+		}
+
+		function clickRedLink( wrapper: VueWrapper, init: MouseEventInit = {} ): boolean {
+			return clickIsFollowed( wrapper.find( 'a.new' ).element, init );
+		}
+
+		function openCreatorTarget(): SubjectCreatorTarget | null {
+			const store = useSubjectStore();
+
+			return store.subjectCreatorOpen ? store.subjectCreatorTarget : null;
+		}
+
+		it( 'opens the creator on the target, with the property\'s target Schemas of this wiki', () => {
+			const wrapper = mountRedLinkTo( MISSING_ID );
+
+			const followed = clickRedLink( wrapper );
+
+			expect( followed ).toBe( false );
+			expect( openCreatorTarget() ).toEqual( { subjectId: new SubjectId( MISSING_ID ), schemaNames: [ 'City', 'Place' ] } );
+		} );
+
+		it( 'is followed where this user may not create the target', () => {
+			const wrapper = mountRedLinkTo( MISSING_ID, ref( false ) );
+
+			expect( clickRedLink( wrapper ) ).toBe( true );
+		} );
+
+		// The wiki creates Subjects of its own Source only.
+		it( 'is followed for a target of another Source', () => {
+			const wrapper = mountRedLinkTo( 'geo:Q1492' );
+
+			expect( clickRedLink( wrapper ) ).toBe( true );
+			expect( openCreatorTarget() ).toBeNull();
+		} );
+
+		it( 'is followed where the property targets no Schema of this wiki', () => {
+			const wrapper = mountRedLinkTo(
+				MISSING_ID,
+				ref( true ),
+				newRelationProperty( { targetSchemas: [ { source: 'geo', name: 'Region' } ] } ),
+			);
+
+			expect( clickRedLink( wrapper ) ).toBe( true );
+			expect( openCreatorTarget() ).toBeNull();
+		} );
+
+		// Opened in a new tab or window, the link leads to the target's Special:Subject page instead.
+		it.each( [ 'ctrlKey', 'metaKey', 'shiftKey', 'altKey' ] )( 'is followed when clicked with %s', ( modifier ) => {
+			const wrapper = mountRedLinkTo( MISSING_ID );
+
+			expect( clickRedLink( wrapper, { [ modifier ]: true } ) ).toBe( true );
+			expect( openCreatorTarget() ).toBeNull();
+		} );
+
+		// A host learns whether this user may create Subjects after the page has rendered.
+		it( 'opens the creator once the host has granted it', () => {
+			const granted = ref( false );
+			const wrapper = mountRedLinkTo( MISSING_ID, granted );
+
+			granted.value = true;
+
+			expect( clickRedLink( wrapper ) ).toBe( false );
+			expect( openCreatorTarget() ).not.toBeNull();
+		} );
+
+	} );
+
+	// What a property given the relation type leaves behind in the Statements it already had.
+	it( 'renders nothing for a value of another type', () => {
+		const wrapper = mountDisplay( newStringValue( 'Málaga' ) );
 
 		expect( wrapper.find( 'div > :is(a, span)' ).exists() ).toBe( false );
 	} );

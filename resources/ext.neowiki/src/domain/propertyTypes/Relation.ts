@@ -2,7 +2,7 @@ import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newRelation, RelationValue, ValueType } from '@/domain/Value';
 import { BasePropertyType } from '@/domain/PropertyType';
-import type { SchemaReference } from '@/domain/SchemaReference';
+import { isLocalSchemaReference, type SchemaReference } from '@/domain/SchemaReference';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -13,6 +13,14 @@ export interface RelationProperty extends PropertyDefinition {
 	readonly targetSchemas: readonly SchemaReference[];
 	readonly multiple?: boolean;
 
+}
+
+/**
+ * The property's target Schemas of this wiki, the only ones a Subject created here can have. A property
+ * given another type since a Statement was written has none.
+ */
+export function localTargetSchemaNames( property: RelationProperty ): string[] {
+	return ( property.targetSchemas ?? [] ).filter( isLocalSchemaReference );
 }
 
 export class RelationType extends BasePropertyType<RelationProperty, RelationValue> {

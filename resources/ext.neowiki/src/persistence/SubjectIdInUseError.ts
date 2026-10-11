@@ -1,7 +1,8 @@
 /**
  * A create was refused because the Subject id it carried is already taken. Only a client that
- * mints ids up front can meet this: it means that very Subject already exists, so the caller's
- * next write is an update rather than another create.
+ * supplies the id can meet this. For an id it minted for this very Subject, that Subject already
+ * exists, so its next write is an update rather than another create; an id it was given may be any
+ * Subject's.
  */
 export class SubjectIdInUseError extends Error {
 

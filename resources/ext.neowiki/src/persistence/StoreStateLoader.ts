@@ -64,14 +64,11 @@ export class StoreStateLoader {
 
 		// The repository bundles the requested Subject with the Subjects its
 		// relations target, so storing them all avoids a re-fetch per relation.
-		const { requestedSubject, referencedSubjects } =
+		const { requestedSubject, referencedSubjects, notFoundTargetIds } =
 			await this.subjectRepo.getSubjectWithReferencedSubjects( subjectId );
 
 		if ( subjectEpoch === subjectStore.mutationEpoch ) {
-			subjectStore.setSubject( requestedSubject );
-			for ( const subject of referencedSubjects ) {
-				subjectStore.setSubject( subject );
-			}
+			subjectStore.setSubjectsWithTargets( [ requestedSubject ], referencedSubjects, notFoundTargetIds );
 		}
 
 		const schema = await this.schemaRepo.getSchema( requestedSubject.getSchemaName() );

@@ -263,6 +263,78 @@ describe( 'RestSubjectRepository', () => {
 			} ) );
 		}
 
+		function repositoryPinnedToRevisionReturning( response: object ): RestSubjectRepository {
+			return new RestSubjectRepository(
+				'https://example.com/rest.php',
+				new InMemoryHttpClient( {
+					[ `https://example.com/rest.php/neowiki/v0/subject/${ requestedId }?expand=page|relations&revisionId=7` ]:
+						new Response( JSON.stringify( response ), { status: 200 } ),
+				} ),
+				NeoWikiExtension.getInstance().getSubjectDeserializer(),
+				new SchemaDeserializer(),
+				7,
+			);
+		}
+
+		function bundleWithout( absentId: string ): object {
+			return {
+				requestedId: requestedId,
+				subjects: Object.fromEntries( Object.entries( bundleResponse.subjects ).filter( ( [ id ] ) => id !== absentId ) ),
+			};
+		}
+
+		it( 'reports a target the response holds no Subject for as not found', async () => {
+			const repository = repositoryReturning( bundleWithout( referencedId1 ) );
+
+			const { notFoundTargetIds } = await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+
+			expect( notFoundTargetIds ).toEqual( [ new SubjectId( referencedId1 ) ] );
+		} );
+
+		// A read of an earlier revision leaves out the targets created since, which exist all the same.
+		it( 'reports no target as not found for a read pinned to a revision', async () => {
+			const repository = repositoryPinnedToRevisionReturning( bundleWithout( referencedId1 ) );
+
+			const { notFoundTargetIds } = await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+
+			expect( notFoundTargetIds ).toEqual( [] );
+		} );
+
+		it( 'does not report a target the response holds as not found where it fails to deserialize', async () => {
+			const repository = repositoryReturning( {
+				requestedId: requestedId,
+				subjects: {
+					[ referencedId1 ]: undeserializableSubject( referencedId1 ),
+					[ requestedId ]: bundleResponse.subjects[ requestedId ],
+					[ referencedId2 ]: bundleResponse.subjects[ referencedId2 ],
+				},
+			} );
+
+			const { notFoundTargetIds } = await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+
+			expect( notFoundTargetIds ).toEqual( [] );
+		} );
+
+		// The read looks up the targets of the Subject asked for, not those of its targets.
+		it( 'does not report a target of a referenced Subject as not found', async () => {
+			const repository = repositoryReturning( {
+				requestedId: requestedId,
+				subjects: {
+					...bundleResponse.subjects,
+					[ referencedId1 ]: {
+						...bundleResponse.subjects[ referencedId1 ],
+						statements: {
+							Parts: { value: [ { target: 's44444444444444' } ], propertyType: RelationType.typeName },
+						},
+					},
+				},
+			} );
+
+			const { notFoundTargetIds } = await repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) );
+
+			expect( notFoundTargetIds ).toEqual( [] );
+		} );
+
 		it( 'returns the requested Subject together with every bundled referenced Subject', async () => {
 			const repository = repositoryReturning( bundleResponse );
 
@@ -395,6 +467,77 @@ describe( 'RestSubjectRepository', () => {
 
 			await expect( repository.getSubjectWithReferencedSubjects( new SubjectId( requestedId ) ) )
 				.rejects.toThrow( 'Invalid statement JSON' );
+		} );
+
+	} );
+
+	describe( 'getPageSubjects', () => {
+
+		const pageId = 7;
+		const pageSubjectId = 's11111111111111';
+		const otherPageSubjectId = 's22222222222222';
+		const referencedId = 's33333333333333';
+		const absentId = 's44444444444444';
+
+		function subjectJson( id: string, ...targets: string[] ): object {
+			return {
+				id: id,
+				label: id,
+				displayName: id,
+				schema: 'Company',
+				pageId: pageId,
+				pageTitle: 'ACME',
+				statements: targets.length === 0 ? {} : {
+					Parts: { value: targets.map( ( target ) => ( { target } ) ), propertyType: RelationType.typeName },
+				},
+			};
+		}
+
+		function repositoryReturning( subjects: object, referencedSubjects: object ): RestSubjectRepository {
+			return newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				[ `https://example.com/rest.php/neowiki/v0/page/${ pageId }/subjects?expand=schemas%7Crelations` ]:
+					new Response(
+						JSON.stringify( { pageId, mainSubjectId: pageSubjectId, subjects, referencedSubjects, schemas: {} } ),
+						{ status: 200 },
+					),
+			} ) );
+		}
+
+		it( 'reports a target of the page\'s Subjects that the response holds no Subject for as not found', async () => {
+			const repository = repositoryReturning(
+				{ [ pageSubjectId ]: subjectJson( pageSubjectId, referencedId, absentId ) },
+				{ [ referencedId ]: subjectJson( referencedId ) },
+			);
+
+			const { notFoundTargetIds } = await repository.getPageSubjects( pageId );
+
+			expect( notFoundTargetIds ).toEqual( [ new SubjectId( absentId ) ] );
+		} );
+
+		// The response holds a target on the same page among the page's own Subjects.
+		it( 'does not report a target that is another Subject of the page as not found', async () => {
+			const repository = repositoryReturning(
+				{
+					[ pageSubjectId ]: subjectJson( pageSubjectId, otherPageSubjectId ),
+					[ otherPageSubjectId ]: subjectJson( otherPageSubjectId ),
+				},
+				{},
+			);
+
+			const { notFoundTargetIds } = await repository.getPageSubjects( pageId );
+
+			expect( notFoundTargetIds ).toEqual( [] );
+		} );
+
+		it( 'does not report a target of a referenced Subject as not found', async () => {
+			const repository = repositoryReturning(
+				{ [ pageSubjectId ]: subjectJson( pageSubjectId, referencedId ) },
+				{ [ referencedId ]: subjectJson( referencedId, absentId ) },
+			);
+
+			const { notFoundTargetIds } = await repository.getPageSubjects( pageId );
+
+			expect( notFoundTargetIds ).toEqual( [] );
 		} );
 
 	} );

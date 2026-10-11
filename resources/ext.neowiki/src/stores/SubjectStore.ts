@@ -9,6 +9,7 @@ import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SubjectWriteResult } from '@/domain/SubjectRepository.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
+import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError.ts';
 
 /**
  * A Subject created together with a page of its own: the page is the server's to title, so where
@@ -18,6 +19,15 @@ export interface CreatedSubjectPage {
 	subjectId: SubjectId;
 	pageTitle: string;
 	pageId: number;
+}
+
+/**
+ * A Subject the creator is opened on because a relation points to it: it is created under this id,
+ * with one of these Schemas.
+ */
+export interface SubjectCreatorTarget {
+	subjectId: SubjectId;
+	schemaNames: readonly string[];
 }
 
 /**
@@ -37,7 +47,13 @@ function recordBundledSchema( schema: Schema | null, epochBeforeRequest: number 
 export const useSubjectStore = defineStore( 'subject', {
 	state: () => ( {
 		subjects: new Map<string, Subject>(),
+		/**
+		 * Ids a read looked up and found no Subject for: none has the id, or none this user may read.
+		 */
+		notFoundIds: new Set<string>(),
 		subjectCreatorOpen: false,
+		/** The Subject the creator is open on, where it was opened on a relation target. */
+		subjectCreatorTarget: null as SubjectCreatorTarget | null,
 		pageSubjects: null as PageSubjects | null,
 		mutationEpoch: 0, // See SchemaStore.mutationEpoch — same guard contract.
 	} ),
@@ -58,10 +74,25 @@ export const useSubjectStore = defineStore( 'subject', {
 		findSubject: ( state ) => function ( id: SubjectId ): Subject | undefined {
 			return state.subjects.get( id.text ) as Subject | undefined;
 		},
+		/**
+		 * Whether a read found no Subject under this id. A Subject the registry holds under the id
+		 * outranks this: it may have been created or read since.
+		 */
+		wasNotFound: ( state ) => function ( id: SubjectId ): boolean {
+			return state.notFoundIds.has( id.text );
+		},
 	},
 	actions: {
 		setSubject( subject: Subject ): void { // TODO: just take Subject
 			this.subjects.set( subject.getId().text, subject );
+		},
+		/**
+		 * Stores Subjects read together with their relation targets, and the targets the read found no
+		 * Subject for.
+		 */
+		setSubjectsWithTargets( subjects: Subject[], targets: Subject[], notFoundTargetIds: SubjectId[] ): void {
+			[ ...subjects, ...targets ].forEach( ( subject ) => this.setSubject( subject ) );
+			notFoundTargetIds.forEach( ( id ) => this.notFoundIds.add( id.text ) );
 		},
 		// Display-only read over the seeded registry: returns the page-payload /
 		// own-write value when present and fetches only on a genuine miss (e.g. a
@@ -70,7 +101,18 @@ export const useSubjectStore = defineStore( 'subject', {
 		async getOrFetchSubject( id: SubjectId ): Promise<Subject> {
 			if ( !this.subjects.has( id.text ) ) {
 				const epoch = this.mutationEpoch;
-				const subject = await NeoWikiExtension.getInstance().getSubjectRepository().getSubject( id );
+				let subject: Subject;
+
+				try {
+					subject = await NeoWikiExtension.getInstance().getSubjectRepository().getSubject( id );
+				} catch ( error ) {
+					if ( error instanceof SubjectNotFoundError ) {
+						this.notFoundIds.add( id.text );
+					}
+
+					throw error;
+				}
+
 				if ( epoch === this.mutationEpoch ) {
 					this.setSubject( subject );
 				}
@@ -261,6 +303,11 @@ export const useSubjectStore = defineStore( 'subject', {
 		},
 
 		openSubjectCreator(): void {
+			this.subjectCreatorTarget = null;
+			this.subjectCreatorOpen = true;
+		},
+		openSubjectCreatorFor( subjectId: SubjectId, schemaNames: readonly string[] ): void {
+			this.subjectCreatorTarget = { subjectId, schemaNames };
 			this.subjectCreatorOpen = true;
 		},
 		closeSubjectCreator(): void {
@@ -275,13 +322,7 @@ export const useSubjectStore = defineStore( 'subject', {
 
 			if ( epoch === this.mutationEpoch ) {
 				this.pageSubjects = result.pageSubjects;
-
-				for ( const subject of result.pageSubjects.getSubjects() ) {
-					this.setSubject( subject );
-				}
-				for ( const subject of result.referencedSubjects ) {
-					this.setSubject( subject );
-				}
+				this.setSubjectsWithTargets( result.pageSubjects.getSubjects(), result.referencedSubjects, result.notFoundTargetIds );
 			}
 
 			if ( schemaEpoch === schemaStore.mutationEpoch ) {

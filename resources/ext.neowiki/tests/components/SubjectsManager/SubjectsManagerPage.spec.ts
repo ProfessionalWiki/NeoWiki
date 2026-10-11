@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
-import { shallowMount, VueWrapper, flushPromises } from '@vue/test-utils';
+import { enableAutoUnmount, mount, shallowMount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { CdxMenuButton } from '@wikimedia/codex';
 import SubjectsManagerPage from '@/components/SubjectsManager/SubjectsManagerPage.vue';
 import { CdxDialogStub, createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
@@ -17,7 +17,12 @@ import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import DataExportButtons from '@/components/SubjectsManager/DataExportButtons.vue';
 import { Service } from '@/NeoWikiServices.ts';
-import { newSchema, newSubject } from '@/TestHelpers.ts';
+import { newRelationStatements, newSchema, newSubject } from '@/TestHelpers.ts';
+import type { Schema } from '@/domain/Schema.ts';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
+
+enableAutoUnmount( afterEach );
 
 // Two subject-id-shaped ids (s + 14 base58 chars), so the deep-link fragment parser accepts them.
 const ID_A = 's1aaaaaaaaaaaa1';
@@ -80,10 +85,14 @@ vi.mock( '@/stores/SubjectStore.ts', async ( importOriginal ) => {
 	};
 } );
 
+// The Schemas the rows render their statements by; only the red-link describe fills it.
+const schemaStoreSchemas = new Map<string, Schema>();
+
 vi.mock( '@/stores/SchemaStore.ts', () => ( {
 	useSchemaStore: () => ( {
 		saveSchema: vi.fn(),
 		getSchema: vi.fn(),
+		schemas: schemaStoreSchemas,
 	} ),
 } ) );
 
@@ -119,7 +128,13 @@ function rowFor( wrapper: VueWrapper, id: string ): VueWrapper {
 	return wrapper.find( '#' + subjectRowDomId( id ) ) as unknown as VueWrapper;
 }
 
-async function mountPage( subjectFirst = false ): Promise<VueWrapper> {
+// Taken before any test stands in for the extension singleton.
+const componentRegistry = NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry();
+
+/**
+ * With renderValues, the page is mounted whole, so a relation shows as a reader sees it.
+ */
+async function mountPage( subjectFirst = false, renderValues = false ): Promise<VueWrapper> {
 	setupMwMock( {
 		functions: [ 'config', 'msg', 'message', 'notify', 'util' ],
 		config: {
@@ -138,7 +153,7 @@ async function mountPage( subjectFirst = false ): Promise<VueWrapper> {
 	const pinia = createPinia();
 	setActivePinia( pinia );
 
-	const wrapper = shallowMount( SubjectsManagerPage, {
+	const wrapper = ( renderValues ? mount : shallowMount )( SubjectsManagerPage, {
 		attachTo: document.body,
 		global: {
 			plugins: [ pinia ],
@@ -150,10 +165,18 @@ async function mountPage( subjectFirst = false ): Promise<VueWrapper> {
 					getPageSubjects: getPageSubjectsRepoMock,
 				},
 				[ Service.SchemaRepository ]: { getSchema: getSchemaRepoMock },
+				[ Service.ComponentRegistry ]: componentRegistry,
 			},
 			// The row and the delete dialog are this page's own building blocks rather than collaborators
 			// to stand in for: the assertions below are about what they render and offer.
-			stubs: { CdxIcon: true, CdxDialog: CdxDialogStub, SubjectRow: false, SubjectDeleteDialog: false },
+			stubs: {
+				CdxIcon: true,
+				CdxDialog: CdxDialogStub,
+				SubjectRow: false,
+				SubjectDeleteDialog: false,
+				SubjectCreatorDialog: true,
+				SubjectEditorDialog: true,
+			},
 		},
 	} );
 
@@ -791,6 +814,57 @@ describe( 'SubjectsManagerPage subject creator', () => {
 
 } );
 
+describe( 'SubjectsManagerPage red links', () => {
+
+	const MISSING_ID = 's1cccccccccccc1';
+
+	beforeEach( () => {
+		useRealSubjectStore = true;
+		canCreateOtherSubjectRef.value = true;
+		Element.prototype.scrollIntoView = vi.fn();
+		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+		schemaStoreSchemas.set( 'Person', newSchema( {
+			title: 'Person',
+			properties: new PropertyDefinitionList( [
+				newRelationProperty( { name: 'Birth place', targetSchemas: [ 'City', 'Place' ] } ),
+			] ),
+		} ) );
+		getPageSubjectsRepoMock.mockReset().mockResolvedValue( {
+			pageSubjects: new PageSubjects( PAGE_ID, null, [ newSubject( {
+				id: ID_A,
+				schemaName: 'Person',
+				statements: newRelationStatements( 'Birth place', MISSING_ID ),
+			} ) ] ),
+			referencedSubjects: [],
+			notFoundTargetIds: [ new SubjectId( MISSING_ID ) ],
+			schemas: [],
+		} );
+		vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue( {
+			getSubjectRepository: () => ( { getPageSubjects: getPageSubjectsRepoMock } ),
+		} as unknown as NeoWikiExtension );
+	} );
+
+	afterEach( () => {
+		useRealSubjectStore = false;
+		canCreateOtherSubjectRef.value = false;
+		schemaStoreSchemas.clear();
+		document.body.innerHTML = '';
+		vi.restoreAllMocks();
+	} );
+
+	it( 'opens the creator on the target of a red link', async () => {
+		const wrapper = await mountPage( false, true );
+
+		await wrapper.find( `#${ subjectRowDomId( ID_A ) } a.new` ).trigger( 'click' );
+
+		const creator = wrapper.findComponent( SubjectCreatorDialog );
+		expect( creator.props( 'open' ) ).toBe( true );
+		expect( creator.props( 'relationTarget' ) )
+			.toEqual( { subjectId: new SubjectId( MISSING_ID ), schemaNames: [ 'City', 'Place' ] } );
+	} );
+
+} );
+
 describe( 'SubjectsManagerPage delete flow', () => {
 	let reloadMock: ReturnType<typeof vi.fn>;
 	let deleteSubjectRepoMock: ReturnType<typeof vi.fn>;
@@ -812,6 +886,7 @@ describe( 'SubjectsManagerPage delete flow', () => {
 		getPageSubjectsRepoMock.mockReset().mockResolvedValue( {
 			pageSubjects: new PageSubjects( PAGE_ID, null, [ subject( ID_A ) ] ),
 			referencedSubjects: [],
+			notFoundTargetIds: [],
 			schemas: [],
 		} );
 
@@ -878,6 +953,7 @@ describe( 'SubjectsManagerPage delete flow', () => {
 		getPageSubjectsRepoMock.mockResolvedValue( {
 			pageSubjects: new PageSubjects( PAGE_ID, null, [ subject( ID_A ), subject( ID_B ) ] ),
 			referencedSubjects: [],
+			notFoundTargetIds: [],
 			schemas: [],
 		} );
 		const wrapper = await mountPage( true );
@@ -919,6 +995,7 @@ describe( 'SubjectsManagerPage delete flow', () => {
 		resolveResync( {
 			pageSubjects: new PageSubjects( PAGE_ID, null, [] ),
 			referencedSubjects: [],
+			notFoundTargetIds: [],
 			schemas: [],
 		} );
 		await flushPromises();

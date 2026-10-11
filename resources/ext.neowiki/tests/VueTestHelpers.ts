@@ -21,6 +21,17 @@ export function createI18nMock(): ReturnType<typeof vi.fn> {
 }
 
 /**
+ * Clicks the element as a reader does, with the left button and whatever else init adds, and tells
+ * whether the browser was left to follow the link.
+ */
+export function clickIsFollowed( element: Element, init: MouseEventInit = {} ): boolean {
+	const click = new MouseEvent( 'click', { bubbles: true, cancelable: true, button: 0, ...init } );
+	element.dispatchEvent( click );
+
+	return !click.defaultPrevented;
+}
+
+/**
  * Locates the CdxTable pager's "Next page" button, asserting it exists so a selector that matches
  * nothing fails loudly here. A missed find() returns an empty DOMWrapper whose
  * attributes( 'disabled' ) is undefined, which would silently satisfy a toBeUndefined()

@@ -5,6 +5,7 @@ import { Schema } from '@/domain/Schema';
 import type { SubjectDeserializer } from '@/persistence/SubjectDeserializer';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
 import type { SubjectJson } from '@/persistence/RestSubjectRepository';
+import { notFoundTargetIds } from '@/persistence/notFoundTargetIds';
 
 export interface PageSubjectsJson {
 	pageId: number;
@@ -17,6 +18,8 @@ export interface PageSubjectsJson {
 export interface DeserializedPageSubjects {
 	pageSubjects: PageSubjects;
 	referencedSubjects: Subject[];
+	/** The targets of the page's Subjects' relations that the read found no Subject for. */
+	notFoundTargetIds: SubjectId[];
 	schemas: Schema[];
 }
 
@@ -35,6 +38,10 @@ export class PageSubjectsDeserializer {
 		return {
 			pageSubjects: new PageSubjects( json.pageId, mainSubjectId, subjects ),
 			referencedSubjects: this.deserializeSubjects( json.referencedSubjects ?? {}, json.pageId ),
+			notFoundTargetIds: notFoundTargetIds(
+				subjects,
+				[ ...Object.keys( json.subjects ), ...Object.keys( json.referencedSubjects ?? {} ) ],
+			),
 			schemas: this.deserializeSchemas( json.schemas ?? {} ),
 		};
 	}

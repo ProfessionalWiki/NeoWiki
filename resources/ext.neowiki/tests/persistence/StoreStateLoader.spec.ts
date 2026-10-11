@@ -85,7 +85,7 @@ describe( 'StoreStateLoader', () => {
 		const referenced1 = newSubject( { id: referencedId1, label: 'Product One', schemaName: 'Product' } );
 		const referenced2 = newSubject( { id: referencedId2, label: 'Product Two', schemaName: 'Product' } );
 		const repository = new RecordingSubjectRepository(
-			{ requestedSubject: main, referencedSubjects: [ referenced1, referenced2 ] },
+			{ requestedSubject: main, referencedSubjects: [ referenced1, referenced2 ], notFoundTargetIds: [] },
 		);
 
 		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
@@ -101,7 +101,7 @@ describe( 'StoreStateLoader', () => {
 		const referenced1 = newSubject( { id: referencedId1, label: 'Product One', schemaName: 'Product' } );
 		const referenced2 = newSubject( { id: referencedId2, label: 'Product Two', schemaName: 'Product' } );
 		const repository = new RecordingSubjectRepository(
-			{ requestedSubject: main, referencedSubjects: [ referenced1, referenced2 ] },
+			{ requestedSubject: main, referencedSubjects: [ referenced1, referenced2 ], notFoundTargetIds: [] },
 		);
 
 		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
@@ -110,11 +110,25 @@ describe( 'StoreStateLoader', () => {
 		expect( repository.getSubjectCallCount ).toBe( 0 );
 	} );
 
+	it( 'records the targets the read reports not found, and no others', async () => {
+		const repository = new RecordingSubjectRepository( {
+			requestedSubject: newMainSubjectWithRelationsTo( referencedId1, referencedId2 ),
+			referencedSubjects: [],
+			notFoundTargetIds: [ referencedId1 ],
+		} );
+
+		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
+
+		const subjectStore = useSubjectStore();
+		expect( [ referencedId1, referencedId2 ].filter( ( id ) => subjectStore.wasNotFound( id ) ) )
+			.toEqual( [ referencedId1 ] );
+	} );
+
 	it( 'stores the schema of the requested Subject', async () => {
 		const main = newMainSubjectWithRelationsTo( referencedId1 );
 		const referenced1 = newSubject( { id: referencedId1, label: 'Product One', schemaName: 'Product' } );
 		const repository = new RecordingSubjectRepository(
-			{ requestedSubject: main, referencedSubjects: [ referenced1 ] },
+			{ requestedSubject: main, referencedSubjects: [ referenced1 ], notFoundTargetIds: [] },
 		);
 
 		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
@@ -159,7 +173,7 @@ describe( 'StoreStateLoader', () => {
 		const loading = loader.loadSubjectsAndSchemas( new Set( [ 's11111111111111' ] ) );
 		subjectStore.mutationEpoch++; // Stands in for any acknowledged subject mutation — SubjectStore has no repo-free mutating action.
 		schemaStore.removeSchema( subject.getSchemaName() );
-		resolveSubjects( { requestedSubject: subject, referencedSubjects: [] } );
+		resolveSubjects( { requestedSubject: subject, referencedSubjects: [], notFoundTargetIds: [] } );
 		await loading;
 
 		expect( subjectStore.subjects.has( 's11111111111111' ) ).toBe( false );

@@ -6,6 +6,9 @@ import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 import { Subject } from '@/domain/Subject';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import type { DisplayRule } from '@/domain/Layout';
+import { Statement } from '@/domain/Statement';
+import { RelationType } from '@/domain/propertyTypes/Relation';
+import { newRelation, RelationValue } from '@/domain/Value';
 
 export const DEFAULT_SUBJECT_ID = 's11111111111111';
 export const DEFAULT_TEST_SUBJECT_LABEL = 'Test subject';
@@ -40,6 +43,16 @@ export function newSubject( {
 		statements,
 		pageIdentifiers,
 	);
+}
+
+export function newRelationStatements( propertyName: string, ...targets: ( string | SubjectId )[] ): StatementList {
+	return new StatementList( [
+		new Statement(
+			new PropertyName( propertyName ),
+			RelationType.typeName,
+			new RelationValue( targets.map( ( target ) => newRelation( undefined, target ) ) ),
+		),
+	] );
 }
 
 /**

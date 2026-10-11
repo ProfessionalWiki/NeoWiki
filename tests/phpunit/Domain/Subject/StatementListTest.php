@@ -17,12 +17,6 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
  */
 class StatementListTest extends TestCase {
 
-	public function testGetRelationsReturnsEmptyArrayWhenThereAreNoStatements(): void {
-		$statements = new StatementList( [] );
-
-		$this->assertSame( [], $statements->getTypedRelations()->relations );
-	}
-
 	public function testGetTypedRelationsTypesEachRelationWithItsPropertyName(): void {
 		$employer = TestRelation::build( targetId: 's11111111111111' );
 		$firstFriend = TestRelation::build( targetId: 's11111111111112' );

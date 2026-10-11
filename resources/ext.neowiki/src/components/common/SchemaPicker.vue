@@ -35,6 +35,8 @@ const props = defineProps<{
 	 * that name already. Choosing the offer emits `create` with the text.
 	 */
 	offersCreation?: boolean;
+	/** The Schemas to offer, of those the wiki has. Absent, all of them. */
+	schemaNames?: readonly string[];
 }>();
 
 const emit = defineEmits<{
@@ -70,7 +72,11 @@ const takenNames = computed( (): Set<string> => {
 const creationOffered = computed( (): boolean =>
 	props.offersCreation && !takenNames.value.has( normalizeSchemaName( typedName.value ) ) );
 
-const matchingItems = computed<MenuItemData[]>( () => schemaMenuItems( summaries.value, query.value ) );
+const offeredSummaries = computed( (): SchemaSummary[] => props.schemaNames === undefined ?
+	summaries.value :
+	summaries.value.filter( ( summary ) => props.schemaNames?.includes( summary.name ) ) );
+
+const matchingItems = computed<MenuItemData[]>( () => schemaMenuItems( offeredSummaries.value, query.value ) );
 
 // Below Schemas, the offer is the menu's footer, which Codex keeps in view while the list scrolls.
 // Alone, it is the list's one item: CdxLookup neither opens a menu nor moves through it by keyboard
@@ -129,7 +135,7 @@ watch( () => props.selected, async ( value ) => {
 // empties the field when there is none, so it is only handed a schema it lists. The
 // field keeps showing the committed name either way.
 function selectableSchema( schemaName: string | null ): string | null {
-	return summaries.value.some( ( summary ) => summary.name === schemaName ) ? schemaName : null;
+	return offeredSummaries.value.some( ( summary ) => summary.name === schemaName ) ? schemaName : null;
 }
 
 function filterSchemas( value: string ): void {

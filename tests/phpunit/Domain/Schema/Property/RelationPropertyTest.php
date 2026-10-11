@@ -67,7 +67,7 @@ class RelationPropertyTest extends PropertyTestCase {
 	"description": "",
 	"required": false,
 	"default": null,
-	"targetSchemas": [ "Person", { "source": "otherwiki", "name": "Company" }, "Group" ],
+	"targetSchemas": [ "Company", { "source": "otherwiki", "name": "Company" }, "Group" ],
 	"multiple": false
 }
 JSON

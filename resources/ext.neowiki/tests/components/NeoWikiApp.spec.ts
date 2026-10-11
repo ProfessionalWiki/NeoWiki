@@ -15,8 +15,12 @@ import type { StatementList } from '@/domain/StatementList.ts';
 import { RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { Neo } from '@/Neo.ts';
 import { newSchema, newSubject } from '@/TestHelpers.ts';
+import type { Schema } from '@/domain/Schema.ts';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
+import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { NeoWikiTestServices } from '../NeoWikiTestServices.ts';
-import { createI18nMock, setupMwMock } from '../VueTestHelpers.ts';
+import { clickIsFollowed, createI18nMock, setupMwMock } from '../VueTestHelpers.ts';
 
 const loadedId = new SubjectId( 's11111111111111' );
 const unloadableId = new SubjectId( 's22222222222222' );
@@ -39,10 +43,14 @@ describe( 'NeoWikiApp', () => {
 
 	/** Only the Company Schema loads. */
 	function loadFrom( ...subjects: Subject[] ): void {
+		loadWithCompanySchema( newSchema( { title: 'Company' } ), subjects );
+	}
+
+	function loadWithCompanySchema( company: Schema, subjects: Subject[] ): void {
 		vi.spyOn( NeoWikiExtension.getInstance(), 'getStoreStateLoader' ).mockReturnValue(
 			new StoreStateLoader(
 				new StubSubjectRepository( subjects ),
-				new InMemorySchemaRepository( [ newSchema( { title: 'Company' } ) ] ),
+				new InMemorySchemaRepository( [ company ] ),
 				new InMemoryLayoutLookup( [] ),
 			),
 		);
@@ -64,13 +72,14 @@ describe( 'NeoWikiApp', () => {
 		document.body.append( placeholder );
 	}
 
-	async function mountApp(): Promise<VueWrapper> {
+	async function mountApp( showSubjectCreator = false ): Promise<VueWrapper> {
 		const wrapper = mount( NeoWikiApp, {
-			props: { showSubjectCreator: false, pageHasMainSubject: false },
+			props: { showSubjectCreator, pageHasMainSubject: false },
 			global: {
 				plugins: [ pinia ],
 				mocks: { $i18n: createI18nMock() },
 				directives: { tooltip: {} },
+				stubs: { SubjectCreatorDialog: true },
 				provide: {
 					...NeoWikiTestServices.getServices(),
 					[ Service.SubjectPermissionHints ]: { canEditSubject: () => Promise.resolve( false ) },
@@ -111,6 +120,51 @@ describe( 'NeoWikiApp', () => {
 		const wrapper = await mountApp();
 
 		expect( mountedSubjectIds( wrapper ) ).toEqual( [ loadedId.text ] );
+	} );
+
+	describe( 'a relation target no read found', () => {
+
+		const missingId = new SubjectId( 's33333333333333' );
+
+		beforeEach( () => {
+			// Where the page's creator is teleported to.
+			const content = document.createElement( 'div' );
+			content.id = 'mw-content-text';
+			document.body.append( content );
+
+			loadWithCompanySchema(
+				newSchema( {
+					title: 'Company',
+					properties: new PropertyDefinitionList( [
+						newRelationProperty( { name: 'Products', targetSchemas: [ 'Product' ] } ),
+					] ),
+				} ),
+				[ newSubject( { id: loadedId, schemaName: 'Company', statements: relationsTo( missingId ) } ) ],
+			);
+			placeViewFor( loadedId );
+		} );
+
+		function clickRedLink(): boolean {
+			return clickIsFollowed( document.querySelector( '.ext-neowiki-view a.new' )! );
+		}
+
+		it( 'opens the page\'s creator on it from its red link', async () => {
+			const wrapper = await mountApp( true );
+
+			clickRedLink();
+			await flushPromises();
+
+			const creator = wrapper.findComponent( SubjectCreatorDialog );
+			expect( creator.props( 'open' ) ).toBe( true );
+			expect( creator.props( 'relationTarget' ) ).toEqual( { subjectId: missingId, schemaNames: [ 'Product' ] } );
+		} );
+
+		it( 'leaves its red link to be followed where the page offers no creator', async () => {
+			await mountApp( false );
+
+			expect( clickRedLink() ).toBe( true );
+		} );
+
 	} );
 
 } );

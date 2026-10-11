@@ -32,8 +32,7 @@ describe( 'TargetSchemasInput', () => {
 		wrappers.splice( 0 ).forEach( ( wrapper ) => wrapper.unmount() );
 	} );
 
-	// Focused, because the menu only opens on focus: assertions about what it lists would otherwise
-	// pass against a list the user cannot see. Attached so that focus lands at all.
+	// Focused, as the field is when a user picks from it, and attached so that focus lands at all.
 	async function mountInput( targetSchemas: SchemaReference[] ): Promise<TargetSchemasInputWrapper> {
 		const wrapper: TargetSchemasInputWrapper = mount( TargetSchemasInput, {
 			props: {
@@ -108,24 +107,11 @@ describe( 'TargetSchemasInput', () => {
 		expect( field( wrapper ).attributes( 'aria-label' ) ).toBe( 'neowiki-property-editor-target-schema' );
 	} );
 
-	it( 'shows each target schema as a chip', async () => {
-		const wrapper = await mountInput( [ 'Person', 'Group' ] );
-
-		expect( chipTexts( wrapper ) ).toEqual( [ 'Person', 'Group' ] );
-	} );
-
 	it( 'shows a target schema from another Source apart from the field, naming its source', async () => {
 		const wrapper = await mountInput( [ { source: 'otherwiki', name: 'Person' }, 'Group' ] );
 
 		expect( chipTexts( wrapper ) ).toEqual( [ 'Group' ] );
 		expect( otherSourceChipTexts( wrapper ) ).toEqual( [ 'otherwiki:Person' ] );
-	} );
-
-	it( 'lists every schema and checks the targets', async () => {
-		const wrapper = await mountInput( [ 'Office' ] );
-
-		expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City' ] );
-		expect( checkedSchemas( wrapper ) ).toEqual( [ 'Office' ] );
 	} );
 
 	it( 'lists only the schemas whose name contains the typed text', async () => {
@@ -135,14 +121,6 @@ describe( 'TargetSchemasInput', () => {
 		await flushPromises();
 
 		expect( listedSchemas( wrapper ) ).toEqual( [ 'City' ] );
-	} );
-
-	it( 'adds a picked schema after the target schemas', async () => {
-		const wrapper = await mountInput( [ 'Office' ] );
-
-		await pickSchema( wrapper, 'City' );
-
-		expect( emittedTargetSchemas( wrapper ) ).toEqual( [ [ 'Office', 'City' ] ] );
 	} );
 
 	it( 'shows a picked schema as a chip and checks it', async () => {

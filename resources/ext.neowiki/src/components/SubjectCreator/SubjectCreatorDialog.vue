@@ -14,7 +14,8 @@
 
 		<SchemaPicker
 			ref="schemaLookupRef"
-			:offers-creation="canCreateSchemas"
+			:offers-creation="canCreateSchemas && offeredSchemaNames === undefined"
+			:schema-names="offeredSchemaNames"
 			@select="onSchemaSelected"
 			@create="openSchemaCreator"
 		/>
@@ -186,7 +187,7 @@ import { ref, shallowRef, computed, watch, nextTick, onMounted } from 'vue';
 import { CdxAccordion, CdxDialog, CdxField, CdxMessage, CdxRadio } from '@wikimedia/codex';
 import type { ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import type { CreatedSubjectPage } from '@/stores/SubjectStore.ts';
+import type { CreatedSubjectPage, SubjectCreatorTarget } from '@/stores/SubjectStore.ts';
 import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
@@ -228,6 +229,11 @@ const props = defineProps<{
 	 */
 	hostPage: { hasMainSubject: boolean } | null;
 	initialSchemaName?: string;
+	/**
+	 * The target of a relation that the Subject is created as: under its id, with one of its Schemas.
+	 * The Schema step then offers only those, and opens on the Subject where there is only one.
+	 */
+	relationTarget?: SubjectCreatorTarget | null;
 	/** The page the caller wants; undefined asks the user as usual. */
 	initialPage?: InitialPage;
 	open: boolean;
@@ -687,16 +693,20 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 	await loadSchema( schemaName );
 }
 
+const offeredSchemaNames = computed( (): readonly string[] | undefined => props.relationTarget?.schemaNames );
+
+const givenSubjectId = computed( (): SubjectId | undefined => props.relationTarget?.subjectId );
+
 async function loadSchema( schemaName: string ): Promise<void> {
 	const currentSequence = ++requestSequence;
 
 	try {
-		// The id is minted alongside the Schema because the step it opens cannot start without
+		// The id is settled alongside the Schema because the step it opens cannot start without
 		// one: the panes and the navigator name the Subject by it, and so does a relation recorded
 		// against it before anything has been written.
 		const [ schema, id ] = await Promise.all( [
 			schemaRepo.getSchema( schemaName ),
-			subjectRepository().mintSubjectId()
+			givenSubjectId.value ?? subjectRepository().mintSubjectId()
 		] );
 
 		if ( currentSequence !== requestSequence ) {
@@ -754,7 +764,11 @@ let writtenRoot: { subjectId: SubjectId; pageId: number | null; pageTitle: strin
 
 async function handleCreate( subject: Subject, pageId: number, comment: string ): Promise<void> {
 	if ( subject.getId().text === rootSubject.value?.getId().text ) {
-		await writeRootSubject( subject, comment );
+		try {
+			await writeRootSubject( subject, comment );
+		} catch ( error ) {
+			throw refusalOfGivenId( error );
+		}
 		return;
 	}
 
@@ -769,6 +783,18 @@ async function handleCreate( subject: Subject, pageId: number, comment: string )
 	}
 
 	await subjectStore.createSubject( subject, page, comment );
+}
+
+/**
+ * The editor takes an id in use as this very create having landed, which holds only for an id minted
+ * here. A given id in use is another Subject's: the create was refused.
+ */
+function refusalOfGivenId( error: unknown ): unknown {
+	if ( givenSubjectId.value === undefined || !( error instanceof SubjectIdInUseError ) ) {
+		return error;
+	}
+
+	return new Error( mw.msg( 'neowiki-subject-creator-id-in-use', givenSubjectId.value.text ) );
 }
 
 async function writeRootSubject( subject: Subject, comment: string ): Promise<void> {
@@ -831,11 +857,10 @@ function asWrittenRoot( subject: Subject, written: { subjectId: SubjectId; pageI
 }
 
 /**
- * Adds the Subject beside a page's Main Subject, under the id minted for it here. That id was
- * minted for this Subject alone, so the server holding it already means this very create landed and
- * only its answer was lost: the id it refused is the id the Subject has. Reporting a failure
- * instead would leave the dialog with no record of what it made, and every retry would be refused
- * the same way.
+ * Adds the Subject beside a page's Main Subject, under its id. An id minted for it here was minted
+ * for this Subject alone, so the server holding it already means this very create landed and only
+ * its answer was lost: the id it refused is the id the Subject has. Reporting a failure instead would
+ * leave the dialog with no record of what it made, and every retry would be refused the same way.
  */
 async function createBesideMainSubject(
 	pageId: number,
@@ -848,7 +873,7 @@ async function createBesideMainSubject(
 	try {
 		return await subjectStore.createOtherSubject( pageId, label, schemaName, statements, comment, id );
 	} catch ( error ) {
-		if ( error instanceof SubjectIdInUseError ) {
+		if ( error instanceof SubjectIdInUseError && givenSubjectId.value === undefined ) {
 			return id;
 		}
 
@@ -965,16 +990,19 @@ watch( () => props.open, async ( isOpen ) => {
 	}
 } );
 
+const pinnedSchemaName = computed( (): string | undefined =>
+	props.initialSchemaName ?? ( offeredSchemaNames.value?.length === 1 ? offeredSchemaNames.value[ 0 ] : undefined ) );
+
 // A Schema that cannot be loaded leaves the picker to do its job rather than a second step with
 // nothing to edit.
 async function pinInitialSchema(): Promise<void> {
-	if ( props.initialSchemaName === undefined ) {
+	if ( pinnedSchemaName.value === undefined ) {
 		return;
 	}
 
 	// The load's own catch clears the Schema and the Subject together, which leaves the picker
 	// showing; nothing further is needed to fall back to it.
-	await loadSchema( props.initialSchemaName );
+	await loadSchema( pinnedSchemaName.value );
 }
 
 function resetForm(): void {

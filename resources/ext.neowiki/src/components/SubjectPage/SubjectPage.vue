@@ -101,6 +101,13 @@
 			:on-save-schema="handleSchemaSave"
 		/>
 
+		<SubjectCreatorDialog
+			v-if="canCreateSubjectPage"
+			v-model:open="subjectStore.subjectCreatorOpen"
+			:host-page="null"
+			:relation-target="subjectStore.subjectCreatorTarget"
+		/>
+
 		<SubjectDeleteDialog
 			v-model:open="deleteConfirmOpen"
 			:subject-name="deletingSubjectName"
@@ -110,7 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowRef } from 'vue';
+import { computed, onMounted, provide, ref, shallowRef } from 'vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -129,7 +136,9 @@ import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
 import SubjectDeleteDialog from '@/components/SubjectsManager/SubjectDeleteDialog.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { useSubjectEditor } from '@/composables/useSubjectEditor.ts';
+import { RelationTargetCreationKey } from '@/components/Value/ValueDisplayContract.ts';
 
 const props = defineProps<{
 	subjectId: string;
@@ -141,7 +150,15 @@ const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
 const subjectRepo = NeoWikiServices.getSubjectRepository();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
-const { canEditSubject, canDeleteSubject, checkPermissions } = useSubjectPermissions();
+const {
+	canEditSubject,
+	canDeleteSubject,
+	canCreateSubjectPage,
+	checkPermissions,
+	checkCreateSubjectPagePermission
+} = useSubjectPermissions();
+
+provide( RelationTargetCreationKey, canCreateSubjectPage );
 
 // What the read returned, rather than a live read of the Subject registry: deleting a Subject takes
 // it out of that registry, and the registry's getter throws for an id it no longer holds. Every
@@ -233,8 +250,7 @@ async function readSubject(): Promise<void> {
 	// the same way the Data tab's own load does. A write acknowledged meanwhile may postdate what
 	// this read returned, so the registry is then left alone (ADR 30 rule 3).
 	if ( subjectEpoch === subjectStore.mutationEpoch ) {
-		subjectStore.setSubject( requested );
-		bundle.referencedSubjects.forEach( ( referenced ) => subjectStore.setSubject( referenced ) );
+		subjectStore.setSubjectsWithTargets( [ requested ], bundle.referencedSubjects, bundle.notFoundTargetIds );
 	}
 	await Promise.all( [
 		loadSchemas( [ requested, ...bundle.referencedSubjects ] ),
@@ -331,8 +347,8 @@ function notFoundMessage(): string {
 
 /**
  * The read expands relations one level, so a referenced Subject's own relation targets are not in
- * it, and RelationDisplay renders a target it cannot resolve as an error. This fetches them, which
- * is the depth the rows below render: their targets' targets are not shown, so not fetched.
+ * it, and RelationDisplay renders a target not read yet as an error. This fetches them, which is the
+ * depth the rows below render: their targets' targets are not shown, so not fetched.
  */
 async function seedRelationTargetsOf( subjects: Subject[] ): Promise<void> {
 	const targets = new Map<string, SubjectId>();
@@ -466,7 +482,7 @@ async function executeDelete( comment: string ): Promise<void> {
 }
 
 onMounted( async () => {
-	await loadSubject();
+	await Promise.all( [ loadSubject(), checkCreateSubjectPagePermission() ] );
 
 	// Editing rights are the hosting page's. Without one there is nothing to ask about, and the
 	// controls stay hidden.

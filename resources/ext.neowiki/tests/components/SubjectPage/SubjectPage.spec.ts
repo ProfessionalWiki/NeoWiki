@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
-import { flushPromises, shallowMount, VueWrapper } from '@vue/test-utils';
+import { enableAutoUnmount, flushPromises, mount, shallowMount, VueWrapper } from '@vue/test-utils';
 import { CdxMenuButton } from '@wikimedia/codex';
 import SubjectPage from '@/components/SubjectPage/SubjectPage.vue';
 import SubjectStatementsView from '@/components/SubjectsManager/SubjectStatementsView.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
+import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import DataExportButtons from '@/components/SubjectsManager/DataExportButtons.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
@@ -20,13 +21,16 @@ import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
 import { newRelation, RelationValue } from '@/domain/Value.ts';
-import { RelationType } from '@/domain/propertyTypes/Relation.ts';
+import { newRelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import type { ReferencingSubjects, SubjectWithReferencedSubjects } from '@/domain/SubjectRepository.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { newSchema, newSubject, unresolvedPage } from '@/TestHelpers.ts';
+
+enableAutoUnmount( afterEach );
 
 const SUBJECT_ID = 's1aaaaaaaaaaaa1';
 const REFERENCED_ID = 's1bbbbbbbbbbbb1';
@@ -110,6 +114,9 @@ const checkPermissionsMock = vi.fn();
 
 const canEditSubjectRef = ref( false );
 const canDeleteSubjectRef = ref( false );
+const canCreateSubjectPageRef = ref( false );
+// What the create-page check answers, which is how the page learns whether red links may create.
+let mayCreateSubjectPage = false;
 
 vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 	useSubjectPermissions: () => ( {
@@ -117,15 +124,20 @@ vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 		canCreateOtherSubject: ref( false ),
 		canEditSubject: canEditSubjectRef,
 		canDeleteSubject: canDeleteSubjectRef,
+		canCreateSubjectPage: canCreateSubjectPageRef,
 		checkPermissions: checkPermissionsMock,
+		checkCreateSubjectPagePermission: vi.fn( async () => {
+			canCreateSubjectPageRef.value = mayCreateSubjectPage;
+		} ),
 	} ),
 } ) );
 
 function bundle(
 	referencedSubjects: Subject[] = [],
 	requested: Subject = requestedSubject,
+	notFoundTargetIds: SubjectId[] = [],
 ): SubjectWithReferencedSubjects {
-	return { requestedSubject: requested, referencedSubjects };
+	return { requestedSubject: requested, referencedSubjects, notFoundTargetIds };
 }
 
 function referencing( subjects: Subject[], propertyNames = [ 'Made in' ], truncated = false ): ReferencingSubjects {
@@ -156,7 +168,13 @@ function silenceConsoleErrors(): MockInstance {
 	return vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 }
 
-function mountPage( subjectFirst = false ): VueWrapper {
+// Taken before any test stands in for the extension singleton.
+const componentRegistry = NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry();
+
+/**
+ * With renderValues, the page is mounted whole, so a relation shows as a reader sees it.
+ */
+function mountPage( subjectFirst = false, renderValues = false ): VueWrapper {
 	setupMwMock( {
 		functions: [ 'config', 'msg', 'message', 'notify', 'util' ],
 		// Core's own separator, which the row captions join property names with.
@@ -171,7 +189,7 @@ function mountPage( subjectFirst = false ): VueWrapper {
 	const pinia = createPinia();
 	setActivePinia( pinia );
 
-	return shallowMount( SubjectPage, {
+	return ( renderValues ? mount : shallowMount )( SubjectPage, {
 		props: { subjectId: SUBJECT_ID },
 		global: {
 			plugins: [ pinia ],
@@ -184,6 +202,8 @@ function mountPage( subjectFirst = false ): VueWrapper {
 				I18nSlot: I18nSlotStub,
 				SubjectRow: false,
 				SubjectDeleteDialog: false,
+				SubjectCreatorDialog: true,
+				SubjectEditorDialog: true,
 			},
 			provide: {
 				[ Service.SubjectRepository ]: {
@@ -193,13 +213,14 @@ function mountPage( subjectFirst = false ): VueWrapper {
 					getPageSubjects: getPageSubjectsMock,
 				},
 				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
+				[ Service.ComponentRegistry ]: componentRegistry,
 			},
 		},
 	} );
 }
 
-async function mountLoadedPage( subjectFirst = false ): Promise<VueWrapper> {
-	const wrapper = mountPage( subjectFirst );
+async function mountLoadedPage( subjectFirst = false, renderValues = false ): Promise<VueWrapper> {
+	const wrapper = mountPage( subjectFirst, renderValues );
 
 	// onMounted awaits the Subject read, then the Schema reads, then the permission check.
 	await flushPromises();
@@ -245,6 +266,8 @@ describe( 'SubjectPage', () => {
 	afterEach( () => {
 		canEditSubjectRef.value = false;
 		canDeleteSubjectRef.value = false;
+		canCreateSubjectPageRef.value = false;
+		mayCreateSubjectPage = false;
 		vi.restoreAllMocks();
 	} );
 
@@ -832,6 +855,32 @@ describe( 'SubjectPage', () => {
 			expect( wrapper.text() ).not.toContain( 'neowiki-managesubjects-add-button' );
 		} );
 
+	} );
+
+	// A reader who may create a page gets the creator for a red link's target. It is opened on no page,
+	// as everywhere a Subject is created from no page of its own.
+	it( 'opens the creator on the target of a red link', async () => {
+		mayCreateSubjectPage = true;
+		getSchemaMock.mockResolvedValue( newSchema( {
+			title: 'Company',
+			properties: new PropertyDefinitionList( [
+				newRelationProperty( { name: 'Made in', targetSchemas: [ 'Product' ] } ),
+			] ),
+		} ) );
+		getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle(
+			[],
+			subject( { id: SUBJECT_ID, label: 'ACME Inc', relatesTo: REFERENCED_ID } ),
+			[ new SubjectId( REFERENCED_ID ) ],
+		) );
+		const wrapper = await mountLoadedPage( false, true );
+
+		await wrapper.find( `${ REQUESTED_ROW } a.new` ).trigger( 'click' );
+
+		const creator = wrapper.findComponent( SubjectCreatorDialog );
+		expect( creator.props( 'open' ) ).toBe( true );
+		expect( creator.props( 'relationTarget' ) )
+			.toEqual( { subjectId: new SubjectId( REFERENCED_ID ), schemaNames: [ 'Product' ] } );
+		expect( creator.props( 'hostPage' ) ).toBeNull();
 	} );
 
 	// The reader is on one Subject's page while every row names another: a fragment of the current

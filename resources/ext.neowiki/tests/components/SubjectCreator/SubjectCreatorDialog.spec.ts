@@ -70,7 +70,7 @@ interface Deferred<T> {
 
 const SchemaPickerStub = {
 	template: '<div class="schema-lookup-stub"></div>',
-	props: { offersCreation: Boolean },
+	props: { offersCreation: Boolean, schemaNames: { type: Array, default: undefined } },
 	emits: [ 'select', 'create' ],
 	setup() {
 		return { focus: vi.fn() };
@@ -302,6 +302,11 @@ describe( 'SubjectCreatorDialog', () => {
 			wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
 		}
 
+		await flushPromises();
+	}
+
+	async function save( wrapper: VueWrapper, summary = '' ): Promise<void> {
+		await wrapper.findComponent( { name: 'SummaryAction' } ).vm.$emit( 'save', summary );
 		await flushPromises();
 	}
 
@@ -794,11 +799,6 @@ describe( 'SubjectCreatorDialog', () => {
 
 		async function typePageTitle( wrapper: VueWrapper, title: string ): Promise<void> {
 			await pageTitleInput( wrapper ).setValue( title );
-			await flushPromises();
-		}
-
-		async function save( wrapper: VueWrapper, summary = '' ): Promise<void> {
-			await wrapper.findComponent( { name: 'SummaryAction' } ).vm.$emit( 'save', summary );
 			await flushPromises();
 		}
 
@@ -2422,6 +2422,75 @@ describe( 'SubjectCreatorDialog', () => {
 		} );
 	} );
 
+	describe( 'creating the Subject a relation points to', () => {
+		const TARGET_ID = 's1targetAAAAAA1';
+
+		async function openOnTarget( props: Record<string, any> = {} ): Promise<VueWrapper> {
+			const wrapper = mountComponent( {}, {
+				relationTarget: { subjectId: new SubjectId( TARGET_ID ), schemaNames: [ SCHEMA_NAME ] },
+				...props,
+			} );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+			return wrapper;
+		}
+
+		it( 'opens on the Subject at once where it may have only one Schema', async () => {
+			const wrapper = await openOnTarget();
+
+			expect( wrapper.findComponent( SubjectEditorDialog ).props( 'schema' ).getName() ).toBe( SCHEMA_NAME );
+		} );
+
+		it( 'offers only the Schemas the Subject may have, and no new one', async () => {
+			const wrapper = await openOnTarget( {
+				relationTarget: { subjectId: new SubjectId( TARGET_ID ), schemaNames: [ 'City', 'Place' ] },
+			} );
+
+			expect( wrapper.findComponent( SchemaPicker ).props( 'schemaNames' ) ).toEqual( [ 'City', 'Place' ] );
+			expect( wrapper.findComponent( SchemaPicker ).props( 'offersCreation' ) ).toBe( false );
+		} );
+
+		it( 'creates the Subject under the id it was given', async () => {
+			const wrapper = await openOnTarget();
+
+			await save( wrapper );
+
+			expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
+				PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, new SubjectId( TARGET_ID ),
+			);
+		} );
+
+		it( 'reports the id as taken rather than taking the Subject as created', async () => {
+			( subjectStore.createOtherSubject as any ).mockRejectedValueOnce( new SubjectIdInUseError( TARGET_ID ) );
+			const wrapper = await openOnTarget( { hostPage: { hasMainSubject: true } } );
+
+			await save( wrapper );
+
+			expect( ( lastSaveError as Error ).message ).toBe( `neowiki-subject-creator-id-in-use${ TARGET_ID }` );
+			expect( reloadMock ).not.toHaveBeenCalled();
+		} );
+
+		it( 'reports the id as taken where the Subject was to get a page of its own', async () => {
+			stubMw( { wgNeoWikiSubjectFirst: true } );
+			subjectStore.createSubjectPage = vi.fn().mockRejectedValue( new SubjectIdInUseError( TARGET_ID ) );
+			const wrapper = await openOnTarget();
+
+			await save( wrapper );
+
+			expect( ( lastSaveError as Error ).message ).toBe( `neowiki-subject-creator-id-in-use${ TARGET_ID }` );
+			expect( location.href ).toBe( '' );
+		} );
+
+		it( 'reports any other refusal as it came', async () => {
+			( subjectStore.createOtherSubject as any ).mockRejectedValueOnce( new Error( 'Server error' ) );
+			const wrapper = await openOnTarget( { hostPage: { hasMainSubject: true } } );
+
+			await save( wrapper );
+
+			expect( ( lastSaveError as Error ).message ).toBe( 'Server error' );
+		} );
+	} );
+
 	// Subjects invented while filling in a relation field, which the editor hands back as
 	// creations of their own once the save runs.
 	describe( 'the Subjects created alongside', () => {
@@ -2449,11 +2518,6 @@ describe( 'SubjectCreatorDialog', () => {
 			await wrapper.setProps( { open: true } );
 			await flushPromises();
 			return wrapper;
-		}
-
-		async function save( wrapper: VueWrapper ): Promise<void> {
-			await wrapper.findComponent( { name: 'SummaryAction' } ).vm.$emit( 'save', '' );
-			await flushPromises();
 		}
 
 		// The page does not exist while the dialog is open, so nothing can say where the draft

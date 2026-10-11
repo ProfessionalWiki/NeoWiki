@@ -10,6 +10,7 @@ import { Subject } from '@/domain/Subject';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
+import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError';
 import { setupMwMock } from '../VueTestHelpers.ts';
 import type { Schema } from '@/domain/Schema.ts';
 
@@ -34,6 +35,15 @@ describe( 'SubjectStore — subjectCreatorOpen', () => {
 		store.openSubjectCreator();
 		store.closeSubjectCreator();
 		expect( store.subjectCreatorOpen ).toBe( false );
+	} );
+
+	it( 'opens the creator on no Subject in particular after one it was opened on', () => {
+		const store = useSubjectStore();
+		store.openSubjectCreatorFor( new SubjectId( 's33333333333333' ), [ 'City' ] );
+
+		store.openSubjectCreator();
+
+		expect( store.subjectCreatorTarget ).toBeNull();
 	} );
 } );
 
@@ -128,6 +138,7 @@ describe( 'SubjectStore deleteSubject', () => {
 		const getPageSubjects = vi.fn().mockResolvedValue( {
 			pageSubjects: new PageSubjects( pageId, null, [ kept ] ),
 			referencedSubjects: [],
+			notFoundTargetIds: [],
 			schemas: [],
 		} );
 		withSubjectRepository( { deleteSubject: vi.fn().mockResolvedValue( true ), getPageSubjects } );
@@ -219,6 +230,7 @@ describe( 'SubjectStore deleteSubject', () => {
 		resolveGetPageSubjects( {
 			pageSubjects: new PageSubjects( pageId, null, [ kept ] ),
 			referencedSubjects: [],
+			notFoundTargetIds: [],
 			schemas: [],
 		} );
 		await request;
@@ -291,6 +303,7 @@ describe( 'SubjectStore ordering guards', () => {
 		resolveLoad( {
 			pageSubjects: new PageSubjects( 7, null, [ fromServer ] ),
 			referencedSubjects: [],
+			notFoundTargetIds: [],
 			schemas: [],
 		} );
 		await request;
@@ -319,6 +332,7 @@ describe( 'SubjectStore ordering guards', () => {
 		resolveLoad( {
 			pageSubjects: new PageSubjects( 7, null, [] ),
 			referencedSubjects: [],
+			notFoundTargetIds: [],
 			schemas: [ fromServer ],
 		} );
 		await request;
@@ -477,6 +491,7 @@ describe( 'SubjectStore moveSubject', () => {
 		withSubjectRepository( { moveSubject, getPageSubjects: vi.fn().mockResolvedValue( {
 			pageSubjects: new PageSubjects( pageId, null, [ kept ] ),
 			referencedSubjects: [],
+			notFoundTargetIds: [],
 			schemas: [],
 		} ) } );
 		const store = useSubjectStore();
@@ -492,6 +507,7 @@ describe( 'SubjectStore moveSubject', () => {
 		const getPageSubjects = vi.fn().mockResolvedValue( {
 			pageSubjects: new PageSubjects( pageId, null, [ kept ] ),
 			referencedSubjects: [],
+			notFoundTargetIds: [],
 			schemas: [],
 		} );
 		withSubjectRepository( { moveSubject: vi.fn().mockResolvedValue( undefined ), getPageSubjects } );
@@ -512,6 +528,7 @@ describe( 'SubjectStore moveSubject', () => {
 			getPageSubjects: vi.fn().mockResolvedValue( {
 				pageSubjects: new PageSubjects( pageId, null, [ kept ] ),
 				referencedSubjects: [],
+				notFoundTargetIds: [],
 				schemas: [],
 			} ),
 		} );
@@ -599,6 +616,47 @@ describe( 'SubjectStore moveSubject', () => {
 
 		expect( getPageSubjects ).not.toHaveBeenCalled();
 		expect( store.subjects.has( moved.getId().text ) ).toBe( true );
+	} );
+
+} );
+
+describe( 'SubjectStore relation targets that were not found', () => {
+
+	const missingId = new SubjectId( 's33333333333333' );
+
+	beforeEach( () => {
+		setActivePinia( createPinia() );
+	} );
+
+	afterEach( () => {
+		vi.restoreAllMocks();
+	} );
+
+	function notFoundAmong( ...ids: SubjectId[] ): string[] {
+		const store = useSubjectStore();
+
+		return ids.filter( ( id ) => store.wasNotFound( id ) ).map( ( id ) => id.text );
+	}
+
+	it( 'records an id the wiki answers it holds no Subject for as not found', async () => {
+		withSubjectRepository( {
+			getSubject: vi.fn().mockRejectedValue( new SubjectNotFoundError( missingId.text ) ),
+		} );
+
+		await expect( useSubjectStore().getOrFetchSubject( missingId ) ).rejects.toBeInstanceOf( SubjectNotFoundError );
+
+		expect( notFoundAmong( missingId ) ).toEqual( [ missingId.text ] );
+	} );
+
+	// Only an answer that the Subject is not there makes a red link: a read that failed says nothing either way.
+	it( 'does not take a failed read for a Subject that was not found', async () => {
+		withSubjectRepository( {
+			getSubject: vi.fn().mockRejectedValue( new Error( 'Error fetching subject' ) ),
+		} );
+
+		await expect( useSubjectStore().getOrFetchSubject( missingId ) ).rejects.toThrow( 'Error fetching subject' );
+
+		expect( notFoundAmong( missingId ) ).toEqual( [] );
 	} );
 
 } );

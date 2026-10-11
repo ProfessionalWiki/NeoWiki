@@ -101,6 +101,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { RelationTargetEditingKey } from '@/components/Value/ValueInputContract.ts';
 import { withoutMissingValueViolations, withoutUnsavedTargetViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
+import { isPlainLeftClick } from '@/presentation/plainLeftClick.ts';
 
 const props = defineProps<{
 	subject: Subject;
@@ -176,11 +177,7 @@ const labelPlaceholder = computed( (): string => subjectLabelPlaceholder( props.
  * the browser, so the Schema page stays reachable and nothing here is a dead end.
  */
 function openSchemaEditor( event: MouseEvent ): void {
-	if ( !props.canEditSchema || event.button !== 0 ) {
-		return;
-	}
-
-	if ( event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ) {
+	if ( !props.canEditSchema || !isPlainLeftClick( event ) ) {
 		return;
 	}
 

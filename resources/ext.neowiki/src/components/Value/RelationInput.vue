@@ -24,7 +24,7 @@
 			<template #input="{ value, onUpdate, onBlur, onFocus, status, ariaLabel }">
 				<SubjectPicker
 					:selected="value"
-					:target-schemas="localTargetSchemaNames"
+					:target-schemas="targetSchemaNames"
 					:start-icon="startIcon"
 					:status="status"
 					:aria-label="ariaLabel"
@@ -46,7 +46,7 @@
 		<SubjectPicker
 			v-else
 			:selected="selectedId"
-			:target-schemas="localTargetSchemaNames"
+			:target-schemas="targetSchemaNames"
 			:start-icon="startIcon"
 			:status="fieldStatus"
 			@update:selected="onSingleSelectionChanged"
@@ -65,7 +65,6 @@
 </template>
 
 <script setup lang="ts">
-import { isLocalSchemaReference } from '@/domain/SchemaReference';
 import { ref, watch, computed, toRef, inject } from 'vue';
 import { CdxField, CdxIcon, ValidationMessages } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
@@ -73,7 +72,7 @@ import RelationTargetOpenButton from '@/components/Value/RelationTargetOpenButto
 import NeoMultiLookupInput from '@/components/common/NeoMultiLookupInput.vue';
 import SubjectPicker from '@/components/common/SubjectPicker.vue';
 import { RelationTargetEditingKey, ValueInputEmits, ValueInputProps, ValueInputExposes } from '@/components/Value/ValueInputContract';
-import { RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
+import { localTargetSchemaNames, RelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { Value, ValueType, RelationValue, relationValueWithTargets } from '@/domain/Value';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useServerViolations, violationStatus } from '@/composables/useServerViolations.ts';
@@ -86,15 +85,7 @@ const props = withDefaults(
 	}
 );
 
-/**
- * The picker searches and creates this wiki's Subjects, so it can only be given Schemas of this wiki.
- * A target Schema from another Source is left out: what the picker would create is a local Subject,
- * not one of that Schema. A property whose type the Schema has changed since the Statement was
- * written has no target Schemas at all.
- */
-const localTargetSchemaNames = computed<string[]>( () =>
-	( props.property.targetSchemas ?? [] ).filter( isLocalSchemaReference )
-);
+const targetSchemaNames = computed<string[]>( () => localTargetSchemaNames( props.property ) );
 
 const startIcon = NeoWikiServices.getComponentRegistry().getIcon( RelationType.typeName );
 
