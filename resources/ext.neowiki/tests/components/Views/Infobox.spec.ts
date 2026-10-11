@@ -19,7 +19,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import type { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { CdxButton } from '@wikimedia/codex';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
 import { newSubject } from '@/TestHelpers.ts';
 
 const $i18n = createI18nMock();
@@ -32,6 +32,7 @@ describe( 'Infobox', () => {
 		( globalThis as any ).mw.util = {
 			getUrl: vi.fn( ( title: string ) => `/wiki/${ title }` ),
 		};
+		stubUpdateTooltipAccessKeys();
 	} );
 
 	let pinia: ReturnType<typeof createPinia>;

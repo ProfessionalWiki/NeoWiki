@@ -484,7 +484,8 @@
 				"mediawiki.user",
 				"mediawiki.storage",
 				"mediawiki.jqueryMsg",
-				"mediawiki.language.names"
+				"mediawiki.language.names",
+				"mediawiki.util"
 			],
 			"codexComponents": [
 				"CdxAccordion",
@@ -638,6 +639,7 @@
 				"neowiki-save-schema",
 				"neowiki-edit-summary-label",
 				"neowiki-edit-summary-placeholder",
+				"accesskey-save",
 				"neowiki-edit-summary-help-text-schema",
 				"neowiki-delete-confirm-title",
 				"neowiki-delete-confirm-message",

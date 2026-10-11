@@ -154,6 +154,23 @@ export function stubIntersectionObserver(): ScrollStub {
 }
 
 /**
+ * Stands in for MediaWiki's `$.fn.updateTooltipAccessKeys`, naming the key in the title as core does
+ * for Chromium: "Save [alt-shift-s]". Like core's, it adds no title and replaces a name it added before.
+ */
+export function stubUpdateTooltipAccessKeys(): void {
+	vi.stubGlobal( '$', ( element: HTMLElement ) => ( {
+		updateTooltipAccessKeys(): void {
+			if ( element.title === '' ) {
+				return;
+			}
+
+			const title = element.title.replace( / \[[^\]]*\]$/, '' );
+			element.title = element.accessKey === '' ? title : `${ title } [alt-shift-${ element.accessKey }]`;
+		},
+	} ) );
+}
+
+/**
  * What MediaWiki's own bcp47() translates, from its own table: a MediaWiki code that is not a BCP 47
  * tag, and in `be-x-old`'s case one that lands on a tag another code already carries. A few are
  * enough for a spec to tell a translated code from one passed straight through, which a pass-through

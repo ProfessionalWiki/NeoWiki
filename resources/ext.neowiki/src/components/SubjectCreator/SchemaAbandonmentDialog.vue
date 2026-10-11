@@ -36,10 +36,13 @@
 
 <script setup lang="ts">
 import { CdxButton, CdxDialog } from '@wikimedia/codex';
+import { useDialogStack } from '@/composables/useDialogStack.ts';
 
-defineProps<{
+const props = defineProps<{
 	open: boolean;
 }>();
+
+useDialogStack( () => props.open );
 
 const emit = defineEmits<{
 	'abandon': [];

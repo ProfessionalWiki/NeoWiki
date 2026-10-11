@@ -26,7 +26,7 @@ import PaneDivider from '@/components/common/PaneDivider.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog, CdxMessage } from '@wikimedia/codex';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
@@ -99,6 +99,7 @@ describe( 'SubjectEditorDialog', () => {
 			functions: [ 'message', 'msg', 'notify', 'config', 'util' ],
 			config: wikiConfig,
 		} );
+		stubUpdateTooltipAccessKeys();
 	} );
 
 	let pinia: ReturnType<typeof createPinia>;

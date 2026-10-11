@@ -1,15 +1,21 @@
-import { mount, VueWrapper, DOMWrapper } from '@vue/test-utils';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { enableAutoUnmount, mount, VueWrapper, DOMWrapper } from '@vue/test-utils';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { nextTick } from 'vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
+import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
+import SchemaAbandonmentDialog from '@/components/SubjectCreator/SchemaAbandonmentDialog.vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconCheck, cdxIconTrash } from '@wikimedia/codex-icons';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
 
 const $i18n = createI18nMock();
 
+enableAutoUnmount( afterEach );
+
 describe( 'SummaryAction', () => {
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'message', 'msg' ] } );
+		setupMwMock( { functions: [ 'message', 'msg' ], messages: { 'accesskey-save': 's' } } );
+		stubUpdateTooltipAccessKeys();
 	} );
 
 	function mountComponent( props: Partial<InstanceType<typeof SummaryAction>[ '$props' ]> = {} ): VueWrapper {
@@ -133,6 +139,122 @@ describe( 'SummaryAction', () => {
 
 			expect( wrapper.get( '.ext-neowiki-summary-action__help-text' ).text() ).toBe( 'Help' );
 			expect( wrapper.get( '.ext-neowiki-summary-action__footer-text' ).text() ).toBe( 'Footer' );
+		} );
+	} );
+
+	describe( 'Save access key', () => {
+		function saveButton( wrapper: VueWrapper ): VueWrapper {
+			return wrapper.findComponent( CdxButton );
+		}
+
+		async function mountSettled( props: Partial<InstanceType<typeof SummaryAction>[ '$props' ]> = {} ): Promise<VueWrapper> {
+			const wrapper = mountComponent( props );
+			await nextTick();
+			return wrapper;
+		}
+
+		it( 'gives the save button the wiki\'s save key, named in its tooltip', async () => {
+			const wrapper = await mountSettled( { saveButtonLabel: 'Save changes' } );
+
+			expect( saveButton( wrapper ).attributes( 'accesskey' ) ).toBe( 's' );
+			expect( saveButton( wrapper ).attributes( 'title' ) ).toBe( 'Save changes [alt-shift-s]' );
+		} );
+
+		it( 'leaves a destructive button without the key', async () => {
+			const wrapper = await mountSettled( { saveButtonAction: 'destructive' } );
+
+			expect( saveButton( wrapper ).attributes( 'accesskey' ) ).toBeUndefined();
+		} );
+
+		it( 'leaves the button without a key when the wiki switches the save key off', async () => {
+			setupMwMock( { functions: [ 'message', 'msg' ], messages: { 'accesskey-save': '-' } } );
+
+			const wrapper = await mountSettled();
+
+			expect( saveButton( wrapper ).attributes( 'accesskey' ) ).toBeUndefined();
+		} );
+
+		it( 'gives the key up as soon as its dialog closes', async () => {
+			const wrapper = await mountSettled();
+			const button = saveButton( wrapper ).element;
+
+			wrapper.unmount();
+
+			expect( button.hasAttribute( 'accesskey' ) ).toBe( false );
+		} );
+
+		describe( 'with dialogs stacked', () => {
+			// The footers of the open dialogs, from the bottom of the stack to the top.
+			const OpenDialogs = {
+				components: { SummaryAction },
+				template: '<SummaryAction v-for="label in labels" :key="label" help-text="" ' +
+					':save-button-label="label" :save-disabled="false" />',
+				props: [ 'labels' ],
+			};
+
+			async function mountOpenDialogs( labels: string[] ): Promise<VueWrapper> {
+				const wrapper = mount( OpenDialogs, { props: { labels }, global: { mocks: { $i18n } } } );
+				await nextTick();
+				return wrapper;
+			}
+
+			function button( wrapper: VueWrapper, label: string ): DOMWrapper<Element> {
+				return wrapper.findAll( 'button' ).find( ( candidate ) => candidate.text() === label )!;
+			}
+
+			it( 'gives the key only to the dialog in front', async () => {
+				const wrapper = await mountOpenDialogs( [ 'Save changes', 'Save schema' ] );
+
+				expect( button( wrapper, 'Save changes' ).attributes( 'accesskey' ) ).toBeUndefined();
+				expect( button( wrapper, 'Save schema' ).attributes( 'accesskey' ) ).toBe( 's' );
+			} );
+
+			it( 'hands the key, named in the tooltip, to the dialog next in line once the one in front closes', async () => {
+				const wrapper = await mountOpenDialogs( [ 'Save changes', 'Save schema', 'Create mapping' ] );
+
+				await wrapper.setProps( { labels: [ 'Save changes', 'Save schema' ] } );
+
+				expect( button( wrapper, 'Save schema' ).attributes( 'accesskey' ) ).toBe( 's' );
+				expect( button( wrapper, 'Save schema' ).attributes( 'title' ) ).toBe( 'Save schema [alt-shift-s]' );
+			} );
+
+			describe.each( [
+				[ 'CloseConfirmationDialog', CloseConfirmationDialog ],
+				[ 'SchemaAbandonmentDialog', SchemaAbandonmentDialog ],
+			] )( 'under a %s', ( _name, confirmation ) => {
+				// Hosts write the question after the footer of the dialog it asks about, and mount it closed.
+				async function mountAskingDialog(): Promise<VueWrapper> {
+					const wrapper = mount(
+						{
+							components: { Confirmation: confirmation, SummaryAction },
+							template: '<SummaryAction help-text="" save-button-label="Save changes" :save-disabled="false" />' +
+								'<Confirmation :open="asking" />',
+							props: [ 'asking' ],
+						},
+						{ props: { asking: false }, global: { mocks: { $i18n } } },
+					);
+					await nextTick();
+					return wrapper;
+				}
+
+				it( 'gives the key up while the question is open', async () => {
+					const wrapper = await mountAskingDialog();
+					expect( button( wrapper, 'Save changes' ).attributes( 'accesskey' ) ).toBe( 's' );
+
+					await wrapper.setProps( { asking: true } );
+
+					expect( button( wrapper, 'Save changes' ).attributes( 'accesskey' ) ).toBeUndefined();
+				} );
+
+				it( 'gets the key back once the question is answered', async () => {
+					const wrapper = await mountAskingDialog();
+					await wrapper.setProps( { asking: true } );
+
+					await wrapper.setProps( { asking: false } );
+
+					expect( button( wrapper, 'Save changes' ).attributes( 'accesskey' ) ).toBe( 's' );
+				} );
+			} );
 		} );
 	} );
 } );

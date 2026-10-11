@@ -1,7 +1,7 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import MappingCreatorDialog from '@/components/MappingsPage/MappingCreatorDialog.vue';
-import { createI18nMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
 
 const createMock = vi.fn();
 const notifyMock = vi.fn();
@@ -58,6 +58,7 @@ describe( 'MappingCreatorDialog', () => {
 				this.create = createMock;
 			} ),
 		} );
+		stubUpdateTooltipAccessKeys();
 	} );
 
 	it( 'rejects an empty name without calling the API', async () => {

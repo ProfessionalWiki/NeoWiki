@@ -45,9 +45,12 @@
 			</p>
 
 			<CdxButton
+				ref="saveButton"
 				:action="props.saveButtonAction"
 				weight="primary"
 				:disabled="props.saveDisabled"
+				:accesskey="accessKey"
+				:title="accessKey === undefined ? undefined : props.saveButtonLabel"
 				@click="onSaveClick"
 			>
 				<CdxIcon :icon="props.saveButtonIcon" />
@@ -58,10 +61,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue';
 import { CdxButton, CdxField, CdxIcon, CdxTextArea, CdxAccordion } from '@wikimedia/codex';
 import { cdxIconCheck } from '@wikimedia/codex-icons';
 import type { Icon } from '@wikimedia/codex-icons';
+import { useDialogStack } from '@/composables/useDialogStack.ts';
 
 const props = withDefaults(
 	defineProps<{
@@ -89,6 +93,31 @@ const props = withDefaults(
 
 const editSummary = ref( '' );
 const textAreaRef = ref<InstanceType<typeof CdxTextArea> | null>( null );
+const saveButton = ref<InstanceType<typeof CdxButton> | null>( null );
+
+// Mounted exactly while its dialog is open, so it stands for that dialog in the stack.
+const inFront = useDialogStack( true );
+
+// As in core, a message of "-" or nothing switches the key off.
+const wikiSaveKey = mw.msg( 'accesskey-save' );
+const saveKey = wikiSaveKey === '-' || wikiSaveKey === '' ? undefined : wikiSaveKey;
+
+const accessKey = computed(
+	(): string | undefined => inFront.value && props.saveButtonAction !== 'destructive' ? saveKey : undefined
+);
+
+// Vue resets the title whenever the key or the label changes, which drops the key's name.
+function nameKeyInTooltip(): void {
+	if ( accessKey.value !== undefined && saveButton.value !== null ) {
+		$( saveButton.value.$el ).updateTooltipAccessKeys();
+	}
+}
+
+onMounted( nameKeyInTooltip );
+onUpdated( nameKeyInTooltip );
+
+// A closing dialog stays in the document while it fades out, where its button would still take the key.
+onBeforeUnmount( () => saveButton.value?.$el.removeAttribute( 'accesskey' ) );
 
 const emit = defineEmits<{
 	save: [ summary: string ];

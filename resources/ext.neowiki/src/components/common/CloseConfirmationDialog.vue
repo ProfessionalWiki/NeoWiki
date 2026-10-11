@@ -21,10 +21,13 @@
 <script setup lang="ts">
 import { CdxDialog } from '@wikimedia/codex';
 import type { PrimaryDialogAction, DialogAction } from '@wikimedia/codex';
+import { useDialogStack } from '@/composables/useDialogStack.ts';
 
-defineProps<{
+const props = defineProps<{
 	open: boolean;
 }>();
+
+useDialogStack( () => props.open );
 
 const emit = defineEmits<{
 	'discard': [];

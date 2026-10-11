@@ -9,7 +9,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { newSubject } from '@/TestHelpers.ts';
-import { createI18nMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
 
 const $i18n = createI18nMock();
 
@@ -92,6 +92,7 @@ describe( 'MoveSubjectDialog', () => {
 				this.create = createMock;
 			} ),
 		} );
+		stubUpdateTooltipAccessKeys();
 
 		getPageSubjectsMock = vi.fn().mockResolvedValue( {
 			pageSubjects: new PageSubjects( TARGET_PAGE_ID, null, [] ),

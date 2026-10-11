@@ -17,7 +17,8 @@ module.exports = {
 		sourceType: 'module'
 	},
 	globals: {
-		mw: 'readonly'
+		mw: 'readonly',
+		$: 'readonly'
 	},
 	rules: {
 		// These @typescript-eslint rules are disabled because they are replaced by the @stylistic rules.
