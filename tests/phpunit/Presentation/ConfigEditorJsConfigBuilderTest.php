@@ -21,6 +21,7 @@ class ConfigEditorJsConfigBuilderTest extends TestCase {
 		'NeoWikiSubjectFirst' => false,
 		'NeoWikiAutoRenderMainSubject' => true,
 		'NeoWikiDataLanguages' => [],
+		'NeoWikiEnforceValidation' => false,
 	];
 
 	private function buildFor( ?array $pageConfig, array $phpConfig = self::PHP_CONFIG ): array {
@@ -41,9 +42,9 @@ class ConfigEditorJsConfigBuilderTest extends TestCase {
 	public function testGivesTheExposedSettingsInTheirOrder(): void {
 		$jsConfig = $this->buildFor( null );
 
-		$this->assertSame( [ 'subjectFirst', 'dataLanguages', 'autoRenderMainSubject' ], array_keys( $jsConfig['pageValues'] ) );
+		$this->assertSame( [ 'subjectFirst', 'dataLanguages', 'enforceValidation', 'autoRenderMainSubject' ], array_keys( $jsConfig['pageValues'] ) );
 		$this->assertSame(
-			[ 'subjectFirst', 'dataLanguages', 'autoRenderMainSubject' ],
+			[ 'subjectFirst', 'dataLanguages', 'enforceValidation', 'autoRenderMainSubject' ],
 			array_keys( $jsConfig['localSettingsValues'] )
 		);
 	}

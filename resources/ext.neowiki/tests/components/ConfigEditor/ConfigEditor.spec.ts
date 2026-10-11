@@ -54,6 +54,7 @@ class StalledPageSaver implements PageRevisionSaver {
 const LOCAL_SETTINGS_VALUES: ConfigValues = {
 	subjectFirst: false,
 	dataLanguages: [ 'de' ],
+	enforceValidation: false,
 	autoRenderMainSubject: true,
 };
 
@@ -74,6 +75,8 @@ describe( 'ConfigEditor', () => {
 				'neowiki-config-setting-subject-first-subject-first-help': 'Each new Subject gets its own page.',
 				'neowiki-config-setting-data-languages': 'Data languages',
 				'neowiki-config-setting-data-languages-help': 'Languages of the wiki\'s data.',
+				'neowiki-config-setting-enforce-validation': 'Block edits that add validation errors',
+				'neowiki-config-setting-enforce-validation-help': 'A Schema marks each constraint as a warning or an error.',
 				'neowiki-config-setting-auto-render-main-subject': 'Show Main Subjects as infoboxes',
 				'neowiki-config-editor-remove-language': ( name: string ) => `Remove ${ name }`,
 				'neowiki-config-editor-reset': 'Reset to default',
@@ -105,7 +108,13 @@ describe( 'ConfigEditor', () => {
 	): VueWrapper {
 		wrapper = mount( ConfigEditor, {
 			props: {
-				pageValues: { subjectFirst: null, dataLanguages: null, autoRenderMainSubject: null, ...pageValues },
+				pageValues: {
+					subjectFirst: null,
+					dataLanguages: null,
+					enforceValidation: null,
+					autoRenderMainSubject: null,
+					...pageValues,
+				},
 				localSettingsValues: { ...LOCAL_SETTINGS_VALUES, ...localSettingsValues },
 				canEdit: canEdit,
 				revisionId: revisionId,
@@ -195,10 +204,15 @@ describe( 'ConfigEditor', () => {
 		expect( resetLink( editor, 'Show Main Subjects' ).exists() ).toBe( true );
 	} );
 
-	it.each( [ 'Wiki type', 'Data languages', 'Show Main Subjects as infoboxes' ] )(
+	it.each( [ 'Wiki type', 'Data languages', 'Block edits that add validation errors', 'Show Main Subjects as infoboxes' ] )(
 		'names the setting its reset link is for, for a screen reader: %s',
 		( label ) => {
-			const editor = newEditor( { subjectFirst: true, dataLanguages: [ 'fr' ], autoRenderMainSubject: false } );
+			const editor = newEditor( {
+				subjectFirst: true,
+				dataLanguages: [ 'fr' ],
+				enforceValidation: true,
+				autoRenderMainSubject: false,
+			} );
 
 			expect( resetLink( editor, label ).attributes( 'aria-label' ) ).toBe( `Reset ${ label } to default` );
 		},
@@ -222,14 +236,17 @@ describe( 'ConfigEditor', () => {
 		expect( document.activeElement ).toBe( radio( editor, 'Subject-first' ).element );
 	} );
 
-	it( 'moves the focus to the setting it returns to its default', async () => {
-		const editor = newEditor( { autoRenderMainSubject: false } );
+	it.each( [ 'Block edits', 'Show Main Subjects' ] )(
+		'moves the focus to the setting it returns to its default: %s',
+		async ( label ) => {
+			const editor = newEditor( { enforceValidation: true, autoRenderMainSubject: false } );
 
-		await resetLink( editor, 'Show Main Subjects' ).trigger( 'click' );
-		await editor.vm.$nextTick();
+			await resetLink( editor, label ).trigger( 'click' );
+			await editor.vm.$nextTick();
 
-		expect( document.activeElement ).toBe( checkbox( editor, 'Show Main Subjects' ).element );
-	} );
+			expect( document.activeElement ).toBe( checkbox( editor, label ).element );
+		},
+	);
 
 	it( 'moves the focus to the language list it returns to its default', async () => {
 		const editor = newEditor( { dataLanguages: [ 'fr' ] } );
@@ -267,6 +284,16 @@ describe( 'ConfigEditor', () => {
 		await save( editor );
 
 		expect( savedJson( pageSaver ) ).toEqual( { subjectFirst: true, autoRenderMainSubject: false } );
+	} );
+
+	it( 'saves validation enforcement as set in its checkbox', async () => {
+		const pageSaver = new SpyPageSaver();
+		const editor = newEditor( {}, { pageSaver } );
+
+		await checkbox( editor, 'Block edits' ).setValue( true );
+		await save( editor );
+
+		expect( savedJson( pageSaver ) ).toEqual( { enforceValidation: true } );
 	} );
 
 	it( 'saves the data languages as changed in their list', async () => {
@@ -424,6 +451,7 @@ describe( 'ConfigEditor', () => {
 	it( 'shows the settings read-only to someone who may not change them', () => {
 		const editor = newEditor( { autoRenderMainSubject: false }, { canEdit: false } );
 
+		expect( checkbox( editor, 'Block edits' ).element.disabled ).toBe( true );
 		expect( checkbox( editor, 'Show Main Subjects' ).element.disabled ).toBe( true );
 		expect( editor.findAll( 'button' ) ).toHaveLength( 0 );
 	} );

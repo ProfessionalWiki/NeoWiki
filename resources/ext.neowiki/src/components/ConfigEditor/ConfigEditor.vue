@@ -74,6 +74,28 @@
 
 		<div class="ext-neowiki-config-editor__setting">
 			<CdxCheckbox
+				ref="enforcementCheckbox"
+				v-model="enforceValidation"
+				:disabled="!props.canEdit"
+			>
+				{{ enforcementLabel }}
+				<template #description>
+					<span class="ext-neowiki-config-editor__help">{{ $i18n( 'neowiki-config-setting-enforce-validation-help' ).text() }}</span>
+					<button
+						v-if="canReset( 'enforceValidation' )"
+						type="button"
+						class="ext-neowiki-config-editor__reset"
+						:aria-label="$i18n( 'neowiki-config-editor-reset-label', enforcementLabel ).text()"
+						@click="reset( 'enforceValidation' )"
+					>
+						{{ $i18n( 'neowiki-config-editor-reset' ).text() }}
+					</button>
+				</template>
+			</CdxCheckbox>
+		</div>
+
+		<div class="ext-neowiki-config-editor__setting">
+			<CdxCheckbox
 				ref="infoboxCheckbox"
 				v-model="autoRenderMainSubject"
 				:disabled="!props.canEdit"
@@ -152,11 +174,13 @@ const props = defineProps<ConfigEditorJsConfig & {
 
 const wikiTypeLabel = mw.message( 'neowiki-config-setting-subject-first' ).text();
 const dataLanguagesLabel = mw.message( 'neowiki-config-setting-data-languages' ).text();
+const enforcementLabel = mw.message( 'neowiki-config-setting-enforce-validation' ).text();
 const infoboxLabel = mw.message( 'neowiki-config-setting-auto-render-main-subject' ).text();
 
 const values = ref<PageValues>( { ...props.pageValues } );
 const subjectFirst = valueInEffect( 'subjectFirst' );
 const dataLanguages = valueInEffect( 'dataLanguages' );
+const enforceValidation = valueInEffect( 'enforceValidation' );
 const autoRenderMainSubject = valueInEffect( 'autoRenderMainSubject' );
 const source = computed( (): string => pageSource( values.value ) );
 const savedSource = ref( source.value );
@@ -170,6 +194,7 @@ const changedMeanwhile = ref( false );
 
 const wikiTypeField = ref<InstanceType<typeof CdxField> | null>( null );
 const languageList = ref<InstanceType<typeof LanguageListInput> | null>( null );
+const enforcementCheckbox = ref<InstanceType<typeof CdxCheckbox> | null>( null );
 const infoboxCheckbox = ref<InstanceType<typeof CdxCheckbox> | null>( null );
 
 const changed = computed( (): boolean => source.value !== savedSource.value );
@@ -193,6 +218,7 @@ function canReset( key: keyof ConfigValues ): boolean {
 const focusSetting: Record<keyof ConfigValues, () => void> = {
 	subjectFirst: () => inputOf( wikiTypeField.value, 'input:checked' )?.focus(),
 	dataLanguages: () => languageList.value?.focus(),
+	enforceValidation: () => inputOf( enforcementCheckbox.value, 'input' )?.focus(),
 	autoRenderMainSubject: () => inputOf( infoboxCheckbox.value, 'input' )?.focus()
 };
 

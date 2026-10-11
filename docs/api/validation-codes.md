@@ -56,7 +56,8 @@ severity in the Schema, per Constraint, and the default is `warning`. See
 state, and blocking is what an author opts into. Every other code reports a system condition rather
 than a user-correctable Constraint, so its severity is fixed.
 
-Blocking matters only when an admin enables enforcement (`$wgNeoWikiEnforceValidation`; off by
+Blocking matters only when an admin enables enforcement (`$wgNeoWikiEnforceValidation`, or
+`enforceValidation` on [`MediaWiki:NeoWiki`](../operations/installation.md#on-wiki-settings); off by
 default, so every write persists). Under enforcement, a write that introduces *new* `error`
 violations is rejected with `422 Unprocessable Entity` and an `{ status, message, violations }` body,
 where `violations` carries the full proposed list, not just the newly-introduced ones. Violations

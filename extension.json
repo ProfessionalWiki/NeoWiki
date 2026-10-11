@@ -588,6 +588,8 @@
 				"neowiki-config-setting-subject-first-subject-first-help",
 				"neowiki-config-setting-data-languages",
 				"neowiki-config-setting-data-languages-help",
+				"neowiki-config-setting-enforce-validation",
+				"neowiki-config-setting-enforce-validation-help",
 				"neowiki-config-setting-auto-render-main-subject",
 				"neowiki-config-editor-intro",
 				"neowiki-config-editor-read-only",

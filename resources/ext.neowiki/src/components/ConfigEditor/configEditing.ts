@@ -5,6 +5,7 @@ export interface ConfigValues {
 	subjectFirst: boolean;
 	/** BCP 47 tags, in order. */
 	dataLanguages: string[];
+	enforceValidation: boolean;
 	autoRenderMainSubject: boolean;
 }
 

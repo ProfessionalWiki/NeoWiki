@@ -2085,10 +2085,7 @@ class NeoWikiExtension {
 	}
 
 	private function isValidationEnforced(): bool {
-		// Behavioral config is read live from MainConfig (like Neo4jQueryLimits), so the admin's
-		// LocalSettings value applies per request and tests can override it via overrideConfigValue()
-		// without rebuilding the getInstance() singleton (which bakes only bootstrap config).
-		return MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiEnforceValidation' ) === true;
+		return $this->getWikiConfigLookup()->getEffectiveValue( 'enforceValidation' ) === true;
 	}
 
 	public function newSubjectValidator( Authority $authority ): SubjectValidator {

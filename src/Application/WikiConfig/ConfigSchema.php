@@ -31,6 +31,11 @@ class ConfigSchema {
 				valueType: ConfigValueType::LanguageList,
 			),
 			new ConfigSetting(
+				pageKey: 'enforceValidation',
+				settingName: 'NeoWikiEnforceValidation',
+				valueType: ConfigValueType::Boolean,
+			),
+			new ConfigSetting(
 				pageKey: 'autoRenderMainSubject',
 				settingName: 'NeoWikiAutoRenderMainSubject',
 				valueType: ConfigValueType::Boolean,

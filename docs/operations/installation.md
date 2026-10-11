@@ -253,9 +253,10 @@ A wiki whose readers do not all see the same pages needs more than these default
 A wiki administrator without server access can change some of NeoWiki's settings in a form on the `MediaWiki:NeoWiki`
 page. Like other site configuration, the page is editable only with the `editinterface` and `editsitejson` rights. The
 exposed settings are `subjectFirst` (overriding `$wgNeoWikiSubjectFirst`), `dataLanguages` (overriding
-`$wgNeoWikiDataLanguages`) and `autoRenderMainSubject` (overriding `$wgNeoWikiAutoRenderMainSubject`). The form saves
-only the settings set on the page, leaving the rest to `LocalSettings.php`. Edit source shows the page's JSON with a
-reference table of the exposed keys and their accepted values.
+`$wgNeoWikiDataLanguages`), `enforceValidation` (overriding `$wgNeoWikiEnforceValidation`) and `autoRenderMainSubject`
+(overriding `$wgNeoWikiAutoRenderMainSubject`). The form saves only the settings set on the page, leaving the rest to
+`LocalSettings.php`. Edit source shows the page's JSON with a reference table of the exposed keys and their accepted
+values.
 
 A valid value on the page takes precedence over `LocalSettings.php`, per setting. A missing page, a
 wrong-shaped value, or an unavailable database falls back to the `LocalSettings.php` value, so a

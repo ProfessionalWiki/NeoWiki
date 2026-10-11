@@ -34,13 +34,20 @@ class ConfigSchemaTest extends TestCase {
 		$this->assertSame( 'NeoWikiDataLanguages', $setting->settingName );
 	}
 
+	public function testExposesTheEnforceValidationSetting(): void {
+		$setting = ( new ConfigSchema() )->getSetting( 'enforceValidation' );
+
+		$this->assertNotNull( $setting );
+		$this->assertSame( 'NeoWikiEnforceValidation', $setting->settingName );
+	}
+
 	public function testExposesExactlyTheAllowlistedSettings(): void {
 		$keys = array_map(
 			static fn ( $setting ): string => $setting->pageKey,
 			( new ConfigSchema() )->getSettings()
 		);
 
-		$this->assertEqualsCanonicalizing( [ 'subjectFirst', 'autoRenderMainSubject', 'dataLanguages' ], $keys );
+		$this->assertEqualsCanonicalizing( [ 'subjectFirst', 'autoRenderMainSubject', 'dataLanguages', 'enforceValidation' ], $keys );
 	}
 
 	public function testUnknownKeyHasNoSetting(): void {
