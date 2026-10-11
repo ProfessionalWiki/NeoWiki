@@ -308,6 +308,7 @@ describe( 'SchemasPage', () => {
 		const table = wrapper.findComponent( SchemasTable );
 
 		table.vm.$emit( 'edit', 'Artwork' );
+		await flushPromises();
 		table.vm.$emit( 'duplicate', 'City' );
 		table.vm.$emit( 'delete', 'Artist' );
 		table.vm.$emit( 'create-subject', 'City' );
@@ -628,6 +629,45 @@ describe( 'SchemasPage', () => {
 		const creator = wrapper.findComponent( SchemaCreatorDialog );
 		expect( creator.props( 'open' ) ).toBe( true );
 		expect( creator.props( 'duplicateOf' ) ).toStrictEqual( newSchema( { title: 'Artwork' } ) );
+	} );
+
+	it( 'leaves the Schema creator on a new Schema when a duplicate asked for before loads after', async () => {
+		mayCreateSchemas = true;
+		let landDuplicate: ( schema: Schema ) => void = () => undefined;
+		getSchemaMock.mockReturnValue( new Promise<Schema>( ( resolve ) => {
+			landDuplicate = resolve;
+		} ) );
+		const wrapper = mountPage();
+		await flushPromises();
+		await askToDuplicate( wrapper, 1 );
+
+		await wrapper.find( '.ext-neowiki-schemas-page__create' ).trigger( 'click' );
+		landDuplicate( newSchema( { title: 'Artwork' } ) );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SchemaCreatorDialog ).props( 'duplicateOf' ) ).toBeUndefined();
+	} );
+
+	it( 'opens only the Schema editor when a duplicate asked for before loads after', async () => {
+		mayCreateSchemas = true;
+		mayEditSchemas = true;
+		let landDuplicate: ( schema: Schema ) => void = () => undefined;
+		getSchemaMock
+			.mockReturnValueOnce( new Promise<Schema>( ( resolve ) => {
+				landDuplicate = resolve;
+			} ) )
+			.mockResolvedValueOnce( newSchema( { title: 'Artist' } ) );
+		const wrapper = mountPage();
+		await flushPromises();
+		await askToDuplicate( wrapper, 1 );
+
+		cards( wrapper )[ 0 ].vm.$emit( 'edit' );
+		await flushPromises();
+		landDuplicate( newSchema( { title: 'Artwork' } ) );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( true );
+		expect( wrapper.findComponent( SchemaCreatorDialog ).props( 'open' ) ).toBe( false );
 	} );
 
 	it( 'keeps duplicating from a user who may not create Schemas', async () => {

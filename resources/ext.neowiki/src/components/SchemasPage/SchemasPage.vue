@@ -192,6 +192,8 @@ const isDeleteConfirmOpen = ref( false );
 const deletingSchemaName = ref( '' );
 // The Schema the Subject creator opens on, which the clicked card or row decides.
 const pinnedSchema = ref<string | undefined>( undefined );
+// Numbers the Schema editors and creators asked for, so a Schema that loads after a later request opens none.
+let schemaDialogRequest = 0;
 
 // The Schema picker's rule: any part of the name, in any case.
 const foundSchemas = computed( () => {
@@ -226,16 +228,17 @@ async function loadSchemas(): Promise<void> {
 }
 
 function openCreator(): void {
+	schemaDialogRequest++;
 	schemaToDuplicate.value = undefined;
 	isCreatorOpen.value = true;
 }
 
 async function openCreatorToDuplicate( schemaName: string ): Promise<void> {
-	try {
-		schemaToDuplicate.value = await schemaRepo.getSchema( schemaName );
+	const schema = await loadSchemaForDialog( schemaName );
+
+	if ( schema !== null ) {
+		schemaToDuplicate.value = schema;
 		isCreatorOpen.value = true;
-	} catch ( error ) {
-		mw.notify( error instanceof Error ? error.message : String( error ), { type: 'error' } );
 	}
 }
 
@@ -253,14 +256,28 @@ function openSubjectCreator( schemaName: string ): void {
 }
 
 async function openEditor( schemaName: string ): Promise<void> {
-	try {
-		editingSchema.value = null;
-		await nextTick();
+	editingSchema.value = null;
+	await nextTick();
 
-		editingSchema.value = await schemaRepo.getSchema( schemaName );
+	const schema = await loadSchemaForDialog( schemaName );
+
+	if ( schema !== null ) {
+		editingSchema.value = schema;
 		isEditorOpen.value = true;
+	}
+}
+
+// Null when the Schema could not be loaded, which is reported, or when another Schema editor or creator was asked for
+// meanwhile.
+async function loadSchemaForDialog( schemaName: string ): Promise<Schema | null> {
+	const request = ++schemaDialogRequest;
+
+	try {
+		const schema = await schemaRepo.getSchema( schemaName );
+		return request === schemaDialogRequest ? schema : null;
 	} catch ( error ) {
 		mw.notify( error instanceof Error ? error.message : String( error ), { type: 'error' } );
+		return null;
 	}
 }
 

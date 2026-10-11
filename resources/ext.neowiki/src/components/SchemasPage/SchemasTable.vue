@@ -127,7 +127,8 @@ function pageUrl( page: string ): string {
 		vertical-align: middle;
 	}
 
-	// Lets a row's menu open past the table, whose sideways scrolling would cut it off, as Codex 2.3 and up do themselves.
+	// Lets a row's menu open past the table, whose sideways scrolling would cut it off. Codex 2.3 and up, which
+	// MediaWiki 1.45 ships, do so themselves.
 	.cdx-table__table-wrapper,
 	.cdx-menu-button__menu-wrapper {
 		position: static;

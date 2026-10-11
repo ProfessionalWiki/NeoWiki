@@ -60,7 +60,6 @@ export function describedAs( wrapper: VueWrapper, element: DOMWrapper<Element> )
 		.map( ( id ) => wrapper.find( `[id="${ id }"]` ).text() );
 }
 
-/** Opens the menu of the menu button with the given accessible name, and clicks its item reading the given text. */
 export async function chooseFromMenu( element: VueWrapper | DOMWrapper<Element>, buttonLabel: string, itemText: string ): Promise<void> {
 	await element.find( `button[aria-label="${ buttonLabel }"]` ).trigger( 'click' );
 	const item = element.findAll( '.cdx-menu-item' ).find( ( menuItem ) => menuItem.text() === itemText );
