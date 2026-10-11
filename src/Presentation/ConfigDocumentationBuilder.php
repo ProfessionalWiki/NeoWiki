@@ -82,9 +82,9 @@ class ConfigDocumentationBuilder {
 	}
 
 	/**
-	 * The accepted-value description as HTML. The boolean type message wraps the literal JSON values in
-	 * <code> spans, so the message text is markup and cannot be escaped wholesale; it is sanitized down to
-	 * the raw-HTML tags and attributes wikitext permits instead.
+	 * The accepted-value description as HTML. The type messages wrap literal JSON values in <code> spans,
+	 * so the message text is markup and cannot be escaped wholesale; it is sanitized down to the raw-HTML
+	 * tags and attributes wikitext permits instead.
 	 */
 	private function describeValue( ConfigSetting $setting ): string {
 		return Sanitizer::removeSomeTags( $this->messageLocalizer->msg( ...$setting->describe() )->text() );

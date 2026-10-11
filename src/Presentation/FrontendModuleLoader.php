@@ -18,12 +18,16 @@ class FrontendModuleLoader {
 	 */
 	private const array SUBJECT_PAGE_CREATION_RIGHTS = [ 'edit', 'createpage' ];
 
+	/**
+	 * @param string[] $dataLanguages
+	 */
 	public function __construct(
 		private readonly HookContainer $hookContainer,
 		private readonly int $validationDebounceMs,
 		private readonly bool $validationEnforced,
 		private readonly bool $subjectFirst,
 		private readonly bool $subjectListAvailable,
+		private readonly array $dataLanguages,
 	) {
 	}
 
@@ -36,6 +40,7 @@ class FrontendModuleLoader {
 			'wgNeoWikiEnforceValidation' => $this->validationEnforced,
 			'wgNeoWikiSubjectFirst' => $this->subjectFirst,
 			'wgNeoWikiSubjectListAvailable' => $this->subjectListAvailable,
+			'wgNeoWikiDataLanguages' => $this->dataLanguages,
 			// The counts read the whole store, so only a viewer who may run queries gets them.
 			'wgNeoWikiSubjectCountsAvailable' => $this->subjectListAvailable
 				&& $out->getAuthority()->isAllowed( AuthorityBasedRawQueryAuthorizer::RIGHT ),

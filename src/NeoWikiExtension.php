@@ -1240,6 +1240,19 @@ class NeoWikiExtension {
 		return $this->getWikiConfigLookup()->getEffectiveValue( 'subjectFirst' ) === true;
 	}
 
+	/**
+	 * The configured data languages, in their configured order: empty for the content language, which
+	 * a malformed LocalSettings.php value also comes down to.
+	 *
+	 * @return string[]
+	 */
+	public function getDataLanguages(): array {
+		/** @var string[]|null $languages */
+		$languages = $this->getWikiConfigLookup()->getEffectiveValue( 'dataLanguages' );
+
+		return $languages ?? [];
+	}
+
 	public function getSubjectPageNamespace(): int {
 		if ( !$this->isSubjectFirst() ) {
 			return NS_MAIN;
@@ -1384,6 +1397,7 @@ class NeoWikiExtension {
 			validationEnforced: $this->isValidationEnforced(),
 			subjectFirst: $this->isSubjectFirst(),
 			subjectListAvailable: $this->isSubjectListAvailable(),
+			dataLanguages: $this->getDataLanguages(),
 		);
 	}
 

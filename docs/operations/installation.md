@@ -178,6 +178,7 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox | `true` | No |
 | `$wgNeoWikiSubjectFirst` | Puts Subjects before pages: see [Choosing page-first or subject-first](#choosing-page-first-or-subject-first) | `false` | No |
 | `$wgNeoWikiSubjectPageNamespace` | Namespace a subject-first wiki creates each Subject's own page in: see [Choosing page-first or subject-first](#choosing-page-first-or-subject-first) | `7480` (`Subject`) | No |
+| `$wgNeoWikiDataLanguages` | Languages the wiki's data is in: see [Data languages](#data-languages) | `[]` (the content language) | No |
 | `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
 | `$wgNeoWikiAutoRebuildOnMappingChange` | Rebuilds every store holding a Mapping's projection when that Mapping changes | `false` | No |
 
@@ -204,6 +205,15 @@ These are the settings you are most likely to change. For the full list with des
 
 On a subject-first wiki, `$wgNeoWikiSubjectPageNamespace` names the namespace each Subject's own page is created in,
 `NS_MAIN` included. It must be a content namespace, or the pages there get no heading, infobox or Data tab.
+
+## Data languages
+
+`$wgNeoWikiDataLanguages` lists the languages the wiki's data is in, as BCP 47 language tags, such as
+`[ 'de', 'fr', 'it' ]`. The [monolingual text](../api/schema-format.md#monolingual-text-monolingualtext) editor offers
+them in this order beside each text, and starts a new text in the first of them the value lacks. Other languages stay
+one search away, and texts already in them keep their language. The default, an empty list, stands for the wiki's
+content language (`$wgLanguageCode`). The list can also be set on `MediaWiki:NeoWiki` as `dataLanguages`
+([on-wiki configuration](#on-wiki-configuration)).
 
 ## Logging
 
@@ -242,9 +252,10 @@ A wiki whose readers do not all see the same pages needs more than these default
 
 A wiki administrator without server access can set part of NeoWiki's configuration on the `MediaWiki:NeoWiki` page.
 It holds JSON and, like other site configuration, is editable only with the `editinterface` and `editsitejson`
-rights. Two settings are exposed: `subjectFirst` (overriding `$wgNeoWikiSubjectFirst`) and
-`autoRenderMainSubject` (overriding `$wgNeoWikiAutoRenderMainSubject`). Editing the page shows a reference table of
-the exposed keys and their accepted values, and creating it preloads a working example.
+rights. The exposed settings are `subjectFirst` (overriding `$wgNeoWikiSubjectFirst`), `autoRenderMainSubject`
+(overriding `$wgNeoWikiAutoRenderMainSubject`) and `dataLanguages` (overriding `$wgNeoWikiDataLanguages`). Editing the
+page shows a reference table of the exposed keys and their accepted values, and creating it preloads a working
+example.
 
 A valid value on the page takes precedence over `LocalSettings.php`, per setting. A missing page, a
 wrong-shaped value, or an unavailable database falls back to the `LocalSettings.php` value, so a

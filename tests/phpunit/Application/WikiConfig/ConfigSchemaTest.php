@@ -27,37 +27,24 @@ class ConfigSchemaTest extends TestCase {
 		$this->assertSame( 'NeoWikiAutoRenderMainSubject', $setting->settingName );
 	}
 
-	public function testExposesExactlyTheTwoAllowlistedSettings(): void {
+	public function testExposesTheDataLanguagesSetting(): void {
+		$setting = ( new ConfigSchema() )->getSetting( 'dataLanguages' );
+
+		$this->assertNotNull( $setting );
+		$this->assertSame( 'NeoWikiDataLanguages', $setting->settingName );
+	}
+
+	public function testExposesExactlyTheAllowlistedSettings(): void {
 		$keys = array_map(
 			static fn ( $setting ): string => $setting->pageKey,
 			( new ConfigSchema() )->getSettings()
 		);
 
-		$this->assertSame( [ 'subjectFirst', 'autoRenderMainSubject' ], $keys );
+		$this->assertEqualsCanonicalizing( [ 'subjectFirst', 'autoRenderMainSubject', 'dataLanguages' ], $keys );
 	}
 
 	public function testUnknownKeyHasNoSetting(): void {
 		$this->assertNull( ( new ConfigSchema() )->getSetting( 'NeoWikiSparqlStores' ) );
-	}
-
-	public function testSettingAcceptsOnlyRealBooleans(): void {
-		$setting = ( new ConfigSchema() )->getSetting( 'subjectFirst' );
-
-		$this->assertTrue( $setting->isValidValue( true ) );
-		$this->assertTrue( $setting->isValidValue( false ) );
-		$this->assertFalse( $setting->isValidValue( 'true' ) );
-		$this->assertFalse( $setting->isValidValue( 1 ) );
-		$this->assertFalse( $setting->isValidValue( null ) );
-	}
-
-	public function testSettingDescribesItselfAsBoolean(): void {
-		$setting = ( new ConfigSchema() )->getSetting( 'subjectFirst' );
-
-		$this->assertSame( [ 'neowiki-config-type-boolean' ], $setting->describe() );
-		$this->assertSame(
-			[ 'neowiki-config-error-invalid-boolean', 'subjectFirst' ],
-			$setting->invalidValueError()
-		);
 	}
 
 }

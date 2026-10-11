@@ -5,28 +5,12 @@
 		@focusout="closeWhenFocusLeaves"
 		@keyup.esc="closeOnEscape"
 	>
-		<!-- A press leaves the focus where it is: in Safari a pressed button does not take the focus
-			at all, so the field the user was in would lose it to nothing, and a row emptied of its
-			text would be dropped before the click reached this button. -->
-		<CdxButton
-			ref="buttonRef"
-			class="ext-neowiki-language-picker__button"
-			weight="quiet"
-			type="button"
-			aria-haspopup="listbox"
-			:aria-expanded="open"
-			:aria-controls="panelId"
-			:aria-label="buttonLabel"
-			:title="buttonLabel"
-			@mousedown.prevent
-			@click="toggle"
-		>
-			<span class="ext-neowiki-language-picker__tag">{{ shownTag }}</span>
-			<CdxIcon
-				:icon="cdxIconExpand"
-				size="x-small"
-			/>
-		</CdxButton>
+		<slot
+			:expanded="open"
+			:controls="panelId"
+			:toggle="toggle"
+			:close="close"
+		/>
 
 		<!-- Shown rather than created, the way a Codex menu is: useFloatingMenu positions an element
 			that is already there, and one appearing on open would be painted once where it happens to
@@ -75,11 +59,9 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-import { CdxButton, CdxIcon, CdxMenu, CdxSearchInput, useFloatingMenu, useGeneratedId } from '@wikimedia/codex';
+import { CdxMenu, CdxSearchInput, useFloatingMenu, useGeneratedId } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
-import { cdxIconExpand } from '@wikimedia/codex-icons';
 import {
-	languageName,
 	languagesByPreference,
 	matchingLanguages,
 	shownLanguageTag,
@@ -96,20 +78,30 @@ const VISIBLE_ITEMS = 8;
 // How many frames to keep trying to put the focus in the search field while the panel is placed.
 const FOCUS_ATTEMPTS = 10;
 
+const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not( [tabindex="-1"] )';
+
 interface LanguagePickerProps {
 	/** The committed language, as a BCP 47 tag. */
 	modelValue: string;
-	/**
-	 * Names the field the picker stands in, such as "Title language 2". Its button is the only tab
-	 * stop that field has, so this is what names the button.
-	 */
-	label: string;
 }
 
 const props = defineProps<LanguagePickerProps>();
 
 const emit = defineEmits<{
 	'update:modelValue': [ tag: string ];
+}>();
+
+defineSlots<{
+	/**
+	 * The trigger the panel opens under. Closing the panel hands the focus back to the trigger's
+	 * first control.
+	 */
+	default( props: {
+		expanded: boolean;
+		controls: string;
+		toggle: () => void;
+		close: () => void;
+	} ): unknown;
 }>();
 
 const searchPlaceholder = mw.message( 'neowiki-language-picker-placeholder' ).text();
@@ -120,21 +112,11 @@ const menuId = useGeneratedId( 'ext-neowiki-language-picker-menu' );
 
 const rootRef = ref<HTMLElement | null>( null );
 const panelRef = ref<HTMLElement | null>( null );
-const buttonRef = ref<InstanceType<typeof CdxButton> | null>( null );
 const menuRef = ref<InstanceType<typeof CdxMenu> | null>( null );
 
 const open = ref( false );
 const query = ref( '' );
 const menuLength = ref( MENU_PAGE_SIZE );
-
-const shownTag = computed( (): string => shownLanguageTag( props.modelValue ) );
-
-const buttonLabel = computed( (): string => mw.message(
-	'neowiki-language-picker-button',
-	props.label,
-	languageName( props.modelValue ) ?? props.modelValue,
-	props.modelValue
-).text() );
 
 /**
  * The languages to choose from, narrowed by what the user is typing, and none while the panel is
@@ -193,34 +175,36 @@ const highlightedId = ref<string | undefined>( undefined );
 watch(
 	[ menuItems, () => menuRef.value?.getHighlightedMenuItem() ],
 	() => {
-		highlightedId.value = menuRef.value?.$el.querySelector( '.cdx-menu-item--highlighted' )?.id;
+		highlightedId.value = panelRef.value?.querySelector( '.cdx-menu-item--highlighted' )?.id;
 	},
 	{ flush: 'post' }
 );
 
-const buttonElement = computed(
-	(): HTMLElement | undefined => buttonRef.value?.$el as HTMLElement | undefined
-);
+// The trigger, which the panel opens under. Wrapped the way a component is: handed a bare element,
+// Codex 1.14 passes the ref object itself on to floating-ui's autoUpdate, which resolves it to
+// nothing, so nothing would watch the trigger.
+const anchor = computed( () => rootRef.value === null ? undefined : { $el: rootRef.value } );
 
-// All useFloatingMenu reads of the element it places: whether it is showing, and its root node. It
-// asks by type for a CdxMenu, the component it was written against.
+// All useFloatingMenu reads of the element it places: whether it is showing, and its root node, by
+// `$el` up to Codex 1.x and by getRootElement() from 2.x. It asks by type for a CdxMenu, the
+// component it was written against.
 const floatingPanel = computed( () => panelRef.value === null ?
 	undefined :
-	{ $el: panelRef.value, isExpanded: (): boolean => open.value }
+	{
+		$el: panelRef.value,
+		getRootElement: (): HTMLElement | null => panelRef.value,
+		isExpanded: (): boolean => open.value
+	}
 );
 
 /**
- * Anchored to the button at the end of the field, and opening from that end, so the panel reads as
- * belonging to the language it changes, and set off by enough of a gap that the panel's edge is
- * never mistaken for the field's. Flipping above when there is no room below, clamping to the
- * space left, and hiding when the field scrolls out of the dialog all come with it.
- *
- * The button goes in as the component rather than as its element: handed an element, Codex passes
- * the ref object itself on to floating-ui's autoUpdate, which resolves it to nothing, so nothing
- * watches the button. The cast is DataExportButtons.vue's, which explains it.
+ * Opening from the trigger's end, so the panel reads as belonging to the language it changes, and
+ * set off by enough of a gap that the panel's edge is never mistaken for the field's. Flipping
+ * above when there is no room below, clamping to the space left, and hiding when the field scrolls
+ * out of the dialog all come with it. The casts are DataExportButtons.vue's, which explains them.
  */
 useFloatingMenu(
-	buttonRef as unknown as Parameters<typeof useFloatingMenu>[0],
+	anchor as unknown as Parameters<typeof useFloatingMenu>[0],
 	floatingPanel as unknown as Parameters<typeof useFloatingMenu>[1],
 	{ placement: 'bottom-end', offset: 4 }
 );
@@ -274,12 +258,18 @@ function close(): void {
 	open.value = false;
 }
 
-// Without scrolling: the button may be scrolled out of view, as when the dialog scrolling is what
-// closed the panel.
 function closeAndReturnFocus(): void {
 	close();
-	buttonElement.value?.focus( { preventScroll: true } );
+	focusTrigger();
 }
+
+// Without scrolling: the trigger may be scrolled out of view, as when the dialog scrolling is what
+// closed the panel.
+function focusTrigger(): void {
+	rootRef.value?.querySelector<HTMLElement>( FOCUSABLE )?.focus( { preventScroll: true } );
+}
+
+defineExpose( { focusTrigger } );
 
 /**
  * Escape closes the panel wherever the focus is in the picker, and goes no further: Codex dialogs
@@ -300,7 +290,7 @@ function closeOnEscape( event: KeyboardEvent ): void {
  * The menu owns the arrow keys. Space is the field's, since a language name may contain one, and
  * Escape is the picker's; a bare Home or End never arrives, CdxTextInput keeping those for the
  * text. Enter picks on its keyup, like Escape closes on its: picking on the keydown would hand the
- * focus back to the button, and CdxButton clicks itself on the Enter keyup that then lands on it,
+ * focus back to the trigger, and a button clicks itself on the Enter keyup that then lands on it,
  * which would open the panel straight back up. Its keydown does nothing, not even submit a form
  * the dialog might hold.
  */
@@ -374,9 +364,9 @@ function onDocumentMousedown( event: MouseEvent ): void {
 }
 
 /**
- * Scrolling what the picker sits in moves the button away from under its panel, and once it
+ * Scrolling what the picker sits in moves the trigger away from under its panel, and once it
  * leaves the visible area useFloatingMenu hides the panel, which drops the focus in it to the
- * page. So the panel closes instead, handing the focus back to the button, which scrolling does not
+ * page. So the panel closes instead, handing the focus back to the trigger, which scrolling does not
  * take it from. Only something the picker sits inside counts as that: the panel's own list
  * scrolling is the user browsing it, and a text field left behind scrolls its text back to the
  * start, which is not the page moving at all.
@@ -411,14 +401,10 @@ function stopListeningToThePage(): void {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-language-picker {
-	/* Positioned so it paints over the field it sits in: Codex gives `.cdx-text-input`
-		`position: relative`, and a positioned box paints above an unpositioned sibling whatever the
-		source order says. Safe on the button, which is a leaf and no ancestor of the panel. */
-	&__button.cdx-button {
-		position: relative;
-		font-size: @font-size-x-small;
-		font-weight: @font-weight-normal;
-	}
+	/* As wide as the trigger, which the panel opens under, and a flex container so an inline-block
+		trigger gets no line box to stand taller in. */
+	display: flex;
+	width: fit-content;
 
 	/* A long name wraps; its tag moves to the next line whole rather than breaking at a hyphen. */
 	&__menu .cdx-menu-item__text__supporting-text {
@@ -427,7 +413,7 @@ function stopListeningToThePage(): void {
 
 	/* Frameless: the search field and the menu under it draw their own borders, and a second one
 		around both reads as a box inside a box. Its position, width, max-height and visibility are
-		written onto it by useFloatingMenu, which sizes it to the button; the floor is ours, wide
+		written onto it by useFloatingMenu, which sizes it to the trigger; the floor is ours, wide
 		enough for a search field and the names under it. */
 	&__panel {
 		position: absolute;

@@ -235,7 +235,7 @@
 			"value": false
 		},
 		"NeoWikiEnableInWikiConfig": {
-			"description": "Whether NeoWiki settings may also be set on the MediaWiki:NeoWiki JSON configuration page, which requires the editinterface and editsitejson rights to edit. When false, that page is never given the JSON content model, validated, or read, so only LocalSettings.php applies. The page exposes NeoWikiSubjectFirst and NeoWikiAutoRenderMainSubject; its values take precedence over LocalSettings.php.",
+			"description": "Whether NeoWiki settings may also be set on the MediaWiki:NeoWiki JSON configuration page, which requires the editinterface and editsitejson rights to edit. When false, that page is never given the JSON content model, validated, or read, so only LocalSettings.php applies. The page exposes NeoWikiSubjectFirst, NeoWikiAutoRenderMainSubject and NeoWikiDataLanguages; its values take precedence over LocalSettings.php.",
 			"value": true
 		},
 		"NeoWikiEnableLua": {
@@ -276,6 +276,10 @@
 		"NeoWikiSubjectFirst": {
 			"description": "Whether this wiki puts Subjects before pages. False by default, which is page-first: a new Subject goes on the page it was created from, and links to Subjects lead to pages. True makes it subject-first: a new Subject gets a page of its own, and links lead to Special:Subject. See https://neowiki.ai/docs/operations/installation#choosing-page-first-or-subject-first",
 			"value": false
+		},
+		"NeoWikiDataLanguages": {
+			"description": "The languages this wiki's data is in, as BCP 47 language tags, such as [ \"de\", \"fr\", \"it\" ]. The monolingual text editor offers them in this order, with any other language a search away. Empty by default, which stands for the wiki's content language ($wgLanguageCode). See https://neowiki.ai/docs/operations/installation#data-languages",
+			"value": []
 		},
 		"NeoWikiSubjectPageNamespace": {
 			"description": "The namespace a subject-first wiki creates each Subject's own page in, titled by the Subject ID. The Subject namespace (7480) by default; NS_MAIN (0) puts those pages in the main namespace. Must be a content namespace. Page-first wikis ignore it.",
@@ -573,8 +577,8 @@
 				"neowiki-monolingual-text-fewer-languages",
 				"neowiki-monolingual-text-text-label",
 				"neowiki-monolingual-text-language-label",
+				"neowiki-language-input-other",
 				"neowiki-language-picker-placeholder",
-				"neowiki-language-picker-button",
 				"neowiki-language-picker-no-results",
 				"neowiki-language-picker-tag",
 				"neowiki-property-type-unregistered",

@@ -294,6 +294,7 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 			$validationEnforced,
 			$subjectFirst,
 			$subjectListAvailable,
+			[],
 		);
 	}
 

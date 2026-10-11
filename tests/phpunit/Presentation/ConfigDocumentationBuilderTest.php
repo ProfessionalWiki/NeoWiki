@@ -46,6 +46,13 @@ class ConfigDocumentationBuilderTest extends MediaWikiIntegrationTestCase {
 		$this->assertStringContainsString( '<code>false</code>', $html );
 	}
 
+	public function testReferenceShowsAnExampleLanguageListAsACodeSpan(): void {
+		$this->assertStringContainsString(
+			'<code>["de", "fr", "it"]</code>',
+			$this->newBuilder()->buildReference()
+		);
+	}
+
 	public function testReferenceDoesNotWrapTheSettingKeysInCode(): void {
 		// The key and LocalSettings.php columns fill their cell, so they are plain text, not code chips.
 		$this->assertStringContainsString( '<td>subjectFirst</td>', $this->newBuilder()->buildReference() );

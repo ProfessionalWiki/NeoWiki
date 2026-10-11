@@ -23,10 +23,17 @@ class ConfigSchema {
 			new ConfigSetting(
 				pageKey: 'subjectFirst',
 				settingName: 'NeoWikiSubjectFirst',
+				valueType: ConfigValueType::Boolean,
 			),
 			new ConfigSetting(
 				pageKey: 'autoRenderMainSubject',
 				settingName: 'NeoWikiAutoRenderMainSubject',
+				valueType: ConfigValueType::Boolean,
+			),
+			new ConfigSetting(
+				pageKey: 'dataLanguages',
+				settingName: 'NeoWikiDataLanguages',
+				valueType: ConfigValueType::LanguageList,
 			),
 		];
 	}

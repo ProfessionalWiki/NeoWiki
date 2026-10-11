@@ -1,6 +1,6 @@
 import { mount, VueWrapper, DOMWrapper } from '@vue/test-utils';
-import { Component, DefineComponent } from 'vue';
-import { expect, vi } from 'vitest';
+import { Component, DefineComponent, nextTick } from 'vue';
+import { expect, onTestFinished, vi } from 'vitest';
 import { ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import { NeoWikiTestServices } from './NeoWikiTestServices.ts';
 
@@ -30,6 +30,66 @@ export function findNextPageButton( wrapper: VueWrapper ): DOMWrapper<Element> {
 	const button = wrapper.find( '.cdx-table-pager button[aria-label="Next page"]' );
 	expect( button.exists() ).toBe( true );
 	return button;
+}
+
+/**
+ * The language a LanguageInput shows, which is also what a screen reader announces: the list's name
+ * for it. The labels that only size the list are hidden from both, and the list's menu and the
+ * search panel are closed.
+ */
+export function shownLanguage( languageInput: Element ): string {
+	const shown = languageInput.cloneNode( true ) as Element;
+
+	shown.querySelectorAll(
+		'[aria-hidden="true"], .ext-neowiki-language-input__width, .cdx-menu, .ext-neowiki-language-picker__panel',
+	).forEach( ( hidden ) => hidden.remove() );
+
+	return shown.textContent?.trim() ?? '';
+}
+
+export async function chooseFromLanguageList( languageInput: VueWrapper | DOMWrapper<Element>, language: string ): Promise<void> {
+	await languageInput.find( '.ext-neowiki-language-input [role="combobox"]' ).trigger( 'click' );
+	await languageInput.findAll( '.ext-neowiki-language-input__select .cdx-menu-item' )
+		.find( ( item ) => item.text() === language )
+		?.trigger( 'click' );
+}
+
+// Codex gives its "no results" element the menu-item class too, so it is excluded here.
+export async function pickInLanguageSearch( languagePicker: VueWrapper | DOMWrapper<Element>, text: string ): Promise<void> {
+	await languagePicker.find( '.ext-neowiki-language-picker__search input' ).setValue( text );
+	await languagePicker.find( '.ext-neowiki-language-picker__menu .cdx-menu-item:not( .cdx-menu__no-results )' )
+		.trigger( 'click' );
+}
+
+export function emittedTags( languageControl: VueWrapper ): string[] {
+	return ( languageControl.emitted( 'update:modelValue' ) ?? [] ).map( ( event ) => event[ 0 ] as string );
+}
+
+// Dispatched rather than trigger()'d, because what the test asserts on is the event itself.
+export function press( element: Element ): MouseEvent {
+	const event = new MouseEvent( 'mousedown', { bubbles: true, cancelable: true } );
+
+	element.dispatchEvent( event );
+
+	return event;
+}
+
+// Keys go where the focus is, which is what the handlers move: each press follows it.
+export async function pressKey( key: string ): Promise<void> {
+	for ( const type of [ 'keydown', 'keyup' ] ) {
+		document.activeElement?.dispatchEvent( new KeyboardEvent( type, { key: key, bubbles: true, cancelable: true } ) );
+		await nextTick();
+	}
+}
+
+// Where a Codex dialog listens: it closes on the Escape keyup that reaches it.
+export function listenForDialogKeys(): ReturnType<typeof vi.fn> {
+	const dialogKeyup = vi.fn();
+
+	document.addEventListener( 'keyup', dialogKeyup );
+	onTestFinished( () => document.removeEventListener( 'keyup', dialogKeyup ) );
+
+	return dialogKeyup;
 }
 
 export function findPropertyNameInput( wrapper: VueWrapper ): DOMWrapper<HTMLInputElement> {

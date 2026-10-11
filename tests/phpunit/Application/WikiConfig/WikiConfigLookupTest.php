@@ -19,17 +19,19 @@ class WikiConfigLookupTest extends TestCase {
 	private const PHP_CONFIG = [
 		'NeoWikiSubjectFirst' => false,
 		'NeoWikiAutoRenderMainSubject' => true,
+		'NeoWikiDataLanguages' => [],
 	];
 
 	private function newLookup(
 		?array $pageData,
 		bool $enabled = true,
-		?TestLogger $logger = null
+		?TestLogger $logger = null,
+		array $phpConfig = self::PHP_CONFIG
 	): WikiConfigLookup {
 		return new WikiConfigLookup(
 			new ConfigSchema(),
 			new StubWikiConfigSource( $pageData ),
-			new HashConfig( self::PHP_CONFIG ),
+			new HashConfig( $phpConfig ),
 			$enabled,
 			$logger ?? new TestLogger()
 		);
@@ -61,6 +63,21 @@ class WikiConfigLookupTest extends TestCase {
 		$lookup = $this->newLookup( [ 'subjectFirst' => 'yes' ] );
 
 		$this->assertFalse( $lookup->getEffectiveValue( 'subjectFirst' ) );
+	}
+
+	public function testAPhpValueOfTheWrongShapeResolvesToNull(): void {
+		$lookup = $this->newLookup( null, phpConfig: [ 'NeoWikiDataLanguages' => 'de' ] + self::PHP_CONFIG );
+
+		$this->assertNull( $lookup->getEffectiveValue( 'dataLanguages' ) );
+	}
+
+	public function testAnInvalidPageValueOverAPhpValueOfTheWrongShapeResolvesToNull(): void {
+		$lookup = $this->newLookup(
+			[ 'dataLanguages' => 'de' ],
+			phpConfig: [ 'NeoWikiDataLanguages' => 'de' ] + self::PHP_CONFIG
+		);
+
+		$this->assertNull( $lookup->getEffectiveValue( 'dataLanguages' ) );
 	}
 
 	public function testAnInvalidPageValueLogsAWarning(): void {

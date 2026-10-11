@@ -24,10 +24,10 @@ class ConfigValidatorTest extends TestCase {
 		$this->assertSame( [], $this->validate( '{}' ) );
 	}
 
-	public function testBothSettingsPopulatedIsValid(): void {
+	public function testEverySettingPopulatedIsValid(): void {
 		$this->assertSame(
 			[],
-			$this->validate( '{ "subjectFirst": true, "autoRenderMainSubject": false }' )
+			$this->validate( '{ "subjectFirst": true, "autoRenderMainSubject": false, "dataLanguages": [ "de", "fr", "it" ] }' )
 		);
 	}
 
@@ -65,6 +65,13 @@ class ConfigValidatorTest extends TestCase {
 		$this->assertSame(
 			[ [ 'neowiki-config-error-invalid-boolean', 'subjectFirst' ] ],
 			$this->validate( '{ "subjectFirst": "yes" }' )
+		);
+	}
+
+	public function testWrongShapeForDataLanguagesIsRejected(): void {
+		$this->assertSame(
+			[ [ 'neowiki-config-error-invalid-language-list', 'dataLanguages' ] ],
+			$this->validate( '{ "dataLanguages": "de" }' )
 		);
 	}
 

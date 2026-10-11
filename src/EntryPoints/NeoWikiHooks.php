@@ -1267,7 +1267,8 @@ class NeoWikiHooks {
 	/**
 	 * Extracts just the core JSON table element. Core wraps it in a <div class="noresize">, so taking
 	 * the balanced <table>...</table> rather than everything to the end of the body avoids re-emitting
-	 * that wrapper's orphaned closing tag.
+	 * that wrapper's orphaned closing tag. A list value is a table nested in a cell, so the element ends
+	 * at the closing tag that balances the opening one, not at the first.
 	 */
 	private static function extractJsonTable( string $html ): string {
 		$start = strpos( $html, '<table class="mw-json"' );
@@ -1276,13 +1277,20 @@ class NeoWikiHooks {
 			return $html;
 		}
 
-		$end = strpos( $html, '</table>', $start );
+		$depth = 0;
+		$offset = $start;
 
-		if ( $end === false ) {
-			return substr( $html, $start );
+		while ( preg_match( '/<table\b|<\/table>/', $html, $match, PREG_OFFSET_CAPTURE, $offset ) === 1 ) {
+			[ $tag, $position ] = $match[0];
+			$depth += $tag === '</table>' ? -1 : 1;
+			$offset = $position + strlen( $tag );
+
+			if ( $depth === 0 ) {
+				return substr( $html, $start, $offset - $start );
+			}
 		}
 
-		return substr( $html, $start, $end - $start + strlen( '</table>' ) );
+		return substr( $html, $start );
 	}
 
 }

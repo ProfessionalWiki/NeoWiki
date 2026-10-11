@@ -23,6 +23,13 @@ class ConfigPageFramingHooksTest extends MediaWikiIntegrationTestCase {
 		'<div id="intro">Default intro</div>'
 		. '<div class="noresize"><table class="mw-json"><tbody><tr><td>data</td></tr></tbody></table></div>';
 
+	private const string LIST_VALUE_HTML =
+		'<div class="noresize"><table class="mw-json"><tbody>'
+		. '<tr><th><span>dataLanguages</span></th><td><table class="mw-json"><tbody>'
+		. '<tr><td class="mw-json-value">"de"</td></tr></tbody></table></td></tr>'
+		. '<tr><th><span>subjectFirst</span></th><td class="mw-json-value">true</td></tr>'
+		. '</tbody></table></div>';
+
 	private const string DIFF_HTML =
 		'<table class="diff"><tr><td class="diff-marker">+</td></tr></table>'
 		. '<div class="noresize"><table class="mw-json"><tbody><tr><td>data</td></tr></tbody></table></div>';
@@ -103,6 +110,18 @@ class ConfigPageFramingHooksTest extends MediaWikiIntegrationTestCase {
 			substr_count( $html, '</div>' ),
 			'The framed config view must not leak the closing tag of the core JSON table wrapper.'
 		);
+	}
+
+	public function testFramedConfigViewKeepsTheRowsAfterAListValue(): void {
+		$html = $this->renderViewWithRequest( $this->configTitle(), [ 'action' => 'view' ], self::LIST_VALUE_HTML );
+
+		$this->assertStringContainsString( '<span>subjectFirst</span>', $html );
+	}
+
+	public function testFramedConfigViewClosesEveryTableItOpens(): void {
+		$html = $this->renderViewWithRequest( $this->configTitle(), [ 'action' => 'view' ], self::LIST_VALUE_HTML );
+
+		$this->assertSame( substr_count( $html, '<table' ), substr_count( $html, '</table>' ) );
 	}
 
 	public function testConfigPageDiffIsNotFramed(): void {

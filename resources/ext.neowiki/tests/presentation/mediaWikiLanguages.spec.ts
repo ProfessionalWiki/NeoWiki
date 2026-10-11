@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { languageOptions, partsForReader, userLanguageTag } from '@/presentation/mediaWikiLanguages';
+import {
+	dataLanguageTags,
+	languageOptions,
+	newPartLanguageTag,
+	partsForReader,
+	userLanguageTag,
+} from '@/presentation/mediaWikiLanguages';
 import { setupMwMock } from '../VueTestHelpers.ts';
 
 describe( 'mediaWikiLanguages', () => {
@@ -45,6 +51,44 @@ describe( 'mediaWikiLanguages', () => {
 			setupMwMock( { config: { wgUserLanguage: 'simple' } } );
 
 			expect( userLanguageTag() ).toBe( 'en-simple' );
+		} );
+
+	} );
+
+	describe( 'dataLanguageTags', () => {
+
+		it( 'lists the data languages in their configured order, in the form a part stores', () => {
+			setupMwMock( { config: { wgContentLanguage: 'en', wgNeoWikiDataLanguages: [ 'fr', 'DE-CH', 'als' ] } } );
+
+			expect( dataLanguageTags() ).toEqual( [ 'fr', 'de-ch', 'gsw' ] );
+		} );
+
+		it( 'lists a data language configured under two codes once, where it is first configured', () => {
+			setupMwMock( { config: { wgContentLanguage: 'en', wgNeoWikiDataLanguages: [ 'fr', 'als', 'de', 'gsw' ] } } );
+
+			expect( dataLanguageTags() ).toEqual( [ 'fr', 'gsw', 'de' ] );
+		} );
+
+		it( 'stands in the content language when no data language is configured', () => {
+			setupMwMock( { config: { wgContentLanguage: 'simple', wgNeoWikiDataLanguages: [] } } );
+
+			expect( dataLanguageTags() ).toEqual( [ 'en-simple' ] );
+		} );
+
+	} );
+
+	describe( 'newPartLanguageTag', () => {
+
+		beforeEach( () => {
+			setupMwMock( { config: { wgContentLanguage: 'en', wgNeoWikiDataLanguages: [ 'de', 'fr', 'it' ] } } );
+		} );
+
+		it( 'starts a new part in the first data language no part is in', () => {
+			expect( newPartLanguageTag( [ 'de', 'es' ] ) ).toBe( 'fr' );
+		} );
+
+		it( 'starts a new part in the content language once every data language has a part', () => {
+			expect( newPartLanguageTag( [ 'it', 'de', 'fr' ] ) ).toBe( 'en' );
 		} );
 
 	} );

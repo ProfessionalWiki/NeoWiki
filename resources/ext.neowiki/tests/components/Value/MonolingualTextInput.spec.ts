@@ -7,7 +7,13 @@ import {
 	newMonolingualTextProperty,
 } from '@/domain/propertyTypes/MonolingualText';
 import { ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { createTestWrapper, setupMwMock } from '../../VueTestHelpers.ts';
+import {
+	chooseFromLanguageList,
+	createTestWrapper,
+	pickInLanguageSearch,
+	setupMwMock,
+	shownLanguage,
+} from '../../VueTestHelpers.ts';
 
 // Every row's language picker listens to the document while it is open, so no mount is left standing.
 enableAutoUnmount( afterEach );
@@ -31,8 +37,14 @@ describe( 'MonolingualTextInput', () => {
 		return wrapper.findAll( '.ext-neowiki-monolingual-text-input__text input' );
 	}
 
-	function languageButtons( wrapper: VueWrapper ): ReturnType<VueWrapper['findAll']> {
-		return wrapper.findAll( '.ext-neowiki-language-picker__button' );
+	function rowLanguages( wrapper: VueWrapper ): string[] {
+		return rowElements( wrapper ).map( ( row ) => shownLanguage( row.find( '.ext-neowiki-language-input' ).element ) );
+	}
+
+	function languageControlNames( wrapper: VueWrapper ): ( string | undefined )[] {
+		return rowElements( wrapper ).map(
+			( row ) => row.find( '.ext-neowiki-language-input [role="combobox"]' ).attributes( 'aria-label' ),
+		);
 	}
 
 	function lastEmittedValue( wrapper: VueWrapper ): MonolingualTextValue | undefined {
@@ -64,31 +76,33 @@ describe( 'MonolingualTextInput', () => {
 		await rowElements( wrapper )[ index ].trigger( 'focusout', { relatedTarget: into } );
 	}
 
-	// Codex gives its "no results" element the menu-item class too, so it is excluded here.
-	function languageMenuItems( wrapper: VueWrapper ): ReturnType<VueWrapper['findAll']> {
-		return rowElements( wrapper )[ 0 ].findAll( '.cdx-menu-item:not( .cdx-menu__no-results )' );
+	async function chooseFromList( wrapper: VueWrapper, index: number, language: string ): Promise<void> {
+		await chooseFromLanguageList( rowElements( wrapper )[ index ], language );
 	}
 
-	/**
-	 * Opens the first row's languages, searches them and picks the first entry the list then offers,
-	 * which is the only way a language is committed.
-	 */
+	async function openLanguageSearch( wrapper: VueWrapper, index: number ): Promise<void> {
+		await chooseFromList( wrapper, index, 'Other language…' );
+	}
+
 	async function chooseLanguage( wrapper: VueWrapper, query: string ): Promise<void> {
-		await languageButtons( wrapper )[ 0 ].trigger( 'click' );
-		await rowElements( wrapper )[ 0 ].find( '.ext-neowiki-language-picker__search input' ).setValue( query );
-		await languageMenuItems( wrapper )[ 0 ].trigger( 'click' );
+		await openLanguageSearch( wrapper, 0 );
+		await pickInLanguageSearch( rowElements( wrapper )[ 0 ], query );
 	}
 
 	// The messages render as they do in a wiki, so an assertion on a label reads as what a user hears.
-	function readsIn( userLanguage: string, contentLanguage: string ): void {
+	function readsIn( userLanguage: string, contentLanguage: string, dataLanguages: string[] = [] ): void {
 		setupMwMock( {
-			config: { wgUserLanguage: userLanguage, wgContentLanguage: contentLanguage },
-			languageNames: { en: 'English', eu: 'Basque', es: 'Spanish' },
+			config: {
+				wgUserLanguage: userLanguage,
+				wgContentLanguage: contentLanguage,
+				wgNeoWikiDataLanguages: dataLanguages,
+			},
+			languageNames: { de: 'German', en: 'English', eu: 'Basque', es: 'Spanish', fr: 'French', it: 'Italian' },
 			messages: {
 				'neowiki-monolingual-text-text-label': ( property, position ) => `${ property } text ${ position }`,
 				'neowiki-monolingual-text-language-label': ( property, position ) =>
 					`${ property } language ${ position }`,
-				'neowiki-language-picker-button': ( label, name, tag ) => `${ label }: ${ name } (${ tag })`,
+				'neowiki-language-input-other': 'Other language…',
 			},
 		} );
 	}
@@ -142,7 +156,7 @@ describe( 'MonolingualTextInput', () => {
 		} );
 
 		expect( textValues( wrapper ) ).toEqual( [ 'Zinema', 'Cine', '' ] );
-		expect( languageButtons( wrapper ).map( ( button ) => button.text() ) ).toEqual( [ 'EU', 'ES', 'EN' ] );
+		expect( rowLanguages( wrapper ) ).toEqual( [ 'Basque', 'Spanish', 'English' ] );
 	} );
 
 	it( 'names both of a row\'s fields after the row they belong to', () => {
@@ -152,8 +166,8 @@ describe( 'MonolingualTextInput', () => {
 
 		expect( textInputs( wrapper ).map( ( input ) => input.attributes( 'aria-label' ) ) )
 			.toEqual( [ 'Original title text 1', 'Original title text 2' ] );
-		expect( languageButtons( wrapper ).map( ( button ) => button.attributes( 'aria-label' ) ) )
-			.toEqual( [ 'Original title language 1: Basque (eu)', 'Original title language 2: English (en)' ] );
+		expect( languageControlNames( wrapper ) )
+			.toEqual( [ 'Original title language 1', 'Original title language 2' ] );
 	} );
 
 	it( 'emits a typed text tagged with the language the wiki is written in', async () => {
@@ -166,6 +180,63 @@ describe( 'MonolingualTextInput', () => {
 			type: ValueType.MonolingualText,
 			parts: [ { text: 'Zinema', language: 'eu' } ],
 		} );
+	} );
+
+	it( 'shows the new row in the first data language the value lacks', () => {
+		readsIn( 'en', 'en', [ 'de', 'fr', 'it' ] );
+
+		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Kino', language: 'de' } ] ) } );
+
+		expect( rowLanguages( wrapper ) ).toEqual( [ 'German', 'French' ] );
+	} );
+
+	it( 'emits a part typed into the new row in the first data language the value lacks', async () => {
+		readsIn( 'en', 'en', [ 'de', 'fr', 'it' ] );
+		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Kino', language: 'de' } ] ) } );
+
+		await textInputs( wrapper )[ 1 ].setValue( 'Cinéma' );
+
+		expect( lastEmittedValue( wrapper )?.parts ).toEqual( [
+			{ text: 'Kino', language: 'de' },
+			{ text: 'Cinéma', language: 'fr' },
+		] );
+	} );
+
+	it( 'moves the new row on to the data language a part leaves', async () => {
+		readsIn( 'en', 'en', [ 'de', 'fr', 'it' ] );
+		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Kino', language: 'de' } ] ) } );
+
+		await chooseFromList( wrapper, 0, 'French' );
+		await textInputs( wrapper )[ 1 ].setValue( 'Film' );
+
+		expect( lastEmittedValue( wrapper )?.parts ).toEqual( [
+			{ text: 'Kino', language: 'fr' },
+			{ text: 'Film', language: 'de' },
+		] );
+	} );
+
+	it( 'keeps the language picked for the new row when the value changes', async () => {
+		readsIn( 'en', 'en', [ 'de', 'fr', 'it' ] );
+		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Kino', language: 'de' } ] ) } );
+
+		await chooseFromList( wrapper, 1, 'Italian' );
+		await chooseFromList( wrapper, 0, 'French' );
+		await textInputs( wrapper )[ 1 ].setValue( 'Cinema' );
+
+		expect( lastEmittedValue( wrapper )?.parts[ 1 ] ).toEqual( { text: 'Cinema', language: 'it' } );
+	} );
+
+	it( 'keeps a typed part in its language when another part changes language', async () => {
+		readsIn( 'en', 'en', [ 'de', 'fr', 'it' ] );
+		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Kino', language: 'de' } ] ) } );
+
+		await textInputs( wrapper )[ 1 ].setValue( 'Cinéma' );
+		await chooseFromList( wrapper, 0, 'Italian' );
+
+		expect( lastEmittedValue( wrapper )?.parts ).toEqual( [
+			{ text: 'Kino', language: 'it' },
+			{ text: 'Cinéma', language: 'fr' },
+		] );
 	} );
 
 	it( 'opens another empty row once the trailing one is typed into', async () => {
@@ -272,7 +343,7 @@ describe( 'MonolingualTextInput', () => {
 		expect( textValues( wrapper ) ).toEqual( [ 'Zinema', 'Cine', '' ] );
 	} );
 
-	it( 'keeps a cleared row while focus is in the languages its button opened', async () => {
+	it( 'keeps a cleared row while focus is in the language search it opened', async () => {
 		const wrapper = newWrapper( {
 			modelValue: newMonolingualTextValue( [
 				{ text: 'Zinema', language: 'eu' },
@@ -281,7 +352,7 @@ describe( 'MonolingualTextInput', () => {
 		} );
 
 		await textInputs( wrapper )[ 0 ].setValue( '' );
-		await languageButtons( wrapper )[ 0 ].trigger( 'click' );
+		await openLanguageSearch( wrapper, 0 );
 		await leaveRow(
 			wrapper,
 			0,
@@ -496,6 +567,23 @@ describe( 'MonolingualTextInput', () => {
 		} );
 
 		await textInputs( wrapper )[ 1 ].setValue( 'Cine' );
+
+		expect( wrapper.emitted( 'clear-server-violation' ) )
+			.toEqual( [ [ { propertyName: 'Original title', valuePartIndex: 1 } ] ] );
+	} );
+
+	it( 'asks the parent to drop the violation of a part whose language changes', async () => {
+		const wrapper = newWrapper( {
+			modelValue: newMonolingualTextValue( [
+				{ text: 'Zinema', language: 'eu' },
+				{ text: 'Ci', language: 'es' },
+			] ),
+			serverViolations: [
+				{ propertyName: 'Original title', code: 'min-length', args: [ 3 ], severity: 'error', valuePartIndex: 1 },
+			],
+		} );
+
+		await chooseFromList( wrapper, 1, 'English' );
 
 		expect( wrapper.emitted( 'clear-server-violation' ) )
 			.toEqual( [ [ { propertyName: 'Original title', valuePartIndex: 1 } ] ] );

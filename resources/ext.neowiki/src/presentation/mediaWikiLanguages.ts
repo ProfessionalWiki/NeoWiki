@@ -20,8 +20,28 @@ export function userLanguageTag(): string {
  * The language the wiki is written in, which is the same for every editor and every page they
  * edit from, special pages included.
  */
-export function contentLanguageTag(): string {
+function contentLanguageTag(): string {
 	return toLanguageTag( mw.config.get( 'wgContentLanguage' ) );
+}
+
+/**
+ * The languages the wiki's data is in, each once, in the order its admins listed them: the content
+ * language when they listed none.
+ */
+export function dataLanguageTags(): string[] {
+	const listed = mw.config.get( 'wgNeoWikiDataLanguages' );
+
+	return Array.isArray( listed ) && listed.length > 0 ?
+		[ ...new Set( listed.map( ( tag: string ) => toLanguageTag( tag ) ) ) ] :
+		[ contentLanguageTag() ];
+}
+
+/**
+ * The language a new part starts in: the first data language no part is in yet, or the content
+ * language once every one is.
+ */
+export function newPartLanguageTag( partLanguageTags: readonly string[] ): string {
+	return dataLanguageTags().find( ( tag ) => !partLanguageTags.includes( tag ) ) ?? contentLanguageTag();
 }
 
 // Kept from one call to the next, since MediaWiki hands out the same names every time and listing

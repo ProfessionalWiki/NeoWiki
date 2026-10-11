@@ -22,22 +22,19 @@
 				class="ext-neowiki-monolingual-text-input__row"
 				@focusout="onRowFocusOut( index, $event )"
 			>
-				<div class="ext-neowiki-monolingual-text-input__field">
-					<CdxTextInput
-						class="ext-neowiki-monolingual-text-input__text"
-						:model-value="view.row.text"
-						:status="view.severity ?? 'default'"
-						:aria-label="view.textLabel"
-						:style="{ '--ext-neowiki-language-tag-length': view.row.language.length }"
-						@update:model-value="( text: string ) => onTextInput( index, text )"
-					/>
-					<LanguagePicker
-						class="ext-neowiki-monolingual-text-input__language"
-						:model-value="view.row.language"
-						:label="view.languageLabel"
-						@update:model-value="( tag: string ) => commitLanguage( index, tag )"
-					/>
-				</div>
+				<CdxTextInput
+					class="ext-neowiki-monolingual-text-input__text"
+					:model-value="view.row.text"
+					:status="view.severity ?? 'default'"
+					:aria-label="view.textLabel"
+					@update:model-value="( text: string ) => onTextInput( index, text )"
+				/>
+				<LanguageInput
+					class="ext-neowiki-monolingual-text-input__language"
+					:model-value="view.language"
+					:label="view.languageLabel"
+					@update:model-value="( tag: string ) => commitLanguage( index, tag )"
+				/>
 				<!-- Can't use CdxField because the message belongs under this row, not the field -->
 				<CdxMessage
 					v-if="view.severity !== undefined"
@@ -65,10 +62,10 @@ import {
 } from '@/domain/Value.ts';
 import type { Severity } from '@/domain/Severity.ts';
 import { MonolingualTextProperty } from '@/domain/propertyTypes/MonolingualText.ts';
-import LanguagePicker from '@/components/common/LanguagePicker.vue';
+import LanguageInput from '@/components/common/LanguageInput.vue';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { preferErrorViolation, useServerViolations, violationStatus } from '@/composables/useServerViolations.ts';
-import { contentLanguageTag } from '@/presentation/mediaWikiLanguages.ts';
+import { newPartLanguageTag } from '@/presentation/mediaWikiLanguages.ts';
 
 /**
  * One editable part.
@@ -76,15 +73,19 @@ import { contentLanguageTag } from '@/presentation/mediaWikiLanguages.ts';
  * `id` identifies the row for as long as it is on screen, so that dropping a row from the middle
  * moves the ones below it rather than shifting their contents into DOM elements the user may be
  * typing in.
+ *
+ * `language` is null on a new row until it holds a part or the user picks its language. Until then
+ * it follows the value, showing the language the next part would start in.
  */
 interface Row {
 	id: number;
 	text: string;
-	language: string;
+	language: string | null;
 }
 
 interface RowView {
 	row: Row;
+	language: string;
 	textLabel: string;
 	languageLabel: string;
 	message?: string;
@@ -112,7 +113,7 @@ const { relevant, format, emitClears, firstMessages, fieldLevelMessages } = useS
 );
 
 function newRow(): Row {
-	return rowOf( { text: '', language: contentLanguageTag() } );
+	return { id: ++lastRowId, text: '', language: null };
 }
 
 function rowOf( part: MonolingualText ): Row {
@@ -121,6 +122,15 @@ function rowOf( part: MonolingualText ): Row {
 
 function holdsPart( row: Row ): boolean {
 	return row.text.trim() !== '';
+}
+
+function languageOf( row: Row ): string {
+	return row.language ?? newPartLanguageTag(
+		rows.value
+			.filter( holdsPart )
+			.map( ( other ) => other.language )
+			.filter( ( tag ): tag is string => tag !== null )
+	);
 }
 
 /**
@@ -145,7 +155,9 @@ function partsOf( value: Value | undefined ): MonolingualText[] {
 }
 
 function currentValue(): MonolingualTextValue | undefined {
-	const value = newMonolingualTextValue( rows.value );
+	const value = newMonolingualTextValue(
+		rows.value.map( ( row ) => ( { text: row.text, language: languageOf( row ) } ) )
+	);
 
 	return value.parts.length === 0 ? undefined : value;
 }
@@ -155,11 +167,18 @@ function emitValue(): void {
 }
 
 function onTextInput( index: number, text: string ): void {
-	const heldPart = holdsPart( rows.value[ index ] );
+	const row = rows.value[ index ];
+	const heldPart = holdsPart( row );
 
-	rows.value[ index ].text = text;
+	row.text = text;
 
-	const holdsPartNow = holdsPart( rows.value[ index ] );
+	const holdsPartNow = holdsPart( row );
+
+	// A part's language is its own: following the value it is now part of would move it, and the
+	// next new row would show the same language.
+	if ( holdsPartNow && row.language === null ) {
+		row.language = languageOf( row );
+	}
 
 	// The trailing empty row is what the next part is typed into, so a new one takes its place the
 	// moment it holds a part. A row emptied again is dropped when the user leaves it.
@@ -200,8 +219,8 @@ function onRowFocusOut( index: number, event: FocusEvent ): void {
 }
 
 /**
- * Whether focus moved to another part of the row: its text field, its language button, or the
- * language panel that button opens.
+ * Whether focus moved to another part of the row: its text field, its language list or link, or the
+ * language search they open.
  */
 function focusStaysInRow( rowElement: HTMLElement, target: EventTarget | null ): boolean {
 	return target instanceof Node && rowElement.contains( target );
@@ -273,6 +292,7 @@ const rowViews = computed<RowView[]>( () => {
 
 		return {
 			row: row,
+			language: languageOf( row ),
 			textLabel: mw.message( 'neowiki-monolingual-text-text-label', props.label, index + 1 ).text(),
 			languageLabel: mw.message( 'neowiki-monolingual-text-language-label', props.label, index + 1 ).text(),
 			message: hit === undefined ? undefined : format( hit ),
@@ -309,40 +329,31 @@ defineExpose<ValueInputExposes>( { getCurrentValue: currentValue } );
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-monolingual-text-input {
-	display: flex;
-	flex-direction: column;
-	gap: @spacing-25;
+	/* A column of texts and a column of their languages, so every text ends where the others do,
+		whether its language is a list or a link. Not positioned: a `position: relative` here would
+		recapture the containing block of the language panel and of Codex's menus inside a dialog,
+		and silently clip them. */
+	display: grid;
+	grid-template-columns: minmax( 0, 1fr ) auto;
+	align-items: center;
+	gap: @spacing-25 @spacing-50;
 
-	/* One cell holding the text field and the language button over its end, so the language reads
-		as belonging to the text. Overlapped by grid placement rather than by positioning: a
-		`position: relative` here would recapture the containing block of the language panel and
-		of Codex's menus inside a dialog, and silently clip them. */
-	&__field {
-		display: grid;
-		grid-template-columns: minmax( 0, 1fr );
-		align-items: center;
+	&__row {
+		display: contents;
+	}
 
-		> * {
-			grid-area: 1 / 1;
-		}
+	&__row > .cdx-message {
+		grid-column: 1 / -1;
 	}
 
 	/* Codex gives every text input a 256px minimum, which a narrow pane cannot hold. Nested to
 		outrank Codex's own rule, which loads later at the same specificity. */
-	&__field > &__text {
+	&__row > &__text {
 		min-width: 0;
 	}
 
-	/* Room for the language button, so a long text ends before it rather than running under it.
-		The button is the tag, whose small capitals come out about as wide as the field's `ch`, plus its
-		chevron and padding; the tag's length is set on the field, since tags run from `en` to
-		`zh-hant-tw`. */
-	&__field > &__text .cdx-text-input__input {
-		padding-inline-end: calc( var( --ext-neowiki-language-tag-length ) * 1ch + @size-250 );
-	}
-
 	&__language {
-		justify-self: end;
+		justify-self: start;
 	}
 }
 </style>

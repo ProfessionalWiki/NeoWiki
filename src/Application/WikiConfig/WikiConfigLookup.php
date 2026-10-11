@@ -35,6 +35,9 @@ class WikiConfigLookup {
 	) {
 	}
 
+	/**
+	 * A value the setting accepts, or null when neither the page nor the PHP configuration holds one.
+	 */
 	public function getEffectiveValue( string $pageKey ): mixed {
 		$setting = $this->schema->getSetting( $pageKey );
 
@@ -42,12 +45,10 @@ class WikiConfigLookup {
 			throw new InvalidArgumentException( "Not an on-wiki-configurable setting: $pageKey" );
 		}
 
-		$phpValue = $this->phpConfig->get( $setting->settingName );
-
 		$pageData = $this->pageData();
 
 		if ( $pageData === null || !array_key_exists( $pageKey, $pageData ) ) {
-			return $phpValue;
+			return $this->phpValue( $setting );
 		}
 
 		$pageValue = $pageData[$pageKey];
@@ -61,7 +62,13 @@ class WikiConfigLookup {
 			[ 'key' => $pageKey ]
 		);
 
-		return $phpValue;
+		return $this->phpValue( $setting );
+	}
+
+	private function phpValue( ConfigSetting $setting ): mixed {
+		$value = $this->phpConfig->get( $setting->settingName );
+
+		return $setting->isValidValue( $value ) ? $value : null;
 	}
 
 	/**
