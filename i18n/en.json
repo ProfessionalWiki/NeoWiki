@@ -22,7 +22,6 @@
 	"neowiki-special-subjects": "Subjects",
 	"neowiki-subjects-unavailable": "Listing subjects needs a Neo4j graph store, which this wiki does not have.",
 	"neowiki-subjects-column-name": "Name",
-	"neowiki-subjects-column-id": "ID",
 	"neowiki-subjects-column-schema": "Schema",
 	"neowiki-subjects-column-page": "Page",
 	"neowiki-subjects-column-edited": "Edited",

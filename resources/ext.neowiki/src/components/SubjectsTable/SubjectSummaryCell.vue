@@ -3,10 +3,6 @@
 		v-if="column === 'name'"
 		:href="nameUrl"
 	>{{ name }}</a>
-	<span
-		v-else-if="column === 'id'"
-		class="ext-neowiki-subject-summary-cell__id"
-	>{{ summary.id }}</span>
 	<SchemaNameDisplay
 		v-else-if="column === 'schema'"
 		:schema-name="summary.schema"
@@ -41,11 +37,3 @@ const nameUrl = computed( () => summaryUrl( props.summary ) );
 const pageUrl = computed( () => mw.util.getUrl( props.summary.pageTitle ) );
 const edited = computed( () => describeLastEdited( props.summary.lastEdited, new Date() ) );
 </script>
-
-<style lang="less">
-@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
-
-.ext-neowiki-subject-summary-cell__id {
-	font-family: @font-family-monospace;
-}
-</style>

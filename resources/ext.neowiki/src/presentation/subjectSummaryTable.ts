@@ -3,7 +3,7 @@ import type { SortDirection, SubjectSummary, SubjectSummarySort } from '@/applic
 import { generatedSubjectName } from '@/presentation/subjectDisplayName.ts';
 import { subjectRowLinkUrl } from '@/presentation/subjectLinks.ts';
 
-export type SubjectColumnId = 'name' | 'id' | 'schema' | 'page' | 'edited';
+export type SubjectColumnId = 'name' | 'schema' | 'page' | 'edited';
 
 export interface SubjectColumn extends TableColumn {
 	id: SubjectColumnId;
@@ -11,7 +11,6 @@ export interface SubjectColumn extends TableColumn {
 
 const COLUMN_LABELS: Record<SubjectColumnId, string> = {
 	name: 'neowiki-subjects-column-name',
-	id: 'neowiki-subjects-column-id',
 	schema: 'neowiki-subjects-column-schema',
 	page: 'neowiki-subjects-column-page',
 	edited: 'neowiki-subjects-column-edited',
@@ -21,16 +20,9 @@ type ColumnSort = Exclude<SubjectSummarySort, 'newest'>;
 
 const COLUMN_SORTS: readonly ColumnSort[] = [ 'name', 'schema', 'page', 'edited' ];
 
-/**
- * The fixed columns of a Subject table. The ID is there to tell Subjects apart and to search by, not to sort by:
- * its order is the creation order the table shows when no column is sorted.
- */
-export function subjectColumns(
-	options: { showId: boolean; showSchema: boolean; showPage: boolean; sortable: boolean },
-): SubjectColumn[] {
+export function subjectColumns( options: { showSchema: boolean; showPage: boolean; sortable: boolean } ): SubjectColumn[] {
 	const ids: SubjectColumnId[] = [
 		'name',
-		...( options.showId ? [ 'id' as const ] : [] ),
 		...( options.showSchema ? [ 'schema' as const ] : [] ),
 		...( options.showPage ? [ 'page' as const ] : [] ),
 		'edited',
@@ -39,7 +31,7 @@ export function subjectColumns(
 	return ids.map( ( id ) => ( {
 		id,
 		label: mw.msg( COLUMN_LABELS[ id ] ),
-		allowSort: options.sortable && isColumnSort( id ),
+		allowSort: options.sortable,
 	} ) );
 }
 

@@ -50,13 +50,6 @@
 				/>
 			</template>
 
-			<template #item-id="{ row }">
-				<SubjectSummaryCell
-					column="id"
-					:summary="row"
-				/>
-			</template>
-
 			<template #item-schema="{ row }">
 				<SubjectSummaryCell
 					column="schema"
@@ -143,7 +136,6 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null;
 let requestSequence = 0;
 
 const columns = computed( () => subjectColumns( {
-	showId: true,
 	showSchema: selectedSchema.value === null,
 	showPage: !isSubjectFirst(),
 	sortable: true

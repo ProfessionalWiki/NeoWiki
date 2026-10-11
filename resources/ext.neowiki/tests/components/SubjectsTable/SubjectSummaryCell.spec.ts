@@ -33,10 +33,6 @@ describe( 'SubjectSummaryCell', () => {
 		expect( link.attributes( 'href' ) ).toBe( '/wiki/Sinclair ZX Spectrum?action=subjects#s1demo1aaaaaaa1' );
 	} );
 
-	it( 'shows the Subject id', () => {
-		expect( mountCell( 'id' ).text() ).toBe( 's1demo1aaaaaaa1' );
-	} );
-
 	it( 'names the Schema', () => {
 		expect( mountCell( 'schema' ).find( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'Computer' );
 	} );

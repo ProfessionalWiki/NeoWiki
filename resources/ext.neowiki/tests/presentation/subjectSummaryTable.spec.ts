@@ -28,21 +28,15 @@ describe( 'subjectSummaryTable', () => {
 
 	beforeEach( () => onWiki( false ) );
 
-	it( 'lists the name first, the ID, Schema and page when asked, and the edit last', () => {
-		expect( subjectColumns( { showId: true, showSchema: true, showPage: true, sortable: true } ).map( ( c ) => c.id ) )
-			.toEqual( [ 'name', 'id', 'schema', 'page', 'edited' ] );
-		expect( subjectColumns( { showId: false, showSchema: false, showPage: false, sortable: true } ).map( ( c ) => c.id ) )
+	it( 'lists the name first, Schema and page when asked, and the edit last', () => {
+		expect( subjectColumns( { showSchema: true, showPage: true, sortable: true } ).map( ( c ) => c.id ) )
+			.toEqual( [ 'name', 'schema', 'page', 'edited' ] );
+		expect( subjectColumns( { showSchema: false, showPage: false, sortable: true } ).map( ( c ) => c.id ) )
 			.toEqual( [ 'name', 'edited' ] );
 	} );
 
-	it( 'never lets the ID column sort', () => {
-		const columns = subjectColumns( { showId: true, showSchema: true, showPage: true, sortable: true } );
-
-		expect( columns.filter( ( c ) => c.allowSort ).map( ( c ) => c.id ) ).toEqual( [ 'name', 'schema', 'page', 'edited' ] );
-	} );
-
 	it( 'lets nothing sort when the table does not', () => {
-		expect( subjectColumns( { showId: true, showSchema: true, showPage: true, sortable: false } ).some( ( c ) => c.allowSort ) )
+		expect( subjectColumns( { showSchema: true, showPage: true, sortable: false } ).some( ( c ) => c.allowSort ) )
 			.toBe( false );
 	} );
 
