@@ -187,7 +187,7 @@ These are the settings you are most likely to change. For the full list with des
 `$wgNeoWikiSubjectFirst` selects whether this wiki is
 [page-first or subject-first](../glossary.md#page-first-and-subject-first-wikis): `false`, the default, is page-first;
 `true` is subject-first. It can also be set on `MediaWiki:NeoWiki` as `subjectFirst`
-([on-wiki configuration](#on-wiki-configuration)).
+([on-wiki settings](#on-wiki-settings)).
 
 | Behaviour | Page-first | Subject-first |
 |---|---|---|
@@ -213,7 +213,7 @@ On a subject-first wiki, `$wgNeoWikiSubjectPageNamespace` names the namespace ea
 them in this order beside each text, and starts a new text in the first of them the value lacks. Other languages stay
 one search away, and texts already in them keep their language. The default, an empty list, stands for the wiki's
 content language (`$wgLanguageCode`). The list can also be set on `MediaWiki:NeoWiki` as `dataLanguages`
-([on-wiki configuration](#on-wiki-configuration)).
+([on-wiki settings](#on-wiki-settings)).
 
 ## Logging
 
@@ -248,9 +248,9 @@ are granted to logged-in users.
 A wiki whose readers do not all see the same pages needs more than these defaults; see
 [Restricted content](restricted-content.md).
 
-## On-wiki configuration
+## On-wiki settings
 
-A wiki administrator without server access can set part of NeoWiki's configuration in a form on the `MediaWiki:NeoWiki`
+A wiki administrator without server access can change some of NeoWiki's settings in a form on the `MediaWiki:NeoWiki`
 page. Like other site configuration, the page is editable only with the `editinterface` and `editsitejson` rights. The
 exposed settings are `subjectFirst` (overriding `$wgNeoWikiSubjectFirst`), `dataLanguages` (overriding
 `$wgNeoWikiDataLanguages`) and `autoRenderMainSubject` (overriding `$wgNeoWikiAutoRenderMainSubject`). The form saves
@@ -259,7 +259,7 @@ reference table of the exposed keys and their accepted values.
 
 A valid value on the page takes precedence over `LocalSettings.php`, per setting. A missing page, a
 wrong-shaped value, or an unavailable database falls back to the `LocalSettings.php` value, so a
-configuration typo cannot take down the wiki. Saving the page rejects unknown keys and wrong-typed values.
+typo on the page cannot take down the wiki. Saving the page rejects unknown keys and wrong-typed values.
 
 Every other setting stays in `LocalSettings.php` — deliberately, for secrets and infrastructure
 (`$wgNeoWikiSparqlStores`), for settings too consequential for a wiki page (`$wgNeoWikiRdfBaseUri` re-mints

@@ -414,7 +414,7 @@
 	"neowiki-managesubjects-export-native": "Display name of the native (NeoWiki-vocabulary) RDF projection, $1 of {{msg-neowiki|neowiki-managesubjects-export-projection-format}}.",
 	"action-subjects": "Description of the Subject management action used by MediaWiki when generating action descriptions.",
 	"neowiki-config-invalid": "Heading shown above the list of errors when an edit to the MediaWiki:NeoWiki JSON configuration page is rejected.",
-	"neowiki-config-error-not-object": "Error shown when the MediaWiki:NeoWiki configuration is not a JSON object.",
+	"neowiki-config-error-not-object": "Error shown when the content of the MediaWiki:NeoWiki configuration page is not a JSON object.",
 	"neowiki-config-error-unknown-key": "Error shown when the configuration contains a setting that is not exposed on-wiki. $1 is the unknown key.",
 	"neowiki-config-error-invalid-boolean": "Error shown when a setting that must be a boolean is not. $1 is the setting key. The words \"true\" and \"false\" are literal JSON values and must not be translated.",
 	"neowiki-config-error-invalid-language-list": "Error shown when a setting that must be a list of language tags is not. $1 is the setting key. The example [\"de\", \"fr\", \"it\"] is a literal JSON value and must not be translated.",
@@ -499,7 +499,7 @@
 	"neowiki-overview-layouts-description": "Short description shown under the [[Special:Layouts]] link on [[Special:NeoWiki]].",
 	"neowiki-overview-mappings-description": "Short description shown under the [[Special:Mappings]] link on [[Special:NeoWiki]]. EDM and CIDOC-CRM are ontology names and stay untranslated.",
 	"neowiki-overview-graph-stores-description": "Short description shown under the [[Special:GraphStores]] link on [[Special:NeoWiki]].",
-	"neowiki-overview-configuration": "Label of the link to [[MediaWiki:NeoWiki]] on [[Special:NeoWiki]], the page holding the wiki's NeoWiki settings.\n{{Identical|Configuration}}",
+	"neowiki-overview-configuration": "Label of the link to [[MediaWiki:NeoWiki]] on [[Special:NeoWiki]], the page holding the wiki's NeoWiki settings.\n{{Identical|Settings}}",
 	"neowiki-overview-configuration-description": "Short description shown under the [[MediaWiki:NeoWiki]] link on [[Special:NeoWiki]]. \"Without server access\" contrasts it with the settings that can only be changed in LocalSettings.php.",
 	"neowiki-overview-manage-schemas": "Label of the link in the header of the Schema table on [[Special:NeoWiki]] that navigates to [[Special:Schemas]], where Schemas are created, edited and deleted.",
 	"neowiki-main-page-text": "Wikitext of the Main Page that NeoWiki's Docker setup writes in place of MediaWiki's own ({{msg-mw|mainpagetext}} and {{msg-mw|mainpagedocfooter}}) when it installs a wiki. {{#create_subject: page=new}} renders the button the text refers to, labelled {{msg-mw|neowiki-create-subject-default-label}}. Keep the wiki markup, {{#create_subject: page=new}}, the page names and the URLs unchanged; translate the link labels and the headings."

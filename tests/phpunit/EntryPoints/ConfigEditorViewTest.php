@@ -136,7 +136,7 @@ class ConfigEditorViewTest extends NeoWikiIntegrationTestCase {
 
 	public function testTheFormLinksToTheDocumentationOfTheConfigurationPage(): void {
 		$this->assertStringContainsString(
-			'href="https://neowiki.ai/docs/operations/installation#on-wiki-configuration"',
+			'href="https://neowiki.ai/docs/operations/installation#on-wiki-settings"',
 			$this->view()->getIndicators()['mw-helplink'] ?? ''
 		);
 	}

@@ -35,7 +35,7 @@ class ConfigDocumentationBuilder {
 		return Html::rawElement(
 			'div',
 			[ 'class' => 'neowiki-config-docs-pointer' ],
-			$this->messageLocalizer->msg( 'neowiki-config-docs-pointer', self::ANCHOR, DocumentationUrl::Installation->value )->parse()
+			$this->messageLocalizer->msg( 'neowiki-config-docs-pointer', self::ANCHOR, DocumentationUrl::OnWikiSettings->value )->parse()
 		);
 	}
 

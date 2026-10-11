@@ -1279,7 +1279,7 @@ class NeoWikiHooks {
 				revisionId: $title->exists() ? $title->getLatestRevID() : null
 			)
 		);
-		$out->addHelpLink( DocumentationUrl::OnWikiConfiguration->value, true );
+		$out->addHelpLink( DocumentationUrl::OnWikiSettings->value, true );
 		// As Edit source does: a copy from the browser's cache, shown on going back, would save stale settings.
 		$out->disableClientCache();
 
