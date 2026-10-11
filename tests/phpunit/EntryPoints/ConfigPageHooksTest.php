@@ -9,13 +9,11 @@ use MediaWiki\Context\RequestContext;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
-use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigExample;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onContentHandlerDefaultModelFor
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onEditFilter
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onEditFormPreloadText
  * @group Database
  */
 class ConfigPageHooksTest extends MediaWikiIntegrationTestCase {
@@ -37,13 +35,6 @@ class ConfigPageHooksTest extends MediaWikiIntegrationTestCase {
 		NeoWikiHooks::onEditFilter( $this->newEditPage( $title ), $text, '', $error, '' );
 
 		return $error;
-	}
-
-	private function preloadText( Title $title ): string {
-		$text = '';
-		NeoWikiHooks::onEditFormPreloadText( $text, $title );
-
-		return $text;
 	}
 
 	public function testConfigPageGetsTheJsonContentModel(): void {
@@ -111,36 +102,6 @@ class ConfigPageHooksTest extends MediaWikiIntegrationTestCase {
 			'',
 			$this->editFilterError( $this->configTitle(), '{ "subjectFirst": "sidebar" }' )
 		);
-	}
-
-	public function testConfigPageIsPreloadedWithTheExample(): void {
-		$this->assertSame( ConfigExample::JSON, $this->preloadText( $this->configTitle() ) );
-	}
-
-	public function testOtherMediaWikiPageIsNotPreloaded(): void {
-		$this->assertSame( '', $this->preloadText( Title::makeTitle( NS_MEDIAWIKI, 'NotNeoWiki' ) ) );
-	}
-
-	public function testConfigPageIsNotPreloadedWhenInWikiConfigDisabled(): void {
-		$this->overrideConfigValue( 'NeoWikiEnableInWikiConfig', false );
-
-		$this->assertSame( '', $this->preloadText( $this->configTitle() ) );
-	}
-
-	public function testPreloadToleratesTheNullTextCorePassesForAMissingPage(): void {
-		// Core's ApiQueryInfo::extractPageInfo() invokes EditFormPreloadText with $text = null for any
-		// non-existent page (action=query&prop=info&inprop=preload), so the handler must not fatal on it.
-		$text = null;
-		NeoWikiHooks::onEditFormPreloadText( $text, Title::makeTitle( NS_MAIN, 'A missing page' ) );
-
-		$this->assertNull( $text );
-	}
-
-	public function testConfigPagePreloadFillsNullText(): void {
-		$text = null;
-		NeoWikiHooks::onEditFormPreloadText( $text, $this->configTitle() );
-
-		$this->assertSame( ConfigExample::JSON, $text );
 	}
 
 }

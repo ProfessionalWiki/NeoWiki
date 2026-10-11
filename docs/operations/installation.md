@@ -255,7 +255,7 @@ page. Like other site configuration, the page is editable only with the `editint
 exposed settings are `subjectFirst` (overriding `$wgNeoWikiSubjectFirst`), `dataLanguages` (overriding
 `$wgNeoWikiDataLanguages`) and `autoRenderMainSubject` (overriding `$wgNeoWikiAutoRenderMainSubject`). The form saves
 only the settings set on the page, leaving the rest to `LocalSettings.php`. Edit source shows the page's JSON with a
-reference table of the exposed keys and their accepted values, and creating the page there preloads a working example.
+reference table of the exposed keys and their accepted values.
 
 A valid value on the page takes precedence over `LocalSettings.php`, per setting. A missing page, a
 wrong-shaped value, or an unavailable database falls back to the `LocalSettings.php` value, so a

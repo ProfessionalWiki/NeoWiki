@@ -46,7 +46,6 @@ use NullIndexField;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchHit;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
-use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigExample;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
@@ -1185,16 +1184,6 @@ class NeoWikiHooks {
 		return Html::errorBox(
 			$localizer->msg( 'neowiki-config-invalid' )->escaped() . Html::rawElement( 'ul', [], $items )
 		);
-	}
-
-	/**
-	 * Preloads a small valid example when the on-wiki configuration page is created, so an administrator
-	 * starts from a working configuration rather than a blank page.
-	 */
-	public static function onEditFormPreloadText( ?string &$text, Title $title ): void {
-		if ( NeoWikiExtension::getInstance()->isConfigPage( $title ) ) {
-			$text = ConfigExample::JSON;
-		}
 	}
 
 	public static function onAlternateEdit( EditPage $editPage ): void {

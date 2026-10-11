@@ -75,7 +75,6 @@
 		"ContentHandlerDefaultModelFor": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentHandlerDefaultModelFor",
 		"EditFilter": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onEditFilter",
 		"AlternateEdit": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onAlternateEdit",
-		"EditFormPreloadText": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onEditFormPreloadText",
 
 		"SidebarBeforeOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSidebarBeforeOutput",
 		"SkinTemplateNavigation::Universal": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSkinTemplateNavigationUniversal",
