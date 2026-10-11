@@ -39,7 +39,7 @@ export class RestSchemaRepository implements SchemaRepository {
 		return this.deserializer.deserialize( schemaName, schema );
 	}
 
-	public async getSchemaNames( search = '' ): Promise<string[]> {
+	public async getSchemaNames( search: string ): Promise<string[]> {
 		const response = await this.httpClient.get(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/schema-names/${ search }`,
 		);
