@@ -7,13 +7,20 @@
 		:hide-caption="true"
 	>
 		<template #item-name="{ row }">
+			<a
+				:id="nameId( row.name )"
+				class="ext-neowiki-schemas-table__name"
+				:href="pageUrl( `Schema:${ row.name }` )"
+				:title="row.name"
+			>{{ row.name }}</a>
+		</template>
+
+		<template #item-description="{ item }">
+			<span class="ext-neowiki-schemas-table__description">{{ item }}</span>
+		</template>
+
+		<template #item-actions="{ row }">
 			<div class="ext-neowiki-schemas-table__cell">
-				<a
-					:id="nameId( row.name )"
-					class="ext-neowiki-schemas-table__name"
-					:href="pageUrl( `Schema:${ row.name }` )"
-					:title="row.name"
-				>{{ row.name }}</a>
 				<CdxButton
 					v-if="canEdit"
 					weight="quiet"
@@ -24,22 +31,14 @@
 				>
 					<CdxIcon :icon="cdxIconEdit" />
 				</CdxButton>
-				<CdxButton
-					v-if="canDelete"
-					weight="quiet"
-					action="destructive"
-					:aria-label="$i18n( 'neowiki-schema-delete' ).text()"
+				<SchemaActionsMenu
+					:can-duplicate="canDuplicate"
+					:can-delete="canDelete"
 					:aria-describedby="nameId( row.name )"
-					:title="$i18n( 'neowiki-schema-delete' ).text()"
-					@click="emit( 'delete', row.name )"
-				>
-					<CdxIcon :icon="cdxIconTrash" />
-				</CdxButton>
+					@duplicate="emit( 'duplicate', row.name )"
+					@delete="emit( 'delete', row.name )"
+				/>
 			</div>
-		</template>
-
-		<template #item-description="{ item }">
-			<span class="ext-neowiki-schemas-table__description">{{ item }}</span>
 		</template>
 
 		<template #item-subjects="{ row }">
@@ -56,14 +55,12 @@
 				>{{ subjectListLinkText( subjectCountOf( row.name ) ) }}</a>
 				<CdxButton
 					v-if="canCreateSubject"
-					weight="quiet"
 					action="progressive"
+					:aria-describedby="nameId( row.name )"
 					@click="emit( 'create-subject', row.name )"
 				>
 					<CdxIcon :icon="cdxIconAdd" />
-					<span class="ext-neowiki-schemas-table__create-label">
-						{{ $i18n( 'neowiki-schema-create-subject', row.name ).text() }}
-					</span>
+					{{ $i18n( 'neowiki-schemas-create-subject' ).text() }}
 				</CdxButton>
 			</div>
 		</template>
@@ -73,13 +70,15 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { CdxButton, CdxIcon, CdxTable, type TableColumn, useGeneratedId } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconEdit } from '@wikimedia/codex-icons';
 import { type SubjectCounts, subjectListLinkText } from '@/composables/useSubjectCounts.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
+import SchemaActionsMenu from './SchemaActionsMenu.vue';
 
 const props = defineProps<{
 	schemas: SchemaSummary[];
 	canEdit: boolean;
+	canDuplicate: boolean;
 	canDelete: boolean;
 	canCreateSubject: boolean;
 	subjectListAvailable: boolean;
@@ -89,6 +88,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	edit: [ schemaName: string ];
+	duplicate: [ schemaName: string ];
 	delete: [ schemaName: string ];
 	'create-subject': [ schemaName: string ];
 }>();
@@ -98,6 +98,9 @@ const idPrefix = useGeneratedId( 'ext-neowiki-schemas-table' );
 const columns = computed( (): TableColumn[] => [
 	{ id: 'name', label: mw.msg( 'neowiki-schemas-column-name' ) },
 	{ id: 'description', label: mw.msg( 'neowiki-schemas-column-description' ) },
+	...( props.canEdit || props.canDuplicate || props.canDelete ?
+		[ { id: 'actions', label: '' } ] :
+		[] ),
 	// The card's footer holds the same two, under the same condition.
 	...( props.subjectListAvailable || props.canCreateSubject ?
 		[ { id: 'subjects', label: mw.msg( 'neowiki-schemas-column-subjects' ) } ] :
@@ -124,6 +127,12 @@ function pageUrl( page: string ): string {
 		vertical-align: middle;
 	}
 
+	// Lets a row's menu open past the table, whose sideways scrolling would cut it off, as Codex 2.3 and up do themselves.
+	.cdx-table__table-wrapper,
+	.cdx-menu-button__menu-wrapper {
+		position: static;
+	}
+
 	&__cell {
 		display: flex;
 		align-items: center;
@@ -131,23 +140,21 @@ function pageUrl( page: string ): string {
 		white-space: nowrap;
 	}
 
-	// Sends the buttons acting on the row to the cell's end, where they line up across the rows.
-	&__name,
-	&__subject-count {
-		margin-inline-end: auto;
-	}
-
 	// Caps a long name, so its row still fits the page.
-	&__name,
-	&__create-label {
+	&__name {
+		display: inline-block;
 		max-width: 12em;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		white-space: nowrap;
+		vertical-align: top;
 	}
 
-	// Holds a two-digit count's width while the counts load, so the column does not widen when they arrive.
+	// Holds a two-digit count's width while the counts load, so the column does not widen when they arrive. Sends the
+	// button after it to the cell's end, where the buttons line up across the rows.
 	&__subject-count {
 		min-width: 5.5em;
+		margin-inline-end: auto;
 	}
 
 	// One line per Schema: the description gives way, cut with an ellipsis.

@@ -81,15 +81,15 @@ const SchemaCardStub = {
 	name: 'SchemaCard',
 	template: '<div class="schema-card-stub"></div>',
 	props: [
-		'summary', 'canEdit', 'canDelete', 'canCreateSubject', 'subjectListAvailable', 'subjectPreviews', 'subjectCount',
-		'subjectCountPending',
+		'summary', 'canEdit', 'canDuplicate', 'canDelete', 'canCreateSubject', 'subjectListAvailable', 'subjectPreviews',
+		'subjectCount', 'subjectCountPending',
 	],
-	emits: [ 'edit', 'delete', 'create-subject' ],
+	emits: [ 'edit', 'duplicate', 'delete', 'create-subject' ],
 };
 
 const SchemaCreatorDialogStub = {
 	template: '<div></div>',
-	props: [ 'open' ],
+	props: [ 'open', 'duplicateOf' ],
 	emits: [ 'update:open', 'created' ],
 };
 
@@ -170,6 +170,11 @@ function cards( wrapper: VueWrapper ): VueWrapper<InstanceType<typeof SchemaCard
 
 function cardNames( wrapper: VueWrapper ): string[] {
 	return cards( wrapper ).map( ( card ) => card.props( 'summary' ).name );
+}
+
+async function askToDuplicate( wrapper: VueWrapper, cardIndex: number ): Promise<void> {
+	cards( wrapper )[ cardIndex ].vm.$emit( 'duplicate' );
+	await flushPromises();
 }
 
 async function askToDelete( wrapper: VueWrapper, cardIndex: number ): Promise<void> {
@@ -260,17 +265,26 @@ describe( 'SchemasPage', () => {
 		expect( wrapper.find( 'a[href^="/wiki/Special:Subjects/"]' ).exists() ).toBe( false );
 	} );
 
-	it.each( [
-		[ 'create Subject pages', false, [ 'neowiki-schema-create-subjectArtist' ] ],
-		[ 'edit Schemas and create Subject pages', true, [ 'neowiki-edit-schema', 'neowiki-schema-create-subjectArtist' ] ],
-	] )( 'offers in each row only the buttons of a user who may %s', async ( _rights, mayEdit, buttons ) => {
+	it.each<[ string, { edit?: boolean; create?: boolean; delete?: boolean; createSubjectPages?: boolean }, string[] ]>( [
+		[ 'create Subject pages', { createSubjectPages: true }, [ 'neowiki-schemas-create-subject' ] ],
+		[
+			'edit Schemas and create Subject pages',
+			{ edit: true, createSubjectPages: true },
+			[ 'neowiki-edit-schema', 'neowiki-schemas-create-subject' ],
+		],
+		[ 'create Schemas', { create: true }, [ 'neowiki-schemas-more-actions', 'neowiki-schemas-duplicate' ] ],
+		[ 'delete Schemas', { delete: true }, [ 'neowiki-schemas-more-actions', 'neowiki-schemas-delete' ] ],
+	] )( 'offers in each row only the actions of a user who may %s', async ( _rights, rights, actions ) => {
 		browserStorage.clear();
-		mayEditSchemas = mayEdit;
-		mayCreateSubjectPages = true;
+		mayEditSchemas = rights.edit ?? false;
+		mayCreateSchemas = rights.create ?? false;
+		mayDeleteSchemas = rights.delete ?? false;
+		mayCreateSubjectPages = rights.createSubjectPages ?? false;
 		const wrapper = await visit();
 
-		expect( wrapper.findAll( 'tbody tr' )[ 0 ].findAll( 'button' ).map( ( button ) => button.attributes( 'aria-label' ) ?? button.text() ) )
-			.toEqual( buttons );
+		expect( wrapper.findAll( 'tbody tr' )[ 0 ].findAll( 'button, .cdx-menu-item' )
+			.map( ( control ) => control.attributes( 'aria-label' ) ?? control.text() ) )
+			.toEqual( actions );
 	} );
 
 	it( 'switches to the cards, and opens in them on the next visit', async () => {
@@ -286,17 +300,21 @@ describe( 'SchemasPage', () => {
 	it( 'acts on the requests of the table as on those of the cards', async () => {
 		browserStorage.clear();
 		mayEditSchemas = true;
+		mayCreateSchemas = true;
 		mayDeleteSchemas = true;
 		mayCreateSubjectPages = true;
+		getSchemaMock.mockImplementation( async ( name: string ) => newSchema( { title: name } ) );
 		const wrapper = await visit();
 		const table = wrapper.findComponent( SchemasTable );
 
 		table.vm.$emit( 'edit', 'Artwork' );
+		table.vm.$emit( 'duplicate', 'City' );
 		table.vm.$emit( 'delete', 'Artist' );
 		table.vm.$emit( 'create-subject', 'City' );
 		await flushPromises();
 
-		expect( getSchemaMock ).toHaveBeenCalledWith( 'Artwork' );
+		expect( wrapper.findComponent( SchemaEditorDialog ).props( 'initialSchema' ) ).toStrictEqual( newSchema( { title: 'Artwork' } ) );
+		expect( wrapper.findComponent( SchemaCreatorDialog ).props( 'duplicateOf' ) ).toStrictEqual( newSchema( { title: 'City' } ) );
 		expect( wrapper.findComponent( DeletePageDialog ).props( 'pageTitle' ) ).toBe( 'Schema:Artist' );
 		expect( wrapper.findComponent( SubjectCreatorDialog ).props( 'initialSchemaName' ) ).toBe( 'City' );
 	} );
@@ -589,6 +607,57 @@ describe( 'SchemasPage', () => {
 		await flushPromises();
 
 		expect( cards( wrapper )[ 1 ].props( 'summary' ).description ).toBe( 'A work of art.' );
+	} );
+
+	it( 'lets the cards offer duplicating to a user who may create Schemas', async () => {
+		mayCreateSchemas = true;
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( cards( wrapper )[ 0 ].props( 'canDuplicate' ) ).toBe( true );
+	} );
+
+	it( 'opens the Schema creator on a duplicate of the Schema of the card', async () => {
+		mayCreateSchemas = true;
+		const artwork = newSchema( { title: 'Artwork' } );
+		getSchemaMock.mockResolvedValue( artwork );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		await askToDuplicate( wrapper, 1 );
+
+		expect( getSchemaMock ).toHaveBeenCalledWith( 'Artwork' );
+		const creator = wrapper.findComponent( SchemaCreatorDialog );
+		expect( creator.props( 'open' ) ).toBe( true );
+		expect( creator.props( 'duplicateOf' ) ).toStrictEqual( artwork );
+	} );
+
+	it( 'reports a Schema that could not be fetched instead of opening the Schema creator', async () => {
+		mayCreateSchemas = true;
+		getSchemaMock.mockRejectedValue( new Error( 'Error fetching schema' ) );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		await askToDuplicate( wrapper, 1 );
+
+		expect( mw.notify ).toHaveBeenCalledWith( 'Error fetching schema', { type: 'error' } );
+		expect( wrapper.findComponent( SchemaCreatorDialog ).props( 'open' ) ).toBe( false );
+	} );
+
+	it( 'opens the Schema creator on a new Schema after a duplicate', async () => {
+		mayCreateSchemas = true;
+		getSchemaMock.mockResolvedValue( newSchema( { title: 'Artwork' } ) );
+		const wrapper = mountPage();
+		await flushPromises();
+		await askToDuplicate( wrapper, 1 );
+		wrapper.findComponent( SchemaCreatorDialog ).vm.$emit( 'update:open', false );
+		await flushPromises();
+
+		await wrapper.find( '.ext-neowiki-schemas-page__create' ).trigger( 'click' );
+
+		const creator = wrapper.findComponent( SchemaCreatorDialog );
+		expect( creator.props( 'open' ) ).toBe( true );
+		expect( creator.props( 'duplicateOf' ) ).toBeUndefined();
 	} );
 
 	it( 'asks to confirm deleting the Schema of the card', async () => {

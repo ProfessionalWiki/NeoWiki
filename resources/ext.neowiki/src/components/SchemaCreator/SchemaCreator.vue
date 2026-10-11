@@ -48,8 +48,11 @@ import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const props = withDefaults( defineProps<{
 	initialName?: string;
+	/** The Schema to duplicate: the new one starts with all of it but the name. */
+	duplicateOf?: Schema;
 }>(), {
-	initialName: ''
+	initialName: '',
+	duplicateOf: undefined
 } );
 
 const emit = defineEmits<{
@@ -60,10 +63,10 @@ const schemaStore = useSchemaStore();
 
 const DEBOUNCE_DELAY = 300;
 
-const baseSchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
+const baseSchema = props.duplicateOf ?? new Schema( '', '', new PropertyDefinitionList( [] ) );
 
 const schemaName = ref( props.initialName );
-const schemaDescription = ref( '' );
+const schemaDescription = ref( baseSchema.getDescription() );
 const nameError = ref( '' );
 const nameStatus = ref<ValidationStatusType>( 'default' );
 const schemaEditorRef = ref<SchemaEditorExposes | null>( null );
@@ -141,10 +144,9 @@ function getSchema(): Schema | null {
 		return null;
 	}
 
-	const propertyDefinitions = schemaEditorRef.value?.getSchema().getPropertyDefinitions() ??
-		new PropertyDefinitionList( [] );
-
-	return new Schema( name, schemaDescription.value.trim(), propertyDefinitions );
+	return ( schemaEditorRef.value?.getSchema() ?? baseSchema )
+		.withName( name )
+		.withDescription( schemaDescription.value.trim() );
 }
 
 function saveBlocker(): SaveBlocker | null {

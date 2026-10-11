@@ -54,6 +54,15 @@ export async function chooseFromLanguageList( languageInput: VueWrapper | DOMWra
 		?.trigger( 'click' );
 }
 
+/** Opens the menu of the menu button with the given accessible name, and clicks its item reading the given text. */
+export async function chooseFromMenu( element: VueWrapper | DOMWrapper<Element>, buttonLabel: string, itemText: string ): Promise<void> {
+	await element.find( `button[aria-label="${ buttonLabel }"]` ).trigger( 'click' );
+	const item = element.findAll( '.cdx-menu-item' ).find( ( menuItem ) => menuItem.text() === itemText );
+
+	expect( item, `menu item ${ itemText }` ).toBeDefined();
+	await item!.trigger( 'click' );
+}
+
 // Codex gives its "no results" element the menu-item class too, so it is excluded here.
 export async function pickInLanguageSearch( languagePicker: VueWrapper | DOMWrapper<Element>, text: string ): Promise<void> {
 	await languagePicker.find( '.ext-neowiki-language-picker__search input' ).setValue( text );

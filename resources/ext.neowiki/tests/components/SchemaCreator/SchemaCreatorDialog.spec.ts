@@ -10,6 +10,9 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import { newTextProperty } from '@/domain/propertyTypes/Text.ts';
+import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
+import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const NEW_SCHEMA_NAME = 'Company';
@@ -203,6 +206,78 @@ describe( 'SchemaCreatorDialog', () => {
 		await flushPromises();
 
 		expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
+	} );
+
+	it( 'is titled for creating a Schema', () => {
+		expect( mountComponent().findComponent( CdxDialog ).props( 'title' ) ).toBe( 'neowiki-schema-creator-title' );
+	} );
+
+	describe( 'Duplicating', () => {
+		const COMPANY = new Schema(
+			'Company',
+			'An organisation that sells things',
+			new PropertyDefinitionList( [ newTextProperty( { name: 'Name' } ), newNumberProperty( { name: 'Founded' } ) ] ),
+		);
+
+		// With the real creator and Schema editor, which are what fill the dialog with the copy.
+		function mountDuplicating( schema: Schema ): VueWrapper {
+			return mount( SchemaCreatorDialog, {
+				props: { open: true, duplicateOf: schema },
+				global: {
+					plugins: [ pinia ],
+					stubs: {
+						SummaryAction: SummaryActionStub,
+						CloseConfirmationDialog: CloseConfirmationDialogStub,
+						CdxDialog: CdxDialogStub,
+						CdxIcon: true,
+						teleport: true,
+					},
+					provide: NeoWikiTestServices.getServices(),
+					directives: { tooltip: {} },
+					mocks: { $i18n: createI18nMock() },
+				},
+			} );
+		}
+
+		function nameAndDescription( wrapper: VueWrapper ): string[] {
+			return wrapper.findAll<HTMLInputElement>( '.ext-neowiki-schema-creator__name-section input' )
+				.map( ( input ) => input.element.value );
+		}
+
+		function propertyNames( wrapper: VueWrapper ): string[] {
+			return wrapper.findAll(
+				'.ext-neowiki-property-list__item:not( .ext-neowiki-property-list__item--subject-label ) ' +
+				'.ext-neowiki-property-list__item__text__label',
+			).map( ( label ) => label.text() );
+		}
+
+		beforeEach( () => {
+			setupMwMock();
+			schemaStore.schemaNameExists = vi.fn().mockResolvedValue( false );
+		} );
+
+		it( 'is titled after the Schema it duplicates', () => {
+			expect( mountDuplicating( COMPANY ).findComponent( CdxDialog ).props( 'title' ) )
+				.toBe( 'neowiki-schema-creator-duplicate-titleCompany' );
+		} );
+
+		it( 'opens on the description and property definitions of that Schema, with no name', () => {
+			const wrapper = mountDuplicating( COMPANY );
+
+			expect( nameAndDescription( wrapper ) ).toEqual( [ '', 'An organisation that sells things' ] );
+			expect( propertyNames( wrapper ) ).toEqual( [ 'Name', 'Founded' ] );
+		} );
+
+		it( 'saves the duplicate under the name typed, with everything else of that Schema', async () => {
+			const wrapper = mountDuplicating( COMPANY );
+
+			await wrapper.find( '.ext-neowiki-schema-creator__name-section input' ).setValue( 'Group' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( schemaStore.saveSchema ).toHaveBeenCalledOnce();
+			expect( schemaStore.saveSchema ).toHaveBeenCalledWith( COMPANY.withName( 'Group' ), expect.any( String ) );
+		} );
 	} );
 
 	describe( 'Blocked save', () => {

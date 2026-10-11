@@ -7,12 +7,13 @@
 			:open="props.open"
 			:use-close-button="true"
 			class="ext-neowiki-ui ext-neowiki-schema-creator-dialog cdx-dialog--dividers"
-			:title="$i18n( 'neowiki-schema-creator-title' ).text()"
+			:title="title"
 			@update:open="onDialogUpdateOpen"
 		>
 			<SchemaCreator
 				ref="schemaCreatorRef"
 				:initial-name="props.initialName"
+				:duplicate-of="props.duplicateOf"
 				@change="markChanged"
 			/>
 
@@ -35,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { CdxDialog } from '@wikimedia/codex';
 import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import type { SchemaCreatorExposes } from '@/components/SchemaCreator/SchemaCreator.vue';
@@ -49,6 +50,8 @@ import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 const props = defineProps<{
 	open: boolean;
 	initialName?: string;
+	/** The Schema to duplicate: the new one starts with all of it but the name. */
+	duplicateOf?: Schema;
 }>();
 
 const emit = defineEmits<{
@@ -60,6 +63,10 @@ const schemaStore = useSchemaStore();
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
 const schemaCreatorRef = ref<SchemaCreatorExposes | null>( null );
+
+const title = computed( () => props.duplicateOf === undefined ?
+	mw.msg( 'neowiki-schema-creator-title' ) :
+	mw.msg( 'neowiki-schema-creator-duplicate-title', props.duplicateOf.getName() ) );
 
 function close(): void {
 	emit( 'update:open', false );

@@ -12,7 +12,7 @@
 					<a :href="schemaUrl">{{ summary.name }}</a>
 				</h2>
 				<span
-					v-if="canEdit || canDelete"
+					v-if="canEdit || canDuplicate || canDelete"
 					class="ext-neowiki-schema-card__actions"
 				>
 					<CdxButton
@@ -25,17 +25,13 @@
 					>
 						<CdxIcon :icon="cdxIconEdit" />
 					</CdxButton>
-					<CdxButton
-						v-if="canDelete"
-						weight="quiet"
-						action="destructive"
-						:aria-label="$i18n( 'neowiki-schema-delete' ).text()"
+					<SchemaActionsMenu
+						:can-duplicate="canDuplicate"
+						:can-delete="canDelete"
 						:aria-describedby="headingId"
-						:title="$i18n( 'neowiki-schema-delete' ).text()"
-						@click="emit( 'delete' )"
-					>
-						<CdxIcon :icon="cdxIconTrash" />
-					</CdxButton>
+						@duplicate="emit( 'duplicate' )"
+						@delete="emit( 'delete' )"
+					/>
 				</span>
 			</div>
 
@@ -98,12 +94,12 @@
 			<CdxButton
 				v-if="canCreateSubject"
 				class="ext-neowiki-schema-card__create"
-				weight="quiet"
 				action="progressive"
+				:aria-describedby="headingId"
 				@click="emit( 'create-subject' )"
 			>
 				<CdxIcon :icon="cdxIconAdd" />
-				{{ $i18n( 'neowiki-schema-create-subject', summary.name ).text() }}
+				{{ $i18n( 'neowiki-schemas-create-subject' ).text() }}
 			</CdxButton>
 		</div>
 	</section>
@@ -112,8 +108,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { CdxButton, CdxIcon, useGeneratedId, useIntersectionObserver } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconEdit, cdxIconTrash } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconEdit } from '@wikimedia/codex-icons';
 import SubjectSummaryCell from '@/components/SubjectsTable/SubjectSummaryCell.vue';
+import SchemaActionsMenu from './SchemaActionsMenu.vue';
 import { subjectListLinkText } from '@/composables/useSubjectCounts.ts';
 import { SUBJECT_PREVIEW_SIZE, type SubjectPreview, SubjectPreviews } from './SubjectPreviews.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
@@ -121,6 +118,7 @@ import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 const props = defineProps<{
 	summary: SchemaSummary;
 	canEdit: boolean;
+	canDuplicate: boolean;
 	canDelete: boolean;
 	canCreateSubject: boolean;
 	/** False on a wiki without the Graph Store the Subject list reads. */
@@ -134,6 +132,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	edit: [];
+	duplicate: [];
 	delete: [];
 	'create-subject': [];
 }>();

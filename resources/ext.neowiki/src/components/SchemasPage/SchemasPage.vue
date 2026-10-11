@@ -23,7 +23,7 @@
 				<CdxButton
 					v-if="canCreateSchemas"
 					class="ext-neowiki-schemas-page__create"
-					@click="isCreatorOpen = true"
+					@click="openCreator"
 				>
 					<CdxIcon :icon="cdxIconAdd" />
 					{{ $i18n( 'neowiki-schema-creator-button' ).text() }}
@@ -53,12 +53,14 @@
 			v-else-if="foundSchemas.length > 0 && view === 'list'"
 			:schemas="foundSchemas"
 			:can-edit="canEditSchema"
+			:can-duplicate="canCreateSchemas"
 			:can-delete="canDeleteSchema"
 			:can-create-subject="canCreateSubjectPage"
 			:subject-list-available="subjectListAvailable"
 			:subject-count-of="subjectCountOf"
 			:subject-count-pending="subjectCountsPending"
 			@edit="openEditor"
+			@duplicate="openCreatorToDuplicate"
 			@delete="confirmDelete"
 			@create-subject="openSubjectCreator"
 		/>
@@ -71,6 +73,7 @@
 				:key="summary.name"
 				:summary="summary"
 				:can-edit="canEditSchema"
+				:can-duplicate="canCreateSchemas"
 				:can-delete="canDeleteSchema"
 				:can-create-subject="canCreateSubjectPage"
 				:subject-list-available="subjectListAvailable"
@@ -78,6 +81,7 @@
 				:subject-count="subjectCountOf( summary.name )"
 				:subject-count-pending="subjectCountsPending"
 				@edit="openEditor( summary.name )"
+				@duplicate="openCreatorToDuplicate( summary.name )"
 				@delete="confirmDelete( summary.name )"
 				@create-subject="openSubjectCreator( summary.name )"
 			/>
@@ -92,6 +96,7 @@
 		<SchemaCreatorDialog
 			v-if="canCreateSchemas"
 			:open="isCreatorOpen"
+			:duplicate-of="schemaToDuplicate"
 			@update:open="isCreatorOpen = $event"
 			@created="onSchemaCreated"
 		/>
@@ -180,6 +185,7 @@ const view = ref( mw.storage.get( VIEW_STORAGE_KEY ) === 'cards' ? 'cards' : 'li
 watch( view, ( chosen ) => mw.storage.set( VIEW_STORAGE_KEY, chosen ) );
 
 const isCreatorOpen = ref( false );
+const schemaToDuplicate = shallowRef<Schema | undefined>( undefined );
 const isEditorOpen = ref( false );
 const editingSchema = shallowRef<Schema | null>( null );
 const isDeleteConfirmOpen = ref( false );
@@ -216,6 +222,20 @@ async function loadSchemas(): Promise<void> {
 
 		console.error( 'Failed to load schemas:', error );
 		listState.value = 'failed';
+	}
+}
+
+function openCreator(): void {
+	schemaToDuplicate.value = undefined;
+	isCreatorOpen.value = true;
+}
+
+async function openCreatorToDuplicate( schemaName: string ): Promise<void> {
+	try {
+		schemaToDuplicate.value = await schemaRepo.getSchema( schemaName );
+		isCreatorOpen.value = true;
+	} catch ( error ) {
+		mw.notify( error instanceof Error ? error.message : String( error ), { type: 'error' } );
 	}
 }
 

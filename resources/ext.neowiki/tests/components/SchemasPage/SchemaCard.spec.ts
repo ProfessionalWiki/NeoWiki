@@ -3,11 +3,12 @@ import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { markRaw } from 'vue';
 import SchemaCard from '@/components/SchemasPage/SchemaCard.vue';
 import { SubjectPreviews } from '@/components/SchemasPage/SubjectPreviews.ts';
-import { createI18nMock, type ScrollStub, setupMwMock, stubIntersectionObserver } from '../../VueTestHelpers.ts';
+import { chooseFromMenu, createI18nMock, type ScrollStub, setupMwMock, stubIntersectionObserver } from '../../VueTestHelpers.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import type { SubjectSummary, SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
 
 const ARTIST: SchemaSummary = { name: 'Artist', description: 'A person who creates works of art.', propertyCount: 4 };
+const MORE_ACTIONS = 'neowiki-schemas-more-actions';
 
 function subject( id: string, displayName: string ): SubjectSummary {
 	return {
@@ -23,6 +24,7 @@ let subjectPreviews: SubjectPreviews;
 interface CardOptions {
 	summary?: SchemaSummary;
 	canEdit?: boolean;
+	canDuplicate?: boolean;
 	canDelete?: boolean;
 	canCreateSubject?: boolean;
 	subjectListAvailable?: boolean;
@@ -40,6 +42,7 @@ function mountCard( options: CardOptions = {} ): VueWrapper {
 		props: {
 			summary: options.summary ?? ARTIST,
 			canEdit: options.canEdit ?? false,
+			canDuplicate: options.canDuplicate ?? false,
 			canDelete: options.canDelete ?? false,
 			canCreateSubject: options.canCreateSubject ?? false,
 			subjectListAvailable: options.subjectListAvailable ?? true,
@@ -72,6 +75,10 @@ function subjectNames( wrapper: VueWrapper ): string[] {
 
 function findButton( wrapper: VueWrapper, label: string ): ReturnType<VueWrapper['find']> {
 	return wrapper.find( `button[aria-label="${ label }"]` );
+}
+
+function menuItemTexts( wrapper: VueWrapper ): string[] {
+	return wrapper.findAll( '.cdx-menu-item' ).map( ( item ) => item.text() );
 }
 
 describe( 'SchemaCard', () => {
@@ -257,29 +264,41 @@ describe( 'SchemaCard', () => {
 		expect( findButton( mountCard( { canEdit: false, canDelete: true } ), 'neowiki-edit-schema' ).exists() ).toBe( false );
 	} );
 
-	it( 'ties its edit and delete buttons to the Schema they act on', () => {
-		const wrapper = mountCard( { canEdit: true, canDelete: true } );
+	it( 'ties its buttons to the Schema they act on', () => {
+		const wrapper = mountCard( { canEdit: true, canDelete: true, canCreateSubject: true } );
 		const headingId = wrapper.find( 'h2' ).attributes( 'id' );
 
 		expect( headingId ).toBeTruthy();
-		expect( findButton( wrapper, 'neowiki-edit-schema' ).attributes( 'aria-describedby' ) ).toBe( headingId );
-		expect( findButton( wrapper, 'neowiki-schema-delete' ).attributes( 'aria-describedby' ) ).toBe( headingId );
+		expect( wrapper.findAll( 'button' ).map( ( button ) => button.attributes( 'aria-describedby' ) ) )
+			.toEqual( [ headingId, headingId, headingId ] );
 	} );
 
 	it( 'gives each card a heading id of its own', () => {
 		expect( mountCard().find( 'h2' ).attributes( 'id' ) ).not.toBe( mountCard().find( 'h2' ).attributes( 'id' ) );
 	} );
 
+	it( 'offers duplicating to a user who may duplicate Schemas', async () => {
+		const wrapper = mountCard( { canDuplicate: true } );
+
+		await chooseFromMenu( wrapper, MORE_ACTIONS, 'neowiki-schemas-duplicate' );
+
+		expect( wrapper.emitted( 'duplicate' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'offers no duplicating to a user who may delete but not duplicate Schemas', () => {
+		expect( menuItemTexts( mountCard( { canDelete: true } ) ) ).not.toContain( 'neowiki-schemas-duplicate' );
+	} );
+
 	it( 'offers deleting to a user who may delete Schemas', async () => {
 		const wrapper = mountCard( { canDelete: true } );
 
-		await findButton( wrapper, 'neowiki-schema-delete' ).trigger( 'click' );
+		await chooseFromMenu( wrapper, MORE_ACTIONS, 'neowiki-schemas-delete' );
 
 		expect( wrapper.emitted( 'delete' ) ).toHaveLength( 1 );
 	} );
 
-	it( 'offers no deleting to a user who may edit but not delete Schemas', () => {
-		expect( findButton( mountCard( { canEdit: true, canDelete: false } ), 'neowiki-schema-delete' ).exists() ).toBe( false );
+	it( 'offers no deleting to a user who may duplicate but not delete Schemas', () => {
+		expect( menuItemTexts( mountCard( { canDuplicate: true } ) ) ).not.toContain( 'neowiki-schemas-delete' );
 	} );
 
 	it( 'offers to create a Subject of its Schema to a user who may', async () => {
@@ -288,7 +307,7 @@ describe( 'SchemaCard', () => {
 
 		await button.trigger( 'click' );
 
-		expect( button.text() ).toBe( 'neowiki-schema-create-subjectArtist' );
+		expect( button.text() ).toBe( 'neowiki-schemas-create-subject' );
 		expect( wrapper.emitted( 'create-subject' ) ).toHaveLength( 1 );
 	} );
 
