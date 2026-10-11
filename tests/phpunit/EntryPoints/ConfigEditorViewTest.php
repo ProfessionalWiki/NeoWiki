@@ -118,6 +118,10 @@ class ConfigEditorViewTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( $latest->getId(), $this->formConfig( $out )['revisionId'] );
 	}
 
+	public function testTheFormIsHeadedNeoWikiSettings(): void {
+		$this->assertSame( 'NeoWiki settings', $this->view()->getPageTitle() );
+	}
+
 	public function testAMissingPageHasNoRevisionToSaveOver(): void {
 		$this->assertNull( $this->formConfig( $this->view() )['revisionId'] );
 	}

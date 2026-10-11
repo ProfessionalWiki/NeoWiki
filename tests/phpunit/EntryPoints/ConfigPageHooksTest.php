@@ -10,10 +10,12 @@ use MediaWiki\EditPage\EditPage;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
+use SkinTemplate;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onContentHandlerDefaultModelFor
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onEditFilter
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onSkinTemplateNavigationUniversal
  * @group Database
  */
 class ConfigPageHooksTest extends MediaWikiIntegrationTestCase {
@@ -93,6 +95,36 @@ class ConfigPageHooksTest extends MediaWikiIntegrationTestCase {
 			'',
 			$this->editFilterError( Title::makeTitle( NS_MAIN, 'Some page' ), 'this is not even json' )
 		);
+	}
+
+	public function testConfigPageHasNoNamespaceTabBesideItsDiscussionTab(): void {
+		$links = $this->navigationOf( $this->configTitle() );
+
+		$this->assertSame( [ 'mediawiki_talk' ], array_keys( $links['associated-pages'] ) );
+		$this->assertSame( [ 'mediawiki_talk' ], array_keys( $links['namespaces'] ) );
+	}
+
+	public function testOtherMediaWikiPageKeepsItsNamespaceTab(): void {
+		$links = $this->navigationOf( Title::makeTitle( NS_MEDIAWIKI, 'NotNeoWiki' ) );
+
+		$this->assertArrayHasKey( 'mediawiki', $links['associated-pages'] );
+	}
+
+	/**
+	 * The tabs MediaWiki gives a MediaWiki: page, as NeoWiki leaves them. Skins draw them from
+	 * associated-pages, or from namespaces, its older copy.
+	 */
+	private function navigationOf( Title $title ): array {
+		$context = new RequestContext();
+		$context->setTitle( $title );
+		$skin = new SkinTemplate( 'fallback' );
+		$skin->setContext( $context );
+		$tabs = [ 'mediawiki' => [ 'text' => 'Message' ], 'mediawiki_talk' => [ 'text' => 'Discussion' ] ];
+		$links = [ 'associated-pages' => $tabs, 'namespaces' => $tabs, 'views' => [] ];
+
+		NeoWikiHooks::onSkinTemplateNavigationUniversal( $skin, $links );
+
+		return $links;
 	}
 
 	public function testConfigPageIsNotValidatedWhenInWikiConfigDisabled(): void {

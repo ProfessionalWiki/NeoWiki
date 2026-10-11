@@ -1117,6 +1117,10 @@ class NeoWikiHooks {
 	public static function onSkinTemplateNavigationUniversal( SkinTemplate $sktemplate, array &$links ): void {
 		$title = $sktemplate->getTitle();
 
+		if ( $title !== null && NeoWikiExtension::getInstance()->isConfigPage( $title ) ) {
+			self::removeNamespaceTab( $title, $links );
+		}
+
 		if ( !SubjectsAction::isEligibleTitle( $title ) ) {
 			return;
 		}
@@ -1128,6 +1132,16 @@ class NeoWikiHooks {
 			'text' => $sktemplate->msg( 'neowiki-managesubjects-tab' )->text(),
 			'href' => $title->getLocalURL( [ 'action' => SubjectsAction::ACTION_NAME ] ),
 		];
+	}
+
+	/**
+	 * The heading names the settings page, where this tab would call it "Message", as on other MediaWiki: pages.
+	 * Current skins draw associated-pages, to which core copies no removal from namespaces.
+	 */
+	private static function removeNamespaceTab( Title $title, array &$links ): void {
+		$tabKey = $title->getNamespaceKey( '' );
+
+		unset( $links['associated-pages'][$tabKey], $links['namespaces'][$tabKey] );
 	}
 
 	private static function handleLayoutPage( OutputPage $out, Skin $skin ): void {
@@ -1258,6 +1272,7 @@ class NeoWikiHooks {
 		$extension = NeoWikiExtension::getInstance();
 
 		$extension->newFrontendModuleLoader()->load( $out, $skin );
+		$out->setPageTitleMsg( $out->msg( 'neowiki-config-editor-title' ) );
 		$out->addJsConfigVars(
 			'wgNeoWikiConfigEditor',
 			$extension->newConfigEditorJsConfigBuilder( $out->getAuthority() )->build(
