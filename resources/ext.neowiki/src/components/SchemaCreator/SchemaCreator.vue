@@ -6,6 +6,7 @@
 				:messages="nameError ? { error: nameError } : {}"
 			>
 				<CdxTextInput
+					ref="nameInput"
 					v-model="schemaName"
 					:placeholder="$i18n( 'neowiki-schema-creator-name-placeholder' ).text()"
 					@input="onNameInput"
@@ -36,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { nextTick, onMounted, ref } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import type { ValidationStatusType } from '@wikimedia/codex';
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
@@ -69,9 +70,14 @@ const schemaName = ref( props.initialName );
 const schemaDescription = ref( baseSchema.getDescription() );
 const nameError = ref( '' );
 const nameStatus = ref<ValidationStatusType>( 'default' );
+const nameInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
 const schemaEditorRef = ref<SchemaEditorExposes | null>( null );
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let requestSequence = 0;
+
+// The name is the field to fill in first. Deferred, as the editor of a duplicate's first property definition takes the
+// focus once mounted.
+onMounted( () => nextTick( () => nameInput.value?.focus() ) );
 
 function onChange(): void {
 	emit( 'change' );

@@ -1,5 +1,5 @@
-import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { DOMWrapper, mount, VueWrapper, flushPromises } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
@@ -219,9 +219,11 @@ describe( 'SchemaCreatorDialog', () => {
 			new PropertyDefinitionList( [ newTextProperty( { name: 'Name' } ), newNumberProperty( { name: 'Founded' } ) ] ),
 		);
 
-		// With the real creator and Schema editor, which are what fill the dialog with the copy.
+		// With the real creator and Schema editor, which are what fill the dialog with the copy. Attached, for
+		// the focus they move.
 		function mountDuplicating( schema: Schema ): VueWrapper {
-			return mount( SchemaCreatorDialog, {
+			const wrapper = mount( SchemaCreatorDialog, {
+				attachTo: document.body,
 				props: { open: true, duplicateOf: schema },
 				global: {
 					plugins: [ pinia ],
@@ -237,6 +239,13 @@ describe( 'SchemaCreatorDialog', () => {
 					mocks: { $i18n: createI18nMock() },
 				},
 			} );
+
+			onTestFinished( () => wrapper.unmount() );
+			return wrapper;
+		}
+
+		function findNameInput( wrapper: VueWrapper ): DOMWrapper<HTMLInputElement> {
+			return wrapper.find<HTMLInputElement>( '.ext-neowiki-schema-creator__name-section input' );
 		}
 
 		function nameAndDescription( wrapper: VueWrapper ): string[] {
@@ -268,10 +277,17 @@ describe( 'SchemaCreatorDialog', () => {
 			expect( propertyNames( wrapper ) ).toEqual( [ 'Name', 'Founded' ] );
 		} );
 
+		it( 'starts with the cursor in the name field', async () => {
+			const wrapper = mountDuplicating( COMPANY );
+			await flushPromises();
+
+			expect( document.activeElement ).toBe( findNameInput( wrapper ).element );
+		} );
+
 		it( 'saves the duplicate under the name typed, with everything else of that Schema', async () => {
 			const wrapper = mountDuplicating( COMPANY );
 
-			await wrapper.find( '.ext-neowiki-schema-creator__name-section input' ).setValue( 'Group' );
+			await findNameInput( wrapper ).setValue( 'Group' );
 			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
 			await flushPromises();
 
