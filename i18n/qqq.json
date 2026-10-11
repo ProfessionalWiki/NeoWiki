@@ -339,7 +339,7 @@
 	"neowiki-field-invalid-date": "Validation error shown when the entered date value cannot be parsed. Date values must be strict ISO 8601 calendar dates in YYYY-MM-DD form with no time or timezone component (for example, '2025-06-15'). Values with a time part, partial values such as year-only, and calendar overflows such as '2025-02-30' are rejected, and min/max bounds are inclusive.",
 	"neowiki-property-type-date": "Label for the date (without time) property type in the schema editor",
 	"neowiki-property-type-boolean": "Label for the boolean (true/false) property type shown in the property type selector.",
-	"neowiki-property-type-monolingualtext": "Label for the monolingual text (text plus the language it is in) property type shown in the property type selector.",
+	"neowiki-property-type-monolingualtext": "Label of the property type whose values are texts, each with the language it is in (monolingualText), shown in the property type selector.",
 	"neowiki-monolingual-text-more-languages": "Link under a monolingual text value in a View that reveals the texts in the languages not shown to the reader.\n\nParameters:\n* $1 - how many languages those texts are in",
 	"neowiki-monolingual-text-fewer-languages": "Link under a monolingual text value in a View, after the texts revealed by {{msg-mw|neowiki-monolingual-text-more-languages}}, that hides them again.",
 	"neowiki-monolingual-text-text-label": "Accessible label of a monolingual text value's text field in the subject editor. $1 is the property name, $2 the value's position in the list, starting at 1.",

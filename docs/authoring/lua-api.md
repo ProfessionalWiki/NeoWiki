@@ -424,7 +424,7 @@ Notes:
   original type until they are re-saved.
 - A relation's `label` is the target's display name, and falls back to the target Subject ID when
   the target cannot be looked up at all (e.g. a broken reference).
-- Monolingual text keeps its languages here; `nw.getValue` and `nw.getAll` give the text alone.
+- A `monolingualText` value keeps its languages here; `nw.getValue` and `nw.getAll` give the text alone.
 
 ## Permissions
 

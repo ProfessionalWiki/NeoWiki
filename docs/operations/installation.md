@@ -211,11 +211,11 @@ On a subject-first wiki, `$wgNeoWikiSubjectPageNamespace` names the namespace ea
 ## Data languages
 
 `$wgNeoWikiDataLanguages` lists the languages the wiki's data is in, as BCP 47 language tags, such as
-`[ 'de', 'fr', 'it' ]`. The [monolingual text](../api/schema-format.md#monolingual-text-monolingualtext) editor offers
-them in this order beside each text, and starts a new text in the first of them the value lacks. Other languages stay
-one search away, and texts already in them keep their language. The default, an empty list, stands for the wiki's
-content language (`$wgLanguageCode`). The list can also be set on `MediaWiki:NeoWiki` as `dataLanguages`
-([on-wiki settings](#on-wiki-settings)).
+`[ 'de', 'fr', 'it' ]`. When editing [text with language](../api/schema-format.md#text-with-language-monolingualtext),
+the editor offers them in this order beside each text, and starts a new text in the first of them the value lacks.
+Other languages stay one search away, and texts already in them keep their language. The default, an empty list,
+stands for the wiki's content language (`$wgLanguageCode`). The list can also be set on `MediaWiki:NeoWiki` as
+`dataLanguages` ([on-wiki settings](#on-wiki-settings)).
 
 ## Logging
 

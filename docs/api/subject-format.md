@@ -73,7 +73,7 @@ A property mapped to `null` instead of a Statement object is skipped when the JS
 | `number` | A single number (integer or float). |
 | `boolean` | A single boolean. |
 | `relation` | Array of [relation objects](#relations). |
-| `monolingualText` | Array of [monolingual text objects](#monolingual-text). |
+| `monolingualText` | Array of [texts with their language](#text-with-language). |
 
 A multi-part `text` value:
 
@@ -103,7 +103,7 @@ Each `relation` value is an array of objects pointing at other Subjects:
 | `id` | string | Yes | ID of this relation. |
 | `target` | string | Yes | ID of the target Subject. |
 
-### Monolingual text
+### Text with language
 
 Each `monolingualText` value is an array of objects, one per value part:
 

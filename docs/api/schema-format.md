@@ -115,7 +115,7 @@ Plain text values.
 }
 ```
 
-### Monolingual text (`monolingualText`)
+### Text with language (`monolingualText`)
 
 Text values that each carry the language they are in ([ADR 34](../adr/034-monolingual-text-value-type.md)).
 
