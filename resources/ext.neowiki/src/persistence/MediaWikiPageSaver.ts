@@ -1,4 +1,4 @@
-import { PageSaver, PageSaverStatus } from '@/persistence/PageSaver.ts';
+import { PageRevisionSaver, PageSaver, PageSaverStatus, RevisionSaveStatus } from '@/persistence/PageSaver.ts';
 
 /**
  * The fields of MediaWiki's REST error body that a failure is reported from.
@@ -8,7 +8,7 @@ interface RestErrorBody {
 	readonly messageTranslations?: Record<string, string>;
 }
 
-export class MediaWikiPageSaver implements PageSaver {
+export class MediaWikiPageSaver implements PageSaver, PageRevisionSaver {
 
 	private readonly api: mw.Api;
 
@@ -20,18 +20,26 @@ export class MediaWikiPageSaver implements PageSaver {
 	}
 
 	public async savePage( pageName: string, source: string, comment: string, content_model: string ): Promise<PageSaverStatus> {
-		try {
-			const revisionId = await this.getPageRevision( pageName );
+		return this.saveRevision( pageName, source, comment, content_model, await this.getPageRevision( pageName ) );
+	}
 
-			const data = {
+	public async saveRevision(
+		pageName: string,
+		source: string,
+		comment: string,
+		contentModel: string,
+		baseRevisionId: number | null,
+	): Promise<RevisionSaveStatus> {
+		try {
+			const data: Record<string, unknown> = {
 				source: source,
 				comment: comment,
-				content_model: content_model,
+				content_model: contentModel,
 				token: await this.getEditToken(),
 			};
 
-			if ( revisionId !== undefined ) {
-				( data as any ).latest = { id: revisionId };
+			if ( baseRevisionId !== null ) {
+				data.latest = { id: baseRevisionId };
 			}
 
 			return await this.putPage( pageName, data );
@@ -42,11 +50,11 @@ export class MediaWikiPageSaver implements PageSaver {
 		}
 	}
 
-	private putPage( pageName: string, data: object ): Promise<PageSaverStatus> {
-		return new Promise<PageSaverStatus>( ( resolve ) => {
+	private putPage( pageName: string, data: object ): Promise<RevisionSaveStatus> {
+		return new Promise<RevisionSaveStatus>( ( resolve ) => {
 			this.rest.put( `/v1/page/${ pageName }`, data )
-				.done( () => {
-					resolve( { success: true } );
+				.done( ( page ) => {
+					resolve( { success: true, revisionId: page.latest.id, source: page.source } );
 				} )
 				.fail( ( _code: string, failure: mw.Rest.HttpErrorData ) => {
 					resolve( { success: false, message: MediaWikiPageSaver.failureMessage( failure ) } );
@@ -71,16 +79,16 @@ export class MediaWikiPageSaver implements PageSaver {
 	}
 
 	/**
-	 * The page's current revision id, or undefined for a page that does not exist yet.
+	 * The page's current revision id, or null for a page that does not exist yet.
 	 * Cache-Control keeps the browser from answering from its cache, which would make the
 	 * save carry a stale base revision (#1303).
 	 */
-	private async getPageRevision( pageName: string ): Promise<number | undefined> {
+	private async getPageRevision( pageName: string ): Promise<number | null> {
 		try {
 			const page = await this.rest.get( `/v1/page/${ pageName }`, {}, { 'Cache-Control': 'no-cache' } );
 			return page.latest.id;
 		} catch ( _error ) {
-			return undefined;
+			return null;
 		}
 	}
 

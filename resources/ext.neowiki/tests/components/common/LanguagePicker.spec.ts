@@ -24,9 +24,9 @@ describe( 'LanguagePicker', () => {
 	</template>`;
 
 	// Attached, because where the focus goes is part of what is asserted.
-	function newWrapper( modelValue: string ): VueWrapper {
+	function newWrapper( modelValue: string, disabledLanguages: string[] = [] ): VueWrapper {
 		wrapper = mount( LanguagePicker, {
-			props: { modelValue: modelValue },
+			props: { modelValue: modelValue, placement: 'bottom-end', disabledLanguages: disabledLanguages },
 			slots: { default: TRIGGER },
 			attachTo: document.body,
 		} );
@@ -210,6 +210,23 @@ describe( 'LanguagePicker', () => {
 		const picker = newWrapper( 'eu' );
 
 		await chooseLanguage( picker, 'Basq' );
+
+		expect( emittedTags( picker ) ).toEqual( [] );
+	} );
+
+	it( 'lists a language it is told is taken as one that cannot be picked', async () => {
+		const picker = newWrapper( '', [ 'eu' ] );
+
+		await chooseLanguage( picker, 'Basq' );
+
+		expect( picker.find( '.cdx-menu-item' ).attributes( 'aria-disabled' ) ).toBe( 'true' );
+		expect( emittedTags( picker ) ).toEqual( [] );
+	} );
+
+	it( 'lists a typed tag it is told is taken as one that cannot be picked', async () => {
+		const picker = newWrapper( '', [ 'pt-br' ] );
+
+		await chooseLanguage( picker, 'PT-br' );
 
 		expect( emittedTags( picker ) ).toEqual( [] );
 	} );

@@ -1238,59 +1238,49 @@ class NeoWikiHooks {
 	}
 
 	/**
-	 * On viewing the on-wiki configuration page, trims the rendered page to the core JSON table and frames
-	 * it with the documentation pointer and the schema-generated configuration reference.
+	 * On a plain view of the on-wiki configuration page, shows the form in place of the rendered JSON.
 	 */
 	public static function onConfigPageBeforePageDisplay( OutputPage $out, Skin $skin ): void {
 		$title = $out->getTitle();
 
-		if ( $title === null || !NeoWikiExtension::getInstance()->isConfigPage( $title ) ) {
+		// Only a view or a diff of the page is an article view: no other action is, nor an error page such as
+		// the one shown to a viewer who may not read the page.
+		if ( $title === null || !$out->isArticle() || !NeoWikiExtension::getInstance()->isConfigPage( $title ) ) {
 			return;
 		}
 
-		$context = $out->getContext();
-		$action = MediaWikiServices::getInstance()->getActionFactory()->getActionName( $context );
+		$request = $out->getRequest();
 
-		// A diff request also resolves to the 'view' action, but renders a comparison the framing
-		// would discard, so only a plain page view is reduced to the JSON table and framed.
-		if ( $action !== 'view' || $context->getRequest()->getCheck( 'diff' ) ) {
+		// A diff or an older revision asked for by id is core's to show, as is its error for a revision it
+		// cannot show. A plain view always gets the form, which edits the latest revision even where an
+		// approval extension shows readers an older one.
+		if ( $request->getCheck( 'diff' ) ) {
 			return;
 		}
 
-		$builder = NeoWikiExtension::getInstance()->newConfigDocumentationBuilder( $context );
-		$table = self::extractJsonTable( $out->getHTML() );
+		if ( $request->getCheck( 'oldid' ) && !self::pageIsLatestRevision( $out ) ) {
+			return;
+		}
 
-		$out->clearHTML();
-		$out->addHTML( $builder->buildPointer() . $table . $builder->buildReference() );
+		self::showConfigEditor( $out, $skin, $title );
 	}
 
-	/**
-	 * Extracts just the core JSON table element. Core wraps it in a <div class="noresize">, so taking
-	 * the balanced <table>...</table> rather than everything to the end of the body avoids re-emitting
-	 * that wrapper's orphaned closing tag. A list value is a table nested in a cell, so the element ends
-	 * at the closing tag that balances the opening one, not at the first.
-	 */
-	private static function extractJsonTable( string $html ): string {
-		$start = strpos( $html, '<table class="mw-json"' );
+	private static function showConfigEditor( OutputPage $out, Skin $skin, Title $title ): void {
+		$extension = NeoWikiExtension::getInstance();
 
-		if ( $start === false ) {
-			return $html;
-		}
+		$extension->newFrontendModuleLoader()->load( $out, $skin );
+		$out->addJsConfigVars(
+			'wgNeoWikiConfigEditor',
+			$extension->newConfigEditorJsConfigBuilder( $out->getContext() )->build(
+				revisionId: $title->exists() ? $title->getLatestRevID() : null
+			)
+		);
+		$out->addHelpLink( DocumentationUrl::OnWikiConfiguration->value, true );
+		// As Edit source does: a copy from the browser's cache, shown on going back, would save stale settings.
+		$out->disableClientCache();
 
-		$depth = 0;
-		$offset = $start;
-
-		while ( preg_match( '/<table\b|<\/table>/', $html, $match, PREG_OFFSET_CAPTURE, $offset ) === 1 ) {
-			[ $tag, $position ] = $match[0];
-			$depth += $tag === '</table>' ? -1 : 1;
-			$offset = $position + strlen( $tag );
-
-			if ( $depth === 0 ) {
-				return substr( $html, $start, $offset - $start );
-			}
-		}
-
-		return substr( $html, $start );
+		$out->clearHTML();
+		$out->addHTML( Html::element( 'div', [ 'id' => 'ext-neowiki-config-editor' ] ) );
 	}
 
 }

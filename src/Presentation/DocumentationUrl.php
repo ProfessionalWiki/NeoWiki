@@ -19,5 +19,6 @@ enum DocumentationUrl: string {
 	case SubjectFormat = 'https://neowiki.ai/docs/api/subject-format';
 	case SchemaFormat = 'https://neowiki.ai/docs/api/schema-format';
 	case Installation = 'https://neowiki.ai/docs/operations/installation';
+	case OnWikiConfiguration = 'https://neowiki.ai/docs/operations/installation#on-wiki-configuration';
 	case GraphStoreRebuilds = 'https://neowiki.ai/docs/operations/maintenance#background-rebuilds';
 }

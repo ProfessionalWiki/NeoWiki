@@ -29,7 +29,7 @@ class ConfigDocumentationBuilder {
 
 	/**
 	 * A one-line pointer to the on-page reference and the external documentation. Rendered to HTML so it
-	 * can be placed directly into the edit form and the view output, neither of which parses wikitext.
+	 * can be placed directly into the edit form, which does not parse wikitext.
 	 */
 	public function buildPointer(): string {
 		return Html::rawElement(

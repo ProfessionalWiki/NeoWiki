@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
-import { PageSaverStatus } from '@/persistence/PageSaver.ts';
+import { PageSaverStatus, RevisionSaveStatus } from '@/persistence/PageSaver.ts';
 
 /**
  * mw.Rest hands its callbacks back a jQuery promise, not a native one, so the double stands in
@@ -29,7 +29,20 @@ function restFailure( responseJSON: unknown, exception = 'Bad Request' ): unknow
 	return { xhr: { responseJSON }, textStatus: 'error', exception };
 }
 
-function newSaver( putOutcome: 'done' | 'fail', putPayload: unknown, editToken: Promise<string> = Promise.resolve( 'token' ) ): MediaWikiPageSaver {
+// What a save made: the page as MediaWiki's REST API hands it back.
+const SAVED_PAGE = { latest: { id: 8 }, source: '{\n\t"subjectFirst": true\n}' };
+
+interface SaverDouble {
+	editToken?: Promise<string>;
+	pageExists?: boolean;
+	putBodies?: Record<string, unknown>[];
+}
+
+function newSaver(
+	putOutcome: 'done' | 'fail',
+	putPayload: unknown,
+	{ editToken = Promise.resolve( 'token' ), pageExists = true, putBodies = [] }: SaverDouble = {},
+): MediaWikiPageSaver {
 	const mediaWiki = {
 		Api: class {
 			public getEditToken(): Promise<string> {
@@ -37,11 +50,13 @@ function newSaver( putOutcome: 'done' | 'fail', putPayload: unknown, editToken: 
 			}
 		},
 		Rest: class {
+			// mw.Rest rejects the request for a page that does not exist yet, which answers 404.
 			public get(): Promise<unknown> {
-				return Promise.resolve( { latest: { id: 7 } } );
+				return pageExists ? Promise.resolve( { latest: { id: 7 } } ) : Promise.reject( 'http' );
 			}
 
-			public put(): unknown {
+			public put( _path: string, body: Record<string, unknown> ): unknown {
+				putBodies.push( body );
 				return restCall( putOutcome, putPayload );
 			}
 		},
@@ -52,6 +67,22 @@ function newSaver( putOutcome: 'done' | 'fail', putPayload: unknown, editToken: 
 
 function save( saver: MediaWikiPageSaver ): Promise<PageSaverStatus> {
 	return saver.savePage( 'Schema:Product', '{}', 'Comment', 'NeoWikiSchema' );
+}
+
+function saveOver( saver: MediaWikiPageSaver, baseRevisionId: number | null ): Promise<RevisionSaveStatus> {
+	return saver.saveRevision( 'MediaWiki:NeoWiki', '{}', 'Comment', 'json', baseRevisionId );
+}
+
+// The body of the one REST request a successful save sends.
+async function putBodyOf(
+	save: ( saver: MediaWikiPageSaver ) => Promise<unknown>,
+	{ pageExists = true }: { pageExists?: boolean } = {},
+): Promise<Record<string, unknown>> {
+	const putBodies: Record<string, unknown>[] = [];
+
+	await save( newSaver( 'done', SAVED_PAGE, { pageExists, putBodies } ) );
+
+	return putBodies[ 0 ];
 }
 
 function failureOf( status: PageSaverStatus ): string {
@@ -65,7 +96,7 @@ function failureOf( status: PageSaverStatus ): string {
 describe( 'MediaWikiPageSaver', () => {
 
 	it( 'reports success when the page is saved', async () => {
-		const status = await save( newSaver( 'done', {} ) );
+		const status = await save( newSaver( 'done', SAVED_PAGE ) );
 
 		expect( status.success ).toBe( true );
 	} );
@@ -110,9 +141,31 @@ describe( 'MediaWikiPageSaver', () => {
 	// The token is fetched over the network too. Its rejection used to escape as a rejected
 	// promise, which is the very thing callers of this cannot see.
 	it( 'reports a failure to fetch the edit token as a status too', async () => {
-		const status = await save( newSaver( 'done', {}, Promise.reject( new Error( 'Could not get token' ) ) ) );
+		const status = await save( newSaver( 'done', SAVED_PAGE, { editToken: Promise.reject( new Error( 'Could not get token' ) ) } ) );
 
 		expect( failureOf( status ) ).toBe( 'Could not get token' );
+	} );
+
+	it( 'saves a page over its current revision', async () => {
+		expect( ( await putBodyOf( save ) ).latest ).toEqual( { id: 7 } );
+	} );
+
+	it( 'creates a page that does not exist yet', async () => {
+		expect( ( await putBodyOf( save, { pageExists: false } ) ).latest ).toBeUndefined();
+	} );
+
+	it( 'saves over the revision it is given', async () => {
+		expect( ( await putBodyOf( ( saver ) => saveOver( saver, 5 ) ) ).latest ).toEqual( { id: 5 } );
+	} );
+
+	it( 'creates the page when it is given no revision to save over', async () => {
+		expect( ( await putBodyOf( ( saver ) => saveOver( saver, null ) ) ).latest ).toBeUndefined();
+	} );
+
+	it( 'reports the revision the save made and the page as it saved it', async () => {
+		const status = await saveOver( newSaver( 'done', SAVED_PAGE ), 5 );
+
+		expect( status ).toEqual( { success: true, revisionId: 8, source: '{\n\t"subjectFirst": true\n}' } );
 	} );
 
 } );

@@ -3,6 +3,23 @@
  * its own — only where a rule calls it.
  */
 
+@import ( reference ) '@wikimedia/codex/mixins/link.less';
+
+/**
+ * A `<button>` that reads as a link: Codex's link styles, without the browser's button box and font.
+ */
+.ext-neowiki-link-button() {
+	.cdx-mixin-link-base();
+	margin: 0;
+	border: 0;
+	padding: 0;
+	background-color: transparent;
+	font-family: inherit;
+	font-size: inherit;
+	line-height: inherit;
+	cursor: pointer;
+}
+
 /**
  * Removes an element from the visual layout while leaving it in the accessibility tree.
  * `clip-path` rather than `display: none` or `visibility: hidden`, which would take it out of

@@ -76,11 +76,20 @@ const FOCUS_ATTEMPTS = 10;
 const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not( [tabindex="-1"] )';
 
 interface LanguagePickerProps {
-	/** The committed language, as a BCP 47 tag. */
-	modelValue: string;
+	/** The committed language, as a BCP 47 tag, or null for none. */
+	modelValue: string | null;
+	/**
+	 * The edge of the trigger the panel opens from, so that it reads as belonging to it: the end of a
+	 * trigger at the end of a field, the start of one that starts a row.
+	 */
+	placement: 'bottom-start' | 'bottom-end';
+	/** Languages listed but not to be picked, as BCP 47 tags, such as the ones a list already holds. */
+	disabledLanguages?: readonly string[];
 }
 
-const props = defineProps<LanguagePickerProps>();
+const props = withDefaults( defineProps<LanguagePickerProps>(), {
+	disabledLanguages: () => []
+} );
 
 const emit = defineEmits<{
 	'update:modelValue': [ tag: string ];
@@ -131,7 +140,8 @@ const menuItems = computed<MenuItemData[]>( () => {
 		.map( ( option ) => ( {
 			value: option.tag,
 			label: option.name,
-			supportingText: shownLanguageTag( option.tag )
+			supportingText: shownLanguageTag( option.tag ),
+			disabled: props.disabledLanguages.includes( option.tag )
 		} ) );
 
 	const typedTag = typedLanguageTag( options, typed );
@@ -140,7 +150,8 @@ const menuItems = computed<MenuItemData[]>( () => {
 		items.push( {
 			value: typedTag,
 			label: typed,
-			description: mw.message( 'neowiki-language-picker-tag' ).text()
+			description: mw.message( 'neowiki-language-picker-tag' ).text(),
+			disabled: props.disabledLanguages.includes( typedTag )
 		} );
 	}
 
@@ -183,15 +194,14 @@ const floatingPanel = computed( () => panelRef.value === null ?
 );
 
 /**
- * Opening from the trigger's end, so the panel reads as belonging to the language it changes, and
- * set off by enough of a gap that the panel's edge is never mistaken for the field's. Flipping
+ * Set off by enough of a gap that the panel's edge is never mistaken for the field's. Flipping
  * above when there is no room below, clamping to the space left, and hiding when the field scrolls
  * out of the dialog all come with it. The casts are DataExportButtons.vue's, which explains them.
  */
 useFloatingMenu(
 	anchor as unknown as Parameters<typeof useFloatingMenu>[0],
 	floatingPanel as unknown as Parameters<typeof useFloatingMenu>[1],
-	{ placement: 'bottom-end', offset: 4 }
+	{ placement: props.placement, offset: 4 }
 );
 
 async function toggle(): Promise<void> {

@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use LogicException;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
+use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
@@ -102,6 +103,7 @@ use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\FailureIsolatingRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicyRegistry;
+use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\SubjectIdMinter;
 use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
@@ -236,6 +238,7 @@ use ProfessionalWiki\NeoWiki\Persistence\SchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\LayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLayoutNameLookup;
 use ProfessionalWiki\NeoWiki\Presentation\ConfigDocumentationBuilder;
+use ProfessionalWiki\NeoWiki\Presentation\ConfigEditorJsConfigBuilder;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\FrontendModuleLoader;
 use ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder;
@@ -1247,10 +1250,10 @@ class NeoWikiExtension {
 	 * @return string[]
 	 */
 	public function getDataLanguages(): array {
-		/** @var string[]|null $languages */
+		/** @var string[] $languages */
 		$languages = $this->getWikiConfigLookup()->getEffectiveValue( 'dataLanguages' );
 
-		return $languages ?? [];
+		return $languages;
 	}
 
 	public function getSubjectPageNamespace(): int {
@@ -1273,9 +1276,13 @@ class NeoWikiExtension {
 	 * the page read is memoized on the shared source, keeping it to at most one read per request.
 	 */
 	public function getWikiConfigLookup(): WikiConfigLookup {
+		return $this->newWikiConfigLookup( $this->getWikiConfigSource() );
+	}
+
+	private function newWikiConfigLookup( WikiConfigSource $source ): WikiConfigLookup {
 		return new WikiConfigLookup(
 			$this->getConfigSchema(),
-			$this->getWikiConfigSource(),
+			$source,
 			MediaWikiServices::getInstance()->getMainConfig(),
 			$this->isInWikiConfigEnabled(),
 			LoggerFactory::getInstance( 'NeoWiki' ),
@@ -1285,14 +1292,18 @@ class NeoWikiExtension {
 	private function getWikiConfigSource(): WikiConfigSource {
 		// Cached so MediaWiki:NeoWiki is read at most once per request. Never read during extension setup:
 		// this is only reached when a request resolves an exposed setting.
-		$this->wikiConfigSource ??= new MediaWikiWikiConfigSource(
-			$this->getPageContentFetcher(),
-			$this->getRequestAuthority(),
+		$this->wikiConfigSource ??= $this->newWikiConfigSource( $this->getRevisionPolicy(), $this->getRequestAuthority() );
+
+		return $this->wikiConfigSource;
+	}
+
+	private function newWikiConfigSource( RevisionPolicy $revisionPolicy, Authority $authority ): WikiConfigSource {
+		return new MediaWikiWikiConfigSource(
+			$this->newPageContentFetcher( $revisionPolicy ),
+			$authority,
 			self::CONFIG_PAGE_TITLE,
 			LoggerFactory::getInstance( 'NeoWiki' ),
 		);
-
-		return $this->wikiConfigSource;
 	}
 
 	public function getConfigSchema(): ConfigSchema {
@@ -1305,6 +1316,16 @@ class NeoWikiExtension {
 
 	public function newConfigDocumentationBuilder( MessageLocalizer $messageLocalizer ): ConfigDocumentationBuilder {
 		return new ConfigDocumentationBuilder( $this->getConfigSchema(), $messageLocalizer );
+	}
+
+	public function newConfigEditorJsConfigBuilder( IContextSource $context ): ConfigEditorJsConfigBuilder {
+		return new ConfigEditorJsConfigBuilder(
+			$this->getConfigSchema(),
+			// The latest revision, which Edit source edits too, rather than the one a revision policy
+			// publishes: the form saves over it.
+			$this->newWikiConfigLookup( $this->newWikiConfigSource( new NullRevisionPolicy(), $context->getAuthority() ) ),
+			$context,
+		);
 	}
 
 	/**
@@ -1329,10 +1350,14 @@ class NeoWikiExtension {
 	}
 
 	public function getPageContentFetcher(): PageContentFetcher {
+		return $this->newPageContentFetcher( $this->getRevisionPolicy() );
+	}
+
+	private function newPageContentFetcher( RevisionPolicy $revisionPolicy ): PageContentFetcher {
 		return new PageContentFetcher(
 			MediaWikiServices::getInstance()->getTitleParser(),
 			MediaWikiServices::getInstance()->getRevisionLookup(),
-			$this->getRevisionPolicy()
+			$revisionPolicy
 		);
 	}
 

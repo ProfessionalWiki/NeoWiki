@@ -347,7 +347,7 @@ function ignoreAutorepeat( event: KeyboardEvent ): void {
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
-@import ( reference ) '@wikimedia/codex/mixins/link.less';
+@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-editable-text {
 	display: inline-flex;
@@ -432,15 +432,7 @@ function ignoreAutorepeat( event: KeyboardEvent ): void {
 	/* A link rather than a control with a box of its own, so it sits on the
 		line it replaces instead of stretching it to a button's height. */
 	&__add-button {
-		.cdx-mixin-link-base();
-		margin: 0;
-		border: 0;
-		padding: 0;
-		background-color: transparent;
-		font-family: inherit;
-		font-size: inherit;
-		line-height: inherit;
-		cursor: pointer;
+		.ext-neowiki-link-button();
 	}
 
 	&__icon-button {

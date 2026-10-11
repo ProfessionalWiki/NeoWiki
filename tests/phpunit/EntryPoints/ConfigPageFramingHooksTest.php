@@ -7,32 +7,15 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 use Article;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\EditPage\EditPage;
-use MediaWiki\Request\FauxRequest;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onAlternateEdit
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onConfigPageBeforePageDisplay
  * @group Database
  */
 class ConfigPageFramingHooksTest extends MediaWikiIntegrationTestCase {
-
-	private const string SEED_HTML =
-		'<div id="intro">Default intro</div>'
-		. '<div class="noresize"><table class="mw-json"><tbody><tr><td>data</td></tr></tbody></table></div>';
-
-	private const string LIST_VALUE_HTML =
-		'<div class="noresize"><table class="mw-json"><tbody>'
-		. '<tr><th><span>dataLanguages</span></th><td><table class="mw-json"><tbody>'
-		. '<tr><td class="mw-json-value">"de"</td></tr></tbody></table></td></tr>'
-		. '<tr><th><span>subjectFirst</span></th><td class="mw-json-value">true</td></tr>'
-		. '</tbody></table></div>';
-
-	private const string DIFF_HTML =
-		'<table class="diff"><tr><td class="diff-marker">+</td></tr></table>'
-		. '<div class="noresize"><table class="mw-json"><tbody><tr><td>data</td></tr></tbody></table></div>';
 
 	private function configTitle(): Title {
 		return Title::makeTitle( NS_MEDIAWIKI, 'NeoWiki' );
@@ -75,87 +58,6 @@ class ConfigPageFramingHooksTest extends MediaWikiIntegrationTestCase {
 
 		$this->assertFalse( $editPage->suppressIntro );
 		$this->assertSame( '', $editPage->editFormTextBottom );
-	}
-
-	private function renderView( Title $title, string $action ): string {
-		return $this->renderViewWithRequest( $title, [ 'action' => $action ], self::SEED_HTML );
-	}
-
-	private function renderViewWithRequest( Title $title, array $requestParams, string $seedHtml ): string {
-		$context = $this->englishContext( $title );
-		$context->setRequest( new FauxRequest( $requestParams ) );
-
-		$out = $context->getOutput();
-		$out->addHTML( $seedHtml );
-
-		NeoWikiHooks::onConfigPageBeforePageDisplay( $out, $context->getSkin() );
-
-		return $out->getHTML();
-	}
-
-	public function testConfigPageViewIsTrimmedToTheJsonTableAndFramed(): void {
-		$html = $this->renderView( $this->configTitle(), 'view' );
-
-		$this->assertStringNotContainsString( 'Default intro', $html );
-		$this->assertStringContainsString( '<table class="mw-json"', $html );
-		$this->assertStringContainsString( 'neowiki.ai', $html );
-		$this->assertStringContainsString( '$wgNeoWikiSubjectFirst', $html );
-	}
-
-	public function testFramedConfigViewEmitsBalancedDivs(): void {
-		$html = $this->renderView( $this->configTitle(), 'view' );
-
-		$this->assertSame(
-			substr_count( $html, '<div' ),
-			substr_count( $html, '</div>' ),
-			'The framed config view must not leak the closing tag of the core JSON table wrapper.'
-		);
-	}
-
-	public function testFramedConfigViewKeepsTheRowsAfterAListValue(): void {
-		$html = $this->renderViewWithRequest( $this->configTitle(), [ 'action' => 'view' ], self::LIST_VALUE_HTML );
-
-		$this->assertStringContainsString( '<span>subjectFirst</span>', $html );
-	}
-
-	public function testFramedConfigViewClosesEveryTableItOpens(): void {
-		$html = $this->renderViewWithRequest( $this->configTitle(), [ 'action' => 'view' ], self::LIST_VALUE_HTML );
-
-		$this->assertSame( substr_count( $html, '<table' ), substr_count( $html, '</table>' ) );
-	}
-
-	public function testConfigPageDiffIsNotFramed(): void {
-		$html = $this->renderViewWithRequest(
-			$this->configTitle(),
-			[ 'action' => 'view', 'diff' => '2' ],
-			self::DIFF_HTML
-		);
-
-		$this->assertStringContainsString( 'diff-marker', $html );
-		$this->assertStringNotContainsString( '$wgNeoWikiSubjectFirst', $html );
-	}
-
-	public function testConfigPageIsUntouchedForNonViewActions(): void {
-		$html = $this->renderView( $this->configTitle(), 'history' );
-
-		$this->assertStringContainsString( 'Default intro', $html );
-		$this->assertStringNotContainsString( '$wgNeoWikiSubjectFirst', $html );
-	}
-
-	public function testOtherMediaWikiPageViewIsUntouched(): void {
-		$html = $this->renderView( Title::makeTitle( NS_MEDIAWIKI, 'NotNeoWiki' ), 'view' );
-
-		$this->assertStringContainsString( 'Default intro', $html );
-		$this->assertStringNotContainsString( '$wgNeoWikiSubjectFirst', $html );
-	}
-
-	public function testConfigPageViewIsUntouchedWhenInWikiConfigDisabled(): void {
-		$this->overrideConfigValue( 'NeoWikiEnableInWikiConfig', false );
-
-		$html = $this->renderView( $this->configTitle(), 'view' );
-
-		$this->assertStringContainsString( 'Default intro', $html );
-		$this->assertStringNotContainsString( '$wgNeoWikiSubjectFirst', $html );
 	}
 
 }

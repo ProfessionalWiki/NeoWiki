@@ -6,6 +6,7 @@
 	>
 		<LanguagePicker
 			:model-value="props.modelValue"
+			placement="bottom-end"
 			@update:model-value="commit"
 		>
 			<template #default="{ toggle, close }">
@@ -30,7 +31,7 @@
 								class="ext-neowiki-language-input__width"
 								aria-hidden="true"
 							>{{ item.label }}</span>
-							<span>{{ labelOf( props.modelValue ) }}</span>
+							<span>{{ languageNameOrTag( props.modelValue ) }}</span>
 						</span>
 					</template>
 				</CdxSelect>
@@ -44,7 +45,7 @@ import { computed } from 'vue';
 import { CdxSelect } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
 import LanguagePicker from '@/components/common/LanguagePicker.vue';
-import { dataLanguageTags, languageName } from '@/presentation/languages.ts';
+import { dataLanguageTags, languageNameOrTag } from '@/presentation/languages.ts';
 
 // Never a language tag, which has no spaces.
 const OTHER_LANGUAGE = 'other language';
@@ -70,14 +71,10 @@ const menuItems = computed( (): MenuItemData[] => {
 	const tags = dataLanguages.includes( props.modelValue ) ? dataLanguages : [ ...dataLanguages, props.modelValue ];
 
 	return [
-		...tags.map( ( tag ) => ( { value: tag, label: labelOf( tag ) } ) ),
+		...tags.map( ( tag ) => ( { value: tag, label: languageNameOrTag( tag ) } ) ),
 		{ value: OTHER_LANGUAGE, label: otherLanguageText }
 	];
 } );
-
-function labelOf( tag: string ): string {
-	return languageName( tag ) ?? tag;
-}
 
 function onSelect( value: string | number | null, openSearch: () => void ): void {
 	if ( value === OTHER_LANGUAGE ) {

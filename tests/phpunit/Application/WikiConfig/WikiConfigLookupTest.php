@@ -65,19 +65,28 @@ class WikiConfigLookupTest extends TestCase {
 		$this->assertFalse( $lookup->getEffectiveValue( 'subjectFirst' ) );
 	}
 
-	public function testAPhpValueOfTheWrongShapeResolvesToNull(): void {
+	public function testAPhpValueOfTheWrongShapeComesDownToWhatItsTypeFallsBackTo(): void {
 		$lookup = $this->newLookup( null, phpConfig: [ 'NeoWikiDataLanguages' => 'de' ] + self::PHP_CONFIG );
 
-		$this->assertNull( $lookup->getEffectiveValue( 'dataLanguages' ) );
+		$this->assertSame( [], $lookup->getEffectiveValue( 'dataLanguages' ) );
 	}
 
-	public function testAnInvalidPageValueOverAPhpValueOfTheWrongShapeResolvesToNull(): void {
+	public function testAnInvalidPageValueOverAPhpValueOfTheWrongShapeComesDownToWhatItsTypeFallsBackTo(): void {
 		$lookup = $this->newLookup(
-			[ 'dataLanguages' => 'de' ],
-			phpConfig: [ 'NeoWikiDataLanguages' => 'de' ] + self::PHP_CONFIG
+			[ 'subjectFirst' => 'yes' ],
+			phpConfig: [ 'NeoWikiSubjectFirst' => 'yes' ] + self::PHP_CONFIG
 		);
 
-		$this->assertNull( $lookup->getEffectiveValue( 'dataLanguages' ) );
+		$this->assertFalse( $lookup->getEffectiveValue( 'subjectFirst' ) );
+	}
+
+	public function testThePhpValueIsTheLocalSettingsValueWhateverThePageSets(): void {
+		$lookup = $this->newLookup(
+			[ 'dataLanguages' => [ 'fr' ] ],
+			phpConfig: [ 'NeoWikiDataLanguages' => [ 'de', 'it' ] ] + self::PHP_CONFIG
+		);
+
+		$this->assertSame( [ 'de', 'it' ], $lookup->getPhpValue( 'dataLanguages' ) );
 	}
 
 	public function testAnInvalidPageValueLogsAWarning(): void {

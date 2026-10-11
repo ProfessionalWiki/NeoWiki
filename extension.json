@@ -556,7 +556,9 @@
 						"cdxIconEllipsis",
 						"cdxIconLanguage",
 						"cdxIconViewCompact",
-						"cdxIconTag"
+						"cdxIconTag",
+						"cdxIconUpTriangle",
+						"cdxIconDownTriangle"
 					]
 				}
 			],
@@ -580,6 +582,21 @@
 				"neowiki-language-picker-placeholder",
 				"neowiki-language-picker-no-results",
 				"neowiki-language-picker-tag",
+				"neowiki-config-editor-intro",
+				"neowiki-config-editor-read-only",
+				"neowiki-config-editor-reset",
+				"neowiki-config-editor-reset-label",
+				"neowiki-config-editor-save",
+				"neowiki-config-editor-saved",
+				"neowiki-config-editor-save-failed",
+				"neowiki-config-editor-changed-meanwhile",
+				"neowiki-config-editor-add-language",
+				"neowiki-config-editor-move-language-up",
+				"neowiki-config-editor-move-language-down",
+				"neowiki-config-editor-remove-language",
+				"neowiki-config-editor-language-added",
+				"neowiki-config-editor-language-moved",
+				"neowiki-config-editor-language-removed",
 				"neowiki-property-type-unregistered",
 				"neowiki-property-type-unregistered-note",
 				"neowiki-property-type-unregistered-input-note",

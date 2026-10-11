@@ -16,6 +16,9 @@ import SubjectsManagerPage from '@/components/SubjectsManager/SubjectsManagerPag
 import CreateSubjectPage from '@/components/CreateSubjectPage/CreateSubjectPage.vue';
 import SubjectPage from '@/components/SubjectPage/SubjectPage.vue';
 import OverviewPage from '@/components/OverviewPage/OverviewPage.vue';
+import ConfigEditor from '@/components/ConfigEditor/ConfigEditor.vue';
+import type { ConfigEditorJsConfig } from '@/components/ConfigEditor/configEditing.ts';
+import { MediaWikiPageSaver } from '@/persistence/MediaWikiPageSaver.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { SchemaName } from '@/domain/Schema.ts';
 import type { LayoutName } from '@/domain/Layout.ts';
@@ -309,6 +312,25 @@ function initializeOverviewPage(): void {
 	} );
 }
 
+function initializeConfigEditor(): void {
+	queueMicrotask( () => {
+		const configEditor = document.getElementById( 'ext-neowiki-config-editor' );
+
+		if ( configEditor === null ) {
+			return;
+		}
+
+		const config = mw.config.get( 'wgNeoWikiConfigEditor' ) as ConfigEditorJsConfig;
+		const app = createMwApp( ConfigEditor, {
+			...config,
+			canEdit: mw.config.get( 'wgIsProbablyEditable' ) === true,
+			pageName: mw.config.get( 'wgPageName' ),
+			pageSaver: new MediaWikiPageSaver( NeoWikiExtension.getInstance().getMediaWiki() ),
+		} );
+		mountNeoWikiApp( app, configEditor );
+	} );
+}
+
 const isTestEnvironment = typeof window !== 'undefined' &&
 	( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode === true;
 
@@ -326,4 +348,5 @@ if ( !isTestEnvironment ) {
 	initializeSubjectPage();
 	initializeSubjectCreatorButtons();
 	initializeOverviewPage();
+	initializeConfigEditor();
 }

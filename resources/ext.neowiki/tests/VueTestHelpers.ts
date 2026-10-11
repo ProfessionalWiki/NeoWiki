@@ -65,6 +65,11 @@ export function emittedTags( languageControl: VueWrapper ): string[] {
 	return ( languageControl.emitted( 'update:modelValue' ) ?? [] ).map( ( event ) => event[ 0 ] as string );
 }
 
+// The languages a LanguageListInput lists, by the names it shows them under.
+export function listedLanguages( languageList: VueWrapper ): string[] {
+	return languageList.findAll( '.ext-neowiki-language-list-input__name' ).map( ( name ) => name.text() );
+}
+
 // Dispatched rather than trigger()'d, because what the test asserts on is the event itself.
 export function press( element: Element ): MouseEvent {
 	const event = new MouseEvent( 'mousedown', { bubbles: true, cancelable: true } );

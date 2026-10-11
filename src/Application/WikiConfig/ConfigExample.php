@@ -15,8 +15,8 @@ class ConfigExample {
 	public const string JSON = <<<'JSON'
 		{
 			"subjectFirst": false,
-			"autoRenderMainSubject": true,
-			"dataLanguages": []
+			"dataLanguages": [],
+			"autoRenderMainSubject": true
 		}
 		JSON;
 

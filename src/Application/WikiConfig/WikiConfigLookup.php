@@ -14,8 +14,9 @@ use Psr\Log\LoggerInterface;
  *
  * A missing page, an absent key, or a value of the wrong shape falls back to the PHP configuration rather
  * than throwing: a config typo on the page must not take down the wiki (the NeoWikiConfigFactory stance).
- * An invalid page value is logged once so the fallback is not silent; unknown page keys are tolerated for
- * forward compatibility. The page is read at most once (memoized), and only when in-wiki config is enabled.
+ * A PHP value of the wrong shape falls back to what its value type comes down to. An invalid page value
+ * is logged once so the fallback is not silent; unknown page keys are tolerated for forward
+ * compatibility. The page is read at most once (memoized), and only when in-wiki config is enabled.
  */
 class WikiConfigLookup {
 
@@ -36,19 +37,22 @@ class WikiConfigLookup {
 	}
 
 	/**
-	 * A value the setting accepts, or null when neither the page nor the PHP configuration holds one.
+	 * A value the setting accepts: the one the page sets, or else the PHP configuration's.
 	 */
 	public function getEffectiveValue( string $pageKey ): mixed {
-		$setting = $this->schema->getSetting( $pageKey );
+		return $this->getPageValue( $pageKey ) ?? $this->getPhpValue( $pageKey );
+	}
 
-		if ( $setting === null ) {
-			throw new InvalidArgumentException( "Not an on-wiki-configurable setting: $pageKey" );
-		}
+	/**
+	 * The value the page sets, or null when it sets none the setting accepts.
+	 */
+	public function getPageValue( string $pageKey ): mixed {
+		$setting = $this->settingFor( $pageKey );
 
 		$pageData = $this->pageData();
 
 		if ( $pageData === null || !array_key_exists( $pageKey, $pageData ) ) {
-			return $this->phpValue( $setting );
+			return null;
 		}
 
 		$pageValue = $pageData[$pageKey];
@@ -62,13 +66,28 @@ class WikiConfigLookup {
 			[ 'key' => $pageKey ]
 		);
 
-		return $this->phpValue( $setting );
+		return null;
 	}
 
-	private function phpValue( ConfigSetting $setting ): mixed {
+	/**
+	 * The PHP configuration's value whatever the page sets: a value the setting accepts.
+	 */
+	public function getPhpValue( string $pageKey ): mixed {
+		$setting = $this->settingFor( $pageKey );
+
 		$value = $this->phpConfig->get( $setting->settingName );
 
-		return $setting->isValidValue( $value ) ? $value : null;
+		return $setting->isValidValue( $value ) ? $value : $setting->valueType->fallbackValue();
+	}
+
+	private function settingFor( string $pageKey ): ConfigSetting {
+		$setting = $this->schema->getSetting( $pageKey );
+
+		if ( $setting === null ) {
+			throw new InvalidArgumentException( "Not an on-wiki-configurable setting: $pageKey" );
+		}
+
+		return $setting;
 	}
 
 	/**

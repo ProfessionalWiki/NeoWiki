@@ -8,17 +8,29 @@ use ProfessionalWiki\NeoWiki\Domain\LanguageTag;
 
 /**
  * The shape of value an exposed setting takes: which values are valid, and how the on-page
- * reference and the save-time error describe it.
+ * reference and the save-time error describe it. The backing value names the type to the
+ * configuration form, which picks the control for it.
  */
-enum ConfigValueType {
+enum ConfigValueType: string {
 
-	case Boolean;
-	case LanguageList;
+	case Boolean = 'boolean';
+	case LanguageList = 'languageList';
 
 	public function isValidValue( mixed $value ): bool {
 		return match ( $this ) {
 			self::Boolean => is_bool( $value ),
 			self::LanguageList => self::isLanguageList( $value ),
+		};
+	}
+
+	/**
+	 * What a setting of this type comes down to when no value it accepts is configured: off, or no
+	 * languages, which stands for the content language.
+	 */
+	public function fallbackValue(): mixed {
+		return match ( $this ) {
+			self::Boolean => false,
+			self::LanguageList => [],
 		};
 	}
 

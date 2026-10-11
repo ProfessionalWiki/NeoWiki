@@ -48,9 +48,21 @@ function contentLanguageTag(): string {
 export function dataLanguageTags(): string[] {
 	const listed = mw.config.get( 'wgNeoWikiDataLanguages' );
 
-	return Array.isArray( listed ) && listed.length > 0 ?
-		[ ...new Set( listed.map( ( tag: string ) => toLanguageTag( tag ) ) ) ] :
-		[ contentLanguageTag() ];
+	return dataLanguageTagsOf( Array.isArray( listed ) ? listed : [] );
+}
+
+/**
+ * The data languages a list of them stands for, read as dataLanguageTags() reads the wiki's own.
+ */
+export function dataLanguageTagsOf( codes: readonly string[] ): string[] {
+	return codes.length > 0 ? uniqueLanguageTags( codes ) : [ contentLanguageTag() ];
+}
+
+/**
+ * Each language once, in its stored form, in the order of its first mention.
+ */
+function uniqueLanguageTags( codes: readonly string[] ): string[] {
+	return [ ...new Set( codes.map( ( code ) => toLanguageTag( code ) ) ) ];
 }
 
 /**
@@ -92,6 +104,10 @@ export function languageName( tag: string ): string | undefined {
 	} catch {
 		return undefined;
 	}
+}
+
+export function languageNameOrTag( tag: string ): string {
+	return languageName( tag ) ?? tag;
 }
 
 let listed: { userLanguage: string; options: readonly LanguageOption[] } | undefined;
@@ -196,7 +212,7 @@ export function readerLanguageTags(): string[] {
 		mw.config.get( 'wgContentLanguage' ),
 	];
 
-	return [ ...new Set( codes.map( ( code ) => toLanguageTag( code ) ) ) ];
+	return uniqueLanguageTags( codes );
 }
 
 /**

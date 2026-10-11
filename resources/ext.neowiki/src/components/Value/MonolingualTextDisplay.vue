@@ -114,7 +114,6 @@ const toggleLabel = computed<string>( () => showingOthers.value ?
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
-@import ( reference ) '@wikimedia/codex/mixins/link.less';
 @import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-monolingual-text-display {
@@ -133,18 +132,11 @@ const toggleLabel = computed<string>( () => showingOthers.value ?
 	/* A link rather than a control with a box of its own, so the value reads like any other
 		until the reader asks for more, and the aside is smaller than the value it follows. */
 	&__toggle {
-		.cdx-mixin-link-base();
+		.ext-neowiki-link-button();
 		display: inline-flex;
 		align-items: center;
 		gap: @spacing-25;
-		margin: 0;
-		border: 0;
-		padding: 0;
-		background-color: transparent;
-		font-family: inherit;
 		font-size: @font-size-x-small;
-		line-height: inherit;
-		cursor: pointer;
 
 		/* Codex's link mixin sizes a trailing icon for body text, where this one is the chevron of
 			a line of small text, set off by the gap above rather than by padding. Selector copied
