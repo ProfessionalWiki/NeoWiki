@@ -83,9 +83,7 @@ class ConfigEditorViewTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function pageValueIn( OutputPage $out, string $pageKey ): mixed {
-		$settings = array_column( $this->formConfig( $out )['settings'], null, 'key' );
-
-		return $settings[$pageKey]['pageValue'];
+		return $this->formConfig( $out )['pageValues'][$pageKey];
 	}
 
 	public function testTheCurrentPageShowsTheFormInPlaceOfItsJson(): void {

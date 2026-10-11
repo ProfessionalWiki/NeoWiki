@@ -9,7 +9,6 @@ use InvalidArgumentException;
 use LogicException;
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
-use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
@@ -1318,13 +1317,12 @@ class NeoWikiExtension {
 		return new ConfigDocumentationBuilder( $this->getConfigSchema(), $messageLocalizer );
 	}
 
-	public function newConfigEditorJsConfigBuilder( IContextSource $context ): ConfigEditorJsConfigBuilder {
+	public function newConfigEditorJsConfigBuilder( Authority $authority ): ConfigEditorJsConfigBuilder {
 		return new ConfigEditorJsConfigBuilder(
 			$this->getConfigSchema(),
 			// The latest revision, which Edit source edits too, rather than the one a revision policy
 			// publishes: the form saves over it.
-			$this->newWikiConfigLookup( $this->newWikiConfigSource( new NullRevisionPolicy(), $context->getAuthority() ) ),
-			$context,
+			$this->newWikiConfigLookup( $this->newWikiConfigSource( new NullRevisionPolicy(), $authority ) ),
 		);
 	}
 

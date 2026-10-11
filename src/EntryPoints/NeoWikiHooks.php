@@ -1260,7 +1260,7 @@ class NeoWikiHooks {
 		$extension->newFrontendModuleLoader()->load( $out, $skin );
 		$out->addJsConfigVars(
 			'wgNeoWikiConfigEditor',
-			$extension->newConfigEditorJsConfigBuilder( $out->getContext() )->build(
+			$extension->newConfigEditorJsConfigBuilder( $out->getAuthority() )->build(
 				revisionId: $title->exists() ? $title->getLatestRevID() : null
 			)
 		);

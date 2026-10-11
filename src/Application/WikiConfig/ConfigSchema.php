@@ -24,34 +24,16 @@ class ConfigSchema {
 				pageKey: 'subjectFirst',
 				settingName: 'NeoWikiSubjectFirst',
 				valueType: ConfigValueType::Boolean,
-				labelMessage: 'neowiki-config-setting-subject-first',
-				helpMessage: null,
-				choices: [
-					new ConfigChoice(
-						value: false,
-						labelMessage: 'neowiki-config-setting-subject-first-page-first',
-						helpMessage: 'neowiki-config-setting-subject-first-page-first-help',
-					),
-					new ConfigChoice(
-						value: true,
-						labelMessage: 'neowiki-config-setting-subject-first-subject-first',
-						helpMessage: 'neowiki-config-setting-subject-first-subject-first-help',
-					),
-				],
 			),
 			new ConfigSetting(
 				pageKey: 'dataLanguages',
 				settingName: 'NeoWikiDataLanguages',
 				valueType: ConfigValueType::LanguageList,
-				labelMessage: 'neowiki-config-setting-data-languages',
-				helpMessage: 'neowiki-config-setting-data-languages-help',
 			),
 			new ConfigSetting(
 				pageKey: 'autoRenderMainSubject',
 				settingName: 'NeoWikiAutoRenderMainSubject',
 				valueType: ConfigValueType::Boolean,
-				labelMessage: 'neowiki-config-setting-auto-render-main-subject',
-				helpMessage: null,
 			),
 		];
 	}

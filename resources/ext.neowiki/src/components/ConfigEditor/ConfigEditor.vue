@@ -7,36 +7,90 @@
 			{{ $i18n( 'neowiki-config-editor-read-only' ).text() }}
 		</p>
 
-		<div
-			v-for="setting in props.settings"
-			:key="setting.key"
-			class="ext-neowiki-config-editor__setting"
-		>
-			<component
-				:is="setting.choices.length > 0 ? ChoiceSettingInput : CONTROLS[ setting.type ]"
-				v-bind="setting.choices.length > 0 ? { choices: setting.choices } : {}"
-				:ref="( control: unknown ) => rememberControl( setting.key, control )"
-				:model-value="valueInEffect( setting )"
-				:label="setting.label"
+		<div class="ext-neowiki-config-editor__setting">
+			<CdxField
+				ref="wikiTypeField"
+				:is-fieldset="true"
 				:disabled="!props.canEdit"
-				@update:model-value="( value: unknown ) => change( setting, value )"
 			>
+				<template #label>
+					{{ wikiTypeLabel }}
+				</template>
 				<template #description>
-					<span
-						v-if="setting.help !== null"
-						class="ext-neowiki-config-editor__help"
-					>{{ setting.help }}</span>
 					<button
-						v-if="props.canEdit && isSet( setting )"
+						v-if="canReset( 'subjectFirst' )"
 						type="button"
 						class="ext-neowiki-config-editor__reset"
-						:aria-label="$i18n( 'neowiki-config-editor-reset-label', setting.label ).text()"
-						@click="reset( setting )"
+						:aria-label="$i18n( 'neowiki-config-editor-reset-label', wikiTypeLabel ).text()"
+						@click="reset( 'subjectFirst' )"
 					>
 						{{ $i18n( 'neowiki-config-editor-reset' ).text() }}
 					</button>
 				</template>
-			</component>
+				<CdxRadio
+					v-model="subjectFirst"
+					:input-value="false"
+					name="ext-neowiki-config-editor-wiki-type"
+				>
+					{{ $i18n( 'neowiki-config-setting-subject-first-page-first' ).text() }}
+					<template #description>
+						{{ $i18n( 'neowiki-config-setting-subject-first-page-first-help' ).text() }}
+					</template>
+				</CdxRadio>
+				<CdxRadio
+					v-model="subjectFirst"
+					:input-value="true"
+					name="ext-neowiki-config-editor-wiki-type"
+				>
+					{{ $i18n( 'neowiki-config-setting-subject-first-subject-first' ).text() }}
+					<template #description>
+						{{ $i18n( 'neowiki-config-setting-subject-first-subject-first-help' ).text() }}
+					</template>
+				</CdxRadio>
+			</CdxField>
+		</div>
+
+		<div class="ext-neowiki-config-editor__setting">
+			<LanguageListInput
+				ref="languageList"
+				v-model="dataLanguages"
+				:label="dataLanguagesLabel"
+				:disabled="!props.canEdit"
+			>
+				<template #description>
+					<span class="ext-neowiki-config-editor__help">{{ $i18n( 'neowiki-config-setting-data-languages-help' ).text() }}</span>
+					<button
+						v-if="canReset( 'dataLanguages' )"
+						type="button"
+						class="ext-neowiki-config-editor__reset"
+						:aria-label="$i18n( 'neowiki-config-editor-reset-label', dataLanguagesLabel ).text()"
+						@click="reset( 'dataLanguages' )"
+					>
+						{{ $i18n( 'neowiki-config-editor-reset' ).text() }}
+					</button>
+				</template>
+			</LanguageListInput>
+		</div>
+
+		<div class="ext-neowiki-config-editor__setting">
+			<CdxCheckbox
+				ref="infoboxCheckbox"
+				v-model="autoRenderMainSubject"
+				:disabled="!props.canEdit"
+			>
+				{{ infoboxLabel }}
+				<template #description>
+					<button
+						v-if="canReset( 'autoRenderMainSubject' )"
+						type="button"
+						class="ext-neowiki-config-editor__reset"
+						:aria-label="$i18n( 'neowiki-config-editor-reset-label', infoboxLabel ).text()"
+						@click="reset( 'autoRenderMainSubject' )"
+					>
+						{{ $i18n( 'neowiki-config-editor-reset' ).text() }}
+					</button>
+				</template>
+			</CdxCheckbox>
 		</div>
 
 		<div
@@ -78,29 +132,17 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
-import type { Component } from 'vue';
-import { CdxButton, CdxField, CdxMessage, CdxTextInput } from '@wikimedia/codex';
-import BooleanSettingInput from '@/components/ConfigEditor/BooleanSettingInput.vue';
-import ChoiceSettingInput from '@/components/ConfigEditor/ChoiceSettingInput.vue';
+import type { WritableComputedRef } from 'vue';
+import { CdxButton, CdxCheckbox, CdxField, CdxMessage, CdxRadio, CdxTextInput } from '@wikimedia/codex';
 import LanguageListInput from '@/components/ConfigEditor/LanguageListInput.vue';
 import {
 	type ConfigEditorJsConfig,
-	type ConfigSetting,
+	type ConfigValues,
+	type PageValues,
 	pageSource,
-	pageValuesOf,
 	sameJson
 } from '@/components/ConfigEditor/configEditing.ts';
 import type { PageRevisionSaver } from '@/persistence/PageSaver.ts';
-
-/**
- * The control for each type of value, unless the setting names its values, which ChoiceSettingInput
- * offers. Each takes the setting's label, a description slot and `disabled`, binds the value with
- * v-model, and exposes focus().
- */
-const CONTROLS: Record<string, Component> = {
-	boolean: BooleanSettingInput,
-	languageList: LanguageListInput
-};
 
 const props = defineProps<ConfigEditorJsConfig & {
 	canEdit: boolean;
@@ -108,8 +150,15 @@ const props = defineProps<ConfigEditorJsConfig & {
 	pageSaver: PageRevisionSaver;
 }>();
 
-const values = ref<Record<string, unknown>>( pageValuesOf( props.settings ) );
-const source = computed( (): string => pageSource( props.settings, values.value ) );
+const wikiTypeLabel = mw.message( 'neowiki-config-setting-subject-first' ).text();
+const dataLanguagesLabel = mw.message( 'neowiki-config-setting-data-languages' ).text();
+const infoboxLabel = mw.message( 'neowiki-config-setting-auto-render-main-subject' ).text();
+
+const values = ref<PageValues>( { ...props.pageValues } );
+const subjectFirst = valueInEffect( 'subjectFirst' );
+const dataLanguages = valueInEffect( 'dataLanguages' );
+const autoRenderMainSubject = valueInEffect( 'autoRenderMainSubject' );
+const source = computed( (): string => pageSource( values.value ) );
 const savedSource = ref( source.value );
 const savedRevisionId = ref( props.revisionId );
 const summary = ref( '' );
@@ -119,36 +168,46 @@ const saveFailure = ref<string | null>( null );
 // show that change, and a further save from it would undo it.
 const changedMeanwhile = ref( false );
 
-const controls = new Map<string, { focus(): void }>();
+const wikiTypeField = ref<InstanceType<typeof CdxField> | null>( null );
+const languageList = ref<InstanceType<typeof LanguageListInput> | null>( null );
+const infoboxCheckbox = ref<InstanceType<typeof CdxCheckbox> | null>( null );
 
 const changed = computed( (): boolean => source.value !== savedSource.value );
 
-function rememberControl( key: string, control: unknown ): void {
-	if ( control !== null ) {
-		controls.set( key, control as { focus(): void } );
-	}
+/**
+ * The value the page sets, or else the one LocalSettings.php gives. Changing it sets it on the page.
+ */
+function valueInEffect<Key extends keyof ConfigValues>( key: Key ): WritableComputedRef<ConfigValues[ Key ]> {
+	return computed( {
+		get: () => ( values.value[ key ] ?? props.localSettingsValues[ key ] ) as ConfigValues[ Key ],
+		set: ( value: ConfigValues[ Key ] ): void => {
+			values.value[ key ] = value;
+		}
+	} );
 }
 
-function isSet( setting: ConfigSetting ): boolean {
-	return values.value[ setting.key ] !== null;
+function canReset( key: keyof ConfigValues ): boolean {
+	return props.canEdit && values.value[ key ] !== null;
 }
 
-function valueInEffect( setting: ConfigSetting ): unknown {
-	return isSet( setting ) ? values.value[ setting.key ] : setting.localSettingsValue;
-}
-
-function change( setting: ConfigSetting, value: unknown ): void {
-	values.value[ setting.key ] = value;
-}
+const focusSetting: Record<keyof ConfigValues, () => void> = {
+	subjectFirst: () => inputOf( wikiTypeField.value, 'input:checked' )?.focus(),
+	dataLanguages: () => languageList.value?.focus(),
+	autoRenderMainSubject: () => inputOf( infoboxCheckbox.value, 'input' )?.focus()
+};
 
 /**
  * The link that did this goes away with it, so the focus moves to the setting.
  */
-async function reset( setting: ConfigSetting ): Promise<void> {
-	values.value[ setting.key ] = null;
+async function reset( key: keyof ConfigValues ): Promise<void> {
+	values.value[ key ] = null;
 
 	await nextTick();
-	controls.get( setting.key )?.focus();
+	focusSetting[ key ]();
+}
+
+function inputOf( control: { $el: unknown } | null, selector: string ): HTMLInputElement | null | undefined {
+	return ( control?.$el as HTMLElement | undefined )?.querySelector<HTMLInputElement>( selector );
 }
 
 async function save(): Promise<void> {

@@ -8,13 +8,12 @@ use ProfessionalWiki\NeoWiki\Domain\LanguageTag;
 
 /**
  * The shape of value an exposed setting takes: which values are valid, and how the on-page
- * reference and the save-time error describe it. The backing value names the type to the
- * configuration form, which picks the control for it.
+ * reference and the save-time error describe it.
  */
-enum ConfigValueType: string {
+enum ConfigValueType {
 
-	case Boolean = 'boolean';
-	case LanguageList = 'languageList';
+	case Boolean;
+	case LanguageList;
 
 	public function isValidValue( mixed $value ): bool {
 		return match ( $this ) {

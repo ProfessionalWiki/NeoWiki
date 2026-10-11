@@ -1,26 +1,17 @@
 /**
- * A setting of the on-wiki configuration, as the server describes it to the form.
+ * The settings on MediaWiki:NeoWiki, by their key on the page.
  */
-export interface ConfigSetting {
-	/** The key the setting has on the page. */
-	readonly key: string;
-	/** The type of its value, which picks the control. */
-	readonly type: string;
-	readonly label: string;
-	readonly help: string | null;
-	/** The values the form offers by name, in place of the control for the type. */
-	readonly choices: readonly ConfigChoice[];
-	/** The value LocalSettings.php gives it, as NeoWiki reads it. */
-	readonly localSettingsValue: unknown;
-	/** The value the page sets, or null when the page leaves it to LocalSettings.php. */
-	readonly pageValue: unknown;
+export interface ConfigValues {
+	subjectFirst: boolean;
+	/** BCP 47 tags, in order. */
+	dataLanguages: string[];
+	autoRenderMainSubject: boolean;
 }
 
-export interface ConfigChoice {
-	readonly value: string | number | boolean;
-	readonly label: string;
-	readonly help: string;
-}
+/**
+ * What the page sets: null for a setting it leaves to LocalSettings.php.
+ */
+export type PageValues = { [ Key in keyof ConfigValues ]: ConfigValues[ Key ] | null };
 
 /**
  * The form's configuration, handed over as the wgNeoWikiConfigEditor JS config var.
@@ -28,28 +19,17 @@ export interface ConfigChoice {
 export interface ConfigEditorJsConfig {
 	/** The revision the form saves over, or null when the page does not exist. */
 	readonly revisionId: number | null;
-	readonly settings: readonly ConfigSetting[];
+	readonly pageValues: PageValues;
+	/** The values LocalSettings.php gives the settings, as NeoWiki reads them. */
+	readonly localSettingsValues: ConfigValues;
 }
 
 /**
- * What the page sets, by setting key: null for a setting it leaves to LocalSettings.php.
+ * The page's JSON: the settings it sets, and no others.
  */
-export type PageValues = Readonly<Record<string, unknown>>;
-
-export function pageValuesOf( settings: readonly ConfigSetting[] ): PageValues {
-	return Object.fromEntries( settings.map( ( setting ) => [ setting.key, setting.pageValue ] ) );
-}
-
-/**
- * The page's JSON: the settings it sets, in the order of the form, and no others.
- */
-export function pageSource( settings: readonly ConfigSetting[], values: PageValues ): string {
+export function pageSource( values: PageValues ): string {
 	return JSON.stringify(
-		Object.fromEntries(
-			settings
-				.filter( ( setting ) => values[ setting.key ] !== null )
-				.map( ( setting ) => [ setting.key, values[ setting.key ] ] ),
-		),
+		Object.fromEntries( Object.entries( values ).filter( ( [ , value ] ) => value !== null ) ),
 		null,
 		'\t',
 	);
