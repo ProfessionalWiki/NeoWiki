@@ -337,23 +337,15 @@ describe( 'SubjectsManagerPage rows and the Subject pages behind them', () => {
 		vi.restoreAllMocks();
 	} );
 
-	// On a subject-first wiki the Data tab is a way into the Subjects it lists.
-	it( 'links every row to that Subject itself on a subject-first wiki', async () => {
-		const wrapper = await mountPage( true );
+	it.each( [
+		[ 'page-first', false ],
+		[ 'subject-first', true ],
+	] )( 'links every row to that Subject itself on a %s wiki', async ( _mode, subjectFirst ) => {
+		const wrapper = await mountPage( subjectFirst );
 
 		expect( wrapper.findAll( 'a.ext-neowiki-subject-row__name' )
 			.map( ( link ) => link.attributes( 'href' ) ) )
 			.toEqual( [ '/wiki/Special:Subject/' + ID_A, '/wiki/Special:Subject/' + ID_B ] );
-	} );
-
-	// A page-first wiki's Data tab is about the page the reader has open, so the names lead nowhere;
-	// the one Subject stays reachable through each row's overflow menu.
-	it( 'leaves every row\'s name plain text on a page-first wiki, still offering the Subject', async () => {
-		const wrapper = await mountPage();
-
-		expect( wrapper.findAll( 'a.ext-neowiki-subject-row__name' ) ).toHaveLength( 0 );
-		expect( wrapper.findComponent( CdxMenuButton ).props( 'menuItems' ).map( ( item ) => item.value ) )
-			.toContain( 'open' );
 	} );
 
 	// Every row is on the page the reader already has open, so naming it in each footer says nothing.
@@ -625,10 +617,9 @@ describe( 'SubjectsManagerPage move action', () => {
 		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 2 );
 	} );
 
-	// Opening and copying a link change nothing, so they lead; edit and promote change the row in
-	// place; move and delete take the row out of the listing, with delete last. The main row's pin is
-	// its indicator, outside the strip.
-	it( 'orders each row\'s inline actions open, copy-link, edit, promote, move, delete', async () => {
+	// Edit leads, as the action used most; the rest run from what changes nothing to what takes the
+	// row out of the listing, delete last. The main row's pin is its indicator, outside the strip.
+	it( 'orders each row\'s inline actions edit, copy-link, promote, move, delete', async () => {
 		const wrapper = await mountPage();
 
 		const strips = wrapper.findAll( '.ext-neowiki-subject-row__actions' )
@@ -636,16 +627,14 @@ describe( 'SubjectsManagerPage move action', () => {
 
 		expect( strips ).toEqual( [
 			[
-				'neowiki-managesubjects-row-open',
-				'neowiki-managesubjects-row-copy-link',
 				'neowiki-managesubjects-row-edit',
+				'neowiki-managesubjects-row-copy-link',
 				'neowiki-managesubjects-row-move',
 				'neowiki-managesubjects-row-delete',
 			],
 			[
-				'neowiki-managesubjects-row-open',
-				'neowiki-managesubjects-row-copy-link',
 				'neowiki-managesubjects-row-edit',
+				'neowiki-managesubjects-row-copy-link',
 				'neowiki-managesubjects-row-promote',
 				'neowiki-managesubjects-row-move',
 				'neowiki-managesubjects-row-delete',
@@ -653,22 +642,15 @@ describe( 'SubjectsManagerPage move action', () => {
 		] );
 	} );
 
-	// On a subject-first wiki the name is the way to the Subject, so the strip leaves opening to it.
-	it( 'leaves opening out of the inline actions on a subject-first wiki', async () => {
-		const wrapper = await mountPage( true );
-
-		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-open"]' ) ).toHaveLength( 0 );
-	} );
-
-	it( 'orders the overflow menu the same way as the inline actions', async () => {
+	it( 'orders the overflow menu like the inline actions, after opening the Subject', async () => {
 		const wrapper = await mountPage();
 
 		const menus = wrapper.findAllComponents( CdxMenuButton )
 			.map( ( menu ) => menu.props( 'menuItems' ).map( ( item ) => item.value ) );
 
 		expect( menus ).toEqual( [
-			[ 'open', 'copy-link', 'edit', 'move', 'delete' ],
-			[ 'open', 'copy-link', 'edit', 'promote', 'move', 'delete' ],
+			[ 'open', 'edit', 'copy-link', 'move', 'delete' ],
+			[ 'open', 'edit', 'copy-link', 'promote', 'move', 'delete' ],
 		] );
 	} );
 

@@ -39,7 +39,7 @@
 				</template>
 				<span class="ext-neowiki-subject-row__title">
 					<a
-						v-if="linkTitle && subjectPageUrl !== null"
+						v-if="subjectPageUrl !== null"
 						class="ext-neowiki-subject-row__name"
 						:href="subjectPageUrl"
 						@click.stop
@@ -80,14 +80,13 @@
 				</span>
 				<span class="ext-neowiki-subject-row__actions">
 					<CdxButton
-						v-if="!linkTitle && subjectPageUrl !== null"
-						class="ext-neowiki-subject-row__open"
+						v-if="canEdit"
 						weight="quiet"
-						:aria-label="$i18n( 'neowiki-managesubjects-row-open' ).text()"
-						:title="$i18n( 'neowiki-managesubjects-row-open' ).text()"
-						@click.stop="openSubjectPage"
+						:aria-label="$i18n( 'neowiki-managesubjects-row-edit' ).text()"
+						:title="$i18n( 'neowiki-managesubjects-row-edit' ).text()"
+						@click.stop="emit( 'edit', subject )"
 					>
-						<CdxIcon :icon="cdxIconArrowNext" />
+						<CdxIcon :icon="cdxIconEdit" />
 					</CdxButton>
 					<CdxButton
 						weight="quiet"
@@ -96,15 +95,6 @@
 						@click.stop="emit( 'copy-link', subject )"
 					>
 						<CdxIcon :icon="cdxIconLink" />
-					</CdxButton>
-					<CdxButton
-						v-if="canEdit"
-						weight="quiet"
-						:aria-label="$i18n( 'neowiki-managesubjects-row-edit' ).text()"
-						:title="$i18n( 'neowiki-managesubjects-row-edit' ).text()"
-						@click.stop="emit( 'edit', subject )"
-					>
-						<CdxIcon :icon="cdxIconEdit" />
 					</CdxButton>
 					<CdxButton
 						v-if="canEdit && mainSubjectControl === 'promote'"
@@ -269,15 +259,10 @@ const props = withDefaults( defineProps<{
 	subject: Subject;
 	expanded: boolean;
 	/**
-	 * The Subject's own page, which the overflow menu offers and the name links to where it is
-	 * linked at all. Null where the reader is on it already.
+	 * The Subject's own page, which the name links to and the overflow menu offers. Null where the
+	 * reader is on it already.
 	 */
 	subjectPageUrl?: string | null;
-	/**
-	 * Whether the name links to that page. Left off, it stays plain text and the inline strip
-	 * carries the way there instead: a surface about the page the reader already has open says so.
-	 */
-	linkTitle?: boolean;
 	/**
 	 * Gives the row the prominence a surface's focal Subject gets: the page's Main Subject on the
 	 * Data tab, the Subject a page is about on Special:Subject. Says nothing about either by itself.
@@ -310,7 +295,6 @@ const props = withDefaults( defineProps<{
 	domId?: string | null;
 }>(), {
 	subjectPageUrl: null,
-	linkTitle: false,
 	emphasized: false,
 	highlighted: false,
 	focused: false,
@@ -357,12 +341,10 @@ function pageUrl( pageName: string ): string {
 	return mw.util.getUrl( pageName );
 }
 
-// Opening and copying a link lead: they change nothing. Edit and promote change the row in place;
-// move and delete take it out of the listing, with delete last. The inline strip keeps this order,
-// and carries opening only where the name does not offer it.
+// Opening and editing lead, as what readers and editors want most. The rest run from what changes
+// nothing to what takes the Subject out of the listing, delete last. The inline strip keeps this
+// order and leaves opening to the name.
 const menuItems = computed<MenuButtonItemData[]>( () => {
-	// Neither is permission-gated: everyone, read-only users included, may reach a Subject's page
-	// and copy a link to it.
 	const items: MenuButtonItemData[] = [];
 
 	if ( props.subjectPageUrl !== null ) {
@@ -373,26 +355,27 @@ const menuItems = computed<MenuButtonItemData[]>( () => {
 		} );
 	}
 
-	items.push( {
-		value: 'copy-link',
-		label: mw.msg( 'neowiki-managesubjects-row-copy-link' ),
-		icon: cdxIconLink
-	} );
-
 	if ( props.canEdit ) {
 		items.push( {
 			value: 'edit',
 			label: mw.msg( 'neowiki-managesubjects-row-edit' ),
 			icon: cdxIconEdit
 		} );
+	}
 
-		if ( props.mainSubjectControl === 'promote' ) {
-			items.push( {
-				value: 'promote',
-				label: mw.msg( 'neowiki-managesubjects-row-promote' ),
-				icon: cdxIconPushPin
-			} );
-		}
+	// Not permission-gated: read-only users may copy a link too.
+	items.push( {
+		value: 'copy-link',
+		label: mw.msg( 'neowiki-managesubjects-row-copy-link' ),
+		icon: cdxIconLink
+	} );
+
+	if ( props.canEdit && props.mainSubjectControl === 'promote' ) {
+		items.push( {
+			value: 'promote',
+			label: mw.msg( 'neowiki-managesubjects-row-promote' ),
+			icon: cdxIconPushPin
+		} );
 	}
 
 	if ( props.canMove ) {
@@ -421,8 +404,8 @@ const menuSelection = ref<string | number | null>( null );
 function dispatchMenuAction( value: string | number | null ): void {
 	menuSelection.value = null;
 
-	if ( value === 'open' ) {
-		openSubjectPage();
+	if ( value === 'open' && props.subjectPageUrl !== null ) {
+		window.location.href = props.subjectPageUrl;
 	} else if ( value === 'copy-link' ) {
 		emit( 'copy-link', props.subject );
 	} else if ( value === 'edit' ) {
@@ -433,14 +416,6 @@ function dispatchMenuAction( value: string | number | null ): void {
 		emit( 'move', props.subject );
 	} else if ( value === 'delete' ) {
 		emit( 'delete', props.subject );
-	}
-}
-
-// Both ways to the Subject's own page that are not the name itself: the strip's action and the
-// menu's item. Offered only where the surface named a page, which is what both are gated on.
-function openSubjectPage(): void {
-	if ( props.subjectPageUrl !== null ) {
-		window.location.href = props.subjectPageUrl;
 	}
 }
 

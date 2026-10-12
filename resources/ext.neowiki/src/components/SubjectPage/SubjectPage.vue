@@ -34,7 +34,6 @@
 						:key="referenced.getId().text"
 						:subject="referenced"
 						:subject-page-url="subjectPageUrl( referenced.getId().text )"
-						link-title
 						:expanded="expandedIds.has( referenced.getId().text )"
 						:can-edit="canEditSubject"
 						:can-delete="canDeleteSubject"
@@ -59,7 +58,6 @@
 						:subject="referencing.subject"
 						:dom-id="referencingSubjectRowDomId( referencing.subject.getId().text )"
 						:subject-page-url="subjectPageUrl( referencing.subject.getId().text )"
-						link-title
 						:caption="propertiesCaption( referencing.propertyNames )"
 						:expanded="expandedReferencingIds.has( referencing.subject.getId().text )"
 						:can-edit="canEditSubject"

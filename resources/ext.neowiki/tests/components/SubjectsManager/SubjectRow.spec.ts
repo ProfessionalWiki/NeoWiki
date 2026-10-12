@@ -242,7 +242,6 @@ describe( 'SubjectRow', () => {
 	describe( 'the way to the Subject\'s own page', () => {
 
 		const NAME_LINK = 'a.ext-neowiki-subject-row__name';
-		const OPEN_ACTION = '.ext-neowiki-subject-row__open';
 		const URL = '/wiki/Special:Subject/' + SUBJECT_ID;
 
 		afterEach( () => {
@@ -250,7 +249,7 @@ describe( 'SubjectRow', () => {
 		} );
 
 		it( 'is the Subject\'s name, linked to the page the surface named', () => {
-			const wrapper = mountRow( { subjectPageUrl: URL, linkTitle: true } );
+			const wrapper = mountRow( { subjectPageUrl: URL } );
 
 			const link = wrapper.find( NAME_LINK );
 			expect( link.attributes( 'href' ) ).toBe( URL );
@@ -270,22 +269,12 @@ describe( 'SubjectRow', () => {
 			expect( location.href ).toBe( URL );
 		} );
 
-		// The overflow menu is the narrow layout's; a wide one shows the inline strip instead. A row
-		// whose name leads nowhere would offer no way to the Subject at all on a wide screen, so the
-		// strip carries opening exactly where the name does not.
-		it( 'is in the inline strip wherever the name is not a link', async () => {
-			vi.stubGlobal( 'location', { href: '' } );
+		// The overflow menu is the narrow layout's; on a wide one the inline actions stand in for it,
+		// and the name is the way there.
+		it( 'is not among the inline actions', () => {
 			const wrapper = mountRow( { subjectPageUrl: URL } );
 
-			await wrapper.find( OPEN_ACTION ).trigger( 'click' );
-
-			expect( location.href ).toBe( URL );
-		} );
-
-		it( 'is out of the inline strip where the name links there', () => {
-			const wrapper = mountRow( { subjectPageUrl: URL, linkTitle: true } );
-
-			expect( wrapper.find( OPEN_ACTION ).exists() ).toBe( false );
+			expect( wrapper.find( '[aria-label="neowiki-managesubjects-row-open"]' ).exists() ).toBe( false );
 		} );
 
 		it( 'leaves the name plain text on a row the reader is already on', () => {
@@ -297,21 +286,10 @@ describe( 'SubjectRow', () => {
 				.not.toContain( 'open' );
 		} );
 
-		// A surface about the page the reader already has open says not to link the name; the menu
-		// still offers the one Subject to whoever wants it.
-		it( 'leaves the name plain text where the surface says not to link it, still offering it', () => {
-			const wrapper = mountRow( { subjectPageUrl: URL } );
-
-			expect( wrapper.find( NAME_LINK ).exists() ).toBe( false );
-			expect( wrapper.find( '.ext-neowiki-subject-row__label' ).text() ).toBe( 'ACME Inc' );
-			expect( wrapper.findComponent( CdxMenuButton ).props( 'menuItems' ).map( ( item ) => item.value ) )
-				.toContain( 'open' );
-		} );
-
 		// Following the name must not also toggle the row it sits in, and must still be followed: the
 		// header one line above it cancels the clicks it handles.
 		it( 'keeps a click on the name from reaching the header, and follows it', () => {
-			const wrapper = mountRow( { subjectPageUrl: URL, linkTitle: true } );
+			const wrapper = mountRow( { subjectPageUrl: URL } );
 
 			const click = new Event( 'click', { bubbles: true, cancelable: true } );
 			wrapper.find( NAME_LINK ).element.dispatchEvent( click );

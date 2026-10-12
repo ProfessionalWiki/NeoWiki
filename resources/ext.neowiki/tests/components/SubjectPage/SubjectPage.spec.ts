@@ -812,8 +812,8 @@ describe( 'SubjectPage', () => {
 	describe( 'what an editor is offered', () => {
 
 		const editorActions = [
-			'neowiki-managesubjects-row-copy-link',
 			'neowiki-managesubjects-row-edit',
+			'neowiki-managesubjects-row-copy-link',
 			'neowiki-managesubjects-row-delete',
 		];
 
@@ -842,9 +842,9 @@ describe( 'SubjectPage', () => {
 			expect( wrapper.findAllComponents( CdxMenuButton )
 				.map( ( menu ) => menu.props( 'menuItems' ).map( ( item ) => item.value ) ) )
 				.toEqual( [
-					[ 'copy-link', 'edit', 'delete' ],
-					[ 'open', 'copy-link', 'edit', 'delete' ],
-					[ 'open', 'copy-link', 'edit', 'delete' ],
+					[ 'edit', 'copy-link', 'delete' ],
+					[ 'open', 'edit', 'copy-link', 'delete' ],
+					[ 'open', 'edit', 'copy-link', 'delete' ],
 				] );
 		} );
 
