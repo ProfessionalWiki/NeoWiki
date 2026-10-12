@@ -715,6 +715,7 @@
 				"neowiki-schema-picker-placeholder",
 				"neowiki-schema-picker-create",
 				"neowiki-schema-picker-create-named",
+				"neowiki-subject-creator-no-schemas",
 				"neowiki-schema-display-property-name",
 				"neowiki-schema-display-property-type",
 				"neowiki-schema-display-property-required",

@@ -14,11 +14,15 @@
 
 		<SchemaPicker
 			ref="schemaLookupRef"
-			:offers-creation="canCreateSchemas && offeredSchemaNames === undefined"
+			:offers-creation="offersSchemaCreation"
 			:schema-names="offeredSchemaNames"
 			@select="onSchemaSelected"
 			@create="openSchemaCreator"
-		/>
+		>
+			<template #no-schemas>
+				<p>{{ $i18n( 'neowiki-subject-creator-no-schemas' ).text() }}</p>
+			</template>
+		</SchemaPicker>
 	</CdxDialog>
 
 	<!-- The Subject itself is filled in by the editor, opened on a Subject the wiki does not hold
@@ -632,6 +636,7 @@ watch( () => props.open, ( isOpen ) => {
 const schemaStore = useSchemaStore();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();
+const schemaPermissionKnown = ref( false );
 const { hasChanged: formChanged, markChanged, resetChanged } = useChangeDetection();
 
 // The page question answered, where it was the user's to answer: a page picked, or a title typed
@@ -665,7 +670,7 @@ function onEditorUpdateOpen( value: boolean ): void {
 }
 
 onMounted( async () => {
-	await Promise.all( [ checkCreatePermission(), checkCreateSubjectPagePermission() ] );
+	await Promise.all( [ checkSchemaPermission(), checkCreateSubjectPagePermission() ] );
 	startPageQuestion();
 
 	// Already open: the open watcher ran before pageChoice existed.
@@ -673,6 +678,11 @@ onMounted( async () => {
 		await applyInitialPageTarget();
 	}
 } );
+
+async function checkSchemaPermission(): Promise<void> {
+	await checkCreatePermission();
+	schemaPermissionKnown.value = true;
+}
 
 function openSchemaCreator( schemaName: string ): void {
 	requestSequence++;
@@ -694,6 +704,10 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 }
 
 const offeredSchemaNames = computed( (): readonly string[] | undefined => props.relationTarget?.schemaNames );
+
+const offersSchemaCreation = computed( (): boolean | null => schemaPermissionKnown.value ?
+	canCreateSchemas.value && offeredSchemaNames.value === undefined :
+	null );
 
 const givenSubjectId = computed( (): SubjectId | undefined => props.relationTarget?.subjectId );
 

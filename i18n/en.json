@@ -177,6 +177,7 @@
 	"neowiki-schema-picker-placeholder": "Select a schema",
 	"neowiki-schema-picker-create": "Create schema",
 	"neowiki-schema-picker-create-named": "Create schema \"$1\"",
+	"neowiki-subject-creator-no-schemas": "Subjects need a schema, and this wiki has none yet; ask someone who can create one.",
 	"neowiki-subject-creator-save": "Create subject",
 	"neowiki-subject-creator-success": "Subject created successfully",
 	"neowiki-subject-creator-error": "Failed to create subject",

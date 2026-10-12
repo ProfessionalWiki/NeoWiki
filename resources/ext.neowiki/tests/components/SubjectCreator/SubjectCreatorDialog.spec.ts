@@ -2216,15 +2216,17 @@ describe( 'SubjectCreatorDialog', () => {
 			getSchemaMock.mockImplementation( async ( name: string ) => newSchema( { title: name } ) );
 		} );
 
-		it( 'is offered to a user who may create schemas', () => {
+		it( 'is offered to a user who may create schemas', async () => {
 			const wrapper = mountComponent();
+			await flushPromises();
 
 			expect( wrapper.findComponent( SchemaPicker ).props( 'offersCreation' ) ).toBe( true );
 		} );
 
-		it( 'is not offered to a user who may not create schemas', () => {
+		it( 'is not offered to a user who may not create schemas', async () => {
 			canCreateSchemas.value = false;
 			const wrapper = mountComponent();
+			await flushPromises();
 
 			expect( wrapper.findComponent( SchemaPicker ).props( 'offersCreation' ) ).toBe( false );
 		} );
@@ -2285,6 +2287,85 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( schemaCreator( wrapper ).exists() ).toBe( false );
 			expect( wrapper.findComponent( SchemaPicker ).exists() ).toBe( true );
 			expect( wrapper.findComponent( SubjectEditorDialog ).exists() ).toBe( false );
+		} );
+	} );
+
+	describe( 'on a wiki without schemas', () => {
+		// The picker itself, attached to the document, where focus is read from: whether focusing the
+		// field opens its menu is decided by Codex's lookup.
+		function mountWithPicker(): VueWrapper {
+			return mountComponent( { SchemaPicker: false }, {}, { attachTo: document.body } );
+		}
+
+		async function open( wrapper: VueWrapper ): Promise<void> {
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+		}
+
+		function schemaField( wrapper: VueWrapper ): DOMWrapper<Element> {
+			return wrapper.find( '.ext-neowiki-schema-picker input' );
+		}
+
+		// None while the menu is closed: a closed menu shows the user nothing.
+		function shownOptions( wrapper: VueWrapper ): string[] {
+			if ( schemaField( wrapper ).attributes( 'aria-expanded' ) !== 'true' ) {
+				return [];
+			}
+
+			return wrapper.findAll( '[role="option"]' ).map( ( option ) => option.text() );
+		}
+
+		/** Holds back the answer that the user may create Schemas until the returned function gives it. */
+		function holdSchemaCreationRight(): () => void {
+			let grant!: () => void;
+			canCreateSchemas.value = false;
+			( useSchemaPermissions as any ).mockReturnValue( {
+				canCreateSchemas,
+				checkCreatePermission: () => new Promise<void>( ( resolve ) => {
+					grant = () => {
+						canCreateSchemas.value = true;
+						resolve();
+					};
+				} ),
+			} );
+
+			return () => grant();
+		}
+
+		beforeEach( () => {
+			schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [] );
+		} );
+
+		it( 'opens on a focused field offering to create a schema, where the right to arrives after the schemas', async () => {
+			const grantSchemaCreation = holdSchemaCreationRight();
+			const wrapper = mountWithPicker();
+			await open( wrapper );
+
+			grantSchemaCreation();
+			await flushPromises();
+
+			expect( document.activeElement ).toBe( schemaField( wrapper ).element );
+			expect( shownOptions( wrapper ) ).toEqual( [ 'neowiki-schema-picker-create' ] );
+		} );
+
+		it( 'says so in place of the field to a user who may not create a schema', async () => {
+			canCreateSchemas.value = false;
+			const wrapper = mountWithPicker();
+
+			await open( wrapper );
+
+			expect( wrapper.text() ).toContain( 'neowiki-subject-creator-no-schemas' );
+			expect( schemaField( wrapper ).exists() ).toBe( false );
+		} );
+
+		// Saying so would send a user who may create a schema to ask someone else.
+		it( 'says nothing of it until it knows whether the user may create a schema', async () => {
+			holdSchemaCreationRight();
+			const wrapper = mountWithPicker();
+
+			await open( wrapper );
+
+			expect( wrapper.text() ).not.toContain( 'neowiki-subject-creator-no-schemas' );
 		} );
 	} );
 

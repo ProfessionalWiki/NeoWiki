@@ -38,9 +38,10 @@ describe( 'SchemaPicker', () => {
 
 	// Attached to the document so focus lands on the field: jsdom ignores focus() on a
 	// detached element, which would silently skip the menu-opening behaviour.
-	function mountPicker( props: Record<string, unknown> = {} ): VueWrapper {
+	function mountPicker( props: Record<string, unknown> = {}, slots: Record<string, string> = {} ): VueWrapper {
 		const wrapper = mount( SchemaPicker, {
 			props,
+			slots,
 			attachTo: document.body,
 			global: {
 				mocks: { $i18n },
@@ -494,21 +495,96 @@ describe( 'SchemaPicker', () => {
 	} );
 
 	describe( 'focusing', () => {
+		function requestFocus( wrapper: VueWrapper ): void {
+			( wrapper.vm as unknown as { focus: () => void } ).focus();
+		}
+
 		// The schemas are delivered only after focus() has been called, as they are over the
 		// network: the field must end up focused with its list open regardless.
 		it( 'lists every schema straight away when focused, without waiting for a second focus', async () => {
 			const deliverSchemas = holdSchemas();
 			const wrapper = mountPicker();
 
-			const focusing = ( wrapper.vm as unknown as { focus: () => Promise<void> } ).focus();
+			requestFocus( wrapper );
 			await nextTick();
 			deliverSchemas( SUMMARIES );
-			await focusing;
-			await nextTick();
+			await flushPromises();
 
 			expect( document.activeElement ).toBe( field( wrapper ).element );
 			expect( field( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'true' );
 			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City' ] );
 		} );
+
+		// Focus is asked for before the caller decides, as a dialog opening does.
+		it( 'opens the offer to create a schema straight away when focused, where the caller decides on it after the schemas arrive', async () => {
+			schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [] );
+			const wrapper = mountPicker( { offersCreation: null } );
+			await flushPromises();
+
+			requestFocus( wrapper );
+			await wrapper.setProps( { offersCreation: true } );
+			await flushPromises();
+
+			expect( document.activeElement ).toBe( field( wrapper ).element );
+			expect( menuShown( wrapper ) ).toBe( true );
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'neowiki-schema-picker-create' ] );
+		} );
+	} );
+
+	describe( 'what the caller gives it to say for a wiki without schemas', () => {
+		const SAID_INSTEAD = 'Nothing to pick';
+
+		async function mountPickerSaying( props: Record<string, unknown> ): Promise<VueWrapper> {
+			const wrapper = mountPicker( props, { 'no-schemas': `<p>${ SAID_INSTEAD }</p>` } );
+			await flushPromises();
+			return wrapper;
+		}
+
+		function expectFieldShown( wrapper: VueWrapper ): void {
+			expect( field( wrapper ).exists() ).toBe( true );
+			expect( wrapper.text() ).not.toContain( SAID_INSTEAD );
+		}
+
+		it( 'is shown in place of the field where the wiki has none and none is to be created', async () => {
+			schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [] );
+
+			const wrapper = await mountPickerSaying( { offersCreation: false } );
+
+			expect( wrapper.text() ).toBe( SAID_INSTEAD );
+			expect( field( wrapper ).exists() ).toBe( false );
+		} );
+
+		it( 'leaves the field where the wiki has schemas', async () => {
+			const wrapper = await mountPickerSaying( { offersCreation: false } );
+
+			expectFieldShown( wrapper );
+		} );
+
+		it( 'leaves the field where the picker offers to create a schema', async () => {
+			schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [] );
+
+			const wrapper = await mountPickerSaying( { offersCreation: true } );
+
+			expectFieldShown( wrapper );
+		} );
+
+		// A failed request lists no schemas, which says nothing about whether the wiki has any.
+		it( 'leaves the field where the schemas could not be loaded', async () => {
+			const consoleError = vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+			schemaStore.fetchAllSchemaSummaries = vi.fn().mockRejectedValue( new Error( 'load failed' ) );
+
+			const wrapper = await mountPickerSaying( { offersCreation: false } );
+
+			expectFieldShown( wrapper );
+			consoleError.mockRestore();
+		} );
+	} );
+
+	it( 'shows the field on a wiki without schemas where the caller gives it nothing to say instead', async () => {
+		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [] );
+		const wrapper = mountPicker();
+		await flushPromises();
+
+		expect( field( wrapper ).exists() ).toBe( true );
 	} );
 } );
