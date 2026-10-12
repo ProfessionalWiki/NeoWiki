@@ -4,6 +4,7 @@
 		<CdxField
 			:status="targetSchemasError === null ? 'default' : 'error'"
 			:messages="targetSchemasError === null ? {} : { error: targetSchemasError }"
+			@focusout="targetSchemasTouched = true"
 		>
 			<template #label>
 				{{ $i18n( 'neowiki-property-editor-target-schema' ).text() }}
@@ -37,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onMounted } from 'vue';
+import { computed, inject, onMounted, ref } from 'vue';
 import { CdxCheckbox, CdxField } from '@wikimedia/codex';
 import { RelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { withConstraintSeverity } from '@/domain/PropertyDefinition.ts';
@@ -47,6 +48,7 @@ import { AttributesEditorEmits, AttributesEditorProps } from '@/components/Schem
 import { missingRelationAttribute } from '@/components/SchemaEditor/Property/missingRelationAttribute.ts';
 import TargetSchemasInput from '@/components/SchemaEditor/Property/TargetSchemasInput.vue';
 import { SchemaCreationKey } from '@/components/common/SchemaCreation.ts';
+import { ErrorsRevealedKey } from '@/components/SchemaEditor/ErrorsRevealed.ts';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { normalizeSchemaName } from '@/stores/SchemaStore.ts';
@@ -60,10 +62,15 @@ onMounted( checkCreatePermission );
 
 const schemaCreation = inject( SchemaCreationKey, undefined );
 
+const targetSchemasTouched = ref( false );
+const errorsRevealed = inject( ErrorsRevealedKey, ref( false ) );
+
 const targetSchemasError = computed<string | null>( () => {
 	const message = missingRelationAttribute( props.property );
 
-	return message === null ? null : mw.message( message ).text();
+	return message !== null && ( targetSchemasTouched.value || errorsRevealed.value ) ?
+		mw.message( message ).text() :
+		null;
 } );
 
 const updateTargetSchemas = ( targetSchemas: SchemaReference[] ): void => {

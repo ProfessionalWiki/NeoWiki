@@ -22,9 +22,10 @@ import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const $i18n = createI18nMock();
 
-// The reason the stubbed editor reports for holding the save. Reset per test by
-// the beforeEach below.
+// The reason the stubbed editor reports for holding the save, and whether it was asked to
+// reveal its errors. Reset per test by the beforeEach below.
 let editorSaveBlocker: SaveBlocker | null = null;
+let editorErrorsRevealed = false;
 
 const SchemaEditorStub = defineComponent( {
 	template: '<div class="schema-editor-stub"></div>',
@@ -40,6 +41,9 @@ const SchemaEditorStub = defineComponent( {
 		},
 		saveBlocker(): SaveBlocker | null {
 			return editorSaveBlocker;
+		},
+		revealErrors(): void {
+			editorErrorsRevealed = true;
 		},
 	},
 } );
@@ -61,6 +65,7 @@ describe( 'SchemaEditorDialog', () => {
 
 	beforeEach( () => {
 		editorSaveBlocker = null;
+		editorErrorsRevealed = false;
 		onSave = vi.fn<SchemaSaveHandler>();
 		setupMwMock( { functions: [ 'message', 'msg', 'notify' ] } );
 	} );
@@ -308,6 +313,15 @@ describe( 'SchemaEditorDialog', () => {
 			await save( wrapper );
 
 			expect( onSave ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		it( 'reveals the errors of the editor', async () => {
+			const wrapper = mountComponent();
+			editorSaveBlocker = { propertyName: 'Maker', message: 'neowiki-property-editor-target-schema-required' };
+
+			await save( wrapper );
+
+			expect( editorErrorsRevealed ).toBe( true );
 		} );
 	} );
 

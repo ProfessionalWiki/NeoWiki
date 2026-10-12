@@ -16,10 +16,11 @@ const EXISTING_SCHEMA_NAME = 'Person';
 const NEW_SCHEMA_NAME = 'Company';
 const DEBOUNCE_DELAY = 300;
 
-// The reason the stubbed editor reports for holding the save, and the Schema it holds. Reset per
-// test by the beforeEach below.
+// The reason the stubbed editor reports for holding the save, the Schema it holds, and whether it
+// was asked to reveal its errors. Reset per test by the beforeEach below.
 let editorSaveBlocker: SaveBlocker | null = null;
 let editorSchema: Schema;
+let editorErrorsRevealed = false;
 
 const SchemaEditorStub = defineComponent( {
 	name: 'SchemaEditor',
@@ -34,6 +35,9 @@ const SchemaEditorStub = defineComponent( {
 		},
 		saveBlocker(): SaveBlocker | null {
 			return editorSaveBlocker;
+		},
+		revealErrors(): void {
+			editorErrorsRevealed = true;
 		},
 	},
 } );
@@ -74,6 +78,7 @@ describe( 'SchemaCreator', () => {
 	beforeEach( () => {
 		editorSaveBlocker = null;
 		editorSchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
+		editorErrorsRevealed = false;
 		vi.useFakeTimers();
 
 		setupMwMock( {
@@ -304,6 +309,14 @@ describe( 'SchemaCreator', () => {
 				message: 'neowiki-field-invalid-number',
 			} );
 		} );
+	} );
+
+	it( 'reveals the errors of the schema editor when asked to', () => {
+		const wrapper = mountComponent();
+
+		( wrapper.vm as any ).revealErrors();
+
+		expect( editorErrorsRevealed ).toBe( true );
 	} );
 
 	it( 'reports a change when the description is typed, so the dialog can offer to save', async () => {

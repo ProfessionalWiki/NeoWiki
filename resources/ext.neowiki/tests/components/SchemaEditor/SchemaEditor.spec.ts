@@ -67,6 +67,8 @@ function createWrapperWithPropertyEditor( schema: Schema ): VueWrapper {
 			},
 			stubs: {
 				PropertyList: true,
+				TargetSchemasInput: true,
+				SubjectPicker: true,
 			},
 		},
 	} );
@@ -97,6 +99,7 @@ describe( 'SchemaEditor', () => {
 		};
 
 		vi.stubGlobal( 'mw', {
+			config: { get: vi.fn() },
 			message: vi.fn( ( str ) => ( {
 				text: () => messages[ str ] ?? str,
 				parse: () => messages[ str ] ?? str,
@@ -682,6 +685,36 @@ describe( 'SchemaEditor', () => {
 			expect( saveBlocker( wrapper ) ).toEqual( {
 				propertyName: 'Score',
 				message: 'neowiki-field-invalid-number',
+			} );
+		} );
+
+		describe( 'once errors are revealed', () => {
+			async function revealErrors( wrapper: VueWrapper ): Promise<void> {
+				( wrapper.vm as unknown as SchemaEditorExposes ).revealErrors();
+				await nextTick();
+			}
+
+			it( 'shows the missing target of the selected relation property', async () => {
+				const wrapper = createWrapperWithPropertyEditor( schemaWith( relationPropertyWithoutTarget( 'Maker' ) ) );
+
+				await revealErrors( wrapper );
+
+				expect( wrapper.text() ).toContain( 'Target schema is required.' );
+			} );
+
+			// Only the selected property has an editor mounted, so the one for this property is
+			// created after the errors were revealed.
+			it( 'shows the missing target of a relation property selected afterwards', async () => {
+				const wrapper = createWrapperWithPropertyEditor( schemaWith(
+					newNumberProperty( { name: 'Score' } ),
+					relationPropertyWithoutTarget( 'Maker' ),
+				) );
+				await revealErrors( wrapper );
+
+				await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertySelected', new PropertyName( 'Maker' ) );
+				await flushPromises();
+
+				expect( wrapper.text() ).toContain( 'Target schema is required.' );
 			} );
 		} );
 	} );

@@ -112,6 +112,7 @@ async function handleSave( summary: string ): Promise<void> {
 	const blocker = schemaCreatorRef.value.saveBlocker();
 
 	if ( blocker !== null ) {
+		schemaCreatorRef.value.revealErrors();
 		mw.notify( blocker.message, { title: blocker.propertyName, type: 'error' } );
 		return;
 	}

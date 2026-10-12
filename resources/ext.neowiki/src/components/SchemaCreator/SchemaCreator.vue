@@ -163,13 +163,18 @@ function saveBlocker(): SaveBlocker | null {
 	return schemaEditorRef.value?.saveBlocker() ?? null;
 }
 
+function revealErrors(): void {
+	schemaEditorRef.value?.revealErrors();
+}
+
 export interface SchemaCreatorExposes {
 	validate: () => Promise<boolean>;
 	getSchema: () => Schema | null;
 	saveBlocker: () => SaveBlocker | null;
+	revealErrors: () => void;
 }
 
-defineExpose<SchemaCreatorExposes>( { validate, getSchema, saveBlocker } );
+defineExpose<SchemaCreatorExposes>( { validate, getSchema, saveBlocker, revealErrors } );
 </script>
 
 <style lang="less">

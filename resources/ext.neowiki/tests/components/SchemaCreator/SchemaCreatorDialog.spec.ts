@@ -26,9 +26,10 @@ const COMPANY = new Schema(
 	new PropertyDefinitionList( [ newTextProperty( { name: 'Name' } ), newNumberProperty( { name: 'Founded' } ) ] ),
 );
 
-// The reason the stubbed creator reports for holding the save. Reset per test by
-// the beforeEach below.
+// The reason the stubbed creator reports for holding the save, and whether it was asked to
+// reveal its errors. Reset per test by the beforeEach below.
 let creatorSaveBlocker: SaveBlocker | null = null;
+let creatorErrorsRevealed = false;
 
 const SchemaCreatorStub = {
 	template: '<div class="schema-creator-stub"></div>',
@@ -41,11 +42,15 @@ const SchemaCreatorStub = {
 		const validate = vi.fn( async (): Promise<boolean> => valid );
 		const getSchema = vi.fn( (): Schema | null => schema );
 		const saveBlocker = (): SaveBlocker | null => creatorSaveBlocker;
+		const revealErrors = (): void => {
+			creatorErrorsRevealed = true;
+		};
 
 		return {
 			validate,
 			getSchema,
 			saveBlocker,
+			revealErrors,
 			setStubValid( v: boolean ) {
 				valid = v;
 			},
@@ -101,6 +106,7 @@ describe( 'SchemaCreatorDialog', () => {
 
 	beforeEach( () => {
 		creatorSaveBlocker = null;
+		creatorErrorsRevealed = false;
 
 		setupMwMock( {
 			functions: [ 'msg', 'notify' ],
@@ -354,6 +360,15 @@ describe( 'SchemaCreatorDialog', () => {
 			await save( wrapper );
 
 			expect( schemaStore.saveSchema ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		it( 'reveals the errors of the creator', async () => {
+			const wrapper = mountComponent();
+			creatorSaveBlocker = { propertyName: 'Maker', message: 'neowiki-property-editor-target-schema-required' };
+
+			await save( wrapper );
+
+			expect( creatorErrorsRevealed ).toBe( true );
 		} );
 	} );
 

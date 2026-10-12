@@ -51,7 +51,7 @@
 <script setup lang="ts">
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
 import { Schema } from '@/domain/Schema.ts';
-import { ComponentPublicInstance, computed, ref, watch } from 'vue';
+import { ComponentPublicInstance, computed, provide, ref, watch } from 'vue';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
 import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
@@ -60,6 +60,7 @@ import { usePaneSize } from '@/composables/usePaneSize.ts';
 import { useGeneratedId } from '@wikimedia/codex';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { missingRelationAttribute } from '@/components/SchemaEditor/Property/missingRelationAttribute.ts';
+import { ErrorsRevealedKey } from '@/components/SchemaEditor/ErrorsRevealed.ts';
 
 const props = defineProps<{
 	initialSchema: Schema;
@@ -243,6 +244,7 @@ function replacePropertyDefinition( updatedProperty: PropertyDefinition ): Prope
 export interface SchemaEditorExposes {
 	getSchema: () => Schema;
 	saveBlocker: () => SaveBlocker | null;
+	revealErrors: () => void;
 }
 
 /**
@@ -283,13 +285,23 @@ const incompleteProperty = (): SaveBlocker | null => {
 	return null;
 };
 
+const errorsRevealed = ref( false );
+
+provide( ErrorsRevealedKey, errorsRevealed );
+
+/** For the host to call when it refuses a save. */
+const revealErrors = (): void => {
+	errorsRevealed.value = true;
+};
+
 defineExpose<SchemaEditorExposes>( {
 	getSchema: function(): Schema {
 		const schema = currentSchema.value as Schema;
 
 		return props.description === undefined ? schema : schema.withDescription( props.description );
 	},
-	saveBlocker
+	saveBlocker,
+	revealErrors
 } );
 </script>
 

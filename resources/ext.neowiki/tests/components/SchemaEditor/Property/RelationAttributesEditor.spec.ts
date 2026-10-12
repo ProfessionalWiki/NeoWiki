@@ -1,10 +1,12 @@
 import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { nextTick, ref, type Ref } from 'vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Relation';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { SchemaCreation, SchemaCreationKey } from '@/components/common/SchemaCreation.ts';
+import { ErrorsRevealedKey } from '@/components/SchemaEditor/ErrorsRevealed.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { newSchema } from '@/TestHelpers.ts';
@@ -25,6 +27,8 @@ describe( 'RelationAttributesEditor', () => {
 	// What the dialog holding the editor provides; undefined where none does.
 	let schemaCreation: SchemaCreation | undefined;
 	let finishCreation: ( schema: Schema | null ) => void;
+	// What the Schema editor holding the editor provides.
+	let errorsRevealed: Ref<boolean>;
 
 	beforeEach( () => {
 		setupMwMock( {
@@ -35,6 +39,7 @@ describe( 'RelationAttributesEditor', () => {
 		} );
 
 		canCreateSchemas = true;
+		errorsRevealed = ref( false );
 		schemaCreation = {
 			create: vi.fn( () => new Promise<Schema | null>( ( resolve ) => {
 				finishCreation = resolve;
@@ -53,6 +58,7 @@ describe( 'RelationAttributesEditor', () => {
 				stubs: { TargetSchemasInput: TargetSchemasInputStub },
 				provide: {
 					[ Service.SchemaPermissionHints ]: { canCreateSchemas: async () => canCreateSchemas },
+					[ ErrorsRevealedKey as symbol ]: errorsRevealed,
 					...( schemaCreation === undefined ? {} : { [ SchemaCreationKey as symbol ]: schemaCreation } ),
 				},
 			},
@@ -221,18 +227,59 @@ describe( 'RelationAttributesEditor', () => {
 	// Codex shows a field's message only while the field is in that message's status, so the text
 	// on screen also stands for the status.
 	describe( 'validation', () => {
-		it( 'shows no error when a target schema is set', () => {
-			const wrapper = newWrapper();
+		function leaveTargetSchemasField( wrapper: VueWrapper ): Promise<void> {
+			return wrapper.findComponent( TargetSchemasInputStub ).trigger( 'focusout' );
+		}
 
-			expect( wrapper.text() ).not.toContain( 'At least one target schema is required.' );
-		} );
-
-		it( 'shows a required error while no target schema is chosen', () => {
+		it( 'shows no error before the user leaves an empty target schemas field', () => {
 			const wrapper = newWrapper( {
 				property: relationProperty( { targetSchemas: [] } ),
 			} );
 
+			expect( wrapper.text() ).not.toContain( 'At least one target schema is required.' );
+		} );
+
+		it( 'shows a required error once the user leaves the target schemas field empty', async () => {
+			const wrapper = newWrapper( {
+				property: relationProperty( { targetSchemas: [] } ),
+			} );
+
+			await leaveTargetSchemasField( wrapper );
+
 			expect( wrapper.text() ).toContain( 'At least one target schema is required.' );
+		} );
+
+		it( 'clears the required error once a target schema is chosen', async () => {
+			const wrapper = newWrapper( {
+				property: relationProperty( { targetSchemas: [] } ),
+			} );
+			await leaveTargetSchemasField( wrapper );
+
+			await wrapper.setProps( { property: relationProperty( { targetSchemas: [ 'Office' ] } ) } );
+
+			expect( wrapper.text() ).not.toContain( 'At least one target schema is required.' );
+		} );
+
+		it( 'shows a required error on an untouched empty field once errors are revealed', async () => {
+			const wrapper = newWrapper( {
+				property: relationProperty( { targetSchemas: [] } ),
+			} );
+
+			errorsRevealed.value = true;
+			await nextTick();
+
+			expect( wrapper.text() ).toContain( 'At least one target schema is required.' );
+		} );
+
+		it( 'clears a revealed required error once a target schema is chosen', async () => {
+			errorsRevealed.value = true;
+			const wrapper = newWrapper( {
+				property: relationProperty( { targetSchemas: [] } ),
+			} );
+
+			await wrapper.setProps( { property: relationProperty( { targetSchemas: [ 'Office' ] } ) } );
+
+			expect( wrapper.text() ).not.toContain( 'At least one target schema is required.' );
 		} );
 	} );
 

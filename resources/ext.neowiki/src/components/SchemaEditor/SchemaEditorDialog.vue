@@ -167,6 +167,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 	const blocker = schemaEditor.value.saveBlocker();
 
 	if ( blocker !== null ) {
+		schemaEditor.value.revealErrors();
 		mw.notify( blocker.message, { title: blocker.propertyName, type: 'error' } );
 		return;
 	}
