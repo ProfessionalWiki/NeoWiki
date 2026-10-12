@@ -495,39 +495,21 @@ describe( 'SchemaPicker', () => {
 	} );
 
 	describe( 'focusing', () => {
-		function requestFocus( wrapper: VueWrapper ): void {
-			( wrapper.vm as unknown as { focus: () => void } ).focus();
-		}
-
 		// The schemas are delivered only after focus() has been called, as they are over the
 		// network: the field must end up focused with its list open regardless.
 		it( 'lists every schema straight away when focused, without waiting for a second focus', async () => {
 			const deliverSchemas = holdSchemas();
 			const wrapper = mountPicker();
 
-			requestFocus( wrapper );
+			const focusing = ( wrapper.vm as unknown as { focus: () => Promise<void> } ).focus();
 			await nextTick();
 			deliverSchemas( SUMMARIES );
-			await flushPromises();
+			await focusing;
+			await nextTick();
 
 			expect( document.activeElement ).toBe( field( wrapper ).element );
 			expect( field( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'true' );
 			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City' ] );
-		} );
-
-		// Focus is asked for before the caller decides, as a dialog opening does.
-		it( 'opens the offer to create a schema straight away when focused, where the caller decides on it after the schemas arrive', async () => {
-			schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [] );
-			const wrapper = mountPicker( { offersCreation: null } );
-			await flushPromises();
-
-			requestFocus( wrapper );
-			await wrapper.setProps( { offersCreation: true } );
-			await flushPromises();
-
-			expect( document.activeElement ).toBe( field( wrapper ).element );
-			expect( menuShown( wrapper ) ).toBe( true );
-			expect( listedSchemas( wrapper ) ).toEqual( [ 'neowiki-schema-picker-create' ] );
 		} );
 	} );
 
@@ -552,14 +534,6 @@ describe( 'SchemaPicker', () => {
 
 			expect( wrapper.text() ).toContain( SAID_INSTEAD );
 			expect( field( wrapper ).exists() ).toBe( false );
-		} );
-
-		it( 'is held back while the caller has yet to decide whether to offer creation', async () => {
-			schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [] );
-
-			const wrapper = await mountPickerSaying( { offersCreation: null } );
-
-			expect( wrapper.text() ).not.toContain( SAID_INSTEAD );
 		} );
 
 		it( 'leaves the field where the wiki has schemas', async () => {

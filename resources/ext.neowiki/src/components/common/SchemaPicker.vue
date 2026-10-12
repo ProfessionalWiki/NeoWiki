@@ -5,7 +5,7 @@
 			name="no-schemas"
 		/>
 		<CdxLookup
-			v-else-if="menuKnown"
+			v-else-if="schemasLoaded"
 			ref="lookupRef"
 			v-model:selected="selectedSchema"
 			v-model:input-value="inputText"
@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { CdxLookup } from '@wikimedia/codex';
 import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
@@ -34,10 +34,9 @@ const props = defineProps<{
 	selected?: string | null;
 	/**
 	 * Ends the list with an offer to create a Schema named after the typed text, unless a Schema has
-	 * that name already. Choosing the offer emits `create` with the text. Null while the caller has
-	 * yet to decide, which holds the field back.
+	 * that name already. Choosing the offer emits `create` with the text.
 	 */
-	offersCreation?: boolean | null;
+	offersCreation?: boolean;
 	/** The Schemas to offer, of those the wiki has. Absent, all of them. */
 	schemaNames?: readonly string[];
 }>();
@@ -73,7 +72,7 @@ const takenNames = computed( (): Set<string> => {
 } );
 
 const creationOffered = computed( (): boolean =>
-	props.offersCreation === true && !takenNames.value.has( normalizeSchemaName( typedName.value ) ) );
+	props.offersCreation && !takenNames.value.has( normalizeSchemaName( typedName.value ) ) );
 
 const offeredSummaries = computed( (): SchemaSummary[] => props.schemaNames === undefined ?
 	summaries.value :
@@ -82,15 +81,12 @@ const offeredSummaries = computed( (): SchemaSummary[] => props.schemaNames === 
 const menu = computed( (): SchemaMenu =>
 	schemaMenu( offeredSummaries.value, query.value, creationOffered.value ? typedName.value : null ) );
 
+const nothingToOffer = computed( (): boolean => wikiHasNoSchemas.value && !props.offersCreation );
+
 // CdxLookup decides whether focus opens the menu from the menu items it was created
-// with, so the field is only rendered once those are known: the schemas have arrived,
-// and the caller has decided whether to offer creation. Loading the schemas is also
-// marked done when the request fails, so a failure leaves a usable field rather than
-// none at all.
-const menuKnown = computed( (): boolean => schemasLoaded.value && props.offersCreation !== null );
-
-const nothingToOffer = computed( (): boolean => wikiHasNoSchemas.value && props.offersCreation === false );
-
+// with, so the field is only rendered once the schemas have arrived. Loading them is
+// also marked done when the request fails, so a failure leaves a usable field rather
+// than none at all.
 async function loadSchemas(): Promise<void> {
 	try {
 		summaries.value = await schemaStore.fetchAllSchemaSummaries();
@@ -101,7 +97,7 @@ async function loadSchemas(): Promise<void> {
 	schemasLoaded.value = true;
 }
 
-loadSchemas();
+const schemasReady = loadSchemas();
 
 // The filter is reset alongside the field: CdxLookup resolves a selection against the
 // menu as it currently stands, and would empty the field for a schema the filter hides.
@@ -165,23 +161,12 @@ function revertUncommittedTyping(): void {
 	query.value = '';
 }
 
-// Focus asked for before the field is rendered lands on it once it is.
-let focusRequested = false;
-
-function focus(): void {
-	focusRequested = true;
-	focusField();
-}
-
-watch( lookupRef, focusField, { flush: 'post' } );
-
-function focusField(): void {
-	const input = ( lookupRef.value?.$el as HTMLElement | undefined )?.querySelector( 'input' );
-
-	if ( focusRequested && input ) {
-		focusRequested = false;
-		input.focus();
-	}
+// Waits for the schemas so that focus lands on a field whose menu can open right away.
+async function focus(): Promise<void> {
+	await schemasReady;
+	await nextTick();
+	const input = ( lookupRef.value?.$el as HTMLElement )?.querySelector( 'input' );
+	input?.focus();
 }
 
 defineExpose( { focus } );
@@ -190,10 +175,10 @@ defineExpose( { focus } );
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
-/* The field is withheld until its menu is known (see above), so without a reserved
+/* The field is withheld until the schemas arrive (see above), so without a reserved
 	height the picker paints a frame with nothing here, and a dialog sized to its content
 	resizes twice. Holding the control's height keeps the box the same before and after
-	the field appears. The token is the Codex control height, so the reservation tracks the
+	the schemas land. The token is the Codex control height, so the reservation tracks the
 	field it stands in for. */
 .ext-neowiki-schema-picker {
 	min-height: @min-size-interactive-pointer;

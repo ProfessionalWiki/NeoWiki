@@ -357,7 +357,7 @@ describe( 'SubjectCreatorDialog', () => {
 		canCreateSchemas.value = true;
 		( useSchemaPermissions as any ).mockReturnValue( {
 			canCreateSchemas,
-			checkCreatePermission: vi.fn(),
+			checkCreatePermission: vi.fn().mockResolvedValue( undefined ),
 		} );
 	} );
 
@@ -390,6 +390,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 	it( 'hides schema selector after schema selection', async () => {
 		const wrapper = mountComponent();
+		await flushPromises();
 
 		expect( wrapper.find( '.schema-lookup-stub' ).exists() ).toBe( true );
 
@@ -436,6 +437,7 @@ describe( 'SubjectCreatorDialog', () => {
 		const picked = newSchema( { title: SCHEMA_NAME, description: 'from the repository' } );
 		getSchemaMock.mockResolvedValue( picked );
 		const wrapper = mountComponent();
+		await flushPromises();
 
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
@@ -446,6 +448,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 	it( 'opens the editor on a Subject the wiki does not hold yet after schema selection', async () => {
 		const wrapper = mountComponent();
+		await flushPromises();
 
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
@@ -462,6 +465,7 @@ describe( 'SubjectCreatorDialog', () => {
 	// (ADR 31): its Schema name, flagged as one nobody chose.
 	it( 'hands the editor a Subject whose name nobody chose', async () => {
 		const wrapper = mountComponent();
+		await flushPromises();
 
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
@@ -476,6 +480,7 @@ describe( 'SubjectCreatorDialog', () => {
 	// A further Subject on the page is not the Main Subject, so it needs no label.
 	it( 'leaves save reachable once a schema is picked, even with the label untouched', async () => {
 		const wrapper = mountComponent();
+		await flushPromises();
 
 		expect( wrapper.find( '.edit-summary-stub' ).exists() ).toBe( false );
 
@@ -487,6 +492,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 	it( 'calls createMainSubject on save with correct arguments', async () => {
 		const wrapper = mountComponent();
+		await flushPromises();
 
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
@@ -501,6 +507,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 	it( 'sends no label when the field was left empty', async () => {
 		const wrapper = mountComponent();
+		await flushPromises();
 
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
@@ -513,6 +520,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 	it( 'does not pass summary when it is empty', async () => {
 		const wrapper = mountComponent();
+		await flushPromises();
 
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
@@ -525,6 +533,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 	it( 'calls createOtherSubject when the page already has a main subject', async () => {
 		const wrapper = mountComponent( {}, { hostPage: { hasMainSubject: true } } );
+		await flushPromises();
 
 		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
 		await flushPromises();
@@ -590,6 +599,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 		it( 'is saved', async () => {
 			const wrapper = mountComponent();
+			await flushPromises();
 
 			await saveEditedSchema( wrapper );
 
@@ -598,6 +608,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 		it( 'is handed to the editor', async () => {
 			const wrapper = mountComponent();
+			await flushPromises();
 
 			await saveEditedSchema( wrapper );
 
@@ -2337,7 +2348,7 @@ describe( 'SubjectCreatorDialog', () => {
 			schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [] );
 		} );
 
-		it( 'opens on a focused field offering to create a schema, where the right to create one is known only after the schemas arrive', async () => {
+		it( 'opens on a focused field offering to create a schema when the permission answer comes late', async () => {
 			const grantSchemaCreation = holdSchemaCreationRight();
 			const wrapper = mountWithPicker();
 			await open( wrapper );

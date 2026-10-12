@@ -13,8 +13,9 @@
 		<EditNoticeList :notices="shownNotices" />
 
 		<SchemaPicker
+			v-if="schemaPermissionKnown"
 			ref="schemaLookupRef"
-			:offers-creation="offersSchemaCreation"
+			:offers-creation="canCreateSchemas && offeredSchemaNames === undefined"
 			:schema-names="offeredSchemaNames"
 			@select="onSchemaSelected"
 			@create="openSchemaCreator"
@@ -636,7 +637,14 @@ watch( () => props.open, ( isOpen ) => {
 const schemaStore = useSchemaStore();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 const { canCreateSchemas, checkCreatePermission } = useSchemaPermissions();
+
+// The picker is rendered once this answer is in: Codex's lookup decides when it is created whether
+// focus opens its menu, and on a wiki without Schemas the offer to create one is all that menu holds.
 const schemaPermissionKnown = ref( false );
+const schemaPermissionChecked = checkCreatePermission().then( () => {
+	schemaPermissionKnown.value = true;
+} );
+
 const { hasChanged: formChanged, markChanged, resetChanged } = useChangeDetection();
 
 // The page question answered, where it was the user's to answer: a page picked, or a title typed
@@ -670,7 +678,7 @@ function onEditorUpdateOpen( value: boolean ): void {
 }
 
 onMounted( async () => {
-	await Promise.all( [ checkSchemaPermission(), checkCreateSubjectPagePermission() ] );
+	await Promise.all( [ schemaPermissionChecked, checkCreateSubjectPagePermission() ] );
 	startPageQuestion();
 
 	// Already open: the open watcher ran before pageChoice existed.
@@ -678,11 +686,6 @@ onMounted( async () => {
 		await applyInitialPageTarget();
 	}
 } );
-
-async function checkSchemaPermission(): Promise<void> {
-	await checkCreatePermission();
-	schemaPermissionKnown.value = true;
-}
 
 function openSchemaCreator( schemaName: string ): void {
 	requestSequence++;
@@ -704,10 +707,6 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 }
 
 const offeredSchemaNames = computed( (): readonly string[] | undefined => props.relationTarget?.schemaNames );
-
-const offersSchemaCreation = computed( (): boolean | null => schemaPermissionKnown.value ?
-	canCreateSchemas.value && offeredSchemaNames.value === undefined :
-	null );
 
 const givenSubjectId = computed( (): SubjectId | undefined => props.relationTarget?.subjectId );
 
@@ -997,6 +996,7 @@ watch( () => props.open, async ( isOpen ) => {
 		}
 
 		await pinInitialSchema();
+		await schemaPermissionChecked;
 		await nextTick();
 		schemaLookupRef.value?.focus();
 	} else {
