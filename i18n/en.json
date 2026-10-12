@@ -491,7 +491,6 @@
 	"neowiki-config-setting-subject-first-subject-first": "Subject-first",
 	"neowiki-config-setting-subject-first-subject-first-help": "Each new Subject gets its own page, and links to it lead to the Subject, not that page.",
 	"neowiki-config-setting-enforce-validation": "Block edits that add validation errors",
-	"neowiki-config-setting-enforce-validation-help": "Schemas decide which rules give errors. By default, rules give warnings.",
 	"neowiki-config-setting-auto-render-main-subject": "Automatically show Main Subjects as infoboxes",
 	"neowiki-config-setting-data-languages": "Data languages",
 	"neowiki-config-setting-data-languages-help": "Languages of the wiki's data, offered in this order when entering text with a language.",

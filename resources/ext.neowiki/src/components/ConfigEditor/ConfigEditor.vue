@@ -80,7 +80,6 @@
 			>
 				{{ enforcementLabel }}
 				<template #description>
-					<span class="ext-neowiki-config-editor__help">{{ $i18n( 'neowiki-config-setting-enforce-validation-help' ).text() }}</span>
 					<button
 						v-if="canReset( 'enforceValidation' )"
 						type="button"
