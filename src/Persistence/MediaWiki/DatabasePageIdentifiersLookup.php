@@ -75,7 +75,6 @@ class DatabasePageIdentifiersLookup implements PageIdentifiersLookup {
 			->select( '1' )
 			->from( DatabaseSubjectPageIndex::TABLE )
 			->join( 'page', null, 'page_id = nwsp_page_id' )
-			->limit( 1 )
 			->caller( __METHOD__ )
 			->fetchField() !== false;
 	}

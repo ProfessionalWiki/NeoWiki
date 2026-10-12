@@ -62,7 +62,6 @@ function findFirstSteps( wrapper: VueWrapper ): VueWrapper | undefined {
 		.find( ( message ) => message.text().includes( 'neowiki-overview-first-steps' ) );
 }
 
-// Left out or hidden, the reader does not see it either way.
 function isShown( component: VueWrapper | undefined ): boolean {
 	return component !== undefined && component.exists() && component.isVisible();
 }
@@ -224,7 +223,6 @@ describe( 'OverviewPage', () => {
 		expect( isShown( findFirstSteps( wrapper ) ) ).toBe( false );
 	} );
 
-	// The first steps point at the create button, which this user is not offered.
 	it( 'shows an empty wiki\'s recent Subjects rather than first steps to a user who may not create a subject', async () => {
 		grantedRight = false;
 		const wrapper = mountPage( { wikiHasSubjects: false } );
