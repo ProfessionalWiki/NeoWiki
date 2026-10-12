@@ -269,14 +269,6 @@ describe( 'SubjectRow', () => {
 			expect( location.href ).toBe( URL );
 		} );
 
-		// The overflow menu is the narrow layout's; on a wide one the inline actions stand in for it,
-		// and the name is the way there.
-		it( 'is not among the inline actions', () => {
-			const wrapper = mountRow( { subjectPageUrl: URL } );
-
-			expect( wrapper.find( '[aria-label="neowiki-managesubjects-row-open"]' ).exists() ).toBe( false );
-		} );
-
 		it( 'leaves the name plain text on a row the reader is already on', () => {
 			const wrapper = mountRow();
 

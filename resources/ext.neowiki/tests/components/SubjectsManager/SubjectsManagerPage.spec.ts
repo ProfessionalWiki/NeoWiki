@@ -418,8 +418,6 @@ describe( 'SubjectsManagerPage row copy-link action', () => {
 
 		const menus = wrapper.findAllComponents( CdxMenuButton );
 		expect( menus ).toHaveLength( 2 );
-		// The read-only user has neither edit nor delete rights, so copy-link is the whole menu: it is
-		// the one row action that is not permission-gated, and it makes the otherwise-empty ⋯ menu useful.
 		for ( const menu of menus ) {
 			expect( menu.props( 'menuItems' ).map( ( item ) => item.value ) ).toEqual( [ 'open', 'copy-link' ] );
 		}
@@ -617,8 +615,7 @@ describe( 'SubjectsManagerPage move action', () => {
 		expect( wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' ) ).toHaveLength( 2 );
 	} );
 
-	// Edit leads, as the action used most; the rest run from what changes nothing to what takes the
-	// row out of the listing, delete last. The main row's pin is its indicator, outside the strip.
+	// The main row's pin is its indicator, outside the strip.
 	it( 'orders each row\'s inline actions edit, copy-link, promote, move, delete', async () => {
 		const wrapper = await mountPage();
 

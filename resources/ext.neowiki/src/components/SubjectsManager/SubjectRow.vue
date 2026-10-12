@@ -321,8 +321,8 @@ const emit = defineEmits<{
 	'copy-link': [ subject: Subject ];
 }>();
 
-// A reader of these rows is browsing Subjects, so a relation in one leads where a link from a row
-// leads, on every surface that mounts the row.
+// A reader of these rows is browsing Subjects, so a relation in one follows the rule for links from
+// Subject listings rather than the one for Views, on every surface that mounts the row.
 provide( RelationTargetUrlKey, subjectLinkUrlFromRow );
 
 const displayName = computed( () => subjectDisplayName( props.subject ) );
