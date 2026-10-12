@@ -641,16 +641,14 @@ const partialSaveMessage = computed( (): string => partialSave.value === null ?
 	).text()
 );
 
-// Counted in pages as well as in Subjects, since each page written gets revisions of its own.
-// A Subject with no resolved page counts as a page of its own, and so does one whose page is not
-// created yet on a subject-first wiki, which gives every new Subject its own.
+// Counted in pages as well as in Subjects on a page-first wiki, since each page written gets
+// revisions of its own. A Subject with no resolved page counts as a page of its own.
 function pageKeyOf( subject: Subject ): string {
 	const pageId = subject.getPageIdentifiers().getPageId();
-	const pageOfItsOwn = !Number.isInteger( pageId ) || ( pageId === 0 && isSubjectFirst() );
 
-	return pageOfItsOwn ?
-		`subject:${ subject.getId().text }` :
-		`page:${ pageId }`;
+	return Number.isInteger( pageId ) ?
+		`page:${ pageId }` :
+		`subject:${ subject.getId().text }`;
 }
 
 const dirtyPageCount = computed( (): number => new Set(
@@ -658,12 +656,17 @@ const dirtyPageCount = computed( (): number => new Set(
 ).size );
 
 // Said only when it tells the user something the screen does not: the Save button plainly
-// writes the one dirty Subject in front of them.
+// writes the one dirty Subject in front of them. A subject-first wiki counts no pages, since
+// its users need not care which pages store their Subjects.
 const saveScopeText = computed( (): string => {
 	const dirty = unsavedIds.value;
 
 	if ( dirty.length === 0 || ( dirty.length === 1 && dirty[ 0 ] === activePaneId.value ) ) {
 		return '';
+	}
+
+	if ( isSubjectFirst() ) {
+		return mw.message( 'neowiki-subject-editor-save-scope-subject-first', dirty.length ).text();
 	}
 
 	return mw.message( 'neowiki-subject-editor-save-scope', dirty.length, dirtyPageCount.value ).text();

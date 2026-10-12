@@ -102,6 +102,7 @@ import { RelationTargetEditingKey } from '@/components/Value/ValueInputContract.
 import { withoutMissingValueViolations, withoutUnsavedTargetViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { isPlainLeftClick } from '@/presentation/plainLeftClick.ts';
+import { isSubjectFirst } from '@/wikiMode.ts';
 
 const props = defineProps<{
 	subject: Subject;
@@ -158,8 +159,13 @@ const schemaBadge = computed( (): string => props.subject.getSchemaName() );
 
 // A Subject bound for a page the save has yet to settle carries the page it will be stored on
 // without a title for it, and a Subject whose page the API could not resolve carries none at all.
-// Either way there is nothing to point at and nothing to name.
+// Either way there is nothing to point at and nothing to name. A subject-first wiki names no page
+// at all, since its users need not care which page stores a Subject.
 const pageName = computed( (): string | null => {
+	if ( isSubjectFirst() ) {
+		return null;
+	}
+
 	const name = props.subject.getPageIdentifiers().getPageName();
 
 	return name === undefined || name === '' ? null : name;

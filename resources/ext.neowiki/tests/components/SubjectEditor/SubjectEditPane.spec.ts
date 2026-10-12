@@ -75,6 +75,9 @@ interface MountPaneOptions {
 
 let pinia: ReturnType<typeof createPinia>;
 
+// What mw.config answers, read at each call, so a test can switch the wiki to subject-first.
+let wikiConfig: Record<string, unknown> = {};
+
 function mountPane( {
 	subject = defaultSubject,
 	schema = defaultSchema,
@@ -136,6 +139,9 @@ const subjectWithAuthor = defaultSubject.withStatements( new StatementList( [ ne
 
 describe( 'SubjectEditPane', () => {
 	beforeEach( () => {
+		// Debounce 0 is blur-only mode: the dry-run fires on blur / pre-save
+		// (via flush()), which runs synchronously in tests.
+		wikiConfig = { wgNeoWikiValidationDebounceMs: 0 };
 		setupMwMock( {
 			functions: [ 'message', 'msg', 'notify', 'config', 'util' ],
 			messages: {
@@ -143,9 +149,7 @@ describe( 'SubjectEditPane', () => {
 				// the sentence around it.
 				'neowiki-subject-editor-stored-on': ( page ) => `Kept on ${ page } for now`,
 			},
-			// Debounce 0 is blur-only mode: the dry-run fires on blur / pre-save
-			// (via flush()), which runs synchronously in tests.
-			config: { wgNeoWikiValidationDebounceMs: 0 },
+			config: wikiConfig,
 		} );
 
 		pinia = createPinia();
@@ -293,6 +297,14 @@ describe( 'SubjectEditPane', () => {
 				subject: subjectStoredOn( unresolvedPage() ),
 				nested: true,
 			} );
+
+			expect( wrapper.find( '.ext-neowiki-subject-edit-pane__storage' ).exists() ).toBe( false );
+		} );
+
+		it( 'names no storage page on a subject-first wiki', () => {
+			wikiConfig.wgNeoWikiSubjectFirst = true;
+
+			const wrapper = mountPane( { nested: true } );
 
 			expect( wrapper.find( '.ext-neowiki-subject-edit-pane__storage' ).exists() ).toBe( false );
 		} );

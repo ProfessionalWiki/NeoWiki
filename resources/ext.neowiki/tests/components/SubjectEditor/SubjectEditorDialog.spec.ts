@@ -2018,6 +2018,15 @@ describe( 'SubjectEditorDialog', () => {
 				expect( footerTextOf( wrapper ) ).toBe( '' );
 			} );
 
+			it( 'says nothing on a subject-first wiki when the only dirty subject is the one on screen', async () => {
+				wikiConfig.wgNeoWikiSubjectFirst = true;
+				const { wrapper } = await mountWithSecondPaneOpen();
+
+				await makePaneDirty( wrapper, 1 );
+
+				expect( footerTextOf( wrapper ) ).toBe( '' );
+			} );
+
 			it( 'names the scope when the one dirty subject is not on screen', async () => {
 				const { wrapper } = await mountWithSecondPaneOpen();
 
@@ -2049,14 +2058,15 @@ describe( 'SubjectEditorDialog', () => {
 				expect( footerTextOf( wrapper ) ).toBe( 'neowiki-subject-editor-save-scope22' );
 			} );
 
-			it( 'counts two dirty subjects stored on one page as a single page on a subject-first wiki too', async () => {
+			// Both on one page, so a page count would say 1 where the Subjects number 2.
+			it( 'counts no pages on a subject-first wiki', async () => {
 				wikiConfig.wgNeoWikiSubjectFirst = true;
 				const wrapper = await mountWithBothSubjectsOn( new PageIdentifiers( 7, 'Shared page' ) );
 
 				await makePaneDirty( wrapper, 0 );
 				await makePaneDirty( wrapper, 1 );
 
-				expect( footerTextOf( wrapper ) ).toBe( 'neowiki-subject-editor-save-scope21' );
+				expect( footerTextOf( wrapper ) ).toBe( 'neowiki-subject-editor-save-scope-subject-first2' );
 			} );
 
 			it( 'counts each dirty subject without a resolved page as a page of its own', async () => {
@@ -3099,25 +3109,6 @@ describe( 'SubjectEditorDialog', () => {
 				expect( mw.notify ).not.toHaveBeenCalled();
 			} );
 
-			it( 'names no storage page for a draft created from a subject stored on one, on a subject-first wiki', async () => {
-				wikiConfig.wgNeoWikiSubjectFirst = true;
-				const { wrapper } = await mountReadyForCreation();
-
-				await createTarget( wrapper );
-
-				expect( paneFor( wrapper, mintedId ).text() ).not.toContain( hostPage.getPageName() );
-			} );
-
-			it( 'counts a draft as a page of its own beside the subject it was created from, on a subject-first wiki', async () => {
-				wikiConfig.wgNeoWikiSubjectFirst = true;
-				const { wrapper } = await mountReadyForCreation();
-				await createReferencedTarget( wrapper );
-
-				await makePaneDirty( wrapper, 0 );
-
-				expect( footerTextOf( wrapper ) ).toBe( 'neowiki-subject-editor-save-scope22' );
-			} );
-
 			// A relation naming a draft is sound in the editor and unresolvable to the server,
 			// so every pane has to know which ids to withhold that complaint for.
 			it( 'tells every pane which target ids the session has yet to write', async () => {
@@ -3343,15 +3334,6 @@ describe( 'SubjectEditorDialog', () => {
 						expect.any( Number ),
 						'neowiki-subject-editor-summary-default-create',
 					);
-				} );
-
-				it( 'counts the root and a draft as two pages on a subject-first wiki', async () => {
-					wikiConfig.wgNeoWikiSubjectFirst = true;
-					const { wrapper } = await mountCreating( { rootSubject: rootOnPageToCome } );
-
-					await createReferencedTarget( wrapper );
-
-					expect( footerTextOf( wrapper ) ).toBe( 'neowiki-subject-editor-save-scope22' );
 				} );
 
 				it( 'counts the root and a draft as one page on a page-first wiki', async () => {

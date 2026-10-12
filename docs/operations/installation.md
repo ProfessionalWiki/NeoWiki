@@ -193,6 +193,7 @@ These are the settings you are most likely to change. For the full list with des
 |---|---|---|
 | Creator: "Store the subject on" | shown; defaults to the current page; a new page needs a title | hidden; always a new page |
 | Standalone target created inside the editor | non-main Subject on the edited Subject's page | its own page |
+| Pages named beside Subjects: the Page column of Subject tables; "Stored on" and the page count in the editor | shown | hidden |
 | Telling namesakes apart when picking a relation target | by their pages, then by their ids | by their ids |
 | Landing after save | the page | Special:Subject |
 | Links to Subjects in infoboxes and views | the page | Special:Subject |

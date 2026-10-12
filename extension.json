@@ -768,6 +768,7 @@
 				"neowiki-subject-editor-create-target-error",
 				"neowiki-subject-editor-partial-save",
 				"neowiki-subject-editor-save-scope",
+				"neowiki-subject-editor-save-scope-subject-first",
 				"neowiki-subject-editor-open-subjects",
 				"neowiki-subject-editor-resize-navigator",
 				"neowiki-schema-editor-resize-property-list",
