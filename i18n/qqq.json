@@ -509,5 +509,6 @@
 	"neowiki-overview-configuration": "Label of the link to [[MediaWiki:NeoWiki]] on [[Special:NeoWiki]], the page holding the wiki's NeoWiki settings.\n{{Identical|Settings}}",
 	"neowiki-overview-configuration-description": "Description of the card on [[Special:NeoWiki]] that leads to [[MediaWiki:NeoWiki]].",
 	"neowiki-overview-schemas-description": "Description of the card on [[Special:NeoWiki]] that leads to [[Special:Schemas]]. A schema defines a type of subject, such as Person, and its properties.",
+	"neowiki-overview-first-steps": "Note on [[Special:NeoWiki]], below the button that opens the 'create subject' dialog, shown while the wiki has no subjects yet. Only users who may create a subject page see it, as only they are offered that button. \"Create subject\" is the button's label, {{msg-mw|neowiki-createsubject-button}}.",
 	"neowiki-main-page-text": "Wikitext of the Main Page that NeoWiki's Docker setup writes in place of MediaWiki's own ({{msg-mw|mainpagetext}} and {{msg-mw|mainpagedocfooter}}) when it installs a wiki. {{#create_subject: page=new}} renders the button the text refers to, labelled {{msg-mw|neowiki-create-subject-default-label}}. Keep the wiki markup, {{#create_subject: page=new}}, the page names and the URLs unchanged; translate the link labels and the headings."
 }

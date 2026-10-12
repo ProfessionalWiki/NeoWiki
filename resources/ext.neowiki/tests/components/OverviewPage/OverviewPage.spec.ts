@@ -2,7 +2,7 @@ import { enableAutoUnmount, mount, VueWrapper, flushPromises } from '@vue/test-u
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
-import { CdxButton, CdxCard } from '@wikimedia/codex';
+import { CdxButton, CdxCard, CdxMessage } from '@wikimedia/codex';
 import OverviewPage from '@/components/OverviewPage/OverviewPage.vue';
 import RecentSubjectsTable from '@/components/SubjectsTable/RecentSubjectsTable.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
@@ -56,6 +56,16 @@ function findCreateSubjectButton( wrapper: VueWrapper ): VueWrapper | undefined 
 		.find( ( button ) => button.text().includes( 'neowiki-createsubject-button' ) );
 }
 
+function findFirstSteps( wrapper: VueWrapper ): VueWrapper | undefined {
+	return wrapper.findAllComponents( CdxMessage )
+		.find( ( message ) => message.text().includes( 'neowiki-overview-first-steps' ) );
+}
+
+// Left out or hidden, the reader does not see it either way.
+function isShown( component: VueWrapper | undefined ): boolean {
+	return component !== undefined && component.exists() && component.isVisible();
+}
+
 /**
  * Where each card in the map goes, in the order the map shows them. A card given a url is itself
  * the link, so its own href is the destination.
@@ -70,6 +80,11 @@ function findCard( wrapper: VueWrapper, href: string ): VueWrapper | undefined {
 
 function precedes( earlier: Element, later: Element ): boolean {
 	return earlier.compareDocumentPosition( later ) === Node.DOCUMENT_POSITION_FOLLOWING;
+}
+
+async function reportNoSubjects( wrapper: VueWrapper ): Promise<void> {
+	wrapper.findComponent( RecentSubjectsTable ).vm.$emit( 'empty' );
+	await flushPromises();
 }
 
 describe( 'OverviewPage', () => {
@@ -166,6 +181,58 @@ describe( 'OverviewPage', () => {
 
 		expect( precedes( createButton, map ) ).toBe( true );
 		expect( precedes( map, recentSubjects ) ).toBe( true );
+	} );
+
+	it( 'shows first steps on a wiki that has no Subjects yet', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+
+		await reportNoSubjects( wrapper );
+
+		expect( isShown( findFirstSteps( wrapper ) ) ).toBe( true );
+	} );
+
+	it( 'shows the first steps between the create button and the map', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+
+		await reportNoSubjects( wrapper );
+
+		const createButton = findCreateSubjectButton( wrapper )!.element;
+		const firstSteps = findFirstSteps( wrapper )!.element;
+		const map = wrapper.findComponent( CdxCard ).element;
+
+		expect( precedes( createButton, firstSteps ) ).toBe( true );
+		expect( precedes( firstSteps, map ) ).toBe( true );
+	} );
+
+	it( 'hides the empty recent Subjects while it shows first steps', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+
+		await reportNoSubjects( wrapper );
+
+		expect( isShown( wrapper.findComponent( RecentSubjectsTable ) ) ).toBe( false );
+	} );
+
+	it( 'keeps the recent Subjects, and shows no first steps, on a wiki that has some', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( isShown( wrapper.findComponent( RecentSubjectsTable ) ) ).toBe( true );
+		expect( isShown( findFirstSteps( wrapper ) ) ).toBe( false );
+	} );
+
+	// The first steps point at the create button, which this user is not offered.
+	it( 'keeps the recent Subjects of an empty wiki for a user who may not create a subject', async () => {
+		grantedRight = false;
+		const wrapper = mountPage();
+		await flushPromises();
+
+		await reportNoSubjects( wrapper );
+
+		expect( isShown( wrapper.findComponent( RecentSubjectsTable ) ) ).toBe( true );
+		expect( isShown( findFirstSteps( wrapper ) ) ).toBe( false );
 	} );
 
 	it( 'offers no Subject list on a wiki that cannot list Subjects', async () => {

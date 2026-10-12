@@ -985,7 +985,8 @@
 				"neowiki-overview-graph-stores-description",
 				"neowiki-overview-configuration",
 				"neowiki-overview-configuration-description",
-				"neowiki-overview-schemas-description"
+				"neowiki-overview-schemas-description",
+				"neowiki-overview-first-steps"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

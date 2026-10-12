@@ -89,4 +89,27 @@ describe( 'RecentSubjectsTable', () => {
 		expect( wrapper.text() ).toContain( 'neowiki-subjects-load-error' );
 	} );
 
+	it( 'reports a wiki that has no Subjects yet', async () => {
+		getSubjectSummaries.mockResolvedValue( { subjects: [], nextCursor: null } );
+		const wrapper = mountTable();
+		await flushPromises();
+
+		expect( wrapper.emitted( 'empty' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'reports nothing on a wiki that has Subjects', async () => {
+		const wrapper = mountTable();
+		await flushPromises();
+
+		expect( wrapper.emitted( 'empty' ) ).toBeUndefined();
+	} );
+
+	it( 'reports nothing when the request fails', async () => {
+		getSubjectSummaries.mockRejectedValue( new Error( 'boom' ) );
+		const wrapper = mountTable();
+		await flushPromises();
+
+		expect( wrapper.emitted( 'empty' ) ).toBeUndefined();
+	} );
+
 } );
