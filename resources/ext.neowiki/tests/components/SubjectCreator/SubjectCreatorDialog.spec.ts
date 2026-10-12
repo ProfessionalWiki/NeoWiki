@@ -2292,9 +2292,10 @@ describe( 'SubjectCreatorDialog', () => {
 
 	describe( 'on a wiki without schemas', () => {
 		// The picker itself, attached to the document, where focus is read from: whether focusing the
-		// field opens its menu is decided by Codex's lookup.
+		// field opens its menu is decided by Codex's lookup. Codex messages render their text, so the
+		// sentence is found whichever element holds it.
 		function mountWithPicker(): VueWrapper {
-			return mountComponent( { SchemaPicker: false }, {}, { attachTo: document.body } );
+			return mountComponent( { SchemaPicker: false, CdxMessage: false }, {}, { attachTo: document.body } );
 		}
 
 		async function open( wrapper: VueWrapper ): Promise<void> {
@@ -2336,7 +2337,7 @@ describe( 'SubjectCreatorDialog', () => {
 			schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [] );
 		} );
 
-		it( 'opens on a focused field offering to create a schema, where the right to arrives after the schemas', async () => {
+		it( 'opens on a focused field offering to create a schema, where the right to create one is known only after the schemas arrive', async () => {
 			const grantSchemaCreation = holdSchemaCreationRight();
 			const wrapper = mountWithPicker();
 			await open( wrapper );

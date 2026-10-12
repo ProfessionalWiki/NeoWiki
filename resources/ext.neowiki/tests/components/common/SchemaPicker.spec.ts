@@ -550,8 +550,16 @@ describe( 'SchemaPicker', () => {
 
 			const wrapper = await mountPickerSaying( { offersCreation: false } );
 
-			expect( wrapper.text() ).toBe( SAID_INSTEAD );
+			expect( wrapper.text() ).toContain( SAID_INSTEAD );
 			expect( field( wrapper ).exists() ).toBe( false );
+		} );
+
+		it( 'is held back while the caller has yet to decide whether to offer creation', async () => {
+			schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [] );
+
+			const wrapper = await mountPickerSaying( { offersCreation: null } );
+
+			expect( wrapper.text() ).not.toContain( SAID_INSTEAD );
 		} );
 
 		it( 'leaves the field where the wiki has schemas', async () => {
