@@ -102,6 +102,12 @@ it( 'creates a relation property definition without target schemas from JSON nam
 	expect( property.targetSchemas ).toEqual( [] );
 } );
 
+it( 'creates a relation property definition with one target schema from JSON holding a single targetSchema', () => {
+	const property = serializer.propertyDefinitionFromJson( 'test', { type: 'relation', targetSchema: 'Company' } ) as RelationProperty;
+
+	expect( property.targetSchemas ).toEqual( [ 'Company' ] );
+} );
+
 it( 'creates a relation property definition with all fields', () => {
 	const json = {
 		type: 'relation',

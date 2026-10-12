@@ -45,11 +45,18 @@ export class RelationType extends BasePropertyType<RelationProperty, RelationVal
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): RelationProperty {
 		return {
 			...base,
-			targetSchemas: json.targetSchemas ?? [],
+			targetSchemas: json.targetSchemas ?? singleTargetSchema( json ),
 			multiple: json.multiple ?? false,
 		} as RelationProperty;
 	}
 
+}
+
+/**
+ * Schemas saved before a relation property could list several target Schemas hold its one target in `targetSchema`.
+ */
+function singleTargetSchema( json: { targetSchema?: SchemaReference } ): SchemaReference[] {
+	return json.targetSchema === undefined ? [] : [ json.targetSchema ];
 }
 
 type RelationPropertyAttributes = Omit<Partial<RelationProperty>, 'name'> & {

@@ -152,9 +152,20 @@ JSON
 		);
 	}
 
-	public function testExceptionOnTargetSchemaInPlaceOfTargetSchemas(): void {
-		$this->expectException( InvalidArgumentException::class );
-		$this->fromJson( '{ "type": "relation", "targetSchema": "Person" }' );
+	public function testSingleTargetSchemaIsReadAsTargetSchemas(): void {
+		$this->assertJsonStringEqualsJsonString(
+			<<<JSON
+{
+	"type": "relation",
+	"description": "",
+	"required": false,
+	"default": null,
+	"targetSchemas": [ "Person" ],
+	"multiple": false
+}
+JSON,
+			$this->deserializeAndReserialize( '{ "type": "relation", "targetSchema": "Person" }' )
+		);
 	}
 
 	public function testExceptionOnEmptyTargetSchemas(): void {

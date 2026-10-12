@@ -62,10 +62,10 @@ class RelationProperty extends PropertyDefinition {
 	}
 
 	/**
-	 * @throws InvalidArgumentException When `targetSchemas` is not a non-empty list of Schema references.
+	 * @throws InvalidArgumentException When the target Schemas are not a non-empty list of Schema references.
 	 */
 	public static function fromPartialJson( PropertyCore $core, array $property, SchemaReferenceParser $schemaReferenceParser ): self {
-		$targetSchemas = $property['targetSchemas'] ?? null;
+		$targetSchemas = $property['targetSchemas'] ?? self::singleTargetSchema( $property );
 
 		if ( !is_array( $targetSchemas ) || !array_is_list( $targetSchemas ) ) {
 			throw new InvalidArgumentException( 'The target Schemas of a relation property must be a list' );
@@ -76,6 +76,13 @@ class RelationProperty extends PropertyDefinition {
 			targetSchemas: self::withoutRepeats( array_map( $schemaReferenceParser->fromJson( ... ), $targetSchemas ) ),
 			multiple: $property['multiple'] ?? false,
 		);
+	}
+
+	/**
+	 * Schemas saved before a relation property could list several target Schemas hold its one target in `targetSchema`.
+	 */
+	private static function singleTargetSchema( array $property ): ?array {
+		return array_key_exists( 'targetSchema', $property ) ? [ $property['targetSchema'] ] : null;
 	}
 
 	/**

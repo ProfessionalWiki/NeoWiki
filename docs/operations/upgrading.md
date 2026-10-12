@@ -73,10 +73,10 @@ If your Subjects predate the optional Subject label, run
 ## Relations model changed, October 2026
 
 A relation property now lists its target Schemas in `targetSchemas` and has no `relation` field
-([Schema format](../api/schema-format.md#relation-relation)). NeoWiki no longer reads one that still holds
-`targetSchema`, though its Relations stay: change `"targetSchema": "City"` to `"targetSchemas": [ "City" ]`, or pick its
-target Schemas again in the Schema editor. `nw.getSchema` gives Lua modules `targetSchemas`, a list, in place of
-`targetSchema` and `relation`, and `SubjectPicker` takes `targetSchemas` in place of `targetSchema`.
+([Schema format](../api/schema-format.md#relation-relation)). One that still holds `targetSchema` keeps working; the
+Schema editor rewrites it on the next save. Scripts and page-source edits that save Schema JSON need `targetSchemas`:
+`"targetSchema": "City"` becomes `"targetSchemas": [ "City" ]`. `nw.getSchema` gives Lua modules `targetSchemas`, a
+list, in place of `targetSchema` and `relation`, and `SubjectPicker` takes `targetSchemas` in place of `targetSchema`.
 
 Relation edges in Neo4j and relation predicates in the native RDF now take the property's name instead of the
 `relation` field's. Cypher and SPARQL that use an old name return nothing until edited: `` -[:`Born in`]-> `` becomes
