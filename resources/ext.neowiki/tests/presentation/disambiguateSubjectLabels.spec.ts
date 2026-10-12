@@ -1,10 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { disambiguateSubjectLabels } from '@/presentation/disambiguateSubjectLabels.ts';
 import type { SubjectLabelResult } from '@/domain/SubjectLabelSearch.ts';
+import { setupMwMock } from '../VueTestHelpers.ts';
 
 const UNDECORATED = { showPageTitle: false, showId: false };
 
 describe( 'disambiguateSubjectLabels', () => {
+	beforeEach( () => {
+		setupMwMock();
+	} );
+
 	it( 'leaves a lone result undecorated', () => {
 		expect( disambiguateSubjectLabels( [
 			{ id: 's1demo1aaaaaaa1', label: 'ACME Inc.', pageTitle: 'ACME Holdings' },
@@ -137,6 +142,32 @@ describe( 'disambiguateSubjectLabels', () => {
 
 		expect( disambiguated.map( ( result ) => result.showPageTitle ) ).toEqual( [ false, false ] );
 		expect( disambiguated.map( ( result ) => result.showId ) ).toEqual( [ true, true ] );
+	} );
+
+	describe( 'on a subject-first wiki', () => {
+		beforeEach( () => {
+			setupMwMock( { config: { wgNeoWikiSubjectFirst: true } } );
+		} );
+
+		it( 'tells namesakes apart by their ids alone', () => {
+			const disambiguated = disambiguateSubjectLabels( [
+				{ id: 's1demo1aaaaaaa1', label: 'Frans Hals', pageTitle: 'Subject:S1demo1aaaaaaa1' },
+				{ id: 's1demo1aaaaaaa2', label: 'Frans Hals', pageTitle: 'Subject:S1demo1aaaaaaa2' },
+			] );
+
+			expect( disambiguated.map( ( result ) => result.showPageTitle ) ).toEqual( [ false, false ] );
+			expect( disambiguated.map( ( result ) => result.showId ) ).toEqual( [ true, true ] );
+		} );
+
+		it( 'leaves results nobody can confuse undecorated', () => {
+			const disambiguated = disambiguateSubjectLabels( [
+				{ id: 's1demo1aaaaaaa1', label: 'Frans Hals', pageTitle: 'Subject:S1demo1aaaaaaa1' },
+				{ id: 's1demo1aaaaaaa2', label: 'Judith Leyster', pageTitle: 'Subject:S1demo1aaaaaaa2' },
+			] );
+
+			expect( disambiguated.map( ( result ) => result.showPageTitle ) ).toEqual( [ false, false ] );
+			expect( disambiguated.map( ( result ) => result.showId ) ).toEqual( [ false, false ] );
+		} );
 	} );
 
 } );

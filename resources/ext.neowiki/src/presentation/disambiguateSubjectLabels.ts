@@ -1,4 +1,5 @@
 import type { SubjectLabelResult } from '@/domain/SubjectLabelSearch.ts';
+import { isSubjectFirst } from '@/wikiMode.ts';
 
 /**
  * A search result together with what it has to show beyond its label to be told apart from its
@@ -16,7 +17,8 @@ export interface DisambiguatedSubjectLabel extends SubjectLabelResult {
  *
  * One rule per tier: show it where it carries information — it is there, and does not merely repeat
  * the tier above — and where the row is not yet unique among those shown. A page repeating its
- * label is what the one-step create flow leaves behind.
+ * label is what the one-step create flow leaves behind. On a subject-first wiki no page carries any:
+ * each is titled by its Subject's id and kept out of the reader's sight.
  *
  * The rows compared are the ones answered rather than the wiki's, so a namesake beyond that window
  * goes unmarked.
@@ -25,7 +27,7 @@ export function disambiguateSubjectLabels( results: SubjectLabelResult[] ): Disa
 	const rows = results.map( ( result ) => ( {
 		result,
 		label: asRendered( result.label ),
-		pageTitle: asRendered( result.pageTitle ),
+		pageTitle: isSubjectFirst() ? '' : asRendered( result.pageTitle ),
 	} ) );
 
 	const pagesByLabel = new Map<string, string[]>();

@@ -117,6 +117,7 @@ describe( 'SubjectPicker', () => {
 	}
 
 	beforeEach( () => {
+		setupMwMock();
 		pinia = createPinia();
 		setActivePinia( pinia );
 
