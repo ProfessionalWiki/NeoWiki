@@ -192,6 +192,19 @@ describe( 'OverviewPage', () => {
 		expect( isShown( findFirstSteps( wrapper ) ) ).toBe( true );
 	} );
 
+	// The rights come from an API request, which can finish after the Subjects load.
+	it( 'shows first steps when the right to create is confirmed after the wiki turns out empty', async () => {
+		grantedRight = false;
+		const wrapper = mountPage();
+		await flushPromises();
+		await reportNoSubjects( wrapper );
+
+		canCreateSubjectPageRef.value = true;
+		await flushPromises();
+
+		expect( isShown( findFirstSteps( wrapper ) ) ).toBe( true );
+	} );
+
 	it( 'shows the first steps between the create button and the map', async () => {
 		const wrapper = mountPage();
 		await flushPromises();
