@@ -70,4 +70,14 @@ class DatabasePageIdentifiersLookup implements PageIdentifiersLookup {
 		return $pageIdentifiers;
 	}
 
+	public function wikiHasSubjects(): bool {
+		return $this->db->newSelectQueryBuilder()
+			->select( '1' )
+			->from( DatabaseSubjectPageIndex::TABLE )
+			->join( 'page', null, 'page_id = nwsp_page_id' )
+			->limit( 1 )
+			->caller( __METHOD__ )
+			->fetchField() !== false;
+	}
+
 }

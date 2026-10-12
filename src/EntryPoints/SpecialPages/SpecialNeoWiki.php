@@ -38,6 +38,10 @@ class SpecialNeoWiki extends SpecialPage {
 			$attributes['data-mw-neowiki-can-edit-configuration'] = 'true';
 		}
 
+		if ( NeoWikiExtension::getInstance()->getPageIdentifiersLookup()->wikiHasSubjects() ) {
+			$attributes['data-mw-neowiki-wiki-has-subjects'] = 'true';
+		}
+
 		$this->getOutput()->addHTML( Html::element( 'div', $attributes ) );
 	}
 

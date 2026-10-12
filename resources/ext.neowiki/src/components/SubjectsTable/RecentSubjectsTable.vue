@@ -59,11 +59,6 @@ import { subjectColumns } from '@/presentation/subjectSummaryTable.ts';
 
 const RECENT_COUNT = 5;
 
-const emit = defineEmits<{
-	/** The Subjects loaded, and there are none. A failed load emits nothing. */
-	empty: [];
-}>();
-
 const lookup = NeoWikiServices.getSubjectSummaryLookup();
 
 const rows = ref<SubjectSummary[]>( [] );
@@ -79,10 +74,6 @@ onMounted( async () => {
 		rows.value = ( await lookup.getSubjectSummaries( {
 			schema: null, search: '', sort: 'newest', direction: 'desc', cursor: null, limit: RECENT_COUNT
 		} ) ).subjects;
-
-		if ( rows.value.length === 0 ) {
-			emit( 'empty' );
-		}
 	} catch {
 		loadFailed.value = true;
 	}

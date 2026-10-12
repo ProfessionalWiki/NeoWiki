@@ -38,10 +38,7 @@
 			</CdxCard>
 		</div>
 
-		<RecentSubjectsTable
-			v-if="showsRecentSubjects"
-			@empty="noSubjectsYet = true"
-		/>
+		<RecentSubjectsTable v-if="showsRecentSubjects" />
 
 		<SubjectCreatorDialog
 			v-if="canCreateSubjectPage"
@@ -115,17 +112,22 @@ const CONFIGURATION_LINK = {
 const props = defineProps<{
 	canManageGraphStores: boolean;
 	canEditConfiguration: boolean;
+	wikiHasSubjects: boolean;
 }>();
 
 const subjectStore = useSubjectStore();
 const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
 
 const subjectListAvailable = isSubjectListAvailable();
-const noSubjectsYet = ref( false );
+const permissionKnown = ref( false );
 
 // The note points at the create button, so only those offered the button get it.
-const showsFirstSteps = computed( () => noSubjectsYet.value && canCreateSubjectPage.value );
-const showsRecentSubjects = computed( () => subjectListAvailable && !showsFirstSteps.value );
+const showsFirstSteps = computed( () => !props.wikiHasSubjects && canCreateSubjectPage.value );
+
+// Without Subjects, the table waits to learn whether the note takes its place, so it never loads there.
+const showsRecentSubjects = computed(
+	() => subjectListAvailable && ( props.wikiHasSubjects || ( permissionKnown.value && !showsFirstSteps.value ) )
+);
 
 const pageLinks = computed( () => [
 	...( subjectListAvailable ? [ SUBJECTS_LINK ] : [] ),
@@ -138,7 +140,10 @@ function pageUrl( page: string ): string {
 	return mw.util.getUrl( page );
 }
 
-onMounted( checkCreateSubjectPagePermission );
+onMounted( async () => {
+	await checkCreateSubjectPagePermission();
+	permissionKnown.value = true;
+} );
 </script>
 
 <style lang="less">

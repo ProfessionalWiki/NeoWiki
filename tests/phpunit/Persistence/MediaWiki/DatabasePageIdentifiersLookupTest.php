@@ -93,6 +93,24 @@ class DatabasePageIdentifiersLookupTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( [], $this->newLookup()->getPageIdsOfSubjects( new SubjectIdList( [] ) ) );
 	}
 
+	public function testAWikiWithoutIndexedSubjectsHasNoSubjects(): void {
+		$this->createPage( 'Page without Subjects' );
+
+		$this->assertFalse( $this->newLookup()->wikiHasSubjects() );
+	}
+
+	public function testAWikiWithASubjectOnAPageHasSubjects(): void {
+		$this->index( self::SUBJECT_ID, $this->createPage( 'Indexed page' ) );
+
+		$this->assertTrue( $this->newLookup()->wikiHasSubjects() );
+	}
+
+	public function testTheRowsADeletedPageLeftBehindAreNoSubjectsOfTheWiki(): void {
+		$this->index( self::SUBJECT_ID, self::MISSING_PAGE_ID );
+
+		$this->assertFalse( $this->newLookup()->wikiHasSubjects() );
+	}
+
 	private function newLookup(): PageIdentifiersLookup {
 		return new DatabasePageIdentifiersLookup(
 			$this->getDb(),

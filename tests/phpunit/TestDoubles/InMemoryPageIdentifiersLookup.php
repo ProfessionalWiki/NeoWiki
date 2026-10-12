@@ -58,4 +58,8 @@ class InMemoryPageIdentifiersLookup implements PageIdentifiersLookup {
 		return $found;
 	}
 
+	public function wikiHasSubjects(): bool {
+		return $this->pageIdentifiers !== [];
+	}
+
 }

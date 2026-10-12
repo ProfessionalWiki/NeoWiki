@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\SpecialPages;
 
 use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialNeoWiki;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndex;
 use SpecialPageTestBase;
 
 /**
@@ -17,6 +18,7 @@ class SpecialNeoWikiTest extends SpecialPageTestBase {
 
 	private const string GRAPH_STORES_ATTRIBUTE = 'data-mw-neowiki-can-manage-graph-stores';
 	private const string CONFIGURATION_ATTRIBUTE = 'data-mw-neowiki-can-edit-configuration';
+	private const string SUBJECTS_ATTRIBUTE = 'data-mw-neowiki-wiki-has-subjects';
 
 	protected function newSpecialPage(): SpecialNeoWiki {
 		return new SpecialNeoWiki();
@@ -79,6 +81,22 @@ class SpecialNeoWikiTest extends SpecialPageTestBase {
 		$this->assertStringNotContainsString( self::CONFIGURATION_ATTRIBUTE, $output );
 	}
 
+	public function testFlagsAWikiWithSubjects(): void {
+		$this->indexASubjectOn( $this->getExistingTestPage()->getId() );
+
+		/** @var string $output */
+		[ $output ] = $this->executeSpecialPage( '', null, null, $this->getTestUser()->getUser() );
+
+		$this->assertStringContainsString( self::SUBJECTS_ATTRIBUTE . '="true"', $output );
+	}
+
+	public function testDoesNotFlagAWikiWithoutSubjects(): void {
+		/** @var string $output */
+		[ $output ] = $this->executeSpecialPage( '', null, null, $this->getTestUser()->getUser() );
+
+		$this->assertStringNotContainsString( self::SUBJECTS_ATTRIBUTE, $output );
+	}
+
 	/**
 	 * Covers what instantiating the class directly cannot: that extension.json registers the page, and
 	 * that it is listed for everyone.
@@ -88,6 +106,14 @@ class SpecialNeoWikiTest extends SpecialPageTestBase {
 
 		$this->assertArrayHasKey( 'NeoWiki', $listed );
 		$this->assertFalse( $listed['NeoWiki']->isRestricted() );
+	}
+
+	private function indexASubjectOn( int $pageId ): void {
+		$this->getDb()->newInsertQueryBuilder()
+			->insertInto( DatabaseSubjectPageIndex::TABLE )
+			->row( [ 'nwsp_subject_id' => 's11111111111111', 'nwsp_page_id' => $pageId ] )
+			->caller( __METHOD__ )
+			->execute();
 	}
 
 }

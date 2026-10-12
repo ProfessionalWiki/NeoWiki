@@ -38,11 +38,12 @@ let pinia: ReturnType<typeof createPinia>;
 interface OverviewProps {
 	canManageGraphStores: boolean;
 	canEditConfiguration: boolean;
+	wikiHasSubjects: boolean;
 }
 
 function mountPage( offered: Partial<OverviewProps> = {} ): VueWrapper {
 	return mount( OverviewPage, {
-		props: { canManageGraphStores: false, canEditConfiguration: false, ...offered },
+		props: { canManageGraphStores: false, canEditConfiguration: false, wikiHasSubjects: true, ...offered },
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
@@ -80,11 +81,6 @@ function findCard( wrapper: VueWrapper, href: string ): VueWrapper | undefined {
 
 function precedes( earlier: Element, later: Element ): boolean {
 	return earlier.compareDocumentPosition( later ) === Node.DOCUMENT_POSITION_FOLLOWING;
-}
-
-async function reportNoSubjects( wrapper: VueWrapper ): Promise<void> {
-	wrapper.findComponent( RecentSubjectsTable ).vm.$emit( 'empty' );
-	await flushPromises();
 }
 
 describe( 'OverviewPage', () => {
@@ -183,33 +179,16 @@ describe( 'OverviewPage', () => {
 		expect( precedes( map, recentSubjects ) ).toBe( true );
 	} );
 
-	it( 'shows first steps on a wiki that has no Subjects yet', async () => {
-		const wrapper = mountPage();
-		await flushPromises();
-
-		await reportNoSubjects( wrapper );
-
-		expect( isShown( findFirstSteps( wrapper ) ) ).toBe( true );
-	} );
-
-	// The rights come from an API request, which can finish after the Subjects load.
-	it( 'shows first steps when the right to create is confirmed after the wiki turns out empty', async () => {
-		grantedRight = false;
-		const wrapper = mountPage();
-		await flushPromises();
-		await reportNoSubjects( wrapper );
-
-		canCreateSubjectPageRef.value = true;
+	it( 'shows first steps on a wiki without Subjects to a user who may create one', async () => {
+		const wrapper = mountPage( { wikiHasSubjects: false } );
 		await flushPromises();
 
 		expect( isShown( findFirstSteps( wrapper ) ) ).toBe( true );
 	} );
 
 	it( 'shows the first steps between the create button and the map', async () => {
-		const wrapper = mountPage();
+		const wrapper = mountPage( { wikiHasSubjects: false } );
 		await flushPromises();
-
-		await reportNoSubjects( wrapper );
 
 		const createButton = findCreateSubjectButton( wrapper )!.element;
 		const firstSteps = findFirstSteps( wrapper )!.element;
@@ -219,13 +198,22 @@ describe( 'OverviewPage', () => {
 		expect( precedes( firstSteps, map ) ).toBe( true );
 	} );
 
-	it( 'hides the empty recent Subjects while it shows first steps', async () => {
-		const wrapper = mountPage();
+	// Left out rather than hidden: the table loads its Subjects as soon as it is there.
+	it( 'loads no recent Subjects while it shows first steps', async () => {
+		const wrapper = mountPage( { wikiHasSubjects: false } );
 		await flushPromises();
 
-		await reportNoSubjects( wrapper );
+		expect( wrapper.findComponent( RecentSubjectsTable ).exists() ).toBe( false );
+	} );
 
-		expect( isShown( wrapper.findComponent( RecentSubjectsTable ) ) ).toBe( false );
+	it( 'waits for the permission check before loading the recent Subjects of a wiki without any', async () => {
+		checkCreateSubjectPagePermissionMock.mockReturnValueOnce( new Promise( () => {
+			// Never settles.
+		} ) );
+		const wrapper = mountPage( { wikiHasSubjects: false } );
+		await flushPromises();
+
+		expect( wrapper.findComponent( RecentSubjectsTable ).exists() ).toBe( false );
 	} );
 
 	it( 'shows the recent Subjects rather than first steps on a wiki that has some', async () => {
@@ -239,10 +227,8 @@ describe( 'OverviewPage', () => {
 	// The first steps point at the create button, which this user is not offered.
 	it( 'shows an empty wiki\'s recent Subjects rather than first steps to a user who may not create a subject', async () => {
 		grantedRight = false;
-		const wrapper = mountPage();
+		const wrapper = mountPage( { wikiHasSubjects: false } );
 		await flushPromises();
-
-		await reportNoSubjects( wrapper );
 
 		expect( isShown( wrapper.findComponent( RecentSubjectsTable ) ) ).toBe( true );
 		expect( isShown( findFirstSteps( wrapper ) ) ).toBe( false );

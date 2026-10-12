@@ -301,9 +301,10 @@ function initializeOverviewPage(): void {
 			const ext = NeoWikiExtension.getInstance();
 			const canManageGraphStores = overviewPage.dataset.mwNeowikiCanManageGraphStores === 'true';
 			const canEditConfiguration = overviewPage.dataset.mwNeowikiCanEditConfiguration === 'true';
+			const wikiHasSubjects = overviewPage.dataset.mwNeowikiWikiHasSubjects === 'true';
 
 			// The Subject creator this page opens reaches value inputs that use v-tooltip.
-			const app = createMwApp( OverviewPage, { canManageGraphStores, canEditConfiguration } )
+			const app = createMwApp( OverviewPage, { canManageGraphStores, canEditConfiguration, wikiHasSubjects } )
 				.directive( 'tooltip', CdxTooltip );
 			app.use( ext.getPinia() );
 			NeoWikiServices.registerServices( app );
