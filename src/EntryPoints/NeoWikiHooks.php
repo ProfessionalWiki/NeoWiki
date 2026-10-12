@@ -1118,7 +1118,8 @@ class NeoWikiHooks {
 		$title = $sktemplate->getTitle();
 
 		if ( $title !== null && NeoWikiExtension::getInstance()->isConfigPage( $title ) ) {
-			self::removeNamespaceTab( $title, $links );
+			self::removeNamespaceTabs( $title, $links );
+			self::labelSettingsFormTabs( $sktemplate, $title, $links );
 		}
 
 		if ( !SubjectsAction::isEligibleTitle( $title ) ) {
@@ -1135,13 +1136,28 @@ class NeoWikiHooks {
 	}
 
 	/**
-	 * The heading names the settings page, where this tab would call it "Message", as on other MediaWiki: pages.
+	 * The settings page shows neither "Message", as other MediaWiki: pages call themselves, nor "Discussion".
 	 * Current skins draw associated-pages, to which core copies no removal from namespaces.
 	 */
-	private static function removeNamespaceTab( Title $title, array &$links ): void {
-		$tabKey = $title->getNamespaceKey( '' );
+	private static function removeNamespaceTabs( Title $title, array &$links ): void {
+		$subjectKey = $title->getNamespaceKey( '' );
 
-		unset( $links['associated-pages'][$tabKey], $links['namespaces'][$tabKey] );
+		foreach ( [ $subjectKey, $subjectKey . '_talk' ] as $tabKey ) {
+			unset( $links['associated-pages'][$tabKey], $links['namespaces'][$tabKey] );
+		}
+	}
+
+	/**
+	 * For someone who may change the settings, viewing the page opens the settings form, so its tab is an Edit, beside
+	 * the Edit source of the JSON.
+	 */
+	private static function labelSettingsFormTabs( SkinTemplate $skin, Title $title, array &$links ): void {
+		$mayEdit = $skin->getAuthority()->probablyCan( 'edit', $title );
+
+		if ( $mayEdit && isset( $links['views']['view'] ) && isset( $links['views']['edit'] ) ) {
+			$links['views']['view']['text'] = $skin->msg( 'skin-view-edit' )->text();
+			$links['views']['edit']['text'] = $skin->msg( 'neowiki-config-editor-edit-source-tab' )->text();
+		}
 	}
 
 	private static function handleLayoutPage( OutputPage $out, Skin $skin ): void {
