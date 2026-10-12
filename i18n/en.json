@@ -560,7 +560,7 @@
 	"neowiki-create-subject-error-uncreatable-page-subject-first": "\"$1\" does not exist, and on this wiki a page created for a subject is titled by its ID. Use page=new, or name a page that exists.",
 	"neowiki-create-subject-denied": "You do not have permission to create a subject.",
 	"neowiki-subject-page-immovable": "This page is titled by the ID of a subject stored on it. A page titled that way cannot be moved on this wiki.",
-	"neowiki-special-neowiki": "NeoWiki",
+	"neowiki-special-neowiki": "NeoWiki overview",
 	"neowiki-sidebar-overview": "Overview",
 	"neowiki-overview-layouts-description": "Configure how subjects are displayed.",
 	"neowiki-overview-mappings-description": "Express your data in standard ontologies.",
