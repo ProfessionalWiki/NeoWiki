@@ -228,7 +228,7 @@ describe( 'OverviewPage', () => {
 		expect( isShown( wrapper.findComponent( RecentSubjectsTable ) ) ).toBe( false );
 	} );
 
-	it( 'keeps the recent Subjects, and shows no first steps, on a wiki that has some', async () => {
+	it( 'shows the recent Subjects rather than first steps on a wiki that has some', async () => {
 		const wrapper = mountPage();
 		await flushPromises();
 
@@ -237,7 +237,7 @@ describe( 'OverviewPage', () => {
 	} );
 
 	// The first steps point at the create button, which this user is not offered.
-	it( 'keeps the recent Subjects of an empty wiki for a user who may not create a subject', async () => {
+	it( 'shows an empty wiki\'s recent Subjects rather than first steps to a user who may not create a subject', async () => {
 		grantedRight = false;
 		const wrapper = mountPage();
 		await flushPromises();
