@@ -58,11 +58,6 @@ describe( 'SchemaCreator', () => {
 						template: '<input class="cdx-text-input-stub" :value="modelValue" @input="$emit( \'update:modelValue\', $event.target.value ); $emit( \'input\' )" />',
 						props: [ 'modelValue', 'placeholder' ],
 						emits: [ 'update:modelValue', 'input' ],
-						methods: {
-							focus(): void {
-								( this.$el as HTMLInputElement ).focus();
-							},
-						},
 					},
 				},
 				provide: {

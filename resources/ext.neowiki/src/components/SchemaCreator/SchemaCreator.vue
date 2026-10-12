@@ -75,9 +75,13 @@ const schemaEditorRef = ref<SchemaEditorExposes | null>( null );
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let requestSequence = 0;
 
-// The name is the field to fill in first. Deferred, as the editor of a duplicate's first property definition takes the
-// focus once mounted.
-onMounted( () => nextTick( () => nameInput.value?.focus() ) );
+// The Schema editor focuses a duplicate's first property definition; the name is the field to fill in first. A new
+// Schema is left to Codex, which focuses the name itself: focusing it sooner stops Codex returning the focus on close.
+onMounted( () => {
+	if ( props.duplicateOf !== undefined ) {
+		nextTick( () => nameInput.value?.focus() );
+	}
+} );
 
 function onChange(): void {
 	emit( 'change' );

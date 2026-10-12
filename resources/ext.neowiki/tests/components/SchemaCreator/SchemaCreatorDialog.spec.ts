@@ -230,27 +230,29 @@ describe( 'SchemaCreatorDialog', () => {
 		expect( wrapper.findComponent( CdxDialog ).props( 'title' ) ).toBe( 'neowiki-schema-creator-duplicate-titleCompany' );
 	} );
 
-	describe( 'Duplicating', () => {
-		// With the real creator and Schema editor, which are what fill the dialog with the copy. Attached, for
-		// the focus they move.
-		function mountDuplicating( schema: Schema ): VueWrapper {
-			const wrapper = mount( SchemaCreatorDialog, {
-				attachTo: document.body,
-				props: { open: true, duplicateOf: schema },
-				global: {
-					plugins: [ pinia ],
-					stubs: {
-						SummaryAction: SummaryActionStub,
-						CloseConfirmationDialog: CloseConfirmationDialogStub,
-						CdxDialog: CdxDialogStub,
-						CdxIcon: true,
-						teleport: true,
-					},
-					provide: NeoWikiTestServices.getServices(),
-					directives: { tooltip: {} },
-					mocks: { $i18n: createI18nMock() },
+	// The real creator and Schema editor, attached to the document for the focus they move.
+	function mountWithRealCreator( props: { open: boolean; duplicateOf?: Schema }, dialogStubs: Record<string, unknown> ): VueWrapper {
+		return mount( SchemaCreatorDialog, {
+			attachTo: document.body,
+			props,
+			global: {
+				plugins: [ pinia ],
+				stubs: {
+					SummaryAction: SummaryActionStub,
+					CloseConfirmationDialog: CloseConfirmationDialogStub,
+					CdxIcon: true,
+					...dialogStubs,
 				},
-			} );
+				provide: NeoWikiTestServices.getServices(),
+				directives: { tooltip: {} },
+				mocks: { $i18n: createI18nMock() },
+			},
+		} );
+	}
+
+	describe( 'Duplicating', () => {
+		function mountDuplicating( schema: Schema ): VueWrapper {
+			const wrapper = mountWithRealCreator( { open: true, duplicateOf: schema }, { CdxDialog: CdxDialogStub, teleport: true } );
 
 			onTestFinished( () => wrapper.unmount() );
 			return wrapper;
@@ -300,6 +302,26 @@ describe( 'SchemaCreatorDialog', () => {
 
 			expect( schemaStore.saveSchema ).toHaveBeenCalledOnce();
 			expect( schemaStore.saveSchema ).toHaveBeenCalledWith( COMPANY.withName( 'Group' ), expect.any( String ) );
+		} );
+	} );
+
+	describe( 'Focus', () => {
+		beforeEach( () => {
+			setupMwMock();
+		} );
+
+		// Mounted open and removed on close, as the dialogs that stack it in front of themselves do.
+		it( 'hands the focus back to where it was once closed', async () => {
+			const opener = document.body.appendChild( document.createElement( 'input' ) );
+			onTestFinished( () => opener.remove() );
+			opener.focus();
+			const wrapper = mountWithRealCreator( { open: true }, {} );
+			await flushPromises();
+
+			wrapper.unmount();
+			await flushPromises();
+
+			expect( document.activeElement ).toBe( opener );
 		} );
 	} );
 
