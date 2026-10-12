@@ -124,7 +124,7 @@ const permissionKnown = ref( false );
 // The note points at the create button, so only those offered the button get it.
 const showsFirstSteps = computed( () => !props.wikiHasSubjects && canCreateSubjectPage.value );
 
-// Without Subjects, the table waits to learn whether the note takes its place, so it never loads there.
+// On a wiki without Subjects the table waits for the permission check, so a user who gets the note never loads it.
 const showsRecentSubjects = computed(
 	() => subjectListAvailable && ( props.wikiHasSubjects || ( permissionKnown.value && !showsFirstSteps.value ) )
 );
