@@ -76,7 +76,7 @@ describe( 'ConfigEditor', () => {
 				'neowiki-config-setting-data-languages': 'Data languages',
 				'neowiki-config-setting-data-languages-help': 'Languages of the wiki\'s data.',
 				'neowiki-config-setting-enforce-validation': 'Block edits that add validation errors',
-				'neowiki-config-setting-enforce-validation-help': 'A Schema marks each constraint as a warning or an error.',
+				'neowiki-config-setting-enforce-validation-help': 'Schemas decide which rules give errors.',
 				'neowiki-config-setting-auto-render-main-subject': 'Show Main Subjects as infoboxes',
 				'neowiki-config-editor-remove-language': ( name: string ) => `Remove ${ name }`,
 				'neowiki-config-editor-reset': 'Reset to default',
