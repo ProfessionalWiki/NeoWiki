@@ -550,7 +550,6 @@ describe( 'SchemaPicker', () => {
 			expectFieldShown( wrapper );
 		} );
 
-		// A failed request lists no schemas, which says nothing about whether the wiki has any.
 		it( 'leaves the field where the schemas could not be loaded', async () => {
 			const consoleError = vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 			schemaStore.fetchAllSchemaSummaries = vi.fn().mockRejectedValue( new Error( 'load failed' ) );

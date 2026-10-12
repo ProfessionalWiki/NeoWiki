@@ -56,7 +56,7 @@ const selectedSchema = ref<string | null>( props.selected ?? null );
 const inputText = ref<string | number>( props.selected ?? '' );
 const summaries = ref<SchemaSummary[]>( [] );
 const schemasLoaded = ref( false );
-// Only a list that loaded tells: a failed request leaves `summaries` empty whatever the wiki has.
+// A failed request leaves `summaries` empty too, so only a list that loaded can tell the wiki has none.
 const wikiHasNoSchemas = ref( false );
 const query = ref<string>( '' );
 const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
