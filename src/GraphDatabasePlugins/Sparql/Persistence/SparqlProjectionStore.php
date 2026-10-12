@@ -19,7 +19,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlUpdat
 
 /**
  * Keeps a SPARQL 1.1 graph store in sync with wiki page changes, one instance per configured store
- * (NativeRdfProjection.md § Sync Mechanism). Each page is a named graph identified by this store's
+ * (installation.md § Optional: SPARQL graph stores). Each page is a named graph identified by this store's
  * projection and the page (`{$base}/graph/{projection}/page/{id}`, #1053): a save replaces that graph
  * atomically (DROP + INSERT DATA), a delete drops it. Qualifying the graph by projection is what lets
  * two stores with different projections point at one endpoint without each save wiping the other's

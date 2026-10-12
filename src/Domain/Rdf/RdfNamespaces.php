@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 /**
- * The IRI and prefix scheme for the native RDF projection (NativeRdfProjection.md § Namespaces).
+ * The IRI and prefix scheme for the native RDF projection (rdf-export.md § IRI scheme).
  *
  * Every NeoWiki IRI lives under a per-wiki base URI so that sibling projections (native and
  * ontology-mapped) mint identical entity IRIs. Standard vocabulary (rdf, rdfs, xsd, dcterms) is
@@ -149,7 +149,7 @@ readonly class RdfNamespaces {
 	 * encoding is a security boundary, not just cosmetics: without it a name like `Rev>2020` would
 	 * close the IRIREF early and a crafted name could forge extra triples.
 	 *
-	 * The rule (NativeRdfProjection.md Q7):
+	 * The rule (rdf-export.md § IRI scheme):
 	 * 1. Spaces become underscores, keeping the spec's readable `neo-prop:Has_author` convention.
 	 * 2. `%` and the IRIREF-illegal ASCII characters (`< > " { } | ^ \` and backtick) plus control
 	 *    characters (0x00–0x1F, 0x7F) are percent-encoded, so a name can never break out of the IRI.

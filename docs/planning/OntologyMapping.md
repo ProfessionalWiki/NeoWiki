@@ -38,7 +38,7 @@ Everything else the document asked has been answered by the implementation — s
 ## Summary
 
 NeoWiki defines its own native Schemas ([ADR 6](../adr/006-schemas.md)). For RDF and SPARQL it projects that data into
-RDF; the native projection uses NeoWiki-native predicates ([NativeRdfProjection.md](NativeRdfProjection.md)). For
+RDF; the native projection uses NeoWiki-native predicates ([RDF Export reference](../api/rdf-export.md)). For
 interoperability — the core of ECHOLOT (SO2, T3.1, T3.2) — the data must instead be available in established
 cultural-heritage ontologies such as CIDOC-CRM, EDM, HDTO, and BIBFRAME.
 
@@ -66,7 +66,7 @@ of whichever projection a query targets. Each projection writes its own family o
 [discussion #996](https://github.com/ProfessionalWiki/NeoWiki/discussions/996)), so projections in a shared store never
 overwrite one another.
 
-- The **native projection** ([NativeRdfProjection.md](NativeRdfProjection.md)) is the default target. A wiki with no
+- The **native projection** ([RDF Export reference](../api/rdf-export.md)) is the default target. A wiki with no
   ontology mapping configured still gets RDF and SPARQL, in NeoWiki-native terms.
 - An **ontology mapping** defines an alternative target (CIDOC-CRM, EDM, …). A store can hold that projection — on its
   own or alongside others — and SPARQL against it is written in that ontology.
@@ -219,7 +219,7 @@ native projection as the default target; the Mapping as a bidirectional definiti
 **Out of scope (separate concerns, cross-referenced):**
 
 - The native projection and the shared projection infrastructure (IRIs, named graphs, sync) —
-  [NativeRdfProjection.md](NativeRdfProjection.md) for the rationale, the
+  [ADR 36](../adr/036-rdf-iris.md) for the IRI rationale, the
   [RDF Export reference](../api/rdf-export.md) for what it emits.
 - The import *pipeline* mechanics and orchestration — T4.1.
 - Reconciliation / entity linking / `owl:sameAs` minting — WP4 (T4.2); mapped IRIs are its input.
@@ -319,12 +319,13 @@ Answered by the shipped implementation. Numbers are the original question number
 
 ## Related
 
-- Planning: [NativeRdfProjection](NativeRdfProjection.md) (why the native projection is shaped as it is),
-  [GlobalProperties](GlobalProperties.md) (why mapping is separate from the data model).
+- Planning: [GlobalProperties](GlobalProperties.md) (why mapping is separate from the data model).
 - ADRs: [004 dedicated slot](../adr/004-use-dedicated-slot.md) (source of truth),
   [006 schemas](../adr/006-schemas.md), [010 relation IDs](../adr/010-add-guids-to-relations.md),
   [017 names as identifiers](../adr/017-names-as-identifiers.md),
-  [019 graph database architecture](../adr/019-graph-database-architecture.md).
+  [019 graph database architecture](../adr/019-graph-database-architecture.md),
+  [036 RDF IRIs](../adr/036-rdf-iris.md).
+- Reference: [RDF Export](../api/rdf-export.md).
 - ECHOLOT tasks: T3.1 (standard schemas / ontology reuse), T3.2 (RDF export and import), T2.3 (semantic
   interoperability / ontology patterns), T4.1 (import/transformation pipelines), T4.2 (reconciliation), T4.5
   (quality checks).

@@ -72,7 +72,7 @@ maps to `dcterms:title`" achieves interoperability without changing the data mod
 
 **Sub-property declarations can anchor local properties to ontology terms without a global registry.** A mapping can
 declare a native predicate a sub-property of an ontology term — Person's Name under `foaf:name`, City's Name under
-`dcterms:title`, kept apart by per-Schema predicates ([Q1](NativeRdfProjection.md#decided)) — and a `foaf:name` query
+`dcterms:title`, kept apart by per-Schema predicates ([ADR 36](../adr/036-rdf-iris.md)) — and a `foaf:name` query
 then finds the local data: the ontology term becomes the shared anchor across Schemas and NeoWiki instances that a
 global property registry would otherwise provide. The stores NeoWiki ships with (QLever, Oxigraph) apply no RDFS
 entailment, so a query follows the declarations explicitly: `?p rdfs:subPropertyOf* foaf:name . ?s ?p ?o`. Consumers
