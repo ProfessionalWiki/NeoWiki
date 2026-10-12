@@ -3,8 +3,6 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { areSubjectCountsAvailable } from '@/subjectCountAvailability.ts';
 
 export interface SubjectCounts {
-	/** False where the reader sees no counts, and once they could not be loaded. */
-	subjectCountsShown: ComputedRef<boolean>;
 	/** True while the counts are on their way. */
 	subjectCountsPending: ComputedRef<boolean>;
 	/** Null while the counts are not known. */
@@ -35,7 +33,6 @@ export function useSubjectCounts(): SubjectCounts {
 	}
 
 	return {
-		subjectCountsShown: computed( () => shown.value ),
 		subjectCountsPending: computed( () => shown.value && counts.value === null ),
 		subjectCountOf,
 		loadSubjectCounts,

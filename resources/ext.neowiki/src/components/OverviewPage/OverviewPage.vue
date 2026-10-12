@@ -1,13 +1,13 @@
 <template>
 	<div class="ext-neowiki-overview">
 		<div
-			v-if="canCreateSubjectPage && hasSchemas"
+			v-if="canCreateSubjectPage"
 			class="ext-neowiki-overview__actions"
 		>
 			<CdxButton
 				action="progressive"
 				weight="primary"
-				@click="openCreator( undefined )"
+				@click="subjectStore.openSubjectCreator()"
 			>
 				<CdxIcon :icon="cdxIconAdd" />
 				{{ $i18n( 'neowiki-createsubject-button' ).text() }}
@@ -18,11 +18,12 @@
 			<CdxCard
 				v-for="link in pageLinks"
 				:key="link.page"
-				class="ext-neowiki-overview__page"
 				:url="pageUrl( link.page )"
+				:icon="link.icon"
 			>
 				<template #title>
 					{{ $i18n( link.label ).text() }}
+					<CdxIcon :icon="cdxIconNext" size="small" />
 				</template>
 				<template #description>
 					{{ $i18n( link.description ).text() }}
@@ -30,116 +31,75 @@
 			</CdxCard>
 		</div>
 
-		<RecentSubjectsTable
-			v-if="subjectListAvailable"
-			class="ext-neowiki-overview__recent-subjects"
-		/>
-
-		<CdxTable
-			:columns="columns"
-			:data="rows"
-			:caption="$i18n( 'neowiki-special-schemas' ).text()"
-			:pending="loading"
-		>
-			<template #header>
-				<a :href="pageUrl( 'Special:Schemas' )">
-					{{ $i18n( 'neowiki-overview-manage-schemas' ).text() }}
-				</a>
-			</template>
-
-			<template #item-name="{ item }">
-				<a
-					:id="nameId( item )"
-					class="ext-neowiki-overview__schema-name"
-					:href="schemaUrl( item )"
-				>{{ item }}</a>
-			</template>
-
-			<template #item-description="{ item }">
-				<span class="ext-neowiki-overview__description">{{ item }}</span>
-			</template>
-
-			<template #item-subjects="{ row }">
-				<span
-					v-if="subjectCountsPending"
-					class="ext-neowiki-overview__subject-count"
-				/>
-				<a
-					v-else
-					class="ext-neowiki-overview__subject-count"
-					:href="pageUrl( `Special:Subjects/${ row.name }` )"
-					:aria-describedby="nameId( row.name )"
-				>{{ subjectListLinkText( subjectCountOf( row.name ) ) }}</a>
-			</template>
-
-			<template #item-actions="{ row }">
-				<CdxButton
-					v-if="canCreateSubjectPage"
-					action="progressive"
-					@click="openCreator( row.name )"
-				>
-					<CdxIcon :icon="cdxIconAdd" />
-					{{ $i18n( 'neowiki-schema-create-subject', row.name ).text() }}
-				</CdxButton>
-			</template>
-
-			<template #empty-state>
-				{{ $i18n( 'neowiki-schemas-empty' ).text() }}
-			</template>
-		</CdxTable>
+		<RecentSubjectsTable v-if="subjectListAvailable" />
 
 		<SubjectCreatorDialog
 			v-if="canCreateSubjectPage"
 			v-model:open="subjectStore.subjectCreatorOpen"
 			:host-page="null"
-			:initial-schema-name="pinnedSchema"
 		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { CdxButton, CdxCard, CdxIcon, CdxTable, useGeneratedId } from '@wikimedia/codex';
-import type { TableColumn } from '@wikimedia/codex';
-import { cdxIconAdd } from '@wikimedia/codex-icons';
+import { computed, onMounted } from 'vue';
+import { CdxButton, CdxCard, CdxIcon } from '@wikimedia/codex';
+import {
+	cdxIconAdd,
+	cdxIconDatabase,
+	cdxIconGlobe,
+	cdxIconLayout,
+	cdxIconListBullet,
+	cdxIconNext,
+	cdxIconSettings,
+	cdxIconTable
+} from '@wikimedia/codex-icons';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import RecentSubjectsTable from '@/components/SubjectsTable/RecentSubjectsTable.vue';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
-import { subjectListLinkText, useSubjectCounts } from '@/composables/useSubjectCounts.ts';
-import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import { isSubjectListAvailable } from '@/subjectListAvailability.ts';
 
 const SUBJECTS_LINK = {
 	page: 'Special:Subjects',
 	label: 'neowiki-special-subjects',
-	description: 'neowiki-overview-subjects-description'
+	description: 'neowiki-overview-subjects-description',
+	icon: cdxIconListBullet
 };
 
 const PAGE_LINKS = [
 	{
-		page: 'Special:Layouts',
-		label: 'neowiki-special-layouts',
-		description: 'neowiki-overview-layouts-description'
+		page: 'Special:Schemas',
+		label: 'neowiki-special-schemas',
+		description: 'neowiki-overview-schemas-description',
+		icon: cdxIconTable
 	},
 	{
 		page: 'Special:Mappings',
 		label: 'neowiki-special-mappings',
-		description: 'neowiki-overview-mappings-description'
+		description: 'neowiki-overview-mappings-description',
+		icon: cdxIconGlobe
+	},
+	{
+		page: 'Special:Layouts',
+		label: 'neowiki-special-layouts',
+		description: 'neowiki-overview-layouts-description',
+		icon: cdxIconLayout
 	}
 ];
 
 const GRAPH_STORES_LINK = {
 	page: 'Special:GraphStores',
 	label: 'neowiki-special-graphstores',
-	description: 'neowiki-overview-graph-stores-description'
+	description: 'neowiki-overview-graph-stores-description',
+	icon: cdxIconDatabase
 };
 
 const CONFIGURATION_LINK = {
 	page: 'MediaWiki:NeoWiki',
 	label: 'neowiki-overview-configuration',
-	description: 'neowiki-overview-configuration-description'
+	description: 'neowiki-overview-configuration-description',
+	icon: cdxIconSettings
 };
 
 const props = defineProps<{
@@ -147,21 +107,10 @@ const props = defineProps<{
 	canEditConfiguration: boolean;
 }>();
 
-const schemaStore = useSchemaStore();
 const subjectStore = useSubjectStore();
 const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
-const { subjectCountsShown, subjectCountsPending, subjectCountOf, loadSubjectCounts } = useSubjectCounts();
-
-const loading = ref( true );
-const rows = ref<SchemaSummary[]>( [] );
-// The Schema the creator opens on, which each button decides anew: the picker for the one above the
-// list, the row's own Schema for the one in it.
-const pinnedSchema = ref<string | undefined>( undefined );
 
 const subjectListAvailable = isSubjectListAvailable();
-const idPrefix = useGeneratedId( 'ext-neowiki-overview' );
-
-const hasSchemas = computed( () => rows.value.length > 0 );
 
 const pageLinks = computed( () => [
 	...( subjectListAvailable ? [ SUBJECTS_LINK ] : [] ),
@@ -170,54 +119,11 @@ const pageLinks = computed( () => [
 	...( props.canEditConfiguration ? [ CONFIGURATION_LINK ] : [] )
 ] );
 
-const columns = computed( (): TableColumn[] => [
-	{
-		id: 'name',
-		label: mw.msg( 'neowiki-schemas-column-name' )
-	},
-	{
-		id: 'description',
-		label: mw.msg( 'neowiki-schemas-column-description' )
-	},
-	...( subjectCountsShown.value ? [ { id: 'subjects', label: mw.msg( 'neowiki-schemas-column-subjects' ) } ] : [] ),
-	{
-		id: 'actions',
-		label: ''
-	}
-] );
-
-// Names the Schema to screen readers on the link to its Subjects. Encoded: an id holds no spaces, a name can.
-function nameId( schemaName: string ): string {
-	return `${ idPrefix }-${ encodeURIComponent( schemaName ) }`;
-}
-
-function schemaUrl( name: string ): string {
-	return mw.util.getUrl( `Schema:${ name }` );
-}
-
 function pageUrl( page: string ): string {
 	return mw.util.getUrl( page );
 }
 
-// The pin is set before the store is told, because the dialog reads it as it opens.
-function openCreator( schemaName: string | undefined ): void {
-	pinnedSchema.value = schemaName;
-	subjectStore.openSubjectCreator();
-}
-
-onMounted( async () => {
-	checkCreateSubjectPagePermission();
-	loadSubjectCounts();
-
-	try {
-		rows.value = await schemaStore.fetchAllSchemaSummaries();
-	} catch ( error ) {
-		// Said out loud, because the table it leaves behind reads as a wiki without Schemas.
-		mw.notify( error instanceof Error ? error.message : String( error ), { type: 'error' } );
-	}
-
-	loading.value = false;
-} );
+onMounted( checkCreateSubjectPagePermission );
 </script>
 
 <style lang="less">
@@ -232,39 +138,14 @@ onMounted( async () => {
 	}
 
 	&__pages {
-		display: flex;
-		flex-wrap: wrap;
+		display: grid;
+		grid-template-columns: repeat( 2, 1fr );
 		gap: @spacing-100;
 		margin-bottom: @spacing-150;
-	}
 
-	&__page {
-		flex: 1 1 14rem;
-	}
-
-	&__recent-subjects {
-		margin-bottom: @spacing-150;
-	}
-
-	// One line per Schema: the description gives way, cut with an ellipsis.
-	&__schema-name,
-	&__subject-count {
-		white-space: nowrap;
-	}
-
-	&__description {
-		display: -webkit-box;
-		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 1;
-		overflow: hidden;
-		-webkit-hyphens: none;
-		hyphens: none;
-	}
-
-	// Holds a two-digit count's width while the counts load, so the column does not widen when they arrive.
-	&__subject-count {
-		display: inline-block;
-		min-width: 5.5em;
+		@media ( max-width: @max-width-breakpoint-mobile ) {
+			grid-template-columns: 1fr;
+		}
 	}
 }
 </style>

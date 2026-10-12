@@ -17,7 +17,7 @@ This is a public demo of [https://neowiki.ai NeoWiki]. Explore the examples belo
 
 '''Trying it hands-on'''
 
-* Create a Subject from [[Special:NeoWiki|Overview]], which lists every Schema with a Create button, or from the buttons on each use-case page below.
+* [[Special:UserLogin|Log in]], then create a Subject from [[Special:NeoWiki|Overview]] or from the buttons on each use-case page below.
 * Edit through a form and watch it update live: [[Subject views]] shows one Subject in three layouts at once, with edits propagating between them.
 * See how a Schema constrains data: [[Validation Demo]].
 * The [https://neowiki.ai/docs/guide/getting-started Getting started guide] builds your own Schema, Subject, View, and query.

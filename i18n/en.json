@@ -34,7 +34,7 @@
 	"neowiki-subjects-load-error": "The subjects could not be loaded.",
 	"neowiki-subjects-recent": "Recently added subjects",
 	"neowiki-subjects-view-all": "View all subjects",
-	"neowiki-overview-subjects-description": "Every subject on this wiki, by schema.",
+	"neowiki-overview-subjects-description": "Browse and search data.",
 	"neowiki-special-createsubject": "Create subject",
 
 	"neowiki-property-type-text": "Text",
@@ -561,11 +561,11 @@
 	"neowiki-subject-page-immovable": "This page is titled by the ID of a subject stored on it. A page titled that way cannot be moved on this wiki.",
 	"neowiki-special-neowiki": "NeoWiki",
 	"neowiki-sidebar-overview": "Overview",
-	"neowiki-overview-layouts-description": "Which properties Views show, and how they look.",
-	"neowiki-overview-mappings-description": "How Subjects are expressed in ontologies such as EDM or CIDOC-CRM.",
-	"neowiki-overview-graph-stores-description": "The databases this wiki's data is projected into for querying.",
+	"neowiki-overview-layouts-description": "Configure how subjects are displayed.",
+	"neowiki-overview-mappings-description": "Express your data in standard ontologies.",
+	"neowiki-overview-graph-stores-description": "Check and rebuild the databases that answer queries.",
 	"neowiki-overview-configuration": "Settings",
-	"neowiki-overview-configuration-description": "NeoWiki settings that can be changed on the wiki, without server access.",
-	"neowiki-overview-manage-schemas": "Manage schemas",
+	"neowiki-overview-configuration-description": "Change how NeoWiki works on this wiki.",
+	"neowiki-overview-schemas-description": "Define the types of subjects and their properties.",
 	"neowiki-main-page-text": "This wiki records structured data with [https://neowiki.ai NeoWiki]: each Subject describes one thing, such as a person or an artwork, with the properties its Schema defines.\n\n{{#create_subject: page=new}}\n\n== Getting started ==\n* [[Special:UserLogin|Log in]], then create your first Subject with the button above. If no Schema fits yet, create one in the dialog the button opens.\n* The [[Special:NeoWiki|NeoWiki overview]], with your Schemas and recent Subjects, is in the NeoWiki section of the Tools menu on every page.\n\n== Help and feedback ==\n* In the [https://neowiki.ai/docs/guide/getting-started Getting started guide], you create a Schema and a Subject, show the Subject on a page, and query your data.\n* The [https://neowiki.ai/docs/glossary NeoWiki glossary] explains Subjects, Schemas and other terms.\n* Questions and feedback go to the [https://github.com/ProfessionalWiki/NeoWiki/issues NeoWiki issue tracker].\n\n== For administrators ==\n* Before adding data, choose whether this wiki is page-first or subject-first on the <span class=\"plainlinks\">[{{fullurl:MediaWiki:NeoWiki}} NeoWiki settings page]</span>.\n* Replace this page with an introduction to your wiki."
 }

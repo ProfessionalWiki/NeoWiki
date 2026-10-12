@@ -2,7 +2,7 @@ NeoWiki exposes a programmable surface: a graph database, parser functions, a Lu
 
 == Browse ==
 
-* [[Special:NeoWiki]]: every Schema with a Create button, and the other NeoWiki pages
+* [[Special:NeoWiki]]: the newest Subjects and links to the other NeoWiki pages
 * [[Special:Schemas]]: all schemas
 * [[Special:Layouts]]: all layouts
 * [[Special:Mappings]]: all ontology mappings

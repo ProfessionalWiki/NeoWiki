@@ -1,4 +1,4 @@
-import { enableAutoUnmount, mount, DOMWrapper, VueWrapper, flushPromises } from '@vue/test-utils';
+import { enableAutoUnmount, mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
@@ -6,11 +6,7 @@ import { CdxButton, CdxCard } from '@wikimedia/codex';
 import OverviewPage from '@/components/OverviewPage/OverviewPage.vue';
 import RecentSubjectsTable from '@/components/SubjectsTable/RecentSubjectsTable.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
-import type { SchemaSummary } from '@/application/SchemaLookup.ts';
-import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
-import { Service } from '@/NeoWikiServices.ts';
 
 let grantedRight = true;
 const canCreateSubjectPageRef = ref( false );
@@ -30,24 +26,14 @@ enableAutoUnmount( afterEach );
 
 const SubjectCreatorDialogStub = {
 	template: '<div class="subject-creator-stub" />',
-	props: [ 'hostPage', 'initialSchemaName', 'open' ],
+	props: [ 'hostPage', 'open' ],
 	emits: [ 'update:open' ],
 };
 
-function summary( name: string, description = '' ): SchemaSummary {
-	return { name, description, propertyCount: 1 };
-}
-
 // The pages the map holds whatever the reader may do. The permission-dependent ones are appended.
-const ALWAYS_MAPPED = [ '/wiki/Special:Subjects', '/wiki/Special:Layouts', '/wiki/Special:Mappings' ];
-
-const PERSON = summary( 'Person', 'Someone' );
-const PAINTING = summary( 'Painting', 'Something hung on a wall' );
-const MUSEUM = summary( 'Museum', 'Somewhere paintings hang' );
+const ALWAYS_MAPPED = [ '/wiki/Special:Subjects', '/wiki/Special:Schemas', '/wiki/Special:Mappings', '/wiki/Special:Layouts' ];
 
 let pinia: ReturnType<typeof createPinia>;
-let schemaStore: ReturnType<typeof useSchemaStore>;
-let getSubjectCounts: ReturnType<typeof vi.fn>;
 
 interface OverviewProps {
 	canManageGraphStores: boolean;
@@ -60,28 +46,14 @@ function mountPage( offered: Partial<OverviewProps> = {} ): VueWrapper {
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
-			provide: { [ Service.SubjectCountLookup ]: { getSubjectCounts } },
 			stubs: { SubjectCreatorDialog: SubjectCreatorDialogStub, RecentSubjectsTable: true, CdxIcon: true },
 		},
 	} );
 }
 
-function listSchemas( summaries: SchemaSummary[] ): void {
-	schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( summaries );
-}
-
-function findCreateButton( wrapper: VueWrapper, schemaName: string ): VueWrapper | undefined {
-	return wrapper.findAllComponents( CdxButton )
-		.find( ( button ) => button.text().includes( `neowiki-schema-create-subject${ schemaName }` ) );
-}
-
-function findPickerButton( wrapper: VueWrapper ): VueWrapper | undefined {
+function findCreateSubjectButton( wrapper: VueWrapper ): VueWrapper | undefined {
 	return wrapper.findAllComponents( CdxButton )
 		.find( ( button ) => button.text().includes( 'neowiki-createsubject-button' ) );
-}
-
-function findLink( wrapper: VueWrapper, href: string ): DOMWrapper<HTMLAnchorElement> | undefined {
-	return wrapper.findAll( 'a' ).find( ( link ) => link.attributes( 'href' ) === href );
 }
 
 /**
@@ -92,122 +64,31 @@ function mappedPages( wrapper: VueWrapper ): ( string | undefined )[] {
 	return wrapper.findAllComponents( CdxCard ).map( ( card ) => card.attributes( 'href' ) );
 }
 
+function findCard( wrapper: VueWrapper, href: string ): VueWrapper | undefined {
+	return wrapper.findAllComponents( CdxCard ).find( ( card ) => card.attributes( 'href' ) === href );
+}
+
+function precedes( earlier: Element, later: Element ): boolean {
+	return earlier.compareDocumentPosition( later ) === Node.DOCUMENT_POSITION_FOLLOWING;
+}
+
 describe( 'OverviewPage', () => {
 	beforeEach( () => {
 		setupMwMock( {
-			functions: [ 'msg', 'util', 'notify', 'config', 'language' ],
-			config: { wgNeoWikiSubjectListAvailable: true, wgNeoWikiSubjectCountsAvailable: true },
+			functions: [ 'util', 'config' ],
+			config: { wgNeoWikiSubjectListAvailable: true },
 		} );
-		getSubjectCounts = vi.fn().mockResolvedValue( new Map( [ [ 'Painting', 3 ] ] ) );
 		grantedRight = true;
 		canCreateSubjectPageRef.value = false;
 		pinia = createPinia();
 		setActivePinia( pinia );
-		schemaStore = useSchemaStore();
-		listSchemas( [ PERSON, PAINTING, MUSEUM ] );
 	} );
 
-	afterEach( () => {
-		vi.restoreAllMocks();
-	} );
-
-	it( 'lists every schema with its description and a link to its page', async () => {
+	it( 'offers to create a subject to a user who may', async () => {
 		const wrapper = mountPage();
 		await flushPromises();
 
-		expect( findLink( wrapper, '/wiki/Schema:Painting' )!.text() ).toBe( 'Painting' );
-		expect( wrapper.text() ).toContain( 'Something hung on a wall' );
-	} );
-
-	it( 'says how many Subjects each schema has, linking to them', async () => {
-		const wrapper = mountPage();
-		await flushPromises();
-
-		expect( findLink( wrapper, '/wiki/Special:Subjects/Painting' )!.text() ).toBe( 'neowiki-schema-subject-count3' );
-		expect( findLink( wrapper, '/wiki/Special:Subjects/Person' )!.text() ).toBe( 'neowiki-schema-subject-count0' );
-	} );
-
-	it( 'shows the schemas before their counts arrive, with a blank Subjects column', async () => {
-		getSubjectCounts = vi.fn().mockReturnValue( new Promise( () => {
-			// Never lands.
-		} ) );
-		const wrapper = mountPage();
-		await flushPromises();
-
-		expect( findLink( wrapper, '/wiki/Schema:Painting' ) ).toBeDefined();
-		expect( wrapper.text() ).toContain( 'neowiki-schemas-column-subjects' );
-		expect( findLink( wrapper, '/wiki/Special:Subjects/Painting' ) ).toBeUndefined();
-	} );
-
-	it( 'drops the Subjects column when the counts could not be loaded', async () => {
-		vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
-		getSubjectCounts = vi.fn().mockRejectedValue( new Error( 'Error fetching subject counts' ) );
-		const wrapper = mountPage();
-		await flushPromises();
-
-		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-column-subjects' );
-		expect( findLink( wrapper, '/wiki/Special:Subjects/Painting' ) ).toBeUndefined();
-	} );
-
-	it( 'has no Subjects column for a reader who sees no counts', async () => {
-		setupMwMock( {
-			functions: [ 'msg', 'util', 'notify', 'config', 'language' ],
-			config: { wgNeoWikiSubjectListAvailable: true, wgNeoWikiSubjectCountsAvailable: false },
-		} );
-		const wrapper = mountPage();
-		await flushPromises();
-
-		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-column-subjects' );
-		expect( findLink( wrapper, '/wiki/Special:Subjects/Painting' ) ).toBeUndefined();
-	} );
-
-	it( 'opens the creator pinned to the schema whose button was clicked', async () => {
-		const wrapper = mountPage();
-		await flushPromises();
-
-		await findCreateButton( wrapper, 'Painting' )!.trigger( 'click' );
-		await flushPromises();
-
-		const dialog = wrapper.findComponent( SubjectCreatorDialog );
-		expect( dialog.props( 'initialSchemaName' ) ).toBe( 'Painting' );
-		expect( dialog.props( 'hostPage' ) ).toBeNull();
-		expect( useSubjectStore().subjectCreatorOpen ).toBe( true );
-	} );
-
-	it( 'opens the creator on its schema picker from the button above the list', async () => {
-		const wrapper = mountPage();
-		await flushPromises();
-
-		await findCreateButton( wrapper, 'Painting' )!.trigger( 'click' );
-		await flushPromises();
-		useSubjectStore().closeSubjectCreator();
-
-		await findPickerButton( wrapper )!.trigger( 'click' );
-		await flushPromises();
-
-		const dialog = wrapper.findComponent( SubjectCreatorDialog );
-		expect( dialog.props( 'initialSchemaName' ) ).toBeUndefined();
-		expect( useSubjectStore().subjectCreatorOpen ).toBe( true );
-	} );
-
-	it( 'shows the creator open once it is asked for', async () => {
-		const wrapper = mountPage();
-		await flushPromises();
-
-		await findCreateButton( wrapper, 'Painting' )!.trigger( 'click' );
-		await flushPromises();
-
-		expect( wrapper.findComponent( SubjectCreatorDialog ).props( 'open' ) ).toBe( true );
-	} );
-
-	it( 'closes the creator in the store when the dialog closes', async () => {
-		const wrapper = mountPage();
-		await flushPromises();
-		useSubjectStore().openSubjectCreator();
-
-		wrapper.findComponent( SubjectCreatorDialog ).vm.$emit( 'update:open', false );
-
-		expect( useSubjectStore().subjectCreatorOpen ).toBe( false );
+		expect( findCreateSubjectButton( wrapper ) ).toBeDefined();
 	} );
 
 	it( 'offers no way to create a subject to a user who may not', async () => {
@@ -215,21 +96,38 @@ describe( 'OverviewPage', () => {
 		const wrapper = mountPage();
 		await flushPromises();
 
-		expect( findPickerButton( wrapper ) ).toBeUndefined();
-		expect( findCreateButton( wrapper, 'Painting' ) ).toBeUndefined();
-		expect( wrapper.findComponent( SubjectCreatorDialog ).exists() ).toBe( false );
+		expect( findCreateSubjectButton( wrapper ) ).toBeUndefined();
 	} );
 
-	it( 'says the wiki has no schemas instead of offering to create a subject', async () => {
-		listSchemas( [] );
+	it( 'opens the creator from the create button', async () => {
 		const wrapper = mountPage();
 		await flushPromises();
 
-		expect( wrapper.text() ).toContain( 'neowiki-schemas-empty' );
-		expect( findPickerButton( wrapper ) ).toBeUndefined();
+		await findCreateSubjectButton( wrapper )!.trigger( 'click' );
+
+		expect( wrapper.findComponent( SubjectCreatorDialog ).props( 'open' ) ).toBe( true );
+	} );
+
+	it( 'hands the creator no page of its own to offer', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( wrapper.findComponent( SubjectCreatorDialog ).props( 'hostPage' ) ).toBeNull();
+	} );
+
+	it( 'closes the creator when the dialog closes', async () => {
+		const wrapper = mountPage();
+		await flushPromises();
+		await findCreateSubjectButton( wrapper )!.trigger( 'click' );
+
+		wrapper.findComponent( SubjectCreatorDialog ).vm.$emit( 'update:open', false );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SubjectCreatorDialog ).props( 'open' ) ).toBe( false );
 	} );
 
 	it( 'maps the other NeoWiki pages, and nothing the reader may not open', async () => {
+		grantedRight = false;
 		const wrapper = mountPage();
 		await flushPromises();
 
@@ -250,48 +148,29 @@ describe( 'OverviewPage', () => {
 		expect( mappedPages( wrapper ) ).toEqual( [ ...ALWAYS_MAPPED, '/wiki/MediaWiki:NeoWiki' ] );
 	} );
 
-	it( 'ties the link to the Subjects of each schema to that schema, for screen readers', async () => {
-		listSchemas( [ PERSON, summary( 'Validation Demo' ) ] );
+	it( 'offers a card that leads to the schemas', async () => {
 		const wrapper = mountPage();
 		await flushPromises();
-		const link = findLink( wrapper, '/wiki/Special:Subjects/Validation Demo' )!;
 
-		expect( link.attributes( 'aria-describedby' )!.split( ' ' ).map( ( id ) => wrapper.find( `[id="${ id }"]` ).text() ) )
-			.toEqual( [ 'Validation Demo' ] );
+		expect( findCard( wrapper, '/wiki/Special:Schemas' )!.text() )
+			.toMatch( /neowiki-special-schemas.*neowiki-overview-schemas-description/s );
 	} );
 
-	it( 'reaches Special:Schemas from the table header rather than from the map', async () => {
+	it( 'shows the create button, then the map, then the recent Subjects', async () => {
 		const wrapper = mountPage();
 		await flushPromises();
 
-		const link = findLink( wrapper, '/wiki/Special:Schemas' )!;
+		const createButton = findCreateSubjectButton( wrapper )!.element;
+		const map = wrapper.findComponent( CdxCard ).element;
+		const recentSubjects = wrapper.findComponent( RecentSubjectsTable ).element;
 
-		expect( link.text() ).toBe( 'neowiki-overview-manage-schemas' );
-		expect( link.element.closest( '.cdx-table__header' ) ).not.toBeNull();
-	} );
-
-	it( 'shows the create button, then the map, then the recent Subjects, then the schema table', async () => {
-		const wrapper = mountPage();
-		await flushPromises();
-
-		const sections = wrapper.element.children;
-
-		expect( sections[ 0 ].contains( findPickerButton( wrapper )!.element ) ).toBe( true );
-		expect( sections[ 1 ].contains( wrapper.findComponent( CdxCard ).element ) ).toBe( true );
-		expect( sections[ 2 ].contains( wrapper.findComponent( RecentSubjectsTable ).element ) ).toBe( true );
-		expect( sections[ 3 ].contains( wrapper.find( 'table' ).element ) ).toBe( true );
-	} );
-
-	it( 'leads to the Subject list first among the pages', async () => {
-		const wrapper = mountPage();
-		await flushPromises();
-
-		expect( mappedPages( wrapper )[ 0 ] ).toBe( '/wiki/Special:Subjects' );
+		expect( precedes( createButton, map ) ).toBe( true );
+		expect( precedes( map, recentSubjects ) ).toBe( true );
 	} );
 
 	it( 'offers no Subject list on a wiki that cannot list Subjects', async () => {
 		setupMwMock( {
-			functions: [ 'msg', 'util', 'notify', 'config' ],
+			functions: [ 'util', 'config' ],
 			config: { wgNeoWikiSubjectListAvailable: false },
 		} );
 		const wrapper = mountPage();
@@ -299,15 +178,5 @@ describe( 'OverviewPage', () => {
 
 		expect( wrapper.findComponent( RecentSubjectsTable ).exists() ).toBe( false );
 		expect( wrapper.html() ).not.toContain( 'Special:Subjects' );
-	} );
-
-	it( 'reports a listing that could not be read', async () => {
-		schemaStore.fetchAllSchemaSummaries = vi.fn()
-			.mockRejectedValue( new Error( 'Error fetching schema summaries' ) );
-
-		mountPage();
-		await flushPromises();
-
-		expect( mw.notify ).toHaveBeenCalledWith( 'Error fetching schema summaries', { type: 'error' } );
 	} );
 } );

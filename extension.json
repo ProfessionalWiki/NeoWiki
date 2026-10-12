@@ -558,7 +558,13 @@
 						"cdxIconViewCompact",
 						"cdxIconTag",
 						"cdxIconUpTriangle",
-						"cdxIconDownTriangle"
+						"cdxIconDownTriangle",
+						"cdxIconTable",
+						"cdxIconGlobe",
+						"cdxIconLayout",
+						"cdxIconDatabase",
+						"cdxIconSettings",
+						"cdxIconNext"
 					]
 				}
 			],
@@ -979,7 +985,7 @@
 				"neowiki-overview-graph-stores-description",
 				"neowiki-overview-configuration",
 				"neowiki-overview-configuration-description",
-				"neowiki-overview-manage-schemas"
+				"neowiki-overview-schemas-description"
 			],
 			"@group:": "TODO: Load code separately while in development. Remove later.",
 			"group": "ext.neowiki"

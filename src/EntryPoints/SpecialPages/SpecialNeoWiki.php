@@ -11,10 +11,6 @@ use MediaWiki\SpecialPage\SpecialPage;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 
-/**
- * Where working with the wiki as a database starts: the Schemas it holds, a way to create a Subject with
- * any of them, and the other NeoWiki pages.
- */
 class SpecialNeoWiki extends SpecialPage {
 
 	public function __construct() {
