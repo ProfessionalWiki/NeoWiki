@@ -24,7 +24,7 @@ A Subject is one thing described with a Schema.
 
 1. Open the creator: **Create subject** in the sidebar, then pick a Schema — or the **Create** button on a Schema's
    own page, which names it (**Create Person** on `Schema:Person`).
-2. Name it with the pencil beside its name, and fill in the values.
+2. Name the Subject in the **Label** field, and fill in the values.
 3. To point at a Subject that is not there yet, type a name in a relation field and pick **Create "Ada" as a new
    Person**. It opens in place, with the tree beside it to move back.
 4. Under **Store the subject on**, choose **This page** where you opened the creator on one, **Another page** you

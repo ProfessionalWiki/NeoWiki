@@ -1,11 +1,13 @@
-import { VueWrapper } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { enableAutoUnmount, VueWrapper } from '@vue/test-utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CdxField } from '@wikimedia/codex';
 import { newNumberValue } from '@/domain/Value';
 import NumberInput from '@/components/Value/NumberInput.vue';
 import { newNumberProperty, NumberProperty } from '@/domain/propertyTypes/Number';
 import { ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
+
+enableAutoUnmount( afterEach );
 
 describe( 'NumberInput', () => {
 	beforeEach( () => {
@@ -287,5 +289,16 @@ describe( 'NumberInput', () => {
 				{ propertyName: 'Foo', valuePartIndex: null },
 			] );
 		} );
+	} );
+
+	it( 'lets go of the focus under the wheel, so the wheel scrolls rather than steps the value', async () => {
+		const wrapper = newWrapper();
+		document.body.appendChild( wrapper.element );
+		const input = wrapper.get( 'input' );
+		( input.element as HTMLInputElement ).focus();
+
+		await input.trigger( 'wheel' );
+
+		expect( document.activeElement ).not.toBe( input.element );
 	} );
 } );

@@ -3,8 +3,29 @@
 		class="ext-neowiki-subject-edit-pane"
 		:aria-label="paneName"
 	>
-		<div class="ext-neowiki-subject-edit-pane__header">
-			<h3 class="ext-neowiki-subject-edit-pane__name">
+		<div
+			class="ext-neowiki-subject-edit-pane__header"
+			:class="{ 'ext-neowiki-subject-edit-pane__header--new': props.isNew }"
+		>
+			<CdxField
+				v-if="props.isNew"
+				class="ext-neowiki-subject-edit-pane__label"
+				:optional="true"
+			>
+				<template #label>
+					{{ $i18n( 'neowiki-subject-editor-label' ).text() }}
+				</template>
+				<CdxTextInput
+					v-model="label"
+					@update:model-value="handleEditorChange"
+					@blur="handleEditorBlur"
+				/>
+			</CdxField>
+
+			<h3
+				v-else
+				class="ext-neowiki-subject-edit-pane__name"
+			>
 				<EditableText
 					ref="labelField"
 					:model-value="label"
@@ -81,6 +102,7 @@ export interface SubjectEditPaneExposes {
 
 <script setup lang="ts">
 import { ref, shallowRef, computed, watch, provide } from 'vue';
+import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import type { SubjectEditorExposes } from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectViolationBanners from '@/components/common/SubjectViolationBanners.vue';
@@ -358,6 +380,15 @@ defineExpose( {
 		flex-wrap: wrap;
 		gap: @spacing-25 @spacing-50;
 		margin-bottom: @spacing-75;
+
+		/* The field's first baseline is its label's, above the input the meta belongs beside. */
+		&--new {
+			align-items: last baseline;
+		}
+	}
+
+	&__label {
+		flex-grow: 1;
 	}
 
 	/* A heading for screen readers and outline tools, sized like the body around it. The

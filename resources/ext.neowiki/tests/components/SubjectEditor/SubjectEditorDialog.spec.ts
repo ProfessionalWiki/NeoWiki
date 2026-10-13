@@ -8,7 +8,7 @@ import { SubjectId } from '@/domain/SubjectId.ts';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
-import { newRelation, RelationValue } from '@/domain/Value.ts';
+import { newRelation, newStringValue, RelationValue } from '@/domain/Value.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
@@ -160,6 +160,9 @@ describe( 'SubjectEditorDialog', () => {
 			global: {
 				mocks: {
 					$i18n,
+				},
+				directives: {
+					tooltip: {},
 				},
 				plugins: [ pinia ],
 				provide: {
@@ -1132,6 +1135,95 @@ describe( 'SubjectEditorDialog', () => {
 			await editLabel( wrapper, '  Renamed Subject  ' );
 
 			expect( exposedToHost( wrapper ).rootLabel ).toBe( 'Renamed Subject' );
+		} );
+	} );
+
+	describe( 'Where the dialog opens', () => {
+		beforeEach( () => {
+			useSubjectStore().validateSubject = vi.fn().mockResolvedValue( [] );
+		} );
+
+		// With a create handler, as every host passes one: it gives a relation field the create
+		// options that open its menu on focus.
+		function mountOpenOn(
+			schema: Schema,
+			{ rootIsNew = false, statements = [] }: { rootIsNew?: boolean; statements?: Statement[] } = {},
+		): VueWrapper {
+			return mountComponent(
+				false, {}, undefined, schema, {}, mockSubject.withStatements( new StatementList( statements ) ),
+				document.body, vi.fn(), { rootIsNew },
+			);
+		}
+
+		function schemaStartingWith( first: Record<string, unknown> ): Schema {
+			return new Schema( 'TestSchema', 'A test schema', new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'First', first ),
+				createPropertyDefinitionFromJson( 'Second', { type: TextType.typeName } ),
+			] ) );
+		}
+
+		function controlOf( wrapper: VueWrapper, fieldName: string, selector: string ): Element {
+			const field = wrapper.findAll( '.cdx-field' )
+				.find( ( candidate ) => candidate.find( '.cdx-label__label__text' ).text() === fieldName );
+
+			if ( field === undefined ) {
+				throw new Error( `No field named ${ fieldName }` );
+			}
+
+			return field.get( selector ).element;
+		}
+
+		function rootPanel( wrapper: VueWrapper ): Element {
+			return wrapper.get( `#ext-neowiki-panel-${ rootSubjectId }` ).element;
+		}
+
+		// The hosts keep the dialog mounted once it has closed, so the next opening is not a mount.
+		it( 'opens on the first field of a subject the wiki holds, each time it opens', async () => {
+			const wrapper = mountOpenOn( schemaStartingWith( { type: TextType.typeName } ) );
+			await vi.waitFor( () => expect( document.activeElement ).toBe( controlOf( wrapper, 'First', 'input' ) ) );
+
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
+
+			await vi.waitFor( () => expect( document.activeElement ).toBe( controlOf( wrapper, 'First', 'input' ) ) );
+		} );
+
+		it( 'opens on a select field, whose menu waits to be asked for', async () => {
+			const wrapper = mountOpenOn( schemaStartingWith( {
+				type: 'select',
+				options: [ { id: 'a', label: 'Active' } ],
+			} ) );
+
+			await vi.waitFor( () => expect( document.activeElement )
+				.toBe( controlOf( wrapper, 'First', '[role="combobox"]' ) ) );
+		} );
+
+		it( 'opens on the pane rather than on a multi-value select holding values', async () => {
+			const wrapper = mountOpenOn(
+				schemaStartingWith( { type: 'select', multiple: true, options: [ { id: 'a', label: 'Active' } ] } ),
+				{ statements: [ new Statement( new PropertyName( 'First' ), 'select', newStringValue( 'a' ) ) ] },
+			);
+
+			await vi.waitFor( () => expect( document.activeElement ).toBe( rootPanel( wrapper ) ) );
+		} );
+
+		it( 'opens on the pane rather than on a relation field, whose menu would open with it', async () => {
+			const wrapper = mountOpenOn( schemaStartingWith( { type: 'relation', targetSchemas: [ 'Person' ] } ) );
+
+			await vi.waitFor( () => expect( document.activeElement ).toBe( rootPanel( wrapper ) ) );
+		} );
+
+		it( 'opens on the pane for a schema without properties', async () => {
+			const wrapper = mountOpenOn( mockSchema );
+
+			await vi.waitFor( () => expect( document.activeElement ).toBe( rootPanel( wrapper ) ) );
+		} );
+
+		it( 'opens a subject being created on its label', async () => {
+			const wrapper = mountOpenOn( schemaStartingWith( { type: TextType.typeName } ), { rootIsNew: true } );
+
+			await vi.waitFor( () => expect( document.activeElement )
+				.toBe( controlOf( wrapper, 'neowiki-subject-editor-label', 'input' ) ) );
 		} );
 	} );
 
@@ -3207,6 +3299,22 @@ describe( 'SubjectEditorDialog', () => {
 					await flushPromises();
 
 					expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
+				} );
+
+				it( 'asks on close once a label is typed into the root', async () => {
+					const { wrapper } = await mountCreating();
+					const labelInput = wrapper.findComponent( SubjectEditPane )
+						.get( '.ext-neowiki-subject-edit-pane__label input' );
+
+					// An input event alone, as typing fires: setValue adds a change event, which only
+					// leaving the field fires.
+					( labelInput.element as HTMLInputElement ).value = 'Ada';
+					await labelInput.trigger( 'input' );
+					wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+					await flushPromises();
+
+					expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+					expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( true );
 				} );
 
 				// The write that landed is what the amber line records, and closing takes that line

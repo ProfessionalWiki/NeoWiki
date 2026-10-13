@@ -120,7 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, shallowReactive, nextTick, computed, provide, watch } from 'vue';
+import { ref, shallowRef, shallowReactive, nextTick, computed, provide, watch, onBeforeUnmount } from 'vue';
 import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
 import type { SubjectEditPaneExposes } from '@/components/SubjectEditor/SubjectEditPane.vue';
 import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
@@ -605,14 +605,36 @@ function startSession(): void {
 	partialSave.value = null;
 }
 
+let focusTimer: ReturnType<typeof setTimeout> | undefined;
+
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
 		startSession();
 		// Fetched per opening: approval state and the viewer's permissions both change
 		// without an edit. Keyed on the page being viewed and on the root Subject's Schema.
 		loadNotices( Number( mw.config.get( 'wgArticleId' ) ), props.subject.getSchemaName() );
+		// A task later: Codex focuses the dialog's first focusable element one or two ticks
+		// after it opens, depending on its version, and would otherwise win.
+		focusTimer = setTimeout( focusRootPane );
 	}
 }, { immediate: true } );
+
+onBeforeUnmount( () => clearTimeout( focusTimer ) );
+
+// Not every tab stop: a chip takes the focus too, and Backspace on it removes its value.
+const VALUE_CONTROL = 'input, select, textarea, [role="combobox"]';
+
+function focusRootPane(): void {
+	const panel = document.getElementById( `ext-neowiki-panel-${ rootPaneId.value }` );
+	const control = panel?.querySelector<HTMLElement>( VALUE_CONTROL ) ?? null;
+
+	( control === null || opensMenuOnFocus( control ) ? panel : control )?.focus( { preventScroll: true } );
+}
+
+// A lookup may open its menu on focus; a select waits for a click or a key.
+function opensMenuOnFocus( control: HTMLElement ): boolean {
+	return control.matches( 'input[role="combobox"]' );
+}
 
 // The host can replace props.subject while the dialog stays open, e.g. saving one subject
 // navigates straight to editing another. Without this, activePaneId keeps naming the old

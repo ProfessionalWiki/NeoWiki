@@ -20,6 +20,7 @@
 			input-type="number"
 			@update:model-value="onInput"
 			@input="onNativeInput"
+			@wheel.passive="onWheel"
 		/>
 	</CdxField>
 </template>
@@ -94,6 +95,11 @@ function onInput( newValue: string ): void {
 
 function onNativeInput( event: Event ): void {
 	unparseableInput.value = ( event.target as HTMLInputElement ).validity.badInput;
+}
+
+// Chromium steps a focused number field with the wheel, even a wheel turned to scroll the form past it.
+function onWheel( event: WheelEvent ): void {
+	( event.currentTarget as HTMLInputElement ).blur();
 }
 
 const unparseableMessage = computed<string | null>( () =>

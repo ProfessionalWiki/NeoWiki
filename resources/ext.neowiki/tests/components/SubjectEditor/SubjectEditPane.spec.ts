@@ -705,4 +705,34 @@ describe( 'SubjectEditPane', () => {
 		} );
 	} );
 
+	describe( 'Labelling a subject being created', () => {
+		beforeEach( () => {
+			useSubjectStore().validateSubject = vi.fn().mockResolvedValue( [] );
+		} );
+
+		it( 'offers an optional label field in place of the rename button', () => {
+			const wrapper = mountPane( { subject: unnamedSubject, isNew: true, nested: true } );
+
+			const fieldLabel = wrapper.get( '.ext-neowiki-subject-edit-pane__label .cdx-label' ).text();
+			expect( fieldLabel ).toContain( 'neowiki-subject-editor-label' );
+			expect( fieldLabel ).toContain( '(optional)' );
+			expect( wrapper.find( 'button[aria-label="neowiki-subject-editor-rename"]' ).exists() ).toBe( false );
+		} );
+
+		it( 'labels the subject as the label is typed', async () => {
+			const wrapper = mountPane( { subject: unnamedSubject, isNew: true } );
+
+			await wrapper.get( '.ext-neowiki-subject-edit-pane__label input' ).setValue( 'Ada' );
+
+			expect( ( ( wrapper.vm as any ).buildUpdatedSubject() as Subject ).getLabel() ).toBe( 'Ada' );
+		} );
+
+		it( 'shows the label a draft was created with', () => {
+			const wrapper = mountPane( { subject: unnamedSubject.withLabel( 'Ada' ), isNew: true, nested: true } );
+
+			expect( ( wrapper.get( '.ext-neowiki-subject-edit-pane__label input' ).element as HTMLInputElement ).value )
+				.toBe( 'Ada' );
+		} );
+	} );
+
 } );
