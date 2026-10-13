@@ -22,10 +22,9 @@ is page-first.
 | A link to a Subject leads | to the page that stores it | to the Subject itself, on Special:Subject |
 | A Subject's own page is | an ordinary page, titled by the label unless the author picks a title; it can be moved | in the `Subject` namespace by default, titled by the id; it cannot be moved |
 
-A surface that must behave differently in the two modes follows this setting and gets none of its own; the
-installation page lists which surface does what under
-[Choosing page-first or subject-first](../operations/installation.md#choosing-page-first-or-subject-first). A second
-setting, or a change to what the mode decides, needs a new ADR.
+A surface that must behave differently in the two modes follows this setting and gets none of its own;
+[Subject-first wikis](../subject-first-wikis.md) lists which surface does what. A second setting, or a change to what
+the mode decides, needs a new ADR.
 
 Stored data and RDF output are the same on both, and a page may hold several Subjects on both.
 
