@@ -17,7 +17,7 @@ readonly class SubjectSummary {
 		public string $schemaName,
 		public int $pageId,
 		public string $pageTitle,
-		/** ISO 8601 in UTC: the last edit of the page holding the Subject. */
+		/** ISO 8601 in UTC: when the Subject was last edited, which SubjectSummaryLookup takes from the page's last edit. */
 		public string $lastEdited,
 	) {
 	}

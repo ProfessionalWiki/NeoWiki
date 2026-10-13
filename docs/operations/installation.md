@@ -123,8 +123,8 @@ wfLoadExtension( 'ParserFunctions' );
 ```
 
 Without both Neo4j URLs set, NeoWiki's structured-data features still work. You lose the Cypher query surfaces
-(`{{#cypher_raw}}`, `nw.query`, `POST /neowiki/v0/query/cypher`), relation-target suggestions, and the Subject lists:
-Special:Subjects, the list on each Schema page, and the newest Subjects on Special:NeoWiki.
+(`{{#cypher_raw}}`, `nw.query`, `POST /neowiki/v0/query/cypher`), relation-target suggestions, Special:Subjects, and the
+list of Subjects on each Schema page.
 
 ### 4. Run the updater
 

@@ -232,7 +232,7 @@ describe( 'OverviewPage', () => {
 		expect( isShown( findFirstSteps( wrapper ) ) ).toBe( false );
 	} );
 
-	it( 'offers no Subject list on a wiki that cannot list Subjects', async () => {
+	it( 'maps the other pages but no Subject list on a wiki that cannot list Subjects', async () => {
 		setupMwMock( {
 			functions: [ 'util', 'config' ],
 			config: { wgNeoWikiSubjectListAvailable: false },
@@ -240,7 +240,18 @@ describe( 'OverviewPage', () => {
 		const wrapper = mountPage();
 		await flushPromises();
 
-		expect( wrapper.findComponent( RecentSubjectsTable ).exists() ).toBe( false );
-		expect( wrapper.html() ).not.toContain( 'Special:Subjects' );
+		expect( mappedPages( wrapper ) ).not.toContain( '/wiki/Special:Subjects' );
+		expect( mappedPages( wrapper ) ).toContain( '/wiki/Special:Schemas' );
+	} );
+
+	it( 'shows the recently edited Subjects also on a wiki that cannot list Subjects', async () => {
+		setupMwMock( {
+			functions: [ 'util', 'config' ],
+			config: { wgNeoWikiSubjectListAvailable: false },
+		} );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( wrapper.findComponent( RecentSubjectsTable ).exists() ).toBe( true );
 	} );
 } );

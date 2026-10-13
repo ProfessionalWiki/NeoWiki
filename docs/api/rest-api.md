@@ -46,6 +46,7 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 | `POST /neowiki/v0/subject-ids` | Mint a batch of unused Subject IDs to assign on create, e.g. to wire relations across an interlinked import. Body `count` (1–1000). |
 | `POST /neowiki/v0/subjects` | Create a Subject together with a page of its own, in one revision, as that page's main Subject. See [Creating Subjects](subject-format.md#creating-subjects). |
 | `GET /neowiki/v0/subjects` | List Subjects, newest first. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. Query: `schema` (only that Schema's Subjects), `search` (case-insensitive substring of the name or page title, or case-sensitive prefix of the ID), `sort` (`newest`, `name`, `schema`, `page`, `edited`) and `direction` (`asc`, `desc`; ignored by `newest`). Needs a Neo4j graph store. |
+| `GET /neowiki/v0/recently-edited-subjects` | List the Subjects whose data was edited most recently, newest first, each once. Adding a Subject counts as editing it. Returns `{"subjects": [...]}`, rows as in `GET /subjects` but with `lastEdited` the time of the Subject's last edit. Query: `limit` (1–50, default 10). A request looks back no further than the wiki's 2,000 newest revisions, of any page, and can return fewer Subjects than `limit` even when more were edited within them. |
 | `GET /neowiki/v0/subject-counts` | Count the Subjects of each Schema: `{"counts": {"Artist": 12}}`. A Schema with no Subjects is absent; one whose page is deleted or unreadable can be present. A count can lag a change by up to a minute. Needs a Neo4j graph store. |
 | `GET /neowiki/v0/subject-labels` | Find Subjects by name — the label, or for a Main Subject without one, the page title unless that is the ID of a Subject on the page. Other label-less Subjects are absent. Returns each Subject's `id`, `label` and the prefixed `pageTitle` of the page holding it. Query: `schema` (only Subjects of these Schemas, pipe-separated; omit for every Schema), `search` (name prefix), `limit`. |
 | `GET /neowiki/v0/subject/{subjectId}/referencingSubjects` | List the Subjects whose relations point at this one. See [Referencing Subjects](subject-format.md#referencing-subjects). |
@@ -126,13 +127,14 @@ Report and rebuild the graph stores this wiki projects into. A rebuild's `202` m
 Where the wiki itself requires login to read, every endpoint answers an anonymous request with `403` and
 `"error": "rest-read-denied"`, before any of the per-page rules below apply.
 
-The Subject, Subject list, page-subjects, main-subject, edit-notices, subject-labels, referencing-subjects, Schema,
-Layout, Mapping, RDF export, and entity-dereference read endpoints enforce the caller's per-page `read` permission; page
-protection and `$wgNamespaceProtection` do not restrict them, because MediaWiki's `read` action ignores both. When you
-may not read a page they respond as if the data were absent — a `null` value, an empty list, or a `404` — never a `403`.
-`GET /subject-labels`, `GET /subjects`, and `GET /subject/{subjectId}/referencingSubjects` omit rows whose page you
-cannot read; because that filter runs per result, all cap `limit` at 50. A `GET /subjects` request reads at most 1,000
-Subjects looking for ones you may read; on reaching that cap it ends the listing with a `null` `nextCursor`.
+The Subject, Subject list, recently-edited-subjects, page-subjects, main-subject, edit-notices, subject-labels,
+referencing-subjects, Schema, Layout, Mapping, RDF export, and entity-dereference read endpoints enforce the caller's
+per-page `read` permission; page protection and `$wgNamespaceProtection` do not restrict them, because MediaWiki's
+`read` action ignores both. When you may not read a page they respond as if the data were absent — a `null` value, an
+empty list, or a `404` — never a `403`. `GET /subject-labels`, `GET /subjects`, `GET /recently-edited-subjects`, and
+`GET /subject/{subjectId}/referencingSubjects` omit rows whose page you cannot read; because that filter runs per
+result, all cap `limit` at 50. A `GET /subjects` request reads at most 1,000 Subjects looking for ones you may read; on
+reaching that cap it ends the listing with a `null` `nextCursor`.
 
 `GET /subject-counts` is gated by the `neowiki-query` right instead of per-page `read`: its counts include Subjects on
 pages you may not read. Without the right it answers `403`.

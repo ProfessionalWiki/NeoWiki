@@ -96,7 +96,7 @@ describe( 'SchemaCard', () => {
 			nextCursor: null,
 		} );
 		scroll = stubIntersectionObserver();
-		subjectPreviews = new SubjectPreviews( { getSubjectSummaries } );
+		subjectPreviews = new SubjectPreviews( { getSubjectSummaries, getRecentlyEditedSubjects: vi.fn() } );
 	} );
 
 	it( 'links the Schema name to its page', () => {

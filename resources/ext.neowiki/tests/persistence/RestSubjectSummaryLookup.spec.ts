@@ -5,6 +5,7 @@ import type { SubjectSummaries, SubjectSummaryQuery } from '@/application/Subjec
 
 const REST_URL = '/rest.php';
 const LIST_URL = `${ REST_URL }/neowiki/v0/subjects?search=&sort=newest&direction=desc&limit=10`;
+const RECENTLY_EDITED_URL = `${ REST_URL }/neowiki/v0/recently-edited-subjects?limit=3`;
 
 const FIRST_PAGE: SubjectSummaryQuery = {
 	schema: null, search: '', sort: 'newest', direction: 'desc', cursor: null, limit: 10,
@@ -50,6 +51,20 @@ describe( 'RestSubjectSummaryLookup', () => {
 		const lookup = newLookup( { [ LIST_URL ]: { ok: false, json: async () => RESULT } as Response } );
 
 		await expect( lookup.getSubjectSummaries( FIRST_PAGE ) ).rejects.toThrow( 'Error fetching subject summaries' );
+	} );
+
+	it( 'asks for as many of the Subjects edited last as it is given', async () => {
+		const lookup = newLookup( { [ RECENTLY_EDITED_URL ]: jsonResponse( { subjects: RESULT.subjects } ) } );
+
+		expect( await lookup.getRecentlyEditedSubjects( 3 ) ).toEqual( RESULT.subjects );
+	} );
+
+	it( 'throws when the Subjects edited last cannot be fetched', async () => {
+		const lookup = newLookup( {
+			[ RECENTLY_EDITED_URL ]: { ok: false, json: async () => ( { subjects: RESULT.subjects } ) } as Response,
+		} );
+
+		await expect( lookup.getRecentlyEditedSubjects( 3 ) ).rejects.toThrow();
 	} );
 
 } );

@@ -417,6 +417,11 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaNamesApi"
 		},
 		{
+			"path": "/neowiki/v0/recently-edited-subjects",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetRecentlyEditedSubjectsApi"
+		},
+		{
 			"path": "/neowiki/v0/subject-labels",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectLabelsApi"
@@ -974,7 +979,7 @@
 				"neowiki-subjects-schema-label",
 				"neowiki-subjects-search-placeholder",
 				"neowiki-subjects-load-error",
-				"neowiki-subjects-recent",
+				"neowiki-subjects-recently-edited",
 				"neowiki-subjects-view-all",
 				"neowiki-overview-subjects-description",
 				"neowiki-special-subjects",

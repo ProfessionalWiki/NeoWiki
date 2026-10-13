@@ -158,7 +158,9 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetReferencingSubjectsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectCountsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectSummariesApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetRecentlyEditedSubjectsApi;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\RecentlyEditedSubjectLookup;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\MintSubjectIdsApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQueryApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\Neo4jRouteRegistration;
@@ -194,6 +196,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectConte
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PointInTimeSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PublishedSubjectLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\DatabaseRecentlyEditedSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectInPlaceOfPageTitleLookup;
@@ -273,6 +276,17 @@ class NeoWikiExtension {
 	 * 50 needs 51 readable rows, so this leaves room for many unreadable ones before a page ends short.
 	 */
 	private const int SUBJECT_SUMMARY_SCAN_BOUND = 1000;
+
+	/**
+	 * How far back the recently edited Subjects look: the wiki's newest revisions, of any page.
+	 */
+	private const int RECENTLY_EDITED_SUBJECTS_REVISION_BOUND = 2000;
+
+	/**
+	 * Most pages and edits one request for the recently edited Subjects reads. 50 Subjects on pages of their own take
+	 * about 100.
+	 */
+	private const int RECENTLY_EDITED_SUBJECTS_READ_BOUND = 200;
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
@@ -1927,6 +1941,19 @@ class NeoWikiExtension {
 		);
 	}
 
+	public function newRecentlyEditedSubjectLookup(): RecentlyEditedSubjectLookup {
+		return new DatabaseRecentlyEditedSubjectLookup(
+			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
+			slotRoleStore: MediaWikiServices::getInstance()->getSlotRoleStore(),
+			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
+			revisionPolicy: $this->getRevisionPolicy(),
+			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
+			titleFormatter: MediaWikiServices::getInstance()->getTitleFormatter(),
+			revisionBound: self::RECENTLY_EDITED_SUBJECTS_REVISION_BOUND,
+			readBound: self::RECENTLY_EDITED_SUBJECTS_READ_BOUND,
+		);
+	}
+
 	public function getSubjectLabelLookup(): SubjectLabelLookup {
 		if ( $this->getNeo4jPlugin() === null ) {
 			return new NullSubjectLabelLookup();
@@ -2235,6 +2262,10 @@ class NeoWikiExtension {
 
 	public static function newGetSubjectSummariesApi(): GetSubjectSummariesApi {
 		return new GetSubjectSummariesApi( self::getInstance()->newSubjectSummaryLookup() );
+	}
+
+	public static function newGetRecentlyEditedSubjectsApi(): GetRecentlyEditedSubjectsApi {
+		return new GetRecentlyEditedSubjectsApi( self::getInstance()->newRecentlyEditedSubjectLookup() );
 	}
 
 	public static function newGetSubjectCountsApi(): GetSubjectCountsApi {

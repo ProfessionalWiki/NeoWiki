@@ -78,7 +78,7 @@ const FULL_TIME_FORMAT = new Intl.DateTimeFormat( undefined, {
 } );
 
 /**
- * When the page was last edited: how long before `now`, and in full. Both in the browser's locale, like the other
+ * When the Subject was last edited: how long before `now`, and in full. Both in the browser's locale, like the other
  * dates the interface shows. An edit dated after `now`, by a server clock ahead of the browser's, reads as now.
  */
 export function describeLastEdited( iso: string, now: Date ): LastEdited | null {

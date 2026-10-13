@@ -5,8 +5,8 @@ order: 5
 # Revision policy
 
 Choose which revision of a page NeoWiki publishes: to the graph stores, the RDF export, the Subject reads
-`GET /neowiki/v0/subject/{subjectId}` and `.../referencingSubjects`, and its own Schema, Layout, Mapping and
-configuration reads. Without a policy every page publishes its latest revision.
+`GET /neowiki/v0/subject/{subjectId}`, `.../referencingSubjects` and `GET /neowiki/v0/recently-edited-subjects`, and its
+own Schema, Layout, Mapping and configuration reads. Without a policy every page publishes its latest revision.
 
 ```php
 class ApprovalRevisionPolicy implements RevisionPolicy {
@@ -27,9 +27,9 @@ channel](../operations/installation.md#logging).
 
 - `publishedRevision()` receives the page's current revision and returns the one to publish, of the same page, or
   `null`, which deletes the page's Page node and Subjects from the graph stores, makes the RDF export and the
-  Subject reads answer not-found for it, and leaves its Subjects out of every referencing list. A policy that throws
-  counts as returning `null`, with the error logged. It runs on every page save and rebuild and on every read above,
-  so keep it cheap.
+  Subject reads answer not-found for it, and leaves its Subjects out of every referencing list and of
+  `GET /neowiki/v0/recently-edited-subjects`. A policy that throws counts as returning `null`, with the error logged. It
+  runs on every page save and rebuild and on every read above, so keep it cheap.
 - `revisionIsReadableBy()` is asked when a REST caller names a `revisionId` or asks for `latest`
   ([REST API](../api/rest-api.md)); a refusal answers exactly like a revision that does not exist.
 

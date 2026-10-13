@@ -32,7 +32,7 @@
 	"neowiki-subjects-schema-label": "Schema",
 	"neowiki-subjects-search-placeholder": "Search by name, page or ID",
 	"neowiki-subjects-load-error": "The subjects could not be loaded.",
-	"neowiki-subjects-recent": "Recently added subjects",
+	"neowiki-subjects-recently-edited": "Recently edited subjects",
 	"neowiki-subjects-view-all": "View all subjects",
 	"neowiki-overview-subjects-description": "Browse and search data.",
 	"neowiki-special-createsubject": "Create subject",

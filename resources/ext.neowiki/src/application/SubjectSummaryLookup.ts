@@ -21,7 +21,7 @@ export interface SubjectSummary {
 	schema: string;
 	pageId: number;
 	pageTitle: string;
-	/** ISO 8601, UTC: when the page holding the Subject was last edited. */
+	/** ISO 8601, UTC: when the Subject was last edited, which getSubjectSummaries takes from the page's last edit. */
 	lastEdited: string;
 }
 
@@ -33,4 +33,7 @@ export interface SubjectSummaries {
 
 export interface SubjectSummaryLookup {
 	getSubjectSummaries( query: SubjectSummaryQuery ): Promise<SubjectSummaries>;
+
+	/** The Subjects whose data was edited last, newest first. Adding a Subject counts as editing it. */
+	getRecentlyEditedSubjects( limit: number ): Promise<SubjectSummary[]>;
 }

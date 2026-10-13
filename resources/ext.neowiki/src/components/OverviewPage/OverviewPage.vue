@@ -126,7 +126,7 @@ const showsFirstSteps = computed( () => !props.wikiHasSubjects && canCreateSubje
 
 // On a wiki without Subjects the table waits for the permission check, so it never loads for a user who gets the note.
 const showsRecentSubjects = computed(
-	() => subjectListAvailable && ( props.wikiHasSubjects || ( permissionKnown.value && !showsFirstSteps.value ) )
+	() => props.wikiHasSubjects || ( permissionKnown.value && !showsFirstSteps.value )
 );
 
 const pageLinks = computed( () => [

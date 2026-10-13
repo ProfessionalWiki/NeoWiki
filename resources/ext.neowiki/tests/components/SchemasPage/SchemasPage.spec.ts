@@ -374,7 +374,7 @@ describe( 'SchemasPage', () => {
 		const getSubjectSummaries = vi.fn().mockResolvedValue( { subjects: [], nextCursor: null } );
 		const wrapper = mountPage( {
 			realCards: true,
-			subjectSummaryLookup: { getSubjectSummaries },
+			subjectSummaryLookup: { getSubjectSummaries, getRecentlyEditedSubjects: vi.fn() },
 			subjectCountLookup: { getSubjectCounts: neverLands() },
 		} );
 		await flushPromises();
@@ -460,7 +460,10 @@ describe( 'SchemasPage', () => {
 			} ],
 			nextCursor: null,
 		} );
-		const wrapper = mountPage( { realCards: true, subjectSummaryLookup: { getSubjectSummaries } } );
+		const wrapper = mountPage( {
+			realCards: true,
+			subjectSummaryLookup: { getSubjectSummaries, getRecentlyEditedSubjects: vi.fn() },
+		} );
 		await flushPromises();
 		scroll.setInView( cards( wrapper )[ 0 ].element, true );
 		await flushPromises();

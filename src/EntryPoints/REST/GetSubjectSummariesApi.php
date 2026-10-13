@@ -11,12 +11,12 @@ use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\InvalidSubjectSummaryCursorException;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SortDirection;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaries;
-use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummary;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryCursor;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryQuery;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummarySort;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Presentation\SubjectSummarySerializer;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
@@ -55,7 +55,7 @@ class GetSubjectSummariesApi extends SimpleHandler {
 
 	private function listingResponse( SubjectSummaries $summaries ): Response {
 		return $this->getResponseFactory()->createJson( [
-			'subjects' => array_map( $this->serialize( ... ), $summaries->summaries ),
+			'subjects' => array_map( SubjectSummarySerializer::serialize( ... ), $summaries->summaries ),
 			'nextCursor' => $summaries->nextCursor?->encode(),
 		] );
 	}
@@ -73,21 +73,6 @@ class GetSubjectSummariesApi extends SimpleHandler {
 				$this->getResponseFactory()->createHttpError( 400, [ 'message' => 'Invalid cursor' ] )
 			);
 		}
-	}
-
-	/**
-	 * @return array<string, string|int|bool>
-	 */
-	private function serialize( SubjectSummary $summary ): array {
-		return [
-			'id' => $summary->subjectId,
-			'displayName' => $summary->displayName,
-			'displayNameIsGenerated' => $summary->displayNameIsGenerated,
-			'schema' => $summary->schemaName,
-			'pageId' => $summary->pageId,
-			'pageTitle' => $summary->pageTitle,
-			'lastEdited' => $summary->lastEdited,
-		];
 	}
 
 	public function getParamSettings(): array {

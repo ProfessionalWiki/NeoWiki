@@ -4,15 +4,20 @@ import RecentSubjectsTable from '@/components/SubjectsTable/RecentSubjectsTable.
 import { Service } from '@/NeoWikiServices.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
-let getSubjectSummaries: ReturnType<typeof vi.fn>;
+let getRecentlyEditedSubjects: ReturnType<typeof vi.fn>;
+
+function setUpWiki( subjectListAvailable: boolean ): void {
+	setupMwMock( {
+		functions: [ 'config', 'msg', 'message', 'util' ],
+		config: { wgNeoWikiSubjectListAvailable: subjectListAvailable },
+	} );
+}
 
 function mountTable(): VueWrapper {
-	setupMwMock( { functions: [ 'config', 'msg', 'message', 'util' ] } );
-
 	return mount( RecentSubjectsTable, {
 		global: {
 			mocks: { $i18n: createI18nMock() },
-			provide: { [ Service.SubjectSummaryLookup ]: { getSubjectSummaries } },
+			provide: { [ Service.SubjectSummaryLookup ]: { getRecentlyEditedSubjects } },
 		},
 	} );
 }
@@ -20,22 +25,25 @@ function mountTable(): VueWrapper {
 describe( 'RecentSubjectsTable', () => {
 
 	beforeEach( () => {
-		getSubjectSummaries = vi.fn().mockResolvedValue( {
-			subjects: [ {
-				id: 's1demo1aaaaaaa1', displayName: 'Commodore 64', displayNameIsGenerated: false, schema: 'Computer',
-				pageId: 1, pageTitle: 'Home computers', lastEdited: '2026-10-01T14:02:00Z',
-			} ],
-			nextCursor: 'more',
-		} );
+		setUpWiki( true );
+		getRecentlyEditedSubjects = vi.fn().mockResolvedValue( [ {
+			id: 's1demo1aaaaaaa1', displayName: 'Commodore 64', displayNameIsGenerated: false, schema: 'Computer',
+			pageId: 1, pageTitle: 'Home computers', lastEdited: '2026-10-01T14:02:00Z',
+		} ] );
 	} );
 
-	it( 'asks for the five newest Subjects', async () => {
+	it( 'is captioned as the recently edited Subjects', async () => {
+		const wrapper = mountTable();
+		await flushPromises();
+
+		expect( wrapper.text() ).toContain( 'neowiki-subjects-recently-edited' );
+	} );
+
+	it( 'asks for the five Subjects edited last', async () => {
 		mountTable();
 		await flushPromises();
 
-		expect( getSubjectSummaries ).toHaveBeenCalledWith( {
-			schema: null, search: '', sort: 'newest', direction: 'desc', cursor: null, limit: 5,
-		} );
+		expect( getRecentlyEditedSubjects ).toHaveBeenCalledWith( 5 );
 	} );
 
 	it( 'shows them without sortable columns', async () => {
@@ -63,8 +71,17 @@ describe( 'RecentSubjectsTable', () => {
 		expect( link.element.closest( '.cdx-table__footer' ) ).not.toBeNull();
 	} );
 
+	it( 'offers no link to the full list on a wiki that cannot list Subjects', async () => {
+		setUpWiki( false );
+		const wrapper = mountTable();
+		await flushPromises();
+
+		expect( wrapper.text() ).toContain( 'Commodore 64' );
+		expect( wrapper.find( 'a[href="/wiki/Special:Subjects"]' ).exists() ).toBe( false );
+	} );
+
 	it( 'says the wiki has no Subjects yet when there are none', async () => {
-		getSubjectSummaries.mockResolvedValue( { subjects: [], nextCursor: null } );
+		getRecentlyEditedSubjects.mockResolvedValue( [] );
 		const wrapper = mountTable();
 		await flushPromises();
 
@@ -72,7 +89,7 @@ describe( 'RecentSubjectsTable', () => {
 	} );
 
 	it( 'says nothing about an empty list while it loads', async () => {
-		getSubjectSummaries.mockReturnValue( new Promise( () => {
+		getRecentlyEditedSubjects.mockReturnValue( new Promise( () => {
 			// Never lands.
 		} ) );
 		const wrapper = mountTable();
@@ -82,7 +99,7 @@ describe( 'RecentSubjectsTable', () => {
 	} );
 
 	it( 'says the list could not be loaded when the request fails', async () => {
-		getSubjectSummaries.mockRejectedValue( new Error( 'boom' ) );
+		getRecentlyEditedSubjects.mockRejectedValue( new Error( 'boom' ) );
 		const wrapper = mountTable();
 		await flushPromises();
 

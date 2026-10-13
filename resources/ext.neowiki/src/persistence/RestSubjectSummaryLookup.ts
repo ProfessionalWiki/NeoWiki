@@ -1,4 +1,6 @@
-import type { SubjectSummaries, SubjectSummaryLookup, SubjectSummaryQuery } from '@/application/SubjectSummaryLookup';
+import type {
+	SubjectSummaries, SubjectSummary, SubjectSummaryLookup, SubjectSummaryQuery,
+} from '@/application/SubjectSummaryLookup';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 
 export class RestSubjectSummaryLookup implements SubjectSummaryLookup {
@@ -35,6 +37,18 @@ export class RestSubjectSummaryLookup implements SubjectSummaryLookup {
 		}
 
 		return await response.json();
+	}
+
+	public async getRecentlyEditedSubjects( limit: number ): Promise<SubjectSummary[]> {
+		const response = await this.httpClient.get(
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/recently-edited-subjects?limit=${ limit }`,
+		);
+
+		if ( !response.ok ) {
+			throw new Error( 'Error fetching recently edited subjects' );
+		}
+
+		return ( await response.json() ).subjects;
 	}
 
 }

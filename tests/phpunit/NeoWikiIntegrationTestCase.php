@@ -162,6 +162,22 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
+	 * Writes the Subject slot as given, as an import or Special:NeoJson does, creating the page if it does not exist.
+	 */
+	protected function writeSubjectSlot( string $pageName, string $subjectJson ): ?RevisionRecord {
+		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( Title::newFromText( $pageName ) );
+		$updater = $page->newPageUpdater( $this->getTestSysop()->getUser() );
+
+		if ( !$page->exists() ) {
+			$updater->setContent( 'main', new TextContent( '' ) );
+		}
+
+		$updater->setContent( MediaWikiSubjectRepository::SLOT_NAME, new SubjectContent( $subjectJson ) );
+
+		return $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'Raw Subject slot' ) );
+	}
+
+	/**
 	 * Pages carrying one Subject each, in the order they were created.
 	 *
 	 * @return int[] The page ids
@@ -194,24 +210,37 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	 * from that can be hidden after the fact.
 	 */
 	protected function hideRevisionAuthor( Title $title, int $revisionId ): void {
-		$this->setRevisionAuthorVisibility( $title, $revisionId, 1 );
+		$this->setRevisionVisibility( $title, $revisionId, RevisionRecord::DELETED_USER, 1 );
 	}
 
 	protected function showRevisionAuthor( Title $title, int $revisionId ): void {
-		$this->setRevisionAuthorVisibility( $title, $revisionId, 0 );
+		$this->setRevisionVisibility( $title, $revisionId, RevisionRecord::DELETED_USER, 0 );
 	}
 
 	/**
-	 * @param int $value 1 hides the author, 0 shows them again (RevisionDeleter::extractBitfield)
+	 * Hides a revision's content from the public, which MediaWiki refuses for a page's current revision.
 	 */
-	private function setRevisionAuthorVisibility( Title $title, int $revisionId, int $value ): void {
+	protected function hideRevisionContent( RevisionRecord $revision ): void {
+		$this->setRevisionVisibility(
+			Title::newFromPageIdentity( $revision->getPage() ),
+			(int)$revision->getId(),
+			RevisionRecord::DELETED_TEXT,
+			1
+		);
+	}
+
+	/**
+	 * @param int $field A RevisionRecord::DELETED_* bit
+	 * @param int $value 1 hides the field, 0 shows it again (RevisionDeleter::extractBitfield)
+	 */
+	private function setRevisionVisibility( Title $title, int $revisionId, int $field, int $value ): void {
 		// The change is logged, and a log entry needs an actor to attribute it to.
 		RequestContext::getMain()->setUser( $this->getTestSysop()->getUser() );
 
 		$list = RevisionDeleter::createList( 'revision', RequestContext::getMain(), $title, [ $revisionId ] );
 
 		$this->assertStatusGood( $list->setVisibility( [
-			'value' => [ RevisionRecord::DELETED_USER => $value ],
+			'value' => [ $field => $value ],
 			'comment' => 'Changing revision visibility in a test',
 		] ) );
 

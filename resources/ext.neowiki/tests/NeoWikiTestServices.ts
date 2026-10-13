@@ -23,6 +23,7 @@ export class NeoWikiTestServices extends NeoWikiServices {
 			[ Service.SubjectLabelSearch ]: { searchSubjectLabels: () => Promise.resolve( [] ) } as SubjectLabelSearch,
 			[ Service.SubjectSummaryLookup ]: {
 				getSubjectSummaries: () => Promise.resolve( { subjects: [], nextCursor: null } ),
+				getRecentlyEditedSubjects: () => Promise.resolve( [] ),
 			} as SubjectSummaryLookup,
 			[ Service.SubjectCountLookup ]: {
 				getSubjectCounts: () => Promise.resolve( new Map() ),
