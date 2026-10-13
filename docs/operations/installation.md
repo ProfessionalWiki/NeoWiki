@@ -184,25 +184,11 @@ These are the settings you are most likely to change. For the full list with des
 
 ## Choosing page-first or subject-first
 
-`$wgNeoWikiSubjectFirst` selects whether this wiki is
-[page-first or subject-first](../glossary.md#page-first-and-subject-first-wikis): `false`, the default, is page-first;
-`true` is subject-first. It can also be set on `MediaWiki:NeoWiki` as `subjectFirst`
-([on-wiki settings](#on-wiki-settings)).
+You can make your wiki [page-first or subject-first](../subject-first-wikis.md). The default is page-first,
+and you can change it in the [on-wiki settings](#on-wiki-settings) or with `$wgNeoWikiSubjectFirst`.
 
-| Behaviour | Page-first | Subject-first |
-|---|---|---|
-| Where a new Subject is stored | on the page its creator is working on, or another they choose | on a new page of its own |
-| Title of a Subject's page | chosen by whoever creates the page, the label by default; can be changed | the Subject's id, in the `Subject` namespace; cannot be changed |
-| Where links to a Subject lead, and where saving one lands | the page it is stored on | Special:Subject |
-| Pages named beside Subjects, in Subject tables and the editor | shown | hidden |
-| Moving a Subject to another page | offered on the Data tab | not offered |
-| Deleting the last Subject on a page | the page stays | the page goes too |
-
-Switching an existing wiki to the other mode moves nothing: pages keep their titles and namespaces, and new Subjects and
-all links follow the new mode.
-
-On a subject-first wiki, `$wgNeoWikiSubjectPageNamespace` names the namespace each Subject's own page is created in,
-`NS_MAIN` included. It must be a content namespace, or the pages there get no heading, infobox or Data tab.
+On a subject-first wiki, Subjects are stored in the `Subject` namespace by default. You can change this with
+`$wgNeoWikiSubjectPageNamespace`.
 
 ## Data languages
 
@@ -210,8 +196,8 @@ On a subject-first wiki, `$wgNeoWikiSubjectPageNamespace` names the namespace ea
 `[ 'de', 'fr', 'it' ]`. When editing [text with language](../api/schema-format.md#text-with-language-monolingualtext),
 the editor offers them in this order beside each text, and starts a new text in the first of them the value lacks.
 Other languages stay one search away, and texts already in them keep their language. The default, an empty list,
-stands for the wiki's content language (`$wgLanguageCode`). The list can also be set on `MediaWiki:NeoWiki` as
-`dataLanguages` ([on-wiki settings](#on-wiki-settings)).
+stands for the wiki's content language (`$wgLanguageCode`). The list can also be set in the
+[on-wiki settings](#on-wiki-settings).
 
 ## Logging
 

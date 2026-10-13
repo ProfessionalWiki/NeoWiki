@@ -1,7 +1,7 @@
 ---
 title: Qualifiers and References
 description: How NeoWiki models Wikibase-style qualifiers, references, and rank with Subjects, Relations, and Schemas.
-order: 2
+order: 3
 ---
 # Qualifiers and References
 

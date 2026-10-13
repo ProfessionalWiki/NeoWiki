@@ -17,6 +17,7 @@ Concepts:
 
 * [Glossary](glossary.md) — the concepts (Subject, Schema, Statement, View, Layout, Page Property) used
   across the UI, the code, and these docs. Start here.
+* [Subject-first wikis](subject-first-wikis.md) — how they differ from page-first wikis, to pick one for your wiki
 * [Qualifiers and References](qualifiers-and-references.md) — how NeoWiki models qualifiers, references,
   and rank (for people coming from Wikibase)
 * [Architecture](architecture.md) — how the parts fit together, followed by the numbered list of Architecture

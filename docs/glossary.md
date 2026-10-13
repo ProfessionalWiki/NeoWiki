@@ -149,6 +149,8 @@ goes on the page you create it from. This is the default.
 **Subject-first**: each new Subject gets its own page, and that page only stores it. Links lead to the Subject
 (`Special:Subject`), not to its page.
 
+See [how they differ](subject-first-wikis.md).
+
 ### View
 
 A View is an on-page rendering of a Subject. Views are placed on wiki pages via the `{{#view}}` parser function or
