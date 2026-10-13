@@ -248,12 +248,14 @@ A wiki whose readers do not all see the same pages needs more than these default
 
 ## On-wiki settings
 
-Users with the `editinterface` and `editsitejson` rights, administrators by default, can change four settings in a
-form at `MediaWiki:NeoWiki`: `$wgNeoWikiSubjectFirst`, `$wgNeoWikiDataLanguages`, `$wgNeoWikiEnforceValidation` and
-`$wgNeoWikiAutoRenderMainSubject`.
+Administrators can change some settings in a form at `MediaWiki:NeoWiki`, such as whether the wiki is
+[page-first or subject-first](#choosing-page-first-or-subject-first) and its [data languages](#data-languages).
+Everything else, such as the Neo4j and SPARQL store connections, can only be set in `LocalSettings.php`.
 
-Per setting, a valid value on the page overrides `LocalSettings.php`; otherwise `LocalSettings.php` applies. Pages
-rendered before a change can lag behind it until purged with `?action=purge`.
+![A form with radio buttons, a reorderable language list and checkboxes](on-wiki-settings.png)
+
+Editing the page takes the `editinterface` and `editsitejson` rights. Per setting, a valid value on the page overrides
+`LocalSettings.php`. Pages rendered before a change can lag behind it until purged with `?action=purge`.
 
 Set `$wgNeoWikiEnableInWikiConfig` to `false` to turn on-wiki settings off.
 
