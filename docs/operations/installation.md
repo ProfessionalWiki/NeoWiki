@@ -201,9 +201,7 @@ These are the settings you are most likely to change. For the full list with des
 | Concept URI in a browser | the page | Special:Subject |
 | "Move" on the Data tab | offered | not offered |
 | Deleting a Subject that is its page's only one | the Subject goes, the page stays | the page goes with it |
-| A Subject's own page | titled by the label, else by the id; in the main namespace | titled by the id; in the `Subject` namespace |
-| A page title asked for on creation (`pageTitle`, `page=` naming a page that does not exist) | used, in the main namespace | refused |
-| Moving a page titled by the id of a Subject on it | allowed | refused |
+| Title of a Subject's page | chosen by whoever creates the page, the label by default; can be changed | the Subject's id, in the `Subject` namespace; cannot be changed |
 
 On a subject-first wiki, `$wgNeoWikiSubjectPageNamespace` names the namespace each Subject's own page is created in,
 `NS_MAIN` included. It must be a content namespace, or the pages there get no heading, infobox or Data tab.
