@@ -18,7 +18,7 @@
 	"specialpages-group-neowiki": "Group heading for NeoWiki special pages on [[Special:SpecialPages]].",
 	"neowiki-special-subjects": "{{doc-special|Subjects}}\nTitle of [[Special:Subjects]], which lists every subject on the wiki. Also the caption of the subjects table on that page and on schema pages.",
 	"neowiki-subjects-unavailable": "Notice shown on [[Special:Subjects]] instead of the list on a wiki without a Neo4j graph store.",
-	"neowiki-subjects-column-subject": "Header of the column naming each subject in the subject tables on [[Special:Subjects]], schema pages and [[Special:NeoWiki]].",
+	"neowiki-subjects-column-subject": "Header of the column naming each subject in the subject tables on [[Special:Subjects]], schema pages and [[Special:NeoWiki]].\n{{Identical|Subject}}",
 	"neowiki-subjects-column-schema": "Header of the column naming each subject's schema in the subject tables.",
 	"neowiki-subjects-column-page": "Header of the column naming the page that holds each subject in the subject tables.\n{{Identical|Page}}",
 	"neowiki-subjects-column-edited": "Header of the column showing when each subject was last edited.",
