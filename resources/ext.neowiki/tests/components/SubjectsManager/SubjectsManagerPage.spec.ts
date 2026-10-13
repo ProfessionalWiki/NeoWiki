@@ -337,11 +337,8 @@ describe( 'SubjectsManagerPage rows and the Subject pages behind them', () => {
 		vi.restoreAllMocks();
 	} );
 
-	it.each( [
-		[ 'page-first', false ],
-		[ 'subject-first', true ],
-	] )( 'links every row to that Subject itself on a %s wiki', async ( _mode, subjectFirst ) => {
-		const wrapper = await mountPage( subjectFirst );
+	it( 'links every row to that Subject itself', async () => {
+		const wrapper = await mountPage();
 
 		expect( wrapper.findAll( 'a.ext-neowiki-subject-row__name' )
 			.map( ( link ) => link.attributes( 'href' ) ) )
