@@ -199,6 +199,25 @@ describe( 'SubjectEditorDialog', () => {
 		);
 	}
 
+	function controlOf( wrapper: VueWrapper, fieldName: string, selector: string ): Element {
+		const field = wrapper.findAll( '.cdx-field' )
+			.find( ( candidate ) => candidate.find( '.cdx-label__label__text' ).text() === fieldName );
+
+		if ( field === undefined ) {
+			throw new Error( `No field named ${ fieldName }` );
+		}
+
+		return field.get( selector ).element;
+	}
+
+	// The dialog places its opening focus a task after it opens. A test that moves the focus
+	// itself waits for that first, or the opening takes the focus back.
+	async function openingFocusPlaced(): Promise<void> {
+		await new Promise( ( resolve ) => {
+			setTimeout( resolve );
+		} );
+	}
+
 	function editedPropertyNames( wrapper: VueWrapper ): string[] {
 		const statements = wrapper.findComponent( SubjectEditor ).props( 'statements' ) as StatementList;
 		return [ ...statements ].map( ( s ) => s.propertyName.toString() );
@@ -1160,17 +1179,6 @@ describe( 'SubjectEditorDialog', () => {
 				createPropertyDefinitionFromJson( 'First', first ),
 				createPropertyDefinitionFromJson( 'Second', { type: TextType.typeName } ),
 			] ) );
-		}
-
-		function controlOf( wrapper: VueWrapper, fieldName: string, selector: string ): Element {
-			const field = wrapper.findAll( '.cdx-field' )
-				.find( ( candidate ) => candidate.find( '.cdx-label__label__text' ).text() === fieldName );
-
-			if ( field === undefined ) {
-				throw new Error( `No field named ${ fieldName }` );
-			}
-
-			return field.get( selector ).element;
 		}
 
 		function rootPanel( wrapper: VueWrapper ): Element {
@@ -2186,15 +2194,16 @@ describe( 'SubjectEditorDialog', () => {
 		// document throughout: a detached element cannot take focus at all.
 		describe( 'Focus on navigation', () => {
 			async function mountAttached(
-				rootSchema: Schema = mockSchema,
-				rootSubject: Subject = mockSubject,
-				stubs: Record<string, unknown> = {},
-			): Promise<VueWrapper> {
-				const { wrapper } = mountWithTargetRepos(
+				rootSchema: Schema,
+				rootSubject: Subject,
+				stubs: Record<string, unknown>,
+			): Promise<TargetReposMount> {
+				const mounted = mountWithTargetRepos(
 					undefined, stubs, rootSchema, rootSubject, document.body,
 				);
 				await flushPromises();
-				return wrapper;
+				await openingFocusPlaced();
+				return mounted;
 			}
 
 			async function openTargetFromForm( wrapper: VueWrapper, id: string ): Promise<void> {
@@ -2202,19 +2211,19 @@ describe( 'SubjectEditorDialog', () => {
 				await flushPromises();
 			}
 
-			it( 'focuses the newly shown panel when a form control opens a relation target', async () => {
-				const wrapper = await mountAttached();
+			it( 'focuses the first field of a subject a form opens', async () => {
+				const { wrapper, mockSchemaRepository } = await mountAttached( mockSchema, mockSubject, { SubjectEditor: false } );
+				mockSchemaRepository.getSchema.mockResolvedValue( schemaWithProperty( 'Born' ) );
 
 				await openTargetFromForm( wrapper, 's22222222222222' );
 
-				expect( document.activeElement )
-					.toBe( wrapper.find( '#ext-neowiki-panel-s22222222222222' ).element );
+				await vi.waitFor( () => expect( document.activeElement ).toBe( controlOf( wrapper, 'Born', 'input' ) ) );
 			} );
 
 			// As the listbox pattern expects: the row the reader chose stays the tab stop, so the
 			// next Tab leaves the navigator rather than restarting inside it.
 			it( 'leaves focus on the list when a row shows a subject', async () => {
-				const wrapper = await mountAttached( relationRootSchema, relationRootSubject, { teleport: false } );
+				const { wrapper } = await mountAttached( relationRootSchema, relationRootSubject, { teleport: false } );
 				await openTargetFromForm( wrapper, 's22222222222222' );
 				const row = listRow( wrapper, rootSubjectId ).element as HTMLElement;
 				row.focus();
@@ -2748,10 +2757,11 @@ describe( 'SubjectEditorDialog', () => {
 				onCreate?: Mock;
 				rootSubject?: Subject;
 				extraProps?: Record<string, unknown>;
+				attachTo?: Element;
 			}
 
 			function mountForCreation( {
-				onSave, onCreate, rootSubject, extraProps,
+				onSave, onCreate, rootSubject, extraProps, attachTo,
 			}: CreationMountOptions = {} ): TargetReposMount {
 				const mounted = mountWithTargetRepos(
 					onSave ?? vi.fn().mockResolvedValue( undefined ),
@@ -2760,7 +2770,7 @@ describe( 'SubjectEditorDialog', () => {
 					// requesting field then holds is one the root really points at.
 					relationRootSchema,
 					rootSubject ?? rootOnHostPage,
-					undefined,
+					attachTo,
 					onCreate ?? vi.fn().mockResolvedValue( undefined ),
 					extraProps,
 				);
@@ -2887,6 +2897,16 @@ describe( 'SubjectEditorDialog', () => {
 				await createTarget( wrapper );
 
 				expect( visibleSubjectId( wrapper ) ).toBe( mintedId );
+			} );
+
+			it( 'focuses the label of the created draft', async () => {
+				const { wrapper } = await mountReadyForCreation( { attachTo: document.body } );
+				await openingFocusPlaced();
+
+				await createTarget( wrapper );
+
+				await vi.waitFor( () => expect( document.activeElement )
+					.toBe( controlOf( wrapper, 'neowiki-subject-editor-label', 'input' ) ) );
 			} );
 
 			it( 'shows no id beside the title while the created draft is on screen', async () => {

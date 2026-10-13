@@ -522,7 +522,7 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 
 		extraPanes.value = [ ...extraPanes.value, { id: id.text, subject, schema, isNew: true } ];
 		activePaneId.value = id.text;
-		focusPanel( id.text );
+		focusPane( id.text );
 
 		return subject;
 	} catch ( error ) {
@@ -553,17 +553,12 @@ function showPane( subjectId: SubjectId ): void {
 }
 
 // Navigating from a control inside a form hides the pane that control lives in, so the
-// browser blurs it to <body> and the next Tab restarts at the top of the dialog. The panel
-// wrapper takes the focus instead, which is what its tabindex="-1" is for. Activation from
-// the navigator is left alone: focus belongs on the row there.
+// browser blurs it to <body> and the next Tab restarts at the top of the dialog. The newly
+// shown pane takes the focus instead, as the first pane does when the dialog opens.
+// Activation from the navigator is left alone: focus belongs on the row there.
 async function openRelationTargetFromForm( targetId: SubjectId ): Promise<void> {
 	await openRelationTarget( targetId );
-	await focusPanel( targetId.text );
-}
-
-async function focusPanel( paneId: string ): Promise<void> {
-	await nextTick();
-	document.getElementById( `ext-neowiki-panel-${ paneId }` )?.focus();
+	await focusPane( targetId.text );
 }
 
 function close(): void {
@@ -614,8 +609,9 @@ watch( () => props.open, ( isOpen ) => {
 		// without an edit. Keyed on the page being viewed and on the root Subject's Schema.
 		loadNotices( Number( mw.config.get( 'wgArticleId' ) ), props.subject.getSchemaName() );
 		// A task later: Codex focuses the dialog's first focusable element one or two ticks
-		// after it opens, depending on its version, and would otherwise win.
-		focusTimer = setTimeout( focusRootPane );
+		// after it opens, depending on its version, and would otherwise win. Without scrolling:
+		// the form is at its top already, and focusing the pane itself would shift it by its padding.
+		focusTimer = setTimeout( () => focusPane( rootPaneId.value, { preventScroll: true } ) );
 	}
 }, { immediate: true } );
 
@@ -624,11 +620,16 @@ onBeforeUnmount( () => clearTimeout( focusTimer ) );
 // Not every tab stop: a chip takes the focus too, and Backspace on it removes its value.
 const VALUE_CONTROL = 'input, select, textarea, [role="combobox"]';
 
-function focusRootPane(): void {
-	const panel = document.getElementById( `ext-neowiki-panel-${ rootPaneId.value }` );
+// When no field can take the focus, the pane holds it: that is what its tabindex="-1" is for.
+// Panes share one scroller, so it is the focus's own scrolling that shows a pane opened from
+// further down a form from its top.
+async function focusPane( paneId: string, options?: { preventScroll: boolean } ): Promise<void> {
+	await nextTick();
+
+	const panel = document.getElementById( `ext-neowiki-panel-${ paneId }` );
 	const control = panel?.querySelector<HTMLElement>( VALUE_CONTROL ) ?? null;
 
-	( control === null || opensMenuOnFocus( control ) ? panel : control )?.focus( { preventScroll: true } );
+	( control === null || opensMenuOnFocus( control ) ? panel : control )?.focus( options );
 }
 
 // A lookup may open its menu on focus; a select waits for a click or a key.
