@@ -293,10 +293,7 @@ provide( RelationTargetCreationKey, canCreate );
 
 // A subject-first wiki gives every Subject a page of its own, so moving one between pages would
 // advertise a page model the wiki denies (ADR 33).
-// The wiki's mode, read once: it cannot change while this tab is open.
-const subjectFirst = isSubjectFirst();
-
-const canMove = computed( () => canEdit.value && !subjectFirst );
+const canMove = computed( () => canEdit.value && !isSubjectFirst() );
 const canDelete = computed( () => canDeleteSubject.value );
 
 const mainSubject = computed<Subject | null>( () => {

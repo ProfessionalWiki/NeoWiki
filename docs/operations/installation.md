@@ -196,7 +196,7 @@ These are the settings you are most likely to change. For the full list with des
 | Telling namesakes apart when picking a relation target | by their pages, then by their ids | by their ids |
 | Landing after save | the page | Special:Subject |
 | Links to Subjects in infoboxes and views | the page | Special:Subject |
-| Links in relation values on the Data tab | the target page's Data tab, with the row highlighted | Special:Subject |
+| Links in relation values on the Data tab and Special:Subject | the target page's Data tab, with the row highlighted | Special:Subject |
 | Concept URI in a browser | the page | Special:Subject |
 | "Move" on the Data tab | offered | not offered |
 | Deleting a Subject that is its page's only one | the Subject goes, the page stays | the page goes with it |
