@@ -10,7 +10,7 @@ export interface SubjectColumn extends TableColumn {
 }
 
 const COLUMN_LABELS: Record<SubjectColumnId, string> = {
-	name: 'neowiki-subjects-column-name',
+	name: 'neowiki-subjects-column-subject',
 	schema: 'neowiki-subjects-column-schema',
 	page: 'neowiki-subjects-column-page',
 	edited: 'neowiki-subjects-column-edited',

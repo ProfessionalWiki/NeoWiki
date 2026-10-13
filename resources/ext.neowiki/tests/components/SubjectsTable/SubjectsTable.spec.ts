@@ -143,7 +143,7 @@ describe( 'SubjectsTable', () => {
 		await flushPromises();
 
 		expect( columnLabels( wrapper ) ).toEqual( [
-			'neowiki-subjects-column-name', 'neowiki-subjects-column-schema', 'neowiki-subjects-column-page',
+			'neowiki-subjects-column-subject', 'neowiki-subjects-column-schema', 'neowiki-subjects-column-page',
 			'neowiki-subjects-column-edited',
 		] );
 	} );
