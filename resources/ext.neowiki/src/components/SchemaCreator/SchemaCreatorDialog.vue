@@ -7,6 +7,7 @@
 			:open="props.open"
 			:use-close-button="true"
 			class="ext-neowiki-ui ext-neowiki-schema-creator-dialog cdx-dialog--dividers"
+			:style="{ '--ext-neowiki-schema-dialog-stack-level': stackLevel }"
 			:title="title"
 			@update:open="onDialogUpdateOpen"
 		>
@@ -87,7 +88,8 @@ const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseCo
 const {
 	initialName: stackedSchemaName,
 	created: stackedSchemaCreated,
-	closed: closeStackedSchemaCreator
+	closed: closeStackedSchemaCreator,
+	stackLevel
 } = useSchemaCreation();
 
 function onDialogUpdateOpen( value: boolean ): void {
@@ -150,16 +152,11 @@ async function handleSave( summary: string ): Promise<void> {
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-schema-creator-dialog {
 	&.cdx-dialog {
-		max-width: @size-5600;
-
-		/* The Schema editor dialog's height, for the same reason: a new Schema opens on its
-			Label row, whose pane is much shorter than a property's. */
-		@media ( min-width: @min-width-breakpoint-desktop ) {
-			height: 60rem;
-		}
+		.ext-neowiki-schema-dialog-size();
 
 		/* Codex's own `overflow-y: auto` is kept, so anything the columns do not scroll
 			themselves stays reachable at the body, and it is what already lets this flex item

@@ -1,4 +1,4 @@
-import { provide, ref, type Ref } from 'vue';
+import { inject, provide, ref, type InjectionKey, type Ref } from 'vue';
 import type { Schema } from '@/domain/Schema.ts';
 import { SchemaCreationKey } from '@/components/common/SchemaCreation.ts';
 
@@ -7,7 +7,11 @@ export interface StackedSchemaCreator {
 	initialName: Ref<string | null>;
 	created: ( schema: Schema ) => void;
 	closed: () => void;
+	/** How many Schema dialogs the calling dialog stands in front of. */
+	stackLevel: number;
 }
+
+const StackLevelKey: InjectionKey<number> = Symbol( 'NeoWikiSchemaDialogStackLevel' );
 
 /**
  * Provides SchemaCreation to the calling dialog's content. The dialog mounts the Create schema dialog
@@ -17,6 +21,7 @@ export interface StackedSchemaCreator {
 export function useSchemaCreation(): StackedSchemaCreator {
 	const initialName = ref<string | null>( null );
 	let settle: ( schema: Schema | null ) => void = () => undefined;
+	const stackLevel = inject( StackLevelKey, 0 );
 
 	provide( SchemaCreationKey, {
 		create: ( name: string ): Promise<Schema | null> => {
@@ -28,6 +33,8 @@ export function useSchemaCreation(): StackedSchemaCreator {
 		},
 	} );
 
+	provide( StackLevelKey, stackLevel + 1 );
+
 	return {
 		initialName,
 		created: ( schema: Schema ): void => settle( schema ),
@@ -35,5 +42,6 @@ export function useSchemaCreation(): StackedSchemaCreator {
 			initialName.value = null;
 			settle( null );
 		},
+		stackLevel,
 	};
 }

@@ -372,39 +372,64 @@ describe( 'SchemaCreatorDialog', () => {
 		} );
 	} );
 
-	// From Codex 2.3 a dialog mounted inside another is teleported into it, where Escape closes both.
-	it( 'stacks the schema creator a relation property asks for next to its own dialog', async () => {
-		const wrapper = mount( SchemaCreatorDialog, {
-			props: { open: true },
-			global: {
-				plugins: [ pinia ],
-				stubs: {
-					SchemaCreator: {
-						components: { RelationAttributesEditor },
-						setup: () => ( { property: newRelationProperty( {} ) } ),
-						template: '<RelationAttributesEditor :property="property" />',
+	describe( 'Stacking the schema creator a relation property asks for', () => {
+		async function mountWithRelationProperty(): Promise<VueWrapper> {
+			const wrapper = mount( SchemaCreatorDialog, {
+				props: { open: true },
+				global: {
+					plugins: [ pinia ],
+					stubs: {
+						SchemaCreator: {
+							components: { RelationAttributesEditor },
+							setup: () => ( { property: newRelationProperty( {} ) } ),
+							template: '<RelationAttributesEditor :property="property" />',
+						},
+						TargetSchemasInput: { template: '<div></div>', emits: [ 'update:modelValue', 'create' ] },
+						SeverityInput: true,
+						SummaryAction: SummaryActionStub,
+						CloseConfirmationDialog: CloseConfirmationDialogStub,
+						CdxDialog: CdxDialogStub,
 					},
-					TargetSchemasInput: { template: '<div></div>', emits: [ 'update:modelValue', 'create' ] },
-					SeverityInput: true,
-					SummaryAction: SummaryActionStub,
-					CloseConfirmationDialog: CloseConfirmationDialogStub,
-					CdxDialog: CdxDialogStub,
+					provide: {
+						[ Service.SchemaPermissionHints ]: { canCreateSchemas: async () => true },
+					},
+					mocks: {
+						$i18n: createI18nMock(),
+					},
 				},
-				provide: {
-					[ Service.SchemaPermissionHints ]: { canCreateSchemas: async () => true },
-				},
-				mocks: {
-					$i18n: createI18nMock(),
-				},
-			},
+			} );
+			await flushPromises();
+
+			return wrapper;
+		}
+
+		// Asked for from the Target schemas field of the dialog in front.
+		async function askForSchema( wrapper: VueWrapper, name: string ): Promise<void> {
+			const fields = wrapper.findAllComponents( TargetSchemasInput );
+			fields[ fields.length - 1 ].vm.$emit( 'create', name );
+			await flushPromises();
+		}
+
+		// From Codex 2.3 a dialog mounted inside another is teleported into it, where Escape closes both.
+		it( 'stacks it next to its own dialog', async () => {
+			const wrapper = await mountWithRelationProperty();
+
+			await askForSchema( wrapper, 'Artist' );
+
+			const stacked = wrapper.findAllComponents( SchemaCreatorDialog ).filter( ( dialog ) => dialog.vm !== wrapper.vm );
+			expect( stacked.map( ( dialog ) => dialog.props( 'initialName' ) ) ).toEqual( [ 'Artist' ] );
+			expect( wrapper.findComponent( CdxDialog ).findAllComponents( SchemaCreatorDialog ) ).toHaveLength( 0 );
 		} );
-		await flushPromises();
 
-		wrapper.findComponent( TargetSchemasInput ).vm.$emit( 'create', 'Artist' );
-		await flushPromises();
+		it( 'tells each dialog how many Schema dialogs stand behind it', async () => {
+			const wrapper = await mountWithRelationProperty();
 
-		const stacked = wrapper.findAllComponents( SchemaCreatorDialog ).filter( ( dialog ) => dialog.vm !== wrapper.vm );
-		expect( stacked.map( ( dialog ) => dialog.props( 'initialName' ) ) ).toEqual( [ 'Artist' ] );
-		expect( wrapper.findComponent( CdxDialog ).findAllComponents( SchemaCreatorDialog ) ).toHaveLength( 0 );
+			await askForSchema( wrapper, 'Artist' );
+			await askForSchema( wrapper, 'Workshop' );
+
+			expect( wrapper.findAll<HTMLElement>( '.cdx-dialog-stub' ).map(
+				( dialog ) => dialog.element.style.getPropertyValue( '--ext-neowiki-schema-dialog-stack-level' ),
+			) ).toEqual( [ '0', '1', '2' ] );
+		} );
 	} );
 } );

@@ -198,18 +198,11 @@ defineExpose( { hasChanged } );
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-schema-editor-dialog {
 	&.cdx-dialog {
-		max-width: @size-5600;
-
-		/* Fixed rather than fitted to the selected row's pane, so that selecting a row does not
-			resize and re-centre the dialog. Enough for a new property of any Property Type below
-			the Schema creator's name fields; a literal because Codex's size scale stops at
-			`@size-5600`. */
-		@media ( min-width: @min-width-breakpoint-desktop ) {
-			height: 60rem;
-		}
+		.ext-neowiki-schema-dialog-size();
 
 		/* Codex's own `overflow-y: auto` is kept, so anything the columns do not scroll
 			themselves stays reachable at the body, and it is what already lets this flex item

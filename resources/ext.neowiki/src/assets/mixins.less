@@ -3,6 +3,7 @@
  * its own — only where a rule calls it.
  */
 
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 @import ( reference ) '@wikimedia/codex/mixins/link.less';
 
 /**
@@ -35,4 +36,25 @@
 	clip-path: inset( 50% );
 	white-space: nowrap;
 	border: 0;
+}
+
+/**
+ * The size of the Schema editor and Create schema dialogs. Fixed rather than fitted to the selected
+ * row's pane, so that selecting a row does not resize and re-centre the dialog: enough for a new
+ * property of any Property Type below the Schema creator's name fields, a literal because Codex's size
+ * scale stops at `@size-5600`.
+ *
+ * A dialog is a step smaller on every side for each Schema dialog behind it
+ * (`--ext-neowiki-schema-dialog-stack-level`), which it would otherwise hide exactly. The height limit
+ * is set here, not left to Codex, whose limit differs between versions, to keep the steps even.
+ */
+.ext-neowiki-schema-dialog-size() {
+	@stack-shrink: calc( 2 * var( --ext-neowiki-schema-dialog-stack-level, 0 ) * @spacing-100 );
+
+	max-width: calc( @size-5600 - @stack-shrink );
+	max-height: calc( @size-viewport-height-full - @size-250 - @stack-shrink );
+
+	@media ( min-width: @min-width-breakpoint-desktop ) {
+		height: calc( 60rem - @stack-shrink );
+	}
 }
