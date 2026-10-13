@@ -155,13 +155,21 @@ async function handleSave( summary: string ): Promise<void> {
 	&.cdx-dialog {
 		max-width: @size-5600;
 
+		/* The Schema editor dialog's height, for the same reason: a new Schema opens on its
+			Label row, whose pane is much shorter than a property's. */
+		@media ( min-width: @min-width-breakpoint-desktop ) {
+			height: 60rem;
+		}
+
 		/* Codex's own `overflow-y: auto` is kept, so anything the columns do not scroll
 			themselves stays reachable at the body, and it is what already lets this flex item
 			shrink below its content. `display: grid` hands the bounded height down to the one
-			child. */
+			child. `flex-grow`, because Codex 2 leaves the body at its content's height and pushes
+			the footer down instead. */
 		.cdx-dialog__body {
 			padding: 0;
 			display: grid;
+			flex-grow: 1;
 		}
 	}
 }

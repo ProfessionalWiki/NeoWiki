@@ -202,13 +202,23 @@ defineExpose( { hasChanged } );
 	&.cdx-dialog {
 		max-width: @size-5600;
 
+		/* Fixed rather than fitted to the selected row's pane, so that selecting a row does not
+			resize and re-centre the dialog. Enough for a new property of any Property Type below
+			the Schema creator's name fields; a literal because Codex's size scale stops at
+			`@size-5600`. */
+		@media ( min-width: @min-width-breakpoint-desktop ) {
+			height: 60rem;
+		}
+
 		/* Codex's own `overflow-y: auto` is kept, so anything the columns do not scroll
 			themselves stays reachable at the body, and it is what already lets this flex item
 			shrink below its content. `display: grid` hands the bounded height down to the one
-			child. */
+			child. `flex-grow`, because Codex 2 leaves the body at its content's height and pushes
+			the footer down instead. */
 		.cdx-dialog__body {
 			padding: 0;
 			display: grid;
+			flex-grow: 1;
 		}
 
 		/* Replicate the Codex default dialog header styles, which a custom
