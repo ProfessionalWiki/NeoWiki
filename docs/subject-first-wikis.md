@@ -10,9 +10,8 @@ wiki page, with full version history.
 **Page-first**, the default: each page is about one thing, and its Subjects hold data about it, as in Semantic
 MediaWiki. Links to a Subject open its page. For wikis built around articles.
 
-**Subject-first**: each new Subject gets a page of its own that only stores it, as in Wikibase, except a Dependent
-Subject, such as a birth, which stays on the page of the Subject it belongs to. Links to a Subject open it on
-Special:Subject rather than on its page. For wikis where most Subjects need no article. Articles can still show
+**Subject-first**: each new Subject gets a page of its own that only stores it, as in Wikibase. Links to a Subject open
+it on Special:Subject rather than on its page. For wikis where most Subjects need no article. Articles can still show
 Subjects, for example as infoboxes.
 
 | Behaviour | Page-first | Subject-first |
