@@ -234,7 +234,7 @@
 			"value": false
 		},
 		"NeoWikiEnableInWikiConfig": {
-			"description": "Whether NeoWiki settings may also be set on the MediaWiki:NeoWiki JSON configuration page, which requires the editinterface and editsitejson rights to edit. When false, that page is never given the JSON content model, validated, or read, so only LocalSettings.php applies. The page exposes NeoWikiSubjectFirst, NeoWikiAutoRenderMainSubject and NeoWikiDataLanguages; its values take precedence over LocalSettings.php.",
+			"description": "Whether some NeoWiki settings may also be set on the MediaWiki:NeoWiki JSON configuration page, which requires the editinterface and editsitejson rights to edit; its values take precedence over LocalSettings.php. When false, that page is never given the JSON content model, validated, or read, so only LocalSettings.php applies. See https://neowiki.ai/docs/operations/installation#on-wiki-settings",
 			"value": true
 		},
 		"NeoWikiEnableLua": {

@@ -248,27 +248,14 @@ A wiki whose readers do not all see the same pages needs more than these default
 
 ## On-wiki settings
 
-A wiki administrator without server access can change some of NeoWiki's settings in a form on the `MediaWiki:NeoWiki`
-page. Like other site configuration, the page is editable only with the `editinterface` and `editsitejson` rights. The
-exposed settings are `subjectFirst` (overriding `$wgNeoWikiSubjectFirst`), `dataLanguages` (overriding
-`$wgNeoWikiDataLanguages`), `enforceValidation` (overriding `$wgNeoWikiEnforceValidation`) and `autoRenderMainSubject`
-(overriding `$wgNeoWikiAutoRenderMainSubject`). The form saves only the settings set on the page, leaving the rest to
-`LocalSettings.php`. Edit source shows the page's JSON with a reference table of the exposed keys and their accepted
-values.
+Users with the `editinterface` and `editsitejson` rights, administrators by default, can change four settings in a
+form at `MediaWiki:NeoWiki`: `$wgNeoWikiSubjectFirst`, `$wgNeoWikiDataLanguages`, `$wgNeoWikiEnforceValidation` and
+`$wgNeoWikiAutoRenderMainSubject`.
 
-A valid value on the page takes precedence over `LocalSettings.php`, per setting. A missing page, a
-wrong-shaped value, or an unavailable database falls back to the `LocalSettings.php` value, so a
-typo on the page cannot take down the wiki. Saving the page rejects unknown keys and wrong-typed values.
+Per setting, a valid value on the page overrides `LocalSettings.php`; otherwise `LocalSettings.php` applies. Pages
+rendered before a change can lag behind it until purged with `?action=purge`.
 
-Every other setting stays in `LocalSettings.php` — deliberately, for secrets and infrastructure
-(`$wgNeoWikiSparqlStores`), for settings too consequential for a wiki page (`$wgNeoWikiRdfBaseUri` re-mints
-every IRI when changed), and for development toggles (`$wgNeoWikiEnableDevelopmentUI`).
-
-`autoRenderMainSubject` changes take effect as pages are re-parsed; already-cached pages keep their previous
-rendering until then, or until purged with `?action=purge`.
-
-Set `$wgNeoWikiEnableInWikiConfig` to `false` to disable the page entirely: it is then never given the JSON
-content model, validated, or read.
+Set `$wgNeoWikiEnableInWikiConfig` to `false` to turn on-wiki settings off.
 
 ## Optional: SPARQL graph stores
 
