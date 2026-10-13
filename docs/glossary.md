@@ -69,7 +69,7 @@ Each Relation has
 
 #### Dependent Subject
 
-A Subject that belongs to its **Host Subject**.
+A Subject that is handled together with its **Host Subject**.
 
 ![A Person's editor and infobox, both showing its Birth's fields inline, and the Birth on its own on Special:Subject; callouts name the Host Subject, the Dependent Subject and a standalone Subject](adr/035-dependent-subjects.svg)
 

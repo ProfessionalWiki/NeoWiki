@@ -14,18 +14,18 @@ Wikis that use CIDOC-CRM as their in-wiki model need many more small Subjects li
 births, each hanging off a bigger Subject such as a Person. One partner's model has 12 Schemas for things like people
 and objects, and 24 for such small Subjects.
 
-The data model supports both, but nothing in it says that a Birth is part of its Person. So NeoWiki treats every
-Subject as a thing of its own: the Person's editor makes you pick from all Births in the wiki rather than fill in a
-date and place, a subject-first wiki gives each new Birth a page of its own, and deleting a Person leaves its Births
-behind. NeoWiki needs to know which Subjects are part of another.
+The data model supports both, but nothing in it says that a Birth should be handled together with its Person. So NeoWiki
+treats every Subject as a thing of its own: the Person's editor makes you pick from all Births in the wiki rather than
+fill in a date and place, a subject-first wiki gives each new Birth a page of its own, and deleting a Person leaves its
+Births behind. NeoWiki needs to know which Subjects to handle together with another.
 
 ## Decision
 
 A Schema's Subjects are standalone unless the Schema declares them dependent. The declaration is made when the Schema
 is created and cannot be changed later; to switch, create a new Schema.
 
-A Dependent Subject is part of exactly one Host Subject, the Subject whose Relation points at it, as a Birth is part
-of its Person. 
+A Dependent Subject is edited, stored and removed with exactly one Host Subject: the Subject whose Relation points at
+it, such as the Person for a Birth.
 
 ![A Person's editor and infobox, both showing its Birth's fields inline, and the Birth on its own on Special:Subject; callouts name the Host Subject, the Dependent Subject and a standalone Subject](035-dependent-subjects.svg)
 
@@ -91,7 +91,7 @@ others find it under "Referenced by" on their `Special:Subject` page.
   the targets stay ordinary Subjects. That changes only editing. Where a Subject is stored, when it goes, whether it
   needs a label and whether search offers it are about the Subject, not about one property that points at it.
 - **Inferring dependence from where a Subject is created**: a Birth and a Place can both be created from a Person's
-  editor, but only the Birth is part of the Person; other Subjects point at the Place.
+  editor, but only the Birth is handled together with the Person; other Subjects point at the Place.
 
 ### Other rules
 
