@@ -11,8 +11,8 @@ wiki page, with full version history.
 MediaWiki. Links to a Subject open its page. For wikis built around articles.
 
 **Subject-first**: each new Subject gets a page of its own that only stores it, as in Wikibase. Links to a Subject open
-it on Special:Subject rather than on its page. For wikis where most Subjects need no article. Articles can still show
-Subjects, for example as infoboxes.
+it on Special:Subject rather than on its page. For wikis that are mostly data, such as catalogues. You can still write
+articles and show Subjects in them.
 
 | Behaviour | Page-first | Subject-first |
 |---|---|---|
