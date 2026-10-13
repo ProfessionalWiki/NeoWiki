@@ -231,6 +231,16 @@ describe( 'SchemaEditorDialog', () => {
 		} );
 	} );
 
+	describe( 'Close button', () => {
+		// From Codex 2.3.3 the header hides its close button at 640px and wider unless the dialog
+		// asks for one, even when the header slot renders that button itself.
+		it( 'keeps its close button on wide screens', () => {
+			const wrapper = mountComponent();
+
+			expect( wrapper.findComponent( CdxDialog ).props( 'useCloseButton' ) ).toBe( true );
+		} );
+	} );
+
 	describe( 'Close confirmation', () => {
 		it( 'shows confirmation dialog when closing with unsaved changes', async () => {
 			const wrapper = mountComponent();

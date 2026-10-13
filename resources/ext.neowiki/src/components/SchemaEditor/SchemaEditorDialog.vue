@@ -5,6 +5,7 @@
 			asked for by name. Same reasoning as the subject editor. -->
 		<CdxDialog
 			:open="props.open"
+			:use-close-button="true"
 			class="ext-neowiki-ui ext-neowiki-schema-editor-dialog cdx-dialog--dividers"
 			:title="dialogTitle"
 			@update:open="onDialogUpdateOpen"
