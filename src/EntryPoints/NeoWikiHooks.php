@@ -126,12 +126,12 @@ class NeoWikiHooks {
 		$out->addHtml( self::getNeoWikiAppHtml( $out, $permissionHints ) );
 		self::addRdfAutodiscoveryLinks( $out );
 
-		$revisionId = self::pageIsLatestRevision( $out ) ? null : $out->getRevisionId();
+		$revisionId = self::revisionIdUnlessLatest( $out );
 		$builder = $extension->newViewHtmlBuilder();
 
 		self::headByMainSubject( $out, $builder, $revisionId );
 
-		// On a diff, the Main Subject heads the revision shown below the diff instead.
+		// On a diff, the Main Subject is shown atop the revision below the diff instead.
 		if ( !$extension->shouldAutoRenderMainSubject() || $out->getRequest()->getCheck( 'diff' ) ) {
 			return;
 		}
@@ -218,8 +218,12 @@ class NeoWikiHooks {
 
 		$out->addHTML( $extension->newViewHtmlBuilder()->mainSubjectHtml(
 			$out->getTitle(),
-			self::pageIsLatestRevision( $out ) ? null : $out->getRevisionId()
+			self::revisionIdUnlessLatest( $out )
 		) );
+	}
+
+	private static function revisionIdUnlessLatest( OutputPage $out ): ?int {
+		return self::pageIsLatestRevision( $out ) ? null : $out->getRevisionId();
 	}
 
 	/**
