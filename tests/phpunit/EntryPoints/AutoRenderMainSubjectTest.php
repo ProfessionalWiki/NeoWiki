@@ -107,9 +107,6 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	/**
-	 * The edit leaves the page's text alone, so the text shows only in the revision below the diff.
-	 */
 	private function renderDiffOfASubjectEdit(): string {
 		$this->createPageWithMainSubjectAndText();
 
