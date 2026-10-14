@@ -67,6 +67,7 @@
 			"ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onBeforePageDisplay",
 			"ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onConfigPageBeforePageDisplay"
 		],
+		"DifferenceEngineRenderRevisionAddParserOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onDifferenceEngineRenderRevisionAddParserOutput",
 
 		"SpecialPage_initList": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSpecialPageInitList",
 

@@ -131,7 +131,8 @@ class NeoWikiHooks {
 
 		self::headByMainSubject( $out, $builder, $revisionId );
 
-		if ( !$extension->shouldAutoRenderMainSubject() ) {
+		// On a diff, the Main Subject heads the revision shown below the diff instead.
+		if ( !$extension->shouldAutoRenderMainSubject() || $out->getRequest()->getCheck( 'diff' ) ) {
 			return;
 		}
 
@@ -201,6 +202,24 @@ class NeoWikiHooks {
 		}
 
 		SubjectLabelHtml::headPage( $out, $subject->getLabel()?->text, $subject->getId() );
+	}
+
+	public static function onDifferenceEngineRenderRevisionAddParserOutput(
+		$differenceEngine,
+		OutputPage $out,
+		$parserOutput,
+		$wikiPage
+	): void {
+		$extension = NeoWikiExtension::getInstance();
+
+		if ( !self::isContentPage( $out ) || !$extension->shouldAutoRenderMainSubject() ) {
+			return;
+		}
+
+		$out->addHTML( $extension->newViewHtmlBuilder()->mainSubjectHtml(
+			$out->getTitle(),
+			self::pageIsLatestRevision( $out ) ? null : $out->getRevisionId()
+		) );
 	}
 
 	/**
