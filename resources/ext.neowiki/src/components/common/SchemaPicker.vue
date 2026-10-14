@@ -12,6 +12,7 @@
 			:menu-items="menu.items"
 			:menu-config="menu.config"
 			:placeholder="$i18n( 'neowiki-schema-picker-placeholder' ).text()"
+			:aria-label="props.ariaLabel"
 			@input="filterSchemas"
 			@update:selected="onSelect"
 			@blur="revertUncommittedTyping"
@@ -39,6 +40,8 @@ const props = defineProps<{
 	offersCreation?: boolean;
 	/** The Schemas to offer, of those the wiki has. Absent, all of them. */
 	schemaNames?: readonly string[];
+	/** Names the field for a caller that shows no label of its own. */
+	ariaLabel?: string;
 }>();
 
 const emit = defineEmits<{

@@ -12,26 +12,19 @@
 	>
 		<EditNoticeList :notices="shownNotices" />
 
-		<CdxField
+		<SchemaPicker
 			v-if="schemaPermissionKnown"
-			:hide-label="true"
+			ref="schemaLookupRef"
+			:offers-creation="canCreateSchemas && offeredSchemaNames === undefined"
+			:schema-names="offeredSchemaNames"
+			:aria-label="$i18n( 'neowiki-subject-creator-schema-field' ).text()"
+			@select="onSchemaSelected"
+			@create="openSchemaCreator"
 		>
-			<template #label>
-				{{ $i18n( 'neowiki-subject-creator-schema-field' ).text() }}
+			<template #no-schemas>
+				<p>{{ $i18n( 'neowiki-subject-creator-no-schemas' ).text() }}</p>
 			</template>
-
-			<SchemaPicker
-				ref="schemaLookupRef"
-				:offers-creation="canCreateSchemas && offeredSchemaNames === undefined"
-				:schema-names="offeredSchemaNames"
-				@select="onSchemaSelected"
-				@create="openSchemaCreator"
-			>
-				<template #no-schemas>
-					<p>{{ $i18n( 'neowiki-subject-creator-no-schemas' ).text() }}</p>
-				</template>
-			</SchemaPicker>
-		</CdxField>
+		</SchemaPicker>
 	</CdxDialog>
 
 	<!-- The Subject itself is filled in by the editor, opened on a Subject the wiki does not hold

@@ -178,8 +178,12 @@ function editedRoot( subject: Subject ): Subject {
 	return subject.withLabel( editedLabel.value ).withStatements( editedStatements() );
 }
 
-// What a screen reader announces a field as, whichever way it is labelled. Not its placeholder,
-// which is gone once the user types.
+function schemaField( wrapper: VueWrapper ): DOMWrapper<Element> {
+	return wrapper.find( '.ext-neowiki-schema-picker input' );
+}
+
+// The name a screen reader announces for a field, from its aria-label or its label element. Not its
+// placeholder, which is gone once the user types.
 function labelOf( field: DOMWrapper<Element> ): string | undefined {
 	const input = field.element as HTMLInputElement;
 
@@ -423,7 +427,7 @@ describe( 'SubjectCreatorDialog', () => {
 		const wrapper = mountComponent( { SchemaPicker: false, CdxField: false, CdxTextInput: false }, { open: true } );
 		await flushPromises();
 
-		expect( labelOf( wrapper.find( '.ext-neowiki-schema-picker input' ) ) ).toBe( 'neowiki-subject-creator-schema-field' );
+		expect( labelOf( schemaField( wrapper ) ) ).toBe( 'neowiki-subject-creator-schema-field' );
 	} );
 
 	it( 'starts again at the schema picker when reopened after the subject step', async () => {
@@ -2328,10 +2332,6 @@ describe( 'SubjectCreatorDialog', () => {
 		async function open( wrapper: VueWrapper ): Promise<void> {
 			await wrapper.setProps( { open: true } );
 			await flushPromises();
-		}
-
-		function schemaField( wrapper: VueWrapper ): DOMWrapper<Element> {
-			return wrapper.find( '.ext-neowiki-schema-picker input' );
 		}
 
 		// None while the menu is closed: a closed menu shows the user nothing.
