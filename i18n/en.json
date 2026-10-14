@@ -175,6 +175,7 @@
 	"neowiki-schema-editor-description-add": "Add description",
 
 	"neowiki-subject-creator-title": "Creating subject",
+	"neowiki-subject-creator-schema-field": "Schema",
 	"neowiki-schema-picker-placeholder": "Select a schema",
 	"neowiki-schema-picker-create": "Create schema",
 	"neowiki-schema-picker-create-named": "Create schema \"$1\"",

@@ -66,6 +66,7 @@
 	"neowiki-page-tools-view-json": "Read-only counterpart of neowiki-page-tools-edit-json: label for the sidebar link to Special:NeoJson, shown to users who lack edit permission. Only visible when development UIs are enabled.",
 	"neowiki-page-tools-rdf": "Label for the sidebar link that opens the current page's RDF export (Turtle serialization of the page's Subjects), served by the per-page RDF REST endpoint. Only shown when the page has NeoWiki Subjects.",
 
+	"neowiki-subject-creator-schema-field": "Label of the field in the 'create subject' dialog that picks the Subject's schema. Visually hidden; read out by screen readers.",
 	"neowiki-subject-creator-no-schemas": "Shown in the 'create subject' dialog in place of the schema field, on a wiki that has no schemas yet, to a user who may not create one.",
 	"neowiki-subject-creator-page-field": "Label of the field group in the 'create subject' dialog that picks which page the Subject goes on.",
 	"neowiki-subject-creator-page-section": "Title of the collapsible section of the 'create subject' dialog that holds the page choice, and, while it is collapsed, the choice made; it is also the header of the non-expandable block a {{#create_subject}} button shows when the page is fixed: {{msg-mw|neowiki-subject-creator-page-section-this}} and its siblings continue this title, so 'Store the subject on' plus 'this page' must read as one phrase.",

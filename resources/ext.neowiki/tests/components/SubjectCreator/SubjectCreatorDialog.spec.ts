@@ -178,6 +178,14 @@ function editedRoot( subject: Subject ): Subject {
 	return subject.withLabel( editedLabel.value ).withStatements( editedStatements() );
 }
 
+// What a screen reader announces a field as, whichever way it is labelled. Not its placeholder,
+// which is gone once the user types.
+function labelOf( field: DOMWrapper<Element> ): string | undefined {
+	const input = field.element as HTMLInputElement;
+
+	return input.getAttribute( 'aria-label' ) ?? input.labels?.[ 0 ]?.textContent?.trim();
+}
+
 const CdxDialogStub = {
 	template: '<div class="cdx-dialog-stub"><slot name="header" /><slot /><slot name="footer" /></div>',
 	props: [ 'open', 'title', 'useCloseButton' ],
@@ -408,6 +416,14 @@ describe( 'SubjectCreatorDialog', () => {
 
 		const pickerVm = wrapper.findComponent( SchemaPicker ).vm as any;
 		expect( pickerVm.focus ).toHaveBeenCalled();
+	} );
+
+	it( 'labels the schema field', async () => {
+		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [ { name: SCHEMA_NAME, description: '' } ] );
+		const wrapper = mountComponent( { SchemaPicker: false, CdxField: false, CdxTextInput: false }, { open: true } );
+		await flushPromises();
+
+		expect( labelOf( wrapper.find( '.ext-neowiki-schema-picker input' ) ) ).toBe( 'neowiki-subject-creator-schema-field' );
 	} );
 
 	it( 'starts again at the schema picker when reopened after the subject step', async () => {
