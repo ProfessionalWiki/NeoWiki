@@ -1,8 +1,9 @@
 import { createMwApp } from 'vue';
 import type { App } from 'vue';
 import type { Pinia } from 'pinia';
-// Global, scoped focus-ring override; see the file header for the rationale.
+// Global, scoped Codex overrides; see the file headers for the rationale.
 import '@/assets/keyboard-focus.less';
+import '@/assets/menu-footer.less';
 import NeoWikiApp from '@/components/NeoWikiApp.vue';
 import { CdxTooltip } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -50,8 +51,8 @@ export function registerSubjectCreatorClickHandler( pinia: Pinia, signal?: Abort
 
 /**
  * Mounts a NeoWiki Vue app, tagging its root element with `ext-neowiki-ui` so
- * the keyboard-only focus override (assets/keyboard-focus.less) applies to our
- * Codex buttons without touching those of MediaWiki core or other extensions.
+ * the Codex overrides in assets/ (keyboard-focus.less, menu-footer.less) apply to
+ * our Codex components without touching those of MediaWiki core or other extensions.
  * Dialogs teleport out of this root and carry the class on the CdxDialog itself.
  */
 function mountNeoWikiApp( app: App, element: Element ): void {

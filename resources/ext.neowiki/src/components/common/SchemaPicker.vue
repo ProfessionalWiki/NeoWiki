@@ -189,12 +189,5 @@ defineExpose( { focus } );
 	.cdx-lookup {
 		width: 100%;
 	}
-
-	/* Codex pins the create item over the bottom edge of the list but gives it no background, so the
-		list would show through just below its border. :where() lets Codex's hover and active
-		backgrounds win. */
-	:where( .cdx-menu--has-footer .cdx-menu-item:last-of-type ) {
-		background-color: @background-color-base;
-	}
 }
 </style>

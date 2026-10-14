@@ -1,0 +1,16 @@
+/**
+ * An opaque resting background for the footer item Codex pins to the bottom of a menu, such as the
+ * create offer below the Schemas of a Schema lookup.
+ *
+ * Codex lays that item over the bottom edge of the scrolling list without a background of its own,
+ * so the list shows through just below the item's top border. Inside `:where()` the selector adds
+ * nothing to the scope's specificity, so Codex's hover, active and selected backgrounds still win.
+ *
+ * Scope: as in keyboard-focus.less.
+ */
+
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+
+:is( .ext-neowiki-ui, .ext-neowiki-view ) :where( .cdx-menu--has-footer .cdx-menu-item:last-of-type ) {
+	background-color: @background-color-base;
+}
