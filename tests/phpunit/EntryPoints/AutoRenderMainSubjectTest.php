@@ -23,11 +23,11 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  */
 class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 
-	private const SUBJECT_ID = 's1zz1111111azz1';
+	private const string SUBJECT_ID = 's1zz1111111azz1';
 	private const string OTHER_SUBJECT_ID = 's1zz1111111azz2';
 
-	private const string DIFFED_PAGE = 'Auto render diff';
-	private const string PAGE_TEXT = 'Text of the diffed page';
+	private const string PAGE_NAME = 'Auto render page';
+	private const string PAGE_TEXT = 'Text of the page';
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -36,38 +36,27 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testDoesNotAutoRenderMainSubjectWhenConfigDisabled(): void {
-		$revision = $this->createPageWithSubjects(
-			'Auto render disabled',
-			TestSubject::build( id: self::SUBJECT_ID )
-		);
-
+		$this->createPageWithMainSubjectAndText();
 		$this->overrideConfigValue( 'NeoWikiAutoRenderMainSubject', false );
 
-		$html = $this->renderContentPage( 'Auto render disabled', $revision->getId() );
+		$html = $this->renderRequest( [] );
 
-		$this->assertStringNotContainsString( self::SUBJECT_ID, $html );
+		$this->assertStringNotContainsString( self::viewOf( self::SUBJECT_ID ), $html );
 	}
 
-	public function testAutoRendersMainSubjectByDefault(): void {
-		$revision = $this->createPageWithSubjects(
-			'Auto render default',
-			TestSubject::build( id: self::SUBJECT_ID )
-		);
+	public function testAutoRendersMainSubjectAtTheTopOfThePageByDefault(): void {
+		$this->createPageWithMainSubjectAndText();
 
-		$html = $this->renderContentPage( 'Auto render default', $revision->getId() );
+		$html = $this->renderRequest( [] );
 
-		$this->assertStringContainsString( self::SUBJECT_ID, $html );
+		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), self::htmlAboveThePageText( $html ) );
 	}
 
 	public function testRendersAppContainerWhenAutoRenderDisabled(): void {
-		$revision = $this->createPageWithSubjects(
-			'Auto render container',
-			TestSubject::build( id: self::SUBJECT_ID )
-		);
-
+		$this->createPageWithMainSubjectAndText();
 		$this->overrideConfigValue( 'NeoWikiAutoRenderMainSubject', false );
 
-		$html = $this->renderContentPage( 'Auto render container', $revision->getId() );
+		$html = $this->renderRequest( [] );
 
 		$this->assertStringContainsString( 'id="ext-neowiki-app"', $html );
 	}
@@ -88,10 +77,10 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testADiffOfAnOldRevisionShowsTheMainSubjectItHeld(): void {
-		$oldRevision = $this->createPageWithSubjects( self::DIFFED_PAGE, TestSubject::build( id: self::SUBJECT_ID ) );
-		$this->changeSubjectsOfPage( self::DIFFED_PAGE, TestSubject::build( id: self::OTHER_SUBJECT_ID ) );
+		$oldRevision = $this->createPageWithSubjects( self::PAGE_NAME, TestSubject::build( id: self::SUBJECT_ID ) );
+		$this->changeSubjectsOfPage( self::PAGE_NAME, TestSubject::build( id: self::OTHER_SUBJECT_ID ) );
 
-		$html = $this->renderDiff( [ 'diff' => 'prev', 'oldid' => (string)$oldRevision->getId() ] );
+		$html = $this->renderRequest( [ 'diff' => 'prev', 'oldid' => (string)$oldRevision->getId() ] );
 
 		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $html );
 	}
@@ -104,44 +93,41 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringNotContainsString( self::viewOf( self::SUBJECT_ID ), $html );
 	}
 
-	private function renderContentPage( string $pageName, int $revisionId ): string {
-		$context = new RequestContext();
-		$context->setTitle( Title::newFromText( $pageName ) );
+	public function testRendersAppContainerOnADiff(): void {
+		$html = $this->renderDiffOfASubjectEdit();
 
-		$out = $context->getOutput();
-		$out->setArticleFlag( true );
-		$out->setRevisionId( $revisionId );
+		$this->assertStringContainsString( 'id="ext-neowiki-app"', $html );
+	}
 
-		NeoWikiHooks::onBeforePageDisplay( $out, $context->getSkin() );
-
-		return $out->getHTML();
+	private function createPageWithMainSubjectAndText(): void {
+		$this->createPageWithSubjects(
+			self::PAGE_NAME,
+			TestSubject::build( id: self::SUBJECT_ID ),
+			mainContent: new WikitextContent( self::PAGE_TEXT )
+		);
 	}
 
 	/**
 	 * The edit leaves the page's text alone, so the text shows only in the revision below the diff.
 	 */
 	private function renderDiffOfASubjectEdit(): string {
-		$this->createPageWithSubjects(
-			self::DIFFED_PAGE,
-			TestSubject::build( id: self::SUBJECT_ID ),
-			mainContent: new WikitextContent( self::PAGE_TEXT )
-		);
+		$this->createPageWithMainSubjectAndText();
 
 		$edit = $this->changeSubjectsOfPage(
-			self::DIFFED_PAGE,
+			self::PAGE_NAME,
 			TestSubject::build( id: self::SUBJECT_ID, label: 'Edited label' )
 		);
 
-		return $this->renderDiff( [ 'diff' => 'prev', 'oldid' => (string)$edit->getId() ] );
+		return $this->renderRequest( [ 'diff' => 'prev', 'oldid' => (string)$edit->getId() ] );
 	}
 
 	/**
 	 * @param array<string, string> $query
 	 */
-	private function renderDiff( array $query ): string {
+	private function renderRequest( array $query ): string {
 		$context = new RequestContext();
 		$context->setRequest( new FauxRequest( $query ) );
-		$context->setTitle( Title::newFromText( self::DIFFED_PAGE ) );
+		$context->setTitle( Title::newFromText( self::PAGE_NAME ) );
 
 		Article::newFromTitle( $context->getTitle(), $context )->view();
 		NeoWikiHooks::onBeforePageDisplay( $context->getOutput(), $context->getSkin() );
@@ -157,8 +143,12 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		return strstr( $html, '<table class="diff', true );
 	}
 
+	private static function htmlAboveThePageText( string $html ): string {
+		return strstr( $html, self::PAGE_TEXT, true );
+	}
+
 	private static function htmlFromTheRevisionHeadingToThePageText( string $html ): string {
-		return strstr( strstr( $html, 'diff-currentversion-title' ), self::PAGE_TEXT, true );
+		return self::htmlAboveThePageText( strstr( $html, 'diff-currentversion-title' ) );
 	}
 
 }
