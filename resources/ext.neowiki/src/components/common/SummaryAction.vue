@@ -149,6 +149,8 @@ defineExpose( { submit: onSaveClick } );
 .ext-neowiki-summary-action {
 	.cdx-accordion {
 		border-bottom: 0;
+		/* Codex 2.3.2 and later hide an accordion's overflow, which would cut off the header's hover background and focus outline. */
+		overflow: visible;
 
 		> summary {
 			margin-top: -@spacing-50;

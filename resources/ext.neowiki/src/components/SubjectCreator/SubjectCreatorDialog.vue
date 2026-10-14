@@ -1045,6 +1045,8 @@ defineExpose( { hasChanged } );
 	/* Sibling of the edit-summary section below it, and built to read as one. */
 	&-page-section.cdx-accordion {
 		border-bottom: 0;
+		/* Codex 2.3.2 and later hide an accordion's overflow, which would cut off the page picker's menu. */
+		overflow: visible;
 
 		> summary {
 			margin-top: -@spacing-50;
