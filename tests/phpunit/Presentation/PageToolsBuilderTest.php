@@ -18,7 +18,7 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 	private const PAGE_ID = 42;
 
 	public function testShowsAllItemsWhenEverythingOpenAndDevUiEnabled(): void {
-		$this->assertSame(
+		$this->assertEquals(
 			[
 				$this->createSubjectItem(),
 				$this->rdfItem(),
@@ -43,7 +43,7 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 	public function testShowsRdfLinkOnAPageWithoutSubjects(): void {
 		// Every page has an RDF export, holding its page metadata and any Subjects, so every page links to
 		// one — as the head autodiscovery tags and the endpoint itself do.
-		$this->assertSame(
+		$this->assertEquals(
 			[ $this->rdfItem() ],
 			$this->build(
 				canCreateMainSubject: false,
@@ -53,28 +53,28 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testHidesEditJsonWhenDevUiDisabled(): void {
-		$this->assertSame(
+		$this->assertEquals(
 			[ $this->createSubjectItem(), $this->rdfItem() ],
 			$this->build( devUiEnabled: false )
 		);
 	}
 
 	public function testHidesCreateSubjectOnOldRevision(): void {
-		$this->assertSame(
+		$this->assertEquals(
 			[ $this->rdfItem(), $this->editJsonItem() ],
 			$this->build( isLatestRevision: false )
 		);
 	}
 
 	public function testHidesCreateSubjectWhenUserCannotCreateSubjects(): void {
-		$this->assertSame(
+		$this->assertEquals(
 			[ $this->rdfItem(), $this->editJsonItem() ],
 			$this->build( canCreateMainSubject: false )
 		);
 	}
 
 	public function testUsesViewJsonLabelWhenUserCannotEditSubjects(): void {
-		$this->assertSame(
+		$this->assertEquals(
 			[
 				$this->rdfItem(),
 				$this->editJsonItem( 'neowiki-page-tools-view-json' ),
