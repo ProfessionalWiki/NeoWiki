@@ -183,6 +183,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 	 * @dataProvider wikiModeProvider
 	 */
 	public function testAPagePlacingItsMainSubjectShowsItInFullThereAndNowhereElse( bool $subjectFirst ): void {
+		$this->skipWhereParsoidParses();
 		$this->overrideConfigValue( 'NeoWikiSubjectFirst', $subjectFirst );
 		$this->createPageWithText( "Before it.\n\n{{#main_subject: }}\n\nAfter it." );
 
@@ -194,6 +195,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testAnOldRevisionOfAPagePlacingItsMainSubjectShowsItOnlyWhereItIsPlaced(): void {
+		$this->skipWhereParsoidParses();
 		$oldRevision = $this->createPageWithText( '{{#main_subject: }}' );
 		$this->changeSubjectsOfPage( self::PAGE_NAME, TestSubject::build( id: self::SUBJECT_ID, label: 'Edited' ) );
 
@@ -250,6 +252,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testADiffOfAPagePlacingItsMainSubjectShowsItOnlyWhereItIsPlaced(): void {
+		$this->skipWhereParsoidParses();
 		$this->createPageWithText( '{{#main_subject: }}' );
 		$edit = $this->changeSubjectsOfPage( self::PAGE_NAME, TestSubject::build( id: self::SUBJECT_ID, label: 'Edited' ) );
 
@@ -267,6 +270,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testAPlacementAfterADiscardedOneShowsTheMainSubjectInFull(): void {
+		$this->skipWhereParsoidParses();
 		$this->createPageWithText( self::PAGE_TEXT . '{{PLURAL:2|{{#main_subject: }}|{{#main_subject: }}}}' );
 
 		$html = $this->renderRequest( [] );
@@ -276,10 +280,21 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testAPagePlacingItsMainSubjectGivesTheSubjectUiItsConfigurationWithAutomaticRenderingOff(): void {
+		$this->skipWhereParsoidParses();
 		$this->overrideConfigValue( 'NeoWikiAutoRenderMainSubject', false );
 		$this->createPageWithText( '{{#main_subject: }}' );
 
 		$this->assertArrayHasKey( 'wgNeoWikiSubjectIriBase', $this->viewPage( [] )->getJsConfigVars() );
+	}
+
+	private function skipWhereParsoidParses(): void {
+		$config = $this->getServiceContainer()->getMainConfig();
+
+		if ( $config->has( 'UseParsoidParser' ) && $config->get( 'UseParsoidParser' ) ) {
+			$this->markTestSkipped(
+				'Placing the Main Subject needs the legacy parser: https://github.com/ProfessionalWiki/NeoWiki/issues/1689'
+			);
+		}
 	}
 
 	private function createPageWithMainSubjectAndText(): void {
