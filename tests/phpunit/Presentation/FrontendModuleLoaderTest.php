@@ -105,26 +105,10 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $this->addedJsConfigVars['wgNeoWikiEnforceValidation'] ?? null );
 	}
 
-	public function testEmitsThatTheSubjectListIsAvailableAsJsConfigVar(): void {
-		$this->clearHook( 'NeoWikiGetFrontendModules' );
-
-		$this->newLoader( subjectListAvailable: true )->load( $this->newCapturingOutputPage(), $this->createMock( Skin::class ) );
-
-		$this->assertTrue( $this->addedJsConfigVars['wgNeoWikiSubjectListAvailable'] ?? null );
-	}
-
-	public function testEmitsThatTheSubjectListIsUnavailableAsJsConfigVar(): void {
-		$this->clearHook( 'NeoWikiGetFrontendModules' );
-
-		$this->newLoader( subjectListAvailable: false )->load( $this->newCapturingOutputPage(), $this->createMock( Skin::class ) );
-
-		$this->assertFalse( $this->addedJsConfigVars['wgNeoWikiSubjectListAvailable'] ?? null );
-	}
-
 	public function testEmitsThatSubjectCountsAreAvailableToAViewerWhoMayQuery(): void {
 		$this->clearHook( 'NeoWikiGetFrontendModules' );
 
-		$this->newLoader( subjectListAvailable: true )->load(
+		$this->newLoader()->load(
 			$this->newCapturingOutputPage( self::viewerWith( [ AuthorityBasedRawQueryAuthorizer::RIGHT ] ) ),
 			$this->createMock( Skin::class )
 		);
@@ -135,19 +119,8 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 	public function testEmitsThatSubjectCountsAreUnavailableToAViewerWhoMayNotQuery(): void {
 		$this->clearHook( 'NeoWikiGetFrontendModules' );
 
-		$this->newLoader( subjectListAvailable: true )->load(
+		$this->newLoader()->load(
 			$this->newCapturingOutputPage( self::viewerWith( [] ) ),
-			$this->createMock( Skin::class )
-		);
-
-		$this->assertFalse( $this->addedJsConfigVars['wgNeoWikiSubjectCountsAvailable'] ?? null );
-	}
-
-	public function testEmitsThatSubjectCountsAreUnavailableWithoutTheSubjectList(): void {
-		$this->clearHook( 'NeoWikiGetFrontendModules' );
-
-		$this->newLoader( subjectListAvailable: false )->load(
-			$this->newCapturingOutputPage( self::viewerWith( [ AuthorityBasedRawQueryAuthorizer::RIGHT ] ) ),
 			$this->createMock( Skin::class )
 		);
 
@@ -285,15 +258,13 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 	private function newLoader(
 		int $validationDebounceMs = 300,
 		bool $validationEnforced = false,
-		bool $subjectFirst = false,
-		bool $subjectListAvailable = false
+		bool $subjectFirst = false
 	): FrontendModuleLoader {
 		return new FrontendModuleLoader(
 			$this->getServiceContainer()->getHookContainer(),
 			$validationDebounceMs,
 			$validationEnforced,
 			$subjectFirst,
-			$subjectListAvailable,
 			[],
 		);
 	}

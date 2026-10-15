@@ -15,6 +15,9 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
+ * Needs the integration base class for the pages the Subjects are saved on and the database the suggestions are
+ * read from.
+ *
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi
  * @group Database
  */
@@ -29,7 +32,6 @@ class GetSubjectLabelsApiTest extends NeoWikiIntegrationTestCase {
 		// body echoing the label twice would pass an expectation built from one name. The page sits
 		// outside the main namespace, so the prefix the field promises is asserted rather than
 		// coinciding with the bare title.
-		$this->setUpNeo4j();
 		$this->createSchema( self::SCHEMA );
 		$this->createPageWithSubjects(
 			'Help:Rembrandt van Rijn',
@@ -78,7 +80,6 @@ class GetSubjectLabelsApiTest extends NeoWikiIntegrationTestCase {
 	 * would name a Schema no Subject has, and find nothing.
 	 */
 	public function testASearchNamingNoSchemaFindsSubjectsOfEverySchema(): void {
-		$this->setUpNeo4j();
 		$this->createSchema( 'Recipe' );
 		$this->createSchema( 'Plant' );
 		$this->createPageWithSubjects(
@@ -104,7 +105,6 @@ class GetSubjectLabelsApiTest extends NeoWikiIntegrationTestCase {
 	 * What the picker of a relation with several target Schemas sends.
 	 */
 	public function testASearchNamingSeveralSchemasFindsSubjectsOfEachOfThem(): void {
-		$this->setUpNeo4j();
 		$this->createSchema( 'Recipe' );
 		$this->createSchema( 'Plant' );
 		$this->createSchema( 'Company' );

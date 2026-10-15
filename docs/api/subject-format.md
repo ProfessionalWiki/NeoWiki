@@ -172,9 +172,8 @@ Dependent Subject too. The rows of the Subject lists carry `hostSubject` as well
 
 `GET /rest.php/neowiki/v0/subject/{subjectId}/referencingSubjects` returns
 `{referencingSubjects: [{subject, propertyNames}], truncated}`: the Subjects whose relations point at the given one,
-itself excluded, ordered by name, each `subject` carrying its page fields. `truncated` means more were left out;
-`false` does not promise there are none. `?limit=` caps the list, 10 by default. Without a Neo4j store the list is
-empty.
+itself excluded, ordered by name, generated names last, each `subject` carrying its page fields. `truncated` means more
+were left out; `false` does not promise there are none. `?limit=` caps the list, 10 by default.
 
 ### Creating Subjects
 

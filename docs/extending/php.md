@@ -13,7 +13,7 @@ order: 9
   revision-deletion audience only; the read is not gated on the page's `read` permission.
 - `newFrontendModuleLoader()` — mount NeoWiki's UI on any page.
 - `newPageRebuilder()` —
-  [refresh a page's graph data without an edit](page-properties.md#refreshing-a-pages-data-without-an-edit).
+  [refresh a page's data without an edit](page-properties.md#refreshing-a-pages-data-without-an-edit).
 
 Examples: [`src/RedHerbSidebarHook.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbSidebarHook.php) and
 [`src/Specials/SpecialRedHerbSubjectFinder.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/Specials/SpecialRedHerbSubjectFinder.php).

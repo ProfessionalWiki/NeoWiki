@@ -4,11 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests;
 
-use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\Content;
 use MediaWiki\Content\FallbackContent;
-use MediaWiki\Content\TextContent;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
@@ -21,7 +18,6 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndexRebuilder;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 use Throwable;
@@ -289,40 +285,6 @@ class SubjectPageIndexTest extends NeoWikiIntegrationTestCase {
 		return $revision->getPageId();
 	}
 
-	/**
-	 * Saves a revision with NeoWiki's revision hook removed, which is the shape of the write it is not
-	 * told about: a history merge that leaves the source page as a redirect.
-	 */
-	private function createPageWithoutTellingNeoWiki( string $pageName, string $subjectJson ): int {
-		$this->clearHook( 'RevisionFromEditComplete' );
-
-		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()
-			->newFromTitle( Title::newFromText( $pageName ) );
-
-		$updater = $wikiPage->newPageUpdater( $this->getTestSysop()->getUser() );
-		$updater->setContent( 'main', new TextContent( '' ) );
-		$updater->setContent( MediaWikiSubjectRepository::SLOT_NAME, new SubjectContent( $subjectJson ) );
-
-		$revision = $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'unhooked write' ) );
-		$this->assertNotNull( $revision );
-
-		return $revision->getPageId();
-	}
-
-	private function removeSubjectSlotWithoutTellingNeoWiki( string $pageName ): void {
-		$this->clearHook( 'RevisionFromEditComplete' );
-
-		$updater = MediaWikiServices::getInstance()->getWikiPageFactory()
-			->newFromTitle( Title::newFromText( $pageName ) )
-			->newPageUpdater( $this->getTestSysop()->getUser() );
-
-		$updater->removeSlot( MediaWikiSubjectRepository::SLOT_NAME );
-
-		$this->assertNotNull(
-			$updater->saveRevision( CommentStoreComment::newUnsavedComment( 'unhooked slot removal' ) )
-		);
-	}
-
 	private function subjectSlotJson( ?string $subjectId = null ): string {
 		if ( $subjectId === null ) {
 			return SubjectContent::newFromData( PageSubjects::newEmpty() )->getText();
@@ -361,25 +323,6 @@ class SubjectPageIndexTest extends NeoWikiIntegrationTestCase {
 			->orderBy( 'nwsp_subject_id' )
 			->caller( __METHOD__ )
 			->fetchFieldValues();
-	}
-
-	private function movePage( string $from, string $to ): void {
-		$this->assertStatusGood(
-			$this->getServiceContainer()->getMovePageFactory()->newMovePage(
-				Title::newFromText( $from ),
-				Title::newFromText( $to )
-			)->move( $this->getTestSysop()->getUser(), 'test move', false )
-		);
-	}
-
-	private function undeleteArchivedRevisions( string $pageName ): void {
-		$this->assertStatusGood(
-			$this->getServiceContainer()->getUndeletePageFactory()->newUndeletePage(
-				MediaWikiServices::getInstance()->getWikiPageFactory()
-					->newFromTitle( Title::newFromText( $pageName ) )->getTitle()->toPageIdentity(),
-				$this->getTestSysop()->getAuthority()
-			)->undeleteUnsafe( 'test restore' )
-		);
 	}
 
 }

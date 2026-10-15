@@ -108,16 +108,9 @@ class PageRebuilderTest extends TestCase {
 		$this->assertSame( [ $revision ], $this->handler->calls );
 	}
 
-	public function testRebuildReadsPageStateFromReplica(): void {
+	public function testRebuildReadsPageStateFromPrimary(): void {
 		$this->newRebuilder( $this->newRevision() )
 			->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
-
-		$this->assertSame( [ IDBAccessObject::READ_NORMAL ], $this->pageDataReads );
-	}
-
-	public function testRebuildFromPrimaryReadsPageStateFromPrimary(): void {
-		$this->newRebuilder( $this->newRevision() )
-			->rebuildFromPrimary( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
 
 		$this->assertSame(
 			[ IDBAccessObject::READ_LATEST ],
@@ -126,12 +119,11 @@ class PageRebuilderTest extends TestCase {
 		);
 	}
 
-	public function testRebuildFromPrimaryPassesTheCurrentRevisionToTheHandler(): void {
-		$revision = $this->newRevision();
+	public function testRebuildFromReplicaLeavesThePrimaryDatabaseAlone(): void {
+		$this->newRebuilder( $this->newRevision() )
+			->rebuildFromReplica( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
 
-		$this->newRebuilder( $revision )->rebuildFromPrimary( Title::makeTitle( NS_MAIN, 'Imported page' ) );
-
-		$this->assertSame( [ $revision ], $this->handler->calls );
+		$this->assertNotContains( IDBAccessObject::READ_LATEST, $this->pageDataReads );
 	}
 
 	private function newRebuilder( ?RevisionRecord $revision ): PageRebuilder {

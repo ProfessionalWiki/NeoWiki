@@ -14,7 +14,7 @@ readonly class SubjectSummaryQuery {
 		/** Empty for no search. */
 		public string $search,
 		public SubjectSummarySort $sort,
-		/** Ignored for SubjectSummarySort::Newest. */
+		/** Descending with SubjectSummarySort::Newest, which lists the newest first. */
 		public SortDirection $direction,
 		/** The last row of the previous page; null for the first page. */
 		public ?SubjectSummaryCursor $after,

@@ -86,7 +86,6 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 			$client->run( 'DROP CONSTRAINT `Page id` IF EXISTS' );
 			$client->run( 'DROP CONSTRAINT `Page wiki_id id` IF EXISTS' );
 			$client->run( 'DROP CONSTRAINT `Subject id` IF EXISTS' );
-			$client->run( 'DROP INDEX `Subject wiki_id` IF EXISTS' );
 		}
 		catch ( \Exception ) {
 			$this->markTestSkipped( 'Neo4j not available' );
@@ -113,6 +112,18 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 			Title::newFromText( $pageName ),
 			$parserOptions
 		);
+	}
+
+	/**
+	 * None of the Subjects is named after the page, as a Main Subject without a label would be.
+	 *
+	 * @return int The page id
+	 */
+	protected function createPageWithoutMainSubject( string $pageName, Subject ...$subjects ): int {
+		$revision = $this->createPageWithSubjects( $pageName, otherSubjects: new SubjectMap( ...$subjects ) );
+		$this->assertNotNull( $revision );
+
+		return $revision->getPageId();
 	}
 
 	/**
@@ -192,6 +203,60 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		}
 
 		return $pageIds;
+	}
+
+	/**
+	 * @return int The page id
+	 */
+	protected function createPageWithoutTellingNeoWiki( string $pageName, string $subjectJson ): int {
+		$this->clearHook( 'RevisionFromEditComplete' );
+
+		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()
+			->newFromTitle( Title::newFromText( $pageName ) );
+
+		$updater = $wikiPage->newPageUpdater( $this->getTestSysop()->getUser() );
+		$updater->setContent( 'main', new TextContent( '' ) );
+		$updater->setContent( MediaWikiSubjectRepository::SLOT_NAME, new SubjectContent( $subjectJson ) );
+
+		$revision = $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'unhooked write' ) );
+		$this->assertNotNull( $revision );
+
+		return $revision->getPageId();
+	}
+
+	protected function removeSubjectSlotWithoutTellingNeoWiki( string $pageName ): void {
+		$this->clearHook( 'RevisionFromEditComplete' );
+
+		$updater = MediaWikiServices::getInstance()->getWikiPageFactory()
+			->newFromTitle( Title::newFromText( $pageName ) )
+			->newPageUpdater( $this->getTestSysop()->getUser() );
+
+		$updater->removeSlot( MediaWikiSubjectRepository::SLOT_NAME );
+
+		$this->assertNotNull(
+			$updater->saveRevision( CommentStoreComment::newUnsavedComment( 'unhooked slot removal' ) )
+		);
+	}
+
+	protected function movePage( string $from, string $to, bool $createRedirect = false ): void {
+		$this->assertStatusGood(
+			$this->getServiceContainer()->getMovePageFactory()->newMovePage(
+				Title::newFromText( $from ),
+				Title::newFromText( $to )
+			)->move( $this->getTestSysop()->getUser(), 'test move', $createRedirect )
+		);
+
+		DeferredUpdates::doUpdates();
+	}
+
+	protected function undeleteArchivedRevisions( string $pageName ): void {
+		$this->assertStatusGood(
+			$this->getServiceContainer()->getUndeletePageFactory()->newUndeletePage(
+				MediaWikiServices::getInstance()->getWikiPageFactory()
+					->newFromTitle( Title::newFromText( $pageName ) )->getTitle()->toPageIdentity(),
+				$this->getTestSysop()->getAuthority()
+			)->undeleteUnsafe( 'test restore' )
+		);
 	}
 
 	protected function deletePageByName( string $pageName ): void {

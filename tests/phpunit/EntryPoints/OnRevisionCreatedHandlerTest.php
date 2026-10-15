@@ -18,16 +18,21 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderContext;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\FailureIsolatingPagePropertiesSource;
 use ProfessionalWiki\NeoWiki\PagePropertiesBuilder;
 use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
+use ProfessionalWiki\NeoWiki\Persistence\PublishedSubjectIndex;
+use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyPublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingPublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingSubjectPageIndex;
 use Psr\Log\NullLogger;
 use Psr\Log\Test\TestLogger;
@@ -45,6 +50,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 
 	private SpyGraphDatabasePlugin $graphStore;
 	private SpySubjectPageIndex $subjectPageIndex;
+	private SpyPublishedSubjectIndex $publishedSubjectIndex;
 	private TestLogger $logger;
 
 	protected function setUp(): void {
@@ -53,6 +59,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
 		$this->graphStore = new SpyGraphDatabasePlugin();
 		$this->subjectPageIndex = new SpySubjectPageIndex();
+		$this->publishedSubjectIndex = new SpyPublishedSubjectIndex();
 		$this->logger = new TestLogger();
 	}
 
@@ -142,6 +149,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $this->graphStore->savedPages );
 		$this->assertSame( [], $this->graphStore->deletedPageIds );
 		$this->assertSame( [], $this->subjectPageIndex->indexedSubjectsByPageId, 'the index should be left alone' );
+		$this->assertSame( [], $this->publishedSubjectIndex->indexedSubjectsByPageId );
 		$this->assertTrue( $this->logger->hasWarningRecords(), 'the skipped page should be logged' );
 	}
 
@@ -190,7 +198,19 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 	 */
 	public function testGraphDeletionHappensEvenWhenTheIndexRemovalFails(): void {
 		try {
-			$this->newHandlerWithFailingIndex()->onPageDelete( self::DELETED_PAGE_ID );
+			$this->newHandlerWithIndexes( new ThrowingSubjectPageIndex(), $this->publishedSubjectIndex )
+				->onPageDelete( self::DELETED_PAGE_ID );
+		} catch ( RuntimeException ) {
+			// Propagating is the index's contract; what matters is what already ran.
+		}
+
+		$this->assertEquals( [ new PageId( self::DELETED_PAGE_ID ) ], $this->graphStore->deletedPageIds );
+	}
+
+	public function testGraphDeletionHappensEvenWhenThePublishedSubjectIndexRemovalFails(): void {
+		try {
+			$this->newHandlerWithIndexes( $this->subjectPageIndex, new ThrowingPublishedSubjectIndex() )
+				->onPageDelete( self::DELETED_PAGE_ID );
 		} catch ( RuntimeException ) {
 			// Propagating is the index's contract; what matters is what already ran.
 		}
@@ -286,6 +306,30 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( PageRefreshOutcome::SkippedUnreadableSubjects, $outcome );
 		$this->assertSame( [], $this->graphStore->savedPages );
 		$this->assertSame( [], $this->graphStore->deletedPageIds );
+		$this->assertSame( [], $this->publishedSubjectIndex->indexedSubjectsByPageId );
+	}
+
+	/**
+	 * @dataProvider subjectJsonThatDoesNotDeserializeProvider
+	 */
+	public function testLeavesThePageAsItWasWhenItsPublishedSubjectsDoNotDeserialize( string $subjectJson ): void {
+		$revision = $this->newRevisionWithSlotContent( self::STUB_PAGE_ID, new SubjectContent( $subjectJson ) );
+
+		$outcome = $this->newHandler()->onRevisionCreated( $revision );
+
+		$this->assertSame( PageRefreshOutcome::SkippedUnreadableSubjects, $outcome );
+		$this->assertSame( [], $this->graphStore->savedPages );
+		$this->assertSame( [], $this->graphStore->deletedPageIds );
+		$this->assertSame( [], $this->publishedSubjectIndex->indexedSubjectsByPageId );
+		$this->assertSame( [], $this->publishedSubjectIndex->removedPageIds );
+		$this->assertTrue( $this->logger->hasWarningRecords(), 'the skipped page should be logged' );
+	}
+
+	public static function subjectJsonThatDoesNotDeserializeProvider(): iterable {
+		yield 'a Subject that fails validation' => [ TestSubject::jsonThatDoesNotDeserialize( TestSubject::ZERO_GUID ) ];
+		yield 'a Subject that is not an object' => [
+			'{"mainSubject":"' . TestSubject::ZERO_GUID . '","subjects":{"' . TestSubject::ZERO_GUID . '":1}}',
+		];
 	}
 
 	private function newCorePropertyRegistry(): PagePropertyProviderRegistry {
@@ -345,20 +389,27 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		return new OnRevisionCreatedHandler(
 			$graphStore,
 			$this->subjectPageIndex,
+			$this->publishedSubjectIndex,
 			$isolatePageProperties
 				? new FailureIsolatingPagePropertiesSource( $pageProperties, $this->logger )
 				: $pageProperties,
 			$revisionPolicy ?? new NullRevisionPolicy(),
+			$this->getServiceContainer()->getTitleFormatter(),
 			$this->logger
 		);
 	}
 
-	private function newHandlerWithFailingIndex(): OnRevisionCreatedHandler {
+	private function newHandlerWithIndexes(
+		SubjectPageIndex $subjectPageIndex,
+		PublishedSubjectIndex $publishedSubjectIndex
+	): OnRevisionCreatedHandler {
 		return new OnRevisionCreatedHandler(
 			$this->graphStore,
-			new ThrowingSubjectPageIndex(),
+			$subjectPageIndex,
+			$publishedSubjectIndex,
 			$this->newPagePropertiesBuilder( new PagePropertyProviderRegistry() ),
 			new NullRevisionPolicy(),
+			$this->getServiceContainer()->getTitleFormatter(),
 			$this->logger
 		);
 	}

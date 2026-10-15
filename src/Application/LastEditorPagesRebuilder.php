@@ -36,7 +36,7 @@ class LastEditorPagesRebuilder {
 			$title = $this->titleFactory->newFromID( $pageId, IDBAccessObject::READ_LATEST );
 
 			if ( $title !== null ) {
-				$this->pageRebuilder->rebuildFromPrimary( $title );
+				$this->pageRebuilder->rebuild( $title );
 			}
 		}
 	}

@@ -20,7 +20,6 @@ function mountTable( props: Partial<InstanceType<typeof SchemasTable>['$props']>
 			canDuplicate: false,
 			canDelete: false,
 			canCreateSubject: false,
-			subjectListAvailable: true,
 			subjectCountOf: ( schemaName: string ) => SUBJECT_COUNTS.get( schemaName ) ?? null,
 			subjectCountPending: false,
 			...props,
@@ -103,7 +102,7 @@ describe( 'SchemasTable', () => {
 		[ 'duplicate', { canDuplicate: true }, [ MORE_ACTIONS, 'neowiki-schemas-duplicate' ] ],
 		[ 'delete', { canDelete: true }, [ MORE_ACTIONS, 'neowiki-schemas-delete' ] ],
 	] )( 'offers a user who may only %s Schemas just that', ( _right, rights, actions ) => {
-		const artist = row( mountTable( { subjectListAvailable: false, ...rights } ), 0 );
+		const artist = row( mountTable( rights ), 0 );
 
 		expect( offeredActions( artist ) ).toEqual( actions );
 	} );
@@ -126,19 +125,12 @@ describe( 'SchemasTable', () => {
 		expect( wrapper.findAll( 'tbody tr' ).map( offeredActions ) ).toEqual( [ [ CREATE_SUBJECT ], [] ] );
 	} );
 
-	it( 'offers only the link to the Schema to a user without rights, on a wiki without a Subject list', () => {
-		const artist = row( mountTable( { subjectListAvailable: false } ), 0 );
+	it( 'offers a user without rights only the links to the Schema and to its Subjects', () => {
+		const artist = row( mountTable(), 0 );
 
 		expect( artist.findAll( 'button' ) ).toEqual( [] );
-		expect( artist.findAll( 'a' ).map( ( link ) => link.attributes( 'href' ) ) ).toEqual( [ '/wiki/Schema:Artist' ] );
-		expect( artist.findAll( 'td' ) ).toHaveLength( 2 );
-	} );
-
-	it( 'offers Subject creation on a wiki without a Subject list', () => {
-		const artist = row( mountTable( { subjectListAvailable: false, canCreateSubject: true } ), 0 );
-
-		expect( findButton( artist, CREATE_SUBJECT ) ).toBeDefined();
-		expect( artist.find( 'a[href^="/wiki/Special:Subjects/"]' ).exists() ).toBe( false );
+		expect( artist.findAll( 'a' ).map( ( link ) => link.attributes( 'href' ) ) )
+			.toEqual( [ '/wiki/Schema:Artist', '/wiki/Special:Subjects/Artist' ] );
 	} );
 
 	it( 'ties the buttons and the Subjects link of each row to its Schema', () => {

@@ -11,7 +11,6 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\IDBAccessObject;
-use Wikimedia\Rdbms\SelectQueryBuilder;
 
 /**
  * Rebuilds `neowiki_subject_page` from the subject slots, which are what it derives from.
@@ -45,7 +44,7 @@ class DatabaseSubjectPageIndexRebuilder {
 		$indexed = 0;
 
 		do {
-			$pageIds = $this->pageIdsHoldingSubjectSlotAfter( $lastPageId );
+			$pageIds = SubjectSlotPages::pageIdsAfter( $this->db, $lastPageId, $this->batchSize );
 
 			if ( $pageIds === [] ) {
 				return;
@@ -72,35 +71,9 @@ class DatabaseSubjectPageIndexRebuilder {
 	private function removeRowsOfPagesHoldingNoSubjectSlot(): void {
 		$this->db->newDeleteQueryBuilder()
 			->deleteFrom( DatabaseSubjectPageIndex::TABLE )
-			->where( 'nwsp_page_id NOT IN (' . $this->pagesHoldingSubjectSlot()->getSQL() . ')' )
+			->where( 'nwsp_page_id NOT IN (' . SubjectSlotPages::newQuery( $this->db )->getSQL() . ')' )
 			->caller( __METHOD__ )
 			->execute();
-	}
-
-	/**
-	 * @return int[]
-	 */
-	private function pageIdsHoldingSubjectSlotAfter( int $afterPageId ): array {
-		return array_map( 'intval', $this->pagesHoldingSubjectSlot()
-			->where( $this->db->buildComparison( '>', [ 'page_id' => $afterPageId ] ) )
-			->orderBy( 'page_id' )
-			->limit( $this->batchSize )
-			->caller( __METHOD__ )
-			->fetchFieldValues() );
-	}
-
-	/**
-	 * The pages whose current revision has a subject slot. Every other page holds no Subjects, so the
-	 * index has nothing to say about it. The caller is left unset, so that embedding this as a subquery
-	 * marks it as one rather than reporting it as a query of its own.
-	 */
-	private function pagesHoldingSubjectSlot(): SelectQueryBuilder {
-		return $this->db->newSelectQueryBuilder()
-			->select( 'page_id' )
-			->from( 'page' )
-			->join( 'slots', null, 'slot_revision_id = page_latest' )
-			->join( 'slot_roles', null, 'slot_role_id = role_id' )
-			->where( [ 'role_name' => MediaWikiSubjectRepository::SLOT_NAME ] );
 	}
 
 	/**

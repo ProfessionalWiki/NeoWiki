@@ -15,8 +15,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
- * Needs the integration base class for the pages the Subjects are saved on and the Neo4j test database the
- * counts are read from.
+ * Needs the integration base class for the pages the Subjects are saved on and the database the counts are read from.
  *
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectCountsApi
  * @group Database
@@ -26,7 +25,6 @@ class GetSubjectCountsApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 
 	public function setUp(): void {
-		$this->setUpNeo4j();
 		$this->createSchema( 'Computer' );
 	}
 

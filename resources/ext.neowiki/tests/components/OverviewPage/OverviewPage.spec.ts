@@ -84,10 +84,7 @@ function precedes( earlier: Element, later: Element ): boolean {
 
 describe( 'OverviewPage', () => {
 	beforeEach( () => {
-		setupMwMock( {
-			functions: [ 'util', 'config' ],
-			config: { wgNeoWikiSubjectListAvailable: true },
-		} );
+		setupMwMock( { functions: [ 'util' ] } );
 		grantedRight = true;
 		canCreateSubjectPageRef.value = false;
 		pinia = createPinia();
@@ -230,28 +227,5 @@ describe( 'OverviewPage', () => {
 
 		expect( isShown( wrapper.findComponent( RecentSubjectsTable ) ) ).toBe( true );
 		expect( isShown( findFirstSteps( wrapper ) ) ).toBe( false );
-	} );
-
-	it( 'maps the other pages but no Subject list on a wiki that cannot list Subjects', async () => {
-		setupMwMock( {
-			functions: [ 'util', 'config' ],
-			config: { wgNeoWikiSubjectListAvailable: false },
-		} );
-		const wrapper = mountPage();
-		await flushPromises();
-
-		expect( mappedPages( wrapper ) ).not.toContain( '/wiki/Special:Subjects' );
-		expect( mappedPages( wrapper ) ).toContain( '/wiki/Special:Schemas' );
-	} );
-
-	it( 'shows the recently edited Subjects also on a wiki that cannot list Subjects', async () => {
-		setupMwMock( {
-			functions: [ 'util', 'config' ],
-			config: { wgNeoWikiSubjectListAvailable: false },
-		} );
-		const wrapper = mountPage();
-		await flushPromises();
-
-		expect( wrapper.findComponent( RecentSubjectsTable ).exists() ).toBe( true );
 	} );
 } );

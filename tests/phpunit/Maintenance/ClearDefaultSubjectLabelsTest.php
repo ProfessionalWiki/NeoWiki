@@ -5,7 +5,6 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Maintenance;
 
 use MediaWiki\CommentStore\CommentStoreComment;
-use MediaWiki\Content\TextContent;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RenderedRevision;
@@ -290,25 +289,6 @@ class ClearDefaultSubjectLabelsTest extends NeoWikiIntegrationTestCase {
 			$this->getStoredLabels( 'Paul Gauguin' ),
 			'the page after the broken one is still reached'
 		);
-	}
-
-	/**
-	 * Writes the slot as given, past every hook: the content is meant not to deserialize, which the
-	 * projection would choke on.
-	 */
-	private function createPageWithoutTellingNeoWiki( string $pageName, string $subjectJson ): int {
-		$this->clearHook( 'RevisionFromEditComplete' );
-
-		$updater = MediaWikiServices::getInstance()->getWikiPageFactory()
-			->newFromTitle( Title::newFromText( $pageName ) )
-			->newPageUpdater( $this->getTestSysop()->getUser() );
-		$updater->setContent( 'main', new TextContent( '' ) );
-		$updater->setContent( MediaWikiSubjectRepository::SLOT_NAME, new SubjectContent( $subjectJson ) );
-
-		$revision = $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'unhooked write' ) );
-		$this->assertNotNull( $revision );
-
-		return $revision->getPageId();
 	}
 
 	/**

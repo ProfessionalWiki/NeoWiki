@@ -65,16 +65,14 @@ import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDial
 import RecentSubjectsTable from '@/components/SubjectsTable/RecentSubjectsTable.vue';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import { isSubjectListAvailable } from '@/subjectListAvailability.ts';
-
-const SUBJECTS_LINK = {
-	page: 'Special:Subjects',
-	label: 'neowiki-special-subjects',
-	description: 'neowiki-overview-subjects-description',
-	icon: cdxIconListBullet
-};
 
 const PAGE_LINKS = [
+	{
+		page: 'Special:Subjects',
+		label: 'neowiki-special-subjects',
+		description: 'neowiki-overview-subjects-description',
+		icon: cdxIconListBullet
+	},
 	{
 		page: 'Special:Schemas',
 		label: 'neowiki-special-schemas',
@@ -118,7 +116,6 @@ const props = defineProps<{
 const subjectStore = useSubjectStore();
 const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
 
-const subjectListAvailable = isSubjectListAvailable();
 const permissionKnown = ref( false );
 
 // The note points at the create button, so only those offered the button get it.
@@ -130,7 +127,6 @@ const showsRecentSubjects = computed(
 );
 
 const pageLinks = computed( () => [
-	...( subjectListAvailable ? [ SUBJECTS_LINK ] : [] ),
 	...PAGE_LINKS,
 	...( props.canManageGraphStores ? [ GRAPH_STORES_LINK ] : [] ),
 	...( props.canEditConfiguration ? [ CONFIGURATION_LINK ] : [] )

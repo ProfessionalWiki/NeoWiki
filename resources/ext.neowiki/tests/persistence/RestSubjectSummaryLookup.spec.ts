@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { RestSubjectSummaryLookup } from '@/persistence/RestSubjectSummaryLookup';
 import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClient';
 import type { SubjectSummaries, SubjectSummaryQuery } from '@/application/SubjectSummaryLookup';
+import { SubjectSummarySearchTimeoutError } from '@/application/SubjectSummarySearchTimeoutError';
+import { productionClientAnswering } from '../infrastructure/productionClientAnswering.ts';
 
 const REST_URL = '/rest.php';
 const LIST_URL = `${ REST_URL }/neowiki/v0/subjects?search=&sort=newest&direction=desc&limit=10`;
@@ -77,6 +79,26 @@ describe( 'RestSubjectSummaryLookup', () => {
 				hostSubject: null,
 			},
 		} );
+	} );
+
+	it( 'says the search took too long when the wiki stops it', async () => {
+		const lookup = new RestSubjectSummaryLookup( REST_URL, productionClientAnswering( 503, {
+			errorType: 'searchTimeout',
+			message: 'The search took too long. Search within one Schema to search fewer Subjects.',
+			httpCode: 503,
+			httpReason: 'Service Unavailable',
+		} ) );
+
+		await expect( lookup.getSubjectSummaries( FIRST_PAGE ) ).rejects.toBeInstanceOf( SubjectSummarySearchTimeoutError );
+	} );
+
+	it( 'takes no other refusal for a search that took too long', async () => {
+		const lookup = new RestSubjectSummaryLookup(
+			REST_URL,
+			productionClientAnswering( 503, '<html><body>Service Unavailable</body></html>' ),
+		);
+
+		await expect( lookup.getSubjectSummaries( FIRST_PAGE ) ).rejects.not.toBeInstanceOf( SubjectSummarySearchTimeoutError );
 	} );
 
 	it( 'asks for as many of the Subjects edited last as it is given', async () => {

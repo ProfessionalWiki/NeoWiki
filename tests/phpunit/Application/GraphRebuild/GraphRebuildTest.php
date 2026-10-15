@@ -1003,7 +1003,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$logger = new TestLogger( true );
 
 		$rebuilder = $this->createStub( PageRebuilder::class );
-		$rebuilder->method( 'rebuild' )->willReturn( PageRefreshOutcome::SkippedMissingRevision );
+		$rebuilder->method( 'rebuildFromReplica' )->willReturn( PageRefreshOutcome::SkippedMissingRevision );
 
 		$run = $this->newExecutor( new InMemoryPageIdsLookup( $pageId ), $logger )->execute(
 			run: $this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running ),
@@ -1034,7 +1034,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$logger = new TestLogger( true );
 
 		$rebuilder = $this->createStub( PageRebuilder::class );
-		$rebuilder->method( 'rebuild' )->willReturn( PageRefreshOutcome::Unpublished );
+		$rebuilder->method( 'rebuildFromReplica' )->willReturn( PageRefreshOutcome::Unpublished );
 
 		$run = $this->newExecutor( new InMemoryPageIdsLookup( $pageId ), $logger )->execute(
 			run: $this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running ),

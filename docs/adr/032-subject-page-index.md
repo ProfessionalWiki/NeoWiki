@@ -2,7 +2,7 @@
 
 Date: 2026-08-20
 
-Status: Accepted
+Status: Accepted, relation-target suggestions superseded by [ADR 37](037-subject-lookups-in-mediawiki-tables.md)
 
 ## Context
 

@@ -2,7 +2,8 @@
 
 Date: 2026-02-13
 
-Status: Accepted (2026-07-23)
+Status: Accepted (2026-07-23), features using Neo4j for convenience superseded by
+[ADR 37](037-subject-lookups-in-mediawiki-tables.md)
 
 ## Context
 

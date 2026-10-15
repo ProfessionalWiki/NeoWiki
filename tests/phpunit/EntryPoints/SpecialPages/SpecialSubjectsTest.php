@@ -41,11 +41,11 @@ class SpecialSubjectsTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringNotContainsString( 'data-mw-neowiki-schema', $this->outputFor( '<' ) );
 	}
 
-	public function testShowsANoticeInsteadOfTheListWithoutNeo4j(): void {
-		$output = $this->runWithoutGraphBackend( fn (): string => $this->outputFor( null ) );
-
-		$this->assertStringContainsString( '(neowiki-subjects-unavailable)', $output );
-		$this->assertStringNotContainsString( 'id="ext-neowiki-subjects"', $output );
+	public function testMountsTheListWithoutAGraphBackend(): void {
+		$this->assertStringContainsString(
+			'id="ext-neowiki-subjects"',
+			$this->runWithoutGraphBackend( fn (): string => $this->outputFor( null ) )
+		);
 	}
 
 	public function testLoadsTheFrontendModule(): void {

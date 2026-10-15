@@ -8,8 +8,8 @@ use ProfessionalWiki\NeoWiki\Application\SubjectCountLookup;
 use Wikimedia\ObjectCache\WANObjectCache;
 
 /**
- * Holds the counts for up to a minute, because counting reads all of the wiki's Subjects: about a quarter of a second
- * per million of them. A count can thus lag a created or deleted Subject by up to a minute.
+ * Holds the counts for up to a minute, because counting reads all of the wiki's Subjects: about a tenth of a second
+ * per million of them on MariaDB. A count can thus lag a created or deleted Subject by up to a minute.
  */
 class CachingSubjectCountLookup implements SubjectCountLookup {
 

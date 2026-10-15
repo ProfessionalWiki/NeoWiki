@@ -31,7 +31,8 @@
 	},
 
 	"AutoloadClasses": {
-		"ProfessionalWiki\\NeoWiki\\Maintenance\\RebuildSubjectPageIndex": "maintenance/RebuildSubjectPageIndex.php"
+		"ProfessionalWiki\\NeoWiki\\Maintenance\\RebuildSubjectPageIndex": "maintenance/RebuildSubjectPageIndex.php",
+		"ProfessionalWiki\\NeoWiki\\Maintenance\\RebuildPublishedSubjectIndex": "maintenance/RebuildPublishedSubjectIndex.php"
 	},
 
 	"TestAutoloadNamespaces": {
@@ -446,6 +447,16 @@
 			"path": "/neowiki/v0/subjects",
 			"method": [ "POST" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newCreateSubjectPageApi"
+		},
+		{
+			"path": "/neowiki/v0/subjects",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectSummariesApi"
+		},
+		{
+			"path": "/neowiki/v0/subject-counts",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectCountsApi"
 		},
 		{
 			"path": "/neowiki/v0/subject/validate",
@@ -1019,6 +1030,8 @@
 				"neowiki-subjects-schema-label",
 				"neowiki-subjects-search-placeholder",
 				"neowiki-subjects-load-error",
+				"neowiki-subjects-search-timeout",
+				"neowiki-subjects-search-timeout-schema",
 				"neowiki-subjects-recently-edited",
 				"neowiki-subjects-view-all",
 				"neowiki-overview-subjects-description",

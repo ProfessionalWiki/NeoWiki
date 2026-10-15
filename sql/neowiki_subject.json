@@ -1,0 +1,130 @@
+[
+	{
+		"name": "neowiki_subject",
+		"comment": "One row per Subject per page holding it, as of the revision the page publishes (its RevisionPolicy decides which). Written with the revision or rebuild that changes it, in the same transaction. A page that publishes nothing has no rows.",
+		"columns": [
+			{
+				"name": "nws_page_id",
+				"comment": "Page whose subject slot holds the Subject",
+				"type": "integer",
+				"options": {
+					"notnull": true,
+					"unsigned": true
+				}
+			},
+			{
+				"name": "nws_subject_id",
+				"comment": "Subject id, bare: a slot holds Subjects of this wiki only",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 32
+				}
+			},
+			{
+				"name": "nws_schema",
+				"comment": "Name of the Subject's Schema, without its Source, cut to 255 bytes on a character boundary",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 255
+				}
+			},
+			{
+				"name": "nws_display_name",
+				"comment": "The label, else the page name for a Main Subject on a page not titled by a Subject id (SubjectDisplayName::labelOrPageName). Null when neither applies: such a Subject has a generated name.",
+				"type": "blob",
+				"options": {
+					"notnull": false,
+					"length": 16777215
+				}
+			},
+			{
+				"name": "nws_display_name_key",
+				"comment": "nws_display_name as CaseInsensitiveKey makes it, for case-insensitive matching and ordering. Null when nws_display_name is.",
+				"type": "binary",
+				"options": {
+					"notnull": false,
+					"length": 255
+				}
+			},
+			{
+				"name": "nws_page_key",
+				"comment": "The page name (prefixed title text, with spaces) as CaseInsensitiveKey makes it",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 255
+				}
+			},
+			{
+				"name": "nws_is_main",
+				"comment": "1 for the page's Main Subject",
+				"type": "mwtinyint",
+				"options": {
+					"notnull": true,
+					"unsigned": true
+				}
+			},
+			{
+				"name": "nws_dependent",
+				"comment": "1 for a Dependent Subject: one whose Schema declared its Subjects dependent when the row was written",
+				"type": "mwtinyint",
+				"options": {
+					"notnull": true,
+					"unsigned": true
+				}
+			},
+			{
+				"name": "nws_edited",
+				"comment": "Timestamp of the page's published revision",
+				"type": "mwtimestamp",
+				"options": {
+					"notnull": true
+				}
+			}
+		],
+		"indexes": [
+			{
+				"name": "nws_subject_id",
+				"comment": "Index for finding a Subject by id, and for listing Subjects by id",
+				"columns": [
+					"nws_subject_id"
+				],
+				"unique": false
+			},
+			{
+				"name": "nws_schema_subject_id",
+				"comment": "Index for listing and counting the Subjects of one Schema",
+				"columns": [
+					"nws_schema",
+					"nws_subject_id"
+				],
+				"unique": false
+			},
+			{
+				"name": "nws_display_name_key",
+				"comment": "Index for matching and ordering Subjects by display name",
+				"columns": [
+					"nws_display_name_key",
+					"nws_subject_id"
+				],
+				"unique": false
+			},
+			{
+				"name": "nws_schema_display_name_key",
+				"comment": "Index for matching and ordering the Subjects of one Schema by display name",
+				"columns": [
+					"nws_schema",
+					"nws_display_name_key",
+					"nws_subject_id"
+				],
+				"unique": false
+			}
+		],
+		"pk": [
+			"nws_page_id",
+			"nws_subject_id"
+		]
+	}
+]

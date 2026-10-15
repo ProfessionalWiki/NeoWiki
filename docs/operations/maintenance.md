@@ -103,20 +103,23 @@ store holding that projection in the background. It is off by default: such a re
 wiki, and it lets anyone who may edit Mapping pages set that going — work `neowiki-admin` otherwise gates. A
 rebuild somebody started by hand is left to finish rather than restarted; the store shows up stale once it ends.
 
-## Rebuilding the subject index
+## Rebuilding the subject indexes
 
-NeoWiki keeps an index of which page holds which Subject. Editing, deletion, undeletion and import all keep it
-current and `update.php` fills it, so this is rarely needed. Run it when Subjects are not found on the pages holding
-them — after merging page histories, or after upgrading through MediaWiki's web updater, which does not fill the
-index:
+NeoWiki keeps two indexes of the wiki's Subjects: which page holds each one, and what each page publishes for
+Special:Subjects, relation-target suggestions, "Referenced by" and the Subject counts. Editing, deletion, undeletion
+and import all keep them current and `update.php` fills them, so this is rarely needed. Rebuild both when Subjects are
+not found on the pages holding them or are missing from those lists — after merging page histories, after adding or
+removing a [revision policy](../extending/revision-policy.md), or after upgrading through MediaWiki's web updater,
+which does not fill them:
 
 ```sh
 php maintenance/run.php NeoWiki:RebuildSubjectPageIndex --force
+php maintenance/run.php NeoWiki:RebuildPublishedSubjectIndex --force
 ```
 
-`--force` re-runs it after `update.php` has recorded it as done.
+`--force` re-runs them after `update.php` has recorded them as done.
 
-Neither [rebuilding the graph](#rebuilding-the-graph) nor a null edit repairs this index.
+Neither [rebuilding the graph](#rebuilding-the-graph) nor a null edit repairs these indexes.
 
 ## Clearing default Subject labels
 
@@ -130,7 +133,8 @@ php maintenance/run.php NeoWiki:ClearDefaultSubjectLabels
 It clears labels that only repeat the name NeoWiki now computes, and leaves every other label alone. A label somebody
 deliberately typed to that same value is cleared too, so pass `--dry-run` first: it reports what would go without
 saving anything, and reporting nothing means there is nothing to do. It walks the
-[subject index](#rebuilding-the-subject-index), so on a wiki whose index is empty, rebuild that first.
+[index of which page holds each Subject](#rebuilding-the-subject-indexes), so on a wiki where that is empty, rebuild it
+first.
 
 ## Making Subjects searchable
 
@@ -167,7 +171,7 @@ php maintenance/run.php CirrusSearch:ForceSearchIndex
 - **Editing pages works.** Edits, deletions and undeletions all commit. NeoWiki logs the projection failure on the
   [`NeoWiki` channel](installation.md#logging).
 - **Editing and displaying Subjects works.**
-- **Queries fail**, along with relation-target suggestions and anything else that reads the graph.
+- **Cypher queries fail.**
 
 Once Neo4j is back, [rebuild the graph](#rebuilding-the-graph): it repairs both a failed save and a failed delete.
 

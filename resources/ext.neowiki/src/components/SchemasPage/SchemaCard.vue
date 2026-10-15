@@ -42,51 +42,46 @@
 				{{ summary.description }}
 			</p>
 
-			<template v-if="subjectListAvailable">
-				<ul
-					v-if="newestSubjects.length > 0"
-					class="ext-neowiki-schema-card__subjects"
+			<ul
+				v-if="newestSubjects.length > 0"
+				class="ext-neowiki-schema-card__subjects"
+			>
+				<li
+					v-for="subject in newestSubjects"
+					:key="subject.id"
 				>
-					<li
-						v-for="subject in newestSubjects"
-						:key="subject.id"
-					>
-						<SubjectSummaryCell
-							column="name"
-							:summary="subject"
-						/>
-					</li>
-				</ul>
-				<p
-					v-else-if="subjectsNote !== null"
-					class="ext-neowiki-schema-card__note"
+					<SubjectSummaryCell
+						column="name"
+						:summary="subject"
+					/>
+				</li>
+			</ul>
+			<p
+				v-else-if="subjectsNote !== null"
+				class="ext-neowiki-schema-card__note"
+			>
+				{{ subjectsNote }}
+			</p>
+			<ul
+				v-else
+				class="ext-neowiki-schema-card__subjects ext-neowiki-schema-card__subjects--pending"
+			>
+				<li
+					v-for="row in pendingRows"
+					:key="row"
 				>
-					{{ subjectsNote }}
-				</p>
-				<ul
-					v-else
-					class="ext-neowiki-schema-card__subjects ext-neowiki-schema-card__subjects--pending"
-				>
-					<li
-						v-for="row in pendingRows"
-						:key="row"
-					>
-						&nbsp;
-					</li>
-				</ul>
-			</template>
+					&nbsp;
+				</li>
+			</ul>
 		</div>
 
-		<div
-			v-if="subjectListAvailable || canCreateSubject"
-			class="ext-neowiki-schema-card__footer"
-		>
+		<div class="ext-neowiki-schema-card__footer">
 			<span
-				v-if="subjectListAvailable && subjectCountPending"
+				v-if="subjectCountPending"
 				class="ext-neowiki-schema-card__subject-count"
 			/>
 			<a
-				v-else-if="subjectListAvailable"
+				v-else
 				class="ext-neowiki-schema-card__subject-count"
 				:href="subjectListUrl"
 				:aria-describedby="headingId"
@@ -121,8 +116,6 @@ const props = defineProps<{
 	canDuplicate: boolean;
 	canDelete: boolean;
 	canCreateSubject: boolean;
-	/** False on a wiki without the Graph Store the Subject list reads. */
-	subjectListAvailable: boolean;
 	subjectPreviews: SubjectPreviews;
 	/** Null while the count is not known. */
 	subjectCount: number | null;
@@ -166,7 +159,7 @@ const pendingRows = computed( () => Math.min( props.subjectCount ?? SUBJECT_PREV
 // A card asks only once seen, so a page of many Schemas does not ask for the Subjects of them all. The previews
 // decide whether a Schema needs asking again. A count of 0 does not spare the asking: it can be a minute old.
 watch( cardInView, ( inView ) => {
-	if ( inView && props.subjectListAvailable ) {
+	if ( inView ) {
 		props.subjectPreviews.load( props.summary.name );
 	}
 } );

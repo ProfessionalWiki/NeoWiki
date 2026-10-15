@@ -34,7 +34,6 @@ interface CardOptions {
 	canDuplicate?: boolean;
 	canDelete?: boolean;
 	canCreateSubject?: boolean;
-	subjectListAvailable?: boolean;
 	subjectCount?: number | null;
 	subjectCountPending?: boolean;
 }
@@ -52,7 +51,6 @@ function mountCard( options: CardOptions = {} ): VueWrapper {
 			canDuplicate: options.canDuplicate ?? false,
 			canDelete: options.canDelete ?? false,
 			canCreateSubject: options.canCreateSubject ?? false,
-			subjectListAvailable: options.subjectListAvailable ?? true,
 			// Raw, so the card sees only the reactivity the previews bring themselves, not what mounting adds.
 			subjectPreviews: markRaw( subjectPreviews ),
 			subjectCount: options.subjectCount ?? null,
@@ -248,15 +246,6 @@ describe( 'SchemaCard', () => {
 				.toHaveLength( rows );
 		},
 	);
-
-	it( 'shows no Subjects and asks for none without a Subject list', async () => {
-		const wrapper = mountCard( { subjectListAvailable: false, canCreateSubject: true } );
-		await scrollIntoView( wrapper );
-
-		expect( getSubjectSummaries ).not.toHaveBeenCalled();
-		expect( wrapper.find( '.ext-neowiki-schema-card__subjects' ).exists() ).toBe( false );
-		expect( wrapper.text() ).not.toContain( 'neowiki-subjects-view-all' );
-	} );
 
 	it( 'offers editing to a user who may edit Schemas', async () => {
 		const wrapper = mountCard( { canEdit: true } );

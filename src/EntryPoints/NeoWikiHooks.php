@@ -57,6 +57,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\EntryPoints\Jobs\RebuildLastEditorPagesJob;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
+use ProfessionalWiki\NeoWiki\Maintenance\RebuildPublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
@@ -437,10 +438,13 @@ class NeoWikiHooks {
 			$sqlDirectory . '/patch-neowiki_rebuild_runs-nwrr_phase.sql'
 		);
 		$updater->addExtensionTable( 'neowiki_subject_page', $sqlDirectory . '/neowiki_subject_page.sql' );
+		$updater->addExtensionTable( 'neowiki_subject', $sqlDirectory . '/neowiki_subject.sql' );
+		$updater->addExtensionTable( 'neowiki_relation', $sqlDirectory . '/neowiki_relation.sql' );
 
-		// Between creating the table and filling it, no Subject that existed before resolves to its page,
-		// so the backfill runs in the same update.php as the table it fills.
+		// Between creating a table and filling it, no Subject that existed before is found through it, so
+		// each backfill runs in the same update.php as the table it fills.
 		$updater->addPostDatabaseUpdateMaintenance( RebuildSubjectPageIndex::class );
+		$updater->addPostDatabaseUpdateMaintenance( RebuildPublishedSubjectIndex::class );
 
 		$updater->addExtensionUpdate( [ [ self::class, 'initializeGraphDatabases' ] ] );
 	}
@@ -858,7 +862,7 @@ class NeoWikiHooks {
 		int $sRevCount,
 		array $pageInfo
 	): void {
-		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuildFromPrimary( $title );
+		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuild( $title );
 
 		self::scheduleSearchUpdateOfCurrentRevision( $title );
 	}
@@ -902,7 +906,7 @@ class NeoWikiHooks {
 	): void {
 		$title = Title::newFromPageIdentity( $page );
 
-		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuildFromPrimary( $title );
+		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuild( $title );
 
 		self::scheduleSearchUpdateOfCurrentRevision( $title );
 
@@ -927,7 +931,7 @@ class NeoWikiHooks {
 	 * @param array<int, array{oldBits: int, newBits: int}> $visibilityChangeMap
 	 */
 	public static function onArticleRevisionVisibilitySet( Title $title, array $ids, array $visibilityChangeMap ): void {
-		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuildFromPrimary( $title );
+		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuild( $title );
 	}
 
 	/**

@@ -8,6 +8,10 @@ use MediaWiki\Context\RequestContext;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaries;
+use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryQuery;
+use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummarySearchTimeoutException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectSummariesApi;
@@ -16,6 +20,8 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
+ * Needs the integration base class for the pages the Subjects are saved on and the database the list is read from.
+ *
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectSummariesApi
  * @group Database
  */
@@ -24,7 +30,6 @@ class GetSubjectSummariesApiTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 
 	public function setUp(): void {
-		$this->setUpNeo4j();
 		$this->createSchema( 'Computer' );
 	}
 
@@ -54,6 +59,15 @@ class GetSubjectSummariesApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ 'sTestGSS1111113', 'sTestGSS1111112' ], array_column( $first['subjects'], 'id' ) );
 		$this->assertSame( [ 'sTestGSS1111111' ], array_column( $second['subjects'], 'id' ) );
 		$this->assertNull( $second['nextCursor'] );
+	}
+
+	public function testListsTheNewestFirstWhateverDirectionIsAsked(): void {
+		$this->createSubjectsOnPages( 'sTestGSS1111111', 'sTestGSS1111112', 'sTestGSS1111113' );
+
+		$this->assertSame(
+			[ 'sTestGSS1111113', 'sTestGSS1111112', 'sTestGSS1111111' ],
+			array_column( $this->get( [ 'sort' => 'newest', 'direction' => 'asc' ] )['subjects'], 'id' )
+		);
 	}
 
 	/**
@@ -99,15 +113,6 @@ class GetSubjectSummariesApiTest extends NeoWikiIntegrationTestCase {
 		$this->get( [ 'limit' => '51' ] );
 	}
 
-	public function testASchemaThatSpellsCypherMatchesNoSubjects(): void {
-		$this->createSubjectsOnPages( 'sTestGSS1111111' );
-
-		// Inside a backtick-quoted name, Neo4j reads backslash-u0060 as the closing backtick.
-		$schema = 'a' . chr( 92 ) . 'u0060 {wiki_id: $wikiId}) RETURN 1 AS x //';
-
-		$this->assertSame( [], $this->get( [ 'schema' => $schema ] )['subjects'] );
-	}
-
 	/**
 	 * @dataProvider impossibleSchemaNameProvider
 	 */
@@ -119,7 +124,21 @@ class GetSubjectSummariesApiTest extends NeoWikiIntegrationTestCase {
 
 	public static function impossibleSchemaNameProvider(): iterable {
 		yield 'empty' => [ '' ];
-		yield 'the label every Subject node carries' => [ 'Subject' ];
+		yield 'a reserved name' => [ 'Subject' ];
+	}
+
+	public function testASearchThatRunsTooLongAnswersThatItTimedOut(): void {
+		$response = $this->executeHandler(
+			new GetSubjectSummariesApi( new class implements SubjectSummaryLookup {
+				public function getSubjectSummaries( SubjectSummaryQuery $query ): SubjectSummaries {
+					throw new SubjectSummarySearchTimeoutException();
+				}
+			} ),
+			new RequestData( [ 'method' => 'GET', 'queryParams' => [ 'search' => 'spectrum' ] ] )
+		);
+
+		$this->assertSame( 503, $response->getStatusCode() );
+		$this->assertSame( 'searchTimeout', json_decode( $response->getBody()->getContents(), true )['errorType'] );
 	}
 
 	public function testRejectsAnUnknownSort(): void {

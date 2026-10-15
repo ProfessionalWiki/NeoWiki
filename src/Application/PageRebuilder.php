@@ -19,19 +19,19 @@ class PageRebuilder {
 
 	/**
 	 * Reprojects the page from its current revision, which is what an approval extension calls when its
-	 * answer changes. What that revision publishes is the handler's decision.
+	 * answer changes. What that revision publishes is the handler's decision. Read from the primary: a
+	 * replica can still hold the revision an edit or import just replaced, and the published Subject index
+	 * would be written from it.
 	 */
 	public function rebuild( Title $title ): PageRefreshOutcome {
-		return $this->rebuildWithReadFlags( $title, IDBAccessObject::READ_NORMAL );
+		return $this->rebuildWithReadFlags( $title, IDBAccessObject::READ_LATEST );
 	}
 
 	/**
-	 * Rebuilds from the primary database. Needed when rebuilding right after a write, such as on the
-	 * import path: a replica can still be missing the page, or still carry the revision the import
-	 * replaced, which would project outdated content.
+	 * As rebuild(), from a replica, for a walk over every page such as a graph rebuild.
 	 */
-	public function rebuildFromPrimary( Title $title ): PageRefreshOutcome {
-		return $this->rebuildWithReadFlags( $title, IDBAccessObject::READ_LATEST );
+	public function rebuildFromReplica( Title $title ): PageRefreshOutcome {
+		return $this->rebuildWithReadFlags( $title, IDBAccessObject::READ_NORMAL );
 	}
 
 	private function rebuildWithReadFlags( Title $title, int $readFlags ): PageRefreshOutcome {

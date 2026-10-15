@@ -30,8 +30,9 @@ Queries are written in each backend's own language, Cypher for Neo4j and SPARQL 
 parser functions, Lua, and the REST API. NeoWiki deliberately has no query language of its own
 ([ADR 19](adr/019-graph-database-architecture.md)).
 
-The subject-to-page index is authoritative in a MediaWiki table, so a wiki can also run with no graph store at all
-([ADR 32](adr/032-subject-page-index.md)): graph queries are then unavailable, and the rest works.
+Only those queries need a graph store; everything else reads Subject data from MediaWiki's own tables, so a wiki can
+also run with no graph store at all ([ADR 32](adr/032-subject-page-index.md),
+[ADR 37](adr/037-subject-lookups-in-mediawiki-tables.md)).
 
 ## Frontend and extension points
 
@@ -82,3 +83,4 @@ Every architectural decision on record, in the order it was made.
 * [ADR 33: Page-first and Subject-first Wikis](adr/033-page-first-and-subject-first-wikis.md)
 * [ADR 34: Monolingual Text Value Type](adr/034-monolingual-text-value-type.md)
 * [ADR 35: Dependent Subjects](adr/035-dependent-subjects.md)
+* [ADR 37: Subject Lookups in MediaWiki Tables](adr/037-subject-lookups-in-mediawiki-tables.md)

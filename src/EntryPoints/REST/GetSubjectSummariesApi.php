@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaries;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryCursor;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryQuery;
+use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummarySearchTimeoutException;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummarySort;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -44,14 +45,21 @@ class GetSubjectSummariesApi extends SimpleHandler {
 			return $this->listingResponse( new SubjectSummaries( [], null ) );
 		}
 
-		return $this->listingResponse( $this->lookup->getSubjectSummaries( new SubjectSummaryQuery(
-			schemaName: $schemaName,
-			search: trim( $params['search'] ),
-			sort: $sort,
-			direction: $direction,
-			after: $after,
-			limit: $params['limit'],
-		) ) );
+		try {
+			return $this->listingResponse( $this->lookup->getSubjectSummaries( new SubjectSummaryQuery(
+				schemaName: $schemaName,
+				search: trim( $params['search'] ),
+				sort: $sort,
+				direction: $direction,
+				after: $after,
+				limit: $params['limit'],
+			) ) );
+		} catch ( SubjectSummarySearchTimeoutException ) {
+			return $this->getResponseFactory()->createHttpError( 503, [
+				'errorType' => 'searchTimeout',
+				'message' => 'The search took too long. Search within one Schema to search fewer Subjects.',
+			] );
+		}
 	}
 
 	private function listingResponse( SubjectSummaries $summaries ): Response {

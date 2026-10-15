@@ -7,13 +7,10 @@ namespace ProfessionalWiki\NeoWiki\Application;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 /**
- * Finds the Subjects that reference a given one, by asking a query projection which Subjects hold an
- * edge into it.
- *
- * Candidates, not an answer: a projection lags the wiki and can hold an edge a Subject no longer
- * holds (#1135), so callers load each candidate from the wiki and keep only those whose current
- * Statements still target it. Callers also gate each candidate on the caller's read access, since
- * nothing here does.
+ * Candidates, not an answer: the relation index it reads can hold a relation a Subject no longer
+ * holds, such as after a write it was not told about, so callers load each candidate from the wiki and
+ * keep only those whose current Statements still target it. Callers also gate each candidate on the
+ * caller's read access, since nothing here does.
  */
 interface ReferencingSubjectLookup {
 

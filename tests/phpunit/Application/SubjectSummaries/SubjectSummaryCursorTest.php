@@ -62,9 +62,9 @@ class SubjectSummaryCursorTest extends TestCase {
 	}
 
 	/**
-	 * @dataProvider mistypedSortValueProvider
+	 * @dataProvider impossibleSortValueProvider
 	 */
-	public function testRejectsASortValueOfTheWrongTypeForItsSort( SubjectSummarySort $sort, string|int $sortValue ): void {
+	public function testRejectsASortValueItsSortCannotHave( SubjectSummarySort $sort, string|int $sortValue ): void {
 		$encoded = ( new SubjectSummaryCursor( $sort, SortDirection::Ascending, $sortValue, self::SUBJECT_ID ) )->encode();
 
 		$this->expectException( InvalidSubjectSummaryCursorException::class );
@@ -72,8 +72,10 @@ class SubjectSummaryCursorTest extends TestCase {
 		SubjectSummaryCursor::decode( $encoded, $sort, SortDirection::Ascending );
 	}
 
-	public static function mistypedSortValueProvider(): iterable {
+	public static function impossibleSortValueProvider(): iterable {
 		yield 'text for an edit time' => [ SubjectSummarySort::Edited, 'yesterday' ];
+		yield 'an edit time after the year 9999' => [ SubjectSummarySort::Edited, 253402300800 ];
+		yield 'an edit time before the year 0' => [ SubjectSummarySort::Edited, -62167219201 ];
 		yield 'a number for a name' => [ SubjectSummarySort::Name, 5 ];
 		yield 'any value for newest first' => [ SubjectSummarySort::Newest, 'apple' ];
 	}

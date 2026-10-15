@@ -40,12 +40,13 @@ $outcome = NeoWikiExtension::getInstance()
 	->rebuild( $title );
 ```
 
-NeoWiki re-runs every provider for the page, re-reads its subject slot, and updates the Page node synchronously; no
-revision is created. `rebuild()` returns a `PageRefreshOutcome`:
+NeoWiki re-runs every provider for the page, re-reads its subject slot, and synchronously updates the Page node and
+what the Subject list, suggestions, counts and "Referenced by" read; no revision is created. `rebuild()` returns a
+`PageRefreshOutcome`:
 
-- `Refreshed` — the Page node was updated.
+- `Refreshed` — the page's data was updated.
 - `Unpublished` — the [revision policy](revision-policy.md) publishes no revision of the page, so the call withdrew
-  it from the graph stores.
+  it from the graph stores, the Subject list, suggestions, counts and "Referenced by".
 - `SkippedMissingRevision` — the page has no current revision.
 - `SkippedUnreadableSubjects` — the page's subject slot holds content NeoWiki cannot read as Subjects.
 - `SkippedUnreadablePageProperties` — the page's properties could not be built, for instance because a provider or

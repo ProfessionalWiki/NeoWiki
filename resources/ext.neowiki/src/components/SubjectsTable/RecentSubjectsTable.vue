@@ -34,10 +34,7 @@
 			/>
 		</template>
 
-		<template
-			v-if="listAvailable"
-			#footer
-		>
+		<template #footer>
 			<a :href="listUrl">{{ $i18n( 'neowiki-subjects-view-all' ).text() }}</a>
 		</template>
 
@@ -57,7 +54,6 @@ import { CdxTable } from '@wikimedia/codex';
 import SubjectSummaryCell from './SubjectSummaryCell.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
-import { isSubjectListAvailable } from '@/subjectListAvailability.ts';
 import type { SubjectSummary } from '@/application/SubjectSummaryLookup.ts';
 import { subjectColumns } from '@/presentation/subjectSummaryTable.ts';
 
@@ -70,7 +66,6 @@ const loading = ref( true );
 const loadFailed = ref( false );
 
 const columns = subjectColumns( { showSchema: true, showPage: !isSubjectFirst(), sortable: false } );
-const listAvailable = isSubjectListAvailable();
 const listUrl = mw.util.getUrl( 'Special:Subjects' );
 const emptyText = computed( () => mw.msg( loadFailed.value ? 'neowiki-subjects-load-error' : 'neowiki-subjects-empty' ) );
 

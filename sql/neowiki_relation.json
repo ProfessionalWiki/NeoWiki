@@ -1,0 +1,62 @@
+[
+	{
+		"name": "neowiki_relation",
+		"comment": "One row per distinct Subject, relation property and target on a page, as of the revision the page publishes. Written with neowiki_subject. A target from another Source has no row; a target that does not exist has one.",
+		"columns": [
+			{
+				"name": "nwr_page_id",
+				"comment": "Page whose subject slot holds the Subject",
+				"type": "integer",
+				"options": {
+					"notnull": true,
+					"unsigned": true
+				}
+			},
+			{
+				"name": "nwr_subject_id",
+				"comment": "Subject holding the Relation",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 32
+				}
+			},
+			{
+				"name": "nwr_property",
+				"comment": "Name of the relation property, cut to 255 bytes on a character boundary",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 255
+				}
+			},
+			{
+				"name": "nwr_target_id",
+				"comment": "Id of the target Subject, bare",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 32
+				}
+			}
+		],
+		"indexes": [
+			{
+				"name": "nwr_target_id",
+				"comment": "Index for finding the Subjects that relate to a target",
+				"columns": [
+					"nwr_target_id",
+					"nwr_property",
+					"nwr_subject_id"
+				],
+				"unique": false
+			}
+		],
+		"pk": [
+			"nwr_page_id",
+			"nwr_subject_id",
+			"nwr_property",
+			"nwr_target_id"
+		]
+	}
+]

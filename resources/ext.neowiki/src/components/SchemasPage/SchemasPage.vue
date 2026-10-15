@@ -56,7 +56,6 @@
 			:can-duplicate="canCreateSchemas"
 			:can-delete="canDeleteSchema"
 			:can-create-subject="canCreateSubjectPage"
-			:subject-list-available="subjectListAvailable"
 			:subject-count-of="subjectCountOf"
 			:subject-count-pending="subjectCountsPending"
 			@edit="openEditor"
@@ -76,7 +75,6 @@
 				:can-duplicate="canCreateSchemas"
 				:can-delete="canDeleteSchema"
 				:can-create-subject="canCreateSubjectPage && !summary.subjectsAreDependent"
-				:subject-list-available="subjectListAvailable"
 				:subject-previews="subjectPreviews"
 				:subject-count="subjectCountOf( summary.name )"
 				:subject-count-pending="subjectCountsPending"
@@ -139,7 +137,6 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
-import { isSubjectListAvailable } from '@/subjectListAvailability.ts';
 import SchemaCard from './SchemaCard.vue';
 import SchemasTable from './SchemasTable.vue';
 import { SubjectPreviews } from './SubjectPreviews.ts';
@@ -166,7 +163,6 @@ const { subjectCountsPending, subjectCountOf, loadSubjectCounts } = useSubjectCo
 const schemaStore = useSchemaStore();
 const subjectStore = useSubjectStore();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
-const subjectListAvailable = isSubjectListAvailable();
 // Kept for the whole page view, so a card filtered out and back in shows its Subjects without asking again.
 const subjectPreviews = new SubjectPreviews( NeoWikiServices.getSubjectSummaryLookup() );
 

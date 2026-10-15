@@ -81,8 +81,8 @@ const SchemaCardStub = {
 	name: 'SchemaCard',
 	template: '<div class="schema-card-stub"></div>',
 	props: [
-		'summary', 'canEdit', 'canDuplicate', 'canDelete', 'canCreateSubject', 'subjectListAvailable', 'subjectPreviews',
-		'subjectCount', 'subjectCountPending',
+		'summary', 'canEdit', 'canDuplicate', 'canDelete', 'canCreateSubject', 'subjectPreviews', 'subjectCount',
+		'subjectCountPending',
 	],
 	emits: [ 'edit', 'duplicate', 'delete', 'create-subject' ],
 };
@@ -120,7 +120,6 @@ function listSchemas( names: string[] ): void {
 }
 
 interface PageOptions {
-	subjectListAvailable?: boolean;
 	/** Mounts the cards themselves rather than stand-ins, for what only a card shows. */
 	realCards?: boolean;
 	subjectSummaryLookup?: SubjectSummaryLookup;
@@ -131,10 +130,7 @@ interface PageOptions {
 function mountPage( options: PageOptions = {} ): VueWrapper {
 	setupMwMock( {
 		functions: [ 'config', 'msg', 'util', 'message', 'notify', 'language' ],
-		config: {
-			wgNeoWikiSubjectListAvailable: options.subjectListAvailable ?? true,
-			wgNeoWikiSubjectCountsAvailable: options.subjectCountLookup !== undefined,
-		},
+		config: { wgNeoWikiSubjectCountsAvailable: options.subjectCountLookup !== undefined },
 	} );
 	Object.assign( mw, { storage: {
 		get: ( key: string ) => browserStorage.get( key ) ?? null,
@@ -248,15 +244,6 @@ describe( 'SchemasPage', () => {
 		expect( wrapper.text() ).toContain( 'neowiki-schemas-no-matchzzq' );
 	} );
 
-	it( 'links no row to its Subjects on a wiki without a Subject list', async () => {
-		browserStorage.clear();
-		mayCreateSubjectPages = true;
-		const wrapper = mountPage( { subjectListAvailable: false } );
-		await flushPromises();
-
-		expect( wrapper.find( 'a[href^="/wiki/Special:Subjects/"]' ).exists() ).toBe( false );
-	} );
-
 	it( 'links no row to its Subjects until the counts arrive', async () => {
 		browserStorage.clear();
 		const wrapper = mountPage( { subjectCountLookup: { getSubjectCounts: neverLands() } } );
@@ -325,13 +312,6 @@ describe( 'SchemasPage', () => {
 		await flushPromises();
 
 		expect( cardNames( wrapper ) ).toEqual( names );
-	} );
-
-	it( 'tells the cards whether the wiki can list Subjects', async () => {
-		const wrapper = mountPage( { subjectListAvailable: false } );
-		await flushPromises();
-
-		expect( cards( wrapper )[ 0 ].props( 'subjectListAvailable' ) ).toBe( false );
 	} );
 
 	it( 'tells each card how many Subjects its Schema has', async () => {

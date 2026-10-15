@@ -231,8 +231,6 @@ class DatabaseRecentlyEditedSubjectLookupTest extends NeoWikiIntegrationTestCase
 	 */
 	public function testLeavesOutAPageWhoseSubjectsDoNotDeserialize( string $subjectJson ): void {
 		$this->saveAt( self::MONDAY, 'Ada Lovelace', $this->person( self::ADA, '1815' ) );
-		// Saving through NeoWiki would refuse what does not deserialize.
-		$this->clearHook( 'RevisionFromEditComplete' );
 		$this->writeSubjectSlotAt( self::TUESDAY, 'Grace Hopper', $subjectJson );
 
 		$this->assertSame( [ self::MONDAY => [ self::ADA ] ], $this->editsByTime() );

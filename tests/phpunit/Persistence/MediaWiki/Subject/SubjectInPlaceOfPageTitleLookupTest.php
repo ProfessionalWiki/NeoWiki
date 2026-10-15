@@ -243,9 +243,6 @@ class SubjectInPlaceOfPageTitleLookupTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function savePageWithSubjectJson( string $pageName, string $subjectJson ): void {
-		// The slot is written as is: saving through NeoWiki would refuse what does not deserialize.
-		$this->clearHook( 'RevisionFromEditComplete' );
-
 		$updater = $this->getServiceContainer()->getWikiPageFactory()
 			->newFromTitle( Title::newFromText( $pageName ) )
 			->newPageUpdater( $this->getTestSysop()->getUser() );

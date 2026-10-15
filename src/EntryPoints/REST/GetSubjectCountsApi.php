@@ -19,7 +19,7 @@ class GetSubjectCountsApi extends SimpleHandler {
 	}
 
 	public function run(): Response {
-		// The counts read the whole store, Subjects on pages the caller may not read included, as a raw query does.
+		// The counts include Subjects on pages the caller may not read, as the results of a raw query do.
 		if ( !$this->getAuthority()->isAllowed( AuthorityBasedRawQueryAuthorizer::RIGHT ) ) {
 			return $this->permissionDenied();
 		}

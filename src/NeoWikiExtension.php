@@ -11,13 +11,16 @@ use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Permissions\UltimateAuthority;
 use MediaWiki\Rest\Response;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Session\CsrfTokenSet;
 use MediaWiki\Title\Title;
+use MediaWiki\User\UserIdentityValue;
 use MessageLocalizer;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubjectPage\CreateSubjectPageAction;
@@ -89,9 +92,7 @@ use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectCountLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
-use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\ReferencingSubjectLookup;
-use ProfessionalWiki\NeoWiki\Application\NullReferencingSubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
 use ProfessionalWiki\NeoWiki\Application\HostSubjectBuilder;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
@@ -190,6 +191,11 @@ use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedSchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseDeletedPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePublishedSubjectIndex;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseReferencingSubjectLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectCountLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectLabelLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectSummaryLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiWikiConfigSource;
@@ -218,10 +224,6 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaJsonLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jReferencingSubjectLookup;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectCountLookup;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectSummaryLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\CallbackProjectionResolver;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService;
@@ -230,8 +232,10 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\Sparql
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin;
 use ProfessionalWiki\NeoWiki\Persistence\DeletedPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLastEditorPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\NullPublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Persistence\NullSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Persistence\PageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\PublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildExecutor;
@@ -640,13 +644,15 @@ class NeoWikiExtension {
 	 * runs extension-contributed providers. See FailureIsolatingGraphDatabasePlugin and
 	 * FailureIsolatingPagePropertiesSource.
 	 *
-	 * The subject -> page index is deliberately outside that isolation: it is authoritative (ADR 32), so
-	 * it is written on the connection the operation is already using and fails the operation with it.
+	 * The subject -> page index and the published Subject index are deliberately outside that isolation:
+	 * NeoWiki's own features read them rather than a graph, so they are written on the connection the
+	 * operation is already using and fail the operation with it.
 	 */
 	public function getStoreContentUC(): OnRevisionCreatedHandler {
 		return $this->newStoreContentHandler(
 			$this->getIsolatingGraphDatabasePlugin(),
 			$this->newSubjectPageIndex(),
+			$this->newPublishedSubjectIndex(),
 			new FailureIsolatingPagePropertiesSource(
 				$this->getPagePropertiesBuilder(),
 				LoggerFactory::getInstance( 'NeoWiki' )
@@ -655,15 +661,17 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Rebuild path (RebuildGraphDatabases, and the jobs that reproject pages in bulk). Failures
-	 * propagate so the script reports which pages failed to reconcile and why, and so a job fails and is
-	 * retried, rather than the hook path's isolation swallowing them and leaving a skip nobody can act
-	 * on.
+	 * Refresh path, for a page whose published state changed without an edit: an approval extension's
+	 * rebuild(), and the job that reprojects the pages a block hid a user on. Failures propagate so a job
+	 * fails and is retried, rather than the hook path's isolation swallowing them and leaving a skip
+	 * nobody can act on. An approval changes what a page publishes, so this writes the published Subject
+	 * index; graph rebuilds go through newPageRebuilderFor(), which does not.
 	 */
 	private function newRebuildStoreContentHandler(): OnRevisionCreatedHandler {
 		return $this->newStoreContentHandler(
 			$this->getGraphDatabasePlugin(),
 			new NullSubjectPageIndex(),
+			$this->newPublishedSubjectIndex(),
 			$this->getPagePropertiesBuilder()
 		);
 	}
@@ -671,13 +679,16 @@ class NeoWikiExtension {
 	private function newStoreContentHandler(
 		GraphDatabasePlugin $graphDatabasePlugin,
 		SubjectPageIndex $subjectPageIndex,
+		PublishedSubjectIndex $publishedSubjectIndex,
 		PagePropertiesSource $pagePropertiesSource,
 	): OnRevisionCreatedHandler {
 		return new OnRevisionCreatedHandler(
 			$graphDatabasePlugin,
 			$subjectPageIndex,
+			$publishedSubjectIndex,
 			$pagePropertiesSource,
 			$this->getRevisionPolicy(),
+			MediaWikiServices::getInstance()->getTitleFormatter(),
 			LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
@@ -686,6 +697,28 @@ class NeoWikiExtension {
 		return new DatabaseSubjectPageIndex(
 			MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase()
 		);
+	}
+
+	private function newPublishedSubjectIndex(): PublishedSubjectIndex {
+		return new DatabasePublishedSubjectIndex(
+			MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase(),
+			$this->newUnrestrictedDependentSubjectRules()
+		);
+	}
+
+	/**
+	 * Resolves every Schema, whoever makes the request: the published Subject index gives every reader the same
+	 * rows, and maintenance scripts, which write it too, run as an anonymous user.
+	 */
+	public function newUnrestrictedDependentSubjectRules(): DependentSubjectRules {
+		$schemaLookup = $this->newSchemaLookup( new UltimateAuthority( new UserIdentityValue( 0, 'NeoWiki' ) ) );
+
+		return new DependentSubjectRules( new SchemaResolver(
+			$this->getSourceRegistry()->withLocalSource(
+				$this->newLocalSource( $this->getSubjectRepository(), $schemaLookup )
+			),
+			LoggerFactory::getInstance( 'NeoWiki' )
+		) );
 	}
 
 	public function getPagePropertiesBuilder(): PagePropertiesBuilder {
@@ -1440,7 +1473,6 @@ class NeoWikiExtension {
 			validationDebounceMs: is_int( $debounceMs ) ? $debounceMs : 300,
 			validationEnforced: $this->isValidationEnforced(),
 			subjectFirst: $this->isSubjectFirst(),
-			subjectListAvailable: $this->isSubjectListAvailable(),
 			dataLanguages: $this->getDataLanguages(),
 		);
 	}
@@ -1501,6 +1533,7 @@ class NeoWikiExtension {
 			$this->newStoreContentHandler(
 				$store,
 				new NullSubjectPageIndex(),
+				new NullPublishedSubjectIndex(),
 				$this->getPagePropertiesBuilder()
 			)
 		);
@@ -1510,8 +1543,8 @@ class NeoWikiExtension {
 	 * Hook paths that project a page they did not themselves write a revision for: import, undeletion,
 	 * and a revision-visibility change. Projects the current revision like the rebuild path, but with
 	 * the hook path's failure isolation, since a projection failure must not abort the user's operation.
-	 * The page is indexed as an edit does it, which costs one read and no write where, as on the
-	 * visibility path, no Subject changed.
+	 * The page is indexed as an edit does it, which costs reads but no write where, as on the visibility
+	 * path, no Subject changed.
 	 */
 	public function newHookPageRebuilder(): PageRebuilder {
 		return $this->newPageRebuilderWith( $this->getStoreContentUC() );
@@ -1963,29 +1996,23 @@ class NeoWikiExtension {
 		);
 	}
 
-	/**
-	 * Whether this wiki can list its Subjects: the listing reads the Neo4j projection.
-	 */
-	public function isSubjectListAvailable(): bool {
-		return $this->config->hasNeo4jBackend();
-	}
-
 	public function newSubjectCountLookup(): SubjectCountLookup {
 		return new CachingSubjectCountLookup(
-			lookup: new Neo4jSubjectCountLookup(
-				client: $this->getReadOnlyNeo4jClient(),
-				wikiId: $this->config->wikiId,
-			),
+			lookup: new DatabaseSubjectCountLookup( MediaWikiServices::getInstance()->getConnectionProvider() ),
 			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 		);
 	}
 
 	public function newSubjectSummaryLookup(): SubjectSummaryLookup {
-		return new Neo4jSubjectSummaryLookup(
-			client: $this->getReadOnlyNeo4jClient(),
-			wikiId: $this->config->wikiId,
+		$searchTimeLimit = MediaWikiServices::getInstance()->getMainConfig()
+			->get( MainConfigNames::MaxExecutionTimeForExpensiveQueries );
+
+		return new DatabaseSubjectSummaryLookup(
+			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
 			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			scanBound: self::SUBJECT_SUMMARY_SCAN_BOUND,
+			searchTimeLimit: is_int( $searchTimeLimit ) ? $searchTimeLimit : 0,
 		);
 	}
 
@@ -2004,26 +2031,15 @@ class NeoWikiExtension {
 	}
 
 	public function getSubjectLabelLookup(): SubjectLabelLookup {
-		if ( $this->getNeo4jPlugin() === null ) {
-			return new NullSubjectLabelLookup();
-		}
-
-		return new Neo4jSubjectLabelLookup(
-			client: $this->getReadOnlyNeo4jClient(),
-			wikiId: $this->config->wikiId,
+		return new DatabaseSubjectLabelLookup(
+			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
 			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 		);
 	}
 
 	public function getReferencingSubjectLookup(): ReferencingSubjectLookup {
-		if ( $this->getNeo4jPlugin() === null ) {
-			return new NullReferencingSubjectLookup();
-		}
-
-		return new Neo4jReferencingSubjectLookup(
-			client: $this->getReadOnlyNeo4jClient(),
-			wikiId: $this->config->wikiId,
-		);
+		return new DatabaseReferencingSubjectLookup( MediaWikiServices::getInstance()->getConnectionProvider() );
 	}
 
 	public function getDbConnection(): IDatabase {

@@ -23,7 +23,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 
 /**
- * Needs the database for the pages the Subjects are on, and Neo4j for the Subject list.
+ * Needs the database for the pages the Subjects are on.
  *
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi
@@ -50,8 +50,6 @@ class DependentSubjectRestReadsTest extends NeoWikiIntegrationTestCase {
 	private RevisionRecord $firstRevision;
 
 	public function setUp(): void {
-		$this->setUpNeo4j();
-
 		$this->createSchema( 'Person', '{"propertyDefinitions":{"Birth":{"type":"relation","targetSchemas":["Birth"]}}}' );
 		$this->createSchema( 'Birth', '{"subjectsAreDependent":true,"propertyDefinitions":{'
 			. '"Place":{"type":"relation","targetSchemas":["Place"]}}}' );

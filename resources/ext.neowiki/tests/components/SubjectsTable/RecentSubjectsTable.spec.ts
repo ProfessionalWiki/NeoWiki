@@ -6,13 +6,6 @@ import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
 let getRecentlyEditedSubjects: ReturnType<typeof vi.fn>;
 
-function setUpWiki( subjectListAvailable: boolean ): void {
-	setupMwMock( {
-		functions: [ 'config', 'msg', 'message', 'util' ],
-		config: { wgNeoWikiSubjectListAvailable: subjectListAvailable },
-	} );
-}
-
 function mountTable(): VueWrapper {
 	return mount( RecentSubjectsTable, {
 		global: {
@@ -25,7 +18,7 @@ function mountTable(): VueWrapper {
 describe( 'RecentSubjectsTable', () => {
 
 	beforeEach( () => {
-		setUpWiki( true );
+		setupMwMock( { functions: [ 'config', 'msg', 'message', 'util' ] } );
 		getRecentlyEditedSubjects = vi.fn().mockResolvedValue( [ {
 			id: 's1demo1aaaaaaa1', displayName: 'Commodore 64', displayNameIsGenerated: false, hostSubject: null,
 			schema: 'Computer',
@@ -70,15 +63,6 @@ describe( 'RecentSubjectsTable', () => {
 
 		expect( link.text() ).toBe( 'neowiki-subjects-view-all' );
 		expect( link.element.closest( '.cdx-table__footer' ) ).not.toBeNull();
-	} );
-
-	it( 'offers no link to the full list on a wiki that cannot list Subjects', async () => {
-		setUpWiki( false );
-		const wrapper = mountTable();
-		await flushPromises();
-
-		expect( wrapper.text() ).toContain( 'Commodore 64' );
-		expect( wrapper.find( 'a[href="/wiki/Special:Subjects"]' ).exists() ).toBe( false );
 	} );
 
 	it( 'says the wiki has no Subjects yet when there are none', async () => {

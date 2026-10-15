@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\SubjectSummaries;
 
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
  * The position of a row in a Subject listing: its value in the sort and its Subject id, which breaks ties.
@@ -60,7 +61,7 @@ readonly class SubjectSummaryCursor {
 	private static function fitsSort( mixed $sortValue, SubjectSummarySort $sort ): bool {
 		return match ( $sort ) {
 			SubjectSummarySort::Newest => $sortValue === null,
-			SubjectSummarySort::Edited => is_int( $sortValue ),
+			SubjectSummarySort::Edited => is_int( $sortValue ) && ConvertibleTimestamp::convert( TS_MW, $sortValue ) !== false,
 			SubjectSummarySort::Name, SubjectSummarySort::Schema, SubjectSummarySort::Page =>
 				is_string( $sortValue ) || $sortValue === null,
 		};

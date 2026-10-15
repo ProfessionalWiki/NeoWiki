@@ -94,7 +94,13 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
 import type { SubjectSummary } from '@/application/SubjectSummaryLookup.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
-import { emptyStateMessage, schemaMenuNames, subjectColumns, summaryOrder } from '@/presentation/subjectSummaryTable.ts';
+import {
+	emptyStateMessage,
+	failureMessage,
+	schemaMenuNames,
+	subjectColumns,
+	summaryOrder
+} from '@/presentation/subjectSummaryTable.ts';
 
 const props = withDefaults( defineProps<{
 	/** Lists only this Schema's Subjects, with no menu to pick another: a Schema's own page. */
@@ -125,7 +131,7 @@ const pagination = useCursorPagination();
 const table = ref<InstanceType<typeof CdxTable> | null>( null );
 const rows = ref<SubjectSummary[]>( [] );
 const loading = ref( true );
-const loadFailed = ref( false );
+const failureText = ref<string | null>( null );
 // Undefined while the end of the listing is unknown, which keeps the pager at "of many" (ADR 27).
 const totalRows = ref<number | undefined>( undefined );
 const sort = ref<TableSort>( {} );
@@ -162,9 +168,7 @@ const createLabel = computed( () => selectedSchema.value === null ?
 	mw.msg( 'neowiki-createsubject-button' ) :
 	mw.msg( 'neowiki-schema-create-subject', selectedSchema.value ) );
 
-const emptyText = computed( () => loadFailed.value ?
-	mw.msg( 'neowiki-subjects-load-error' ) :
-	emptyStateMessage( appliedSearch.value, selectedSchema.value ) );
+const emptyText = computed( () => failureText.value ?? emptyStateMessage( appliedSearch.value, selectedSchema.value ) );
 
 async function fetchPage( offset: number, limit: number ): Promise<void> {
 	// Rows no response led to, as Previous asks for after a page-size change: nothing resumes the listing there.
@@ -190,16 +194,16 @@ async function fetchPage( offset: number, limit: number ): Promise<void> {
 		}
 
 		rows.value = result.subjects;
-		loadFailed.value = false;
+		failureText.value = null;
 		pagination.recordNextCursor( offset, limit, result.nextCursor );
 		totalRows.value = result.nextCursor === null ? offset + result.subjects.length : undefined;
-	} catch {
+	} catch ( error ) {
 		if ( sequence !== requestSequence ) {
 			return;
 		}
 
 		rows.value = [];
-		loadFailed.value = true;
+		failureText.value = failureMessage( error, selectedSchema.value );
 	}
 
 	loading.value = false;

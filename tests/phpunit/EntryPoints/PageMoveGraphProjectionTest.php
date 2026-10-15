@@ -4,8 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
-use MediaWiki\Deferred\DeferredUpdates;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -136,21 +134,6 @@ class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		);
 
 		return $result->first()->toRecursiveArray()['name'] ?? null;
-	}
-
-	/**
-	 * @return int[]
-	 */
-	private function movePage( string $from, string $to, bool $createRedirect = false ): void {
-		$movePage = MediaWikiServices::getInstance()->getMovePageFactory()->newMovePage(
-			Title::newFromText( $from ),
-			Title::newFromText( $to )
-		);
-
-		$status = $movePage->move( $this->getTestSysop()->getUser(), 'test move', $createRedirect );
-		$this->assertStatusGood( $status );
-
-		DeferredUpdates::doUpdates();
 	}
 
 }

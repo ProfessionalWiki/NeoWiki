@@ -2,6 +2,7 @@ import type { TableColumn, TableSort } from '@wikimedia/codex';
 import type { SortDirection, SubjectSummary, SubjectSummarySort } from '@/application/SubjectSummaryLookup.ts';
 import { displayNameOf } from '@/presentation/subjectDisplayName.ts';
 import { subjectRowLinkUrl } from '@/presentation/subjectLinks.ts';
+import { SubjectSummarySearchTimeoutError } from '@/application/SubjectSummarySearchTimeoutError.ts';
 
 export type SubjectColumnId = 'name' | 'schema' | 'page' | 'edited';
 
@@ -116,4 +117,13 @@ export function emptyStateMessage( search: string, schema: string | null ): stri
 	}
 
 	return schema === null ? mw.msg( 'neowiki-subjects-empty' ) : mw.msg( 'neowiki-subjects-empty-schema', schema );
+}
+
+/** Suggesting a Schema helps a search that took too long only while none is chosen. */
+export function failureMessage( error: unknown, schema: string | null ): string {
+	if ( !( error instanceof SubjectSummarySearchTimeoutError ) ) {
+		return mw.msg( 'neowiki-subjects-load-error' );
+	}
+
+	return schema === null ? mw.msg( 'neowiki-subjects-search-timeout' ) : mw.msg( 'neowiki-subjects-search-timeout-schema' );
 }

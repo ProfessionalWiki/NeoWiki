@@ -44,11 +44,11 @@
 		<template #item-subjects="{ row }">
 			<div class="ext-neowiki-schemas-table__cell">
 				<span
-					v-if="subjectListAvailable && subjectCountPending"
+					v-if="subjectCountPending"
 					class="ext-neowiki-schemas-table__subject-count"
 				/>
 				<a
-					v-else-if="subjectListAvailable"
+					v-else
 					class="ext-neowiki-schemas-table__subject-count"
 					:href="pageUrl( `Special:Subjects/${ row.name }` )"
 					:aria-describedby="nameId( row.name )"
@@ -81,7 +81,6 @@ const props = defineProps<{
 	canDuplicate: boolean;
 	canDelete: boolean;
 	canCreateSubject: boolean;
-	subjectListAvailable: boolean;
 	subjectCountOf: SubjectCounts['subjectCountOf'];
 	subjectCountPending: boolean;
 }>();
@@ -101,10 +100,7 @@ const columns = computed( (): TableColumn[] => [
 	...( props.canEdit || props.canDuplicate || props.canDelete ?
 		[ { id: 'actions', label: '' } ] :
 		[] ),
-	// The card's footer holds the same two, under the same condition.
-	...( props.subjectListAvailable || props.canCreateSubject ?
-		[ { id: 'subjects', label: mw.msg( 'neowiki-schemas-column-subjects' ) } ] :
-		[] )
+	{ id: 'subjects', label: mw.msg( 'neowiki-schemas-column-subjects' ) }
 ] );
 
 // Names the Schema to screen readers on its row's buttons and link. Encoded: an id holds no spaces, a name can.

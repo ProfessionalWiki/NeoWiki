@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository';
-import { ProductionHttpClient } from '@/infrastructure/HttpClient/ProductionHttpClient';
 import { SubjectId } from '@/domain/SubjectId';
 import { StatementList } from '@/domain/StatementList';
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
@@ -8,34 +7,17 @@ import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import type { SubjectDeserializer } from '@/persistence/SubjectDeserializer';
 import type { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
+import { productionClientAnswering } from '../infrastructure/productionClientAnswering.ts';
 
 /**
  * What a refused write looks like to the caller with the client production uses, rather than with a
  * double that hands every status back as a readable Response. Which statuses that client resolves
  * decides whether the body reaches the caller at all, and the errors below are built from it.
- *
- * The adapter stands in for the network: axios leaves applying validateStatus to the adapter, so
- * this one applies the client's own, and rejects the way axios does when it says no.
  */
 function repositoryAnswering( status: number, body: unknown ): RestSubjectRepository {
-	const httpClient = new ProductionHttpClient();
-
-	( httpClient.getAxiosInstance() as any ).defaults.adapter = ( config: any ): Promise<unknown> => {
-		const response = { data: body, status, statusText: '', headers: {}, config };
-
-		if ( config.validateStatus( status ) ) {
-			return Promise.resolve( response );
-		}
-
-		return Promise.reject( Object.assign(
-			new Error( `Request failed with status code ${ status }` ),
-			{ response, config, isAxiosError: true },
-		) );
-	};
-
 	return new RestSubjectRepository(
 		'/rest.php',
-		httpClient,
+		productionClientAnswering( status, body ),
 		{} as SubjectDeserializer,
 		{} as SchemaDeserializer,
 	);

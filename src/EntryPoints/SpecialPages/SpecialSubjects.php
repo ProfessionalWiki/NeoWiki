@@ -28,14 +28,8 @@ class SpecialSubjects extends SpecialPage {
 		parent::execute( $subPage );
 		$this->addHelpLink( DocumentationUrl::Subjects->value, true );
 
-		$extension = NeoWikiExtension::getInstance();
 		$out = $this->getOutput();
-		$extension->newFrontendModuleLoader()->load( $out, $this->getSkin() );
-
-		if ( !$extension->isSubjectListAvailable() ) {
-			$out->addHTML( Html::noticeBox( $this->msg( 'neowiki-subjects-unavailable' )->escaped(), '' ) );
-			return;
-		}
+		NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $out, $this->getSkin() );
 
 		$attributes = [ 'id' => 'ext-neowiki-subjects' ];
 

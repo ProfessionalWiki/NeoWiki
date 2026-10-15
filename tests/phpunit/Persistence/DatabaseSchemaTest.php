@@ -100,6 +100,12 @@ class DatabaseSchemaTest extends MediaWikiIntegrationTestCase {
 		yield 'subject page, mysql' => [ 'neowiki_subject_page', 'mysql' ];
 		yield 'subject page, sqlite' => [ 'neowiki_subject_page', 'sqlite' ];
 		yield 'subject page, postgres' => [ 'neowiki_subject_page', 'postgres' ];
+		yield 'subject, mysql' => [ 'neowiki_subject', 'mysql' ];
+		yield 'subject, sqlite' => [ 'neowiki_subject', 'sqlite' ];
+		yield 'subject, postgres' => [ 'neowiki_subject', 'postgres' ];
+		yield 'relation, mysql' => [ 'neowiki_relation', 'mysql' ];
+		yield 'relation, sqlite' => [ 'neowiki_relation', 'sqlite' ];
+		yield 'relation, postgres' => [ 'neowiki_relation', 'postgres' ];
 	}
 
 	public function databaseTypeProvider(): iterable {

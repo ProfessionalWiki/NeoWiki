@@ -6,6 +6,7 @@ import { Service } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { createI18nMock, findNextPageButton, setupMwMock } from '../../VueTestHelpers.ts';
 import type { SubjectSummaries, SubjectSummary, SubjectSummaryQuery } from '@/application/SubjectSummaryLookup.ts';
+import { SubjectSummarySearchTimeoutError } from '@/application/SubjectSummarySearchTimeoutError.ts';
 
 function summary( id: string, overrides: Partial<SubjectSummary> = {} ): SubjectSummary {
 	return {
@@ -278,6 +279,60 @@ describe( 'SubjectsTable', () => {
 		await flushPromises();
 
 		expect( wrapper.text() ).toContain( 'neowiki-subjects-load-error' );
+	} );
+
+	it( 'suggests choosing a Schema when a search of every Schema takes too long', async () => {
+		const wrapper = mountTable();
+		await flushPromises();
+		getSubjectSummaries.mockRejectedValue( new SubjectSummarySearchTimeoutError() );
+
+		await searchFor( wrapper, 'zx' );
+
+		expect( wrapper.find( 'tbody' ).text() ).toBe( 'neowiki-subjects-search-timeout' );
+	} );
+
+	it( 'says only that the search took too long when a Schema is chosen', async () => {
+		const wrapper = mountTable();
+		await flushPromises();
+		findSchemaMenu( wrapper ).vm.$emit( 'update:selected', 'Computer' );
+		await flushPromises();
+		getSubjectSummaries.mockRejectedValue( new SubjectSummarySearchTimeoutError() );
+
+		await searchFor( wrapper, 'zx' );
+
+		expect( wrapper.find( 'tbody' ).text() ).toBe( 'neowiki-subjects-search-timeout-schema' );
+	} );
+
+	it( 'stops saying the search took too long once a later search answers', async () => {
+		const wrapper = mountTable();
+		await flushPromises();
+		getSubjectSummaries
+			.mockRejectedValueOnce( new SubjectSummarySearchTimeoutError() )
+			.mockResolvedValueOnce( { subjects: [], nextCursor: null } );
+		await searchFor( wrapper, 'z' );
+
+		await searchFor( wrapper, 'zx' );
+
+		expect( wrapper.find( 'tbody' ).text() ).toBe( 'neowiki-subjects-no-matchzx' );
+	} );
+
+	it( 'ignores a search that took too long after a newer one answered', async () => {
+		let failFirstSearch: ( error: Error ) => void = () => undefined;
+		const wrapper = mountTable();
+		await flushPromises();
+		getSubjectSummaries
+			.mockReturnValueOnce( new Promise( ( _resolve, reject ) => {
+				failFirstSearch = reject;
+			} ) )
+			.mockResolvedValueOnce( { subjects: [ summary( 's1demo1aaaaaaa2', { displayName: 'Newer' } ) ], nextCursor: null } );
+		await searchFor( wrapper, 'n' );
+		await searchFor( wrapper, 'ne' );
+
+		failFirstSearch( new SubjectSummarySearchTimeoutError() );
+		await flushPromises();
+
+		expect( wrapper.text() ).toContain( 'Newer' );
+		expect( wrapper.text() ).not.toContain( 'neowiki-subjects-search-timeout' );
 	} );
 
 	it( 'lists only the fixed Schema, with no menu, Schema column or Create button', async () => {

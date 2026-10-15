@@ -12,8 +12,8 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 
 /**
- * Adds the Host Subject to the summaries of Dependent Subjects nobody named, read from their pages: a listing from a
- * Graph Store does not hold it.
+ * Adds the Host Subject to the summaries of Dependent Subjects nobody named, read from their pages: a Subject listing
+ * does not hold it.
  */
 readonly class SubjectSummaryHostSubjects {
 

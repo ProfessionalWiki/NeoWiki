@@ -64,7 +64,6 @@
 		</CdxTable>
 
 		<SubjectsTable
-			v-if="subjectListAvailable"
 			class="ext-neowiki-schema-display__subjects"
 			:fixed-schema="currentSchema.getName()"
 		/>
@@ -97,7 +96,6 @@ import type { Icon } from '@wikimedia/codex-icons';
 import SchemaDisplayHeader from './SchemaDisplayHeader.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import SubjectsTable from '@/components/SubjectsTable/SubjectsTable.vue';
-import { isSubjectListAvailable } from '@/subjectListAvailability.ts';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
@@ -120,8 +118,6 @@ const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPer
 onMounted( () => {
 	checkCreateSubjectPagePermission();
 } );
-
-const subjectListAvailable = isSubjectListAvailable();
 
 const isEditorOpen = shallowRef( false );
 const currentSchema = shallowRef<Schema>( props.schema );

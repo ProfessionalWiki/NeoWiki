@@ -340,7 +340,7 @@ class GraphRebuildExecutor {
 		}
 
 		try {
-			$outcome = $pageRebuilder->rebuild( $title );
+			$outcome = $pageRebuilder->rebuildFromReplica( $title );
 		} catch ( TimeoutException | DBError $e ) {
 			throw $e;
 		} catch ( Exception $e ) {

@@ -3,6 +3,7 @@ import type {
 } from '@/application/SubjectSummaryLookup';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import { hostSubjectFromJson, type HostSubjectJson } from '@/persistence/hostSubjectFromJson';
+import { SubjectSummarySearchTimeoutError } from '@/application/SubjectSummarySearchTimeoutError';
 
 type SubjectSummaryJson = Omit<SubjectSummary, 'hostSubject'> & { hostSubject?: HostSubjectJson };
 
@@ -37,7 +38,9 @@ export class RestSubjectSummaryLookup implements SubjectSummaryLookup {
 
 		const response = await this.httpClient.get(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subjects?${ params.toString() }`,
-		);
+		).catch( ( error: unknown ) => {
+			throw isSearchTimeout( error ) ? new SubjectSummarySearchTimeoutError() : error;
+		} );
 
 		if ( !response.ok ) {
 			throw new Error( 'Error fetching subject summaries' );
@@ -60,4 +63,11 @@ export class RestSubjectSummaryLookup implements SubjectSummaryLookup {
 		return ( ( await response.json() ).subjects as SubjectSummaryJson[] ).map( summaryFromJson );
 	}
 
+}
+
+/**
+ * The production client rejects the 503 a search timeout is answered with, so the timeout is read from the rejection.
+ */
+function isSearchTimeout( error: unknown ): boolean {
+	return ( error as { response?: { data?: { errorType?: unknown } } } )?.response?.data?.errorType === 'searchTimeout';
 }

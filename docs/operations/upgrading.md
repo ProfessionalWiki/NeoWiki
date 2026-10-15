@@ -70,6 +70,12 @@ length of the run.
 If your Subjects predate the optional Subject label, run
 [clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before that rebuild.
 
+## New database tables, October 2026
+
+Special:Subjects, relation-target suggestions, "Referenced by" and the Subject counts now read two new tables, and
+work without Neo4j. `update.php` creates and fills them. After upgrading through MediaWiki's web updater, which does not
+fill them, [rebuild the subject indexes](maintenance.md#rebuilding-the-subject-indexes).
+
 ## Demo Attendance Subjects now dependent, October 2026
 
 The demo's `Schema:Attendance` now declares its Subjects [dependent](../glossary.md#dependent-subject), which a Schema

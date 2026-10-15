@@ -11,11 +11,11 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Permissions\Authority;
+use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Title\Title;
-use ProfessionalWiki\NeoWiki\Application\NullReferencingSubjectLookup;
-use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphBackendNotConfiguredException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
@@ -25,10 +25,12 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetReferencingSubjectsApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectLabelsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jReferencingSubjectLookup;
-use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jSubjectLabelLookup;
+use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedRawQueryAuthorizer;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use TestLogger;
 
@@ -43,6 +45,7 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 	use HandlerTestTrait;
 
 	private const SUBJECT_ID = 's1zz1111111azz1';
+	private const REFERRING_SUBJECT_ID = 's1zz1111111azz2';
 	private const PROPERTY = 'Motto';
 	private const VALUE = 'Beyond the graph';
 
@@ -201,58 +204,74 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'only one of the Neo4j read/write Bolt URLs', self::loggedText( $logger ) );
 	}
 
-	public function testRelationTargetSuggestionsAreEmptyWithoutBackend(): void {
-		$suggestions = $this->runWithoutGraphBackend(
-			static fn() => NeoWikiExtension::getInstance()->getSubjectLabelLookup()
-				->getSubjectLabelsMatching( 'anything', 10, [ TestSubject::DEFAULT_SCHEMA_ID ] )
-		);
+	public function testRelationTargetsAreSuggestedWithoutBackend(): void {
+		$suggestions = $this->runWithoutGraphBackend( function (): array {
+			$this->createPageWithMottoSubject( 'NoBackendSuggestedPage' );
 
-		$this->assertSame( [], $suggestions );
-	}
-
-	public function testSubjectLabelLookupIsNullObjectWithoutBackend(): void {
-		$lookup = $this->runWithoutGraphBackend(
-			static fn() => NeoWikiExtension::getInstance()->getSubjectLabelLookup()
-		);
-
-		$this->assertInstanceOf( NullSubjectLabelLookup::class, $lookup );
-	}
-
-	public function testSubjectLabelLookupIsNeo4jWhenConfigured(): void {
-		$this->assertInstanceOf(
-			Neo4jSubjectLabelLookup::class,
-			NeoWikiExtension::getInstance()->getSubjectLabelLookup()
-		);
-	}
-
-	public function testReferencingSubjectsAreEmptyWithoutBackend(): void {
-		$referencing = $this->runWithoutGraphBackend( function (): array {
-			$this->createPageWithMottoSubject( 'NoBackendReferencedPage' );
-
-			return json_decode( $this->executeHandler(
-				new GetReferencingSubjectsApi(),
-				new RequestData( [
-					'method' => 'GET',
-					'pathParams' => [ 'subjectId' => self::SUBJECT_ID ],
-				] )
-			)->getBody()->getContents(), true );
+			return $this->getJson(
+				new GetSubjectLabelsApi(),
+				[ 'queryParams' => [ 'search' => 'Test sub' ] ]
+			);
 		} );
 
-		$this->assertSame( [ 'referencingSubjects' => [], 'truncated' => false ], $referencing );
+		$this->assertSame( [ self::SUBJECT_ID ], array_column( $suggestions, 'id' ) );
 	}
 
-	public function testReferencingSubjectLookupIsNullObjectWithoutBackend(): void {
-		$lookup = $this->runWithoutGraphBackend(
-			static fn() => NeoWikiExtension::getInstance()->getReferencingSubjectLookup()
+	public function testReferencingSubjectsAreFoundWithoutBackend(): void {
+		$referencing = $this->runWithoutGraphBackend( function (): array {
+			$this->createPageWithMottoSubject( 'NoBackendReferencedPage' );
+			$this->createPageWithSubjects( 'NoBackendReferringPage', TestSubject::build(
+				id: self::REFERRING_SUBJECT_ID,
+				statements: new StatementList( [
+					TestStatement::buildRelation( 'Inspired by', [ TestRelation::build( targetId: self::SUBJECT_ID ) ] ),
+				] )
+			) );
+
+			return $this->getJson(
+				new GetReferencingSubjectsApi(),
+				[ 'pathParams' => [ 'subjectId' => self::SUBJECT_ID ] ]
+			);
+		} );
+
+		$this->assertSame(
+			[ self::REFERRING_SUBJECT_ID ],
+			array_map( static fn ( array $row ): string => $row['subject']['id'], $referencing['referencingSubjects'] )
 		);
-
-		$this->assertInstanceOf( NullReferencingSubjectLookup::class, $lookup );
 	}
 
-	public function testReferencingSubjectLookupIsNeo4jWhenConfigured(): void {
-		$this->assertInstanceOf(
-			Neo4jReferencingSubjectLookup::class,
-			NeoWikiExtension::getInstance()->getReferencingSubjectLookup()
+	public function testSubjectsAreListedWithoutBackend(): void {
+		$listing = $this->runWithoutGraphBackend( function (): array {
+			$this->createPageWithMottoSubject( 'NoBackendListedPage' );
+
+			return $this->getJson( NeoWikiExtension::newGetSubjectSummariesApi(), [] );
+		} );
+
+		$this->assertSame( [ self::SUBJECT_ID ], array_column( $listing['subjects'], 'id' ) );
+	}
+
+	public function testSubjectsAreCountedWithoutBackend(): void {
+		$counts = $this->runWithoutGraphBackend( function (): array {
+			$this->createPageWithMottoSubject( 'NoBackendCountedPage' );
+
+			return $this->getJson(
+				NeoWikiExtension::newGetSubjectCountsApi(),
+				[],
+				$this->mockAnonAuthorityWithPermissions( [ AuthorityBasedRawQueryAuthorizer::RIGHT ] )
+			);
+		} );
+
+		$this->assertSame( [ TestSubject::DEFAULT_SCHEMA_ID => 1 ], $counts['counts'] );
+	}
+
+	/**
+	 * @param array<string, mixed> $request
+	 * @return array<mixed>
+	 */
+	private function getJson( Handler $handler, array $request, ?Authority $authority = null ): array {
+		return json_decode(
+			$this->executeHandler( $handler, new RequestData( [ 'method' => 'GET' ] + $request ), authority: $authority )
+				->getBody()->getContents(),
+			true
 		);
 	}
 

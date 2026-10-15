@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
-use Laudis\Neo4j\Contracts\ClientInterface;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\HttpException;
@@ -12,12 +11,14 @@ use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Response;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetReferencingSubjectsApi;
-use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -41,8 +42,6 @@ class GetReferencingSubjectsApiTest extends NeoWikiIntegrationTestCase {
 	private int $targetPageId;
 
 	public function setUp(): void {
-		$this->setUpNeo4j();
-
 		$this->createSchema(
 			self::SCHEMA,
 			<<<JSON
@@ -172,20 +171,17 @@ JSON
 	}
 
 	/**
-	 * The graph keeps the edge of a relation renamed in the Schema (#1135), and holds edges a page
-	 * whose projection failed no longer matches. Statements decide, so neither can be shown.
+	 * A write NeoWiki is not told about, such as a history merge, can take a relation away that the index keeps.
 	 */
 	public function testSubjectWhoseStatementsNoLongerPointHereIsOmitted(): void {
-		$this->createPageWithSubjects(
-			'GRSApiTest_Stale',
-			mainSubject: TestSubject::build(
-				id: 'sTestGRS1111116',
-				label: new SubjectLabel( 'Stale' ),
-				schemaName: new SchemaName( self::SCHEMA )
-			)
-		);
+		$this->createReferringPage( 'GRSApiTest_Stale', 'sTestGRS1111116', 'Stale' );
 
-		$this->plantRawEdge( 'sTestGRS1111116' );
+		$this->createPageWithoutTellingNeoWiki(
+			'GRSApiTest_Stale',
+			SubjectContent::newFromData(
+				new PageSubjects( $this->referrer( 'sTestGRS1111116', 'Stale', [] ), new SubjectMap() )
+			)->getText()
+		);
 
 		$this->assertSame( [], $this->requestReferencingSubjects()['referencingSubjects'] );
 	}
@@ -199,10 +195,6 @@ JSON
 		);
 	}
 
-	/**
-	 * Until the next rebuild the graph still holds the edges of a page that stopped publishing, so
-	 * what drops the row is reading the referrer's Statements from what its page publishes.
-	 */
 	public function testReferringSubjectOnAPageThatPublishesNothingIsOmitted(): void {
 		$pageId = $this->createReferringPage( 'GRSApiTest_Unpublished', 'sTestGRS1111125', 'Anvil' )->getPageId();
 
@@ -263,10 +255,6 @@ JSON
 		);
 	}
 
-	/**
-	 * Truncation is decided after gating, so the flag describes what the caller could have seen
-	 * rather than how many rows the graph held.
-	 */
 	public function testUnreadableSubjectsDoNotCountTowardsTruncation(): void {
 		$this->createReferringPage( 'GRSApiTest_Shown', 'sTestGRS1111123', 'Anvil' );
 		$this->createReferringPage( 'GRSApiTest_Unreadable', 'sTestGRS1111124', 'Bellows' );
@@ -352,18 +340,6 @@ JSON
 		);
 	}
 
-	/**
-	 * An edge the graph holds while the Subject's Statements hold nothing of the kind: what a
-	 * renamed relation type, and a projection that ran against older content, leave behind.
-	 */
-	private function plantRawEdge( string $sourceId ): void {
-		$this->getClient()->run(
-			'MATCH (source:Subject { id: $sourceId }), (target:Subject { id: $targetId })
-			 CREATE (source)-[:Gone { id: "rTestGRS111111" }]->(target)',
-			[ 'sourceId' => $sourceId, 'targetId' => self::TARGET_ID ]
-		);
-	}
-
 	private function requestReferencingSubjects(
 		string $subjectId = self::TARGET_ID,
 		?int $limit = null,
@@ -400,10 +376,6 @@ JSON
 			static fn ( array $referencing ): string => $referencing['subject']['id'],
 			$body['referencingSubjects']
 		);
-	}
-
-	private function getClient(): ClientInterface {
-		return NeoWikiExtension::getInstance()->getNeo4jClient();
 	}
 
 }
