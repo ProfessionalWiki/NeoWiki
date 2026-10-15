@@ -4,10 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\SpecialPages;
 
+use MediaWiki\Content\WikitextContent;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
@@ -20,6 +22,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 use SpecialPageExecutor;
 
 /**
@@ -41,6 +44,8 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	private const string ABSENT_ID = 's1demo8aaaaaab6';
 	private const string BIRTH_ID = 's1demo8aaaaaab7';
 	private const string RECORD_ID = 's1demo8aaaaaab8';
+	private const string OTHER_ID = 's1demo8aaaaaab9';
+	private const string PAGE_NAME = 'SpecialSubjectTest_Company';
 	private const string INVALID_ID_ERROR = '(neowiki-special-subject-invalid-id)';
 	private const string PAGE_DESCRIPTION = '(neowiki-special-subject)';
 
@@ -108,6 +113,105 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 			SpecialPage::getTitleFor( 'Subjects' )->getFullURL(),
 			$this->executeWith( '' )->getRedirect()
 		);
+	}
+
+	public function testASubjectFirstWikiForwardsAMainSubjectToItsPage(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$this->createPageWithSubjects( self::PAGE_NAME, mainSubject: TestSubject::build( id: self::SUBJECT_ID ) );
+
+		$this->assertForwardsToThePage( $this->executeWith( self::SUBJECT_ID ) );
+	}
+
+	public function testASubjectFirstWikiForwardsAMainSubjectWhoseLatestRevisionIsPublished(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$latest = $this->createPageWithSubjects( self::PAGE_NAME, mainSubject: TestSubject::build( id: self::SUBJECT_ID ) );
+		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $latest ) );
+
+		$this->assertForwardsToThePage( $this->executeWith( self::SUBJECT_ID ) );
+	}
+
+	private function assertForwardsToThePage( OutputPage $out ): void {
+		$this->assertStringEndsWith( Title::newFromText( self::PAGE_NAME )->getLocalURL(), $out->getRedirect() );
+	}
+
+	/**
+	 * The page can get another Main Subject, after which a remembered forward would lead to the wrong one.
+	 */
+	public function testTheForwardIsTemporary(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$this->createPageWithSubjects( self::PAGE_NAME, mainSubject: TestSubject::build( id: self::SUBJECT_ID ) );
+
+		$this->assertSame( '302', $this->executeWith( self::SUBJECT_ID )->mRedirectCode );
+	}
+
+	public function testASubjectFirstWikiShowsASubjectThatIsNotItsPagesMainSubjectHere(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$this->createPageWithSubjects(
+			self::PAGE_NAME,
+			mainSubject: TestSubject::build( id: self::OTHER_ID ),
+			otherSubjects: new SubjectMap( TestSubject::build( id: self::SUBJECT_ID ) )
+		);
+
+		$this->assertShownHere( $this->executeWith( self::SUBJECT_ID ) );
+	}
+
+	/**
+	 * A page outside the content namespaces does not show its Subjects.
+	 */
+	public function testASubjectFirstWikiShowsTheMainSubjectOfAPageOutsideTheContentNamespacesHere(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$this->createPageWithSubjects( 'Help:' . self::PAGE_NAME, mainSubject: TestSubject::build( id: self::SUBJECT_ID ) );
+
+		$this->assertShownHere( $this->executeWith( self::SUBJECT_ID ) );
+	}
+
+	public function testASubjectFirstWikiShowsAMainSubjectHereWhenPagesDoNotShowTheirsAutomatically(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$this->overrideConfigValue( 'NeoWikiAutoRenderMainSubject', false );
+		$this->createPageWithSubjects( self::PAGE_NAME, mainSubject: TestSubject::build( id: self::SUBJECT_ID ) );
+
+		$this->assertShownHere( $this->executeWith( self::SUBJECT_ID ) );
+	}
+
+	/**
+	 * A link to a redirect leads to its target, which does not show the Subject.
+	 */
+	public function testASubjectFirstWikiShowsTheMainSubjectOfARedirectHere(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$this->createPageWithSubjects(
+			self::PAGE_NAME,
+			mainSubject: TestSubject::build( id: self::SUBJECT_ID ),
+			mainContent: new WikitextContent( '#REDIRECT [[Special:Subject/' . self::SUBJECT_ID . ']]' )
+		);
+
+		$this->assertShownHere( $this->executeWith( self::SUBJECT_ID ) );
+	}
+
+	/**
+	 * Readers see the revision the wiki publishes, and a page shows its Main Subject in full only on its
+	 * latest revision.
+	 */
+	public function testASubjectFirstWikiShowsAMainSubjectHereWhileItsPagePublishesAnOlderRevision(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$approved = $this->createPageWithSubjects( self::PAGE_NAME, mainSubject: TestSubject::build( id: self::SUBJECT_ID ) );
+		$this->changeSubjectsOfPage( self::PAGE_NAME, TestSubject::build( id: self::SUBJECT_ID, label: 'Draft' ) );
+		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $approved ) );
+
+		$this->assertShownHere( $this->executeWith( self::SUBJECT_ID ) );
+	}
+
+	/**
+	 * A page-first wiki shows a Main Subject on its page as an infobox, without what this page shows.
+	 */
+	public function testAPageFirstWikiShowsAMainSubjectHere(): void {
+		$this->createPageWithSubjects( self::PAGE_NAME, mainSubject: TestSubject::build( id: self::SUBJECT_ID ) );
+
+		$this->assertShownHere( $this->executeWith( self::SUBJECT_ID ) );
+	}
+
+	private function assertShownHere( OutputPage $out ): void {
+		$this->assertSame( '', $out->getRedirect() );
+		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="' . self::SUBJECT_ID . '"', $out->getHTML() );
 	}
 
 	/**
@@ -267,8 +371,11 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	/**
 	 * Naming a Subject in the title would tell a reader it exists, which the whole page must not do for
 	 * one on a page they may not read: that answers exactly as an id the wiki never minted (#1046).
+	 *
+	 * @dataProvider wikiModeProvider
 	 */
-	public function testASubjectOnAnUnreadablePageRendersExactlyLikeAnAbsentOne(): void {
+	public function testASubjectOnAnUnreadablePageRendersExactlyLikeAnAbsentOne( bool $subjectFirst ): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', $subjectFirst );
 		$this->createPageWithSubjects(
 			'SpecialSubjectTest_Restricted',
 			mainSubject: TestSubject::build( id: self::SUBJECT_ID, label: 'Restricted Inc' )
@@ -280,11 +387,17 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( self::PAGE_DESCRIPTION, $denied->getPageTitle() );
 		$this->assertSame( $absent->getPageTitle(), $denied->getPageTitle() );
+		$this->assertSame( $absent->getRedirect(), $denied->getRedirect() );
 		$this->assertSame(
 			str_replace( self::ABSENT_ID, self::SUBJECT_ID, $absent->getHTML() ),
 			$denied->getHTML(),
 			'Only the Subject id echoed into the mount point may differ.'
 		);
+	}
+
+	public static function wikiModeProvider(): iterable {
+		yield 'page-first' => [ false ];
+		yield 'subject-first' => [ true ];
 	}
 
 	/**

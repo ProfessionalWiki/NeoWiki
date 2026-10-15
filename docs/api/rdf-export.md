@@ -171,12 +171,13 @@ the operator's own routing concern.
 
 ### Finding these exports
 
-Each Subject row on a page's Data tab (`action=subjects`) and on Special:Subject carries **JSON** and **RDF** buttons,
-and the Data tab carries **All as JSON** and **All as RDF** for the whole page once it holds at least one Subject. The
-RDF buttons offer Turtle and TriG in `native`, and in the projection of each Mapping that the viewing user may read and
-that maps the Schema of an exported Subject. A row's buttons target that Subject's [JSON](../api/rest-api.md#subjects)
-and [RDF](#subject) endpoints; the page's buttons target its [Subjects JSON](../api/rest-api.md#pages-and-subjects)
-and [RDF](#page). Each Subject row also shows that Subject's `neo-subj:` IRI with a control that copies it.
+Each Subject row on a page's Data tab (`action=subjects`), on Special:Subject and on a page showing its Main Subject
+in full carries **JSON** and **RDF** buttons, and the Data tab carries **All as JSON** and **All as RDF** for the whole
+page once it holds at least one Subject. The RDF buttons offer Turtle and TriG in `native`, and in the projection of
+each Mapping that the viewing user may read and that maps the Schema of an exported Subject. A row's buttons target that
+Subject's [JSON](../api/rest-api.md#subjects) and [RDF](#subject) endpoints; the page's buttons target its [Subjects
+JSON](../api/rest-api.md#pages-and-subjects) and [RDF](#page). Each Subject row also shows that Subject's `neo-subj:`
+IRI with a control that copies it.
 
 Content pages that exist also emit `<link rel="alternate">` autodiscovery tags (Turtle and TriG, native
 projection) in the HTML head, on a wiki with a graph database configured.

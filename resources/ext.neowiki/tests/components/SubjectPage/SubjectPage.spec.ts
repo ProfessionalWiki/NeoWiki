@@ -30,6 +30,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { newSchema, newSubject, unresolvedPage } from '@/TestHelpers.ts';
+import { RelationTargetCreationKey } from '@/components/Value/ValueDisplayContract.ts';
 
 enableAutoUnmount( afterEach );
 
@@ -172,18 +173,26 @@ function silenceConsoleErrors(): MockInstance {
 // Taken before any test stands in for the extension singleton.
 const componentRegistry = NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry();
 
+interface HostOptions {
+	/** Mounted on the page that stores the Subject, as NeoWikiApp mounts it, rather than on Special:Subject. */
+	onHostingPage?: boolean;
+	/** What the host provides around the page. */
+	provide?: Record<string | symbol, unknown>;
+}
+
 /**
  * With renderValues, the page is mounted whole, so a relation shows as a reader sees it.
  */
-function mountPage( subjectFirst = false, renderValues = false ): VueWrapper {
+function mountPage( subjectFirst = false, renderValues = false, host: HostOptions = {} ): VueWrapper {
 	setupMwMock( {
-		functions: [ 'config', 'msg', 'message', 'notify', 'util' ],
+		functions: [ 'config', 'msg', 'message', 'notify', 'storage', 'util' ],
 		// Core's own separator, which the row captions join property names with.
 		messages: { 'comma-separator': ', ' },
 		config: {
 			wgNeoWikiMappings: MAPPINGS,
 			wgNeoWikiSubjectIriBase: IRI_BASE,
 			wgNeoWikiSubjectFirst: subjectFirst,
+			wgPageName: PAGE_NAME,
 		},
 	} );
 
@@ -191,7 +200,7 @@ function mountPage( subjectFirst = false, renderValues = false ): VueWrapper {
 	setActivePinia( pinia );
 
 	return ( renderValues ? mount : shallowMount )( SubjectPage, {
-		props: { subjectId: SUBJECT_ID },
+		props: { subjectId: SUBJECT_ID, onHostingPage: host.onHostingPage ?? false },
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
@@ -215,13 +224,14 @@ function mountPage( subjectFirst = false, renderValues = false ): VueWrapper {
 				},
 				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
 				[ Service.ComponentRegistry ]: componentRegistry,
+				...host.provide,
 			},
 		},
 	} );
 }
 
-async function mountLoadedPage( subjectFirst = false, renderValues = false ): Promise<VueWrapper> {
-	const wrapper = mountPage( subjectFirst, renderValues );
+async function mountLoadedPage( subjectFirst = false, renderValues = false, host: HostOptions = {} ): Promise<VueWrapper> {
+	const wrapper = mountPage( subjectFirst, renderValues, host );
 
 	// onMounted awaits the Subject read, then the Schema reads, then the permission check.
 	await flushPromises();
@@ -1291,6 +1301,71 @@ describe( 'SubjectPage', () => {
 			await flushPromises();
 
 			expect( wrapper.find( REFERENCED_ROW ).exists() ).toBe( false );
+		} );
+
+	} );
+
+	describe( 'on the page that stores the Subject', () => {
+
+		beforeEach( () => {
+			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [ referencedSubject ] ) );
+		} );
+
+		it( 'names no page in the footer of the Subject it shows, which is that page', async () => {
+			const wrapper = await mountLoadedPage( false, false, { onHostingPage: true } );
+
+			expect( wrapper.find( `${ REQUESTED_ROW } ${ PAGE_LINK }` ).exists() ).toBe( false );
+			expect( wrapper.find( `${ REFERENCED_ROW } ${ PAGE_LINK }` ).exists() ).toBe( true );
+		} );
+
+		it( 'has no Subject creator of its own, the page having one', async () => {
+			mayCreateSubjectPage = true;
+
+			const wrapper = await mountLoadedPage( false, false, { onHostingPage: true } );
+
+			expect( wrapper.findComponent( SubjectCreatorDialog ).exists() ).toBe( false );
+		} );
+
+		it( 'opens the page\'s Subject creator on the target of a red link where the page allows it', async () => {
+			getSchemaMock.mockResolvedValue( newSchema( {
+				title: 'Company',
+				properties: new PropertyDefinitionList( [
+					newRelationProperty( { name: 'Made in', targetSchemas: [ 'Product' ] } ),
+				] ),
+			} ) );
+			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle(
+				[],
+				subject( { id: SUBJECT_ID, label: 'ACME Inc', relatesTo: REFERENCED_ID } ),
+				[ new SubjectId( REFERENCED_ID ) ],
+			) );
+			const wrapper = await mountLoadedPage( false, true, {
+				onHostingPage: true,
+				provide: { [ RelationTargetCreationKey as symbol ]: ref( true ) },
+			} );
+
+			await wrapper.find( `${ REQUESTED_ROW } a.new` ).trigger( 'click' );
+
+			expect( useSubjectStore().subjectCreatorTarget )
+				.toEqual( { subjectId: new SubjectId( REFERENCED_ID ), schemaNames: [ 'Product' ] } );
+		} );
+
+		it( 'shows the page\'s current revision once the Subject it shows is deleted, with the notice still to come', async () => {
+			canDeleteSubjectRef.value = true;
+			const wrapper = await mountLoadedPage( false, false, { onHostingPage: true } );
+			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
+			// Restored by re-stubbing, as above.
+			const realLocation = window.location;
+			vi.stubGlobal( 'location', { href: '/w/index.php?title=ACME_Inc&oldid=7' } );
+
+			try {
+				await confirmDelete( wrapper, wrapper.find( `${ REQUESTED_ROW } ${ DELETE_CONTROL }` ) );
+
+				expect( location.href ).toBe( '/wiki/' + PAGE_NAME );
+			} finally {
+				vi.stubGlobal( 'location', realLocation );
+			}
+
+			expect( mw.storage.session.set ).toHaveBeenCalledWith( 'neowiki-managesubjects-delete-success', expect.anything() );
 		} );
 
 	} );

@@ -5,11 +5,14 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages;
 
 use MediaWiki\Html\Html;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectSlotReader;
 use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectLabelHtml;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectNameMessage;
@@ -40,6 +43,13 @@ class SpecialSubject extends SpecialPage {
 		$attributes = [ 'id' => 'ext-neowiki-subject' ];
 
 		if ( $subjectId !== null ) {
+			$pageShowingSubject = $this->pageShowingSubject( $extension, $subjectId );
+
+			if ( $pageShowingSubject !== null ) {
+				$out->redirect( $pageShowingSubject->getFullURL() );
+				return;
+			}
+
 			$this->headBySubject( $out, $extension, $subjectId );
 
 			// What the Subject's own view reads; it loads every Mapping the viewer may read.
@@ -57,6 +67,42 @@ class SpecialSubject extends SpecialPage {
 		// on a page this user may not read answer alike (#1046).
 		$extension->newFrontendModuleLoader()->load( $out, $this->getSkin() );
 		$out->addHTML( Html::element( 'div', $attributes ) );
+	}
+
+	/**
+	 * The page that shows the Subject in full as this one does, beside the page's own history and tabs:
+	 * on a subject-first wiki, a content page does so for its Main Subject while automatic rendering is
+	 * on. Null for any other Subject, and for a page the reader may not read.
+	 */
+	private function pageShowingSubject( NeoWikiExtension $extension, SubjectId $subjectId ): ?Title {
+		if ( !$extension->isSubjectFirst() || !$extension->shouldAutoRenderMainSubject() ) {
+			return null;
+		}
+
+		$page = $extension->newSubjectHostingPageResolver( $this->getAuthority() )->resolveReadableHostingPage( $subjectId );
+		$title = $page === null ? null : Title::newFromText( $page->getTitle() );
+
+		if ( $title === null
+			|| $title->isRedirect()
+			|| !MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $title->getNamespace() )
+			|| !$this->isMainSubjectOfPublishedLatestRevision( $extension, $title, $subjectId )
+		) {
+			return null;
+		}
+
+		return $title;
+	}
+
+	/**
+	 * Readers see the revision the wiki publishes, and a page shows its Main Subject in full only on its
+	 * latest revision.
+	 */
+	private function isMainSubjectOfPublishedLatestRevision( NeoWikiExtension $extension, Title $title, SubjectId $subjectId ): bool {
+		$latest = MediaWikiServices::getInstance()->getRevisionLookup()->getRevisionByTitle( $title );
+
+		return $latest !== null
+			&& $extension->getRevisionPolicy()->publishedRevision( $latest )?->getId() === $latest->getId()
+			&& SubjectSlotReader::read( $latest )?->getPageSubjects()->isMainSubject( $subjectId ) === true;
 	}
 
 	/**

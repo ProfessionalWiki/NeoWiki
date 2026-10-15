@@ -82,6 +82,13 @@ class NeoWikiHooks {
 
 	private const SEARCH_UPDATE_BEFORE_1_44 = 'MediaWiki\\Deferred\\SearchUpdate';
 
+	/**
+	 * Marks a page whose HTML holds the mount MainSubjectParserFunction places, as extension data on its
+	 * ParserOutput and as a property of the OutputPage showing it. Such a page gets no automatic rendering
+	 * of its Main Subject.
+	 */
+	private const string PLACES_MAIN_SUBJECT = 'neowiki-places-main-subject';
+
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
 		$carriesCreateSubjectButton = self::carriesCreateSubjectButton( $out );
 
@@ -133,8 +140,18 @@ class NeoWikiHooks {
 
 		self::headByMainSubject( $out, $builder, $revisionId );
 
+		if ( $out->getProperty( self::PLACES_MAIN_SUBJECT ) === true ) {
+			self::addSubjectUiConfig( $out );
+			return;
+		}
+
 		// On a diff, the Main Subject is shown atop the revision below the diff instead.
 		if ( !$extension->shouldAutoRenderMainSubject() || $out->getRequest()->getCheck( 'diff' ) ) {
+			return;
+		}
+
+		if ( $extension->isSubjectFirst() && self::pageIsLatestRevision( $out ) ) {
+			self::appendMainSubjectInFull( $out, $builder );
 			return;
 		}
 
@@ -142,6 +159,21 @@ class NeoWikiHooks {
 		$out->clearHTML();
 		$out->addHTML( $builder->mainSubjectHtml( $out->getTitle(), $revisionId ) );
 		$out->addHTML( $html );
+	}
+
+	private static function appendMainSubjectInFull( OutputPage $out, ViewHtmlBuilder $builder ): void {
+		$html = $builder->mainSubjectInFullHtml( $out->getTitle() );
+
+		if ( $html === '' ) {
+			return;
+		}
+
+		self::addSubjectUiConfig( $out );
+		$out->addHTML( $html );
+	}
+
+	private static function addSubjectUiConfig( OutputPage $out ): void {
+		$out->addJsConfigVars( NeoWikiExtension::getInstance()->getSubjectUiJsConfigVars( $out->getAuthority() ) );
 	}
 
 	/**
@@ -209,12 +241,17 @@ class NeoWikiHooks {
 	public static function onDifferenceEngineRenderRevisionAddParserOutput(
 		$differenceEngine,
 		OutputPage $out,
-		$parserOutput,
+		ParserOutput $parserOutput,
 		$wikiPage
 	): void {
 		$extension = NeoWikiExtension::getInstance();
 
 		if ( !self::isContentPage( $out ) || !$extension->shouldAutoRenderMainSubject() ) {
+			return;
+		}
+
+		// The revision shows its Main Subject where it places it, as an infobox on a diff.
+		if ( $parserOutput->getExtensionData( self::PLACES_MAIN_SUBJECT ) === true ) {
 			return;
 		}
 
@@ -522,6 +559,14 @@ class NeoWikiHooks {
 		);
 
 		$parser->setFunctionHook(
+			'main_subject',
+			static function ( Parser $parser, string ...$args ): string|array {
+				$parserFunction = new MainSubjectParserFunction( NeoWikiExtension::getInstance()->newPageSubjectsLookup() );
+				return $parserFunction->handle( $parser, ...$args );
+			}
+		);
+
+		$parser->setFunctionHook(
 			'neowiki_value',
 			static function ( Parser $parser, string ...$args ): string|array {
 				$parserFunction = new NeoWikiValueParserFunction(
@@ -543,6 +588,22 @@ class NeoWikiHooks {
 				return $parserFunction->handle( $parser, ...$args );
 			}
 		);
+	}
+
+	/**
+	 * Only a mount that reached the HTML counts: a condition or a Lua module can discard what the parser
+	 * function returned.
+	 */
+	public static function onParserAfterTidy( Parser $parser, string &$text ): void {
+		if ( ViewHtmlBuilder::containsMainSubjectInFull( $text ) ) {
+			$parser->getOutput()->setExtensionData( self::PLACES_MAIN_SUBJECT, true );
+		}
+	}
+
+	public static function onOutputPageParserOutput( OutputPage $out, ParserOutput $parserOutput ): void {
+		if ( $parserOutput->getExtensionData( self::PLACES_MAIN_SUBJECT ) === true ) {
+			$out->setProperty( self::PLACES_MAIN_SUBJECT, true );
+		}
 	}
 
 	/**

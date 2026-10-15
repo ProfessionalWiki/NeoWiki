@@ -38,6 +38,32 @@ class ViewHtmlBuilder {
 		return self::viewPlaceholderHtml( $subject->getId()->text );
 	}
 
+	public function mainSubjectInFullHtml( Title $title ): string {
+		$subject = $this->getPageSubjects( $title, null )?->getMainSubject();
+
+		if ( $subject === null ) {
+			return '';
+		}
+
+		return self::mainSubjectInFullPlaceholderHtml( $subject->getId()->text );
+	}
+
+	public static function mainSubjectInFullPlaceholderHtml( string $subjectId ): string {
+		return Html::element( 'div', [
+			'id' => 'ext-neowiki-main-subject',
+			'class' => 'ext-neowiki-ui',
+			'data-mw-neowiki-subject-id' => $subjectId,
+		] );
+	}
+
+	/**
+	 * Whether the HTML holds a mount made by mainSubjectInFullPlaceholderHtml(). Wikitext cannot fake one,
+	 * since the Sanitizer drops data-mw-* attributes.
+	 */
+	public static function containsMainSubjectInFull( string $html ): bool {
+		return preg_match( '/<div id="ext-neowiki-main-subject"(?: [\w-]+="[^"]*")* data-mw-neowiki-subject-id="/', $html ) === 1;
+	}
+
 	public static function viewPlaceholderHtml( string $subjectId, ?string $layoutName = null ): string {
 		$attributes = [
 			'class' => 'ext-neowiki-view',

@@ -15,7 +15,7 @@
 					:expanded="expandedIds.has( subjectId.text )"
 					:can-edit="canEditSubject"
 					:can-delete="canDeleteSubject"
-					:page="hostingPage"
+					:page="onHostingPage ? null : hostingPage"
 					@toggle="toggleExpanded"
 					@edit="editSubject"
 					@delete="confirmDelete"
@@ -129,6 +129,7 @@ import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import type { ReferencingSubject, ReferencingSubjects } from '@/domain/SubjectRepository.ts';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError.ts';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
+import { setPendingNotification } from '@/presentation/PendingNotification.ts';
 import { referencingSubjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
 import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
@@ -139,9 +140,16 @@ import { useSubjectEditor } from '@/composables/useSubjectEditor.ts';
 import { RelationTargetCreationKey } from '@/components/Value/ValueDisplayContract.ts';
 import { isDependentSubject } from '@/domain/dependentSubjects.ts';
 
-const props = defineProps<{
+const props = withDefaults( defineProps<{
 	subjectId: string;
-}>();
+	/**
+	 * Shown on the page that stores the Subject rather than on Special:Subject. That page has the
+	 * Subject creator, and needs no link to itself.
+	 */
+	onHostingPage?: boolean;
+}>(), {
+	onHostingPage: false
+} );
 
 const subjectId = new SubjectId( props.subjectId );
 
@@ -157,7 +165,9 @@ const {
 	checkCreateSubjectPagePermission
 } = useSubjectPermissions();
 
-provide( RelationTargetCreationKey, canCreateSubjectPage );
+if ( !props.onHostingPage ) {
+	provide( RelationTargetCreationKey, canCreateSubjectPage );
+}
 
 // What the read returned, rather than a live read of the Subject registry: deleting a Subject takes
 // it out of that registry, and the registry's getter throws for an id it no longer holds. Every
@@ -464,6 +474,15 @@ async function executeDelete( comment: string ): Promise<void> {
 			target.getId(),
 			comment || mw.msg( 'neowiki-managesubjects-delete-summary-default' )
 		);
+
+		if ( deletedTheSubjectShown && props.onHostingPage ) {
+			// Not a reload: a permanent link to the latest revision would show that revision again,
+			// Subject and all.
+			setPendingNotification( 'neowiki-managesubjects-delete-success' );
+			window.location.href = mw.util.getUrl( String( mw.config.get( 'wgPageName' ) ) );
+			return;
+		}
+
 		mw.notify( mw.msg( 'neowiki-managesubjects-delete-success' ), { type: 'success' } );
 
 		if ( deletedTheSubjectShown ) {
@@ -486,7 +505,11 @@ async function executeDelete( comment: string ): Promise<void> {
 }
 
 onMounted( async () => {
-	await Promise.all( [ loadSubject(), checkCreateSubjectPagePermission() ] );
+	await Promise.all( [
+		loadSubject(),
+		// The page's own Subject creator asks this where there is one.
+		props.onHostingPage ? undefined : checkCreateSubjectPagePermission()
+	] );
 
 	// Editing rights are the hosting page's. Without one there is nothing to ask about, and the
 	// controls stay hidden.
@@ -501,6 +524,8 @@ onMounted( async () => {
 
 .ext-neowiki-subject-page {
 	max-width: 64rem;
+	// Thumbnails and infoboxes floated in the page text above would otherwise overlap it.
+	clear: both;
 
 	&__loading,
 	&__error {

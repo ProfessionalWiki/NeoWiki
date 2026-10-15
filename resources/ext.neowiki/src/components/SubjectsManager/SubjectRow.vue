@@ -282,7 +282,7 @@ const props = withDefaults( defineProps<{
 	showDragHandle?: boolean;
 	/**
 	 * The page the Subject is stored on, linked in the expanded footer. Null where naming it says
-	 * nothing — the Data tab is that page — or where the read resolved none.
+	 * nothing — the reader is on that page or its Data tab — or where the read resolved none.
 	 */
 	page?: PageIdentifiers | null;
 	/**

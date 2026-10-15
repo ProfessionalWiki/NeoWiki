@@ -79,6 +79,14 @@ class ViewHtmlBuilderTest extends TestCase {
 		$this->assertStringContainsString( 'data-mw-neowiki-subject-id="s1zz1111111azz3"', $html );
 	}
 
+	public function testShowsNoMainSubjectInFullForAPageWithoutOne(): void {
+		$builder = new ViewHtmlBuilder(
+			new InMemorySubjectContentRepository( new PageSubjects( null, new SubjectMap( TestSubject::build() ) ) )
+		);
+
+		$this->assertSame( '', $builder->mainSubjectInFullHtml( Title::newFromText( 'OnlyOtherSubjects' ) ) );
+	}
+
 	private function pageHoldingSubjectLabelled( string $label ): PageSubjects {
 		return new PageSubjects(
 			TestSubject::build( id: self::TITLING_SUBJECT_ID, label: $label ),
@@ -181,6 +189,35 @@ class ViewHtmlBuilderTest extends TestCase {
 		( new ViewHtmlBuilder( $repository ) )->subjectInPlaceOfPageTitle( Title::newFromText( 'Ada Lovelace' ), null );
 
 		$this->assertSame( 0, $repository->readCount );
+	}
+
+	public function testRecognizesTheMountForTheMainSubjectInFull(): void {
+		$this->assertTrue( ViewHtmlBuilder::containsMainSubjectInFull(
+			'<p>Text</p>' . ViewHtmlBuilder::mainSubjectInFullPlaceholderHtml( self::TITLING_SUBJECT_ID )
+		) );
+	}
+
+	public function testAViewIsNoMountForTheMainSubjectInFull(): void {
+		$this->assertFalse( ViewHtmlBuilder::containsMainSubjectInFull(
+			ViewHtmlBuilder::viewPlaceholderHtml( self::TITLING_SUBJECT_ID )
+		) );
+	}
+
+	/**
+	 * @dataProvider wikitextMarkupProvider
+	 */
+	public function testWikitextCannotFakeAMainSubjectMount( string $sanitizedMarkup ): void {
+		$this->assertFalse( ViewHtmlBuilder::containsMainSubjectInFull( $sanitizedMarkup ) );
+	}
+
+	public static function wikitextMarkupProvider(): iterable {
+		yield 'the id alone' => [ '<div id="ext-neowiki-main-subject"></div>' ];
+		yield 'an attribute ending in the data attribute' => [
+			'<div id="ext-neowiki-main-subject" data-x-data-mw-neowiki-subject-id="1"></div>'
+		];
+		yield 'the data attribute inside a value' => [
+			'<div id="ext-neowiki-main-subject" title="a data-mw-neowiki-subject-id="></div>'
+		];
 	}
 
 }

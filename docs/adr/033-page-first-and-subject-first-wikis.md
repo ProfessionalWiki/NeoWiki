@@ -2,7 +2,8 @@
 
 Date: 2026-09-18
 
-Status: Accepted (2026-09-28)
+Status: Accepted (2026-09-28). Amended 2026-10-15: Special:Subject forwards to a Subject's page when that page shows
+it in full.
 
 ## Context
 
@@ -19,12 +20,11 @@ is page-first.
 | | Page-first | Subject-first |
 |---|---|---|
 | A new Subject goes | where its author puts it, by default on the page they are on | on a page of its own |
-| A link to a Subject leads | to the page that stores it | to the Subject itself, on Special:Subject |
+| A link to a Subject leads | to the page that stores it | to the Subject itself, on Special:Subject, which forwards to its page when that page shows it in full |
 | A Subject's own page is | an ordinary page, titled by the label unless the author picks a title; it can be moved | in the `Subject` namespace by default, titled by the id; it cannot be moved |
 
 A surface that must behave differently in the two modes follows this setting and gets none of its own;
-[Subject-first wikis](../subject-first-wikis.md) lists which surface does what. A second setting, or a change to what
-the mode decides, needs a new ADR.
+[Subject-first wikis](../subject-first-wikis.md) lists which surface does what.
 
 Stored data and RDF output are the same on both, and a page may hold several Subjects on both.
 

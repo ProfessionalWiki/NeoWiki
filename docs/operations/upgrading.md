@@ -105,11 +105,8 @@ graph fails or gives their Relations the wrong type.
 
 ## Removed setting, September 2026
 
-`$wgNeoWikiDereferenceSubjectsToHostingPage` is removed, and there is no alias: the wiki's mode answers its
-question. A browser dereferencing a Subject's concept URI now lands on the page the Subject is stored on, which the
-old setting did only when set to `true`. To keep sending browsers to `Special:Subject`, set `$wgNeoWikiSubjectFirst`
-to `true`, which also changes where new Subjects are created and where links to Subjects lead. See
-[Choosing page-first or subject-first](installation.md#choosing-page-first-or-subject-first).
+`$wgNeoWikiDereferenceSubjectsToHostingPage` is removed, and there is no alias. A browser dereferencing a Subject's
+concept URI lands where [Dereferencing subject IRIs](../api/rdf-export.md#dereferencing-subject-iris) says.
 
 A `MediaWiki:NeoWiki` page still carrying `dereferenceSubjectsToHostingPage` keeps working, and the key does
 nothing; saving the page is refused until the key is removed.

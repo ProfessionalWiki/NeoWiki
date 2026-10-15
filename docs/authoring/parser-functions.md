@@ -9,6 +9,7 @@ NeoWiki provides these parser functions for use in wikitext.
 | If you want to... | Use |
 |-------------------|-----|
 | Render a Subject visually on the page | [`{{#view}}`](#view) |
+| Show the page's Main Subject in full, where you choose | [`{{#main_subject}}`](#main_subject) |
 | Insert one property's value inline as text | [`{{#neowiki_value}}`](#neowiki_value) |
 | Add a button that creates a Subject | [`{{#create_subject}}`](#create_subject) |
 | Run a custom Cypher query and see the raw results | [`{{#cypher_raw}}`](#cypher_raw) |
@@ -22,10 +23,10 @@ For definitions of terms like Subject, Schema, and Layout, see the [Glossary](..
 
 Every parser function reads as the user the page is parsed for. Subjects that user cannot read are
 treated as absent. `{{#cypher_raw}}` and `{{#sparql_raw}}` need the `neowiki-query` right.
-`{{#view}}` only places a marker at parse time; the Subject it shows is fetched per viewer over the
-REST API, under that viewer's permissions. Output of the other functions is cached separately for
-readers with different groups or rights, so it tracks page access only where page access follows
-those; where a hook grants it per account, per IP or per session, see
+`{{#view}}` and `{{#main_subject}}` only place a marker at parse time; the Subject they show is fetched
+per viewer over the REST API, under that viewer's permissions. Output of the other functions is
+cached separately for readers with different groups or rights, so it tracks page access only where
+page access follows those; where a hook grants it per account, per IP or per session, see
 [Restricted content](../operations/restricted-content.md).
 
 ## `{{#view}}`
@@ -71,6 +72,27 @@ and how.
 
 Unknown named arguments, more than one positional argument, or specifying the
 Subject both positionally and as `subject=` produce a visible parser error.
+
+## `{{#main_subject}}`
+
+Shows the page's Main Subject where the wikitext places it, in full as Special:Subject does: with the Subjects it
+references and those referencing it.
+
+### Syntax
+
+```
+{{#main_subject: }}
+```
+
+### Notes
+
+- Renders nothing when the page has no Main Subject.
+- Replaces the page's automatic display of its Main Subject. For an infobox as well, add [`{{#view: }}`](#view).
+- Works once per page: a second `{{#main_subject}}` shows nothing.
+- On an old revision or a diff, shows the Main Subject as an infobox.
+- Rendering happens client-side, so the Subject appears once the page's JavaScript has loaded.
+
+Any argument produces a visible parser error.
 
 ## `{{#neowiki_value}}`
 

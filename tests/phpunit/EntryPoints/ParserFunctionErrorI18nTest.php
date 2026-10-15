@@ -9,10 +9,11 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\ViewParserFunction
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\CreateSubjectParserFunction
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\MainSubjectParserFunction
  */
 class ParserFunctionErrorI18nTest extends TestCase {
 
-	private const array ERROR_PREFIXES = [ 'neowiki-view-error-', 'neowiki-create-subject-error-' ];
+	private const array ERROR_PREFIXES = [ 'neowiki-view-error-', 'neowiki-create-subject-error-', 'neowiki-main-subject-error-' ];
 
 	/**
 	 * Error messages are rendered via Message::escaped(), which HTML-escapes

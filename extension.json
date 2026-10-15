@@ -48,6 +48,8 @@
 		"ParserOptionsRegister": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserOptionsRegister",
 		"PageRenderingHash": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageRenderingHash",
 		"ParserFirstCallInit": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserFirstCallInit",
+		"ParserAfterTidy": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserAfterTidy",
+		"OutputPageParserOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onOutputPageParserOutput",
 
 		"RevisionFromEditComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionFromEditComplete",
 		"SearchIndexFields": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSearchIndexFields",
@@ -248,7 +250,7 @@
 			"value": false
 		},
 		"NeoWikiAutoRenderMainSubject": {
-			"description": "Whether a page's Main Subject is automatically rendered (as an infobox) on content pages.",
+			"description": "Whether a page's Main Subject is automatically rendered on content pages: as an infobox, or in full on a subject-first wiki.",
 			"value": true
     },
 		"NeoWikiValidationDebounceMs": {

@@ -31,8 +31,9 @@ A Subject is one thing described with a Schema.
    pick, or **A new page**, titled after the Subject's name unless you change the **Page title**.
 5. Save. Everything made along the way is saved with it.
 
-A page's Main Subject renders automatically as an infobox, and its **Data** tab lets you view and edit all its
-Subjects. To find a Subject again, use **Special:Subjects** or the list at the bottom of its Schema's page.
+A page's Main Subject renders automatically as an infobox, or in full on a [subject-first
+wiki](../subject-first-wikis.md), and the page's **Data** tab lets you view and edit all its Subjects. To find a Subject
+again, use **Special:Subjects** or the list at the bottom of its Schema's page.
 
 Any page can offer the same creator as a button: add
 [`{{#create_subject: schema=Person}}`](../authoring/parser-functions.md#create_subject) to its wikitext.

@@ -21,6 +21,7 @@ import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { newTextProperty, TextType } from '@/domain/propertyTypes/Text.ts';
 import { Layout } from '@/domain/Layout.ts';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
+import SubjectPage from '@/components/SubjectPage/SubjectPage.vue';
 import { NeoWikiTestServices } from '../NeoWikiTestServices.ts';
 import { clickIsFollowed, createI18nMock, setupMwMock } from '../VueTestHelpers.ts';
 
@@ -81,6 +82,15 @@ describe( 'NeoWikiApp', () => {
 		document.body.append( placeholder );
 	}
 
+	function placeMainSubjectInFull( subjectId: SubjectId ): HTMLElement {
+		const place = document.createElement( 'div' );
+		place.id = 'ext-neowiki-main-subject';
+		place.dataset.mwNeowikiSubjectId = subjectId.text;
+		document.body.append( place );
+
+		return place;
+	}
+
 	async function mountApp( showSubjectCreator = false ): Promise<VueWrapper> {
 		const wrapper = mount( NeoWikiApp, {
 			props: { showSubjectCreator, pageHasMainSubject: false },
@@ -88,7 +98,7 @@ describe( 'NeoWikiApp', () => {
 				plugins: [ pinia ],
 				mocks: { $i18n: createI18nMock() },
 				directives: { tooltip: {} },
-				stubs: { SubjectCreatorDialog: true },
+				stubs: { SubjectCreatorDialog: true, SubjectPage: true },
 				provide: {
 					...NeoWikiTestServices.getServices(),
 					[ Service.SubjectPermissionHints ]: { canEditSubject: () => Promise.resolve( false ) },
@@ -251,6 +261,44 @@ describe( 'NeoWikiApp', () => {
 				.toContain( '1849' );
 		} );
 
+	} );
+
+	it( 'shows the Main Subject in full where the page asks for it, as the page that stores it', async () => {
+		const place = placeMainSubjectInFull( loadedId );
+		loadFrom( newSubject( { id: loadedId, schemaName: 'Company' } ) );
+
+		const wrapper = await mountApp();
+
+		const subjectPage = wrapper.findComponent( SubjectPage );
+		expect( place.contains( subjectPage.element ) ).toBe( true );
+		expect( subjectPage.props() ).toMatchObject( { subjectId: loadedId.text, onHostingPage: true } );
+		expect( wrapper.findComponent( Infobox ).exists() ).toBe( false );
+	} );
+
+	it.each( [
+		[ 'an old revision', { wgRevisionId: 1, wgCurRevisionId: 2 } ],
+		[ 'a diff', { wgRevisionId: 2, wgCurRevisionId: 2, wgDiffNewId: 2 } ],
+	] )( 'shows the Main Subject as an infobox where the page asks for it in full on %s', async ( _, config ) => {
+		setupMwMock( { functions: [ 'config', 'message', 'msg', 'util' ], config } );
+		const place = placeMainSubjectInFull( loadedId );
+		loadFrom( newSubject( { id: loadedId, schemaName: 'Company' } ) );
+
+		const wrapper = await mountApp();
+
+		expect( wrapper.findComponent( SubjectPage ).exists() ).toBe( false );
+		expect( place.contains( wrapper.findComponent( Infobox ).element ) ).toBe( true );
+		// The headings after it clear the infobox, as they clear any View.
+		expect( place.classList ).toContain( 'ext-neowiki-view' );
+	} );
+
+	it( 'mounts the Views on an old revision of a page that does not place its Main Subject', async () => {
+		setupMwMock( { functions: [ 'config', 'message', 'msg', 'util' ], config: { wgRevisionId: 1, wgCurRevisionId: 2 } } );
+		loadFrom( newSubject( { id: loadedId, schemaName: 'Company' } ) );
+		placeViewFor( loadedId );
+
+		const wrapper = await mountApp();
+
+		expect( mountedSubjectIds( wrapper ) ).toEqual( [ loadedId.text ] );
 	} );
 
 } );

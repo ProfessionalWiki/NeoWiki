@@ -126,8 +126,7 @@ block, while `error` Violations can block saving, depending on the wiki's valida
 
 ### Page
 
-A page is an article with a title, as on Wikipedia: the place for free text and for showing Subjects in infoboxes.
-Pages are central in a page-first wiki. In a subject-first wiki you do not need to use or pay attention to them.
+A page is an article with a title, as on Wikipedia: the place for free text and for showing Subjects.
 
 ![Page with a Main Subject shown as an infobox and a second Subject; callouts name the parts](page-with-subjects.svg)
 
@@ -143,18 +142,18 @@ Pages have
 
 A wiki-level setting decides which comes first ([ADR 33](adr/033-page-first-and-subject-first-wikis.md)).
 
-**Page-first**: a page is about one thing, and its Subjects hold data about it. Links lead to pages, and a new Subject
-goes on the page you create it from. This is the default.
+**Page-first**: a page is about one thing, and its Subjects hold data about it. A new Subject goes on the page you
+create it from. This is the default.
 
-**Subject-first**: each new Subject gets its own page, and that page only stores it. Links lead to the Subject
-(`Special:Subject`), not to its page.
+**Subject-first**: each new Subject gets a page of its own, which shows it.
 
 See [how they differ](subject-first-wikis.md).
 
 ### View
 
-A View is an on-page rendering of a Subject. Views are placed on wiki pages via the `{{#view}}` parser function or
-automatically for a page's Main Subject. Each View renders a Subject using a View Type.
+A View is an on-page rendering of a Subject. Views are placed on wiki pages via the `{{#view}}` parser function, or
+automatically for a page's Main Subject where the page does not show it in full. Each View renders a Subject using a
+View Type.
 
 A View can optionally reference a Layout to customize which properties are shown and how. Without a Layout, all
 properties are shown in Schema-defined order, except those whose values are Dependent Subjects.
