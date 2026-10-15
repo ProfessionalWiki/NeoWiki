@@ -9,6 +9,7 @@ use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectIdInUseException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
@@ -17,6 +18,8 @@ use ProfessionalWiki\NeoWiki\Presentation\RestReplaceSubjectPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ReplaceSubjectApi extends SimpleHandler {
+
+	use TakesDependentSubjects;
 
 	public function __construct(
 		private readonly CsrfValidator $csrfValidator
@@ -39,13 +42,16 @@ class ReplaceSubjectApi extends SimpleHandler {
 				$extension->getSubjectIdParser()->parseOrThrow( $subjectId ),
 				$body['label'] ?? null,
 				$body['statements'],
-				$body['comment'] ?? null
+				$body['comment'] ?? null,
+				$body['dependentSubjects'] ?? []
 			);
 		} catch ( InvalidArgumentException $e ) {
 			return $this->getResponseFactory()->createHttpError( 400, [
 				'status' => 'error',
 				'message' => $e->getMessage(),
 			] );
+		} catch ( SubjectIdInUseException $e ) {
+			return $this->subjectIdInUseResponse( $e );
 		} catch ( SubjectNotFoundException $e ) {
 			return $this->getResponseFactory()->createHttpError( 404, [
 				'status' => 'error',
@@ -96,7 +102,7 @@ class ReplaceSubjectApi extends SimpleHandler {
 				ParamValidator::PARAM_REQUIRED => false,
 				self::PARAM_DESCRIPTION => 'Optional edit summary.',
 			],
-		];
+		] + $this->dependentSubjectsParamSettings();
 	}
 
 }

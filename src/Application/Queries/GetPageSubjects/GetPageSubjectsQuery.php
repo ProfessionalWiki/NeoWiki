@@ -16,7 +16,6 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
@@ -55,10 +54,10 @@ readonly class GetPageSubjectsQuery {
 		foreach ( $subjectsOnPage->asArray() as $subject ) {
 			$pageIdentifiers = $hostingPages[$subject->id->text] ?? null;
 
-			$subjectItems[$subject->id->text] = GetSubjectResponseItem::fromSubject(
+			$subjectItems[$subject->id->text] = $this->responseItemFactory->createResponseItem(
 				$subject,
 				$pageIdentifiers,
-				SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageIdentifiers?->getTitle() ?? '' )
+				$pageSubjects
 			);
 		}
 

@@ -1,3 +1,5 @@
+import type { HostSubject } from '@/domain/HostSubject';
+
 export type SubjectSummarySort = 'newest' | 'name' | 'schema' | 'page' | 'edited';
 
 export type SortDirection = 'asc' | 'desc';
@@ -18,6 +20,8 @@ export interface SubjectSummary {
 	id: string;
 	displayName: string;
 	displayNameIsGenerated: boolean;
+	/** Null except for a Dependent Subject nobody named, which is named after it. */
+	hostSubject: HostSubject | null;
 	schema: string;
 	pageId: number;
 	pageTitle: string;

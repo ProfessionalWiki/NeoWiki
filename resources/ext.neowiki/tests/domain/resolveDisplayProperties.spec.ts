@@ -1,14 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { resolveDisplayProperties } from '@/domain/resolveDisplayProperties';
-import { newSubject, newSchema } from '@/TestHelpers';
+import { DEFAULT_SUBJECT_ID, newSubject, newSchema } from '@/TestHelpers';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 import { StatementList } from '@/domain/StatementList';
 import { Statement } from '@/domain/Statement';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newNumberProperty, type NumberProperty } from '@/domain/propertyTypes/Number';
 import { newTextProperty } from '@/domain/propertyTypes/Text';
-import { newNumberValue, newStringValue } from '@/domain/Value';
+import { newRelationProperty, RelationType } from '@/domain/propertyTypes/Relation';
+import { newNumberValue, newRelation, newStringValue, RelationValue } from '@/domain/Value';
 import { Layout } from '@/domain/Layout';
+import type { Subject } from '@/domain/Subject';
+import type { SubjectId } from '@/domain/SubjectId';
 
 function newLayout( displayRules: { property: string; displayAttributes?: Record<string, unknown> }[] ): Layout {
 	return new Layout(
@@ -22,6 +25,10 @@ function newLayout( displayRules: { property: string; displayAttributes?: Record
 		} ) ),
 		{},
 	);
+}
+
+function findNoSubject(): Subject | undefined {
+	return undefined;
 }
 
 describe( 'resolveDisplayProperties', () => {
@@ -42,7 +49,7 @@ describe( 'resolveDisplayProperties', () => {
 			] ),
 		} );
 
-		const result = resolveDisplayProperties( schema, subject );
+		const result = resolveDisplayProperties( schema, subject, undefined, findNoSubject );
 
 		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name', 'Age', 'City' ] );
 		expect( result[ 0 ].value ).toEqual( newStringValue( 'Alice' ) );
@@ -70,7 +77,7 @@ describe( 'resolveDisplayProperties', () => {
 			{ property: 'Name' },
 		] );
 
-		const result = resolveDisplayProperties( schema, subject, layout );
+		const result = resolveDisplayProperties( schema, subject, layout, findNoSubject );
 
 		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'City', 'Name' ] );
 		expect( result[ 0 ].value ).toEqual( newStringValue( 'Berlin' ) );
@@ -92,7 +99,7 @@ describe( 'resolveDisplayProperties', () => {
 			{ property: 'Revenue', displayAttributes: { precision: 0 } },
 		] );
 
-		const result = resolveDisplayProperties( schema, subject, layout );
+		const result = resolveDisplayProperties( schema, subject, layout, findNoSubject );
 
 		expect( result ).toHaveLength( 1 );
 		expect( ( result[ 0 ].propertyDefinition as NumberProperty ).precision ).toBe( 0 );
@@ -113,7 +120,7 @@ describe( 'resolveDisplayProperties', () => {
 		} );
 		const layout = newLayout( [] );
 
-		const result = resolveDisplayProperties( schema, subject, layout );
+		const result = resolveDisplayProperties( schema, subject, layout, findNoSubject );
 
 		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name', 'Age' ] );
 	} );
@@ -134,7 +141,7 @@ describe( 'resolveDisplayProperties', () => {
 			{ property: 'NonExistentProperty' },
 		] );
 
-		const result = resolveDisplayProperties( schema, subject, layout );
+		const result = resolveDisplayProperties( schema, subject, layout, findNoSubject );
 
 		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name' ] );
 	} );
@@ -157,7 +164,7 @@ describe( 'resolveDisplayProperties', () => {
 			{ property: 'Name' },
 		] );
 
-		const result = resolveDisplayProperties( schema, subject, layout );
+		const result = resolveDisplayProperties( schema, subject, layout, findNoSubject );
 
 		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name', 'Age' ] );
 	} );
@@ -179,7 +186,7 @@ describe( 'resolveDisplayProperties', () => {
 			{ property: 'Age' },
 		] );
 
-		const result = resolveDisplayProperties( schema, subject, layout );
+		const result = resolveDisplayProperties( schema, subject, layout, findNoSubject );
 
 		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name' ] );
 	} );
@@ -205,9 +212,77 @@ describe( 'resolveDisplayProperties', () => {
 			{ property: 'City' },
 		] );
 
-		const result = resolveDisplayProperties( schema, subject, layout );
+		const result = resolveDisplayProperties( schema, subject, layout, findNoSubject );
 
 		expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name', 'City' ] );
+	} );
+
+	describe( 'a relation property that points at Dependent Subjects', () => {
+
+		const birthId = 's1birthAAAAAAA1';
+		const friendId = 's1friendAAAAAA1';
+
+		const schema = newSchema( {
+			properties: new PropertyDefinitionList( [
+				newTextProperty( { name: 'Name' } ),
+				newRelationProperty( { name: 'Birth', targetSchemas: [ 'Birth' ] } ),
+				newRelationProperty( { name: 'Friend', targetSchemas: [ 'Person' ] } ),
+			] ),
+		} );
+
+		const subject = newSubject( {
+			statements: new StatementList( [
+				new Statement( new PropertyName( 'Name' ), 'text', newStringValue( 'Alice' ) ),
+				new Statement( new PropertyName( 'Birth' ), RelationType.typeName, new RelationValue( [ newRelation( undefined, birthId ) ] ) ),
+				new Statement( new PropertyName( 'Friend' ), RelationType.typeName, new RelationValue( [ newRelation( undefined, friendId ) ] ) ),
+			] ),
+		} );
+
+		const relationTargets = [
+			newSubject( {
+				id: birthId,
+				label: null,
+				schemaName: 'Birth',
+				hostSubject: {
+					id: DEFAULT_SUBJECT_ID,
+					schemaName: 'TestSchema',
+					displayName: 'Alice',
+					displayNameIsGenerated: false,
+					hostSubject: null,
+				},
+			} ),
+			newSubject( { id: friendId, label: 'Bob', schemaName: 'Person' } ),
+		];
+
+		function findRelationTarget( id: SubjectId ): Subject | undefined {
+			return relationTargets.find( ( target ) => target.getId().text === id.text );
+		}
+
+		it( 'is left out without a Layout, while the other properties stay', () => {
+			const result = resolveDisplayProperties( schema, subject, undefined, findRelationTarget );
+
+			expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name', 'Friend' ] );
+		} );
+
+		it( 'keeps a relation property whose target was not read', () => {
+			const birthOnly = ( id: SubjectId ): Subject | undefined => id.text === birthId ? relationTargets[ 0 ] : undefined;
+
+			const result = resolveDisplayProperties( schema, subject, undefined, birthOnly );
+
+			expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Name', 'Friend' ] );
+		} );
+
+		it( 'is shown where a Display Rule of the Layout names it', () => {
+			const layout = newLayout( [
+				{ property: 'Birth' },
+				{ property: 'Name' },
+			] );
+
+			const result = resolveDisplayProperties( schema, subject, layout, findRelationTarget );
+
+			expect( result.map( ( r ) => r.propertyDefinition.name.toString() ) ).toEqual( [ 'Birth', 'Name' ] );
+		} );
+
 	} );
 
 } );

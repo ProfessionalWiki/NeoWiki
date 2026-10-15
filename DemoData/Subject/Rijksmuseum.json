@@ -44,54 +44,54 @@
 						"https://www.instagram.com/rijksmuseum",
 						"https://twitter.com/rijksmuseum"
 					]
+				},
+				"Attendance figures": {
+					"propertyType": "relation",
+					"value": [
+						{ "id": "rBKCjDftnYgSdAJ", "target": "sEpfwJLAtndAaaA" },
+						{ "id": "rgFKbv2gQfcqLwF", "target": "sEpfwJLAtndBbbB" },
+						{ "id": "rNpGydZhJ74hga6", "target": "sEpfwJLAtndCccC" },
+						{ "id": "rkXKcYPREAYsRra", "target": "sEpfwJLAtndDddD" },
+						{ "id": "rNwQhP12V5e2fn6", "target": "sEpfwJLAtndEeeE" }
+					]
 				}
 			}
 		},
 		"sEpfwJLAtndAaaA": {
-			"label": "Rijksmuseum attendance 2024",
 			"schema": "Attendance",
 			"statements": {
-				"Museum": { "propertyType": "relation", "value": [ { "id": "rEpfwJLAtndAaaA", "target": "sEpfwJLnxyQy6vR" } ] },
 				"Year": { "propertyType": "number", "value": 2024 },
 				"Visitors": { "propertyType": "number", "value": 2500000 },
 				"Source": { "propertyType": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/the-rijksmuseum-in-2024" ] }
 			}
 		},
 		"sEpfwJLAtndBbbB": {
-			"label": "Rijksmuseum attendance 2023",
 			"schema": "Attendance",
 			"statements": {
-				"Museum": { "propertyType": "relation", "value": [ { "id": "rEpfwJLAtndBbbB", "target": "sEpfwJLnxyQy6vR" } ] },
 				"Year": { "propertyType": "number", "value": 2023 },
 				"Visitors": { "propertyType": "number", "value": 2700000 },
 				"Source": { "propertyType": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/rijksmuseum-rounds-off-historic-year" ] }
 			}
 		},
 		"sEpfwJLAtndCccC": {
-			"label": "Rijksmuseum attendance 2022",
 			"schema": "Attendance",
 			"statements": {
-				"Museum": { "propertyType": "relation", "value": [ { "id": "rEpfwJLAtndCccC", "target": "sEpfwJLnxyQy6vR" } ] },
 				"Year": { "propertyType": "number", "value": 2022 },
 				"Visitors": { "propertyType": "number", "value": 1760000 },
 				"Source": { "propertyType": "url", "value": [ "https://www.rijksmuseum.nl/nl/pers/persberichten/het-rijksmuseum-in-2022" ] }
 			}
 		},
 		"sEpfwJLAtndDddD": {
-			"label": "Rijksmuseum attendance 2021",
 			"schema": "Attendance",
 			"statements": {
-				"Museum": { "propertyType": "relation", "value": [ { "id": "rEpfwJLAtndDddD", "target": "sEpfwJLnxyQy6vR" } ] },
 				"Year": { "propertyType": "number", "value": 2021 },
 				"Visitors": { "propertyType": "number", "value": 625000 },
 				"Source": { "propertyType": "url", "value": [ "https://www.rijksmuseum.nl/nl/pers/persberichten/het-rijksmuseum-in-2021" ] }
 			}
 		},
 		"sEpfwJLAtndEeeE": {
-			"label": "Rijksmuseum attendance 2020",
 			"schema": "Attendance",
 			"statements": {
-				"Museum": { "propertyType": "relation", "value": [ { "id": "rEpfwJLAtndEeeE", "target": "sEpfwJLnxyQy6vR" } ] },
 				"Year": { "propertyType": "number", "value": 2020 },
 				"Visitors": { "propertyType": "number", "value": 675000 },
 				"Source": { "propertyType": "url", "value": [ "https://www.rijksmuseum.nl/en/press/press-releases/the-rijksmuseum-in-2020" ] }

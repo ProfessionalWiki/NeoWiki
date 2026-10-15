@@ -17,7 +17,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 readonly class SubjectResponseItemFactory {
 
 	public function __construct(
-		private PageSubjectsLookup $pageSubjectsLookup,
+		private PageSubjectsAtRevisionLookup $pageSubjectsLookup,
+		private HostSubjectBuilder $hostSubjectBuilder,
 	) {
 	}
 
@@ -30,16 +31,48 @@ readonly class SubjectResponseItemFactory {
 		$pagesRead = [];
 
 		foreach ( $placedSubjects as $idText => [ $subject, $pageIdentifiers ] ) {
-			$items[$idText] = GetSubjectResponseItem::fromSubject(
+			$items[$idText] = $this->newResponseItem(
 				$subject,
 				// Withholding the page fields must not withhold the fallback they feed: the display
 				// name is built from the identifiers fetched either way.
 				$includePageIdentifiers ? $pageIdentifiers : null,
-				$this->chosenName( $subject, $pageIdentifiers, $pagesRead )
+				$this->pageSubjectsHolding( $subject, $pageIdentifiers, $pagesRead ),
+				$pageIdentifiers?->getTitle() ?? ''
 			);
 		}
 
 		return $items;
+	}
+
+	public function createResponseItem(
+		Subject $subject,
+		?PageIdentifiers $pageIdentifiers,
+		PageSubjects $pageSubjects
+	): GetSubjectResponseItem {
+		return $this->newResponseItem( $subject, $pageIdentifiers, $pageSubjects, $pageIdentifiers?->getTitle() ?? '' );
+	}
+
+	/**
+	 * @param ?PageSubjects $pageSubjects Null for a Subject whose name its page has no say in.
+	 */
+	private function newResponseItem(
+		Subject $subject,
+		?PageIdentifiers $pageIdentifiers,
+		?PageSubjects $pageSubjects,
+		string $pageName
+	): GetSubjectResponseItem {
+		$chosenName = $pageSubjects === null
+			? $subject->getLabel()?->text
+			: SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageName );
+
+		return GetSubjectResponseItem::fromSubject(
+			$subject,
+			$pageIdentifiers,
+			$chosenName,
+			$chosenName === null && $pageSubjects !== null
+				? $this->hostSubjectBuilder->build( $subject, $pageSubjects, $pageName )
+				: null
+		);
 	}
 
 	/**
@@ -50,17 +83,15 @@ readonly class SubjectResponseItemFactory {
 	 * @param array<int, PageSubjects> $pagesRead Page ID → the Subjects that page holds, filled as
 	 *   pages are reached.
 	 */
-	private function chosenName( Subject $subject, ?PageIdentifiers $pageIdentifiers, array &$pagesRead ): ?string {
-		$label = $subject->getLabel();
-
-		if ( $label !== null || $pageIdentifiers === null ) {
-			return $label?->text;
+	private function pageSubjectsHolding( Subject $subject, ?PageIdentifiers $pageIdentifiers, array &$pagesRead ): ?PageSubjects {
+		if ( $subject->getLabel() !== null || $pageIdentifiers === null ) {
+			return null;
 		}
 
 		$pageId = $pageIdentifiers->getId();
 		$pagesRead[$pageId->id] ??= $this->pageSubjectsLookup->getPageSubjects( $pageId );
 
-		return SubjectDisplayName::labelOrPageName( $subject, $pagesRead[$pageId->id], $pageIdentifiers->getTitle() );
+		return $pagesRead[$pageId->id];
 	}
 
 }

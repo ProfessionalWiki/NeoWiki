@@ -9,10 +9,10 @@ use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummary;
 final class SubjectSummarySerializer {
 
 	/**
-	 * @return array<string, string|int|bool>
+	 * @return array<string, mixed>
 	 */
 	public static function serialize( SubjectSummary $summary ): array {
-		return [
+		$entry = [
 			'id' => $summary->subjectId,
 			'displayName' => $summary->displayName,
 			'displayNameIsGenerated' => $summary->displayNameIsGenerated,
@@ -21,6 +21,12 @@ final class SubjectSummarySerializer {
 			'pageTitle' => $summary->pageTitle,
 			'lastEdited' => $summary->lastEdited,
 		];
+
+		if ( $summary->hostSubject !== null ) {
+			$entry['hostSubject'] = SubjectPresentationSerializer::serializeHostSubject( $summary->hostSubject );
+		}
+
+		return $entry;
 	}
 
 }

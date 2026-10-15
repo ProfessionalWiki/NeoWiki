@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\SelectStatementResolver
@@ -30,7 +31,7 @@ class SelectStatementResolverTest extends TestCase {
 	}
 
 	private function newSchemaWithSelectNamed( string $propertyName, bool $multiple ): Schema {
-		return new Schema(
+		return TestSchema::build(
 			name: new SchemaName( 'SomeSchema' ),
 			description: '',
 			properties: new PropertyDefinitions( [

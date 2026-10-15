@@ -36,6 +36,18 @@ describe( 'SchemaDisplayHeader', () => {
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__description' ).exists() ).toBe( false );
 	} );
 
+	it( 'says that the Subjects of a Schema of Dependent Subjects are dependent', () => {
+		const wrapper = mountComponent( newSchema( { subjectsAreDependent: true } ) );
+
+		expect( wrapper.text() ).toContain( 'neowiki-schema-subjects-are-dependent' );
+	} );
+
+	it( 'says nothing about dependence for a Schema of standalone Subjects', () => {
+		const wrapper = mountComponent( newSchema() );
+
+		expect( wrapper.text() ).not.toContain( 'neowiki-schema-subjects-are-dependent' );
+	} );
+
 	it( 'shows edit button when canEditSchema is true', () => {
 		const wrapper = mountComponent( newSchema(), true );
 

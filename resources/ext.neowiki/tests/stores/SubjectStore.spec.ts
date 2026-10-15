@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSubjectStore } from '@/stores/SubjectStore';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
@@ -51,10 +51,34 @@ function writeResult( subject: Subject | null, schema: Schema | null = null ): R
 	return { subjectId: new SubjectId( 's11111111111111' ), subject, schema };
 }
 
+function pageRead( pageId: number, ...subjects: Subject[] ): Record<string, unknown> {
+	return {
+		pageSubjects: new PageSubjects( pageId, null, subjects ),
+		referencedSubjects: [],
+		notFoundTargetIds: [],
+		schemas: [],
+	};
+}
+
 function withSubjectRepository( repository: Record<string, unknown> ): void {
 	vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue(
 		{ getSubjectRepository: () => repository } as unknown as NeoWikiExtension,
 	);
+}
+
+const REPOSITORY_WRITE_PARAMETERS = {
+	createMainSubject: [ 'pageId', 'label', 'schemaName', 'statements', 'dependentSubjects', 'comment', 'id' ],
+	createOtherSubject: [ 'pageId', 'label', 'schemaName', 'statements', 'dependentSubjects', 'comment', 'id' ],
+	createSubjectPage: [ 'label', 'schemaName', 'statements', 'dependentSubjects', 'comment', 'pageTitle', 'id' ],
+	updateSubject: [ 'id', 'label', 'statements', 'dependentSubjects', 'comment' ],
+};
+
+function callsOf(
+	repository: Partial<Record<keyof typeof REPOSITORY_WRITE_PARAMETERS, unknown>>,
+	write: keyof typeof REPOSITORY_WRITE_PARAMETERS,
+): Record<string, unknown>[] {
+	return ( repository[ write ] as Mock ).mock.calls.map( ( args ) =>
+		Object.fromEntries( REPOSITORY_WRITE_PARAMETERS[ write ].map( ( name, index ) => [ name, args[ index ] ] ) ) );
 }
 
 describe( 'SubjectStore createSubject', () => {
@@ -78,6 +102,7 @@ describe( 'SubjectStore createSubject', () => {
 			createSubjectPage: vi.fn().mockResolvedValue(
 				{ ...writeResult( null ), pageTitle: 'Anvil', pageId: 12 },
 			),
+			getPageSubjects: vi.fn( ( readPageId: number ) => Promise.resolve( pageRead( readPageId ) ) ),
 		};
 
 		withSubjectRepository( repository );
@@ -88,22 +113,34 @@ describe( 'SubjectStore createSubject', () => {
 	it( 'stores the Subject on the page it was given on a page-first wiki', async () => {
 		const repository = repositoryWriting( false );
 
-		await useSubjectStore().createSubject( drafted, pageId, 'why' );
+		await useSubjectStore().createSubject( drafted, pageId, [], 'why' );
 
-		expect( repository.createOtherSubject ).toHaveBeenCalledWith(
-			pageId, 'Anvil', 'Product', drafted.getStatements(), 'why', drafted.getId(),
-		);
+		expect( callsOf( repository, 'createOtherSubject' ) ).toContainEqual( expect.objectContaining( {
+			pageId,
+			label: 'Anvil',
+			schemaName: 'Product',
+			statements: drafted.getStatements(),
+			dependentSubjects: [],
+			comment: 'why',
+			id: drafted.getId(),
+		} ) );
 		expect( repository.createSubjectPage ).not.toHaveBeenCalled();
 	} );
 
 	it( 'gives the Subject a page of its own on a subject-first wiki', async () => {
 		const repository = repositoryWriting( true );
 
-		await useSubjectStore().createSubject( drafted, pageId, 'why' );
+		await useSubjectStore().createSubject( drafted, pageId, [], 'why' );
 
-		expect( repository.createSubjectPage ).toHaveBeenCalledWith(
-			'Anvil', 'Product', drafted.getStatements(), 'why', undefined, drafted.getId(),
-		);
+		expect( callsOf( repository, 'createSubjectPage' ) ).toContainEqual( expect.objectContaining( {
+			label: 'Anvil',
+			schemaName: 'Product',
+			statements: drafted.getStatements(),
+			dependentSubjects: [],
+			comment: 'why',
+			pageTitle: undefined,
+			id: drafted.getId(),
+		} ) );
 		expect( repository.createOtherSubject ).not.toHaveBeenCalled();
 	} );
 
@@ -113,7 +150,7 @@ describe( 'SubjectStore createSubject', () => {
 		const repository = repositoryWriting( true );
 		repository.createSubjectPage.mockRejectedValueOnce( new PageTitleTakenError( 'Anvil' ) );
 
-		await expect( useSubjectStore().createSubject( drafted, pageId, 'why' ) )
+		await expect( useSubjectStore().createSubject( drafted, pageId, [], 'why' ) )
 			.rejects.toBeInstanceOf( PageTitleTakenError );
 		expect( repository.createSubjectPage ).toHaveBeenCalledTimes( 1 );
 	} );
@@ -261,11 +298,12 @@ describe( 'SubjectStore ordering guards', () => {
 		withSubjectRepository( {
 			getSubject: () => pending,
 			updateSubject: vi.fn().mockResolvedValue( writeResult( updated ) ),
+			getPageSubjects: vi.fn().mockResolvedValue( pageRead( 0, updated ) ),
 		} );
 		const store = useSubjectStore();
 
 		const request = store.getOrFetchSubject( new SubjectId( 's11111111111111' ) );
-		await store.updateSubject( updated );
+		await store.updateSubject( updated, [] );
 		resolveFetch( stale );
 
 		expect( await request ).toStrictEqual( updated );
@@ -286,29 +324,25 @@ describe( 'SubjectStore ordering guards', () => {
 	} );
 
 	it( 'discards loadPageSubjects subject writes when a mutation lands mid-flight', async () => {
-		const fromServer = newSubject( { id: 's11111111111111', label: 'from-server' } );
-		const updated = newSubject( { id: 's11111111111111', label: 'updated' } );
+		const onPage = new PageIdentifiers( 7, 'Page' );
+		const fromServer = newSubject( { id: 's11111111111111', label: 'from-server', pageIdentifiers: onPage } );
+		const updated = newSubject( { id: 's11111111111111', label: 'updated', pageIdentifiers: onPage } );
 		let resolveLoad!: ( value: unknown ) => void;
 		const pending = new Promise( ( resolve ) => {
 			resolveLoad = resolve;
 		} );
 		withSubjectRepository( {
-			getPageSubjects: () => pending,
+			getPageSubjects: vi.fn().mockReturnValueOnce( pending ).mockResolvedValue( pageRead( 7, updated ) ),
 			updateSubject: vi.fn().mockResolvedValue( writeResult( updated ) ),
 		} );
 		const store = useSubjectStore();
 
 		const request = store.loadPageSubjects( 7 );
-		await store.updateSubject( updated );
-		resolveLoad( {
-			pageSubjects: new PageSubjects( 7, null, [ fromServer ] ),
-			referencedSubjects: [],
-			notFoundTargetIds: [],
-			schemas: [],
-		} );
+		await store.updateSubject( updated, [] );
+		resolveLoad( pageRead( 7, fromServer ) );
 		await request;
 
-		expect( store.pageSubjects ).toBeNull();
+		expect( store.pageSubjects?.getSubjects() ).toEqual( [ updated ] );
 		expect( store.getSubject( new SubjectId( 's11111111111111' ) ) ).toStrictEqual( updated );
 	} );
 
@@ -349,34 +383,40 @@ describe( 'SubjectStore write results', () => {
 
 	beforeEach( () => {
 		setActivePinia( createPinia() );
+		vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 	} );
 
 	afterEach( () => {
 		vi.restoreAllMocks();
 	} );
 
+	// The page read that follows each write fails, so the registry holds what the write itself recorded.
+	function withWritingRepository( repository: Record<string, unknown> ): void {
+		withSubjectRepository( { ...repository, getPageSubjects: vi.fn().mockRejectedValue( new Error( 'read failed' ) ) } );
+	}
+
 	it( 'records the Subject the update returned, not the one it was given', async () => {
 		// Only the server's copy carries whatever normalisation the write applied.
 		const sent = newSubject( { id: id.text, label: 'as typed' } );
 		const canonical = newSubject( { id: id.text, label: 'as persisted' } );
-		withSubjectRepository( {
+		withWritingRepository( {
 			updateSubject: vi.fn().mockResolvedValue( writeResult( canonical ) ),
 		} );
 		const store = useSubjectStore();
 
-		await store.updateSubject( sent );
+		await store.updateSubject( sent, [] );
 
 		expect( store.getSubject( id ) ).toStrictEqual( canonical );
 	} );
 
 	it( 'records the Schema the update bundled', async () => {
 		const schema = newSchema( { title: 'Person', description: 'as persisted' } );
-		withSubjectRepository( {
+		withWritingRepository( {
 			updateSubject: vi.fn().mockResolvedValue( writeResult( newSubject( { id: id.text } ), schema ) ),
 		} );
 		const subjectStore = useSubjectStore();
 
-		await subjectStore.updateSubject( newSubject( { id: id.text } ) );
+		await subjectStore.updateSubject( newSubject( { id: id.text } ), [] );
 
 		expect( useSchemaStore().getSchema( 'Person' ) ).toStrictEqual( schema );
 	} );
@@ -390,6 +430,7 @@ describe( 'SubjectStore write results', () => {
 				updateSubject: () => new Promise( ( resolve ) => {
 					resolveUpdate = resolve;
 				} ),
+				getPageSubjects: vi.fn().mockRejectedValue( new Error( 'read failed' ) ),
 			} ),
 			getSchemaRepository: () => ( { saveSchema: vi.fn().mockResolvedValue( undefined ) } ),
 		};
@@ -397,7 +438,7 @@ describe( 'SubjectStore write results', () => {
 		const subjectStore = useSubjectStore();
 		const schemaStore = useSchemaStore();
 
-		const request = subjectStore.updateSubject( newSubject( { id: id.text } ) );
+		const request = subjectStore.updateSubject( newSubject( { id: id.text } ), [] );
 		await schemaStore.saveSchema( savedElsewhere );
 		resolveUpdate( writeResult( newSubject( { id: id.text } ), bundled ) );
 		await request;
@@ -407,21 +448,23 @@ describe( 'SubjectStore write results', () => {
 
 	it( 'creates the Subject under the id it was given', async () => {
 		const createMainSubject = vi.fn().mockResolvedValue( writeResult( newSubject( { id: id.text } ) ) );
-		withSubjectRepository( { createMainSubject } );
+		withWritingRepository( { createMainSubject } );
 
-		await useSubjectStore().createMainSubject( 7, null, 'Person', new StatementList( [] ), 'why', id );
+		await useSubjectStore().createMainSubject( 7, null, 'Person', new StatementList( [] ), [], 'why', id );
 
-		expect( createMainSubject ).toHaveBeenCalledWith( 7, null, 'Person', expect.any( StatementList ), 'why', id );
+		expect( callsOf( { createMainSubject }, 'createMainSubject' ) ).toContainEqual(
+			expect.objectContaining( { pageId: 7, label: null, schemaName: 'Person', dependentSubjects: [], comment: 'why', id } ),
+		);
 	} );
 
 	it( 'records the Subject the creation returned', async () => {
 		const created = newSubject( { id: id.text, label: 'as persisted' } );
-		withSubjectRepository( {
+		withWritingRepository( {
 			createMainSubject: vi.fn().mockResolvedValue( writeResult( created ) ),
 		} );
 		const store = useSubjectStore();
 
-		const returnedId = await store.createMainSubject( 7, 'as typed', 'Person', new StatementList( [] ) );
+		const returnedId = await store.createMainSubject( 7, 'as typed', 'Person', new StatementList( [] ), [] );
 
 		expect( returnedId ).toStrictEqual( id );
 		expect( store.getSubject( id ) ).toStrictEqual( created );
@@ -431,18 +474,18 @@ describe( 'SubjectStore write results', () => {
 		// A Subject without page identifiers cannot back the links that read it, so the registry
 		// keeps what it had rather than recording a page-less copy.
 		const seeded = newSubject( { id: id.text, label: 'seeded' } );
-		withSubjectRepository( { updateSubject: vi.fn().mockResolvedValue( writeResult( null ) ) } );
+		withWritingRepository( { updateSubject: vi.fn().mockResolvedValue( writeResult( null ) ) } );
 		const store = useSubjectStore();
 		store.setSubject( seeded );
 
-		await store.updateSubject( newSubject( { id: id.text, label: 'as typed' } ) );
+		await store.updateSubject( newSubject( { id: id.text, label: 'as typed' } ), [] );
 
 		expect( store.getSubject( id ) ).toStrictEqual( seeded );
 	} );
 
 	it( 'records the Subject created together with its page, and reports that page', async () => {
 		const created = newSubject( { id: id.text, label: 'as persisted' } );
-		withSubjectRepository( {
+		withWritingRepository( {
 			createSubjectPage: vi.fn().mockResolvedValue( {
 				...writeResult( created ),
 				pageTitle: 'As Persisted',
@@ -450,7 +493,7 @@ describe( 'SubjectStore write results', () => {
 		} );
 		const store = useSubjectStore();
 
-		const result = await store.createSubjectPage( 'as typed', 'Person', new StatementList( [] ) );
+		const result = await store.createSubjectPage( 'as typed', 'Person', new StatementList( [] ), [] );
 
 		expect( result.subjectId ).toStrictEqual( id );
 		expect( result.pageTitle ).toBe( 'As Persisted' );
@@ -459,12 +502,12 @@ describe( 'SubjectStore write results', () => {
 
 	it( 'records the Subject that createOtherSubject returned', async () => {
 		const created = newSubject( { id: id.text, label: 'as persisted' } );
-		withSubjectRepository( {
+		withWritingRepository( {
 			createOtherSubject: vi.fn().mockResolvedValue( writeResult( created ) ),
 		} );
 		const store = useSubjectStore();
 
-		await store.createOtherSubject( 7, 'as typed', 'Person', new StatementList( [] ) );
+		await store.createOtherSubject( 7, 'as typed', 'Person', new StatementList( [] ), [] );
 
 		expect( store.getSubject( id ) ).toStrictEqual( created );
 	} );
@@ -657,6 +700,176 @@ describe( 'SubjectStore relation targets that were not found', () => {
 		await expect( useSubjectStore().getOrFetchSubject( missingId ) ).rejects.toThrow( 'Error fetching subject' );
 
 		expect( notFoundAmong( missingId ) ).toEqual( [] );
+	} );
+
+} );
+
+describe( 'SubjectStore writes of a Host Subject', () => {
+
+	const pageId = 7;
+	const otherPageId = 8;
+	const onPage = new PageIdentifiers( pageId, 'Pablo Picasso' );
+	const host = newSubject( { id: 's11111111111111', label: 'Pablo Picasso', pageIdentifiers: onPage } );
+	const birth = newSubject( { id: 's1birthAAAAAAA1', label: null, schemaName: 'Birth', pageIdentifiers: onPage } );
+	const name = newSubject( { id: 's1nameAAAAAAAA1', label: null, schemaName: 'Name', pageIdentifiers: onPage } );
+
+	beforeEach( () => {
+		setActivePinia( createPinia() );
+	} );
+
+	afterEach( () => {
+		vi.restoreAllMocks();
+	} );
+
+	function pageHolding( ...subjects: Subject[] ): Record<string, unknown> {
+		return {
+			pageSubjects: new PageSubjects( pageId, host.getId(), subjects ),
+			referencedSubjects: [],
+			notFoundTargetIds: [],
+			schemas: [],
+		};
+	}
+
+	function repositoryAnswering( page: Record<string, unknown> ): { updateSubject: Mock; getPageSubjects: Mock } {
+		const repository = {
+			updateSubject: vi.fn().mockResolvedValue( writeResult( host ) ),
+			getPageSubjects: vi.fn().mockResolvedValue( page ),
+		};
+
+		withSubjectRepository( repository );
+
+		return repository;
+	}
+
+	it( 'sends the Dependent Subjects along with the Subject it writes', async () => {
+		const repository = repositoryAnswering( pageHolding( host, birth ) );
+
+		await useSubjectStore().updateSubject( host, [ birth ], 'why' );
+
+		expect( callsOf( repository, 'updateSubject' ) ).toContainEqual( expect.objectContaining( {
+			id: host.getId(),
+			label: 'Pablo Picasso',
+			statements: host.getStatements(),
+			dependentSubjects: [ birth ],
+			comment: 'why',
+		} ) );
+	} );
+
+	it( 'holds the Dependent Subjects the write created, read back from the page', async () => {
+		repositoryAnswering( pageHolding( host, birth ) );
+		const store = useSubjectStore();
+
+		await store.updateSubject( host, [ birth ], 'why' );
+
+		expect( store.findSubject( birth.getId() ) ).toStrictEqual( birth );
+	} );
+
+	it( 'drops a Dependent Subject the write removed', async () => {
+		repositoryAnswering( pageHolding( host ) );
+		const store = useSubjectStore();
+		store.setSubject( name );
+
+		await store.updateSubject( host, [], 'why' );
+
+		expect( store.findSubject( name.getId() ) ).toBeUndefined();
+	} );
+
+	it( 'keeps a Subject of another page the read does not list', async () => {
+		repositoryAnswering( pageHolding( host ) );
+		const elsewhere = newSubject( { id: 's1otherAAAAAAA1', pageIdentifiers: new PageIdentifiers( otherPageId, 'Elsewhere' ) } );
+		const store = useSubjectStore();
+		store.setSubject( elsewhere );
+
+		await store.updateSubject( host, [], 'why' );
+
+		expect( store.findSubject( elsewhere.getId() ) ).toStrictEqual( elsewhere );
+	} );
+
+	it( 'follows the listing of the page it wrote to', async () => {
+		repositoryAnswering( pageHolding( host, birth ) );
+		const store = useSubjectStore();
+		store.pageSubjects = new PageSubjects( pageId, host.getId(), [ host, name ] );
+		store.setSubject( name );
+
+		await store.updateSubject( host, [ birth ], 'why' );
+
+		expect( store.pageSubjects?.getSubjects() ).toEqual( [ host, birth ] );
+	} );
+
+	it( 'leaves the listing of another page alone', async () => {
+		repositoryAnswering( pageHolding( host, birth ) );
+		const store = useSubjectStore();
+		store.pageSubjects = new PageSubjects( otherPageId, null, [] );
+
+		await store.updateSubject( host, [ birth ], 'why' );
+
+		expect( store.pageSubjects?.getPageId() ).toBe( otherPageId );
+	} );
+
+	it( 'still resolves when reading the page after the write fails', async () => {
+		vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+		withSubjectRepository( {
+			updateSubject: vi.fn().mockResolvedValue( writeResult( host ) ),
+			getPageSubjects: vi.fn().mockRejectedValue( new Error( 'read failed' ) ),
+		} );
+
+		await expect( useSubjectStore().updateSubject( host, [ birth ], 'why' ) ).resolves.toBeUndefined();
+	} );
+
+	it( 'creates a Subject on a page of its own together with its Dependent Subjects, and reads that page', async () => {
+		setupMwMock( { config: { wgNeoWikiSubjectFirst: true } } );
+		const repository = {
+			createSubjectPage: vi.fn().mockResolvedValue( { ...writeResult( null ), pageTitle: 'Pablo Picasso', pageId: 12 } ),
+			getPageSubjects: vi.fn().mockResolvedValue( pageHolding( host, birth ) ),
+		};
+		withSubjectRepository( repository );
+
+		await useSubjectStore().createSubject( host, pageId, [ birth ], 'why' );
+
+		expect( callsOf( repository, 'createSubjectPage' ) ).toContainEqual( expect.objectContaining( {
+			label: 'Pablo Picasso',
+			schemaName: 'TestSchema',
+			statements: host.getStatements(),
+			dependentSubjects: [ birth ],
+			comment: 'why',
+			pageTitle: undefined,
+			id: host.getId(),
+		} ) );
+		expect( repository.getPageSubjects ).toHaveBeenCalledWith( 12 );
+	} );
+
+	it( 'creates a Subject on the page it was given together with its Dependent Subjects', async () => {
+		setupMwMock( { config: { wgNeoWikiSubjectFirst: false } } );
+		const repository = {
+			createOtherSubject: vi.fn().mockResolvedValue( writeResult( host ) ),
+			getPageSubjects: vi.fn().mockResolvedValue( pageHolding( host, birth ) ),
+		};
+		withSubjectRepository( repository );
+
+		await useSubjectStore().createSubject( host, pageId, [ birth ], 'why' );
+
+		expect( callsOf( repository, 'createOtherSubject' )[ 0 ].dependentSubjects ).toEqual( [ birth ] );
+		expect( useSubjectStore().findSubject( birth.getId() ) ).toStrictEqual( birth );
+	} );
+
+	it( 'creates a page\'s Main Subject together with its Dependent Subjects', async () => {
+		const repository = {
+			createMainSubject: vi.fn().mockResolvedValue( writeResult( host ) ),
+			getPageSubjects: vi.fn().mockResolvedValue( pageHolding( host, birth ) ),
+		};
+		withSubjectRepository( repository );
+
+		await useSubjectStore().createMainSubject( pageId, 'Pablo Picasso', 'TestSchema', host.getStatements(), [ birth ], 'why', host.getId() );
+
+		expect( callsOf( repository, 'createMainSubject' ) ).toContainEqual( expect.objectContaining( {
+			pageId,
+			label: 'Pablo Picasso',
+			schemaName: 'TestSchema',
+			statements: host.getStatements(),
+			dependentSubjects: [ birth ],
+			comment: 'why',
+			id: host.getId(),
+		} ) );
 	} );
 
 } );

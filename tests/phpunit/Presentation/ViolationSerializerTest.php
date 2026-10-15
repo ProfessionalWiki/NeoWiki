@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Presentation;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Presentation\ViolationSerializer;
@@ -46,6 +47,22 @@ class ViolationSerializerTest extends TestCase {
 		$this->assertNull( $serialized['propertyName'] );
 		$this->assertSame( 'schema-not-found', $serialized['code'] );
 		$this->assertSame( [], $serialized['args'] );
+	}
+
+	public function testSerializesTheSubjectTheViolationIsOn(): void {
+		$serialized = ViolationSerializer::serialize(
+			new Violation( propertyName: null, code: 'dependent-subject-has-label', subjectId: new SubjectId( 'sBirth111111111' ) )
+		);
+
+		$this->assertSame( 'sBirth111111111', $serialized['subjectId'] );
+	}
+
+	public function testOmitsSubjectIdWhenNull(): void {
+		$serialized = ViolationSerializer::serialize(
+			new Violation( propertyName: null, code: 'required' )
+		);
+
+		$this->assertArrayNotHasKey( 'subjectId', $serialized );
 	}
 
 	public function testOmitsValuePartIndexWhenNull(): void {

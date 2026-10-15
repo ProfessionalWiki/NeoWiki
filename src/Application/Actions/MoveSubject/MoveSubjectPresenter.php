@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\MoveSubject;
 
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+
 interface MoveSubjectPresenter {
 
 	public function presentMoved(): void;
@@ -37,5 +39,12 @@ interface MoveSubjectPresenter {
 	 * page failed too, so it is left on neither and has to be restored from the source page's history.
 	 */
 	public function presentMoveIncomplete(): void;
+
+	/**
+	 * Called when the move breaks a rule for Dependent Subjects. No Subject moved.
+	 *
+	 * @param Violation[] $violations
+	 */
+	public function presentValidationFailed( array $violations ): void;
 
 }

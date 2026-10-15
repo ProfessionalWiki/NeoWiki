@@ -4,15 +4,21 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\MoveSubject;
 
+use Closure;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\DependentSubjectRulesViolatedException;
 use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
+use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use RuntimeException;
 
@@ -40,6 +46,7 @@ readonly class MoveSubjectAction {
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private SubjectHostingPageResolver $hostingPageResolver,
 		private SubjectIdParser $subjectIdParser,
+		private DependentSubjectRules $dependentSubjectRules,
 	) {
 	}
 
@@ -75,11 +82,22 @@ readonly class MoveSubjectAction {
 			return;
 		}
 
+		if ( $this->dependentSubjectRules->isDependent( $subject ) ) {
+			$this->presenter->presentValidationFailed( [ new Violation(
+				propertyName: null,
+				code: DependentSubjectRules::WITHOUT_HOST,
+				severity: Severity::Error,
+				subjectId: $subject->id,
+			) ] );
+			return;
+		}
+
+		$dependentSubjects = $this->dependentSubjectRules->dependentSubjectsReachedFrom( $subject, $sourceSubjects );
 		$targetSubjects = $this->subjectRepository->getSubjectsByPageId( $targetPageId );
 
 		// The subject -> page index permits one id on two pages. Refuse that state rather than add
 		// to it: which page such a Subject belongs to is already ambiguous.
-		if ( $targetSubjects->getAllSubjects()->getSubject( $subjectId ) !== null ) {
+		if ( $this->anyOnPage( $dependentSubjects->prepend( $subject ), $targetSubjects ) ) {
 			$this->presenter->presentSubjectAlreadyOnTargetPage();
 			return;
 		}
@@ -96,6 +114,11 @@ readonly class MoveSubjectAction {
 		$sourceSubjectsAfterMove = $sourceSubjects->without( $subjectId );
 		$this->addToTarget( $targetSubjects, $subject, $request->makeMainSubject );
 
+		foreach ( $dependentSubjects->asArray() as $dependentSubject ) {
+			$sourceSubjectsAfterMove = $sourceSubjectsAfterMove->without( $dependentSubject->id );
+			$targetSubjects->createOtherSubject( $dependentSubject );
+		}
+
 		$this->write(
 			request: $request,
 			sourcePageId: $sourcePageId,
@@ -104,6 +127,16 @@ readonly class MoveSubjectAction {
 			targetPageId: $targetPageId,
 			targetSubjects: $targetSubjects
 		);
+	}
+
+	private function anyOnPage( SubjectMap $subjects, PageSubjects $pageSubjects ): bool {
+		foreach ( $subjects->asArray() as $subject ) {
+			if ( $pageSubjects->getAllSubjects()->hasSubject( $subject->id ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private function addToTarget( PageSubjects $targetSubjects, Subject $subject, bool $makeMainSubject ): void {
@@ -132,7 +165,12 @@ readonly class MoveSubjectAction {
 	): void {
 		// Source first, for the projection reason in the class docblock: the target write has to be
 		// the last word on the moved Subject's node.
-		$sourceStatus = $this->subjectRepository->savePageSubjects( $sourceSubjectsAfterMove, $sourcePageId, $request->comment );
+		try {
+			$sourceStatus = $this->subjectRepository->savePageSubjects( $sourceSubjectsAfterMove, $sourcePageId, $request->comment );
+		} catch ( DependentSubjectRulesViolatedException $exception ) {
+			$this->presenter->presentValidationFailed( $exception->violations );
+			return;
+		}
 
 		// The source page went away under the write, which from the caller's side is the Subject
 		// going away. Nothing has been written, as the source page is written first.
@@ -141,10 +179,25 @@ readonly class MoveSubjectAction {
 			return;
 		}
 
-		$targetStatus = $this->subjectRepository->savePageSubjects( $targetSubjects, $targetPageId, $request->comment );
+		try {
+			$targetStatus = $this->subjectRepository->savePageSubjects( $targetSubjects, $targetPageId, $request->comment );
+		} catch ( DependentSubjectRulesViolatedException $exception ) {
+			$this->undoSourceWrite(
+				$sourceSubjectsBeforeMove,
+				$sourcePageId,
+				$request->comment,
+				fn () => $this->presenter->presentValidationFailed( $exception->violations )
+			);
+			return;
+		}
 
 		if ( $targetStatus->status === PageContentSavingStatus::ERROR ) {
-			$this->undoSourceWrite( $sourceSubjectsBeforeMove, $sourcePageId, $request->comment );
+			$this->undoSourceWrite(
+				$sourceSubjectsBeforeMove,
+				$sourcePageId,
+				$request->comment,
+				fn () => $this->presenter->presentTargetPageNotFound()
+			);
 			return;
 		}
 
@@ -155,16 +208,23 @@ readonly class MoveSubjectAction {
 	 * Writes the source page back as it was, so a move whose target write failed leaves the Subject
 	 * where it started rather than on no page at all - which is a state the API cannot write to.
 	 * The page's own write authorization was taken before the first write and covers this one.
+	 *
+	 * @param Closure(): void $presentFailedMove
 	 */
-	private function undoSourceWrite( PageSubjects $sourceSubjectsBeforeMove, PageId $sourcePageId, ?string $comment ): void {
-		$undoStatus = $this->subjectRepository->savePageSubjects( $sourceSubjectsBeforeMove, $sourcePageId, $comment );
+	private function undoSourceWrite(
+		PageSubjects $sourceSubjectsBeforeMove,
+		PageId $sourcePageId,
+		?string $comment,
+		Closure $presentFailedMove
+	): void {
+		$undoStatus = $this->subjectRepository->restorePageSubjects( $sourceSubjectsBeforeMove, $sourcePageId, $comment );
 
 		if ( $undoStatus->status === PageContentSavingStatus::ERROR ) {
 			$this->presenter->presentMoveIncomplete();
 			return;
 		}
 
-		$this->presenter->presentTargetPageNotFound();
+		$presentFailedMove();
 	}
 
 }

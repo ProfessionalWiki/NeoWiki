@@ -6,7 +6,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -56,21 +55,6 @@ class SubjectContentTest extends TestCase {
 			TestSubject::ZERO_GUID,
 			$content->getPageSubjects()->getMainSubject()->id->text
 		);
-	}
-
-	public function testMutatePageSubjects(): void {
-		$content = SubjectContent::newFromData(
-			new PageSubjects(
-				mainSubject: TestSubject::build( id: TestSubject::ZERO_GUID ),
-				otherSubjects: new SubjectMap()
-			)
-		);
-
-		$content->mutatePageSubjects( function( PageSubjects $subjects ): void {
-			$subjects->removeSubject( new SubjectId( TestSubject::ZERO_GUID ) );
-		} );
-
-		$this->assertNull( $content->getPageSubjects()->getMainSubject() );
 	}
 
 	public function testSubjectIdsAreReadWithoutDeserializing(): void {

@@ -77,8 +77,8 @@ const updateTargetSchemas = ( targetSchemas: SchemaReference[] ): void => {
 	emit( 'update:property', { targetSchemas } );
 };
 
-async function createTargetSchema( schemaName: string ): Promise<void> {
-	const schema = await schemaCreation?.create( schemaName ) ?? null;
+async function createTargetSchema( schemaName: string, subjectsAreDependent: boolean | null ): Promise<void> {
+	const schema = await schemaCreation?.create( schemaName, subjectsAreDependent ) ?? null;
 
 	// The wiki saved the Schema under its page title, which is the name the field would list it by.
 	if ( schema !== null ) {

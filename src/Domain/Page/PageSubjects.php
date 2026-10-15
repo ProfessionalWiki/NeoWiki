@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Page;
 
+use Closure;
 use InvalidArgumentException;
 use OutOfBoundsException;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -75,6 +76,18 @@ class PageSubjects {
 	}
 
 	/**
+	 * A copy with $change applied to every Subject, keeping the Main Subject and the order.
+	 *
+	 * @param Closure(Subject): Subject $change
+	 */
+	public function withEachSubject( Closure $change ): self {
+		return new self(
+			$this->mainSubject === null ? null : $change( $this->mainSubject ),
+			new SubjectMap( ...array_map( $change, $this->otherSubjects->asArray() ) )
+		);
+	}
+
+	/**
 	 * Updates the subject with the ID of the provided subject.
 	 * @throws OutOfBoundsException if the subject is not found
 	 */
@@ -90,6 +103,18 @@ class PageSubjects {
 		}
 
 		throw new OutOfBoundsException( 'Subject not found' );
+	}
+
+	/**
+	 * Replaces the Subject with $subject's id, or adds $subject as one of the other Subjects.
+	 */
+	public function putSubject( Subject $subject ): void {
+		if ( $this->isMainSubject( $subject->id ) ) {
+			$this->mainSubject = $subject;
+			return;
+		}
+
+		$this->otherSubjects->addOrUpdateSubject( $subject );
 	}
 
 	public function isMainSubject( SubjectId $id ): bool {

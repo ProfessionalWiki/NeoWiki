@@ -10,6 +10,12 @@
 			>
 				{{ schema.getDescription() }}
 			</div>
+			<p
+				v-if="schema.subjectsAreDependent()"
+				class="ext-neowiki-schema-display-header__dependence"
+			>
+				{{ $i18n( 'neowiki-schema-subjects-are-dependent' ).text() }}
+			</p>
 			<CdxButton
 				v-if="canCreateSubject"
 				class="ext-neowiki-schema-display-header__create-subject"
@@ -79,6 +85,12 @@ const emit = defineEmits<{
 
 	&__description {
 		color: @color-subtle;
+	}
+
+	&__dependence {
+		margin: @spacing-25 0 0;
+		color: @color-subtle;
+		font-size: @font-size-small;
 	}
 
 	&__create-subject {

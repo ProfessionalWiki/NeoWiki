@@ -23,6 +23,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
+import { DependentSubjectEditingKey, type DependentSubjectEditing } from '@/components/SubjectEditor/DependentSubjectEditing.ts';
 
 const $i18n = createI18nMock();
 
@@ -36,11 +37,11 @@ const defaultSubject = subjectStoredOn( testPage );
 
 const defaultSchema = newSchema();
 
-const schemaWithNameAndAge = new Schema(
-	'TestSchema',
-	'A test schema',
-	new PropertyDefinitionList( [ newTextProperty( { name: 'Name' } ), newNumberProperty( { name: 'Age' } ) ] ),
-);
+const schemaWithNameAndAge = newSchema( {
+	title: 'TestSchema',
+	description: 'A test schema',
+	properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Name' } ), newNumberProperty( { name: 'Age' } ) ] ),
+} );
 
 // Stores no label (ADR 31), so its name on screen is the server's derived one: here the
 // page it is the Main Subject of.
@@ -71,6 +72,7 @@ interface MountPaneOptions {
 	nested?: boolean;
 	isNew?: boolean;
 	unsavedTargetIds?: readonly string[];
+	provide?: Record<symbol, unknown>;
 }
 
 let pinia: ReturnType<typeof createPinia>;
@@ -84,6 +86,7 @@ function mountPane( {
 	nested = false,
 	isNew = false,
 	unsavedTargetIds = [],
+	provide = {},
 }: MountPaneOptions = {} ): VueWrapper {
 	return mount( SubjectEditPane, {
 		props: {
@@ -98,7 +101,7 @@ function mountPane( {
 				$i18n,
 			},
 			plugins: [ pinia ],
-			provide: NeoWikiTestServices.getServices(),
+			provide: { ...NeoWikiTestServices.getServices(), ...provide },
 			directives: {
 				tooltip: {},
 			},
@@ -125,11 +128,11 @@ function fieldValue( wrapper: VueWrapper, propertyName: string ): unknown {
 }
 
 // A relation field with a target picked, as the pane shows it for a Subject read from the server.
-const relationSchema = new Schema(
-	'TestSchema',
-	'A test schema',
-	new PropertyDefinitionList( [ newRelationProperty( { name: 'Author' } ) ] ),
-);
+const relationSchema = newSchema( {
+	title: 'TestSchema',
+	description: 'A test schema',
+	properties: new PropertyDefinitionList( [ newRelationProperty( { name: 'Author' } ) ] ),
+} );
 
 const subjectWithAuthor = defaultSubject.withStatements( new StatementList( [ new Statement(
 	new PropertyName( 'Author' ),
@@ -197,6 +200,24 @@ describe( 'SubjectEditPane', () => {
 
 		expect( updated ).not.toBeNull();
 		expect( [ ...updated!.getStatements() ] ).toHaveLength( 1 );
+	} );
+
+	it( 'keeps the Statements its Schema does not declare in the Subject it builds', async () => {
+		const born = new Statement(
+			new PropertyName( 'Born' ),
+			RelationType.typeName,
+			new RelationValue( [ newRelation( undefined, 's1birthAAAAAAA1' ) ] ),
+		);
+		const wrapper = mountPane( {
+			subject: subjectWithOnlyName.withStatements( new StatementList( [ ...subjectWithOnlyName.getStatements(), born ] ) ),
+			schema: schemaWithNameAndAge,
+		} );
+
+		await wrapper.find( 'input' ).setValue( 'Ada' );
+
+		const built = ( wrapper.vm as any ).buildUpdatedSubject() as Subject;
+		expect( built.getStatementValue( new PropertyName( 'Name' ) ) ).toEqual( newStringValue( 'Ada' ) );
+		expect( built.getStatements().get( new PropertyName( 'Born' ) ) ).toEqual( born );
 	} );
 
 	it( 'routes anchorless server violations to the banner and anchored ones to the field', async () => {
@@ -412,11 +433,11 @@ describe( 'SubjectEditPane', () => {
 	} );
 
 	function schemaWithTextProperty( propertyName: string ): Schema {
-		return new Schema(
-			'TestSchema',
-			'A test schema',
-			new PropertyDefinitionList( [ newTextProperty( { name: propertyName } ) ] ),
-		);
+		return newSchema( {
+			title: 'TestSchema',
+			description: 'A test schema',
+			properties: new PropertyDefinitionList( [ newTextProperty( { name: propertyName } ) ] ),
+		} );
 	}
 
 	function sentPropertyNames( validate: ReturnType<typeof vi.fn>, call: number ): string[] {
@@ -732,6 +753,166 @@ describe( 'SubjectEditPane', () => {
 
 			expect( ( wrapper.get( '.ext-neowiki-subject-edit-pane__label input' ).element as HTMLInputElement ).value )
 				.toBe( 'Ada' );
+		} );
+	} );
+
+	describe( 'A Dependent Subject edited on its own', () => {
+		const birthSchema = newSchema( { title: 'Birth', subjectsAreDependent: true } );
+		const birth = newSubject( {
+			id: 's1birthAAAAAAA1',
+			label: null,
+			displayNameIsGenerated: true,
+			schemaName: 'Birth',
+			pageIdentifiers: testPage,
+		} );
+
+		it( 'offers no label to give it', () => {
+			const wrapper = mountPane( { subject: birth, schema: birthSchema } );
+
+			expect( wrapper.findComponent( EditableText ).exists() ).toBe( false );
+			expect( wrapper.find( '.ext-neowiki-subject-edit-pane__label' ).exists() ).toBe( false );
+			expect( wrapper.get( '.ext-neowiki-subject-edit-pane__name' ).text() ).toBe( '(s1birthAAAAAAA1)' );
+		} );
+	} );
+
+	describe( 'Dependent Subjects in the form', () => {
+		const BIRTH_ID = 's1birthAAAAAAA1';
+		const birthSchema = newSchema( {
+			title: 'Birth',
+			subjectsAreDependent: true,
+			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Date' } ) ] ),
+		} );
+		const hostSchema = newSchema( {
+			properties: new PropertyDefinitionList( [
+				newTextProperty( { name: 'Name' } ),
+				newRelationProperty( { name: 'Birth', targetSchemas: [ 'Birth' ] } ),
+			] ),
+		} );
+		const birth = newSubject( {
+			id: BIRTH_ID,
+			label: null,
+			schemaName: 'Birth',
+			pageIdentifiers: testPage,
+			statements: new StatementList( [
+				new Statement( new PropertyName( 'Date' ), TextType.typeName, newStringValue( '1881' ) ),
+			] ),
+		} );
+		const host = defaultSubject.withStatements( new StatementList( [ new Statement(
+			new PropertyName( 'Birth' ),
+			RelationType.typeName,
+			new RelationValue( [ newRelation( undefined, BIRTH_ID ) ] ),
+		) ] ) );
+
+		const editing: DependentSubjectEditing = {
+			targetsDependentSubjects: ( property ) => property.targetSchemas.includes( 'Birth' ),
+			schema: ( name ) => name === 'Birth' ? birthSchema : undefined,
+			subject: ( id ) => id === BIRTH_ID ? birth : undefined,
+			isNew: () => false,
+			markChanged: () => undefined,
+			add: () => Promise.resolve( null ),
+			unsavedTargetIds: () => [],
+		};
+
+		function mountHost(): VueWrapper {
+			return mountPane( { subject: host, schema: hostSchema, provide: { [ DependentSubjectEditingKey as symbol ]: editing } } );
+		}
+
+		function violation( propertyName: string, code: string, subjectId?: string ): SubjectViolation {
+			return { propertyName, code, args: [], severity: 'error', valuePartIndex: null, ...( subjectId === undefined ? {} : { subjectId } ) };
+		}
+
+		function bannerCodes( wrapper: VueWrapper ): string[] {
+			return ( wrapper.findAllComponents( SubjectViolationBanners )[ 0 ].props( 'violations' ) as SubjectViolation[] )
+				.map( ( shown ) => shown.code );
+		}
+
+		function messageInGroup( wrapper: VueWrapper ): string {
+			return wrapper.get( '.ext-neowiki-dependent-subject-editor .cdx-field__validation-message' ).text();
+		}
+
+		it( 'reports the Dependent Subjects its form shows, for the save to carry', async () => {
+			const wrapper = mountHost();
+			await flushPromises();
+
+			expect( ( ( wrapper.vm as any ).buildDependentSubjects() as Subject[] ).map( ( each ) => each.getId().text ) )
+				.toEqual( [ BIRTH_ID ] );
+		} );
+
+		it( 'counts an edit inside a Dependent Subject as a change of its own', async () => {
+			const wrapper = mountHost();
+			await flushPromises();
+
+			wrapper.findComponent( SubjectEditor ).vm.$emit( 'dependent-subject-change', false );
+			await nextTick();
+
+			expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
+		} );
+
+		it( 'takes in the Dependent Subjects again after a relation inside one changed', async () => {
+			const wrapper = mountHost();
+			await flushPromises();
+
+			wrapper.findComponent( SubjectEditor ).vm.$emit( 'dependent-subject-change', true );
+			await nextTick();
+
+			expect( ( ( wrapper.vm as any ).editedDependentSubjects as Subject[] ).map( ( each ) => each.getId().text ) )
+				.toEqual( [ BIRTH_ID ] );
+		} );
+
+		it( 'drops the cards of the Dependent Subjects removed before its Subject was written', async () => {
+			const wrapper = mountHost();
+			await flushPromises();
+			await wrapper.find( '.ext-neowiki-dependent-subject-editor__remove' ).trigger( 'click' );
+			await flushPromises();
+			expect( wrapper.find( '.ext-neowiki-dependent-subjects-input__removed' ).exists() ).toBe( true );
+
+			( wrapper.vm as any ).markWritten();
+			await nextTick();
+
+			expect( wrapper.find( '.ext-neowiki-dependent-subjects-input__removed' ).exists() ).toBe( false );
+		} );
+
+		it( 'reports none where its Schema has no field for them', () => {
+			const wrapper = mountPane();
+
+			expect( ( wrapper.vm as any ).buildDependentSubjects() ).toEqual( [] );
+		} );
+
+		it( 'shows what a refused save reported on a Dependent Subject at that Subject\'s field', async () => {
+			const wrapper = mountHost();
+			await flushPromises();
+
+			( wrapper.vm as any ).setServerViolations( [ violation( 'Date', 'some-field-code', BIRTH_ID ) ] );
+			await flushPromises();
+
+			expect( messageInGroup( wrapper ) ).toBe( 'neowiki-field-some-field-code' );
+			expect( bannerCodes( wrapper ) ).toEqual( [] );
+		} );
+
+		it( 'keeps what a refused save reported on its own Subject, named or not, at its own fields', async () => {
+			const wrapper = mountHost();
+			await flushPromises();
+
+			( wrapper.vm as any ).setServerViolations( [
+				violation( 'Name', 'unnamed-code' ),
+				violation( 'Name', 'named-code', defaultSubject.getId().text ),
+			] );
+			await nextTick();
+
+			expect( ( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) as SubjectViolation[] )
+				.map( ( shown ) => shown.code ) ).toEqual( [ 'unnamed-code', 'named-code' ] );
+			expect( bannerCodes( wrapper ) ).toEqual( [] );
+		} );
+
+		// Not at the field of the same name, which is another Subject's.
+		it( 'shows what a refused save reported on a Subject the form does not show in its banners', async () => {
+			const wrapper = mountHost();
+			await flushPromises();
+
+			( wrapper.vm as any ).setServerViolations( [ violation( 'Name', 'elsewhere-code', 's1goneAAAAAAAA1' ) ] );
+			await nextTick();
+
+			expect( bannerCodes( wrapper ) ).toEqual( [ 'elsewhere-code' ] );
 		} );
 	} );
 

@@ -29,20 +29,20 @@ Take a museum's yearly attendance. Define an `Attendance` Schema and link one At
 Museum Schema
   Attendance figures: relation → Attendance (multiple)
 
-Attendance Schema
+Attendance Schema (Subjects are dependent)
   Year:     number
   Visitors: number
   Source:   url
 ```
 
 Each Attendance Subject (`{ Year: 2024, Visitors: 2500000, Source: "https://…" }`) holds what Wikibase would put as a
-qualifier (`Year`) and a reference (`Source`) on one population Statement. Here they are typed properties governed by
+qualifier (`Year`) and a reference (`Source`) on one visitor-count Statement. Here they are typed properties governed by
 the `Attendance` Schema, so they validate and render like any other data. A linked Subject can link to further
 Subjects, with no depth limit. Qualify a link the same way: retarget the Relation at a new Subject that holds the
 qualifying properties and carries its own Relation to the original target.
 
-The Attendance Subjects can live on their own pages or as additional [Subjects](glossary.md#page) on the museum's
-page. The [Subject Format](api/subject-format.md#complete-example) shows the same pattern in JSON.
+The `Attendance` Schema declares its Subjects [dependent](glossary.md#dependent-subject): each Attendance Subject is
+edited in the museum's editor, stored on the museum's page and removed with the museum.
 
 ## References
 

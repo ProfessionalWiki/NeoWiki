@@ -28,7 +28,8 @@ class SchemaTest extends TestCase {
 		return new Schema(
 			name: new SchemaName( 'Company' ),
 			description: 'A company',
-			properties: new PropertyDefinitions( $propertyDefinitions )
+			properties: new PropertyDefinitions( $propertyDefinitions ),
+			subjectsAreDependent: false
 		);
 	}
 

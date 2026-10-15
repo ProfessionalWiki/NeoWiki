@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject;
 
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\DependentSubjectRulesViolatedException;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -93,7 +94,12 @@ readonly class SetMainSubjectAction {
 	}
 
 	private function saveAndPresentChanged( PageSubjects $pageSubjects, PageId $pageId, ?string $comment ): void {
-		$status = $this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $comment );
+		try {
+			$status = $this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $comment );
+		} catch ( DependentSubjectRulesViolatedException $exception ) {
+			$this->presenter->presentValidationFailed( $exception->violations );
+			return;
+		}
 
 		// The read gate at the top already turns an unresolvable page away; this catches the page
 		// going away between that check and the save, so a dropped write is never reported as changed.

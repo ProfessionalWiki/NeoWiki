@@ -59,4 +59,12 @@ class RestReplaceSubjectPresenter implements ReplaceSubjectPresenter {
 		$this->statusCode = 422;
 	}
 
+	public function presentSaveFailed( ?string $errorMessage ): void {
+		$this->apiResponse = [
+			'status' => 'error',
+			'message' => 'The Subject could not be saved' . ( $errorMessage === null ? '' : ": $errorMessage" ),
+		];
+		$this->statusCode = 500;
+	}
+
 }

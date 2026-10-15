@@ -12,7 +12,14 @@
 			@update:selected="onSelect"
 			@update:input-chips="keepTargetsOfChips"
 			@input="onInput"
-		/>
+		>
+			<template
+				v-if="leftOutKindReason !== null"
+				#no-results
+			>
+				{{ leftOutKindReason }}
+			</template>
+		</CdxMultiselectLookup>
 		<!-- Shown apart from the field: Codex 1.14 turns a clicked chip back into text to search for,
 			and the menu offers no Schema of another Source to pick it again. -->
 		<div
@@ -34,22 +41,24 @@ import { computed, ref, watch } from 'vue';
 import { CdxInfoChip, CdxMultiselectLookup } from '@wikimedia/codex';
 import type { ChipInputItem } from '@wikimedia/codex';
 import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
-import type { SchemaSummary } from '@/application/SchemaLookup.ts';
+import { type SchemaSummary, subjectsAreDependentIn } from '@/application/SchemaLookup.ts';
 import { isLocalSchemaReference, schemaReferenceText, type SchemaReference } from '@/domain/SchemaReference';
 import { CREATE_SCHEMA, schemaMenu, type SchemaMenu } from '@/presentation/schemaMenu.ts';
+import { targetsDependentSubjects } from '@/domain/propertyTypes/Relation.ts';
 
 const props = defineProps<{
 	modelValue: readonly SchemaReference[];
 	/**
 	 * Ends the list with an offer to create a Schema named after the typed text, unless a Schema or a
-	 * target has that name already. Choosing the offer emits `create` with the text.
+	 * target has that name already. Choosing the offer emits `create` with the text, and with whether
+	 * the targets' Subjects are dependent, which the new Schema must match, or null where unknown.
 	 */
 	offersCreation?: boolean;
 }>();
 
 const emit = defineEmits<{
 	'update:modelValue': [ targetSchemas: SchemaReference[] ];
-	'create': [ schemaName: string ];
+	'create': [ schemaName: string, subjectsAreDependent: boolean | null ];
 }>();
 
 const schemaStore = useSchemaStore();
@@ -80,8 +89,32 @@ const takenNames = computed( (): Set<string> => new Set(
 const creationOffered = computed( (): boolean =>
 	props.offersCreation && !takenNames.value.has( normalizeSchemaName( typedName.value ) ) );
 
+// The targets of one property all have Dependent Subjects or none does, so once one is chosen, only
+// Schemas like it are offered.
+const propertyTargetsDependentSubjects = computed( (): boolean | null =>
+	targetsDependentSubjects( localTargets.value, subjectsAreDependentIn( summaries.value ) ) );
+
+const offeredSummaries = computed( (): SchemaSummary[] => propertyTargetsDependentSubjects.value === null ?
+	summaries.value :
+	summaries.value.filter( ( summary ) => summary.subjectsAreDependent === propertyTargetsDependentSubjects.value ) );
+
 const menu = computed( (): SchemaMenu =>
-	schemaMenu( summaries.value, query.value, creationOffered.value ? typedName.value : null ) );
+	schemaMenu( offeredSummaries.value, query.value, creationOffered.value ? typedName.value : null ) );
+
+// Where the search finds Schemas only of the kind the targets rule out, a menu with nothing to offer says why.
+const leftOutKindReason = computed( (): string | null => {
+	const search = query.value.trim().toLowerCase();
+	const targetsDependent = propertyTargetsDependentSubjects.value;
+
+	if ( targetsDependent === null || search === '' || !summaries.value.some( ( summary ) =>
+		summary.subjectsAreDependent !== targetsDependent && summary.name.toLowerCase().includes( search ) ) ) {
+		return null;
+	}
+
+	return targetsDependent ?
+		mw.msg( 'neowiki-property-editor-target-schema-dependent-only' ) :
+		mw.msg( 'neowiki-property-editor-target-schema-standalone-only' );
+} );
 
 // CdxMultiselectLookup opens its menu on focus only when it has items by then, so the field is
 // rendered once the Schemas have arrived, or a failure to load them has been reported.
@@ -120,7 +153,7 @@ function onSelect( names: readonly string[] ): void {
 		const schemaName = typedName.value;
 		// Cleared as a pick clears it: the Schema the offer creates comes back as a target.
 		clearSearch();
-		emit( 'create', schemaName );
+		emit( 'create', schemaName, propertyTargetsDependentSubjects.value );
 		return;
 	}
 

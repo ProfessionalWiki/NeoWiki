@@ -45,6 +45,19 @@ export class StatementList implements Iterable<Statement> {
 		return this.filter( ( statement ) => statement.value instanceof RelationValue );
 	}
 
+	/**
+	 * Replaces the statement of the same property in place, or appends.
+	 */
+	public withStatement( statement: Statement ): StatementList {
+		if ( !this.has( statement.propertyName ) ) {
+			return new StatementList( [ ...this, statement ] );
+		}
+
+		return new StatementList( [ ...this ].map(
+			( existing ) => existing.propertyName.toString() === statement.propertyName.toString() ? statement : existing,
+		) );
+	}
+
 	private filter( callback: ( property: Statement ) => boolean ): StatementList {
 		return new StatementList(
 			Object.values( this.statements ).filter( callback ),

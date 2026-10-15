@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\SetSubjectsOrdering;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\DependentSubjectRulesViolatedException;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -57,7 +58,12 @@ readonly class SetSubjectsOrderingAction {
 			return;
 		}
 
-		$status = $this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $request->comment );
+		try {
+			$status = $this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $request->comment );
+		} catch ( DependentSubjectRulesViolatedException $exception ) {
+			$this->presenter->presentValidationFailed( $exception->violations );
+			return;
+		}
 
 		// The read gate above already turns an unresolvable page away; this catches the page going
 		// away between that check and the save, so a dropped write is never reported as changed.

@@ -1,6 +1,8 @@
 import { flushPromises, VueWrapper } from '@vue/test-utils';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { newRelationProperty } from '@/domain/propertyTypes/Relation';
 import { CdxCheckbox, CdxSelect } from '@wikimedia/codex';
 import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 import NumberInput from '@/components/Value/NumberInput.vue';
@@ -10,6 +12,7 @@ import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttribu
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newSelectProperty, SelectProperty } from '@/domain/propertyTypes/Select';
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
+import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
 import { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { newNumberValue, newStringValue } from '@/domain/Value';
 import { createTestWrapper, FieldProps, findPropertyNameInput, reportUnparseableNumber, selectedText, setupMwMock } from '../../VueTestHelpers.ts';
@@ -231,6 +234,43 @@ describe( 'PropertyDefinitionEditor', () => {
 			await reportUnparseableNumber( wrapper.findComponent( NumberInput ).find( 'input' ) );
 
 			expect( lastEmittedProperty( wrapper ).default ).toBeUndefined();
+		} );
+	} );
+
+	describe( 'initial value of a relation property', () => {
+		beforeEach( () => {
+			useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+				{ name: 'Birth', description: '', propertyCount: 1, subjectsAreDependent: true },
+				{ name: 'City', description: '', propertyCount: 1, subjectsAreDependent: false },
+			] );
+		} );
+
+		function offersInitialValue( wrapper: VueWrapper ): boolean {
+			return wrapper.text().includes( 'neowiki-property-editor-initial-value' );
+		}
+
+		it( 'is not offered where the target Schemas have Dependent Subjects', async () => {
+			const wrapper = newWrapper( newRelationProperty( { name: 'Birth', targetSchemas: [ 'Birth' ] } ) );
+			await flushPromises();
+
+			expect( offersInitialValue( wrapper ) ).toBe( false );
+		} );
+
+		it( 'is offered where the target Schemas have standalone Subjects', async () => {
+			const wrapper = newWrapper( newRelationProperty( { name: 'Place', targetSchemas: [ 'City' ] } ) );
+			await flushPromises();
+
+			expect( offersInitialValue( wrapper ) ).toBe( true );
+		} );
+
+		it( 'is no longer offered once a target Schema with Dependent Subjects is added', async () => {
+			const wrapper = newWrapper( newRelationProperty( { name: 'Event', targetSchemas: [] } ) );
+			await flushPromises();
+
+			await wrapper.findComponent( RelationAttributesEditor ).vm.$emit( 'update:property', { targetSchemas: [ 'Birth' ] } );
+			await flushPromises();
+
+			expect( offersInitialValue( wrapper ) ).toBe( false );
 		} );
 	} );
 

@@ -5,6 +5,8 @@ import { SchemaCreationKey } from '@/components/common/SchemaCreation.ts';
 export interface StackedSchemaCreator {
 	/** The name the Create schema dialog opened with, null while it is closed. */
 	initialName: Ref<string | null>;
+	/** Decided for the user; null leaves it to them. */
+	subjectsAreDependent: Ref<boolean | null>;
 	created: ( schema: Schema ) => void;
 	closed: () => void;
 	/** How many Schema dialogs the calling dialog stands in front of. */
@@ -20,12 +22,14 @@ const StackLevelKey: InjectionKey<number> = Symbol( 'NeoWikiSchemaDialogStackLev
  */
 export function useSchemaCreation(): StackedSchemaCreator {
 	const initialName = ref<string | null>( null );
+	const subjectsAreDependent = ref<boolean | null>( null );
 	let settle: ( schema: Schema | null ) => void = () => undefined;
 	const stackLevel = inject( StackLevelKey, 0 );
 
 	provide( SchemaCreationKey, {
-		create: ( name: string ): Promise<Schema | null> => {
+		create: ( name: string, dependent: boolean | null ): Promise<Schema | null> => {
 			initialName.value = name;
+			subjectsAreDependent.value = dependent;
 
 			return new Promise( ( resolve ) => {
 				settle = resolve;
@@ -37,6 +41,7 @@ export function useSchemaCreation(): StackedSchemaCreator {
 
 	return {
 		initialName,
+		subjectsAreDependent,
 		created: ( schema: Schema ): void => settle( schema ),
 		closed: (): void => {
 			initialName.value = null;

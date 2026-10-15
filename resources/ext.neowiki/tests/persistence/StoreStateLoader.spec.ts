@@ -69,7 +69,10 @@ class UnreachableSubjectRepository extends StubSubjectRepository {
 function newLoader( repository: SubjectRepository ): StoreStateLoader {
 	return new StoreStateLoader(
 		repository,
-		new InMemorySchemaRepository( [ newSchema( { title: 'Company' } ) ] ),
+		new InMemorySchemaRepository( [
+			newSchema( { title: 'Company' } ),
+			newSchema( { title: 'Founding', subjectsAreDependent: true } ),
+		] ),
 		new InMemoryLayoutLookup( [] ),
 	);
 }
@@ -88,7 +91,7 @@ describe( 'StoreStateLoader', () => {
 			{ requestedSubject: main, referencedSubjects: [ referenced1, referenced2 ], notFoundTargetIds: [] },
 		);
 
-		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
+		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ), new Set() );
 
 		const subjectStore = useSubjectStore();
 		expect( subjectStore.getSubject( mainId ) ).toEqual( main );
@@ -104,7 +107,7 @@ describe( 'StoreStateLoader', () => {
 			{ requestedSubject: main, referencedSubjects: [ referenced1, referenced2 ], notFoundTargetIds: [] },
 		);
 
-		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
+		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ), new Set() );
 
 		expect( repository.getSubjectWithReferencedSubjectsCallCount ).toBe( 1 );
 		expect( repository.getSubjectCallCount ).toBe( 0 );
@@ -117,7 +120,7 @@ describe( 'StoreStateLoader', () => {
 			notFoundTargetIds: [ referencedId1 ],
 		} );
 
-		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
+		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ), new Set() );
 
 		const subjectStore = useSubjectStore();
 		expect( [ referencedId1, referencedId2 ].filter( ( id ) => subjectStore.wasNotFound( id ) ) )
@@ -131,9 +134,80 @@ describe( 'StoreStateLoader', () => {
 			{ requestedSubject: main, referencedSubjects: [ referenced1 ], notFoundTargetIds: [] },
 		);
 
-		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
+		await newLoader( repository ).loadSubjectsAndSchemas( new Set( [ mainId.text ] ), new Set() );
 
 		expect( useSchemaStore().getSchema( 'Company' ) ).toEqual( newSchema( { title: 'Company' } ) );
+	} );
+
+	// Only a View with a Layout can show a Subject's Dependent Subjects, by naming their property.
+	describe( 'the Dependent Subjects of a Subject', () => {
+
+		const birthId = new SubjectId( 's44444444444444' );
+
+		afterEach( () => {
+			vi.restoreAllMocks();
+		} );
+
+		function birthOf( schemaName: string ): Subject {
+			return newSubject( {
+				id: birthId,
+				label: null,
+				displayNameIsGenerated: true,
+				schemaName,
+				hostSubject: {
+					id: mainId.text,
+					schemaName: 'Company',
+					displayName: 'ACME Inc',
+					displayNameIsGenerated: false,
+					hostSubject: null,
+				},
+			} );
+		}
+
+		function newLoaderOfBirth(): StoreStateLoader {
+			return newLoader( new RecordingSubjectRepository( {
+				requestedSubject: newMainSubjectWithRelationsTo( birthId ),
+				referencedSubjects: [ birthOf( 'Founding' ) ],
+				notFoundTargetIds: [],
+			} ) );
+		}
+
+		it( 'get their Schemas loaded along with the Subject\'s own where a View shows it with a Layout', async () => {
+			await newLoaderOfBirth().loadSubjectsAndSchemas( new Set( [ mainId.text ] ), new Set( [ mainId.text ] ) );
+
+			expect( useSchemaStore().schemas.has( 'Founding' ) ).toBe( true );
+		} );
+
+		it( 'get none of their Schemas loaded where no View shows it with a Layout', async () => {
+			await newLoaderOfBirth().loadSubjectsAndSchemas( new Set( [ mainId.text ] ), new Set() );
+
+			expect( useSchemaStore().schemas.has( 'Founding' ) ).toBe( false );
+		} );
+
+		// The Subject's own Schema lands last here, so a load giving up at the failed one would miss it.
+		it( 'leave the Subject\'s own Schema stored when one of their Schemas does not load', async () => {
+			vi.spyOn( console, 'warn' ).mockImplementation( () => undefined );
+			const loader = new StoreStateLoader(
+				new RecordingSubjectRepository( {
+					requestedSubject: newMainSubjectWithRelationsTo( birthId ),
+					referencedSubjects: [ birthOf( 'Ghost' ) ],
+					notFoundTargetIds: [],
+				} ),
+				{
+					getSchema: ( name: string ) => name === 'Company' ?
+						new Promise( ( resolve ) => {
+							setTimeout( () => resolve( newSchema( { title: 'Company' } ) ), 0 );
+						} ) :
+						Promise.reject( new Error( 'Unknown schema: ' + name ) ),
+				} as unknown as SchemaRepository,
+				new InMemoryLayoutLookup( [] ),
+			);
+
+			await loader.loadSubjectsAndSchemas( new Set( [ mainId.text ] ), new Set( [ mainId.text ] ) );
+
+			expect( useSchemaStore().schemas.has( 'Company' ) ).toBe( true );
+		} );
+
 	} );
 
 	it( 'discards layout write-backs that a mutation overtook', async () => {
@@ -170,7 +244,7 @@ describe( 'StoreStateLoader', () => {
 		const subjectStore = useSubjectStore();
 		const schemaStore = useSchemaStore();
 
-		const loading = loader.loadSubjectsAndSchemas( new Set( [ 's11111111111111' ] ) );
+		const loading = loader.loadSubjectsAndSchemas( new Set( [ 's11111111111111' ] ), new Set() );
 		subjectStore.mutationEpoch++; // Stands in for any acknowledged subject mutation — SubjectStore has no repo-free mutating action.
 		schemaStore.removeSchema( subject.getSchemaName() );
 		resolveSubjects( { requestedSubject: subject, referencedSubjects: [], notFoundTargetIds: [] } );
@@ -199,7 +273,7 @@ describe( 'StoreStateLoader', () => {
 
 		function loadReadableAndUnloadable(): Promise<void> {
 			return newLoader( new StubSubjectRepository( [ readable ] ) )
-				.loadSubjectsAndSchemas( new Set( [ mainId.text, unloadableId.text ] ) );
+				.loadSubjectsAndSchemas( new Set( [ mainId.text, unloadableId.text ] ), new Set() );
 		}
 
 		function expectSkipLogged( subjectId: SubjectId ): void {
@@ -223,7 +297,7 @@ describe( 'StoreStateLoader', () => {
 		// A request that fails outright, the wiki unreachable or answering 500, is skipped like a denial.
 		it( 'stores nothing for a Subject whose request fails', async () => {
 			await newLoader( new UnreachableSubjectRepository( [ readable ] ) )
-				.loadSubjectsAndSchemas( new Set( [ mainId.text ] ) );
+				.loadSubjectsAndSchemas( new Set( [ mainId.text ] ), new Set() );
 
 			expect( useSubjectStore().subjects.has( mainId.text ) ).toBe( false );
 			expectSkipLogged( mainId );
@@ -234,7 +308,7 @@ describe( 'StoreStateLoader', () => {
 			const schemalessId = new SubjectId( 's55555555555555' );
 
 			await newLoader( new StubSubjectRepository( [ newSubject( { id: schemalessId, schemaName: 'Ghost' } ) ] ) )
-				.loadSubjectsAndSchemas( new Set( [ schemalessId.text ] ) );
+				.loadSubjectsAndSchemas( new Set( [ schemalessId.text ] ), new Set() );
 
 			expectSkipLogged( schemalessId );
 		} );

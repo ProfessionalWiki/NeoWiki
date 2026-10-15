@@ -106,7 +106,7 @@ const SchemaEditorDialogStub = {
 };
 
 function summaries( names: string[] ): SchemaSummary[] {
-	return names.map( ( name ) => ( { name, description: '', propertyCount: 1 } ) );
+	return names.map( ( name ) => ( { name, description: '', propertyCount: 1, subjectsAreDependent: false } ) );
 }
 
 function neverLands(): Mock<() => Promise<never>> {
@@ -455,7 +455,8 @@ describe( 'SchemasPage', () => {
 		const scroll = stubIntersectionObserver();
 		const getSubjectSummaries = vi.fn().mockResolvedValue( {
 			subjects: [ {
-				id: 's1demo1aaaaaaa3', displayName: 'Johannes Vermeer', displayNameIsGenerated: false, schema: 'Artist',
+				id: 's1demo1aaaaaaa3', displayName: 'Johannes Vermeer', displayNameIsGenerated: false, hostSubject: null,
+				schema: 'Artist',
 				pageId: 1, pageTitle: 'Johannes Vermeer', lastEdited: '2026-10-01T14:02:00Z',
 			} ],
 			nextCursor: null,
@@ -557,6 +558,18 @@ describe( 'SchemasPage', () => {
 		expect( cards( wrapper )[ 0 ].props( 'canEdit' ) ).toBe( true );
 	} );
 
+	it( 'lets the cards offer Subject creation only for Schemas whose Subjects are standalone', async () => {
+		mayCreateSubjectPages = true;
+		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+			{ name: 'Artist', description: '', propertyCount: 1, subjectsAreDependent: false },
+			{ name: 'Birth', description: '', propertyCount: 1, subjectsAreDependent: true },
+		] );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( cards( wrapper ).map( ( card ) => card.props( 'canCreateSubject' ) ) ).toEqual( [ true, false ] );
+	} );
+
 	it( 'lets the cards offer deleting to a user who may delete Schemas', async () => {
 		mayDeleteSchemas = true;
 		const wrapper = mountPage();
@@ -603,7 +616,7 @@ describe( 'SchemasPage', () => {
 		await flushPromises();
 
 		await wrapper.findComponent( SchemaEditorDialog ).props( 'onSave' )(
-			new Schema( 'Artwork', 'A work of art.', new PropertyDefinitionList( [] ) ),
+			newSchema( { title: 'Artwork', description: 'A work of art.', properties: new PropertyDefinitionList( [] ) } ),
 			'comment',
 		);
 		await flushPromises();

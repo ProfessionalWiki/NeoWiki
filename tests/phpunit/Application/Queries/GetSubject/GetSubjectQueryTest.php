@@ -8,7 +8,9 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectPresenter;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponse;
-use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
+use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -23,12 +25,15 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestNaming;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivePageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
@@ -38,10 +43,17 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
  */
 class GetSubjectQueryTest extends TestCase {
 
+	private const string PERSON = 'sGSQPerson11111';
+	private const string FRIEND = 'sGSQFriend11111';
+	private const string BIRTH = 'sGSQBirth111111';
+	private const string RECORD = 'sGSQRecord11111';
+	private const string PLACE = 'sGSQSpain111111';
+	private const string ARCHIVE = 'sGSQArchive1111';
+
 	public function testPresentsSubjectInHappyPathResponse(): void {
 		$spyPresenter = $this->getSpyPresenter();
 
-		$query = new GetSubjectQuery(
+		$query = $this->newQuery(
 			$spyPresenter,
 			new InMemorySubjectLookup(
 				TestSubject::build(),
@@ -62,11 +74,7 @@ class GetSubjectQueryTest extends TestCase {
 						),
 					] ),
 				),
-			),
-			new InMemoryPageIdentifiersLookup(),
-			$this->responseItemFactory(),
-			new StubPageReadAuthorizer( allowed: true ),
-			TestSubjectIds::newParser(),
+			)
 		);
 
 		$query->execute(
@@ -107,6 +115,7 @@ class GetSubjectQueryTest extends TestCase {
 						pageId: null,
 						pageTitle: null,
 						pageNamespaceId: null,
+						hostSubject: null,
 					)
 				]
 			),
@@ -134,13 +143,9 @@ class GetSubjectQueryTest extends TestCase {
 	public function testPresentsSubjectNotFound(): void {
 		$spyPresenter = $this->getSpyPresenter();
 
-		$query = new GetSubjectQuery(
+		$query = $this->newQuery(
 			$spyPresenter,
-			new InMemorySubjectLookup(),
-			new InMemoryPageIdentifiersLookup(),
-			$this->responseItemFactory(),
-			new StubPageReadAuthorizer( allowed: true ),
-			TestSubjectIds::newParser(),
+			new InMemorySubjectLookup()
 		);
 
 		$query->execute(
@@ -156,16 +161,13 @@ class GetSubjectQueryTest extends TestCase {
 		$spyPresenter = $this->getSpyPresenter();
 		$subject = TestSubject::build();
 
-		$query = new GetSubjectQuery(
+		$query = $this->newQuery(
 			$spyPresenter,
 			new InMemorySubjectLookup( $subject ),
-			new InMemoryPageIdentifiersLookup( [
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
 				[ new SubjectId( TestSubject::ZERO_GUID ), new PageIdentifiers( new PageId( 1 ), 'wrong title', 0 ) ],
 				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'right title', 12 ) ],
-			] ),
-			$this->responseItemFactory(),
-			new StubPageReadAuthorizer( allowed: true ),
-			TestSubjectIds::newParser(),
+			] )
 		);
 
 		$query->execute(
@@ -267,15 +269,13 @@ class GetSubjectQueryTest extends TestCase {
 		string $pageTitle = 'Rijksmuseum',
 		SubjectMap $otherSubjectsOfPage = new SubjectMap()
 	): GetSubjectQuery {
-		return new GetSubjectQuery(
+		return $this->newQuery(
 			$spyPresenter,
 			new InMemorySubjectLookup( $requested ),
-			new InMemoryPageIdentifiersLookup( [
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
 				[ $requested->id, new PageIdentifiers( new PageId( 42 ), $pageTitle, 0 ) ],
 			] ),
-			$this->responseItemFactoryWithMainSubject( $mainSubjectOfPage, $otherSubjectsOfPage, 42 ),
-			new StubPageReadAuthorizer( allowed: true ),
-			TestSubjectIds::newParser(),
+			responseItemFactory: $this->responseItemFactoryWithMainSubject( $mainSubjectOfPage, $otherSubjectsOfPage, 42 )
 		);
 	}
 
@@ -304,16 +304,13 @@ class GetSubjectQueryTest extends TestCase {
 			label: new SubjectLabel( 'referenced subject' ),
 		);
 
-		$query = new GetSubjectQuery(
+		$query = $this->newQuery(
 			$spyPresenter,
 			new InMemorySubjectLookup( $subject, $referencedSubject ),
-			new InMemoryPageIdentifiersLookup( [
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
 				[ $subject->id, new PageIdentifiers( new PageId( 42 ), 'subject title', 0 ) ],
 				[ $referencedSubject->id, new PageIdentifiers( new PageId( 1337 ), 'referenced title', 12 ) ],
-			] ),
-			$this->responseItemFactory(),
-			new StubPageReadAuthorizer( allowed: true ),
-			TestSubjectIds::newParser(),
+			] )
 		);
 
 		$query->execute(
@@ -356,13 +353,10 @@ class GetSubjectQueryTest extends TestCase {
 			[ new SubjectId( 's11111111111aa3' ), new PageIdentifiers( new PageId( 103 ), 'Third', 0 ) ],
 		] );
 
-		$query = new GetSubjectQuery(
+		$query = $this->newQuery(
 			$spyPresenter,
 			$subjectLookup,
-			$pageIdentifiersLookup,
-			$this->responseItemFactory(),
-			new StubPageReadAuthorizer( allowed: true ),
-			TestSubjectIds::newParser(),
+			pageIdentifiersLookup: $pageIdentifiersLookup
 		);
 
 		$query->execute(
@@ -398,15 +392,12 @@ class GetSubjectQueryTest extends TestCase {
 			TestSubject::build( id: 's11111111111aa2', label: new SubjectLabel( 'second target' ) ),
 		);
 
-		$query = new GetSubjectQuery(
+		$query = $this->newQuery(
 			$spyPresenter,
 			$subjectLookup,
-			new InMemoryPageIdentifiersLookup( [
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
 				[ new SubjectId( 's11111111111aa2' ), new PageIdentifiers( new PageId( 102 ), 'Second', 0 ) ],
-			] ),
-			$this->responseItemFactory(),
-			new StubPageReadAuthorizer( allowed: true ),
-			TestSubjectIds::newParser(),
+			] )
 		);
 
 		$query->execute(
@@ -429,21 +420,19 @@ class GetSubjectQueryTest extends TestCase {
 	public function testOmitsReferencedSubjectOnUnreadablePage(): void {
 		$spyPresenter = $this->getSpyPresenter();
 
-		$query = new GetSubjectQuery(
+		$query = $this->newQuery(
 			$spyPresenter,
 			new InMemorySubjectLookup(
 				$this->newSubjectReferencing( 's11111111111aa1', 's11111111111aa2' ),
 				TestSubject::build( id: 's11111111111aa1', label: new SubjectLabel( 'hidden target' ) ),
 				TestSubject::build( id: 's11111111111aa2', label: new SubjectLabel( 'visible target' ) ),
 			),
-			new InMemoryPageIdentifiersLookup( [
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
 				[ new SubjectId( 's11111111111maa' ), new PageIdentifiers( new PageId( 42 ), 'Requested', 0 ) ],
 				[ new SubjectId( 's11111111111aa1' ), new PageIdentifiers( new PageId( 101 ), 'Hidden', 0 ) ],
 				[ new SubjectId( 's11111111111aa2' ), new PageIdentifiers( new PageId( 102 ), 'Visible', 0 ) ],
 			] ),
-			$this->responseItemFactory(),
-			new SelectivePageReadAuthorizer( deniedPageIds: [ 101 ] ),
-			TestSubjectIds::newParser(),
+			readAuthorizer: new SelectivePageReadAuthorizer( deniedPageIds: [ 101 ] )
 		);
 
 		$query->execute(
@@ -467,19 +456,16 @@ class GetSubjectQueryTest extends TestCase {
 	public function testServesReferencedSubjectWhoseHostingPageDoesNotResolve(): void {
 		$spyPresenter = $this->getSpyPresenter();
 
-		$query = new GetSubjectQuery(
+		$query = $this->newQuery(
 			$spyPresenter,
 			new InMemorySubjectLookup(
 				$this->newSubjectReferencing( 's11111111111aa1' ),
 				TestSubject::build( id: 's11111111111aa1', label: new SubjectLabel( 'unplaced target' ) ),
 			),
 			// Places the requested Subject only, so the target's entry is absent from the batch.
-			new InMemoryPageIdentifiersLookup( [
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( [
 				[ new SubjectId( 's11111111111maa' ), new PageIdentifiers( new PageId( 42 ), 'Requested', 0 ) ],
-			] ),
-			$this->responseItemFactory(),
-			new StubPageReadAuthorizer( allowed: true ),
-			TestSubjectIds::newParser(),
+			] )
 		);
 
 		$query->execute(
@@ -512,13 +498,11 @@ class GetSubjectQueryTest extends TestCase {
 			[ new SubjectId( 's11111111111aa2' ), new PageIdentifiers( new PageId( 102 ), 'Second', 0 ) ],
 		] );
 
-		$query = new GetSubjectQuery(
+		$query = $this->newQuery(
 			$spyPresenter,
 			$subjectLookup,
-			$pageIdentifiersLookup,
-			$this->responseItemFactory(),
-			new SelectivePageReadAuthorizer( deniedPageIds: [ 42 ] ),
-			TestSubjectIds::newParser(),
+			pageIdentifiersLookup: $pageIdentifiersLookup,
+			readAuthorizer: new SelectivePageReadAuthorizer( deniedPageIds: [ 42 ] )
 		);
 
 		$query->execute(
@@ -532,12 +516,115 @@ class GetSubjectQueryTest extends TestCase {
 		$this->assertSame( 0, $pageIdentifiersLookup->getPageIdsOfSubjectsCallCount );
 	}
 
+	public function testExpandingRelationsEmbedsWhatTheDependentSubjectsPointAtInTurn(): void {
+		$response = $this->expandedResponseFor(
+			$this->subjectOf( self::PERSON, 'Person', [ 'Birth' => self::BIRTH ] ),
+			$this->subjectOf( self::BIRTH, 'Birth', [ 'Place' => self::PLACE, 'Record' => self::RECORD ] ),
+			$this->subjectOf( self::PLACE, 'Place', [] ),
+			$this->subjectOf( self::RECORD, 'Record', [ 'Archive' => self::ARCHIVE ] ),
+			$this->subjectOf( self::ARCHIVE, 'Place', [] ),
+		);
+
+		$this->assertSame(
+			[ self::PERSON, self::BIRTH, self::PLACE, self::RECORD, self::ARCHIVE ],
+			array_keys( $response->subjects )
+		);
+	}
+
+	public function testExpandingRelationsLeavesOutWhatAStandaloneTargetPointsAt(): void {
+		$response = $this->expandedResponseFor(
+			$this->subjectOf( self::PERSON, 'Person', [ 'Friend' => self::FRIEND ] ),
+			$this->subjectOf( self::FRIEND, 'Person', [ 'Birth' => self::BIRTH ] ),
+			$this->subjectOf( self::BIRTH, 'Birth', [] ),
+		);
+
+		$this->assertSame( [ self::PERSON, self::FRIEND ], array_keys( $response->subjects ) );
+	}
+
+	public function testExpandingRelationsEmbedsDependentSubjectsThatPointAtEachOtherOnce(): void {
+		$response = $this->expandedResponseFor(
+			$this->subjectOf( self::PERSON, 'Person', [ 'Birth' => self::BIRTH ] ),
+			$this->subjectOf( self::BIRTH, 'Birth', [ 'Record' => self::RECORD ] ),
+			$this->subjectOf( self::RECORD, 'Record', [ 'Birth' => self::BIRTH ] ),
+		);
+
+		$this->assertSame( [ self::PERSON, self::BIRTH, self::RECORD ], array_keys( $response->subjects ) );
+	}
+
+	/**
+	 * Every Subject on one page, with Births and Records as the Dependent Subjects.
+	 */
+	private function expandedResponseFor( Subject $requested, Subject ...$others ): GetSubjectResponse {
+		$spyPresenter = $this->getSpyPresenter();
+		$onePage = new PageIdentifiers( new PageId( 42 ), 'Pablo Picasso', 0 );
+
+		$query = $this->newQuery(
+			$spyPresenter,
+			new InMemorySubjectLookup( $requested, ...$others ),
+			pageIdentifiersLookup: new InMemoryPageIdentifiersLookup( array_map(
+				static fn ( Subject $subject ): array => [ $subject->id, $onePage ],
+				[ $requested, ...$others ]
+			) ),
+			schemaLookup: new InMemorySchemaLookup(
+				TestSchema::build( name: 'Person' ),
+				TestSchema::build( name: 'Birth', subjectsAreDependent: true ),
+				TestSchema::build( name: 'Record', subjectsAreDependent: true ),
+				TestSchema::build( name: 'Place' ),
+			)
+		);
+
+		$query->execute(
+			subjectId: $requested->id->text,
+			includePageIdentifiers: false,
+			includeReferencedSubjects: true
+		);
+
+		return $spyPresenter->response;
+	}
+
+	/**
+	 * @param array<string, string> $targetsByProperty
+	 */
+	private function subjectOf( string $id, string $schema, array $targetsByProperty ): Subject {
+		$statements = [];
+
+		foreach ( $targetsByProperty as $property => $targetId ) {
+			$statements[] = TestStatement::buildRelation( $property, [ TestRelation::build( targetId: $targetId ) ] );
+		}
+
+		return TestSubject::build(
+			id: $id,
+			label: null,
+			schemaName: TestSchema::reference( $schema ),
+			statements: new StatementList( $statements )
+		);
+	}
+
+	private function newQuery(
+		GetSubjectPresenter $presenter,
+		SubjectLookup $subjectLookup,
+		InMemoryPageIdentifiersLookup $pageIdentifiersLookup = new InMemoryPageIdentifiersLookup(),
+		?SubjectResponseItemFactory $responseItemFactory = null,
+		PageReadAuthorizer $readAuthorizer = new StubPageReadAuthorizer( allowed: true ),
+		SchemaLookup $schemaLookup = new InMemorySchemaLookup(),
+	): GetSubjectQuery {
+		return new GetSubjectQuery(
+			$presenter,
+			$subjectLookup,
+			$pageIdentifiersLookup,
+			$responseItemFactory ?? $this->responseItemFactory(),
+			$readAuthorizer,
+			TestSubjectIds::newParser(),
+			TestNaming::newDependentSubjectRules( $schemaLookup ),
+		);
+	}
+
 	/**
 	 * For the tests that do not care which Subject a page calls its Main one: every page it is asked
 	 * about answers that it has none.
 	 */
 	private function responseItemFactory(): SubjectResponseItemFactory {
-		return new SubjectResponseItemFactory( new PageSubjectsLookup( new InMemorySubjectRepository() ) );
+		return TestNaming::newResponseItemFactory( new InMemorySubjectRepository() );
 	}
 
 	private function responseItemFactoryWithMainSubject(
@@ -548,7 +635,7 @@ class GetSubjectQueryTest extends TestCase {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects( new PageSubjects( $mainSubject, $otherSubjects ), new PageId( $pageId ) );
 
-		return new SubjectResponseItemFactory( new PageSubjectsLookup( $repository ) );
+		return TestNaming::newResponseItemFactory( $repository );
 	}
 
 	private function newSubjectReferencing( string ...$targetIds ): Subject {

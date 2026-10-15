@@ -6,8 +6,8 @@ import {
 import type { SubjectSummary } from '@/application/SubjectSummaryLookup.ts';
 
 const SUMMARY: SubjectSummary = {
-	id: 's1demo1aaaaaaa1', displayName: 'ZX Spectrum 48K', displayNameIsGenerated: false, schema: 'Computer',
-	pageId: 7, pageTitle: 'Sinclair ZX Spectrum', lastEdited: '2026-10-01T14:02:00Z',
+	id: 's1demo1aaaaaaa1', displayName: 'ZX Spectrum 48K', displayNameIsGenerated: false, hostSubject: null,
+	schema: 'Computer', pageId: 7, pageTitle: 'Sinclair ZX Spectrum', lastEdited: '2026-10-01T14:02:00Z',
 };
 
 const NOW = new Date( '2026-10-01T14:02:00Z' );
@@ -57,6 +57,22 @@ describe( 'subjectSummaryTable', () => {
 
 	it( 'names a named Subject by its name', () => {
 		expect( summaryName( SUMMARY ) ).toBe( 'ZX Spectrum 48K' );
+	} );
+
+	it( 'names a Dependent Subject after its Schema and its Host Subject', () => {
+		expect( summaryName( {
+			...SUMMARY,
+			displayName: 'Expansion card',
+			displayNameIsGenerated: true,
+			schema: 'Expansion card',
+			hostSubject: {
+				id: 's1demo1aaaaaaa2',
+				schemaName: 'Computer',
+				displayName: 'ZX Spectrum 48K',
+				displayNameIsGenerated: false,
+				hostSubject: null,
+			},
+		} ) ).toBe( 'Expansion card of ZX Spectrum 48K' );
 	} );
 
 	it( 'links to the Subject on a subject-first wiki', () => {

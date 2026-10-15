@@ -108,7 +108,7 @@
 
 		<SubjectDeleteDialog
 			v-model:open="deleteConfirmOpen"
-			:subject-name="deletingSubjectName"
+			:subject="deletingSubject"
 			@confirm="executeDelete"
 		/>
 	</div>
@@ -117,7 +117,7 @@
 <script setup lang="ts">
 import { computed, onMounted, provide, ref, shallowRef } from 'vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import { useSubjectStore, type DependentSubjects } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
@@ -137,6 +137,7 @@ import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { useSubjectEditor } from '@/composables/useSubjectEditor.ts';
 import { RelationTargetCreationKey } from '@/components/Value/ValueDisplayContract.ts';
+import { isDependentSubject } from '@/domain/dependentSubjects.ts';
 
 const props = defineProps<{
 	subjectId: string;
@@ -166,7 +167,7 @@ provide( RelationTargetCreationKey, canCreateSubjectPage );
 // failed, and a Subject is the read that landed.
 const subject = shallowRef<Subject | null>( null );
 const errorText = ref<string | null>( null );
-// Bundle order, which is the order the Subject's relations name them.
+// Bundle order, which is the order the Subject's relations name them, those of its Dependent Subjects after.
 const referencedSubjects = shallowRef<Subject[]>( [] );
 // The other direction: the Subjects pointing at this one, in the order the wiki names them.
 const referencingSubjects = shallowRef<ReferencingSubject[]>( [] );
@@ -260,7 +261,10 @@ async function readSubject(): Promise<void> {
 	}
 
 	subject.value = requested;
-	referencedSubjects.value = bundle.referencedSubjects;
+	// The Subject row shows its Dependent Subjects inside it already.
+	referencedSubjects.value = bundle.referencedSubjects.filter(
+		( each ) => !isDependentSubject( each, schemaStore.schemas )
+	);
 
 	// Not awaited: the page's own controls must not wait on a section it can do without.
 	referencingRead.then( ( referencing ) => {
@@ -409,15 +413,20 @@ function editSubject( edited: Subject ): void {
 
 // Re-read rather than patch: a save can add or drop relations, so the referenced Subjects below are
 // no longer the ones the page was built from.
-async function handleEditSave( updatedSubject: Subject, comment: string ): Promise<void> {
-	await subjectStore.updateSubject( updatedSubject, comment );
+async function handleEditSave( updatedSubject: Subject, dependentSubjects: DependentSubjects, comment: string ): Promise<void> {
+	await subjectStore.updateSubject( updatedSubject, dependentSubjects, comment );
 	await reloadSubject();
 }
 
 // No reload of its own: a created Subject always comes with the update that points at it, and that
 // goes through handleEditSave.
-async function handleEditCreate( subject: Subject, targetPageId: number, comment: string ): Promise<void> {
-	await subjectStore.createSubject( subject, targetPageId, comment );
+async function handleEditCreate(
+	subject: Subject,
+	targetPageId: number,
+	dependentSubjects: DependentSubjects,
+	comment: string
+): Promise<void> {
+	await subjectStore.createSubject( subject, targetPageId, dependentSubjects, comment );
 }
 
 async function handleSchemaSave( updatedSchema: Schema, comment: string ): Promise<void> {
@@ -427,11 +436,8 @@ async function handleSchemaSave( updatedSchema: Schema, comment: string ): Promi
 const deleteConfirmOpen = ref( false );
 const deletingSubject = shallowRef<Subject | null>( null );
 
-const deletingSubjectName = computed( () =>
-	deletingSubject.value === null ? '' : subjectDisplayName( deletingSubject.value ) );
-
 async function confirmDelete( target: Subject ): Promise<void> {
-	const deleteForm = await pageDeleteFormUrl( pageOf( target ), subjectRepo );
+	const deleteForm = await pageDeleteFormUrl( target.getId(), pageOf( target ), subjectRepo );
 
 	if ( deleteForm !== null ) {
 		window.location.href = deleteForm;

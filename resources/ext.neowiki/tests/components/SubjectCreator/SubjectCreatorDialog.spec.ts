@@ -1,6 +1,6 @@
 import { enableAutoUnmount, mount, VueWrapper, DOMWrapper, flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ref, nextTick } from 'vue';
+import { computed, ref, nextTick } from 'vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import SchemaPicker from '@/components/common/SchemaPicker.vue';
 import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
@@ -70,7 +70,7 @@ interface Deferred<T> {
 
 const SchemaPickerStub = {
 	template: '<div class="schema-lookup-stub"></div>',
-	props: { offersCreation: Boolean, schemaNames: { type: Array, default: undefined } },
+	props: { offersCreation: Boolean, schemaNames: { type: Array, default: undefined }, standaloneOnly: Boolean },
 	emits: [ 'select', 'create' ],
 	setup() {
 		return { focus: vi.fn() };
@@ -86,7 +86,14 @@ let editedStatements = (): StatementList => new StatementList( [
 ] );
 // Subjects the editing session invented alongside the one being created, which the editor writes
 // as creations of their own. Each carries the page its pane was opened against.
-let sessionDrafts: { subject: Subject; pageId: number }[] = [];
+let sessionDrafts: { subject: Subject; pageId: number; dependentSubjects?: Subject[] }[] = [];
+// What the pane of the Subject being created reports as its Dependent Subjects.
+let editedDependentSubjects: Subject[] = [];
+// Whether the stubbed editor dialog shows, as the real one does once it has read what the Subject's form needs, and
+// whether it shows that it is still reading, as the real one does once that takes a while. Reset per test by the
+// beforeEach below.
+const editorShows = ref( true );
+const editorShowsReading = ref( false );
 // What the last save through the stub threw, so a test can assert the save stopped there.
 let lastSaveError: unknown = null;
 // Stands in for the round trip the real write loop awaits before its first write — it flushes every
@@ -97,7 +104,7 @@ let beforeFirstWrite: Promise<unknown> = Promise.resolve();
 const SchemaCreatorDialogStub = {
 	name: 'SchemaCreatorDialog',
 	template: '<div class="schema-creator-dialog-stub"></div>',
-	props: [ 'open', 'initialName' ],
+	props: { open: Boolean, initialName: String, subjectsAreDependent: { type: Boolean, default: undefined } },
 	emits: [ 'update:open', 'created' ],
 };
 
@@ -129,9 +136,9 @@ const SubjectEditorDialogStub = {
 		const saving = ref( false );
 
 		// As the real write loop does, an id the server already holds counts as a create that landed.
-		async function create( subject: Subject, pageId: number, comment: string ): Promise<void> {
+		async function create( subject: Subject, pageId: number, dependentSubjects: Subject[], comment: string ): Promise<void> {
 			try {
-				await props.onCreate( subject, pageId, comment );
+				await props.onCreate( subject, pageId, dependentSubjects, comment );
 			} catch ( error ) {
 				if ( !( error instanceof SubjectIdInUseError ) ) {
 					throw error;
@@ -153,10 +160,10 @@ const SubjectEditorDialogStub = {
 			try {
 				await beforeFirstWrite;
 
-				await create( editedRoot( props.subject as Subject ), 0, comment );
+				await create( editedRoot( props.subject as Subject ), 0, editedDependentSubjects, comment );
 
 				for ( const draft of sessionDrafts ) {
-					await create( draft.subject, draft.pageId, comment );
+					await create( draft.subject, draft.pageId, draft.dependentSubjects ?? [], comment );
 				}
 			} catch ( error ) {
 				lastSaveError = error;
@@ -168,7 +175,13 @@ const SubjectEditorDialogStub = {
 			props.onSaved();
 		}
 
-		return { saving, runSave, rootLabel: editedLabel };
+		return {
+			saving,
+			runSave,
+			rootLabel: editedLabel,
+			shown: editorShows,
+			visible: computed( () => editorShows.value || editorShowsReading.value ),
+		};
 	},
 };
 
@@ -222,12 +235,29 @@ describe( 'SubjectCreatorDialog', () => {
 	let mintSubjectIdMock: ReturnType<typeof vi.fn>;
 	let repositorySpy: ReturnType<typeof vi.spyOn>;
 
+	const STORE_WRITE_PARAMETERS = {
+		createMainSubject: [ 'pageId', 'label', 'schemaName', 'statements', 'dependentSubjects', 'comment', 'id' ],
+		createOtherSubject: [ 'pageId', 'label', 'schemaName', 'statements', 'dependentSubjects', 'comment', 'id' ],
+		createSubjectPage: [ 'label', 'schemaName', 'statements', 'dependentSubjects', 'comment', 'pageTitle', 'id' ],
+		createSubject: [ 'subject', 'pageId', 'dependentSubjects', 'comment' ],
+		updateSubject: [ 'subject', 'dependentSubjects', 'comment' ],
+	};
+
+	function callsTo( write: keyof typeof STORE_WRITE_PARAMETERS ): Record<string, unknown>[] {
+		return ( subjectStore[ write ] as ReturnType<typeof vi.fn> ).mock.calls.map( ( args ) =>
+			Object.fromEntries( STORE_WRITE_PARAMETERS[ write ].map( ( name, index ) => [ name, args[ index ] ] ) ) );
+	}
+
 	// Every route that makes the new Subject a page's Main Subject creates it under the id minted
 	// for it.
 	function expectMainSubjectCreated( pageId: number, label: string | null, schemaName: string, comment: string ): void {
-		expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
-			pageId, label, schemaName, expect.any( StatementList ), comment, new SubjectId( MINTED_ID ),
-		);
+		expect( callsTo( 'createMainSubject' ) ).toContainEqual( expect.objectContaining( {
+			pageId,
+			label,
+			schemaName,
+			comment,
+			id: new SubjectId( MINTED_ID ),
+		} ) );
 	}
 
 	// Re-callable inside a test that needs another wiki configuration; the mount below reads it
@@ -330,6 +360,9 @@ describe( 'SubjectCreatorDialog', () => {
 			new Statement( new PropertyName( 'Color' ), TextType.typeName, newStringValue( 'Red' ) ),
 		] );
 		sessionDrafts = [];
+		editedDependentSubjects = [];
+		editorShows.value = true;
+		editorShowsReading.value = false;
 		lastSaveError = null;
 		beforeFirstWrite = Promise.resolve();
 		reloadMock = vi.fn();
@@ -563,14 +596,13 @@ describe( 'SubjectCreatorDialog', () => {
 		await wrapper.findComponent( { name: 'SummaryAction' } ).vm.$emit( 'save', 'test summary' );
 		await flushPromises();
 
-		expect( subjectStore.createOtherSubject ).toHaveBeenCalledWith(
-			PAGE_ID,
-			'Typed label',
-			SCHEMA_NAME,
-			expect.any( StatementList ),
-			'test summary',
-			new SubjectId( MINTED_ID ),
-		);
+		expect( callsTo( 'createOtherSubject' ) ).toContainEqual( expect.objectContaining( {
+			pageId: PAGE_ID,
+			label: 'Typed label',
+			schemaName: SCHEMA_NAME,
+			comment: 'test summary',
+			id: new SubjectId( MINTED_ID ),
+		} ) );
 		expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
 	} );
 
@@ -633,6 +665,161 @@ describe( 'SubjectCreatorDialog', () => {
 			await saveEditedSchema( wrapper );
 
 			expect( wrapper.findComponent( SubjectEditorDialog ).props( 'schema' ) ).toStrictEqual( EDITED_SCHEMA );
+		} );
+	} );
+
+	describe( 'Dependent Subjects', () => {
+		const BIRTH_ID = 's1birthAAAAAAA1';
+		const birthSchema = newSchema( { title: 'Birth', subjectsAreDependent: true } );
+
+		beforeEach( () => {
+			getSchemaMock.mockImplementation( async ( name: string ) => name === 'Birth' ? birthSchema : newSchema( { title: name } ) );
+		} );
+
+		it( 'offers only the Schemas whose Subjects are standalone', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			expect( wrapper.findComponent( SchemaPicker ).props( 'standaloneOnly' ) ).toBe( true );
+		} );
+
+		it( 'stays at the Schema step for a Schema whose Subjects are dependent, saying why', async () => {
+			const wrapper = mountComponent( {}, { initialSchemaName: 'Birth' } );
+
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SchemaPicker ).exists() ).toBe( true );
+			expect( wrapper.findComponent( SubjectEditorDialog ).exists() ).toBe( false );
+			expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-create-subject-error-dependent-subjectsBirth', { type: 'error' } );
+		} );
+
+		it( 'writes the Dependent Subjects along with the Subject it creates', async () => {
+			const birth = newSubject( { id: BIRTH_ID, label: null, schemaName: 'Birth' } );
+			editedDependentSubjects = [ birth ];
+			const wrapper = mountComponent();
+			await flushPromises();
+			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+
+			await save( wrapper, 'why' );
+
+			expect( callsTo( 'createMainSubject' ) ).toContainEqual( expect.objectContaining( {
+				pageId: PAGE_ID,
+				label: null,
+				schemaName: SCHEMA_NAME,
+				dependentSubjects: [ birth ],
+				comment: 'why',
+				id: new SubjectId( MINTED_ID ),
+			} ) );
+		} );
+
+		it( 'creates a Schema from the Schema step as one whose Subjects are standalone', async () => {
+			const wrapper = mountComponent();
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			wrapper.findComponent( SchemaPicker ).vm.$emit( 'create', NEW_SCHEMA_NAME );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SchemaCreatorDialog ).props( 'subjectsAreDependent' ) ).toBe( false );
+		} );
+	} );
+
+	describe( 'while the editor reads what the Subject\'s form needs', () => {
+		beforeEach( () => {
+			editorShows.value = false;
+		} );
+
+		it( 'keeps the Schema step on screen until the editor shows', async () => {
+			const wrapper = mountComponent( {}, { initialSchemaName: SCHEMA_NAME } );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+			expect( wrapper.findComponent( SchemaPicker ).exists() ).toBe( true );
+
+			editorShows.value = true;
+			await nextTick();
+
+			expect( wrapper.findComponent( SchemaPicker ).exists() ).toBe( false );
+		} );
+
+		it( 'hands over to the editor once the editor shows that it is reading', async () => {
+			const wrapper = mountComponent( {}, { initialSchemaName: SCHEMA_NAME } );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			editorShowsReading.value = true;
+			await nextTick();
+
+			expect( wrapper.findComponent( SchemaPicker ).exists() ).toBe( false );
+		} );
+
+		it( 'goes back to the Schema step when the editor closes while it shows that it is reading', async () => {
+			const wrapper = mountComponent( {}, { initialSchemaName: SCHEMA_NAME } );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+			editorShowsReading.value = true;
+			await nextTick();
+
+			await wrapper.find( '.stub-close' ).trigger( 'click' );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SchemaPicker ).exists() ).toBe( true );
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+		} );
+
+		it( 'goes back to the Schema step when the editor closes before it shows', async () => {
+			const wrapper = mountComponent( {}, { initialSchemaName: SCHEMA_NAME } );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			await wrapper.find( '.stub-close' ).trigger( 'click' );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SubjectEditorDialog ).exists() ).toBe( false );
+			expect( wrapper.findComponent( SchemaPicker ).exists() ).toBe( true );
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+		} );
+
+		it( 'takes no input on the Schema step meanwhile', async () => {
+			const wrapper = mountComponent( {}, { initialSchemaName: SCHEMA_NAME } );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			expect( wrapper.findComponent( CdxDialog ).attributes( 'inert' ) ).toBeDefined();
+		} );
+
+		it( 'takes input on the Schema step while no Schema is picked', async () => {
+			const wrapper = mountComponent();
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			expect( wrapper.findComponent( CdxDialog ).attributes( 'inert' ) ).toBeUndefined();
+		} );
+
+		it( 'leaves no question about a close requested meanwhile once the editor shows', async () => {
+			const wrapper = mountComponent();
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+			wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+
+			wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+			await flushPromises();
+			editorShows.value = true;
+			await nextTick();
+
+			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+		} );
+
+		it( 'leaves the picker unfocused when it opens on a pinned Schema', async () => {
+			const wrapper = mountComponent( {}, { initialSchemaName: SCHEMA_NAME } );
+
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			expect( ( wrapper.findComponent( SchemaPicker ).vm as any ).focus ).not.toHaveBeenCalled();
 		} );
 	} );
 
@@ -834,9 +1021,18 @@ describe( 'SubjectCreatorDialog', () => {
 		}
 
 		/** The title the one page created was sent with. */
-		function createdPageTitle(): string | undefined {
+		function createdPageTitle(): unknown {
 			expect( subjectStore.createSubjectPage ).toHaveBeenCalledOnce();
-			return ( subjectStore.createSubjectPage as ReturnType<typeof vi.fn> ).mock.calls[ 0 ][ 4 ];
+			return callsTo( 'createSubjectPage' )[ 0 ].pageTitle;
+		}
+
+		function createdPageDependentSubjects(): unknown {
+			expect( subjectStore.createSubjectPage ).toHaveBeenCalledOnce();
+			return callsTo( 'createSubjectPage' )[ 0 ].dependentSubjects;
+		}
+
+		function birthOfTheSubject(): Subject {
+			return newSubject( { id: 's1birthAAAAAAA1', label: null, schemaName: 'Birth' } );
 		}
 
 		function deferred<T>(): Deferred<T> {
@@ -1028,10 +1224,25 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper, 'why' );
 
-				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					null, SCHEMA_NAME, expect.any( StatementList ), 'why', undefined, new SubjectId( MINTED_ID ),
-				);
+				expect( callsTo( 'createSubjectPage' ) ).toContainEqual( expect.objectContaining( {
+					label: null,
+					schemaName: SCHEMA_NAME,
+					comment: 'why',
+					pageTitle: undefined,
+					id: new SubjectId( MINTED_ID ),
+				} ) );
 				expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
+			} );
+
+			it( 'creates the Subject on its own page together with its Dependent Subjects', async () => {
+				const birth = birthOfTheSubject();
+				editedDependentSubjects = [ birth ];
+				const wrapper = mountSubjectFirst();
+				await pickSchema( wrapper );
+
+				await save( wrapper, 'why' );
+
+				expect( createdPageDependentSubjects() ).toEqual( [ birth ] );
 			} );
 
 			it( 'asks nothing of a caller that preselected a new page but named none', async () => {
@@ -1063,9 +1274,13 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					'Amsterdam', SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, undefined, new SubjectId( MINTED_ID ),
-				);
+				expect( callsTo( 'createSubjectPage' ) ).toContainEqual( expect.objectContaining( {
+					label: 'Amsterdam',
+					schemaName: SCHEMA_NAME,
+					comment: DEFAULT_CREATE_SUMMARY,
+					pageTitle: undefined,
+					id: new SubjectId( MINTED_ID ),
+				} ) );
 			} );
 
 			it( 'goes to the Subject itself, leaving no notice for a page to show', async () => {
@@ -1193,10 +1408,26 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper, 'why' );
 
-				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					'New Person', SCHEMA_NAME, expect.any( StatementList ), 'why', 'New Person', new SubjectId( MINTED_ID ),
-				);
+				expect( callsTo( 'createSubjectPage' ) ).toContainEqual( expect.objectContaining( {
+					label: 'New Person',
+					schemaName: SCHEMA_NAME,
+					comment: 'why',
+					pageTitle: 'New Person',
+					id: new SubjectId( MINTED_ID ),
+				} ) );
 				expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
+			} );
+
+			it( 'creates the titled page together with the Dependent Subjects of its Subject', async () => {
+				const birth = birthOfTheSubject();
+				editedDependentSubjects = [ birth ];
+				const wrapper = mountWithoutHostPage();
+				await pickSchema( wrapper );
+				await typeLabel( wrapper, 'New Person' );
+
+				await save( wrapper, 'why' );
+
+				expect( createdPageDependentSubjects() ).toEqual( [ birth ] );
 			} );
 
 			// Here the page is the entity, so it is never titled after a Subject id: with nothing to
@@ -1288,9 +1519,13 @@ describe( 'SubjectCreatorDialog', () => {
 				await typeLabel( wrapper, 'New Person' );
 				await save( wrapper );
 
-				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					'New Person', SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, 'New Person', new SubjectId( MINTED_ID ),
-				);
+				expect( callsTo( 'createSubjectPage' ) ).toContainEqual( expect.objectContaining( {
+					label: 'New Person',
+					schemaName: SCHEMA_NAME,
+					comment: DEFAULT_CREATE_SUMMARY,
+					pageTitle: 'New Person',
+					id: new SubjectId( MINTED_ID ),
+				} ) );
 			} );
 
 			it( 'navigates to the page the server created when opened on a page', async () => {
@@ -1622,9 +1857,13 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper, 'why' );
 
-				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					'Delft Blue', SCHEMA_NAME, expect.any( StatementList ), 'why', 'Delft', new SubjectId( MINTED_ID ),
-				);
+				expect( callsTo( 'createSubjectPage' ) ).toContainEqual( expect.objectContaining( {
+					label: 'Delft Blue',
+					schemaName: SCHEMA_NAME,
+					comment: 'why',
+					pageTitle: 'Delft',
+					id: new SubjectId( MINTED_ID ),
+				} ) );
 			} );
 
 			it( 'titles the page after the label where none was typed', async () => {
@@ -1634,9 +1873,13 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( subjectStore.createSubjectPage ).toHaveBeenCalledWith(
-					'Delft Blue', SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, 'Delft Blue', new SubjectId( MINTED_ID ),
-				);
+				expect( callsTo( 'createSubjectPage' ) ).toContainEqual( expect.objectContaining( {
+					label: 'Delft Blue',
+					schemaName: SCHEMA_NAME,
+					comment: DEFAULT_CREATE_SUMMARY,
+					pageTitle: 'Delft Blue',
+					id: new SubjectId( MINTED_ID ),
+				} ) );
 			} );
 		} );
 
@@ -1733,6 +1976,7 @@ describe( 'SubjectCreatorDialog', () => {
 			} );
 
 			it( 'adds the subject alongside an existing main subject, under the label given', async () => {
+				editedDependentSubjects = [ newSubject( { id: 's1birthAAAAAAA1', label: null, schemaName: 'Birth' } ) ];
 				const wrapper = mountDialog();
 				await chooseAnotherPage( wrapper );
 				await pickPageWithMainSubject( wrapper );
@@ -1740,14 +1984,14 @@ describe( 'SubjectCreatorDialog', () => {
 				await typeLabel( wrapper, 'Second opinion' );
 				await save( wrapper );
 
-				expect( subjectStore.createOtherSubject ).toHaveBeenCalledWith(
-					EXISTING_PAGE_ID,
-					'Second opinion',
-					SCHEMA_NAME,
-					expect.any( StatementList ),
-					DEFAULT_CREATE_SUMMARY,
-					new SubjectId( MINTED_ID ),
-				);
+				expect( callsTo( 'createOtherSubject' ) ).toContainEqual( expect.objectContaining( {
+					pageId: EXISTING_PAGE_ID,
+					label: 'Second opinion',
+					schemaName: SCHEMA_NAME,
+					dependentSubjects: editedDependentSubjects,
+					comment: DEFAULT_CREATE_SUMMARY,
+					id: new SubjectId( MINTED_ID ),
+				} ) );
 				expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
 			} );
 
@@ -2103,14 +2347,13 @@ describe( 'SubjectCreatorDialog', () => {
 
 				await save( wrapper );
 
-				expect( subjectStore.createOtherSubject ).toHaveBeenCalledWith(
-					EXISTING_PAGE_ID,
-					null,
-					SCHEMA_NAME,
-					expect.any( StatementList ),
-					DEFAULT_CREATE_SUMMARY,
-					new SubjectId( MINTED_ID ),
-				);
+				expect( callsTo( 'createOtherSubject' ) ).toContainEqual( expect.objectContaining( {
+					pageId: EXISTING_PAGE_ID,
+					label: null,
+					schemaName: SCHEMA_NAME,
+					comment: DEFAULT_CREATE_SUMMARY,
+					id: new SubjectId( MINTED_ID ),
+				} ) );
 				expect( subjectStore.createMainSubject ).not.toHaveBeenCalled();
 			} );
 
@@ -2564,9 +2807,13 @@ describe( 'SubjectCreatorDialog', () => {
 
 			await save( wrapper );
 
-			expect( subjectStore.createMainSubject ).toHaveBeenCalledWith(
-				PAGE_ID, null, SCHEMA_NAME, expect.any( StatementList ), DEFAULT_CREATE_SUMMARY, new SubjectId( TARGET_ID ),
-			);
+			expect( callsTo( 'createMainSubject' ) ).toContainEqual( expect.objectContaining( {
+				pageId: PAGE_ID,
+				label: null,
+				schemaName: SCHEMA_NAME,
+				comment: DEFAULT_CREATE_SUMMARY,
+				id: new SubjectId( TARGET_ID ),
+			} ) );
 		} );
 
 		it( 'reports the id as taken rather than taking the Subject as created', async () => {
@@ -2610,6 +2857,10 @@ describe( 'SubjectCreatorDialog', () => {
 			return newSubject( { id: DRAFT_ID, label: 'A colleague', schemaName: 'Colleague' } );
 		}
 
+		function birth(): Subject {
+			return newSubject( { id: 's1birthAAAAAAA1', label: null, schemaName: 'Birth' } );
+		}
+
 		beforeEach( () => {
 			subjectStore.createSubject = vi.fn().mockResolvedValue( new SubjectId( DRAFT_ID ) );
 			subjectStore.createSubjectPage = vi.fn().mockResolvedValue( {
@@ -2637,9 +2888,11 @@ describe( 'SubjectCreatorDialog', () => {
 
 			await save( wrapper );
 
-			expect( subjectStore.createSubject ).toHaveBeenCalledWith(
-				expect.any( Subject ), CREATED_PAGE_ID, DEFAULT_CREATE_SUMMARY,
-			);
+			expect( callsTo( 'createSubject' ) ).toContainEqual( expect.objectContaining( {
+				subject: expect.any( Subject ),
+				pageId: CREATED_PAGE_ID,
+				comment: DEFAULT_CREATE_SUMMARY,
+			} ) );
 		} );
 
 		it( 'stores one on the page answered in the footer', async () => {
@@ -2648,9 +2901,11 @@ describe( 'SubjectCreatorDialog', () => {
 
 			await save( wrapper );
 
-			expect( subjectStore.createSubject ).toHaveBeenCalledWith(
-				expect.any( Subject ), PAGE_ID, DEFAULT_CREATE_SUMMARY,
-			);
+			expect( callsTo( 'createSubject' ) ).toContainEqual( expect.objectContaining( {
+				subject: expect.any( Subject ),
+				pageId: PAGE_ID,
+				comment: DEFAULT_CREATE_SUMMARY,
+			} ) );
 		} );
 
 		// One created while drilled into another Subject belongs beside that Subject, not beside
@@ -2661,9 +2916,11 @@ describe( 'SubjectCreatorDialog', () => {
 
 			await save( wrapper );
 
-			expect( subjectStore.createSubject ).toHaveBeenCalledWith(
-				expect.any( Subject ), OWN_PAGE_ID, DEFAULT_CREATE_SUMMARY,
-			);
+			expect( callsTo( 'createSubject' ) ).toContainEqual( expect.objectContaining( {
+				subject: expect.any( Subject ),
+				pageId: OWN_PAGE_ID,
+				comment: DEFAULT_CREATE_SUMMARY,
+			} ) );
 		} );
 
 		// A second pass over a root the first one created would be refused: its id, and any page
@@ -2671,15 +2928,27 @@ describe( 'SubjectCreatorDialog', () => {
 		it( 'updates rather than creates the Subject again after a save that stopped part way', async () => {
 			( subjectStore.createSubject as any ).mockRejectedValueOnce( new Error( 'Server error' ) );
 			sessionDrafts = [ { subject: draft(), pageId: 0 } ];
+			editedDependentSubjects = [ birth() ];
 			const wrapper = await openOn();
 
 			await save( wrapper );
 			await save( wrapper );
 
 			expect( subjectStore.createMainSubject ).toHaveBeenCalledTimes( 1 );
-			expect( subjectStore.updateSubject ).toHaveBeenCalledWith(
-				expect.any( Subject ), DEFAULT_CREATE_SUMMARY,
-			);
+			expect( callsTo( 'updateSubject' ) ).toContainEqual( expect.objectContaining( {
+				subject: expect.any( Subject ),
+				dependentSubjects: editedDependentSubjects,
+				comment: DEFAULT_CREATE_SUMMARY,
+			} ) );
+		} );
+
+		it( 'writes one with its Dependent Subjects', async () => {
+			sessionDrafts = [ { subject: draft(), pageId: 0, dependentSubjects: [ birth() ] } ];
+			const wrapper = await openOn();
+
+			await save( wrapper );
+
+			expect( callsTo( 'createSubject' )[ 0 ].dependentSubjects ).toEqual( [ birth() ] );
 		} );
 
 		it( 'keeps the id the server gave the Subject when it writes it again', async () => {
@@ -2691,7 +2960,7 @@ describe( 'SubjectCreatorDialog', () => {
 			await save( wrapper );
 			await save( wrapper );
 
-			const written = ( subjectStore.updateSubject as any ).mock.calls[ 0 ][ 0 ] as Subject;
+			const written = callsTo( 'updateSubject' )[ 0 ].subject as Subject;
 			expect( written.getId().text ).toBe( CREATED_PAGE_SUBJECT_ID );
 		} );
 
@@ -2719,9 +2988,11 @@ describe( 'SubjectCreatorDialog', () => {
 
 			await save( wrapper );
 
-			expect( subjectStore.createSubject ).toHaveBeenCalledWith(
-				expect.any( Subject ), PAGE_ID, DEFAULT_CREATE_SUMMARY,
-			);
+			expect( callsTo( 'createSubject' ) ).toContainEqual( expect.objectContaining( {
+				subject: expect.any( Subject ),
+				pageId: PAGE_ID,
+				comment: DEFAULT_CREATE_SUMMARY,
+			} ) );
 		} );
 
 		it( 'writes them on a subject-first wiki even when the answer to its own create was lost', async () => {

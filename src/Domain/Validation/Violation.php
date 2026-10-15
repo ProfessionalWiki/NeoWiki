@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\Validation;
 
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 readonly class Violation {
 
@@ -14,12 +15,16 @@ readonly class Violation {
 	 */
 	public const string UNRESOLVABLE_RELATION_TARGET_SOURCE = 'relation-target-unresolvable-source';
 
+	/**
+	 * @param ?SubjectId $subjectId The Subject the Violation is on; null for the Subject being validated.
+	 */
 	public function __construct(
 		public ?PropertyName $propertyName,
 		public string $code,
 		public array $args = [],
 		public ?int $valuePartIndex = null,
 		public Severity $severity = Severity::Warning,
+		public ?SubjectId $subjectId = null,
 	) {
 	}
 
@@ -30,6 +35,18 @@ readonly class Violation {
 			args: $this->args,
 			valuePartIndex: $this->valuePartIndex,
 			severity: $this->severity,
+			subjectId: $this->subjectId,
+		);
+	}
+
+	public function withSubjectId( SubjectId $subjectId ): self {
+		return new self(
+			propertyName: $this->propertyName,
+			code: $this->code,
+			args: $this->args,
+			valuePartIndex: $this->valuePartIndex,
+			severity: $this->severity,
+			subjectId: $subjectId,
 		);
 	}
 

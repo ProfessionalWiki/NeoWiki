@@ -20,9 +20,10 @@ import { StatementList } from '@/domain/StatementList.ts';
 import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { Statement } from '@/domain/Statement.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
-import { newRelation, RelationValue } from '@/domain/Value.ts';
+import { newRelation, newStringValue, RelationValue } from '@/domain/Value.ts';
 import { newRelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import { newTextProperty, TextType } from '@/domain/propertyTypes/Text.ts';
 import type { ReferencingSubjects, SubjectWithReferencedSubjects } from '@/domain/SubjectRepository.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -402,6 +403,64 @@ describe( 'SubjectPage', () => {
 
 		const names = wrapper.findAll( `${ REFERENCED_ROW } ${ ROW_LABEL }` ).map( ( link ) => link.text() );
 		expect( names ).toEqual( [ 'Rocket', 'Anvil' ] );
+	} );
+
+	describe( 'a Subject with a Dependent Subject', () => {
+
+		const FOUNDING_ID = 's1ddddddddddd11';
+
+		const founding = newSubject( {
+			id: FOUNDING_ID,
+			label: null,
+			displayNameIsGenerated: true,
+			schemaName: 'Founding',
+			statements: new StatementList( [
+				new Statement( new PropertyName( 'Year' ), TextType.typeName, newStringValue( '1849' ) ),
+			] ),
+			pageIdentifiers: new PageIdentifiers( PAGE_ID, PAGE_NAME ),
+			hostSubject: {
+				id: SUBJECT_ID,
+				schemaName: 'Company',
+				displayName: 'ACME Inc',
+				displayNameIsGenerated: false,
+				hostSubject: null,
+			},
+		} );
+
+		beforeEach( () => {
+			getSchemaMock.mockImplementation( ( name: string ) => Promise.resolve( {
+				Company: newSchema( {
+					title: 'Company',
+					properties: new PropertyDefinitionList( [
+						newRelationProperty( { name: 'Made in', targetSchemas: [ 'Founding' ] } ),
+					] ),
+				} ),
+				Founding: newSchema( {
+					title: 'Founding',
+					properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Year' } ) ] ),
+					subjectsAreDependent: true,
+				} ),
+				Product: SCHEMAS.Product,
+			}[ name ] ) );
+			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle(
+				[ founding, referencedSubject ],
+				subject( { id: SUBJECT_ID, label: 'ACME Inc', relatesTo: FOUNDING_ID } ),
+			) );
+		} );
+
+		it( 'shows it inside the row of the Subject', async () => {
+			const wrapper = await mountLoadedPage( false, true );
+
+			expect( wrapper.find( `${ REQUESTED_ROW } .ext-neowiki-dependent-subject-display` ).text() ).toContain( '1849' );
+		} );
+
+		it( 'leaves it out of the Subjects the Subject references', async () => {
+			const wrapper = await mountLoadedPage();
+
+			expect( wrapper.findAll( `${ REFERENCED_ROW } ${ ROW_LABEL }` ).map( ( label ) => label.text() ) )
+				.toEqual( [ 'Anvil' ] );
+		} );
+
 	} );
 
 	// The header still toggles where it is not a link, as on the Data tab; the statement count stands
@@ -989,10 +1048,11 @@ describe( 'SubjectPage', () => {
 			await openEditorOn( wrapper.find( EDIT_CONTROL ) );
 			getSubjectWithReferencedSubjectsMock.mockClear();
 
-			await wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' )( freshSubject, 'a comment' );
+			const dependent = subject( { id: 's1birthAAAAAAA1', label: null, schemaName: 'Birth' } );
+			await wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' )( freshSubject, [ dependent ], 'a comment' );
 			await flushPromises();
 
-			expect( updateSubject ).toHaveBeenCalledWith( freshSubject, 'a comment' );
+			expect( updateSubject ).toHaveBeenCalledWith( freshSubject, [ dependent ], 'a comment' );
 			expect( getSubjectWithReferencedSubjectsMock ).toHaveBeenCalledTimes( 1 );
 		} );
 
@@ -1008,10 +1068,11 @@ describe( 'SubjectPage', () => {
 			getSubjectWithReferencedSubjectsMock.mockClear();
 
 			const onCreate = wrapper.findComponent( SubjectEditorDialog ).props( 'onCreate' );
-			await onCreate!( created, REFERENCED_PAGE_ID, 'a comment' );
+			const dependent = subject( { id: 's1birthAAAAAAA1', label: null, schemaName: 'Birth' } );
+			await onCreate!( created, REFERENCED_PAGE_ID, [ dependent ], 'a comment' );
 			await flushPromises();
 
-			expect( createSubject ).toHaveBeenCalledWith( created, REFERENCED_PAGE_ID, 'a comment' );
+			expect( createSubject ).toHaveBeenCalledWith( created, REFERENCED_PAGE_ID, [ dependent ], 'a comment' );
 			expect( getSubjectWithReferencedSubjectsMock ).not.toHaveBeenCalled();
 		} );
 
@@ -1025,7 +1086,7 @@ describe( 'SubjectPage', () => {
 			await openEditorOn( wrapper.find( EDIT_CONTROL ) );
 			getSubjectWithReferencedSubjectsMock.mockRejectedValue( new SubjectNotFoundError( SUBJECT_ID ) );
 
-			await wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' )( freshSubject, 'a comment' );
+			await wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' )( freshSubject, [], 'a comment' );
 			await flushPromises();
 
 			expect( wrapper.find( `${ REQUESTED_ROW } ${ ROW_LABEL }` ).text() ).toBe( 'ACME Inc' );

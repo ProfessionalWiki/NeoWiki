@@ -23,6 +23,10 @@ final class ViolationSerializer {
 			$serialized['valuePartIndex'] = $violation->valuePartIndex;
 		}
 
+		if ( $violation->subjectId !== null ) {
+			$serialized['subjectId'] = $violation->subjectId->text;
+		}
+
 		return $serialized;
 	}
 

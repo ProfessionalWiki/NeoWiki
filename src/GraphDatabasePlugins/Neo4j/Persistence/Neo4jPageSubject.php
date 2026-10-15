@@ -14,6 +14,7 @@ readonly class Neo4jPageSubject {
 	public function __construct(
 		public Subject $subject,
 		public bool $isMainSubject,
+		public bool $isDependent,
 	) {
 	}
 

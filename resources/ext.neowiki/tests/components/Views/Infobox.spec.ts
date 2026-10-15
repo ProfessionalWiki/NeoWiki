@@ -10,7 +10,6 @@ import { NumberType } from '@/domain/propertyTypes/Number.ts';
 import { UrlType } from '@/domain/propertyTypes/Url.ts';
 import { newNumberValue, newStringValue } from '@/domain/Value.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
-import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -20,7 +19,7 @@ import type { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { CdxButton } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
-import { newSubject } from '@/TestHelpers.ts';
+import { newSubject, newSchema } from '@/TestHelpers.ts';
 
 const $i18n = createI18nMock();
 
@@ -42,15 +41,15 @@ describe( 'Infobox', () => {
 	const getSchemaMock = vi.fn();
 	const updateSubjectMock = vi.fn();
 
-	const mockSchema = new Schema(
-		'TestSchema',
-		'A test schema',
-		new PropertyDefinitionList( [
+	const mockSchema = newSchema( {
+		title: 'TestSchema',
+		description: 'A test schema',
+		properties: new PropertyDefinitionList( [
 			createPropertyDefinitionFromJson( 'name', { type: TextType.typeName } ),
 			createPropertyDefinitionFromJson( 'age', { type: NumberType.typeName } ),
 			createPropertyDefinitionFromJson( 'website', { type: UrlType.typeName } ),
 		] ),
-	);
+	} );
 
 	const mockSubject = newSubject( {
 		id: 's1demo5sssssss1',
@@ -192,7 +191,7 @@ describe( 'Infobox', () => {
 		// Values the stores do not hold, so the assertions can only pass if the dialog was
 		// handed the repositories' data rather than a registry read.
 		const freshSubject = newSubject( { id: mockSubject.getId(), label: 'Fetched Subject', schemaName: 'TestSchema' } );
-		const freshSchema = new Schema( 'TestSchema', 'Fetched schema', new PropertyDefinitionList( [] ) );
+		const freshSchema = newSchema( { title: 'TestSchema', description: 'Fetched schema', properties: new PropertyDefinitionList( [] ) } );
 		getSubjectForEditingMock.mockResolvedValue( freshSubject );
 		getSchemaMock.mockResolvedValue( freshSchema );
 
@@ -242,13 +241,13 @@ describe( 'Infobox', () => {
 		// The display renders a value only when the Schema it holds defines that property, so a save
 		// against a Schema that gained a property in another session has to bring both the Subject and
 		// that Schema back — otherwise the value the user just entered is invisible until reload.
-		const schemaWithCostCentre = new Schema(
-			'TestSchema',
-			'A test schema',
-			new PropertyDefinitionList( [
+		const schemaWithCostCentre = newSchema( {
+			title: 'TestSchema',
+			description: 'A test schema',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'Cost centre', { type: TextType.typeName } ),
 			] ),
-		);
+		} );
 		// What the editor hands to onSave, here without the statement the server ends up storing.
 		const clientCopy = mockSubject.withStatements( new StatementList( [] ) );
 		const persistedSubject = newSubject( {
@@ -267,8 +266,8 @@ describe( 'Infobox', () => {
 			await flushPromises();
 
 			const onSave = wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' ) as
-				( subject: Subject, comment: string ) => Promise<void>;
-			await onSave( clientCopy, 'summary' );
+				( subject: Subject, dependentSubjects: Subject[] | null, comment: string ) => Promise<void>;
+			await onSave( clientCopy, null, 'summary' );
 			await flushPromises();
 		}
 

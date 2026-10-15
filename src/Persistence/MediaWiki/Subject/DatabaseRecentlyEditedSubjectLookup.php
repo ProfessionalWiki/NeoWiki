@@ -12,6 +12,7 @@ use MediaWiki\Storage\NameTableStore;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFormatter;
 use MediaWiki\Utils\MWTimestamp;
+use ProfessionalWiki\NeoWiki\Application\HostSubjectBuilder;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\RecentlyEditedSubjectLookup;
@@ -39,6 +40,7 @@ class DatabaseRecentlyEditedSubjectLookup implements RecentlyEditedSubjectLookup
 		private readonly RevisionPolicy $revisionPolicy,
 		private readonly PageReadAuthorizer $readAuthorizer,
 		private readonly TitleFormatter $titleFormatter,
+		private readonly HostSubjectBuilder $hostSubjectBuilder,
 		private readonly int $revisionBound,
 		private readonly int $readBound,
 	) {
@@ -47,11 +49,12 @@ class DatabaseRecentlyEditedSubjectLookup implements RecentlyEditedSubjectLookup
 	public function getRecentlyEditedSubjects( int $limit ): array {
 		/** @var array<int, array{?RevisionRecord, ?PageSubjects}> $pages */
 		$pages = [];
-		$summaries = [];
+		/** @var array<string, array{Subject, PageSubjects, RevisionRecord, stdClass}> $edits */
+		$edits = [];
 		$reads = 0;
 
 		foreach ( $this->newestRevisions() as $change ) {
-			if ( $reads >= $this->readBound || count( $summaries ) >= $limit ) {
+			if ( $reads >= $this->readBound || count( $edits ) >= $limit ) {
 				break;
 			}
 
@@ -68,7 +71,7 @@ class DatabaseRecentlyEditedSubjectLookup implements RecentlyEditedSubjectLookup
 			[ $published, $pageSubjects ] = $pages[$change->rev_page];
 
 			if ( $published === null || $pageSubjects === null || $this->isAfter( $change, $published )
-				|| array_diff( $pageSubjects->getAllSubjects()->getIdsAsTextArray(), array_keys( $summaries ) ) === []
+				|| array_diff( $pageSubjects->getAllSubjects()->getIdsAsTextArray(), array_keys( $edits ) ) === []
 			) {
 				continue;
 			}
@@ -81,12 +84,15 @@ class DatabaseRecentlyEditedSubjectLookup implements RecentlyEditedSubjectLookup
 				$subject = $publishedById->getSubject( $changed->id );
 
 				if ( $subject !== null ) {
-					$summaries[$subject->id->text] ??= $this->newSummary( $subject, $pageSubjects, $published, $change );
+					$edits[$subject->id->text] ??= [ $subject, $pageSubjects, $published, $change ];
 				}
 			}
 		}
 
-		return array_slice( array_values( $summaries ), 0, $limit );
+		return array_map(
+			fn ( array $edit ): SubjectSummary => $this->newSummary( ...$edit ),
+			array_slice( array_values( $edits ), 0, $limit )
+		);
 	}
 
 	/**
@@ -198,6 +204,7 @@ class DatabaseRecentlyEditedSubjectLookup implements RecentlyEditedSubjectLookup
 			pageId: (int)$change->rev_page,
 			pageTitle: $pageTitle,
 			lastEdited: (string)MWTimestamp::convert( TS_ISO_8601, $change->rev_timestamp ),
+			hostSubject: $name === null ? $this->hostSubjectBuilder->build( $subject, $pageSubjects, $pageTitle ) : null,
 		);
 	}
 

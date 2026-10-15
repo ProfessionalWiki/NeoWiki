@@ -53,10 +53,17 @@ readonly class JsonSchemaSerializer {
 			'required' => [ 'statements' ],
 			'properties' => [
 				'schema' => [ 'const' => $schema->getName()->getText() ],
-				'label' => [ 'type' => [ 'string', 'null' ] ],
+				'label' => $this->labelSchema( $schema ),
 				'statements' => $this->statementsSchema( $schema->getAllProperties() ),
 			],
 		];
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function labelSchema( Schema $schema ): array {
+		return [ 'type' => $schema->subjectsAreDependent() ? 'null' : [ 'string', 'null' ] ];
 	}
 
 	/**

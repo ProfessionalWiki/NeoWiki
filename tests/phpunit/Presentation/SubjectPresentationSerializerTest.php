@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Presentation;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Application\HostSubject;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectPresentationSerializer;
 use stdClass;
@@ -33,6 +34,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 			pageId: $pageId,
 			pageTitle: $pageTitle,
 			pageNamespaceId: $pageNamespaceId,
+			hostSubject: null,
 		);
 	}
 
@@ -92,6 +94,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 			pageId: null,
 			pageTitle: null,
 			pageNamespaceId: null,
+			hostSubject: null,
 		);
 
 		$this->assertEquals(
@@ -104,6 +107,49 @@ class SubjectPresentationSerializerTest extends TestCase {
 				'statements' => new stdClass(),
 			],
 			( new SubjectPresentationSerializer() )->serialize( $item )
+		);
+	}
+
+	public function testSerializesTheHostSubjectsADependentSubjectIsNamedAfter(): void {
+		$item = new GetSubjectResponseItem(
+			id: 'sRecord11111111',
+			label: null,
+			displayName: 'Record',
+			displayNameIsGenerated: true,
+			schema: 'Record',
+			statements: [],
+			pageId: null,
+			pageTitle: null,
+			pageNamespaceId: null,
+			hostSubject: new HostSubject(
+				id: 'sBirth111111111',
+				schema: 'Birth',
+				displayName: 'Birth',
+				displayNameIsGenerated: true,
+				hostSubject: new HostSubject(
+					id: 'sPerson11111111',
+					schema: [ 'source' => 'wikibase', 'name' => 'Person' ],
+					displayName: 'Pablo Picasso',
+					displayNameIsGenerated: false,
+					hostSubject: null
+				)
+			),
+		);
+
+		$this->assertSame(
+			[
+				'id' => 'sBirth111111111',
+				'displayName' => 'Birth',
+				'displayNameIsGenerated' => true,
+				'schema' => 'Birth',
+				'hostSubject' => [
+					'id' => 'sPerson11111111',
+					'displayName' => 'Pablo Picasso',
+					'displayNameIsGenerated' => false,
+					'schema' => [ 'source' => 'wikibase', 'name' => 'Person' ],
+				],
+			],
+			( new SubjectPresentationSerializer() )->serialize( $item )['hostSubject']
 		);
 	}
 

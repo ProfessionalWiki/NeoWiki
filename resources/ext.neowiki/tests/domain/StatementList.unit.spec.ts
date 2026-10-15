@@ -47,6 +47,21 @@ describe( 'StatementList', () => {
 		expect( statementList.has( new PropertyName( 'property2' ) ) ).toBe( true );
 	} );
 
+	it( 'puts a statement in place of the one with its property name', () => {
+		const statement3 = new Statement( new PropertyName( 'property3' ), TextType.typeName, newStringValue( 'value3' ) );
+		const replacement = new Statement( property2, TextType.typeName, newStringValue( 'replaced' ) );
+
+		const statements = new StatementList( [ statement1, statement2, statement3 ] ).withStatement( replacement );
+
+		expect( [ ...statements ] ).toEqual( [ statement1, replacement, statement3 ] );
+	} );
+
+	it( 'adds a statement for a property it has none for after the others', () => {
+		const statements = new StatementList( [ statement1 ] ).withStatement( statement2 );
+
+		expect( [ ...statements ] ).toEqual( [ statement1, statement2 ] );
+	} );
+
 	it( 'filters out Statements with empty values', () => {
 		const emptyStatement = new Statement( new PropertyName( 'emptyProperty' ), TextType.typeName, undefined );
 		const statementList = new StatementList( [ statement1, emptyStatement, statement2 ] );

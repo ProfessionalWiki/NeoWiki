@@ -42,9 +42,10 @@ const { editingSubject, editingSchema, editorOpen, openEditor } = nw.useSubjectE
 );
 ```
 
-Bind the three refs to the dialog and call `openEditor( subjectId )` from your edit control. It reads the Subject
-and its Schema fresh, and reports a failed read instead of opening. A save through the dialog updates the stores
-itself.
+Bind the three refs to the dialog, call `openEditor( subjectId )` from your edit control, and pass an `onSave` that
+writes through the Subject store:
+`( subject, dependentSubjects, comment ) => subjectStore.updateSubject( subject, dependentSubjects, comment )`.
+`openEditor` reads the Subject and its Schema fresh, and reports a failed read instead of opening.
 
 Relation fields offer creating the target Subject in place only when the dialog is given an `onCreate` handler
 alongside `onSave`, which decides the page the new Subject goes to; the handler types are in

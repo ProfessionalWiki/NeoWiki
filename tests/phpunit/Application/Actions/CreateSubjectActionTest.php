@@ -8,10 +8,12 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
+use ProfessionalWiki\NeoWiki\Application\DependentSubjectBuilder;
 use ProfessionalWiki\NeoWiki\Application\NewSubjectIdResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use ProfessionalWiki\NeoWiki\Application\Validation\DependentSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -23,7 +25,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -49,6 +50,9 @@ use RuntimeException;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestNaming;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction
@@ -97,39 +101,53 @@ class CreateSubjectActionTest extends TestCase {
 		array $schemaNames = []
 	): CreateSubjectAction {
 		$registry = TestSources::newPropertyTypeRegistry();
+		$statementListBuilder = new StatementListBuilder(
+			$registry,
+			$this->idGenerator,
+			TestSubjectIds::newParser()
+		);
+		$proposedSubjectValidator = new ProposedSubjectValidator(
+			schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
+			subjectValidator: new SubjectValidator(
+				propertyTypeLookup: $registry,
+				subjectLookup: new InMemorySubjectLookup(),
+				sourceRegistry: TestSources::newRegistry(),
+			),
+		);
+
+		$newSubjectIdResolver = new NewSubjectIdResolver(
+			subjectIdParser: TestSubjectIds::newParser(),
+			idGenerator: $this->idGenerator,
+			pageIdentifiersLookup: $this->pageIdentifiersLookup,
+		);
+
 		return new CreateSubjectAction(
 			$this->presenterSpy,
 			$this->subjectRepository,
-			new NewSubjectIdResolver(
-				subjectIdParser: TestSubjectIds::newParser(),
-				idGenerator: $this->idGenerator,
-				pageIdentifiersLookup: $this->pageIdentifiersLookup,
-			),
+			$newSubjectIdResolver,
 			$this->readAuthorizer,
 			$this->authorizer,
-			new StatementListBuilder(
-				$registry,
-				$this->idGenerator,
-				TestSubjectIds::newParser()
-			),
+			$statementListBuilder,
 			TestSources::newSchemaResolver( $this->schemaLookup ),
 			new SelectStatementResolver( new SelectValueResolver() ),
-			new ProposedSubjectValidator(
-				schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
-				subjectValidator: new SubjectValidator(
-					propertyTypeLookup: $registry,
-					subjectLookup: new InMemorySubjectLookup(),
-					sourceRegistry: TestSources::newRegistry(),
-				),
-			),
+			$proposedSubjectValidator,
 			$this->pageIdentifiersResolver,
 			TestSources::newSchemaReferenceParser( $schemaNames ),
+			new DependentSubjectBuilder(
+				newSubjectIdResolver: $newSubjectIdResolver,
+				schemaReferenceParser: TestSources::newSchemaReferenceParser( $schemaNames ),
+				schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
+				selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
+				statementListBuilder: $statementListBuilder,
+				dependentSubjectRules: TestNaming::newDependentSubjectRules( $this->schemaLookup ),
+			),
+			new DependentSubjectValidator( $proposedSubjectValidator ),
 			$validationEnforced,
 		);
 	}
 
 	private function registerSelectSchema( bool $multiple = false ): void {
-		$this->schemaLookup->updateSchema( new Schema(
+		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( self::SELECT_SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
@@ -490,7 +508,7 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	private function registerSchemaWithRequiredStatus(): void {
-		$this->schemaLookup->updateSchema( new Schema(
+		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( self::SELECT_SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
@@ -690,7 +708,7 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	private function registerPersonSchemaWithRelation(): void {
-		$this->schemaLookup->updateSchema( new Schema(
+		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( 'PersonSchema' ),
 			description: '',
 			properties: new PropertyDefinitions( [
@@ -700,7 +718,7 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	private function registerPersonSchemaWithRequiredName(): void {
-		$this->schemaLookup->updateSchema( new Schema(
+		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( 'PersonSchema' ),
 			description: '',
 			properties: new PropertyDefinitions( [
@@ -714,7 +732,7 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	private function registerPersonSchemaWithRequiredUnregisteredProperty(): void {
-		$this->schemaLookup->updateSchema( new Schema(
+		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( 'PersonSchema' ),
 			description: '',
 			properties: new PropertyDefinitions( [
@@ -1047,6 +1065,93 @@ class CreateSubjectActionTest extends TestCase {
 		);
 
 		$this->assertSame( 's' . self::STUB_ID, $this->presenterSpy->result );
+	}
+
+	private const string BIRTH_ID = 'sBirth111111111';
+
+	private function registerPersonAndBirthSchemas( bool $birthDateRequired = false ): void {
+		$this->schemaLookup->updateSchema( TestSchema::build(
+			name: 'Person',
+			properties: new PropertyDefinitions( [ 'Birth' => TestProperty::buildRelation( targetSchemas: [ 'Birth' ] ) ] )
+		) );
+		$this->schemaLookup->updateSchema( TestSchema::build(
+			name: 'Birth',
+			properties: new PropertyDefinitions( [
+				'Date' => TestProperty::buildText(
+					required: $birthDateRequired,
+					constraintSeverities: [ 'required' => Severity::Error ]
+				),
+			] ),
+			subjectsAreDependent: true
+		) );
+	}
+
+	private function newPersonWithBirthRequest(): CreateSubjectRequest {
+		return new CreateSubjectRequest(
+			pageId: 1,
+			isMainSubject: true,
+			label: 'Pablo Picasso',
+			schemaName: 'Person',
+			statements: [ 'Birth' => [ 'propertyType' => 'relation', 'value' => [ [ 'target' => self::BIRTH_ID ] ] ] ],
+			dependentSubjects: [ [ 'id' => self::BIRTH_ID, 'schema' => 'Birth', 'statements' => [] ] ],
+		);
+	}
+
+	public function testWritesTheDependentSubjectsInTheSameSaveAsTheSubject(): void {
+		$this->registerPersonAndBirthSchemas();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+		$savesBefore = count( $this->subjectRepository->savedPageIds );
+
+		$this->newCreateSubjectAction()->createSubject( $this->newPersonWithBirthRequest() );
+
+		$this->assertCount( $savesBefore + 1, $this->subjectRepository->savedPageIds );
+		$this->assertSame(
+			[ 's' . self::STUB_ID, self::BIRTH_ID ],
+			$this->subjectRepository->getSubjectsByPageId( new PageId( 1 ) )->getAllSubjects()->getIdsAsTextArray()
+		);
+	}
+
+	public function testARelationToADependentSubjectOfTheWriteIsNotReportedAsMissing(): void {
+		$this->registerPersonAndBirthSchemas();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject( $this->newPersonWithBirthRequest() );
+
+		$this->assertSame( [], $this->presenterSpy->violations );
+	}
+
+	public function testABlockingViolationOfADependentSubjectBlocksTheWriteUnderEnforcement(): void {
+		$this->registerPersonAndBirthSchemas( birthDateRequired: true );
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction( validationEnforced: true )->createSubject( $this->newPersonWithBirthRequest() );
+
+		$this->assertTrue( $this->presenterSpy->validationFailed );
+		$this->assertNull( $this->subjectRepository->getSubject( new SubjectId( 's' . self::STUB_ID ) ) );
+	}
+
+	public function testAValidationFailureUnderEnforcementListsTheViolationsOfTheDependentSubjects(): void {
+		$this->registerPersonAndBirthSchemas( birthDateRequired: true );
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction( validationEnforced: true )->createSubject( $this->newPersonWithBirthRequest() );
+
+		$this->assertEquals(
+			[ [ 'required', new SubjectId( self::BIRTH_ID ) ] ],
+			array_map( static fn ( Violation $violation ): array => [ $violation->code, $violation->subjectId ], $this->presenterSpy->violations )
+		);
+	}
+
+	public function testPresentsAWriteTheRulesForDependentSubjectsRefuseAsAValidationFailure(): void {
+		$this->registerPersonAndBirthSchemas();
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+		$refusal = new Violation( null, 'dependent-subject-without-host', severity: Severity::Error, subjectId: new SubjectId( self::BIRTH_ID ) );
+		$this->subjectRepository->refuseWritesWith = [ $refusal ];
+
+		$this->newCreateSubjectAction()->createSubject( $this->newPersonWithBirthRequest() );
+
+		$this->assertTrue( $this->presenterSpy->validationFailed );
+		$this->assertEquals( [ $refusal ], $this->presenterSpy->violations );
 	}
 
 }

@@ -11,6 +11,7 @@ export class SchemaDeserializer {
 			// always has one, even if it is empty.
 			schema.description ?? '',
 			this.deserializePropertyDefinitions( schema.propertyDefinitions ),
+			schema.subjectsAreDependent === true,
 		);
 	}
 

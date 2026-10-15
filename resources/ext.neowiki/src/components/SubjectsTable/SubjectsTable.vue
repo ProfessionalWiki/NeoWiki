@@ -33,7 +33,7 @@
 						:aria-label="$i18n( 'neowiki-subjects-search-placeholder' ).text()"
 					/>
 					<CdxButton
-						v-if="fixedSchema === undefined && canCreate"
+						v-if="fixedSchema === undefined && canCreate && createsWithoutHost"
 						class="ext-neowiki-subjects-table__create"
 						@click="emit( 'create', selectedSchema ?? undefined )"
 					>
@@ -93,6 +93,7 @@ import { useCursorPagination } from '@/composables/useCursorPagination.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
 import type { SubjectSummary } from '@/application/SubjectSummaryLookup.ts';
+import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import { emptyStateMessage, schemaMenuNames, subjectColumns, summaryOrder } from '@/presentation/subjectSummaryTable.ts';
 
 const props = withDefaults( defineProps<{
@@ -131,7 +132,8 @@ const sort = ref<TableSort>( {} );
 const selectedSchema = ref<string | null>( props.fixedSchema ?? props.initialSchema );
 const searchText = ref( '' );
 const appliedSearch = ref( '' );
-const schemaNames = ref<string[]>( [] );
+const schemaSummaries = ref<SchemaSummary[]>( [] );
+const schemaNames = computed( (): string[] => schemaSummaries.value.map( ( summary ) => summary.name ) );
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 let requestSequence = 0;
 
@@ -152,6 +154,9 @@ const schemaMenuItems = computed( (): MenuItemData[] => [
 	{ value: ALL_SCHEMAS, label: mw.msg( 'neowiki-subjects-all-schemas' ) },
 	...schemaMenuNames( schemaNames.value, selectedSchema.value ).map( ( name ) => ( { value: name, label: name } ) )
 ] );
+
+const createsWithoutHost = computed( (): boolean => selectedSchema.value === null ||
+	schemaSummaries.value.some( ( summary ) => summary.name === selectedSchema.value && !summary.subjectsAreDependent ) );
 
 const createLabel = computed( () => selectedSchema.value === null ?
 	mw.msg( 'neowiki-createsubject-button' ) :
@@ -243,7 +248,7 @@ onMounted( async () => {
 	}
 
 	try {
-		schemaNames.value = ( await schemaStore.fetchAllSchemaSummaries() ).map( ( summary ) => summary.name );
+		schemaSummaries.value = await schemaStore.fetchAllSchemaSummaries();
 	} catch ( error ) {
 		mw.notify( error instanceof Error ? error.message : String( error ), { type: 'error' } );
 	}

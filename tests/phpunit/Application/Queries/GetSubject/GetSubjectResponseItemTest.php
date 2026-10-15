@@ -28,7 +28,8 @@ class GetSubjectResponseItemTest extends TestCase {
 				schemaName: new SchemaName( 'Organization' ),
 			),
 			null,
-			'ACME Corp'
+			'ACME Corp',
+			null
 		);
 
 		$this->assertSame( 's1demo1aaaaaaa1', $item->id );
@@ -41,6 +42,7 @@ class GetSubjectResponseItemTest extends TestCase {
 			TestSubject::build( label: null, schemaName: new SchemaName( 'Organization' ) ),
 			null,
 			// Nobody chose a name, so the Schema supplies one and the item says so.
+			null,
 			null
 		);
 
@@ -53,7 +55,8 @@ class GetSubjectResponseItemTest extends TestCase {
 		$item = GetSubjectResponseItem::fromSubject(
 			TestSubject::build( label: new SubjectLabel( 'ACME Corp' ) ),
 			null,
-			'ACME Corp'
+			'ACME Corp',
+			null
 		);
 
 		$this->assertFalse( $item->displayNameIsGenerated );
@@ -68,7 +71,8 @@ class GetSubjectResponseItemTest extends TestCase {
 				] )
 			),
 			null,
-			'ACME Corp'
+			'ACME Corp',
+			null
 		);
 
 		$this->assertSame(
@@ -81,7 +85,7 @@ class GetSubjectResponseItemTest extends TestCase {
 	}
 
 	public function testFromSubjectWithoutPageIdentifiersLeavesPageFieldsNull(): void {
-		$item = GetSubjectResponseItem::fromSubject( TestSubject::build(), null, 'Test subject' );
+		$item = GetSubjectResponseItem::fromSubject( TestSubject::build(), null, 'Test subject', null );
 
 		$this->assertNull( $item->pageId );
 		$this->assertNull( $item->pageTitle );
@@ -92,7 +96,8 @@ class GetSubjectResponseItemTest extends TestCase {
 		$item = GetSubjectResponseItem::fromSubject(
 			TestSubject::build(),
 			new PageIdentifiers( new PageId( 42 ), 'Help:Bunnies', 12 ),
-			'Test subject'
+			'Test subject',
+			null
 		);
 
 		$this->assertSame( 42, $item->pageId );

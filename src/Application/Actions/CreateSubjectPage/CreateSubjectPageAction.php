@@ -4,7 +4,11 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubjectPage;
 
+use ProfessionalWiki\NeoWiki\Application\DependentSubjectBuilder;
 use ProfessionalWiki\NeoWiki\Application\NewSubjectIdResolver;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\DependentSubjectRulesViolatedException;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectIdInUseException;
+use ProfessionalWiki\NeoWiki\Application\Validation\DependentSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
@@ -14,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
@@ -47,12 +52,18 @@ readonly class CreateSubjectPageAction {
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private PageIdentifiersResolver $pageIdentifiersResolver,
 		private SchemaReferenceParser $schemaReferenceParser,
+		private DependentSubjectBuilder $dependentSubjectBuilder,
+		private DependentSubjectValidator $dependentSubjectValidator,
 		private bool $validationEnforced,
 		private bool $subjectFirst,
 		private int $subjectPageNamespace,
 	) {
 	}
 
+	/**
+	 * @throws InvalidArgumentException When the request holds a value or a Dependent Subject that cannot be built.
+	 * @throws SubjectIdInUseException When a Dependent Subject takes an id another Subject holds.
+	 */
 	public function createSubjectPage( CreateSubjectPageRequest $request ): void {
 		$schemaReference = $this->schemaReferenceParser->localName( $request->schemaName );
 		$schema = $this->schemaResolver->getSchema( $schemaReference );
@@ -94,33 +105,57 @@ readonly class CreateSubjectPageAction {
 			return;
 		}
 
-		$violations = $this->proposedSubjectValidator->validate( $subject );
+		$dependentSubjects = $this->dependentSubjectBuilder->build( $request->dependentSubjects, $subject->getId(), PageSubjects::newEmpty() );
 
-		if ( $this->validationEnforced && $this->blockingViolations( $violations ) !== [] ) {
-			$this->presenter->presentValidationFailed( $violations );
+		$violations = $this->proposedSubjectValidator->validate( $subject, $dependentSubjects );
+		$dependentSubjectViolations = $this->dependentSubjectValidator->validate( $dependentSubjects, $subject, new SubjectMap() );
+		$allViolations = array_merge( $violations, $dependentSubjectViolations->all );
+
+		if ( $this->validationEnforced && $dependentSubjectViolations->blockTheWriteWith( $violations ) ) {
+			$this->presenter->presentValidationFailed( $allViolations );
 			return;
 		}
 
-		$pageSubjects = new PageSubjects( $subject, new SubjectMap() );
-		$status = $this->subjectRepository->createPageWithSubjects( $pageTitle, $pageSubjects, $request->comment );
+		$pageSubjects = new PageSubjects( $subject, $dependentSubjects );
+		$pageId = $this->createPage( $pageTitle, $pageSubjects, $request->comment, $allViolations );
 
-		if ( $status->pageId === null ) {
-			$this->presentFailedWrite( $pageTitle, $status );
+		if ( $pageId === null ) {
 			return;
 		}
 
-		$page = new PageIdentifiers( id: $status->pageId, title: $pageTitle, namespaceId: $this->subjectPageNamespace );
+		$page = new PageIdentifiers( id: $pageId, title: $pageTitle, namespaceId: $this->subjectPageNamespace );
 
 		$this->presenter->presentCreated(
 			GetSubjectResponseItem::fromSubject(
 				$subject,
 				$page,
-				SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageTitle )
+				SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageTitle ),
+				hostSubject: null
 			),
 			$page,
 			$schema,
 			$violations
 		);
+	}
+
+	/**
+	 * Null when the write failed, which this has then presented.
+	 *
+	 * @param Violation[] $violations
+	 */
+	private function createPage( string $pageTitle, PageSubjects $pageSubjects, ?string $comment, array $violations ): ?PageId {
+		try {
+			$status = $this->subjectRepository->createPageWithSubjects( $pageTitle, $pageSubjects, $comment );
+		} catch ( DependentSubjectRulesViolatedException $exception ) {
+			$this->presenter->presentValidationFailed( array_merge( $violations, $exception->violations ) );
+			return null;
+		}
+
+		if ( $status->pageId === null ) {
+			$this->presentFailedWrite( $pageTitle, $status );
+		}
+
+		return $status->pageId;
 	}
 
 	/**
@@ -185,17 +220,6 @@ readonly class CreateSubjectPageAction {
 		}
 
 		return $this->selectStatementResolver->resolve( $schema, $statements );
-	}
-
-	/**
-	 * @param Violation[] $violations
-	 * @return Violation[]
-	 */
-	private function blockingViolations( array $violations ): array {
-		return array_values( array_filter(
-			$violations,
-			static fn ( Violation $v ): bool => $v->isBlocking()
-		) );
 	}
 
 }

@@ -16,7 +16,14 @@
 			@input="filterSchemas"
 			@update:selected="onSelect"
 			@blur="revertUncommittedTyping"
-		/>
+		>
+			<template
+				v-if="leftOutDependentSchema !== null"
+				#no-results
+			>
+				{{ $i18n( 'neowiki-create-subject-error-dependent-subjects', leftOutDependentSchema ).text() }}
+			</template>
+		</CdxLookup>
 	</div>
 </template>
 
@@ -42,6 +49,8 @@ const props = defineProps<{
 	schemaNames?: readonly string[];
 	/** Names the field for a caller that shows no label of its own. */
 	ariaLabel?: string;
+	/** Leaves out the Schemas whose Subjects are dependent. */
+	standaloneOnly?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -77,12 +86,28 @@ const takenNames = computed( (): Set<string> => {
 const creationOffered = computed( (): boolean =>
 	props.offersCreation && !takenNames.value.has( normalizeSchemaName( typedName.value ) ) );
 
-const offeredSummaries = computed( (): SchemaSummary[] => props.schemaNames === undefined ?
-	summaries.value :
-	summaries.value.filter( ( summary ) => props.schemaNames?.includes( summary.name ) ) );
+const offeredSummaries = computed( (): SchemaSummary[] => summaries.value.filter( ( summary ) =>
+	( props.schemaNames === undefined || props.schemaNames.includes( summary.name ) ) &&
+	!( props.standaloneOnly && summary.subjectsAreDependent ) ) );
 
 const menu = computed( (): SchemaMenu =>
 	schemaMenu( offeredSummaries.value, query.value, creationOffered.value ? typedName.value : null ) );
+
+// A Schema the search finds that is left out for having Dependent Subjects, the one it names in full first, so that a
+// menu with nothing to offer can say why.
+const leftOutDependentSchema = computed( (): string | null => {
+	const search = query.value.trim().toLowerCase();
+
+	if ( !props.standaloneOnly || search === '' ) {
+		return null;
+	}
+
+	const found = summaries.value.filter( ( summary ) => summary.subjectsAreDependent &&
+		( props.schemaNames === undefined || props.schemaNames.includes( summary.name ) ) &&
+		summary.name.toLowerCase().includes( search ) );
+
+	return ( found.find( ( summary ) => summary.name.toLowerCase() === search ) ?? found[ 0 ] )?.name ?? null;
+} );
 
 const nothingToOffer = computed( (): boolean => wikiHasNoSchemas.value && !props.offersCreation );
 

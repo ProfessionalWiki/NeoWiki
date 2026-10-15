@@ -81,6 +81,18 @@ JSON
 		$this->assertSame( 1, $byName['Person']['propertyCount'] );
 	}
 
+	public function testSummariesSayWhetherTheSubjectsAreDependent(): void {
+		$this->createSchema( 'Birth', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
+		$this->createSchema( 'Place', '{"propertyDefinitions":{}}' );
+
+		$response = $this->executeHandler( new GetSchemaSummariesApi(), new RequestData( [ 'method' => 'GET' ] ) );
+
+		$this->assertSame(
+			[ 'Birth' => true, 'Place' => false ],
+			array_column( json_decode( $response->getBody()->getContents(), true )['schemas'], 'subjectsAreDependent', 'name' )
+		);
+	}
+
 	public function testFollowingTheCursorWalksAllPages(): void {
 		$this->createSchema( 'Alpha', '{"title":"Alpha","description":"First","propertyDefinitions":{}}' );
 		$this->createSchema( 'Beta', '{"title":"Beta","description":"Second","propertyDefinitions":{}}' );

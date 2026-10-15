@@ -61,12 +61,18 @@ class Neo4jSubjectUpdater {
 		$subjects = [];
 
 		foreach ( $pageSubjects->getAllSubjects()->asArray() as $subject ) {
-			if ( $this->schemaResolver->getSchema( $subject->getSchemaReference() ) === null ) {
+			$schema = $this->schemaResolver->getSchema( $subject->getSchemaReference() );
+
+			if ( $schema === null ) {
 				$this->logger->warning( 'Schema not found: ' . $subject->getSchemaReference()->getText() );
 				continue;
 			}
 
-			$subjects[] = new Neo4jPageSubject( $subject, $subject->id->text === $mainSubjectId );
+			$subjects[] = new Neo4jPageSubject(
+				subject: $subject,
+				isMainSubject: $subject->id->text === $mainSubjectId,
+				isDependent: $schema->subjectsAreDependent()
+			);
 		}
 
 		return $subjects;
@@ -246,7 +252,7 @@ class Neo4jSubjectUpdater {
 			'MATCH (page:Page {id: $pageId, wiki_id: $wikiId})
 				UNWIND $subjects AS row
 				MATCH (subject:Subject {id: row.id})
-				MERGE (page)-[:HasSubject {isMain: row.isMain}]->(subject)',
+				MERGE (page)-[:HasSubject {isMain: row.isMain, isDependent: row.isDependent}]->(subject)',
 			[
 				'pageId' => $this->pageId->id,
 				'wikiId' => $this->wikiId,
@@ -254,6 +260,7 @@ class Neo4jSubjectUpdater {
 					fn ( Neo4jPageSubject $pageSubject ) => [
 						'id' => $pageSubject->getId(),
 						'isMain' => $pageSubject->isMainSubject,
+						'isDependent' => $pageSubject->isDependent,
 					],
 					$subjects
 				),

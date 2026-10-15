@@ -40,6 +40,7 @@
 				v-else
 				:schema-properties="schemaProperties"
 				:display-rules="currentDisplayRules"
+				:properties-targeting-dependent-subjects="targetingDependentSubjects"
 				@update:display-rules="onDisplayRulesChanged"
 			/>
 		</div>
@@ -49,10 +50,13 @@
 <script setup lang="ts">
 import { ref, shallowRef, watch } from 'vue';
 import { Layout, type DisplayRule } from '@/domain/Layout.ts';
-import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
+import type { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { CdxField, CdxMessage, CdxTextArea } from '@wikimedia/codex';
 import DisplayRuleList from './DisplayRuleList.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { propertiesTargetingDependentSubjects } from '@/domain/propertyTypes/Relation.ts';
+import { subjectsAreDependentIn } from '@/application/SchemaLookup.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 const props = defineProps<{
 	initialLayout: Layout;
@@ -63,17 +67,24 @@ const emit = defineEmits<{
 }>();
 
 const schemaRepo = NeoWikiServices.getSchemaRepository();
+const schemaStore = useSchemaStore();
 
 const description = ref( props.initialLayout.getDescription() );
 const currentDisplayRules = shallowRef<DisplayRule[]>( [ ...props.initialLayout.getDisplayRules() ] );
 const schemaProperties = shallowRef<PropertyDefinition[]>( [] );
+const targetingDependentSubjects = shallowRef<PropertyName[]>( [] );
 const schemaFetchFailed = ref( false );
 
 async function fetchSchemaProperties( schemaName: string ): Promise<void> {
 	schemaFetchFailed.value = false;
 	try {
-		const schema = await schemaRepo.getSchema( schemaName );
+		const [ schema, summaries ] = await Promise.all( [
+			schemaRepo.getSchema( schemaName ),
+			schemaStore.fetchAllSchemaSummaries()
+		] );
 		schemaProperties.value = [ ...schema.getPropertyDefinitions() ];
+		targetingDependentSubjects.value = propertiesTargetingDependentSubjects( schema, subjectsAreDependentIn( summaries ) )
+			.map( ( property ) => property.name );
 	} catch ( error ) {
 		console.error( 'Failed to fetch schema:', error );
 		schemaFetchFailed.value = true;

@@ -12,8 +12,10 @@ use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
+use ProfessionalWiki\NeoWiki\Application\DependentSubjectGuard;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\DependentSubjectRulesViolatedException;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -34,6 +36,7 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		private readonly PageContentSaver $pageContentSaver,
 		private readonly TitleFactory $titleFactory,
 		private readonly IContentHandlerFactory $contentHandlerFactory,
+		private readonly DependentSubjectGuard $dependentSubjectGuard,
 	) {
 	}
 
@@ -86,25 +89,41 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		throw new \RuntimeException( 'Content is not a SubjectContent' );
 	}
 
-	public function updateSubject( Subject $subject, ?string $comment = null ): void {
+	public function updateSubject(
+		Subject $subject,
+		?string $comment = null,
+		SubjectMap $dependentSubjects = new SubjectMap()
+	): PageContentSavingStatus {
 		$pageId = $this->getPageIdForSubject( $subject->id );
+		$content = $pageId === null ? null : $this->getContentByPageId( $pageId );
+		$pageSubjects = $content?->getPageSubjects();
 
-		if ( $pageId === null ) {
-			return;
+		if ( $pageId === null || $content === null || $pageSubjects?->getAllSubjects()->hasSubject( $subject->id ) !== true ) {
+			return new PageContentSavingStatus( PageContentSavingStatus::ERROR, 'Subject not found' );
 		}
 
-		$content = $this->getContentByPageId( $pageId );
+		$pageSubjects->updateSubject( $subject );
 
-		if ( $content !== null ) {
-			$this->updateSubjectContent( $content, $subject );
-			$this->saveContent( $content, $pageId, $comment );
+		foreach ( $dependentSubjects->asArray() as $dependentSubject ) {
+			$pageSubjects->putSubject( $dependentSubject );
 		}
+
+		return $this->saveGuarded( $content, $pageSubjects, $dependentSubjects->getIds(), $pageId, $comment );
 	}
 
-	private function updateSubjectContent( SubjectContent $content, Subject $subject ): void {
-		$contentData = $content->getPageSubjects();
-		$contentData->updateSubject( $subject );
-		$content->setPageSubjects( $contentData );
+	/**
+	 * @throws DependentSubjectRulesViolatedException
+	 */
+	private function saveGuarded(
+		SubjectContent $content,
+		PageSubjects $pageSubjects,
+		SubjectIdList $suppliedIds,
+		PageId $pageId,
+		?string $comment
+	): PageContentSavingStatus {
+		$content->setPageSubjects( $this->dependentSubjectGuard->admit( $content->getPageSubjects(), $pageSubjects, $suppliedIds ) );
+
+		return $this->saveContent( $content, $pageId, $comment );
 	}
 
 	private function saveContent( SubjectContent $content, PageId $pageId, ?string $comment = null ): PageContentSavingStatus {
@@ -130,19 +149,15 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 			return new PageContentSavingStatus( PageContentSavingStatus::NO_CHANGES );
 		}
 
-		// Asked of the slot rather than inferred from the save: mutatePageSubjects re-serializes the
-		// slot whatever the mutation did, so a slot written by anything other than the serializer -
-		// an import, or Special:NeoJson - yields new bytes and a real revision even when the removal
-		// removed nothing.
+		// Asked of the slot rather than inferred from the save: the write re-serializes the slot
+		// whatever it removed, so a slot written by anything other than the serializer - an import,
+		// or Special:NeoJson - yields new bytes and a real revision even when the removal removed
+		// nothing.
 		if ( $content->getPageSubjects()->getAllSubjects()->getSubject( $id ) === null ) {
 			return new PageContentSavingStatus( PageContentSavingStatus::NO_CHANGES );
 		}
 
-		$content->mutatePageSubjects( function( PageSubjects $pageSubjects ) use ( $id ): void {
-			$pageSubjects->removeSubject( $id );
-		} );
-
-		return $this->saveContent( $content, $pageId, $comment );
+		return $this->saveGuarded( $content, $content->getPageSubjects()->without( $id ), new SubjectIdList( [] ), $pageId, $comment );
 	}
 
 	public function getMainSubject( PageId $pageId ): ?Subject {
@@ -154,6 +169,16 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 	}
 
 	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): PageContentSavingStatus {
+		return $this->saveGuarded(
+			$this->getContentByPageId( $pageId ) ?? SubjectContent::newEmpty(),
+			$pageSubjects,
+			new SubjectIdList( [] ),
+			$pageId,
+			$comment
+		);
+	}
+
+	public function restorePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment ): PageContentSavingStatus {
 		$content = $this->getContentByPageId( $pageId ) ?? SubjectContent::newEmpty();
 
 		$content->setPageSubjects( $pageSubjects );
@@ -169,7 +194,9 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 			[
 				// Empty rather than absent, because a page needs a main slot.
 				SlotRecord::MAIN => $this->emptyContent( $title ),
-				self::SLOT_NAME => SubjectContent::newFromData( $pageSubjects ),
+				self::SLOT_NAME => SubjectContent::newFromData(
+					$this->dependentSubjectGuard->admit( PageSubjects::newEmpty(), $pageSubjects, new SubjectIdList( [] ) )
+				),
 			],
 			CommentStoreComment::newUnsavedComment( $comment ?? 'Create a page for a new NeoWiki subject' )
 		);

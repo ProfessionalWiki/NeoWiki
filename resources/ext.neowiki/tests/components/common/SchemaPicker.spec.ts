@@ -9,9 +9,9 @@ import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 const $i18n = createI18nMock();
 
 const SUMMARIES = [
-	{ name: 'Product', description: 'A product', propertyCount: 2 },
-	{ name: 'Office', description: 'A physical location', propertyCount: 4 },
-	{ name: 'City', description: '', propertyCount: 3 },
+	{ name: 'Product', description: 'A product', propertyCount: 2, subjectsAreDependent: false },
+	{ name: 'Office', description: 'A physical location', propertyCount: 4, subjectsAreDependent: true },
+	{ name: 'City', description: '', propertyCount: 3, subjectsAreDependent: false },
 ];
 
 // The picker is mounted with the real Codex component: which of a keystroke, a click
@@ -145,6 +145,50 @@ describe( 'SchemaPicker', () => {
 			const wrapper = await mountLoadedPicker( { schemaNames: [ 'City', 'Product' ] } );
 
 			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'City' ] );
+		} );
+
+		it( 'leaves out the schemas whose subjects are dependent where it offers standalone ones only', async () => {
+			const wrapper = await mountLoadedPicker( { standaloneOnly: true } );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'City' ] );
+		} );
+
+		describe( 'where it offers standalone ones only', () => {
+			// Codex shows the line in place of results, under its own class, and keeps an empty one where it has none.
+			function noResultsLine( wrapper: VueWrapper ): string {
+				const line = wrapper.find( '.cdx-menu__no-results' );
+
+				return line.exists() ? line.text() : '';
+			}
+
+			it( 'says why a Schema the typed text finds is left out', async () => {
+				const wrapper = await mountLoadedPicker( { standaloneOnly: true } );
+
+				await type( wrapper, 'offi' );
+
+				expect( menuShown( wrapper ) ).toBe( true );
+				expect( noResultsLine( wrapper ) ).toBe( 'neowiki-create-subject-error-dependent-subjectsOffice' );
+			} );
+
+			it( 'names the Schema the typed text names in full, of several it finds left out', async () => {
+				schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+					{ name: 'Branch office', description: '', propertyCount: 1, subjectsAreDependent: true },
+					...SUMMARIES,
+				] );
+				const wrapper = await mountLoadedPicker( { standaloneOnly: true } );
+
+				await type( wrapper, 'office' );
+
+				expect( noResultsLine( wrapper ) ).toBe( 'neowiki-create-subject-error-dependent-subjectsOffice' );
+			} );
+
+			it( 'says nothing of typed text that finds no Schema at all', async () => {
+				const wrapper = await mountLoadedPicker( { standaloneOnly: true } );
+
+				await type( wrapper, 'Zeppelin' );
+
+				expect( noResultsLine( wrapper ) ).toBe( '' );
+			} );
 		} );
 
 		it( 'lists only the schemas matching the typed text', async () => {
@@ -428,7 +472,7 @@ describe( 'SchemaPicker', () => {
 		} );
 
 		describe( 'that the list, fetched before it was created, leaves out', () => {
-			const ARTWORK = { name: 'Artwork', description: '', propertyCount: 0 };
+			const ARTWORK = { name: 'Artwork', description: '', propertyCount: 0, subjectsAreDependent: false };
 
 			async function mountPickerTargetingProduct(): Promise<VueWrapper> {
 				const wrapper = await mountLoadedPicker( { selected: 'Product' } );

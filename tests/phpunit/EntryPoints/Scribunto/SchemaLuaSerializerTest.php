@@ -40,7 +40,8 @@ class SchemaLuaSerializerTest extends TestCase {
 		$schema = new Schema(
 			new SchemaName( 'Empty' ),
 			'',
-			new PropertyDefinitions( [] )
+			new PropertyDefinitions( [] ),
+			false
 		);
 
 		$this->assertSame(
@@ -53,7 +54,8 @@ class SchemaLuaSerializerTest extends TestCase {
 		$schema = new Schema(
 			new SchemaName( 'Doc' ),
 			'Describes a document',
-			new PropertyDefinitions( [] )
+			new PropertyDefinitions( [] ),
+			false
 		);
 
 		$result = $this->newSerializer()->toLuaTable( $schema );
@@ -246,7 +248,8 @@ class SchemaLuaSerializerTest extends TestCase {
 		return new Schema(
 			new SchemaName( 'Test' ),
 			'',
-			new PropertyDefinitions( $props )
+			new PropertyDefinitions( $props ),
+			false
 		);
 	}
 

@@ -11,6 +11,9 @@ use ProfessionalWiki\NeoWiki\Application\Actions\SetSubjectsOrdering\SetSubjects
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
@@ -289,6 +292,23 @@ class SetSubjectsOrderingActionTest extends TestCase {
 		$this->assertFalse( $presenter->changed );
 	}
 
+	public function testPresentsAnOrderingTheRulesForDependentSubjectsRefuse(): void {
+		$repository = $this->newRepositoryWithMainAndThreeOtherSubjects();
+		$refusal = new Violation( null, 'dependent-subject-is-main', severity: Severity::Error, subjectId: new SubjectId( self::FIRST_ID ) );
+		$repository->refuseWritesWith = [ $refusal ];
+
+		$presenter = $this->newSpyPresenter();
+		$this->newAction( $presenter, $repository )->setOrdering(
+			new SetSubjectsOrderingRequest(
+				pageId: self::PAGE_ID,
+				mainSubjectId: self::FIRST_ID,
+				otherSubjectIds: [ self::MAIN_ID, self::SECOND_ID, self::THIRD_ID ],
+			)
+		);
+
+		$this->assertEquals( [ $refusal ], $presenter->violations );
+	}
+
 	private function newRepositoryWithMainAndThreeOtherSubjects(): InMemorySubjectRepository {
 		$repository = new InMemorySubjectRepository();
 		$repository->savePageSubjects(
@@ -324,6 +344,9 @@ class SetSubjectsOrderingActionTest extends TestCase {
 			public bool $pageNotFound = false;
 			public ?string $invalidReason = null;
 
+			/** @var Violation[] */
+			public array $violations = [];
+
 			public function presentOrderingChanged(): void {
 				$this->changed = true;
 			}
@@ -339,6 +362,10 @@ class SetSubjectsOrderingActionTest extends TestCase {
 
 			public function presentPageNotFound(): void {
 				$this->pageNotFound = true;
+			}
+
+			public function presentValidationFailed( array $violations ): void {
+				$this->violations = $violations;
 			}
 
 		};

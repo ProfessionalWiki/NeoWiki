@@ -96,13 +96,15 @@ export interface SubjectRepository {
 	): Promise<void>;
 
 	/**
-	 * The optional id is a pre-minted, unused Subject ID to assign, as on createOtherSubject.
+	 * The optional id is a pre-minted, unused Subject ID to assign, as on createOtherSubject. The
+	 * dependentSubjects are written as on updateSubject.
 	 */
 	createMainSubject(
 		pageId: number,
 		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
+		dependentSubjects: readonly Subject[],
 		comment?: string,
 		id?: SubjectId
 	): Promise<SubjectWriteResult>;
@@ -110,13 +112,14 @@ export interface SubjectRepository {
 	/**
 	 * The optional id is a pre-minted, unused Subject ID to assign; omit it to have the server mint
 	 * one. Minting up front (see mintSubjectId) is what lets relations between Subjects be wired
-	 * before any of them exists.
+	 * before any of them exists. The dependentSubjects are written as on updateSubject.
 	 */
 	createOtherSubject(
 		pageId: number,
 		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
+		dependentSubjects: readonly Subject[],
 		comment?: string,
 		id?: SubjectId
 	): Promise<SubjectWriteResult>;
@@ -128,12 +131,14 @@ export interface SubjectRepository {
 	 * PageTitleTakenError when a page of that title already exists, and InvalidPageTitleError when
 	 * the pageTitle given titles no page; nothing is created then.
 	 *
-	 * The optional id is a pre-minted, unused Subject ID to assign, as on createOtherSubject.
+	 * The optional id is a pre-minted, unused Subject ID to assign, as on createOtherSubject. The
+	 * dependentSubjects are written as on updateSubject.
 	 */
 	createSubjectPage(
 		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
+		dependentSubjects: readonly Subject[],
 		comment?: string,
 		pageTitle?: string,
 		id?: SubjectId
@@ -145,10 +150,15 @@ export interface SubjectRepository {
 	 */
 	mintSubjectId(): Promise<SubjectId>;
 
+	/**
+	 * Writes the dependentSubjects to the Subject's page in the same revision, each creating or replacing the
+	 * Subject with its id. The write removes the Dependent Subjects it leaves unreached.
+	 */
 	updateSubject(
 		id: SubjectId,
 		label: string | null,
 		statements: StatementList,
+		dependentSubjects: readonly Subject[],
 		comment?: string
 	): Promise<SubjectWriteResult>;
 
@@ -230,15 +240,15 @@ export class StubSubjectRepository implements SubjectRepository {
 		return Promise.resolve();
 	}
 
-	public createMainSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _comment?: string, id?: SubjectId ): Promise<SubjectWriteResult> {
+	public createMainSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _dependentSubjects: readonly Subject[], _comment?: string, id?: SubjectId ): Promise<SubjectWriteResult> {
 		return Promise.resolve( this.newWriteResult( id ?? new SubjectId( 's11111111111111' ), pageId, label, schemaName, statements ) );
 	}
 
-	public createOtherSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _comment?: string, id?: SubjectId ): Promise<SubjectWriteResult> {
+	public createOtherSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _dependentSubjects: readonly Subject[], _comment?: string, id?: SubjectId ): Promise<SubjectWriteResult> {
 		return Promise.resolve( this.newWriteResult( id ?? new SubjectId( 's11111111111112' ), pageId, label, schemaName, statements ) );
 	}
 
-	public createSubjectPage( label: string | null, schemaName: string, statements: StatementList, _comment?: string, pageTitle?: string, id?: SubjectId ): Promise<SubjectPageWriteResult> {
+	public createSubjectPage( label: string | null, schemaName: string, statements: StatementList, _dependentSubjects: readonly Subject[], _comment?: string, pageTitle?: string, id?: SubjectId ): Promise<SubjectPageWriteResult> {
 		const createdId = id ?? new SubjectId( 's11111111111113' );
 
 		return Promise.resolve( {
@@ -252,7 +262,7 @@ export class StubSubjectRepository implements SubjectRepository {
 		return Promise.resolve( new SubjectId( 'smintedAAAAAAA1' ) );
 	}
 
-	public async updateSubject( id: SubjectId, label: string | null, statements: StatementList, _comment?: string ): Promise<SubjectWriteResult> {
+	public async updateSubject( id: SubjectId, label: string | null, statements: StatementList, _dependentSubjects: readonly Subject[], _comment?: string ): Promise<SubjectWriteResult> {
 		const existing = await this.getSubject( id );
 
 		return this.newWriteResult( id, 0, label, existing.getSchemaName(), statements );
@@ -267,7 +277,7 @@ export class StubSubjectRepository implements SubjectRepository {
 	): SubjectWriteResult {
 		return {
 			subjectId: id,
-			subject: new Subject( id, label, label ?? schemaName, label === null, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ) ),
+			subject: new Subject( id, label, label ?? schemaName, label === null, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ), null ),
 			schema: null,
 		};
 	}

@@ -2,6 +2,13 @@ import type {
 	SubjectSummaries, SubjectSummary, SubjectSummaryLookup, SubjectSummaryQuery,
 } from '@/application/SubjectSummaryLookup';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
+import { hostSubjectFromJson, type HostSubjectJson } from '@/persistence/hostSubjectFromJson';
+
+type SubjectSummaryJson = Omit<SubjectSummary, 'hostSubject'> & { hostSubject?: HostSubjectJson };
+
+function summaryFromJson( json: SubjectSummaryJson ): SubjectSummary {
+	return { ...json, hostSubject: hostSubjectFromJson( json.hostSubject ) };
+}
 
 export class RestSubjectSummaryLookup implements SubjectSummaryLookup {
 
@@ -36,7 +43,9 @@ export class RestSubjectSummaryLookup implements SubjectSummaryLookup {
 			throw new Error( 'Error fetching subject summaries' );
 		}
 
-		return await response.json();
+		const json = await response.json() as { subjects: SubjectSummaryJson[]; nextCursor: string | null };
+
+		return { subjects: json.subjects.map( summaryFromJson ), nextCursor: json.nextCursor };
 	}
 
 	public async getRecentlyEditedSubjects( limit: number ): Promise<SubjectSummary[]> {
@@ -48,7 +57,7 @@ export class RestSubjectSummaryLookup implements SubjectSummaryLookup {
 			throw new Error( 'Error fetching recently edited subjects' );
 		}
 
-		return ( await response.json() ).subjects;
+		return ( ( await response.json() ).subjects as SubjectSummaryJson[] ).map( summaryFromJson );
 	}
 
 }

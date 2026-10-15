@@ -70,7 +70,7 @@ module.exports = exports = {
 				return;
 			}
 			nw.NeoWikiExtension.getInstance().getStoreStateLoader()
-				.loadSubjectsAndSchemas( new Set( [ id ] ) )
+				.loadSubjectsAndSchemas( new Set( [ id ] ), new Set() )
 				.then( () => {
 					// The loader never rejects, and the Subject store can hold the picked Subject
 					// without its Schema, so the Subject loaded only when both stores hold it.

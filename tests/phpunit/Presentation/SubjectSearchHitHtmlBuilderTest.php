@@ -35,13 +35,13 @@ class SubjectSearchHitHtmlBuilderTest extends NeoWikiIntegrationTestCase {
 
 	public function testASchemaNameIsEscaped(): void {
 		$this->assertEscaped(
-			new SubjectSearchMatch( self::SCRIPT, null, [ new MatchedSearchLine( null, [ '', 'A', '' ] ) ] )
+			new SubjectSearchMatch( self::SCRIPT, null, [ new MatchedSearchLine( null, [ '', 'A', '' ], [] ) ] )
 		);
 	}
 
 	public function testASubjectNameIsEscaped(): void {
 		$this->assertEscaped(
-			new SubjectSearchMatch( 'Museum', self::SCRIPT, [ new MatchedSearchLine( 'City', [ '', 'A', '' ] ) ] )
+			new SubjectSearchMatch( 'Museum', self::SCRIPT, [ new MatchedSearchLine( 'City', [ '', 'A', '' ], [] ) ] )
 		);
 	}
 
@@ -54,7 +54,7 @@ class SubjectSearchHitHtmlBuilderTest extends NeoWikiIntegrationTestCase {
 
 	public function testTheHeadingNamesTheSubjectAndItsSchema(): void {
 		$html = $this->newBuilder()->buildExtract(
-			new SubjectSearchMatch( 'Museum', 'Van Gogh Museum', [ new MatchedSearchLine( 'City', [ '', 'A', '' ] ) ] )
+			new SubjectSearchMatch( 'Museum', 'Van Gogh Museum', [ new MatchedSearchLine( 'City', [ '', 'A', '' ], [] ) ] )
 		);
 
 		$this->assertStringContainsString( '(neowiki-search-hit-subject: Van Gogh Museum, Museum)', $html );
@@ -68,7 +68,7 @@ class SubjectSearchHitHtmlBuilderTest extends NeoWikiIntegrationTestCase {
 
 	public function testAMatchedLabelIsShownWithoutAPropertyName(): void {
 		$html = $this->newBuilder()->buildExtract(
-			new SubjectSearchMatch( 'Museum', null, [ new MatchedSearchLine( null, [ '', 'Rijksmuseum', '' ] ) ] )
+			new SubjectSearchMatch( 'Museum', null, [ new MatchedSearchLine( null, [ '', 'Rijksmuseum', '' ], [] ) ] )
 		);
 
 		$this->assertStringContainsString( '<span class="searchmatch">Rijksmuseum</span>', $html );
@@ -77,13 +77,41 @@ class SubjectSearchHitHtmlBuilderTest extends NeoWikiIntegrationTestCase {
 
 	public function testEveryMatchedLineIsShownInOrder(): void {
 		$html = $this->newBuilder()->buildExtract( new SubjectSearchMatch( 'Museum', null, [
-			new MatchedSearchLine( 'City', [ '', 'Amsterdam', '' ] ),
-			new MatchedSearchLine( 'Country', [ 'The ', 'Netherlands', '' ] ),
+			new MatchedSearchLine( 'City', [ '', 'Amsterdam', '' ], [] ),
+			new MatchedSearchLine( 'Country', [ 'The ', 'Netherlands', '' ], [] ),
 		] ) );
 
 		$this->assertStringContainsString( 'City(colon-separator)<span class="searchmatch">Amsterdam</span>', $html );
 		$this->assertStringContainsString( 'Country(colon-separator)The <span class="searchmatch">Netherlands</span>', $html );
 		$this->assertLessThan( strpos( $html, 'Netherlands' ), strpos( $html, 'Amsterdam' ) );
+	}
+
+	public function testALineOfADependentSubjectNamesTheRelationPropertyThatLeadsToIt(): void {
+		$html = $this->newBuilder()->buildExtract( new SubjectSearchMatch( 'Museum', null, [
+			new MatchedSearchLine( 'Year', [ '', '2019', '' ], [ 'Attendance' ] ),
+		] ) );
+
+		$this->assertStringContainsString(
+			'(neowiki-search-hit-property-path: Attendance, Year)(colon-separator)<span class="searchmatch">2019</span>',
+			$html
+		);
+	}
+
+	public function testALineOfADependentSubjectOfADependentSubjectNamesEachRelationPropertyOnTheWay(): void {
+		$html = $this->newBuilder()->buildExtract( new SubjectSearchMatch( 'Museum', null, [
+			new MatchedSearchLine( 'Publisher', [ '', 'Rijksmuseum', '' ], [ 'Attendance', 'Source' ] ),
+		] ) );
+
+		$this->assertStringContainsString(
+			'(neowiki-search-hit-property-path: (neowiki-search-hit-property-path: Attendance, Source), Publisher)',
+			$html
+		);
+	}
+
+	public function testARelationPropertyNameIsEscaped(): void {
+		$this->assertEscaped( new SubjectSearchMatch( 'Museum', null, [
+			new MatchedSearchLine( 'Year', [ '', '2019', '' ], [ self::SCRIPT ] ),
+		] ) );
 	}
 
 	public function testAValueIsCutBackToWhatFitsBeforeTheMatch(): void {
@@ -127,7 +155,7 @@ class SubjectSearchHitHtmlBuilderTest extends NeoWikiIntegrationTestCase {
 	 * @param string[] $parts
 	 */
 	private function matchOn( string $propertyName, array $parts ): SubjectSearchMatch {
-		return new SubjectSearchMatch( 'Museum', null, [ new MatchedSearchLine( $propertyName, $parts ) ] );
+		return new SubjectSearchMatch( 'Museum', null, [ new MatchedSearchLine( $propertyName, $parts, [] ) ] );
 	}
 
 	private function newBuilder(): SubjectSearchHitHtmlBuilder {

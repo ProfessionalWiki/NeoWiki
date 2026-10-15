@@ -126,7 +126,7 @@ module.exports = exports = {
 				.withLabel( nw.enteredSubjectLabel( label.value ) )
 				.withStatements( newStatements );
 
-			subjectStore.updateSubject( updatedSubject )
+			subjectStore.updateSubject( updatedSubject, [] )
 				.then( () => {
 					mw.notify( mw.message( 'redherb-edit-main-subject-success' ).text() );
 					close();

@@ -1,24 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
-import { Schema } from '@/domain/Schema';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newTextProperty } from '@/domain/propertyTypes/Text';
 import { newUrlProperty } from '@/domain/propertyTypes/Url';
 import { newNumberProperty } from '@/domain/propertyTypes/Number';
 import { newRelationProperty } from '@/domain/propertyTypes/Relation';
+import { newSchema } from '@/TestHelpers.ts';
 
 describe( 'SchemaSerializer', () => {
 	const serializer = new SchemaSerializer();
 
 	describe( 'serializeSchema', () => {
 		it( 'serializes a schema with no properties', () => {
-			const schema = new Schema(
-				'TestSchema',
-				'Test Description',
-				new PropertyDefinitionList( [] ),
-			);
+			const schema = newSchema( {
+				title: 'TestSchema',
+				description: 'Test Description',
+				properties: new PropertyDefinitionList( [] ),
+			} );
 
 			const serialized = serializer.serializeSchema( schema );
 			const parsed = JSON.parse( serialized );
@@ -29,11 +29,21 @@ describe( 'SchemaSerializer', () => {
 			} );
 		} );
 
+		it( 'declares the subjects of a schema with dependent subjects dependent', () => {
+			const schema = newSchema( { title: 'Birth', description: '', properties: new PropertyDefinitionList( [] ), subjectsAreDependent: true } );
+
+			expect( JSON.parse( serializer.serializeSchema( schema ) ) ).toEqual( {
+				description: '',
+				subjectsAreDependent: true,
+				propertyDefinitions: {},
+			} );
+		} );
+
 		it( 'serializes a schema with all property types', () => {
-			const schema = new Schema(
-				'TestSchema',
-				'Test Description',
-				new PropertyDefinitionList( [
+			const schema = newSchema( {
+				title: 'TestSchema',
+				description: 'Test Description',
+				properties: new PropertyDefinitionList( [
 					newTextProperty( {
 						name: 'textProperty',
 						description: 'Text property',
@@ -64,7 +74,7 @@ describe( 'SchemaSerializer', () => {
 						multiple: true,
 					} ),
 				] ),
-			);
+			} );
 
 			const serialized = serializer.serializeSchema( schema );
 			const parsed = JSON.parse( serialized );
@@ -184,17 +194,17 @@ describe( 'SchemaSerializer', () => {
 				},
 			} );
 
-			const unchecked = new Schema(
-				schema.getName(),
-				schema.getDescription(),
-				new PropertyDefinitionList(
+			const unchecked = newSchema( {
+				title: schema.getName(),
+				description: schema.getDescription(),
+				properties: new PropertyDefinitionList(
 					[ ...schema.getPropertyDefinitions() ].map( ( property ) => ( {
 						...property,
 						required: false,
 						uniqueItems: false,
 					} ) ),
 				),
-			);
+			} );
 
 			const parsed = JSON.parse( serializer.serializeSchema( unchecked ) );
 
@@ -244,11 +254,11 @@ describe( 'SchemaSerializer', () => {
 
 	describe( 'serialization formatting', () => {
 		it( 'uses 4 spaces for indentation', () => {
-			const schema = new Schema(
-				'TestSchema',
-				'Test Description',
-				new PropertyDefinitionList( [] ),
-			);
+			const schema = newSchema( {
+				title: 'TestSchema',
+				description: 'Test Description',
+				properties: new PropertyDefinitionList( [] ),
+			} );
 
 			const serialized = serializer.serializeSchema( schema );
 

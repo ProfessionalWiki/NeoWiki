@@ -9,10 +9,14 @@ use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\SpecialPage\SpecialPage;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Statement;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialSubject;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectLabelHtml;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
@@ -24,6 +28,7 @@ use SpecialPageExecutor;
  *
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialSubject
  * @covers \ProfessionalWiki\NeoWiki\Presentation\SubjectNamePresenter
+ * @covers \ProfessionalWiki\NeoWiki\Presentation\SubjectNameMessage
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::getSubjectUiJsConfigVars
  * @group Database
  */
@@ -34,6 +39,8 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 
 	private const string SUBJECT_ID = 's1demo8aaaaaab5';
 	private const string ABSENT_ID = 's1demo8aaaaaab6';
+	private const string BIRTH_ID = 's1demo8aaaaaab7';
+	private const string RECORD_ID = 's1demo8aaaaaab8';
 	private const string INVALID_ID_ERROR = '(neowiki-special-subject-invalid-id)';
 	private const string PAGE_DESCRIPTION = '(neowiki-special-subject)';
 
@@ -197,6 +204,60 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 				schemaName: new SchemaName( 'Company' )
 			) )
 		);
+	}
+
+	public function testTheTitleNamesADependentSubjectAfterItsHostSubject(): void {
+		$this->createSubjectsOfPicasso();
+
+		$this->assertSame(
+			'(neowiki-dependent-subject-name: Birth, Pablo Picasso)',
+			$this->executeWith( self::BIRTH_ID )->getPageTitle()
+		);
+	}
+
+	public function testTheTitleNamesADependentSubjectOfADependentSubjectUpTheChain(): void {
+		$this->createSubjectsOfPicasso();
+
+		$this->assertSame(
+			'(neowiki-dependent-subject-name: Record, (neowiki-dependent-subject-name: Birth, Pablo Picasso))',
+			$this->executeWith( self::RECORD_ID )->getPageTitle()
+		);
+	}
+
+	public function testTheBrowserTitleNamesADependentSubjectAfterItsHostSubject(): void {
+		$this->createSubjectsOfPicasso();
+
+		$this->assertStringContainsString(
+			'(neowiki-dependent-subject-name: Birth, Pablo Picasso)',
+			$this->executeWith( self::BIRTH_ID )->getHTMLTitle()
+		);
+	}
+
+	private function createSubjectsOfPicasso(): void {
+		$this->createSchema( 'Birth', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
+		$this->createSchema( 'Record', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
+
+		$this->createPageWithSubjects(
+			'SpecialSubjectTest_Picasso',
+			mainSubject: TestSubject::build(
+				id: self::SUBJECT_ID,
+				label: 'Pablo Picasso',
+				statements: new StatementList( [ $this->relation( 'Birth', self::BIRTH_ID ) ] )
+			),
+			otherSubjects: new SubjectMap(
+				TestSubject::build(
+					id: self::BIRTH_ID,
+					label: null,
+					schemaName: new SchemaName( 'Birth' ),
+					statements: new StatementList( [ $this->relation( 'Record', self::RECORD_ID ) ] )
+				),
+				TestSubject::build( id: self::RECORD_ID, label: null, schemaName: new SchemaName( 'Record' ) )
+			)
+		);
+	}
+
+	private function relation( string $property, string $targetId ): Statement {
+		return TestStatement::buildRelation( $property, [ TestRelation::build( targetId: $targetId ) ] );
 	}
 
 	public function testTheTitleStaysThePagesOwnForASubjectTheWikiDoesNotHave(): void {

@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
@@ -28,6 +29,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator
@@ -396,6 +398,30 @@ class SubjectValidatorTest extends TestCase {
 		$this->assertFalse( $violations[0]->isBlocking() );
 	}
 
+	public function testRelationTargetWrittenAlongsideIsFound(): void {
+		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty() ] );
+
+		$violations = $this->validator->validate(
+			new StatementList( [ $this->newRelationStatement( self::NONEXISTENT_TARGET_ID ) ] ),
+			$schema,
+			new SubjectMap( TestSubject::build( id: self::NONEXISTENT_TARGET_ID, schemaName: new SchemaName( self::TARGET_SCHEMA ) ) )
+		);
+
+		$this->assertSame( [], $violations );
+	}
+
+	public function testRelationTargetWrittenAlongsideIsCheckedAsItIsWritten(): void {
+		$schema = $this->newSchema( [ 'Links' => $this->newRelationProperty() ] );
+
+		$violations = $this->validator->validate(
+			new StatementList( [ $this->newRelationStatement( self::MATCHING_TARGET_ID ) ] ),
+			$schema,
+			new SubjectMap( TestSubject::build( id: self::MATCHING_TARGET_ID, schemaName: new SchemaName( 'Company' ) ) )
+		);
+
+		$this->assertSame( [ 'relation-target-schema-mismatch' ], array_map( static fn ( $v ) => $v->code, $violations ) );
+	}
+
 	/**
 	 * The registry answers for the Source, so the target is looked up rather than refused; the local
 	 * lookup this test runs against holds no foreign Subjects, which is a not-found, not an
@@ -638,10 +664,10 @@ class SubjectValidatorTest extends TestCase {
 	}
 
 	private function newSchema( array $properties ): Schema {
-		return new Schema(
+		return TestSchema::build(
 			name: new SchemaName( 'TestSchema' ),
 			description: '',
-			properties: $this->newPropertyDefinitions( $properties ),
+			properties: $this->newPropertyDefinitions( $properties )
 		);
 	}
 

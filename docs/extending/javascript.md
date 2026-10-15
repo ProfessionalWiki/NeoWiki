@@ -13,15 +13,16 @@ component registry, and `registerServices( app )` for a Vue app of your own. The
 ## Displaying values
 
 Render each value through its Property Type's display component; rendering by hand loses Display Attributes and
-custom types. `resolveDisplayProperties()` picks the properties a Layout shows, or every non-empty one without a
-Layout:
+custom types. `resolveDisplayProperties()` picks the properties a View shows: those its Layout names, or without one
+every non-empty property except relation properties that point at
+[Dependent Subjects](../glossary.md#dependent-subject):
 
 ```javascript
 const nw = require( 'ext.neowiki' );
 const registry = nw.NeoWikiServices.getComponentRegistry();
 
 // [ { propertyDefinition, value }, ... ]
-const resolvedProperties = nw.resolveDisplayProperties( schema, subject, layout );
+const resolvedProperties = nw.resolveDisplayProperties( schema, subject, layout, nw.useSubjectStore().findSubject );
 ```
 
 ```html

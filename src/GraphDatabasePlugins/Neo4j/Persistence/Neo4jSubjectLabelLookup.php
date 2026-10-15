@@ -78,10 +78,11 @@ class Neo4jSubjectLabelLookup implements SubjectLabelLookup {
 				 * @var SummarizedResult $result
 				 */
 				$result = $transaction->run(
-					"MATCH (page:Page { wiki_id: \$wikiId })-[:HasSubject]->(n:Subject)
+					"MATCH (page:Page { wiki_id: \$wikiId })-[hasSubject:HasSubject]->(n:Subject)
 					 WHERE toLower(n.name) STARTS WITH toLower(\$search)
 					 AND ( \$schemaNames IS NULL OR any( label IN labels(n) WHERE label IN \$schemaNames ) )
 					 AND n.wiki_id = \$wikiId
+					 AND NOT coalesce(hasSubject.isDependent, false)
 					 RETURN n.id AS id, n.name AS name, page.id AS pageId, page.name AS pageTitle
 					 ORDER BY n.name, n.id
 					 LIMIT \$limit",

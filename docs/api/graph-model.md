@@ -15,7 +15,7 @@ For definitions of domain terms like Subject, Statement, and Schema, see the [Gl
 Two node types and two relationship categories:
 
 ```
-(:Page)-[:HasSubject {isMain}]->(:Subject:SchemaName)
+(:Page)-[:HasSubject {isMain, isDependent}]->(:Subject:SchemaName)
 (:Subject)-[:PropertyName {id}]->(:Subject)
 ```
 
@@ -126,6 +126,7 @@ Connects a Page node to each of its Subject nodes.
 | Property | Neo4j Type | Description |
 |----------|------------|-------------|
 | `isMain` | boolean | `true` for the Main Subject, `false` for the page's other Subjects |
+| `isDependent` | boolean | `true` for a [Dependent Subject](../glossary.md#dependent-subject), `false` for any other Subject |
 
 A page can have at most one Main Subject and any number of other Subjects
 ([ADR 7](../adr/007-multiple-subjects-per-page.md)).

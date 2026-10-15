@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { Component, computed } from 'vue';
+import { Component, computed, provide } from 'vue';
 import { Subject } from '@/domain/Subject.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -73,13 +73,16 @@ import { useSubjectEditor } from '@/composables/useSubjectEditor.ts';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
-import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import { useSubjectStore, type DependentSubjects } from '@/stores/SubjectStore.ts';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconEdit } from '@wikimedia/codex-icons';
 import { resolveDisplayProperties, type ResolvedProperty } from '@/domain/resolveDisplayProperties.ts';
 import type { ViewProps } from '@/components/Views/ViewContract.ts';
+import { EnclosingSubjectIdsKey } from '@/components/Value/ValueDisplayContract.ts';
 
 const props = defineProps<ViewProps>();
+
+provide( EnclosingSubjectIdsKey, computed( () => [ props.subjectId.text ] ) );
 
 const subjectStore = useSubjectStore();
 const schemaStore = useSchemaStore();
@@ -92,12 +95,21 @@ const { editingSubject, editingSchema, editorOpen, openEditor } = useSubjectEdit
 const subject = computed( () => subjectStore.getSubject( props.subjectId ) );
 const schema = computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) );
 
-const handleSaveSubject = async ( updatedSubject: Subject, comment: string ): Promise<void> => {
-	await subjectStore.updateSubject( updatedSubject, comment );
+const handleSaveSubject = async (
+	updatedSubject: Subject,
+	dependentSubjects: DependentSubjects,
+	comment: string
+): Promise<void> => {
+	await subjectStore.updateSubject( updatedSubject, dependentSubjects, comment );
 };
 
-const handleCreateSubject = async ( subject: Subject, pageId: number, comment: string ): Promise<void> => {
-	await subjectStore.createSubject( subject, pageId, comment );
+const handleCreateSubject = async (
+	subject: Subject,
+	pageId: number,
+	dependentSubjects: DependentSubjects,
+	comment: string
+): Promise<void> => {
+	await subjectStore.createSubject( subject, pageId, dependentSubjects, comment );
 };
 
 const handleSaveSchema = async ( updatedSchema: Schema, comment: string ): Promise<void> => {
@@ -122,7 +134,7 @@ const resolvedProperties = computed( (): ResolvedProperty[] => {
 	if ( !schema.value || !subject.value ) {
 		return [];
 	}
-	return resolveDisplayProperties( schema.value, subject.value, layout.value );
+	return resolveDisplayProperties( schema.value, subject.value, layout.value, subjectStore.findSubject );
 } );
 
 </script>
@@ -195,6 +207,17 @@ const resolvedProperties = computed( (): ResolvedProperty[] => {
 		flex: 0 1 60%;
 		overflow-wrap: anywhere;
 		word-break: break-word;
+	}
+
+	&__item:has( .ext-neowiki-dependent-subject-display, .ext-neowiki-dependent-subject-table ) {
+		flex-direction: column;
+		align-items: stretch;
+		row-gap: @spacing-50;
+	}
+
+	&__item:has( .ext-neowiki-dependent-subject-display, .ext-neowiki-dependent-subject-table ) > &__property,
+	&__item:has( .ext-neowiki-dependent-subject-display, .ext-neowiki-dependent-subject-table ) > &__value {
+		flex: none;
 	}
 }
 

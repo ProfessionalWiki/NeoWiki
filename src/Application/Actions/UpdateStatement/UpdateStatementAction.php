@@ -6,9 +6,11 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
+use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\DependentSubjectRulesViolatedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
@@ -21,10 +23,10 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Validation\ViolationDiff;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 
 /**
  * Sets or removes one Statement of a Subject, leaving its other Statements and its label alone.
@@ -39,6 +41,7 @@ readonly class UpdateStatementAction {
 		private SchemaResolver $schemaResolver,
 		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
+		private SubjectResponseItemFactory $responseItemFactory,
 		private UpdateStatementPresenter $presenter,
 		private bool $validationEnforced,
 	) {
@@ -180,7 +183,17 @@ readonly class UpdateStatementAction {
 			return;
 		}
 
-		$this->subjectRepository->updateSubject( $proposedSubject, $comment );
+		try {
+			$status = $this->subjectRepository->updateSubject( $proposedSubject, $comment );
+		} catch ( DependentSubjectRulesViolatedException $exception ) {
+			$this->presenter->presentValidationFailed( array_merge( $proposedViolations, $exception->violations ) );
+			return;
+		}
+
+		if ( $status->status === PageContentSavingStatus::ERROR ) {
+			$this->presenter->presentSaveFailed( $status->errorMessage );
+			return;
+		}
 
 		// The proposed Subject is the persisted state: the builder and the resolver above already
 		// normalized what the request supplied.
@@ -198,11 +211,7 @@ readonly class UpdateStatementAction {
 	private function newResponseItem( Subject $subject, PageIdentifiers $pageIdentifiers ): GetSubjectResponseItem {
 		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $pageIdentifiers->getId() );
 
-		return GetSubjectResponseItem::fromSubject(
-			$subject,
-			$pageIdentifiers,
-			SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageIdentifiers->getTitle() )
-		);
+		return $this->responseItemFactory->createResponseItem( $subject, $pageIdentifiers, $pageSubjects );
 	}
 
 }

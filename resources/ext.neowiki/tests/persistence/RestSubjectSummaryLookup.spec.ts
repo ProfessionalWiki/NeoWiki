@@ -11,11 +11,15 @@ const FIRST_PAGE: SubjectSummaryQuery = {
 	schema: null, search: '', sort: 'newest', direction: 'desc', cursor: null, limit: 10,
 };
 
+const ZX_SPECTRUM_JSON = {
+	id: 's1demo1aaaaaaa1', displayName: 'ZX Spectrum 48K', displayNameIsGenerated: false, schema: 'Computer',
+	pageId: 7, pageTitle: 'Sinclair ZX Spectrum', lastEdited: '2026-10-01T14:02:00Z',
+};
+
+const RESULT_JSON = { subjects: [ ZX_SPECTRUM_JSON ], nextCursor: 'abc' };
+
 const RESULT: SubjectSummaries = {
-	subjects: [ {
-		id: 's1demo1aaaaaaa1', displayName: 'ZX Spectrum 48K', displayNameIsGenerated: false, schema: 'Computer',
-		pageId: 7, pageTitle: 'Sinclair ZX Spectrum', lastEdited: '2026-10-01T14:02:00Z',
-	} ],
+	subjects: [ { ...ZX_SPECTRUM_JSON, hostSubject: null } ],
 	nextCursor: 'abc',
 };
 
@@ -31,7 +35,7 @@ describe( 'RestSubjectSummaryLookup', () => {
 
 	// The client answers no other URL, so an empty schema= or cursor= would throw rather than pass.
 	it( 'asks for the first page of every Schema without a schema or cursor parameter', async () => {
-		const lookup = newLookup( { [ LIST_URL ]: jsonResponse( RESULT ) } );
+		const lookup = newLookup( { [ LIST_URL ]: jsonResponse( RESULT_JSON ) } );
 
 		expect( await lookup.getSubjectSummaries( FIRST_PAGE ) ).toEqual( RESULT );
 	} );
@@ -39,7 +43,7 @@ describe( 'RestSubjectSummaryLookup', () => {
 	it( 'passes the Schema, search, order and cursor it is given', async () => {
 		const lookup = newLookup( {
 			[ `${ REST_URL }/neowiki/v0/subjects?search=zx&sort=name&direction=asc&limit=20&schema=Computer&cursor=abc` ]:
-				jsonResponse( RESULT ),
+				jsonResponse( RESULT_JSON ),
 		} );
 
 		expect( await lookup.getSubjectSummaries( {
@@ -53,15 +57,37 @@ describe( 'RestSubjectSummaryLookup', () => {
 		await expect( lookup.getSubjectSummaries( FIRST_PAGE ) ).rejects.toThrow( 'Error fetching subject summaries' );
 	} );
 
+	it( 'reads the Host Subjects a Dependent Subject is named after', async () => {
+		const birth = {
+			...ZX_SPECTRUM_JSON,
+			hostSubject: {
+				id: 's1demo1aaaaaaa2', schema: 'Birth', displayName: 'Birth', displayNameIsGenerated: true,
+				hostSubject: {
+					id: 's1demo1aaaaaaa3', schema: { source: 'wikibase', name: 'Person' }, displayName: 'Pablo Picasso',
+					displayNameIsGenerated: false,
+				},
+			},
+		};
+		const lookup = newLookup( { [ RECENTLY_EDITED_URL ]: jsonResponse( { subjects: [ birth ] } ) } );
+
+		expect( ( await lookup.getRecentlyEditedSubjects( 3 ) )[ 0 ].hostSubject ).toEqual( {
+			id: 's1demo1aaaaaaa2', schemaName: 'Birth', displayName: 'Birth', displayNameIsGenerated: true,
+			hostSubject: {
+				id: 's1demo1aaaaaaa3', schemaName: 'Person', displayName: 'Pablo Picasso', displayNameIsGenerated: false,
+				hostSubject: null,
+			},
+		} );
+	} );
+
 	it( 'asks for as many of the Subjects edited last as it is given', async () => {
-		const lookup = newLookup( { [ RECENTLY_EDITED_URL ]: jsonResponse( { subjects: RESULT.subjects } ) } );
+		const lookup = newLookup( { [ RECENTLY_EDITED_URL ]: jsonResponse( { subjects: RESULT_JSON.subjects } ) } );
 
 		expect( await lookup.getRecentlyEditedSubjects( 3 ) ).toEqual( RESULT.subjects );
 	} );
 
 	it( 'throws when the Subjects edited last cannot be fetched', async () => {
 		const lookup = newLookup( {
-			[ RECENTLY_EDITED_URL ]: { ok: false, json: async () => ( { subjects: RESULT.subjects } ) } as Response,
+			[ RECENTLY_EDITED_URL ]: { ok: false, json: async () => ( { subjects: RESULT_JSON.subjects } ) } as Response,
 		} );
 
 		await expect( lookup.getRecentlyEditedSubjects( 3 ) ).rejects.toThrow();

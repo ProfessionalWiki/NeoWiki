@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Queries\GetSubject;
 
+use ProfessionalWiki\NeoWiki\Application\HostSubject;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -37,6 +38,11 @@ readonly class GetSubjectResponseItem {
 		public ?int $pageId,
 		public ?string $pageTitle,
 		public ?int $pageNamespaceId,
+		/**
+		 * Set only for a Dependent Subject nobody named, which is then named after its Host Subject rather than by
+		 * $displayName.
+		 */
+		public ?HostSubject $hostSubject,
 	) {
 	}
 
@@ -46,12 +52,14 @@ readonly class GetSubjectResponseItem {
 	 *
 	 * The name someone chose is passed in rather than derived here, because only the caller holding
 	 * the page knows whether the Subject is its Main Subject. Null means nobody chose one, which is
-	 * what makes the name and the verdict on it one answer rather than two that could disagree.
+	 * what makes the name and the verdict on it one answer rather than two that could disagree. The
+	 * Host Subject comes from the page too.
 	 */
 	public static function fromSubject(
 		Subject $subject,
 		?PageIdentifiers $pageIdentifiers,
-		?string $chosenName
+		?string $chosenName,
+		?HostSubject $hostSubject
 	): self {
 		return new self(
 			id: $subject->id->text,
@@ -63,6 +71,7 @@ readonly class GetSubjectResponseItem {
 			pageId: $pageIdentifiers?->getId()->id,
 			pageTitle: $pageIdentifiers?->getTitle(),
 			pageNamespaceId: $pageIdentifiers?->getNamespaceId(),
+			hostSubject: $hostSubject,
 		);
 	}
 

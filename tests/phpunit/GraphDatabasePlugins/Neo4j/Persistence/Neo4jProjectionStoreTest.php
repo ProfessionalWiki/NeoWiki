@@ -259,11 +259,33 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$result = $this->readGraph(
 			'
 			MATCH (page:Page {id: ' . $pageId . '})-[hs:HasSubject]->(subject)
-			RETURN subject.id as id, properties(hs) as hs
+			RETURN subject.id as id, {isMain: hs.isMain} as hs
 			ORDER BY id'
 		)->getResults()->toRecursiveArray();
 
 		$this->assertSame( $expectedSubjects, $result );
+	}
+
+	public function testTheHasSubjectRelationSaysWhetherTheSubjectIsADependentSubject(): void {
+		$store = NeoWikiExtension::getInstance()->newNeo4jProjectionStore( new InMemorySchemaLookup(
+			TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID ),
+			TestSchema::build( name: 'Birth', subjectsAreDependent: true )
+		) );
+
+		$store->savePage( TestPage::build(
+			id: 42,
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
+			otherSubjects: new SubjectMap( TestSubject::build( id: self::GUID_2, schemaName: new SchemaName( 'Birth' ) ) )
+		) );
+
+		$this->assertSame(
+			[ [ 'id' => self::GUID_1, 'isDependent' => false ], [ 'id' => self::GUID_2, 'isDependent' => true ] ],
+			$this->readGraph(
+				'MATCH (page:Page {id: 42})-[hs:HasSubject]->(subject)
+				RETURN subject.id AS id, hs.isDependent AS isDependent
+				ORDER BY id'
+			)->getResults()->toRecursiveArray()
+		);
 	}
 
 	public function testSavesPageRemovesObsoleteSubjects(): void {

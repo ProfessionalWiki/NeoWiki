@@ -38,17 +38,17 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 | `GET /neowiki/v0/entity/{subjectId}` | Dereference a Subject's concept URI: `303` to its RDF or to a page showing it, depending on `Accept`. See [Dereferencing subject IRIs](rdf-export.md#dereferencing-subject-iris). |
 | `PUT /neowiki/v0/subject/{subjectId}` | Replace a Subject's label and statements. |
 | `DELETE /neowiki/v0/subject/{subjectId}` | Delete a Subject. |
-| `POST /neowiki/v0/subject/{subjectId}/move` | Move a Subject to another page, keeping its ID so relations targeting it keep resolving. Body `targetPageId`, optional `makeMainSubject` and `comment`. Edits both pages. |
+| `POST /neowiki/v0/subject/{subjectId}/move` | Move a Subject to another page, keeping its ID so relations targeting it keep resolving. Body `targetPageId`, optional `makeMainSubject` and `comment`. Edits both pages. The Subject's [Dependent Subjects](subject-format.md#dependent-subjects) move with it; moving a Dependent Subject on its own answers `422` with [`dependent-subject-without-host`](validation-codes.md#dependent-subject-without-host). |
 | `PUT /neowiki/v0/subject/{subjectId}/statements/{propertyName}` | Set one Statement, leaving the Subject's label and other Statements as they are. |
 | `DELETE /neowiki/v0/subject/{subjectId}/statements/{propertyName}` | Remove one Statement. |
 | `POST /neowiki/v0/subject/validate` | Check whether a new Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject/{subjectId}/validate` | Check whether a change to a Subject is valid, without saving it. Returns `{violations: [...]}` — see [Validation codes](validation-codes.md). |
 | `POST /neowiki/v0/subject-ids` | Mint a batch of unused Subject IDs to assign on create, e.g. to wire relations across an interlinked import. Body `count` (1–1000). |
 | `POST /neowiki/v0/subjects` | Create a Subject together with a page of its own, in one revision, as that page's main Subject. See [Creating Subjects](subject-format.md#creating-subjects). |
-| `GET /neowiki/v0/subjects` | List Subjects, newest first. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. Query: `schema` (only that Schema's Subjects), `search` (case-insensitive substring of the name or page title, or case-sensitive prefix of the ID), `sort` (`newest`, `name`, `schema`, `page`, `edited`) and `direction` (`asc`, `desc`; ignored by `newest`). Needs a Neo4j graph store. |
+| `GET /neowiki/v0/subjects` | List Subjects, newest first. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. Query: `schema` (only that Schema's Subjects; without it, [Dependent Subjects](subject-format.md#dependent-subjects) are left out), `search` (case-insensitive substring of the name or page title, or case-sensitive prefix of the ID), `sort` (`newest`, `name`, `schema`, `page`, `edited`) and `direction` (`asc`, `desc`; ignored by `newest`). Needs a Neo4j graph store. |
 | `GET /neowiki/v0/recently-edited-subjects` | List the Subjects whose data was edited most recently, newest first, each once. Adding a Subject counts as editing it. Returns `{"subjects": [...]}`, rows as in `GET /subjects` but with `lastEdited` the time of the Subject's last edit. Query: `limit` (1–50, default 10). A request looks back no further than the wiki's 2,000 newest revisions, of any page, and can return fewer Subjects than `limit` even when more were edited within them. |
 | `GET /neowiki/v0/subject-counts` | Count the Subjects of each Schema: `{"counts": {"Artist": 12}}`. A Schema with no Subjects is absent; one whose page is deleted or unreadable can be present. A count can lag a change by up to a minute. Needs a Neo4j graph store. |
-| `GET /neowiki/v0/subject-labels` | Find Subjects by name — the label, or for a Main Subject without one, the page title unless that is the ID of a Subject on the page. Other label-less Subjects are absent. Returns each Subject's `id`, `label` and the prefixed `pageTitle` of the page holding it. Query: `schema` (only Subjects of these Schemas, pipe-separated; omit for every Schema), `search` (name prefix), `limit`. |
+| `GET /neowiki/v0/subject-labels` | Find Subjects by name — the label, or for a Main Subject without one, the page title unless that is the ID of a Subject on the page. Other label-less Subjects and [Dependent Subjects](subject-format.md#dependent-subjects) are absent. Returns each Subject's `id`, `label` and the prefixed `pageTitle` of the page holding it. Query: `schema` (only Subjects of these Schemas, pipe-separated; omit for every Schema), `search` (name prefix), `limit`. |
 | `GET /neowiki/v0/subject/{subjectId}/referencingSubjects` | List the Subjects whose relations point at this one. See [Referencing Subjects](subject-format.md#referencing-subjects). |
 
 ### Pages and Subjects
@@ -187,7 +187,8 @@ Subject; match a relation value's `target` against the resolved Subjects to look
 resolve to a Subject you can read is silently omitted — the relation value itself is unchanged.
 
 On the **Subject read**, the targets are merged into the same `subjects` map as the requested Subject, which
-`requestedId` identifies:
+`requestedId` identifies, and so are the targets of each [Dependent Subject](subject-format.md#dependent-subjects)
+among them, in turn:
 
 ```json
 {
@@ -217,7 +218,7 @@ top-level `referencedSubjects` map keyed by Subject ID:
   "mainSubjectId": "sEpfwJLnxyQy6vR",
   "subjects": {
     "sEpfwJLnxyQy6vR": { "id": "sEpfwJLnxyQy6vR", "label": "Rijksmuseum", "displayName": "Rijksmuseum", "displayNameIsGenerated": false, "schema": "Museum", "statements": { ... } },
-    "sEpfwJLAtndAaaA": { "id": "sEpfwJLAtndAaaA", "label": null, "displayName": "Attendance", "displayNameIsGenerated": true, "schema": "Attendance", "statements": { ... } }
+    "sEpfwJLAtndAaaA": { "id": "sEpfwJLAtndAaaA", "label": null, "displayName": "Attendance", "displayNameIsGenerated": true, "schema": "Attendance", "hostSubject": { "id": "sEpfwJLnxyQy6vR", "displayName": "Rijksmuseum", "displayNameIsGenerated": false, "schema": "Museum" }, "statements": { ... } }
   },
   "referencedSubjects": {
     "sEpfwJLnuwcxvuJ": { "id": "sEpfwJLnuwcxvuJ", "label": "Amsterdam", "displayName": "Amsterdam", "displayNameIsGenerated": false, "schema": "City", "statements": { ... } }

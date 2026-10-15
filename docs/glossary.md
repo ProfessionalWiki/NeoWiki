@@ -71,7 +71,7 @@ Each Relation has
 
 A Subject that belongs to its **Host Subject**.
 
-![A Person's editor and infobox, both showing its Birth's fields inline, and the Birth on its own on Special:Subject; callouts name the Host Subject, the Dependent Subject and a standalone Subject](adr/035-dependent-subjects.svg)
+![A Person's editor and its row on the Data tab, both showing its Birth's fields inline, and the Birth on its own on Special:Subject; callouts name the Host Subject, the Dependent Subject and a standalone Subject](adr/035-dependent-subjects.svg)
 
 Schemas define whether their Subjects are Dependent or not ([ADR 35](adr/035-dependent-subjects.md)).
 
@@ -157,7 +157,7 @@ A View is an on-page rendering of a Subject. Views are placed on wiki pages via 
 automatically for a page's Main Subject. Each View renders a Subject using a View Type.
 
 A View can optionally reference a Layout to customize which properties are shown and how. Without a Layout, all
-properties are shown in Schema-defined order.
+properties are shown in Schema-defined order, except those whose values are Dependent Subjects.
 
 #### View Type
 

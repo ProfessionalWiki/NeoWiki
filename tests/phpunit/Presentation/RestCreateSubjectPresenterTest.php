@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Presentation\RestCreateSubjectPresenter;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Presentation\RestCreateSubjectPresenter
@@ -31,11 +32,12 @@ class RestCreateSubjectPresenterTest extends TestCase {
 			pageId: $pageId,
 			pageTitle: $pageId === null ? null : 'ACME Corp',
 			pageNamespaceId: $pageId === null ? null : 0,
+			hostSubject: null,
 		);
 	}
 
 	private function newSchema(): Schema {
-		return new Schema(
+		return TestSchema::build(
 			name: new SchemaName( 'Organization' ),
 			description: 'Companies and the like',
 			properties: new PropertyDefinitions( [

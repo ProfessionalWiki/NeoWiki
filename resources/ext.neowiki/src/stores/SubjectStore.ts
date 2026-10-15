@@ -44,6 +44,12 @@ function recordBundledSchema( schema: Schema | null, epochBeforeRequest: number 
 	}
 }
 
+/**
+ * The Dependent Subjects a write creates or replaces with the Subject it names; the wiki keeps the others that
+ * Subject still reaches.
+ */
+export type DependentSubjects = readonly Subject[];
+
 export const useSubjectStore = defineStore( 'subject', {
 	state: () => ( {
 		subjects: new Map<string, Subject>(),
@@ -119,17 +125,22 @@ export const useSubjectStore = defineStore( 'subject', {
 			}
 			return this.getSubject( id );
 		},
-		async updateSubject( subject: Subject, comment?: string ): Promise<void> {
+		async updateSubject( subject: Subject, dependentSubjects: DependentSubjects, comment?: string ): Promise<void> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().updateSubject(
 				subject.getId(),
 				subject.getLabel(),
 				subject.getStatements(),
+				dependentSubjects,
 				comment,
 			);
 
 			this.recordWriteResult( result, schemaEpoch );
+
+			if ( result.subject !== null ) {
+				await this.reloadWrittenPage( result.subject.getPageIdentifiers().getPageId() );
+			}
 		},
 		/**
 		 * Writes a Subject the client built, under the id it already carries. The counterpart to
@@ -138,9 +149,9 @@ export const useSubjectStore = defineStore( 'subject', {
 		 * Where it lands is the wiki's mode (ADR 33): a page-first wiki stores it on the page given,
 		 * a subject-first one gives it a page of its own and ignores that page.
 		 */
-		async createSubject( subject: Subject, pageId: number, comment?: string ): Promise<SubjectId> {
+		async createSubject( subject: Subject, pageId: number, dependentSubjects: DependentSubjects, comment?: string ): Promise<SubjectId> {
 			if ( isSubjectFirst() ) {
-				return ( await this.createSubjectOnOwnPage( subject, comment ) ).subjectId;
+				return ( await this.createSubjectOnOwnPage( subject, dependentSubjects, comment ) ).subjectId;
 			}
 
 			return this.createOtherSubject(
@@ -148,6 +159,7 @@ export const useSubjectStore = defineStore( 'subject', {
 				subject.getLabel(),
 				subject.getSchemaName(),
 				subject.getStatements(),
+				dependentSubjects,
 				comment,
 				subject.getId(),
 			);
@@ -221,7 +233,15 @@ export const useSubjectStore = defineStore( 'subject', {
 		async validateSubjectUpdate( id: SubjectId, label: string | null, statements: StatementList ): Promise<SubjectViolation[]> {
 			return NeoWikiExtension.getInstance().getSubjectRepository().validateSubjectUpdate( id, label, statements );
 		},
-		async createMainSubject( pageId: number, label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string, id?: SubjectId ): Promise<SubjectId> {
+		async createMainSubject(
+			pageId: number,
+			label: string | null,
+			schemaName: SchemaName,
+			statements: StatementList,
+			dependentSubjects: DependentSubjects,
+			comment?: string,
+			id?: SubjectId,
+		): Promise<SubjectId> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createMainSubject(
@@ -229,15 +249,25 @@ export const useSubjectStore = defineStore( 'subject', {
 				label,
 				schemaName,
 				statements,
+				dependentSubjects,
 				comment,
 				id,
 			);
 
 			this.recordWriteResult( result, schemaEpoch );
+			await this.reloadWrittenPage( pageId );
 
 			return result.subjectId;
 		},
-		async createOtherSubject( pageId: number, label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string, id?: SubjectId ): Promise<SubjectId> {
+		async createOtherSubject(
+			pageId: number,
+			label: string | null,
+			schemaName: SchemaName,
+			statements: StatementList,
+			dependentSubjects: DependentSubjects,
+			comment?: string,
+			id?: SubjectId,
+		): Promise<SubjectId> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createOtherSubject(
@@ -245,20 +275,23 @@ export const useSubjectStore = defineStore( 'subject', {
 				label,
 				schemaName,
 				statements,
+				dependentSubjects,
 				comment,
 				id,
 			);
 
 			this.recordWriteResult( result, schemaEpoch );
+			await this.reloadWrittenPage( pageId );
 
 			return result.subjectId;
 		},
 
-		async createSubjectOnOwnPage( subject: Subject, comment?: string ): Promise<CreatedSubjectPage> {
+		async createSubjectOnOwnPage( subject: Subject, dependentSubjects: DependentSubjects, comment?: string ): Promise<CreatedSubjectPage> {
 			return this.createSubjectPage(
 				subject.getLabel(),
 				subject.getSchemaName(),
 				subject.getStatements(),
+				dependentSubjects,
 				comment,
 				undefined,
 				subject.getId(),
@@ -269,21 +302,43 @@ export const useSubjectStore = defineStore( 'subject', {
 		 * Creates a Subject together with a page of its own, and reports where it landed: the page
 		 * is the server's to title, so the caller learns its name only from the answer.
 		 */
-		async createSubjectPage( label: string | null, schemaName: SchemaName, statements: StatementList, comment?: string, pageTitle?: string, id?: SubjectId ): Promise<CreatedSubjectPage> {
+		async createSubjectPage(
+			label: string | null,
+			schemaName: SchemaName,
+			statements: StatementList,
+			dependentSubjects: DependentSubjects,
+			comment?: string,
+			pageTitle?: string,
+			id?: SubjectId,
+		): Promise<CreatedSubjectPage> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().createSubjectPage(
 				label,
 				schemaName,
 				statements,
+				dependentSubjects,
 				comment,
 				pageTitle,
 				id,
 			);
 
 			this.recordWriteResult( result, schemaEpoch );
+			await this.reloadWrittenPage( result.pageId );
 
 			return { subjectId: result.subjectId, pageTitle: result.pageTitle, pageId: result.pageId };
+		},
+
+		/**
+		 * The write answers with its Subject alone, so the page is read again for the Dependent Subjects
+		 * it wrote and removed. A failed read must not reject: the write has committed.
+		 */
+		async reloadWrittenPage( pageId: number ): Promise<void> {
+			try {
+				await this.loadPageSubjects( pageId );
+			} catch ( error ) {
+				console.error( 'Failed to read the page\'s subjects again after a write:', error );
+			}
 		},
 
 		/**
@@ -314,6 +369,10 @@ export const useSubjectStore = defineStore( 'subject', {
 			this.subjectCreatorOpen = false;
 		},
 
+		/**
+		 * Drops the Subjects of that page the read no longer lists. Replaces the page listing only where
+		 * it is that page's or there is none yet.
+		 */
 		async loadPageSubjects( pageId: number ): Promise<void> {
 			const schemaStore = useSchemaStore();
 			const epoch = this.mutationEpoch;
@@ -321,7 +380,18 @@ export const useSubjectStore = defineStore( 'subject', {
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().getPageSubjects( pageId );
 
 			if ( epoch === this.mutationEpoch ) {
-				this.pageSubjects = result.pageSubjects;
+				const listedIds = new Set( result.pageSubjects.getSubjects().map( ( subject ) => subject.getId().text ) );
+
+				for ( const [ id, subject ] of this.subjects ) {
+					if ( subject.getPageIdentifiers().getPageId() === pageId && !listedIds.has( id ) ) {
+						this.subjects.delete( id );
+					}
+				}
+
+				if ( this.pageSubjects === null || this.pageSubjects.getPageId() === pageId ) {
+					this.pageSubjects = result.pageSubjects;
+				}
+
 				this.setSubjectsWithTargets( result.pageSubjects.getSubjects(), result.referencedSubjects, result.notFoundTargetIds );
 			}
 

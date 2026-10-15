@@ -10,7 +10,6 @@ use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
@@ -22,6 +21,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator
@@ -48,7 +48,7 @@ class ProposedSubjectValidatorTest extends TestCase {
 	}
 
 	private function registerSchemaWithAge( bool $required ): void {
-		$this->schemaLookup->updateSchema( new Schema(
+		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( self::SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
@@ -56,7 +56,7 @@ class ProposedSubjectValidatorTest extends TestCase {
 					new PropertyCore( description: '', required: $required, default: null ),
 					[ 'minimum' => null, 'maximum' => null, 'precision' => null ],
 				),
-			] ),
+			] )
 		) );
 	}
 

@@ -12,7 +12,7 @@
 				<SchemaDisplayHeader
 					:schema="currentSchema"
 					:can-edit-schema="canEditSchema"
-					:can-create-subject="canCreateSubjectPage"
+					:can-create-subject="canCreateSubjectPage && !currentSchema.subjectsAreDependent()"
 					@edit="openEditor"
 					@create-subject="subjectStore.openSubjectCreator()"
 				/>

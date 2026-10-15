@@ -9,9 +9,8 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponse;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 
 /**
- * Keeps the name of the Subject a {@see \ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery}
- * was asked for, for a caller that wants to name it and nothing more. Both answers come from the one
- * captured Subject, so they cannot disagree.
+ * Keeps the Subject a {@see \ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectQuery}
+ * was asked for, for a caller that wants to name it and nothing more.
  */
 class SubjectNamePresenter implements GetSubjectPresenter {
 
@@ -26,18 +25,11 @@ class SubjectNamePresenter implements GetSubjectPresenter {
 	}
 
 	/**
-	 * The name to show, or null when the query served no Subject — because the wiki holds none with
-	 * that id, or because it is on a page the caller may not read (#1046).
+	 * Null when the query served no Subject — because the wiki holds none with that id, or because it
+	 * is on a page the caller may not read (#1046).
 	 */
-	public function getDisplayName(): ?string {
-		return $this->requestedSubject?->displayName;
-	}
-
-	/**
-	 * Whether that name is the Schema name the wiki fell back on rather than one somebody chose.
-	 */
-	public function displayNameIsGenerated(): bool {
-		return $this->requestedSubject?->displayNameIsGenerated ?? false;
+	public function getRequestedSubject(): ?GetSubjectResponseItem {
+		return $this->requestedSubject;
 	}
 
 }

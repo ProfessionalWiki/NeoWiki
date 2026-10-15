@@ -302,6 +302,36 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * Only data written past the rules gives a Dependent Subject a label to match.
+	 */
+	public function testNeverOffersADependentSubject(): void {
+		$this->saveSubjects( new SubjectMap(
+			TestSubject::build( id: self::SUBJECT_ID_1, label: new SubjectLabel( 'Apple Pie' ) ),
+			TestSubject::build( id: self::SUBJECT_ID_2, label: new SubjectLabel( 'Apple' ), schemaName: new SchemaName( 'Ingredient' ) ),
+		) );
+
+		$this->assertEquals(
+			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie', 'Foo' ) ],
+			$this->newLookup()->getSubjectLabelsMatching( 'Apple', 10, null )
+		);
+	}
+
+	public function testDependentSubjectsDoNotCrowdOutTheSubjectsAfterThem(): void {
+		$this->saveSubjects( new SubjectMap(
+			TestSubject::build( id: 'sTestSLL1111121', label: new SubjectLabel( 'Apple 1' ), schemaName: new SchemaName( 'Ingredient' ) ),
+			TestSubject::build( id: 'sTestSLL1111122', label: new SubjectLabel( 'Apple 2' ), schemaName: new SchemaName( 'Ingredient' ) ),
+			TestSubject::build( id: 'sTestSLL1111123', label: new SubjectLabel( 'Apple 3' ), schemaName: new SchemaName( 'Ingredient' ) ),
+			TestSubject::build( id: 'sTestSLL1111124', label: new SubjectLabel( 'Apple 4' ), schemaName: new SchemaName( 'Ingredient' ) ),
+			TestSubject::build( id: self::SUBJECT_ID_1, label: new SubjectLabel( 'Apple Pie' ) ),
+		) );
+
+		$this->assertEquals(
+			[ new SubjectLabelLookupResult( self::SUBJECT_ID_1, 'Apple Pie', 'Foo' ) ],
+			$this->newLookup()->getSubjectLabelsMatching( 'Apple', 1, null )
+		);
+	}
+
 	private function saveSubjects( SubjectMap $subjects ): void {
 		$this->newProjectionStore()->savePage( TestPage::build(
 			id: 1,
@@ -321,13 +351,16 @@ class Neo4jSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 	}
 
 	protected function newProjectionStore(): GraphDatabasePlugin {
-		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore(
-			new InMemorySchemaLookup(
-				TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID ),
-				TestSchema::build( name: 'Recipe' ),
-				TestSchema::build( name: 'Plant' ),
-				TestSchema::build( name: 'Company' ),
-			)
+		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore( $this->schemaLookup() );
+	}
+
+	private function schemaLookup(): InMemorySchemaLookup {
+		return new InMemorySchemaLookup(
+			TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID ),
+			TestSchema::build( name: 'Recipe' ),
+			TestSchema::build( name: 'Plant' ),
+			TestSchema::build( name: 'Company' ),
+			TestSchema::build( name: 'Ingredient', subjectsAreDependent: true ),
 		);
 	}
 

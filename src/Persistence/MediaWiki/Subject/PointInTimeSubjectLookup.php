@@ -7,15 +7,17 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\PageSubjectsAtRevisionLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use Wikimedia\Rdbms\IConnectionProvider;
 
-class PointInTimeSubjectLookup implements SubjectLookup {
+class PointInTimeSubjectLookup implements SubjectLookup, PageSubjectsAtRevisionLookup {
 
 	public function __construct(
 		private readonly RevisionLookup $revisionLookup,
@@ -49,6 +51,15 @@ class PointInTimeSubjectLookup implements SubjectLookup {
 		}
 
 		return $subjects;
+	}
+
+	public function getPageSubjects( PageId $pageId ): PageSubjects {
+		$revision = $pageId->id === $this->primaryRevision->getPageId()
+			? $this->primaryRevision
+			: $this->getRevisionAtOrBefore( $pageId );
+		$content = $revision === null ? null : SubjectSlotReader::read( $revision );
+
+		return $content?->getPageSubjects() ?? PageSubjects::newEmpty();
 	}
 
 	private function getSubjectsFromRevision( RevisionRecord $revision, SubjectIdList $subjectIds ): SubjectMap {

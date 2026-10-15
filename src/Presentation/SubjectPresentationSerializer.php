@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Presentation;
 
+use ProfessionalWiki\NeoWiki\Application\HostSubject;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use stdClass;
 
@@ -25,6 +26,10 @@ class SubjectPresentationSerializer {
 			'schema' => $item->schema,
 		];
 
+		if ( $item->hostSubject !== null ) {
+			$entry['hostSubject'] = self::serializeHostSubject( $item->hostSubject );
+		}
+
 		if ( $item->pageId !== null ) {
 			$entry['pageId'] = $item->pageId;
 			$entry['pageTitle'] = $item->pageTitle;
@@ -34,6 +39,24 @@ class SubjectPresentationSerializer {
 		// An empty PHP array encodes as `[]`, which is not the object keyed by property name that
 		// the Subject format specifies, and that a Subject holding Statements already serves.
 		$entry['statements'] = $item->statements === [] ? new stdClass() : $item->statements;
+
+		return $entry;
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	public static function serializeHostSubject( HostSubject $hostSubject ): array {
+		$entry = [
+			'id' => $hostSubject->id,
+			'displayName' => $hostSubject->displayName,
+			'displayNameIsGenerated' => $hostSubject->displayNameIsGenerated,
+			'schema' => $hostSubject->schema,
+		];
+
+		if ( $hostSubject->hostSubject !== null ) {
+			$entry['hostSubject'] = self::serializeHostSubject( $hostSubject->hostSubject );
+		}
 
 		return $entry;
 	}

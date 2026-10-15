@@ -8,10 +8,11 @@ import type { Schema } from '@/domain/Schema';
 export interface SchemaCreation {
 
 	/**
-	 * Opens the Create schema dialog with the given name filled in. Resolves to the Schema created
-	 * there, or to null once the dialog is closed without creating one.
+	 * Opens the Create schema dialog with the given name filled in, and `subjectsAreDependent` decided for the
+	 * user unless null. Resolves to the Schema created there, or to null once the dialog is closed without
+	 * creating one.
 	 */
-	create( initialName: string ): Promise<Schema | null>;
+	create( initialName: string, subjectsAreDependent: boolean | null ): Promise<Schema | null>;
 
 }
 

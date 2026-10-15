@@ -47,14 +47,17 @@ class Neo4jSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 	}
 
 	protected function newProjectionStore(): GraphDatabasePlugin {
-		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore(
-			new InMemorySchemaLookup(
-				TestSchema::build( name: 'Computer' ),
-				TestSchema::build( name: 'Computer model' ),
-				TestSchema::build( name: 'Person' ),
-				TestSchema::build( name: 'Zebra' ),
-				TestSchema::build( name: 'ant' ),
-			)
+		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore( $this->schemaLookup() );
+	}
+
+	private function schemaLookup(): InMemorySchemaLookup {
+		return new InMemorySchemaLookup(
+			TestSchema::build( name: 'Computer' ),
+			TestSchema::build( name: 'Computer model' ),
+			TestSchema::build( name: 'Person' ),
+			TestSchema::build( name: 'Zebra' ),
+			TestSchema::build( name: 'ant' ),
+			TestSchema::build( name: 'Expansion card', subjectsAreDependent: true ),
 		);
 	}
 
@@ -101,6 +104,31 @@ class Neo4jSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 		$schema = 'a' . chr( 92 ) . 'u0060 {wiki_id: $wikiId}) RETURN 1 AS x //';
 
 		$this->assertSame( [], $this->idsOf( $this->summaries( schema: $schema ) ) );
+	}
+
+	public function testTheListingOfEverySchemaLeavesOutDependentSubjects(): void {
+		$this->savePage( 1, 'Page one', [
+			self::subject( self::OLDEST, 'ZX Spectrum' ),
+			self::subject( self::OLDER, null, 'Expansion card' ),
+		] );
+
+		$this->assertSame( [ self::OLDEST ], $this->idsOf( $this->summaries() ) );
+	}
+
+	public function testTheListingOfASchemaOfDependentSubjectsListsThem(): void {
+		$this->savePage( 1, 'Page one', [
+			self::subject( self::OLDEST, 'ZX Spectrum' ),
+			self::subject( self::OLDER, null, 'Expansion card' ),
+		] );
+
+		$this->assertSame( [ self::OLDER ], $this->idsOf( $this->summaries( schema: 'Expansion card' ) ) );
+	}
+
+	public function testTheListingOfEverySchemaReadsOnPastMoreDependentSubjectsThanTheScanBound(): void {
+		$this->savePage( 1, 'Page one', [ self::subject( self::OLDEST, 'ZX Spectrum' ) ] );
+		$this->savePage( 2, 'Page two', self::subjectsNewerThanTheFourAbove( 5, 'Expansion card' ) );
+
+		$this->assertSame( [ self::OLDEST ], $this->idsOf( $this->summaries( scanBound: 3 ) ) );
 	}
 
 	public function testSearchMatchesANameAnywhereInAnyCase(): void {
@@ -153,6 +181,7 @@ class Neo4jSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 					pageId: 7,
 					pageTitle: 'Sinclair ZX Spectrum',
 					lastEdited: '2026-10-01T14:02:00Z',
+					hostSubject: null,
 				),
 			],
 			$this->summaries()->summaries
@@ -470,12 +499,12 @@ class Neo4jSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 	/**
 	 * @return list<Subject> Up to 24 Subjects, newer than NEWEST and older than NEWEST_OF_ALL.
 	 */
-	private static function subjectsNewerThanTheFourAbove( int $count ): array {
+	private static function subjectsNewerThanTheFourAbove( int $count, string $schema = 'Computer' ): array {
 		// Subject ids never contain I or O.
 		$idEndings = array_slice( str_split( 'ABCDEFGHJKLMNPQRSTUVWXYZ' ), 0, $count );
 
 		return array_map(
-			static fn ( string $idEnding ): Subject => self::subject( 'sTestSSL222222' . $idEnding, $idEnding ),
+			static fn ( string $idEnding ): Subject => self::subject( 'sTestSSL222222' . $idEnding, $idEnding, $schema ),
 			$idEndings
 		);
 	}

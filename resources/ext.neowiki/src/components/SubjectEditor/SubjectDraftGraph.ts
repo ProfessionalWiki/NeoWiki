@@ -33,13 +33,19 @@ function relationTargetIds( subject: Subject, schema: Schema ): string[] {
 
 /**
  * A Subject the editor is holding. `id` is the Subject's own id, which is what relations name, and
- * `isNew` marks one the wiki does not have yet.
+ * `isNew` marks one the wiki does not have yet. Its Dependent Subjects are written along with it, so
+ * the relations they hold count as its own.
  */
 export interface HeldSubject {
 	id: string;
 	subject: Subject;
 	schema: Schema;
 	isNew: boolean;
+	dependentSubjects: readonly { subject: Subject; schema: Schema }[];
+}
+
+function heldTargetIds( entry: HeldSubject ): string[] {
+	return [ entry, ...entry.dependentSubjects ].flatMap( ( { subject, schema } ) => relationTargetIds( subject, schema ) );
 }
 
 /**
@@ -70,7 +76,7 @@ export function reachableTargetIds(
 			continue;
 		}
 
-		for ( const targetId of relationTargetIds( entry.subject, entry.schema ) ) {
+		for ( const targetId of heldTargetIds( entry ) ) {
 			if ( !reached.has( targetId ) ) {
 				reached.add( targetId );
 				queue.push( targetId );
@@ -125,7 +131,7 @@ export function writeOrder<T extends HeldSubject>(
 
 		visited.add( id );
 
-		for ( const targetId of relationTargetIds( entry.subject, entry.schema ) ) {
+		for ( const targetId of heldTargetIds( entry ) ) {
 			emitNew( targetId );
 		}
 

@@ -51,7 +51,7 @@ and how.
 |-----------|-------------|
 | `<subjectId>` (positional) | Subject ID to render: 15 characters starting with `s` for a Subject of this wiki, or `sourceKey:localId` for one from another [Source](../api/subject-format.md#ids). Defaults to the current page's Main Subject. |
 | `subject=<subjectId>` | Named alternative to the positional form. Cannot be combined with the positional form. |
-| `layout=<layoutName>` | Layout to apply. Without one, all properties are shown in schema order. |
+| `layout=<layoutName>` | Layout to apply. Without one, all properties are shown in schema order, except relation properties that point at [Dependent Subjects](../glossary.md#dependent-subject). |
 
 ### Notes
 
@@ -176,12 +176,13 @@ Renders a button that opens the Subject creator without leaving the page.
 {{#create_subject: }}
 {{#create_subject: schema=Person}}
 {{#create_subject: schema=Person | text=Add a person}}
-{{#create_subject: schema=Attendance | page=this}}
+{{#create_subject: schema=Exhibition | page=this}}
 {{#create_subject: schema=Person | page=People directory}}
 ```
 
-Positional arguments, unknown named arguments, a Schema that does not exist, and an unusable page title produce a
-visible parser error. An empty value counts as absent.
+Positional arguments, unknown named arguments, a Schema that does not exist or whose Subjects are
+[dependent](../glossary.md#dependent-subject), and an unusable page title produce a visible parser error. An empty value
+counts as absent.
 
 ## `{{#cypher_raw}}`
 

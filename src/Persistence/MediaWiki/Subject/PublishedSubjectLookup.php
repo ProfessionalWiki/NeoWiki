@@ -6,8 +6,11 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
 use MediaWiki\Revision\RevisionLookup;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\PageSubjectsAtRevisionLookup;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
@@ -19,7 +22,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
  * RevisionPolicy publishes, which on a wiki with an approval extension is not the latest one. A page
  * that publishes nothing contributes no Subjects, so a Subject held only by a draft is not found.
  */
-readonly class PublishedSubjectLookup implements SubjectLookup {
+readonly class PublishedSubjectLookup implements SubjectLookup, PageSubjectsAtRevisionLookup {
 
 	public function __construct(
 		private PageIdentifiersLookup $pageIdentifiersLookup,
@@ -45,6 +48,10 @@ readonly class PublishedSubjectLookup implements SubjectLookup {
 		}
 
 		return $subjects;
+	}
+
+	public function getPageSubjects( PageId $pageId ): PageSubjects {
+		return $this->getPublishedContent( $pageId->id )?->getPageSubjects() ?? PageSubjects::newEmpty();
 	}
 
 	private function getPublishedContent( int $pageId ): ?SubjectContent {

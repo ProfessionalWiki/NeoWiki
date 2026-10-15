@@ -52,7 +52,8 @@ readonly class GetMainSubjectQuery {
 		return GetSubjectResponseItem::fromSubject(
 			$mainSubject,
 			$pageIdentifiers,
-			SubjectDisplayName::labelOrPageName( $mainSubject, $pageSubjects, $pageIdentifiers?->getTitle() ?? '' )
+			SubjectDisplayName::labelOrPageName( $mainSubject, $pageSubjects, $pageIdentifiers?->getTitle() ?? '' ),
+			hostSubject: null
 		);
 	}
 

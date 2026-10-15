@@ -23,6 +23,8 @@ articles and show Subjects in them.
 | Moving a Subject to another page | offered on the Data tab | not offered |
 | Deleting the last Subject on a page | the page stays | the page goes too |
 
+In both modes, a [Dependent Subject](glossary.md#dependent-subject) is stored on its Host Subject's page.
+
 Administrators can [change the mode](operations/installation.md#choosing-page-first-or-subject-first). Switching an
 existing wiki to the other mode moves nothing: pages keep their titles and namespaces, while new Subjects and links to
 every Subject follow the new mode.

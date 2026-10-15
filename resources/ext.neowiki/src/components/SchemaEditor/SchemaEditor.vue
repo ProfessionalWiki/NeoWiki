@@ -9,6 +9,7 @@
 			:id="propertyListId"
 			:properties="currentSchema.getPropertyDefinitions()"
 			:selected-property-name="selectedPropertyName"
+			:shows-label-row="!subjectsAreDependent"
 			@subject-label-selected="onSubjectLabelSelected"
 			@property-selected="onPropertySelected"
 			@add-property="addProperty"
@@ -36,6 +37,12 @@
 				:select-name="selectedPropertyName === createdPropertyName"
 				@update:property-definition="onPropertyUpdated"
 			/>
+			<p
+				v-else-if="subjectsAreDependent"
+				class="ext-neowiki-schema-editor__no-properties"
+			>
+				{{ $i18n( 'neowiki-schema-editor-no-properties-dependent' ).text() }}
+			</p>
 			<template v-else>
 				<h3 class="ext-neowiki-schema-editor__subject-label-heading">
 					{{ $i18n( 'neowiki-schema-editor-subject-label' ).text() }}
@@ -62,7 +69,7 @@ import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { missingRelationAttribute } from '@/components/SchemaEditor/Property/missingRelationAttribute.ts';
 import { ErrorsRevealedKey } from '@/components/SchemaEditor/ErrorsRevealed.ts';
 
-const props = defineProps<{
+const props = withDefaults( defineProps<{
 	initialSchema: Schema;
 	/**
 	 * The Schema's description, owned by the host: the editor covers the property
@@ -71,7 +78,15 @@ const props = defineProps<{
 	 * should keep the one the Schema arrived with rather than clear it.
 	 */
 	description?: string;
-}>();
+	/**
+	 * Set by a host that decides it, such as the Schema creator. Null keeps
+	 * what the Schema declares.
+	 */
+	subjectsAreDependent?: boolean | null;
+}>(), {
+	description: undefined,
+	subjectsAreDependent: null
+} );
 
 const emit = defineEmits<{
 	change: [];
@@ -98,7 +113,10 @@ const paneSize = usePaneSize( root, {
 
 const currentSchema = ref<Schema>( props.initialSchema );
 
-// Undefined while the Label row is selected.
+const subjectsAreDependent = computed( (): boolean =>
+	props.subjectsAreDependent ?? currentSchema.value.subjectsAreDependent() );
+
+// Undefined while the Label row is selected, or, without a Label row, while no property is.
 const selectedPropertyName = ref<string | undefined>();
 
 // Gives each selected property an editor of its own. Not the name: renaming the property
@@ -227,7 +245,8 @@ function buildUpdatedSchema( updatedProperty: PropertyDefinition ): Schema {
 	return new Schema(
 		currentSchema.value.getName(),
 		currentSchema.value.getDescription(),
-		replacePropertyDefinition( updatedProperty )
+		replacePropertyDefinition( updatedProperty ),
+		currentSchema.value.subjectsAreDependent()
 	);
 }
 
@@ -349,6 +368,11 @@ defineExpose<SchemaEditorExposes>( {
 
 		&__subject-label-help {
 			margin: @spacing-50 0 0;
+		}
+
+		&__no-properties {
+			margin: 0;
+			color: @color-subtle;
 		}
 	}
 

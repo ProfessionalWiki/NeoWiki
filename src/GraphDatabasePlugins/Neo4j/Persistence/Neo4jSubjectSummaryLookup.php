@@ -142,12 +142,14 @@ readonly class Neo4jSubjectSummaryLookup implements SubjectSummaryLookup {
 
 	/**
 	 * A Subject that several pages hold is listed once, under the lowest page id. Stub nodes have no page, so they are
-	 * never listed. Column sorts group rather than walk the Subject id index as newest first does: after the walk's
-	 * subquery, Neo4j sorts every row, in two to four times the memory the grouping holds.
+	 * never listed, and neither are Dependent Subjects unless their Schema is the one listed. Column sorts group rather
+	 * than walk the Subject id index as newest first does: after the walk's subquery, Neo4j sorts every row, in two to
+	 * four times the memory the grouping holds.
 	 */
 	private function subjectsWithTheirPages( SubjectSummaryQuery $query, ?SubjectSummaryCursor $after ): string {
 		// A dynamic label takes the Schema name as a parameter, so no name can change the query.
 		$subjectLabels = $query->schemaName === null ? 'Subject' : 'Subject:$($schemaName)';
+		$hasSubjectCondition = $query->schemaName === null ? 'NOT coalesce(hasSubject.isDependent, false)' : 'true';
 
 		if ( $query->sort === SubjectSummarySort::Newest ) {
 			// Neo4j walks the index in order, from the cursor on, only when this WHERE holds a condition on the id. The
@@ -160,13 +162,15 @@ readonly class Neo4jSubjectSummaryLookup implements SubjectSummaryLookup {
 				USING INDEX subject:Subject(id)
 				WHERE $idCondition
 				CALL (subject) {
-					MATCH (page:Page {wiki_id: \$wikiId})-[:HasSubject]->(subject)
+					MATCH (page:Page {wiki_id: \$wikiId})-[hasSubject:HasSubject]->(subject)
+					WHERE $hasSubjectCondition
 					RETURN page ORDER BY page.id LIMIT 1
 				}";
 		}
 
 		return "
-			MATCH (page:Page {wiki_id: \$wikiId})-[:HasSubject]->(subject:$subjectLabels {wiki_id: \$wikiId})
+			MATCH (page:Page {wiki_id: \$wikiId})-[hasSubject:HasSubject]->(subject:$subjectLabels {wiki_id: \$wikiId})
+			WHERE $hasSubjectCondition
 			WITH subject, min(page.id) AS pageId
 			MATCH (page:Page {wiki_id: \$wikiId, id: pageId})";
 	}
@@ -223,6 +227,7 @@ readonly class Neo4jSubjectSummaryLookup implements SubjectSummaryLookup {
 				pageId: (int)$row->get( 'pageId' ),
 				pageTitle: (string)$row->get( 'pageTitle' ),
 				lastEdited: gmdate( 'Y-m-d\TH:i:s\Z', (int)$row->get( 'lastEdited' ) ),
+				hostSubject: null,
 			),
 			'cursor' => new SubjectSummaryCursor( $query->sort, $query->direction, $row->get( 'sortValue' ), $id ),
 		];

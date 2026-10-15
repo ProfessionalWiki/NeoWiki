@@ -1,5 +1,5 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { ref } from 'vue';
 import LayoutDisplay from '@/components/LayoutDisplay/LayoutDisplay.vue';
@@ -10,6 +10,10 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { setupMwMock, createI18nMock } from '../../VueTestHelpers.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
+import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
+import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
+import { InMemorySchemaRepository } from '@/application/SchemaRepository.ts';
+import type { Schema } from '@/domain/Schema.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
 const checkEditPermissionMock = vi.fn();
@@ -24,6 +28,15 @@ vi.mock( '@/composables/useLayoutPermissions.ts', () => ( {
 
 const getLayoutMock = vi.fn();
 const getSchemaMock = vi.fn();
+
+// The Schema summaries are read through the extension, the Layout's Schema through the injected services: both
+// reach the one repository, as they reach the one REST API on a wiki.
+function wikiHolding( ...schemas: Schema[] ): void {
+	const repository = new InMemorySchemaRepository( schemas );
+
+	getSchemaMock.mockImplementation( ( name: string ) => repository.getSchema( name ) );
+	vi.spyOn( NeoWikiExtension.getInstance(), 'getSchemaRepository' ).mockReturnValue( repository );
+}
 
 function newLayout( description: string, displayRules: DisplayRule[] = [] ): Layout {
 	return new Layout( 'CompanyInfo', 'Company', 'infobox', description, displayRules, {} );
@@ -51,13 +64,22 @@ function mountComponent( layout: Layout ): VueWrapper {
 	} );
 }
 
+function emptyStateText( wrapper: VueWrapper ): string {
+	return wrapper.find( '.cdx-table__table__empty-state-content' ).text();
+}
+
 describe( 'LayoutDisplay', () => {
 	beforeEach( () => {
 		setActivePinia( createPinia() );
 		canEditLayoutRef.value = false;
 		checkEditPermissionMock.mockClear();
 		getLayoutMock.mockReset();
-		getSchemaMock.mockReset().mockResolvedValue( newSchema( { title: 'Company' } ) );
+		getSchemaMock.mockReset();
+		wikiHolding( newSchema( { title: 'Company' } ) );
+	} );
+
+	afterEach( () => {
+		vi.restoreAllMocks();
 	} );
 
 	it( 'passes layout and canEditLayout to the header component', () => {
@@ -81,10 +103,28 @@ describe( 'LayoutDisplay', () => {
 		expect( rows[ 1 ].text() ).toContain( 'Founded' );
 	} );
 
-	it( 'shows the empty message when the layout has no display rules', () => {
+	it( 'shows the empty message when the layout has no display rules', async () => {
 		const wrapper = mountComponent( newLayout( '' ) );
+		await flushPromises();
 
-		expect( wrapper.text() ).toContain( 'neowiki-layout-display-no-rules' );
+		expect( emptyStateText( wrapper ) ).toBe( 'neowiki-layout-display-no-rules' );
+	} );
+
+	it( 'names the properties targeting Dependent Subjects as left out when the layout has no display rules', async () => {
+		wikiHolding(
+			newSchema( {
+				title: 'Company',
+				properties: new PropertyDefinitionList( [
+					newRelationProperty( { name: 'Annual reports', targetSchemas: [ 'Annual report' ] } ),
+				] ),
+			} ),
+			newSchema( { title: 'Annual report', subjectsAreDependent: true } ),
+		);
+
+		const wrapper = mountComponent( newLayout( '' ) );
+		await flushPromises();
+
+		expect( emptyStateText( wrapper ) ).toBe( 'neowiki-layout-display-no-rules-dependentAnnual reports1' );
 	} );
 
 	it( 'renders LayoutEditorDialog only with edit permission', () => {

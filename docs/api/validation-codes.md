@@ -16,6 +16,8 @@ Violations are returned by:
   the resulting `violations` array in their `201`/`200` success body. Whether a write with violations
   is rejected is covered under
   [Severity, blocking, and enforcement](#severity-blocking-and-enforcement).
+- Every endpoint that writes a page's Subjects, in the `422` body of a write that breaks the
+  [rules for Dependent Subjects](#rules-for-dependent-subjects).
 
 The `/validate` endpoints return `200 OK` with a `{violations: [...]}` body whenever the request is
 well-formed; violations in the body do not change the HTTP status. `400` is reserved for malformed
@@ -42,6 +44,10 @@ Each violation in the response has this shape:
   [Severity, blocking, and enforcement](#severity-blocking-and-enforcement).
 - `valuePartIndex` is the zero-based index of the offending part of a multi-part value. Only the
   codes that document it set it; the key is omitted from the JSON otherwise.
+- `subjectId` is the ID of the Subject the violation is on. The
+  [codes for Dependent Subjects](#rules-for-dependent-subjects) always set it, as do the violations of
+  a [`dependentSubjects`](subject-format.md#dependent-subjects) item. Without it, the violation is on
+  the Subject the request creates, replaces or validates.
 
 ## Severity, blocking, and enforcement
 
@@ -58,7 +64,8 @@ than a user-correctable Constraint, so its severity is fixed.
 
 Blocking matters only when an admin enables enforcement (`$wgNeoWikiEnforceValidation`, or
 `enforceValidation` on [`MediaWiki:NeoWiki`](../operations/installation.md#on-wiki-settings); off by
-default, so every write persists). Under enforcement, a write that introduces *new* `error`
+default, so every write that keeps the [rules for Dependent Subjects](#rules-for-dependent-subjects)
+persists). Under enforcement, a write that introduces *new* `error`
 violations is rejected with `422 Unprocessable Entity` and an `{ status, message, violations }` body,
 where `violations` carries the full proposed list, not just the newly-introduced ones. Violations
 already present on the stored Subject never block, so an already-invalid Subject stays editable, and
@@ -201,20 +208,74 @@ did not.
 Only a violation the edit introduces blocks it, so a Subject that already carries such a target stays
 editable.
 
-It is also the one code that is not Schema-scoped: it is reported for every relation value on the
+It is also not Schema-scoped: it is reported for every relation value on the
 Subject, including a Statement the Schema does not declare and a Subject whose Schema cannot be
 loaded at all. Such a target would be unreadable from the moment it is written, which no later
 Schema change fixes.
 
 `args`: `[targetId]`. `valuePartIndex`: the offending target. `severity`: `error` (fixed).
 
+## Rules for Dependent Subjects
+
+A write through any endpoint that breaks a
+[rule for Dependent Subjects](subject-format.md#dependent-subjects) is refused with `422`, whatever
+the enforcement setting, and its body lists the codes below with the request's other violations.
+Only a violation the write introduces refuses it, so a page that already breaks a rule stays
+editable. The `/validate` endpoints do not check these rules.
+
+### `dependent-subject-referenced-twice`
+
+A Dependent Subject is the target of more than one relation on its page.
+
+`args`: `[]`. `subjectId`: the Dependent Subject. `severity`: `error` (fixed).
+
+### `dependent-target-not-on-page`
+
+On `relation` properties whose target Schemas declare their Subjects dependent. The relation's
+target is not on the page of the Subject holding it, or does not exist. Write a new target in the
+same request, in [`dependentSubjects`](subject-format.md#dependent-subjects).
+
+`args`: `[targetId]`. `valuePartIndex`: the offending target. `subjectId`: the Subject holding the
+relation. `severity`: `error` (fixed).
+
+### `relation-to-dependent-subject`
+
+On `relation` properties. The relation points at a Dependent Subject from a property whose target
+Schemas do not declare their Subjects dependent, or from a property the Schema does not declare.
+
+`args`: `[targetId]`. `valuePartIndex`: the offending target. `subjectId`: the Subject holding the
+relation. `severity`: `error` (fixed).
+
+### `dependent-subject-is-main`
+
+A Dependent Subject is its page's main Subject.
+
+`args`: `[]`. `subjectId`: the Dependent Subject. `severity`: `error` (fixed).
+
+### `dependent-subject-has-label`
+
+A Dependent Subject has a label.
+
+`args`: `[]`. `subjectId`: the Dependent Subject. `severity`: `error` (fixed).
+
+### `dependent-subject-without-host`
+
+The write creates a Dependent Subject, or supplies one in
+[`dependentSubjects`](subject-format.md#dependent-subjects), that no standalone Subject on its page
+points at, directly or through other Dependent Subjects; or it moves a Dependent Subject on its own.
+Write a Dependent Subject in the same request as the relation to it; to move one, move its Host
+Subject.
+
+`args`: `[]`. `subjectId`: the Dependent Subject. `severity`: `error` (fixed).
+
 ## Out-of-schema Statements
 
 A Statement whose property is not declared on the current Schema is ignored — no violation. This is
 schema-drift tolerance: a property may have been removed from the Schema while Subjects still carry
-old Statements. The one exception is
-[`relation-target-unresolvable-source`](#relation-target-unresolvable-source), reported even for
-Statements the Schema does not declare.
+old Statements. The exceptions are
+[`relation-target-unresolvable-source`](#relation-target-unresolvable-source) and
+[`relation-to-dependent-subject`](#relation-to-dependent-subject), reported even for Statements the
+Schema does not declare.
 
 ## Adding a new validation code
 

@@ -192,7 +192,7 @@ class CachingSchemaLookupTest extends TestCase {
 	}
 
 	private function expectedSchema(): Schema {
-		return new Schema( new SchemaName( 'Person' ), 'desc', new PropertyDefinitions( [] ) );
+		return new Schema( new SchemaName( 'Person' ), 'desc', new PropertyDefinitions( [] ), false );
 	}
 
 	private function newDeserializer(): SchemaPersistenceDeserializer {

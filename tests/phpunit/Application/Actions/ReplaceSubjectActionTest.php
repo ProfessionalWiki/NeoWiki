@@ -4,14 +4,19 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAction;
+use ProfessionalWiki\NeoWiki\Application\DependentSubjectBuilder;
+use ProfessionalWiki\NeoWiki\Application\NewSubjectIdResolver;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
+use ProfessionalWiki\NeoWiki\Application\Validation\DependentSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -22,7 +27,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UrlProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -31,8 +35,10 @@ use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestNaming;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
@@ -43,6 +49,8 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestHostingPages;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -58,11 +66,13 @@ class ReplaceSubjectActionTest extends TestCase {
 	private InMemorySubjectRepository $subjectRepository;
 	private InMemorySchemaLookup $schemaLookup;
 	private ReplaceSubjectPresenterSpy $presenterSpy;
+	private InMemoryPageIdentifiersLookup $pageIdentifiersLookup;
 
 	public function setUp(): void {
 		$this->subjectRepository = new InMemorySubjectRepository();
 		$this->schemaLookup = new InMemorySchemaLookup();
 		$this->presenterSpy = new ReplaceSubjectPresenterSpy();
+		$this->pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
 	}
 
 	private function newAction(
@@ -76,6 +86,15 @@ class ReplaceSubjectActionTest extends TestCase {
 			idGenerator: new StubIdGenerator( '11111111111127' ),
 			subjectIdParser: TestSubjectIds::newParser()
 		);
+		$proposedSubjectValidator = new ProposedSubjectValidator(
+			schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
+			subjectValidator: new SubjectValidator(
+				propertyTypeLookup: $registry,
+				subjectLookup: new InMemorySubjectLookup(),
+				sourceRegistry: TestSources::newRegistry(),
+			),
+		);
+
 		return new ReplaceSubjectAction(
 			subjectRepository: $this->subjectRepository,
 			hostingPageResolver: TestHostingPages::newResolverForSubjectOnNamespacedPage( $readAuthorizer ),
@@ -83,14 +102,21 @@ class ReplaceSubjectActionTest extends TestCase {
 			statementListBuilder: $builder,
 			schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
 			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
-			proposedSubjectValidator: new ProposedSubjectValidator(
-				schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
-				subjectValidator: new SubjectValidator(
-					propertyTypeLookup: $registry,
-					subjectLookup: new InMemorySubjectLookup(),
-					sourceRegistry: TestSources::newRegistry(),
+			proposedSubjectValidator: $proposedSubjectValidator,
+			dependentSubjectBuilder: new DependentSubjectBuilder(
+				newSubjectIdResolver: new NewSubjectIdResolver(
+					subjectIdParser: TestSubjectIds::newParser(),
+					idGenerator: new StubIdGenerator( '11111111111111' ),
+					pageIdentifiersLookup: $this->pageIdentifiersLookup,
 				),
+				schemaReferenceParser: TestSources::newSchemaReferenceParser(),
+				schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
+				selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
+				statementListBuilder: $builder,
+				dependentSubjectRules: TestNaming::newDependentSubjectRules( $this->schemaLookup ),
 			),
+			dependentSubjectValidator: new DependentSubjectValidator( $proposedSubjectValidator ),
+			responseItemFactory: TestNaming::newResponseItemFactory( $this->subjectRepository, $this->schemaLookup ),
 			presenter: $this->presenterSpy,
 			validationEnforced: $validationEnforced,
 		);
@@ -204,7 +230,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	private function registerSchemaWithRelation(): void {
-		$this->schemaLookup->updateSchema( new Schema(
+		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( self::SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
@@ -214,7 +240,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	private function registerSchemaWithSelect(): void {
-		$this->schemaLookup->updateSchema( new Schema(
+		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( self::SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
@@ -421,7 +447,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	private function registerSchemaWithWebsite( bool $required, bool $multiple ): void {
-		$this->schemaLookup->updateSchema( new Schema(
+		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( self::SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
@@ -544,7 +570,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	private function registerSchemaWithRequiredStatus(): void {
-		$this->schemaLookup->updateSchema( new Schema(
+		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( self::SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
@@ -699,7 +725,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	private function registerSchemaWithRequiredAlphaAndBeta(): void {
-		$this->schemaLookup->updateSchema( new Schema(
+		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( self::SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
@@ -718,7 +744,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	private function registerSchemaWithNameAndUnregisteredSwatch(): void {
-		$this->schemaLookup->updateSchema( new Schema(
+		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( self::SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
@@ -895,7 +921,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	public function testEnforcementOnRejectsEditThatAddsBadValueAtNewIndex(): void {
-		$this->schemaLookup->updateSchema( new Schema(
+		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( self::SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
@@ -944,6 +970,105 @@ class ReplaceSubjectActionTest extends TestCase {
 
 		$this->assertNull( $this->presenterSpy->subject?->label );
 		$this->assertTrue( $this->presenterSpy->subject?->displayNameIsGenerated );
+	}
+
+	private const string BIRTH_ID = 'sBirth111111111';
+
+	private function registerSchemaWithBirth( bool $birthDateRequired = false ): void {
+		$this->schemaLookup->updateSchema( TestSchema::build(
+			name: self::SCHEMA_NAME,
+			properties: new PropertyDefinitions( [ 'Birth' => TestProperty::buildRelation( targetSchemas: [ 'Birth' ] ) ] )
+		) );
+		$this->schemaLookup->updateSchema( TestSchema::build(
+			name: 'Birth',
+			properties: new PropertyDefinitions( [
+				'Date' => TestProperty::buildText(
+					required: $birthDateRequired,
+					constraintSeverities: [ 'required' => Severity::Error ]
+				),
+			] ),
+			subjectsAreDependent: true
+		) );
+	}
+
+	private function replaceWithBirth( ReplaceSubjectAction $action ): void {
+		$action->replace(
+			new SubjectId( self::SUBJECT_ID ),
+			'Pablo Picasso',
+			[ 'Birth' => [ 'propertyType' => 'relation', 'value' => [ [ 'target' => self::BIRTH_ID ] ] ] ],
+			null,
+			[ [ 'id' => self::BIRTH_ID, 'schema' => 'Birth', 'statements' => [] ] ]
+		);
+	}
+
+	public function testWritesTheDependentSubjectsInTheSameWriteAsTheSubject(): void {
+		$this->registerSchemaWithBirth();
+		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+
+		$this->replaceWithBirth( $this->newAction() );
+
+		$this->assertNotNull( $this->subjectRepository->getSubject( new SubjectId( self::BIRTH_ID ) ) );
+	}
+
+	public function testARelationToADependentSubjectOfTheWriteIsNotReportedAsMissing(): void {
+		$this->registerSchemaWithBirth();
+		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+
+		$this->replaceWithBirth( $this->newAction() );
+
+		$this->assertSame( [], $this->presenterSpy->violations );
+	}
+
+	public function testABlockingViolationOfADependentSubjectBlocksTheWriteUnderEnforcement(): void {
+		$this->registerSchemaWithBirth( birthDateRequired: true );
+		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+
+		$this->replaceWithBirth( $this->newAction( validationEnforced: true ) );
+
+		$this->assertTrue( $this->presenterSpy->validationFailed );
+		$this->assertNull( $this->subjectRepository->getSubject( new SubjectId( self::BIRTH_ID ) ) );
+	}
+
+	public function testPresentsAWriteTheRulesForDependentSubjectsRefuseAsAValidationFailure(): void {
+		$this->registerSchemaWithBirth();
+		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+		$refusal = new Violation( null, 'dependent-subject-has-label', severity: Severity::Error, subjectId: new SubjectId( self::BIRTH_ID ) );
+		$this->subjectRepository->refuseWritesWith = [ $refusal ];
+
+		$this->replaceWithBirth( $this->newAction() );
+
+		$this->assertTrue( $this->presenterSpy->validationFailed );
+		$this->assertEquals( [ $refusal ], $this->presenterSpy->violations );
+	}
+
+	public function testPresentsAWriteThatDidNotLand(): void {
+		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+		$this->subjectRepository->failNextSave = true;
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+
+		$this->assertSame( 'Page not found', $this->presenterSpy->saveFailure );
+	}
+
+	public function testADependentSubjectIsNamedAfterItsHostSubject(): void {
+		$this->schemaLookup->updateSchema( TestSchema::build( name: 'Birth', subjectsAreDependent: true ) );
+		$this->subjectRepository->savePageSubjects(
+			new PageSubjects(
+				TestSubject::build(
+					id: 'sPerson11111111',
+					label: 'Pablo Picasso',
+					statements: new StatementList( [
+						TestStatement::buildRelation( 'Birth', [ TestRelation::build( targetId: self::SUBJECT_ID ) ] ),
+					] )
+				),
+				new SubjectMap( TestSubject::build( id: self::SUBJECT_ID, label: null, schemaName: new SchemaName( 'Birth' ) ) )
+			),
+			new PageId( 7 )
+		);
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), null, [], null );
+
+		$this->assertSame( 'Pablo Picasso', $this->presenterSpy->subject?->hostSubject?->displayName );
 	}
 
 }

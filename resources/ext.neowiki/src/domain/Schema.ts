@@ -12,6 +12,7 @@ export class Schema {
 		private readonly name: SchemaName,
 		private readonly description: string,
 		private readonly properties: PropertyDefinitionList,
+		private readonly subjectsDependent: boolean,
 	) {
 	}
 
@@ -27,6 +28,10 @@ export class Schema {
 		return this.properties;
 	}
 
+	public subjectsAreDependent(): boolean {
+		return this.subjectsDependent;
+	}
+
 	public getPropertyDefinition( propertyName: string|PropertyName ): PropertyDefinition {
 		return this.properties.get(
 			propertyName instanceof PropertyName ? propertyName : new PropertyName( propertyName ),
@@ -34,11 +39,15 @@ export class Schema {
 	}
 
 	public withName( name: SchemaName ): Schema {
-		return new Schema( name, this.description, this.properties );
+		return new Schema( name, this.description, this.properties, this.subjectsDependent );
 	}
 
 	public withDescription( description: string ): Schema {
-		return new Schema( this.name, description, this.properties );
+		return new Schema( this.name, description, this.properties, this.subjectsDependent );
+	}
+
+	public withSubjectsAreDependent( subjectsAreDependent: boolean ): Schema {
+		return new Schema( this.name, this.description, this.properties, subjectsAreDependent );
 	}
 
 	public withAddedPropertyDefinition( property: PropertyDefinition ): Schema {
@@ -46,6 +55,7 @@ export class Schema {
 			this.name,
 			this.description,
 			new PropertyDefinitionList( [ ...this.properties, property ] ),
+			this.subjectsDependent,
 		);
 	}
 
@@ -54,6 +64,7 @@ export class Schema {
 			this.name,
 			this.description,
 			this.properties.reordered( names ),
+			this.subjectsDependent,
 		);
 	}
 
@@ -62,6 +73,7 @@ export class Schema {
 			this.name,
 			this.description,
 			this.properties.withoutNames( [ propertyName ] ),
+			this.subjectsDependent,
 		);
 	}
 
@@ -77,6 +89,17 @@ export class Schema {
 
 	public blankStatements(): StatementList {
 		return this.statementsFrom( new StatementList( [] ) );
+	}
+
+	/**
+	 * The edited statements, then those of `existing` whose property the Schema does not declare, which a form
+	 * built from statementsFrom() leaves out.
+	 */
+	public statementsAfterEdit( existing: StatementList, edited: StatementList ): StatementList {
+		return new StatementList( [
+			...edited,
+			...[ ...existing ].filter( ( statement ) => !this.properties.has( statement.propertyName ) ),
+		] );
 	}
 
 }

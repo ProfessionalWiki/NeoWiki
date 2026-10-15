@@ -235,11 +235,12 @@ import {
 	cdxIconTrash
 } from '@wikimedia/codex-icons';
 import { Subject } from '@/domain/Subject.ts';
+import type { Schema } from '@/domain/Schema.ts';
 import type { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { subjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
 import { subjectLinkUrlFromRow } from '@/presentation/subjectLinks.ts';
 import { RelationTargetUrlKey } from '@/components/Value/ValueDisplayContract.ts';
-import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
+import { identifyingSubjectName } from '@/presentation/subjectDisplayName.ts';
 import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
 import { rdfProjectionsFor, subjectExportUrls } from '@/presentation/DataExportMenu.ts';
 import { subjectIri } from '@/presentation/subjectIri.ts';
@@ -247,6 +248,7 @@ import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import SubjectStatementsView from '@/components/SubjectsManager/SubjectStatementsView.vue';
 import DataExportButtons from '@/components/SubjectsManager/DataExportButtons.vue';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 /**
  * Which Main Subject control the row carries: the pin that demotes the page's Main Subject, the pin
@@ -325,7 +327,12 @@ const emit = defineEmits<{
 // Subject listings rather than the one for Views, on every surface that mounts the row.
 provide( RelationTargetUrlKey, subjectLinkUrlFromRow );
 
-const displayName = computed( () => subjectDisplayName( props.subject ) );
+const schemaStore = useSchemaStore();
+
+const displayName = computed( () => identifyingSubjectName(
+	props.subject,
+	schemaStore.schemas.get( props.subject.getSchemaName() ) as Schema | undefined
+) );
 const schemaName = computed( () => schemaNameToShow( props.subject ) );
 const statementCount = computed( () => props.subject.getNamesOfNonEmptyProperties().length );
 const exportUrls = computed( () => subjectExportUrls( props.subject.getId().text ) );

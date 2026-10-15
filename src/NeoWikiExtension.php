@@ -45,6 +45,7 @@ use ProfessionalWiki\NeoWiki\Application\WikiConfig\WikiConfigSource;
 use ProfessionalWiki\NeoWiki\Application\NewSubjectIdResolver;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
+use ProfessionalWiki\NeoWiki\Application\PageSubjectsAtRevisionLookup;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
 use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchHitBuilder;
 use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchTextBuilder;
@@ -92,10 +93,15 @@ use ProfessionalWiki\NeoWiki\Application\NullSubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\ReferencingSubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\NullReferencingSubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
+use ProfessionalWiki\NeoWiki\Application\HostSubjectBuilder;
 use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\ReadAuthorizedSubjectLookup;
+use ProfessionalWiki\NeoWiki\Application\DependentSubjectBuilder;
+use ProfessionalWiki\NeoWiki\Application\DependentSubjectGuard;
+use ProfessionalWiki\NeoWiki\Application\Validation\DependentSubjectValidator;
+use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\LastEditorPagesRebuilder;
 use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
@@ -160,6 +166,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectCountsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectSummariesApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetRecentlyEditedSubjectsApi;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryLookup;
+use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryHostSubjects;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\RecentlyEditedSubjectLookup;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\MintSubjectIdsApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQueryApi;
@@ -1411,7 +1418,7 @@ class NeoWikiExtension {
 	public function getSubjectSearchHitLookup(): SubjectSearchHitLookup {
 		$this->subjectSearchHitLookup ??= new SubjectSearchHitLookup(
 			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
-			hitBuilder: new SubjectSearchHitBuilder( $this->newSubjectSearchTextBuilder() ),
+			hitBuilder: new SubjectSearchHitBuilder( $this->newSubjectSearchTextBuilder(), $this->newDependentSubjectRules() ),
 			logger: LoggerFactory::getInstance( 'NeoWiki' )
 		);
 
@@ -1649,8 +1656,25 @@ class NeoWikiExtension {
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			schemaReferenceParser: $this->getSchemaReferenceParser(),
+			dependentSubjectBuilder: $this->newDependentSubjectBuilder(),
+			dependentSubjectValidator: $this->newDependentSubjectValidator( $authority ),
 			validationEnforced: $this->isValidationEnforced(),
 		);
+	}
+
+	private function newDependentSubjectBuilder(): DependentSubjectBuilder {
+		return new DependentSubjectBuilder(
+			newSubjectIdResolver: $this->getNewSubjectIdResolver(),
+			schemaReferenceParser: $this->getSchemaReferenceParser(),
+			schemaResolver: $this->getSchemaResolver(),
+			selectStatementResolver: $this->getSelectStatementResolver(),
+			statementListBuilder: $this->getStatementListBuilder(),
+			dependentSubjectRules: $this->newDependentSubjectRules(),
+		);
+	}
+
+	private function newDependentSubjectValidator( Authority $authority ): DependentSubjectValidator {
+		return new DependentSubjectValidator( $this->newProposedSubjectValidator( $authority ) );
 	}
 
 	private function getNewSubjectIdResolver(): NewSubjectIdResolver {
@@ -1673,6 +1697,8 @@ class NeoWikiExtension {
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			schemaReferenceParser: $this->getSchemaReferenceParser(),
+			dependentSubjectBuilder: $this->newDependentSubjectBuilder(),
+			dependentSubjectValidator: $this->newDependentSubjectValidator( $authority ),
 			validationEnforced: $this->isValidationEnforced(),
 			subjectFirst: $this->isSubjectFirst(),
 			subjectPageNamespace: $this->getSubjectPageNamespace(),
@@ -1709,7 +1735,27 @@ class NeoWikiExtension {
 			pageContentSaver: $this->getPageContentSaver(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			contentHandlerFactory: MediaWikiServices::getInstance()->getContentHandlerFactory(),
+			dependentSubjectGuard: $this->newDependentSubjectGuard( $this->getRequestAuthority() ),
 		);
+	}
+
+	private function newDependentSubjectGuard( Authority $authority ): DependentSubjectGuard {
+		return new DependentSubjectGuard(
+			rules: $this->newDependentSubjectRules(),
+			subjectLookup: fn (): SubjectLookup => $this->newReadAuthorizedSubjectLookup( $authority ),
+		);
+	}
+
+	private function newReadAuthorizedSubjectLookup( Authority $authority ): SubjectLookup {
+		return $this->getSourceRoutingSubjectLookup( new ReadAuthorizedSubjectLookup(
+			subjectLookup: $this->getSubjectRepository(),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+		) );
+	}
+
+	public function newDependentSubjectRules(): DependentSubjectRules {
+		return new DependentSubjectRules( $this->getSchemaResolver() );
 	}
 
 	private function getIdGenerator(): IdGenerator {
@@ -1772,6 +1818,7 @@ class NeoWikiExtension {
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			hostingPageResolver: $this->newSubjectHostingPageResolver( $authority ),
 			subjectIdParser: $this->getSubjectIdParser(),
+			dependentSubjectRules: $this->newDependentSubjectRules(),
 		);
 	}
 
@@ -1949,6 +1996,7 @@ class NeoWikiExtension {
 			revisionPolicy: $this->getRevisionPolicy(),
 			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
 			titleFormatter: MediaWikiServices::getInstance()->getTitleFormatter(),
+			hostSubjectBuilder: $this->newHostSubjectBuilder(),
 			revisionBound: self::RECENTLY_EDITED_SUBJECTS_REVISION_BOUND,
 			readBound: self::RECENTLY_EDITED_SUBJECTS_READ_BOUND,
 		);
@@ -2021,7 +2069,7 @@ class NeoWikiExtension {
 		return new GetPageSubjectsQuery(
 			presenter: $presenter,
 			subjectRepository: $this->getSubjectRepository(),
-			responseItemFactory: $this->newSubjectResponseItemFactory(),
+			responseItemFactory: $this->newSubjectResponseItemFactory( $this->newPageSubjectsLookup() ),
 			subjectLookup: $this->getSourceRoutingSubjectLookup( $this->getSubjectRepository() ),
 			schemaLookup: $this->getSchemaLookup(),
 			schemaSerializer: $this->getSchemaPresentationSerializer(),
@@ -2030,38 +2078,44 @@ class NeoWikiExtension {
 		);
 	}
 
-	private function newPublishedSubjectLookup(): SubjectLookup {
-		return $this->getSourceRoutingSubjectLookup( new PublishedSubjectLookup(
+	private function newPublishedSubjectLookup(): PublishedSubjectLookup {
+		return new PublishedSubjectLookup(
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
 			revisionPolicy: $this->getRevisionPolicy(),
-		) );
+		);
 	}
 
 	public function newGetSubjectQuery( GetSubjectPresenter $presenter, Authority $authority ): GetSubjectQuery {
+		$publishedSubjectLookup = $this->newPublishedSubjectLookup();
+
 		return new GetSubjectQuery(
 			presenter: $presenter,
-			subjectLookup: $this->newPublishedSubjectLookup(),
+			subjectLookup: $this->getSourceRoutingSubjectLookup( $publishedSubjectLookup ),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
-			responseItemFactory: $this->newSubjectResponseItemFactory(),
+			responseItemFactory: $this->newSubjectResponseItemFactory( $publishedSubjectLookup ),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			subjectIdParser: $this->getSubjectIdParser(),
+			dependentSubjectRules: $this->newDependentSubjectRules(),
 		);
 	}
 
 	public function newGetSubjectQueryForRevision( GetSubjectPresenter $presenter, RevisionRecord $revision, Authority $authority ): GetSubjectQuery {
+		$pointInTimeSubjectLookup = new PointInTimeSubjectLookup(
+			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
+			primaryRevision: $revision,
+		);
+
 		return new GetSubjectQuery(
 			presenter: $presenter,
-			subjectLookup: new PointInTimeSubjectLookup(
-				revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
-				pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
-				connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
-				primaryRevision: $revision,
-			),
+			subjectLookup: $pointInTimeSubjectLookup,
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
-			responseItemFactory: $this->newSubjectResponseItemFactory(),
+			responseItemFactory: $this->newSubjectResponseItemFactory( $pointInTimeSubjectLookup ),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			subjectIdParser: $this->getSubjectIdParser(),
+			dependentSubjectRules: $this->newDependentSubjectRules(),
 		);
 	}
 
@@ -2069,18 +2123,32 @@ class NeoWikiExtension {
 		GetReferencingSubjectsPresenter $presenter,
 		Authority $authority
 	): GetReferencingSubjectsQuery {
+		$publishedSubjectLookup = $this->newPublishedSubjectLookup();
+
 		return new GetReferencingSubjectsQuery(
 			presenter: $presenter,
 			referencingSubjectLookup: $this->getReferencingSubjectLookup(),
-			subjectLookup: $this->newPublishedSubjectLookup(),
+			subjectLookup: $this->getSourceRoutingSubjectLookup( $publishedSubjectLookup ),
 			hostingPageResolver: $this->newSubjectHostingPageResolver( $authority ),
-			responseItemFactory: $this->newSubjectResponseItemFactory(),
+			responseItemFactory: $this->newSubjectResponseItemFactory( $publishedSubjectLookup ),
 			subjectIdParser: $this->getSubjectIdParser(),
 		);
 	}
 
-	private function newSubjectResponseItemFactory(): SubjectResponseItemFactory {
-		return new SubjectResponseItemFactory( $this->newPageSubjectsLookup() );
+	private function newSubjectResponseItemFactory( PageSubjectsAtRevisionLookup $pageSubjectsLookup ): SubjectResponseItemFactory {
+		return new SubjectResponseItemFactory( $pageSubjectsLookup, $this->newHostSubjectBuilder() );
+	}
+
+	public function newHostSubjectBuilder(): HostSubjectBuilder {
+		return new HostSubjectBuilder( $this->newDependentSubjectRules() );
+	}
+
+	public function newSubjectSummaryHostSubjects(): SubjectSummaryHostSubjects {
+		return new SubjectSummaryHostSubjects(
+			dependentSubjectRules: $this->newDependentSubjectRules(),
+			hostSubjectBuilder: $this->newHostSubjectBuilder(),
+			pageSubjectsLookup: $this->newPublishedSubjectLookup(),
+		);
 	}
 
 	public function newReplaceSubjectAction( ReplaceSubjectPresenter $presenter, Authority $authority ): ReplaceSubjectAction {
@@ -2092,6 +2160,9 @@ class NeoWikiExtension {
 			schemaResolver: $this->getSchemaResolver(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
+			dependentSubjectBuilder: $this->newDependentSubjectBuilder(),
+			dependentSubjectValidator: $this->newDependentSubjectValidator( $authority ),
+			responseItemFactory: $this->newSubjectResponseItemFactory( $this->newPageSubjectsLookup() ),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
 		);
@@ -2106,6 +2177,7 @@ class NeoWikiExtension {
 			schemaResolver: $this->getSchemaResolver(),
 			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
+			responseItemFactory: $this->newSubjectResponseItemFactory( $this->newPageSubjectsLookup() ),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
 		);
@@ -2118,11 +2190,7 @@ class NeoWikiExtension {
 	public function newSubjectValidator( Authority $authority ): SubjectValidator {
 		return new SubjectValidator(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
-			subjectLookup: $this->getSourceRoutingSubjectLookup( new ReadAuthorizedSubjectLookup(
-				subjectLookup: $this->getSubjectRepository(),
-				pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
-				readAuthorizer: $this->newPageReadAuthorizer( $authority ),
-			) ),
+			subjectLookup: $this->newReadAuthorizedSubjectLookup( $authority ),
 			sourceRegistry: $this->getSourceRegistry(),
 		);
 	}

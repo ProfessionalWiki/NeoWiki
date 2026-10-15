@@ -46,6 +46,7 @@ import { CdxSelect } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
 import LanguagePicker from '@/components/common/LanguagePicker.vue';
 import { dataLanguageTags, languageNameOrTag } from '@/presentation/languages.ts';
+import { useListEscapeGuard } from '@/composables/useListEscapeGuard.ts';
 
 // Never a language tag, which has no spaces.
 const OTHER_LANGUAGE = 'other language';
@@ -88,25 +89,7 @@ function commit( tag: string ): void {
 	emit( 'update:modelValue', tag );
 }
 
-/**
- * Codex dialogs close on the Escape keyup, which would take everything typed into the dialog with it,
- * so the Escape that closes the list goes no further. Whether it does is read on the keydown, while
- * the list is still open.
- */
-let escapeClosesList = false;
-
-function noteEscape( event: KeyboardEvent ): void {
-	escapeClosesList = event.key === 'Escape' &&
-		event.target instanceof Element &&
-		event.target.getAttribute( 'aria-expanded' ) === 'true';
-}
-
-function keepEscapeFromDialog( event: KeyboardEvent ): void {
-	if ( escapeClosesList ) {
-		event.stopPropagation();
-		escapeClosesList = false;
-	}
-}
+const { noteEscape, keepEscapeFromDialog } = useListEscapeGuard();
 </script>
 
 <style lang="less">

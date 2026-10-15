@@ -26,6 +26,7 @@ Per-type value constraints (`options`, ranges, string formats, `uniqueItems`) ar
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `description` | string | No | Human-readable description of the schema |
+| `subjectsAreDependent` | boolean | No | Whether the Schema's Subjects are [Dependent Subjects](subject-format.md#dependent-subjects). Set when the Schema is created: a save that changes it is refused. Omitted when `false`. |
 | `propertyDefinitions` | object | Yes | Map of property names to property definition objects |
 
 ## Schema references
@@ -209,6 +210,9 @@ References to other Subjects.
   "multiple": true
 }
 ```
+
+Either all target Schemas of a relation property declare their Subjects dependent or none does; a save that mixes
+them is refused. Target Schemas that do not exist, or that you may not read, do not count.
 
 ### Boolean (`boolean`)
 

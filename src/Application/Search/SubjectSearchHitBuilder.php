@@ -4,9 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Search;
 
+use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 
 /**
  * What a page's Subjects add to its search result row: the Subject to lead to instead of the page,
@@ -20,7 +24,8 @@ readonly class SubjectSearchHitBuilder {
 	private const int MAX_LINES = 3;
 
 	public function __construct(
-		private SubjectSearchTextBuilder $textBuilder
+		private SubjectSearchTextBuilder $textBuilder,
+		private DependentSubjectRules $dependentSubjectRules,
 	) {
 	}
 
@@ -66,7 +71,8 @@ readonly class SubjectSearchHitBuilder {
 	}
 
 	/**
-	 * The Main Subject first, then page order; one Subject per row.
+	 * The Main Subject first, then page order; one Subject per row. A match in a Dependent Subject is a match in the
+	 * Subject at the top of its chain of Host Subjects.
 	 *
 	 * @param ?string $rowTitle The name the row's link text carries, which the extract need not
 	 *   repeat; null when the link names its Subject by id
@@ -77,8 +83,18 @@ readonly class SubjectSearchHitBuilder {
 		?string $rowTitle,
 		SearchTermMatcher $matcher
 	): ?SubjectSearchMatch {
+		$hostSubjects = $this->dependentSubjectRules->hostSubjectsOn( $pageSubjects );
+
 		foreach ( $pageSubjects->getAllSubjects()->asArray() as $subject ) {
-			$lines = $this->matchedLines( $this->textBuilder->linesOf( $subject ), $matcher );
+			if ( array_key_exists( $subject->id->text, $hostSubjects ) ) {
+				continue;
+			}
+
+			$reached = [];
+			$lines = $this->matchedLines(
+				$this->linesWithDependentSubjects( $subject, $pageSubjects->getAllSubjects(), [], $reached ),
+				$matcher
+			);
 
 			if ( $lines !== [] ) {
 				return new SubjectSearchMatch(
@@ -95,17 +111,75 @@ readonly class SubjectSearchHitBuilder {
 	}
 
 	/**
-	 * @param SubjectSearchLine[] $lines
+	 * @param string[] $relationPropertyNames
+	 * @param array<string, true> $reached
+	 * @return array<array{SubjectSearchLine, string[]}>
+	 */
+	private function linesWithDependentSubjects(
+		Subject $subject,
+		SubjectMap $pageSubjects,
+		array $relationPropertyNames,
+		array &$reached
+	): array {
+		$lines = array_map(
+			static fn ( SubjectSearchLine $line ): array => [ $line, $relationPropertyNames ],
+			$this->textBuilder->linesOf( $subject )
+		);
+
+		foreach ( $subject->getStatements()->asArray() as $statement ) {
+			foreach ( $this->dependentSubjectsIn( $statement, $pageSubjects, $reached ) as $dependentSubject ) {
+				array_push( $lines, ...$this->linesWithDependentSubjects(
+					$dependentSubject,
+					$pageSubjects,
+					[ ...$relationPropertyNames, $statement->getPropertyName()->text ],
+					$reached
+				) );
+			}
+		}
+
+		return $lines;
+	}
+
+	/**
+	 * @param array<string, true> $reached Added to, since a page that breaks the rules can point at a Dependent Subject
+	 *   twice, or in a circle.
+	 * @return Subject[]
+	 */
+	private function dependentSubjectsIn( Statement $statement, SubjectMap $pageSubjects, array &$reached ): array {
+		$value = $statement->getValue();
+
+		if ( !$value instanceof RelationValue ) {
+			return [];
+		}
+
+		$dependentSubjects = [];
+
+		foreach ( $value->relations as $relation ) {
+			$target = $pageSubjects->getSubject( $relation->targetId );
+
+			if ( $target !== null && !array_key_exists( $target->id->text, $reached )
+				&& $this->dependentSubjectRules->isDependent( $target )
+			) {
+				$reached[$target->id->text] = true;
+				$dependentSubjects[] = $target;
+			}
+		}
+
+		return $dependentSubjects;
+	}
+
+	/**
+	 * @param array<array{SubjectSearchLine, string[]}> $lines
 	 * @return MatchedSearchLine[]
 	 */
 	private function matchedLines( array $lines, SearchTermMatcher $matcher ): array {
 		$matchedLines = [];
 
-		foreach ( $lines as $line ) {
+		foreach ( $lines as [ $line, $relationPropertyNames ] ) {
 			$parts = $matcher->splitOnMatches( $line->text );
 
 			if ( count( $parts ) > 1 ) {
-				$matchedLines[] = new MatchedSearchLine( $line->propertyName, $parts );
+				$matchedLines[] = new MatchedSearchLine( $line->propertyName, $parts, $relationPropertyNames );
 
 				if ( count( $matchedLines ) === self::MAX_LINES ) {
 					break;

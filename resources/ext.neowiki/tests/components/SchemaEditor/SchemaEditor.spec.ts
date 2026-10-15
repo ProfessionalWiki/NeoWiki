@@ -15,6 +15,7 @@ import { createI18nMock, findPropertyNameInput, reportUnparseableNumber, selecte
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import PaneDivider from '@/components/common/PaneDivider.vue';
 import { defineComponent, nextTick } from 'vue';
+import { createPinia } from 'pinia';
 
 // For the two tests whose selected property is a relation: the real editor mounts the schema
 // picker there, which needs an active Pinia that createWrapperWithPropertyEditor does not
@@ -58,6 +59,7 @@ function createWrapperWithPropertyEditor( schema: Schema ): VueWrapper {
 			initialSchema: schema,
 		},
 		global: {
+			plugins: [ createPinia() ],
 			provide: NeoWikiTestServices.getServices(),
 			directives: {
 				tooltip: {},
@@ -108,14 +110,14 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	it( 'selects the first property by default when properties exist', () => {
-		const schema = new Schema(
-			'TestSchema',
-			'Description',
-			new PropertyDefinitionList( [
+		const schema = newSchema( {
+			title: 'TestSchema',
+			description: 'Description',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 			] ),
-		);
+		} );
 
 		const wrapper = createWrapper( schema );
 
@@ -125,11 +127,11 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	it( 'opens a schema without properties on the label pane', () => {
-		const schema = new Schema(
-			'EmptySchema',
-			'Description',
-			new PropertyDefinitionList( [] ),
-		);
+		const schema = newSchema( {
+			title: 'EmptySchema',
+			description: 'Description',
+			properties: new PropertyDefinitionList( [] ),
+		} );
 
 		const wrapper = createWrapper( schema );
 
@@ -160,14 +162,14 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	it( 'removes property when propertyDeleted event is emitted', async () => {
-		const schema = new Schema(
-			'TestSchema',
-			'Description',
-			new PropertyDefinitionList( [
+		const schema = newSchema( {
+			title: 'TestSchema',
+			description: 'Description',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 			] ),
-		);
+		} );
 
 		const wrapper = createWrapper( schema );
 		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
@@ -180,14 +182,14 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	it( 'updates selection when selected property is deleted', async () => {
-		const schema = new Schema(
-			'TestSchema',
-			'Description',
-			new PropertyDefinitionList( [
+		const schema = newSchema( {
+			title: 'TestSchema',
+			description: 'Description',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 			] ),
-		);
+		} );
 
 		const wrapper = createWrapper( schema );
 		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
@@ -198,15 +200,15 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	it( 'maintains selection when non-selected property is deleted', async () => {
-		const schema = new Schema(
-			'TestSchema',
-			'Description',
-			new PropertyDefinitionList( [
+		const schema = newSchema( {
+			title: 'TestSchema',
+			description: 'Description',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'thirdProp', { type: TextType.typeName } ),
 			] ),
-		);
+		} );
 
 		const wrapper = createWrapper( schema );
 		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
@@ -229,11 +231,11 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	it( 'builds the schema with the description supplied by the host', () => {
-		const schema = new Schema(
-			'TestSchema',
-			'The description the editor was handed',
-			new PropertyDefinitionList( [] ),
-		);
+		const schema = newSchema( {
+			title: 'TestSchema',
+			description: 'The description the editor was handed',
+			properties: new PropertyDefinitionList( [] ),
+		} );
 
 		const wrapper = createWrapper( schema, 'The description the host now holds' );
 
@@ -243,11 +245,11 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	it( 'keeps the schema its own description when the host presents none', () => {
-		const schema = new Schema(
-			'TestSchema',
-			'The description it arrived with',
-			new PropertyDefinitionList( [] ),
-		);
+		const schema = newSchema( {
+			title: 'TestSchema',
+			description: 'The description it arrived with',
+			properties: new PropertyDefinitionList( [] ),
+		} );
 
 		const wrapper = mount( SchemaEditor, {
 			props: { initialSchema: schema },
@@ -262,13 +264,13 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	it( 'keeps the host description when a property is edited', async () => {
-		const schema = new Schema(
-			'TestSchema',
-			'',
-			new PropertyDefinitionList( [
+		const schema = newSchema( {
+			title: 'TestSchema',
+			description: '',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 			] ),
-		);
+		} );
 
 		const wrapper = createWrapper( schema, 'Held by the host' );
 		const editor = wrapper.findComponent( { name: 'PropertyDefinitionEditor' } );
@@ -278,12 +280,59 @@ describe( 'SchemaEditor', () => {
 		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getDescription() ).toBe( 'Held by the host' );
 	} );
 
+	it( 'keeps the declaration that the subjects are dependent when a property is edited', async () => {
+		const schema = newSchema( {
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
+			] ),
+			subjectsAreDependent: true,
+		} );
+
+		const wrapper = createWrapper( schema );
+		const updatedProperty = createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName, description: 'Updated' } );
+		await wrapper.findComponent( { name: 'PropertyDefinitionEditor' } ).vm.$emit( 'update:propertyDefinition', updatedProperty );
+
+		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).subjectsAreDependent() ).toBe( true );
+	} );
+
+	describe( 'the Label row', () => {
+		function labelRowShown( wrapper: VueWrapper ): boolean {
+			return wrapper.findComponent( { name: 'PropertyList' } ).props( 'showsLabelRow' );
+		}
+
+		it( 'is left out for a Schema whose Subjects are dependent', () => {
+			const wrapper = createWrapper( newSchema( { subjectsAreDependent: true } ) );
+
+			expect( labelRowShown( wrapper ) ).toBe( false );
+		} );
+
+		it( 'is shown for a Schema whose Subjects are standalone', () => {
+			const wrapper = createWrapper( newSchema() );
+
+			expect( labelRowShown( wrapper ) ).toBe( true );
+		} );
+
+		it( 'follows what the host decides about the Subjects', async () => {
+			const wrapper = createWrapper( newSchema() );
+
+			await wrapper.setProps( { subjectsAreDependent: true } );
+
+			expect( labelRowShown( wrapper ) ).toBe( false );
+		} );
+
+		it( 'gives way to a request for property definitions while a Schema of Dependent Subjects has none', () => {
+			const wrapper = createWrapper( newSchema( { subjectsAreDependent: true } ) );
+
+			expect( wrapper.find( '.ext-neowiki-schema-editor__detail' ).text() ).toBe( 'neowiki-schema-editor-no-properties-dependent' );
+		} );
+	} );
+
 	it( 'emits change when a property is added', async () => {
-		const schema = new Schema(
-			'TestSchema',
-			'Description',
-			new PropertyDefinitionList( [] ),
-		);
+		const schema = newSchema( {
+			title: 'TestSchema',
+			description: 'Description',
+			properties: new PropertyDefinitionList( [] ),
+		} );
 
 		const wrapper = createWrapper( schema );
 
@@ -306,14 +355,14 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	it( 'emits change when a property is deleted', async () => {
-		const schema = new Schema(
-			'TestSchema',
-			'Description',
-			new PropertyDefinitionList( [
+		const schema = newSchema( {
+			title: 'TestSchema',
+			description: 'Description',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 			] ),
-		);
+		} );
 
 		const wrapper = createWrapper( schema );
 		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
@@ -324,13 +373,13 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	it( 'emits change when a property definition is updated', async () => {
-		const schema = new Schema(
-			'TestSchema',
-			'Description',
-			new PropertyDefinitionList( [
+		const schema = newSchema( {
+			title: 'TestSchema',
+			description: 'Description',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 			] ),
-		);
+		} );
 
 		const wrapper = createWrapper( schema );
 		const editor = wrapper.findComponent( { name: 'PropertyDefinitionEditor' } );
@@ -342,15 +391,15 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	it( 'reorders properties when propertyReordered event is emitted', async () => {
-		const schema = new Schema(
-			'TestSchema',
-			'Description',
-			new PropertyDefinitionList( [
+		const schema = newSchema( {
+			title: 'TestSchema',
+			description: 'Description',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'thirdProp', { type: TextType.typeName } ),
 			] ),
-		);
+		} );
 
 		const wrapper = createWrapper( schema );
 		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
@@ -367,14 +416,14 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	it( 'emits change when properties are reordered', async () => {
-		const schema = new Schema(
-			'TestSchema',
-			'Description',
-			new PropertyDefinitionList( [
+		const schema = newSchema( {
+			title: 'TestSchema',
+			description: 'Description',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 			] ),
-		);
+		} );
 
 		const wrapper = createWrapper( schema );
 		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
@@ -388,42 +437,42 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	it( 'reinitializes state when initialSchema prop changes', async () => {
-		const schema = new Schema(
-			'TestSchema',
-			'Original',
-			new PropertyDefinitionList( [
+		const schema = newSchema( {
+			title: 'TestSchema',
+			description: 'Original',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 			] ),
-		);
+		} );
 
 		const wrapper = createWrapper( schema );
 
 		expect( selectedPropertyName( wrapper ) ).toBe( 'firstProp' );
 
-		const newSchema = new Schema(
-			'UpdatedSchema',
-			'Updated description',
-			new PropertyDefinitionList( [
+		const updatedSchema = newSchema( {
+			title: 'UpdatedSchema',
+			description: 'Updated description',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'alphaProperty', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'betaProperty', { type: TextType.typeName } ),
 			] ),
-		);
+		} );
 
-		await wrapper.setProps( { initialSchema: newSchema } );
+		await wrapper.setProps( { initialSchema: updatedSchema } );
 
 		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getName() ).toBe( 'UpdatedSchema' );
 		expect( selectedPropertyName( wrapper ) ).toBe( 'alphaProperty' );
 	} );
 
 	it( 'does not emit change when a property is selected', async () => {
-		const schema = new Schema(
-			'TestSchema',
-			'Description',
-			new PropertyDefinitionList( [
+		const schema = newSchema( {
+			title: 'TestSchema',
+			description: 'Description',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 				createPropertyDefinitionFromJson( 'secondProp', { type: TextType.typeName } ),
 			] ),
-		);
+		} );
 
 		const wrapper = createWrapper( schema );
 		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
@@ -435,11 +484,11 @@ describe( 'SchemaEditor', () => {
 
 	describe( 'Unparseable initial value', () => {
 		function schemaWithScore(): Schema {
-			return new Schema(
-				'TestSchema',
-				'Description',
-				new PropertyDefinitionList( [ newNumberProperty( { name: 'Score' } ) ] ),
-			);
+			return newSchema( {
+				title: 'TestSchema',
+				description: 'Description',
+				properties: new PropertyDefinitionList( [ newNumberProperty( { name: 'Score' } ) ] ),
+			} );
 		}
 
 		it( 'reports nothing while the selected property editor reports nothing', () => {
@@ -486,11 +535,11 @@ describe( 'SchemaEditor', () => {
 		} );
 
 		it( 'reports nothing when no property is selected', () => {
-			const wrapper = createWrapperWithPropertyEditor( new Schema(
-				'EmptySchema',
-				'Description',
-				new PropertyDefinitionList( [] ),
-			) );
+			const wrapper = createWrapperWithPropertyEditor( newSchema( {
+				title: 'EmptySchema',
+				description: 'Description',
+				properties: new PropertyDefinitionList( [] ),
+			} ) );
 
 			expect( saveBlocker( wrapper ) ).toBeNull();
 		} );
@@ -610,7 +659,7 @@ describe( 'SchemaEditor', () => {
 
 	describe( 'Incomplete property definition', () => {
 		function schemaWith( ...properties: PropertyDefinition[] ): Schema {
-			return new Schema( 'Test', '', new PropertyDefinitionList( properties ) );
+			return newSchema( { title: 'Test', description: '', properties: new PropertyDefinitionList( properties ) } );
 		}
 
 		// The state switching a property's type to Relation leaves behind.
@@ -722,11 +771,15 @@ describe( 'SchemaEditor', () => {
 
 describe( 'SchemaEditor pane divider', () => {
 
-	const schemaWithProperty = new Schema( 'Test', '', new PropertyDefinitionList( [
-		createPropertyDefinitionFromJson( 'Name', { type: 'text' } ),
-	] ) );
+	const schemaWithProperty = newSchema( {
+		title: 'Test',
+		description: '',
+		properties: new PropertyDefinitionList( [
+			createPropertyDefinitionFromJson( 'Name', { type: 'text' } ),
+		] ),
+	} );
 
-	const emptySchema = new Schema( 'Test', '', new PropertyDefinitionList( [] ) );
+	const emptySchema = newSchema( { title: 'Test', description: '', properties: new PropertyDefinitionList( [] ) } );
 
 	it( 'sits between the list and the editor', () => {
 		const wrapper = createWrapper( schemaWithProperty );

@@ -52,6 +52,7 @@
 				v-else
 				:schema-properties="schemaProperties"
 				:display-rules="currentDisplayRules"
+				:properties-targeting-dependent-subjects="targetingDependentSubjects"
 				@update:display-rules="onDisplayRulesChanged"
 			/>
 		</div>
@@ -64,9 +65,12 @@ import { CdxField, CdxMessage, CdxSelect, CdxTextInput } from '@wikimedia/codex'
 import type { MenuItemData, ValidationStatusType } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { Layout, type DisplayRule } from '@/domain/Layout.ts';
-import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
+import type { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import DisplayRuleList from '@/components/LayoutEditor/DisplayRuleList.vue';
 import SchemaPicker from '@/components/common/SchemaPicker.vue';
+import { propertiesTargetingDependentSubjects } from '@/domain/propertyTypes/Relation.ts';
+import { subjectsAreDependentIn } from '@/application/SchemaLookup.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 const emit = defineEmits<{
 	change: [];
@@ -74,6 +78,7 @@ const emit = defineEmits<{
 
 const layoutRepo = NeoWikiServices.getLayoutRepository();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
+const schemaStore = useSchemaStore();
 
 const DEBOUNCE_DELAY = 300;
 const DEFAULT_VIEW_TYPE = 'infobox';
@@ -85,6 +90,7 @@ const nameInputRef = ref<InstanceType<typeof CdxTextInput> | null>( null );
 const selectedSchema = ref<string | null>( null );
 const selectedViewType = ref<string | null>( DEFAULT_VIEW_TYPE );
 const schemaProperties = shallowRef<PropertyDefinition[]>( [] );
+const targetingDependentSubjects = shallowRef<PropertyName[]>( [] );
 const schemaFetchFailed = ref( false );
 const currentDisplayRules = shallowRef<DisplayRule[]>( [] );
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -103,15 +109,31 @@ function onChange(): void {
 async function onSchemaSelected( schemaName: string ): Promise<void> {
 	selectedSchema.value = schemaName;
 	schemaProperties.value = [];
+	targetingDependentSubjects.value = [];
 	schemaFetchFailed.value = false;
 
 	currentDisplayRules.value = [];
 	emit( 'change' );
 
 	try {
-		const schema = await schemaRepo.getSchema( schemaName );
+		const [ schema, summaries ] = await Promise.all( [
+			schemaRepo.getSchema( schemaName ),
+			schemaStore.fetchAllSchemaSummaries()
+		] );
+
+		// Answered after another Schema was picked, whose properties the list is for.
+		if ( selectedSchema.value !== schemaName ) {
+			return;
+		}
+
 		schemaProperties.value = [ ...schema.getPropertyDefinitions() ];
+		targetingDependentSubjects.value = propertiesTargetingDependentSubjects( schema, subjectsAreDependentIn( summaries ) )
+			.map( ( property ) => property.name );
 	} catch ( error ) {
+		if ( selectedSchema.value !== schemaName ) {
+			return;
+		}
+
 		console.error( 'Failed to fetch schema:', error );
 		schemaFetchFailed.value = true;
 	}
@@ -215,6 +237,7 @@ function reset(): void {
 	selectedSchema.value = null;
 	selectedViewType.value = DEFAULT_VIEW_TYPE;
 	schemaProperties.value = [];
+	targetingDependentSubjects.value = [];
 	schemaFetchFailed.value = false;
 
 	currentDisplayRules.value = [];

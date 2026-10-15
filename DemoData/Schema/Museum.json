@@ -36,6 +36,11 @@
 			"type": "url",
 			"multiple": true,
 			"description": "Social media and review sites"
+		},
+		"Attendance figures": {
+			"type": "relation",
+			"targetSchemas": [ "Attendance" ],
+			"multiple": true
 		}
 	}
 }

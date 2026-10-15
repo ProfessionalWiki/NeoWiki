@@ -5,12 +5,14 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\DependentSubjectRulesViolatedException;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 
 class InMemorySubjectRepository implements SubjectRepository {
@@ -33,6 +35,19 @@ class InMemorySubjectRepository implements SubjectRepository {
 	public int $updateSubjectCallCount = 0;
 
 	/**
+	 * When not empty, every write but restorePageSubjects throws DependentSubjectRulesViolatedException with
+	 * these; savePageSubjects only for the pages $refuseSavesToPageIds selects.
+	 *
+	 * @var Violation[]
+	 */
+	public array $refuseWritesWith = [];
+
+	/**
+	 * @var int[] Page ids whose saves are refused. Empty refuses the saves to every page.
+	 */
+	public array $refuseSavesToPageIds = [];
+
+	/**
 	 * When true, savePageSubjects reports a save failure without storing anything, standing in for a
 	 * page that has gone away underneath the write (the branch PageContentSaver returns ERROR for).
 	 */
@@ -47,7 +62,7 @@ class InMemorySubjectRepository implements SubjectRepository {
 	public array $failSavesForPageIds = [];
 
 	/**
-	 * The page ids passed to savePageSubjects, in call order, including the ones made to fail.
+	 * The page ids passed to savePageSubjects and restorePageSubjects, in call order, including the ones made to fail.
 	 *
 	 * @var int[]
 	 */
@@ -84,10 +99,34 @@ class InMemorySubjectRepository implements SubjectRepository {
 		return $found;
 	}
 
-	public function updateSubject( Subject $subject, ?string $comment = null ): void {
-		$this->subjects[$subject->id->text] = $subject;
+	public function updateSubject(
+		Subject $subject,
+		?string $comment = null,
+		SubjectMap $dependentSubjects = new SubjectMap()
+	): PageContentSavingStatus {
+		$this->refuseIfAsked();
+
+		if ( $this->failNextSave ) {
+			return new PageContentSavingStatus( PageContentSavingStatus::ERROR, 'Page not found' );
+		}
+
+		foreach ( $dependentSubjects->prepend( $subject )->asArray() as $writtenSubject ) {
+			$this->subjects[$writtenSubject->id->text] = $writtenSubject;
+		}
+
 		$this->comments[$subject->id->text] = $comment;
 		$this->updateSubjectCallCount++;
+
+		return new PageContentSavingStatus( PageContentSavingStatus::REVISION_CREATED );
+	}
+
+	/**
+	 * @throws DependentSubjectRulesViolatedException
+	 */
+	private function refuseIfAsked(): void {
+		if ( $this->refuseWritesWith !== [] ) {
+			throw new DependentSubjectRulesViolatedException( $this->refuseWritesWith );
+		}
 	}
 
 	public function deleteSubject( SubjectId $id, ?string $comment ): PageContentSavingStatus {
@@ -138,6 +177,8 @@ class InMemorySubjectRepository implements SubjectRepository {
 	private int $nextCreatedPageId = 100;
 
 	public function createPageWithSubjects( string $pageTitle, PageSubjects $pageSubjects, ?string $comment = null ): PageContentSavingStatus {
+		$this->refuseIfAsked();
+
 		if ( $this->failNextSave ) {
 			return new PageContentSavingStatus( PageContentSavingStatus::ERROR, 'Page not found' );
 		}
@@ -151,11 +192,24 @@ class InMemorySubjectRepository implements SubjectRepository {
 
 	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): PageContentSavingStatus {
 		$this->savedPageIds[] = $pageId->id;
-		$callNumber = count( $this->savedPageIds );
 
+		if ( $this->refuseSavesToPageIds === [] || in_array( $pageId->id, $this->refuseSavesToPageIds, true ) ) {
+			$this->refuseIfAsked();
+		}
+
+		return $this->store( $pageSubjects, $pageId, $comment );
+	}
+
+	public function restorePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment ): PageContentSavingStatus {
+		$this->savedPageIds[] = $pageId->id;
+
+		return $this->store( $pageSubjects, $pageId, $comment );
+	}
+
+	private function store( PageSubjects $pageSubjects, PageId $pageId, ?string $comment ): PageContentSavingStatus {
 		if ( $this->failNextSave
 			|| in_array( $pageId->id, $this->failSavesForPageIds, true )
-			|| ( $this->failSaveFromCallNumber !== null && $callNumber >= $this->failSaveFromCallNumber ) ) {
+			|| ( $this->failSaveFromCallNumber !== null && count( $this->savedPageIds ) >= $this->failSaveFromCallNumber ) ) {
 			return new PageContentSavingStatus( PageContentSavingStatus::ERROR, 'Page not found' );
 		}
 

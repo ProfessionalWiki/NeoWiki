@@ -50,6 +50,20 @@ async function throwOn422IfPossible( response: Response ): Promise<void> {
 	throw new ValidationFailedError( violations );
 }
 
+function dependentSubjectsField( subjects: readonly Subject[] ): { dependentSubjects?: Record<string, unknown>[] } {
+	if ( subjects.length === 0 ) {
+		return {};
+	}
+
+	return {
+		dependentSubjects: subjects.map( ( subject ) => ( {
+			id: subject.getId().text,
+			schema: subject.getSchemaName(),
+			statements: statementsToJson( subject.getStatements() ),
+		} ) ),
+	};
+}
+
 export type SubjectJson = {
 	id: string;
 	/** The stored label, null for a Subject that has none. */
@@ -292,6 +306,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
+		dependentSubjects: readonly Subject[],
 		comment?: string,
 		id?: SubjectId,
 	): Promise<SubjectWriteResult> {
@@ -301,6 +316,7 @@ export class RestSubjectRepository implements SubjectRepository {
 			statements: statementsToJson( statements ),
 			comment,
 			id: id?.text,
+			...dependentSubjectsField( dependentSubjects ),
 		};
 
 		const response = await this.httpClient.post(
@@ -327,6 +343,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
+		dependentSubjects: readonly Subject[],
 		comment?: string,
 		id?: SubjectId,
 	): Promise<SubjectWriteResult> {
@@ -336,6 +353,7 @@ export class RestSubjectRepository implements SubjectRepository {
 			statements: statementsToJson( statements ),
 			comment,
 			id: id?.text,
+			...dependentSubjectsField( dependentSubjects ),
 		};
 
 		const response = await this.httpClient.post(
@@ -365,6 +383,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		label: string | null,
 		schemaName: SchemaName,
 		statements: StatementList,
+		dependentSubjects: readonly Subject[],
 		comment?: string,
 		pageTitle?: string,
 		id?: SubjectId,
@@ -385,6 +404,7 @@ export class RestSubjectRepository implements SubjectRepository {
 					statements: statementsToJson( statements ),
 					comment,
 					id: id?.text,
+					...dependentSubjectsField( dependentSubjects ),
 				},
 				{
 					headers: {
@@ -452,13 +472,20 @@ export class RestSubjectRepository implements SubjectRepository {
 	/**
 	 * A full replacement: a null label clears whatever label the Subject had.
 	 */
-	public async updateSubject( id: SubjectId, label: string | null, statements: StatementList, comment?: string ): Promise<SubjectWriteResult> {
+	public async updateSubject(
+		id: SubjectId,
+		label: string | null,
+		statements: StatementList,
+		dependentSubjects: readonly Subject[],
+		comment?: string,
+	): Promise<SubjectWriteResult> {
 		const response = await this.httpClient.put(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`,
 			{
 				label,
 				statements: statementsToJson( statements ),
 				comment,
+				...dependentSubjectsField( dependentSubjects ),
 			},
 			{
 				headers: {

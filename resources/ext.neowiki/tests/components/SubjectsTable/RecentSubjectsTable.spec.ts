@@ -27,7 +27,8 @@ describe( 'RecentSubjectsTable', () => {
 	beforeEach( () => {
 		setUpWiki( true );
 		getRecentlyEditedSubjects = vi.fn().mockResolvedValue( [ {
-			id: 's1demo1aaaaaaa1', displayName: 'Commodore 64', displayNameIsGenerated: false, schema: 'Computer',
+			id: 's1demo1aaaaaaa1', displayName: 'Commodore 64', displayNameIsGenerated: false, hostSubject: null,
+			schema: 'Computer',
 			pageId: 1, pageTitle: 'Home computers', lastEdited: '2026-10-01T14:02:00Z',
 		} ] );
 	} );

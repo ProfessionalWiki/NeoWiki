@@ -142,7 +142,7 @@ module.exports = exports = {
 			if ( !schema.value ) {
 				return [];
 			}
-			return nw.resolveDisplayProperties( schema.value, subject.value, layout.value );
+			return nw.resolveDisplayProperties( schema.value, subject.value, layout.value, subjectStore.findSubject );
 		} );
 
 		// The Layout's settings let the layout author customise this View Type.
@@ -180,8 +180,8 @@ module.exports = exports = {
 			return componentRegistry.getValueDisplayComponent( propertyType );
 		}
 
-		function handleSaveSubject( updatedSubject, comment ) {
-			return subjectStore.updateSubject( updatedSubject, comment );
+		function handleSaveSubject( updatedSubject, dependentSubjects, comment ) {
+			return subjectStore.updateSubject( updatedSubject, dependentSubjects, comment );
 		}
 
 		function handleSaveSchema( updatedSchema, comment ) {

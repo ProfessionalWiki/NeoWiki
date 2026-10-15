@@ -60,13 +60,4 @@ class SubjectContent extends JsonContent {
 		return SubjectContentDataDeserializer::deserializeSubjectIds( $this->getText() );
 	}
 
-	/**
-	 * @param callable(PageSubjects):void $mutator
-	 */
-	public function mutatePageSubjects( callable $mutator ): void {
-		$data = $this->getPageSubjects();
-		$mutator( $data );
-		$this->setPageSubjects( $data );
-	}
-
 }

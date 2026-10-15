@@ -12,6 +12,7 @@ readonly class Schema {
 		private SchemaName $name,
 		private string $description,
 		private PropertyDefinitions $properties,
+		private bool $subjectsAreDependent,
 	) {
 	}
 
@@ -40,6 +41,10 @@ readonly class Schema {
 
 	public function getAllProperties(): PropertyDefinitions {
 		return $this->properties;
+	}
+
+	public function subjectsAreDependent(): bool {
+		return $this->subjectsAreDependent;
 	}
 
 }

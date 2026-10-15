@@ -26,11 +26,17 @@ vi.mock( '@/NeoWikiServices.ts', () => {
 
 enableAutoUnmount( afterEach );
 
-function createWrapper( properties: PropertyDefinitionList, selectedPropertyName?: string, attachTo?: HTMLElement ): VueWrapper {
+function createWrapper(
+	properties: PropertyDefinitionList,
+	selectedPropertyName?: string,
+	attachTo?: HTMLElement,
+	showsLabelRow: boolean = true,
+): VueWrapper {
 	return mount( PropertyList, {
 		props: {
 			properties,
 			selectedPropertyName,
+			showsLabelRow,
 		},
 		attachTo,
 		global: {
@@ -332,6 +338,60 @@ describe( 'PropertyList', () => {
 
 			// SortableJS reports indexes that count every row of the list.
 			sortableOptions().onReorder!( 3, 1 );
+
+			expect( reorderedNames( wrapper ) ).toEqual( [ 'Gamma', 'Alpha', 'Beta' ] );
+		} );
+
+	} );
+
+	describe( 'without a Label row', () => {
+
+		function createWithoutLabelRow( selectedPropertyName?: string, attachTo?: HTMLElement ): VueWrapper {
+			return createWrapper( properties, selectedPropertyName, attachTo, false );
+		}
+
+		it( 'lists the properties alone', () => {
+			const wrapper = createWithoutLabelRow( 'Alpha' );
+
+			expect( rowTitles( wrapper ) ).toEqual( [ 'Alpha', 'Beta', 'Gamma' ] );
+		} );
+
+		it( 'keeps the first property in the tab order while none is selected', () => {
+			const wrapper = createWithoutLabelRow();
+
+			expect( focusableRowTitles( wrapper ) ).toEqual( [ 'Alpha' ] );
+		} );
+
+		it( 'selects the first property on ArrowDown while none is selected', async () => {
+			const wrapper = createWithoutLabelRow();
+
+			await wrapper.find( '[role="listbox"]' ).trigger( 'keydown', { key: 'ArrowDown' } );
+
+			const emitted = wrapper.emitted( 'propertySelected' ) as PropertyName[][];
+			expect( emitted[ 0 ][ 0 ].toString() ).toBe( 'Alpha' );
+		} );
+
+		it( 'moves the focus with the selection to the next property', async () => {
+			const wrapper = createWithoutLabelRow( 'Alpha', document.body );
+
+			await wrapper.find( '[role="listbox"]' ).trigger( 'keydown', { key: 'ArrowDown' } );
+
+			expect( document.activeElement ).toBe( findRow( wrapper, 'Beta' ).element );
+		} );
+
+		it( 'selects nothing above the first property on ArrowUp', async () => {
+			const wrapper = createWithoutLabelRow( 'Alpha' );
+
+			await wrapper.find( '[role="listbox"]' ).trigger( 'keydown', { key: 'ArrowUp' } );
+
+			expect( wrapper.emitted( 'propertySelected' ) ).toBeUndefined();
+			expect( wrapper.emitted( 'subjectLabelSelected' ) ).toBeUndefined();
+		} );
+
+		it( 'moves a dropped property to its place, with no Label row among the rows SortableJS counts', () => {
+			const wrapper = createWithoutLabelRow( 'Alpha' );
+
+			sortableOptions().onReorder!( 2, 0 );
 
 			expect( reorderedNames( wrapper ) ).toEqual( [ 'Gamma', 'Alpha', 'Beta' ] );
 		} );

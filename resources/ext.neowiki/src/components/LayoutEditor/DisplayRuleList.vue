@@ -8,7 +8,16 @@
 				v-if="isDefault"
 				class="ext-neowiki-display-rule-list__header__note"
 			>
-				{{ $i18n( 'neowiki-layout-display-no-rules' ).text() }}
+				<template v-if="propertyNamesLeftOut.length === 0">
+					{{ $i18n( 'neowiki-layout-display-no-rules' ).text() }}
+				</template>
+				<template v-else>
+					{{ $i18n(
+						'neowiki-layout-display-no-rules-dependent',
+						propertyNamesLeftOut.join( $i18n( 'comma-separator' ).text() ),
+						propertyNamesLeftOut.length
+					).text() }}
+				</template>
 			</span>
 			<CdxButton
 				v-if="hasHidden"
@@ -71,7 +80,7 @@
 import { ref, computed } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconDraggable, cdxIconEye, cdxIconEyeClosed } from '@wikimedia/codex-icons';
-import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
+import type { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import type { DisplayRule } from '@/domain/Layout.ts';
 import { useSortable } from '@/composables/useSortable.ts';
 import { unifiedRows, rulesAfterToggle, rulesAfterShowingAll, rulesAfterReorder } from './displayRuleEditing.ts';
@@ -79,6 +88,7 @@ import { unifiedRows, rulesAfterToggle, rulesAfterShowingAll, rulesAfterReorder 
 const props = defineProps<{
 	schemaProperties: PropertyDefinition[];
 	displayRules: DisplayRule[];
+	propertiesTargetingDependentSubjects: PropertyName[];
 }>();
 
 const emit = defineEmits<{
@@ -87,18 +97,32 @@ const emit = defineEmits<{
 
 const listRef = ref<HTMLElement | null>( null );
 
-const rows = computed( () => unifiedRows( props.schemaProperties, props.displayRules ) );
+// Without Display Rules, a View shows every property but those pointing at Dependent Subjects.
+const rulesInEffect = computed( (): DisplayRule[] => {
+	if ( props.displayRules.length > 0 ) {
+		return props.displayRules;
+	}
+
+	const leftOut = props.propertiesTargetingDependentSubjects.map( ( name ) => name.toString() );
+
+	return props.schemaProperties
+		.filter( ( property ) => !leftOut.includes( property.name.toString() ) )
+		.map( ( property ) => ( { property: property.name } ) );
+} );
+
+const rows = computed( () => unifiedRows( props.schemaProperties, rulesInEffect.value ) );
+const propertyNamesLeftOut = computed( () => props.propertiesTargetingDependentSubjects.map( ( name ) => name.toString() ) );
 const isDefault = computed( () => props.displayRules.length === 0 );
 const shownCount = computed( () => rows.value.filter( ( row ) => row.shown ).length );
 const totalCount = computed( () => props.schemaProperties.length );
 const hasHidden = computed( () => shownCount.value < totalCount.value );
 
 function onToggle( name: string ): void {
-	emit( 'update:display-rules', rulesAfterToggle( props.schemaProperties, props.displayRules, name ) );
+	emit( 'update:display-rules', rulesAfterToggle( props.schemaProperties, rulesInEffect.value, name ) );
 }
 
 function onShowAll(): void {
-	emit( 'update:display-rules', rulesAfterShowingAll( props.schemaProperties, props.displayRules ) );
+	emit( 'update:display-rules', rulesAfterShowingAll( props.schemaProperties, rulesInEffect.value ) );
 }
 
 function toggleMessageKey( shown: boolean ): string {
@@ -121,7 +145,7 @@ useSortable( listRef, {
 	draggable: '.ext-neowiki-display-rule-list__item:not(.ext-neowiki-display-rule-list__item--hidden)',
 	ghostClass: 'ext-neowiki-display-rule-list__item--ghost',
 	onReorder( oldIndex: number, newIndex: number ): void {
-		emit( 'update:display-rules', rulesAfterReorder( props.schemaProperties, props.displayRules, oldIndex, newIndex ) );
+		emit( 'update:display-rules', rulesAfterReorder( props.schemaProperties, rulesInEffect.value, oldIndex, newIndex ) );
 	}
 } );
 </script>
@@ -132,6 +156,7 @@ useSortable( listRef, {
 .ext-neowiki-display-rule-list {
 	&__header {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		gap: @spacing-50;
 		padding: @spacing-25 @spacing-75;
@@ -143,7 +168,7 @@ useSortable( listRef, {
 		}
 
 		&__note {
-			flex-grow: 1;
+			flex: 1 1 @size-1600;
 		}
 	}
 

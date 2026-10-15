@@ -2,7 +2,6 @@ import { mount, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import type { SubjectEditorExposes } from '@/components/SubjectEditor/SubjectEditor.vue';
-import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson } from '@/domain/PropertyDefinition.ts';
 import RelationInput from '@/components/Value/RelationInput.vue';
@@ -15,6 +14,9 @@ import { newSchema } from '@/TestHelpers.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import { createI18nMock, createTestWrapper, reportUnparseableNumber } from '../../VueTestHelpers.ts';
+import DependentSubjectsInput from '@/components/SubjectEditor/DependentSubjectsInput.vue';
+import { DependentSubjectEditingKey, type DependentSubjectEditing } from '@/components/SubjectEditor/DependentSubjectEditing.ts';
+import { createPinia, setActivePinia } from 'pinia';
 
 describe( 'SubjectEditor', () => {
 	beforeEach( () => {
@@ -26,17 +28,17 @@ describe( 'SubjectEditor', () => {
 		} );
 	} );
 
-	const schema = new Schema(
-		'TestSchema',
-		'A test schema',
-		new PropertyDefinitionList( [
+	const schema = newSchema( {
+		title: 'TestSchema',
+		description: 'A test schema',
+		properties: new PropertyDefinitionList( [
 			createPropertyDefinitionFromJson( 'Name', { type: TextType.typeName } ),
 			createPropertyDefinitionFromJson( 'Score', { type: NumberType.typeName } ),
 			// Sits after the number field, so an editor that only consulted the last
 			// field would report nothing unparseable.
 			createPropertyDefinitionFromJson( 'Notes', { type: TextType.typeName } ),
 		] ),
-	);
+	} );
 
 	function newWrapper(): VueWrapper {
 		return createTestWrapper( SubjectEditor, {
@@ -83,19 +85,27 @@ describe( 'SubjectEditor', () => {
 	// The schema can change while the dialog is open (the nested schema editor); a
 	// stale reference to a field no longer in the schema must not keep holding saves.
 	it( 'stops reporting unparseable input once the field is gone from the schema', async () => {
-		const withTrailingNumber = new Schema( 'TestSchema', 'A test schema', new PropertyDefinitionList( [
-			createPropertyDefinitionFromJson( 'Name', { type: TextType.typeName } ),
-			createPropertyDefinitionFromJson( 'Score', { type: NumberType.typeName } ),
-		] ) );
+		const withTrailingNumber = newSchema( {
+			title: 'TestSchema',
+			description: 'A test schema',
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Name', { type: TextType.typeName } ),
+				createPropertyDefinitionFromJson( 'Score', { type: NumberType.typeName } ),
+			] ),
+		} );
 		const wrapper = createTestWrapper( SubjectEditor, {
 			statements: withTrailingNumber.blankStatements(),
 			schema: withTrailingNumber,
 		} );
 		await reportUnparseableNumber( wrapper.find( 'input[type="number"]' ) );
 
-		const withoutNumber = new Schema( 'TestSchema', 'A test schema', new PropertyDefinitionList( [
-			createPropertyDefinitionFromJson( 'Name', { type: TextType.typeName } ),
-		] ) );
+		const withoutNumber = newSchema( {
+			title: 'TestSchema',
+			description: 'A test schema',
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Name', { type: TextType.typeName } ),
+			] ),
+		} );
 		await wrapper.setProps( { schema: withoutNumber, statements: withoutNumber.blankStatements() } );
 
 		expect( editor( wrapper ).saveBlocker() ).toBeNull();
@@ -141,6 +151,83 @@ describe( 'SubjectEditor', () => {
 
 			expect( wrapper.emitted( 'change' ) ).toHaveLength( 1 );
 			expect( wrapper.emitted( 'relation-change' ) ).toBeUndefined();
+		} );
+	} );
+
+	describe( 'Dependent Subjects', () => {
+		const hostSchema = newSchema( {
+			properties: new PropertyDefinitionList( [
+				newRelationProperty( { name: 'Birth', targetSchemas: [ 'Birth' ] } ),
+				newRelationProperty( { name: 'Employer', targetSchemas: [ 'Company' ] } ),
+			] ),
+		} );
+
+		const editing: DependentSubjectEditing = {
+			targetsDependentSubjects: ( property ) => property.targetSchemas.includes( 'Birth' ),
+			schema: () => undefined,
+			subject: () => undefined,
+			isNew: () => false,
+			markChanged: () => undefined,
+			add: () => Promise.resolve( null ),
+			unsavedTargetIds: () => [],
+		};
+
+		function mountHost( provide: Record<symbol, unknown> ): VueWrapper {
+			setActivePinia( createPinia() );
+
+			return mount( SubjectEditor, {
+				props: {
+					statements: hostSchema.blankStatements(),
+					schema: hostSchema,
+				},
+				global: {
+					provide: { ...NeoWikiTestServices.getServices(), ...provide },
+					directives: { tooltip: {} },
+					mocks: { $i18n: createI18nMock() },
+					stubs: { SubjectPicker: true, NeoMultiLookupInput: true },
+				},
+			} );
+		}
+
+		function fieldComponents( wrapper: VueWrapper ): Record<string, string> {
+			return Object.fromEntries( [
+				...wrapper.findAllComponents( DependentSubjectsInput ).map( ( field ) => [ field.props( 'label' ), 'inline' ] ),
+				...wrapper.findAllComponents( RelationInput ).map( ( field ) => [ field.props( 'label' ), 'picker' ] ),
+			] );
+		}
+
+		it( 'edits a relation\'s Dependent Subjects inline, and picks the targets of the other relations', () => {
+			const wrapper = mountHost( { [ DependentSubjectEditingKey as symbol ]: editing } );
+
+			expect( fieldComponents( wrapper ) ).toEqual( { Birth: 'inline', Employer: 'picker' } );
+		} );
+
+		it( 'picks the targets of every relation where the editor does not edit Dependent Subjects', () => {
+			const wrapper = mountHost( {} );
+
+			expect( fieldComponents( wrapper ) ).toEqual( { Birth: 'picker', Employer: 'picker' } );
+		} );
+
+		it( 'reports no Dependent Subjects where no field edits them', () => {
+			const wrapper = mountHost( {} );
+
+			expect( editor( wrapper ).getDependentSubjects() ).toEqual( [] );
+		} );
+
+		it( 'passes on a change inside a Dependent Subject, saying whether it is to a relation', async () => {
+			const wrapper = mountHost( { [ DependentSubjectEditingKey as symbol ]: editing } );
+
+			await wrapper.findComponent( DependentSubjectsInput ).vm.$emit( 'dependent-subject-change', true );
+
+			expect( wrapper.emitted( 'dependent-subject-change' ) ).toEqual( [ [ true ] ] );
+		} );
+
+		it( 'tells of no change of its own for a change inside a Dependent Subject', async () => {
+			const wrapper = mountHost( { [ DependentSubjectEditingKey as symbol ]: editing } );
+
+			await wrapper.findComponent( DependentSubjectsInput ).vm.$emit( 'dependent-subject-change', false );
+
+			expect( wrapper.emitted( 'change' ) ).toBeUndefined();
 		} );
 	} );
 

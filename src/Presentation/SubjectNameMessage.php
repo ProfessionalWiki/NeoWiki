@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Presentation;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Message\Message;
 use MessageLocalizer;
+use ProfessionalWiki\NeoWiki\Application\HostSubject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 /**
@@ -22,6 +23,34 @@ class SubjectNameMessage {
 		}
 
 		return ( new RawMessage( '$1' ) )->plaintextParams( $chosenName );
+	}
+
+	/**
+	 * Names a Dependent Subject after its Schema and Host Subject, as in "Birth of Pablo Picasso".
+	 *
+	 * @param string|array{source: string, name: string} $schema The Dependent Subject's Schema reference.
+	 */
+	public static function ofDependentSubject(
+		MessageLocalizer $messageLocalizer,
+		string|array $schema,
+		HostSubject $hostSubject
+	): Message {
+		return $messageLocalizer->msg( 'neowiki-dependent-subject-name' )->plaintextParams(
+			is_array( $schema ) ? $schema['name'] : $schema,
+			self::ofHostSubject( $messageLocalizer, $hostSubject )->text()
+		);
+	}
+
+	private static function ofHostSubject( MessageLocalizer $messageLocalizer, HostSubject $hostSubject ): Message {
+		if ( $hostSubject->hostSubject !== null ) {
+			return self::ofDependentSubject( $messageLocalizer, $hostSubject->schema, $hostSubject->hostSubject );
+		}
+
+		return self::from(
+			$messageLocalizer,
+			new SubjectId( $hostSubject->id ),
+			$hostSubject->displayNameIsGenerated ? null : $hostSubject->displayName
+		);
 	}
 
 }

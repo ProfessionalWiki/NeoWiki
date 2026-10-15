@@ -14,8 +14,9 @@ export function isShapedAsViolation( raw: unknown ): raw is SubjectViolation {
 	const indexOk = v.valuePartIndex === undefined ||
 		v.valuePartIndex === null ||
 		typeof v.valuePartIndex === 'number';
+	const subjectIdOk = v.subjectId === undefined || typeof v.subjectId === 'string';
 
-	return propertyNameOk && codeOk && argsOk && severityOk && indexOk;
+	return propertyNameOk && codeOk && argsOk && severityOk && indexOk && subjectIdOk;
 }
 
 export function parseViolations( body: unknown ): SubjectViolation[] | null {
@@ -37,5 +38,6 @@ export function parseViolations( body: unknown ): SubjectViolation[] | null {
 		// must render as advisory, not blocking.
 		severity: v.severity ?? 'warning',
 		valuePartIndex: v.valuePartIndex ?? null,
+		...( v.subjectId === undefined ? {} : { subjectId: v.subjectId } ),
 	} ) );
 }

@@ -16,6 +16,9 @@ import type { Severity } from '@/domain/Severity';
  *
  * severity decides styling and blocking (ADR 26): an `error` can be rejected
  * under enforcement, a `warning` never blocks and renders as advisory.
+ *
+ * subjectId names the Subject the violation is on, where a write covers several; absent, it is the
+ * Subject the request names.
  */
 export interface SubjectViolation {
 	readonly propertyName: string | null;
@@ -23,6 +26,7 @@ export interface SubjectViolation {
 	readonly args: readonly unknown[];
 	readonly severity: Severity;
 	readonly valuePartIndex: number | null;
+	readonly subjectId?: string;
 }
 
 /**

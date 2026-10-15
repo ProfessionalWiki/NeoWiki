@@ -104,7 +104,7 @@ module.exports = exports = {
 			}
 			const pageId = mw.config.get( 'wgArticleId' );
 			const subjectStatements = editorRef.value.getSubjectData();
-			subjectStore.createOtherSubject( pageId, trimmed, SCHEMA_NAME, subjectStatements )
+			subjectStore.createOtherSubject( pageId, trimmed, SCHEMA_NAME, subjectStatements, [] )
 				.then( () => {
 					mw.notify( mw.message( 'redherb-create-subject-success' ).text() );
 					open.value = false;

@@ -10,9 +10,9 @@ import { createI18nMock, setupMwMock } from '../../../VueTestHelpers.ts';
 type TargetSchemasInputWrapper = VueWrapper<InstanceType<typeof TargetSchemasInput>>;
 
 const SUMMARIES = [
-	{ name: 'Product', description: 'A product', propertyCount: 2 },
-	{ name: 'Office', description: 'A physical location', propertyCount: 4 },
-	{ name: 'City', description: '', propertyCount: 3 },
+	{ name: 'Product', description: 'A product', propertyCount: 2, subjectsAreDependent: false },
+	{ name: 'Office', description: 'A physical location', propertyCount: 4, subjectsAreDependent: false },
+	{ name: 'City', description: '', propertyCount: 3, subjectsAreDependent: false },
 ];
 
 // Mounted with the real Codex component: which chips a pick or a removal leaves is decided by
@@ -216,7 +216,7 @@ describe( 'TargetSchemasInput', () => {
 	it( 'lists and checks a target schema created after the list was fetched', async () => {
 		const wrapper = await mountInput( [ 'Office' ] );
 		useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue(
-			[ ...SUMMARIES, { name: 'Artwork', description: '', propertyCount: 0 } ],
+			[ ...SUMMARIES, { name: 'Artwork', description: '', propertyCount: 0, subjectsAreDependent: false } ],
 		);
 
 		await wrapper.setProps( { modelValue: [ 'Office', 'Artwork' ] } );
@@ -312,7 +312,7 @@ describe( 'TargetSchemasInput', () => {
 			it( 'hands the typed text on', async () => {
 				const wrapper = await chooseOffer();
 
-				expect( wrapper.emitted( 'create' ) ).toEqual( [ [ 'Prod' ] ] );
+				expect( wrapper.emitted( 'create' ) ).toEqual( [ [ 'Prod', false ] ] );
 			} );
 
 			it( 'adds no target schema', async () => {
@@ -327,6 +327,95 @@ describe( 'TargetSchemasInput', () => {
 				expect( field( wrapper ).element.value ).toBe( '' );
 				expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City', OFFER ] );
 			} );
+		} );
+	} );
+
+	describe( 'Schemas of dependent and of standalone Subjects', () => {
+		beforeEach( () => {
+			useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+				{ name: 'Birth', description: '', propertyCount: 2, subjectsAreDependent: true },
+				{ name: 'City', description: '', propertyCount: 3, subjectsAreDependent: false },
+				{ name: 'Name', description: '', propertyCount: 1, subjectsAreDependent: true },
+				{ name: 'Office', description: '', propertyCount: 4, subjectsAreDependent: false },
+			] );
+		} );
+
+		it( 'offers both while no target is chosen', async () => {
+			const wrapper = await mountInput( [] );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Birth', 'City', 'Name', 'Office' ] );
+		} );
+
+		it( 'offers only Schemas of dependent Subjects once one of those is a target', async () => {
+			const wrapper = await mountInput( [ 'Birth' ] );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Birth', 'Name' ] );
+		} );
+
+		it( 'offers only Schemas of standalone Subjects once one of those is a target', async () => {
+			const wrapper = await mountInput( [ 'Office' ] );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'City', 'Office' ] );
+		} );
+
+		it( 'decides by the first target whose Schema it knows', async () => {
+			const wrapper = await mountInput( [ 'Deleted', 'Name' ] );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Birth', 'Name' ] );
+		} );
+
+		// Codex shows the line in place of results, under its own class, and keeps an empty one where it has none.
+		function noResultsLine( wrapper: VueWrapper ): string {
+			const line = wrapper.find( '.cdx-menu__no-results' );
+
+			return line.exists() ? line.text() : '';
+		}
+
+		it( 'says why a Schema of standalone Subjects the typed text finds cannot be added beside targets of dependent ones', async () => {
+			const wrapper = await mountInput( [ 'Birth' ] );
+
+			await field( wrapper ).setValue( 'Offi' );
+			await flushPromises();
+
+			expect( noResultsLine( wrapper ) ).toBe( 'neowiki-property-editor-target-schema-dependent-only' );
+		} );
+
+		it( 'says why a Schema of dependent Subjects the typed text finds cannot be added beside targets of standalone ones', async () => {
+			const wrapper = await mountInput( [ 'Office' ] );
+
+			await field( wrapper ).setValue( 'Bir' );
+			await flushPromises();
+
+			expect( noResultsLine( wrapper ) ).toBe( 'neowiki-property-editor-target-schema-standalone-only' );
+		} );
+
+		it( 'says nothing of typed text that finds no Schema at all', async () => {
+			const wrapper = await mountInput( [ 'Birth' ] );
+
+			await field( wrapper ).setValue( 'Zeppelin' );
+			await flushPromises();
+
+			expect( noResultsLine( wrapper ) ).toBe( '' );
+		} );
+
+		it( 'hands on that the targets\' Subjects are dependent with the offer to create a Schema', async () => {
+			const wrapper = await mountCreatingInput( [ 'Birth' ] );
+			await field( wrapper ).setValue( 'Death' );
+			await flushPromises();
+
+			await pickSchema( wrapper, 'neowiki-schema-picker-create-namedDeath' );
+
+			expect( wrapper.emitted( 'create' ) ).toEqual( [ [ 'Death', true ] ] );
+		} );
+
+		it( 'hands on that nothing decides it while no target is chosen', async () => {
+			const wrapper = await mountCreatingInput( [] );
+			await field( wrapper ).setValue( 'Death' );
+			await flushPromises();
+
+			await pickSchema( wrapper, 'neowiki-schema-picker-create-namedDeath' );
+
+			expect( wrapper.emitted( 'create' ) ).toEqual( [ [ 'Death', null ] ] );
 		} );
 	} );
 

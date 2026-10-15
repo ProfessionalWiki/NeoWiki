@@ -7,6 +7,8 @@ namespace ProfessionalWiki\NeoWiki\Application;
 interface SubjectLabelLookup {
 
 	/**
+	 * Never returns a Dependent Subject: only its Host Subject may point at one.
+	 *
 	 * @param int $limit Maximum results to return. Callers must cap this to a small value: an
 	 *   implementation may over-fetch and run a per-result permission check, so an unbounded limit
 	 *   is unbounded work. The REST entry point caps it at 50.

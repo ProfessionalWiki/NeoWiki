@@ -56,13 +56,14 @@ class GetSchemaSummariesApi extends SimpleHandler {
 	}
 
 	/**
-	 * @return array{name: string, description: string, propertyCount: int}
+	 * @return array{name: string, description: string, propertyCount: int, subjectsAreDependent: bool}
 	 */
 	private function schemaToSummary( Schema $schema ): array {
 		return [
 			'name' => $schema->getName()->getText(),
 			'description' => $schema->getDescription(),
 			'propertyCount' => count( $schema->getAllProperties()->asMap() ),
+			'subjectsAreDependent' => $schema->subjectsAreDependent(),
 		];
 	}
 

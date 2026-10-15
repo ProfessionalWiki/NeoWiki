@@ -20,3 +20,9 @@ export const RelationTargetUrlKey: InjectionKey<( target: Subject ) => string> =
  * Absent, a red link only leads to the target's Special:Subject page.
  */
 export const RelationTargetCreationKey: InjectionKey<Readonly<Ref<boolean>>> = Symbol( 'NeoWikiRelationTargetCreation' );
+
+/**
+ * The ids of the Subjects a value display is shown inside, outermost first. A relation display links to one of these
+ * rather than nesting it again without end, which only data written past the rules can call for.
+ */
+export const EnclosingSubjectIdsKey: InjectionKey<Readonly<Ref<readonly string[]>>> = Symbol( 'NeoWikiEnclosingSubjectIds' );

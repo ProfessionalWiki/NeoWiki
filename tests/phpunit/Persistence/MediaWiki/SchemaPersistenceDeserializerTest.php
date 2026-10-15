@@ -107,6 +107,25 @@ class SchemaPersistenceDeserializerTest extends TestCase {
 		yield 'empty type' => [ '{"type": ""}' ];
 	}
 
+	public function testReadsTheDeclarationThatTheSubjectsAreDependent(): void {
+		$json = '{"subjectsAreDependent": true, "propertyDefinitions": {}}';
+
+		$this->assertTrue( $this->deserialize( $json )->subjectsAreDependent() );
+	}
+
+	/**
+	 * @dataProvider standaloneDeclarationProvider
+	 */
+	public function testSubjectsAreStandaloneUnlessTheSchemaDeclaresThemDependent( string $json ): void {
+		$this->assertFalse( $this->deserialize( $json )->subjectsAreDependent() );
+	}
+
+	public function standaloneDeclarationProvider(): iterable {
+		yield 'absent' => [ '{"propertyDefinitions": {}}' ];
+		yield 'false' => [ '{"subjectsAreDependent": false, "propertyDefinitions": {}}' ];
+		yield 'not a boolean' => [ '{"subjectsAreDependent": "yes", "propertyDefinitions": {}}' ];
+	}
+
 	private function deserialize( string $json = self::SCHEMA_JSON ): Schema {
 		return ( new SchemaPersistenceDeserializer( TestSources::newPropertyTypeRegistry() ) )
 			->deserialize( new SchemaName( 'TestSchema' ), $json );

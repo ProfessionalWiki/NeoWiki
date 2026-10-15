@@ -1,5 +1,5 @@
 import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { nextTick, ref, type Ref } from 'vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
@@ -102,9 +102,13 @@ describe( 'RelationAttributesEditor', () => {
 	} );
 
 	describe( 'creating a target schema from the field', () => {
-		async function chooseCreateOffer( wrapper: VueWrapper, typedName: string ): Promise<void> {
+		async function chooseCreateOffer(
+			wrapper: VueWrapper,
+			typedName: string,
+			targetsDependentSubjects: boolean | null = null,
+		): Promise<void> {
 			await flushPromises();
-			wrapper.findComponent( TargetSchemasInputStub ).vm.$emit( 'create', typedName );
+			wrapper.findComponent( TargetSchemasInputStub ).vm.$emit( 'create', typedName, targetsDependentSubjects );
 			await flushPromises();
 		}
 
@@ -131,12 +135,35 @@ describe( 'RelationAttributesEditor', () => {
 			expect( wrapper.findComponent( TargetSchemasInputStub ).props( 'offersCreation' ) ).toBe( false );
 		} );
 
+		function creationAskedFor(): { initialName: unknown; subjectsAreDependent: unknown } {
+			expect( schemaCreation!.create ).toHaveBeenCalledOnce();
+			const [ initialName, subjectsAreDependent ] = ( schemaCreation!.create as Mock ).mock.calls[ 0 ];
+
+			return { initialName, subjectsAreDependent };
+		}
+
 		it( 'opens the schema creator on the name typed in the field', async () => {
 			const wrapper = newWrapper();
 
 			await chooseCreateOffer( wrapper, 'Artist' );
 
-			expect( schemaCreation!.create ).toHaveBeenCalledWith( 'Artist' );
+			expect( creationAskedFor().initialName ).toBe( 'Artist' );
+		} );
+
+		it( 'opens the schema creator decided on the kind of Subjects the targets have', async () => {
+			const wrapper = newWrapper();
+
+			await chooseCreateOffer( wrapper, 'Birth', true );
+
+			expect( creationAskedFor().subjectsAreDependent ).toBe( true );
+		} );
+
+		it( 'opens the schema creator undecided on the kind where the targets do not say', async () => {
+			const wrapper = newWrapper();
+
+			await chooseCreateOffer( wrapper, 'Artist', null );
+
+			expect( creationAskedFor().subjectsAreDependent ).toBeNull();
 		} );
 
 		it( 'opens the schema creator when nothing was typed', async () => {
@@ -144,7 +171,7 @@ describe( 'RelationAttributesEditor', () => {
 
 			await chooseCreateOffer( wrapper, '' );
 
-			expect( schemaCreation!.create ).toHaveBeenCalledWith( '' );
+			expect( creationAskedFor().initialName ).toBe( '' );
 		} );
 
 		// The name typed in the field may have been changed in the creator since.

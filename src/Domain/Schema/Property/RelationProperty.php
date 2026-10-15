@@ -57,6 +57,13 @@ class RelationProperty extends PropertyDefinition {
 		return false;
 	}
 
+	/**
+	 * @return list<SchemaReference>
+	 */
+	public function getTargetSchemas(): array {
+		return $this->targetSchemas;
+	}
+
 	public function allowsMultipleValues(): bool {
 		return $this->multiple;
 	}

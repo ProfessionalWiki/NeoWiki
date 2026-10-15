@@ -73,6 +73,20 @@ function writeResponseJson( overrides: Record<string, unknown> = {} ): Record<st
 	};
 }
 
+const birth = new Subject(
+	new SubjectId( 's1birthAAAAAAA1' ),
+	null,
+	'Birth',
+	true,
+	'Birth',
+	new StatementList( [ new Statement( new PropertyName( 'Date' ), TextType.typeName, newStringValue( '1881' ) ) ] ),
+	new PageIdentifiers( 42, 'Employees' ), null );
+const birthField = [ {
+	id: 's1birthAAAAAAA1',
+	schema: 'Birth',
+	statements: { Date: { value: [ '1881' ], propertyType: 'text' } },
+} ];
+
 describe( 'RestSubjectRepository', () => {
 
 	describe( 'getSubject', () => {
@@ -113,6 +127,7 @@ describe( 'RestSubjectRepository', () => {
 					new Statement( new PropertyName( 'WorkUrl' ), 'url', newStringValue( 'https://pro.wiki' ) ),
 				] ),
 				new PageIdentifiers( subjectResponse.pageId, subjectResponse.pageTitle ),
+				null,
 			) );
 			expect( subject.getLabel() ).toEqual( 'John Doe' );
 		} );
@@ -553,7 +568,7 @@ describe( 'RestSubjectRepository', () => {
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
 			await expect(
-				() => repository.createMainSubject( 42, 'Foo', 'Bar', new StatementList( [] ) ),
+				() => repository.createMainSubject( 42, 'Foo', 'Bar', new StatementList( [] ), [] ),
 			).rejects.toThrowError( 'Error creating main subject' );
 		} );
 
@@ -565,7 +580,7 @@ describe( 'RestSubjectRepository', () => {
 
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
-			const result = await repository.createMainSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
+			const result = await repository.createMainSubject( 42, 'John Doe', 'Employee', new StatementList( [] ), [] );
 
 			expect( result.subjectId.text ).toEqual( 's33333333333333' );
 			expect( result.subject?.getLabel() ).toEqual( 'John Doe' );
@@ -581,7 +596,7 @@ describe( 'RestSubjectRepository', () => {
 
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
-			await repository.createMainSubject( 42, null, 'Employee', new StatementList( [] ) );
+			await repository.createMainSubject( 42, null, 'Employee', new StatementList( [] ), [] );
 
 			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { label: null } );
 		} );
@@ -595,9 +610,22 @@ describe( 'RestSubjectRepository', () => {
 
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
-			await repository.createMainSubject( 42, null, 'Employee', new StatementList( [] ), undefined, new SubjectId( 's1ab2cd3ef4gh5i' ) );
+			await repository.createMainSubject( 42, null, 'Employee', new StatementList( [] ), [], undefined, new SubjectId( 's1ab2cd3ef4gh5i' ) );
 
 			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { id: 's1ab2cd3ef4gh5i' } );
+		} );
+
+		it( 'sends the Dependent Subjects written along with it', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/page/42/mainSubject':
+					new Response( JSON.stringify( writeResponseJson() ), { status: 200 } ),
+			} );
+			const postSpy = vi.spyOn( inMemoryHttpClient, 'post' );
+
+			await newRepository( 'https://example.com/rest.php', inMemoryHttpClient )
+				.createMainSubject( 42, null, 'Employee', new StatementList( [] ), [ birth ] );
+
+			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { dependentSubjects: birthField } );
 		} );
 
 		it( 'keeps a conflict a failure even for a minted id', async () => {
@@ -607,7 +635,7 @@ describe( 'RestSubjectRepository', () => {
 			} );
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
-			const promise = repository.createMainSubject( 42, null, 'Employee', new StatementList( [] ), undefined, new SubjectId( 's1ab2cd3ef4gh5i' ) );
+			const promise = repository.createMainSubject( 42, null, 'Employee', new StatementList( [] ), [], undefined, new SubjectId( 's1ab2cd3ef4gh5i' ) );
 
 			await expect( promise ).rejects.toThrowError( 'Error creating main subject' );
 			await expect( promise ).rejects.toSatisfy(
@@ -668,7 +696,7 @@ describe( 'RestSubjectRepository', () => {
 			const httpClient = new InMemoryHttpClient( { [ url ]: created() } );
 
 			const result = await newRepository( 'https://example.com/rest.php', httpClient )
-				.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) );
+				.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ), [] );
 
 			expect( result.subjectId.text ).toEqual( 's33333333333333' );
 			expect( result.pageTitle ).toEqual( 'John Doe' );
@@ -680,7 +708,7 @@ describe( 'RestSubjectRepository', () => {
 			const postSpy = vi.spyOn( httpClient, 'post' );
 
 			await newRepository( 'https://example.com/rest.php', httpClient )
-				.createSubjectPage( null, 'Employee', new StatementList( [] ), 'why' );
+				.createSubjectPage( null, 'Employee', new StatementList( [] ), [], 'why' );
 
 			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( {
 				label: null,
@@ -694,9 +722,19 @@ describe( 'RestSubjectRepository', () => {
 			const postSpy = vi.spyOn( httpClient, 'post' );
 
 			await newRepository( 'https://example.com/rest.php', httpClient )
-				.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ), undefined, 'Employee of the year' );
+				.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ), [], undefined, 'Employee of the year' );
 
 			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { pageTitle: 'Employee of the year' } );
+		} );
+
+		it( 'sends the Dependent Subjects written along with it', async () => {
+			const httpClient = new InMemoryHttpClient( { [ url ]: created() } );
+			const postSpy = vi.spyOn( httpClient, 'post' );
+
+			await newRepository( 'https://example.com/rest.php', httpClient )
+				.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ), [ birth ] );
+
+			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { dependentSubjects: birthField } );
 		} );
 
 		it( 'sends the id the caller minted for the subject', async () => {
@@ -705,7 +743,7 @@ describe( 'RestSubjectRepository', () => {
 
 			await newRepository( 'https://example.com/rest.php', httpClient )
 				.createSubjectPage(
-					'John Doe', 'Employee', new StatementList( [] ), undefined, undefined,
+					'John Doe', 'Employee', new StatementList( [] ), [], undefined, undefined,
 					new SubjectId( 's33333333333333' ),
 				);
 
@@ -719,7 +757,7 @@ describe( 'RestSubjectRepository', () => {
 
 			const error = await newRepository( 'https://example.com/rest.php', httpClient )
 				.createSubjectPage(
-					'John Doe', 'Employee', new StatementList( [] ), undefined, undefined,
+					'John Doe', 'Employee', new StatementList( [] ), [], undefined, undefined,
 					new SubjectId( 's33333333333333' ),
 				)
 				.catch( ( thrown: unknown ) => thrown );
@@ -732,7 +770,7 @@ describe( 'RestSubjectRepository', () => {
 
 			const error = await newRepository( 'https://example.com/rest.php', httpClient )
 				.createSubjectPage(
-					'John Doe', 'Employee', new StatementList( [] ), undefined, undefined,
+					'John Doe', 'Employee', new StatementList( [] ), [], undefined, undefined,
 					new SubjectId( 's33333333333333' ),
 				)
 				.catch( ( thrown: unknown ) => thrown );
@@ -744,7 +782,7 @@ describe( 'RestSubjectRepository', () => {
 			const httpClient = new InMemoryHttpClient( { [ url ]: titleTaken() } );
 
 			const error = await newRepository( 'https://example.com/rest.php', httpClient )
-				.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) )
+				.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ), [] )
 				.catch( ( thrown: unknown ) => thrown );
 
 			expect( error ).toBeInstanceOf( PageTitleTakenError );
@@ -763,7 +801,7 @@ describe( 'RestSubjectRepository', () => {
 			} );
 
 			const error = await newRepository( 'https://example.com/rest.php', httpClient )
-				.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) )
+				.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ), [] )
 				.catch( ( thrown: unknown ) => thrown );
 
 			expect( error ).toBeInstanceOf( ValidationFailedError );
@@ -776,7 +814,7 @@ describe( 'RestSubjectRepository', () => {
 
 			await expect(
 				() => newRepository( 'https://example.com/rest.php', httpClient )
-					.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) ),
+					.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ), [] ),
 			).rejects.toThrowError( 'Error creating subject page' );
 		} );
 
@@ -794,7 +832,7 @@ describe( 'RestSubjectRepository', () => {
 			} as unknown as InMemoryHttpClient );
 
 			await expect(
-				repository.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) ),
+				repository.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ), [] ),
 			).rejects.toThrowError( 'The database is locked' );
 		} );
 
@@ -804,7 +842,7 @@ describe( 'RestSubjectRepository', () => {
 			} as unknown as InMemoryHttpClient );
 
 			await expect(
-				repository.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) ),
+				repository.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ), [] ),
 			).rejects.toThrowError( 'Error creating subject page' );
 		} );
 
@@ -821,7 +859,7 @@ describe( 'RestSubjectRepository', () => {
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
 			await expect(
-				() => repository.updateSubject( new SubjectId( 's11111111111111' ), 'Updated Label', new StatementList( [] ) ),
+				() => repository.updateSubject( new SubjectId( 's11111111111111' ), 'Updated Label', new StatementList( [] ), [] ),
 			).rejects.toThrowError( 'Error updating subject' );
 		} );
 
@@ -839,6 +877,7 @@ describe( 'RestSubjectRepository', () => {
 				new SubjectId( 's11111111111111' ),
 				'Subject label',
 				new StatementList( [] ),
+				[],
 				'Edit comment',
 			);
 
@@ -858,7 +897,7 @@ describe( 'RestSubjectRepository', () => {
 			const result = await newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
 				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':
 					new Response( JSON.stringify( withoutPage ), { status: 200 } ),
-			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Updated', new StatementList( [] ) );
+			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Updated', new StatementList( [] ), [] );
 
 			expect( result.subject ).toBeNull();
 			expect( result.subjectId.text ).toEqual( 's33333333333333' );
@@ -873,9 +912,22 @@ describe( 'RestSubjectRepository', () => {
 
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
-			await repository.updateSubject( new SubjectId( 's11111111111111' ), null, new StatementList( [] ) );
+			await repository.updateSubject( new SubjectId( 's11111111111111' ), null, new StatementList( [] ), [] );
 
 			expect( putSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { label: null } );
+		} );
+
+		it( 'sends the Dependent Subjects written along with it, each by its id, Schema and statements', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':
+					new Response( JSON.stringify( writeResponseJson() ), { status: 200 } ),
+			} );
+			const putSpy = vi.spyOn( inMemoryHttpClient, 'put' );
+
+			await newRepository( 'https://example.com/rest.php', inMemoryHttpClient )
+				.updateSubject( new SubjectId( 's11111111111111' ), null, new StatementList( [] ), [ birth ] );
+
+			expect( putSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { dependentSubjects: birthField } );
 		} );
 
 		it( 'sends a PUT request', async () => {
@@ -892,6 +944,7 @@ describe( 'RestSubjectRepository', () => {
 				new SubjectId( 's11111111111111' ),
 				'Subject label',
 				new StatementList( [] ),
+				[],
 			);
 
 			expect( putSpy ).toHaveBeenCalledOnce();
@@ -943,7 +996,7 @@ describe( 'RestSubjectRepository', () => {
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
 			await expect(
-				() => repository.createOtherSubject( 42, 'Foo', 'Bar', new StatementList( [] ) ),
+				() => repository.createOtherSubject( 42, 'Foo', 'Bar', new StatementList( [] ), [] ),
 			).rejects.toThrowError( 'Error creating other subject' );
 		} );
 
@@ -955,7 +1008,7 @@ describe( 'RestSubjectRepository', () => {
 
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
-			const result = await repository.createOtherSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
+			const result = await repository.createOtherSubject( 42, 'John Doe', 'Employee', new StatementList( [] ), [] );
 
 			expect( result.subjectId.text ).toEqual( 's33333333333333' );
 		} );
@@ -983,6 +1036,7 @@ describe( 'RestSubjectRepository', () => {
 				'John Doe',
 				'Employee',
 				new StatementList( [] ),
+				[],
 				'Edit comment',
 				new SubjectId( 's44444444444444' ),
 			);
@@ -990,12 +1044,22 @@ describe( 'RestSubjectRepository', () => {
 			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { id: 's44444444444444' } );
 		} );
 
+		it( 'sends the Dependent Subjects written along with it', async () => {
+			const inMemoryHttpClient = clientAnswering( createdResponse() );
+			const postSpy = vi.spyOn( inMemoryHttpClient, 'post' );
+
+			await newRepository( 'https://example.com/rest.php', inMemoryHttpClient )
+				.createOtherSubject( 42, 'John Doe', 'Employee', new StatementList( [] ), [ birth ] );
+
+			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { dependentSubjects: birthField } );
+		} );
+
 		it( 'sends no id when the caller minted none, leaving the server to assign one', async () => {
 			const inMemoryHttpClient = clientAnswering( createdResponse() );
 			const postSpy = vi.spyOn( inMemoryHttpClient, 'post' );
 
 			await newRepository( 'https://example.com/rest.php', inMemoryHttpClient )
-				.createOtherSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
+				.createOtherSubject( 42, 'John Doe', 'Employee', new StatementList( [] ), [] );
 
 			expect( ( postSpy.mock.calls[ 0 ][ 1 ] as Record<string, unknown> ).id ).toBeUndefined();
 		} );
@@ -1008,6 +1072,7 @@ describe( 'RestSubjectRepository', () => {
 				'John Doe',
 				'Employee',
 				new StatementList( [] ),
+				[],
 				undefined,
 				new SubjectId( 's44444444444444' ),
 			).catch( ( thrown ) => thrown );
@@ -1019,7 +1084,7 @@ describe( 'RestSubjectRepository', () => {
 		it( 'throws the generic error on a conflict for a create that carried no id', async () => {
 			const repository = newRepository( 'https://example.com/rest.php', clientAnswering( conflictResponse() ) );
 
-			const promise = repository.createOtherSubject( 42, 'John Doe', 'Employee', new StatementList( [] ) );
+			const promise = repository.createOtherSubject( 42, 'John Doe', 'Employee', new StatementList( [] ), [] );
 
 			await expect( promise ).rejects.toThrowError( 'Error creating other subject' );
 			await expect( promise ).rejects.toSatisfy(
@@ -1121,7 +1186,7 @@ describe( 'RestSubjectRepository', () => {
 			};
 
 			const promise = repoWith( make422Response( body ) )
-				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ) );
+				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ), [] );
 
 			const error = await promise.catch( ( e ) => e );
 			expect( error ).toBeInstanceOf( ValidationFailedError );
@@ -1134,7 +1199,7 @@ describe( 'RestSubjectRepository', () => {
 
 		it( 'throws generic Error (not ValidationFailedError) when 422 body has no violations field', async () => {
 			const promise = repoWith( make422Response( { status: 'error', message: 'Validation failed' } ) )
-				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ) );
+				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ), [] );
 
 			await expect( promise ).rejects.toSatisfy(
 				( err ) => err instanceof Error && !( err instanceof ValidationFailedError ),
@@ -1144,7 +1209,7 @@ describe( 'RestSubjectRepository', () => {
 
 		it( 'throws generic Error when 422 body has violations as a non-array', async () => {
 			const promise = repoWith( make422Response( { violations: { propertyName: 'Foo', code: 'required' } } ) )
-				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ) );
+				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ), [] );
 
 			await expect( promise ).rejects.toSatisfy(
 				( err ) => err instanceof Error && !( err instanceof ValidationFailedError ),
@@ -1154,7 +1219,7 @@ describe( 'RestSubjectRepository', () => {
 		it( 'throws generic Error when a violation entry has a non-string code', async () => {
 			const promise = repoWith( make422Response( {
 				violations: [ { propertyName: 'Foo', code: 123, args: [], severity: 'error', valuePartIndex: null } ],
-			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ) );
+			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ), [] );
 
 			await expect( promise ).rejects.toSatisfy(
 				( err ) => err instanceof Error && !( err instanceof ValidationFailedError ),
@@ -1164,14 +1229,14 @@ describe( 'RestSubjectRepository', () => {
 		it( 'resolves normally on 200 (existing behaviour preserved)', async () => {
 			const result = await newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
 				[ subjectUrl ]: new Response( JSON.stringify( writeResponseJson() ), { status: 200 } ),
-			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Updated', new StatementList( [] ) );
+			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Updated', new StatementList( [] ), [] );
 
 			expect( result.subjectId.text ).toEqual( 's33333333333333' );
 		} );
 
 		it( 'throws generic Error on 500', async () => {
 			const promise = repoWith( make500Response() )
-				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ) );
+				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ), [] );
 
 			await expect( promise ).rejects.toThrowError( 'Error updating subject' );
 			await expect( promise ).rejects.toSatisfy(
@@ -1196,7 +1261,7 @@ describe( 'RestSubjectRepository', () => {
 
 			await expect(
 				newRepository( 'https://example.com/rest.php', inMemoryHttpClient )
-					.createMainSubject( 42, 'Label', 'Schema', new StatementList( [] ) ),
+					.createMainSubject( 42, 'Label', 'Schema', new StatementList( [] ), [] ),
 			).rejects.toBeInstanceOf( ValidationFailedError );
 		} );
 
@@ -1217,7 +1282,7 @@ describe( 'RestSubjectRepository', () => {
 
 			await expect(
 				newRepository( 'https://example.com/rest.php', inMemoryHttpClient )
-					.createOtherSubject( 42, 'Label', 'Schema', new StatementList( [] ) ),
+					.createOtherSubject( 42, 'Label', 'Schema', new StatementList( [] ), [] ),
 			).rejects.toBeInstanceOf( ValidationFailedError );
 		} );
 

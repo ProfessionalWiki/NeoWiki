@@ -13,6 +13,7 @@ use MediaWiki\Parser\ParserOutputFlags;
 use MediaWiki\Parser\ParserOutputLinkTypes;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
+use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
@@ -309,6 +310,14 @@ class CreateSubjectParserFunctionTest extends NeoWikiIntegrationTestCase {
 		$this->assertRendersError( $result, 'neowiki-create-subject-error-unknown-schema', 'No such schema' );
 	}
 
+	public function testReportsASchemaWhoseSubjectsAreDependent(): void {
+		$this->createSchema( 'Birth', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
+
+		$result = $this->callOn( $this->contentPage, 'schema=Birth' );
+
+		$this->assertRendersError( $result, 'neowiki-create-subject-error-dependent-subjects', 'Birth' );
+	}
+
 	public function testReportsAnInvalidSchemaNameAsUnknown(): void {
 		$result = $this->callOn( $this->contentPage, 'schema=Page' );
 
@@ -400,7 +409,11 @@ class CreateSubjectParserFunctionTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function newFunction( bool $subjectFirst ): CreateSubjectParserFunction {
-		return new CreateSubjectParserFunction( new PageSubjectsLookup( $this->subjectRepository ), $subjectFirst );
+		return new CreateSubjectParserFunction(
+			new PageSubjectsLookup( $this->subjectRepository ),
+			$subjectFirst,
+			static fn (): SchemaLookup => NeoWikiExtension::getInstance()->getSchemaLookup()
+		);
 	}
 
 	private function newParser( Title $title ): Parser {

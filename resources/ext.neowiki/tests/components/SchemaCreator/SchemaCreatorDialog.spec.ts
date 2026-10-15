@@ -17,14 +17,15 @@ import { newTextProperty } from '@/domain/propertyTypes/Text.ts';
 import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
+import { newSchema } from '@/TestHelpers.ts';
 
 const NEW_SCHEMA_NAME = 'Company';
 
-const COMPANY = new Schema(
-	'Company',
-	'An organisation that sells things',
-	new PropertyDefinitionList( [ newTextProperty( { name: 'Name' } ), newNumberProperty( { name: 'Founded' } ) ] ),
-);
+const COMPANY = newSchema( {
+	title: 'Company',
+	description: 'An organisation that sells things',
+	properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Name' } ), newNumberProperty( { name: 'Founded' } ) ] ),
+} );
 
 // The reason the stubbed creator reports for holding the save, and whether it was asked to
 // reveal its errors. Reset per test by the beforeEach below.
@@ -33,11 +34,11 @@ let creatorErrorsRevealed = false;
 
 const SchemaCreatorStub = {
 	template: '<div class="schema-creator-stub"></div>',
-	props: [ 'initialName' ],
+	props: { initialName: String, duplicateOf: Object, subjectsAreDependent: { type: [ Boolean, null ], default: null } },
 	emits: [ 'change' ],
 	setup() {
 		let valid = true;
-		const schema: Schema | null = new Schema( NEW_SCHEMA_NAME, 'A description', new PropertyDefinitionList( [] ) );
+		const schema: Schema | null = newSchema( { title: NEW_SCHEMA_NAME, description: 'A description', properties: new PropertyDefinitionList( [] ) } );
 
 		const validate = vi.fn( async (): Promise<boolean> => valid );
 		const getSchema = vi.fn( (): Schema | null => schema );
@@ -117,6 +118,18 @@ describe( 'SchemaCreatorDialog', () => {
 
 		schemaStore = useSchemaStore();
 		schemaStore.saveSchema = vi.fn().mockResolvedValue( undefined );
+	} );
+
+	it( 'hands the creator a decision on whether the Subjects are dependent', () => {
+		const wrapper = mountComponent( { subjectsAreDependent: true } );
+
+		expect( wrapper.findComponent( SchemaCreatorStub ).props( 'subjectsAreDependent' ) ).toBe( true );
+	} );
+
+	it( 'leaves whether the Subjects are dependent to the user where it was given no decision', () => {
+		const wrapper = mountComponent();
+
+		expect( wrapper.findComponent( SchemaCreatorStub ).props( 'subjectsAreDependent' ) ).toBeNull();
 	} );
 
 	it( 'starts the schema on the name it is given', () => {
@@ -269,7 +282,7 @@ describe( 'SchemaCreatorDialog', () => {
 		}
 
 		function nameAndDescription( wrapper: VueWrapper ): string[] {
-			return wrapper.findAll<HTMLInputElement>( '.ext-neowiki-schema-creator__name-section input' )
+			return wrapper.findAll<HTMLInputElement>( '.ext-neowiki-schema-creator__name-section .cdx-text-input input' )
 				.map( ( input ) => input.element.value );
 		}
 
@@ -404,11 +417,31 @@ describe( 'SchemaCreatorDialog', () => {
 		}
 
 		// Asked for from the Target schemas field of the dialog in front.
-		async function askForSchema( wrapper: VueWrapper, name: string ): Promise<void> {
+		async function askForSchema( wrapper: VueWrapper, name: string, subjectsAreDependent: boolean | null = null ): Promise<void> {
 			const fields = wrapper.findAllComponents( TargetSchemasInput );
-			fields[ fields.length - 1 ].vm.$emit( 'create', name );
+			fields[ fields.length - 1 ].vm.$emit( 'create', name, subjectsAreDependent );
 			await flushPromises();
 		}
+
+		function stackedDialog( wrapper: VueWrapper ): VueWrapper<InstanceType<typeof SchemaCreatorDialog>> {
+			return wrapper.findAllComponents( SchemaCreatorDialog ).filter( ( dialog ) => dialog.vm !== wrapper.vm )[ 0 ];
+		}
+
+		it( 'decides the stacked Schema\'s Subjects like those of the property\'s targets', async () => {
+			const wrapper = await mountWithRelationProperty();
+
+			await askForSchema( wrapper, 'Birth', true );
+
+			expect( stackedDialog( wrapper ).props( 'subjectsAreDependent' ) ).toBe( true );
+		} );
+
+		it( 'leaves the stacked Schema\'s Subjects to the user where the property has no targets to go by', async () => {
+			const wrapper = await mountWithRelationProperty();
+
+			await askForSchema( wrapper, 'Birth', null );
+
+			expect( stackedDialog( wrapper ).props( 'subjectsAreDependent' ) ).toBeNull();
+		} );
 
 		// From Codex 2.3 a dialog mounted inside another is teleported into it, where Escape closes both.
 		it( 'stacks it next to its own dialog', async () => {

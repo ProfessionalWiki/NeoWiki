@@ -10,10 +10,6 @@ export function unifiedRows(
 	schemaProperties: PropertyDefinition[],
 	displayRules: DisplayRule[],
 ): UnifiedRow[] {
-	if ( displayRules.length === 0 ) {
-		return schemaProperties.map( ( property ) => ( { property, shown: true } ) );
-	}
-
 	const propertiesByName = new Map(
 		schemaProperties.map( ( property ) => [ property.name.toString(), property ] ),
 	);

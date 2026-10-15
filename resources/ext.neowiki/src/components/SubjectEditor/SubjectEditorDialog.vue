@@ -4,7 +4,7 @@
 			which this body never does: the navigator and the form each scroll inside it. The
 			dividers are what the rule between those two surfaces runs into, so ask by name. -->
 		<CdxDialog
-			:open="open"
+			:open="visible"
 			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog cdx-dialog--dividers"
 			:class="{ 'ext-neowiki-subject-editor-dialog--wide': showsNavigator }"
 			:title="dialogTitle"
@@ -20,6 +20,7 @@
 				class="ext-neowiki-subject-editor-dialog__content"
 				:style="{ '--ext-neowiki-pane-size': paneSize.cssSize.value }"
 				:inert="saving || undefined"
+				:aria-busy="pending || undefined"
 			>
 				<EditNoticeList :notices="notices" />
 
@@ -54,6 +55,10 @@
 
 				<div class="ext-neowiki-subject-editor-dialog__surface">
 					<div class="ext-neowiki-subject-editor-dialog__panels">
+						<CdxProgressBar
+							v-if="pending"
+							:aria-label="$i18n( 'neowiki-subject-editor-loading' ).text()"
+						/>
 						<div
 							v-for="pane in panes"
 							v-show="pane.id === activePaneId"
@@ -67,7 +72,7 @@
 								:schema="pane.schema"
 								:nested="pane.id !== rootPaneId"
 								:is-new="pane.isNew"
-								:unsaved-target-ids="draftIds"
+								:unsaved-target-ids="unsavedTargetIds"
 								:can-edit-schema="pane.id === rootPaneId && canEditSchema"
 								@edit-relation-target="openRelationTargetFromForm"
 								@edit-schema="openSchemaEditor( pane.id )"
@@ -77,7 +82,10 @@
 				</div>
 			</div>
 
-			<template #footer>
+			<template
+				v-if="!pending"
+				#footer
+			>
 				<CdxMessage
 					v-if="partialSave !== null"
 					:inline="true"
@@ -126,7 +134,7 @@ import type { SubjectEditPaneExposes } from '@/components/SubjectEditor/SubjectE
 import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
-import { CdxDialog, CdxMessage, useGeneratedId } from '@wikimedia/codex';
+import { CdxDialog, CdxMessage, CdxProgressBar, useGeneratedId } from '@wikimedia/codex';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -152,15 +160,29 @@ import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
 import { reachableTargetIds, writeOrder } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 import type { HeldSubject } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
+import { DependentSubjectLoader, loadedSchemasOf } from '@/application/DependentSubjectLoader.ts';
+import { useDependentSubjectEditing } from '@/composables/useDependentSubjectEditing.ts';
+import { focusFirstValueControl } from '@/components/SubjectEditor/valueControlFocus.ts';
+import type { DependentSubjects } from '@/stores/SubjectStore.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
-type SubjectSaveHandler = ( subject: Subject, comment: string ) => Promise<void>;
+/**
+ * Writes a Subject the wiki holds and its `dependentSubjects` in one write.
+ */
+type SubjectSaveHandler = ( subject: Subject, dependentSubjects: DependentSubjects, comment: string ) => Promise<void>;
 
 /**
  * Writes a Subject this session invented, carrying the id minted for it, as a Subject of the
- * given page. Hosts that leave it out get no create affordance in the relation fields. A
- * WriteRefusedError stops the save without a message from this dialog.
+ * given page, together with the Dependent Subjects it hosts. Hosts that leave it out get no create
+ * affordance in the relation fields. A WriteRefusedError stops the save without a message from this
+ * dialog.
  */
-type SubjectCreateHandler = ( subject: Subject, pageId: number, comment: string ) => Promise<void>;
+type SubjectCreateHandler = (
+	subject: Subject,
+	pageId: number,
+	dependentSubjects: DependentSubjects,
+	comment: string
+) => Promise<void>;
 
 /** Told that the whole save is through, by a host that reports it somewhere this dialog cannot. */
 type SaveReporter = () => void;
@@ -244,6 +266,22 @@ function setPaneRef( id: string, el: unknown ): void {
 	}
 }
 
+// The root Subject as its pane edits it; for a new root, pointing at the Dependent Subjects it starts with. Null
+// until what the root's form needs has loaded.
+const loadedRoot = shallowRef<Subject | null>( null );
+
+// The form shows complete or not at all.
+const shown = computed( (): boolean => props.open && loadedRoot.value !== null );
+
+// Once reading what the form needs takes a while, the dialog shows that it is reading, rather than leave the control
+// that opened it looking inert.
+const PENDING_DELAY_MS = 300;
+const readingLong = ref( false );
+let pendingTimer: ReturnType<typeof setTimeout> | undefined;
+
+const pending = computed( (): boolean => props.open && loadedRoot.value === null && readingLong.value );
+const visible = computed( (): boolean => shown.value || pending.value );
+
 const extraPanes = shallowRef<EditPane[]>( [] );
 const activePaneId = ref<string>( rootPaneId.value );
 
@@ -251,10 +289,10 @@ const activePaneId = ref<string>( rootPaneId.value );
 // and the dialog is still open.
 const partialSave = ref<{ written: number; attempted: number } | null>( null );
 
-const panes = computed( (): EditPane[] => [
+const panes = computed( (): EditPane[] => loadedRoot.value === null ? [] : [
 	{
 		id: rootPaneId.value,
-		subject: props.subject,
+		subject: loadedRoot.value,
 		schema: currentSchema.value,
 		isNew: props.rootIsNew === true
 	},
@@ -280,6 +318,31 @@ const draftSubjects = computed( (): Subject[] => panes.value
 
 const draftIds = computed( (): string[] => draftSubjects.value.map( ( subject ) => subject.getId().text ) );
 
+const schemaStore = useSchemaStore();
+const dependentSubjectLoader = new DependentSubjectLoader(
+	subjectRepository,
+	schemaRepository,
+	() => schemaStore.fetchAllSchemaSummaries()
+);
+
+const dependentSubjectEditing = useDependentSubjectEditing( dependentSubjectLoader, () => !saving.value, draftIds );
+
+const unsavedTargetIds = dependentSubjectEditing.unsavedTargetIds;
+
+function withSchemas( subjects: readonly Subject[] ): HeldSubject[ 'dependentSubjects' ] {
+	const held: { subject: Subject; schema: Schema }[] = [];
+
+	for ( const subject of subjects ) {
+		const schema = dependentSubjectEditing.schemas.get( subject.getSchemaName() );
+
+		if ( schema !== undefined ) {
+			held.push( { subject, schema } );
+		}
+	}
+
+	return held;
+}
+
 // What the walks below read: a pane's Subject as its own form currently holds it. editedSubjects
 // carries an entry for every pane, so this never falls back.
 function heldSubjects(): HeldSubject[] {
@@ -287,7 +350,8 @@ function heldSubjects(): HeldSubject[] {
 		id: pane.id,
 		subject: editedSubjects.value.get( pane.id ) as Subject,
 		schema: pane.schema,
-		isNew: pane.isNew
+		isNew: pane.isNew,
+		dependentSubjects: withSchemas( paneRefs.get( pane.id )?.editedDependentSubjects ?? [] )
 	} ) );
 }
 
@@ -307,9 +371,11 @@ const committedIds = computed( (): string[] =>
 const referencedDraftIds = computed( (): Set<string> =>
 	reachableTargetIds( heldSubjects(), committedIds.value ) );
 
-// A Subject about to be written, as the draft graph wants to see it.
+// A Subject about to be written, as the draft graph wants to see it, with the Dependent Subjects its
+// write carries.
 interface WriteTarget extends HeldSubject {
 	pane: EditPane;
+	dependentSubjectsToWrite: DependentSubjects;
 }
 
 interface DirtyPane {
@@ -394,7 +460,7 @@ function withLiveLabel( instance: SubjectEditPaneExposes ): Subject {
 
 // The root Subject's label as its form holds it, for a host that follows the name being given.
 const rootLabel = computed( (): string | null =>
-	( editedSubjects.value.get( rootPaneId.value ) as Subject ).getLabel() );
+	editedSubjects.value.get( rootPaneId.value )?.getLabel() ?? null );
 
 // The Subjects the navigator lists, in the order their panes were opened.
 const openSubjects = computed( (): Subject[] => panes.value.map(
@@ -407,10 +473,10 @@ const showsNavigator = computed( (): boolean => extraPanes.value.length > 0 );
 
 const openIds = computed( (): string[] => panes.value.map( ( pane ) => pane.id ) );
 
-// Tells one opening of the dialog from the next. The two watchers further down bump it, an
-// opening and a replaced root alike, and a target fetch that outlives its opening is dropped by
-// it: the hosts keep this dialog mounted after it closes, so the fetch would otherwise land in
-// the next opening.
+// Tells one opening of the dialog from the next. The watcher further down bumps it, for an
+// opening and a replaced root alike, and so does unmounting. A fetch that outlives its opening is
+// dropped by it: the hosts keep this dialog mounted after it closes, so the fetch would otherwise
+// land in the next opening.
 /**
  * `SchemaEditorDialog` below is bound to the root's Schema, so only the root pane may open it —
  * a nested pane would put the reader in front of a Schema they did not point at. The pane has a
@@ -445,9 +511,11 @@ async function openRelationTarget( targetId: SubjectId ): Promise<void> {
 	try {
 		const subject = await subjectRepository.getSubjectForEditing( targetId );
 		const schema = await schemaRepository.getSchema( subject.getSchemaName() );
+		const dependentSubjects = await dependentSubjectLoader.loadFor( subject, schema, dependentSubjectEditing.schemas );
 		if ( epoch !== openEpoch.value ) {
 			return;
 		}
+		dependentSubjectEditing.include( dependentSubjects, false );
 		extraPanes.value = [ ...extraPanes.value, { id, subject, schema, isNew: false } ];
 		activePaneId.value = id;
 	} catch ( error ) {
@@ -502,6 +570,22 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 			subjectRepository.mintSubjectId()
 		] );
 
+		const started = await dependentSubjectLoader.startFor(
+			new Subject(
+				id,
+				label,
+				// What the server would derive for a Subject with no label of its own (ADR 31).
+				label ?? schemaName,
+				label === null,
+				schemaName,
+				new StatementList( [] ),
+				page,
+				null
+			),
+			schema,
+			dependentSubjectEditing.schemas
+		);
+
 		// The dialog was reopened or given another root while this was in flight, or a save has
 		// started: its panes are gone or already harvested, and a pane added now would belong to
 		// nothing.
@@ -509,17 +593,9 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 			return null;
 		}
 
-		const subject = new Subject(
-			id,
-			label,
-			// What the server would derive for a Subject with no label of its own (ADR 31).
-			label ?? schemaName,
-			label === null,
-			schemaName,
-			new StatementList( [] ),
-			page
-		);
+		const subject = started.subject;
 
+		dependentSubjectEditing.include( started.dependentSubjects, true );
 		extraPanes.value = [ ...extraPanes.value, { id: id.text, subject, schema, isNew: true } ];
 		activePaneId.value = id.text;
 		focusPane( id.text );
@@ -588,8 +664,6 @@ function onDialogUpdateOpen( value: boolean ): void {
 	}
 }
 
-// Immediate, because the hosts render this dialog with v-if: it mounts with open
-// already true, so a deferred watcher would never see the opening that created it.
 // An opening and a replaced root both start over: a dialog only reaches `open: false` with
 // nothing unsaved or after a confirmed discard (see useCloseConfirmation), so nothing an
 // earlier session opened or reported carries into the next.
@@ -598,27 +672,74 @@ function startSession(): void {
 	extraPanes.value = [];
 	activePaneId.value = rootPaneId.value;
 	partialSave.value = null;
+	loadedRoot.value = null;
+	readingLong.value = false;
+	clearTimeout( pendingTimer );
+	pendingTimer = setTimeout( () => {
+		readingLong.value = true;
+	}, PENDING_DELAY_MS );
+	loadRoot();
 }
 
 let focusTimer: ReturnType<typeof setTimeout> | undefined;
 
-watch( () => props.open, ( isOpen ) => {
-	if ( isOpen ) {
-		startSession();
-		// Fetched per opening: approval state and the viewer's permissions both change
-		// without an edit. Keyed on the page being viewed and on the root Subject's Schema.
-		loadNotices( Number( mw.config.get( 'wgArticleId' ) ), props.subject.getSchemaName() );
+async function loadRoot(): Promise<void> {
+	const epoch = openEpoch.value;
+	const root = props.subject;
+	const rootIsNew = props.rootIsNew === true;
+
+	try {
+		const loaded = rootIsNew ?
+			await dependentSubjectLoader.startFor( root, currentSchema.value, new Map() ) :
+			{ subject: root, dependentSubjects: await dependentSubjectLoader.loadFor( root, currentSchema.value, new Map() ) };
+
+		if ( epoch !== openEpoch.value ) {
+			return;
+		}
+
+		clearTimeout( pendingTimer );
+		dependentSubjectEditing.startFrom( loaded.dependentSubjects, rootIsNew );
+		loadedRoot.value = loaded.subject;
 		// A task later: Codex focuses the dialog's first focusable element one or two ticks
 		// after it opens, depending on its version, and would otherwise win. Without scrolling:
 		// the form is at its top already, and focusing the pane itself would shift it by its padding.
 		focusTimer = setTimeout( () => focusPane( rootPaneId.value, { preventScroll: true } ) );
+	} catch ( error ) {
+		if ( epoch !== openEpoch.value ) {
+			return;
+		}
+
+		console.error( 'Failed to load the subject for editing:', error );
+		clearTimeout( pendingTimer );
+		mw.notify( mw.msg( 'neowiki-subject-editor-load-error' ), { type: 'error' } );
+		close();
+	}
+}
+
+// Fetched per opening: approval state and the viewer's permissions both change
+// without an edit. Keyed on the page being viewed and on the root Subject's Schema.
+watch( () => props.open, ( isOpen ) => {
+	if ( isOpen ) {
+		loadNotices( Number( mw.config.get( 'wgArticleId' ) ), props.subject.getSchemaName() );
 	}
 }, { immediate: true } );
 
-onBeforeUnmount( () => clearTimeout( focusTimer ) );
+// Immediate, because the hosts render this dialog with v-if: it mounts with open
+// already true, so a deferred watcher would never see the opening that created it.
+// The host can also replace props.subject while the dialog stays open, e.g. saving one subject
+// navigates straight to editing another. One watcher for both, because opening the dialog on
+// another Subject changes both at once, and the root would otherwise be read twice.
+watch( [ () => props.open, () => props.subject ], ( [ isOpen ] ) => {
+	if ( isOpen ) {
+		startSession();
+	}
+}, { immediate: true } );
 
-// Not every tab stop: a chip takes the focus too, and Backspace on it removes its value.
-const VALUE_CONTROL = 'input, select, textarea, [role="combobox"]';
+onBeforeUnmount( () => {
+	clearTimeout( focusTimer );
+	clearTimeout( pendingTimer );
+	openEpoch.value += 1;
+} );
 
 // When no field can take the focus, the pane holds it: that is what its tabindex="-1" is for.
 // Panes share one scroller, so it is the focus's own scrolling that shows a pane opened from
@@ -627,28 +748,20 @@ async function focusPane( paneId: string, options?: { preventScroll: boolean } )
 	await nextTick();
 
 	const panel = document.getElementById( `ext-neowiki-panel-${ paneId }` );
-	const control = panel?.querySelector<HTMLElement>( VALUE_CONTROL ) ?? null;
 
-	( control === null || opensMenuOnFocus( control ) ? panel : control )?.focus( options );
+	if ( panel !== null ) {
+		focusFirstValueControl( panel, options );
+	}
 }
-
-// A lookup may open its menu on focus; a select waits for a click or a key.
-function opensMenuOnFocus( control: HTMLElement ): boolean {
-	return control.matches( 'input[role="combobox"]' );
-}
-
-// The host can replace props.subject while the dialog stays open, e.g. saving one subject
-// navigates straight to editing another. Without this, activePaneId keeps naming the old
-// root, no pane in the new `panes` list matches it, and nothing renders at all.
-watch( rootPaneId, startSession );
 
 watch( () => props.subject, ( newSubject ) => {
 	checkEditPermission( newSubject.getSchemaName() );
 }, { immediate: true } );
 
+// Synchronously, so that a session started by the same update loads the root by the new Schema.
 watch( () => props.schema, ( newSchema ) => {
 	currentSchema.value = newSchema;
-} );
+}, { flush: 'sync' } );
 
 async function showSubject( id: string ): Promise<void> {
 	await openRelationTarget( new SubjectId( id ) );
@@ -718,9 +831,15 @@ function markPaneWritten( id: string ): void {
 
 // A Subject this session invented has to be created rather than replaced, on the page its pane
 // was opened against.
-async function writeSubject( pane: EditPane, subject: Subject, comment: string ): Promise<void> {
+async function writeSubject(
+	pane: EditPane,
+	subject: Subject,
+	dependentSubjects: DependentSubjects,
+	comment: string
+): Promise<void> {
 	if ( !pane.isNew ) {
-		await props.onSave( subject, comment );
+		await props.onSave( subject, dependentSubjects, comment );
+		dependentSubjectEditing.markWritten( dependentSubjects );
 		return;
 	}
 
@@ -729,7 +848,7 @@ async function writeSubject( pane: EditPane, subject: Subject, comment: string )
 	}
 
 	try {
-		await props.onCreate( subject, pane.subject.getPageIdentifiers().getPageId(), comment );
+		await props.onCreate( subject, pane.subject.getPageIdentifiers().getPageId(), dependentSubjects, comment );
 	} catch ( error ) {
 		// The id was minted for this Subject alone, so the server holding it already means this
 		// very create landed and only its answer was lost. Retrying the create would refuse
@@ -740,6 +859,7 @@ async function writeSubject( pane: EditPane, subject: Subject, comment: string )
 	}
 
 	markPaneWritten( pane.id );
+	dependentSubjectEditing.markWritten( dependentSubjects );
 }
 
 async function writeDirtyPanes( summary: string ): Promise<void> {
@@ -783,7 +903,16 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 			mw.notify( mw.msg( 'neowiki-subject-editor-error', subjectDisplayName( pane.subject ) ), { type: 'error' } );
 			return;
 		}
-		targets.push( { id: pane.id, pane, subject: updated, schema: pane.schema, isNew: pane.isNew } );
+		const dependentSubjects = instance.buildDependentSubjects();
+		targets.push( {
+			id: pane.id,
+			pane,
+			subject: updated,
+			schema: pane.schema,
+			isNew: pane.isNew,
+			dependentSubjects: withSchemas( dependentSubjects ),
+			dependentSubjectsToWrite: dependentSubjectEditing.edited( dependentSubjects )
+		} );
 	}
 
 	const orderedTargets = writeOrder( targets, committedIds.value );
@@ -792,12 +921,12 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 	// reported once, below.
 	let failed = false;
 
-	for ( const { id, pane, subject: updatedSubject } of orderedTargets ) {
+	for ( const { id, pane, subject: updatedSubject, dependentSubjectsToWrite } of orderedTargets ) {
 		const subjectName = subjectDisplayName( updatedSubject );
 
 		try {
-			await writeSubject( pane, updatedSubject, summary || defaultSummaryFor( pane ) );
-			paneRefs.get( id )?.resetChanged();
+			await writeSubject( pane, updatedSubject, dependentSubjectsToWrite, summary || defaultSummaryFor( pane ) );
+			paneRefs.get( id )?.markWritten();
 			savedNames.push( subjectName );
 		} catch ( error ) {
 			failed = true;
@@ -865,11 +994,26 @@ function defaultSummaryFor( pane: EditPane ): string {
 		'neowiki-subject-editor-summary-default' );
 }
 
-const onSchemaSaved = ( schema: Schema ): void => {
+// The saved Schema may target Schemas the editor has not loaded, which decide how its fields edit.
+const onSchemaSaved = async ( schema: Schema ): Promise<void> => {
 	currentSchema.value = schema;
+
+	const epoch = openEpoch.value;
+	let schemas: Map<string, Schema | null>;
+
+	try {
+		schemas = await dependentSubjectLoader.loadSchemas( [ schema ], dependentSubjectEditing.schemas );
+	} catch ( error ) {
+		console.error( 'Failed to load the Schemas the saved Schema targets:', error );
+		return;
+	}
+
+	if ( epoch === openEpoch.value ) {
+		dependentSubjectEditing.include( { subjects: [], schemas: loadedSchemasOf( schemas ) }, false );
+	}
 };
 
-defineExpose( { hasChanged: hasUnsavedEdits, rootLabel } );
+defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 
 </script>
 

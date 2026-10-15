@@ -22,6 +22,8 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\DatabaseRecentlyEditedSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
@@ -39,6 +41,7 @@ class DatabaseRecentlyEditedSubjectLookupTest extends NeoWikiIntegrationTestCase
 
 	private const string ADA = 'sTestRES1111111';
 	private const string GRACE = 'sTestRES1111112';
+	private const string BIRTH = 'sTestRES1111113';
 
 	// After the fixture's Schema page, which is saved at the real time.
 	private const string MONDAY = '2030-01-07T09:00:00Z';
@@ -251,6 +254,29 @@ class DatabaseRecentlyEditedSubjectLookupTest extends NeoWikiIntegrationTestCase
 		$this->assertSame( 'Help:Ada Lovelace', $other->pageTitle );
 	}
 
+	public function testNamesADependentSubjectAfterItsHostSubject(): void {
+		$this->createSchema( 'Birth', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
+		$this->saveAt(
+			self::MONDAY,
+			'Ada Lovelace',
+			TestSubject::build(
+				id: self::ADA,
+				label: 'Ada Lovelace',
+				statements: new StatementList( [
+					TestStatement::buildRelation( 'Birth', [ TestRelation::build( targetId: self::BIRTH ) ] ),
+				] )
+			),
+			TestSubject::build(
+				id: self::BIRTH,
+				label: null,
+				schemaName: new SchemaName( 'Birth' ),
+				statements: new StatementList( [ $this->statement( 'Year', '1815' ) ] )
+			)
+		);
+
+		$this->assertSame( 'Ada Lovelace', $this->listedRow( self::BIRTH )->hostSubject?->displayName );
+	}
+
 	private function newLookup(
 		int $revisionBound = 2000,
 		int $readBound = 200,
@@ -263,6 +289,7 @@ class DatabaseRecentlyEditedSubjectLookupTest extends NeoWikiIntegrationTestCase
 			revisionPolicy: NeoWikiExtension::getInstance()->getRevisionPolicy(),
 			readAuthorizer: $readAuthorizer,
 			titleFormatter: $this->getServiceContainer()->getTitleFormatter(),
+			hostSubjectBuilder: NeoWikiExtension::getInstance()->newHostSubjectBuilder(),
 			revisionBound: $revisionBound,
 			readBound: $readBound,
 		);

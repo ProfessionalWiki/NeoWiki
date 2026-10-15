@@ -28,6 +28,8 @@ readonly class CreateSubjectRequest {
 		 * Client-supplied Subject ID. Must be well-formed and unused; when null the server mints one.
 		 */
 		public ?string $id = null,
+
+		public array $dependentSubjects = [],
 	) {
 	}
 

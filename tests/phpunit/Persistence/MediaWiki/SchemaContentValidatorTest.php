@@ -47,6 +47,18 @@ class SchemaContentValidatorTest extends TestCase {
 		);
 	}
 
+	public function testDeclaringTheSubjectsDependentPassesValidation(): void {
+		$this->assertTrue(
+			SchemaContentValidator::newInstance()->validate( '{ "subjectsAreDependent": true, "propertyDefinitions": {} }' )
+		);
+	}
+
+	public function testANonBooleanDeclarationOfDependentSubjectsFailsValidation(): void {
+		$this->assertFalse(
+			SchemaContentValidator::newInstance()->validate( '{ "subjectsAreDependent": "yes", "propertyDefinitions": {} }' )
+		);
+	}
+
 	public function testMissingPropertyDefinitionsFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();
 

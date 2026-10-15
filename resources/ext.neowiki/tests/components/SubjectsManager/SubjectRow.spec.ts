@@ -12,10 +12,12 @@ import { Statement } from '@/domain/Statement.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
 import { newRelation, newStringValue, RelationValue } from '@/domain/Value.ts';
 import { newRelationProperty, RelationType } from '@/domain/propertyTypes/Relation.ts';
-import { TextType } from '@/domain/propertyTypes/Text.ts';
+import { newTextProperty, TextType } from '@/domain/propertyTypes/Text.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { newSchema, newSubject } from '@/TestHelpers.ts';
+import type { Schema } from '@/domain/Schema.ts';
+import type { Subject } from '@/domain/Subject.ts';
 
 const SUBJECT_ID = 's1aaaaaaaaaaaa1';
 const IRI_BASE = 'https://data.example.org/entity/';
@@ -47,6 +49,7 @@ function mountRow( props: Record<string, unknown> = {} ): VueWrapper {
 describe( 'SubjectRow', () => {
 
 	beforeEach( () => {
+		setActivePinia( createPinia() );
 		writeText = vi.fn().mockResolvedValue( undefined );
 		Object.defineProperty( navigator, 'clipboard', { value: { writeText }, configurable: true } );
 	} );
@@ -292,6 +295,24 @@ describe( 'SubjectRow', () => {
 
 	} );
 
+	it( 'tells a Dependent Subject apart from the others named after its Host Subject by its first value', () => {
+		useSchemaStore().setSchema( 'Attendance', newSchema( {
+			title: 'Attendance',
+			subjectsAreDependent: true,
+			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Year' } ) ] ),
+		} ) );
+
+		const wrapper = mountRow( { subject: newSubject( {
+			label: null,
+			displayNameIsGenerated: true,
+			schemaName: 'Attendance',
+			statements: new StatementList( [ new Statement( new PropertyName( 'Year' ), TextType.typeName, newStringValue( '2024' ) ) ] ),
+			hostSubject: { id: SUBJECT_ID, schemaName: 'Museum', displayName: 'Rijksmuseum', displayNameIsGenerated: false, hostSubject: null },
+		} ) } );
+
+		expect( wrapper.find( '.ext-neowiki-subject-row__label' ).text() ).toBe( 'Attendance of Rijksmuseum (Year: 2024)' );
+	} );
+
 	it( 'shows the drag handle only where the page offers reordering', () => {
 		const handle = '[title="neowiki-managesubjects-row-drag-handle"]';
 
@@ -323,19 +344,58 @@ describe( 'SubjectRow', () => {
 				.toBe( '/wiki/Anvil (product)?action=subjects#' + TARGET_ID );
 		} );
 
+		// A View leaves it out unless a Layout names its property.
+		it( 'shows a Dependent Subject inside the row of its Host Subject', () => {
+			const wrapper = mountRowRelatingTo(
+				newSubject( {
+					id: TARGET_ID,
+					label: null,
+					displayNameIsGenerated: true,
+					schemaName: 'Founding',
+					statements: new StatementList( [
+						new Statement( new PropertyName( 'Year' ), TextType.typeName, newStringValue( '1849' ) ),
+					] ),
+					hostSubject: {
+						id: SUBJECT_ID,
+						schemaName: 'Company',
+						displayName: 'ACME Inc',
+						displayNameIsGenerated: false,
+						hostSubject: null,
+					},
+				} ),
+				newSchema( {
+					title: 'Founding',
+					properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Year' } ) ] ),
+					subjectsAreDependent: true,
+				} ),
+				false,
+			);
+
+			expect( wrapper.find( '.ext-neowiki-dependent-subject-display' ).text() ).toContain( '1849' );
+		} );
+
+		function mountRowRelatingToTarget( subjectFirst: boolean ): VueWrapper {
+			return mountRowRelatingTo(
+				newSubject( {
+					id: TARGET_ID,
+					label: 'Anvil',
+					schemaName: 'Product',
+					pageIdentifiers: new PageIdentifiers( 7, 'Anvil (product)' ),
+				} ),
+				newSchema( { title: 'Product' } ),
+				subjectFirst,
+			);
+		}
+
 		// Mounted rather than shallow-rendered, so the relation is rendered by the value-display
 		// components the surfaces really use.
-		function mountRowRelatingToTarget( subjectFirst: boolean ): VueWrapper {
+		function mountRowRelatingTo( target: Subject, targetSchema: Schema, subjectFirst: boolean ): VueWrapper {
 			stubMw( { wgNeoWikiSubjectFirst: subjectFirst } );
 			const pinia = createPinia();
 			setActivePinia( pinia );
 
-			useSubjectStore().setSubject( newSubject( {
-				id: TARGET_ID,
-				label: 'Anvil',
-				schemaName: 'Product',
-				pageIdentifiers: new PageIdentifiers( 7, 'Anvil (product)' ),
-			} ) );
+			useSubjectStore().setSubject( target );
+			useSchemaStore().setSchema( targetSchema.getName(), targetSchema );
 			useSchemaStore().setSchema( 'Company', newSchema( {
 				title: 'Company',
 				properties: new PropertyDefinitionList( [ newRelationProperty( { name: 'Makes' } ) ] ),

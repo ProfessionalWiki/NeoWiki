@@ -4,12 +4,16 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
+use Closure;
+use InvalidArgumentException;
 use MediaWiki\Html\Html;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOutputFlags;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
+use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
@@ -27,9 +31,14 @@ class CreateSubjectParserFunction {
 	private const string PAGE_THIS = 'this';
 	private const string PAGE_NEW = 'new';
 
+	/**
+	 * @param Closure(Parser): SchemaLookup $schemaLookup Reads as the user the page is parsed for. Called only when a
+	 *   Schema is named, so that a page naming none keeps one parser cache entry for everyone ({@see ParserAuthority}).
+	 */
 	public function __construct(
 		private readonly PageSubjectsLookup $pageSubjectsLookup,
 		private readonly bool $subjectFirst,
+		private readonly Closure $schemaLookup,
 	) {
 	}
 
@@ -113,6 +122,10 @@ class CreateSubjectParserFunction {
 				return $this->renderError( $parser, 'neowiki-create-subject-error-unknown-schema', $schemaName );
 			}
 
+			if ( $this->hasDependentSubjects( $parser, $schemaTitle ) ) {
+				return $this->renderError( $parser, 'neowiki-create-subject-error-dependent-subjects', $schemaTitle->getText() );
+			}
+
 			// Subjects store their Schema under the name its page is titled with, not as typed.
 			$attributes['data-mw-neowiki-schema'] = $schemaTitle->getText();
 		}
@@ -146,6 +159,16 @@ class CreateSubjectParserFunction {
 		$parser->getOutput()->addLink( $title, $title->getArticleID() );
 
 		return $title->exists() ? $title : null;
+	}
+
+	private function hasDependentSubjects( Parser $parser, Title $schemaTitle ): bool {
+		try {
+			$schemaName = new SchemaName( $schemaTitle->getText() );
+		} catch ( InvalidArgumentException ) {
+			return false;
+		}
+
+		return ( $this->schemaLookup )( $parser )->getSchema( $schemaName )?->subjectsAreDependent() === true;
 	}
 
 	/**

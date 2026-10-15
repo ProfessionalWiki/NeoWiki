@@ -27,8 +27,8 @@
 <path stroke="#54595D" stroke-width="1.5" d="M66.3,302.8l4,4"/>
 <text x="78" y="306" font-size="13" fill="#202122">Málaga</text>
 
-<!-- Display: the Host Subject's infobox -->
-<text x="656" y="36" text-anchor="middle" font-size="15" font-weight="bold" fill="#202122">Display</text>
+<!-- Display: the Host Subject's row on the Data tab -->
+<text x="656" y="36" text-anchor="middle" font-size="15" font-weight="bold" fill="#202122">Data tab</text>
 <rect x="526" y="54" width="260" height="226" fill="none" stroke="#039" stroke-width="1.5"/>
 <text x="540" y="78" font-weight="bold" fill="#000">Pablo Picasso</text>
 <rect x="540" y="86" width="52" height="17" rx="3" fill="#EAECF0"/>
@@ -73,7 +73,7 @@
 
 <text x="405" y="300" text-anchor="middle" fill="#D96B00">Standalone Subject</text>
 <text x="405" y="318" text-anchor="middle" font-size="12" fill="#D96B00">picked in the editor,</text>
-<text x="405" y="333" text-anchor="middle" font-size="12" fill="#D96B00">a link in the infobox</text>
+<text x="405" y="333" text-anchor="middle" font-size="12" fill="#D96B00">shown as a link</text>
 <path stroke="#D96B00" d="M325,296L262,301"/>
 <path stroke="#D96B00" d="M487,296L537,224"/>
 

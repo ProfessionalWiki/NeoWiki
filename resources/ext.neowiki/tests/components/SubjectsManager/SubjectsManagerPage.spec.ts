@@ -9,6 +9,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { PageSubjects } from '@/domain/PageSubjects.ts';
+import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { subjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
@@ -584,6 +585,53 @@ describe( 'SubjectsManagerPage main subject controls', () => {
 
 } );
 
+describe( 'SubjectsManagerPage rows of Dependent Subjects', () => {
+
+	beforeEach( () => {
+		storeSubjects = [
+			subject( ID_A ),
+			newSubject( { id: ID_B, label: null, displayNameIsGenerated: true, schemaName: 'Birth' } ),
+		];
+		mainSubjectId = new SubjectId( ID_A );
+		schemaStoreSchemas.set( 'Birth', newSchema( { title: 'Birth', subjectsAreDependent: true } ) );
+		canEditSubjectRef.value = true;
+		canDeleteSubjectRef.value = true;
+		window.location.hash = '';
+		Element.prototype.scrollIntoView = vi.fn();
+		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+		window.location.hash = '';
+		schemaStoreSchemas.delete( 'Birth' );
+		canEditSubjectRef.value = false;
+		canDeleteSubjectRef.value = false;
+		vi.restoreAllMocks();
+	} );
+
+	it( 'offers no promotion and no move, only editing, copying a link and deleting', async () => {
+		const wrapper = await mountPage();
+
+		expect(
+			rowFor( wrapper, ID_B ).findAll( '.ext-neowiki-subject-row__actions [aria-label]' )
+				.map( ( element ) => element.attributes( 'aria-label' ) ),
+		).toEqual( [
+			'neowiki-managesubjects-row-edit',
+			'neowiki-managesubjects-row-copy-link',
+			'neowiki-managesubjects-row-delete',
+		] );
+	} );
+
+	it( 'offers no handle to drag it to the Main Subject\'s place', async () => {
+		const wrapper = await mountPage();
+
+		expect( rowFor( wrapper, ID_B ).find( '.ext-neowiki-subject-row__drag-handle' ).exists() ).toBe( false );
+		expect( rowFor( wrapper, ID_A ).find( '.ext-neowiki-subject-row__drag-handle' ).exists() ).toBe( true );
+	} );
+
+} );
+
 describe( 'SubjectsManagerPage move action', () => {
 
 	beforeEach( () => {
@@ -837,6 +885,56 @@ describe( 'SubjectsManagerPage red links', () => {
 		expect( creator.props( 'open' ) ).toBe( true );
 		expect( creator.props( 'relationTarget' ) )
 			.toEqual( { subjectId: new SubjectId( MISSING_ID ), schemaNames: [ 'City', 'Place' ] } );
+	} );
+
+} );
+
+describe( 'SubjectsManagerPage saves from the editor', () => {
+
+	const onPage = new PageIdentifiers( PAGE_ID, 'Test Page' );
+	const host = newSubject( { id: ID_A, label: 'Pablo Picasso', schemaName: 'Person', pageIdentifiers: onPage } );
+	const birth = newSubject( { id: ID_B, label: null, schemaName: 'Birth', pageIdentifiers: onPage } );
+
+	beforeEach( () => {
+		useRealSubjectStore = true;
+		canEditSubjectRef.value = true;
+		window.location.hash = '';
+		Element.prototype.scrollIntoView = vi.fn();
+		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+
+		getSubjectForEditingRepoMock.mockReset().mockResolvedValue( host );
+		getSchemaRepoMock.mockReset().mockResolvedValue( newSchema( { title: 'Person' } ) );
+		getPageSubjectsRepoMock.mockReset().mockResolvedValue( {
+			pageSubjects: new PageSubjects( PAGE_ID, host.getId(), [ host, birth ] ),
+			referencedSubjects: [],
+			notFoundTargetIds: [],
+			schemas: [],
+		} );
+		vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue( {
+			getSubjectRepository: () => ( {
+				getPageSubjects: getPageSubjectsRepoMock,
+				updateSubject: vi.fn().mockResolvedValue( { subjectId: host.getId(), subject: host, schema: null } ),
+			} ),
+		} as unknown as NeoWikiExtension );
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+		canEditSubjectRef.value = false;
+		useRealSubjectStore = false;
+		vi.restoreAllMocks();
+	} );
+
+	it( 'reads the page once after a save from the editor', async () => {
+		const wrapper = await mountPage();
+		await wrapper.find( '[aria-label="neowiki-managesubjects-row-edit"]' ).trigger( 'click' );
+		await flushPromises();
+		getPageSubjectsRepoMock.mockClear();
+
+		await wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' )( host, [], 'why' );
+		await flushPromises();
+
+		expect( getPageSubjectsRepoMock ).toHaveBeenCalledOnce();
 	} );
 
 } );

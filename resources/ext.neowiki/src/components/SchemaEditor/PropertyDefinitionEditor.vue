@@ -60,6 +60,7 @@
 		/>
 		<component
 			:is="componentRegistry.getValueEditingComponent( localProperty.type )"
+			v-if="takesInitialValue"
 			ref="defaultValueInput"
 			v-model="localProperty.default"
 			class="property-definition-editor__default"
@@ -76,7 +77,10 @@ import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue'
 import { CdxCheckbox, CdxField, CdxSelect, CdxTextArea, CdxTextInput, type MenuItemData } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue';
+import { localTargetSchemaNames, type RelationProperty, RelationType, targetsDependentSubjects } from '@/domain/propertyTypes/Relation.ts';
+import { type SchemaSummary, subjectsAreDependentIn } from '@/application/SchemaLookup.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 const props = defineProps<{
 	property: PropertyDefinition;
@@ -214,6 +218,36 @@ const typeOptions = computed( (): MenuItemData[] => {
 
 	return options;
 } );
+
+const schemaStore = useSchemaStore();
+const schemaSummaries = shallowRef<readonly SchemaSummary[] | null>( null );
+
+const targetSchemaNames = computed( (): string[] => localProperty.value.type === RelationType.typeName ?
+	localTargetSchemaNames( localProperty.value as RelationProperty ) :
+	[] );
+
+// Read again for a target the summaries do not know, such as a Schema created from the target field.
+watch( () => targetSchemaNames.value.join( '|' ), async () => {
+	const knownNames = schemaSummaries.value?.map( ( summary ) => summary.name ) ?? [];
+
+	if ( targetSchemaNames.value.every( ( name ) => knownNames.includes( name ) ) ) {
+		return;
+	}
+
+	try {
+		schemaSummaries.value = await schemaStore.fetchAllSchemaSummaries();
+	} catch ( error ) {
+		console.error( 'Failed to load the schemas the property targets:', error );
+		schemaSummaries.value = [];
+	}
+}, { immediate: true } );
+
+// A Relation to a Dependent Subject can only come from its Host Subject, so no initial value can point at one. Until
+// the target Schemas are known, a relation property offers none either, rather than offering one it then withdraws.
+const takesInitialValue = computed( (): boolean => targetSchemaNames.value.length === 0 || (
+	schemaSummaries.value !== null &&
+	targetsDependentSubjects( targetSchemaNames.value, subjectsAreDependentIn( schemaSummaries.value ) ) !== true
+) );
 
 const defaultValueInput = ref<ValueInputExposes | null>( null );
 

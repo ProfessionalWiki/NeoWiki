@@ -116,14 +116,14 @@
 					v-for="subject in otherSubjects"
 					:key="subject.getId().text"
 					:subject="subject"
-					main-subject-control="promote"
+					:main-subject-control="isDependent( subject ) ? 'none' : 'promote'"
 					:expanded="expandedIds.has( subject.getId().text )"
 					:highlighted="highlightedId === subject.getId().text"
 					:focused="focusedId === subject.getId().text"
 					:can-edit="canEdit"
 					:can-delete="canDelete"
-					:can-move="canMove"
-					:show-drag-handle="canEdit"
+					:can-move="canMove && !isDependent( subject )"
+					:show-drag-handle="canEdit && !isDependent( subject )"
 					:subject-page-url="subjectPageUrl( subject.getId().text )"
 					@toggle="toggleExpanded"
 					@edit="editSubject"
@@ -176,7 +176,7 @@
 
 		<SubjectDeleteDialog
 			v-model:open="deleteConfirmOpen"
-			:subject-name="deletingSubjectName"
+			:subject="deletingSubject"
 			@confirm="executeDelete"
 		/>
 	</div>
@@ -190,7 +190,7 @@ import {
 	cdxIconPushPin
 } from '@wikimedia/codex-icons';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import { useSubjectStore, type DependentSubjects } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { useSubjectDrag } from '@/composables/useSubjectDrag.ts';
@@ -209,6 +209,7 @@ import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDial
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { useSubjectEditor } from '@/composables/useSubjectEditor.ts';
 import { RelationTargetCreationKey } from '@/components/Value/ValueDisplayContract.ts';
+import { isDependentSubject } from '@/domain/dependentSubjects.ts';
 import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vue';
 import SubjectDeleteDialog from '@/components/SubjectsManager/SubjectDeleteDialog.vue';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
@@ -316,7 +317,6 @@ const hasMainSubject = computed( () => mainSubject.value !== null );
 const hasOtherSubjects = computed( () => otherSubjects.value.length > 0 );
 const isCompletelyEmpty = computed( () => !hasMainSubject.value && !hasOtherSubjects.value );
 
-const deletingSubjectName = computed( () => deletingSubject.value === null ? '' : subjectDisplayName( deletingSubject.value ) );
 const movingSubjectName = computed( () => movingSubject.value === null ? '' : subjectDisplayName( movingSubject.value ) );
 
 function toggleExpanded( subject: Subject ): void {
@@ -486,19 +486,26 @@ async function demoteFromMain(): Promise<void> {
 	}
 }
 
-async function handleEditSave( updatedSubject: Subject, comment: string ): Promise<void> {
-	await subjectStore.updateSubject( updatedSubject, comment );
-	await loadSubjects();
+// No listing refresh of their own: the store reads the page again after each write.
+async function handleEditSave( updatedSubject: Subject, dependentSubjects: DependentSubjects, comment: string ): Promise<void> {
+	await subjectStore.updateSubject( updatedSubject, dependentSubjects, comment );
 }
 
-// No listing refresh of its own: a created Subject is always accompanied by the update that points
-// at it, and that goes through handleEditSave, which refreshes once the whole save is through.
-async function handleEditCreate( subject: Subject, targetPageId: number, comment: string ): Promise<void> {
-	await subjectStore.createSubject( subject, targetPageId, comment );
+async function handleEditCreate(
+	subject: Subject,
+	targetPageId: number,
+	dependentSubjects: DependentSubjects,
+	comment: string
+): Promise<void> {
+	await subjectStore.createSubject( subject, targetPageId, dependentSubjects, comment );
 }
 
 async function handleSchemaSave( updatedSchema: Schema, comment: string ): Promise<void> {
 	await schemaStore.saveSchema( updatedSchema, comment );
+}
+
+function isDependent( subject: Subject ): boolean {
+	return isDependentSubject( subject, schemaStore.schemas );
 }
 
 function isMainSubject( subject: Subject ): boolean {
@@ -529,7 +536,7 @@ function onSubjectMoved( targetTitle: string ): void {
 }
 
 async function confirmDelete( subject: Subject ): Promise<void> {
-	const deleteForm = await pageDeleteFormUrl( new PageIdentifiers( pageId, currentPageTitle ), subjectRepo );
+	const deleteForm = await pageDeleteFormUrl( subject.getId(), new PageIdentifiers( pageId, currentPageTitle ), subjectRepo );
 
 	if ( deleteForm !== null ) {
 		window.location.href = deleteForm;

@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Presentation;
 
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Application\Actions\MoveSubject\MoveSubjectPresenter;
 
 class RestMoveSubjectPresenter implements MoveSubjectPresenter {
@@ -50,6 +51,18 @@ class RestMoveSubjectPresenter implements MoveSubjectPresenter {
 			'message' => 'The subject was removed from its original page but could not be added to the target page, and could not be put back',
 		];
 		$this->statusCode = 500;
+	}
+
+	/**
+	 * @param Violation[] $violations
+	 */
+	public function presentValidationFailed( array $violations ): void {
+		$this->apiResponse = [
+			'status' => 'error',
+			'message' => 'Validation failed',
+			'violations' => ViolationSerializer::serializeMany( $violations ),
+		];
+		$this->statusCode = 422;
 	}
 
 }

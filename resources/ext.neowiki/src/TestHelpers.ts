@@ -4,6 +4,7 @@ import { Schema } from '@/domain/Schema';
 import { StatementList } from '@/domain/StatementList';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
 import { Subject } from '@/domain/Subject';
+import type { HostSubject } from '@/domain/HostSubject';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import type { DisplayRule } from '@/domain/Layout';
 import { Statement } from '@/domain/Statement';
@@ -22,6 +23,7 @@ interface NewTestSubjectOptions {
 	schemaName?: string;
 	statements?: StatementList;
 	pageIdentifiers?: PageIdentifiers;
+	hostSubject?: HostSubject | null;
 }
 
 export function newSubject( {
@@ -32,6 +34,7 @@ export function newSubject( {
 	schemaName = DEFAULT_TEST_SCHEMA_NAME,
 	statements = new StatementList( [] ),
 	pageIdentifiers = new PageIdentifiers( 0, 'TestSubjectPage' ),
+	hostSubject = null,
 }: NewTestSubjectOptions = {} ): Subject {
 	return new Subject(
 		id instanceof SubjectId ? id : new SubjectId( id ),
@@ -42,6 +45,7 @@ export function newSubject( {
 		schemaName,
 		statements,
 		pageIdentifiers,
+		hostSubject,
 	);
 }
 
@@ -67,17 +71,20 @@ interface NewTestSchemaOptions {
 	title?: string;
 	description?: string;
 	properties?: PropertyDefinitionList;
+	subjectsAreDependent?: boolean;
 }
 
 export function newSchema( {
 	title = 'TestSchema',
 	description = 'TestSchema description',
 	properties,
+	subjectsAreDependent = false,
 }: NewTestSchemaOptions = {} ): Schema {
 	return new Schema(
 		title,
 		description,
 		properties ?? new PropertyDefinitionList( [] ),
+		subjectsAreDependent,
 	);
 }
 

@@ -13,8 +13,8 @@ function mountTable( props: Partial<InstanceType<typeof SchemasTable>['$props']>
 	return mount( SchemasTable, {
 		props: {
 			schemas: [
-				{ name: 'Artist', description: 'A person who creates works of art.', propertyCount: 4 },
-				{ name: 'Artwork', description: '', propertyCount: 2 },
+				{ name: 'Artist', description: 'A person who creates works of art.', propertyCount: 4, subjectsAreDependent: false },
+				{ name: 'Artwork', description: '', propertyCount: 2, subjectsAreDependent: false },
 			],
 			canEdit: false,
 			canDuplicate: false,
@@ -114,6 +114,18 @@ describe( 'SchemasTable', () => {
 		expect( wrapper.findAll( 'tbody tr' ).map( offeredActions ) ).toEqual( [ [ CREATE_SUBJECT ], [ CREATE_SUBJECT ] ] );
 	} );
 
+	it( 'offers no Subject creation for a Schema whose Subjects are dependent', () => {
+		const wrapper = mountTable( {
+			schemas: [
+				{ name: 'Artist', description: '', propertyCount: 1, subjectsAreDependent: false },
+				{ name: 'Birth', description: '', propertyCount: 1, subjectsAreDependent: true },
+			],
+			canCreateSubject: true,
+		} );
+
+		expect( wrapper.findAll( 'tbody tr' ).map( offeredActions ) ).toEqual( [ [ CREATE_SUBJECT ], [] ] );
+	} );
+
 	it( 'offers only the link to the Schema to a user without rights, on a wiki without a Subject list', () => {
 		const artist = row( mountTable( { subjectListAvailable: false } ), 0 );
 
@@ -132,8 +144,8 @@ describe( 'SchemasTable', () => {
 	it( 'ties the buttons and the Subjects link of each row to its Schema', () => {
 		const wrapper = mountTable( {
 			schemas: [
-				{ name: 'Artist', description: '', propertyCount: 1 },
-				{ name: 'Validation Demo', description: '', propertyCount: 1 },
+				{ name: 'Artist', description: '', propertyCount: 1, subjectsAreDependent: false },
+				{ name: 'Validation Demo', description: '', propertyCount: 1, subjectsAreDependent: false },
 			],
 			canEdit: true,
 			canDelete: true,

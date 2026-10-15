@@ -17,7 +17,7 @@ enableAutoUnmount( afterEach );
 let pinia: ReturnType<typeof createPinia>;
 
 function summary( name: string ): SchemaSummary {
-	return { name, description: '', propertyCount: 0 };
+	return { name, description: '', propertyCount: 0, subjectsAreDependent: false };
 }
 
 function listSchemas( ...names: string[] ): void {

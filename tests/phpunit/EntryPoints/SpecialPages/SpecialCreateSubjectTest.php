@@ -4,8 +4,11 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\SpecialPages;
 
+use MediaWiki\Title\Title;
 use PermissionsError;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialCreateSubject;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use SpecialPageTestBase;
 
 /**
@@ -47,6 +50,21 @@ class SpecialCreateSubjectTest extends SpecialPageTestBase {
 		[ $output ] = $this->executeSpecialPage( 'Legal_Entity', null, null, $this->getTestUser()->getUser() );
 
 		$this->assertStringContainsString( 'data-mw-neowiki-schema="Legal Entity"', $output );
+	}
+
+	public function testASchemaWhoseSubjectsAreDependentIsRefused(): void {
+		// The singleton caches Schemas by page and revision id, which repeat across tests' tables.
+		NeoWikiExtension::resetInstance();
+		$this->editPage(
+			Title::makeTitle( NeoWikiExtension::NS_SCHEMA, 'Birth' ),
+			new SchemaContent( '{"subjectsAreDependent":true,"propertyDefinitions":{}}' )
+		);
+
+		/** @var string $output */
+		[ $output ] = $this->executeSpecialPage( 'Birth', null, 'qqx', $this->getTestUser()->getUser() );
+
+		$this->assertStringContainsString( 'neowiki-create-subject-error-dependent-subjects', $output );
+		$this->assertStringNotContainsString( 'id="ext-neowiki-create-subject"', $output );
 	}
 
 	public function testAnUnparseableSubpagePinsNoSchema(): void {

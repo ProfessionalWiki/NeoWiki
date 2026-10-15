@@ -6,8 +6,8 @@ import type { SubjectColumnId } from '@/presentation/subjectSummaryTable.ts';
 import { setupMwMock } from '../../VueTestHelpers.ts';
 
 const SUMMARY: SubjectSummary = {
-	id: 's1demo1aaaaaaa1', displayName: 'ZX Spectrum 48K', displayNameIsGenerated: false, schema: 'Computer',
-	pageId: 7, pageTitle: 'Sinclair ZX Spectrum', lastEdited: '2026-10-01T14:02:00Z',
+	id: 's1demo1aaaaaaa1', displayName: 'ZX Spectrum 48K', displayNameIsGenerated: false, hostSubject: null,
+	schema: 'Computer', pageId: 7, pageTitle: 'Sinclair ZX Spectrum', lastEdited: '2026-10-01T14:02:00Z',
 };
 
 function mountCell( column: SubjectColumnId, overrides: Partial<SubjectSummary> = {} ): VueWrapper {

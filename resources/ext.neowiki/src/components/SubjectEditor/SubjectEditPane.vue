@@ -7,8 +7,15 @@
 			class="ext-neowiki-subject-edit-pane__header"
 			:class="{ 'ext-neowiki-subject-edit-pane__header--new': props.isNew }"
 		>
+			<h3
+				v-if="subjectsAreDependent"
+				class="ext-neowiki-subject-edit-pane__name"
+			>
+				{{ paneName }}
+			</h3>
+
 			<CdxField
-				v-if="props.isNew"
+				v-else-if="props.isNew"
 				class="ext-neowiki-subject-edit-pane__label"
 				:optional="true"
 			>
@@ -77,6 +84,7 @@
 			:server-violations="serverViolations"
 			@change="handleEditorChange"
 			@relation-change="handleRelationChange"
+			@dependent-subject-change="handleDependentSubjectChange"
 			@focusout="handleEditorBlur"
 			@clear-server-violation="handleClearViolation"
 			@edit-relation-target="emit( 'edit-relation-target', $event )"
@@ -91,9 +99,16 @@ export interface SubjectEditPaneExposes {
 	// Refreshed on relation changes alone, so its other statements lag: read it for the
 	// relations it holds, never to save or validate from.
 	editedSubject: Subject;
+	// The Dependent Subjects the form shows, as far behind as editedSubject.
+	editedDependentSubjects: readonly Subject[];
 	setLabel: ( value: string ) => void;
-	resetChanged: () => void;
+	/** Its Subject is written as the form holds it: unchanged from here on, and its removals final. */
+	markWritten: () => void;
 	buildUpdatedSubject: () => Subject | null;
+	/**
+	 * As their fields hold them, nested ones included.
+	 */
+	buildDependentSubjects: () => Subject[];
 	setServerViolations: ( violations: readonly SubjectViolation[] ) => void;
 	saveBlocker: () => SaveBlocker | null;
 	flushValidation: () => Promise<void>;
@@ -121,6 +136,7 @@ import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { RelationTargetEditingKey } from '@/components/Value/ValueInputContract.ts';
+import { DependentSubjectViolationsKey, PaneWritesKey } from '@/components/SubjectEditor/DependentSubjectEditing.ts';
 import { withoutMissingValueViolations, withoutUnsavedTargetViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { isPlainLeftClick } from '@/presentation/plainLeftClick.ts';
@@ -147,10 +163,23 @@ const emit = defineEmits<{
 
 provide( RelationTargetEditingKey, true );
 
+const dependentSubjectViolations = shallowRef<readonly SubjectViolation[]>( [] );
+
+provide( DependentSubjectViolationsKey, dependentSubjectViolations );
+
 const subjectStore = useSubjectStore();
 
 const subjectEditorRef = ref<SubjectEditorExposes | null>( null );
 const { hasChanged: committed, markChanged, resetChanged } = useChangeDetection();
+
+const writes = ref( 0 );
+
+provide( PaneWritesKey, writes );
+
+function markWritten(): void {
+	resetChanged();
+	writes.value++;
+}
 
 // A label still being typed is already something to save, and nothing once it is discarded.
 const labelDirty = ref( false );
@@ -163,10 +192,14 @@ const hasChanged = computed( (): boolean => committed.value || labelDirty.value 
 // only consumer and reads only relation statements, and harvesting per keystroke would re-walk
 // that graph per character. Its other statements therefore lag; never save or validate from it.
 const editedSubject = shallowRef<Subject>( props.subject );
+const editedDependentSubjects = shallowRef<readonly Subject[]>( [] );
 
 function handleRelationChange(): void {
 	editedSubject.value = buildUpdatedSubject() ?? props.subject;
+	editedDependentSubjects.value = buildDependentSubjects();
 }
+
+const subjectsAreDependent = computed( (): boolean => props.schema.subjectsAreDependent() );
 
 const label = ref( props.subject.getLabel() ?? '' );
 
@@ -274,6 +307,14 @@ function handleEditorChange(): void {
 	revalidate();
 }
 
+function handleDependentSubjectChange( relationChanged: boolean ): void {
+	handleEditorChange();
+
+	if ( relationChanged ) {
+		handleRelationChange();
+	}
+}
+
 function handleEditorBlur(): void {
 	// focusout bubbles on every field-to-field move; only flush when something
 	// actually changed since the last validation, to avoid redundant requests.
@@ -323,6 +364,7 @@ watch( [ subjectEditorRef, () => props.schema ], ( [ editor ] ) => {
 watch( () => props.subject, ( newSubject ) => {
 	label.value = newSubject.getLabel() ?? '';
 	editedSubject.value = newSubject;
+	editedDependentSubjects.value = [];
 } );
 
 function buildUpdatedSubject(): Subject | null {
@@ -331,7 +373,14 @@ function buildUpdatedSubject(): Subject | null {
 	}
 	return props.subject
 		.withLabel( storedLabel.value )
-		.withStatements( subjectEditorRef.value.getSubjectData().withNonEmptyValues() );
+		.withStatements( props.schema.statementsAfterEdit(
+			props.subject.getStatements(),
+			subjectEditorRef.value.getSubjectData().withNonEmptyValues()
+		) );
+}
+
+function buildDependentSubjects(): Subject[] {
+	return subjectEditorRef.value?.getDependentSubjects() ?? [];
 }
 
 // The write reads the committed label, so a name still being typed is committed on the way to
@@ -345,8 +394,21 @@ function saveBlocker(): SaveBlocker | null {
 	return subjectEditorRef.value?.saveBlocker() ?? null;
 }
 
+// Violations on a Dependent Subject the form shows go to its fields. One on a Subject the form does not
+// show would show nowhere, so it joins the banners.
 function setServerViolations( violations: readonly SubjectViolation[] ): void {
-	serverViolations.value = withoutSessionOnlyViolations( violations );
+	const ownId = props.subject.getId().text;
+	const shownIds = new Set( buildDependentSubjects().map( ( subject ) => subject.getId().text ) );
+
+	serverViolations.value = withoutSessionOnlyViolations( violations
+		.filter( ( violation ) => violation.subjectId === undefined || !shownIds.has( violation.subjectId ) )
+		.map( ( violation ) => violation.subjectId === undefined || violation.subjectId === ownId ?
+			violation :
+			{ ...violation, propertyName: null } ) );
+
+	dependentSubjectViolations.value = violations.filter(
+		( violation ) => violation.subjectId !== undefined && shownIds.has( violation.subjectId )
+	);
 }
 
 // Complaints that are only true of the wiki as it stands, not of what this session is saving.
@@ -358,9 +420,11 @@ defineExpose( {
 	hasChanged,
 	label,
 	editedSubject,
+	editedDependentSubjects,
 	setLabel,
-	resetChanged,
+	markWritten,
 	buildUpdatedSubject,
+	buildDependentSubjects,
 	setServerViolations,
 	saveBlocker,
 	flushValidation

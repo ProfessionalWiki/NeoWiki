@@ -48,6 +48,23 @@ describe( 'SchemaDeserializer', () => {
 		expect( schema.getPropertyDefinitions().asRecord() ).toEqual( {} );
 	} );
 
+	it( 'reads the declaration that the subjects are dependent', () => {
+		const schema = new SchemaDeserializer().deserialize( 'Birth', {
+			subjectsAreDependent: true,
+			propertyDefinitions: {},
+		} );
+
+		expect( schema.subjectsAreDependent() ).toBe( true );
+	} );
+
+	it( 'reads the subjects of a schema without the declaration as standalone', () => {
+		const schema = new SchemaDeserializer().deserialize( 'Place', {
+			propertyDefinitions: {},
+		} );
+
+		expect( schema.subjectsAreDependent() ).toBe( false );
+	} );
+
 	it( 'deserializes an omitted description as an empty one', () => {
 		const schema = new SchemaDeserializer().deserialize( 'Undescribed', {
 			propertyDefinitions: {},

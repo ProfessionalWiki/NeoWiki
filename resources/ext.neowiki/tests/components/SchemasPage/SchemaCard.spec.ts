@@ -14,13 +14,13 @@ import {
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import type { SubjectSummary, SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
 
-const ARTIST: SchemaSummary = { name: 'Artist', description: 'A person who creates works of art.', propertyCount: 4 };
+const ARTIST: SchemaSummary = { name: 'Artist', description: 'A person who creates works of art.', propertyCount: 4, subjectsAreDependent: false };
 const MORE_ACTIONS = 'neowiki-schemas-more-actions';
 
 function subject( id: string, displayName: string ): SubjectSummary {
 	return {
-		id, displayName, displayNameIsGenerated: false, schema: 'Artist', pageId: 1, pageTitle: displayName,
-		lastEdited: '2026-10-01T14:02:00Z',
+		id, displayName, displayNameIsGenerated: false, hostSubject: null, schema: 'Artist', pageId: 1,
+		pageTitle: displayName, lastEdited: '2026-10-01T14:02:00Z',
 	};
 }
 

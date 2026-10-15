@@ -26,11 +26,54 @@
 					{{ $i18n( 'neowiki-schema-editor-description' ).text() }}
 				</template>
 			</CdxField>
+
+			<!-- Decided for the user, only dependent Subjects are worth stating: standalone is the default. -->
+			<CdxField
+				v-if="props.subjectsAreDependent === null"
+				class="ext-neowiki-schema-creator__dependence"
+				:hide-label="true"
+			>
+				<div class="ext-neowiki-schema-creator__dependence-option">
+					<CdxCheckbox
+						v-model="subjectsAreDependent"
+						@update:model-value="onChange"
+					>
+						{{ $i18n( 'neowiki-schema-creator-dependent' ).text() }}
+						<template #description>
+							{{ $i18n( 'neowiki-schema-creator-dependent-help' ).text() }}
+						</template>
+					</CdxCheckbox>
+					<!-- Outside the checkbox's label, which would take its name into the checkbox's own. A toggle rather
+						than a tooltip: a tap shows it too, and Escape is left to the dialog. -->
+					<CdxButton
+						weight="quiet"
+						:aria-label="$i18n( 'neowiki-schema-creator-dependent-info-label' ).text()"
+						:title="$i18n( 'neowiki-schema-creator-dependent-info-label' ).text()"
+						:aria-expanded="explanationShown"
+						@click="explanationShown = !explanationShown"
+					>
+						<CdxIcon :icon="cdxIconInfo" />
+					</CdxButton>
+				</div>
+				<p
+					v-if="explanationShown"
+					class="ext-neowiki-schema-creator__dependence-explanation"
+				>
+					{{ $i18n( 'neowiki-schema-creator-dependent-info' ).text() }}
+				</p>
+			</CdxField>
+			<p
+				v-else-if="subjectsAreDependent"
+				class="ext-neowiki-schema-creator__dependence-decided"
+			>
+				{{ $i18n( 'neowiki-schema-subjects-are-dependent' ).text() }}
+			</p>
 		</div>
 
 		<SchemaEditor
 			ref="schemaEditorRef"
 			:initial-schema="baseSchema"
+			:subjects-are-dependent="subjectsAreDependent"
 			@change="onChange"
 		/>
 	</div>
@@ -38,7 +81,8 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue';
-import { CdxField, CdxTextInput } from '@wikimedia/codex';
+import { CdxButton, CdxCheckbox, CdxField, CdxIcon, CdxTextInput } from '@wikimedia/codex';
+import { cdxIconInfo } from '@wikimedia/codex-icons';
 import type { ValidationStatusType } from '@wikimedia/codex';
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
 import type { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
@@ -51,9 +95,14 @@ const props = withDefaults( defineProps<{
 	initialName?: string;
 	/** The Schema to duplicate: the new one starts with all of it but the name. */
 	duplicateOf?: Schema;
+	/**
+	 * Set to decide for the user. Null leaves it to them, starting from what a duplicated Schema declares.
+	 */
+	subjectsAreDependent?: boolean | null;
 }>(), {
 	initialName: '',
-	duplicateOf: undefined
+	duplicateOf: undefined,
+	subjectsAreDependent: null
 } );
 
 const emit = defineEmits<{
@@ -64,10 +113,12 @@ const schemaStore = useSchemaStore();
 
 const DEBOUNCE_DELAY = 300;
 
-const baseSchema = props.duplicateOf ?? new Schema( '', '', new PropertyDefinitionList( [] ) );
+const baseSchema = props.duplicateOf ?? new Schema( '', '', new PropertyDefinitionList( [] ), false );
 
 const schemaName = ref( props.initialName );
 const schemaDescription = ref( baseSchema.getDescription() );
+const subjectsAreDependent = ref( props.subjectsAreDependent ?? baseSchema.subjectsAreDependent() );
+const explanationShown = ref( false );
 const nameError = ref( '' );
 const nameStatus = ref<ValidationStatusType>( 'default' );
 const nameInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
@@ -156,7 +207,8 @@ function getSchema(): Schema | null {
 
 	return ( schemaEditorRef.value?.getSchema() ?? baseSchema )
 		.withName( name )
-		.withDescription( schemaDescription.value.trim() );
+		.withDescription( schemaDescription.value.trim() )
+		.withSubjectsAreDependent( subjectsAreDependent.value );
 }
 
 function saveBlocker(): SaveBlocker | null {
@@ -193,6 +245,26 @@ defineExpose<SchemaCreatorExposes>( { validate, getSchema, saveBlocker, revealEr
 		@media ( min-width: @min-width-breakpoint-desktop ) {
 			padding: @spacing-150;
 		}
+	}
+
+	/* The button ends the line saying that the choice is final, and the explanation opens below that line. On the
+		baseline rather than at the end: the checkbox's margin and padding reach below its last line. */
+	&__dependence-option {
+		display: flex;
+		align-items: last baseline;
+		gap: @spacing-25;
+	}
+
+	/* In line with the checkbox's own text, past its box. */
+	&__dependence-explanation {
+		margin: @spacing-25 0 0;
+		padding-inline-start: calc( @size-125 + @spacing-50 );
+		color: @color-subtle;
+	}
+
+	&__dependence-decided {
+		margin: @spacing-75 0 0;
+		color: @color-subtle;
 	}
 }
 </style>

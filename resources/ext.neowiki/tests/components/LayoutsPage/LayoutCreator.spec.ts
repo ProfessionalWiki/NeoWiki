@@ -8,6 +8,7 @@ import { Layout } from '@/domain/Layout.ts';
 import type { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { newTextProperty } from '@/domain/propertyTypes/Text.ts';
+import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { newSchema } from '@/TestHelpers.ts';
@@ -138,6 +139,10 @@ describe( 'LayoutCreator', () => {
 		return wrapper.findAll( '.ext-neowiki-display-rule-list__item' ).map( ( row ) => row.text() );
 	}
 
+	function hiddenProperties( wrapper: VueWrapper ): string[] {
+		return wrapper.findAll( '.ext-neowiki-display-rule-list__item--hidden' ).map( ( row ) => row.text() );
+	}
+
 	// As the dialog's "Create layout" does.
 	async function createLayout( wrapper: VueWrapper ): Promise<Layout | null> {
 		const creator = wrapper.vm as unknown as LayoutCreatorExposes;
@@ -159,6 +164,60 @@ describe( 'LayoutCreator', () => {
 		await pickSchema( wrapper, 'Person' );
 
 		expect( listedProperties( wrapper ) ).toEqual( [ 'Name', 'Born' ] );
+	} );
+
+	it( 'lists the properties of the Schema picked last, though the one picked before it loads later', async () => {
+		const wrapper = await mountCreator();
+		const readSchema = schemaRepository.getSchema.bind( schemaRepository );
+		let releasePerson!: () => void;
+		vi.spyOn( schemaRepository, 'getSchema' ).mockImplementation( ( name: string ) => name === 'Person' ?
+			new Promise( ( resolve ) => {
+				releasePerson = () => resolve( readSchema( name ) );
+			} ) :
+			readSchema( name ) );
+
+		await pickSchema( wrapper, 'Person' );
+		await pickSchema( wrapper, 'Product' );
+		releasePerson();
+		await flushPromises();
+
+		expect( listedProperties( wrapper ) ).toEqual( [ 'Price' ] );
+	} );
+
+	it( 'lists the properties of the Schema picked last, though the read for the one picked before it fails later', async () => {
+		vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+		const wrapper = await mountCreator();
+		const readSchema = schemaRepository.getSchema.bind( schemaRepository );
+		let failPerson!: () => void;
+		vi.spyOn( schemaRepository, 'getSchema' ).mockImplementation( ( name: string ) => name === 'Person' ?
+			new Promise( ( _resolve, reject ) => {
+				failPerson = () => reject( new Error( 'read failed' ) );
+			} ) :
+			readSchema( name ) );
+
+		await pickSchema( wrapper, 'Person' );
+		await pickSchema( wrapper, 'Product' );
+		failPerson();
+		await flushPromises();
+
+		expect( listedProperties( wrapper ) ).toEqual( [ 'Price' ] );
+	} );
+
+	it( 'hides the properties of the picked Schema that target Dependent Subjects', async () => {
+		await schemaRepository.saveSchema( newSchema( {
+			title: 'Museum',
+			properties: new PropertyDefinitionList( [
+				newTextProperty( { name: 'Description' } ),
+				newRelationProperty( { name: 'Attendance figures', targetSchemas: [ 'Attendance' ], multiple: true } ),
+				newTextProperty( { name: 'Website' } ),
+			] ),
+		} ) );
+		await schemaRepository.saveSchema( newSchema( { title: 'Attendance', subjectsAreDependent: true } ) );
+		const wrapper = await mountCreator();
+
+		await pickSchema( wrapper, 'Museum' );
+
+		expect( hiddenProperties( wrapper ) ).toEqual( [ 'Attendance figures' ] );
 	} );
 
 	it( 'keeps showing the picked Schema in the Schema field once it is left', async () => {

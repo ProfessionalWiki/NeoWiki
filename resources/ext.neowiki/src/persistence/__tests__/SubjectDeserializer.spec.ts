@@ -36,7 +36,32 @@ describe( 'SubjectDeserializer', () => {
 			'SDSchema',
 			new StatementList( [] ),
 			new PageIdentifiers( 42, 'SDPageTitle' ),
+			null,
 		) );
+	} );
+
+	it( 'reads the Host Subject a Dependent Subject is named after', () => {
+		const json = {
+			id: 's13333333333337',
+			label: null,
+			displayName: 'Birth',
+			displayNameIsGenerated: true,
+			schema: 'Birth',
+			hostSubject: {
+				id: 's13333333333338', schema: 'Person', displayName: 'Pablo Picasso', displayNameIsGenerated: false,
+			},
+			statements: {},
+			pageId: 42,
+			pageTitle: 'SDPageTitle',
+		};
+
+		expect( deserializer.deserialize( json ).getHostSubject() ).toEqual( {
+			id: 's13333333333338',
+			schemaName: 'Person',
+			displayName: 'Pablo Picasso',
+			displayNameIsGenerated: false,
+			hostSubject: null,
+		} );
 	} );
 
 	it( 'carries the server\'s generated-name verdict through to the Subject', () => {
@@ -156,6 +181,7 @@ describe( 'SubjectDeserializer', () => {
 				new Statement( new PropertyName( 'Property2' ), NumberType.typeName, newNumberValue( 1337 ) ),
 			] ),
 			new PageIdentifiers( 42, 'SDPageTitle' ),
+			null,
 		) );
 	} );
 

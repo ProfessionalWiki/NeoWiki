@@ -65,6 +65,59 @@ export async function chooseFromLanguageList( languageInput: VueWrapper | DOMWra
 		?.trigger( 'click' );
 }
 
+/**
+ * The name assistive technology announces for an element: its `aria-label`, else the text of the elements its
+ * `aria-labelledby` names, else the text of its `<label>`, or of its `<caption>` for a table, else, for a button or a
+ * link, its own text. Text hidden from assistive technology counts for nothing, and an element with an `aria-label`
+ * of its own counts by that.
+ */
+export function accessibleName( element: Element ): string {
+	const label = element.getAttribute( 'aria-label' );
+
+	if ( label !== null ) {
+		return label.trim();
+	}
+
+	const labelledBy = element.getAttribute( 'aria-labelledby' );
+
+	if ( labelledBy !== null ) {
+		const root = element.getRootNode() as ParentNode;
+
+		return collapsed( labelledBy.split( ' ' ).filter( ( id ) => id !== '' )
+			.map( ( id ) => root.querySelector( `[id="${ id }"]` ) )
+			.map( ( labelling ) => labelling === null ? '' : textAlternative( labelling ) )
+			.join( ' ' ) );
+	}
+
+	const labels = ( element as HTMLInputElement ).labels;
+
+	if ( labels !== undefined && labels !== null && labels.length > 0 ) {
+		return collapsed( [ ...labels ].map( textAlternative ).join( ' ' ) );
+	}
+
+	if ( element instanceof HTMLTableElement ) {
+		return element.caption === null ? '' : collapsed( textAlternative( element.caption ) );
+	}
+
+	return element.matches( 'button, a' ) ? collapsed( textAlternative( element ) ) : '';
+}
+
+function textAlternative( node: Node ): string {
+	if ( !( node instanceof HTMLElement || node instanceof SVGElement ) ) {
+		return node.nodeType === Node.TEXT_NODE ? node.textContent ?? '' : '';
+	}
+
+	if ( node.getAttribute( 'aria-hidden' ) === 'true' || node.style.display === 'none' ) {
+		return '';
+	}
+
+	return node.getAttribute( 'aria-label' ) ?? [ ...node.childNodes ].map( textAlternative ).join( ' ' );
+}
+
+function collapsed( text: string ): string {
+	return text.replace( /\s+/g, ' ' ).trim();
+}
+
 /** The texts of the elements an element's `aria-describedby` names, which a screen reader reads after its name. */
 export function describedAs( wrapper: VueWrapper, element: DOMWrapper<Element> ): string[] {
 	return ( element.attributes( 'aria-describedby' ) ?? '' ).split( ' ' ).filter( ( id ) => id !== '' )
@@ -311,6 +364,15 @@ export function setupMwMock(
 		// it rather than each spec restating the marker's shape.
 		if ( key === 'neowiki-subject-generated-name' && customMessages[ key ] === undefined ) {
 			return `(${ params[ 0 ] })`;
+		}
+
+		// And so is the name of a Dependent Subject nobody named, also as told apart by its first value.
+		if ( key === 'neowiki-dependent-subject-name' && customMessages[ key ] === undefined ) {
+			return `${ params[ 0 ] } of ${ params[ 1 ] }`;
+		}
+
+		if ( key === 'neowiki-dependent-subject-identified-name' && customMessages[ key ] === undefined ) {
+			return `${ params[ 0 ] } (${ params[ 1 ] }: ${ params[ 2 ] })`;
 		}
 
 		// Core's own wrapper, whose brackets a locale can change. Carried here for the same reason.

@@ -37,7 +37,7 @@ const SchemaEditorStub = defineComponent( {
 	methods: {
 		// Mirrors the real editor, which applies the host-owned description.
 		getSchema(): Schema {
-			return new Schema( 'TestSchema', this.description, new PropertyDefinitionList( [] ) );
+			return newSchema( { title: 'TestSchema', description: this.description, properties: new PropertyDefinitionList( [] ) } );
 		},
 		saveBlocker(): SaveBlocker | null {
 			return editorSaveBlocker;
@@ -70,7 +70,7 @@ describe( 'SchemaEditorDialog', () => {
 		setupMwMock( { functions: [ 'message', 'msg', 'notify' ] } );
 	} );
 
-	const mockSchema = new Schema( 'TestSchema', 'A test schema', new PropertyDefinitionList( [] ) );
+	const mockSchema = newSchema( { title: 'TestSchema', description: 'A test schema', properties: new PropertyDefinitionList( [] ) } );
 
 	const stubs = {
 		SchemaEditor: SchemaEditorStub,
@@ -231,6 +231,28 @@ describe( 'SchemaEditorDialog', () => {
 		} );
 	} );
 
+	describe( 'Whether the Subjects are dependent', () => {
+		// Not teleported, so that its header can be read off the wrapper.
+		function mountOn( initialSchema: Schema ): VueWrapper {
+			return mount( SchemaEditorDialog, {
+				props: { initialSchema, open: true, onSave },
+				global: { mocks: { $i18n }, stubs: { ...stubs, teleport: true } },
+			} );
+		}
+
+		it( 'says so of a Schema whose Subjects are dependent', () => {
+			const wrapper = mountOn( newSchema( { subjectsAreDependent: true } ) );
+
+			expect( wrapper.find( '.cdx-dialog__header' ).text() ).toContain( 'neowiki-schema-subjects-are-dependent' );
+		} );
+
+		it( 'says nothing of it for a Schema whose Subjects are standalone', () => {
+			const wrapper = mountOn( mockSchema );
+
+			expect( wrapper.find( '.cdx-dialog__header' ).text() ).not.toContain( 'neowiki-schema-subjects-are-dependent' );
+		} );
+	} );
+
 	describe( 'Close button', () => {
 		// From Codex 2.3.3 the header hides its close button at 640px and wider unless the dialog
 		// asks for one, even when the header slot renders that button itself.
@@ -356,7 +378,7 @@ describe( 'SchemaEditorDialog', () => {
 		const SchemaCreatorDialogStub = {
 			name: 'SchemaCreatorDialog',
 			components: { CdxDialog },
-			props: [ 'open', 'initialName' ],
+			props: { open: Boolean, initialName: String, subjectsAreDependent: { type: Boolean, default: undefined } },
 			emits: [ 'update:open', 'created' ],
 			template: '<CdxDialog :open="open" title="schema-creator" />',
 		};
@@ -415,6 +437,14 @@ describe( 'SchemaEditorDialog', () => {
 
 			expect( schemaCreator().props( 'initialName' ) ).toBe( 'Artist' );
 			expect( wrapper.findComponent( CdxDialog ).findComponent( SchemaCreatorDialog ).exists() ).toBe( false );
+		} );
+
+		it( 'decides the Subjects of the Schema it stacks like those of the property\'s targets', async () => {
+			await flushPromises();
+			wrapper.findComponent( TargetSchemasInput ).vm.$emit( 'create', 'Birth', true );
+			await flushPromises();
+
+			expect( schemaCreator().props( 'subjectsAreDependent' ) ).toBe( true );
 		} );
 
 		it( 'stacks the schema creator when nothing was typed', async () => {

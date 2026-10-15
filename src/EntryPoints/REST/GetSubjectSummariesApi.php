@@ -16,6 +16,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryQuery;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummarySort;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectSummarySerializer;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\IntegerDef;
@@ -55,7 +56,10 @@ class GetSubjectSummariesApi extends SimpleHandler {
 
 	private function listingResponse( SubjectSummaries $summaries ): Response {
 		return $this->getResponseFactory()->createJson( [
-			'subjects' => array_map( SubjectSummarySerializer::serialize( ... ), $summaries->summaries ),
+			'subjects' => array_map(
+				SubjectSummarySerializer::serialize( ... ),
+				NeoWikiExtension::getInstance()->newSubjectSummaryHostSubjects()->addTo( $summaries->summaries )
+			),
 			'nextCursor' => $summaries->nextCursor?->encode(),
 		] );
 	}

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { ref, Ref } from 'vue';
 import { enableAutoUnmount, mount, shallowMount } from '@vue/test-utils';
+import { createPinia } from 'pinia';
 import { useSubjectDrag, SubjectDragHandlers } from '@/composables/useSubjectDrag';
 import { subjectRowDomId } from '@/presentation/subjectRowAnchor';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
@@ -137,7 +138,7 @@ describe( 'useSubjectDrag', () => {
 				expanded: false,
 				showDragHandle: true,
 			},
-			global: { mocks: { $i18n: createI18nMock() }, stubs: { CdxIcon: true } },
+			global: { plugins: [ createPinia() ], mocks: { $i18n: createI18nMock() }, stubs: { CdxIcon: true } },
 		} ).element as HTMLElement;
 
 		mountComposable( document.createElement( 'ul' ), document.createElement( 'ul' ), newHandlers() );

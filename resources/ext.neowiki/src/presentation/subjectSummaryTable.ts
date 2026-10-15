@@ -1,6 +1,6 @@
 import type { TableColumn, TableSort } from '@wikimedia/codex';
 import type { SortDirection, SubjectSummary, SubjectSummarySort } from '@/application/SubjectSummaryLookup.ts';
-import { generatedSubjectName } from '@/presentation/subjectDisplayName.ts';
+import { displayNameOf } from '@/presentation/subjectDisplayName.ts';
 import { subjectRowLinkUrl } from '@/presentation/subjectLinks.ts';
 
 export type SubjectColumnId = 'name' | 'schema' | 'page' | 'edited';
@@ -54,7 +54,7 @@ export function summaryOrder( sort: TableSort ): { sort: SubjectSummarySort; dir
 }
 
 export function summaryName( summary: SubjectSummary ): string {
-	return summary.displayNameIsGenerated ? generatedSubjectName( summary.id ) : summary.displayName;
+	return displayNameOf( { ...summary, schemaName: summary.schema } );
 }
 
 export function summaryUrl( summary: SubjectSummary ): string {

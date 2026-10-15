@@ -62,6 +62,21 @@ describe( 'Schema', () => {
 
 	} );
 
+	describe( 'withSubjectsAreDependent', () => {
+
+		it( 'returns a new Schema declaring its Subjects dependent, the rest unchanged', () => {
+			const originalSchema = newSchema( {
+				properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Date' } ) ] ),
+			} );
+
+			const updatedSchema = originalSchema.withSubjectsAreDependent( true );
+
+			expect( updatedSchema.subjectsAreDependent() ).toBe( true );
+			expect( updatedSchema.withSubjectsAreDependent( false ) ).toEqual( originalSchema );
+		} );
+
+	} );
+
 	describe( 'withAddedPropertyDefinition', () => {
 
 		it( 'adds a Property Definition when Schema has no properties', () => {
@@ -110,6 +125,25 @@ describe( 'Schema', () => {
 			expect( updatedSchema.getPropertyDefinitions().asRecord() ).toEqual( {
 				[ property2.name.toString() ]: property2,
 			} );
+		} );
+
+	} );
+
+	describe( 'subjectsAreDependent', () => {
+
+		const schemaOfDependentSubjects = newSchema( {
+			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'foo' } ), newNumberProperty( { name: 'bar' } ) ] ),
+			subjectsAreDependent: true,
+		} );
+
+		it.each( [
+			[ 'withName', () => schemaOfDependentSubjects.withName( 'Renamed' ) ],
+			[ 'withDescription', () => schemaOfDependentSubjects.withDescription( 'Described' ) ],
+			[ 'withAddedPropertyDefinition', () => schemaOfDependentSubjects.withAddedPropertyDefinition( newTextProperty( { name: 'baz' } ) ) ],
+			[ 'withReorderedPropertyDefinitions', () => schemaOfDependentSubjects.withReorderedPropertyDefinitions( [ new PropertyName( 'bar' ), new PropertyName( 'foo' ) ] ) ],
+			[ 'withRemovedPropertyDefinition', () => schemaOfDependentSubjects.withRemovedPropertyDefinition( new PropertyName( 'foo' ) ) ],
+		] )( '%s keeps the declaration that the subjects are dependent', ( _, derive ) => {
+			expect( derive().subjectsAreDependent() ).toBe( true );
 		} );
 
 	} );
@@ -204,6 +238,37 @@ describe( 'Schema', () => {
 			const result = schema.statementsFrom( new StatementList( [ existing ] ) );
 
 			expect( result.get( new PropertyName( 'foo' ) ).propertyType ).toBe( TextType.typeName );
+		} );
+
+	} );
+
+	describe( 'statementsAfterEdit', () => {
+
+		const schema = newSchema( {
+			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'foo' } ) ] ),
+		} );
+
+		function statementOf( propertyName: string, text: string ): Statement {
+			return new Statement( new PropertyName( propertyName ), TextType.typeName, newStringValue( text ) );
+		}
+
+		it( 'keeps the existing Statements whose Property the Schema does not declare, beside the edited ones', () => {
+			const result = schema.statementsAfterEdit(
+				new StatementList( [ statementOf( 'foo', 'before' ), statementOf( 'orphan', 'x' ) ] ),
+				new StatementList( [ statementOf( 'foo', 'after' ) ] ),
+			);
+
+			expect( result.get( new PropertyName( 'foo' ) ) ).toEqual( statementOf( 'foo', 'after' ) );
+			expect( result.get( new PropertyName( 'orphan' ) ) ).toEqual( statementOf( 'orphan', 'x' ) );
+		} );
+
+		it( 'leaves out a declared Property the edit left without a Statement', () => {
+			const result = schema.statementsAfterEdit(
+				new StatementList( [ statementOf( 'foo', 'before' ) ] ),
+				new StatementList( [] ),
+			);
+
+			expect( result.has( new PropertyName( 'foo' ) ) ).toBe( false );
 		} );
 
 	} );

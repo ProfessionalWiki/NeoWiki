@@ -27,4 +27,9 @@ interface ReplaceSubjectPresenter {
 	 */
 	public function presentValidationFailed( array $violations ): void;
 
+	/**
+	 * Called when the write did not land. $errorMessage is null when the write reported no message.
+	 */
+	public function presentSaveFailed( ?string $errorMessage ): void;
+
 }

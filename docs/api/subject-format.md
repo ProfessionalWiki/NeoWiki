@@ -154,11 +154,16 @@ Subject and the Schema name for any other Subject, or for a main Subject whose p
 stored on it ([ADR 31](../adr/031-optional-subject-labels.md)). `displayNameIsGenerated` is true wherever that Schema
 name is used.
 
+A [Dependent Subject](#dependent-subjects) also carries `hostSubject`: name it after its Schema and its Host Subject,
+as in "Birth of Pablo Picasso", rather than by `displayName`. `hostSubject` holds the Host Subject's `id`, `schema`,
+`displayName` and `displayNameIsGenerated`, plus its own `hostSubject`, named the same way, where the Host Subject is a
+Dependent Subject too. The rows of the Subject lists carry `hostSubject` as well.
+
 - `?expand=page` adds `pageId`, `pageTitle`, and `pageNamespaceId` to each Subject. `pageTitle` is the full page
   title with namespace prefix (e.g. `Help:Installation`); `pageNamespaceId` is the canonical MediaWiki namespace
   ID (e.g. `0` for the main namespace, `12` for Help).
-- `?expand=relations` embeds the Subjects this one's relations target; see
-  [REST API](rest-api.md#the-expand-parameter) for the shape.
+- `?expand=relations` embeds the Subjects this one's relations target, and in turn those that the relations of its
+  Dependent Subjects target; see [REST API](rest-api.md#the-expand-parameter) for the shape.
 - `?revisionId=` returns the Subject as of that MediaWiki revision; an unknown or unreadable revision returns `404`.
 - `?latest=1` returns the Subject as of the hosting page's current revision rather than the one the wiki publishes,
   for editing, when the viewer may see that revision. Combined with `revisionId` or `expand=relations` it returns `400`.
@@ -175,8 +180,9 @@ empty.
 
 `POST /rest.php/neowiki/v0/page/{pageId}/mainSubject` and `.../{pageId}/subjects` create a Subject on a page, and
 `POST /rest.php/neowiki/v0/subjects` creates one together with a page of its own. The body takes `schema` and
-[`statements`](#statement-object), both required, plus an optional `label` and an optional `comment` edit summary.
-Omitting `label`, or passing only whitespace, creates a Subject with no label.
+[`statements`](#statement-object), both required, plus an optional `label`, an optional `comment` edit summary, and
+optional [`dependentSubjects`](#dependent-subjects). Omitting `label`, or passing only whitespace, creates a Subject
+with no label.
 
 The server mints the Subject ID unless you pass one:
 
@@ -212,6 +218,7 @@ main-namespace title. A subject-first wiki titles it by the Subject's ID, in the
 |-------|----------|-------|
 | `label` | No | Replaces the stored label. Omitted or whitespace-only clears any label the Subject has. |
 | `statements` | Yes | Map of property name to Statement; omitted names are deleted. Pass `{}` to clear all. |
+| `dependentSubjects` | No | See [Dependent Subjects](#dependent-subjects). |
 | `comment` | No | Edit summary. |
 
 On every endpoint that takes `statements`, an entry without `propertyType`, or whose value is empty for its type, is
@@ -251,6 +258,46 @@ Violations in the response cover the whole Subject, not only the property writte
 `{propertyName}` is URL-encoded, so `Founded at` is `Founded%20at`. A property name containing `/` is not
 addressable this way on servers that reject `%2F` in paths; write those Statements with
 `PUT /subject/{subjectId}`.
+
+### Dependent Subjects
+
+A Subject whose Schema [declares its Subjects dependent](schema-format.md#top-level-structure) is a
+[Dependent Subject](../glossary.md#dependent-subject); any other Subject is standalone. A Dependent Subject has no
+label, is never a page's main Subject, and exactly one relation points at it: from its Host Subject on the same page,
+through a property whose target Schemas declare their Subjects dependent. Such a property points only at Subjects on
+the page of the Subject holding it. A write that breaks any of this is refused with `422` and
+[these codes](validation-codes.md#rules-for-dependent-subjects).
+
+The [create](#creating-subjects) and [replace](#writing-subjects) endpoints take an optional `dependentSubjects` list,
+written in the same revision as the Subject they create or replace:
+
+```json
+{
+  "label": "Pablo Picasso",
+  "schema": "Person",
+  "statements": {
+    "Birth": { "propertyType": "relation", "value": [ { "target": "s1demo6sssssss1" } ] }
+  },
+  "dependentSubjects": [
+    { "id": "s1demo6sssssss1", "schema": "Birth", "statements": { ... } }
+  ]
+}
+```
+
+Each item has an `id`, a `schema` that declares its Subjects dependent (`400` otherwise), and
+[`statements`](#statement-object). An unused `id`, such as one from `POST /rest.php/neowiki/v0/subject-ids`, creates a
+Subject. When replacing a Subject, the `id` of a Dependent Subject of the same Schema that it points at, directly or
+through other Dependent Subjects, replaces that Dependent Subject. Any other `id` in use answers `409`. A relation to
+another Subject of the same request does not report
+[`relation-target-not-found`](validation-codes.md#relation-target-not-found). The response's `subject`, `schema` and
+`violations` cover only the Subject the request creates or replaces; violations of a Dependent Subject appear only in a
+`422` body.
+
+Every write removes the Dependent Subjects it leaves unreached: those that a standalone Subject on the page pointed at
+before the write, directly or through other Dependent Subjects, and none does after it. Dropping the relation to a
+Dependent Subject removes it, and deleting a Subject removes its Dependent Subjects; a write that leaves one of its own
+`dependentSubjects` unreached is refused instead. These rules never refuse a deletion, and deleting a Dependent Subject
+removes the relation to it.
 
 ### Write responses
 

@@ -4,7 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject;
 
+use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Application\DependentSubjectBuilder;
 use ProfessionalWiki\NeoWiki\Application\NewSubjectIdResolver;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\DependentSubjectRulesViolatedException;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectIdInUseException;
+use ProfessionalWiki\NeoWiki\Application\Validation\DependentSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
@@ -15,13 +20,14 @@ use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
-use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use RuntimeException;
 
@@ -39,10 +45,16 @@ readonly class CreateSubjectAction {
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private PageIdentifiersResolver $pageIdentifiersResolver,
 		private SchemaReferenceParser $schemaReferenceParser,
+		private DependentSubjectBuilder $dependentSubjectBuilder,
+		private DependentSubjectValidator $dependentSubjectValidator,
 		private bool $validationEnforced,
 	) {
 	}
 
+	/**
+	 * @throws InvalidArgumentException When the request holds a value or a Dependent Subject that cannot be built.
+	 * @throws SubjectIdInUseException When a Dependent Subject takes an id another Subject holds.
+	 */
 	public function createSubject( CreateSubjectRequest $request ): void {
 		$pageId = new PageId( $request->pageId );
 
@@ -70,26 +82,29 @@ readonly class CreateSubjectAction {
 		}
 
 		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $pageId );
+		$dependentSubjects = $this->dependentSubjectBuilder->build( $request->dependentSubjects, $subject->id, $pageSubjects );
+		$storedDependentSubjects = $pageSubjects->getAllSubjects()->onlyWithIds( $dependentSubjects->getIds() );
 
-		try {
-			if ( $request->isMainSubject ) {
-				$pageSubjects->createMainSubject( $subject );
-			} else {
-				$pageSubjects->createOtherSubject( $subject );
-			}
-		} catch ( RuntimeException ) {
+		if ( !$this->addToPage( $pageSubjects, $subject, $dependentSubjects, $request->isMainSubject ) ) {
 			$this->presenter->presentSubjectAlreadyExists();
 			return;
 		}
 
-		$violations = $this->proposedSubjectValidator->validate( $subject );
+		$violations = $this->proposedSubjectValidator->validate( $subject, $dependentSubjects );
+		$dependentSubjectViolations = $this->dependentSubjectValidator->validate( $dependentSubjects, $subject, $storedDependentSubjects );
+		$allViolations = array_merge( $violations, $dependentSubjectViolations->all );
 
-		if ( $this->validationEnforced && $this->blockingViolations( $violations ) !== [] ) {
-			$this->presenter->presentValidationFailed( $violations );
+		if ( $this->validationEnforced && $dependentSubjectViolations->blockTheWriteWith( $violations ) ) {
+			$this->presenter->presentValidationFailed( $allViolations );
 			return;
 		}
 
-		$status = $this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $request->comment );
+		try {
+			$status = $this->subjectRepository->savePageSubjects( $pageSubjects, $pageId, $request->comment );
+		} catch ( DependentSubjectRulesViolatedException $exception ) {
+			$this->presenter->presentValidationFailed( array_merge( $allViolations, $exception->violations ) );
+			return;
+		}
 
 		// The read gate above already turns an unresolvable page away; this catches the page going
 		// away between that check and the save, so a dropped write is never reported as created.
@@ -108,7 +123,8 @@ readonly class CreateSubjectAction {
 			GetSubjectResponseItem::fromSubject(
 				$subject,
 				$pageIdentifiers,
-				SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageName )
+				SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageName ),
+				hostSubject: null
 			),
 			$schema,
 			$violations
@@ -116,14 +132,25 @@ readonly class CreateSubjectAction {
 	}
 
 	/**
-	 * @param Violation[] $violations
-	 * @return Violation[]
+	 * False, adding nothing, when the page already holds $subject's id, or already has a Main Subject and
+	 * $subject is to be one.
 	 */
-	private function blockingViolations( array $violations ): array {
-		return array_values( array_filter(
-			$violations,
-			static fn ( Violation $v ): bool => $v->isBlocking()
-		) );
+	private function addToPage( PageSubjects $pageSubjects, Subject $subject, SubjectMap $dependentSubjects, bool $isMainSubject ): bool {
+		try {
+			if ( $isMainSubject ) {
+				$pageSubjects->createMainSubject( $subject );
+			} else {
+				$pageSubjects->createOtherSubject( $subject );
+			}
+		} catch ( RuntimeException ) {
+			return false;
+		}
+
+		foreach ( $dependentSubjects->asArray() as $dependentSubject ) {
+			$pageSubjects->putSubject( $dependentSubject );
+		}
+
+		return true;
 	}
 
 	private function buildSubject(

@@ -6,17 +6,18 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\Content;
 
 use MediaWiki\Content\ValidationParams;
 use MediaWiki\Title\Title;
-use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContentHandler;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use StatusValue;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContentHandler
+ * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\DependentSubjectSchemaRules
  * @group Database
  */
-class SchemaContentHandlerValidateSaveTest extends MediaWikiIntegrationTestCase {
+class SchemaContentHandlerValidateSaveTest extends NeoWikiIntegrationTestCase {
 
 	private function validate( string $json, string $name = 'Person' ): StatusValue {
 		$handler = new SchemaContentHandler( SchemaContent::CONTENT_MODEL_ID );
@@ -65,6 +66,33 @@ class SchemaContentHandlerValidateSaveTest extends MediaWikiIntegrationTestCase 
 		$this->assertStringContainsString( '2 errors', $text );
 		$this->assertStringContainsString( '/propertyDefinitions/Owner', $text );
 		$this->assertStringContainsString( '/propertyDefinitions/Maker/targetSchemas/0', $text );
+	}
+
+	public function testChangingWhetherTheSubjectsOfAStoredSchemaAreDependentFailsValidation(): void {
+		$this->createSchema( 'Birth', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
+
+		$status = $this->validate( '{ "propertyDefinitions": {} }', 'Birth' );
+
+		$this->assertStatusError( 'neowiki-schema-dependence-unchangeable', $status );
+	}
+
+	public function testEditingAStoredSchemaWithoutChangingItsDeclarationPassesValidation(): void {
+		$this->createSchema( 'Birth', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
+
+		$status = $this->validate( '{ "subjectsAreDependent": true, "description": "Edited", "propertyDefinitions": {} }', 'Birth' );
+
+		$this->assertStatusGood( $status );
+	}
+
+	public function testARelationPropertyTargetingSchemasWithDependentAndWithStandaloneSubjectsFailsValidation(): void {
+		$this->createSchema( 'Birth', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
+		$this->createSchema( 'Place', '{"propertyDefinitions":{}}' );
+
+		$status = $this->validate(
+			'{ "propertyDefinitions": { "Related": { "type": "relation", "targetSchemas": [ "Birth", "Place" ] } } }'
+		);
+
+		$this->assertStatusError( 'neowiki-schema-relation-targets-mixed', $status );
 	}
 
 }

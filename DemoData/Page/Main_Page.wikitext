@@ -10,7 +10,7 @@ This is a public demo of [https://neowiki.ai NeoWiki]. Explore the examples belo
 '''Just exploring'''
 
 * Structured data, queried in a page: [[Museum collection]] runs live graph queries over linked museums, artworks, and exhibitions.
-* One Subject and what references it: [[Special:Subject/sEpfwJLnxyQy6vR|the Rijksmuseum on Special:Subject]] lists the artwork, exhibition, and attendance records that point at it.
+* One Subject and what references it: [[Special:Subject/sEpfwJLnxyQy6vR|the Rijksmuseum on Special:Subject]] lists the artwork and exhibition that point at it.
 * Several Subjects on one page: [{{fullurl:Rijksmuseum|action=subjects}} the Rijksmuseum's Data tab] holds the museum and its attendance records as separate Subjects.
 * Every Subject is shaped by a [[Special:Schemas|Schema]], and [[Special:Layouts|Layouts]] control how Subjects are displayed.
 * Every Subject's data as RDF: [[RDF and ontology mappings]] shows native, EDM and CIDOC-CRM projections of the demo content, the ontology ones defined by [[Special:Mappings|Mappings]].

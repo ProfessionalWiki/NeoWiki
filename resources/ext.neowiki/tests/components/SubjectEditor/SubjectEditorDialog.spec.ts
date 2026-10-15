@@ -21,21 +21,26 @@ import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
+import DependentSubjectEditor from '@/components/SubjectEditor/DependentSubjectEditor.vue';
 import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
 import PaneDivider from '@/components/common/PaneDivider.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
-import { CdxDialog, CdxMessage } from '@wikimedia/codex';
+import { CdxDialog, CdxLookup, CdxMessage } from '@wikimedia/codex';
+import type { MenuItemData } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
-import { newSubject, unresolvedPage } from '@/TestHelpers.ts';
+import { newSubject, unresolvedPage, newSchema } from '@/TestHelpers.ts';
 import { StubSubjectRepository } from '@/domain/SubjectRepository.ts';
 import { SubjectCreationKey, type SubjectCreation } from '@/components/common/SubjectCreation.ts';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import { WriteRefusedError } from '@/components/SubjectEditor/WriteRefusedError.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
+import { PageSubjects } from '@/domain/PageSubjects.ts';
+import { InMemorySchemaLookup, type SchemaLookup } from '@/application/SchemaLookup.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 const $i18n = createI18nMock();
 
@@ -52,6 +57,8 @@ let editorSaveBlockerBySchema: Record<string, SaveBlocker | null> = {};
 // What the stubbed editor reports its fields hold, keyed by Schema name, so a test can make
 // one pane's form yield a real relation. Empty means no values at all.
 let editorStatementsBySchema: Record<string, Statement[]> = {};
+// What the stubbed editor reports as its Dependent Subjects, keyed by Schema name.
+let editorDependentSubjectsBySchema: Record<string, Subject[]> = {};
 // What mw.config answers, read at each call, so a test can switch the wiki to subject-first.
 let wikiConfig: Record<string, unknown> = {};
 
@@ -70,7 +77,9 @@ const SubjectEditorStub = {
 			}
 			return editorSaveBlocker;
 		};
-		return { getSubjectData, saveBlocker };
+		const getDependentSubjects = (): Subject[] =>
+			editorDependentSubjectsBySchema[ props.schema?.getName() ?? '' ] ?? [];
+		return { getSubjectData, getDependentSubjects, saveBlocker };
 	},
 };
 
@@ -91,6 +100,7 @@ describe( 'SubjectEditorDialog', () => {
 		editorSaveBlocker = null;
 		editorSaveBlockerBySchema = {};
 		editorStatementsBySchema = {};
+		editorDependentSubjectsBySchema = {};
 		// Debounce 0 is blur-only mode: the dry-run fires on blur / pre-save
 		// (via flush()), which runs synchronously in tests.
 		wikiConfig = { wgNeoWikiValidationDebounceMs: 0, wgArticleId: 42 };
@@ -105,11 +115,11 @@ describe( 'SubjectEditorDialog', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let schemaPermissionHints: any;
 
-	const mockSchema = new Schema(
-		'TestSchema',
-		'A test schema',
-		new PropertyDefinitionList( [] ),
-	);
+	const mockSchema = newSchema( {
+		title: 'TestSchema',
+		description: 'A test schema',
+		properties: new PropertyDefinitionList( [] ),
+	} );
 
 	const mockSubject = newSubject( {
 		id: 's1demo5sssssss1',
@@ -131,7 +141,7 @@ describe( 'SubjectEditorDialog', () => {
 	const mountComponent = (
 		canEditSchema: boolean,
 		stubs: Record<string, any>,
-		onSave?: ( subject: any, comment: string ) => Promise<void>,
+		onSave?: ( subject: any, dependentSubjects: readonly Subject[], comment: string ) => Promise<void>,
 		schema: Schema = mockSchema,
 		provide: Record<string, unknown> = {},
 		subject: Subject = mockSubject,
@@ -139,12 +149,18 @@ describe( 'SubjectEditorDialog', () => {
 		attachTo: Element | undefined = undefined,
 		// Left out by every host that cannot create Subjects, which is what the dialog reads
 		// to decide whether the relation fields are offered creation at all.
-		onCreate: ( ( subject: any, pageId: number, comment: string ) => Promise<void> ) | undefined = undefined,
+		onCreate: (
+			( subject: any, pageId: number, dependentSubjects: readonly Subject[], comment: string ) => Promise<void>
+		) | undefined = undefined,
 		extraProps: Record<string, unknown> = {},
 	): VueWrapper => {
 		schemaPermissionHints = {
 			canEditSchema: vi.fn().mockResolvedValue( canEditSchema ),
 		};
+
+		// The Schema store pages the wiki's Schema repository, which is the one the dialog is handed as a service.
+		const schemaRepository = { ...NeoWikiTestServices.getServices(), ...provide }[ Service.SchemaRepository ] as SchemaLookup;
+		useSchemaStore().fetchAllSchemaSummaries = async () => ( await schemaRepository.getSchemaSummaries( null, 500 ) ).schemas;
 
 		return mount( SubjectEditorDialog, {
 			attachTo,
@@ -189,14 +205,30 @@ describe( 'SubjectEditorDialog', () => {
 		useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [] );
 	} );
 
+	const HANDLER_PARAMETERS = {
+		save: [ 'subject', 'dependentSubjects', 'comment' ],
+		create: [ 'subject', 'pageId', 'dependentSubjects', 'comment' ],
+	};
+
+	function callsTo( handler: Mock, kind: keyof typeof HANDLER_PARAMETERS ): Record<string, unknown>[] {
+		return handler.mock.calls.map( ( args ) =>
+			Object.fromEntries( HANDLER_PARAMETERS[ kind ].map( ( name, index ) => [ name, args[ index ] ] ) ) );
+	}
+
+	function summariesOf( schemas: Schema[] ): Mock {
+		const lookup = new InMemorySchemaLookup( schemas );
+
+		return vi.fn( ( cursor: string | null, limit: number ) => lookup.getSchemaSummaries( cursor, limit ) );
+	}
+
 	function schemaWithProperty( propertyName: string ): Schema {
-		return new Schema(
-			'TestSchema',
-			'A test schema',
-			new PropertyDefinitionList( [
+		return newSchema( {
+			title: 'TestSchema',
+			description: 'A test schema',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( propertyName, { type: TextType.typeName } ),
 			] ),
-		);
+		} );
 	}
 
 	function controlOf( wrapper: VueWrapper, fieldName: string, selector: string ): Element {
@@ -401,6 +433,7 @@ describe( 'SubjectEditorDialog', () => {
 
 			await wrapper.setProps( { open: false } );
 			await wrapper.setProps( { open: true } );
+			await flushPromises();
 
 			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
 		} );
@@ -414,6 +447,7 @@ describe( 'SubjectEditorDialog', () => {
 
 			await wrapper.setProps( { open: false } );
 			await wrapper.setProps( { open: true } );
+			await flushPromises();
 			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
 
 			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
@@ -450,6 +484,7 @@ describe( 'SubjectEditorDialog', () => {
 
 		await wrapper.setProps( { open: false } );
 		await wrapper.setProps( { open: true } );
+		await flushPromises();
 
 		expect( ( wrapper.vm as any ).hasChanged ).toBe( false );
 	} );
@@ -1131,6 +1166,7 @@ describe( 'SubjectEditorDialog', () => {
 			await flushPromises();
 
 			await wrapper.setProps( { subject: mockSubject.withLabel( 'Renamed Subject' ) } );
+			await flushPromises();
 
 			expect( titleText( wrapper ) ).toBe( 'Renamed Subject' );
 		} );
@@ -1142,6 +1178,7 @@ describe( 'SubjectEditorDialog', () => {
 			await editLabel( wrapper, 'Renamed Subject' );
 			await wrapper.setProps( { open: false } );
 			await wrapper.setProps( { open: true } );
+			await flushPromises();
 
 			expect( titleText( wrapper ) ).toBe( 'Test Subject' );
 		} );
@@ -1175,10 +1212,14 @@ describe( 'SubjectEditorDialog', () => {
 		}
 
 		function schemaStartingWith( first: Record<string, unknown> ): Schema {
-			return new Schema( 'TestSchema', 'A test schema', new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'First', first ),
-				createPropertyDefinitionFromJson( 'Second', { type: TextType.typeName } ),
-			] ) );
+			return newSchema( {
+				title: 'TestSchema',
+				description: 'A test schema',
+				properties: new PropertyDefinitionList( [
+					createPropertyDefinitionFromJson( 'First', first ),
+					createPropertyDefinitionFromJson( 'Second', { type: TextType.typeName } ),
+				] ),
+			} );
 		}
 
 		function rootPanel( wrapper: VueWrapper ): Element {
@@ -1236,21 +1277,21 @@ describe( 'SubjectEditorDialog', () => {
 	} );
 
 	describe( 'Panes', () => {
-		const personSchema = new Schema(
-			'Person',
-			'A person',
-			new PropertyDefinitionList( [] ),
-		);
+		const personSchema = newSchema( {
+			title: 'Person',
+			description: 'A person',
+			properties: new PropertyDefinitionList( [] ),
+		} );
 
 		// The module-wide mockSchema declares no relation and mockSubject stores no target, so no
 		// navigator is rendered anywhere in "Panes" except where these two fixtures are passed.
-		const relationRootSchema = new Schema(
-			'TestSchema',
-			'A test schema',
-			new PropertyDefinitionList( [
+		const relationRootSchema = newSchema( {
+			title: 'TestSchema',
+			description: 'A test schema',
+			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'Colleague', { type: 'relation', targetSchemas: [ 'Person' ] } ),
 			] ),
-		);
+		} );
 
 		function colleagueStatement( ...targetIds: string[] ): Statement {
 			return new Statement(
@@ -1313,11 +1354,11 @@ describe( 'SubjectEditorDialog', () => {
 		interface TargetReposMount {
 			wrapper: VueWrapper;
 			mockSubjectRepository: { getSubjectForEditing: Mock; mintSubjectId: Mock };
-			mockSchemaRepository: { getSchema: Mock };
+			mockSchemaRepository: { getSchema: Mock; getSchemaSummaries: Mock };
 			target: Subject;
 		}
 
-		type SaveHandler = ( subject: any, comment: string ) => Promise<void>;
+		type SaveHandler = ( subject: any, dependentSubjects: readonly Subject[], comment: string ) => Promise<void>;
 
 		interface PaneStackOptions {
 			onSave?: SaveHandler;
@@ -1342,7 +1383,10 @@ describe( 'SubjectEditorDialog', () => {
 				// repository actually mints.
 				mintSubjectId: vi.fn( () => new StubSubjectRepository( [] ).mintSubjectId() ),
 			};
-			const mockSchemaRepository = { getSchema: vi.fn().mockResolvedValue( personSchema ) };
+			const mockSchemaRepository = {
+				getSchema: vi.fn().mockResolvedValue( personSchema ),
+				getSchemaSummaries: summariesOf( [] ),
+			};
 			const wrapper = mountComponent(
 				true,
 				{ ...paneStackStubs, ...stubOverrides },
@@ -1519,6 +1563,7 @@ describe( 'SubjectEditorDialog', () => {
 
 			const newRoot = targetSubject( 's99999999999999', 'New root' );
 			await wrapper.setProps( { subject: newRoot } );
+			await flushPromises();
 
 			expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 1 );
 			const panel = wrapper.find( '#ext-neowiki-panel-s99999999999999' );
@@ -1972,6 +2017,7 @@ describe( 'SubjectEditorDialog', () => {
 				const wrapper = await partiallySave( partialSaveHandler() );
 
 				await wrapper.setProps( { subject: targetSubject( 's99999999999999', 'New root' ) } );
+				await flushPromises();
 				// The old root, opened again as a target, is the fetched Subject and not the pane
 				// the last session left behind.
 				wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( rootSubjectId ) );
@@ -1986,6 +2032,7 @@ describe( 'SubjectEditorDialog', () => {
 
 				await wrapper.setProps( { open: false } );
 				await wrapper.setProps( { open: true } );
+				await flushPromises();
 
 				expect( ( wrapper.vm as any ).hasChanged ).toBe( false );
 				expect( ( paneFor( wrapper, rootSubjectId ).vm as any ).label ).not.toBe( 'Written root' );
@@ -2472,6 +2519,7 @@ describe( 'SubjectEditorDialog', () => {
 
 					await wrapper.setProps( { open: false } );
 					await wrapper.setProps( { open: true } );
+					await flushPromises();
 					await clickEditTarget( wrapper );
 
 					expect( mockSubjectRepository.getSubjectForEditing ).toHaveBeenCalledTimes( 2 );
@@ -2735,10 +2783,14 @@ describe( 'SubjectEditorDialog', () => {
 
 			// The schemas the drafts of these tests are edited against. Person carries a relation
 			// of its own, so a draft can point at another draft; Employer ends the chain.
-			const personCreationSchema = new Schema( 'Person', 'A person', new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'Colleague', { type: 'relation', targetSchemas: [ 'Employer' ] } ),
-			] ) );
-			const employerSchema = new Schema( 'Employer', 'An employer', new PropertyDefinitionList( [] ) );
+			const personCreationSchema = newSchema( {
+				title: 'Person',
+				description: 'A person',
+				properties: new PropertyDefinitionList( [
+					createPropertyDefinitionFromJson( 'Colleague', { type: 'relation', targetSchemas: [ 'Employer' ] } ),
+				] ),
+			} );
+			const employerSchema = newSchema( { title: 'Employer', description: 'An employer', properties: new PropertyDefinitionList( [] ) } );
 			const creationSchemas: Record<string, Schema> = {
 				Person: personCreationSchema,
 				Employer: employerSchema,
@@ -2962,7 +3014,7 @@ describe( 'SubjectEditorDialog', () => {
 
 				expect( onCreate ).toHaveBeenCalledTimes( 1 );
 				expect( ( onCreate.mock.calls[ 0 ][ 0 ] as Subject ).getId().text ).toBe( mintedId );
-				expect( onCreate.mock.calls[ 0 ][ 1 ] ).toBe( hostPage.getPageId() );
+				expect( callsTo( onCreate, 'create' )[ 0 ].pageId ).toBe( hostPage.getPageId() );
 			} );
 
 			// The host's create handler, after a draft was created from a stored target on the given
@@ -2989,13 +3041,13 @@ describe( 'SubjectEditorDialog', () => {
 			it( 'creates the draft on the page of the subject being edited, not the dialog\'s root', async () => {
 				const onCreate = await createHandlerAfterDraftFromTargetOn( otherPage );
 
-				expect( onCreate ).toHaveBeenCalledWith( expect.anything(), otherPage.getPageId(), expect.anything() );
+				expect( callsTo( onCreate, 'create' ) ).toContainEqual( expect.objectContaining( { pageId: otherPage.getPageId() } ) );
 			} );
 
 			it( 'creates the draft on the root\'s page when the subject being edited has no resolved page', async () => {
 				const onCreate = await createHandlerAfterDraftFromTargetOn( unresolvedPage() );
 
-				expect( onCreate ).toHaveBeenCalledWith( expect.anything(), hostPage.getPageId(), expect.anything() );
+				expect( callsTo( onCreate, 'create' ) ).toContainEqual( expect.objectContaining( { pageId: hostPage.getPageId() } ) );
 			} );
 
 			it( 'updates the subject that refers to the draft with the host\'s save handler', async () => {
@@ -3262,6 +3314,86 @@ describe( 'SubjectEditorDialog', () => {
 				expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
 			} );
 
+			describe( 'with Dependent Subjects', () => {
+				const BIRTH_ID = 's1birthAAAAAAA1';
+				const birthSchema = newSchema( {
+					title: 'Birth',
+					description: 'A birth',
+					properties: new PropertyDefinitionList( [
+						createPropertyDefinitionFromJson( 'Midwife', { type: 'relation', targetSchemas: [ 'Person' ] } ),
+					] ),
+					subjectsAreDependent: true,
+				} );
+				const bornSchema = newSchema( {
+					title: 'Born',
+					description: 'Someone born',
+					properties: new PropertyDefinitionList( [
+						createPropertyDefinitionFromJson( 'Birth', { type: 'relation', targetSchemas: [ 'Birth' ], required: true } ),
+					] ),
+				} );
+
+				it( 'starts a Subject created from a relation field with the Dependent Subject a required field needs', async () => {
+					const { wrapper, mockSchemaRepository, mockSubjectRepository } = await mountReadyForCreation();
+					mockSchemaRepository.getSchema.mockImplementation(
+						( name: string ) => Promise.resolve( { Born: bornSchema, Birth: birthSchema }[ name ] ?? personSchema ),
+					);
+					mockSchemaRepository.getSchemaSummaries = summariesOf( [ bornSchema, birthSchema ] );
+					mockSubjectRepository.mintSubjectId
+						.mockResolvedValueOnce( new SubjectId( mintedId ) )
+						.mockResolvedValueOnce( new SubjectId( BIRTH_ID ) );
+
+					await createTarget( wrapper, { schemaName: 'Born' } );
+
+					const draft = paneFor( wrapper, mintedId ).props( 'subject' ) as Subject;
+					expect( draft.getStatementValue( new PropertyName( 'Birth' ) ) )
+						.toEqual( new RelationValue( [ newRelation( undefined, BIRTH_ID ) ] ) );
+				} );
+
+				it( 'writes a draft that only a Dependent Subject points at', async () => {
+					const onCreate = vi.fn().mockResolvedValue( undefined );
+					const hostOfBirthSchema = newSchema( {
+						title: 'TestSchema',
+						description: 'A test schema',
+						properties: new PropertyDefinitionList( [
+							createPropertyDefinitionFromJson( 'Birth', { type: 'relation', targetSchemas: [ 'Birth' ] } ),
+						] ),
+					} );
+					const wrapper = mountComponent(
+						true,
+						{ ...paneStackStubs, SubjectEditor: CreationAwareSubjectEditorStub },
+						vi.fn().mockResolvedValue( undefined ),
+						hostOfBirthSchema,
+						{
+							[ Service.SubjectRepository ]: new StubSubjectRepository( [] ),
+							[ Service.SchemaRepository ]: new InMemorySchemaLookup(
+								[ hostOfBirthSchema, birthSchema, personCreationSchema, employerSchema ],
+							),
+						},
+						rootOnHostPage,
+						undefined,
+						onCreate,
+					);
+					await flushPromises();
+					const draft = await createTarget( wrapper );
+
+					editorDependentSubjectsBySchema = { TestSchema: [ newSubject( {
+						id: BIRTH_ID,
+						label: null,
+						schemaName: 'Birth',
+						statements: new StatementList( [ new Statement(
+							new PropertyName( 'Midwife' ),
+							'relation',
+							new RelationValue( [ newRelation( undefined, draft!.getId().text ) ] ),
+						) ] ),
+					} ) ] };
+					wrapper.findAllComponents( SubjectEditPane )[ 0 ].findComponent( SubjectEditor ).vm.$emit( 'relation-change' );
+					await nextTick();
+					await triggerSave( wrapper, '' );
+
+					expect( subjectIdsPassedTo( onCreate ) ).toEqual( [ mintedId ] );
+				} );
+			} );
+
 			// What the subject creator opens: the Subject at the root of the dialog is one the
 			// wiki does not hold either, so the save creates it alongside whatever it points at.
 			describe( 'when the root is new too', () => {
@@ -3457,11 +3589,9 @@ describe( 'SubjectEditorDialog', () => {
 
 					await triggerSave( wrapper, '' );
 
-					expect( onCreate ).toHaveBeenCalledWith(
-						expect.anything(),
-						expect.any( Number ),
-						'neowiki-subject-editor-summary-default-create',
-					);
+					expect( callsTo( onCreate, 'create' ) ).toContainEqual( expect.objectContaining( {
+						comment: 'neowiki-subject-editor-summary-default-create',
+					} ) );
 				} );
 
 				it( 'counts the root and a draft as one page on a page-first wiki', async () => {
@@ -3523,6 +3653,628 @@ describe( 'SubjectEditorDialog', () => {
 			] );
 
 			repository.mockRestore();
+		} );
+	} );
+	describe( 'Dependent Subjects', () => {
+		const BIRTH_ID = 's1birthAAAAAAA1';
+		const MINTED_ID = 'smintedAAAAAAA1';
+		const hostPage = new PageIdentifiers( 42, 'Host page' );
+		const birthSchema = newSchema( {
+			title: 'Birth',
+			description: 'A birth',
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Date', { type: TextType.typeName } ),
+			] ),
+			subjectsAreDependent: true,
+		} );
+		const hostSchema = newSchema( {
+			title: 'TestSchema',
+			description: 'A test schema',
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Birth', { type: 'relation', targetSchemas: [ 'Birth' ] } ),
+			] ),
+		} );
+
+		function birthBorn( date: string ): Subject {
+			return newSubject( {
+				id: BIRTH_ID,
+				label: null,
+				schemaName: 'Birth',
+				statements: new StatementList( [
+					new Statement( new PropertyName( 'Date' ), TextType.typeName, newStringValue( date ) ),
+				] ),
+			} );
+		}
+
+		const hostPointingAtBirth = newSubject( {
+			id: rootSubjectId,
+			label: 'Test Subject',
+			statements: new StatementList( [ new Statement(
+				new PropertyName( 'Birth' ),
+				'relation',
+				new RelationValue( [ newRelation( undefined, BIRTH_ID ) ] ),
+			) ] ),
+			pageIdentifiers: hostPage,
+		} );
+
+		// Its Schema starts it with a Birth, and its page is yet to be created.
+		const newRoot = newSubject( { id: rootSubjectId, pageIdentifiers: PageIdentifiers.notYetCreated() } );
+		const requiredBirthSchema = newSchema( {
+			title: 'TestSchema',
+			description: 'A test schema',
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Birth', { type: 'relation', targetSchemas: [ 'Birth' ], required: true } ),
+			] ),
+		} );
+
+		function pageHolding( pageId: number, subjects: Subject[] ): unknown {
+			return {
+				pageSubjects: new PageSubjects( pageId, null, subjects ),
+				referencedSubjects: [],
+				notFoundTargetIds: [],
+				schemas: [],
+			};
+		}
+
+		interface Wiki {
+			provide: Record<string, unknown>;
+			getPageSubjects: Mock;
+			getSubjectForEditing: Mock;
+		}
+
+		// What the dialog reads through: the wiki's Schemas, and the Subjects on the page of the one it edits. Every
+		// id it mints is MINTED_ID.
+		function wikiHolding( schemas: Schema[], pageSubjects: Subject[] ): Wiki {
+			const getPageSubjects = vi.fn( ( pageId: number ) => Promise.resolve( pageHolding( pageId, pageSubjects ) ) );
+			const getSubjectForEditing = vi.fn();
+
+			return {
+				provide: {
+					[ Service.SubjectRepository ]: {
+						getPageSubjects,
+						getSubjectForEditing,
+						mintSubjectId: () => Promise.resolve( new SubjectId( MINTED_ID ) ),
+					},
+					[ Service.SchemaRepository ]: new InMemorySchemaLookup( schemas ),
+				},
+				getPageSubjects,
+				getSubjectForEditing,
+			};
+		}
+
+		// Holds the reads of the page of the Subject it edits until the test releases them, and answers any read
+		// after that at once, as a slow network does, however many reads the dialog makes.
+		function wikiReadingOnRelease(): { provide: Record<string, unknown>; release: () => void } {
+			const wiki = wikiHolding( [ hostSchema, birthSchema ], [] );
+			const held: ( () => void )[] = [];
+			let released = false;
+
+			wiki.getPageSubjects.mockImplementation( ( pageId: number ) => {
+				const answer = (): unknown => pageHolding( pageId, [ hostPointingAtBirth, birthBorn( '1881' ) ] );
+
+				return released ? Promise.resolve( answer() ) : new Promise( ( resolve ) => {
+					held.push( () => resolve( answer() ) );
+				} );
+			} );
+
+			return {
+				provide: wiki.provide,
+				release: () => {
+					released = true;
+					held.splice( 0 ).forEach( ( resolveHeld ) => resolveHeld() );
+				},
+			};
+		}
+
+		async function saveAfterAChange( wrapper: VueWrapper ): Promise<void> {
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'a summary' );
+			await flushPromises();
+		}
+
+		afterEach( () => {
+			vi.restoreAllMocks();
+		} );
+
+		describe( 'that the form edits', () => {
+			const RECORD_ID = 's1recordAAAAAA1';
+			const SECOND_BIRTH_ID = 's1birthAAAAAAA2';
+			const recordSchema = newSchema( {
+				title: 'Record',
+				description: 'A record',
+				properties: new PropertyDefinitionList( [
+					createPropertyDefinitionFromJson( 'Archive', { type: TextType.typeName } ),
+				] ),
+				subjectsAreDependent: true,
+			} );
+			const birthWithRecordSchema = newSchema( {
+				title: 'Birth',
+				description: 'A birth',
+				properties: new PropertyDefinitionList( [
+					createPropertyDefinitionFromJson( 'Date', { type: TextType.typeName } ),
+					createPropertyDefinitionFromJson( 'Record', { type: 'relation', targetSchemas: [ 'Record' ] } ),
+				] ),
+				subjectsAreDependent: true,
+			} );
+			const hostOfBirthsSchema = newSchema( {
+				title: 'TestSchema',
+				description: 'A test schema',
+				properties: new PropertyDefinitionList( [
+					createPropertyDefinitionFromJson( 'Births', { type: 'relation', targetSchemas: [ 'Birth' ], multiple: true } ),
+				] ),
+			} );
+
+			function relationTo( propertyName: string, ...targetIds: string[] ): Statement {
+				return new Statement(
+					new PropertyName( propertyName ),
+					'relation',
+					new RelationValue( targetIds.map( ( targetId ) => newRelation( undefined, targetId ) ) ),
+				);
+			}
+
+			function storedBirth( id: string, date: string, ...recordIds: string[] ): Subject {
+				return newSubject( {
+					id,
+					label: null,
+					schemaName: 'Birth',
+					statements: new StatementList( [
+						new Statement( new PropertyName( 'Date' ), TextType.typeName, newStringValue( date ) ),
+						...( recordIds.length === 0 ? [] : [ relationTo( 'Record', ...recordIds ) ] ),
+					] ),
+				} );
+			}
+
+			const storedRecord = newSubject( {
+				id: RECORD_ID,
+				label: null,
+				schemaName: 'Record',
+				statements: new StatementList( [
+					new Statement( new PropertyName( 'Archive' ), TextType.typeName, newStringValue( 'Malaga' ) ),
+				] ),
+			} );
+
+			function mountHostOf( births: string[], stored: Subject[], onSave: Mock ): VueWrapper {
+				const host = newSubject( {
+					id: rootSubjectId,
+					label: 'Test Subject',
+					statements: new StatementList( [ relationTo( 'Births', ...births ) ] ),
+					pageIdentifiers: hostPage,
+				} );
+
+				return mountComponent(
+					true, {}, onSave, hostOfBirthsSchema,
+					wikiHolding( [ hostOfBirthsSchema, birthWithRecordSchema, recordSchema ], [ host, ...stored ] ).provide,
+					host,
+				);
+			}
+
+			async function typeInto( field: Element, text: string ): Promise<void> {
+				await new DOMWrapper( field ).setValue( text );
+				await flushPromises();
+			}
+
+			async function save( wrapper: VueWrapper ): Promise<void> {
+				await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'a summary' );
+				await flushPromises();
+			}
+
+			function idsWrittenAlong( onSave: Mock ): string[] {
+				return ( callsTo( onSave, 'save' )[ 0 ].dependentSubjects as Subject[] ).map( ( subject ) => subject.getId().text );
+			}
+
+			function birthsSaved( onSave: Mock ): string[] {
+				const births = ( callsTo( onSave, 'save' )[ 0 ].subject as Subject ).getStatementValue( new PropertyName( 'Births' ) );
+
+				return births instanceof RelationValue ? births.relations.map( ( relation ) => relation.target.text ) : [];
+			}
+
+			// Through the pane rather than the wrapper, whose DOM does not reach a dialog the real Teleport moved.
+			async function removeBirth( wrapper: VueWrapper, index: number ): Promise<void> {
+				await wrapper.findComponent( SubjectEditPane ).findAll( '.ext-neowiki-dependent-subject-editor__remove' )[ index ].trigger( 'click' );
+				await flushPromises();
+			}
+
+			async function undoRemoval( wrapper: VueWrapper ): Promise<void> {
+				const undo = wrapper.findComponent( SubjectEditPane ).findAll( 'button' )
+					.find( ( button ) => button.text() === 'neowiki-dependent-subject-undo' );
+
+				if ( undo === undefined ) {
+					throw new Error( 'No Undo button' );
+				}
+
+				await undo.trigger( 'click' );
+				await flushPromises();
+			}
+
+			it( 'writes the Dependent Subjects edited in the form, and not the others', async () => {
+				const onSave = vi.fn().mockResolvedValue( undefined );
+				const wrapper = mountHostOf(
+					[ BIRTH_ID, SECOND_BIRTH_ID ],
+					[ storedBirth( BIRTH_ID, '1881' ), storedBirth( SECOND_BIRTH_ID, '1882' ) ],
+					onSave,
+				);
+				await flushPromises();
+
+				await typeInto( controlOf( wrapper, 'Date', 'input' ), '25 October 1881' );
+				await save( wrapper );
+
+				expect( idsWrittenAlong( onSave ) ).toEqual( [ BIRTH_ID ] );
+			} );
+
+			it( 'writes a Dependent Subject edited inside one left as it was, without the one around it', async () => {
+				const onSave = vi.fn().mockResolvedValue( undefined );
+				const wrapper = mountHostOf( [ BIRTH_ID ], [ storedBirth( BIRTH_ID, '1881', RECORD_ID ), storedRecord ], onSave );
+				await flushPromises();
+
+				await typeInto( controlOf( wrapper, 'Archive', 'input' ), 'Archivo Municipal' );
+				await save( wrapper );
+
+				expect( idsWrittenAlong( onSave ) ).toEqual( [ RECORD_ID ] );
+			} );
+
+			it( 'writes a Dependent Subject added in the form', async () => {
+				const onSave = vi.fn().mockResolvedValue( undefined );
+				const wrapper = mountHostOf( [ BIRTH_ID ], [ storedBirth( BIRTH_ID, '1881' ) ], onSave );
+				await flushPromises();
+
+				await wrapper.findAll( 'button' )
+					.find( ( button ) => button.text() === 'neowiki-dependent-subject-addBirth' )!
+					.trigger( 'click' );
+				await flushPromises();
+				await save( wrapper );
+
+				expect( idsWrittenAlong( onSave ) ).toEqual( [ MINTED_ID ] );
+			} );
+
+			it( 'writes neither a removed Dependent Subject nor the relation to it, though it was edited', async () => {
+				const onSave = vi.fn().mockResolvedValue( undefined );
+				const wrapper = mountHostOf(
+					[ BIRTH_ID, SECOND_BIRTH_ID ],
+					[ storedBirth( BIRTH_ID, '1881' ), storedBirth( SECOND_BIRTH_ID, '1882' ) ],
+					onSave,
+				);
+				await flushPromises();
+				await typeInto( controlOf( wrapper, 'Date', 'input' ), '25 October 1881' );
+
+				await removeBirth( wrapper, 0 );
+				await save( wrapper );
+
+				expect( birthsSaved( onSave ) ).toEqual( [ SECOND_BIRTH_ID ] );
+				expect( idsWrittenAlong( onSave ) ).toEqual( [] );
+			} );
+
+			it( 'writes nothing for a Dependent Subject left as stored whose removal was undone', async () => {
+				const onSave = vi.fn().mockResolvedValue( undefined );
+				const wrapper = mountHostOf( [ BIRTH_ID ], [ storedBirth( BIRTH_ID, '1881' ) ], onSave );
+				await flushPromises();
+
+				await removeBirth( wrapper, 0 );
+				await undoRemoval( wrapper );
+				await save( wrapper );
+
+				expect( birthsSaved( onSave ) ).toEqual( [ BIRTH_ID ] );
+				expect( idsWrittenAlong( onSave ) ).toEqual( [] );
+			} );
+
+			it( 'writes what was typed into a Dependent Subject whose removal was undone', async () => {
+				const onSave = vi.fn().mockResolvedValue( undefined );
+				const wrapper = mountHostOf( [ BIRTH_ID ], [ storedBirth( BIRTH_ID, '1881' ) ], onSave );
+				await flushPromises();
+				await typeInto( controlOf( wrapper, 'Date', 'input' ), '25 October 1881' );
+
+				await removeBirth( wrapper, 0 );
+				await undoRemoval( wrapper );
+				await save( wrapper );
+
+				const [ written ] = callsTo( onSave, 'save' )[ 0 ].dependentSubjects as Subject[];
+				expect( written.getStatementValue( new PropertyName( 'Date' ) ) ).toEqual( newStringValue( '25 October 1881' ) );
+			} );
+
+			it( 'writes an edited Dependent Subject once, not again with a later save', async () => {
+				const onSave = vi.fn().mockResolvedValue( undefined );
+				const wrapper = mountHostOf( [ BIRTH_ID ], [ storedBirth( BIRTH_ID, '1881', RECORD_ID ), storedRecord ], onSave );
+				await flushPromises();
+				await typeInto( controlOf( wrapper, 'Date', 'input' ), '25 October 1881' );
+				await save( wrapper );
+				onSave.mockClear();
+
+				await typeInto( controlOf( wrapper, 'Archive', 'input' ), 'Archivo Municipal' );
+				await save( wrapper );
+
+				expect( idsWrittenAlong( onSave ) ).toEqual( [ RECORD_ID ] );
+			} );
+
+			describe( 'with a relation field of their own', () => {
+				const citySchema = newSchema( { title: 'City', description: 'A city', properties: new PropertyDefinitionList( [] ) } );
+				const birthWithPlaceSchema = newSchema( {
+					title: 'Birth',
+					description: 'A birth',
+					properties: new PropertyDefinitionList( [
+						createPropertyDefinitionFromJson( 'Place', { type: 'relation', targetSchemas: [ 'City' ] } ),
+					] ),
+					subjectsAreDependent: true,
+				} );
+
+				function mountHostOfBirthWithPlace( onCreate: Mock ): VueWrapper {
+					const host = newSubject( {
+						id: rootSubjectId,
+						label: 'Test Subject',
+						statements: new StatementList( [ relationTo( 'Births', BIRTH_ID ) ] ),
+						pageIdentifiers: hostPage,
+					} );
+					const birth = newSubject( { id: BIRTH_ID, label: null, schemaName: 'Birth' } );
+
+					// The real Teleport: its stub remounts the panes when a created Subject brings the navigator in.
+					return mountComponent(
+						true, { teleport: false }, vi.fn().mockResolvedValue( undefined ), hostOfBirthsSchema,
+						wikiHolding( [ hostOfBirthsSchema, birthWithPlaceSchema, citySchema ], [ host, birth ] ).provide,
+						host, undefined, onCreate,
+					);
+				}
+
+				// Picked by position, as a user picks it: the Place field offers "Create a new City" last.
+				async function createCityFromPlace( wrapper: VueWrapper ): Promise<void> {
+					const lookup = wrapper.findComponent( DependentSubjectEditor ).findComponent( CdxLookup );
+					const items = lookup.props( 'menuItems' ) as MenuItemData[];
+
+					lookup.vm.$emit( 'update:selected', items[ items.length - 1 ].value );
+					await flushPromises();
+				}
+
+				function schemasCreated( onCreate: Mock ): string[] {
+					return callsTo( onCreate, 'create' ).map( ( call ) => ( call.subject as Subject ).getSchemaName() );
+				}
+
+				beforeEach( () => {
+					useSubjectStore().validateSubject = vi.fn().mockResolvedValue( [] );
+				} );
+
+				it( 'creates a Subject made inside a Dependent Subject whose removal was undone', async () => {
+					const onCreate = vi.fn().mockResolvedValue( undefined );
+					const wrapper = mountHostOfBirthWithPlace( onCreate );
+					await flushPromises();
+					await createCityFromPlace( wrapper );
+
+					await removeBirth( wrapper, 0 );
+					await undoRemoval( wrapper );
+					await save( wrapper );
+
+					expect( schemasCreated( onCreate ) ).toEqual( [ 'City' ] );
+				} );
+			} );
+		} );
+
+		it( 'shows the Dependent Subjects of the Subject it edits, read from its page', async () => {
+			const wrapper = mountComponent(
+				true, {}, undefined, hostSchema,
+				wikiHolding( [ hostSchema, birthSchema ], [ hostPointingAtBirth, birthBorn( '25 October 1881' ) ] ).provide,
+				hostPointingAtBirth,
+			);
+			await flushPromises();
+
+			expect( ( controlOf( wrapper, 'Date', 'input' ) as HTMLInputElement ).value ).toBe( '25 October 1881' );
+		} );
+
+		it( 'opens a related Subject together with its Dependent Subjects', async () => {
+			const related = newSubject( {
+				id: 's22222222222222',
+				label: 'Related',
+				statements: hostPointingAtBirth.getStatements(),
+				pageIdentifiers: hostPage,
+			} );
+			const wiki = wikiHolding( [ hostSchema, birthSchema ], [ related, birthBorn( '1881' ) ] );
+			wiki.getSubjectForEditing.mockResolvedValue( related );
+			const wrapper = mountComponent( true, {}, undefined, mockSchema, wiki.provide );
+			await flushPromises();
+
+			wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
+			await flushPromises();
+
+			expect( ( controlOf( wrapper, 'Date', 'input' ) as HTMLInputElement ).value ).toBe( '1881' );
+		} );
+
+		it( 'opens once the Dependent Subjects of the Subject it edits are read, not before', async () => {
+			const wiki = wikiReadingOnRelease();
+			const wrapper = mountComponent( true, {}, undefined, hostSchema, wiki.provide, hostPointingAtBirth );
+			await flushPromises();
+			expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( false );
+
+			wiki.release();
+			await flushPromises();
+
+			expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( true );
+		} );
+
+		describe( 'while reading what its form needs takes a while', () => {
+			let releasePage!: () => void;
+
+			function mountReadingSlowly(): VueWrapper {
+				const wiki = wikiReadingOnRelease();
+				releasePage = wiki.release;
+
+				return mountComponent( true, {}, undefined, hostSchema, wiki.provide, hostPointingAtBirth );
+			}
+
+			function showsPending( wrapper: VueWrapper ): boolean {
+				return wrapper.findComponent( CdxDialog ).props( 'open' ) === true &&
+					wrapper.find( '[role="progressbar"]' ).exists();
+			}
+
+			beforeEach( () => {
+				vi.useFakeTimers();
+			} );
+
+			afterEach( () => {
+				vi.useRealTimers();
+			} );
+
+			it( 'shows that it is reading, without the form or its save', async () => {
+				const wrapper = mountReadingSlowly();
+				await flushPromises();
+
+				await vi.advanceTimersByTimeAsync( 300 );
+
+				expect( showsPending( wrapper ) ).toBe( true );
+				expect( wrapper.find( '[aria-busy="true"]' ).exists() ).toBe( true );
+				expect( wrapper.findComponent( SubjectEditor ).exists() ).toBe( false );
+				expect( wrapper.findComponent( SummaryAction ).exists() ).toBe( false );
+			} );
+
+			it( 'shows nothing for the moment a quick read takes', async () => {
+				const wrapper = mountReadingSlowly();
+				await flushPromises();
+
+				await vi.advanceTimersByTimeAsync( 250 );
+
+				expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( false );
+			} );
+
+			it( 'shows the form in place of the pending state once it is read', async () => {
+				const wrapper = mountReadingSlowly();
+				await flushPromises();
+				await vi.advanceTimersByTimeAsync( 300 );
+
+				releasePage();
+				await flushPromises();
+
+				expect( showsPending( wrapper ) ).toBe( false );
+				expect( ( controlOf( wrapper, 'Date', 'input' ) as HTMLInputElement ).value ).toBe( '1881' );
+			} );
+
+			it( 'tells its host it shows only once the form does', async () => {
+				const wrapper = mountReadingSlowly();
+				await flushPromises();
+
+				await vi.advanceTimersByTimeAsync( 300 );
+
+				expect( exposedToHost( wrapper ).shown ).toBe( false );
+				expect( exposedToHost( wrapper ).visible ).toBe( true );
+			} );
+		} );
+
+		it( 'tells its host it shows once the Dependent Subjects of the Subject it edits are read', async () => {
+			const wiki = wikiReadingOnRelease();
+			const wrapper = mountComponent( true, {}, undefined, hostSchema, wiki.provide, hostPointingAtBirth );
+			await flushPromises();
+			expect( exposedToHost( wrapper ).shown ).toBe( false );
+
+			wiki.release();
+			await flushPromises();
+
+			expect( exposedToHost( wrapper ).shown ).toBe( true );
+		} );
+
+		it( 'closes, saying so, when the Dependent Subjects of the Subject it edits cannot be read', async () => {
+			vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+			const wiki = wikiHolding( [ hostSchema, birthSchema ], [] );
+			wiki.getPageSubjects.mockRejectedValue( new Error( 'read failed' ) );
+
+			const wrapper = mountComponent( true, {}, undefined, hostSchema, wiki.provide, hostPointingAtBirth );
+			await flushPromises();
+
+			expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-subject-editor-load-error', { type: 'error' } );
+			expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
+		} );
+
+		it( 'says nothing of a read that fails after its host took it away', async () => {
+			vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+			let failPage!: () => void;
+			const wiki = wikiHolding( [ hostSchema, birthSchema ], [] );
+			wiki.getPageSubjects.mockImplementation( () => new Promise( ( _resolve, reject ) => {
+				failPage = () => reject( new Error( 'read failed' ) );
+			} ) );
+			const wrapper = mountComponent( true, {}, undefined, hostSchema, wiki.provide, hostPointingAtBirth );
+			await flushPromises();
+
+			wrapper.unmount();
+			failPage();
+			await flushPromises();
+
+			expect( mw.notify ).not.toHaveBeenCalled();
+		} );
+
+		it( 'edits the Subject the host replaced it with, though the read for the one before lands later', async () => {
+			let releaseFirstPage!: () => void;
+			const firstRoot = newSubject( { id: 's1firstAAAAAAA1', label: 'First root', pageIdentifiers: hostPage } );
+			const secondRoot = newSubject( { id: 's1secondAAAAAA1', label: 'Second root', pageIdentifiers: new PageIdentifiers( 77, 'Other page' ) } );
+			const wiki = wikiHolding( [ hostSchema, birthSchema ], [] );
+			wiki.getPageSubjects.mockImplementation( ( pageId: number ) => pageId === hostPage.getPageId() ?
+				new Promise( ( resolve ) => {
+					releaseFirstPage = () => resolve( pageHolding( pageId, [ firstRoot ] ) );
+				} ) :
+				Promise.resolve( pageHolding( pageId, [ secondRoot ] ) ) );
+			const wrapper = mountComponent(
+				true, {}, undefined, hostSchema, wiki.provide,
+				firstRoot.withStatements( hostPointingAtBirth.getStatements() ),
+			);
+			await flushPromises();
+
+			await wrapper.setProps( { subject: secondRoot.withStatements( hostPointingAtBirth.getStatements() ) } );
+			await flushPromises();
+			releaseFirstPage();
+			await flushPromises();
+
+			expect( titleText( wrapper ) ).toBe( 'Second root' );
+		} );
+
+		it( 'reads the Dependent Subjects of a Subject of another Schema it is opened on', async () => {
+			const wrapper = mountComponent(
+				true, {}, undefined, mockSchema,
+				wikiHolding( [ mockSchema, hostSchema, birthSchema ], [ hostPointingAtBirth, birthBorn( '1881' ) ] ).provide,
+			);
+			await flushPromises();
+			await wrapper.setProps( { open: false } );
+
+			await wrapper.setProps( { open: true, subject: hostPointingAtBirth, schema: hostSchema } );
+			await flushPromises();
+
+			expect( ( controlOf( wrapper, 'Date', 'input' ) as HTMLInputElement ).value ).toBe( '1881' );
+		} );
+
+		describe( 'of a Subject the wiki does not hold yet', () => {
+			beforeEach( () => {
+				useSubjectStore().validateSubject = vi.fn().mockResolvedValue( [] );
+			} );
+
+			function mountNewRoot( stubs: Record<string, any>, onCreate: Mock ): VueWrapper {
+				return mountComponent(
+					true, stubs, undefined, requiredBirthSchema, wikiHolding( [ requiredBirthSchema, birthSchema ], [] ).provide,
+					newRoot, undefined, onCreate, { rootIsNew: true },
+				);
+			}
+
+			it( 'starts it with the Dependent Subject a required field needs', async () => {
+				const wrapper = mountNewRoot( {}, vi.fn() );
+				await flushPromises();
+
+				expect( wrapper.findAll( '.ext-neowiki-dependent-subject-editor' ) ).toHaveLength( 1 );
+			} );
+
+			it( 'creates it together with its Dependent Subjects', async () => {
+				const birth = newSubject( { id: MINTED_ID, label: null, schemaName: 'Birth' } );
+				editorDependentSubjectsBySchema = { TestSchema: [ birth ] };
+				const onCreate = vi.fn().mockResolvedValue( undefined );
+				const wrapper = mountNewRoot( saveButtonTestStubs, onCreate );
+				await flushPromises();
+
+				await saveAfterAChange( wrapper );
+
+				expect( callsTo( onCreate, 'create' )[ 0 ].dependentSubjects ).toEqual( [ birth ] );
+			} );
+
+			it( 'withholds the complaint about a relation to a Dependent Subject it starts with', async () => {
+				useSubjectStore().validateSubject = vi.fn().mockResolvedValue( [ {
+					propertyName: 'Birth',
+					code: 'relation-target-not-found',
+					args: [ MINTED_ID ],
+					severity: 'warning',
+					valuePartIndex: null,
+				} ] );
+				const wrapper = mountNewRoot( saveButtonTestStubs, vi.fn() );
+				await flushPromises();
+
+				expect( wrapper.findComponent( SubjectEditor ).props( 'serverViolations' ) ).toEqual( [] );
+			} );
 		} );
 	} );
 } );

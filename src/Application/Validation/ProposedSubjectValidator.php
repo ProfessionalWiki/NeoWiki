@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Validation;
 
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
@@ -31,9 +32,12 @@ readonly class ProposedSubjectValidator {
 	}
 
 	/**
+	 * @param SubjectMap $writtenAlongside Subjects stored by the same write, as it leaves them. They count as existing
+	 *   relation targets.
+	 *
 	 * @return Violation[]
 	 */
-	public function validate( Subject $subject ): array {
+	public function validate( Subject $subject, SubjectMap $writtenAlongside = new SubjectMap() ): array {
 		$schema = $this->schemaResolver->getSchema( $subject->getSchemaReference() );
 
 		if ( $schema === null ) {
@@ -55,6 +59,7 @@ readonly class ProposedSubjectValidator {
 		return $this->subjectValidator->validate(
 			$subject->getStatements(),
 			$schema,
+			$writtenAlongside,
 		);
 	}
 

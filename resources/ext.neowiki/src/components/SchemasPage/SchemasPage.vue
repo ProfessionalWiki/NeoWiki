@@ -75,7 +75,7 @@
 				:can-edit="canEditSchema"
 				:can-duplicate="canCreateSchemas"
 				:can-delete="canDeleteSchema"
-				:can-create-subject="canCreateSubjectPage"
+				:can-create-subject="canCreateSubjectPage && !summary.subjectsAreDependent"
 				:subject-list-available="subjectListAvailable"
 				:subject-previews="subjectPreviews"
 				:subject-count="subjectCountOf( summary.name )"

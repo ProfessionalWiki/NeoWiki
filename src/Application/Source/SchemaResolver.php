@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Source;
 use Psr\Log\LoggerInterface;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceResolver;
 use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 
 /**
@@ -17,7 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
  * as a Schema that was never created: callers already report an unresolvable Schema as a degraded state
  * rather than failing.
  */
-readonly class SchemaResolver {
+readonly class SchemaResolver implements SchemaReferenceResolver {
 
 	public function __construct(
 		private SourceRegistry $sourceRegistry,

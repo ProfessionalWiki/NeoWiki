@@ -39,6 +39,7 @@ function held( id: string, isNew: boolean, ...targetIds: string[] ): HeldSubject
 		subject: newSubject( { id, schemaName: 'Link', statements: new StatementList( statements ) } ),
 		schema: linkSchema,
 		isNew,
+		dependentSubjects: [],
 	};
 }
 
@@ -54,6 +55,13 @@ function heldUnderTextSchema( id: string, isNew: boolean, targetId: string ): He
 			] ),
 		} ),
 	};
+}
+
+// The entry with a Dependent Subject that points at targetIds.
+function hosting( entry: HeldSubject, ...targetIds: string[] ): HeldSubject {
+	const dependent = held( 'sDependent11111', false, ...targetIds );
+
+	return { ...entry, dependentSubjects: [ { subject: dependent.subject, schema: dependent.schema } ] };
 }
 
 function idsOf( entries: readonly HeldSubject[] ): string[] {
@@ -145,6 +153,22 @@ describe( 'reachableTargetIds', () => {
 		const reached = reachableTargetIds( [ held( A_ID, true ), held( B_ID, true ) ], [ A_ID ] );
 
 		expect( reached.has( B_ID ) ).toBe( false );
+	} );
+
+	it( 'reaches a draft that a Dependent Subject of a saved Subject points at', () => {
+		const reached = reachableTargetIds( [ hosting( held( SAVED_ID, false ), A_ID ), held( A_ID, true ) ] );
+
+		expect( reached.has( A_ID ) ).toBe( true );
+	} );
+
+	it( 'leaves out a draft that only a Dependent Subject of an unreached draft points at', () => {
+		const reached = reachableTargetIds( [
+			held( SAVED_ID, false ),
+			hosting( held( A_ID, true ), B_ID ),
+			held( B_ID, true ),
+		] );
+
+		expect( reached.size ).toBe( 0 );
 	} );
 
 	it( 'ignores a committed id nothing is held under', () => {
@@ -256,6 +280,16 @@ describe( 'writeOrder', () => {
 		const ordered = writeOrder( [ held( SAVED_ID, false ), held( A_ID, true ) ], [ SAVED_ID ] );
 
 		expect( idsOf( ordered ) ).toEqual( [ A_ID, SAVED_ID ] );
+	} );
+
+	it( 'writes a draft that a Dependent Subject points at before the draft hosting it', () => {
+		const ordered = writeOrder( [
+			held( SAVED_ID, false, A_ID ),
+			hosting( held( A_ID, true ), B_ID ),
+			held( B_ID, true ),
+		] );
+
+		expect( idsOf( ordered ) ).toEqual( [ B_ID, A_ID, SAVED_ID ] );
 	} );
 
 	it( 'ignores an id named first that nothing is held under', () => {

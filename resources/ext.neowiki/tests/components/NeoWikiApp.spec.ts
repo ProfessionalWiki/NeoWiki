@@ -14,10 +14,12 @@ import type { Subject } from '@/domain/Subject.ts';
 import type { StatementList } from '@/domain/StatementList.ts';
 import { RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { Neo } from '@/Neo.ts';
-import { newSchema, newSubject } from '@/TestHelpers.ts';
+import { newDisplayRules, newSchema, newSubject } from '@/TestHelpers.ts';
 import type { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
+import { newTextProperty, TextType } from '@/domain/propertyTypes/Text.ts';
+import { Layout } from '@/domain/Layout.ts';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { NeoWikiTestServices } from '../NeoWikiTestServices.ts';
 import { clickIsFollowed, createI18nMock, setupMwMock } from '../VueTestHelpers.ts';
@@ -47,11 +49,15 @@ describe( 'NeoWikiApp', () => {
 	}
 
 	function loadWithCompanySchema( company: Schema, subjects: Subject[] ): void {
+		loadWith( [ company ], subjects, [] );
+	}
+
+	function loadWith( schemas: Schema[], subjects: Subject[], layouts: Layout[] ): void {
 		vi.spyOn( NeoWikiExtension.getInstance(), 'getStoreStateLoader' ).mockReturnValue(
 			new StoreStateLoader(
 				new StubSubjectRepository( subjects ),
-				new InMemorySchemaRepository( [ company ] ),
-				new InMemoryLayoutLookup( [] ),
+				new InMemorySchemaRepository( schemas ),
+				new InMemoryLayoutLookup( layouts ),
 			),
 		);
 	}
@@ -65,10 +71,13 @@ describe( 'NeoWikiApp', () => {
 		} );
 	}
 
-	function placeViewFor( subjectId: SubjectId ): void {
+	function placeViewFor( subjectId: SubjectId, layoutName?: string ): void {
 		const placeholder = document.createElement( 'div' );
 		placeholder.className = 'ext-neowiki-view';
 		placeholder.dataset.mwNeowikiSubjectId = subjectId.text;
+		if ( layoutName !== undefined ) {
+			placeholder.dataset.mwNeowikiLayoutName = layoutName;
+		}
 		document.body.append( placeholder );
 	}
 
@@ -163,6 +172,83 @@ describe( 'NeoWikiApp', () => {
 			await mountApp( false );
 
 			expect( clickRedLink() ).toBe( true );
+		} );
+
+	} );
+
+	describe( 'a relation to a Dependent Subject', () => {
+
+		const foundingId = new SubjectId( 's1foundingAAAA1' );
+		const productId = new SubjectId( 's1productAAAAA1' );
+
+		beforeEach( () => {
+			loadWith(
+				[
+					newSchema( {
+						title: 'Company',
+						properties: new PropertyDefinitionList( [
+							newRelationProperty( { name: 'Founding', targetSchemas: [ 'Founding' ] } ),
+							newRelationProperty( { name: 'Products', targetSchemas: [ 'Product' ] } ),
+						] ),
+					} ),
+					newSchema( {
+						title: 'Founding',
+						properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Year' } ) ] ),
+						subjectsAreDependent: true,
+					} ),
+				],
+				[
+					newSubject( {
+						id: loadedId,
+						label: 'ACME Inc',
+						schemaName: 'Company',
+						statements: Neo.getInstance().getSubjectDeserializer().deserializeStatements( {
+							Founding: { value: [ { target: foundingId.text } ], propertyType: RelationType.typeName },
+							Products: { value: [ { target: productId.text } ], propertyType: RelationType.typeName },
+						} ),
+					} ),
+					newSubject( {
+						id: foundingId,
+						label: null,
+						displayNameIsGenerated: true,
+						schemaName: 'Founding',
+						statements: Neo.getInstance().getSubjectDeserializer().deserializeStatements( {
+							Year: { value: [ '1849' ], propertyType: TextType.typeName },
+						} ),
+						hostSubject: {
+							id: loadedId.text,
+							schemaName: 'Company',
+							displayName: 'ACME Inc',
+							displayNameIsGenerated: false,
+							hostSubject: null,
+						},
+					} ),
+					newSubject( { id: productId, label: 'Anvil', schemaName: 'Product' } ),
+				],
+				[ new Layout( 'CompanyFounding', 'Company', 'infobox', '', newDisplayRules( 'Founding' ), {} ) ],
+			);
+		} );
+
+		function shownPropertyNames(): string[] {
+			return [ ...document.querySelectorAll( '.ext-neowiki-view .ext-neowiki-infobox__property' ) ]
+				.map( ( property ) => property.textContent!.trim() );
+		}
+
+		it( 'is left out of a View without a Layout', async () => {
+			placeViewFor( loadedId );
+
+			await mountApp();
+
+			expect( shownPropertyNames() ).toEqual( [ 'Products' ] );
+		} );
+
+		it( 'shows the Dependent Subject inside a View whose Layout names its property', async () => {
+			placeViewFor( loadedId, 'CompanyFounding' );
+
+			await mountApp();
+
+			expect( document.querySelector( '.ext-neowiki-view .ext-neowiki-dependent-subject-display' )?.textContent )
+				.toContain( '1849' );
 		} );
 
 	} );

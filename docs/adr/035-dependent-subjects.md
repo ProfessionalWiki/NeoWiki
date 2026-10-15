@@ -27,7 +27,7 @@ is created and cannot be changed later; to switch, create a new Schema.
 A Dependent Subject is part of exactly one Host Subject, the Subject whose Relation points at it, as a Birth is part
 of its Person. 
 
-![A Person's editor and infobox, both showing its Birth's fields inline, and the Birth on its own on Special:Subject; callouts name the Host Subject, the Dependent Subject and a standalone Subject](035-dependent-subjects.svg)
+![A Person's editor and its row on the Data tab, both showing its Birth's fields inline, and the Birth on its own on Special:Subject; callouts name the Host Subject, the Dependent Subject and a standalone Subject](035-dependent-subjects.svg)
 
 Each Dependent Subject:
 
@@ -38,9 +38,9 @@ Each Dependent Subject:
   Relation never points at a missing Subject.
 - Is stored on its Host Subject's page, in page-first and subject-first wikis alike
   ([ADR 33](033-page-first-and-subject-first-wikis.md)).
-- Is removed with its Host Subject, or with the Relation to it: any save after which no standalone Subject on the
-  page reaches it, directly or through other Dependent Subjects, removes it. Deleting it on its own also removes the
-  Relation to it.
+- Is removed with its Host Subject, or with the Relation to it: a save that cuts it off from every standalone Subject on
+  the page, directly or through other Dependent Subjects, removes it. Deleting it on its own also removes the Relation
+  to it.
 - Has no label.
 - Is never a page's Main Subject.
 - Can be the Host Subject of further Dependent Subjects.
@@ -65,14 +65,15 @@ others find it under "Referenced by" on their `Special:Subject` page.
 
 - Editing: the Host Subject's editor shows a Dependent Subject's fields inline instead of a picker. If the relation
   property targets several Schemas, adding a Dependent Subject first asks which one.
-- Display: a Dependent Subject is shown as part of its Host Subject. It is named after its Schema and its Host
-  Subject, as in "Birth of Pablo Picasso", not by the bracketed id [ADR 31](031-optional-subject-labels.md) would
-  give it.
+- Display: `Special:Subject` and the Data tab show a Dependent Subject inside its Host Subject, as a table where the
+  relation property allows multiple values. A View leaves that relation property out unless its Layout names it. A
+  Dependent Subject is named after its Schema and its Host Subject, as in "Birth of Pablo Picasso", not by the
+  bracketed id [ADR 31](031-optional-subject-labels.md) would give it.
 - A Dependent Subject keeps its own id, IRI and graph node. `Special:Subject` and the Data tab show it and can open it
   for editing on its own, and queries and exports include it.
 - Finding: search shows a match in a Dependent Subject as a hit on the standalone Subject at the top of its chain of
-  Host Subjects, so a search that matches a Birth finds the Person. Fields for choosing an existing Subject, such as the
-  search field on `Special:Subject`, never offer a Dependent Subject.
+  Host Subjects, so a search that matches a Birth finds the Person. Fields for choosing an existing Subject, such as a
+  relation field in the Subject editor, never offer a Dependent Subject.
 - Creation: Schemas with Dependent Subjects are not offered where a Subject is created without a Host Subject.
 - Moving a Subject to another page takes its Dependent Subjects along. A Dependent Subject cannot be moved on its own.
 - Tracked in [#1554](https://github.com/ProfessionalWiki/NeoWiki/issues/1554).

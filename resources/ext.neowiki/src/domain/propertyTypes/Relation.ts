@@ -3,6 +3,7 @@ import { PropertyName } from '@/domain/PropertyDefinition';
 import { newRelation, RelationValue, ValueType } from '@/domain/Value';
 import { BasePropertyType } from '@/domain/PropertyType';
 import { isLocalSchemaReference, type SchemaReference } from '@/domain/SchemaReference';
+import type { Schema } from '@/domain/Schema';
 
 export interface RelationProperty extends PropertyDefinition {
 
@@ -21,6 +22,42 @@ export interface RelationProperty extends PropertyDefinition {
  */
 export function localTargetSchemaNames( property: RelationProperty ): string[] {
 	return ( property.targetSchemas ?? [] ).filter( isLocalSchemaReference );
+}
+
+/**
+ * The first Schema whose answer is known decides, since the target Schemas of one property all have Dependent
+ * Subjects or none does. Null when no answer is known.
+ */
+export function targetsDependentSubjects(
+	targetSchemaNames: readonly string[],
+	subjectsAreDependent: ( schemaName: string ) => boolean | undefined,
+): boolean | null {
+	for ( const schemaName of targetSchemaNames ) {
+		const answer = subjectsAreDependent( schemaName );
+
+		if ( answer !== undefined ) {
+			return answer;
+		}
+	}
+
+	return null;
+}
+
+export function relationProperties( schema: Schema ): RelationProperty[] {
+	return [ ...schema.getPropertyDefinitions() ]
+		.filter( ( property ): property is RelationProperty => property.type === RelationType.typeName );
+}
+
+/**
+ * Leaves out a property whose target Schemas `subjectsAreDependent` knows nothing about.
+ */
+export function propertiesTargetingDependentSubjects(
+	schema: Schema,
+	subjectsAreDependent: ( schemaName: string ) => boolean | undefined,
+): RelationProperty[] {
+	return relationProperties( schema ).filter(
+		( property ) => targetsDependentSubjects( localTargetSchemaNames( property ), subjectsAreDependent ) === true,
+	);
 }
 
 export class RelationType extends BasePropertyType<RelationProperty, RelationValue> {

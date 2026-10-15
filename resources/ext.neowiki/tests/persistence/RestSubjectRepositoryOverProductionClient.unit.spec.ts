@@ -51,7 +51,7 @@ describe( 'RestSubjectRepository over the production HTTP client', () => {
 		} );
 
 		const error = await repository
-			.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) )
+			.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ), [] )
 			.catch( ( thrown: unknown ) => thrown );
 
 		expect( error ).toBeInstanceOf( PageTitleTakenError );
@@ -66,7 +66,7 @@ describe( 'RestSubjectRepository over the production HTTP client', () => {
 		} );
 
 		const error = await repository
-			.createSubjectPage( null, 'Employee', new StatementList( [] ), undefined, 'Help:John Doe' )
+			.createSubjectPage( null, 'Employee', new StatementList( [] ), [], undefined, 'Help:John Doe' )
 			.catch( ( thrown: unknown ) => thrown );
 
 		expect( error ).toBeInstanceOf( InvalidPageTitleError );
@@ -84,7 +84,7 @@ describe( 'RestSubjectRepository over the production HTTP client', () => {
 		} );
 
 		const error = await repository
-			.createSubjectPage( null, 'Employee', new StatementList( [] ) )
+			.createSubjectPage( null, 'Employee', new StatementList( [] ), [] )
 			.catch( ( thrown: unknown ) => thrown );
 
 		expect( error ).not.toBeInstanceOf( InvalidPageTitleError );
@@ -102,6 +102,7 @@ describe( 'RestSubjectRepository over the production HTTP client', () => {
 			'John Doe',
 			'Employee',
 			new StatementList( [] ),
+			[],
 			undefined,
 			new SubjectId( 's44444444444444' ),
 		).catch( ( thrown: unknown ) => thrown );
@@ -117,7 +118,7 @@ describe( 'RestSubjectRepository over the production HTTP client', () => {
 		} );
 
 		await expect(
-			repository.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ) ),
+			repository.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ), [] ),
 		).rejects.toThrowError( 'the database is locked' );
 	} );
 

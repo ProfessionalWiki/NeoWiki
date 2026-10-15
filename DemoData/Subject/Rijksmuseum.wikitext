@@ -4,6 +4,6 @@ The museum holds around one million objects from 1200 to 2000, including masterp
 
 == Annual attendance ==
 
-Yearly attendance, stored as [[Schema:Attendance|Attendance]] Subjects on this page, each linked to the museum it counts.
+Yearly attendance, stored on this page as [[Schema:Attendance|Attendance]] Subjects. They are [https://neowiki.ai/docs/glossary#dependent-subject Dependent Subjects] of the museum: they show inside it on its [{{fullurl:{{FULLPAGENAME}}|action=subjects}} Data tab] and on [[Special:Subject/sEpfwJLnxyQy6vR|Special:Subject]], and you edit them with the museum.
 
 {{#invoke:NeoWikiDemo|subjectTable|schema=Attendance|columns=Year, Visitors|sortBy=Year|numberColumns=Visitors}}

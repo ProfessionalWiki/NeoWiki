@@ -113,6 +113,15 @@ describe( 'SchemaDisplay', () => {
 		expect( wrapper.findComponent( SchemaDisplayHeader ).props( 'canCreateSubject' ) ).toBe( true );
 	} );
 
+	it( 'tells the header to offer no Subject creation for a Schema whose Subjects are dependent', async () => {
+		grantedRight = true;
+
+		const wrapper = mountComponent( newSchema( { subjectsAreDependent: true } ) );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SchemaDisplayHeader ).props( 'canCreateSubject' ) ).toBe( false );
+	} );
+
 	it( 'opens the creator on this schema, page and all, when the header asks for it', async () => {
 		grantedRight = true;
 		const wrapper = mountComponent( newSchema( { title: 'Person' } ) );

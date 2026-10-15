@@ -64,13 +64,31 @@ readonly class SubjectSearchHitHtmlBuilder {
 			$isMatch = !$isMatch;
 		}
 
-		if ( $line->propertyName === null ) {
+		$propertyNames = $line->propertyName === null
+			? $line->relationPropertyNames
+			: [ ...$line->relationPropertyNames, $line->propertyName ];
+
+		if ( $propertyNames === [] ) {
 			return $value;
 		}
 
-		return htmlspecialchars( $line->propertyName )
+		return htmlspecialchars( $this->propertyPath( $propertyNames ) )
 			. $this->messageLocalizer->msg( 'colon-separator' )->escaped()
 			. $value;
+	}
+
+	/**
+	 * @param non-empty-list<string> $propertyNames
+	 */
+	private function propertyPath( array $propertyNames ): string {
+		$path = array_shift( $propertyNames );
+
+		foreach ( $propertyNames as $propertyName ) {
+			$path = $this->messageLocalizer->msg( 'neowiki-search-hit-property-path' )
+				->plaintextParams( $path, $propertyName )->text();
+		}
+
+		return $path;
 	}
 
 	/**

@@ -119,13 +119,24 @@ describe( 'useSubjectEditor', () => {
 	it( 'leaves what it last opened alone when a later open fails', async () => {
 		const opener = newOpener();
 		await opener.openEditor( SUBJECT_ID );
+		opener.editorOpen.value = false;
 
 		getSubjectForEditing.mockRejectedValue( new Error( 'network down' ) );
 		await opener.openEditor( SUBJECT_ID );
 
 		expect( opener.editingSubject.value ).toBe( storedSubject );
 		expect( opener.editingSchema.value ).toBe( SCHEMAS.Company );
-		expect( opener.editorOpen.value ).toBe( true );
+		expect( opener.editorOpen.value ).toBe( false );
+	} );
+
+	it( 'opens no other Subject while the editor is open', async () => {
+		const opener = newOpener();
+		await opener.openEditor( SUBJECT_ID );
+
+		getSubjectForEditing.mockResolvedValue( newSubject( { id: OTHER_SUBJECT_ID, schemaName: 'Person' } ) );
+		await opener.openEditor( OTHER_SUBJECT_ID );
+
+		expect( opener.editingSubject.value ).toBe( storedSubject );
 	} );
 
 	describe( 'when a second open starts before the first has landed', () => {

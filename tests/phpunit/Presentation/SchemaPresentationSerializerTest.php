@@ -15,6 +15,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 
 /**
@@ -34,7 +35,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 	}
 
 	public function testSerializeText(): void {
-		$schema = new Schema(
+		$schema = TestSchema::build(
 			name: new SchemaName( 'testSchema' ),
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
@@ -66,7 +67,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 	}
 
 	public function testSerializeNumber(): void {
-		$schema = new Schema(
+		$schema = TestSchema::build(
 			name: new SchemaName( 'testSchema' ),
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
@@ -99,7 +100,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 	}
 
 	public function testSerializeRelation(): void {
-		$schema = new Schema(
+		$schema = TestSchema::build(
 			name: new SchemaName( 'testSchema' ),
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
@@ -131,7 +132,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 	}
 
 	public function testSerializeString(): void {
-		$schema = new Schema(
+		$schema = TestSchema::build(
 			name: new SchemaName( 'testSchema' ),
 			description: 'Test schema description',
 			properties: new PropertyDefinitions( [
@@ -163,8 +164,22 @@ class SchemaPresentationSerializerTest extends TestCase {
 		$this->assertSerializesTo( $expectedJson, $schema );
 	}
 
+	public function testSchemaWithDependentSubjectsDeclaresThem(): void {
+		$this->assertSerializesTo(
+			'{ "description": "", "subjectsAreDependent": true, "propertyDefinitions": {} }',
+			TestSchema::build( name: 'Birth', description: '', subjectsAreDependent: true )
+		);
+	}
+
+	public function testSchemaWithStandaloneSubjectsLeavesTheDeclarationOut(): void {
+		$this->assertSerializesTo(
+			'{ "description": "", "propertyDefinitions": {} }',
+			TestSchema::build( name: 'Place', description: '' )
+		);
+	}
+
 	public function testSchemaWithoutPropertiesHasAnEmptyPropertyDefinitionsObject(): void {
-		$schema = new Schema(
+		$schema = TestSchema::build(
 			name: new SchemaName( 'testSchema' ),
 			description: '',
 			properties: new PropertyDefinitions( [] )

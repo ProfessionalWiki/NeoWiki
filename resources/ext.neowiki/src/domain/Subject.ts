@@ -4,6 +4,7 @@ import type { SchemaName } from '@/domain/Schema';
 import type { PageIdentifiers } from '@/domain/PageIdentifiers';
 import type { PropertyName } from '@/domain/PropertyDefinition';
 import type { Value } from '@/domain/Value';
+import type { HostSubject } from '@/domain/HostSubject';
 
 export class Subject {
 
@@ -15,6 +16,7 @@ export class Subject {
 		private readonly schemaName: SchemaName,
 		private readonly statements: StatementList,
 		private readonly pageIdentifiers: PageIdentifiers,
+		private readonly hostSubject: HostSubject | null,
 	) {
 	}
 
@@ -52,6 +54,13 @@ export class Subject {
 		return this.schemaName;
 	}
 
+	/**
+	 * Null except for a Dependent Subject nobody named. Names are shown through presentation/subjectDisplayName.ts.
+	 */
+	public getHostSubject(): HostSubject | null {
+		return this.hostSubject;
+	}
+
 	public getStatements(): StatementList {
 		return this.statements;
 	}
@@ -87,11 +96,21 @@ export class Subject {
 			this.schemaName,
 			this.statements,
 			this.pageIdentifiers,
+			this.hostSubject,
 		);
 	}
 
 	public withStatements( statements: StatementList ): Subject {
-		return new Subject( this.id, this.label, this.displayName, this.displayNameIsGenerated, this.schemaName, statements, this.pageIdentifiers );
+		return new Subject(
+			this.id,
+			this.label,
+			this.displayName,
+			this.displayNameIsGenerated,
+			this.schemaName,
+			statements,
+			this.pageIdentifiers,
+			this.hostSubject,
+		);
 	}
 
 }

@@ -88,6 +88,12 @@ class JsonSchemaSerializerTest extends TestCase {
 		$this->assertSame( [ 'type' => [ 'string', 'null' ] ], $document['properties']['label'] );
 	}
 
+	public function testDependentSubjectHasNoLabel(): void {
+		$document = $this->documentFor( TestSchema::build( name: 'Birth', subjectsAreDependent: true ) );
+
+		$this->assertSame( [ 'type' => 'null' ], $document['properties']['label'] );
+	}
+
 	public function testStatementsRejectUndeclaredProperties(): void {
 		$statements = $this->documentFor( $this->schemaWith( [] ) )['properties']['statements'];
 

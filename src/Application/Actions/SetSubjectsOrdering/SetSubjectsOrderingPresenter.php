@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\SetSubjectsOrdering;
 
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+
 interface SetSubjectsOrderingPresenter {
 
 	public function presentOrderingChanged(): void;
@@ -18,5 +20,12 @@ interface SetSubjectsOrderingPresenter {
 	 * sweeping page ids (see PageReadAuthorizer).
 	 */
 	public function presentPageNotFound(): void;
+
+	/**
+	 * Called when the ordering breaks a rule for Dependent Subjects. Nothing is changed.
+	 *
+	 * @param Violation[] $violations
+	 */
+	public function presentValidationFailed( array $violations ): void;
 
 }

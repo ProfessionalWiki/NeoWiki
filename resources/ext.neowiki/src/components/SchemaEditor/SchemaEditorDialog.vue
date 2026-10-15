@@ -31,6 +31,14 @@
 							@update:model-value="onDescriptionChanged"
 						/>
 					</div>
+
+					<!-- Shown, not offered: it is set when the Schema is created. -->
+					<p
+						v-if="props.initialSchema.subjectsAreDependent()"
+						class="ext-neowiki-schema-editor-dialog__dependence"
+					>
+						{{ $i18n( 'neowiki-schema-subjects-are-dependent' ).text() }}
+					</p>
 				</div>
 
 				<CdxButton
@@ -72,6 +80,7 @@
 			v-if="stackedSchemaName !== null"
 			:open="true"
 			:initial-name="stackedSchemaName"
+			:subjects-are-dependent="stackedSubjectsAreDependent"
 			@update:open="closeStackedSchemaCreator"
 			@created="stackedSchemaCreated"
 		/>
@@ -135,6 +144,7 @@ const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseCo
 
 const {
 	initialName: stackedSchemaName,
+	subjectsAreDependent: stackedSubjectsAreDependent,
 	created: stackedSchemaCreated,
 	closed: closeStackedSchemaCreator
 } = useSchemaCreation();
@@ -235,6 +245,12 @@ defineExpose( { hasChanged } );
 		.cdx-dialog__header__title-group {
 			min-width: 0;
 		}
+	}
+
+	&__dependence {
+		margin: @spacing-25 0 0;
+		color: @color-subtle;
+		font-size: @font-size-small;
 	}
 }
 </style>

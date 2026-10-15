@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 
-class PageSubjectsLookup {
+class PageSubjectsLookup implements PageSubjectsAtRevisionLookup {
 
 	public function __construct(
 		private readonly SubjectRepository $subjectRepository,

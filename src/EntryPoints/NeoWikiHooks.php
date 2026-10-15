@@ -44,6 +44,7 @@ use Wikimedia\Rdbms\IResultWrapper;
 use MessageLocalizer;
 use NullIndexField;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchHit;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
@@ -531,7 +532,9 @@ class NeoWikiHooks {
 			static function ( Parser $parser, string ...$args ): string|array {
 				$parserFunction = new CreateSubjectParserFunction(
 					NeoWikiExtension::getInstance()->newPageSubjectsLookup(),
-					NeoWikiExtension::getInstance()->isSubjectFirst()
+					NeoWikiExtension::getInstance()->isSubjectFirst(),
+					static fn ( Parser $parser ): SchemaLookup => NeoWikiExtension::getInstance()
+						->getSchemaLookupFor( ParserAuthority::of( $parser ) )
 				);
 				return $parserFunction->handle( $parser, ...$args );
 			}

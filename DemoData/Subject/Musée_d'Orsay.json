@@ -44,19 +44,20 @@
 						"https://www.instagram.com/museeorsay",
 						"https://twitter.com/MuseeOrsay"
 					]
+				},
+				"Attendance figures": {
+					"propertyType": "relation",
+					"value": [
+						{ "id": "rafZr8cCdfB6RBy", "target": "sEpfwLY8XjJ8gE1" },
+						{ "id": "rhBXDRrNYQ6rXV4", "target": "sEpfwLY8WnceT2y" },
+						{ "id": "r9s4VCQEHbGbt4T", "target": "sEpfwLY8VcdQZJL" }
+					]
 				}
 			}
 		},
 		"sEpfwLY8VcdQZJL": {
-			"label": "Musée d'Orsay attendance 2019",
 			"schema": "Attendance",
 			"statements": {
-				"Museum": {
-					"propertyType": "relation",
-					"value": [
-						{ "id": "rEpfwLY8VcdQZJL", "target": "sEpfwJLnx3Kze3t" }
-					]
-				},
 				"Year": {
 					"propertyType": "number",
 					"value": 2019
@@ -72,15 +73,8 @@
 			}
 		},
 		"sEpfwLY8WnceT2y": {
-			"label": "Musée d'Orsay attendance 2022",
 			"schema": "Attendance",
 			"statements": {
-				"Museum": {
-					"propertyType": "relation",
-					"value": [
-						{ "id": "rEpfwLY8WnceT2y", "target": "sEpfwJLnx3Kze3t" }
-					]
-				},
 				"Year": {
 					"propertyType": "number",
 					"value": 2022
@@ -96,15 +90,8 @@
 			}
 		},
 		"sEpfwLY8XjJ8gE1": {
-			"label": "Musée d'Orsay attendance 2023",
 			"schema": "Attendance",
 			"statements": {
-				"Museum": {
-					"propertyType": "relation",
-					"value": [
-						{ "id": "rEpfwLY8XjJ8gE1", "target": "sEpfwJLnx3Kze3t" }
-					]
-				},
 				"Year": {
 					"propertyType": "number",
 					"value": 2023

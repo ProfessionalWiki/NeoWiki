@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\REST;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectIdInUseException;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
@@ -14,6 +15,8 @@ use ProfessionalWiki\NeoWiki\Presentation\RestCreateSubjectPresenter;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class CreateSubjectApi extends SimpleHandler {
+
+	use TakesDependentSubjects;
 
 	public function __construct(
 		private readonly bool $isMainSubject,
@@ -38,6 +41,7 @@ class CreateSubjectApi extends SimpleHandler {
 					statements: $body['statements'],
 					comment: $body['comment'] ?? null,
 					id: $body['id'] ?? null,
+					dependentSubjects: $body['dependentSubjects'] ?? [],
 				)
 			);
 		} catch ( \InvalidArgumentException $e ) {
@@ -45,6 +49,8 @@ class CreateSubjectApi extends SimpleHandler {
 				'status' => 'error',
 				'message' => $e->getMessage(),
 			] );
+		} catch ( SubjectIdInUseException $e ) {
+			return $this->subjectIdInUseResponse( $e );
 		} catch ( \RuntimeException $e ) {
 			return $this->getResponseFactory()->createHttpError( 403, [
 				'status' => 'error',
@@ -104,7 +110,7 @@ class CreateSubjectApi extends SimpleHandler {
 					. 'Subject ID (malformed is rejected with 400, in-use with 409). When omitted, the server '
 					. 'mints one. Pre-mint IDs with POST /neowiki/v0/subject-ids to wire relations across a batch.',
 			],
-		];
+		] + $this->dependentSubjectsParamSettings();
 	}
 
 }

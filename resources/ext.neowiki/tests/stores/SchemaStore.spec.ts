@@ -12,7 +12,7 @@ interface Deferred<T> {
 }
 
 function summary( name: string ): SchemaSummary {
-	return { name, description: '', propertyCount: 0 };
+	return { name, description: '', propertyCount: 0, subjectsAreDependent: false };
 }
 
 function manySummaries( count: number, prefix: string ): SchemaSummary[] {

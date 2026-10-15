@@ -4,6 +4,7 @@ export interface SchemaSummary {
 	name: string;
 	description: string;
 	propertyCount: number;
+	subjectsAreDependent: boolean;
 }
 
 export interface SchemaSummaryPage {
@@ -17,6 +18,13 @@ export interface SchemaLookup {
 	getSchemaNames( search: string ): Promise<string[]>;
 	getSchemaSummaries( cursor: string | null, limit: number ): Promise<SchemaSummaryPage>;
 
+}
+
+/**
+ * Undefined for a Schema the summaries leave out.
+ */
+export function subjectsAreDependentIn( summaries: readonly SchemaSummary[] ): ( schemaName: string ) => boolean | undefined {
+	return ( schemaName ) => summaries.find( ( summary ) => summary.name === schemaName )?.subjectsAreDependent;
 }
 
 export class InMemorySchemaLookup implements SchemaLookup {
@@ -48,6 +56,7 @@ export class InMemorySchemaLookup implements SchemaLookup {
 			name: schema.getName(),
 			description: schema.getDescription(),
 			propertyCount: [ ...schema.getPropertyDefinitions() ].length,
+			subjectsAreDependent: schema.subjectsAreDependent(),
 		} ) );
 
 		// The cursor is opaque to callers; this fake encodes the next start index in it.

@@ -30,12 +30,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, inject, provide, ref } from 'vue';
 import { Subject } from '@/domain/Subject';
 import { Schema } from '@/domain/Schema';
 import { useSchemaStore } from '@/stores/SchemaStore';
-import { resolveDisplayProperties, type ResolvedProperty } from '@/domain/resolveDisplayProperties';
+import { resolveAllNonEmptyProperties, type ResolvedProperty } from '@/domain/resolveDisplayProperties';
 import StatementDisplay from '@/components/Value/StatementDisplay.vue';
+import { EnclosingSubjectIdsKey } from '@/components/Value/ValueDisplayContract.ts';
 
 const props = defineProps<{
 	subject: Subject;
@@ -43,12 +44,16 @@ const props = defineProps<{
 
 const schemaStore = useSchemaStore();
 
+const enclosingSubjectIds = inject( EnclosingSubjectIdsKey, ref( [] ) );
+
+provide( EnclosingSubjectIdsKey, computed( () => [ ...enclosingSubjectIds.value, props.subject.getId().text ] ) );
+
 const resolvedProperties = computed<ResolvedProperty[]>( () => {
 	const schema = schemaStore.schemas.get( props.subject.getSchemaName() ) as Schema | undefined;
 	if ( schema === undefined ) {
 		return [];
 	}
-	return resolveDisplayProperties( schema, props.subject as Subject );
+	return resolveAllNonEmptyProperties( schema, props.subject as Subject );
 } );
 </script>
 
@@ -104,6 +109,16 @@ const resolvedProperties = computed<ResolvedProperty[]>( () => {
 
 		&__value {
 			flex: 0 1 60%;
+		}
+
+		&__item:has( .ext-neowiki-dependent-subject-display, .ext-neowiki-dependent-subject-table ) {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		&__item:has( .ext-neowiki-dependent-subject-display, .ext-neowiki-dependent-subject-table ) > &__property,
+		&__item:has( .ext-neowiki-dependent-subject-display, .ext-neowiki-dependent-subject-table ) > &__value {
+			flex: none;
 		}
 	}
 }

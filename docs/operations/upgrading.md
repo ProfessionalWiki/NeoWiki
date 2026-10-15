@@ -70,6 +70,13 @@ length of the run.
 If your Subjects predate the optional Subject label, run
 [clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before that rebuild.
 
+## Demo Attendance Subjects now dependent, October 2026
+
+The demo's `Schema:Attendance` now declares its Subjects [dependent](../glossary.md#dependent-subject), which a Schema
+can do only when it is created. On a wiki with the earlier demo content, delete that page before you next
+[refresh the demo content](#optional-refresh-the-demo-content); otherwise the refresh reports it as failed and keeps
+the old Schema.
+
 ## Relations model changed, October 2026
 
 A relation property now lists its target Schemas in `targetSchemas` and has no `relation` field

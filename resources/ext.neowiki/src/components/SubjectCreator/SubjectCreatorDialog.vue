@@ -1,13 +1,16 @@
 <!-- eslint-disable vue/no-multiple-template-root -->
 <template>
-	<!-- Unmounted rather than closed once the Schema is settled: setting a Codex dialog's own open
-		prop to false here would be indistinguishable from the user closing it. -->
+	<!-- Unmounted rather than closed once the editor shows: setting a Codex dialog's own open
+		prop to false here would be indistinguishable from the user closing it. It stays while the
+		editor reads what the Subject's form needs, until the editor shows that it is reading, so one
+		dialog is on screen throughout. -->
 	<CdxDialog
-		v-if="rootSubject === null"
+		v-if="!editorVisible"
 		:open="props.open"
 		class="ext-neowiki-ui ext-neowiki-subject-creator-dialog cdx-dialog--dividers"
 		:title="$i18n( 'neowiki-subject-creator-title' ).text()"
 		:use-close-button="true"
+		:inert="editorStarting || undefined"
 		@update:open="onSchemaStepUpdateOpen"
 	>
 		<EditNoticeList :notices="shownNotices" />
@@ -18,6 +21,7 @@
 			:offers-creation="canCreateSchemas && offeredSchemaNames === undefined"
 			:schema-names="offeredSchemaNames"
 			:aria-label="$i18n( 'neowiki-subject-creator-schema-field' ).text()"
+			:standalone-only="true"
 			@select="onSchemaSelected"
 			@create="openSchemaCreator"
 		>
@@ -178,11 +182,13 @@
 	/>
 
 	<!-- Mounted only while open, as the confirmations are: Codex stacks dialogs in mount order, and
-		the Schema step it stands in front of is mounted afresh each time the creator starts over. -->
+		the Schema step it stands in front of is mounted afresh each time the creator starts over. The
+		Schema's Subjects are standalone, as the Subject being created has no Host Subject. -->
 	<SchemaCreatorDialog
 		v-if="newSchemaName !== null"
 		:open="true"
 		:initial-name="newSchemaName"
+		:subjects-are-dependent="false"
 		@update:open="newSchemaName = null"
 		@created="onSchemaCreated"
 	/>
@@ -193,7 +199,7 @@ import { ref, shallowRef, computed, watch, nextTick, onMounted } from 'vue';
 import { CdxAccordion, CdxDialog, CdxField, CdxMessage, CdxRadio } from '@wikimedia/codex';
 import type { ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
-import type { CreatedSubjectPage, SubjectCreatorTarget } from '@/stores/SubjectStore.ts';
+import type { CreatedSubjectPage, DependentSubjects, SubjectCreatorTarget } from '@/stores/SubjectStore.ts';
 import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { StatementList } from '@/domain/StatementList.ts';
@@ -296,6 +302,12 @@ const chosenPageHasMainSubject = ref( false );
 const chosenPageMainSubjectName = ref<string | null>( null );
 
 const editorRef = ref<InstanceType<typeof SubjectEditorDialog> | null>( null );
+
+const editorShown = computed( (): boolean => editorRef.value?.shown === true );
+
+const editorVisible = computed( (): boolean => editorRef.value?.visible === true );
+
+const editorStarting = computed( (): boolean => rootSubject.value !== null && !editorShown.value );
 
 // The title typed, cleared included, or the caller's; while null, the title follows the label.
 const typedPageTitle = ref<string | null>( null );
@@ -665,16 +677,24 @@ function close(): void {
 
 const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseConfirmation( hasChanged, close );
 
+// Its backdrop is outside the inert part of the step, and its clicks count for nothing either.
 function onSchemaStepUpdateOpen( value: boolean ): void {
-	if ( !value ) {
+	if ( !value && !editorStarting.value ) {
 		requestClose();
 	}
 }
 
-// The editor has asked about discarding already.
+// The editor has asked about discarding already. One that closes before it shows could not read
+// what the Subject's form needs, and has said so: the Schema step stays, to pick again from.
 function onEditorUpdateOpen( value: boolean ): void {
-	if ( !value ) {
+	if ( value ) {
+		return;
+	}
+
+	if ( editorShown.value ) {
 		close();
+	} else {
+		leaveSchemaStepOpen();
 	}
 }
 
@@ -723,6 +743,16 @@ async function loadSchema( schemaName: string ): Promise<void> {
 			givenSubjectId.value ?? subjectRepository().mintSubjectId()
 		] );
 
+		// The picker leaves these Schemas out, so only a Schema a caller names gets here.
+		if ( schema.subjectsAreDependent() ) {
+			if ( currentSequence === requestSequence ) {
+				leaveSchemaStepOpen();
+				mw.notify( mw.msg( 'neowiki-create-subject-error-dependent-subjects', schema.getName() ), { type: 'error' } );
+			}
+
+			return;
+		}
+
 		if ( currentSequence !== requestSequence ) {
 			return;
 		}
@@ -734,9 +764,13 @@ async function loadSchema( schemaName: string ): Promise<void> {
 		}
 
 		console.error( 'Failed to load schema:', error );
-		loadedSchema.value = null;
-		rootSubject.value = null;
+		leaveSchemaStepOpen();
 	}
+}
+
+function leaveSchemaStepOpen(): void {
+	loadedSchema.value = null;
+	rootSubject.value = null;
 }
 
 function openSubjectStep( schema: Schema, id: SubjectId ): void {
@@ -753,7 +787,8 @@ function openSubjectStep( schema: Schema, id: SubjectId ): void {
 		true,
 		schema.getName(),
 		new StatementList( [] ),
-		UNANSWERED_PAGE
+		UNANSWERED_PAGE,
+		null
 	);
 }
 
@@ -776,10 +811,10 @@ function answeredPageId(): number | null {
  */
 let writtenRoot: { subjectId: SubjectId; pageId: number | null; pageTitle: string | null } | null = null;
 
-async function handleCreate( subject: Subject, pageId: number, comment: string ): Promise<void> {
+async function handleCreate( subject: Subject, pageId: number, dependentSubjects: DependentSubjects, comment: string ): Promise<void> {
 	if ( subject.getId().text === rootSubject.value?.getId().text ) {
 		try {
-			await writeRootSubject( subject, comment );
+			await writeRootSubject( subject, dependentSubjects, comment );
 		} catch ( error ) {
 			throw refusalOfGivenId( error );
 		}
@@ -796,7 +831,7 @@ async function handleCreate( subject: Subject, pageId: number, comment: string )
 		throw new Error( mw.msg( 'neowiki-subject-creator-error' ) );
 	}
 
-	await subjectStore.createSubject( subject, page, comment );
+	await subjectStore.createSubject( subject, page, dependentSubjects, comment );
 }
 
 /**
@@ -811,11 +846,11 @@ function refusalOfGivenId( error: unknown ): unknown {
 	return new Error( mw.msg( 'neowiki-subject-creator-id-in-use', givenSubjectId.value.text ) );
 }
 
-async function writeRootSubject( subject: Subject, comment: string ): Promise<void> {
+async function writeRootSubject( subject: Subject, dependentSubjects: DependentSubjects, comment: string ): Promise<void> {
 	// A save that stopped part way has created it already, and the answer it got says where. Creating
 	// it again would be refused: its id, and any page title it was given, are taken now.
 	if ( writtenRoot !== null ) {
-		await subjectStore.updateSubject( asWrittenRoot( subject, writtenRoot ), comment );
+		await subjectStore.updateSubject( asWrittenRoot( subject, writtenRoot ), dependentSubjects, comment );
 		return;
 	}
 
@@ -835,7 +870,7 @@ async function writeRootSubject( subject: Subject, comment: string ): Promise<vo
 	const statements = subject.getStatements();
 
 	if ( answer.goingTo === 'newPage' ) {
-		const created = await createOnNewPage( subject, comment, answer.title );
+		const created = await createOnNewPage( subject, dependentSubjects, comment, answer.title );
 
 		writtenRoot = { subjectId: created.subjectId, pageId: created.pageId, pageTitle: created.pageTitle };
 		return;
@@ -848,8 +883,8 @@ async function writeRootSubject( subject: Subject, comment: string ): Promise<vo
 	}
 
 	const subjectId = answer.besideMainSubject ?
-		await createBesideMainSubject( pageId, label, schemaName, statements, comment, subject.getId() ) :
-		await subjectStore.createMainSubject( pageId, label, schemaName, statements, comment, subject.getId() );
+		await createBesideMainSubject( pageId, label, schemaName, statements, dependentSubjects, comment, subject.getId() ) :
+		await subjectStore.createMainSubject( pageId, label, schemaName, statements, dependentSubjects, comment, subject.getId() );
 
 	writtenRoot = { subjectId, pageId, pageTitle: answer.pageTitle };
 }
@@ -866,7 +901,8 @@ function asWrittenRoot( subject: Subject, written: { subjectId: SubjectId; pageI
 		subject.hasGeneratedDisplayName(),
 		subject.getSchemaName(),
 		subject.getStatements(),
-		new PageIdentifiers( written.pageId ?? 0, written.pageTitle ?? '' )
+		new PageIdentifiers( written.pageId ?? 0, written.pageTitle ?? '' ),
+		subject.getHostSubject()
 	);
 }
 
@@ -881,11 +917,12 @@ async function createBesideMainSubject(
 	label: string | null,
 	schemaName: string,
 	statements: StatementList,
+	dependentSubjects: DependentSubjects,
 	comment: string,
 	id: SubjectId
 ): Promise<SubjectId> {
 	try {
-		return await subjectStore.createOtherSubject( pageId, label, schemaName, statements, comment, id );
+		return await subjectStore.createOtherSubject( pageId, label, schemaName, statements, dependentSubjects, comment, id );
 	} catch ( error ) {
 		if ( error instanceof SubjectIdInUseError && givenSubjectId.value === undefined ) {
 			return id;
@@ -901,11 +938,12 @@ async function createBesideMainSubject(
  */
 async function createOnNewPage(
 	subject: Subject,
+	dependentSubjects: DependentSubjects,
 	comment: string,
 	title: string | null
 ): Promise<CreatedSubjectPage> {
 	if ( isSubjectFirst() ) {
-		return await subjectStore.createSubjectOnOwnPage( subject, comment );
+		return await subjectStore.createSubjectOnOwnPage( subject, dependentSubjects, comment );
 	}
 
 	// Re-decided on each attempt, so a title given since the last one clears what it answered.
@@ -922,6 +960,7 @@ async function createOnNewPage(
 			subject.getLabel(),
 			subject.getSchemaName(),
 			subject.getStatements(),
+			dependentSubjects,
 			comment,
 			title,
 			subject.getId()
@@ -954,8 +993,8 @@ watch( pageTitle, () => {
 } );
 
 // A Subject the user drilled into from a relation exists already, so the editor updates it.
-async function handleSaveExisting( subject: Subject, comment: string ): Promise<void> {
-	await subjectStore.updateSubject( subject, comment );
+async function handleSaveExisting( subject: Subject, dependentSubjects: DependentSubjects, comment: string ): Promise<void> {
+	await subjectStore.updateSubject( subject, dependentSubjects, comment );
 }
 
 async function handleSchemaSave( updatedSchema: Schema, comment: string ): Promise<void> {
@@ -999,7 +1038,11 @@ watch( () => props.open, async ( isOpen ) => {
 		await pinInitialSchema();
 		await schemaPermissionChecked;
 		await nextTick();
-		schemaLookupRef.value?.focus();
+
+		// A pinned Schema has moved on to the editor.
+		if ( rootSubject.value === null ) {
+			schemaLookupRef.value?.focus();
+		}
 	} else {
 		resetForm();
 	}

@@ -22,17 +22,6 @@ function ruleNames( displayRules: DisplayRule[] ): string[] {
 
 describe( 'unifiedRows', () => {
 
-	it( 'shows every property in schema order in the default state', () => {
-		const schemaProperties = properties( 'Alpha', 'Beta', 'Gamma', 'Delta' );
-
-		expect( rowState( schemaProperties, [] ) ).toEqual( [
-			[ 'Alpha', true ],
-			[ 'Beta', true ],
-			[ 'Gamma', true ],
-			[ 'Delta', true ],
-		] );
-	} );
-
 	it( 'lists shown properties in rule order followed by hidden ones in schema order', () => {
 		const schemaProperties = properties( 'Alpha', 'Beta', 'Gamma', 'Delta' );
 
@@ -57,14 +46,6 @@ describe( 'unifiedRows', () => {
 } );
 
 describe( 'rulesAfterToggle', () => {
-
-	it( 'materialises the other properties in schema order when hiding from the default state', () => {
-		const schemaProperties = properties( 'Alpha', 'Beta', 'Gamma', 'Delta' );
-
-		const result = rulesAfterToggle( schemaProperties, [], 'Gamma' );
-
-		expect( ruleNames( result ) ).toEqual( [ 'Alpha', 'Beta', 'Delta' ] );
-	} );
 
 	it( 'appends a rule when showing a hidden property in a custom state', () => {
 		const schemaProperties = properties( 'Alpha', 'Beta', 'Gamma', 'Delta' );
@@ -131,14 +112,6 @@ describe( 'rulesAfterShowingAll', () => {
 } );
 
 describe( 'rulesAfterReorder', () => {
-
-	it( 'materialises all properties in the new order when reordering from the default state', () => {
-		const schemaProperties = properties( 'Alpha', 'Beta', 'Gamma', 'Delta' );
-
-		const result = rulesAfterReorder( schemaProperties, [], 2, 0 );
-
-		expect( ruleNames( result ) ).toEqual( [ 'Gamma', 'Alpha', 'Beta', 'Delta' ] );
-	} );
 
 	it( 'reorders the shown rules in a custom state, leaving hidden properties out', () => {
 		const schemaProperties = properties( 'Alpha', 'Beta', 'Gamma', 'Delta' );

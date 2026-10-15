@@ -9,8 +9,8 @@ import type { SubjectSummaries, SubjectSummary, SubjectSummaryQuery } from '@/ap
 
 function summary( id: string, overrides: Partial<SubjectSummary> = {} ): SubjectSummary {
 	return {
-		id, displayName: `Name ${ id }`, displayNameIsGenerated: false, schema: 'Computer', pageId: 1,
-		pageTitle: 'Some page', lastEdited: '2026-10-01T14:02:00Z', ...overrides,
+		id, displayName: `Name ${ id }`, displayNameIsGenerated: false, hostSubject: null, schema: 'Computer',
+		pageId: 1, pageTitle: 'Some page', lastEdited: '2026-10-01T14:02:00Z', ...overrides,
 	};
 }
 
@@ -87,8 +87,8 @@ describe( 'SubjectsTable', () => {
 		pinia = createPinia();
 		setActivePinia( pinia );
 		useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
-			{ name: 'Person', description: '', propertyCount: 1 },
-			{ name: 'Computer', description: '', propertyCount: 4 },
+			{ name: 'Person', description: '', propertyCount: 1, subjectsAreDependent: false },
+			{ name: 'Computer', description: '', propertyCount: 4, subjectsAreDependent: false },
 		] );
 		getSubjectSummaries = vi.fn().mockResolvedValue( { subjects: [ summary( 's1demo1aaaaaaa1' ) ], nextCursor: null } );
 	} );
@@ -305,6 +305,32 @@ describe( 'SubjectsTable', () => {
 		await wrapper.find( '.ext-neowiki-subjects-table__create' ).trigger( 'click' );
 
 		expect( wrapper.emitted( 'create' ) ).toEqual( [ [ 'Computer' ] ] );
+	} );
+
+	describe( 'for a Schema whose Subjects are dependent', () => {
+		beforeEach( () => {
+			useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+				{ name: 'Person', description: '', propertyCount: 1, subjectsAreDependent: false },
+				{ name: 'Birth', description: '', propertyCount: 2, subjectsAreDependent: true },
+			] );
+		} );
+
+		it( 'offers no Create button while it is the Schema chosen', async () => {
+			const wrapper = mountTable( { initialSchema: 'Birth', canCreate: true } );
+			await flushPromises();
+
+			expect( wrapper.find( '.ext-neowiki-subjects-table__create' ).exists() ).toBe( false );
+		} );
+
+		it( 'offers the Create button again once a Schema of standalone Subjects is chosen', async () => {
+			const wrapper = mountTable( { initialSchema: 'Birth', canCreate: true } );
+			await flushPromises();
+
+			findSchemaMenu( wrapper ).vm.$emit( 'update:selected', 'Person' );
+			await flushPromises();
+
+			expect( wrapper.find( '.ext-neowiki-subjects-table__create' ).exists() ).toBe( true );
+		} );
 	} );
 
 	it( 'offers to create a Subject of any Schema while every Schema is listed', async () => {

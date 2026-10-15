@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Presentation;
 
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Application\Actions\SetSubjectsOrdering\SetSubjectsOrderingPresenter;
 
 class RestSetSubjectsOrderingPresenter implements SetSubjectsOrderingPresenter {
@@ -37,6 +38,18 @@ class RestSetSubjectsOrderingPresenter implements SetSubjectsOrderingPresenter {
 	public function presentPageNotFound(): void {
 		$this->apiResponse = [ 'status' => 'error', 'message' => 'Page not found' ];
 		$this->statusCode = 404;
+	}
+
+	/**
+	 * @param Violation[] $violations
+	 */
+	public function presentValidationFailed( array $violations ): void {
+		$this->apiResponse = [
+			'status' => 'error',
+			'message' => 'Validation failed',
+			'violations' => ViolationSerializer::serializeMany( $violations ),
+		];
+		$this->statusCode = 422;
 	}
 
 }

@@ -90,7 +90,8 @@ onMounted( async (): Promise<void> => {
 
 	await Promise.all( [
 		storeStateLoader.loadSubjectsAndSchemas(
-			new Set( views.map( ( view ) => view.subjectId.text ) )
+			new Set( views.map( ( view ) => view.subjectId.text ) ),
+			new Set( views.filter( ( view ) => view.layoutName !== undefined ).map( ( view ) => view.subjectId.text ) )
 		),
 		storeStateLoader.loadLayouts(
 			new Set( views.map( ( v ) => v.layoutName ).filter( ( n ): n is string => n !== undefined ) )

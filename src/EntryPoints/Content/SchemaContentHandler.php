@@ -9,8 +9,11 @@ use MediaWiki\Content\Content;
 use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Content\ValidationParams;
+use MediaWiki\Message\Message;
 use MediaWiki\Title\Title;
 use MediaWiki\Parser\ParserOutput;
+use ProfessionalWiki\NeoWiki\Domain\Schema\DependentSubjectSchemaRules;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
@@ -34,8 +37,9 @@ class SchemaContentHandler extends JsonContentHandler {
 		$title = Title::newFromPageIdentity( $validationParams->getPageIdentity() );
 
 		try {
-			new SchemaName( $title->getText() );
+			$schemaName = new SchemaName( $title->getText() );
 		} catch ( InvalidArgumentException $exception ) {
+			$schemaName = null;
 			$status->fatal( 'neowiki-schema-name-invalid', $exception->getMessage() );
 		}
 
@@ -50,7 +54,33 @@ class SchemaContentHandler extends JsonContentHandler {
 			);
 		}
 
+		if ( $schemaName !== null && $status->isOK() ) {
+			$this->checkDependentSubjectRules(
+				$status,
+				NeoWikiExtension::getInstance()->getPersistenceSchemaDeserializer()->deserialize( $schemaName, $content->getText() )
+			);
+		}
+
 		return $status;
+	}
+
+	private function checkDependentSubjectRules( StatusValue $status, Schema $schema ): void {
+		$rules = new DependentSubjectSchemaRules( NeoWikiExtension::getInstance()->getSchemaResolver() );
+
+		if ( $rules->changesDeclaration( $schema ) ) {
+			$status->fatal( 'neowiki-schema-dependence-unchangeable' );
+			return;
+		}
+
+		$mixingProperties = $rules->propertiesMixingTargetSchemas( $schema );
+
+		if ( $mixingProperties !== [] ) {
+			$status->fatal(
+				'neowiki-schema-relation-targets-mixed',
+				Message::listParam( $mixingProperties ),
+				count( $mixingProperties )
+			);
+		}
 	}
 
 	protected function fillParserOutput(

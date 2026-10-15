@@ -15,6 +15,7 @@
 				ref="schemaCreatorRef"
 				:initial-name="props.initialName"
 				:duplicate-of="props.duplicateOf"
+				:subjects-are-dependent="props.subjectsAreDependent"
 				@change="markChanged"
 			/>
 
@@ -39,6 +40,7 @@
 			v-if="stackedSchemaName !== null"
 			:open="true"
 			:initial-name="stackedSchemaName"
+			:subjects-are-dependent="stackedSubjectsAreDependent"
 			@update:open="closeStackedSchemaCreator"
 			@created="stackedSchemaCreated"
 		/>
@@ -58,12 +60,18 @@ import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { useSchemaCreation } from '@/composables/useSchemaCreation.ts';
 
-const props = defineProps<{
+const props = withDefaults( defineProps<{
 	open: boolean;
 	initialName?: string;
 	/** The Schema to duplicate: the new one starts with all of it but the name. */
 	duplicateOf?: Schema;
-}>();
+	/** Set to decide for the user; null leaves it to them. */
+	subjectsAreDependent?: boolean | null;
+}>(), {
+	initialName: undefined,
+	duplicateOf: undefined,
+	subjectsAreDependent: null
+} );
 
 const emit = defineEmits<{
 	'update:open': [ value: boolean ];
@@ -87,6 +95,7 @@ const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseCo
 
 const {
 	initialName: stackedSchemaName,
+	subjectsAreDependent: stackedSubjectsAreDependent,
 	created: stackedSchemaCreated,
 	closed: closeStackedSchemaCreator,
 	stackLevel

@@ -31,6 +31,34 @@ describe( 'parseViolations', () => {
 		} ) ).toBeNull();
 	} );
 
+	it( 'carries the id of the Subject a violation names', () => {
+		const result = parseViolations( {
+			violations: [ {
+				propertyName: 'Date',
+				code: 'required',
+				args: [],
+				severity: 'error',
+				subjectId: 's1birthAAAAAAA1',
+			} ],
+		} );
+
+		expect( result?.[ 0 ].subjectId ).toBe( 's1birthAAAAAAA1' );
+	} );
+
+	it( 'names no Subject for a violation that names none', () => {
+		const result = parseViolations( {
+			violations: [ { propertyName: 'Homepage', code: 'invalid-url', args: [], severity: 'error' } ],
+		} );
+
+		expect( result?.[ 0 ] ).not.toHaveProperty( 'subjectId' );
+	} );
+
+	it( 'returns null for a body naming a Subject other than by its id', () => {
+		expect( parseViolations( {
+			violations: [ { propertyName: null, code: 'dependent-subject-is-main', args: [], subjectId: 42 } ],
+		} ) ).toBeNull();
+	} );
+
 	it( 'returns null for a malformed body', () => {
 		expect( parseViolations( { violations: [ { code: 123 } ] } ) ).toBeNull();
 	} );

@@ -22,6 +22,8 @@ class ReplaceSubjectPresenterSpy implements ReplaceSubjectPresenter {
 
 	public bool $validationFailed = false;
 
+	public ?string $saveFailure = null;
+
 	public function presentUpdated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations ): void {
 		$this->subjectId = $subject->id;
 		$this->subject = $subject;
@@ -32,6 +34,10 @@ class ReplaceSubjectPresenterSpy implements ReplaceSubjectPresenter {
 	public function presentValidationFailed( array $violations ): void {
 		$this->validationFailed = true;
 		$this->violations = $violations;
+	}
+
+	public function presentSaveFailed( ?string $errorMessage ): void {
+		$this->saveFailure = $errorMessage ?? '';
 	}
 
 }

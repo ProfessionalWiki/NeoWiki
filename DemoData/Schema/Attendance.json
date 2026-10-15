@@ -1,11 +1,7 @@
 {
-	"description": "Annual attendance record, linked to the museum it counts and stored as one of that museum's other Subjects.",
+	"description": "A museum's visitor count for one year, with its source. Each is edited, stored and removed with its museum.",
+	"subjectsAreDependent": true,
 	"propertyDefinitions": {
-		"Museum": {
-			"type": "relation",
-			"targetSchemas": [ "Museum" ],
-			"required": true
-		},
 		"Year": {
 			"type": "number",
 			"required": true

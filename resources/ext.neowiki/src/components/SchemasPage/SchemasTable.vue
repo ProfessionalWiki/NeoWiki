@@ -54,7 +54,7 @@
 					:aria-describedby="nameId( row.name )"
 				>{{ subjectListLinkText( subjectCountOf( row.name ) ) }}</a>
 				<CdxButton
-					v-if="canCreateSubject"
+					v-if="canCreateSubject && !row.subjectsAreDependent"
 					action="progressive"
 					:aria-describedby="nameId( row.name )"
 					@click="emit( 'create-subject', row.name )"

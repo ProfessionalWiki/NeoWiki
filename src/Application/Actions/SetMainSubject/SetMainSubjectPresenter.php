@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\SetMainSubject;
 
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+
 interface SetMainSubjectPresenter {
 
 	public function presentMainSubjectChanged(): void;
@@ -18,5 +20,12 @@ interface SetMainSubjectPresenter {
 	 * sweeping page ids (see PageReadAuthorizer).
 	 */
 	public function presentPageNotFound(): void;
+
+	/**
+	 * Called when the change breaks a rule for Dependent Subjects. Nothing is changed.
+	 *
+	 * @param Violation[] $violations
+	 */
+	public function presentValidationFailed( array $violations ): void;
 
 }

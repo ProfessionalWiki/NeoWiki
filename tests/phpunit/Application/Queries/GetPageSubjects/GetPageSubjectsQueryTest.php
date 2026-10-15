@@ -28,6 +28,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestNaming;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
@@ -102,6 +103,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						pageId: null,
 						pageTitle: null,
 						pageNamespaceId: null,
+						hostSubject: null,
 					),
 					's11111111111ca2' => new GetSubjectResponseItem(
 						id: 's11111111111ca2',
@@ -113,6 +115,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						pageId: null,
 						pageTitle: null,
 						pageNamespaceId: null,
+						hostSubject: null,
 					),
 					's11111111111ca3' => new GetSubjectResponseItem(
 						id: 's11111111111ca3',
@@ -124,6 +127,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						pageId: null,
 						pageTitle: null,
 						pageNamespaceId: null,
+						hostSubject: null,
 					),
 					's11111111111ca1' => new GetSubjectResponseItem(
 						id: 's11111111111ca1',
@@ -135,6 +139,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						pageId: null,
 						pageTitle: null,
 						pageNamespaceId: null,
+						hostSubject: null,
 					),
 				]
 			),
@@ -205,6 +210,29 @@ class GetPageSubjectsQueryTest extends TestCase {
 
 		$this->assertNull( $presenter->response->subjects['s11111111111ca1']->label );
 		$this->assertSame( 'Attendance', $presenter->response->subjects['s11111111111ca1']->displayName );
+	}
+
+	public function testADependentSubjectIsNamedAfterItsHostSubject(): void {
+		$repository = new InMemorySubjectRepository();
+		$repository->savePageSubjects(
+			new PageSubjects(
+				$this->newSubjectReferencing( 's11111111111maa', 's11111111111ca1' ),
+				new SubjectMap(
+					TestSubject::build( id: 's11111111111ca1', label: null, schemaName: new SchemaName( 'Attendance' ) ),
+				)
+			),
+			new PageId( 42 )
+		);
+
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery(
+			$presenter,
+			$repository,
+			schemaLookup: new InMemorySchemaLookup( TestSchema::build( name: 'Attendance', subjectsAreDependent: true ) )
+		)->execute( 42 );
+
+		$this->assertSame( 's11111111111maa', $presenter->response->subjects['s11111111111ca1']->hostSubject?->id );
 	}
 
 	public function testLabellessMainSubjectOfAPageTitledByAnotherSubjectsIdIsNamedAfterItsSchema(): void {
@@ -758,12 +786,14 @@ class GetPageSubjectsQueryTest extends TestCase {
 		?PageIdentifiersLookup $pageIdentifiersLookup = null,
 		?PageReadAuthorizer $readAuthorizer = null,
 	): GetPageSubjectsQuery {
+		$schemaLookup ??= new InMemorySchemaLookup();
+
 		return new GetPageSubjectsQuery(
 			presenter: $presenter,
 			subjectRepository: $repository,
-			responseItemFactory: new SubjectResponseItemFactory( new PageSubjectsLookup( $repository ) ),
+			responseItemFactory: TestNaming::newResponseItemFactory( $repository, $schemaLookup ),
 			subjectLookup: $subjectLookup ?? new InMemorySubjectLookup(),
-			schemaLookup: $schemaLookup ?? new InMemorySchemaLookup(),
+			schemaLookup: $schemaLookup,
 			schemaSerializer: new SchemaPresentationSerializer(),
 			pageIdentifiersLookup: $pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
 			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),

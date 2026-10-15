@@ -35,6 +35,12 @@ export function useSubjectEditor(
 	let latestOpen = 0;
 
 	async function openEditor( id: SubjectId ): Promise<void> {
+		// An open editor stays out of sight while it reads what its form needs, and the buttons that
+		// opened it are not covered meanwhile: another open would replace the Subject it is about to show.
+		if ( editorOpen.value ) {
+			return;
+		}
+
 		const request = ++latestOpen;
 
 		try {

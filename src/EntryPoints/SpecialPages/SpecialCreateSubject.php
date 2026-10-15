@@ -32,12 +32,21 @@ class SpecialCreateSubject extends SpecialPage {
 			throw new PermissionsError( 'createpage' );
 		}
 
+		$schemaTitle = MediaWikiServices::getInstance()->getTitleFactory()
+			->newFromText( $subPage ?? '', NeoWikiExtension::NS_SCHEMA );
+
+		if ( $schemaTitle !== null
+			&& NeoWikiExtension::getInstance()->newDependentSubjectRules()->localSchemaDeclaresDependentSubjects( $schemaTitle->getText() )
+		) {
+			$this->getOutput()->addHTML( Html::errorBox(
+				$this->msg( 'neowiki-create-subject-error-dependent-subjects', $schemaTitle->getText() )->escaped()
+			) );
+			return;
+		}
+
 		NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $this->getOutput(), $this->getSkin() );
 
 		$attributes = [ 'id' => 'ext-neowiki-create-subject' ];
-
-		$schemaTitle = MediaWikiServices::getInstance()->getTitleFactory()
-			->newFromText( $subPage ?? '', NeoWikiExtension::NS_SCHEMA );
 
 		if ( $schemaTitle !== null ) {
 			$attributes['data-mw-neowiki-schema'] = $schemaTitle->getText();

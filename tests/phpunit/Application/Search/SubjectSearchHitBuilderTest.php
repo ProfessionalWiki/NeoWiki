@@ -19,11 +19,15 @@ use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestNaming;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Tests\MarkedMatchesTrait;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchHitBuilder
@@ -38,6 +42,8 @@ class SubjectSearchHitBuilderTest extends TestCase {
 
 	private const string MAIN_ID = 's11111111111111';
 	private const string OTHER_ID = 's22222222222222';
+	private const string ATTENDANCE_ID = 's33333333333331';
+	private const string SOURCE_ID = 's33333333333332';
 	private const string PAGE_NAME = 'Rijksmuseum';
 
 	public function testAPageWithoutSubjectsHasNothingToShow(): void {
@@ -241,6 +247,111 @@ class SubjectSearchHitBuilderTest extends TestCase {
 		$this->assertNull( $hit->match );
 	}
 
+	public function testAMatchInADependentSubjectIsAMatchInItsHostSubject(): void {
+		$hit = $this->hitFor(
+			$this->pageWith(
+				$this->museumIn( 'Amsterdam', $this->relationTo( 'Attendance', self::ATTENDANCE_ID ) ),
+				$this->attendance( self::ATTENDANCE_ID, TestStatement::build( property: 'Year', value: '2019' ) )
+			),
+			true,
+			'2019'
+		);
+
+		$this->assertSame( 'Museum', $this->matchOf( $hit )->schemaName );
+		$this->assertSame( [ 'Attendance / Year' ], $this->qualifiedPropertyNamesOf( $hit ) );
+	}
+
+	public function testTheHostSubjectsOwnLinesComeBeforeThoseOfItsDependentSubjects(): void {
+		$hit = $this->hitFor(
+			$this->pageWith(
+				$this->attendanceHostingMuseum(),
+				$this->attendance( self::ATTENDANCE_ID, TestStatement::build( property: 'Note', value: 'Amsterdam crowds' ) )
+			),
+			true,
+			'amsterdam'
+		);
+
+		$this->assertSame( [ 'City', 'Attendance / Note' ], $this->qualifiedPropertyNamesOf( $hit ) );
+	}
+
+	public function testALineOfADependentSubjectOfADependentSubjectNamesEachRelationPropertyOnTheWay(): void {
+		$hit = $this->hitFor(
+			$this->pageWith(
+				$this->attendanceHostingMuseum(),
+				$this->attendance( self::ATTENDANCE_ID, $this->relationTo( 'Source', self::SOURCE_ID ) ),
+				$this->source( TestStatement::build( property: 'Publisher', value: 'Annual report' ) )
+			),
+			true,
+			'annual'
+		);
+
+		$this->assertSame( [ 'Attendance / Source / Publisher' ], $this->qualifiedPropertyNamesOf( $hit ) );
+	}
+
+	public function testTheDependentSubjectsOfTheMainSubjectAreMatchedBeforeAnotherSubject(): void {
+		$hit = $this->hitFor(
+			$this->pageWith(
+				$this->attendanceHostingMuseum(),
+				$this->otherSubjectIn( 'Berlin' ),
+				$this->attendance( self::ATTENDANCE_ID, TestStatement::build( property: 'Note', value: 'Loan from Berlin' ) )
+			),
+			true,
+			'berlin'
+		);
+
+		$this->assertSame( [ 'Attendance / Note' ], $this->qualifiedPropertyNamesOf( $hit ) );
+	}
+
+	public function testAMatchInADependentSubjectBeforeItsHostSubjectInPageOrderIsAMatchInItsHostSubject(): void {
+		$hit = $this->hitFor(
+			$this->pageWith(
+				$this->museumIn( 'Amsterdam' ),
+				$this->attendance( self::ATTENDANCE_ID, TestStatement::build( property: 'Note', value: 'Loan from Berlin' ) ),
+				$this->subjectWith(
+					self::OTHER_ID,
+					'Gemaldegalerie',
+					TestStatement::build( property: 'City', value: 'Dahlem' ),
+					$this->relationTo( 'Attendance', self::ATTENDANCE_ID )
+				)
+			),
+			true,
+			'berlin'
+		);
+
+		$this->assertSame( 'Gemaldegalerie', $this->matchOf( $hit )->subjectName );
+		$this->assertSame( [ 'Attendance / Note' ], $this->qualifiedPropertyNamesOf( $hit ) );
+	}
+
+	public function testAMatchInAStandaloneSubjectTheHostSubjectPointsAtIsAMatchInThatSubject(): void {
+		$hit = $this->hitFor(
+			$this->pageWith(
+				$this->museumIn( 'Amsterdam', $this->relationTo( 'Architect', self::OTHER_ID ) ),
+				$this->otherSubjectIn( 'Berlin' )
+			),
+			true,
+			'berlin'
+		);
+
+		$this->assertSame( [ 'City' ], $this->qualifiedPropertyNamesOf( $hit ) );
+	}
+
+	public function testDependentSubjectsThatPointAtEachOtherAreMatchedOnce(): void {
+		$hit = $this->hitFor(
+			$this->pageWith(
+				$this->attendanceHostingMuseum(),
+				$this->attendance( self::ATTENDANCE_ID, $this->relationTo( 'Source', self::SOURCE_ID ) ),
+				$this->source(
+					TestStatement::build( property: 'Publisher', value: 'Annual report' ),
+					$this->relationTo( 'Counted', self::ATTENDANCE_ID )
+				)
+			),
+			true,
+			'annual'
+		);
+
+		$this->assertSame( [ 'Attendance / Source / Publisher' ], $this->qualifiedPropertyNamesOf( $hit ) );
+	}
+
 	private function landingOf( SubjectSearchHit $hit ): SubjectSearchLanding {
 		$this->assertNotNull( $hit->landing );
 
@@ -263,11 +374,58 @@ class SubjectSearchHitBuilderTest extends TestCase {
 		);
 	}
 
-	private function museumIn( string $city ): Subject {
+	/**
+	 * @return string[]
+	 */
+	private function qualifiedPropertyNamesOf( SubjectSearchHit $hit ): array {
+		return array_map(
+			static fn ( MatchedSearchLine $line ): string => implode(
+				' / ',
+				[ ...$line->relationPropertyNames, $line->propertyName ?? '' ]
+			),
+			$this->matchOf( $hit )->lines
+		);
+	}
+
+	private function museumIn( string $city, Statement ...$statements ): Subject {
 		return $this->subjectWith(
 			self::MAIN_ID,
 			'Rijksmuseum',
-			TestStatement::build( property: 'City', value: $city )
+			TestStatement::build( property: 'City', value: $city ),
+			...$statements
+		);
+	}
+
+	private function attendanceHostingMuseum(): Subject {
+		return $this->museumIn( 'Amsterdam', $this->relationTo( 'Attendance', self::ATTENDANCE_ID ) );
+	}
+
+	private function attendance( string $id, Statement ...$statements ): Subject {
+		return TestSubject::build(
+			id: $id,
+			label: null,
+			schemaName: new SchemaName( 'Attendance' ),
+			statements: new StatementList( $statements )
+		);
+	}
+
+	private function source( Statement ...$statements ): Subject {
+		return TestSubject::build(
+			id: self::SOURCE_ID,
+			label: null,
+			schemaName: new SchemaName( 'Source' ),
+			statements: new StatementList( $statements )
+		);
+	}
+
+	private function relationTo( string $property, string $targetId ): Statement {
+		return TestStatement::buildRelation( $property, [ TestRelation::build( targetId: $targetId ) ] );
+	}
+
+	private function schemaLookup(): InMemorySchemaLookup {
+		return new InMemorySchemaLookup(
+			TestSchema::build( name: 'Attendance', subjectsAreDependent: true ),
+			TestSchema::build( name: 'Source', subjectsAreDependent: true ),
 		);
 	}
 
@@ -326,8 +484,9 @@ class SubjectSearchHitBuilderTest extends TestCase {
 		return new SubjectSearchHitBuilder(
 			new SubjectSearchTextBuilder(
 				PropertyTypeRegistry::withCoreTypes( TestSources::newSchemaReferenceParser() ),
-				TestSources::newSchemaResolver()
-			)
+				TestSources::newSchemaResolver( $this->schemaLookup() )
+			),
+			TestNaming::newDependentSubjectRules( $this->schemaLookup() )
 		);
 	}
 

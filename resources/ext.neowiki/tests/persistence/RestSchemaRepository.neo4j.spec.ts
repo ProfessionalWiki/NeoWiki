@@ -9,6 +9,7 @@ import { InMemoryHttpClient } from '@/infrastructure/HttpClient/InMemoryHttpClie
 import { TextType } from '@/domain/propertyTypes/Text';
 import { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import { FailingPageSaver, PageSaver, SucceedingPageSaver } from '@/persistence/PageSaver.ts';
+import { newSchema } from '@/TestHelpers.ts';
 
 describe( 'RestSchemaRepository', () => {
 
@@ -122,7 +123,7 @@ describe( 'RestSchemaRepository', () => {
 			repository = new RestSchemaRepository( apiUrl, mockHttpClient, mockSerializer, new SchemaDeserializer(), pageSaver );
 		} );
 
-		const testSchema = new Schema( 'TestSchema', 'Test Description', new PropertyDefinitionList( [] ) );
+		const testSchema = newSchema( { title: 'TestSchema', description: 'Test Description', properties: new PropertyDefinitionList( [] ) } );
 
 		it( 'should call the correct API endpoint with the right parameters', async () => {
 			vi.spyOn( pageSaver, 'savePage' );
@@ -161,11 +162,11 @@ describe( 'RestSchemaRepository', () => {
 		} );
 
 		it( 'should encode the schema name', async () => {
-			const schemaWithSpecialChars = new Schema(
-				'Test/Schema With:Spaces',
-				'Description',
-				new PropertyDefinitionList( [] ),
-			);
+			const schemaWithSpecialChars = newSchema( {
+				title: 'Test/Schema With:Spaces',
+				description: 'Description',
+				properties: new PropertyDefinitionList( [] ),
+			} );
 
 			vi.spyOn( pageSaver, 'savePage' );
 

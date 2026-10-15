@@ -38,7 +38,16 @@
 			</template>
 
 			<template #empty-state>
-				{{ $i18n( 'neowiki-layout-display-no-rules' ).text() }}
+				<template v-if="propertyNamesLeftOut.length === 0">
+					{{ $i18n( 'neowiki-layout-display-no-rules' ).text() }}
+				</template>
+				<template v-else>
+					{{ $i18n(
+						'neowiki-layout-display-no-rules-dependent',
+						propertyNamesLeftOut.join( $i18n( 'comma-separator' ).text() ),
+						propertyNamesLeftOut.length
+					).text() }}
+				</template>
 			</template>
 		</CdxTable>
 
@@ -65,6 +74,9 @@ import LayoutEditorDialog from '@/components/LayoutEditor/LayoutEditorDialog.vue
 import { useLayoutPermissions } from '@/composables/useLayoutPermissions.ts';
 import { useLayoutStore } from '@/stores/LayoutStore.ts';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
+import { propertiesTargetingDependentSubjects } from '@/domain/propertyTypes/Relation.ts';
+import { subjectsAreDependentIn } from '@/application/SchemaLookup.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 const props = defineProps( {
 	layout: {
@@ -79,7 +91,9 @@ const { canEditLayout, checkEditPermission } = useLayoutPermissions();
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 const layoutRepo = NeoWikiServices.getLayoutRepository();
+const schemaStore = useSchemaStore();
 const schemaProperties = shallowRef<PropertyDefinition[]>( [] );
+const propertyNamesLeftOut = shallowRef<string[]>( [] );
 
 watch( () => props.layout, ( newLayout ) => {
 	currentLayout.value = newLayout;
@@ -88,10 +102,16 @@ watch( () => props.layout, ( newLayout ) => {
 
 watch( () => currentLayout.value.getSchema(), async ( schemaName ) => {
 	try {
-		const schema = await schemaRepo.getSchema( schemaName );
+		const [ schema, summaries ] = await Promise.all( [
+			schemaRepo.getSchema( schemaName ),
+			schemaStore.fetchAllSchemaSummaries()
+		] );
 		schemaProperties.value = [ ...schema.getPropertyDefinitions() ];
+		propertyNamesLeftOut.value = propertiesTargetingDependentSubjects( schema, subjectsAreDependentIn( summaries ) )
+			.map( ( property ) => property.name.toString() );
 	} catch {
 		schemaProperties.value = [];
+		propertyNamesLeftOut.value = [];
 	}
 }, { immediate: true } );
 

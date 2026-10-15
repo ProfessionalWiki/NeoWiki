@@ -70,6 +70,7 @@ class GetMainSubjectQueryTest extends TestCase {
 					pageId: self::PAGE_ID,
 					pageTitle: self::PAGE_TITLE,
 					pageNamespaceId: NS_MAIN,
+					hostSubject: null,
 				)
 			),
 			$presenter->response

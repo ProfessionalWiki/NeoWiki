@@ -14,6 +14,8 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
@@ -29,9 +31,12 @@ readonly class SubjectValidator {
 	}
 
 	/**
+	 * @param SubjectMap $writtenAlongside Subjects stored by the same write, as it leaves them. They count as existing
+	 *   relation targets.
+	 *
 	 * @return Violation[]
 	 */
-	public function validate( StatementList $statements, Schema $schema ): array {
+	public function validate( StatementList $statements, Schema $schema, SubjectMap $writtenAlongside = new SubjectMap() ): array {
 		$violations = $this->validateRelationTargetSources( $statements );
 
 		// Resolved in one lookup ahead of the per-Statement pass: resolving each target where it is
@@ -40,7 +45,7 @@ readonly class SubjectValidator {
 		// below never checks: they cannot produce a violation, but they are not free either - a
 		// target on a page no other target shares costs that page's revision load and slot
 		// deserialization.
-		$relationTargets = $this->subjectLookup->getSubjects( $statements->getReferencedSubjects() );
+		$relationTargets = $this->relationTargets( $statements->getReferencedSubjects(), $writtenAlongside );
 
 		foreach ( $statements->asArray() as $statement ) {
 			if ( $schema->hasProperty( $statement->getPropertyName() ) ) {
@@ -56,6 +61,16 @@ readonly class SubjectValidator {
 		}
 
 		return array_merge( $violations, $this->validateRequiredProperties( $statements, $schema ) );
+	}
+
+	private function relationTargets( SubjectIdList $targetIds, SubjectMap $writtenAlongside ): SubjectMap {
+		$storedTargetIds = array_filter(
+			$targetIds->asArray(),
+			static fn ( SubjectId $targetId ): bool => !$writtenAlongside->hasSubject( $targetId )
+		);
+
+		return $this->subjectLookup->getSubjects( new SubjectIdList( $storedTargetIds ) )
+			->union( $writtenAlongside->onlyWithIds( $targetIds ) );
 	}
 
 	/**

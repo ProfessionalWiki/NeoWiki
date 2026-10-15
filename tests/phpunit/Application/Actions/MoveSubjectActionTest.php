@@ -10,15 +10,26 @@ use ProfessionalWiki\NeoWiki\Application\Actions\MoveSubject\MoveSubjectPresente
 use ProfessionalWiki\NeoWiki\Application\Actions\MoveSubject\MoveSubjectRequest;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
+use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use RuntimeException;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivePageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectWriteAuthorizer;
@@ -33,9 +44,16 @@ class MoveSubjectActionTest extends TestCase {
 	private const string SOURCE_MAIN_ID = 's11111111111saa';
 	private const string TARGET_MAIN_ID = 's11111111111taa';
 	private const string STRANGER_ID = 's11111111111zaa';
+	private const string BIRTH_ID = 'sBirth111111111';
 
 	private const int SOURCE_PAGE_ID = 42;
 	private const int TARGET_PAGE_ID = 43;
+
+	private InMemorySchemaLookup $schemaLookup;
+
+	protected function setUp(): void {
+		$this->schemaLookup = new InMemorySchemaLookup();
+	}
 
 	public function testMovedSubjectLeavesTheSourcePageAndArrivesOnTheTarget(): void {
 		$repository = $this->newRepository();
@@ -470,10 +488,12 @@ class MoveSubjectActionTest extends TestCase {
 					[ new SubjectId( self::MOVED_ID ), new PageIdentifiers( new PageId( self::SOURCE_PAGE_ID ), 'Source page', 0 ) ],
 					[ new SubjectId( self::SOURCE_MAIN_ID ), new PageIdentifiers( new PageId( self::SOURCE_PAGE_ID ), 'Source page', 0 ) ],
 					[ new SubjectId( self::TARGET_MAIN_ID ), new PageIdentifiers( new PageId( self::TARGET_PAGE_ID ), 'Target page', 0 ) ],
+					[ new SubjectId( self::BIRTH_ID ), new PageIdentifiers( new PageId( self::SOURCE_PAGE_ID ), 'Source page', 0 ) ],
 				] ),
 				$readAuthorizer
 			),
 			subjectIdParser: TestSubjectIds::newParser(),
+			dependentSubjectRules: new DependentSubjectRules( TestSources::newSchemaResolver( $this->schemaLookup ) ),
 		);
 	}
 
@@ -486,6 +506,9 @@ class MoveSubjectActionTest extends TestCase {
 			public bool $targetPageNotFound = false;
 			public bool $alreadyOnTargetPage = false;
 			public bool $moveIncomplete = false;
+
+			/** @var Violation[] */
+			public array $violations = [];
 
 			public function presentMoved(): void {
 				$this->moved = true;
@@ -511,7 +534,102 @@ class MoveSubjectActionTest extends TestCase {
 				$this->moveIncomplete = true;
 			}
 
+			public function presentValidationFailed( array $violations ): void {
+				$this->violations = $violations;
+			}
+
 		};
+	}
+
+	private function newRepositoryWhereTheMovedSubjectHostsABirth(): InMemorySubjectRepository {
+		$this->schemaLookup->updateSchema( TestSchema::build(
+			name: 'Person',
+			properties: new PropertyDefinitions( [ 'Birth' => TestProperty::buildRelation( targetSchemas: [ 'Birth' ] ) ] )
+		) );
+		$this->schemaLookup->updateSchema( TestSchema::build( name: 'Birth', subjectsAreDependent: true ) );
+
+		$repository = $this->newRepository();
+		$repository->savePageSubjects(
+			new PageSubjects(
+				TestSubject::build( id: self::SOURCE_MAIN_ID ),
+				new SubjectMap(
+					TestSubject::build(
+						id: self::MOVED_ID,
+						label: 'Moved subject',
+						schemaName: TestSchema::reference( 'Person' ),
+						statements: new StatementList( [
+							TestStatement::buildRelation( 'Birth', [ TestRelation::build( targetId: self::BIRTH_ID ) ] ),
+						] )
+					),
+					TestSubject::build( id: self::BIRTH_ID, label: null, schemaName: TestSchema::reference( 'Birth' ) )
+				)
+			),
+			new PageId( self::SOURCE_PAGE_ID )
+		);
+		$repository->savedPageIds = [];
+
+		return $repository;
+	}
+
+	private function newRefusal(): Violation {
+		return new Violation( null, DependentSubjectRules::WITHOUT_HOST, severity: Severity::Error, subjectId: new SubjectId( self::BIRTH_ID ) );
+	}
+
+	public function testTheDependentSubjectsOfTheMovedSubjectArriveWithIt(): void {
+		$repository = $this->newRepositoryWhereTheMovedSubjectHostsABirth();
+
+		$this->newAction( $this->newSpyPresenter(), $repository )->moveSubject( $this->newRequest() );
+
+		$this->assertSame(
+			[ self::TARGET_MAIN_ID, self::MOVED_ID, self::BIRTH_ID ],
+			$repository->getSubjectsByPageId( new PageId( self::TARGET_PAGE_ID ) )->getAllSubjects()->getIdsAsTextArray()
+		);
+	}
+
+	public function testTheDependentSubjectsOfTheMovedSubjectLeaveTheSourcePage(): void {
+		$repository = $this->newRepositoryWhereTheMovedSubjectHostsABirth();
+
+		$this->newAction( $this->newSpyPresenter(), $repository )->moveSubject( $this->newRequest() );
+
+		$this->assertSame(
+			[ self::SOURCE_MAIN_ID ],
+			$repository->getSubjectsByPageId( new PageId( self::SOURCE_PAGE_ID ) )->getAllSubjects()->getIdsAsTextArray()
+		);
+	}
+
+	public function testRefusesToMoveADependentSubjectOnItsOwn(): void {
+		$repository = $this->newRepositoryWhereTheMovedSubjectHostsABirth();
+		$presenter = $this->newSpyPresenter();
+
+		$this->newAction( $presenter, $repository )->moveSubject( $this->newRequest( subjectId: self::BIRTH_ID ) );
+
+		$this->assertEquals( [ $this->newRefusal() ], $presenter->violations );
+		$this->assertSame( [], $repository->savedPageIds );
+	}
+
+	public function testPresentsARefusedSourceWrite(): void {
+		$repository = $this->newRepository();
+		$repository->refuseWritesWith = [ $this->newRefusal() ];
+		$repository->refuseSavesToPageIds = [ self::SOURCE_PAGE_ID ];
+		$presenter = $this->newSpyPresenter();
+
+		$this->newAction( $presenter, $repository )->moveSubject( $this->newRequest() );
+
+		$this->assertEquals( [ $this->newRefusal() ], $presenter->violations );
+	}
+
+	public function testPresentsARefusedTargetWriteWithTheSubjectBackOnItsSourcePage(): void {
+		$repository = $this->newRepository();
+		$repository->refuseWritesWith = [ $this->newRefusal() ];
+		$repository->refuseSavesToPageIds = [ self::TARGET_PAGE_ID ];
+		$presenter = $this->newSpyPresenter();
+
+		$this->newAction( $presenter, $repository )->moveSubject( $this->newRequest() );
+
+		$this->assertEquals( [ $this->newRefusal() ], $presenter->violations );
+		$this->assertTrue(
+			$repository->getSubjectsByPageId( new PageId( self::SOURCE_PAGE_ID ) )->getAllSubjects()->hasSubject( new SubjectId( self::MOVED_ID ) )
+		);
 	}
 
 }

@@ -38,6 +38,7 @@ class SchemaPersistenceDeserializer {
 			name: $schemaName,
 			description: $json['description'] ?? '',
 			properties: $this->propertiesFromJson( $json ),
+			subjectsAreDependent: ( $json['subjectsAreDependent'] ?? false ) === true,
 		);
 	}
 

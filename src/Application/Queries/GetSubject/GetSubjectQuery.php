@@ -8,8 +8,11 @@ use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 
 readonly class GetSubjectQuery {
@@ -21,6 +24,7 @@ readonly class GetSubjectQuery {
 		private SubjectResponseItemFactory $responseItemFactory,
 		private PageReadAuthorizer $readAuthorizer,
 		private SubjectIdParser $subjectIdParser,
+		private DependentSubjectRules $dependentSubjectRules,
 	) {
 	}
 
@@ -49,28 +53,7 @@ readonly class GetSubjectQuery {
 		$placedSubjects = [ $subject->getId()->text => [ $subject, $pageIdentifiers ] ];
 
 		if ( $includeReferencedSubjects ) {
-			$referencedIds = $subject->getReferencedSubjects();
-
-			$referencedSubjects = $this->subjectLookup->getSubjects( $referencedIds );
-			$hostingPages = $this->pageIdentifiersLookup->getPageIdsOfSubjects( $referencedIds );
-
-			// Iterated by the requested ids, not the returned map: the response keeps relation
-			// order, and SubjectMap promises no order of its own.
-			foreach ( $referencedIds->asArray() as $idText => $id ) {
-				$referencedSubject = $referencedSubjects->getSubject( $id );
-
-				if ( $referencedSubject === null ) {
-					continue;
-				}
-
-				$referencedPage = $hostingPages[$idText] ?? null;
-
-				if ( !$this->mayServe( $id, $referencedPage ) ) {
-					continue;
-				}
-
-				$placedSubjects[$idText] = [ $referencedSubject, $referencedPage ];
-			}
+			$this->placeReferencedSubjects( [ $subject ], $placedSubjects );
 		}
 
 		$this->presenter->presentSubject(
@@ -79,6 +62,66 @@ readonly class GetSubjectQuery {
 				subjects: $this->responseItemFactory->createResponseItems( $placedSubjects, $includePageIdentifiers )
 			)
 		);
+	}
+
+	/**
+	 * A Dependent Subject is shown with its Host Subject, and so is what it points at.
+	 *
+	 * @param Subject[] $subjects
+	 * @param array<string, array{Subject, ?PageIdentifiers}> $placedSubjects
+	 */
+	private function placeReferencedSubjects( array $subjects, array &$placedSubjects ): void {
+		$referencedIds = $this->unplacedTargetsOf( $subjects, $placedSubjects );
+
+		if ( $referencedIds->asArray() === [] ) {
+			return;
+		}
+
+		$referencedSubjects = $this->subjectLookup->getSubjects( $referencedIds );
+		$hostingPages = $this->pageIdentifiersLookup->getPageIdsOfSubjects( $referencedIds );
+		$dependentSubjects = [];
+
+		// Iterated by the requested ids, not the returned map: the response keeps relation
+		// order, and SubjectMap promises no order of its own.
+		foreach ( $referencedIds->asArray() as $idText => $id ) {
+			$referencedSubject = $referencedSubjects->getSubject( $id );
+
+			if ( $referencedSubject === null ) {
+				continue;
+			}
+
+			$referencedPage = $hostingPages[$idText] ?? null;
+
+			if ( !$this->mayServe( $id, $referencedPage ) ) {
+				continue;
+			}
+
+			$placedSubjects[$idText] = [ $referencedSubject, $referencedPage ];
+
+			if ( $this->dependentSubjectRules->isDependent( $referencedSubject ) ) {
+				$dependentSubjects[] = $referencedSubject;
+			}
+		}
+
+		$this->placeReferencedSubjects( $dependentSubjects, $placedSubjects );
+	}
+
+	/**
+	 * @param Subject[] $subjects
+	 * @param array<string, array{Subject, ?PageIdentifiers}> $placedSubjects
+	 */
+	private function unplacedTargetsOf( array $subjects, array $placedSubjects ): SubjectIdList {
+		$ids = [];
+
+		foreach ( $subjects as $subject ) {
+			foreach ( $subject->getReferencedSubjects()->asArray() as $idText => $id ) {
+				if ( !array_key_exists( $idText, $placedSubjects ) ) {
+					$ids[] = $id;
+				}
+			}
+		}
+
+		return new SubjectIdList( $ids );
 	}
 
 	/**

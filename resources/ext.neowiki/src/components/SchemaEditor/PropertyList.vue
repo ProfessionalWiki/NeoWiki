@@ -7,6 +7,7 @@
 			@keydown="onKeydown"
 		>
 			<li
+				v-if="props.showsLabelRow"
 				role="option"
 				class="ext-neowiki-property-list__item ext-neowiki-property-list__item--subject-label"
 				:class="{ 'ext-neowiki-property-list__item--selected': isSubjectLabelSelected }"
@@ -34,7 +35,7 @@
 				class="ext-neowiki-property-list__item"
 				:class="{ 'ext-neowiki-property-list__item--selected': isSelected( property ) }"
 				:aria-selected="isSelected( property )"
-				:tabindex="isSelected( property ) ? 0 : -1"
+				:tabindex="isTabStop( property ) ? 0 : -1"
 				@click="emit( 'propertySelected', property.name )"
 			>
 				<CdxIcon
@@ -105,8 +106,9 @@ import type { Icon } from '@wikimedia/codex-icons';
 
 const props = defineProps<{
 	properties: PropertyDefinitionList;
-	/** The property whose row is selected. Without one, the Label row is. */
+	/** The property whose row is selected. Without one, the Label row is, where it is shown. */
 	selectedPropertyName?: string;
+	showsLabelRow: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -123,7 +125,7 @@ const listRef = ref<HTMLElement | null>( null );
 
 const propertyArray = computed( (): PropertyDefinition[] => [ ...props.properties ] );
 
-const isSubjectLabelSelected = computed( (): boolean => props.selectedPropertyName === undefined );
+const isSubjectLabelSelected = computed( (): boolean => props.showsLabelRow && props.selectedPropertyName === undefined );
 
 // Alone, the Label row has no other row to move to, so Tab passes the list.
 const isSubjectLabelTabStop = computed( (): boolean => isSubjectLabelSelected.value && propertyArray.value.length > 0 );
@@ -131,6 +133,16 @@ const isSubjectLabelTabStop = computed( (): boolean => isSubjectLabelSelected.va
 function isSelected( property: PropertyDefinition ): boolean {
 	return property.name.toString() === props.selectedPropertyName;
 }
+
+// Without a Label row or a selection, the first property's row is the Tab stop.
+function isTabStop( property: PropertyDefinition ): boolean {
+	return isSelected( property ) ||
+		( !props.showsLabelRow && getSelectedIndex() === -1 && property === propertyArray.value[ 0 ] );
+}
+
+const firstPropertyRow = computed( (): number => props.showsLabelRow ? 1 : 0 );
+
+const firstSelectableIndex = computed( (): number => props.showsLabelRow ? -1 : 0 );
 
 function getPropertyIcon( property: PropertyDefinition ): Icon | undefined {
 	return componentRegistry.getIcon( property.type );
@@ -141,14 +153,15 @@ function describeType( type: string, required: boolean ): string {
 	return required ? typeLabel : `${ typeLabel }・${ mw.msg( 'neowiki-schema-editor-optional' ) }`;
 }
 
-// Indexes below are into the properties, with the Label row before them as -1.
+// Indexes below are into the properties, with the Label row before them as -1. Without a Label row, -1
+// is no row at all.
 function getSelectedIndex(): number {
 	return propertyArray.value.findIndex( isSelected );
 }
 
 function focusItem( index: number ): void {
 	const items = listRef.value?.querySelectorAll<HTMLElement>( '[role="option"]' );
-	items?.[ index + 1 ]?.focus();
+	items?.[ index + firstPropertyRow.value ]?.focus();
 }
 
 function selectAndFocus( index: number ): void {
@@ -185,7 +198,7 @@ function onKeydown( event: KeyboardEvent ): void {
 		if ( event.altKey && currentIndex > 0 ) {
 			moveProperty( currentIndex, currentIndex - 1 );
 			selectAndFocus( currentIndex - 1 );
-		} else if ( !event.altKey && currentIndex > -1 ) {
+		} else if ( !event.altKey && currentIndex > firstSelectableIndex.value ) {
 			selectAndFocus( currentIndex - 1 );
 		}
 	}
@@ -194,8 +207,8 @@ function onKeydown( event: KeyboardEvent ): void {
 useSortable( listRef, {
 	draggable: '.ext-neowiki-property-list__item:not(.ext-neowiki-property-list__item--subject-label)',
 	onReorder( oldIndex: number, newIndex: number ): void {
-		// SortableJS indexes count the Label row, which stays first.
-		moveProperty( oldIndex - 1, newIndex - 1 );
+		// SortableJS indexes count the Label row, which stays first, where it is shown.
+		moveProperty( oldIndex - firstPropertyRow.value, newIndex - firstPropertyRow.value );
 	}
 } );
 </script>

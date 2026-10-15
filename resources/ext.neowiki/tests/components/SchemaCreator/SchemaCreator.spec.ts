@@ -1,16 +1,17 @@
-import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
+import { DOMWrapper, mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { accessibleName, createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { newTextProperty } from '@/domain/propertyTypes/Text.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
+import { newSchema } from '@/TestHelpers.ts';
 
 const EXISTING_SCHEMA_NAME = 'Person';
 const NEW_SCHEMA_NAME = 'Company';
@@ -27,6 +28,7 @@ const SchemaEditorStub = defineComponent( {
 	template: '<div class="schema-editor-stub"></div>',
 	props: {
 		initialSchema: { type: Object, required: true },
+		subjectsAreDependent: { type: Boolean, default: undefined },
 	},
 	emits: [ 'change' ],
 	methods: {
@@ -46,9 +48,15 @@ describe( 'SchemaCreator', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let schemaStore: ReturnType<typeof useSchemaStore>;
 
-	function mountComponent( { initialName }: { initialName?: string } = {} ): VueWrapper {
+	interface CreatorProps {
+		initialName?: string;
+		duplicateOf?: Schema;
+		subjectsAreDependent?: boolean;
+	}
+
+	function mountComponent( props: CreatorProps = {} ): VueWrapper {
 		return mount( SchemaCreator, {
-			props: initialName === undefined ? {} : { initialName },
+			props,
 			global: {
 				plugins: [ pinia ],
 				stubs: {
@@ -62,6 +70,12 @@ describe( 'SchemaCreator', () => {
 						template: '<input class="cdx-text-input-stub" :value="modelValue" @input="$emit( \'update:modelValue\', $event.target.value ); $emit( \'input\' )" />',
 						props: [ 'modelValue', 'placeholder' ],
 						emits: [ 'update:modelValue', 'input' ],
+						// A duplicate's name is focused, as Codex's focus() does.
+						methods: {
+							focus(): void {
+								( this.$el as HTMLInputElement ).focus();
+							},
+						},
 					},
 				},
 				provide: {
@@ -77,7 +91,7 @@ describe( 'SchemaCreator', () => {
 
 	beforeEach( () => {
 		editorSaveBlocker = null;
-		editorSchema = new Schema( '', '', new PropertyDefinitionList( [] ) );
+		editorSchema = newSchema( { title: '', description: '', properties: new PropertyDefinitionList( [] ) } );
 		editorErrorsRevealed = false;
 		vi.useFakeTimers();
 
@@ -271,7 +285,7 @@ describe( 'SchemaCreator', () => {
 		} );
 
 		it( 'returns the property definitions made in the schema editor', async () => {
-			editorSchema = new Schema( '', '', new PropertyDefinitionList( [ newTextProperty( { name: 'Founded' } ) ] ) );
+			editorSchema = newSchema( { title: '', description: '', properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Founded' } ) ] ) } );
 			const wrapper = mountComponent();
 
 			await wrapper.find( '.cdx-text-input-stub' ).setValue( NEW_SCHEMA_NAME );
@@ -281,7 +295,7 @@ describe( 'SchemaCreator', () => {
 		} );
 
 		it( 'returns an empty description when the field is empty, even where the editor holds one', async () => {
-			editorSchema = new Schema( '', 'The description of the Schema duplicated', new PropertyDefinitionList( [] ) );
+			editorSchema = newSchema( { title: '', description: 'The description of the Schema duplicated', properties: new PropertyDefinitionList( [] ) } );
 			const wrapper = mountComponent();
 
 			const nameInput = wrapper.find( '.cdx-text-input-stub' );
@@ -308,6 +322,115 @@ describe( 'SchemaCreator', () => {
 				propertyName: 'Score',
 				message: 'neowiki-field-invalid-number',
 			} );
+		} );
+	} );
+
+	describe( 'whether its Subjects are dependent', () => {
+		const DEPENDENT_CHECKBOX = '.ext-neowiki-schema-creator__dependence input[type="checkbox"]';
+
+		async function createdSchema( wrapper: VueWrapper ): Promise<Schema> {
+			await wrapper.find( '.cdx-text-input-stub' ).setValue( NEW_SCHEMA_NAME );
+
+			return ( wrapper.vm as any ).getSchema() as Schema;
+		}
+
+		it( 'creates a Schema whose Subjects are standalone unless the user declares them dependent', async () => {
+			const wrapper = mountComponent();
+
+			expect( ( await createdSchema( wrapper ) ).subjectsAreDependent() ).toBe( false );
+		} );
+
+		it( 'creates a Schema whose Subjects are dependent once the user declares them so', async () => {
+			const wrapper = mountComponent();
+
+			await wrapper.find( DEPENDENT_CHECKBOX ).setValue( true );
+
+			expect( ( await createdSchema( wrapper ) ).subjectsAreDependent() ).toBe( true );
+		} );
+
+		it( 'tells the schema editor what the user declares', async () => {
+			const wrapper = mountComponent();
+
+			await wrapper.find( DEPENDENT_CHECKBOX ).setValue( true );
+
+			expect( wrapper.findComponent( SchemaEditorStub ).props( 'subjectsAreDependent' ) ).toBe( true );
+		} );
+
+		it( 'starts a duplicate with what the duplicated Schema declares', () => {
+			const wrapper = mountComponent( { duplicateOf: newSchema( { title: 'Birth', description: '', properties: new PropertyDefinitionList( [] ), subjectsAreDependent: true } ) } );
+
+			expect( ( wrapper.find( DEPENDENT_CHECKBOX ).element as HTMLInputElement ).checked ).toBe( true );
+		} );
+
+		it( 'offers no choice decided for the user, and creates the Schema as decided', async () => {
+			const wrapper = mountComponent( { subjectsAreDependent: true } );
+
+			expect( wrapper.find( DEPENDENT_CHECKBOX ).exists() ).toBe( false );
+			expect( ( await createdSchema( wrapper ) ).subjectsAreDependent() ).toBe( true );
+		} );
+
+		it( 'says that a Schema decided for the user has dependent Subjects', () => {
+			const wrapper = mountComponent( { subjectsAreDependent: true } );
+
+			expect( wrapper.text() ).toContain( 'neowiki-schema-subjects-are-dependent' );
+		} );
+
+		function explanationToggle( wrapper: VueWrapper ): DOMWrapper<HTMLButtonElement> {
+			const toggle = wrapper.findAll<HTMLButtonElement>( '.ext-neowiki-schema-creator__dependence button' )
+				.find( ( button ) => accessibleName( button.element ) === 'neowiki-schema-creator-dependent-info-label' );
+
+			if ( toggle === undefined ) {
+				throw new Error( 'No button named after what the explanation explains' );
+			}
+
+			return toggle;
+		}
+
+		// Whatever element holds it, as long as it is shown.
+		function explanationShown( wrapper: VueWrapper ): boolean {
+			return wrapper.findAll( '.ext-neowiki-schema-creator__dependence *' )
+				.some( ( element ) => element.text() === 'neowiki-schema-creator-dependent-info' && element.isVisible() );
+		}
+
+		it( 'keeps its explanation out of sight until asked for it', () => {
+			const wrapper = mountComponent();
+
+			expect( explanationShown( wrapper ) ).toBe( false );
+			expect( explanationToggle( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'false' );
+		} );
+
+		it( 'shows its explanation once asked for it', async () => {
+			const wrapper = mountComponent();
+
+			await explanationToggle( wrapper ).trigger( 'click' );
+
+			expect( explanationShown( wrapper ) ).toBe( true );
+			expect( explanationToggle( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'true' );
+		} );
+
+		it( 'hides its explanation again when asked a second time', async () => {
+			const wrapper = mountComponent();
+
+			await explanationToggle( wrapper ).trigger( 'click' );
+			await explanationToggle( wrapper ).trigger( 'click' );
+
+			expect( explanationShown( wrapper ) ).toBe( false );
+			expect( explanationToggle( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'false' );
+		} );
+
+		it( 'names its checkbox by the label alone, also while the explanation shows', async () => {
+			const wrapper = mountComponent();
+
+			await explanationToggle( wrapper ).trigger( 'click' );
+
+			expect( accessibleName( wrapper.find( DEPENDENT_CHECKBOX ).element ) ).toBe( 'neowiki-schema-creator-dependent' );
+		} );
+
+		it( 'says nothing of a Schema decided for the user to have standalone Subjects', () => {
+			const wrapper = mountComponent( { subjectsAreDependent: false } );
+
+			expect( wrapper.find( DEPENDENT_CHECKBOX ).exists() ).toBe( false );
+			expect( wrapper.text() ).not.toContain( 'neowiki-schema-subjects-are-dependent' );
 		} );
 	} );
 

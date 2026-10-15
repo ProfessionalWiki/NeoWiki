@@ -9,6 +9,7 @@ use MediaWiki\Content\FallbackContent;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Application\DependentSubjectGuard;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -23,6 +24,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepos
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use RuntimeException;
 
 /**
@@ -37,6 +39,13 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 
 	private function newRepository(): MediaWikiSubjectRepository {
 		return NeoWikiExtension::getInstance()->newSubjectRepository();
+	}
+
+	private function newDependentSubjectGuard(): DependentSubjectGuard {
+		return new DependentSubjectGuard(
+			NeoWikiExtension::getInstance()->newDependentSubjectRules(),
+			fn (): InMemorySubjectLookup => new InMemorySubjectLookup()
+		);
 	}
 
 	public function testGetSubjectReturnsNullForUnknownSubject(): void {
@@ -133,6 +142,7 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 			pageContentSaver: NeoWikiExtension::getInstance()->getPageContentSaver(),
 			titleFactory: $this->getServiceContainer()->getTitleFactory(),
 			contentHandlerFactory: $this->getServiceContainer()->getContentHandlerFactory(),
+			dependentSubjectGuard: $this->newDependentSubjectGuard(),
 		);
 
 		$status = $repository->deleteSubject( new SubjectId( 'sTestMSR1111119' ), null );
@@ -160,6 +170,7 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 			pageContentSaver: NeoWikiExtension::getInstance()->getPageContentSaver(),
 			titleFactory: $this->getServiceContainer()->getTitleFactory(),
 			contentHandlerFactory: $this->getServiceContainer()->getContentHandlerFactory(),
+			dependentSubjectGuard: $this->newDependentSubjectGuard(),
 		);
 
 		$status = $repository->deleteSubject( new SubjectId( 'sTestMSR1111119' ), null );
@@ -297,6 +308,7 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 			pageContentSaver: NeoWikiExtension::getInstance()->getPageContentSaver(),
 			titleFactory: $this->getServiceContainer()->getTitleFactory(),
 			contentHandlerFactory: $this->getServiceContainer()->getContentHandlerFactory(),
+			dependentSubjectGuard: $this->newDependentSubjectGuard(),
 		);
 
 		$subjects = $repository->getSubjects(
@@ -340,6 +352,7 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 			pageContentSaver: $pageContentSaver,
 			titleFactory: $this->getServiceContainer()->getTitleFactory(),
 			contentHandlerFactory: $this->getServiceContainer()->getContentHandlerFactory(),
+			dependentSubjectGuard: $this->newDependentSubjectGuard(),
 		);
 
 		$this->expectException( RuntimeException::class );

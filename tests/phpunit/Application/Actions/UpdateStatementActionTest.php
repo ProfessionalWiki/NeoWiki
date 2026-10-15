@@ -5,6 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Application\Actions;
 
 use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement\UpdateStatementAction;
@@ -27,14 +29,15 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestNaming;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestHostingPages;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
@@ -108,6 +111,7 @@ class UpdateStatementActionTest extends TestCase {
 					sourceRegistry: TestSources::newRegistry(),
 				),
 			),
+			responseItemFactory: TestNaming::newResponseItemFactory( $this->subjectRepository, $this->schemaLookup ),
 			presenter: $this->presenterSpy,
 			validationEnforced: $validationEnforced,
 		);
@@ -133,7 +137,7 @@ class UpdateStatementActionTest extends TestCase {
 	}
 
 	private function registerSchema( PropertyDefinitions $properties ): void {
-		$this->schemaLookup->updateSchema( new Schema(
+		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( self::SCHEMA_NAME ),
 			description: '',
 			properties: $properties
@@ -198,7 +202,7 @@ class UpdateStatementActionTest extends TestCase {
 	public function testSetStatementTakesTheTypeFromTheSubjectsOwnSourcedSchema(): void {
 		$this->registerSchema( new PropertyDefinitions( [ 'Price' => TestProperty::buildText() ] ) );
 
-		$this->catalog->addSchema( new Schema(
+		$this->catalog->addSchema( TestSchema::build(
 			name: new SchemaName( self::SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [ 'Price' => TestProperty::buildNumber() ] )
@@ -649,6 +653,55 @@ class UpdateStatementActionTest extends TestCase {
 		$this->assertCount( 1, $this->presenterSpy->violations );
 		$this->assertSame( 'schema-not-found', $this->presenterSpy->violations[0]->code );
 		$this->assertSame( [ 'https://pro.wiki' ], $this->getStoredValue( 'Website' ) );
+	}
+
+	public function testPresentsAWriteTheRulesForDependentSubjectsRefuseAsAValidationFailure(): void {
+		$this->registerSchema( new PropertyDefinitions( [ 'Website' => TestProperty::buildUrl() ] ) );
+		$this->storeSubject();
+		$refusal = new Violation(
+			new PropertyName( 'Friend' ),
+			'relation-to-dependent-subject',
+			[ 'sBirth111111111' ],
+			0,
+			Severity::Error,
+			new SubjectId( self::SUBJECT_ID )
+		);
+		$this->subjectRepository->refuseWritesWith = [ $refusal ];
+
+		$this->setStatement( 'Website', 'url', [ 'https://pro.wiki' ] );
+
+		$this->assertTrue( $this->presenterSpy->validationFailed );
+		$this->assertEquals( [ $refusal ], $this->presenterSpy->violations );
+	}
+
+	public function testPresentsAWriteThatDidNotLand(): void {
+		$this->storeSubject();
+		$this->subjectRepository->failNextSave = true;
+
+		$this->setStatement( 'Website', 'url', [ 'https://pro.wiki' ] );
+
+		$this->assertSame( 'Page not found', $this->presenterSpy->saveFailure );
+	}
+
+	public function testADependentSubjectIsNamedAfterItsHostSubject(): void {
+		$this->schemaLookup->updateSchema( TestSchema::build( name: 'Birth', subjectsAreDependent: true ) );
+		$this->subjectRepository->savePageSubjects(
+			new PageSubjects(
+				TestSubject::build(
+					id: 'sPerson11111111',
+					label: 'Pablo Picasso',
+					statements: new StatementList( [
+						TestStatement::buildRelation( 'Birth', [ TestRelation::build( targetId: self::SUBJECT_ID ) ] ),
+					] )
+				),
+				new SubjectMap( TestSubject::build( id: self::SUBJECT_ID, label: null, schemaName: new SchemaName( 'Birth' ) ) )
+			),
+			new PageId( 7 )
+		);
+
+		$this->setStatement( 'Date', 'text', [ '25 October 1881' ] );
+
+		$this->assertSame( 'Pablo Picasso', $this->presenterSpy->subject?->hostSubject?->displayName );
 	}
 
 }

@@ -4,6 +4,7 @@ import { StatementList } from '@/domain/StatementList';
 import { StatementDeserializer } from '@/persistence/StatementDeserializer';
 import { Subject } from '@/domain/Subject';
 import { schemaReferenceName } from '@/domain/SchemaReference';
+import { hostSubjectFromJson } from '@/persistence/hostSubjectFromJson';
 
 export class SubjectDeserializer {
 
@@ -33,6 +34,7 @@ export class SubjectDeserializer {
 			schema,
 			statementList,
 			pageIdentifiers,
+			hostSubjectFromJson( json.hostSubject ),
 		);
 	}
 
