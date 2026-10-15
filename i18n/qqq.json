@@ -8,7 +8,7 @@
 		]
 	},
 	"neowiki-name": "{{Name}}",
-	"neowiki-description": "{{Desc|name=NeoWiki|url=https://github.com/ProfessionalWiki/NeoWiki}}",
+	"neowiki-description": "{{Desc|name=NeoWiki|url=https://neowiki.ai}}",
 	"right-neowiki-schema-edit": "{{doc-right|neowiki-schema-edit}}\nName of the user right required to create and edit pages in the NeoWiki Schema namespace.",
 	"right-neowiki-layout-edit": "{{doc-right|neowiki-layout-edit}}\nName of the user right required to create and edit pages in the NeoWiki Layout namespace.",
 	"right-neowiki-mapping-edit": "{{doc-right|neowiki-mapping-edit}}\nName of the user right required to create and edit pages in the NeoWiki Mapping namespace.",
