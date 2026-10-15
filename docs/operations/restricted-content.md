@@ -71,4 +71,5 @@ error and joins the pages-with-script-errors category. A module can still reach 
   Subject values included, to any reader of the wiki, as it already does for the page's wikitext.
 - **Derived data follows the anonymous parse.** Where anonymous users cannot read a page, a category or page
   property a template derives from its Subject values is never set, and pages reading those Subjects by ID or
-  through relations are not refreshed when those Subjects change, unlike pages reading them by page name.
+  through relations are not refreshed when those Subjects change, unlike pages reading them by page name. No page
+  showing their select values is refreshed when an option of their Schema is renamed.

@@ -10,20 +10,33 @@ use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\PageDependencyRecorder;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
@@ -64,7 +77,8 @@ class SubjectResolverTest extends TestCase {
 		?PageIdentifiersLookup $pageIdentifiersLookup = null,
 		?PageReadAuthorizer $readAuthorizer = null,
 		?SubjectLookup $subjectLookup = null,
-		?PageDependencyRecorder $pageDependencyRecorder = null
+		?PageDependencyRecorder $pageDependencyRecorder = null,
+		?SchemaLookup $schemaLookup = null
 	): SubjectResolver {
 		return new SubjectResolver(
 			$contentRepository,
@@ -72,7 +86,8 @@ class SubjectResolverTest extends TestCase {
 			$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
 			$readAuthorizer ?? new StubPageReadAuthorizer( true ),
 			TestSubjectIds::newParser(),
-			$pageDependencyRecorder ?? new NullPageDependencyRecorder()
+			$pageDependencyRecorder ?? new NullPageDependencyRecorder(),
+			TestSources::newSchemaResolver( $schemaLookup )
 		);
 	}
 
@@ -384,6 +399,112 @@ class SubjectResolverTest extends TestCase {
 			self::TARGET_SUBJECT_ID,
 			$resolver->resolveRelationLabel( $this->newRelationToTarget() )
 		);
+	}
+
+	private function selectStatement( string ...$optionIds ): Statement {
+		return TestStatement::build( 'Status', new StringValue( ...$optionIds ), SelectType::NAME );
+	}
+
+	/**
+	 * The Schema of {@see createSubject()}, giving it a Status property.
+	 */
+	private function schemaGivingStatus( PropertyDefinition $status ): InMemorySchemaLookup {
+		return new InMemorySchemaLookup( TestSchema::build(
+			name: 'TestSchema',
+			properties: new PropertyDefinitions( [ 'Status' => $status ] )
+		) );
+	}
+
+	private function statusWithOptions(): PropertyDefinition {
+		return TestProperty::buildSelect( options: [
+			new SelectOption( 'o1', 'Draft' ),
+			new SelectOption( 'o2', 'In review' ),
+			new SelectOption( 'o3', 'Published' ),
+			new SelectOption( 'o4', 'Archived' ),
+		] );
+	}
+
+	private function displayValueOf(
+		Statement $statement,
+		SchemaLookup $schemaLookup,
+		?PageDependencyRecorder $pageDependencyRecorder = null
+	): NeoValue {
+		return $this->newResolver(
+			new InMemorySubjectContentRepository(),
+			pageDependencyRecorder: $pageDependencyRecorder,
+			schemaLookup: $schemaLookup
+		)->resolveDisplayValue( $this->createSubject(), $statement );
+	}
+
+	public function testSelectValueShowsTheLabelsOfItsOptions(): void {
+		$this->assertEquals(
+			new StringValue( 'In review', 'Published' ),
+			$this->displayValueOf( $this->selectStatement( 'o2', 'o3' ), $this->schemaGivingStatus( $this->statusWithOptions() ) )
+		);
+	}
+
+	public function testOptionTheSchemaNoLongerHasShowsItsId(): void {
+		$this->assertEquals(
+			new StringValue( 'In review', 'o9' ),
+			$this->displayValueOf( $this->selectStatement( 'o2', 'o9' ), $this->schemaGivingStatus( $this->statusWithOptions() ) )
+		);
+	}
+
+	public function testSelectValueShowsItsIdsWhenTheSchemaCannotBeRead(): void {
+		$this->assertEquals(
+			new StringValue( 'o2' ),
+			$this->displayValueOf( $this->selectStatement( 'o2' ), new InMemorySchemaLookup() )
+		);
+	}
+
+	public function testSelectValueShowsItsIdsWhenReadingTheSchemaFails(): void {
+		$schemaLookup = $this->createStub( SchemaLookup::class );
+		$schemaLookup->method( 'getSchema' )->willThrowException( new RuntimeException( 'Source unreachable' ) );
+
+		$this->assertEquals(
+			new StringValue( 'o2' ),
+			$this->displayValueOf( $this->selectStatement( 'o2' ), $schemaLookup )
+		);
+	}
+
+	public function testSelectValueShowsItsIdsWhenTheSchemaNoLongerHasTheProperty(): void {
+		$schemaWithoutStatus = new InMemorySchemaLookup( TestSchema::build(
+			name: 'TestSchema',
+			properties: new PropertyDefinitions( [ 'Phase' => $this->statusWithOptions() ] )
+		) );
+
+		$this->assertEquals(
+			new StringValue( 'o2' ),
+			$this->displayValueOf( $this->selectStatement( 'o2' ), $schemaWithoutStatus )
+		);
+	}
+
+	public function testSelectValueShowsItsIdsWhenTheSchemaNowGivesThePropertyAnotherType(): void {
+		$this->assertEquals(
+			new StringValue( 'o2' ),
+			$this->displayValueOf( $this->selectStatement( 'o2' ), $this->schemaGivingStatus( TestProperty::buildText() ) )
+		);
+	}
+
+	/**
+	 * The Statement keeps the type it was written with until it is saved again.
+	 */
+	public function testTextValueShowsAsStoredWhenTheSchemaNowMakesThePropertyASelect(): void {
+		$this->assertEquals(
+			new StringValue( 'o2' ),
+			$this->displayValueOf( TestStatement::build( 'Status', 'o2' ), $this->schemaGivingStatus( $this->statusWithOptions() ) )
+		);
+	}
+
+	/**
+	 * Creating or restoring the Schema then refreshes the ids shown in its absence.
+	 */
+	public function testShowingASelectValueDependsOnItsSchemaEvenWhenItCannotBeRead(): void {
+		$dependencies = new SpyPageDependencyRecorder();
+
+		$this->displayValueOf( $this->selectStatement( 'o2' ), new InMemorySchemaLookup(), $dependencies );
+
+		$this->assertEquals( [ SchemaReference::local( new SchemaName( 'TestSchema' ) ) ], $dependencies->recordedSchemas );
 	}
 
 }

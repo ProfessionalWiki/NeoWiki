@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CdxField, CdxMultiselectLookup, CdxSelect } from '@wikimedia/codex';
 import SelectInput from '@/components/Value/SelectInput.vue';
 import { newSelectProperty, SelectProperty } from '@/domain/propertyTypes/Select';
+import { newStringValue } from '@/domain/Value.ts';
 import { ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { createTestWrapper } from '../../VueTestHelpers.ts';
 
@@ -28,6 +29,48 @@ describe( 'SelectInput', () => {
 			...props,
 		} );
 	}
+
+	// The Schema editor's initial value field lists the options while one waits for its label, and a
+	// menu shows an item without a label by its id.
+	describe( 'an option without a label', () => {
+		const options = [ { id: 'open', label: 'Open' }, { id: 'o2', label: ' ' }, { id: 'closed', label: 'Closed' } ];
+
+		it( 'is not offered by the single select', () => {
+			const wrapper = newWrapper( { property: newSelectProperty( { name: 'Status', options } ) } );
+
+			expect( wrapper.findComponent( CdxSelect ).props( 'menuItems' ) ).toEqual( [
+				{ value: 'open', label: 'Open' },
+				{ value: 'closed', label: 'Closed' },
+			] );
+		} );
+
+		it( 'is not offered by the multi-select', async () => {
+			const wrapper = newWrapper( { property: newSelectProperty( { name: 'Status', options, multiple: true } ) } );
+
+			await wrapper.findComponent( CdxMultiselectLookup ).vm.$emit( 'input', '' );
+
+			expect( wrapper.findComponent( CdxMultiselectLookup ).props( 'menuItems' ) ).toEqual( [
+				{ value: 'open', label: 'Open' },
+				{ value: 'closed', label: 'Closed' },
+			] );
+		} );
+	} );
+
+	// The Schema editor's initial value field stays open while an option is renamed there.
+	it( 'shows the current label of a chosen option', async () => {
+		const property = newSelectProperty( {
+			name: 'Status',
+			multiple: true,
+			options: [ { id: 'open', label: 'Open' }, { id: 'closed', label: 'Closed' }, { id: 'archived', label: 'Archived' } ],
+		} );
+		const wrapper = newWrapper( { property, modelValue: newStringValue( 'closed' ) } );
+
+		await wrapper.setProps( {
+			property: { ...property, options: [ property.options[ 0 ], { id: 'closed', label: 'Shut' }, property.options[ 2 ] ] },
+		} );
+
+		expect( wrapper.findComponent( CdxMultiselectLookup ).props( 'inputChips' ) ).toEqual( [ { value: 'closed', label: 'Shut' } ] );
+	} );
 
 	it( 'does not flag an empty required select before the user has chosen', () => {
 		const wrapper = newWrapper();

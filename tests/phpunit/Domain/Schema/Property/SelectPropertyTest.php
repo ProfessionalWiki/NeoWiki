@@ -146,6 +146,21 @@ JSON
 		);
 	}
 
+	public function testExceptionOnDuplicateLabelDifferingInNonAsciiCase(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->fromJson(
+			<<<JSON
+{
+	"type": "select",
+	"options": [
+		{ "id": "a", "label": "Été" },
+		{ "id": "b", "label": "été" }
+	]
+}
+JSON
+		);
+	}
+
 	public function testExceptionOnDuplicateLabelWhitespace(): void {
 		$this->expectException( InvalidArgumentException::class );
 		$this->fromJson(

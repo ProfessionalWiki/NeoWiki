@@ -50,7 +50,7 @@ class NeoWikiValueParserFunction {
 		}
 
 		$separator = $params['separator'] ?? self::DEFAULT_SEPARATOR;
-		$formatted = $this->formatValue( $statement->getValue(), $separator );
+		$formatted = $this->formatValue( $this->subjectResolver->resolveDisplayValue( $subject, $statement ), $separator );
 
 		if ( $formatted === '' ) {
 			return '';

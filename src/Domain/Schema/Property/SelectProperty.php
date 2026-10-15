@@ -42,6 +42,16 @@ class SelectProperty extends PropertyDefinition {
 		return array_map( fn( SelectOption $o ): string => $o->getId(), $this->options );
 	}
 
+	public function getOption( string $id ): ?SelectOption {
+		foreach ( $this->options as $option ) {
+			if ( $option->getId() === $id ) {
+				return $option;
+			}
+		}
+
+		return null;
+	}
+
 	public function allowsMultipleValues(): bool {
 		return $this->multiple;
 	}

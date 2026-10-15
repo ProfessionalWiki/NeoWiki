@@ -82,16 +82,13 @@ class SelectType implements PropertyType {
 			return [];
 		}
 
-		$labelsById = [];
-		foreach ( $definition->getOptions() as $option ) {
-			$labelsById[ $option->getId() ] = $option->getLabel();
-		}
-
 		$labels = [];
 
 		foreach ( $value->strings as $id ) {
-			if ( isset( $labelsById[ $id ] ) ) {
-				$labels[] = $labelsById[ $id ];
+			$option = $definition->getOption( $id );
+
+			if ( $option !== null ) {
+				$labels[] = $option->getLabel();
 			}
 		}
 

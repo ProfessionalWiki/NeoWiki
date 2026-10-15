@@ -21,6 +21,15 @@ export function resolveSelectLabel( property: SelectProperty, id: string ): stri
 	return property.options.find( ( option ) => option.id === id )?.label;
 }
 
+const OPTION_ID_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+// Shaped like Subject and Relation ids.
+export function newSelectOptionId(): string {
+	const randomNumbers = crypto.getRandomValues( new Uint32Array( 14 ) );
+
+	return 'o' + Array.from( randomNumbers, ( n ) => OPTION_ID_ALPHABET[ n % OPTION_ID_ALPHABET.length ] ).join( '' );
+}
+
 export class SelectType extends BasePropertyType<SelectProperty, StringValue> {
 
 	public static readonly valueType = ValueType.String;

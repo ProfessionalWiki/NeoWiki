@@ -7,6 +7,8 @@ namespace ProfessionalWiki\NeoWiki\Infrastructure;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\PageDependencyRecorder;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 /**
  * Records a page a parse read as a template of the parsed page, as `{{REVISIONID:…}}` does, so that the
@@ -30,6 +32,14 @@ class ParserPageDependencyRecorder implements PageDependencyRecorder {
 		}
 
 		$this->parser->getOutput()->addTemplate( $page, $page->getArticleID(), $page->getLatestRevID() );
+	}
+
+	public function recordDependencyOnSchema( SchemaReference $schema ): void {
+		$page = $schema->isLocal() ? Title::makeTitleSafe( NeoWikiExtension::NS_SCHEMA, $schema->name->getText() ) : null;
+
+		if ( $page !== null ) {
+			$this->recordDependencyOn( $page );
+		}
 	}
 
 	private function isBeingParsed( Title $page ): bool {

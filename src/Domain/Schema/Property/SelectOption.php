@@ -30,7 +30,11 @@ class SelectOption {
 	}
 
 	public function normalizedLabel(): string {
-		return strtolower( trim( $this->label ) );
+		return self::normalizeLabel( $this->label );
+	}
+
+	public static function normalizeLabel( string $label ): string {
+		return mb_strtolower( trim( $label ) );
 	}
 
 	public function equals( self $other ): bool {

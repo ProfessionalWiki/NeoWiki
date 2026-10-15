@@ -6,13 +6,21 @@ namespace ProfessionalWiki\NeoWiki\Application;
 
 use Exception;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
+use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
+use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 
 class SubjectResolver {
 
@@ -37,6 +45,7 @@ class SubjectResolver {
 		private readonly PageReadAuthorizer $readAuthorizer,
 		private readonly SubjectIdParser $subjectIdParser,
 		private readonly PageDependencyRecorder $pageDependencyRecorder,
+		private readonly SchemaResolver $schemaResolver,
 	) {
 	}
 
@@ -109,6 +118,42 @@ class SubjectResolver {
 		}
 
 		return $relation->targetId->text;
+	}
+
+	/**
+	 * The option ids of a select Statement become their labels in the Subject's Schema; an id the Schema
+	 * does not have stays as it is. Every other value is returned as stored.
+	 */
+	public function resolveDisplayValue( Subject $subject, Statement $statement ): NeoValue {
+		$value = $statement->getValue();
+
+		if ( !$value instanceof StringValue || $statement->getPropertyType() !== SelectType::NAME ) {
+			return $value;
+		}
+
+		$property = $this->getPropertyDefinition( $subject, $statement->getPropertyName() );
+
+		if ( !$property instanceof SelectProperty ) {
+			return $value;
+		}
+
+		return new StringValue( ...array_map(
+			static fn ( string $id ): string => $property->getOption( $id )?->getLabel() ?? $id,
+			$value->strings
+		) );
+	}
+
+	private function getPropertyDefinition( Subject $subject, PropertyName $propertyName ): ?PropertyDefinition {
+		$reference = $subject->getSchemaReference();
+		$this->pageDependencyRecorder->recordDependencyOnSchema( $reference );
+
+		try {
+			$schema = $this->schemaResolver->getSchema( $reference );
+		} catch ( Exception ) {
+			return null;
+		}
+
+		return $schema !== null && $schema->hasProperty( $propertyName ) ? $schema->getProperty( $propertyName ) : null;
 	}
 
 	private function resolveDisplayNameOnHostingPage( SubjectId $subjectId ): ?string {

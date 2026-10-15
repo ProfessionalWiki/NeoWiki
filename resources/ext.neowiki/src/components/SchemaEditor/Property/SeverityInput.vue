@@ -154,6 +154,20 @@ function onSelected( value: string | number | null ): void {
 			margin-block: -@ext-neowiki-severity-input-overhang 0;
 		}
 	}
+
+	// A fieldset draws its legend into its border, above the content the input is placed in.
+	// Floated, the legend is laid out as the label at the top of any other field is.
+	&.cdx-field--is-fieldset {
+		> .cdx-label {
+			float: left;
+			box-sizing: border-box;
+			width: 100%;
+		}
+
+		> .cdx-field__control {
+			clear: both;
+		}
+	}
 }
 
 // Placement helper for a hidden-label CdxField holding a checkbox and the input.

@@ -25,7 +25,7 @@ readonly class SelectValueResolver {
 	}
 
 	private function resolveFromScalar( SelectProperty $property, string $raw ): string {
-		$byId = $this->findById( $property, $raw );
+		$byId = $property->getOption( $raw );
 		if ( $byId !== null ) {
 			return $byId->getId();
 		}
@@ -34,7 +34,7 @@ readonly class SelectValueResolver {
 	}
 
 	private function resolveByLabel( SelectProperty $property, string $label ): string {
-		$normalized = strtolower( trim( $label ) );
+		$normalized = SelectOption::normalizeLabel( $label );
 
 		foreach ( $property->getOptions() as $option ) {
 			if ( $option->normalizedLabel() === $normalized ) {
@@ -57,15 +57,15 @@ readonly class SelectValueResolver {
 		$label = $raw['label'] ?? null;
 
 		if ( $id !== null && $label !== null ) {
-			$matched = $this->findById( $property, $id );
-			if ( $matched === null || $matched->normalizedLabel() !== strtolower( trim( $label ) ) ) {
+			$matched = $property->getOption( $id );
+			if ( $matched === null || $matched->normalizedLabel() !== SelectOption::normalizeLabel( $label ) ) {
 				throw new InvalidArgumentException( "Select value id/label mismatch for \"$id\" / \"$label\"" );
 			}
 			return $matched->getId();
 		}
 
 		if ( $id !== null ) {
-			$matched = $this->findById( $property, $id );
+			$matched = $property->getOption( $id );
 			if ( $matched === null ) {
 				throw new InvalidArgumentException( "No select option matches id \"$id\"" );
 			}
@@ -74,15 +74,6 @@ readonly class SelectValueResolver {
 
 		/** @var string $label */
 		return $this->resolveByLabel( $property, $label );
-	}
-
-	private function findById( SelectProperty $property, string $id ): ?SelectOption {
-		foreach ( $property->getOptions() as $option ) {
-			if ( $option->getId() === $id ) {
-				return $option;
-			}
-		}
-		return null;
 	}
 
 }

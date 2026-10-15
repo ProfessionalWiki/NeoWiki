@@ -28,37 +28,37 @@ class SubjectDataLookup {
 
 	/**
 	 * Returns a single scalar value for the property (first value for multi-valued).
-	 * Relations resolve to the target subject's label.
+	 * Relations resolve to the target subject's label, select options to their labels.
 	 *
 	 * @return mixed[] Single-element array for Lua: [value] or [null]
 	 */
 	public function getValue( Title $currentTitle, string $propertyName, ?array $options = null ): array {
-		$statement = $this->resolveStatement( $currentTitle, $propertyName, $options );
+		$value = $this->resolveValue( $currentTitle, $propertyName, $options );
 
-		if ( $statement === null ) {
+		if ( $value === null ) {
 			return [ null ];
 		}
 
-		return [ $this->convertToScalar( $statement->getValue() ) ];
+		return [ $this->convertToScalar( $value ) ];
 	}
 
 	/**
 	 * Returns all values for the property as a 1-indexed Lua table.
-	 * Relations resolve to the target subject's label.
+	 * Relations resolve to the target subject's label, select options to their labels.
 	 *
 	 * @return mixed[] Single-element array for Lua: [table] or [null]
 	 */
 	public function getAll( Title $currentTitle, string $propertyName, ?array $options = null ): array {
-		$statement = $this->resolveStatement( $currentTitle, $propertyName, $options );
+		$value = $this->resolveValue( $currentTitle, $propertyName, $options );
 
-		if ( $statement === null ) {
+		if ( $value === null ) {
 			return [ null ];
 		}
 
-		return [ $this->convertToLuaTable( $statement->getValue() ) ];
+		return [ $this->convertToLuaTable( $value ) ];
 	}
 
-	private function resolveStatement( Title $currentTitle, string $propertyName, ?array $options ): ?Statement {
+	private function resolveValue( Title $currentTitle, string $propertyName, ?array $options ): ?NeoValue {
 		$propertyName = trim( $propertyName );
 
 		if ( $propertyName === '' ) {
@@ -71,7 +71,9 @@ class SubjectDataLookup {
 			return null;
 		}
 
-		return $subject->getStatements()->getStatement( new PropertyName( $propertyName ) );
+		$statement = $subject->getStatements()->getStatement( new PropertyName( $propertyName ) );
+
+		return $statement === null ? null : $this->subjectResolver->resolveDisplayValue( $subject, $statement );
 	}
 
 	private function resolveSubjectFromOptions( Title $currentTitle, ?array $options ): ?Subject {
@@ -265,7 +267,7 @@ class SubjectDataLookup {
 		$result = [];
 
 		foreach ( $subject->getStatements()->asArray() as $propertyName => $statement ) {
-			$result[$propertyName] = $this->statementToTable( $statement );
+			$result[$propertyName] = $this->statementToTable( $subject, $statement );
 		}
 
 		return $result;
@@ -274,19 +276,17 @@ class SubjectDataLookup {
 	/**
 	 * @return array<string, mixed>
 	 */
-	private function statementToTable( Statement $statement ): array {
+	private function statementToTable( Subject $subject, Statement $statement ): array {
 		return [
 			'propertyType' => $statement->getPropertyType(),
-			'values' => $this->statementValuesToLuaArray( $statement ),
+			'values' => $this->valuesToLuaArray( $this->subjectResolver->resolveDisplayValue( $subject, $statement ) ),
 		];
 	}
 
 	/**
 	 * @return array<int, mixed>
 	 */
-	private function statementValuesToLuaArray( Statement $statement ): array {
-		$value = $statement->getValue();
-
+	private function valuesToLuaArray( NeoValue $value ): array {
 		if ( $value->isEmpty() ) {
 			return [];
 		}

@@ -10,6 +10,7 @@ import { newNumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { newTextProperty } from '@/domain/propertyTypes/Text.ts';
 import { newSchema } from '@/TestHelpers.ts';
 import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
+import { newSelectProperty } from '@/domain/propertyTypes/Select.ts';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import { createI18nMock, findPropertyNameInput, reportUnparseableNumber, selectedText } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
@@ -96,6 +97,7 @@ describe( 'SchemaEditor', () => {
 		// Real text for the messages asserted on below, to tell a rendered message from its key.
 		const messages: Record<string, string> = {
 			'neowiki-property-editor-target-schema-required': 'Target schema is required.',
+			'neowiki-property-editor-option-label-required': 'Every option needs a label.',
 		};
 
 		vi.stubGlobal( 'mw', {
@@ -634,6 +636,19 @@ describe( 'SchemaEditor', () => {
 			expect( saveBlocker( wrapper ) ).toEqual( {
 				propertyName: 'Maker',
 				message: 'Target schema is required.',
+			} );
+		} );
+
+		// The wiki stores such a property, then drops it on reading the Schema back.
+		it( 'names a select property with an option without a label', () => {
+			const wrapper = createWrapper( schemaWith( newSelectProperty( {
+				name: 'Status',
+				options: [ { id: 'o1', label: 'Draft' }, { id: 'o2', label: ' ' } ],
+			} ) ) );
+
+			expect( saveBlocker( wrapper ) ).toEqual( {
+				propertyName: 'Status',
+				message: 'Every option needs a label.',
 			} );
 		} );
 

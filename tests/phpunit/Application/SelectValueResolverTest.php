@@ -23,6 +23,7 @@ class SelectValueResolverTest extends TestCase {
 				new SelectOption( id: 'opt1', label: 'Draft' ),
 				new SelectOption( id: 'opt2', label: 'In Review' ),
 				new SelectOption( id: 'opt3', label: 'Approved' ),
+				new SelectOption( id: 'opt4', label: 'Überprüft' ),
 			],
 			multiple: false,
 		);
@@ -48,6 +49,12 @@ class SelectValueResolverTest extends TestCase {
 		$id = $this->newResolver()->resolve( $this->newProperty(), 'draft' );
 
 		$this->assertSame( 'opt1', $id );
+	}
+
+	public function testResolvesNonAsciiLabelCaseInsensitively(): void {
+		$id = $this->newResolver()->resolve( $this->newProperty(), 'überprüft' );
+
+		$this->assertSame( 'opt4', $id );
 	}
 
 	public function testResolvesLabelWithSurroundingWhitespace(): void {

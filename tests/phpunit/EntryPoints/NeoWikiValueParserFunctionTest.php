@@ -14,8 +14,11 @@ use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
@@ -32,6 +35,10 @@ use ProfessionalWiki\NeoWiki\Domain\Value\RelationValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiValueParserFunction;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\NullPageDependencyRecorder;
@@ -82,9 +89,27 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 				$pageIdentifiersLookup ?? new InMemoryPageIdentifiersLookup(),
 				$readAuthorizer ?? new StubPageReadAuthorizer( true ),
 				TestSubjectIds::newParser(),
-				new NullPageDependencyRecorder()
+				new NullPageDependencyRecorder(),
+				TestSources::newSchemaResolver( $this->newSchemaLookup() )
 			)
 		);
+	}
+
+	/**
+	 * The Schema of {@see createSubject()}, whose Status property is a select.
+	 */
+	private function newSchemaLookup(): InMemorySchemaLookup {
+		return new InMemorySchemaLookup( TestSchema::build(
+			name: 'TestSchema',
+			properties: new PropertyDefinitions( [
+				'Status' => TestProperty::buildSelect( options: [
+					new SelectOption( 'o1', 'Draft' ),
+					new SelectOption( 'o2', 'In review' ),
+					new SelectOption( 'o3', 'Published' ),
+					new SelectOption( 'o4', 'Archived' ),
+				] ),
+			] )
+		) );
 	}
 
 	/**
@@ -197,6 +222,19 @@ class NeoWikiValueParserFunctionTest extends TestCase {
 			->handle( $this->createMockParser(), 'Tags', 'separator=' );
 
 		$this->assertNoParseHtml( 'abc', $result );
+	}
+
+	// --- Select values ---
+
+	public function testReturnsTheLabelsOfSelectOptions(): void {
+		$subject = $this->createSubject(
+			new Statement( new PropertyName( 'Status' ), SelectType::NAME, new StringValue( 'o2', 'o3' ) )
+		);
+
+		$result = $this->createPF( $this->repositoryWithSubject( $subject ) )
+			->handle( $this->createMockParser(), 'Status' );
+
+		$this->assertNoParseHtml( 'In review, Published', $result );
 	}
 
 	// --- Monolingual text values ---

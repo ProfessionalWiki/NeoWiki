@@ -16,11 +16,12 @@
 		</template>
 		<CdxMultiselectLookup
 			v-if="props.property.multiple"
-			v-model:input-chips="chips"
 			v-model:selected="selection"
 			v-model:input-value="inputValue"
+			:input-chips="shownChips"
 			:menu-items="menuItems"
 			:placeholder="selectPlaceholder"
+			@update:input-chips="chips = $event"
 			@input="onInput"
 		>
 			<template #no-results>
@@ -47,7 +48,7 @@ import { CdxField, CdxIcon, CdxMultiselectLookup, CdxSelect } from '@wikimedia/c
 import type { ChipInputItem, MenuItemData } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import { newStringValue, StringValue, ValueType } from '@/domain/Value';
-import { resolveSelectLabel, SelectProperty } from '@/domain/propertyTypes/Select.ts';
+import { resolveSelectLabel, SelectOption, SelectProperty } from '@/domain/propertyTypes/Select.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { useServerViolations, violationStatus } from '@/composables/useServerViolations.ts';
 
@@ -74,8 +75,14 @@ const selectPlaceholder = computed( () =>
 	mw.message( 'neowiki-select-placeholder' ).text()
 );
 
+// An option still waiting for its label in the Schema editor is not offered: a menu shows the id of
+// an item without a label.
+const offeredOptions = computed( (): SelectOption[] =>
+	props.property.options.filter( ( option ) => option.label.trim() !== '' )
+);
+
 const singleMenuItems = computed( (): MenuItemData[] =>
-	props.property.options.map( ( option ) => ( {
+	offeredOptions.value.map( ( option ) => ( {
 		value: option.id,
 		label: option.label
 	} ) )
@@ -99,6 +106,9 @@ function chipFromId( id: string ): ChipInputItem {
 const initialParts = partsFromValue( props.modelValue );
 const selection = ref<string[]>( [ ...initialParts ] );
 const chips = ref<ChipInputItem[]>( initialParts.map( chipFromId ) );
+
+// Labelled afresh, as an option keeps its id when the Schema editor renames it.
+const shownChips = computed( (): ChipInputItem[] => chips.value.map( ( chip ) => chipFromId( String( chip.value ) ) ) );
 const inputValue = ref<string | number>( '' );
 const menuItems = ref<MenuItemData[]>( [] );
 
@@ -108,7 +118,7 @@ const singleSelectedValue = computed( () =>
 
 function getFilteredOptions(): MenuItemData[] {
 	const query = String( inputValue.value ).toLowerCase();
-	return props.property.options
+	return offeredOptions.value
 		.filter( ( option ) => !selection.value.includes( option.id ) )
 		.filter( ( option ) => query === '' || option.label.toLowerCase().includes( query ) )
 		.map( ( option ) => ( { value: option.id, label: option.label } ) );

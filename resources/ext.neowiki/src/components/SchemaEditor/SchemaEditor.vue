@@ -60,6 +60,7 @@ import { usePaneSize } from '@/composables/usePaneSize.ts';
 import { useGeneratedId } from '@wikimedia/codex';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { missingRelationAttribute } from '@/components/SchemaEditor/Property/missingRelationAttribute.ts';
+import { invalidSelectOption } from '@/components/SchemaEditor/Property/selectOptionProblems.ts';
 import { ErrorsRevealedKey } from '@/components/SchemaEditor/ErrorsRevealed.ts';
 
 const props = defineProps<{
@@ -268,14 +269,15 @@ const unparseableInput = (): SaveBlocker | null => {
 };
 
 /**
- * The first property definition the wiki would refuse to store, or null. Read from the Schema
- * rather than from the mounted editor: only the selected property has one, and a property the
- * user navigated away from is just as unsaveable. Only relation properties can be incomplete
- * today; letting every Property Type answer for its own definition is #1454.
+ * The first property definition the wiki would refuse to store, or drop when reading it back, or
+ * null. Read from the Schema rather than from the mounted editor: only the selected property has
+ * one, and a property the user navigated away from is just as unsaveable. Only relation and select
+ * properties can be faulty today; letting every Property Type answer for its own definition is
+ * https://github.com/ProfessionalWiki/NeoWiki/issues/1454.
  */
 const incompleteProperty = (): SaveBlocker | null => {
 	for ( const property of currentSchema.value.getPropertyDefinitions() ) {
-		const message = missingRelationAttribute( property );
+		const message = missingRelationAttribute( property ) ?? invalidSelectOption( property );
 
 		if ( message !== null ) {
 			return { propertyName: property.name.toString(), message: mw.message( message ).text() };

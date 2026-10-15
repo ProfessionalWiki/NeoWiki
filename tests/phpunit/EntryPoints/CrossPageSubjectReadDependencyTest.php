@@ -8,6 +8,8 @@ use MediaWiki\Extension\Scribunto\ScribuntoContent;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutputLinkTypes;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
@@ -17,7 +19,8 @@ use ProfessionalWiki\NeoWiki\Tests\ParseTimePermissionFixtures;
 
 /**
  * A parse that reads the Subjects of another page depends on that page, the way a page depends on a
- * template it uses, so that MediaWiki refreshes the parsed page when the read one changes.
+ * template it uses, so that MediaWiki refreshes the parsed page when the read one changes. So does a
+ * parse showing a select value, on the Schema that gives its options their labels.
  *
  * Needs the integration base and the database for the real parser, the Lua library, and the pages
  * and subject-to-page index the reads go through.
@@ -36,6 +39,8 @@ class CrossPageSubjectReadDependencyTest extends NeoWikiIntegrationTestCase {
 	private const string READ_PAGE = 'CrossPageSubjectReadDependencyTestReadPage';
 	private const string TARGET_PAGE = 'CrossPageSubjectReadDependencyTestTargetPage';
 	private const string MISSING_PAGE = 'CrossPageSubjectReadDependencyTestMissingPage';
+	private const string SELECT_PAGE = 'CrossPageSubjectReadDependencyTestSelectPage';
+	private const string SELECT_SCHEMA = 'CrossPageSubjectReadDependencyTestSchema';
 	private const string MODULE = 'CrossPageSubjectReadDependencyTest';
 
 	private const string READ_SUBJECT_ID = 'sreadsubject111';
@@ -114,6 +119,27 @@ class CrossPageSubjectReadDependencyTest extends NeoWikiIntegrationTestCase {
 		$this->assertContains(
 			self::TARGET_PAGE,
 			$this->pagesTheParseDependsOn( '{{#neowiki_value: Owner }}', self::READ_PAGE )
+		);
+	}
+
+	public function testShowingASelectValueDependsOnTheSchemaGivingItsLabel(): void {
+		$this->createSchema(
+			self::SELECT_SCHEMA,
+			'{"propertyDefinitions":{"Status":{"type":"select","options":[{"id":"o1","label":"Open"}]}}}'
+		);
+
+		$this->createPageWithSubjects(
+			self::SELECT_PAGE,
+			TestSubject::build(
+				id: 'sstatussubject1',
+				schemaName: new SchemaName( self::SELECT_SCHEMA ),
+				statements: new StatementList( [ TestStatement::build( 'Status', 'o1', SelectType::NAME ) ] )
+			)
+		);
+
+		$this->assertContains(
+			'Schema:' . self::SELECT_SCHEMA,
+			$this->pagesTheParseDependsOn( '{{#neowiki_value: Status }}', self::SELECT_PAGE )
 		);
 	}
 

@@ -10,8 +10,11 @@ use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
@@ -30,8 +33,12 @@ use ProfessionalWiki\NeoWiki\Domain\Value\UnregisteredTypeValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\SubjectDataLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\NullPageDependencyRecorder;
@@ -111,8 +118,30 @@ class SubjectDataLookupTest extends TestCase {
 			$pageIdentifiersLookup,
 			new StubPageReadAuthorizer( true ),
 			TestSubjectIds::newParser(),
-			new NullPageDependencyRecorder()
+			new NullPageDependencyRecorder(),
+			TestSources::newSchemaResolver( $this->newSchemaLookup() )
 		);
+	}
+
+	/**
+	 * The Schema of {@see createSubject()}, whose Status property is a select.
+	 */
+	private function newSchemaLookup(): InMemorySchemaLookup {
+		return new InMemorySchemaLookup( TestSchema::build(
+			name: 'TestSchema',
+			properties: new PropertyDefinitions( [
+				'Status' => TestProperty::buildSelect( options: [
+					new SelectOption( 'o1', 'Draft' ),
+					new SelectOption( 'o2', 'In review' ),
+					new SelectOption( 'o3', 'Published' ),
+					new SelectOption( 'o4', 'Archived' ),
+				] ),
+			] )
+		) );
+	}
+
+	private function statusStatement( string ...$optionIds ): Statement {
+		return new Statement( new PropertyName( 'Status' ), SelectType::NAME, new StringValue( ...$optionIds ) );
 	}
 
 	// === getValue tests ===
@@ -275,6 +304,14 @@ class SubjectDataLookupTest extends TestCase {
 		);
 	}
 
+	public function testGetValueReturnsTheLabelOfASelectOption(): void {
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $this->createSubject(
+			$this->statusStatement( 'o2', 'o3' )
+		) ) );
+
+		$this->assertSame( [ 'In review' ], $lookup->getValue( $this->createTitle(), 'Status' ) );
+	}
+
 	public function testGetValueReturnsNullForMissingProperty(): void {
 		$subject = $this->createSubject(
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
@@ -430,6 +467,17 @@ class SubjectDataLookupTest extends TestCase {
 		);
 	}
 
+	public function testGetAllReturnsTheLabelsOfSelectOptions(): void {
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $this->createSubject(
+			$this->statusStatement( 'o2', 'o3' )
+		) ) );
+
+		$this->assertSame(
+			[ [ 1 => 'In review', 2 => 'Published' ] ],
+			$lookup->getAll( $this->createTitle(), 'Status' )
+		);
+	}
+
 	public function testGetAllReturnsNullForMissingProperty(): void {
 		$subject = $this->createSubject(
 			new Statement( new PropertyName( 'City' ), 'text', new StringValue( 'Berlin' ) )
@@ -484,6 +532,16 @@ class SubjectDataLookupTest extends TestCase {
 			],
 			$result[0]['statements']['Original title']['values']
 		);
+	}
+
+	public function testSubjectTableHoldsTheLabelsOfSelectOptions(): void {
+		$lookup = new SubjectDataLookup( $this->resolverWithMainSubject( $this->createSubject(
+			$this->statusStatement( 'o2', 'o3' )
+		) ) );
+
+		$result = $lookup->getMainSubjectData( $this->createTitle() );
+
+		$this->assertSame( [ 1 => 'In review', 2 => 'Published' ], $result[0]['statements']['Status']['values'] );
 	}
 
 	private function monolingualTitleStatement(): Statement {
