@@ -62,7 +62,7 @@
 	"neowiki-page-tools-create-subject": "Label for the link in the NeoWiki section of the sidebar that opens the Subject creator on the page being viewed, with that page preselected. The dialog creates the page's Main Subject if it has none, or another Subject otherwise. Pages that cannot open the creator link to [[Special:CreateSubject]] instead, under {{msg-mw|neowiki-sidebar-create-subject}}, which reads the same.",
 	"neowiki-page-tools-edit-json": "Label for the sidebar link that navigates to Special:NeoJson for the current page. Only visible when development UIs are enabled.",
 	"neowiki-page-tools-view-json": "Read-only counterpart of neowiki-page-tools-edit-json: label for the sidebar link to Special:NeoJson, shown to users who lack edit permission. Only visible when development UIs are enabled.",
-	"neowiki-page-tools-rdf": "Label for the sidebar link that opens the current page's RDF export (Turtle serialization of the page's Subjects), served by the per-page RDF REST endpoint. Only shown when the page has NeoWiki Subjects.",
+	"neowiki-page-tools-rdf": "Label for the sidebar link that opens the current page's RDF export (Turtle serialization of the page's Subjects), served by the per-page RDF REST endpoint. Shown on every existing content page.",
 
 	"neowiki-subject-creator-schema-field": "Label of the field in the 'create subject' dialog that picks the Subject's schema. Not shown; read out by screen readers.",
 	"neowiki-subject-creator-no-schemas": "Shown in the 'create subject' dialog in place of the schema field, on a wiki that has no schemas yet, to a user who may not create one.",
