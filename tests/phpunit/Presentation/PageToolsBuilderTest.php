@@ -21,7 +21,6 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame(
 			[
 				$this->createSubjectItem(),
-				$this->manageSubjectsItem(),
 				$this->rdfItem(),
 				$this->editJsonItem(),
 			],
@@ -32,7 +31,7 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 	public function testHidesRdfLinkForATitleWithoutAPage(): void {
 		// A red link has no page id, and the export of page 0 is a 404.
 		$this->assertSame(
-			[ $this->manageSubjectsItem() ],
+			[],
 			$this->build(
 				pageId: 0,
 				canCreateMainSubject: false,
@@ -45,7 +44,7 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 		// Every page has an RDF export, holding its page metadata and any Subjects, so every page links to
 		// one — as the head autodiscovery tags and the endpoint itself do.
 		$this->assertSame(
-			[ $this->manageSubjectsItem(), $this->rdfItem() ],
+			[ $this->rdfItem() ],
 			$this->build(
 				canCreateMainSubject: false,
 				devUiEnabled: false
@@ -53,59 +52,30 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
-	public function testShowsCreateAndManageWhenDevUiDisabled(): void {
+	public function testHidesEditJsonWhenDevUiDisabled(): void {
 		$this->assertSame(
-			[ $this->createSubjectItem(), $this->manageSubjectsItem(), $this->rdfItem() ],
+			[ $this->createSubjectItem(), $this->rdfItem() ],
 			$this->build( devUiEnabled: false )
 		);
 	}
 
-	public function testShowsManageAndEditJsonOnOldRevision(): void {
+	public function testHidesCreateSubjectOnOldRevision(): void {
 		$this->assertSame(
-			[ $this->manageSubjectsItem(), $this->rdfItem(), $this->editJsonItem() ],
+			[ $this->rdfItem(), $this->editJsonItem() ],
 			$this->build( isLatestRevision: false )
 		);
 	}
 
-	public function testShowsManageAndEditJsonWhenUserCannotCreateSubjects(): void {
+	public function testHidesCreateSubjectWhenUserCannotCreateSubjects(): void {
 		$this->assertSame(
-			[ $this->manageSubjectsItem(), $this->rdfItem(), $this->editJsonItem() ],
+			[ $this->rdfItem(), $this->editJsonItem() ],
 			$this->build( canCreateMainSubject: false )
 		);
 	}
 
-	public function testReturnsOnlyManageSubjectsAndRdfWhenNothingElseQualifies(): void {
-		$this->assertSame(
-			[ $this->manageSubjectsItem(), $this->rdfItem() ],
-			$this->build(
-				canCreateMainSubject: false,
-				devUiEnabled: false
-			)
-		);
-	}
-
-	public function testHidesManageSubjectsLinkWhenAlreadyViewingSubjectsAction(): void {
-		$this->assertSame(
-			[ $this->createSubjectItem(), $this->rdfItem(), $this->editJsonItem() ],
-			$this->build( currentAction: 'subjects' )
-		);
-	}
-
-	public function testReturnsOnlyTheRdfLinkOnSubjectsActionWhenNothingElseQualifies(): void {
-		$this->assertSame(
-			[ $this->rdfItem() ],
-			$this->build(
-				canCreateMainSubject: false,
-				devUiEnabled: false,
-				currentAction: 'subjects'
-			)
-		);
-	}
-
-	public function testUsesViewLabelsWhenUserCannotEditSubjects(): void {
+	public function testUsesViewJsonLabelWhenUserCannotEditSubjects(): void {
 		$this->assertSame(
 			[
-				$this->manageSubjectsItem( 'neowiki-page-tools-view-subjects' ),
 				$this->rdfItem(),
 				$this->editJsonItem( 'neowiki-page-tools-view-json' ),
 			],
@@ -124,8 +94,7 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 		bool $canCreateMainSubject = true,
 		bool $canEditSubject = true,
 		bool $isLatestRevision = true,
-		bool $devUiEnabled = true,
-		string $currentAction = 'view'
+		bool $devUiEnabled = true
 	): array {
 		return ( new PageToolsBuilder() )->build(
 			title: Title::newFromText( self::PAGE_NAME ),
@@ -133,8 +102,7 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 			canCreateMainSubject: $canCreateMainSubject,
 			canEditSubject: $canEditSubject,
 			isLatestRevision: $isLatestRevision,
-			devUiEnabled: $devUiEnabled,
-			currentAction: $currentAction
+			devUiEnabled: $devUiEnabled
 		);
 	}
 
@@ -149,17 +117,6 @@ class PageToolsBuilderTest extends MediaWikiIntegrationTestCase {
 			'data' => [
 				'mw-neowiki-action' => 'open-subject-creator',
 			],
-		];
-	}
-
-	/**
-	 * @return array<string, mixed>
-	 */
-	private function manageSubjectsItem( string $messageKey = 'neowiki-page-tools-manage-subjects' ): array {
-		return [
-			'text' => wfMessage( $messageKey )->text(),
-			'href' => Title::newFromText( self::PAGE_NAME )->getLocalURL( [ 'action' => 'subjects' ] ),
-			'id' => 't-neowiki-manage-subjects',
 		];
 	}
 

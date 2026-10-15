@@ -1100,10 +1100,7 @@ class NeoWikiHooks {
 			canCreateMainSubject: $hints->canCreateMainSubject( $pageId ),
 			canEditSubject: $hints->canEditSubject( $pageId ),
 			isLatestRevision: self::pageIsLatestRevision( $skin->getOutput() ),
-			devUiEnabled: $extension->isDevelopmentUIEnabled(),
-			currentAction: MediaWikiServices::getInstance()
-				->getActionFactory()
-				->getActionName( $skin->getContext() )
+			devUiEnabled: $extension->isDevelopmentUIEnabled()
 		);
 	}
 
