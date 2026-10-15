@@ -1,6 +1,6 @@
 <template>
 	<div class="ext-neowiki-summary-action">
-		<CdxAccordion @toggle="onAccordionToggle">
+		<CdxAccordion ref="accordionRef" @toggle="onAccordionToggle">
 			<template #title>
 				<span class="ext-neowiki-summary-action__label">
 					{{ props.label || $i18n( 'neowiki-edit-summary-label' ).text() }}
@@ -66,6 +66,7 @@ import { CdxButton, CdxField, CdxIcon, CdxTextArea, CdxAccordion } from '@wikime
 import { cdxIconCheck } from '@wikimedia/codex-icons';
 import type { Icon } from '@wikimedia/codex-icons';
 import { useDialogStack } from '@/composables/useDialogStack.ts';
+import { isAccordionOpen } from '@/presentation/accordionOpen.ts';
 
 const props = withDefaults(
 	defineProps<{
@@ -92,6 +93,7 @@ const props = withDefaults(
 );
 
 const editSummary = ref( '' );
+const accordionRef = ref<InstanceType<typeof CdxAccordion> | null>( null );
 const textAreaRef = ref<InstanceType<typeof CdxTextArea> | null>( null );
 const saveButton = ref<InstanceType<typeof CdxButton> | null>( null );
 
@@ -123,9 +125,8 @@ const emit = defineEmits<{
 	save: [ summary: string ];
 }>();
 
-const onAccordionToggle = ( event: Event ): void => {
-	const details = event.target as HTMLDetailsElement;
-	if ( details.open && textAreaRef.value ) {
+const onAccordionToggle = (): void => {
+	if ( isAccordionOpen( accordionRef.value ) && textAreaRef.value ) {
 		const textarea = textAreaRef.value.$el.querySelector( 'textarea' );
 		if ( textarea ) {
 			textarea.focus();

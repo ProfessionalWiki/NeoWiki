@@ -1,11 +1,17 @@
 import { enableAutoUnmount, mount, VueWrapper, DOMWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { nextTick } from 'vue';
+import { Component, nextTick } from 'vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconCheck, cdxIconTrash } from '@wikimedia/codex-icons';
-import { createI18nMock, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
+import {
+	createI18nMock,
+	NewerCodexAccordionStub,
+	setupMwMock,
+	stubUpdateTooltipAccessKeys,
+	toggleDetails,
+} from '../../VueTestHelpers.ts';
 
 const $i18n = createI18nMock();
 
@@ -17,7 +23,10 @@ describe( 'SummaryAction', () => {
 		stubUpdateTooltipAccessKeys();
 	} );
 
-	function mountComponent( props: Partial<InstanceType<typeof SummaryAction>[ '$props' ]> = {} ): VueWrapper {
+	function mountComponent(
+		props: Partial<InstanceType<typeof SummaryAction>[ '$props' ]> = {},
+		{ attachTo, stubs = {} }: { attachTo?: HTMLElement; stubs?: Record<string, Component> } = {},
+	): VueWrapper {
 		return mount( SummaryAction, {
 			props: {
 				helpText: '',
@@ -25,8 +34,10 @@ describe( 'SummaryAction', () => {
 				saveDisabled: false,
 				...props,
 			},
+			attachTo,
 			global: {
 				mocks: { $i18n },
+				stubs,
 			},
 		} );
 	}
@@ -106,6 +117,19 @@ describe( 'SummaryAction', () => {
 
 		expect( wrapper.find( 'textarea' ).attributes( 'placeholder' ) )
 			.toBe( 'Why are you deleting this?' );
+	} );
+
+	describe( 'Opening the field', () => {
+		it.each( [
+			[ 'Codex 1.14', {} ],
+			[ 'Codex 1.23 and later', { CdxAccordion: NewerCodexAccordionStub } ],
+		] )( 'moves focus into the text box on %s', async ( _codex, stubs ) => {
+			const wrapper = mountComponent( {}, { attachTo: document.body, stubs } );
+
+			await toggleDetails( wrapper.find( 'details' ).element, true );
+
+			expect( document.activeElement ).toBe( wrapper.find( 'textarea' ).element );
+		} );
 	} );
 
 	describe( 'Footer text', () => {
