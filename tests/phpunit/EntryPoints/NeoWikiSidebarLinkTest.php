@@ -185,8 +185,14 @@ class NeoWikiSidebarLinkTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * The page tools hold the RDF link whatever the configuration, and not the Subject creator, so the section
+	 * also links the special page.
+	 */
 	private function neoWikiSectionOnAnOrdinaryPage(): array {
-		return $this->neoWikiSection( Title::makeTitle( NS_MAIN, 'Ordinary Page' ) );
+		$page = $this->getExistingTestPage( Title::makeTitle( NS_MAIN, 'Ordinary Page' ) );
+
+		return $this->neoWikiSection( $page->getTitle() );
 	}
 
 	/**
