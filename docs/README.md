@@ -32,8 +32,7 @@ Reference for wikitext and Lua authors:
 * [Lua API](authoring/lua-api.md) — the `mw.neowiki` Scribunto library, including `nw.query()` for Cypher
 * [Mapping Format](authoring/mapping-format.md) — the JSON of a Mapping page: projecting Schemas into EDM,
   CIDOC-CRM, or another vocabulary
-* [Edit Notices](authoring/edit-notices.md) — messages shown in the Subject editor, the Subject creator, and Manage
-  subjects
+* [Edit Notices](authoring/edit-notices.md) — messages shown in the Subject editor and the Subject creator
 
 ## API
 
