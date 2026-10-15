@@ -2,7 +2,20 @@
 	"name": "neowiki/neowiki",
 	"type": "mediawiki-extension",
 	"license": "GPL-2.0-or-later",
-	"description": "TODO",
+	"description": "Collaborative knowledge management on MediaWiki and graph databases, AI-ready by construction.",
+	"keywords": [
+		"MediaWiki",
+		"knowledge graph",
+		"knowledge management",
+		"structured data",
+		"semantic wiki",
+		"linked data",
+		"ontology",
+		"RDF",
+		"SPARQL",
+		"Neo4j"
+	],
+	"homepage": "https://neowiki.ai",
 	"authors": [
 		{
 			"name": "Professional.Wiki",
