@@ -2,7 +2,7 @@
 	"name": "neowiki/neowiki",
 	"type": "mediawiki-extension",
 	"license": "GPL-2.0-or-later",
-	"description": "Knowledge graph that people curate and AI agents query: structured records live beside page text, schemas generate their editing forms, and Neo4j or SPARQL stores mirror them. Built on MediaWiki.",
+	"description": "Collaborative knowledge graph: model it with schemas, edit it in generated forms, query it in Neo4j or SPARQL stores, and open it to AI agents via API or MCP. Built on MediaWiki.",
 	"keywords": [
 		"MediaWiki",
 		"knowledge graph",
