@@ -8,15 +8,11 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\DependentSubjectBuilder;
 use ProfessionalWiki\NeoWiki\Application\NewSubjectIdResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectIdInUseException;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
-use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -24,7 +20,6 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestNaming;
-use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestRelation;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
@@ -55,16 +50,7 @@ class DependentSubjectBuilderTest extends TestCase {
 
 	private function newBuilder(): DependentSubjectBuilder {
 		$schemaLookup = new InMemorySchemaLookup(
-			TestSchema::build(
-				name: 'Birth',
-				properties: new PropertyDefinitions( [
-					'Kind' => TestProperty::buildSelect( options: [
-						new SelectOption( id: 'opt_home', label: 'Home birth' ),
-						new SelectOption( id: 'opt_hospital', label: 'Hospital birth' ),
-					] ),
-				] ),
-				subjectsAreDependent: true
-			),
+			TestSchema::build( name: 'Birth', subjectsAreDependent: true ),
 			TestSchema::build( name: 'Name', subjectsAreDependent: true ),
 			TestSchema::build( name: 'Place' )
 		);
@@ -77,7 +63,6 @@ class DependentSubjectBuilderTest extends TestCase {
 			),
 			schemaReferenceParser: TestSources::newSchemaReferenceParser(),
 			schemaResolver: TestSources::newSchemaResolver( $schemaLookup ),
-			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
 			statementListBuilder: new StatementListBuilder(
 				TestSources::newPropertyTypeRegistry(),
 				new StubIdGenerator( '11111111111111' ),
@@ -111,15 +96,6 @@ class DependentSubjectBuilderTest extends TestCase {
 				statements: new StatementList( [ TestStatement::build( property: 'Date', value: new StringValue( '1881-10-25' ) ) ] )
 			) ),
 			$this->build( [ $this->birthItem() ] )
-		);
-	}
-
-	public function testResolvesASelectValueGivenByItsLabel(): void {
-		$item = [ 'id' => self::BIRTH, 'schema' => 'Birth', 'statements' => [ 'Kind' => [ 'propertyType' => 'select', 'value' => [ 'Home birth' ] ] ] ];
-
-		$this->assertEquals(
-			new StringValue( 'opt_home' ),
-			$this->build( [ $item ] )->getSubject( new SubjectId( self::BIRTH ) )->getStatements()->asArray()['Kind']->getValue()
 		);
 	}
 

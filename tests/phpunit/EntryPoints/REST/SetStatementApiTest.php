@@ -35,9 +35,23 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 	private const string SUBJECT_ID = 'sTestSS11111111';
 
 	private function createSubjectPage( ?StatementList $statements = null ): void {
+		$this->createSubjectPageWithPropertyDefinitions(
+			'{"Website":{"type":"url"},"Founded at":{"type":"number"}}',
+			$statements
+		);
+	}
+
+	private function createSubjectPageWithSelectProperty(): void {
+		$this->createSubjectPageWithPropertyDefinitions(
+			'{"Status":{"type":"select","options":[{"id":"opt_draft","label":"Draft"}]}}',
+			null
+		);
+	}
+
+	private function createSubjectPageWithPropertyDefinitions( string $propertyDefinitions, ?StatementList $statements ): void {
 		$this->createSchema(
 			'SetStatementSchema',
-			'{"title":"SetStatementSchema","propertyDefinitions":{"Website":{"type":"url"},"Founded at":{"type":"number"}}}'
+			'{"title":"SetStatementSchema","propertyDefinitions":' . $propertyDefinitions . '}'
 		);
 		$this->createPageWithSubjects(
 			'SetStatementApiTest',
@@ -311,6 +325,20 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( 400, $response->getStatusCode() );
 		$this->assertNull( $this->getStoredValue( 'Founded at' ) );
+	}
+
+	public function testSelectOptionLabelIsStoredAsSentWithAnInvalidOptionViolation(): void {
+		$this->createSubjectPageWithSelectProperty();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Status', [ 'statement' => [ 'propertyType' => 'select', 'value' => [ 'Draft' ] ] ] )
+		);
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( [ 'Draft' ], $this->getStoredValue( 'Status' ) );
+		$this->assertSame( 'invalid-option', $responseData['violations'][0]['code'] );
 	}
 
 	/**

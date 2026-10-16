@@ -32,8 +32,6 @@ itself.
 Where the document is stricter than the write endpoints:
 
 - a Statement for a property the Schema does not declare is rejected; the wiki stores it
-- a `select` value must be an option id; the write endpoints also take an option label or an
-  `{ "id", "label" }` object
 - a Statement given as `null` or without `propertyType` is rejected; the wiki drops it
 - a value with more parts than its property allows is rejected; the wiki checks `multiple` only for
   [`select`, `relation` and `monolingualText`](validation-codes.md#single-value-only)

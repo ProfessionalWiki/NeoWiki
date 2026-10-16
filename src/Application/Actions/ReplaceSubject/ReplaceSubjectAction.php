@@ -14,7 +14,6 @@ use ProfessionalWiki\NeoWiki\Application\Validation\DependentSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
@@ -23,7 +22,6 @@ use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -37,7 +35,6 @@ readonly class ReplaceSubjectAction {
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaResolver $schemaResolver,
-		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private DependentSubjectBuilder $dependentSubjectBuilder,
 		private DependentSubjectValidator $dependentSubjectValidator,
@@ -90,9 +87,7 @@ readonly class ReplaceSubjectAction {
 		$priorViolations = $this->proposedSubjectValidator->validate( $subject );
 
 		$subject->setLabel( SubjectLabel::fromText( $label ) );
-		$subject->setStatements(
-			$this->statementListBuilder->build( $this->resolveStatements( $schema, $statements ) )
-		);
+		$subject->setStatements( $this->statementListBuilder->build( $statements ) );
 
 		$proposedViolations = $this->proposedSubjectValidator->validate( $subject, $newDependentSubjects );
 		$dependentSubjectViolations = $this->dependentSubjectValidator->validate(
@@ -123,8 +118,8 @@ readonly class ReplaceSubjectAction {
 			return;
 		}
 
-		// The mutated Subject is the persisted state: the builder and the resolver above already
-		// normalized what the request supplied.
+		// The mutated Subject is the persisted state: the builder above already normalized what the
+		// request supplied.
 		$this->presenter->presentUpdated(
 			$this->newResponseItem( $subject, $pageIdentifiers ),
 			$schema,
@@ -140,19 +135,6 @@ readonly class ReplaceSubjectAction {
 		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $pageIdentifiers->getId() );
 
 		return $this->responseItemFactory->createResponseItem( $subject, $pageIdentifiers, $pageSubjects );
-	}
-
-	/**
-	 * @param array<string, mixed> $statements
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function resolveStatements( ?Schema $schema, array $statements ): array {
-		if ( $schema === null ) {
-			return $statements;
-		}
-
-		return $this->selectStatementResolver->resolve( $schema, $statements );
 	}
 
 }

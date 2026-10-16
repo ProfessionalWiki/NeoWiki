@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement;
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\DependentSubjectRulesViolatedException;
@@ -39,7 +38,6 @@ readonly class UpdateStatementAction {
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaResolver $schemaResolver,
-		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private SubjectResponseItemFactory $responseItemFactory,
 		private UpdateStatementPresenter $presenter,
@@ -54,7 +52,7 @@ readonly class UpdateStatementAction {
 	 *  level; the builder rejects anything that is not a string.
 	 *
 	 * @throws InvalidArgumentException When the property type is not a string, when none is given
-	 *  and none can be derived, or when a select value cannot be resolved.
+	 *  and none can be derived, or when the value does not fit its property type.
 	 * @throws SubjectNotFoundException
 	 * @throws SubjectEditNotAuthorizedException
 	 */
@@ -140,10 +138,6 @@ readonly class UpdateStatementAction {
 			],
 		];
 
-		if ( $schema !== null ) {
-			$statements = $this->selectStatementResolver->resolve( $schema, $statements );
-		}
-
 		return $this->statementListBuilder->build( $statements )->getStatement( $propertyName );
 	}
 
@@ -195,8 +189,8 @@ readonly class UpdateStatementAction {
 			return;
 		}
 
-		// The proposed Subject is the persisted state: the builder and the resolver above already
-		// normalized what the request supplied.
+		// The proposed Subject is the persisted state: the builder above already normalized what the
+		// request supplied.
 		$this->presenter->presentUpdated(
 			$this->newResponseItem( $proposedSubject, $pageIdentifiers ),
 			$schema,

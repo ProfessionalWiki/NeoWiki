@@ -11,8 +11,6 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAc
 use ProfessionalWiki\NeoWiki\Application\DependentSubjectBuilder;
 use ProfessionalWiki\NeoWiki\Application\NewSubjectIdResolver;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
@@ -101,7 +99,6 @@ class ReplaceSubjectActionTest extends TestCase {
 			writeAuthorizer: $authorizer ?? new SpySubjectWriteAuthorizer( allowed: true ),
 			statementListBuilder: $builder,
 			schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
-			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
 			proposedSubjectValidator: $proposedSubjectValidator,
 			dependentSubjectBuilder: new DependentSubjectBuilder(
 				newSubjectIdResolver: new NewSubjectIdResolver(
@@ -111,7 +108,6 @@ class ReplaceSubjectActionTest extends TestCase {
 				),
 				schemaReferenceParser: TestSources::newSchemaReferenceParser(),
 				schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
-				selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
 				statementListBuilder: $builder,
 				dependentSubjectRules: TestNaming::newDependentSubjectRules( $this->schemaLookup ),
 			),
@@ -240,12 +236,25 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	private function registerSchemaWithSelect(): void {
+		$this->registerSchemaWithSelectOf( new PropertyCore( description: '', required: false, default: null ) );
+	}
+
+	private function registerSchemaWithSelectWhoseOptionsAreAnError(): void {
+		$this->registerSchemaWithSelectOf( new PropertyCore(
+			description: '',
+			required: false,
+			default: null,
+			constraintSeverities: [ 'options' => Severity::Error ],
+		) );
+	}
+
+	private function registerSchemaWithSelectOf( PropertyCore $core ): void {
 		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( self::SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
 				'Status' => new SelectProperty(
-					core: new PropertyCore( description: '', required: false, default: null ),
+					core: $core,
 					options: [
 						new SelectOption( id: 'opt_draft', label: 'Draft' ),
 						new SelectOption( id: 'opt_approved', label: 'Approved' ),
@@ -254,18 +263,6 @@ class ReplaceSubjectActionTest extends TestCase {
 				),
 			] )
 		) );
-	}
-
-	private function getStatusValue( SubjectId $subjectId ): StringValue {
-		$statement = $this->subjectRepository
-			->getSubject( $subjectId )
-			->getStatements()
-			->getStatement( new PropertyName( 'Status' ) );
-
-		/** @var StringValue $value */
-		$value = $statement->getValue();
-
-		return $value;
 	}
 
 	public function testLabelIsReplaced(): void {
@@ -341,33 +338,6 @@ class ReplaceSubjectActionTest extends TestCase {
 		$persisted = $this->subjectRepository->getSubject( new SubjectId( self::SUBJECT_ID ) );
 
 		$this->assertNull( $persisted->getStatements()->getStatement( new PropertyName( 'Website' ) ) );
-	}
-
-	public function testEmptySelectValueDeletesTheStatement(): void {
-		$this->registerSchemaWithSelect();
-		$this->subjectRepository->updateSubject( TestSubject::build(
-			id: new SubjectId( self::SUBJECT_ID ),
-			schemaName: new SchemaName( self::SCHEMA_NAME ),
-		) );
-
-		$action = $this->newAction();
-		$action->replace(
-			new SubjectId( self::SUBJECT_ID ),
-			'Label',
-			[ 'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ] ],
-			null
-		);
-
-		$action->replace(
-			new SubjectId( self::SUBJECT_ID ),
-			'Label',
-			[ 'Status' => [ 'propertyType' => 'select', 'value' => '' ] ],
-			null
-		);
-
-		$persisted = $this->subjectRepository->getSubject( new SubjectId( self::SUBJECT_ID ) );
-
-		$this->assertNull( $persisted->getStatements()->getStatement( new PropertyName( 'Status' ) ) );
 	}
 
 	/**
@@ -534,76 +504,49 @@ class ReplaceSubjectActionTest extends TestCase {
 		$action->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
 	}
 
-	public function testSelectValueResolvedWhenSchemaPresent(): void {
-		$this->registerSchemaWithSelect();
-		$subject = TestSubject::build(
+	public function testAnOptionTheSchemaNoLongerHasDoesNotBlockSavingTheSubject(): void {
+		$this->registerSchemaWithSelectWhoseOptionsAreAnError();
+		$this->subjectRepository->updateSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
-		);
-		$this->subjectRepository->updateSubject( $subject );
+			statements: new StatementList( [
+				TestStatement::build( property: 'Status', value: 'opt_retired', propertyType: 'select' ),
+			] ),
+		) );
+		$updatesBeforeAction = $this->subjectRepository->updateSubjectCallCount;
 
-		$this->newAction()->replace(
+		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
-			'Label',
-			[ 'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ] ],
+			'New label',
+			[ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'opt_retired' ] ] ],
 			null
 		);
 
-		$this->assertSame( [ 'opt_approved' ], $this->getStatusValue( new SubjectId( self::SUBJECT_ID ) )->strings );
+		$this->assertFalse( $this->presenterSpy->validationFailed );
+		$this->assertSame( $updatesBeforeAction + 1, $this->subjectRepository->updateSubjectCallCount );
 	}
 
-	public function testSelectValuePassesThroughWhenNoSchemaRegistered(): void {
-		$subject = TestSubject::build(
+	public function testANewValueThatIsNoOptionIdIsRefusedUnderEnforcementWhenOptionsAreAnError(): void {
+		$this->registerSchemaWithSelectWhoseOptionsAreAnError();
+		$this->subjectRepository->updateSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
-			schemaName: new SchemaName( 'UnknownSchema' ),
-		);
-		$this->subjectRepository->updateSubject( $subject );
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+		) );
+		$updatesBeforeAction = $this->subjectRepository->updateSubjectCallCount;
 
-		$this->newAction()->replace(
+		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'Label',
-			[ 'Status' => [ 'propertyType' => 'select', 'value' => 'opt_draft' ] ],
+			[ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'Approved' ] ] ],
 			null
 		);
 
-		$this->assertSame( [ 'opt_draft' ], $this->getStatusValue( new SubjectId( self::SUBJECT_ID ) )->strings );
+		$this->assertTrue( $this->presenterSpy->validationFailed );
+		$this->assertSame( $updatesBeforeAction, $this->subjectRepository->updateSubjectCallCount );
 	}
 
 	private function registerSchemaWithRequiredStatus(): void {
-		$this->schemaLookup->updateSchema( TestSchema::build(
-			name: new SchemaName( self::SCHEMA_NAME ),
-			description: '',
-			properties: new PropertyDefinitions( [
-				'Status' => new SelectProperty(
-					core: new PropertyCore( description: '', required: true, default: null ),
-					options: [
-						new SelectOption( id: 'opt_draft', label: 'Draft' ),
-						new SelectOption( id: 'opt_approved', label: 'Approved' ),
-					],
-					multiple: false,
-				),
-			] )
-		) );
-	}
-
-	public function testReplacePresentsEmptyViolationsForCleanInput(): void {
-		$this->registerSchemaWithSelect();
-		$subject = TestSubject::build(
-			id: new SubjectId( self::SUBJECT_ID ),
-			label: new SubjectLabel( 'Original Label' ),
-			schemaName: new SchemaName( self::SCHEMA_NAME ),
-		);
-		$this->subjectRepository->updateSubject( $subject );
-
-		$this->newAction()->replace(
-			new SubjectId( self::SUBJECT_ID ),
-			'New Label',
-			[ 'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ] ],
-			null
-		);
-
-		$this->assertSame( [], $this->presenterSpy->violations );
-		$this->assertSame( self::SUBJECT_ID, $this->presenterSpy->subjectId );
+		$this->registerSchemaWithSelectOf( new PropertyCore( description: '', required: true, default: null ) );
 	}
 
 	public function testReplacePresentsViolationForRequiredPropertyMissing(): void {
@@ -639,7 +582,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->newAction()->replace(
 			new SubjectId( self::SUBJECT_ID ),
 			'New Label',
-			[ 'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ] ],
+			[ 'Status' => [ 'propertyType' => 'select', 'value' => 'opt_approved' ] ],
 			null
 		);
 
@@ -648,7 +591,7 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->assertFalse( $this->presenterSpy->subject?->displayNameIsGenerated );
 		$this->assertSame( self::SCHEMA_NAME, $this->presenterSpy->subject?->schema );
 		$this->assertSame(
-			// The label the request supplied was resolved to the option id.
+			// The bare string the request supplied is stored as a list.
 			[ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'opt_approved' ] ] ],
 			$this->presenterSpy->subject?->statements
 		);

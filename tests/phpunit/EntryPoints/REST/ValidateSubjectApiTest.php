@@ -121,26 +121,7 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertFalse( $this->newValidateSubjectApi()->needsWriteAccess() );
 	}
 
-	public function testInvalidSelectValueProducesInvalidOptionViolation(): void {
-		$this->createSchemaWithSelectProperty();
-
-		$body = $this->validBody();
-		$body['statements'] = [
-			'Status' => [ 'propertyType' => 'select', 'value' => [ 'bogus-id' ] ],
-		];
-
-		$response = $this->executeHandler(
-			$this->newValidateSubjectApi(),
-			$this->createRequestData( $body )
-		);
-
-		$this->assertSame( 200, $response->getStatusCode() );
-		$responseBody = json_decode( $response->getBody()->getContents(), true );
-		$codes = array_column( $responseBody['violations'], 'code' );
-		$this->assertContains( 'invalid-option', $codes );
-	}
-
-	public function testValidSelectLabelIsResolvedAndValidates(): void {
+	public function testSelectOptionLabelIsReportedAsInvalidOption(): void {
 		$this->createSchemaWithSelectProperty();
 
 		$body = $this->validBody();
@@ -155,7 +136,7 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( 200, $response->getStatusCode() );
 		$responseBody = json_decode( $response->getBody()->getContents(), true );
-		$this->assertSame( [], $responseBody['violations'] );
+		$this->assertSame( [ 'invalid-option' ], array_column( $responseBody['violations'], 'code' ) );
 	}
 
 	/**

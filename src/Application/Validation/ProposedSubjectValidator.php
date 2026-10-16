@@ -17,11 +17,7 @@ use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
  * When the Schema cannot be found, a single non-blocking `schema-not-found`
  * violation is returned and the write still proceeds: the Subject stays
  * editable (ADR 21), but the response reports that it could not be validated
- * rather than implying it is valid. This matches the update-validate endpoint,
- * which emits the same violation. Centralising the decision keeps the two write
- * paths (CreateSubjectAction, ReplaceSubjectAction) from repeating it, and is
- * where the enforcement tier will hook in. ValidateSubjectUpdateQuery still has
- * its own copy until the validate and write flows are unified.
+ * rather than implying it is valid.
  */
 readonly class ProposedSubjectValidator {
 

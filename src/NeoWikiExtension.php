@@ -88,8 +88,6 @@ use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePluginRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectCountLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookup;
 use ProfessionalWiki\NeoWiki\Application\ReferencingSubjectLookup;
@@ -1686,7 +1684,6 @@ class NeoWikiExtension {
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),
-			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			schemaReferenceParser: $this->getSchemaReferenceParser(),
@@ -1701,7 +1698,6 @@ class NeoWikiExtension {
 			newSubjectIdResolver: $this->getNewSubjectIdResolver(),
 			schemaReferenceParser: $this->getSchemaReferenceParser(),
 			schemaResolver: $this->getSchemaResolver(),
-			selectStatementResolver: $this->getSelectStatementResolver(),
 			statementListBuilder: $this->getStatementListBuilder(),
 			dependentSubjectRules: $this->newDependentSubjectRules(),
 		);
@@ -1727,7 +1723,6 @@ class NeoWikiExtension {
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),
-			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			schemaReferenceParser: $this->getSchemaReferenceParser(),
@@ -1747,10 +1742,6 @@ class NeoWikiExtension {
 
 	public function newSubjectIdMinter(): SubjectIdMinter {
 		return new SubjectIdMinter( $this->getIdGenerator() );
-	}
-
-	public function getSelectStatementResolver(): SelectStatementResolver {
-		return new SelectStatementResolver( new SelectValueResolver() );
 	}
 
 	public function getSubjectRepository(): SubjectRepository {
@@ -2175,7 +2166,6 @@ class NeoWikiExtension {
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),
-			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			dependentSubjectBuilder: $this->newDependentSubjectBuilder(),
 			dependentSubjectValidator: $this->newDependentSubjectValidator( $authority ),
@@ -2192,7 +2182,6 @@ class NeoWikiExtension {
 			writeAuthorizer: $this->newSubjectWriteAuthorizer( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),
-			selectStatementResolver: $this->getSelectStatementResolver(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			responseItemFactory: $this->newSubjectResponseItemFactory( $this->newPageSubjectsLookup() ),
 			presenter: $presenter,
@@ -2224,7 +2213,6 @@ class NeoWikiExtension {
 			schemaResolver: $this->getSchemaResolver(),
 			subjectValidator: $this->newSubjectValidator( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
-			selectStatementResolver: $this->getSelectStatementResolver(),
 			schemaReferenceParser: $this->getSchemaReferenceParser(),
 		);
 	}
@@ -2232,10 +2220,8 @@ class NeoWikiExtension {
 	public function newValidateSubjectUpdateQuery( Authority $authority ): ValidateSubjectUpdateQuery {
 		return new ValidateSubjectUpdateQuery(
 			subjectRepository: $this->getSubjectRepository(),
-			schemaResolver: $this->getSchemaResolver(),
-			subjectValidator: $this->newSubjectValidator( $authority ),
+			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			statementListBuilder: $this->getStatementListBuilder(),
-			selectStatementResolver: $this->getSelectStatementResolver(),
 			hostingPageResolver: $this->newSubjectHostingPageResolver( $authority ),
 			subjectIdParser: $this->getSubjectIdParser(),
 		);
