@@ -68,6 +68,24 @@ describe( 'createPropertyDefinitionFromJson', () => {
 		expect( property.minimum ).toBeUndefined();
 		expect( property.maximum ).toBeUndefined();
 	} );
+
+	it( 'keeps minPrecision, so saving the Schema does not drop it', () => {
+		const property = dateType.createPropertyDefinitionFromJson(
+			{ name: new PropertyName( 'Date' ), type: 'date', description: '', required: false },
+			{ type: 'date', minPrecision: 'month' },
+		);
+
+		expect( property.minPrecision ).toBe( 'month' );
+	} );
+
+	it( 'normalizes null minPrecision to undefined', () => {
+		const property = dateType.createPropertyDefinitionFromJson(
+			{ name: new PropertyName( 'Date' ), type: 'date', description: '', required: false },
+			{ type: 'date', minPrecision: null },
+		);
+
+		expect( property.minPrecision ).toBeUndefined();
+	} );
 } );
 
 describe( 'parseStrictDate', () => {

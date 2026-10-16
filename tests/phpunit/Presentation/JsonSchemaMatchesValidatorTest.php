@@ -283,6 +283,17 @@ class JsonSchemaMatchesValidatorTest extends TestCase {
 		$date = [ 'type' => 'date' ];
 
 		yield 'date value' => [ $date, self::value( 'date', [ '2025-06-15' ] ) ];
+		yield 'date of month precision' => [ $date, self::value( 'date', [ '2025-06' ] ) ];
+		yield 'date of year precision' => [ $date, self::value( 'date', [ '2025' ] ) ];
+		yield 'date of year and month precision overflowing' => [ $date, self::value( 'date', [ '2025-13' ] ) ];
+		yield 'date below its minPrecision' => [
+			$date + [ 'minPrecision' => 'day' ],
+			self::value( 'date', [ '2025-06' ] ),
+		];
+		yield 'date at its minPrecision' => [
+			$date + [ 'minPrecision' => 'month' ],
+			self::value( 'date', [ '2025-06' ] ),
+		];
 		yield 'date with an impossible month' => [ $date, self::value( 'date', [ '2025-13-01' ] ) ];
 		yield 'date in another notation' => [ $date, self::value( 'date', [ '15/06/2025' ] ) ];
 		yield 'date carrying a time' => [ $date, self::value( 'date', [ '2025-06-15T00:00:00Z' ] ) ];
