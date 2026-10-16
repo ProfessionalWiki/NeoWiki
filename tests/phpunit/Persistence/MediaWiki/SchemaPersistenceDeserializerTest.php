@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty;
@@ -105,6 +106,30 @@ class SchemaPersistenceDeserializerTest extends TestCase {
 		yield 'null type' => [ '{"type": null}' ];
 		yield 'non-string type' => [ '{"type": 42}' ];
 		yield 'empty type' => [ '{"type": ""}' ];
+	}
+
+	/**
+	 * @dataProvider propertyOfTheWrongShapeProvider
+	 */
+	public function testSkipsPropertyOfTheWrongShape( string $propertyJson ): void {
+		$json = '{"propertyDefinitions": {"Broken": ' . $propertyJson . ', "Name": {"type": "text"}}}';
+
+		$schema = $this->deserialize( $json );
+
+		$this->assertFalse( $schema->hasProperty( 'Broken' ) );
+		$this->assertTrue( $schema->hasProperty( 'Name' ) );
+	}
+
+	public function propertyOfTheWrongShapeProvider(): iterable {
+		yield 'not an object' => [ '"text"' ];
+		yield 'non-string description' => [ '{"type": "text", "description": 5}' ];
+		yield 'non-boolean required' => [ '{"type": "text", "required": "yes"}' ];
+	}
+
+	public function testRejectsANonStringDescription(): void {
+		$this->expectException( InvalidArgumentException::class );
+
+		$this->deserialize( '{"description": 5}' );
 	}
 
 	private function deserialize( string $json = self::SCHEMA_JSON ): Schema {
