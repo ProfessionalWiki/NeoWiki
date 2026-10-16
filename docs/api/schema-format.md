@@ -189,9 +189,11 @@ Each `SelectOption`:
 | `id` | string | Yes | Stable identifier, unique within the property. Statements store this. |
 | `label` | string | Yes | Display text, unique (case-insensitive, trimmed) within the property. |
 
-On write, a Statement value may be an option `id`, a `label` (case-insensitive, trimmed), or a `{ "id", "label" }`
-object; a mismatched `id`/`label` is rejected. Reads and display resolve stored `id`s back to labels via the current
-Schema.
+On write, each part of a Statement value may be an option `id`, a `label` (case-insensitive, trimmed), or an
+`{ "id", "label" }` object. A string that matches no option is stored as sent and reported as
+[`invalid-option`](validation-codes.md#invalid-option). An object must name one option, by `id`, by `label`, or by both
+consistently; any other object is rejected with `400`. Parts naming the same option are stored once. A `value` of `{}`
+reads as `[]` and clears the Statement. Reads and display resolve stored `id`s back to labels via the current Schema.
 
 ### Relation (`relation`)
 

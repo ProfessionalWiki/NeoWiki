@@ -9,8 +9,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement\UpdateStatementAction;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
+use ProfessionalWiki\NeoWiki\Application\StatementNormalizer;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
@@ -99,7 +98,7 @@ class UpdateStatementActionTest extends TestCase {
 				subjectIdParser: TestSubjectIds::newParser()
 			),
 			schemaResolver: $schemaResolver,
-			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
+			statementNormalizer: new StatementNormalizer( $registry ),
 			proposedSubjectValidator: new ProposedSubjectValidator(
 				schemaResolver: $schemaResolver,
 				subjectValidator: new SubjectValidator(
@@ -351,7 +350,7 @@ class UpdateStatementActionTest extends TestCase {
 		$this->assertSame( [ 'opt_approved' ], $this->getStoredValue( 'Status' ) );
 	}
 
-	public function testUnresolvableSelectValueThrows(): void {
+	public function testSelectValueNamingNoOptionIsStoredAsSent(): void {
 		$this->registerSchema( new PropertyDefinitions( [
 			'Status' => new SelectProperty(
 				core: new PropertyCore( description: '', required: false, default: null ),
@@ -361,17 +360,9 @@ class UpdateStatementActionTest extends TestCase {
 		] ) );
 		$this->storeSubject();
 
-		$action = $this->newAction();
+		$this->setStatement( 'Status', 'select', 'No such option' );
 
-		$this->expectException( InvalidArgumentException::class );
-
-		$action->setStatement(
-			new SubjectId( self::SUBJECT_ID ),
-			new PropertyName( 'Status' ),
-			'select',
-			'No such option',
-			null
-		);
+		$this->assertSame( [ 'No such option' ], $this->getStoredValue( 'Status' ) );
 	}
 
 	public function testCommentIsForwarded(): void {

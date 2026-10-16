@@ -78,10 +78,10 @@ class SelectOptionTest extends TestCase {
 		$this->assertFalse( $a->equals( $d ) );
 	}
 
-	public function testNormalizedLabelTrimsAndLowercases(): void {
+	public function testFoldedLabelTrimsAndLowercases(): void {
 		$option = new SelectOption( 'abc', '  DrAfT  ' );
 
-		$this->assertSame( 'draft', $option->normalizedLabel() );
+		$this->assertSame( 'draft', $option->foldedLabel() );
 	}
 
 }
