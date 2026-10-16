@@ -25,6 +25,8 @@ class SchemaPersistenceDeserializer {
 	}
 
 	/**
+	 * The JSON can hold what a save refuses: an import stores a page without that validation.
+	 *
 	 * @throws InvalidArgumentException
 	 */
 	public function deserialize( SchemaName $schemaName, string $json ): Schema {
@@ -36,7 +38,7 @@ class SchemaPersistenceDeserializer {
 
 		return new Schema(
 			name: $schemaName,
-			description: $json['description'] ?? '',
+			description: is_string( $json['description'] ?? null ) ? $json['description'] : '',
 			properties: $this->propertiesFromJson( $json ),
 		);
 	}
@@ -49,7 +51,7 @@ class SchemaPersistenceDeserializer {
 		$properties = [];
 
 		foreach ( $json['propertyDefinitions'] ?? [] as $propertyName => $property ) {
-			if ( is_string( $propertyName ) ) {
+			if ( is_string( $propertyName ) && is_array( $property ) ) {
 				try {
 					$properties[$propertyName] = PropertyDefinition::fromJson( $property, $this->propertyTypeLookup );
 				}

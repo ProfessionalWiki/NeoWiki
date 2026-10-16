@@ -26,6 +26,10 @@
 		]
 	},
 
+	"TrackingCategories": [
+		"neowiki-schema-invalid-category"
+	],
+
 	"AutoloadNamespaces": {
 		"ProfessionalWiki\\NeoWiki\\": "src/"
 	},
