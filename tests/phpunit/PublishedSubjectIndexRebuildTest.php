@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests;
 
+use MediaWiki\Content\Content;
+use MediaWiki\Content\FallbackContent;
 use MediaWiki\Installer\DatabaseUpdater;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
@@ -132,6 +134,17 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 		yield 'a Subject that is not an object' => [ '{"mainSubject":"' . self::ADA . '","subjects":{"' . self::ADA . '":1}}' ];
 	}
 
+	public function testRebuildingLeavesAPageWhoseSlotDoesNotHoldSubjectContentAsItWas(): void {
+		$pageId = $this->createPage( 'Ada Lovelace', self::ADA, 'Ada' );
+
+		$this->rebuild( revisionLookup: $this->revisionLookupReading(
+			$pageId,
+			$this->revisionHoldingInItsSubjectSlot( new FallbackContent( '{"subjects":{}}', 'unregistered-model' ) )
+		) );
+
+		$this->assertSame( [ self::ADA => 'Ada' ], $this->displayNamesOf( $pageId ) );
+	}
+
 	public function testRebuildingLeavesAPageWhoseContentCannotBeLoadedAsItWasAndGoesOn(): void {
 		$unloadablePageId = $this->createPage( 'Ada Lovelace', self::ADA, 'Ada' );
 		$gracePageId = $this->createPageWithoutTellingNeoWiki( 'Grace Hopper', $this->slotJson( self::GRACE, 'Grace' ) );
@@ -243,6 +256,18 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 		);
 
 		return $stub;
+	}
+
+	private function revisionHoldingInItsSubjectSlot( Content $content ): RevisionRecord {
+		$slots = $this->createStub( RevisionSlots::class );
+		$slots->method( 'getContent' )->willReturn( $content );
+
+		$revision = $this->createStub( RevisionRecord::class );
+		$revision->method( 'hasSlot' )->willReturn( true );
+		$revision->method( 'getContent' )->willReturn( $content );
+		$revision->method( 'getSlots' )->willReturn( $slots );
+
+		return $revision;
 	}
 
 	private function revisionWhoseSubjectSlotCannotBeLoaded(): RevisionRecord {

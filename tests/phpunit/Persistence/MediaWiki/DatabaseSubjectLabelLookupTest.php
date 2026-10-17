@@ -193,6 +193,26 @@ class DatabaseSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ 'Apple Pie' ], array_column( $this->labelsMatching( 'Apple', limit: 1 ), 'label' ) );
 	}
 
+	/**
+	 * In a LIKE pattern, a percent sign matches any text and an underscore any one character.
+	 *
+	 * @dataProvider likeWildcardProvider
+	 */
+	public function testMatchesPercentSignsAndUnderscoresInTheSearchLiterally( string $search, string $match, string $nonMatch ): void {
+		$this->createPageWithoutMainSubject(
+			'Wildcards',
+			self::subject( 'sTestDSL1111111', $match ),
+			self::subject( 'sTestDSL1111112', $nonMatch ),
+		);
+
+		$this->assertSame( [ $match ], array_column( $this->labelsMatching( $search ), 'label' ) );
+	}
+
+	public static function likeWildcardProvider(): iterable {
+		yield 'percent sign' => [ '100%', '100% cotton', '1000 threads' ];
+		yield 'underscore' => [ 'snake_', 'snake_case', 'snakes and ladders' ];
+	}
+
 	public function testFindsNothingForASearchOfOnlySpaces(): void {
 		$this->createPageWithoutMainSubject( 'Spaced', self::subject( 'sTestDSL1111111', ' Apple' ) );
 

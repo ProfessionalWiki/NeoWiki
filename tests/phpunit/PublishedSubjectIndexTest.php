@@ -268,6 +268,23 @@ class PublishedSubjectIndexTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $this->relationsOf( $pageId ) );
 	}
 
+	/**
+	 * One Subject id on two pages is what cross-wiki transfer leaves.
+	 */
+	public function testDeletingOneOfTwoPagesHoldingASubjectLeavesTheRowsOfTheOther(): void {
+		$copy = $this->createPageWithSubjects(
+			'Ada Lovelace (copy)',
+			$this->subject( self::ADA, statements: [ $this->relating( 'Mentor', self::BABBAGE ) ] )
+		);
+		$this->assertNotNull( $copy );
+		$this->savePage( $this->subject( self::ADA, statements: [ $this->relating( 'Mentor', self::BABBAGE ) ] ) );
+
+		$this->deletePageByName( self::PAGE );
+
+		$this->assertSame( [ self::ADA ], array_keys( $this->subjectRowsOf( $copy->getPageId() ) ) );
+		$this->assertSame( [ [ self::ADA, 'Mentor', self::BABBAGE ] ], $this->relationsOf( $copy->getPageId() ) );
+	}
+
 	public function testUndeletingAPageIndexesItsSubjectsAgain(): void {
 		$pageId = $this->savePage( $this->subject( self::ADA, label: 'Ada' ) )->getPageId();
 		$this->deletePageByName( self::PAGE );
