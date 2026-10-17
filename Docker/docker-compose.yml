@@ -1,6 +1,8 @@
 services:
   mediawiki:
-    image: ghcr.io/professionalwiki/neowiki:latest
+    # The bundled Makefile sets the tag that matches the checkout. Without it, the tag is latest:
+    # the newest release.
+    image: ghcr.io/professionalwiki/neowiki:${NEOWIKI_IMAGE_TAG:-latest}
     restart: unless-stopped
     # LocalSettings routes the NeoWiki log channel here, and a stack whose EDM projection has no Mapping
     # page reports a failure on every save. Rotate, so a long-running stack cannot fill the host with it.

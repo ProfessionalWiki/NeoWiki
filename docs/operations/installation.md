@@ -29,9 +29,15 @@ Download the `ProfessionalWiki/NeoWiki` repository and run this from its root:
 make demo
 ```
 
-This pulls the latest demo image, starts the stack, installs the wiki, and loads the demo data. Later, `make down`
-stops and removes the containers, and `make remove` also deletes the data volumes. To move a running stack to the
-latest NeoWiki, see [Upgrading](upgrading.md).
+This pulls the demo image, starts the stack, installs the wiki, and loads the demo data. Later, `make down` stops and
+removes the containers, and `make remove` also deletes the data volumes. To move a running stack to a newer NeoWiki,
+see [Upgrading](upgrading.md).
+
+Which image `make demo` pulls depends on your copy of the repository: that release's for a checkout of a
+[release](https://github.com/ProfessionalWiki/NeoWiki/releases) tag, master's for any other git checkout, and the
+newest release's for a copy without git, such as a downloaded archive. To run a different
+[image](https://github.com/ProfessionalWiki/NeoWiki/pkgs/container/neowiki), name its tag, as in
+`NEOWIKI_IMAGE_TAG=0.1.0 make demo`.
 
 For an empty wiki without the sample data, run `make up && make install-db && make load-neo4j-users` instead. That
 wiki has no `Mapping:EDM` page, so the stack's preconfigured EDM projection reports a failure on every save until you
@@ -43,15 +49,13 @@ Open `http://localhost:8484` and log in as `AdminName` with the password `AdminP
 
 By default, the stack runs on localhost. To let others reach it, host it on a server. Edit `Docker/.env` and change
 every value marked `# Change for production`, which covers the passwords and `MW_SERVER`. Then start the stack with the
-`server` profile, which adds automatic HTTPS through Caddy. Run it from the repository root so the follow-up `make`
-commands target the same stack:
+`server` profile, which adds automatic HTTPS through Caddy:
 
 ```sh
-docker compose -p neowiki-neowiki --env-file Docker/.env -f Docker/docker-compose.yml --profile server up -d
+COMPOSE_PROFILES=server make demo
 ```
 
-Then run `make install-db`, `make load-neo4j-users` and `make import-demo-data` against it. This is still an
-evaluation setup, not a production deployment.
+This is still an evaluation setup, not a production deployment.
 
 ## Method B: Add to an existing MediaWiki
 

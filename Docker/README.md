@@ -130,7 +130,7 @@ To query it from the host, add the `docker-compose.tools.yml` overlay, which map
 ```sh
 # <project> is this stack's compose project name, which `docker compose ls` lists.
 docker compose -p <project> --env-file Docker/.env \
-  -f Docker/docker-compose.yml -f Docker/docker-compose.tools.yml up -d
+  -f Docker/docker-compose.yml -f Docker/docker-compose.tools.yml up -d qlever
 
 curl http://localhost:7019/ \
   --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' \
@@ -186,7 +186,7 @@ To query it from the host, add the `docker-compose.tools.yml` overlay, which map
 ```sh
 # <project> is this stack's compose project name, which `docker compose ls` lists.
 COMPOSE_PROFILES=oxigraph docker compose -p <project> --env-file Docker/.env \
-  -f Docker/docker-compose.yml -f Docker/docker-compose.tools.yml up -d
+  -f Docker/docker-compose.yml -f Docker/docker-compose.tools.yml up -d oxigraph
 
 curl http://localhost:7878/query \
   --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' \
@@ -208,6 +208,18 @@ adding the flag breaks the test.
 `make phpunit` brings it up on demand via the `test` profile; in CI it is started explicitly (see
 `.github/workflows/ci-php.yml`).
 
+## Demo image tags
+
+`.github/workflows/build-docker.yml` publishes the demo image as `ghcr.io/professionalwiki/neowiki`:
+
+- `master` on every push to master.
+- The tag's own name, such as `0.1.0` or `0.1.0-rc.1`, on each version tag. A release also moves its minor version's
+  tag, such as `0.1`, and `latest`; a pre-release moves neither.
+
+The bundled Makefile picks the tag from the checkout; see
+[Installation](../docs/operations/installation.md#method-a-docker). A `docker compose` command run without the
+Makefile gets `latest` unless `NEOWIKI_IMAGE_TAG` is set.
+
 ## The `test` profile
 
 `test_neo`, `test_qlever` and `test_oxigraph` are only for the PHP test suite, so `make dev` does
@@ -221,8 +233,8 @@ report the backends as missing instead of starting them.
 
 - `Dockerfile` — multi-stage build: `production-mw` (MediaWiki + NeoWiki on the
   production `php.ini`; intermediate, no `LocalSettings.php`), `final-mw` (the prebuilt
-  demo image published as `ghcr.io/professionalwiki/neowiki:latest`, which bakes in
-  `LocalSettings.php`), and `dev-mw` (the dev image with mounted NeoWiki source).
+  [demo image](#demo-image-tags), which bakes in `LocalSettings.php`), and `dev-mw` (the
+  dev image with mounted NeoWiki source).
 - `docker-compose.yml` — the demo stack's services (`mediawiki`, `db`, `neo`, `qlever`
   — SPARQL store, see above) plus the profile-gated `caddy` (the `server` profile, for
   HTTPS hosting) and `oxigraph` (the `oxigraph` profile, the second SPARQL store, see
