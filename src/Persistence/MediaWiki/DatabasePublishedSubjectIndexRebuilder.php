@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use InvalidArgumentException;
+use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\TitleFormatter;
@@ -112,7 +113,21 @@ class DatabasePublishedSubjectIndexRebuilder {
 			return;
 		}
 
-		$subjects = $this->publishedSubjects( $published );
+		try {
+			$subjects = $this->publishedSubjects( $published );
+		} catch ( RevisionAccessException $exception ) {
+			$this->logger->warning(
+				'NeoWiki left page {page} as it was in the published Subject index: its published revision {revision} '
+				. 'cannot be loaded. {message}',
+				[
+					'page' => $pageId,
+					'revision' => $published->getId(),
+					'message' => $exception->getMessage(),
+					'exception' => $exception,
+				]
+			);
+			return;
+		}
 
 		if ( $subjects === null ) {
 			$this->logger->warning(
