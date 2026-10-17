@@ -83,6 +83,20 @@ MW_SMTP_HOST :=
 endif
 endif
 
+# ---- Demo image --------------------------------------------------------------
+
+# The tag of the prebuilt image the demo stack runs: at a release tag, that release's; anywhere
+# else in a git checkout, master's. The version pattern skips tags that are not releases, such as
+# the perf/ ones. Without .git, as in a downloaded archive, there is no tag to read, so it is
+# latest: the newest release.
+ifeq ($(origin NEOWIKI_IMAGE_TAG),undefined)
+ifneq ($(wildcard .git),)
+NEOWIKI_IMAGE_TAG := $(or $(shell git describe --tags --exact-match --match '[0-9]*.[0-9]*.[0-9]*' 2>/dev/null),master)
+else
+NEOWIKI_IMAGE_TAG := latest
+endif
+endif
+
 # ---- Compose invocations -----------------------------------------------------
 
 DC := docker compose -p $(PROJECT_NAME) -f Docker/docker-compose.yml
@@ -154,7 +168,7 @@ doctor: ## Diagnose dev-environment prerequisites (Docker runtime)
 up: _preflight ## Bring up try-it-out stack (prebuilt image)
 	$(DC) up -d
 
-pull: _preflight ## Pull the latest prebuilt demo image
+pull: _preflight ## Pull this checkout's prebuilt demo image
 	$(DC) pull
 
 demo: _preflight ## One-command demo: pull image, start stack, install + seed (idempotent)
@@ -166,7 +180,7 @@ demo: _preflight ## One-command demo: pull image, start stack, install + seed (i
 	@echo "Demo wiki ready at: http://localhost:$$MW_SERVER_PORT"
 	@echo "Log in as AdminName (password: $$MW_ADMIN_PASSWORD)."
 
-upgrade: _preflight ## Upgrade the demo stack: pull the latest image, restart, migrate, rebuild the graph
+upgrade: _preflight ## Move the demo stack to this checkout's image: pull, restart, migrate, rebuild the graph
 	$(DC) pull
 	$(DC) up -d
 	@$(MAKE) --no-print-directory _wait-mw
@@ -315,6 +329,7 @@ test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-set-port.sh
 	@./Docker/tests/test-preflight.sh
 	@./Docker/tests/test-services.sh
+	@./Docker/tests/test-image-tag.sh
 
 # ---- Health gate -------------------------------------------------------------
 
@@ -715,4 +730,4 @@ perf-restore: _require-snapshot ## Restore perf/snapshot/, replacing this stack'
 
 .PHONY: wiki-production-image
 wiki-production-image: ## Build the prebuilt ghcr image
-	docker build Docker --file Docker/Dockerfile --pull --target final-mw -t ghcr.io/professionalwiki/neowiki:latest
+	docker build Docker --file Docker/Dockerfile --pull --target final-mw -t ghcr.io/professionalwiki/neowiki:$(NEOWIKI_IMAGE_TAG)

@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+*'
   workflow_dispatch:
 
 jobs:
@@ -13,6 +15,10 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      # The image's tag: a git tag's own name, master for any other ref. Only master and tags
+      # publish.
+      NEOWIKI_IMAGE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || 'master' }}
 
     steps:
       - uses: actions/checkout@v6
@@ -97,11 +103,22 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.PAT_write_packages }}
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master' || github.ref_type == 'tag'
 
+      # A release such as 0.1.0 also moves its minor version's tag (0.1) and latest. A pre-release
+      # such as 0.1.0-rc.1 moves neither.
       - name: Push Docker Image
-        run: docker push ghcr.io/professionalwiki/neowiki:latest
-        if: github.ref == 'refs/heads/master'
+        run: |
+          image=ghcr.io/professionalwiki/neowiki
+          tags=$NEOWIKI_IMAGE_TAG
+          if [[ $NEOWIKI_IMAGE_TAG =~ ^([0-9]+\.[0-9]+)\.[0-9]+$ ]]; then
+            tags="$tags ${BASH_REMATCH[1]} latest"
+          fi
+          for tag in $tags; do
+            docker tag "$image:$NEOWIKI_IMAGE_TAG" "$image:$tag"
+            docker push "$image:$tag"
+          done
+        if: github.ref == 'refs/heads/master' || github.ref_type == 'tag'
 
       - name: Delete Older Images
         uses: actions/delete-package-versions@v5
@@ -110,4 +127,4 @@ jobs:
           package-type: 'container'
           delete-only-untagged-versions: true
           token: ${{ secrets.PAT_write_packages }}
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master' || github.ref_type == 'tag'

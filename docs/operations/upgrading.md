@@ -5,11 +5,11 @@ order: 2
 
 # Upgrading NeoWiki
 
-NeoWiki has no releases or version numbers yet, so upgrading means moving to the latest development state.
-
 ## Upgrading a Docker install
 
-Update the copy of the repository the stack runs from: `git pull` in it, or re-download it if you took an archive.
+Move the copy of the repository the stack runs from to the version you want: check out its release tag, as in
+`git fetch && git checkout 0.2.0`, or follow master with `git checkout master && git pull`. If you took an archive,
+unpack the newest one in its place.
 
 Then, from the repository root:
 
@@ -17,7 +17,7 @@ Then, from the repository root:
 make upgrade
 ```
 
-This pulls the latest demo image, restarts the stack on it, runs MediaWiki's updater, and
+This pulls the demo image of that version, restarts the stack on it, runs MediaWiki's updater, and
 [rebuilds](maintenance.md#rebuilding-the-graph) every configured backend's projection.
 
 For a stack started with the `server` profile, run `COMPOSE_PROFILES=server make upgrade` instead.
