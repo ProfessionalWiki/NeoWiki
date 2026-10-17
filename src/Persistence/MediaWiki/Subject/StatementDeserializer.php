@@ -49,7 +49,7 @@ class StatementDeserializer {
 			?? ValueType::UnregisteredType;
 
 		return match ( $valueType ) {
-			ValueType::String => new StringValue( ...(array)$value ),
+			ValueType::String => new StringValue( ...array_values( (array)$value ) ),
 			ValueType::Number => new NumberValue( $value ),
 			ValueType::Relation => $this->deserializeRelationValue( $value ),
 			ValueType::MonolingualText => MonolingualTextValue::fromScalars( $value ),
