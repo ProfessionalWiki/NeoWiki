@@ -15,12 +15,14 @@
 			/>
 		</template>
 		<CdxTextInput
+			ref="textInput"
 			input-type="datetime-local"
 			:start-icon="cdxIconClock"
 			:model-value="internalInputValue"
 			:min="toLocalInputValue( props.property.minimum )"
 			:max="toLocalInputValue( props.property.maximum )"
 			@update:model-value="onInput"
+			@keyup="updateIfEmptied( textInput, internalInputValue, onInput )"
 		/>
 	</CdxField>
 </template>
@@ -38,6 +40,7 @@ import { DateTimeProperty, formatDateTimeForDisplay } from '@/domain/propertyTyp
 import { fromLocalInputValue, toLocalInputValue } from '@/domain/propertyTypes/dateTimeConversion.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { useFieldServerViolation } from '@/composables/useFieldServerViolation.ts';
+import { holdsUnparseableInput, updateIfEmptied } from '@/presentation/unparseableInput.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<DateTimeProperty>>(),
@@ -58,6 +61,8 @@ const { validationMessages, validationStatus, clearServerViolation } = useFieldS
 
 const internalInputValue = ref<string>( '' );
 
+const textInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
+
 const initializeInputValue = ( value: Value | undefined ): void => {
 	if ( value && value.type === ValueType.String ) {
 		const str = ( value as StringValue ).parts[ 0 ];
@@ -74,6 +79,10 @@ watch( () => props.modelValue, ( newValue ) => {
 } );
 
 function onInput( newValue: string ): void {
+	if ( holdsUnparseableInput( textInput.value ) ) {
+		return;
+	}
+
 	internalInputValue.value = newValue;
 	const isoValue = fromLocalInputValue( newValue );
 	const value = isoValue !== undefined ? newStringValue( isoValue ) : undefined;

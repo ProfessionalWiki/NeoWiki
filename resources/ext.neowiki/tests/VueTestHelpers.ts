@@ -2,6 +2,8 @@ import { mount, VueWrapper, DOMWrapper } from '@vue/test-utils';
 import { Component, DefineComponent, nextTick } from 'vue';
 import { expect, onTestFinished, vi } from 'vitest';
 import { ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
+import type { Value } from '@/domain/Value';
+import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { NeoWikiTestServices } from './NeoWikiTestServices.ts';
 import { keepMenuEscapesFromDialogs } from '@/codex/menuEscape.ts';
 
@@ -235,6 +237,47 @@ export async function reportUnparseableNumber( input: DOMWrapper<Element> ): Pro
 	} );
 
 	await input.setValue( '' );
+}
+
+/**
+ * Puts a native date or date and time input into the state a browser reports once one of its
+ * parts, such as the month, is cleared: the other parts stay visible, the value reads as empty,
+ * and validity.badInput is set, the same state as for a number it cannot parse.
+ */
+export async function reportPartlyClearedDate( input: DOMWrapper<Element> ): Promise<void> {
+	await reportUnparseableNumber( input );
+}
+
+/**
+ * Clears the parts a partly cleared date input still shows, which leaves it empty without
+ * validity.badInput. Browsers fire no input event for this, only the release of the key.
+ */
+export async function clearRemainingDateParts( input: DOMWrapper<Element> ): Promise<void> {
+	Object.defineProperty( input.element, 'validity', {
+		configurable: true,
+		get: () => ( { badInput: false } ),
+	} );
+
+	await input.trigger( 'keyup', { key: 'Backspace' } );
+}
+
+/** The value a value input leaves its v-model holding: the last one it reported, else the one it was given. */
+export function boundValue( valueInput: VueWrapper ): Value | undefined {
+	const reported = valueInput.emitted( 'update:modelValue' ) ?? [];
+
+	return reported.length === 0 ?
+		( valueInput.props() as { modelValue?: Value } ).modelValue :
+		reported[ reported.length - 1 ][ 0 ] as Value | undefined;
+}
+
+/**
+ * The property definition an attributes editor leaves the property editor holding: the one it was
+ * given, with each change it reported applied in turn.
+ */
+export function editedProperty<T extends PropertyDefinition>( attributesEditor: VueWrapper ): T {
+	const changes = ( attributesEditor.emitted( 'update:property' ) ?? [] ).map( ( event ) => event[ 0 ] as Partial<T> );
+
+	return Object.assign( { ...( attributesEditor.props() as { property: T } ).property }, ...changes );
 }
 
 export function createTestWrapper<TComponent extends DefineComponent<any, any, any>>(

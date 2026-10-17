@@ -6,7 +6,7 @@ import { newStringValue, StringValue, ValueType } from '@/domain/Value';
 import DateTimeInput from '@/components/Value/DateTimeInput.vue';
 import { newDateTimeProperty, DateTimeProperty } from '@/domain/propertyTypes/DateTime';
 import { ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { createTestWrapper } from '../../VueTestHelpers.ts';
+import { boundValue, clearRemainingDateParts, createTestWrapper, reportPartlyClearedDate } from '../../VueTestHelpers.ts';
 import { toLocalInputValue } from '@/domain/propertyTypes/dateTimeConversion';
 
 describe( 'DateTimeInput', () => {
@@ -236,6 +236,35 @@ describe( 'DateTimeInput', () => {
 			const minCall = findMessageCall( 'neowiki-field-min-value' );
 			expect( minCall?.[ 1 ] ).not.toBe( minimum );
 			expect( minCall?.[ 1 ] ).not.toMatch( /Z$/ );
+		} );
+	} );
+
+	describe( 'Clearing the date and time part by part', () => {
+		const dateTime = newStringValue( '2025-06-15T14:00:00.000Z' );
+
+		it( 'keeps the value it was given while some parts remain', async () => {
+			const wrapper = newWrapper( { modelValue: dateTime } );
+
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			expect( boundValue( wrapper ) ).toEqual( dateTime );
+		} );
+
+		it( 'returns the value it was given as the current value while some parts remain', async () => {
+			const wrapper = newWrapper( { modelValue: dateTime } );
+
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( dateTime );
+		} );
+
+		it( 'empties the value once every part is cleared', async () => {
+			const wrapper = newWrapper( { modelValue: dateTime } );
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			await clearRemainingDateParts( wrapper.find( 'input' ) );
+
+			expect( boundValue( wrapper ) ).toBeUndefined();
 		} );
 	} );
 } );

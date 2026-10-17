@@ -37,6 +37,13 @@ describe( 'PropertyDefinitionEditor', () => {
 		return emitted![ emitted!.length - 1 ][ 0 ] as PropertyDefinition;
 	}
 
+	// The property the editor leaves its parent holding: the last one it reported, else the one it was given.
+	function heldProperty( wrapper: VueWrapper ): PropertyDefinition {
+		return wrapper.emitted( 'update:property-definition' ) === undefined ?
+			( wrapper.props() as { property: PropertyDefinition } ).property :
+			lastEmittedProperty( wrapper );
+	}
+
 	async function changeTypeTo( wrapper: VueWrapper, type: string ): Promise<void> {
 		await wrapper.findComponent( CdxSelect ).vm.$emit( 'update:selected', type );
 	}
@@ -236,14 +243,14 @@ describe( 'PropertyDefinitionEditor', () => {
 			expect( unparseableInputMessage( wrapper ) ).toBeNull();
 		} );
 
-		// The removal happens as the bad character is typed, not on save: this is the
-		// gap the save gates hide rather than close.
-		it( 'has already dropped the initial value while the field still shows the text', async () => {
+		// The save gates ask only the selected property's editor, so selecting another
+		// property must not be what loses the value.
+		it( 'keeps the initial value while the field shows the text', async () => {
 			const wrapper = newWrapper( newNumberProperty( { name: 'Score', default: newNumberValue( 5 ) } ) );
 
 			await reportUnparseableNumber( wrapper.findComponent( NumberInput ).find( 'input' ) );
 
-			expect( lastEmittedProperty( wrapper ).default ).toBeUndefined();
+			expect( heldProperty( wrapper ).default ).toEqual( newNumberValue( 5 ) );
 		} );
 	} );
 

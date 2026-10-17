@@ -6,7 +6,7 @@ import { newStringValue, StringValue, ValueType } from '@/domain/Value';
 import DateInput from '@/components/Value/DateInput.vue';
 import { newDateProperty, DateProperty } from '@/domain/propertyTypes/Date';
 import { ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { createTestWrapper } from '../../VueTestHelpers.ts';
+import { boundValue, clearRemainingDateParts, createTestWrapper, reportPartlyClearedDate } from '../../VueTestHelpers.ts';
 
 describe( 'DateInput', () => {
 	beforeEach( () => {
@@ -211,6 +211,44 @@ describe( 'DateInput', () => {
 			const minCall = findMessageCall( 'neowiki-field-min-value' );
 			expect( minCall?.[ 1 ] ).not.toBe( minimum );
 			expect( minCall?.[ 1 ] ).not.toMatch( /^\d{4}-\d{2}-\d{2}$/ );
+		} );
+	} );
+
+	describe( 'Clearing the date part by part', () => {
+		const date = newStringValue( '2025-06-15' );
+
+		it( 'keeps the value it was given while some parts remain', async () => {
+			const wrapper = newWrapper( { modelValue: date } );
+
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			expect( boundValue( wrapper ) ).toEqual( date );
+		} );
+
+		it( 'returns the value it was given as the current value while some parts remain', async () => {
+			const wrapper = newWrapper( { modelValue: date } );
+
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( date );
+		} );
+
+		it( 'empties the value once every part is cleared', async () => {
+			const wrapper = newWrapper( { modelValue: date } );
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			await clearRemainingDateParts( wrapper.find( 'input' ) );
+
+			expect( boundValue( wrapper ) ).toBeUndefined();
+		} );
+
+		// Any value it reported would count as an edit, enabling the save over nothing.
+		it( 'reports nothing for a key released in a field that held no date', async () => {
+			const wrapper = newWrapper( { modelValue: undefined } );
+
+			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Tab' } );
+
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
 		} );
 	} );
 } );
