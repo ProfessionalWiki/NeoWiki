@@ -5,7 +5,7 @@ import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAtt
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newNumberProperty, NumberProperty } from '@/domain/propertyTypes/Number';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { createTestWrapper, FieldProps, setupMwMock } from '../../../VueTestHelpers.ts';
+import { createTestWrapper, editedProperty, FieldProps, reportUnparseableNumber, setupMwMock } from '../../../VueTestHelpers.ts';
 
 describe( 'NumberAttributesEditor', () => {
 	beforeEach( () => {
@@ -269,6 +269,22 @@ describe( 'NumberAttributesEditor', () => {
 
 			expect( wrapper.emitted( 'update:property' ) ).toBeTruthy();
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { minimum: undefined } ] );
+		} );
+	} );
+
+	describe( 'Text that cannot be parsed', () => {
+		const property = newNumberProperty( { minimum: 1, maximum: 100, precision: 2 } );
+
+		it.each( [
+			[ 'minimum', '.number-attributes__minimum' ],
+			[ 'maximum', '.number-attributes__maximum' ],
+			[ 'precision', '.number-attributes__precision' ],
+		] as const )( 'keeps the %s it was given', async ( attribute, field ) => {
+			const wrapper = newWrapper( { property } );
+
+			await reportUnparseableNumber( wrapper.find( `${ field } input` ) );
+
+			expect( editedProperty<NumberProperty>( wrapper )[ attribute ] ).toBe( property[ attribute ] );
 		} );
 	} );
 } );

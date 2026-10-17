@@ -15,9 +15,11 @@
 				</template>
 
 				<CdxTextInput
+					ref="minimumTextInput"
 					input-type="datetime-local"
 					:model-value="minimumInput"
 					@update:model-value="updateMinimum"
+					@keyup="updateIfEmptied( minimumTextInput, minimumInput, updateMinimum )"
 				/>
 				<SeverityInput
 					v-if="property.minimum !== undefined"
@@ -37,9 +39,11 @@
 				</template>
 
 				<CdxTextInput
+					ref="maximumTextInput"
 					input-type="datetime-local"
 					:model-value="maximumInput"
 					@update:model-value="updateMaximum"
+					@keyup="updateIfEmptied( maximumTextInput, maximumInput, updateMaximum )"
 				/>
 				<SeverityInput
 					v-if="property.maximum !== undefined"
@@ -60,6 +64,7 @@ import { fromLocalInputValue, toLocalInputValue } from '@/domain/propertyTypes/d
 import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import NeoNestedField from '@/components/common/NeoNestedField.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
+import { holdsUnparseableInput, updateIfEmptied } from '@/presentation/unparseableInput.ts';
 import { withConstraintSeverity } from '@/domain/PropertyDefinition.ts';
 import type { Severity } from '@/domain/Severity.ts';
 
@@ -70,6 +75,8 @@ const minimumInput = ref( toLocalInputValue( props.property.minimum ) );
 const maximumInput = ref( toLocalInputValue( props.property.maximum ) );
 const minimumError = ref<string | null>( null );
 const maximumError = ref<string | null>( null );
+const minimumTextInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
+const maximumTextInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
 
 watch( () => props.property.minimum, ( newVal ) => {
 	minimumInput.value = toLocalInputValue( newVal );
@@ -91,6 +98,10 @@ function minExceedsMax( min: string, max: string ): boolean {
 }
 
 const updateMinimum = ( value: string ): void => {
+	if ( holdsUnparseableInput( minimumTextInput.value ) ) {
+		return;
+	}
+
 	minimumInput.value = value;
 
 	if ( minExceedsMax( value, maximumInput.value ) ) {
@@ -104,6 +115,10 @@ const updateMinimum = ( value: string ): void => {
 };
 
 const updateMaximum = ( value: string ): void => {
+	if ( holdsUnparseableInput( maximumTextInput.value ) ) {
+		return;
+	}
+
 	maximumInput.value = value;
 
 	if ( minExceedsMax( minimumInput.value, value ) ) {

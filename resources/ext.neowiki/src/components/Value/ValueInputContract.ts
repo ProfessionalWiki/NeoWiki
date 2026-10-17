@@ -39,8 +39,8 @@ export interface ValueInputExposes {
 	 * this state: text like "5foo" stays on screen while the value reads as
 	 * empty, so getCurrentValue() has nothing to return. Callers hold the save
 	 * while any input reports a message, and surface that same message, rather
-	 * than dropping text the user can still see. Inputs whose widget cannot
-	 * reach such a state omit this.
+	 * than dropping text the user can still see. Inputs that omit this keep
+	 * returning the last value their widget could read.
 	 */
 	unparseableInputMessage?(): string | null;
 }

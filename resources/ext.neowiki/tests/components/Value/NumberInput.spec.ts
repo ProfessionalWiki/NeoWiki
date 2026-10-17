@@ -5,7 +5,7 @@ import { newNumberValue } from '@/domain/Value';
 import NumberInput from '@/components/Value/NumberInput.vue';
 import { newNumberProperty, NumberProperty } from '@/domain/propertyTypes/Number';
 import { ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { createTestWrapper } from '../../VueTestHelpers.ts';
+import { boundValue, createTestWrapper } from '../../VueTestHelpers.ts';
 
 enableAutoUnmount( afterEach );
 
@@ -167,6 +167,25 @@ describe( 'NumberInput', () => {
 			await field.reportBadInput();
 
 			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-field-invalid-number' );
+		} );
+
+		it( 'keeps the value it was given while the text cannot be parsed', async () => {
+			const wrapper = newWrapper( { modelValue: newNumberValue( 7 ) } );
+			const field = bindNativeNumberField( wrapper );
+
+			await field.reportBadInput();
+
+			expect( boundValue( wrapper ) ).toEqual( newNumberValue( 7 ) );
+		} );
+
+		it( 'empties the value when the user clears the text it could not parse', async () => {
+			const wrapper = newWrapper( { modelValue: newNumberValue( 7 ) } );
+			const field = bindNativeNumberField( wrapper );
+			await field.reportBadInput();
+
+			await field.reportValue( '' );
+
+			expect( boundValue( wrapper ) ).toBeUndefined();
 		} );
 
 		// The save gates show what they are given, so a message that diverged from the

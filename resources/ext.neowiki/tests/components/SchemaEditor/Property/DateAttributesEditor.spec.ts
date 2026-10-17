@@ -5,7 +5,7 @@ import DateAttributesEditor from '@/components/SchemaEditor/Property/DateAttribu
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newDateProperty, DateProperty } from '@/domain/propertyTypes/Date';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { createTestWrapper, FieldProps, setupMwMock } from '../../../VueTestHelpers.ts';
+import { clearRemainingDateParts, createTestWrapper, editedProperty, FieldProps, reportPartlyClearedDate, setupMwMock } from '../../../VueTestHelpers.ts';
 
 describe( 'DateAttributesEditor', () => {
 	beforeEach( () => {
@@ -207,6 +207,32 @@ describe( 'DateAttributesEditor', () => {
 			expect( wrapper.emitted( 'update:property' ) ).toEqual( [
 				[ { constraintSeverities: { maximum: 'error', minimum: 'error' } } ],
 			] );
+		} );
+	} );
+
+	describe( 'Clearing a date part by part', () => {
+		const property = newDateProperty( { minimum: '2020-01-01', maximum: '2030-12-31' } );
+
+		const bounds = [
+			[ 'minimum', '.date-attributes__minimum' ],
+			[ 'maximum', '.date-attributes__maximum' ],
+		] as const;
+
+		it.each( bounds )( 'keeps the %s it was given while some parts remain', async ( attribute, field ) => {
+			const wrapper = newWrapper( { property } );
+
+			await reportPartlyClearedDate( wrapper.find( `${ field } input` ) );
+
+			expect( editedProperty<DateProperty>( wrapper )[ attribute ] ).toBe( property[ attribute ] );
+		} );
+
+		it.each( bounds )( 'drops the %s once every part is cleared', async ( attribute, field ) => {
+			const wrapper = newWrapper( { property } );
+			await reportPartlyClearedDate( wrapper.find( `${ field } input` ) );
+
+			await clearRemainingDateParts( wrapper.find( `${ field } input` ) );
+
+			expect( editedProperty<DateProperty>( wrapper )[ attribute ] ).toBeUndefined();
 		} );
 	} );
 } );
