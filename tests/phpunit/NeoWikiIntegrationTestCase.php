@@ -379,6 +379,25 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		return $updater->saveRevision( CommentStoreComment::newUnsavedComment( 'TODO' ) );
 	}
 
+	/**
+	 * Stores the Schema page as an import does, without the validation a save runs, so it can hold JSON a save refuses.
+	 */
+	protected function importSchema( string $name, string $json ): void {
+		$title = Title::makeTitle( NeoWikiExtension::NS_SCHEMA, $name );
+
+		$this->importXml(
+			'<mediawiki><page><title>' . htmlspecialchars( $title->getPrefixedText() ) . '</title><revision>'
+			. '<model>' . SchemaContent::CONTENT_MODEL_ID . '</model><format>application/json</format>'
+			. '<text>' . htmlspecialchars( $json ) . '</text></revision></page></mediawiki>'
+		);
+
+		$this->assertSame(
+			$json,
+			$this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $title )->getContent()?->serialize(),
+			'the import should store the JSON as given'
+		);
+	}
+
 	protected function createLayout( string $name, ?string $json = null ): ?RevisionRecord {
 		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle(
 			Title::newFromText( $name, NeoWikiExtension::NS_LAYOUT )

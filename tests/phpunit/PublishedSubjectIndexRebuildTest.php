@@ -165,6 +165,15 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ self::ADA => false, self::BIRTH => true ], $this->dependentFlagsOf( $pageId ) );
 	}
 
+	public function testRebuildingIndexesASubjectOfASchemaWithWronglyTypedJsonAsStandalone(): void {
+		$this->importSchema( 'Birth', '{"description":5,"propertyDefinitions":{}}' );
+		$pageId = $this->createPageWithoutTellingNeoWiki( 'Ada Lovelace', $this->slotJsonOfAdaAndHerBirth() );
+
+		$this->rebuild();
+
+		$this->assertSame( [ self::ADA => false, self::BIRTH => false ], $this->dependentFlagsOf( $pageId ) );
+	}
+
 	public function testTheUpdateScriptFillsTheIndexWithWhatEachPagePublishes(): void {
 		$this->clearHook( 'RevisionFromEditComplete' );
 		$approved = $this->writeSubjectSlot( 'Ada Lovelace', $this->slotJson( self::ADA, 'Approved name' ) );
