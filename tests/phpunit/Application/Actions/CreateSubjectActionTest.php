@@ -10,8 +10,6 @@ use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectActi
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectRequest;
 use ProfessionalWiki\NeoWiki\Application\DependentSubjectBuilder;
 use ProfessionalWiki\NeoWiki\Application\NewSubjectIdResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Validation\DependentSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
@@ -129,7 +127,6 @@ class CreateSubjectActionTest extends TestCase {
 			$this->authorizer,
 			$statementListBuilder,
 			TestSources::newSchemaResolver( $this->schemaLookup ),
-			new SelectStatementResolver( new SelectValueResolver() ),
 			$proposedSubjectValidator,
 			$this->pageIdentifiersResolver,
 			TestSources::newSchemaReferenceParser( $schemaNames ),
@@ -137,7 +134,6 @@ class CreateSubjectActionTest extends TestCase {
 				newSubjectIdResolver: $newSubjectIdResolver,
 				schemaReferenceParser: TestSources::newSchemaReferenceParser( $schemaNames ),
 				schemaResolver: TestSources::newSchemaResolver( $this->schemaLookup ),
-				selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
 				statementListBuilder: $statementListBuilder,
 				dependentSubjectRules: TestNaming::newDependentSubjectRules( $this->schemaLookup ),
 			),
@@ -146,18 +142,22 @@ class CreateSubjectActionTest extends TestCase {
 		);
 	}
 
-	private function registerSelectSchema( bool $multiple = false ): void {
+	private function registerSelectSchema(): void {
+		$this->registerSelectSchemaOf( new PropertyCore( description: '', required: false, default: null ) );
+	}
+
+	private function registerSelectSchemaOf( PropertyCore $core ): void {
 		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( self::SELECT_SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
 				'Status' => new SelectProperty(
-					core: new PropertyCore( description: '', required: false, default: null ),
+					core: $core,
 					options: [
 						new SelectOption( id: 'opt_draft', label: 'Draft' ),
 						new SelectOption( id: 'opt_approved', label: 'Approved' ),
 					],
-					multiple: $multiple,
+					multiple: false,
 				),
 			] )
 		) );
@@ -403,7 +403,7 @@ class CreateSubjectActionTest extends TestCase {
 		$this->assertSame( [ 'opt_draft' ], $this->getStatusValueForCreatedSubject()->strings );
 	}
 
-	public function testSelectValueResolvesLabelToId(): void {
+	public function testSelectOptionLabelIsStoredAsSent(): void {
 		$this->registerSelectSchema();
 
 		$this->newCreateSubjectAction()->createSubject(
@@ -413,115 +413,16 @@ class CreateSubjectActionTest extends TestCase {
 				label: 'Some Label',
 				schemaName: self::SELECT_SCHEMA_NAME,
 				statements: [
-					'Status' => [ 'propertyType' => 'select', 'value' => '  approved  ' ],
+					'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ],
 				]
 			)
 		);
 
-		$this->assertSame( [ 'opt_approved' ], $this->getStatusValueForCreatedSubject()->strings );
-	}
-
-	public function testSelectValueAcceptsConsistentIdLabelObject(): void {
-		$this->registerSelectSchema();
-
-		$this->newCreateSubjectAction()->createSubject(
-			new CreateSubjectRequest(
-				pageId: 1,
-				isMainSubject: true,
-				label: 'Some Label',
-				schemaName: self::SELECT_SCHEMA_NAME,
-				statements: [
-					'Status' => [
-						'propertyType' => 'select',
-						'value' => [ 'id' => 'opt_approved', 'label' => 'Approved' ],
-					],
-				]
-			)
-		);
-
-		$this->assertSame( [ 'opt_approved' ], $this->getStatusValueForCreatedSubject()->strings );
-	}
-
-	public function testSelectValueRejectsInconsistentIdLabelObject(): void {
-		$this->registerSelectSchema();
-
-		$this->expectException( \InvalidArgumentException::class );
-
-		$this->newCreateSubjectAction()->createSubject(
-			new CreateSubjectRequest(
-				pageId: 1,
-				isMainSubject: true,
-				label: 'Some Label',
-				schemaName: self::SELECT_SCHEMA_NAME,
-				statements: [
-					'Status' => [
-						'propertyType' => 'select',
-						'value' => [ 'id' => 'opt_draft', 'label' => 'WrongName' ],
-					],
-				]
-			)
-		);
-	}
-
-	public function testMultiSelectValueResolvesMixedForms(): void {
-		$this->registerSelectSchema( multiple: true );
-
-		$this->newCreateSubjectAction()->createSubject(
-			new CreateSubjectRequest(
-				pageId: 1,
-				isMainSubject: true,
-				label: 'Some Label',
-				schemaName: self::SELECT_SCHEMA_NAME,
-				statements: [
-					'Status' => [
-						'propertyType' => 'select',
-						'value' => [
-							'opt_draft',
-							'Approved',
-							[ 'id' => 'opt_draft', 'label' => 'Draft' ],
-						],
-					],
-				]
-			)
-		);
-
-		$this->assertSame(
-			[ 'opt_draft', 'opt_approved', 'opt_draft' ],
-			$this->getStatusValueForCreatedSubject()->strings
-		);
-	}
-
-	public function testSelectValuePassesThroughWhenSchemaIsMissing(): void {
-		$this->newCreateSubjectAction()->createSubject(
-			new CreateSubjectRequest(
-				pageId: 1,
-				isMainSubject: true,
-				label: 'Some Label',
-				schemaName: 'UnknownSchema',
-				statements: [
-					'Status' => [ 'propertyType' => 'select', 'value' => 'opt_draft' ],
-				]
-			)
-		);
-
-		$this->assertSame( [ 'opt_draft' ], $this->getStatusValueForCreatedSubject()->strings );
+		$this->assertSame( [ 'Approved' ], $this->getStatusValueForCreatedSubject()->strings );
 	}
 
 	private function registerSchemaWithRequiredStatus(): void {
-		$this->schemaLookup->updateSchema( TestSchema::build(
-			name: new SchemaName( self::SELECT_SCHEMA_NAME ),
-			description: '',
-			properties: new PropertyDefinitions( [
-				'Status' => new SelectProperty(
-					core: new PropertyCore( description: '', required: true, default: null ),
-					options: [
-						new SelectOption( id: 'opt_draft', label: 'Draft' ),
-						new SelectOption( id: 'opt_approved', label: 'Approved' ),
-					],
-					multiple: false,
-				),
-			] )
-		) );
+		$this->registerSelectSchemaOf( new PropertyCore( description: '', required: true, default: null ) );
 	}
 
 	public function testCreateProducesEmptyViolationsForCleanInput(): void {
@@ -975,7 +876,7 @@ class CreateSubjectActionTest extends TestCase {
 				label: 'Some Label',
 				schemaName: self::SELECT_SCHEMA_NAME,
 				statements: [
-					'Status' => [ 'propertyType' => 'select', 'value' => 'Approved' ],
+					'Status' => [ 'propertyType' => 'select', 'value' => 'opt_approved' ],
 				]
 			)
 		);
@@ -984,7 +885,7 @@ class CreateSubjectActionTest extends TestCase {
 		$this->assertSame( 'Some Label', $this->presenterSpy->subject?->label );
 		$this->assertSame( self::SELECT_SCHEMA_NAME, $this->presenterSpy->subject?->schema );
 		$this->assertSame(
-			// The label the request supplied was resolved to the option id.
+			// The bare string the request supplied is stored as a list.
 			[ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'opt_approved' ] ] ],
 			$this->presenterSpy->subject?->statements
 		);

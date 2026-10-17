@@ -21,7 +21,6 @@ readonly class DependentSubjectBuilder {
 		private NewSubjectIdResolver $newSubjectIdResolver,
 		private SchemaReferenceParser $schemaReferenceParser,
 		private SchemaReferenceResolver $schemaResolver,
-		private SelectStatementResolver $selectStatementResolver,
 		private StatementListBuilder $statementListBuilder,
 		private DependentSubjectRules $dependentSubjectRules,
 	) {
@@ -92,9 +91,7 @@ readonly class DependentSubjectBuilder {
 			id: $this->newSubjectIdResolver->resolve( $item['id'] ),
 			label: SubjectLabel::fromText( $item['label'] ?? null ),
 			schema: $schemaReference,
-			statements: $this->statementListBuilder->build(
-				$this->selectStatementResolver->resolve( $schema, $item['statements'] )
-			),
+			statements: $this->statementListBuilder->build( $item['statements'] ),
 		);
 	}
 

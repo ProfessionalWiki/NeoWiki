@@ -11,7 +11,6 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectIdInUseExcepti
 use ProfessionalWiki\NeoWiki\Application\Validation\DependentSubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
@@ -21,7 +20,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -48,7 +46,6 @@ readonly class CreateSubjectPageAction {
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaResolver $schemaResolver,
-		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private PageIdentifiersResolver $pageIdentifiersResolver,
 		private SchemaReferenceParser $schemaReferenceParser,
@@ -83,7 +80,7 @@ readonly class CreateSubjectPageAction {
 			throw new InvalidPageTitleException( $titleAsked );
 		}
 
-		$subject = $this->buildSubject( $request, $schemaReference, $schema );
+		$subject = $this->buildSubject( $request, $schemaReference );
 		$pageTitle = $pageTitleAsked ?? $this->pageTitleFor( $subject->getId(), $request->label );
 
 		// Authorized before the page is looked for, so that a title the caller may not write
@@ -194,32 +191,13 @@ readonly class CreateSubjectPageAction {
 			?? throw new LogicException( "No page can be created in namespace $this->subjectPageNamespace" );
 	}
 
-	private function buildSubject(
-		CreateSubjectPageRequest $request,
-		SchemaReference $schemaReference,
-		?Schema $schema
-	): Subject {
+	private function buildSubject( CreateSubjectPageRequest $request, SchemaReference $schemaReference ): Subject {
 		return new Subject(
 			id: $this->newSubjectIdResolver->resolve( $request->id ),
 			label: SubjectLabel::fromText( $request->label ),
 			schema: $schemaReference,
-			statements: $this->statementListBuilder->build(
-				$this->resolveSelectValues( $schema, $request->statements )
-			),
+			statements: $this->statementListBuilder->build( $request->statements ),
 		);
-	}
-
-	/**
-	 * @param array<string, mixed> $statements
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function resolveSelectValues( ?Schema $schema, array $statements ): array {
-		if ( $schema === null ) {
-			return $statements;
-		}
-
-		return $this->selectStatementResolver->resolve( $schema, $statements );
 	}
 
 }

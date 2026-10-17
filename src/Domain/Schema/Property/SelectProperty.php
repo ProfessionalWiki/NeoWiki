@@ -29,13 +29,6 @@ class SelectProperty extends PropertyDefinition {
 	}
 
 	/**
-	 * @return SelectOption[]
-	 */
-	public function getOptions(): array {
-		return $this->options;
-	}
-
-	/**
 	 * @return string[]
 	 */
 	public function getOptionIds(): array {

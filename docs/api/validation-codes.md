@@ -130,7 +130,7 @@ for `date` and `dateTime`. `severity`: set by the `minimum` / `maximum` Constrai
 
 ### `invalid-option`
 
-On `select` properties. A part is not in the property's `options` allow-list.
+On `select` properties. A part is not the `id` of one of the property's `options`.
 
 `args`: `[offendingPart]`. `valuePartIndex`: the offending part. `severity`: set by the `options`
 Constraint (default `warning`).

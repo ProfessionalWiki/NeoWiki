@@ -9,8 +9,6 @@ use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubject\ValidateSubjectQuery;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
@@ -265,17 +263,10 @@ class JsonSchemaMatchesValidatorTest extends TestCase {
 			self::value( 'select', [ 'anything' ] ),
 		];
 
-		yield 'select option label' => [
-			$select,
-			self::value( 'select', [ 'Draft' ] ),
-			'the write endpoints also take an option label, which they resolve to its id; the document '
-				. 'describes the stored form only.',
-		];
-
+		yield 'select option label' => [ $select, self::value( 'select', [ 'Draft' ] ) ];
 		yield 'select option as an id and label object' => [
 			$select,
 			self::value( 'select', [ [ 'id' => 'oVgd1htUPMmGZYT', 'label' => 'Draft' ] ] ),
-			'the write endpoints also take an option as an {id, label} object, for the same reason.',
 		];
 	}
 
@@ -547,7 +538,6 @@ class JsonSchemaMatchesValidatorTest extends TestCase {
 				idGenerator: new StubIdGenerator( 'Generated11111' ),
 				subjectIdParser: TestSubjectIds::newParser(),
 			),
-			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
 			schemaReferenceParser: TestSources::newSchemaReferenceParser(),
 		);
 	}

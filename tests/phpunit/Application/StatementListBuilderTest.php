@@ -250,6 +250,10 @@ class StatementListBuilderTest extends TestCase {
 
 	public static function valueNotFittingItsTypeProvider(): iterable {
 		yield 'text given a number' => [ 'text', 2019 ];
+		yield 'select part given as an id and label object' => [
+			'select',
+			[ [ 'id' => 'opt_draft', 'label' => 'Draft' ] ],
+		];
 		yield 'number given a string' => [ 'number', 'not a number' ];
 		yield 'number with no value' => [ 'number', null ];
 		yield 'boolean given a string' => [ 'boolean', 'yes' ];

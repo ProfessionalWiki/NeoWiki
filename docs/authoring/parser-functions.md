@@ -121,7 +121,7 @@ Returns the value of a single property from a Subject, formatted as a string.
 | Type | Output |
 |------|--------|
 | `text`, `url`, `date`, `dateTime` | The string value. Multiple values joined with `separator`. |
-| `select` | The option's label. Multiple options joined with `separator`. Falls back to the option's id when the option cannot be looked up. |
+| `select` | The option's label. Multiple options joined with `separator`. Falls back to the stored value when the option cannot be looked up. |
 | `number` | The number, e.g. `42` or `19.99`. |
 | `boolean` | `true` or `false`. |
 | `relation` | The target Subject's display name. Multiple targets joined with `separator`. Falls back to the target Subject ID when the target cannot be looked up or its page is not readable. |

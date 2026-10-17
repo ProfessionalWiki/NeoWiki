@@ -11,8 +11,6 @@ use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
 class ReplaceSubjectPresenterSpy implements ReplaceSubjectPresenter {
 
-	public string $subjectId = '';
-
 	public ?GetSubjectResponseItem $subject = null;
 
 	public ?Schema $schema = null;
@@ -25,7 +23,6 @@ class ReplaceSubjectPresenterSpy implements ReplaceSubjectPresenter {
 	public ?string $saveFailure = null;
 
 	public function presentUpdated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations ): void {
-		$this->subjectId = $subject->id;
 		$this->subject = $subject;
 		$this->schema = $schema;
 		$this->violations = $violations;

@@ -11,8 +11,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement\UpdateStatementAction;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectValueResolver;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
@@ -23,8 +21,6 @@ use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectOption;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Property\SelectProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
@@ -102,7 +98,6 @@ class UpdateStatementActionTest extends TestCase {
 				subjectIdParser: TestSubjectIds::newParser()
 			),
 			schemaResolver: $schemaResolver,
-			selectStatementResolver: new SelectStatementResolver( new SelectValueResolver() ),
 			proposedSubjectValidator: new ProposedSubjectValidator(
 				schemaResolver: $schemaResolver,
 				subjectValidator: new SubjectValidator(
@@ -334,47 +329,6 @@ class UpdateStatementActionTest extends TestCase {
 
 		$this->assertNull(
 			$this->getStoredSubject()->getStatements()->getStatement( new PropertyName( 'Website' ) )
-		);
-	}
-
-	public function testSelectValueIsResolvedToItsOptionId(): void {
-		$this->registerSchema( new PropertyDefinitions( [
-			'Status' => new SelectProperty(
-				core: new PropertyCore( description: '', required: false, default: null ),
-				options: [
-					new SelectOption( id: 'opt_draft', label: 'Draft' ),
-					new SelectOption( id: 'opt_approved', label: 'Approved' ),
-				],
-				multiple: false,
-			),
-		] ) );
-		$this->storeSubject();
-
-		$this->setStatement( 'Status', 'select', 'Approved' );
-
-		$this->assertSame( [ 'opt_approved' ], $this->getStoredValue( 'Status' ) );
-	}
-
-	public function testUnresolvableSelectValueThrows(): void {
-		$this->registerSchema( new PropertyDefinitions( [
-			'Status' => new SelectProperty(
-				core: new PropertyCore( description: '', required: false, default: null ),
-				options: [ new SelectOption( id: 'opt_draft', label: 'Draft' ) ],
-				multiple: false,
-			),
-		] ) );
-		$this->storeSubject();
-
-		$action = $this->newAction();
-
-		$this->expectException( InvalidArgumentException::class );
-
-		$action->setStatement(
-			new SubjectId( self::SUBJECT_ID ),
-			new PropertyName( 'Status' ),
-			'select',
-			'No such option',
-			null
 		);
 	}
 

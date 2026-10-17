@@ -4,25 +4,20 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Queries\ValidateSubjectUpdate;
 
-use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
-use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
+use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
-use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
 readonly class ValidateSubjectUpdateQuery {
 
 	public function __construct(
 		private SubjectRepository $subjectRepository,
-		private SchemaResolver $schemaResolver,
-		private SubjectValidator $subjectValidator,
+		private ProposedSubjectValidator $proposedSubjectValidator,
 		private StatementListBuilder $statementListBuilder,
-		private SelectStatementResolver $selectStatementResolver,
 		private SubjectHostingPageResolver $hostingPageResolver,
 		private SubjectIdParser $subjectIdParser,
 	) {
@@ -49,31 +44,8 @@ readonly class ValidateSubjectUpdateQuery {
 			throw SubjectNotFoundException::forId( $id );
 		}
 
-		$schema = $this->schemaResolver->getSchema( $subject->getSchemaReference() );
-
-		if ( $schema === null ) {
-			// Everything Schema-scoped is lost, but a relation target no Source can reach still is
-			// one, so report it here too: the write path would refuse the same proposal.
-			return array_merge(
-				[
-					new Violation(
-						propertyName: null,
-						code: 'schema-not-found',
-						args: [ $subject->getSchemaReference()->getText() ],
-						severity: Severity::Warning,
-					),
-				],
-				$this->subjectValidator->validateRelationTargetSources(
-					$this->statementListBuilder->build( $statements )
-				)
-			);
-		}
-
-		return $this->subjectValidator->validate(
-			$this->statementListBuilder->build(
-				$this->selectStatementResolver->resolveOrLeave( $schema, $statements )
-			),
-			$schema,
+		return $this->proposedSubjectValidator->validate(
+			$subject->withStatements( $this->statementListBuilder->build( $statements ) )
 		);
 	}
 

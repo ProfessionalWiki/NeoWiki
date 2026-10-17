@@ -53,7 +53,7 @@ The first value of the property, type-converted for Lua:
 | Property type | Returned type |
 |---------------|---------------|
 | `text`, `url`, `date`, `dateTime` | string |
-| `select` | string (the option's label, or its id when the option cannot be looked up) |
+| `select` | string (the option's label, or the stored value when the option cannot be looked up) |
 | `number` | number |
 | `boolean` | boolean |
 | `relation` | string (the target Subject's display name, or its Subject ID when the target cannot be looked up) |
@@ -425,7 +425,7 @@ Notes:
   original type until they are re-saved.
 - A relation's `label` is the target's display name, and falls back to the target Subject ID when
   the target cannot be looked up at all (e.g. a broken reference).
-- A `select` value is the option's label, and falls back to the option's id when the option cannot be looked up.
+- A `select` value is the option's label, and falls back to the stored value when the option cannot be looked up.
 - A `monolingualText` value keeps its languages here; `nw.getValue` and `nw.getAll` give the text alone.
 
 ## Permissions

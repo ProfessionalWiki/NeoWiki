@@ -98,6 +98,15 @@ class SelectTypeValidateTest extends TestCase {
 		$this->assertNull( $violations[1]->propertyName );
 	}
 
+	public function testInvalidOptionDefaultsToWarning(): void {
+		$violations = $this->type->validate(
+			new StringValue( 'purple' ),
+			$this->newProperty( required: false, multiple: true ),
+		);
+
+		$this->assertSame( Severity::Warning, $violations[0]->severity );
+	}
+
 	public function testInvalidOptionUsesErrorWhenOptionsAnnotated(): void {
 		$definition = PropertyDefinition::fromJson(
 			[

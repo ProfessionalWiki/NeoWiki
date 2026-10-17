@@ -14,7 +14,6 @@ use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
-use ProfessionalWiki\NeoWiki\Application\SelectStatementResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
@@ -22,7 +21,6 @@ use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -41,7 +39,6 @@ readonly class CreateSubjectAction {
 		private SubjectWriteAuthorizer $writeAuthorizer,
 		private StatementListBuilder $statementListBuilder,
 		private SchemaResolver $schemaResolver,
-		private SelectStatementResolver $selectStatementResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private PageIdentifiersResolver $pageIdentifiersResolver,
 		private SchemaReferenceParser $schemaReferenceParser,
@@ -74,7 +71,7 @@ readonly class CreateSubjectAction {
 		$schemaReference = $this->schemaReference( $request );
 		$schema = $this->schemaResolver->getSchema( $schemaReference );
 
-		$subject = $this->buildSubject( $request, $schemaReference, $schema );
+		$subject = $this->buildSubject( $request, $schemaReference );
 
 		if ( $request->id !== null && $this->newSubjectIdResolver->isInUse( $subject->id ) ) {
 			$this->presenter->presentSubjectAlreadyExists();
@@ -153,18 +150,12 @@ readonly class CreateSubjectAction {
 		return true;
 	}
 
-	private function buildSubject(
-		CreateSubjectRequest $request,
-		SchemaReference $schemaReference,
-		?Schema $schema
-	): Subject {
+	private function buildSubject( CreateSubjectRequest $request, SchemaReference $schemaReference ): Subject {
 		return new Subject(
 			id: $this->newSubjectIdResolver->resolve( $request->id ),
 			label: SubjectLabel::fromText( $request->label ),
 			schema: $schemaReference,
-			statements: $this->statementListBuilder->build(
-				$this->resolveSelectValues( $schema, $request->statements )
-			),
+			statements: $this->statementListBuilder->build( $request->statements ),
 		);
 	}
 
@@ -173,19 +164,6 @@ readonly class CreateSubjectAction {
 	 */
 	private function schemaReference( CreateSubjectRequest $request ): SchemaReference {
 		return $this->schemaReferenceParser->localName( $request->schemaName );
-	}
-
-	/**
-	 * @param array<string, mixed> $statements
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function resolveSelectValues( ?Schema $schema, array $statements ): array {
-		if ( $schema === null ) {
-			return $statements;
-		}
-
-		return $this->selectStatementResolver->resolve( $schema, $statements );
 	}
 
 }
