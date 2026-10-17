@@ -23,8 +23,6 @@ services:
       - NEO4J_URL_EXTERNAL
       - NEO4J_USERNAME
       - NEO4J_PASSWORD
-      - NEO4J_USERNAME_READ
-      - NEO4J_PASSWORD_READ
     healthcheck:
       test: "curl -fsSL http://localhost:80/index.php/Special:Version | grep 'Jeroen De Dauw'"
       interval: 60s
@@ -45,12 +43,11 @@ services:
       retries: 4
 
   neo:
-    image: neo4j:enterprise
+    image: neo4j:5.26-community
     ports:
       - "127.0.0.1:7474:7474"
       - "127.0.0.1:7687:7687"
     environment:
-      - NEO4J_ACCEPT_LICENSE_AGREEMENT=eval
       - NEO4J_AUTH
     healthcheck:
       test: "wget http://localhost:7474/browser -O - | grep 'Neo4j Browser'"

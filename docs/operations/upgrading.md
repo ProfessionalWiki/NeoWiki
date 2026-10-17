@@ -70,6 +70,19 @@ length of the run.
 If your Subjects predate the optional Subject label, run
 [clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before that rebuild.
 
+## Docker stack moved to Neo4j Community Edition, October 2026
+
+The Docker stack now runs Neo4j Community Edition, which cannot open graph data written by the Enterprise Edition that
+older stacks ran: their `neo` container keeps restarting, and `make upgrade` fails. Remove the Neo4j volume before
+upgrading. That is safe on any stack, since `make upgrade` rebuilds everything Neo4j holds from the wiki's pages. The
+volume is `neowiki-<checkout directory, lowercased>_neo4j-data`; for a checkout named `NeoWiki`:
+
+```sh
+make down
+docker volume rm neowiki-neowiki_neo4j-data
+make upgrade   # COMPOSE_PROFILES=server make upgrade for a stack on the server profile
+```
+
 ## Docker wiki port bound to localhost, October 2026
 
 The Docker stack's wiki port, 8484 by default, now only accepts connections from the machine the stack runs on. To

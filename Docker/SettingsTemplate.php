@@ -241,7 +241,7 @@ $neo4jScheme = getenv( 'NEO4J_SCHEME' ) ?: 'bolt';
 $neo4jAddress = ( getenv( 'NEO4J_HOST' ) ?: 'neo' ) . ':' . ( getenv( 'NEO4J_PORT' ) ?: '7687' );
 
 $wgNeoWikiNeo4jInternalWriteUrl = $neo4jScheme . '://' . getenv( 'NEO4J_USERNAME' ) . ':' . getenv( 'NEO4J_PASSWORD' ) . '@' . $neo4jAddress;
-$wgNeoWikiNeo4jInternalReadUrl = $neo4jScheme . '://' . getenv( 'NEO4J_USERNAME_READ' ) . ':' . getenv( 'NEO4J_PASSWORD_READ' ) . '@' . $neo4jAddress;
+$wgNeoWikiNeo4jInternalReadUrl = $wgNeoWikiNeo4jInternalWriteUrl;
 
 // SPARQL graph store (QLever) for the SPARQL projection plugin (#586). Both the demo stack and the
 // dev stack run the qlever service defined in docker-compose.yml by default and point the wiki at

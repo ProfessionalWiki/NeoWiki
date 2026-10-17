@@ -67,12 +67,11 @@ services:
   test_neo:
     profiles:
       - test
-    image: neo4j:enterprise
+    image: neo4j:5.26-community
     restart: unless-stopped
     volumes:
       - test-neo4j-data:/data
     environment:
-      - NEO4J_ACCEPT_LICENSE_AGREEMENT=eval
       # Hardcoded password (intentional): NeoWiki's test suite uses this
       # fixed credential to connect to the test Neo4j instance. Do not
       # parameterize without also updating the test configuration.

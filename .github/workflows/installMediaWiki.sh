@@ -23,7 +23,7 @@ $wgDevelopmentWarnings = true;
 wfLoadExtension( "Scribunto" );
 
 $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:password@localhost:7689';
-$wgNeoWikiNeo4jInternalReadUrl = 'bolt://mediawiki_read:mediawiki_read@localhost:7689';
+$wgNeoWikiNeo4jInternalReadUrl = 'bolt://neo4j:password@localhost:7689';
 EOT
 
 cat <<EOT >> LocalSettings.php

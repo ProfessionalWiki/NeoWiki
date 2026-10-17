@@ -340,7 +340,6 @@ _first-run-seed:
 		echo "Wiki already initialized; skipping install-db."; \
 	else \
 		$(MAKE) --no-print-directory install-db; \
-		$(MAKE) --no-print-directory load-neo4j-users; \
 		$(MAKE) --no-print-directory composer-install; \
 		$(MAKE) --no-print-directory import-demo-data; \
 	fi
@@ -354,13 +353,12 @@ _first-run-seed-demo:
 		echo "Wiki already initialized; skipping install."; \
 	else \
 		$(MAKE) --no-print-directory install-db; \
-		$(MAKE) --no-print-directory load-neo4j-users; \
 		$(MAKE) --no-print-directory import-demo-data; \
 	fi
 
 # ---- DB and Neo4j init -------------------------------------------------------
 
-.PHONY: install-db load-neo4j-users setup-test-neo test-backends test-backends-stop
+.PHONY: install-db test-backends test-backends-stop
 
 # --dbserver must match MARIADB_HOST: a literal here installs the schema on a different server
 # than SettingsTemplate.php points the wiki at.
@@ -382,19 +380,14 @@ install-db:
 	echo '{{subst:int:neowiki-main-page-text}}' | $(EXEC_MW_ROOT) env QLEVER_URL= \
 		php maintenance/run.php edit --user 'MediaWiki default' --summary 'NeoWiki starter page' 'Main Page'
 
-load-neo4j-users:
-	$(DC) exec -T neo bash -c \
-		"echo \"CREATE USER $(NEO4J_USERNAME_READ) SET PASSWORD '$(NEO4J_PASSWORD_READ)' CHANGE NOT REQUIRED; GRANT ROLE reader TO $(NEO4J_USERNAME_READ);\" | cypher-shell -u neo4j -p $(NEO4J_PASSWORD) -a bolt://localhost:7687"
-
 # Runs before every PHP test target.
 #
-# The already-running check is a speed optimization, not a correctness requirement: the seed
-# is idempotent. Without it every `make phpunit filter=X` would pay a few seconds for the
-# compose up and the cypher-shell JVM.
+# The already-running check is a speed optimization, not a correctness requirement: without it
+# every `make phpunit filter=X` would pay a few seconds for the compose up.
 #
 # Inside the mediawiki container there is no compose to drive, so it can only report that the
 # backends are missing.
-test-backends: ## Start and seed the test-only backends (the PHP test targets do this for you)
+test-backends: ## Start the test-only backends (the PHP test targets do this for you)
 ifeq ($(INSIDE_CONTAINER),1)
 	@if ! /wait-for-it.sh test_neo:7689 -t 1 >/dev/null 2>&1 \
 		|| ! /wait-for-it.sh test_qlever:7019 -t 1 >/dev/null 2>&1 \
@@ -410,15 +403,9 @@ else
 		exit 0; \
 	fi; \
 	$(DC_TEST) up -d; \
-	$(MAKE) --no-print-directory setup-test-neo; \
-	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh test_qlever:7019 -t 120 && /wait-for-it.sh test_oxigraph:7878 -t 120'
+	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh test_neo:7689 -t 60 && /wait-for-it.sh test_qlever:7019 -t 120 \
+		&& /wait-for-it.sh test_oxigraph:7878 -t 120'
 endif
-
-# Dev-only: wait for and seed the test_neo instance. Not called from prod or CI flows.
-setup-test-neo:
-	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh test_neo:7689 -t 60'
-	$(DC_TEST) exec -T test_neo bash -c \
-		"echo \"CREATE USER mediawiki_read IF NOT EXISTS SET PASSWORD 'mediawiki_read' CHANGE NOT REQUIRED; GRANT ROLE reader TO mediawiki_read;\" | cypher-shell -u neo4j -p password -a bolt://localhost:7689"
 
 test-backends-stop: ## Stop the test-only backends (make phpunit restarts them on demand)
 	$(DC_TEST) stop test_neo test_qlever test_oxigraph
@@ -576,13 +563,12 @@ ts-lint: _wait-node ## Run TS linter
 
 # Wipe and reseed the dev stack. The teardown (make remove) is stack-agnostic —
 # --remove-orphans reaps the dev sidecars too — while the up must be the dev
-# variant, since reset rebuilds the dev stack (note setup-test-neo below).
+# variant, since reset rebuilds the dev stack.
 reset: ## Wipe DB + Neo4j volumes and reseed demo data (recreates the dev stack)
 	$(MAKE) --no-print-directory remove
 	$(DC_DEV) up -d
 	@$(MAKE) --no-print-directory _wait-mw
 	$(MAKE) --no-print-directory install-db
-	$(MAKE) --no-print-directory load-neo4j-users
 	$(MAKE) --no-print-directory import-demo-data
 
 import-demo-data: ## Import the NeoWiki demo subjects
@@ -609,25 +595,31 @@ PERF_SNAPSHOT_DIR := $(PERF_DIR)/snapshot
 PERF_SQL := $(PERF_SNAPSHOT_DIR)/mediawiki.sql
 PERF_NEO := $(PERF_SNAPSHOT_DIR)/neo4j.dump
 
-# `neo4j-admin database dump` and `load` refuse to touch a database the server has
-# mounted, so both are bracketed by STOP/START DATABASE against the system database.
+# `neo4j-admin database dump` and `load` refuse to touch a store the server has open, and
+# Community Edition cannot take its database offline on its own, so both stop the neo
+# container and run neo4j-admin in a one-off container on its volume.
 NEO_CYPHER := $(DC) exec -T neo cypher-shell -u $(NEO4J_USERNAME) -p $(NEO4J_PASSWORD)
 
-# `docker compose exec` lands in the neo container as root, while the server runs as
-# neo4j. Loading as root leaves a store the server cannot write, which then fails to
-# start, so neo4j-admin runs as the owning user.
-NEO_ADMIN := $(DC) exec -T --user neo4j neo neo4j-admin
+# The one-off container would start as root, while the server runs as neo4j. Loading as root
+# leaves a store the server cannot write, which then fails to start, so neo4j-admin runs as the
+# owning user.
+NEO_ADMIN := $(DC) run --rm --no-deps -T --user neo4j neo neo4j-admin
 
 # Shell fragments rather than targets of their own: make runs any recipe line that mentions
 # $(MAKE) even under --dry-run, so recursing into a stop/start target would let
 # `make -n perf-snapshot` truncate the snapshot and `make -n perf-restore` overwrite the live
 # store for real.
-NEO_STOP = $(NEO_CYPHER) -d system 'STOP DATABASE neo4j WAIT' < /dev/null
+#
+# A large store's shutdown outlasts compose's default ten seconds, and neo4j-admin refuses the
+# store a killed server leaves behind, so the stop waits longer.
+NEO_STOP = $(DC) stop --timeout 120 neo
 
-# START reports success even when the store it mounted is unusable, so prove the database
-# actually answers queries: a silently broken restore is worse than a failed one.
-NEO_START = { $(NEO_CYPHER) -d system 'START DATABASE neo4j WAIT' < /dev/null \
-	&& $(NEO_CYPHER) -d neo4j 'RETURN 1' < /dev/null > /dev/null; } \
+# Neo4j starts even when the store it mounted is unusable, so wait until the database answers
+# queries: a silently broken restore is worse than a failed one.
+NEO_START = { $(DC) start neo > /dev/null && for attempt in $$(seq 1 60); do \
+		$(NEO_CYPHER) -d neo4j 'RETURN 1' < /dev/null > /dev/null 2>&1 && break; \
+		[ $$attempt -lt 60 ] && sleep 2; \
+	done; } \
 	|| { echo "The neo4j database did not come back online." >&2; exit 1; }
 
 .PHONY: perf-generate perf-import perf-snapshot perf-restore

@@ -86,9 +86,6 @@ jobs:
       - name: Install MediaWiki
         run: make install-db
 
-      - name: Load Neo4j users
-        run: make load-neo4j-users
-
       - run: make smoke-test
 
       - name: Login to GitHub Container Registry

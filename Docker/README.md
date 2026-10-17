@@ -54,10 +54,10 @@ Set them in the environment rather than in `Docker/.env`: a value there becomes 
 assignment, which a later `MARIADB_HOST=... make dev` cannot override.
 
 An address outside this stack reaches the wiki, `make install-db` and the first-run seed, but not
-the rest of the tooling. `make load-neo4j-users` and the perf snapshot targets still act on the
-bundled `neo` and `db`, `make remove` still wipes only this stack's volumes, and the `mediawiki`
-service still waits on both bundled services being healthy. An external server also has to already
-carry the database, user and Neo4j accounts the bundled services create for themselves.
+the rest of the tooling. The perf snapshot targets still act on the bundled `neo` and `db`,
+`make remove` still wipes only this stack's volumes, and the `mediawiki` service still waits on both
+bundled services being healthy. An external server also has to already carry the database, user and
+Neo4j account the bundled services create for themselves.
 
 `make reset` is the sharp edge: it wipes the bundled volumes and then reinstalls and reimports the
 demo data over whatever `MARIADB_HOST` and `NEO4J_HOST` point at, so against a populated external

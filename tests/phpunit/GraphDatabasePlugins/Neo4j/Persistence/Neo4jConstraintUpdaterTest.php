@@ -30,21 +30,19 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 		$updater->createDefaultConstraints();
 
 		$result = $this->readGraph(
-			'SHOW CONSTRAINTS YIELD name, type, entityType, labelsOrTypes, properties ORDER BY name'
+			'SHOW CONSTRAINTS YIELD name, entityType, labelsOrTypes, properties ORDER BY name'
 		);
 
 		$this->assertSame(
 			[
 				[
 					'name' => 'Page wiki_id id',
-					'type' => 'NODE_PROPERTY_UNIQUENESS',
 					'entityType' => 'NODE',
 					'labelsOrTypes' => [ 'Page' ],
 					'properties' => [ 'wiki_id', 'id' ],
 				],
 				[
 					'name' => 'Subject id',
-					'type' => 'NODE_PROPERTY_UNIQUENESS',
 					'entityType' => 'NODE',
 					'labelsOrTypes' => [ 'Subject' ],
 					'properties' => [ 'id' ],
