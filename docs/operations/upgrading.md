@@ -70,14 +70,6 @@ length of the run.
 If your Subjects predate the optional Subject label, run
 [clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before that rebuild.
 
-## Select values take option ids only, October 2026
-
-The Subject write endpoints take `select` values as option ids only. A label, or any other string that is not an
-option id, is now left as sent and reported as [`invalid-option`](../api/validation-codes.md#invalid-option) rather than
-mapped or refused, and a `{ "id", "label" }` object is refused with `400`. Scripts that write `select` values need to
-send ids from the property's [`options`](../api/schema-format.md#select-select) and check the response's `violations`
-for `invalid-option`.
-
 ## New database tables, October 2026
 
 Special:Subjects, relation-target suggestions, "Referenced by" and the Subject counts now read two new tables, and
