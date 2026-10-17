@@ -169,13 +169,15 @@ describe( 'NumberInput', () => {
 			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-field-invalid-number' );
 		} );
 
-		it( 'keeps the value it was given while the text cannot be parsed', async () => {
+		// Anything the field reports counts as an edit, which enables the save, so a
+		// field keeping its value reports nothing.
+		it( 'reports nothing while the text cannot be parsed', async () => {
 			const wrapper = newWrapper( { modelValue: newNumberValue( 7 ) } );
 			const field = bindNativeNumberField( wrapper );
 
 			await field.reportBadInput();
 
-			expect( boundValue( wrapper ) ).toEqual( newNumberValue( 7 ) );
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
 		} );
 
 		it( 'empties the value when the user clears the text it could not parse', async () => {
