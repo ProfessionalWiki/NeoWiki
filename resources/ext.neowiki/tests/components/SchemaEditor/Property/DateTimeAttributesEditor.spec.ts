@@ -220,29 +220,37 @@ describe( 'DateTimeAttributesEditor', () => {
 		} );
 	} );
 
+	// Anything the editor reports counts as an edit, which enables the save, so a field
+	// keeping its value reports nothing.
 	describe( 'Clearing a date and time part by part', () => {
-		const property = newDateTimeProperty( { minimum: '2020-01-01T00:00:00Z', maximum: '2030-12-31T23:59:59Z' } );
-
 		const bounds = [
-			[ 'minimum', '.datetime-attributes__minimum' ],
-			[ 'maximum', '.datetime-attributes__maximum' ],
+			[ 'minimum', '.datetime-attributes__minimum', newDateTimeProperty( { minimum: '2020-01-01T00:00:00Z' } ) ],
+			[ 'maximum', '.datetime-attributes__maximum', newDateTimeProperty( { maximum: '2030-12-31T23:59:59Z' } ) ],
 		] as const;
 
-		it.each( bounds )( 'keeps the %s it was given while some parts remain', async ( attribute, field ) => {
+		it.each( bounds )( 'reports nothing for the %s while some parts remain', async ( _, field, property ) => {
 			const wrapper = newWrapper( { property } );
 
 			await reportPartlyClearedDate( wrapper.find( `${ field } input` ) );
 
-			expect( editedProperty<DateTimeProperty>( wrapper )[ attribute ] ).toBe( property[ attribute ] );
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 
-		it.each( bounds )( 'drops the %s once every part is cleared', async ( attribute, field ) => {
+		it.each( bounds )( 'drops the %s once every part is cleared', async ( attribute, field, property ) => {
 			const wrapper = newWrapper( { property } );
 			await reportPartlyClearedDate( wrapper.find( `${ field } input` ) );
 
 			await clearRemainingDateParts( wrapper.find( `${ field } input` ) );
 
 			expect( editedProperty<DateTimeProperty>( wrapper )[ attribute ] ).toBeUndefined();
+		} );
+
+		it.each( bounds )( 'reports nothing for a key released in the %s field while it holds a date and time', async ( _, field, property ) => {
+			const wrapper = newWrapper( { property } );
+
+			await wrapper.find( `${ field } input` ).trigger( 'keyup', { key: 'Tab' } );
+
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 	} );
 } );

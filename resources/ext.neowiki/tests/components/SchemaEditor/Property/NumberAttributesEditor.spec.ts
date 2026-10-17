@@ -5,7 +5,7 @@ import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAtt
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newNumberProperty, NumberProperty } from '@/domain/propertyTypes/Number';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { createTestWrapper, editedProperty, FieldProps, reportUnparseableNumber, setupMwMock } from '../../../VueTestHelpers.ts';
+import { createTestWrapper, FieldProps, reportUnparseableNumber, setupMwMock } from '../../../VueTestHelpers.ts';
 
 describe( 'NumberAttributesEditor', () => {
 	beforeEach( () => {
@@ -272,6 +272,8 @@ describe( 'NumberAttributesEditor', () => {
 		} );
 	} );
 
+	// Anything the editor reports counts as an edit, which enables the save, so a field
+	// keeping its value reports nothing.
 	describe( 'Text that cannot be parsed', () => {
 		const property = newNumberProperty( { minimum: 1, maximum: 100, precision: 2 } );
 
@@ -279,12 +281,12 @@ describe( 'NumberAttributesEditor', () => {
 			[ 'minimum', '.number-attributes__minimum' ],
 			[ 'maximum', '.number-attributes__maximum' ],
 			[ 'precision', '.number-attributes__precision' ],
-		] as const )( 'keeps the %s it was given', async ( attribute, field ) => {
+		] as const )( 'reports nothing for the %s while its text cannot be parsed', async ( _, field ) => {
 			const wrapper = newWrapper( { property } );
 
 			await reportUnparseableNumber( wrapper.find( `${ field } input` ) );
 
-			expect( editedProperty<NumberProperty>( wrapper )[ attribute ] ).toBe( property[ attribute ] );
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 	} );
 } );

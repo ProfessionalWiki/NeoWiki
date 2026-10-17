@@ -214,23 +214,26 @@ describe( 'DateInput', () => {
 		} );
 	} );
 
+	// Anything a field reports counts as an edit, which enables the save, so a field
+	// keeping its value reports nothing.
 	describe( 'Clearing the date part by part', () => {
 		const date = newStringValue( '2025-06-15' );
 
-		it( 'keeps the value it was given while some parts remain', async () => {
+		it( 'reports nothing while some parts remain', async () => {
 			const wrapper = newWrapper( { modelValue: date } );
 
 			await reportPartlyClearedDate( wrapper.find( 'input' ) );
 
-			expect( boundValue( wrapper ) ).toEqual( date );
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
 		} );
 
-		it( 'returns the value it was given as the current value while some parts remain', async () => {
+		it( 'returns the last date it could read as the current value while some parts remain', async () => {
 			const wrapper = newWrapper( { modelValue: date } );
+			await wrapper.find( 'input' ).setValue( '2030-03-20' );
 
 			await reportPartlyClearedDate( wrapper.find( 'input' ) );
 
-			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( date );
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( newStringValue( '2030-03-20' ) );
 		} );
 
 		it( 'empties the value once every part is cleared', async () => {
@@ -242,7 +245,14 @@ describe( 'DateInput', () => {
 			expect( boundValue( wrapper ) ).toBeUndefined();
 		} );
 
-		// Any value it reported would count as an edit, enabling the save over nothing.
+		it( 'reports nothing for a key released in a field that holds a date', async () => {
+			const wrapper = newWrapper( { modelValue: date } );
+
+			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Tab' } );
+
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
+		} );
+
 		it( 'reports nothing for a key released in a field that held no date', async () => {
 			const wrapper = newWrapper( { modelValue: undefined } );
 

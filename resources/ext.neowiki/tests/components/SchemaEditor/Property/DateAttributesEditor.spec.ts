@@ -210,29 +210,37 @@ describe( 'DateAttributesEditor', () => {
 		} );
 	} );
 
+	// Anything the editor reports counts as an edit, which enables the save, so a field
+	// keeping its value reports nothing.
 	describe( 'Clearing a date part by part', () => {
-		const property = newDateProperty( { minimum: '2020-01-01', maximum: '2030-12-31' } );
-
 		const bounds = [
-			[ 'minimum', '.date-attributes__minimum' ],
-			[ 'maximum', '.date-attributes__maximum' ],
+			[ 'minimum', '.date-attributes__minimum', newDateProperty( { minimum: '2020-01-01' } ) ],
+			[ 'maximum', '.date-attributes__maximum', newDateProperty( { maximum: '2030-12-31' } ) ],
 		] as const;
 
-		it.each( bounds )( 'keeps the %s it was given while some parts remain', async ( attribute, field ) => {
+		it.each( bounds )( 'reports nothing for the %s while some parts remain', async ( _, field, property ) => {
 			const wrapper = newWrapper( { property } );
 
 			await reportPartlyClearedDate( wrapper.find( `${ field } input` ) );
 
-			expect( editedProperty<DateProperty>( wrapper )[ attribute ] ).toBe( property[ attribute ] );
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 
-		it.each( bounds )( 'drops the %s once every part is cleared', async ( attribute, field ) => {
+		it.each( bounds )( 'drops the %s once every part is cleared', async ( attribute, field, property ) => {
 			const wrapper = newWrapper( { property } );
 			await reportPartlyClearedDate( wrapper.find( `${ field } input` ) );
 
 			await clearRemainingDateParts( wrapper.find( `${ field } input` ) );
 
 			expect( editedProperty<DateProperty>( wrapper )[ attribute ] ).toBeUndefined();
+		} );
+
+		it.each( bounds )( 'reports nothing for a key released in the %s field while it holds a date', async ( _, field, property ) => {
+			const wrapper = newWrapper( { property } );
+
+			await wrapper.find( `${ field } input` ).trigger( 'keyup', { key: 'Tab' } );
+
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 	} );
 } );

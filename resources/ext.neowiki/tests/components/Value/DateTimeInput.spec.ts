@@ -239,23 +239,28 @@ describe( 'DateTimeInput', () => {
 		} );
 	} );
 
+	// Anything a field reports counts as an edit, which enables the save, so a field
+	// keeping its value reports nothing.
 	describe( 'Clearing the date and time part by part', () => {
 		const dateTime = newStringValue( '2025-06-15T14:00:00.000Z' );
 
-		it( 'keeps the value it was given while some parts remain', async () => {
+		it( 'reports nothing while some parts remain', async () => {
 			const wrapper = newWrapper( { modelValue: dateTime } );
 
 			await reportPartlyClearedDate( wrapper.find( 'input' ) );
 
-			expect( boundValue( wrapper ) ).toEqual( dateTime );
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
 		} );
 
-		it( 'returns the value it was given as the current value while some parts remain', async () => {
+		it( 'returns the last date and time it could read as the current value while some parts remain', async () => {
 			const wrapper = newWrapper( { modelValue: dateTime } );
+			const local = '2030-03-20T09:15';
+			await wrapper.find( 'input' ).setValue( local );
 
 			await reportPartlyClearedDate( wrapper.find( 'input' ) );
 
-			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( dateTime );
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() )
+				.toEqual( newStringValue( new Date( local ).toISOString() ) );
 		} );
 
 		it( 'empties the value once every part is cleared', async () => {
@@ -265,6 +270,14 @@ describe( 'DateTimeInput', () => {
 			await clearRemainingDateParts( wrapper.find( 'input' ) );
 
 			expect( boundValue( wrapper ) ).toBeUndefined();
+		} );
+
+		it( 'reports nothing for a key released in a field that holds a date and time', async () => {
+			const wrapper = newWrapper( { modelValue: dateTime } );
+
+			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Tab' } );
+
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
 		} );
 	} );
 } );
