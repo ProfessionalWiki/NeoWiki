@@ -345,7 +345,7 @@ _first-run-seed:
 	fi
 	@# TS install/build are handled by the node sidecar on startup (npm install && npm run build:watch).
 
-# Demo variant of the seed: no dev-only steps (test_neo, composer install). Uses
+# Demo variant of the seed: no dev-only steps (composer install). Uses
 # $(DC) since the demo stack has no dev overlay. Idempotent like _first-run-seed.
 .PHONY: _first-run-seed-demo
 _first-run-seed-demo:
@@ -597,29 +597,25 @@ PERF_NEO := $(PERF_SNAPSHOT_DIR)/neo4j.dump
 
 # `neo4j-admin database dump` and `load` refuse to touch a store the server has open, and
 # Community Edition cannot take its database offline on its own, so both stop the neo
-# container and run neo4j-admin in a one-off container on its volume.
-NEO_CYPHER := $(DC) exec -T neo cypher-shell -u $(NEO4J_USERNAME) -p $(NEO4J_PASSWORD)
-
-# The one-off container would start as root, while the server runs as neo4j. Loading as root
-# leaves a store the server cannot write, which then fails to start, so neo4j-admin runs as the
-# owning user.
+# container and run neo4j-admin in a one-off container on its volume. That container would
+# start as root, while the server runs as neo4j. Loading as root leaves a store the server
+# cannot write, which then fails to start, so neo4j-admin runs as the owning user.
 NEO_ADMIN := $(DC) run --rm --no-deps -T --user neo4j neo neo4j-admin
+
+NEO_PROBE := $(DC) exec -T neo cypher-shell -u $(NEO4J_USERNAME) -p $(NEO4J_PASSWORD) \
+	-d neo4j 'RETURN 1' < /dev/null > /dev/null
 
 # Shell fragments rather than targets of their own: make runs any recipe line that mentions
 # $(MAKE) even under --dry-run, so recursing into a stop/start target would let
 # `make -n perf-snapshot` truncate the snapshot and `make -n perf-restore` overwrite the live
 # store for real.
-#
-# A large store's shutdown outlasts compose's default ten seconds, and neo4j-admin refuses the
-# store a killed server leaves behind, so the stop waits longer.
-NEO_STOP = $(DC) stop --timeout 120 neo
+NEO_STOP = $(DC) stop neo
 
 # Neo4j starts even when the store it mounted is unusable, so wait until the database answers
 # queries: a silently broken restore is worse than a failed one. The last probe keeps its error
 # output, which says why.
-NEO_START = { $(DC) start neo > /dev/null && { for attempt in $$(seq 1 60); do \
-		$(NEO_CYPHER) -d neo4j 'RETURN 1' < /dev/null > /dev/null 2>&1 && break; sleep 2; done; \
-		$(NEO_CYPHER) -d neo4j 'RETURN 1' < /dev/null > /dev/null; }; } \
+NEO_START = $(DC) start neo > /dev/null \
+	&& { for attempt in $$(seq 1 60); do $(NEO_PROBE) 2> /dev/null && break; sleep 2; done; $(NEO_PROBE); } \
 	|| { echo "The neo4j database did not come back online." >&2; exit 1; }
 
 .PHONY: perf-generate perf-import perf-snapshot perf-restore

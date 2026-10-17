@@ -82,6 +82,9 @@ services:
     # covers that line.
     image: neo4j:5.26-community
     restart: unless-stopped
+    # A large store's shutdown outlasts compose's default ten seconds, and `neo4j-admin database dump`
+    # refuses the store a killed server leaves behind.
+    stop_grace_period: 120s
     volumes:
       - neo4j-data:/data
     environment:
