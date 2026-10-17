@@ -235,7 +235,7 @@ if ( $mwIsDev ) {
 	wfLoadExtension( 'RedHerb', "$IP/extensions/NeoWiki/tests/RedHerb/extension.json" );
 }
 
-$wgNeoWikiEnableDevelopmentUI = true;
+$wgNeoWikiEnableDevelopmentUI = $mwIsDev;
 
 $neo4jScheme = getenv( 'NEO4J_SCHEME' ) ?: 'bolt';
 $neo4jAddress = ( getenv( 'NEO4J_HOST' ) ?: 'neo' ) . ':' . ( getenv( 'NEO4J_PORT' ) ?: '7687' );
