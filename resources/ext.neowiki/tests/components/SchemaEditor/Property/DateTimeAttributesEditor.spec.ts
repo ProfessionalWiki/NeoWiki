@@ -220,8 +220,7 @@ describe( 'DateTimeAttributesEditor', () => {
 		} );
 	} );
 
-	// Anything the editor reports counts as an edit, which enables the save, so a field
-	// keeping its value reports nothing.
+	// Any report counts as an edit, which enables the save.
 	describe( 'Clearing a date and time part by part', () => {
 		const bounds = [
 			[ 'minimum', '.datetime-attributes__minimum', newDateTimeProperty( { minimum: '2020-01-01T00:00:00Z' } ) ],

@@ -210,8 +210,7 @@ describe( 'DateAttributesEditor', () => {
 		} );
 	} );
 
-	// Anything the editor reports counts as an edit, which enables the save, so a field
-	// keeping its value reports nothing.
+	// Any report counts as an edit, which enables the save.
 	describe( 'Clearing a date part by part', () => {
 		const bounds = [
 			[ 'minimum', '.date-attributes__minimum', newDateProperty( { minimum: '2020-01-01' } ) ],
