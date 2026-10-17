@@ -266,7 +266,7 @@ describe( 'DateTimeInput', () => {
 			const wrapper = newWrapper( { modelValue: dateTime } );
 			await reportPartlyClearedDate( wrapper.find( 'input' ) );
 
-			await clearRemainingDateParts( wrapper.find( 'input' ) );
+			await clearRemainingDateParts( wrapper.find( 'input' ), 'Backspace' );
 
 			expect( boundValue( wrapper ) ).toBeUndefined();
 		} );
@@ -275,7 +275,7 @@ describe( 'DateTimeInput', () => {
 			const wrapper = newWrapper( { modelValue: dateTime } );
 			await reportPartlyClearedDate( wrapper.find( 'input' ) );
 
-			await clearRemainingDateParts( wrapper.find( 'input' ) );
+			await clearRemainingDateParts( wrapper.find( 'input' ), 'Backspace' );
 
 			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
 		} );
@@ -295,6 +295,7 @@ describe( 'DateTimeInput', () => {
 				serverViolations: [
 					{ propertyName: 'Foo', code: 'min-value', args: [ '2030-01-01T00:00:00Z' ], severity: 'error', valuePartIndex: null },
 				],
+				// Drops the violation as the Subject editor does, which re-renders the field.
 				'onClear-server-violation': () => wrapper.setProps( { serverViolations: [] } ),
 			} );
 

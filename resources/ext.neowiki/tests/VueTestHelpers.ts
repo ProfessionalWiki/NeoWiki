@@ -159,12 +159,12 @@ export async function reportPartlyClearedDate( input: DOMWrapper<Element> ): Pro
 }
 
 /**
- * Clears the parts a partly cleared date input still shows, which leaves it empty without
- * validity.badInput. Browsers fire no input event for this, only the release of the key.
+ * Clears the parts a partly cleared date input still shows with the given key, which leaves it
+ * empty without validity.badInput. Browsers fire no input event for this, only the key's release.
  */
-export async function clearRemainingDateParts( input: DOMWrapper<Element> ): Promise<void> {
+export async function clearRemainingDateParts( input: DOMWrapper<Element>, key: 'Backspace' | 'Delete' ): Promise<void> {
 	stubBadInput( input, false );
-	await input.trigger( 'keyup', { key: 'Backspace' } );
+	await input.trigger( 'keyup', { key } );
 }
 
 function stubBadInput( input: DOMWrapper<Element>, badInput: boolean ): void {

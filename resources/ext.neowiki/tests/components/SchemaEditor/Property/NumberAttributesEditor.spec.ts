@@ -295,7 +295,7 @@ describe( 'NumberAttributesEditor', () => {
 			await wrapper.find( '.number-attributes__maximum input' ).setValue( '3' );
 
 			expect( getMaximumFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 
 		it( 'refuses a minimum above the maximum it kept', async () => {
@@ -305,7 +305,7 @@ describe( 'NumberAttributesEditor', () => {
 			await wrapper.find( '.number-attributes__minimum input' ).setValue( '8' );
 
 			expect( getMinimumFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 	} );
 } );

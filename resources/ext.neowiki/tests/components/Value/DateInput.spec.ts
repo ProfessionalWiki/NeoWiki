@@ -235,11 +235,11 @@ describe( 'DateInput', () => {
 			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( newStringValue( '2030-03-20' ) );
 		} );
 
-		it( 'empties the value once every part is cleared', async () => {
+		it.each( [ 'Backspace', 'Delete' ] as const )( 'empties the value once %s clears every part', async ( key ) => {
 			const wrapper = newWrapper( { modelValue: date } );
 			await reportPartlyClearedDate( wrapper.find( 'input' ) );
 
-			await clearRemainingDateParts( wrapper.find( 'input' ) );
+			await clearRemainingDateParts( wrapper.find( 'input' ), key );
 
 			expect( boundValue( wrapper ) ).toBeUndefined();
 		} );
@@ -248,7 +248,7 @@ describe( 'DateInput', () => {
 			const wrapper = newWrapper( { modelValue: date } );
 			await reportPartlyClearedDate( wrapper.find( 'input' ) );
 
-			await clearRemainingDateParts( wrapper.find( 'input' ) );
+			await clearRemainingDateParts( wrapper.find( 'input' ), 'Backspace' );
 
 			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
 		} );
@@ -262,7 +262,7 @@ describe( 'DateInput', () => {
 		} );
 
 		// The browser shows nothing for a date it cannot display, such as one in the year 0.
-		it( 'keeps a date the field cannot show when another key is released in it', async () => {
+		it( 'keeps a date the field cannot show when a key other than Backspace or Delete is released in it', async () => {
 			const wrapper = newWrapper( { modelValue: newStringValue( '0000-01-01' ) } );
 
 			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Tab' } );
@@ -285,6 +285,7 @@ describe( 'DateInput', () => {
 				serverViolations: [
 					{ propertyName: 'Foo', code: 'min-value', args: [ '2030-01-01' ], severity: 'error', valuePartIndex: null },
 				],
+				// Drops the violation as the Subject editor does, which re-renders the field.
 				'onClear-server-violation': () => wrapper.setProps( { serverViolations: [] } ),
 			} );
 

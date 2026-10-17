@@ -312,7 +312,7 @@ describe( 'TextAttributesEditor', () => {
 			await wrapper.find( '.text-attributes__max-length input' ).setValue( '3' );
 
 			expect( getMaxLengthFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 
 		it( 'refuses a minimum length above the maximum length it kept', async () => {
@@ -322,7 +322,7 @@ describe( 'TextAttributesEditor', () => {
 			await wrapper.find( '.text-attributes__min-length input' ).setValue( '8' );
 
 			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 	} );
 } );
