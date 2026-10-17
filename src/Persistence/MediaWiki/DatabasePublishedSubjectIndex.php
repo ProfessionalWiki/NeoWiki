@@ -7,9 +7,11 @@ namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use ProfessionalWiki\NeoWiki\Persistence\PublishedSubjectIndex;
 use stdClass;
+use TypeError;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
@@ -118,12 +120,21 @@ class DatabasePublishedSubjectIndex implements PublishedSubjectIndex {
 				displayNameKey: $displayName === null ? null : CaseInsensitiveKey::of( $displayName ),
 				pageKey: $pageKey,
 				isMain: $subjects->isMainSubject( $subject->id ),
-				isDependent: $this->dependentSubjectRules->isDependent( $subject ),
+				isDependent: $this->isDependent( $subject ),
 				edited: $publishedTimestamp,
 			);
 		}
 
 		return $rows;
+	}
+
+	private function isDependent( Subject $subject ): bool {
+		try {
+			return $this->dependentSubjectRules->isDependent( $subject );
+		} catch ( TypeError ) {
+			// An imported Schema page with wrongly typed JSON throws this; anything else must still fail the write.
+			return false;
+		}
 	}
 
 	/**

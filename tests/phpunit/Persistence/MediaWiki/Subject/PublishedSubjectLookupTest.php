@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
+use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
@@ -82,6 +83,16 @@ class PublishedSubjectLookupTest extends NeoWikiIntegrationTestCase {
 			->getSubjects( new SubjectIdList( [ $subject->id ] ) );
 
 		$this->assertTrue( $subjects->isEmpty() );
+	}
+
+	public function testYieldsNoPageSubjectsForAPageWhosePublishedSubjectDataDoesNotDeserialize(): void {
+		$revision = $this->writeSubjectSlot( 'PublishedTestBroken', TestSubject::jsonThatDoesNotDeserialize( 'sPubTest1111116' ) );
+		$this->assertNotNull( $revision );
+
+		$pageSubjects = $this->newLookup( new NullRevisionPolicy(), new InMemoryPageIdentifiersLookup() )
+			->getPageSubjects( new PageId( $revision->getPageId() ) );
+
+		$this->assertTrue( $pageSubjects->isEmpty() );
 	}
 
 	public function testEmptyIdListReadsNoRevision(): void {

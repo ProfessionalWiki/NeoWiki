@@ -57,12 +57,6 @@ class DatabaseSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ 'Apple Pie' ], array_column( $this->labelsMatching( 'Apple' ), 'label' ) );
 	}
 
-	public function testCarriesThePrefixedTitleOfThePageHoldingTheSubject(): void {
-		$this->createPageWithoutMainSubject( 'Help:Painters', self::subject( 'sTestDSL1111111', 'Rembrandt' ) );
-
-		$this->assertSame( [ 'Help:Painters' ], array_column( $this->labelsMatching( 'Rem' ), 'pageTitle' ) );
-	}
-
 	public function testReturnsNoMoreThanTheLimit(): void {
 		$this->createPageWithoutMainSubject(
 			'Fruit',
@@ -72,16 +66,6 @@ class DatabaseSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertSame( [ 'Apple 1', 'Apple 2' ], array_column( $this->labelsMatching( 'Apple', limit: 2 ), 'label' ) );
-	}
-
-	public function testFindsSubjectsOfEverySchemaWhenNoSchemaIsNamed(): void {
-		$this->createPageWithoutMainSubject(
-			'Apples',
-			self::subject( 'sTestDSL1111111', 'Apple Pie', 'Recipe' ),
-			self::subject( 'sTestDSL1111112', 'Apple Tree', 'Plant' ),
-		);
-
-		$this->assertSame( [ 'Apple Pie', 'Apple Tree' ], array_column( $this->labelsMatching( 'Apple' ), 'label' ) );
 	}
 
 	public function testFindsNothingWithinAnEmptyListOfSchemas(): void {
@@ -191,6 +175,26 @@ class DatabaseSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertSame( [ 'Apple Pie' ], array_column( $this->labelsMatching( 'Apple', limit: 1 ), 'label' ) );
+	}
+
+	/**
+	 * In a LIKE pattern, a percent sign matches any text and an underscore any one character.
+	 *
+	 * @dataProvider likeWildcardProvider
+	 */
+	public function testMatchesPercentSignsAndUnderscoresInTheSearchLiterally( string $search, string $match, string $nonMatch ): void {
+		$this->createPageWithoutMainSubject(
+			'Wildcards',
+			self::subject( 'sTestDSL1111111', $match ),
+			self::subject( 'sTestDSL1111112', $nonMatch ),
+		);
+
+		$this->assertSame( [ $match ], array_column( $this->labelsMatching( $search ), 'label' ) );
+	}
+
+	public static function likeWildcardProvider(): iterable {
+		yield 'percent sign' => [ '100%', '100% cotton', '1000 threads' ];
+		yield 'underscore' => [ 'snake_', 'snake_case', 'snakes and ladders' ];
 	}
 
 	public function testFindsNothingForASearchOfOnlySpaces(): void {

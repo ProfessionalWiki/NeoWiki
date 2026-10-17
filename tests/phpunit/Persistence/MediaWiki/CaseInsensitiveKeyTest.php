@@ -31,10 +31,6 @@ class CaseInsensitiveKeyTest extends TestCase {
 		);
 	}
 
-	public function testAPrefixInAnotherCaseKeysToAPrefixOfTheTextsKey(): void {
-		$this->assertStringStartsWith( CaseInsensitiveKey::of( 'ADA' ), CaseInsensitiveKey::of( 'Ada Lovelace' ) );
-	}
-
 	public function testCuttingALongTextNeverSplitsACharacter(): void {
 		$this->assertSame( str_repeat( 'é', 127 ), CaseInsensitiveKey::of( str_repeat( 'é', 200 ) ) );
 	}

@@ -4,18 +4,15 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
-use InvalidArgumentException;
+use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
-use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\TitleFormatter;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectsToPublish;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\UnreadableSubjectsException;
 use Psr\Log\LoggerInterface;
-use TypeError;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\IDBAccessObject;
 
@@ -112,13 +109,18 @@ class DatabasePublishedSubjectIndexRebuilder {
 			return;
 		}
 
-		$subjects = $this->publishedSubjects( $published );
-
-		if ( $subjects === null ) {
+		try {
+			$subjects = SubjectsToPublish::of( $published );
+		} catch ( UnreadableSubjectsException | RevisionAccessException $exception ) {
 			$this->logger->warning(
-				'NeoWiki left page {page} as it was in the published Subject index: its published revision '
-				. '{revision} holds Subject data that cannot be read.',
-				[ 'page' => $pageId, 'revision' => $published->getId() ]
+				'NeoWiki left page {page} as it was in the published Subject index: its published revision {revision} '
+				. 'cannot be read. {message}',
+				[
+					'page' => $pageId,
+					'revision' => $published->getId(),
+					'message' => $exception->getMessage(),
+					'exception' => $exception,
+				]
 			);
 			return;
 		}
@@ -129,28 +131,6 @@ class DatabasePublishedSubjectIndexRebuilder {
 			$subjects,
 			(string)$published->getTimestamp()
 		);
-	}
-
-	/**
-	 * Null when the page is left as it is, as the hook paths leave it: its slot holds content that is not
-	 * Subject data, or Subject data that does not deserialize.
-	 */
-	private function publishedSubjects( RevisionRecord $published ): ?PageSubjects {
-		if ( !$published->hasSlot( MediaWikiSubjectRepository::SLOT_NAME ) ) {
-			return PageSubjects::newEmpty();
-		}
-
-		$content = $published->getContent( MediaWikiSubjectRepository::SLOT_NAME, RevisionRecord::RAW );
-
-		if ( !$content instanceof SubjectContent ) {
-			return null;
-		}
-
-		try {
-			return $content->getPageSubjects();
-		} catch ( InvalidArgumentException | TypeError ) {
-			return null;
-		}
 	}
 
 }

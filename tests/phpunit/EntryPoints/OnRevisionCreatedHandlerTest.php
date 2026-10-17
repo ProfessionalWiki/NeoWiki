@@ -103,7 +103,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $this->graphStore->deletedPageIds );
 	}
 
-	public function testWritesNothingWhenThePagePropertiesCannotBeBuilt(): void {
+	public function testIndexesThePageButSkipsTheGraphWhenThePagePropertiesCannotBeBuilt(): void {
 		// Building the properties parses the page and runs every provider, which throws for a page
 		// MediaWiki can no longer handle or a provider that fails. On the hook path that must not abort
 		// the triggering edit, which is what the isolating source production wires there is for.
@@ -117,6 +117,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( PageRefreshOutcome::SkippedUnreadablePageProperties, $outcome );
 		$this->assertSame( [], $this->graphStore->savedPages );
+		$this->assertSame( [ $revision->getPageId() => [] ], $this->publishedSubjectIndex->indexedSubjectsByPageId );
 		$this->assertTrue( $this->logger->hasErrorRecords(), 'the skipped page should be logged' );
 	}
 
@@ -307,6 +308,24 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $this->graphStore->savedPages );
 		$this->assertSame( [], $this->graphStore->deletedPageIds );
 		$this->assertSame( [], $this->publishedSubjectIndex->indexedSubjectsByPageId );
+	}
+
+	public function testPublishesTheApprovedRevisionWhenTheGivenOneDoesNotHoldSubjectContent(): void {
+		$approved = $this->createPageWithSubjects( self::APPROVED_PAGE, TestSubject::build() );
+		$draft = $this->newRevisionWithSlotContent(
+			$approved->getPageId(),
+			new FallbackContent( '{"subjects":{}}', 'unregistered-model' )
+		);
+
+		$outcome = $this->newHandlerWithPolicy( FixedRevisionPolicy::publishing( $approved ) )
+			->onRevisionCreated( $draft );
+
+		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
+		$this->assertSame(
+			[ $approved->getPageId() => [ TestSubject::ZERO_GUID ] ],
+			$this->publishedSubjectIndex->indexedSubjectsByPageId
+		);
+		$this->assertSame( [], $this->subjectPageIndex->indexedSubjectsByPageId, 'the index should be left alone' );
 	}
 
 	/**

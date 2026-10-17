@@ -618,9 +618,13 @@ class NeoWikiExtension {
 	 * only the saver may read into output every reader is served from the parser cache.
 	 */
 	public function getSchemaResolverFor( Authority $authority ): SchemaResolver {
+		return $this->newSchemaResolver( $this->getSchemaLookupFor( $authority ) );
+	}
+
+	private function newSchemaResolver( SchemaLookup $localSchemaLookup ): SchemaResolver {
 		return new SchemaResolver(
 			$this->getSourceRegistry()->withLocalSource(
-				$this->newLocalSource( $this->getSubjectRepository(), $this->getSchemaLookupFor( $authority ) )
+				$this->newLocalSource( $this->getSubjectRepository(), $localSchemaLookup )
 			),
 			LoggerFactory::getInstance( 'NeoWiki' )
 		);
@@ -711,13 +715,8 @@ class NeoWikiExtension {
 	 * rows, and maintenance scripts, which write it too, run as an anonymous user.
 	 */
 	public function newUnrestrictedDependentSubjectRules(): DependentSubjectRules {
-		$schemaLookup = $this->newSchemaLookup( new UltimateAuthority( new UserIdentityValue( 0, 'NeoWiki' ) ) );
-
-		return new DependentSubjectRules( new SchemaResolver(
-			$this->getSourceRegistry()->withLocalSource(
-				$this->newLocalSource( $this->getSubjectRepository(), $schemaLookup )
-			),
-			LoggerFactory::getInstance( 'NeoWiki' )
+		return new DependentSubjectRules( $this->newSchemaResolver(
+			$this->newSchemaLookup( new UltimateAuthority( new UserIdentityValue( 0, 'NeoWiki' ) ) )
 		) );
 	}
 

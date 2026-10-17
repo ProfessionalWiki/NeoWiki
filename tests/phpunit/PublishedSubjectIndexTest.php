@@ -57,6 +57,7 @@ class PublishedSubjectIndexTest extends NeoWikiIntegrationTestCase {
 
 	private const string DEPENDENT_SUBJECTS_SCHEMA = '{"subjectsAreDependent":true,"propertyDefinitions":{}}';
 	private const string STANDALONE_SUBJECTS_SCHEMA = '{"propertyDefinitions":{}}';
+	private const string WRONGLY_TYPED_SCHEMA = '{"description":5,"propertyDefinitions":{}}';
 
 	public function testCreatingAPageIndexesEverySubjectItPublishes(): void {
 		$pageId = $this->savePage(
@@ -73,6 +74,17 @@ class PublishedSubjectIndexTest extends NeoWikiIntegrationTestCase {
 			],
 			$this->subjectRowsOf( $pageId )
 		);
+	}
+
+	/**
+	 * Without a Graph Store: its projection still fails on such a Schema.
+	 */
+	public function testASubjectOfASchemaWithWronglyTypedJsonIsIndexedAsStandalone(): void {
+		$this->importSchema( 'Birth', self::WRONGLY_TYPED_SCHEMA );
+
+		$pageId = $this->runWithoutGraphBackend( fn (): int => $this->saveAdaAndHerBirth() );
+
+		$this->assertSame( [ self::ADA => false, self::BIRTH => false ], $this->dependentFlagsOf( $pageId ) );
 	}
 
 	public function testASubjectWithASchemaOfAnotherSourceIsIndexedUnderTheSchemasName(): void {
@@ -254,6 +266,23 @@ class PublishedSubjectIndexTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame( [], $this->subjectRowsOf( $pageId ) );
 		$this->assertSame( [], $this->relationsOf( $pageId ) );
+	}
+
+	/**
+	 * One Subject id on two pages is what cross-wiki transfer leaves.
+	 */
+	public function testDeletingOneOfTwoPagesHoldingASubjectLeavesTheRowsOfTheOther(): void {
+		$copy = $this->createPageWithSubjects(
+			'Ada Lovelace (copy)',
+			$this->subject( self::ADA, statements: [ $this->relating( 'Mentor', self::BABBAGE ) ] )
+		);
+		$this->assertNotNull( $copy );
+		$this->savePage( $this->subject( self::ADA, statements: [ $this->relating( 'Mentor', self::BABBAGE ) ] ) );
+
+		$this->deletePageByName( self::PAGE );
+
+		$this->assertSame( [ self::ADA ], array_keys( $this->subjectRowsOf( $copy->getPageId() ) ) );
+		$this->assertSame( [ [ self::ADA, 'Mentor', self::BABBAGE ] ], $this->relationsOf( $copy->getPageId() ) );
 	}
 
 	public function testUndeletingAPageIndexesItsSubjectsAgain(): void {
