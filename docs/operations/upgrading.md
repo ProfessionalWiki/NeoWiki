@@ -74,13 +74,13 @@ If your Subjects predate the optional Subject label, run
 
 The Docker stack now runs Neo4j Community Edition, which cannot open graph data written by the Enterprise Edition that
 older stacks ran: their `neo` container keeps restarting, and `make upgrade` fails. Remove the Neo4j volume before
-upgrading. That is safe on any stack, since `make upgrade` rebuilds everything Neo4j holds from the wiki's pages. The
-volume is `neowiki-<checkout directory, lowercased>_neo4j-data`; for a checkout named `NeoWiki`:
+[upgrading](#upgrading-a-docker-install). That is safe on any stack, since `make upgrade` rebuilds everything Neo4j
+holds from the wiki's pages. The volume is `neowiki-<checkout directory, lowercased>_neo4j-data`; for a checkout named
+`NeoWiki`:
 
 ```sh
 make down
 docker volume rm neowiki-neowiki_neo4j-data
-make upgrade   # COMPOSE_PROFILES=server make upgrade for a stack on the server profile
 ```
 
 ## Docker wiki port bound to localhost, October 2026

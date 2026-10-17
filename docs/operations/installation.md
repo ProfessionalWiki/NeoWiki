@@ -33,9 +33,9 @@ This pulls the latest demo image, starts the stack, installs the wiki, and loads
 stops and removes the containers, and `make remove` also deletes the data volumes. To move a running stack to the
 latest NeoWiki, see [Upgrading](upgrading.md).
 
-For an empty wiki without the sample data, run `make up && make install-db` instead. That
-wiki has no `Mapping:EDM` page, so the stack's preconfigured EDM projection reports a failure on every save until you
-create that Mapping or remove its entry from `$wgNeoWikiSparqlStores`.
+For an empty wiki without the sample data, run `make up && make install-db` instead. That wiki has no `Mapping:EDM`
+page, so the stack's preconfigured EDM projection reports a failure on every save until you create that Mapping or
+remove its entry from `$wgNeoWikiSparqlStores`.
 
 Open `http://localhost:8484` and log in as `AdminName` with the password `AdminPassword`.
 
@@ -50,8 +50,8 @@ commands target the same stack:
 docker compose -p neowiki-neowiki --env-file Docker/.env -f Docker/docker-compose.yml --profile server up -d
 ```
 
-Then run `make install-db` and `make import-demo-data` against it. This is still an
-evaluation setup, not a production deployment.
+Then run `make install-db` and `make import-demo-data` against it. This is still an evaluation setup, not a production
+deployment.
 
 ## Method B: Add to an existing MediaWiki
 
