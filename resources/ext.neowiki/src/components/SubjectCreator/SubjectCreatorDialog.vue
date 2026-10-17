@@ -85,6 +85,7 @@
 
 			<CdxAccordion
 				v-else-if="pageChoice !== null && pageQuestionAsked"
+				ref="pageSectionRef"
 				class="ext-neowiki-subject-creator-page-section"
 				:open="pageSectionOpen"
 				@toggle="onPageSectionToggle"
@@ -229,6 +230,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { setPendingNotification } from '@/presentation/PendingNotification.ts';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
+import { isAccordionOpen } from '@/presentation/accordionOpen.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
 import { useEditNotices } from '@/composables/useEditNotices.ts';
@@ -320,6 +322,7 @@ const pageReadError = ref<string | null>( null );
 // Which page the Subject goes on is asked below the Subject itself. startPageQuestion decides
 // whether the section starts open.
 const pageSectionOpen = ref( false );
+const pageSectionRef = ref<InstanceType<typeof CdxAccordion> | null>( null );
 
 const pageFieldRef = ref<InstanceType<typeof CdxField> | null>( null );
 const pageTitleInputRef = ref<InstanceType<typeof PageTitleInput> | null>( null );
@@ -481,8 +484,8 @@ watch( pageError, ( error ) => {
 // The element opens and closes itself, so its own state is what the summary and the next open
 // follow, rather than the value last rendered onto it. Rendered open, it reports opening as a
 // click does, so only an opening from closed moves focus.
-function onPageSectionToggle( event: Event ): void {
-	const open = ( event.target as HTMLDetailsElement ).open;
+function onPageSectionToggle(): void {
+	const open = isAccordionOpen( pageSectionRef.value );
 	const openedFromClosed = open && !pageSectionOpen.value;
 
 	pageSectionOpen.value = open;

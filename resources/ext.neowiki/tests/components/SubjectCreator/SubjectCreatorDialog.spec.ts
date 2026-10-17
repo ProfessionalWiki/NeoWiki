@@ -8,7 +8,13 @@ import PagePicker from '@/components/common/PagePicker.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { createI18nMock, openDialogTitles, setupMwMock } from '../../VueTestHelpers.ts';
+import {
+	createI18nMock,
+	NewerCodexAccordionStub,
+	openDialogTitles,
+	setupMwMock,
+	toggleDetails,
+} from '../../VueTestHelpers.ts';
 import { newSchema, newSubject } from '@/TestHelpers.ts';
 import { PageSubjects } from '@/domain/PageSubjects.ts';
 import type { SubjectRepository } from '@/domain/SubjectRepository.ts';
@@ -918,9 +924,10 @@ describe( 'SubjectCreatorDialog', () => {
 		function mountDialog(
 			props: Record<string, any> = {},
 			options: Record<string, any> = {},
+			stubs: Record<string, any> = {},
 		): VueWrapper {
 			return mountComponent(
-				{ PagePicker: PagePickerStub, CdxField: CdxFieldWithMessagesStub, I18nSlot: I18nSlotStub },
+				{ PagePicker: PagePickerStub, CdxField: CdxFieldWithMessagesStub, I18nSlot: I18nSlotStub, ...stubs },
 				props,
 				options,
 			);
@@ -980,7 +987,6 @@ describe( 'SubjectCreatorDialog', () => {
 			return wrapper.find( '.ext-neowiki-subject-creator-page-section__choice' ).text();
 		}
 
-		/** Opened the way a user opens it: the browser toggles the element and reports it. */
 		async function openSection( wrapper: VueWrapper ): Promise<void> {
 			await toggleSection( wrapper, true );
 		}
@@ -990,9 +996,7 @@ describe( 'SubjectCreatorDialog', () => {
 		}
 
 		async function toggleSection( wrapper: VueWrapper, open: boolean ): Promise<void> {
-			const section = wrapper.find( '.ext-neowiki-subject-creator-page-section' );
-			( section.element as HTMLDetailsElement ).open = open;
-			await toggleReported();
+			await toggleDetails( wrapper.find( '.ext-neowiki-subject-creator-page-section' ).element, open );
 		}
 
 		/** A details element reports opening or closing a task later, rendered so or toggled alike. */
@@ -1659,8 +1663,8 @@ describe( 'SubjectCreatorDialog', () => {
 
 		describe( 'focus in the section', () => {
 			/** Attached to the document, since that is where what has focus is read from. */
-			function mountAttached( props: Record<string, any> = {} ): VueWrapper {
-				return mountDialog( props, { attachTo: document.body } );
+			function mountAttached( props: Record<string, any> = {}, stubs: Record<string, any> = {} ): VueWrapper {
+				return mountDialog( props, { attachTo: document.body }, stubs );
 			}
 
 			function pickerInput( wrapper: VueWrapper ): Element {
@@ -1671,8 +1675,11 @@ describe( 'SubjectCreatorDialog', () => {
 				return wrapper.find( `.cdx-radio-stub[data-value="${ value }"] input` ).element;
 			}
 
-			it( 'moves into the title of the page to create when the section is opened', async () => {
-				const wrapper = mountAttached( { hostPage: null } );
+			it.each( [
+				[ 'Codex 1.14', {} ],
+				[ 'Codex 1.23 and later', { CdxAccordion: NewerCodexAccordionStub } ],
+			] )( 'moves into the title of the page to create when the section is opened on %s', async ( _codex, stubs ) => {
+				const wrapper = mountAttached( { hostPage: null }, stubs );
 				await pickSchema( wrapper );
 				await closeSection( wrapper );
 

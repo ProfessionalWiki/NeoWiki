@@ -247,6 +247,40 @@ export const CdxDialogStub = {
 	emits: [ 'update:open' ],
 };
 
+/**
+ * CdxAccordion as Codex 1.23 and later run in a browser that sets no newState on a toggle event: every toggle
+ * reports closed. Codex 1.14, which the specs otherwise run, passes the event itself.
+ */
+export const NewerCodexAccordionStub = {
+	template: '<details class="cdx-accordion" @toggle="$emit( \'toggle\', false )">' +
+		'<summary><slot name="title" /></summary><slot /></details>',
+	emits: [ 'toggle' ],
+};
+
+/**
+ * Opens or closes a details element as a user does: the browser toggles it and reports the toggle a task
+ * later. Waiting for that report, then a task more, lets whatever the report set off finish.
+ */
+export async function toggleDetails( element: Element, open: boolean ): Promise<void> {
+	const details = element as HTMLDetailsElement;
+
+	// An element left as it was reports nothing, which would leave the wait below hanging.
+	if ( details.open === open ) {
+		throw new Error( `The details element is ${ open ? 'open' : 'closed' } already` );
+	}
+
+	const reported = new Promise( ( resolve ) => {
+		details.addEventListener( 'toggle', resolve, { once: true } );
+	} );
+
+	details.open = open;
+	await reported;
+
+	await new Promise( ( resolve ) => {
+		setTimeout( resolve, 0 );
+	} );
+}
+
 export interface ScrollStub {
 	/** Tells whoever observes the element that it is now in view, or out of it. */
 	setInView( element: Element, inView: boolean ): void;
