@@ -5,7 +5,7 @@ import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAtt
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newNumberProperty, NumberProperty } from '@/domain/propertyTypes/Number';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { createTestWrapper, editedProperty, FieldProps, reportUnparseableNumber, setupMwMock } from '../../../VueTestHelpers.ts';
+import { createTestWrapper, FieldProps, reportUnparseableNumber, setupMwMock } from '../../../VueTestHelpers.ts';
 
 describe( 'NumberAttributesEditor', () => {
 	beforeEach( () => {
@@ -295,7 +295,7 @@ describe( 'NumberAttributesEditor', () => {
 			await wrapper.find( '.number-attributes__maximum input' ).setValue( '3' );
 
 			expect( getMaximumFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( editedProperty<NumberProperty>( wrapper ).maximum ).toBeUndefined();
+			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
 		} );
 
 		it( 'refuses a minimum above the maximum it kept', async () => {
@@ -305,7 +305,7 @@ describe( 'NumberAttributesEditor', () => {
 			await wrapper.find( '.number-attributes__minimum input' ).setValue( '8' );
 
 			expect( getMinimumFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( editedProperty<NumberProperty>( wrapper ).minimum ).toBeUndefined();
+			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
 		} );
 	} );
 } );
