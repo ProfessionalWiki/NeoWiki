@@ -9,8 +9,10 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    # Loopback only, so other machines reach the wiki through Caddy's HTTPS (the server profile) rather
+    # than over plain HTTP. Do not leave that to a host firewall: Docker's published ports bypass ufw.
     ports:
-      - "${MW_SERVER_PORT:-8484}:80"
+      - "127.0.0.1:${MW_SERVER_PORT:-8484}:80"
     volumes:
       - mediawiki-images-data:/var/www/html/w/images
       # Uncomment to use custom LocalSettings.

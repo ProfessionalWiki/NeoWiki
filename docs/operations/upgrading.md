@@ -70,6 +70,12 @@ length of the run.
 If your Subjects predate the optional Subject label, run
 [clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before that rebuild.
 
+## Docker wiki port bound to localhost, October 2026
+
+The Docker stack's wiki port, 8484 by default, now only accepts connections from the machine the stack runs on. To
+reach the wiki from other machines, use the [`server` profile](installation.md#optional-share-the-demo-with-others),
+which serves it over HTTPS.
+
 ## New database tables, October 2026
 
 Special:Subjects, relation-target suggestions, "Referenced by" and the Subject counts now read two new tables, and
