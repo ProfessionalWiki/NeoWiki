@@ -130,6 +130,7 @@ import type { ReferencingSubject, ReferencingSubjects } from '@/domain/SubjectRe
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError.ts';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
 import { setPendingNotification } from '@/presentation/PendingNotification.ts';
+import { showLabelInPageHeading } from '@/presentation/pageHeading.ts';
 import { referencingSubjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
 import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
@@ -268,6 +269,11 @@ async function readSubject(): Promise<void> {
 
 	if ( read !== latestRead ) {
 		return;
+	}
+
+	// The server headed the page by what the first read finds, and a re-read can follow a rename.
+	if ( subject.value !== null ) {
+		showLabelInPageHeading( requested );
 	}
 
 	subject.value = requested;

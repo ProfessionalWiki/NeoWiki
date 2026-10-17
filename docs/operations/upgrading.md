@@ -124,7 +124,7 @@ graph fails or gives their Relations the wrong type.
 ## Removed setting, September 2026
 
 `$wgNeoWikiDereferenceSubjectsToHostingPage` is removed, and there is no alias. A browser dereferencing a Subject's
-concept URI lands where [Dereferencing subject IRIs](../api/rdf-export.md#dereferencing-subject-iris) says.
+concept URI is redirected as [Dereferencing subject IRIs](../api/rdf-export.md#dereferencing-subject-iris) describes.
 
 A `MediaWiki:NeoWiki` page still carrying `dereferenceSubjectsToHostingPage` keeps working, and the key does
 nothing; saving the page is refused until the key is removed.

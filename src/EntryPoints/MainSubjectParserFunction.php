@@ -44,13 +44,12 @@ class MainSubjectParserFunction {
 
 	/**
 	 * Null too where the page's Subjects cannot be read: the page then shows without its Main Subject
-	 * rather than failing, and the parse is not cached, since the failure may pass.
+	 * rather than failing.
 	 */
 	private function findMainSubjectId( Parser $parser ): ?string {
 		try {
 			return $this->pageSubjectsOf( $parser )?->getMainSubject()?->getId()->text;
 		} catch ( Throwable ) {
-			$parser->getOutput()->updateCacheExpiry( 0 );
 			return null;
 		}
 	}

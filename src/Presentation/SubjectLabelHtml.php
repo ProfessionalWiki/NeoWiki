@@ -10,9 +10,9 @@ use MessageLocalizer;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 /**
- * A Subject's label with its id beside it, where the label stands in for a title: the heading of a page
- * titled by a Subject id and of Special:Subject, and links to such a page in Recent changes and
- * watchlists. The id tells apart Subjects that share a label, and names one that has none.
+ * A Subject's label where it stands in for a title: the heading of a page titled by a Subject id and of
+ * Special:Subject, and links to such a page in Recent changes and watchlists. The id beside it tells apart
+ * Subjects that share a label, and names one that has none.
  */
 class SubjectLabelHtml {
 
@@ -33,6 +33,15 @@ class SubjectLabelHtml {
 	}
 
 	/**
+	 * The name alone, for a name someone chose. Carries the styles of the "No label defined" that a save can put in
+	 * its place.
+	 */
+	public static function headPageByName( OutputPage $out, string $name ): void {
+		$out->setPageTitle( self::label( $out, $name ) );
+		$out->addModuleStyles( [ self::STYLE_MODULE ] );
+	}
+
+	/**
 	 * Each part isolated, so a label in one script direction does not reorder the id beside it.
 	 */
 	public static function withId( MessageLocalizer $localizer, ?string $label, string $subjectId ): string {
@@ -43,7 +52,15 @@ class SubjectLabelHtml {
 		);
 	}
 
+	/**
+	 * Marked by a class, which the page heading keeps where it drops data-mw-* attributes, so that the page
+	 * can show a new label without a reload.
+	 */
 	private static function label( MessageLocalizer $localizer, ?string $label ): string {
+		return Html::rawElement( 'span', [ 'class' => 'ext-neowiki-subject-label' ], self::labelText( $localizer, $label ) );
+	}
+
+	private static function labelText( MessageLocalizer $localizer, ?string $label ): string {
 		if ( $label === null ) {
 			return Html::element(
 				'span',

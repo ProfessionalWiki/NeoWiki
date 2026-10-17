@@ -10,6 +10,7 @@ use MediaWiki\Message\Message;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectSlotReader;
@@ -70,9 +71,9 @@ class SpecialSubject extends SpecialPage {
 	}
 
 	/**
-	 * The page that shows the Subject in full as this one does, beside the page's own history and tabs:
-	 * on a subject-first wiki, a content page does so for its Main Subject while automatic rendering is
-	 * on. Null for any other Subject, and for a page the reader may not read.
+	 * The page that shows the Subject, beside the page's own history and tabs: on a subject-first wiki, a content
+	 * page shows its Main Subject in full, and the Dependent Subjects inside it, while automatic rendering is on.
+	 * Null for any other Subject, and for a page the reader may not read.
 	 */
 	private function pageShowingSubject( NeoWikiExtension $extension, SubjectId $subjectId ): ?Title {
 		if ( !$extension->isSubjectFirst() || !$extension->shouldAutoRenderMainSubject() ) {
@@ -85,7 +86,7 @@ class SpecialSubject extends SpecialPage {
 		if ( $title === null
 			|| $title->isRedirect()
 			|| !MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $title->getNamespace() )
-			|| !$this->isMainSubjectOfPublishedLatestRevision( $extension, $title, $subjectId )
+			|| !$this->publishedLatestRevisionShows( $extension, $title, $subjectId )
 		) {
 			return null;
 		}
@@ -97,12 +98,25 @@ class SpecialSubject extends SpecialPage {
 	 * Readers see the revision the wiki publishes, and a page shows its Main Subject in full only on its
 	 * latest revision.
 	 */
-	private function isMainSubjectOfPublishedLatestRevision( NeoWikiExtension $extension, Title $title, SubjectId $subjectId ): bool {
+	private function publishedLatestRevisionShows( NeoWikiExtension $extension, Title $title, SubjectId $subjectId ): bool {
 		$latest = MediaWikiServices::getInstance()->getRevisionLookup()->getRevisionByTitle( $title );
 
-		return $latest !== null
-			&& $extension->getRevisionPolicy()->publishedRevision( $latest )?->getId() === $latest->getId()
-			&& SubjectSlotReader::read( $latest )?->getPageSubjects()->isMainSubject( $subjectId ) === true;
+		if ( $latest === null || $extension->getRevisionPolicy()->publishedRevision( $latest )?->getId() !== $latest->getId() ) {
+			return false;
+		}
+
+		$pageSubjects = SubjectSlotReader::read( $latest )?->getPageSubjects();
+
+		return $pageSubjects !== null && self::isMainSubjectOrInsideIt( $extension, $pageSubjects, $subjectId );
+	}
+
+	private static function isMainSubjectOrInsideIt( NeoWikiExtension $extension, PageSubjects $pageSubjects, SubjectId $subjectId ): bool {
+		$mainSubject = $pageSubjects->getMainSubject();
+
+		return $mainSubject !== null && (
+			$mainSubject->id->equals( $subjectId )
+			|| $extension->newDependentSubjectRules()->dependentSubjectsReachedFrom( $mainSubject, $pageSubjects )->hasSubject( $subjectId )
+		);
 	}
 
 	/**
@@ -137,7 +151,7 @@ class SpecialSubject extends SpecialPage {
 			return;
 		}
 
-		$out->setPageTitleMsg( SubjectNameMessage::from( $this, $subjectId, $subject->displayName ) );
+		SubjectLabelHtml::headPageByName( $out, $subject->displayName );
 	}
 
 	public function getGroupName(): string {

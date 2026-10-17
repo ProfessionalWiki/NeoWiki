@@ -248,6 +248,17 @@ async function openEditorOn( control: ReturnType<VueWrapper['find']> ): Promise<
 	await flushPromises();
 }
 
+/**
+ * Heads the page as SubjectLabelHtml does where the heading shows the Subject's label.
+ */
+function headPageBy( label: string ): void {
+	document.body.innerHTML = `<h1 id="firstHeading"><span class="ext-neowiki-subject-label"><bdi>${ label }</bdi></span></h1>`;
+}
+
+function pageHeading(): string {
+	return document.querySelector( '#firstHeading' )!.textContent!;
+}
+
 async function confirmDelete( wrapper: VueWrapper, control: ReturnType<VueWrapper['find']> ): Promise<void> {
 	await control.trigger( 'click' );
 	// The click first settles where the deletion goes, which on a subject-first wiki is a read.
@@ -280,6 +291,7 @@ describe( 'SubjectPage', () => {
 		canCreateSubjectPageRef.value = false;
 		mayCreateSubjectPage = false;
 		vi.restoreAllMocks();
+		document.body.innerHTML = '';
 	} );
 
 	it( 'reads the Subject its subjectId names', async () => {
@@ -1104,6 +1116,19 @@ describe( 'SubjectPage', () => {
 			expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-special-subject-load-error', { type: 'error' } );
 		} );
 
+		it( 'shows the new label in the page heading once a save renames the Subject', async () => {
+			headPageBy( 'ACME Inc' );
+			const wrapper = await mountLoadedPage();
+			vi.spyOn( useSubjectStore(), 'updateSubject' ).mockResolvedValue( undefined );
+			await openEditorOn( wrapper.find( EDIT_CONTROL ) );
+			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [], subject( { id: SUBJECT_ID, label: 'ACME Corp' } ) ) );
+
+			await wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' )( freshSubject, [], 'a comment' );
+			await flushPromises();
+
+			expect( pageHeading() ).toBe( 'ACME Corp' );
+		} );
+
 		it( 'saves a Schema the editor changed', async () => {
 			const wrapper = await mountLoadedPage();
 			const saveSchema = vi.spyOn( useSchemaStore(), 'saveSchema' ).mockResolvedValue( undefined );
@@ -1286,6 +1311,7 @@ describe( 'SubjectPage', () => {
 		it( 'shows what the latest re-read found when an earlier one lands after it', async () => {
 			const other = subject( { id: OTHER_REFERENCED_ID, label: 'Rocket', schemaName: 'Product' } );
 			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [ referencedSubject, other ] ) );
+			headPageBy( 'ACME Inc' );
 			const wrapper = await mountLoadedPage();
 			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
 			let landFirstReRead!: ( value: SubjectWithReferencedSubjects ) => void;
@@ -1293,7 +1319,7 @@ describe( 'SubjectPage', () => {
 				.mockReturnValueOnce( new Promise( ( resolve ) => {
 					landFirstReRead = resolve;
 				} ) )
-				.mockResolvedValueOnce( bundle() );
+				.mockResolvedValueOnce( bundle( [], subject( { id: SUBJECT_ID, label: 'ACME Corp' } ) ) );
 
 			await confirmDelete( wrapper, wrapper.findAll( DELETE_CONTROL )[ 1 ] );
 			await confirmDelete( wrapper, wrapper.findAll( DELETE_CONTROL )[ 2 ] );
@@ -1301,6 +1327,7 @@ describe( 'SubjectPage', () => {
 			await flushPromises();
 
 			expect( wrapper.find( REFERENCED_ROW ).exists() ).toBe( false );
+			expect( pageHeading() ).toBe( 'ACME Corp' );
 		} );
 
 	} );
@@ -1349,6 +1376,26 @@ describe( 'SubjectPage', () => {
 				.toEqual( { subjectId: new SubjectId( REFERENCED_ID ), schemaNames: [ 'Product' ] } );
 		} );
 
+		it( 'deletes a Subject the shown one references in place, staying on the page', async () => {
+			canDeleteSubjectRef.value = true;
+			const wrapper = await mountLoadedPage( false, false, { onHostingPage: true } );
+			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
+			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle() );
+			// Restored by re-stubbing, as above.
+			const realLocation = window.location;
+			vi.stubGlobal( 'location', { href: '/w/index.php?title=ACME_Inc&oldid=7' } );
+
+			try {
+				await confirmDelete( wrapper, wrapper.find( `${ REFERENCED_ROW } ${ DELETE_CONTROL }` ) );
+
+				expect( location.href ).toBe( '/w/index.php?title=ACME_Inc&oldid=7' );
+			} finally {
+				vi.stubGlobal( 'location', realLocation );
+			}
+
+			expect( wrapper.find( REFERENCED_ROW ).exists() ).toBe( false );
+		} );
+
 		it( 'shows the page\'s current revision once the Subject it shows is deleted, with the notice still to come', async () => {
 			canDeleteSubjectRef.value = true;
 			const wrapper = await mountLoadedPage( false, false, { onHostingPage: true } );
@@ -1366,6 +1413,7 @@ describe( 'SubjectPage', () => {
 			}
 
 			expect( mw.storage.session.set ).toHaveBeenCalledWith( 'neowiki-managesubjects-delete-success', expect.anything() );
+			expect( mw.notify ).not.toHaveBeenCalled();
 		} );
 
 	} );
