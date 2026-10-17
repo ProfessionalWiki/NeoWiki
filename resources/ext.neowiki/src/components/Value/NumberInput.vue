@@ -92,12 +92,13 @@ watch( () => props.modelValue, ( newValue ) => {
 function onInput( newValue: string ): void {
 	internalInputValue.value = newValue;
 	unparseableInput.value = holdsUnparseableInput( textInput.value );
+	clearServerViolation();
 
-	if ( !unparseableInput.value ) {
-		emit( 'update:modelValue', newValue === '' ? undefined : newNumberValue( Number( newValue ) ) );
+	if ( unparseableInput.value ) {
+		return;
 	}
 
-	clearServerViolation();
+	emit( 'update:modelValue', newValue === '' ? undefined : newNumberValue( Number( newValue ) ) );
 }
 
 // Chromium steps a focused number field with the wheel, even a wheel turned to scroll the form past it.

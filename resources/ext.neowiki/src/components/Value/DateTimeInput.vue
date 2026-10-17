@@ -22,7 +22,7 @@
 			:min="toLocalInputValue( props.property.minimum )"
 			:max="toLocalInputValue( props.property.maximum )"
 			@update:model-value="onInput"
-			@keyup="updateIfEmptied( textInput, internalInputValue, onInput )"
+			@keyup="updateIfEmptied( $event, internalInputValue, onInput )"
 		/>
 	</CdxField>
 </template>

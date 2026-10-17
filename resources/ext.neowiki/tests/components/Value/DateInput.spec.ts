@@ -253,20 +253,44 @@ describe( 'DateInput', () => {
 			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
 		} );
 
-		it( 'reports nothing for a key released in a field that holds a date', async () => {
+		it( 'reports nothing for a deletion key released in a field that still shows a date', async () => {
 			const wrapper = newWrapper( { modelValue: date } );
+
+			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Backspace' } );
+
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
+		} );
+
+		// The browser shows nothing for a date it cannot display, such as one in the year 0.
+		it( 'keeps a date the field cannot show when another key is released in it', async () => {
+			const wrapper = newWrapper( { modelValue: newStringValue( '0000-01-01' ) } );
 
 			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Tab' } );
 
 			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
 		} );
 
-		it( 'reports nothing for a key released in a field that held no date', async () => {
+		it( 'reports nothing for a deletion key released in a field that held no date', async () => {
 			const wrapper = newWrapper( { modelValue: undefined } );
 
-			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Tab' } );
+			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Backspace' } );
 
 			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
+		} );
+
+		it( 'leaves a partly cleared date as the user left it while it has a server violation', async () => {
+			const wrapper: VueWrapper = createTestWrapper( DateInput, {
+				modelValue: date,
+				property: newDateProperty( { name: 'Foo' } ),
+				serverViolations: [
+					{ propertyName: 'Foo', code: 'min-value', args: [ '2030-01-01' ], severity: 'error', valuePartIndex: null },
+				],
+				'onClear-server-violation': () => wrapper.setProps( { serverViolations: [] } ),
+			} );
+
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			expect( ( wrapper.find( 'input' ).element as HTMLInputElement ).value ).toBe( '' );
 		} );
 	} );
 } );

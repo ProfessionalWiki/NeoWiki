@@ -5,21 +5,22 @@ type MountedTextInput = { $el: Element };
  * the field shows into a value, such as "-" in a number field or a date with one part cleared.
  */
 export function holdsUnparseableInput( textInput: MountedTextInput | null ): boolean {
-	return nativeInput( textInput )?.validity.badInput ?? false;
+	return textInput?.$el.querySelector( 'input' )?.validity.badInput ?? false;
 }
 
 /**
- * Hands `update` the empty text once the field reads as empty while `text`, what it last held, does not.
- * For a date field's keyup: clearing the last part of a partly cleared date fires no input event.
+ * For a date field's keyup. Clearing the last part of a partly cleared date fires no input event, so
+ * `update` gets the empty text when a deletion key leaves the field empty while `text`, what it held,
+ * was not. Other keys do nothing: a field also reads as empty when the browser cannot show its date.
  */
-export function updateIfEmptied( textInput: MountedTextInput | null, text: string, update: ( text: string ) => void ): void {
-	const input = nativeInput( textInput );
+export function updateIfEmptied( event: KeyboardEvent, text: string, update: ( text: string ) => void ): void {
+	const input = event.target as HTMLInputElement;
 
-	if ( text !== '' && input !== null && input.value === '' && !input.validity.badInput ) {
+	if ( isDeletion( event ) && text !== '' && input.value === '' && !input.validity.badInput ) {
 		update( '' );
 	}
 }
 
-function nativeInput( textInput: MountedTextInput | null ): HTMLInputElement | null {
-	return textInput?.$el.querySelector( 'input' ) ?? null;
+function isDeletion( event: KeyboardEvent ): boolean {
+	return event.key === 'Backspace' || event.key === 'Delete';
 }
