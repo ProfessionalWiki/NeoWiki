@@ -19,7 +19,7 @@
 					input-type="date"
 					:model-value="minimumInput"
 					@update:model-value="updateMinimum"
-					@keyup="updateIfEmptied( minimumTextInput, minimumInput, updateMinimum )"
+					@keyup="updateIfEmptied( $event, minimumInput, updateMinimum )"
 				/>
 				<SeverityInput
 					v-if="property.minimum !== undefined"
@@ -43,7 +43,7 @@
 					input-type="date"
 					:model-value="maximumInput"
 					@update:model-value="updateMaximum"
-					@keyup="updateIfEmptied( maximumTextInput, maximumInput, updateMaximum )"
+					@keyup="updateIfEmptied( $event, maximumInput, updateMaximum )"
 				/>
 				<SeverityInput
 					v-if="property.maximum !== undefined"

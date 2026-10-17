@@ -280,12 +280,27 @@ describe( 'DateTimeInput', () => {
 			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
 		} );
 
-		it( 'reports nothing for a key released in a field that holds a date and time', async () => {
+		it( 'reports nothing for a deletion key released in a field that still shows a date and time', async () => {
 			const wrapper = newWrapper( { modelValue: dateTime } );
 
-			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Tab' } );
+			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Backspace' } );
 
 			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
+		} );
+
+		it( 'leaves a partly cleared date and time as the user left it while it has a server violation', async () => {
+			const wrapper: VueWrapper = createTestWrapper( DateTimeInput, {
+				modelValue: dateTime,
+				property: newDateTimeProperty( { name: 'Foo' } ),
+				serverViolations: [
+					{ propertyName: 'Foo', code: 'min-value', args: [ '2030-01-01T00:00:00Z' ], severity: 'error', valuePartIndex: null },
+				],
+				'onClear-server-violation': () => wrapper.setProps( { serverViolations: [] } ),
+			} );
+
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			expect( ( wrapper.find( 'input' ).element as HTMLInputElement ).value ).toBe( '' );
 		} );
 	} );
 } );

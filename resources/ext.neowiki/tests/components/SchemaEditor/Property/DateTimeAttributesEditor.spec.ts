@@ -244,10 +244,10 @@ describe( 'DateTimeAttributesEditor', () => {
 			expect( editedProperty<DateTimeProperty>( wrapper )[ attribute ] ).toBeUndefined();
 		} );
 
-		it.each( bounds )( 'reports nothing for a key released in the %s field while it holds a date and time', async ( _, field, property ) => {
+		it.each( bounds )( 'reports nothing for a deletion key released in the %s field while it still shows a date and time', async ( _, field, property ) => {
 			const wrapper = newWrapper( { property } );
 
-			await wrapper.find( `${ field } input` ).trigger( 'keyup', { key: 'Tab' } );
+			await wrapper.find( `${ field } input` ).trigger( 'keyup', { key: 'Backspace' } );
 
 			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
