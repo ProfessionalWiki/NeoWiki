@@ -239,7 +239,7 @@ describe( 'DateTimeAttributesEditor', () => {
 			const wrapper = newWrapper( { property } );
 			await reportPartlyClearedDate( wrapper.find( `${ field } input` ) );
 
-			await clearRemainingDateParts( wrapper.find( `${ field } input` ) );
+			await clearRemainingDateParts( wrapper.find( `${ field } input` ), 'Backspace' );
 
 			expect( editedProperty<DateTimeProperty>( wrapper )[ attribute ] ).toBeUndefined();
 		} );
