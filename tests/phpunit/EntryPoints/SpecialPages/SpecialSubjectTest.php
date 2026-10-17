@@ -34,6 +34,7 @@ use SpecialPageExecutor;
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialSubject
  * @covers \ProfessionalWiki\NeoWiki\Presentation\SubjectNamePresenter
  * @covers \ProfessionalWiki\NeoWiki\Presentation\SubjectNameMessage
+ * @covers \ProfessionalWiki\NeoWiki\Presentation\SubjectLabelHtml::headPageByName
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::getSubjectUiJsConfigVars
  * @group Database
  */

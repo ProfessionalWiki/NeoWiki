@@ -248,6 +248,17 @@ async function openEditorOn( control: ReturnType<VueWrapper['find']> ): Promise<
 	await flushPromises();
 }
 
+/**
+ * Heads the page as SubjectLabelHtml does where the heading shows the Subject's label.
+ */
+function headPageBy( label: string ): void {
+	document.body.innerHTML = `<h1 id="firstHeading"><span class="ext-neowiki-subject-label"><bdi>${ label }</bdi></span></h1>`;
+}
+
+function pageHeading(): string {
+	return document.querySelector( '#firstHeading' )!.textContent!;
+}
+
 async function confirmDelete( wrapper: VueWrapper, control: ReturnType<VueWrapper['find']> ): Promise<void> {
 	await control.trigger( 'click' );
 	// The click first settles where the deletion goes, which on a subject-first wiki is a read.
@@ -280,6 +291,7 @@ describe( 'SubjectPage', () => {
 		canCreateSubjectPageRef.value = false;
 		mayCreateSubjectPage = false;
 		vi.restoreAllMocks();
+		document.body.innerHTML = '';
 	} );
 
 	it( 'reads the Subject its subjectId names', async () => {
@@ -1105,20 +1117,16 @@ describe( 'SubjectPage', () => {
 		} );
 
 		it( 'shows the new label in the page heading once a save renames the Subject', async () => {
-			document.body.innerHTML = '<h1 id="firstHeading"><span class="ext-neowiki-subject-label"><bdi>ACME Inc</bdi></span></h1>';
+			headPageBy( 'ACME Inc' );
 			const wrapper = await mountLoadedPage();
 			vi.spyOn( useSubjectStore(), 'updateSubject' ).mockResolvedValue( undefined );
 			await openEditorOn( wrapper.find( EDIT_CONTROL ) );
 			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [], subject( { id: SUBJECT_ID, label: 'ACME Corp' } ) ) );
 
-			try {
-				await wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' )( freshSubject, [], 'a comment' );
-				await flushPromises();
+			await wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' )( freshSubject, [], 'a comment' );
+			await flushPromises();
 
-				expect( document.querySelector( '#firstHeading' )!.textContent ).toBe( 'ACME Corp' );
-			} finally {
-				document.body.innerHTML = '';
-			}
+			expect( pageHeading() ).toBe( 'ACME Corp' );
 		} );
 
 		it( 'saves a Schema the editor changed', async () => {
@@ -1303,6 +1311,7 @@ describe( 'SubjectPage', () => {
 		it( 'shows what the latest re-read found when an earlier one lands after it', async () => {
 			const other = subject( { id: OTHER_REFERENCED_ID, label: 'Rocket', schemaName: 'Product' } );
 			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [ referencedSubject, other ] ) );
+			headPageBy( 'ACME Inc' );
 			const wrapper = await mountLoadedPage();
 			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
 			let landFirstReRead!: ( value: SubjectWithReferencedSubjects ) => void;
@@ -1310,7 +1319,7 @@ describe( 'SubjectPage', () => {
 				.mockReturnValueOnce( new Promise( ( resolve ) => {
 					landFirstReRead = resolve;
 				} ) )
-				.mockResolvedValueOnce( bundle() );
+				.mockResolvedValueOnce( bundle( [], subject( { id: SUBJECT_ID, label: 'ACME Corp' } ) ) );
 
 			await confirmDelete( wrapper, wrapper.findAll( DELETE_CONTROL )[ 1 ] );
 			await confirmDelete( wrapper, wrapper.findAll( DELETE_CONTROL )[ 2 ] );
@@ -1318,6 +1327,7 @@ describe( 'SubjectPage', () => {
 			await flushPromises();
 
 			expect( wrapper.find( REFERENCED_ROW ).exists() ).toBe( false );
+			expect( pageHeading() ).toBe( 'ACME Corp' );
 		} );
 
 	} );
