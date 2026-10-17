@@ -310,6 +310,24 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $this->publishedSubjectIndex->indexedSubjectsByPageId );
 	}
 
+	public function testPublishesTheApprovedRevisionWhenTheGivenOneDoesNotHoldSubjectContent(): void {
+		$approved = $this->createPageWithSubjects( self::APPROVED_PAGE, TestSubject::build() );
+		$draft = $this->newRevisionWithSlotContent(
+			$approved->getPageId(),
+			new FallbackContent( '{"subjects":{}}', 'unregistered-model' )
+		);
+
+		$outcome = $this->newHandlerWithPolicy( FixedRevisionPolicy::publishing( $approved ) )
+			->onRevisionCreated( $draft );
+
+		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
+		$this->assertSame(
+			[ $approved->getPageId() => [ TestSubject::ZERO_GUID ] ],
+			$this->publishedSubjectIndex->indexedSubjectsByPageId
+		);
+		$this->assertSame( [], $this->subjectPageIndex->indexedSubjectsByPageId, 'the index should be left alone' );
+	}
+
 	/**
 	 * @dataProvider subjectJsonThatDoesNotDeserializeProvider
 	 */
