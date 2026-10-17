@@ -45,17 +45,26 @@ export function formatUrlForDisplay( urlString: string, maxLength: number = 50 )
 }
 
 function stripProtocol( urlString: string ): string {
+	const url = parseHttpUrl( urlString );
+
+	if ( url === null ) {
+		return urlString;
+	}
+
+	const pathName = url.pathname === '/' ? '' : url.pathname;
+	return url.hostname + pathName + url.search + url.hash;
+}
+
+export function isHttpUrl( urlString: string ): boolean {
+	return parseHttpUrl( urlString ) !== null;
+}
+
+function parseHttpUrl( urlString: string ): URL | null {
 	try {
 		const url = new URL( urlString );
-
-		if ( !ALLOWED_PROTOCOLS.includes( url.protocol ) ) {
-			return urlString;
-		}
-
-		const pathName = url.pathname === '/' ? '' : url.pathname;
-		return url.hostname + pathName + url.search + url.hash;
+		return ALLOWED_PROTOCOLS.includes( url.protocol ) ? url : null;
 	} catch {
-		return urlString;
+		return null;
 	}
 }
 

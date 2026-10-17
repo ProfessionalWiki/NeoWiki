@@ -44,6 +44,32 @@ describe( 'UrlDisplay', () => {
 		expect( links[ 1 ].text() ).toBe( 'bar.com/example' );
 	} );
 
+	it( 'links an http URL', () => {
+		const wrapper = createWrapper( 'http://example.com' );
+
+		expect( wrapper.find( 'a' ).exists() ).toBe( true );
+	} );
+
+	/* eslint-disable no-script-url */
+	it.each( [
+		'javascript:alert(1)',
+		'JaVaScRiPt:alert(1)',
+		'data:text/html,<script>alert(1)</script>',
+	] )( 'shows %s as text instead of a link', ( url ) => {
+		const wrapper = createWrapper( url );
+
+		expect( wrapper.find( 'a' ).exists() ).toBe( false );
+		expect( wrapper.text() ).toBe( url );
+	} );
+	/* eslint-enable no-script-url */
+
+	it( 'shows a URL without a scheme as text instead of a link', () => {
+		const wrapper = createWrapper( 'example.com' );
+
+		expect( wrapper.find( 'a' ).exists() ).toBe( false );
+		expect( wrapper.text() ).toBe( 'example.com' );
+	} );
+
 	it( 'renders nothing when a single empty URL is present', () => {
 		const wrapper = createWrapper();
 
