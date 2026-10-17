@@ -67,7 +67,7 @@ class QueryCypherEndToEndTest extends NeoWikiIntegrationTestCase {
 		// RENAME USER passes the keyword validator but the Explain layer rejects it, so this fails
 		// unless the production service composes the Explain validator, not just the keyword one.
 		$service = NeoWikiExtension::getInstance()->newCypherQueryService( $this->getTestSysop()->getUser() );
-		$request = new Neo4jQueryRequest( 'RENAME USER neo4j TO renamed', [], new Neo4jQueryLimits( 30, 5000 ) );
+		$request = new Neo4jQueryRequest( 'RENAME USER nonexistent TO renamed', [], new Neo4jQueryLimits( 30, 5000 ) );
 
 		$this->expectException( WriteQueryRejectedException::class );
 

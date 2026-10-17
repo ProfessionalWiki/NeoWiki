@@ -35,11 +35,11 @@ class CompositeCypherQueryValidatorIntegrationTest extends NeoWikiIntegrationTes
 	public function testAdminQueryIsRejected(): void {
 		$validator = $this->newValidator();
 
-		$this->assertFalse( $validator->queryIsAllowed( 'RENAME USER neo4j TO renamed' ) );
+		$this->assertFalse( $validator->queryIsAllowed( 'RENAME USER nonexistent TO renamed' ) );
 	}
 
 	public function testAdminQueryPassesKeywordValidatorButIsRejectedByComposite(): void {
-		$query = 'RENAME USER neo4j TO renamed';
+		$query = 'RENAME USER nonexistent TO renamed';
 
 		$keywordValidator = new KeywordCypherQueryValidator();
 		$this->assertTrue( $keywordValidator->queryIsAllowed( $query ) );

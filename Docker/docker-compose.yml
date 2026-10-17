@@ -78,8 +78,8 @@ services:
 
   neo:
     # Community Edition, since Enterprise's free licence only covers a 30-day internal evaluation. 5.26 is the
-    # LTS line and the oldest Neo4j NeoWiki supports; test_neo and CI run the same image, so the test suite
-    # covers that floor.
+    # LTS line and the oldest one NeoWiki supports; test_neo and CI run the same image, so the test suite
+    # covers that line.
     image: neo4j:5.26-community
     restart: unless-stopped
     volumes:

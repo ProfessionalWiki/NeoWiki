@@ -615,11 +615,11 @@ NEO_ADMIN := $(DC) run --rm --no-deps -T --user neo4j neo neo4j-admin
 NEO_STOP = $(DC) stop --timeout 120 neo
 
 # Neo4j starts even when the store it mounted is unusable, so wait until the database answers
-# queries: a silently broken restore is worse than a failed one.
-NEO_START = { $(DC) start neo > /dev/null && for attempt in $$(seq 1 60); do \
-		$(NEO_CYPHER) -d neo4j 'RETURN 1' < /dev/null > /dev/null 2>&1 && break; \
-		[ $$attempt -lt 60 ] && sleep 2; \
-	done; } \
+# queries: a silently broken restore is worse than a failed one. The last probe keeps its error
+# output, which says why.
+NEO_START = { $(DC) start neo > /dev/null && { for attempt in $$(seq 1 60); do \
+		$(NEO_CYPHER) -d neo4j 'RETURN 1' < /dev/null > /dev/null 2>&1 && break; sleep 2; done; \
+		$(NEO_CYPHER) -d neo4j 'RETURN 1' < /dev/null > /dev/null; }; } \
 	|| { echo "The neo4j database did not come back online." >&2; exit 1; }
 
 .PHONY: perf-generate perf-import perf-snapshot perf-restore
