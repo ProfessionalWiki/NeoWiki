@@ -169,8 +169,7 @@ describe( 'NumberInput', () => {
 			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-field-invalid-number' );
 		} );
 
-		// Anything the field reports counts as an edit, which enables the save, so a
-		// field keeping its value reports nothing.
+		// Any report counts as an edit, which enables the save.
 		it( 'reports nothing while the text cannot be parsed', async () => {
 			const wrapper = newWrapper( { modelValue: newNumberValue( 7 ) } );
 			const field = bindNativeNumberField( wrapper );
@@ -213,8 +212,8 @@ describe( 'NumberInput', () => {
 		} );
 
 		// Selecting all and deleting is the natural recovery from bad text: badInput
-		// drops while the reported value stays '', so only the native input event —
-		// not a model-value change — is there to clear the flag.
+		// drops while the reported value stays '', so only the input event itself,
+		// not a change of value, is there to clear the flag.
 		it( 'stops reporting unparseable input when the user clears the field', async () => {
 			const wrapper = newWrapper();
 			const field = bindNativeNumberField( wrapper );

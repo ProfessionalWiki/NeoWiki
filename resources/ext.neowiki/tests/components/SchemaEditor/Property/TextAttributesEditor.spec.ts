@@ -5,7 +5,7 @@ import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttribu
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newTextProperty, TextProperty } from '@/domain/propertyTypes/Text';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { createTestWrapper, FieldProps, reportUnparseableNumber, setupMwMock } from '../../../VueTestHelpers.ts';
+import { createTestWrapper, editedProperty, FieldProps, reportUnparseableNumber, setupMwMock } from '../../../VueTestHelpers.ts';
 
 describe( 'TextAttributesEditor', () => {
 	beforeEach( () => {
@@ -290,8 +290,7 @@ describe( 'TextAttributesEditor', () => {
 		} );
 	} );
 
-	// Anything the editor reports counts as an edit, which enables the save, so a field
-	// keeping its value reports nothing.
+	// Any report counts as an edit, which enables the save.
 	describe( 'Text that cannot be parsed', () => {
 		const property = newTextProperty( { minLength: 2, maxLength: 50 } );
 
@@ -304,6 +303,26 @@ describe( 'TextAttributesEditor', () => {
 			await reportUnparseableNumber( wrapper.find( `${ field } input` ) );
 
 			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
+		} );
+
+		it( 'refuses a maximum length below the minimum length it kept', async () => {
+			const wrapper = newWrapper( { property: newTextProperty( { minLength: 5 } ) } );
+			await reportUnparseableNumber( wrapper.find( '.text-attributes__min-length input' ) );
+
+			await wrapper.find( '.text-attributes__max-length input' ).setValue( '3' );
+
+			expect( getMaxLengthFieldProps( wrapper ).status ).toBe( 'error' );
+			expect( editedProperty<TextProperty>( wrapper ).maxLength ).toBeUndefined();
+		} );
+
+		it( 'refuses a minimum length above the maximum length it kept', async () => {
+			const wrapper = newWrapper( { property: newTextProperty( { maxLength: 5 } ) } );
+			await reportUnparseableNumber( wrapper.find( '.text-attributes__max-length input' ) );
+
+			await wrapper.find( '.text-attributes__min-length input' ).setValue( '8' );
+
+			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
+			expect( editedProperty<TextProperty>( wrapper ).minLength ).toBeUndefined();
 		} );
 	} );
 } );

@@ -80,6 +80,14 @@ describe( 'PropertyDefinitionEditor', () => {
 		expect( lastEmittedProperty( wrapper ).default ).toBeUndefined();
 	} );
 
+	it( 'takes the initial value typed into its field', async () => {
+		const wrapper = newWrapper( newNumberProperty( { name: 'Score' } ) );
+
+		await wrapper.findComponent( NumberInput ).find( 'input' ).setValue( '7' );
+
+		expect( lastEmittedProperty( wrapper ).default ).toEqual( newNumberValue( 7 ) );
+	} );
+
 	it( 'keeps Constraint severities when an attribute is edited', async () => {
 		const wrapper = newWrapper( {
 			...newTextProperty( { name: 'Status', minLength: 2 } ),

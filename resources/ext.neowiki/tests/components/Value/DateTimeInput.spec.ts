@@ -239,8 +239,7 @@ describe( 'DateTimeInput', () => {
 		} );
 	} );
 
-	// Anything a field reports counts as an edit, which enables the save, so a field
-	// keeping its value reports nothing.
+	// Any report counts as an edit, which enables the save.
 	describe( 'Clearing the date and time part by part', () => {
 		const dateTime = newStringValue( '2025-06-15T14:00:00.000Z' );
 
@@ -270,6 +269,15 @@ describe( 'DateTimeInput', () => {
 			await clearRemainingDateParts( wrapper.find( 'input' ) );
 
 			expect( boundValue( wrapper ) ).toBeUndefined();
+		} );
+
+		it( 'returns no current value once every part is cleared', async () => {
+			const wrapper = newWrapper( { modelValue: dateTime } );
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			await clearRemainingDateParts( wrapper.find( 'input' ) );
+
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
 		} );
 
 		it( 'reports nothing for a key released in a field that holds a date and time', async () => {
