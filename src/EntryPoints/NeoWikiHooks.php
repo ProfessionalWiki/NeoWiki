@@ -133,19 +133,28 @@ class NeoWikiHooks {
 
 		self::headByMainSubject( $out, $builder, $revisionId );
 
+		// On a diff, the Main Subject is shown atop the revision below the diff instead.
+		if ( $out->getRequest()->getCheck( 'diff' ) ) {
+			return;
+		}
+
+		$showsInFull = $extension->isSubjectFirst() && self::pageIsLatestRevision( $out );
+
 		// Only a mount that reached the page counts: a condition or a Lua module can discard what the parser
 		// function returned.
 		if ( ViewHtmlBuilder::containsMainSubjectInFull( $out->getHTML() ) ) {
-			self::addSubjectUiConfig( $out );
+			if ( $showsInFull ) {
+				self::addSubjectUiConfig( $out );
+			}
+
 			return;
 		}
 
-		// On a diff, the Main Subject is shown atop the revision below the diff instead.
-		if ( !$extension->shouldAutoRenderMainSubject() || $out->getRequest()->getCheck( 'diff' ) ) {
+		if ( !$extension->shouldAutoRenderMainSubject() ) {
 			return;
 		}
 
-		if ( $extension->isSubjectFirst() && self::pageIsLatestRevision( $out ) ) {
+		if ( $showsInFull ) {
 			self::appendMainSubjectInFull( $out, $builder );
 			return;
 		}
@@ -1234,21 +1243,16 @@ class NeoWikiHooks {
 	 * says so. VisualEditor adds its tab in this hook, which runs first where VisualEditor loads before NeoWiki.
 	 */
 	private static function labelTextEditTab( SkinTemplate $skin, array &$links ): void {
-		$title = $skin->getRelevantTitle();
+		$tab = isset( $links['views']['ve-edit'] ) ? 've-edit' : 'edit';
 
-		if ( $title === null
-			|| !$title->exists()
-			|| !MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $title->getNamespace() )
+		if ( !isset( $links['views'][$tab] )
+			|| !SubjectsAction::isEligibleTitle( $skin->getRelevantTitle() )
 			|| !NeoWikiExtension::getInstance()->isSubjectFirst()
 		) {
 			return;
 		}
 
-		$tab = isset( $links['views']['ve-edit'] ) ? 've-edit' : 'edit';
-
-		if ( isset( $links['views'][$tab] ) ) {
-			$links['views'][$tab]['text'] = $skin->msg( 'neowiki-edit-text-tab' )->text();
-		}
+		$links['views'][$tab]['text'] = $skin->msg( 'neowiki-edit-text-tab' )->text();
 	}
 
 	private static function handleLayoutPage( OutputPage $out, Skin $skin ): void {
