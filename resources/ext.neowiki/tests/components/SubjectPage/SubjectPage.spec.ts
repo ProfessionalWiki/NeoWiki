@@ -1104,6 +1104,23 @@ describe( 'SubjectPage', () => {
 			expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-special-subject-load-error', { type: 'error' } );
 		} );
 
+		it( 'shows the new label in the page heading once a save renames the Subject', async () => {
+			document.body.innerHTML = '<h1 id="firstHeading"><span class="ext-neowiki-subject-label"><bdi>ACME Inc</bdi></span></h1>';
+			const wrapper = await mountLoadedPage();
+			vi.spyOn( useSubjectStore(), 'updateSubject' ).mockResolvedValue( undefined );
+			await openEditorOn( wrapper.find( EDIT_CONTROL ) );
+			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [], subject( { id: SUBJECT_ID, label: 'ACME Corp' } ) ) );
+
+			try {
+				await wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' )( freshSubject, [], 'a comment' );
+				await flushPromises();
+
+				expect( document.querySelector( '#firstHeading' )!.textContent ).toBe( 'ACME Corp' );
+			} finally {
+				document.body.innerHTML = '';
+			}
+		} );
+
 		it( 'saves a Schema the editor changed', async () => {
 			const wrapper = await mountLoadedPage();
 			const saveSchema = vi.spyOn( useSchemaStore(), 'saveSchema' ).mockResolvedValue( undefined );
@@ -1347,6 +1364,28 @@ describe( 'SubjectPage', () => {
 
 			expect( useSubjectStore().subjectCreatorTarget )
 				.toEqual( { subjectId: new SubjectId( REFERENCED_ID ), schemaNames: [ 'Product' ] } );
+		} );
+
+		it( 'deletes a Subject the shown one references in place, staying on the page', async () => {
+			canDeleteSubjectRef.value = true;
+			const wrapper = await mountLoadedPage( false, false, { onHostingPage: true } );
+			const deleteSubject = vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
+			getSubjectWithReferencedSubjectsMock.mockClear().mockResolvedValue( bundle() );
+			// Restored by re-stubbing, as above.
+			const realLocation = window.location;
+			vi.stubGlobal( 'location', { href: '/w/index.php?title=ACME_Inc&oldid=7' } );
+
+			try {
+				await confirmDelete( wrapper, wrapper.find( `${ REFERENCED_ROW } ${ DELETE_CONTROL }` ) );
+
+				expect( location.href ).toBe( '/w/index.php?title=ACME_Inc&oldid=7' );
+			} finally {
+				vi.stubGlobal( 'location', realLocation );
+			}
+
+			expect( deleteSubject ).toHaveBeenCalledWith( expect.objectContaining( { text: REFERENCED_ID } ), 'no longer needed' );
+			expect( getSubjectWithReferencedSubjectsMock ).toHaveBeenCalledTimes( 1 );
+			expect( wrapper.find( REFERENCED_ROW ).exists() ).toBe( false );
 		} );
 
 		it( 'shows the page\'s current revision once the Subject it shows is deleted, with the notice still to come', async () => {

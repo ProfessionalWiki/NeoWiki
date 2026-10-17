@@ -13,6 +13,7 @@ use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialSubject;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -22,6 +23,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Tests\ReadsMarkedSubjectLabel;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 use SpecialPageExecutor;
 
@@ -39,6 +41,7 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 
 	use HelpLinkAssertions;
 	use NeoWikiMockAuthorityTrait;
+	use ReadsMarkedSubjectLabel;
 
 	private const string SUBJECT_ID = 's1demo8aaaaaab5';
 	private const string ABSENT_ID = 's1demo8aaaaaab6';
@@ -46,6 +49,7 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	private const string RECORD_ID = 's1demo8aaaaaab8';
 	private const string OTHER_ID = 's1demo8aaaaaab9';
 	private const string PAGE_NAME = 'SpecialSubjectTest_Company';
+	private const string PICASSO_PAGE_NAME = 'SpecialSubjectTest_Picasso';
 	private const string INVALID_ID_ERROR = '(neowiki-special-subject-invalid-id)';
 	private const string PAGE_DESCRIPTION = '(neowiki-special-subject)';
 
@@ -119,7 +123,7 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
 		$this->createPageWithSubjects( self::PAGE_NAME, mainSubject: TestSubject::build( id: self::SUBJECT_ID ) );
 
-		$this->assertForwardsToThePage( $this->executeWith( self::SUBJECT_ID ) );
+		$this->assertForwardsTo( self::PAGE_NAME, $this->executeWith( self::SUBJECT_ID ) );
 	}
 
 	public function testASubjectFirstWikiForwardsAMainSubjectWhoseLatestRevisionIsPublished(): void {
@@ -127,11 +131,28 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$latest = $this->createPageWithSubjects( self::PAGE_NAME, mainSubject: TestSubject::build( id: self::SUBJECT_ID ) );
 		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $latest ) );
 
-		$this->assertForwardsToThePage( $this->executeWith( self::SUBJECT_ID ) );
+		$this->assertForwardsTo( self::PAGE_NAME, $this->executeWith( self::SUBJECT_ID ) );
 	}
 
-	private function assertForwardsToThePage( OutputPage $out ): void {
-		$this->assertStringEndsWith( Title::newFromText( self::PAGE_NAME )->getLocalURL(), $out->getRedirect() );
+	/**
+	 * The page shows them inside its Main Subject.
+	 *
+	 * @dataProvider dependentSubjectOfTheMainSubjectProvider
+	 */
+	public function testASubjectFirstWikiForwardsADependentSubjectOfTheMainSubjectToItsPage( string $dependentSubjectId ): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$this->createSubjectsOfPicasso();
+
+		$this->assertForwardsTo( self::PICASSO_PAGE_NAME, $this->executeWith( $dependentSubjectId ) );
+	}
+
+	public static function dependentSubjectOfTheMainSubjectProvider(): iterable {
+		yield 'directly' => [ self::BIRTH_ID ];
+		yield 'through another Dependent Subject' => [ self::RECORD_ID ];
+	}
+
+	private function assertForwardsTo( string $pageName, OutputPage $out ): void {
+		$this->assertStringEndsWith( Title::newFromText( $pageName )->getLocalURL(), $out->getRedirect() );
 	}
 
 	/**
@@ -153,6 +174,18 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertShownHere( $this->executeWith( self::SUBJECT_ID ) );
+	}
+
+	public function testASubjectFirstWikiShowsADependentSubjectHereWhenItsHostSubjectIsNotItsPagesMainSubject(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$this->createSchemasOfDependentSubjects();
+		$this->createPageWithSubjects(
+			self::PICASSO_PAGE_NAME,
+			mainSubject: TestSubject::build( id: self::OTHER_ID ),
+			otherSubjects: new SubjectMap( $this->picasso(), ...$this->dependentSubjectsOfPicasso() )
+		);
+
+		$this->assertSame( '', $this->executeWith( self::BIRTH_ID )->getRedirect() );
 	}
 
 	/**
@@ -267,12 +300,28 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	 * name the Subject rather than the page showing it.
 	 */
 	public function testTheTitleIsTheSubjectsName(): void {
-		$this->createPageWithSubjects(
-			'SpecialSubjectTest_Company',
-			mainSubject: TestSubject::build( id: self::SUBJECT_ID, label: 'ACME Inc' )
-		);
+		$this->createSubjectLabelled( 'ACME Inc' );
 
-		$this->assertSame( 'ACME Inc', $this->executeWith( self::SUBJECT_ID )->getPageTitle() );
+		$this->assertSame( 'ACME Inc', strip_tags( $this->executeWith( self::SUBJECT_ID )->getPageTitle() ) );
+	}
+
+	public function testTheBrowserTitleIsTheSubjectsName(): void {
+		$this->createSubjectLabelled( 'ACME Inc' );
+
+		$this->assertSame( '(pagetitle: ACME Inc)', $this->executeWith( self::SUBJECT_ID )->getHTMLTitle() );
+	}
+
+	public function testTheTitleMarksTheNameForThePageToReplaceWhenTheSubjectIsRenamed(): void {
+		$this->createSubjectLabelled( 'ACME Inc' );
+
+		$this->assertSame( 'ACME Inc', self::markedSubjectLabel( $this->executeWith( self::SUBJECT_ID )->getPageTitle() ) );
+	}
+
+	private function createSubjectLabelled( string $label ): void {
+		$this->createPageWithSubjects(
+			self::PAGE_NAME,
+			mainSubject: TestSubject::build( id: self::SUBJECT_ID, label: $label )
+		);
 	}
 
 	public function testTheTitleSaysNoLabelIsDefinedBesideTheIdOfASubjectWithoutOne(): void {
@@ -338,26 +387,41 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function createSubjectsOfPicasso(): void {
-		$this->createSchema( 'Birth', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
-		$this->createSchema( 'Record', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
+		$this->createSchemasOfDependentSubjects();
 
 		$this->createPageWithSubjects(
-			'SpecialSubjectTest_Picasso',
-			mainSubject: TestSubject::build(
-				id: self::SUBJECT_ID,
-				label: 'Pablo Picasso',
-				statements: new StatementList( [ $this->relation( 'Birth', self::BIRTH_ID ) ] )
-			),
-			otherSubjects: new SubjectMap(
-				TestSubject::build(
-					id: self::BIRTH_ID,
-					label: null,
-					schemaName: new SchemaName( 'Birth' ),
-					statements: new StatementList( [ $this->relation( 'Record', self::RECORD_ID ) ] )
-				),
-				TestSubject::build( id: self::RECORD_ID, label: null, schemaName: new SchemaName( 'Record' ) )
-			)
+			self::PICASSO_PAGE_NAME,
+			mainSubject: $this->picasso(),
+			otherSubjects: new SubjectMap( ...$this->dependentSubjectsOfPicasso() )
 		);
+	}
+
+	private function createSchemasOfDependentSubjects(): void {
+		$this->createSchema( 'Birth', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
+		$this->createSchema( 'Record', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
+	}
+
+	private function picasso(): Subject {
+		return TestSubject::build(
+			id: self::SUBJECT_ID,
+			label: 'Pablo Picasso',
+			statements: new StatementList( [ $this->relation( 'Birth', self::BIRTH_ID ) ] )
+		);
+	}
+
+	/**
+	 * @return Subject[] His Birth, and its Record.
+	 */
+	private function dependentSubjectsOfPicasso(): array {
+		return [
+			TestSubject::build(
+				id: self::BIRTH_ID,
+				label: null,
+				schemaName: new SchemaName( 'Birth' ),
+				statements: new StatementList( [ $this->relation( 'Record', self::RECORD_ID ) ] )
+			),
+			TestSubject::build( id: self::RECORD_ID, label: null, schemaName: new SchemaName( 'Record' ) ),
+		];
 	}
 
 	private function relation( string $property, string $targetId ): Statement {

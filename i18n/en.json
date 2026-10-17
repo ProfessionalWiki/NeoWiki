@@ -456,6 +456,7 @@
 	"neowiki-layout-delete": "Delete layout",
 
 	"neowiki-managesubjects-tab": "Data",
+	"neowiki-edit-text-tab": "Edit text",
 	"neowiki-managesubjects-title": "Subjects on $1",
 	"neowiki-managesubjects-not-applicable": "Subject management is not available on this page.",
 	"neowiki-managesubjects-add-button": "Create subject",
@@ -535,7 +536,7 @@
 	"neowiki-config-docs-column-setting": "LocalSettings.php setting",
 	"neowiki-config-setting-subject-first": "Wiki type",
 	"neowiki-config-setting-subject-first-page-first": "Page-first",
-	"neowiki-config-setting-subject-first-page-first-help": "A Subject is stored on the page it is created from, and links to it lead to that page.",
+	"neowiki-config-setting-subject-first-page-first-help": "A Subject is stored on the page it is created from.",
 	"neowiki-config-setting-subject-first-subject-first": "Subject-first",
 	"neowiki-config-setting-subject-first-subject-first-help": "Each new Subject gets a page of its own, which shows it.",
 	"neowiki-config-setting-enforce-validation": "Block edits that add validation errors",

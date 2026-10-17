@@ -13,6 +13,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectLabelHtml;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\ReadsMarkedSubjectLabel;
 
 /**
  * Needs the database for the page whose Subjects the view reads.
@@ -21,6 +22,8 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  * @group Database
  */
 class SubjectIdTitledPageHeadingTest extends NeoWikiIntegrationTestCase {
+
+	use ReadsMarkedSubjectLabel;
 
 	private const string SUBJECT_ID = 's1zz1111111azz5';
 	private const string SUBJECT_NAMESPACE_PAGE = 'Subject:' . self::SUBJECT_ID;
@@ -35,6 +38,12 @@ class SubjectIdTitledPageHeadingTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertStringContainsString( 'Ada Lovelace', $heading );
 		$this->assertStringContainsString( self::SUBJECT_ID, $heading );
+	}
+
+	public function testTheHeadingMarksTheLabelForThePageToReplaceWhenTheSubjectIsRenamed(): void {
+		$heading = $this->viewContentPage( $this->createPageLabelled( 'Ada Lovelace' )->getId() )->getPageTitle();
+
+		$this->assertSame( 'Ada Lovelace', self::markedSubjectLabel( $heading ) );
 	}
 
 	public function testTheBrowserTitleNamesThePageByTheLabelAlone(): void {

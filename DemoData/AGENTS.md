@@ -111,8 +111,8 @@ Use-case hub pages follow a six-section pattern:
 
 1. **Scenario**. One short paragraph framing who the dataset is for and what story it tells.
 2. **Featured**. `{{#invoke:SubjectRow|render|<id>|<id>}}` showing 2 representative subjects.
-   **Skip this section on Subject-as-page hubs** (e.g. `ACME_Inc`). The auto-rendered infobox at
-   the top already serves as the featured view.
+   **Skip this section on Subject-as-page hubs** (e.g. `ACME_Inc`). The automatically rendered Main
+   Subject already serves as the featured view.
 3. **Question Answered**. A natural-language question heading followed by a Cypher result table.
 4. **Browse**. A curated table of subjects in the dataset.
 5. **Add your own**. `{{#create_subject: schema=<Schema> | page=new}}` for the hub's central Schema,

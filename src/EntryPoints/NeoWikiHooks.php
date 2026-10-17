@@ -82,13 +82,6 @@ class NeoWikiHooks {
 
 	private const SEARCH_UPDATE_BEFORE_1_44 = 'MediaWiki\\Deferred\\SearchUpdate';
 
-	/**
-	 * Marks a page whose HTML holds the mount MainSubjectParserFunction places, as extension data on its
-	 * ParserOutput and as a property of the OutputPage showing it. Such a page gets no automatic rendering
-	 * of its Main Subject.
-	 */
-	private const string PLACES_MAIN_SUBJECT = 'neowiki-places-main-subject';
-
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
 		$carriesCreateSubjectButton = self::carriesCreateSubjectButton( $out );
 
@@ -140,7 +133,9 @@ class NeoWikiHooks {
 
 		self::headByMainSubject( $out, $builder, $revisionId );
 
-		if ( $out->getProperty( self::PLACES_MAIN_SUBJECT ) === true ) {
+		// Only a mount that reached the page counts: a condition or a Lua module can discard what the parser
+		// function returned.
+		if ( ViewHtmlBuilder::containsMainSubjectInFull( $out->getHTML() ) ) {
 			self::addSubjectUiConfig( $out );
 			return;
 		}
@@ -251,7 +246,7 @@ class NeoWikiHooks {
 		}
 
 		// The revision shows its Main Subject where it places it, as an infobox on a diff.
-		if ( $parserOutput->getExtensionData( self::PLACES_MAIN_SUBJECT ) === true ) {
+		if ( ViewHtmlBuilder::containsMainSubjectInFull( $parserOutput->getContentHolderText() ) ) {
 			return;
 		}
 
@@ -588,22 +583,6 @@ class NeoWikiHooks {
 				return $parserFunction->handle( $parser, ...$args );
 			}
 		);
-	}
-
-	/**
-	 * Only a mount that reached the HTML counts: a condition or a Lua module can discard what the parser
-	 * function returned.
-	 */
-	public static function onParserAfterTidy( Parser $parser, string &$text ): void {
-		if ( ViewHtmlBuilder::containsMainSubjectInFull( $text ) ) {
-			$parser->getOutput()->setExtensionData( self::PLACES_MAIN_SUBJECT, true );
-		}
-	}
-
-	public static function onOutputPageParserOutput( OutputPage $out, ParserOutput $parserOutput ): void {
-		if ( $parserOutput->getExtensionData( self::PLACES_MAIN_SUBJECT ) === true ) {
-			$out->setProperty( self::PLACES_MAIN_SUBJECT, true );
-		}
 	}
 
 	/**
@@ -1210,6 +1189,10 @@ class NeoWikiHooks {
 			self::labelSettingsFormTabs( $sktemplate, $title, $links );
 		}
 
+		if ( $title !== null && NeoWikiExtension::getInstance()->isSubjectFirst() ) {
+			self::labelTextEditTab( $sktemplate, $title, $links );
+		}
+
 		if ( !SubjectsAction::isEligibleTitle( $title ) ) {
 			return;
 		}
@@ -1245,6 +1228,22 @@ class NeoWikiHooks {
 		if ( $mayEdit && isset( $links['views']['view'] ) && isset( $links['views']['edit'] ) ) {
 			$links['views']['view']['text'] = $skin->msg( 'skin-view-edit' )->text();
 			$links['views']['edit']['text'] = $skin->msg( 'neowiki-config-editor-edit-source-tab' )->text();
+		}
+	}
+
+	/**
+	 * On a subject-first wiki a page's Subjects have edit controls of their own, so the tab that edits the page's text
+	 * says so. VisualEditor adds its tab in this hook, which runs first where VisualEditor loads before NeoWiki.
+	 */
+	private static function labelTextEditTab( SkinTemplate $skin, Title $title, array &$links ): void {
+		if ( !$title->exists() || !MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $title->getNamespace() ) ) {
+			return;
+		}
+
+		$tab = isset( $links['views']['ve-edit'] ) ? 've-edit' : 'edit';
+
+		if ( isset( $links['views'][$tab] ) ) {
+			$links['views'][$tab]['text'] = $skin->msg( 'neowiki-edit-text-tab' )->text();
 		}
 	}
 

@@ -9,7 +9,7 @@ NeoWiki provides these parser functions for use in wikitext.
 | If you want to... | Use |
 |-------------------|-----|
 | Render a Subject visually on the page | [`{{#view}}`](#view) |
-| Show the page's Main Subject in full, where you choose | [`{{#main_subject}}`](#main_subject) |
+| Move the page's automatic Main Subject display to where you choose | [`{{#main_subject}}`](#main_subject) |
 | Insert one property's value inline as text | [`{{#neowiki_value}}`](#neowiki_value) |
 | Add a button that creates a Subject | [`{{#create_subject}}`](#create_subject) |
 | Run a custom Cypher query and see the raw results | [`{{#cypher_raw}}`](#cypher_raw) |
@@ -75,8 +75,8 @@ Subject both positionally and as `subject=` produce a visible parser error.
 
 ## `{{#main_subject}}`
 
-Shows the page's Main Subject where the wikitext places it, in full as Special:Subject does: with the Subjects it
-references and those referencing it.
+Shows the page's Main Subject where the wikitext places it, the way the page would show it automatically: in full on a
+subject-first wiki, as an infobox on a page-first one.
 
 ### Syntax
 
@@ -87,7 +87,7 @@ references and those referencing it.
 ### Notes
 
 - Renders nothing when the page has no Main Subject.
-- Replaces the page's automatic display of its Main Subject. For an infobox as well, add [`{{#view: }}`](#view).
+- Replaces the page's automatic display of its Main Subject.
 - Works once per page: a second `{{#main_subject}}` shows nothing.
 - On an old revision or a diff, shows the Main Subject as an infobox.
 - Rendering happens client-side, so the Subject appears once the page's JavaScript has loaded.

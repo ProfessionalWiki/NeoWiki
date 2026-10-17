@@ -2,7 +2,7 @@
 
 Date: 2026-09-18
 
-Status: Accepted (2026-09-28). Amended 2026-10-15: Special:Subject forwards to a Subject's page when that page shows
+Status: Accepted (2026-09-28). Amended 2026-10-17: Special:Subject forwards to a Subject's page when that page shows
 it in full.
 
 ## Context
