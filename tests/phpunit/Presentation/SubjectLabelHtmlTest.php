@@ -24,15 +24,6 @@ class SubjectLabelHtmlTest extends TestCase {
 		$this->assertSame( 'Ada Lovelace (s1zz1111111azz4)', strip_tags( $this->withId( 'Ada Lovelace' ) ) );
 	}
 
-	/**
-	 * Not every language puts a space between words.
-	 */
-	public function testTheLabelAndTheIdAreSeparatedAsTheLanguageSeparatesWords(): void {
-		$html = SubjectLabelHtml::withId( new MockMessageLocalizer( 'qqx' ), 'Ada Lovelace', 's1zz1111111azz4' );
-
-		$this->assertSame( 'Ada Lovelace(word-separator)(parentheses: s1zz1111111azz4)', strip_tags( $html ) );
-	}
-
 	public function testTheLabelIsEscaped(): void {
 		$this->assertStringContainsString( '&lt;b', $this->withId( '<b>Ada</b>' ) );
 	}

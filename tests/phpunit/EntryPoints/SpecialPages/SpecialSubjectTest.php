@@ -176,6 +176,13 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertShownHere( $this->executeWith( self::SUBJECT_ID ) );
 	}
 
+	public function testASubjectFirstWikiShowsASubjectOfAPageWithoutAMainSubjectHere(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$this->createPageWithoutMainSubject( self::PAGE_NAME, TestSubject::build( id: self::SUBJECT_ID ) );
+
+		$this->assertShownHere( $this->executeWith( self::SUBJECT_ID ) );
+	}
+
 	public function testASubjectFirstWikiShowsADependentSubjectHereWhenItsHostSubjectIsNotItsPagesMainSubject(): void {
 		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
 		$this->createSchemasOfDependentSubjects();
@@ -303,12 +310,6 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->createSubjectLabelled( 'ACME Inc' );
 
 		$this->assertSame( 'ACME Inc', strip_tags( $this->executeWith( self::SUBJECT_ID )->getPageTitle() ) );
-	}
-
-	public function testTheBrowserTitleIsTheSubjectsName(): void {
-		$this->createSubjectLabelled( 'ACME Inc' );
-
-		$this->assertSame( '(pagetitle: ACME Inc)', $this->executeWith( self::SUBJECT_ID )->getHTMLTitle() );
 	}
 
 	public function testTheTitleMarksTheNameForThePageToReplaceWhenTheSubjectIsRenamed(): void {

@@ -39,7 +39,7 @@ class EditTextTabTest extends NeoWikiIntegrationTestCase {
 		$this->editPage( self::PAGE_NAME, 'Text of the page' );
 
 		$this->assertSame(
-			[ 've-edit' => 'Edit text', 'edit' => 'Edit source' ],
+			[ 've-edit' => '(neowiki-edit-text-tab)', 'edit' => 'Edit source' ],
 			$this->editTabsOf( self::PAGE_NAME, self::VISUAL_EDITOR_TABS )
 		);
 	}
@@ -48,7 +48,7 @@ class EditTextTabTest extends NeoWikiIntegrationTestCase {
 		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
 		$this->editPage( self::PAGE_NAME, 'Text of the page' );
 
-		$this->assertSame( [ 'edit' => 'Edit text' ], $this->editTabsOf( self::PAGE_NAME, self::CORE_TABS ) );
+		$this->assertSame( [ 'edit' => '(neowiki-edit-text-tab)' ], $this->editTabsOf( self::PAGE_NAME, self::CORE_TABS ) );
 	}
 
 	public function testAPageFirstWikiKeepsTheEditTabs(): void {
@@ -97,7 +97,7 @@ class EditTextTabTest extends NeoWikiIntegrationTestCase {
 	 */
 	private function editTabsOf( string $pageName, array $views ): array {
 		$context = new RequestContext();
-		$context->setLanguage( 'en' );
+		$context->setLanguage( 'qqx' );
 		$context->setTitle( Title::newFromText( $pageName ) );
 
 		$skin = new SkinTemplate( 'fallback' );
