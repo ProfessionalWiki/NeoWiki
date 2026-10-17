@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
 use MediaWiki\Context\RequestContext;
+use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -68,6 +69,18 @@ class EditTextTabTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
+	 * As Special:WhatLinksHere does for the page it is about.
+	 */
+	public function testASubjectFirstWikiNamesTheEditTabEditTextOnASpecialPageShowingThePagesTabs(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
+		$this->editPage( self::PAGE_NAME, 'Text of the page' );
+		$skin = $this->skinOn( SpecialPage::getTitleFor( 'Whatlinkshere', self::PAGE_NAME ) );
+		$skin->setRelevantTitle( Title::newFromText( self::PAGE_NAME ) );
+
+		$this->assertSame( [ 'edit' => '(neowiki-edit-text-tab)' ], $this->editTabsDrawnBy( $skin, self::CORE_TABS ) );
+	}
+
+	/**
 	 * That tab creates the page, which has no Subject yet.
 	 */
 	public function testASubjectFirstWikiKeepsTheCreateTabOfAPageThatDoesNotExist(): void {
@@ -90,18 +103,31 @@ class EditTextTabTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
+	 * @param array<string, array{text: string}> $views
+	 * @return array<string, string>
+	 */
+	private function editTabsOf( string $pageName, array $views ): array {
+		return $this->editTabsDrawnBy( $this->skinOn( Title::newFromText( $pageName ) ), $views );
+	}
+
+	private function skinOn( Title $title ): SkinTemplate {
+		$context = new RequestContext();
+		$context->setLanguage( 'qqx' );
+		$context->setTitle( $title );
+
+		$skin = new SkinTemplate( 'fallback' );
+		$skin->setContext( $context );
+
+		return $skin;
+	}
+
+	/**
 	 * The text of each tab that edits the page, by its key, once NeoWiki has drawn the tabs.
 	 *
 	 * @param array<string, array{text: string}> $views The tabs as the hooks before NeoWiki's leave them
 	 * @return array<string, string>
 	 */
-	private function editTabsOf( string $pageName, array $views ): array {
-		$context = new RequestContext();
-		$context->setLanguage( 'qqx' );
-		$context->setTitle( Title::newFromText( $pageName ) );
-
-		$skin = new SkinTemplate( 'fallback' );
-		$skin->setContext( $context );
+	private function editTabsDrawnBy( SkinTemplate $skin, array $views ): array {
 		$links = [ 'views' => $views ];
 
 		NeoWikiHooks::onSkinTemplateNavigationUniversal( $skin, $links );

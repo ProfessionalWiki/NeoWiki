@@ -318,6 +318,15 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'ACME Inc', self::markedSubjectLabel( $this->executeWith( self::SUBJECT_ID )->getPageTitle() ) );
 	}
 
+	/**
+	 * Saving the Subject without a label puts "No label defined" in place of its name, without a reload.
+	 */
+	public function testTheTitleOfASubjectWithALabelCarriesTheStylesOfNoLabelDefined(): void {
+		$this->createSubjectLabelled( 'ACME Inc' );
+
+		$this->assertContains( SubjectLabelHtml::STYLE_MODULE, $this->executeWith( self::SUBJECT_ID )->getModuleStyles() );
+	}
+
 	private function createSubjectLabelled( string $label ): void {
 		$this->createPageWithSubjects(
 			self::PAGE_NAME,

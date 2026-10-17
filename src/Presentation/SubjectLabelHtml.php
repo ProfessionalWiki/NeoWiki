@@ -33,6 +33,15 @@ class SubjectLabelHtml {
 	}
 
 	/**
+	 * The name alone, for a name someone chose. Carries the styles of the "No label defined" that a save can put in
+	 * its place.
+	 */
+	public static function headPageByName( OutputPage $out, string $name ): void {
+		$out->setPageTitle( self::label( $out, $name ) );
+		$out->addModuleStyles( [ self::STYLE_MODULE ] );
+	}
+
+	/**
 	 * Each part isolated, so a label in one script direction does not reorder the id beside it.
 	 */
 	public static function withId( MessageLocalizer $localizer, ?string $label, string $subjectId ): string {
@@ -47,7 +56,7 @@ class SubjectLabelHtml {
 	 * Marked by a class, which the page heading keeps where it drops data-mw-* attributes, so that the page
 	 * can show a new label without a reload.
 	 */
-	public static function label( MessageLocalizer $localizer, ?string $label ): string {
+	private static function label( MessageLocalizer $localizer, ?string $label ): string {
 		return Html::rawElement( 'span', [ 'class' => 'ext-neowiki-subject-label' ], self::labelText( $localizer, $label ) );
 	}
 

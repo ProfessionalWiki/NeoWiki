@@ -151,7 +151,7 @@ class SpecialSubject extends SpecialPage {
 			return;
 		}
 
-		$out->setPageTitle( SubjectLabelHtml::label( $this, $subject->displayName ) );
+		SubjectLabelHtml::headPageByName( $out, $subject->displayName );
 	}
 
 	public function getGroupName(): string {

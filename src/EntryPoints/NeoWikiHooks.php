@@ -1189,9 +1189,7 @@ class NeoWikiHooks {
 			self::labelSettingsFormTabs( $sktemplate, $title, $links );
 		}
 
-		if ( $title !== null && NeoWikiExtension::getInstance()->isSubjectFirst() ) {
-			self::labelTextEditTab( $sktemplate, $title, $links );
-		}
+		self::labelTextEditTab( $sktemplate, $links );
 
 		if ( !SubjectsAction::isEligibleTitle( $title ) ) {
 			return;
@@ -1235,8 +1233,14 @@ class NeoWikiHooks {
 	 * On a subject-first wiki a page's Subjects have edit controls of their own, so the tab that edits the page's text
 	 * says so. VisualEditor adds its tab in this hook, which runs first where VisualEditor loads before NeoWiki.
 	 */
-	private static function labelTextEditTab( SkinTemplate $skin, Title $title, array &$links ): void {
-		if ( !$title->exists() || !MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $title->getNamespace() ) ) {
+	private static function labelTextEditTab( SkinTemplate $skin, array &$links ): void {
+		$title = $skin->getRelevantTitle();
+
+		if ( $title === null
+			|| !$title->exists()
+			|| !MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $title->getNamespace() )
+			|| !NeoWikiExtension::getInstance()->isSubjectFirst()
+		) {
 			return;
 		}
 
