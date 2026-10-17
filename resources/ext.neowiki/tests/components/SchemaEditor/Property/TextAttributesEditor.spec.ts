@@ -5,7 +5,7 @@ import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttribu
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newTextProperty, TextProperty } from '@/domain/propertyTypes/Text';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { createTestWrapper, editedProperty, FieldProps, reportUnparseableNumber, setupMwMock } from '../../../VueTestHelpers.ts';
+import { createTestWrapper, FieldProps, reportUnparseableNumber, setupMwMock } from '../../../VueTestHelpers.ts';
 
 describe( 'TextAttributesEditor', () => {
 	beforeEach( () => {
@@ -312,7 +312,7 @@ describe( 'TextAttributesEditor', () => {
 			await wrapper.find( '.text-attributes__max-length input' ).setValue( '3' );
 
 			expect( getMaxLengthFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( editedProperty<TextProperty>( wrapper ).maxLength ).toBeUndefined();
+			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
 		} );
 
 		it( 'refuses a minimum length above the maximum length it kept', async () => {
@@ -322,7 +322,7 @@ describe( 'TextAttributesEditor', () => {
 			await wrapper.find( '.text-attributes__min-length input' ).setValue( '8' );
 
 			expect( getMinLengthFieldProps( wrapper ).status ).toBe( 'error' );
-			expect( editedProperty<TextProperty>( wrapper ).minLength ).toBeUndefined();
+			expect( wrapper.emitted( 'update:property' ) ).toBeFalsy();
 		} );
 	} );
 } );

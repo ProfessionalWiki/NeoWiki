@@ -145,11 +145,7 @@ export function selectedText( input: HTMLInputElement ): string {
  * typing, so the browser's report is stubbed here.
  */
 export async function reportUnparseableNumber( input: DOMWrapper<Element> ): Promise<void> {
-	Object.defineProperty( input.element, 'validity', {
-		configurable: true,
-		get: () => ( { badInput: true } ),
-	} );
-
+	stubBadInput( input, true );
 	await input.setValue( '' );
 }
 
@@ -167,12 +163,15 @@ export async function reportPartlyClearedDate( input: DOMWrapper<Element> ): Pro
  * validity.badInput. Browsers fire no input event for this, only the release of the key.
  */
 export async function clearRemainingDateParts( input: DOMWrapper<Element> ): Promise<void> {
+	stubBadInput( input, false );
+	await input.trigger( 'keyup', { key: 'Backspace' } );
+}
+
+function stubBadInput( input: DOMWrapper<Element>, badInput: boolean ): void {
 	Object.defineProperty( input.element, 'validity', {
 		configurable: true,
-		get: () => ( { badInput: false } ),
+		get: () => ( { badInput } ),
 	} );
-
-	await input.trigger( 'keyup', { key: 'Backspace' } );
 }
 
 /** The value a value input leaves its v-model holding: the last one it reported, else the one it was given. */

@@ -17,6 +17,10 @@ export interface ValueInputProps<T extends PropertyDefinition> {
 }
 
 export type ValueInputEmits = {
+	/**
+	 * Not emitted while the widget holds text it cannot turn into a Value, such as "-" in a
+	 * number field: reporting it as empty would erase the stored value.
+	 */
 	'update:modelValue': [ Value | undefined ];
 	/**
 	 * Emitted when the user edits a field that had a backend violation, so
