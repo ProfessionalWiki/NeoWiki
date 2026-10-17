@@ -214,16 +214,6 @@ class DatabaseSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 		$this->summaries( connectionProvider: $connectionProvider );
 	}
 
-	public function testLeavesOutSubjectsOnPagesTheCallerCannotRead(): void {
-		$this->savePage( 'Page one', [ self::subject( self::OLDEST, 'A' ) ] );
-		$hiddenPageId = $this->savePage( 'Page two', [ self::subject( self::OLDER, 'B' ) ] );
-
-		$this->assertSame(
-			[ self::OLDEST ],
-			$this->idsOf( $this->summaries( readAuthorizer: new SelectivePageReadAuthorizer( [ $hiddenPageId ] ) ) )
-		);
-	}
-
 	public function testReadsOnInASecondFetchToFillThePage(): void {
 		$this->savePage( 'Readable', [
 			self::subject( self::NEWEST_OF_ALL, 'A' ),

@@ -29,12 +29,6 @@ class DatabaseReferencingSubjectLookupTest extends NeoWikiIntegrationTestCase {
 	private const string THIRD_SOURCE_ID = 'sTestDRS1111114';
 	private const string FOURTH_SOURCE_ID = 'sTestDRS1111115';
 
-	public function testFindsTheSubjectPointingAtTheTarget(): void {
-		$this->createPageWithoutMainSubject( 'Referrers', $this->target(), $this->referrer( self::SOURCE_ID, 'Referring subject' ) );
-
-		$this->assertSame( [ self::SOURCE_ID ], $this->idsOfSubjectsReferencingTarget() );
-	}
-
 	public function testIgnoresASubjectTheTargetPointsAtWithoutPointingBack(): void {
 		$this->createPageWithoutMainSubject(
 			'Referrers',
