@@ -17,6 +17,10 @@ export interface ValueInputProps<T extends PropertyDefinition> {
 }
 
 export type ValueInputEmits = {
+	/**
+	 * Not emitted while the widget holds text it cannot turn into a Value, such as "-" in a
+	 * number field: reporting it as empty would erase the stored value.
+	 */
 	'update:modelValue': [ Value | undefined ];
 	/**
 	 * Emitted when the user edits a field that had a backend violation, so
@@ -39,8 +43,8 @@ export interface ValueInputExposes {
 	 * this state: text like "5foo" stays on screen while the value reads as
 	 * empty, so getCurrentValue() has nothing to return. Callers hold the save
 	 * while any input reports a message, and surface that same message, rather
-	 * than dropping text the user can still see. Inputs whose widget cannot
-	 * reach such a state omit this.
+	 * than dropping text the user can still see. Inputs that omit this keep
+	 * returning the last value their widget could read.
 	 */
 	unparseableInputMessage?(): string | null;
 }

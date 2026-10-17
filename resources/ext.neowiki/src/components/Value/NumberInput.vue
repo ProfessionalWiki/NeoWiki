@@ -15,11 +15,11 @@
 			/>
 		</template>
 		<CdxTextInput
+			ref="textInput"
 			:model-value="internalInputValue"
 			:start-icon="startIcon"
 			input-type="number"
 			@update:model-value="onInput"
-			@input="onNativeInput"
 			@wheel.passive="onWheel"
 		/>
 	</CdxField>
@@ -39,6 +39,7 @@ import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/component
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useFieldServerViolation } from '@/composables/useFieldServerViolation.ts';
 import { violationStatus } from '@/composables/useServerViolations.ts';
+import { holdsUnparseableInput } from '@/presentation/unparseableInput.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<NumberProperty>>(),
@@ -59,6 +60,8 @@ const { validationMessages, clearServerViolation } = useFieldServerViolation(
 );
 
 const internalInputValue = ref<string>( '' );
+
+const textInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
 
 // A number input shows text it cannot parse, such as "5foo", while reporting an
 // empty value to JavaScript; the raw characters are never exposed. badInput is
@@ -88,13 +91,14 @@ watch( () => props.modelValue, ( newValue ) => {
 
 function onInput( newValue: string ): void {
 	internalInputValue.value = newValue;
-	const value = newValue === '' ? undefined : newNumberValue( Number( newValue ) );
-	emit( 'update:modelValue', value );
+	unparseableInput.value = holdsUnparseableInput( textInput.value );
 	clearServerViolation();
-}
 
-function onNativeInput( event: Event ): void {
-	unparseableInput.value = ( event.target as HTMLInputElement ).validity.badInput;
+	if ( unparseableInput.value ) {
+		return;
+	}
+
+	emit( 'update:modelValue', newValue === '' ? undefined : newNumberValue( Number( newValue ) ) );
 }
 
 // Chromium steps a focused number field with the wheel, even a wheel turned to scroll the form past it.

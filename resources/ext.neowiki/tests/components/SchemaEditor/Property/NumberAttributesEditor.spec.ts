@@ -5,7 +5,7 @@ import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAtt
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newNumberProperty, NumberProperty } from '@/domain/propertyTypes/Number';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { createTestWrapper, FieldProps, setupMwMock } from '../../../VueTestHelpers.ts';
+import { createTestWrapper, FieldProps, reportUnparseableNumber, setupMwMock } from '../../../VueTestHelpers.ts';
 
 describe( 'NumberAttributesEditor', () => {
 	beforeEach( () => {
@@ -269,6 +269,43 @@ describe( 'NumberAttributesEditor', () => {
 
 			expect( wrapper.emitted( 'update:property' ) ).toBeTruthy();
 			expect( wrapper.emitted( 'update:property' )?.[ 0 ] ).toEqual( [ { minimum: undefined } ] );
+		} );
+	} );
+
+	// Any report counts as an edit, which enables the save.
+	describe( 'Text that cannot be parsed', () => {
+		const property = newNumberProperty( { minimum: 1, maximum: 100, precision: 2 } );
+
+		it.each( [
+			[ 'minimum', '.number-attributes__minimum' ],
+			[ 'maximum', '.number-attributes__maximum' ],
+			[ 'precision', '.number-attributes__precision' ],
+		] as const )( 'reports nothing for the %s while its text cannot be parsed', async ( _, field ) => {
+			const wrapper = newWrapper( { property } );
+
+			await reportUnparseableNumber( wrapper.find( `${ field } input` ) );
+
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
+		} );
+
+		it( 'refuses a maximum below the minimum it kept', async () => {
+			const wrapper = newWrapper( { property: newNumberProperty( { minimum: 5 } ) } );
+			await reportUnparseableNumber( wrapper.find( '.number-attributes__minimum input' ) );
+
+			await wrapper.find( '.number-attributes__maximum input' ).setValue( '3' );
+
+			expect( getMaximumFieldProps( wrapper ).status ).toBe( 'error' );
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
+		} );
+
+		it( 'refuses a minimum above the maximum it kept', async () => {
+			const wrapper = newWrapper( { property: newNumberProperty( { maximum: 5 } ) } );
+			await reportUnparseableNumber( wrapper.find( '.number-attributes__maximum input' ) );
+
+			await wrapper.find( '.number-attributes__minimum input' ).setValue( '8' );
+
+			expect( getMinimumFieldProps( wrapper ).status ).toBe( 'error' );
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 	} );
 } );

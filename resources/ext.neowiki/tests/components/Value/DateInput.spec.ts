@@ -6,7 +6,7 @@ import { newStringValue, StringValue, ValueType } from '@/domain/Value';
 import DateInput from '@/components/Value/DateInput.vue';
 import { newDateProperty, DateProperty } from '@/domain/propertyTypes/Date';
 import { ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { createTestWrapper } from '../../VueTestHelpers.ts';
+import { boundValue, clearRemainingDateParts, createTestWrapper, reportPartlyClearedDate } from '../../VueTestHelpers.ts';
 
 describe( 'DateInput', () => {
 	beforeEach( () => {
@@ -211,6 +211,87 @@ describe( 'DateInput', () => {
 			const minCall = findMessageCall( 'neowiki-field-min-value' );
 			expect( minCall?.[ 1 ] ).not.toBe( minimum );
 			expect( minCall?.[ 1 ] ).not.toMatch( /^\d{4}-\d{2}-\d{2}$/ );
+		} );
+	} );
+
+	// Any report counts as an edit, which enables the save.
+	describe( 'Clearing the date part by part', () => {
+		const date = newStringValue( '2025-06-15' );
+
+		it( 'reports nothing while some parts remain', async () => {
+			const wrapper = newWrapper( { modelValue: date } );
+
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
+		} );
+
+		it( 'returns the last date it could read as the current value while some parts remain', async () => {
+			const wrapper = newWrapper( { modelValue: date } );
+			await wrapper.find( 'input' ).setValue( '2030-03-20' );
+
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( newStringValue( '2030-03-20' ) );
+		} );
+
+		it.each( [ 'Backspace', 'Delete' ] as const )( 'empties the value once %s clears every part', async ( key ) => {
+			const wrapper = newWrapper( { modelValue: date } );
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			await clearRemainingDateParts( wrapper.find( 'input' ), key );
+
+			expect( boundValue( wrapper ) ).toBeUndefined();
+		} );
+
+		it( 'returns no current value once every part is cleared', async () => {
+			const wrapper = newWrapper( { modelValue: date } );
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			await clearRemainingDateParts( wrapper.find( 'input' ), 'Backspace' );
+
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
+		} );
+
+		it( 'reports nothing for a deletion key released in a field that still shows a date', async () => {
+			const wrapper = newWrapper( { modelValue: date } );
+
+			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Backspace' } );
+
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
+		} );
+
+		// The browser shows nothing for a date it cannot display, such as one in the year 0.
+		it( 'keeps a date the field cannot show when a key other than Backspace or Delete is released in it', async () => {
+			const wrapper = newWrapper( { modelValue: newStringValue( '0000-01-01' ) } );
+
+			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Tab' } );
+
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
+		} );
+
+		it( 'reports nothing for a deletion key released in a field that held no date', async () => {
+			const wrapper = newWrapper( { modelValue: undefined } );
+
+			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Backspace' } );
+
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
+		} );
+
+		it( 'leaves a partly cleared date as the user left it while it has a server violation', async () => {
+			const wrapper: VueWrapper = createTestWrapper( DateInput, {
+				modelValue: date,
+				property: newDateProperty( { name: 'Foo' } ),
+				serverViolations: [
+					{ propertyName: 'Foo', code: 'min-value', args: [ '2030-01-01' ], severity: 'error', valuePartIndex: null },
+				],
+				// Drops the violation as the Subject editor does, which re-renders the field.
+				'onClear-server-violation': () => wrapper.setProps( { serverViolations: [] } ),
+			} );
+
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			expect( ( wrapper.find( 'input' ).element as HTMLInputElement ).value ).toBe( '' );
 		} );
 	} );
 } );

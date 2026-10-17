@@ -16,6 +16,7 @@
 				</template>
 
 				<CdxTextInput
+					ref="minimumTextInput"
 					:model-value="minimumInput"
 					input-type="number"
 					@update:model-value="updateMinimum"
@@ -38,6 +39,7 @@
 				</template>
 
 				<CdxTextInput
+					ref="maximumTextInput"
 					:model-value="maximumInput"
 					input-type="number"
 					@update:model-value="updateMaximum"
@@ -60,6 +62,7 @@
 				{{ $i18n( 'neowiki-property-editor-precision' ).text() }}
 			</template>
 			<CdxTextInput
+				ref="precisionTextInput"
 				:model-value="precisionInput"
 				input-type="number"
 				min="0"
@@ -79,6 +82,7 @@ import { AttributesEditorEmits, AttributesEditorProps } from '@/components/Schem
 import { minExceedsMax } from '@/components/SchemaEditor/Property/minExceedsMax.ts';
 import NeoNestedField from '@/components/common/NeoNestedField.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
+import { holdsUnparseableInput } from '@/presentation/unparseableInput.ts';
 
 const props = defineProps<AttributesEditorProps<NumberProperty>>();
 const emit = defineEmits<AttributesEditorEmits<NumberProperty>>();
@@ -89,6 +93,9 @@ const precisionInput = ref( props.property.precision?.toString() ?? '' );
 const minimumError = ref<string | null>( null );
 const maximumError = ref<string | null>( null );
 const precisionError = ref<string | null>( null );
+const minimumTextInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
+const maximumTextInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
+const precisionTextInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
 
 watch( () => props.property.minimum, ( newVal ) => {
 	minimumInput.value = newVal?.toString() ?? '';
@@ -109,6 +116,10 @@ const isValidPrecision = ( value: number | undefined ): boolean =>
 	value === undefined || value >= 0;
 
 const updateMinimum = ( value: string ): void => {
+	if ( holdsUnparseableInput( minimumTextInput.value ) ) {
+		return;
+	}
+
 	minimumInput.value = value;
 
 	if ( minExceedsMax( value, maximumInput.value ) ) {
@@ -122,6 +133,10 @@ const updateMinimum = ( value: string ): void => {
 };
 
 const updateMaximum = ( value: string ): void => {
+	if ( holdsUnparseableInput( maximumTextInput.value ) ) {
+		return;
+	}
+
 	maximumInput.value = value;
 
 	if ( minExceedsMax( minimumInput.value, value ) ) {
@@ -139,6 +154,10 @@ const updateSeverity = ( constraint: 'minimum' | 'maximum', severity: Severity )
 };
 
 const updatePrecision = ( value: string ): void => {
+	if ( holdsUnparseableInput( precisionTextInput.value ) ) {
+		return;
+	}
+
 	precisionInput.value = value;
 	const numValue = parseNumber( value );
 
