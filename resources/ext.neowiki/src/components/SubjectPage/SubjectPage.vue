@@ -271,7 +271,7 @@ async function readSubject(): Promise<void> {
 		return;
 	}
 
-	// The server headed the page by what the first read finds, and a re-read can follow a rename.
+	// The server heads the page by what the first read finds; a re-read can follow a rename.
 	if ( subject.value !== null ) {
 		showLabelInPageHeading( requested );
 	}

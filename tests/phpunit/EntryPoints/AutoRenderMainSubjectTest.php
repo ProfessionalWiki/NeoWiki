@@ -34,7 +34,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 	private const string PAGE_NAME = 'Auto render page';
 	private const string PAGE_TEXT = 'Text of the page';
 
-	private const string IN_FULL = 'id="ext-neowiki-main-subject"';
+	private const string PLACEHOLDER = 'id="ext-neowiki-main-subject"';
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -120,9 +120,9 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->createPageWithText( self::PAGE_TEXT );
 
 		$html = $this->renderRequest( [] );
-		$inFull = $this->inFullElement( $html );
+		$inFull = $this->placeholderElement( $html );
 
-		$this->assertAppearsInOrder( $html, self::PAGE_TEXT, self::IN_FULL );
+		$this->assertAppearsInOrder( $html, self::PAGE_TEXT, self::PLACEHOLDER );
 		// The frontend mounts the Subject UI on this element, and the focus styles apply under its class.
 		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $inFull );
 		$this->assertStringContainsString( 'ext-neowiki-ui', $inFull );
@@ -145,7 +145,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $html );
 		$this->assertTrue( $this->showsAnInfobox( $html ) );
-		$this->assertStringNotContainsString( self::IN_FULL, $html );
+		$this->assertStringNotContainsString( self::PLACEHOLDER, $html );
 	}
 
 	public function testADiffOnASubjectFirstWikiShowsTheMainSubjectAsAnInfobox(): void {
@@ -154,7 +154,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		$html = $this->renderDiffOfASubjectEdit();
 
 		$this->assertTrue( $this->showsAnInfobox( $html ) );
-		$this->assertStringNotContainsString( self::IN_FULL, $html );
+		$this->assertStringNotContainsString( self::PLACEHOLDER, $html );
 	}
 
 	/**
@@ -168,8 +168,8 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		$html = $this->renderRequest( [] );
 
 		$this->assertSame( 1, substr_count( $html, self::viewOf( self::SUBJECT_ID ) ) );
-		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->inFullElement( $html ) );
-		$this->assertAppearsInOrder( $html, 'Before it.', self::IN_FULL, 'After it.' );
+		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->placeholderElement( $html ) );
+		$this->assertAppearsInOrder( $html, 'Before it.', self::PLACEHOLDER, 'After it.' );
 	}
 
 	public function testAnOldRevisionOfAPagePlacingItsMainSubjectShowsItOnlyWhereItIsPlaced(): void {
@@ -180,7 +180,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		$html = $this->renderRequest( [ 'oldid' => (string)$oldRevision->getId() ] );
 
 		$this->assertSame( 1, substr_count( $html, self::viewOf( self::SUBJECT_ID ) ) );
-		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->inFullElement( $html ) );
+		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->placeholderElement( $html ) );
 	}
 
 	public function testAnOldRevisionPlacesTheMainSubjectItHad(): void {
@@ -198,7 +198,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 
 		$html = $this->renderRequest( [ 'oldid' => (string)$oldRevision->getId() ] );
 
-		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->inFullElement( $html ) );
+		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->placeholderElement( $html ) );
 	}
 
 	/**
@@ -237,7 +237,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		$html = $this->renderRequest( [ 'diff' => 'prev', 'oldid' => (string)$edit->getId() ] );
 
 		$this->assertSame( 1, substr_count( $html, self::viewOf( self::SUBJECT_ID ) ) );
-		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->inFullElement( $html ) );
+		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->placeholderElement( $html ) );
 	}
 
 	public function testAPlacementThatDoesNotReachThePageLeavesAutomaticRenderingOn(): void {
@@ -253,7 +253,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 
 		$html = $this->renderRequest( [] );
 
-		$this->assertStringContainsString( self::IN_FULL, $html );
+		$this->assertStringContainsString( self::PLACEHOLDER, $html );
 		$this->assertFalse( $this->showsAnInfobox( $html ) );
 	}
 
@@ -337,11 +337,10 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * The opening tag of the element the Main Subject is mounted on where the page places it or shows it in full, or
-	 * an empty string without one.
+	 * The opening tag of the Main Subject's placeholder, or an empty string without one.
 	 */
-	private function inFullElement( string $html ): string {
-		return preg_match( '/<\w+[^>]*' . self::IN_FULL . '[^>]*>/', $html, $matches ) === 1 ? $matches[0] : '';
+	private function placeholderElement( string $html ): string {
+		return preg_match( '/<\w+[^>]*' . self::PLACEHOLDER . '[^>]*>/', $html, $matches ) === 1 ? $matches[0] : '';
 	}
 
 	private function showsAnInfobox( string $html ): bool {

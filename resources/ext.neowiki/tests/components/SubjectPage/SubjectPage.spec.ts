@@ -259,6 +259,29 @@ function pageHeading(): string {
 	return document.querySelector( '#firstHeading' )!.textContent!;
 }
 
+/**
+ * The address the page is at after the act, starting at the given one, whether it navigates by assigning `href` or by
+ * `assign()`. Restored by re-stubbing rather than vi.unstubAllGlobals(), which would take the `mw` stub with it, out
+ * from under every component this file leaves mounted.
+ */
+async function addressAfter( href: string, act: () => Promise<void> ): Promise<string> {
+	const realLocation = window.location;
+	const stub = {
+		href,
+		assign: ( url: string ): void => {
+			stub.href = url;
+		},
+	};
+	vi.stubGlobal( 'location', stub );
+
+	try {
+		await act();
+		return stub.href;
+	} finally {
+		vi.stubGlobal( 'location', realLocation );
+	}
+}
+
 async function confirmDelete( wrapper: VueWrapper, control: ReturnType<VueWrapper['find']> ): Promise<void> {
 	await control.trigger( 'click' );
 	// The click first settles where the deletion goes, which on a subject-first wiki is a read.
@@ -621,19 +644,11 @@ describe( 'SubjectPage', () => {
 			const deleteSubject = vi.fn().mockResolvedValue( undefined );
 			const wrapper = await mountLoadedPage( true );
 			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockImplementation( deleteSubject );
-			// Restored by re-stubbing rather than vi.unstubAllGlobals(), which would take the `mw`
-			// stub with it, out from under every component this file leaves mounted.
-			const realLocation = window.location;
-			vi.stubGlobal( 'location', { href: '' } );
 
-			try {
+			expect( await addressAfter( '', async () => {
 				await wrapper.find( `${ REQUESTED_ROW } ${ DELETE_CONTROL }` ).trigger( 'click' );
 				await flushPromises();
-
-				expect( location.href ).toBe( '/wiki/ACME Inc?action=delete' );
-			} finally {
-				vi.stubGlobal( 'location', realLocation );
-			}
+			} ) ).toBe( '/wiki/ACME Inc?action=delete' );
 
 			expect( wrapper.findComponent( SummaryAction ).exists() ).toBe( false );
 			expect( deleteSubject ).not.toHaveBeenCalled();
@@ -1381,17 +1396,11 @@ describe( 'SubjectPage', () => {
 			const wrapper = await mountLoadedPage( false, false, { onHostingPage: true } );
 			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
 			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle() );
-			// Restored by re-stubbing, as above.
-			const realLocation = window.location;
-			vi.stubGlobal( 'location', { href: '/w/index.php?title=ACME_Inc&oldid=7' } );
 
-			try {
-				await confirmDelete( wrapper, wrapper.find( `${ REFERENCED_ROW } ${ DELETE_CONTROL }` ) );
-
-				expect( location.href ).toBe( '/w/index.php?title=ACME_Inc&oldid=7' );
-			} finally {
-				vi.stubGlobal( 'location', realLocation );
-			}
+			expect( await addressAfter(
+				'/w/index.php?title=ACME_Inc&oldid=7',
+				() => confirmDelete( wrapper, wrapper.find( `${ REFERENCED_ROW } ${ DELETE_CONTROL }` ) ),
+			) ).toBe( '/w/index.php?title=ACME_Inc&oldid=7' );
 
 			expect( wrapper.find( REFERENCED_ROW ).exists() ).toBe( false );
 		} );
@@ -1400,17 +1409,11 @@ describe( 'SubjectPage', () => {
 			canDeleteSubjectRef.value = true;
 			const wrapper = await mountLoadedPage( false, false, { onHostingPage: true } );
 			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
-			// Restored by re-stubbing, as above.
-			const realLocation = window.location;
-			vi.stubGlobal( 'location', { href: '/w/index.php?title=ACME_Inc&oldid=7' } );
 
-			try {
-				await confirmDelete( wrapper, wrapper.find( `${ REQUESTED_ROW } ${ DELETE_CONTROL }` ) );
-
-				expect( location.href ).toBe( '/wiki/' + PAGE_NAME );
-			} finally {
-				vi.stubGlobal( 'location', realLocation );
-			}
+			expect( await addressAfter(
+				'/w/index.php?title=ACME_Inc&oldid=7',
+				() => confirmDelete( wrapper, wrapper.find( `${ REQUESTED_ROW } ${ DELETE_CONTROL }` ) ),
+			) ).toBe( '/wiki/' + PAGE_NAME );
 
 			expect( mw.storage.session.set ).toHaveBeenCalledWith( 'neowiki-managesubjects-delete-success', expect.anything() );
 			expect( mw.notify ).not.toHaveBeenCalled();

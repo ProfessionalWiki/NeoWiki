@@ -96,6 +96,16 @@ describe( 'showLabelInPageHeading', () => {
 
 	} );
 
+	it( 'leaves page text alone that gives an element the heading\'s id', () => {
+		document.body.innerHTML = '<h1 id="firstHeading">ACME Inc</h1>' +
+			'<div id="firstHeading"><span class="ext-neowiki-subject-label">Old label</span></div>';
+
+		showLabelInPageHeading( newSubject( { label: 'New label' } ) );
+
+		expect( document.body.textContent ).toBe( 'ACME IncOld label' );
+		expect( document.title ).toBe( 'Old label - Wiki' );
+	} );
+
 	it( 'leaves the title of a page someone named as it is', () => {
 		document.body.innerHTML = '<h1 id="firstHeading">ACME Inc</h1>';
 

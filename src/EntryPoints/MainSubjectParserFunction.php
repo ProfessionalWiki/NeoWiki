@@ -36,7 +36,7 @@ class MainSubjectParserFunction {
 		}
 
 		return [
-			ViewHtmlBuilder::mainSubjectInFullPlaceholderHtml( $mainSubjectId ),
+			ViewHtmlBuilder::mainSubjectPlaceholderHtml( $mainSubjectId ),
 			'noparse' => true,
 			'isHTML' => true,
 		];

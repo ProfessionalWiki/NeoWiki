@@ -82,7 +82,7 @@ describe( 'NeoWikiApp', () => {
 		document.body.append( placeholder );
 	}
 
-	function placeMainSubjectInFull( subjectId: SubjectId ): HTMLElement {
+	function placeMainSubjectPlaceholder( subjectId: SubjectId ): HTMLElement {
 		const place = document.createElement( 'div' );
 		place.id = 'ext-neowiki-main-subject';
 		place.dataset.mwNeowikiSubjectId = subjectId.text;
@@ -269,7 +269,7 @@ describe( 'NeoWikiApp', () => {
 
 	it( 'shows the Main Subject in full where a subject-first page places it, as the page that stores it', async () => {
 		onASubjectFirstWiki();
-		const place = placeMainSubjectInFull( loadedId );
+		const place = placeMainSubjectPlaceholder( loadedId );
 		loadFrom( newSubject( { id: loadedId, schemaName: 'Company' } ) );
 
 		const wrapper = await mountApp();
@@ -280,13 +280,14 @@ describe( 'NeoWikiApp', () => {
 		expect( wrapper.findComponent( Infobox ).exists() ).toBe( false );
 	} );
 
-	// Wikitext can give an element the id of the place, but not its data-mw-* attribute.
+	// Wikitext can give an element the id of the place, but not its data-mw-* attribute. The component selects the
+	// place by attribute rather than by #id, which jsdom matches against only the first element with that id.
 	it( 'shows the Main Subject in the place the page made for it, not in an element that only shares its id', async () => {
 		onASubjectFirstWiki();
 		const lookalike = document.createElement( 'div' );
 		lookalike.id = 'ext-neowiki-main-subject';
 		document.body.append( lookalike );
-		const place = placeMainSubjectInFull( loadedId );
+		const place = placeMainSubjectPlaceholder( loadedId );
 		loadFrom( newSubject( { id: loadedId, schemaName: 'Company' } ) );
 
 		const wrapper = await mountApp();
@@ -295,7 +296,7 @@ describe( 'NeoWikiApp', () => {
 	} );
 
 	it( 'shows the Main Subject as an infobox where a page-first page places it, as the page would show it', async () => {
-		const place = placeMainSubjectInFull( loadedId );
+		const place = placeMainSubjectPlaceholder( loadedId );
 		loadFrom( newSubject( { id: loadedId, schemaName: 'Company' } ) );
 
 		const wrapper = await mountApp();
@@ -309,7 +310,7 @@ describe( 'NeoWikiApp', () => {
 		[ 'a diff', { wgRevisionId: 2, wgCurRevisionId: 2, wgDiffNewId: 2 } ],
 	] )( 'shows the Main Subject as an infobox where a subject-first page places it, on %s', async ( _, config ) => {
 		onASubjectFirstWiki( config );
-		const place = placeMainSubjectInFull( loadedId );
+		const place = placeMainSubjectPlaceholder( loadedId );
 		loadFrom( newSubject( { id: loadedId, schemaName: 'Company' } ) );
 
 		const wrapper = await mountApp();

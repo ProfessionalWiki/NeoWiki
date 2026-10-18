@@ -397,7 +397,7 @@
 	"neowiki-select-unknown-option": "Placeholder shown in a select-property display when a stored option ID cannot be resolved to a label (e.g. the option was removed from the Schema).",
 
 	"neowiki-managesubjects-tab": "Label for the Data tab that appears alongside the standard action tabs (View, Edit, History) on content pages, linking to the Subject management page.",
-	"neowiki-edit-text-tab": "Label of the tab that edits a content page's text on a subject-first wiki, in place of {{msg-mw|skin-view-edit}}, since the page's Subject has edit controls of its own. Where VisualEditor is installed, it labels VisualEditor's tab, beside {{msg-mw|visualeditor-ca-editsource}}.",
+	"neowiki-edit-text-tab": "Label of the tab that edits a content page's text on a subject-first wiki, in place of {{msg-mw|skin-view-edit}}, since the page's Subject has edit controls of its own.",
 	"neowiki-managesubjects-title": "Title of the Subject management page. $1 is the prefixed page title (e.g. 'Berlin').",
 	"neowiki-managesubjects-not-applicable": "Error shown when the Subject management page is opened on a page that cannot have Subjects (e.g. a Special page or a non-existent page).",
 	"neowiki-managesubjects-add-button": "Label for the button that opens the Subject creation flow from the Subject management page.",

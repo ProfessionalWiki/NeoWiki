@@ -69,8 +69,8 @@ others find it under "Referenced by" on their `Special:Subject` page.
   relation property allows multiple values. A View leaves that relation property out unless its Layout names it. A
   Dependent Subject is named after its Schema and its Host Subject, as in "Birth of Pablo Picasso", not by the
   bracketed id [ADR 31](031-optional-subject-labels.md) would give it.
-- A Dependent Subject keeps its own id, IRI and graph node. `Special:Subject` and the Data tab show it and can open it
-  for editing on its own, and queries and exports include it.
+- A Dependent Subject keeps its own id, IRI and graph node. The Data tab shows it and can open it for editing on its
+  own, and so does `Special:Subject` where it does not forward to its page. Queries and exports include it.
 - Finding: search shows a match in a Dependent Subject as a hit on the standalone Subject at the top of its chain of
   Host Subjects, so a search that matches a Birth finds the Person. Fields for choosing an existing Subject, such as a
   relation field in the Subject editor, never offer a Dependent Subject.

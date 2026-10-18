@@ -64,10 +64,9 @@ const props = defineProps<{
 
 const viewsData = ref<ViewData[]>( [] );
 
-// A page that places its Main Subject shows it as it would on its own: in full on the latest revision of a
-// subject-first page, as an infobox elsewhere.
+// Must agree with $showsInFull in NeoWikiHooks::handleContentPage, which loads the configuration the full view reads.
 const showsMainSubjectAsInfobox = !isSubjectFirst() || !isLatestRevision() || Boolean( mw.config.get( 'wgDiffNewId' ) );
-const mainSubjectInFull = showsMainSubjectAsInfobox ? null : findMainSubjectInFull();
+const mainSubjectInFull = showsMainSubjectAsInfobox ? null : findMainSubjectPlaceholder();
 
 const shouldShowSubjectCreator = ref( props.showSubjectCreator );
 // The creator is teleported onto the page being viewed, which is the page it offers first.
@@ -100,7 +99,7 @@ function isLatestRevision(): boolean {
 
 onMounted( async (): Promise<void> => {
 	if ( showsMainSubjectAsInfobox ) {
-		findMainSubjectInFull()?.element.classList.add( 'ext-neowiki-view' );
+		findMainSubjectPlaceholder()?.element.classList.add( 'ext-neowiki-view' );
 	}
 
 	const views = collectViews( document.querySelectorAll( '.ext-neowiki-view' ) );
@@ -133,9 +132,8 @@ function subjectAndSchemaLoaded( view: View ): boolean {
 	return subject !== undefined && useSchemaStore().schemas.has( subject.getSchemaName() );
 }
 
-function findMainSubjectInFull(): { element: HTMLElement; subjectId: string } | null {
-	// Wikitext can give an element this id, but not a data-mw-* attribute. An attribute selector rather than #id,
-	// which jsdom matches against only the first element with that id.
+function findMainSubjectPlaceholder(): { element: HTMLElement; subjectId: string } | null {
+	// Wikitext can give an element this id, but not a data-mw-* attribute.
 	const element = document.querySelector<HTMLElement>( '[id="ext-neowiki-main-subject"][data-mw-neowiki-subject-id]' );
 	const subjectId = element?.dataset.mwNeowikiSubjectId;
 

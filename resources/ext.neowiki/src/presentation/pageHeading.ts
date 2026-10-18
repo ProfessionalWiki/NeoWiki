@@ -6,7 +6,8 @@ import { subjectDisplayName } from '@/presentation/subjectDisplayName';
  * one there and in the browser tab. A heading that marks none, such as a title someone chose, stays.
  */
 export function showLabelInPageHeading( subject: Subject ): void {
-	const label = document.querySelector( '#firstHeading .ext-neowiki-subject-label' );
+	// The skin's heading, which precedes any element the page text gives the same id.
+	const label = document.getElementById( 'firstHeading' )?.querySelector( '.ext-neowiki-subject-label' ) ?? null;
 
 	if ( label === null ) {
 		return;

@@ -71,9 +71,9 @@ class SpecialSubject extends SpecialPage {
 	}
 
 	/**
-	 * The page that shows the Subject, beside the page's own history and tabs: on a subject-first wiki, a content
-	 * page shows its Main Subject in full, and the Dependent Subjects inside it, while automatic rendering is on.
-	 * Null for any other Subject, and for a page the reader may not read.
+	 * The page that shows the Subject in full: on a subject-first wiki with automatic rendering on, a content page
+	 * shows its Main Subject and the Dependent Subjects inside it. Null for any other Subject, and for a page the
+	 * reader may not read.
 	 */
 	private function pageShowingSubject( NeoWikiExtension $extension, SubjectId $subjectId ): ?Title {
 		if ( !$extension->isSubjectFirst() || !$extension->shouldAutoRenderMainSubject() ) {

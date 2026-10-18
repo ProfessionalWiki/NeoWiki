@@ -140,9 +140,9 @@ class NeoWikiHooks {
 
 		$showsInFull = $extension->isSubjectFirst() && self::pageIsLatestRevision( $out );
 
-		// Only a mount that reached the page counts: a condition or a Lua module can discard what the parser
-		// function returned.
-		if ( ViewHtmlBuilder::containsMainSubjectInFull( $out->getHTML() ) ) {
+		// Only a placeholder that reached the page counts: a Lua module or PLURAL can discard what the parser function
+		// returned.
+		if ( ViewHtmlBuilder::containsMainSubjectPlaceholder( $out->getHTML() ) ) {
 			if ( $showsInFull ) {
 				self::addSubjectUiConfig( $out );
 			}
@@ -255,7 +255,7 @@ class NeoWikiHooks {
 		}
 
 		// The revision shows its Main Subject where it places it, as an infobox on a diff.
-		if ( ViewHtmlBuilder::containsMainSubjectInFull( $parserOutput->getContentHolderText() ) ) {
+		if ( ViewHtmlBuilder::containsMainSubjectPlaceholder( $parserOutput->getContentHolderText() ) ) {
 			return;
 		}
 
@@ -1238,10 +1238,6 @@ class NeoWikiHooks {
 		}
 	}
 
-	/**
-	 * On a subject-first wiki a page's Subjects have edit controls of their own, so the tab that edits the page's text
-	 * says so. VisualEditor adds its tab in this hook, which runs first where VisualEditor loads before NeoWiki.
-	 */
 	private static function labelTextEditTab( SkinTemplate $skin, array &$links ): void {
 		$tab = isset( $links['views']['ve-edit'] ) ? 've-edit' : 'edit';
 

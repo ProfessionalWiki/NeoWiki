@@ -45,10 +45,10 @@ class ViewHtmlBuilder {
 			return '';
 		}
 
-		return self::mainSubjectInFullPlaceholderHtml( $subject->getId()->text );
+		return self::mainSubjectPlaceholderHtml( $subject->getId()->text );
 	}
 
-	public static function mainSubjectInFullPlaceholderHtml( string $subjectId ): string {
+	public static function mainSubjectPlaceholderHtml( string $subjectId ): string {
 		return Html::element( 'div', [
 			'id' => 'ext-neowiki-main-subject',
 			'class' => 'ext-neowiki-ui',
@@ -57,10 +57,10 @@ class ViewHtmlBuilder {
 	}
 
 	/**
-	 * Whether the HTML holds a mount made by mainSubjectInFullPlaceholderHtml(). Wikitext cannot fake one,
+	 * Whether the HTML holds a placeholder made by mainSubjectPlaceholderHtml(). Wikitext cannot fake one,
 	 * since the Sanitizer drops data-mw-* attributes.
 	 */
-	public static function containsMainSubjectInFull( string $html ): bool {
+	public static function containsMainSubjectPlaceholder( string $html ): bool {
 		return preg_match( '/<div id="ext-neowiki-main-subject"(?: [\w-]+="[^"]*")* data-mw-neowiki-subject-id="/', $html ) === 1;
 	}
 
