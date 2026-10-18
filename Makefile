@@ -166,8 +166,13 @@ demo: _preflight ## One-command demo: pull image, start stack, install + seed (i
 	@echo "Demo wiki ready at: http://localhost:$$MW_SERVER_PORT"
 	@echo "Log in as AdminName (password: $$MW_ADMIN_PASSWORD)."
 
+# Neo4j restarts on an empty store: it holds only what the rebuild writes, and a store that an
+# earlier Neo4j image wrote can keep the new one from starting. Removing mediawiki as well makes
+# `up` wait until the new store is healthy before it starts the wiki.
 upgrade: _preflight ## Upgrade the demo stack: pull the latest image, restart, migrate, rebuild the graph
 	$(DC) pull
+	$(DC) rm --stop --force mediawiki neo
+	docker volume rm --force $(PROJECT_NAME)_neo4j-data
 	$(DC) up -d
 	@$(MAKE) --no-print-directory _wait-mw
 	@$(MAKE) --no-print-directory update-dot-php
