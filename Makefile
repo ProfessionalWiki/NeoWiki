@@ -19,10 +19,12 @@ override MARIADB_PORT := $(or $(strip $(MARIADB_PORT)),3306)
 
 # ---- Project namespace and ports ---------------------------------------------
 
-# Derive a unique project name from the extension directory.
-# Main checkout: mediawiki/extensions/NeoWiki/            -> neowiki-neowiki
-# Worktree:      mediawiki/extensions/NeoWiki-feature-x/  -> neowiki-neowiki-feature-x
-PROJECT_NAME := $(shell echo "neowiki-$(notdir $(CURDIR))" | tr A-Z a-z)
+# Derive a unique project name from the extension directory. Compose accepts only lowercase letters,
+# digits, hyphens and underscores, so anything else becomes a hyphen.
+# Main checkout:   mediawiki/extensions/NeoWiki/            -> neowiki-neowiki
+# Worktree:        mediawiki/extensions/NeoWiki-feature-x/  -> neowiki-neowiki-feature-x
+# Release archive: NeoWiki-0.1.0/                           -> neowiki-neowiki-0-1-0
+PROJECT_NAME := $(shell echo "neowiki-$(notdir $(CURDIR))" | tr A-Z a-z | sed 's/[^a-z0-9_-]/-/g')
 
 PORT_RANGE_START := 8484
 PORT_RANGE_END := 8499
@@ -163,7 +165,7 @@ demo: _preflight ## One-command demo: pull image, start stack, install + seed (i
 	@$(MAKE) --no-print-directory _wait-mw
 	@$(MAKE) --no-print-directory _first-run-seed-demo
 	@echo ""
-	@echo "Demo wiki ready at: http://localhost:$$MW_SERVER_PORT"
+	@echo "Demo wiki ready at: $$MW_SERVER"
 	@echo "Log in as AdminName (password: $$MW_ADMIN_PASSWORD)."
 
 upgrade: _preflight ## Upgrade the demo stack: pull the latest image, restart, migrate, rebuild the graph
@@ -173,7 +175,7 @@ upgrade: _preflight ## Upgrade the demo stack: pull the latest image, restart, m
 	@$(MAKE) --no-print-directory update-dot-php
 	@$(MAKE) --no-print-directory rebuild-graph-databases
 	@echo ""
-	@echo "Upgrade complete: http://localhost:$$MW_SERVER_PORT"
+	@echo "Upgrade complete: $$MW_SERVER"
 
 dev: _preflight bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
 	@$(MAKE) --no-print-directory _dev-impl
@@ -315,6 +317,7 @@ test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-set-port.sh
 	@./Docker/tests/test-preflight.sh
 	@./Docker/tests/test-services.sh
+	@./Docker/tests/test-project-name.sh
 
 # ---- Health gate -------------------------------------------------------------
 

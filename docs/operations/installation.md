@@ -43,15 +43,13 @@ Open `http://localhost:8484` and log in as `AdminName` with the password `AdminP
 
 By default, the stack runs on localhost. To let others reach it, host it on a server. Edit `Docker/.env` and change
 every value marked `# Change for production`, which covers the passwords and `MW_SERVER`. Then start the stack with the
-`server` profile, which adds automatic HTTPS through Caddy. Run it from the repository root so the follow-up `make`
-commands target the same stack:
+`server` profile, which adds automatic HTTPS through Caddy:
 
 ```sh
-docker compose -p neowiki-neowiki --env-file Docker/.env -f Docker/docker-compose.yml --profile server up -d
+COMPOSE_PROFILES=server make demo
 ```
 
-Then run `make install-db` and `make import-demo-data` against it. This is still an evaluation setup, not a production
-deployment.
+This is still an evaluation setup, not a production deployment.
 
 ## Method B: Add to an existing MediaWiki
 
