@@ -22,7 +22,15 @@ override MARIADB_PORT := $(or $(strip $(MARIADB_PORT)),3306)
 # Derive a unique project name from the extension directory.
 # Main checkout: mediawiki/extensions/NeoWiki/            -> neowiki-neowiki
 # Worktree:      mediawiki/extensions/NeoWiki-feature-x/  -> neowiki-neowiki-feature-x
-PROJECT_NAME := $(shell echo "neowiki-$(notdir $(CURDIR))" | tr A-Z a-z)
+# Characters compose rejects in a project name, such as dots, become hyphens.
+# A copy without .git, such as an unpacked release archive, always gets neowiki: its directory,
+# such as NeoWiki-0.1.0/, changes with each version, and a new name starts a new stack on empty
+# volumes. No checkout derives that name, so an archive never lands on a dev stack's volumes.
+ifeq ($(wildcard .git),)
+PROJECT_NAME := neowiki
+else
+PROJECT_NAME := $(shell echo "neowiki-$(notdir $(CURDIR))" | tr A-Z a-z | tr -c 'a-z0-9_\n-' -)
+endif
 
 PORT_RANGE_START := 8484
 PORT_RANGE_END := 8499
@@ -81,6 +89,26 @@ ifeq ($(origin MW_SMTP_HOST),undefined)
 ifeq ($(filter mailcatcher,$(ACTIVE_PROFILES)),)
 MW_SMTP_HOST :=
 endif
+endif
+
+# ---- Demo image --------------------------------------------------------------
+
+# Of the version tags on the commit, the highest wins, a release over its pre-releases; the pattern
+# skips tags that are not versions, such as the perf/ ones. Without .git, as in a downloaded archive, there is
+# no tag to read, so it is latest: the newest release. When git cannot read the checkout, it stays
+# empty, which _require-image-tag refuses. Blank counts as unset, as for MARIADB_HOST above, and a
+# set value loses the spaces an inline comment in Docker/.env leaves behind it.
+DEMO_IMAGE := ghcr.io/professionalwiki/neowiki
+ifeq ($(strip $(NEOWIKI_IMAGE_TAG)),)
+ifeq ($(wildcard .git),)
+override NEOWIKI_IMAGE_TAG := latest
+else ifeq ($(shell git rev-parse --git-dir 2>/dev/null),)
+override NEOWIKI_IMAGE_TAG :=
+else
+override NEOWIKI_IMAGE_TAG := $(or $(shell git -c versionsort.suffix=- for-each-ref --count=1 --contains HEAD --merged HEAD --sort=-v:refname --format='%(refname:strip=2)' 'refs/tags/[0-9]*.[0-9]*.[0-9]*' 2>/dev/null),master)
+endif
+else
+override NEOWIKI_IMAGE_TAG := $(strip $(NEOWIKI_IMAGE_TAG))
 endif
 
 # ---- Compose invocations -----------------------------------------------------
@@ -142,6 +170,7 @@ help:
 # ---- Lifecycle (host only) ---------------------------------------------------
 
 .PHONY: up pull demo upgrade dev dev-tools _dev-tools-impl down remove logs ps print-services bash _preflight doctor
+.PHONY: _require-image-tag _require-matching-image
 
 # Fail fast on a broken Docker runtime (Docker or Compose missing, daemon down or
 # denied) before the lifecycle targets do expensive work. Source: Docker/scripts/preflight.sh.
@@ -151,14 +180,35 @@ _preflight:
 doctor: ## Diagnose dev-environment prerequisites (Docker runtime)
 	@PREFLIGHT_VERBOSE=1 ./Docker/scripts/preflight.sh
 
-up: _preflight ## Bring up try-it-out stack (prebuilt image)
+# Empty would fall through to docker-compose.yml's latest default: the newest release, whatever
+# version this checkout holds. Only the targets that pull, run or build the image depend on this:
+# the PHP targets re-run make inside the mediawiki container, where a worktree's .git points nowhere.
+_require-image-tag:
+	$(if $(NEOWIKI_IMAGE_TAG),,$(error Cannot tell which demo image to run, since git cannot read this checkout: see `git status`, or set NEOWIKI_IMAGE_TAG))
+
+# up and demo run no migration, so they refuse a stack whose mediawiki container runs another image
+# than the one they would start, as after checking out another version or pulling a newer master;
+# upgrade moves it and migrates. Images are compared by ID, since a tag can move. Containers that
+# `docker compose run` leaves behind do not count.
+_require-matching-image:
+	@container="$$(docker ps -a -q --filter label=com.docker.compose.project=$(PROJECT_NAME) \
+		--filter label=com.docker.compose.service=mediawiki --filter label=com.docker.compose.oneoff=False)"; \
+	wanted="$(DEMO_IMAGE):$$NEOWIKI_IMAGE_TAG"; \
+	if [ -n "$$container" ] && \
+		[ "$$(docker inspect -f '{{.Image}}' $$container)" != "$$(docker image inspect -f '{{.Id}}' "$$wanted" 2>/dev/null)" ]; then \
+		echo "This stack's mediawiki container does not run $$wanted. make upgrade moves a demo stack to it and migrates; make dev restarts a dev stack." >&2; \
+		exit 1; \
+	fi
+
+up: _require-image-tag _preflight _require-matching-image ## Bring up try-it-out stack (prebuilt image)
 	$(DC) up -d
 
-pull: _preflight ## Pull the latest prebuilt demo image
+pull: _require-image-tag _preflight ## Pull this checkout's prebuilt demo image
 	$(DC) pull
 
-demo: _preflight ## One-command demo: pull image, start stack, install + seed (idempotent)
+demo: _require-image-tag _preflight ## One-command demo: pull image, start stack, install + seed (idempotent)
 	$(DC) pull
+	@$(MAKE) --no-print-directory _require-matching-image
 	$(DC) up -d
 	@$(MAKE) --no-print-directory _wait-mw
 	@$(MAKE) --no-print-directory _first-run-seed-demo
@@ -166,7 +216,7 @@ demo: _preflight ## One-command demo: pull image, start stack, install + seed (i
 	@echo "Demo wiki ready at: http://localhost:$$MW_SERVER_PORT"
 	@echo "Log in as AdminName (password: $$MW_ADMIN_PASSWORD)."
 
-upgrade: _preflight ## Upgrade the demo stack: pull the latest image, restart, migrate, rebuild the graph
+upgrade: _require-image-tag _preflight ## Move the demo stack to this checkout's image: pull, restart, migrate, rebuild the graph
 	$(DC) pull
 	$(DC) up -d
 	@$(MAKE) --no-print-directory _wait-mw
@@ -315,6 +365,7 @@ test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-set-port.sh
 	@./Docker/tests/test-preflight.sh
 	@./Docker/tests/test-services.sh
+	@./Docker/tests/test-image-tag.sh
 
 # ---- Health gate -------------------------------------------------------------
 
@@ -702,5 +753,5 @@ perf-restore: _require-snapshot ## Restore perf/snapshot/, replacing this stack'
 # ---- Production image --------------------------------------------------------
 
 .PHONY: wiki-production-image
-wiki-production-image: ## Build the prebuilt ghcr image
-	docker build Docker --file Docker/Dockerfile --pull --target final-mw -t ghcr.io/professionalwiki/neowiki:latest
+wiki-production-image: _require-image-tag ## Build the prebuilt ghcr image
+	docker build Docker --file Docker/Dockerfile --pull --target final-mw -t "$(DEMO_IMAGE):$$NEOWIKI_IMAGE_TAG"
