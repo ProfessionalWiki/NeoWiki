@@ -4,18 +4,16 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
-use InvalidArgumentException;
+use Generator;
+use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
-use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\TitleFormatter;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectsToPublish;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\UnreadableSubjectsException;
 use Psr\Log\LoggerInterface;
-use TypeError;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\IDBAccessObject;
 
@@ -42,10 +40,12 @@ class DatabasePublishedSubjectIndexRebuilder {
 	}
 
 	/**
-	 * @return iterable<int> How many pages have been reindexed so far, once per batch.
+	 * @return Generator<int, int, mixed, int[]> Yields how many pages have been reindexed so far, once per batch, and
+	 *   returns the ids of the pages left as they were because their published Subject data cannot be read.
 	 */
-	public function rebuild(): iterable {
+	public function rebuild(): Generator {
 		$reindexed = 0;
+		$leftAsTheyWere = [];
 
 		$pageWalks = [ $this->pageIdsHoldingSubjectSlotAfter( ... ), $this->pageIdsOfStrayRowsAfter( ... ) ];
 
@@ -56,9 +56,13 @@ class DatabasePublishedSubjectIndexRebuilder {
 				$pageIds = $pageIdsAfter( $lastPageId );
 
 				foreach ( $pageIds as $pageId ) {
-					$this->reindexPage( $pageId );
+					if ( $this->reindexPage( $pageId ) ) {
+						$reindexed++;
+					} else {
+						$leftAsTheyWere[] = $pageId;
+					}
+
 					$lastPageId = $pageId;
-					$reindexed++;
 				}
 
 				if ( $pageIds !== [] ) {
@@ -66,6 +70,8 @@ class DatabasePublishedSubjectIndexRebuilder {
 				}
 			} while ( count( $pageIds ) === $this->batchSize );
 		}
+
+		return $leftAsTheyWere;
 	}
 
 	/**
@@ -94,7 +100,10 @@ class DatabasePublishedSubjectIndexRebuilder {
 			->fetchFieldValues() );
 	}
 
-	private function reindexPage( int $pageId ): void {
+	/**
+	 * @return bool False when the page is left as it was
+	 */
+	private function reindexPage( int $pageId ): bool {
 		$page = new PageId( $pageId );
 
 		// From the primary, like the walk: a replica may not have the page's current revision yet.
@@ -102,25 +111,30 @@ class DatabasePublishedSubjectIndexRebuilder {
 
 		if ( $current === null ) {
 			$this->index->removePage( $page );
-			return;
+			return true;
 		}
 
 		$published = $this->revisionPolicy->publishedRevision( $current );
 
 		if ( $published === null ) {
 			$this->index->removePage( $page );
-			return;
+			return true;
 		}
 
-		$subjects = $this->publishedSubjects( $published );
-
-		if ( $subjects === null ) {
+		try {
+			$subjects = SubjectsToPublish::of( $published );
+		} catch ( UnreadableSubjectsException | RevisionAccessException $exception ) {
 			$this->logger->warning(
-				'NeoWiki left page {page} as it was in the published Subject index: its published revision '
-				. '{revision} holds Subject data that cannot be read.',
-				[ 'page' => $pageId, 'revision' => $published->getId() ]
+				'NeoWiki left page {page} as it was in the published Subject index: the Subject data of its published '
+				. 'revision {revision} cannot be read. {message}',
+				[
+					'page' => $pageId,
+					'revision' => $published->getId(),
+					'message' => $exception->getMessage(),
+					'exception' => $exception,
+				]
 			);
-			return;
+			return false;
 		}
 
 		$this->index->setSubjectsOfPage(
@@ -129,28 +143,8 @@ class DatabasePublishedSubjectIndexRebuilder {
 			$subjects,
 			(string)$published->getTimestamp()
 		);
-	}
 
-	/**
-	 * Null when the page is left as it is, as the hook paths leave it: its slot holds content that is not
-	 * Subject data, or Subject data that does not deserialize.
-	 */
-	private function publishedSubjects( RevisionRecord $published ): ?PageSubjects {
-		if ( !$published->hasSlot( MediaWikiSubjectRepository::SLOT_NAME ) ) {
-			return PageSubjects::newEmpty();
-		}
-
-		$content = $published->getContent( MediaWikiSubjectRepository::SLOT_NAME, RevisionRecord::RAW );
-
-		if ( !$content instanceof SubjectContent ) {
-			return null;
-		}
-
-		try {
-			return $content->getPageSubjects();
-		} catch ( InvalidArgumentException | TypeError ) {
-			return null;
-		}
+		return true;
 	}
 
 }

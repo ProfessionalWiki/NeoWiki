@@ -108,9 +108,9 @@ rebuild somebody started by hand is left to finish rather than restarted; the st
 NeoWiki keeps two indexes of the wiki's Subjects: which page holds each one, and what each page publishes for
 Special:Subjects, relation-target suggestions, "Referenced by" and the Subject counts. Editing, deletion, undeletion
 and import all keep them current and `update.php` fills them, so this is rarely needed. Rebuild both when Subjects are
-not found on the pages holding them or are missing from those lists — after merging page histories, after adding or
-removing a [revision policy](../extending/revision-policy.md), or after upgrading through MediaWiki's web updater,
-which does not fill them:
+not found on the pages holding them, or those lists are wrong — after merging page histories, after adding or removing
+a [revision policy](../extending/revision-policy.md), after creating, deleting, restoring or importing a Schema that
+Subjects already use, or after upgrading through MediaWiki's web updater, which does not fill them:
 
 ```sh
 php maintenance/run.php NeoWiki:RebuildSubjectPageIndex --force

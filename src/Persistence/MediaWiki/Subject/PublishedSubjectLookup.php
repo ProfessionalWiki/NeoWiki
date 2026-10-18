@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
+use InvalidArgumentException;
 use MediaWiki\Revision\RevisionLookup;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsAtRevisionLookup;
@@ -15,12 +16,13 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
-use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use TypeError;
 
 /**
  * The Subjects as the wiki publishes them: every hosting page is read at the revision its
  * RevisionPolicy publishes, which on a wiki with an approval extension is not the latest one. A page
- * that publishes nothing contributes no Subjects, so a Subject held only by a draft is not found.
+ * that publishes nothing contributes no Subjects, so a Subject held only by a draft is not found, and
+ * neither does a page whose published Subject data does not deserialize.
  */
 readonly class PublishedSubjectLookup implements SubjectLookup, PageSubjectsAtRevisionLookup {
 
@@ -40,7 +42,7 @@ readonly class PublishedSubjectLookup implements SubjectLookup, PageSubjectsAtRe
 		$idsByHostingPage = new SubjectIdsByHostingPage( $this->pageIdentifiersLookup );
 
 		foreach ( $idsByHostingPage->group( $subjectIds ) as $pageId => $idsOnPage ) {
-			$pageSubjects = $this->getPublishedContent( $pageId )?->getPageSubjects()->getAllSubjects();
+			$pageSubjects = $this->getPublishedSubjects( $pageId )?->getAllSubjects();
 
 			if ( $pageSubjects !== null ) {
 				$subjects = $subjects->union( $pageSubjects->onlyWithIds( $idsOnPage ) );
@@ -51,10 +53,10 @@ readonly class PublishedSubjectLookup implements SubjectLookup, PageSubjectsAtRe
 	}
 
 	public function getPageSubjects( PageId $pageId ): PageSubjects {
-		return $this->getPublishedContent( $pageId->id )?->getPageSubjects() ?? PageSubjects::newEmpty();
+		return $this->getPublishedSubjects( $pageId->id ) ?? PageSubjects::newEmpty();
 	}
 
-	private function getPublishedContent( int $pageId ): ?SubjectContent {
+	private function getPublishedSubjects( int $pageId ): ?PageSubjects {
 		$revision = $this->revisionLookup->getRevisionByPageId( $pageId );
 
 		if ( $revision === null ) {
@@ -62,8 +64,13 @@ readonly class PublishedSubjectLookup implements SubjectLookup, PageSubjectsAtRe
 		}
 
 		$publishedRevision = $this->revisionPolicy->publishedRevision( $revision );
+		$content = $publishedRevision === null ? null : SubjectSlotReader::read( $publishedRevision );
 
-		return $publishedRevision === null ? null : SubjectSlotReader::read( $publishedRevision );
+		try {
+			return $content?->getPageSubjects();
+		} catch ( InvalidArgumentException | TypeError ) {
+			return null;
+		}
 	}
 
 }

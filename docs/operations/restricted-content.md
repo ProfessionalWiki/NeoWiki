@@ -28,7 +28,7 @@ On a wiki that requires login to read, `{{#view}}` renders nothing for anonymous
 
 ## Narrowing `neowiki-query`
 
-NeoWiki grants the right to `*`. Withdrawing it helps only where anonymous readers can reach a query surface.
+NeoWiki grants the right to `*`. Withdrawing it denies anonymous readers the Subject counts and any query surface.
 
 ```php
 $wgGroupPermissions['*']['neowiki-query'] = false;

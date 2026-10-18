@@ -189,7 +189,6 @@ class DatabaseSubjectSummaryLookup implements SubjectSummaryLookup {
 			->from( DatabasePublishedSubjectIndex::SUBJECT_TABLE, self::ALIAS )
 			->join( 'page', null, 'page_id = ' . self::ALIAS . '.nws_page_id' )
 			->where( $runConditions )
-			->andWhere( LowestPageRows::condition( $db, self::ALIAS ) )
 			->orderBy( $orderColumns, $direction )
 			->limit( $limit )
 			// Without it, MariaDB reads all of `page` and sorts every row once Subjects outnumber pages a few
@@ -216,6 +215,9 @@ class DatabaseSubjectSummaryLookup implements SubjectSummaryLookup {
 				$db->buildComparison( $direction === SelectQueryBuilder::SORT_ASC ? '>' : '<', $position )
 			);
 		}
+
+		// Last: MariaDB tests the conditions in the order they are added, and this one is a lookup per row.
+		$builder->andWhere( LowestPageRows::condition( $db, self::ALIAS ) );
 
 		$rows = [];
 

@@ -84,6 +84,18 @@ class StatementDeserializerTest extends TestCase {
 		);
 	}
 
+	public function testDeserializesTextStoredAsAnObjectWithNamedAndNumberedKeys(): void {
+		$statement = $this->newDeserializer()->deserialize(
+			'MyText',
+			[
+				'propertyType' => 'text',
+				'value' => [ 'a' => 'Foo', 0 => 'Bar' ],
+			]
+		);
+
+		$this->assertSame( [ 'Foo', 'Bar' ], $statement->getValue()->toScalars() );
+	}
+
 	public function testDropsStoredPartsWithoutContent(): void {
 		$statement = $this->newDeserializer()->deserialize(
 			'MyText',

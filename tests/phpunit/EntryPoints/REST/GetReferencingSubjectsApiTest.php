@@ -204,6 +204,17 @@ JSON
 	}
 
 	/**
+	 * A save of such data leaves the page's rows as they were, so the index still names the referrer.
+	 */
+	public function testReferringSubjectOnAPageWhosePublishedSubjectDataDoesNotDeserializeIsOmitted(): void {
+		$this->createReferringPage( 'GRSApiTest_Broken', 'sTestGRS1111128', 'Broken' );
+		$this->writeSubjectSlot( 'GRSApiTest_Broken', TestSubject::jsonThatDoesNotDeserialize( 'sTestGRS1111128' ) );
+		$this->createReferringPage( 'GRSApiTest_Intact', 'sTestGRS1111129', 'Intact' );
+
+		$this->assertSame( [ 'sTestGRS1111129' ], $this->idsOfReferencingSubjects( $this->requestReferencingSubjects() ) );
+	}
+
+	/**
 	 * The referrer's page stays readable, so only the gate on the target itself stands between this
 	 * caller and the news that the Subject exists (ADR 27, #1046).
 	 */

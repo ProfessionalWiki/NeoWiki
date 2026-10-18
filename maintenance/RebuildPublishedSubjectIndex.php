@@ -19,6 +19,8 @@ require_once $basePath . '/maintenance/Maintenance.php';
  */
 class RebuildPublishedSubjectIndex extends LoggedUpdateMaintenance {
 
+	private const int REPORTED_PAGES = 5;
+
 	public function __construct() {
 		parent::__construct();
 
@@ -46,15 +48,38 @@ class RebuildPublishedSubjectIndex extends LoggedUpdateMaintenance {
 		$this->output( "Rebuilding the NeoWiki published Subject index...\n" );
 
 		$reindexed = 0;
+		$rebuild = $this->newRebuilder()->rebuild();
 
-		foreach ( $this->newRebuilder()->rebuild() as $reindexed ) {
+		foreach ( $rebuild as $reindexed ) {
 			$this->output( "...$reindexed pages reindexed\n" );
 			$this->waitForReplication();
 		}
 
 		$this->output( "Done. Reindexed $reindexed pages.\n" );
 
+		$leftAsTheyWere = $rebuild->getReturn();
+
+		if ( $leftAsTheyWere !== [] ) {
+			$this->reportPagesLeftAsTheyWere( $leftAsTheyWere );
+		}
+
 		return true;
+	}
+
+	/**
+	 * To stderr, which reaches whoever scheduled the run; a few page ids show what the pages have in common.
+	 *
+	 * @param int[] $pageIds
+	 */
+	private function reportPagesLeftAsTheyWere( array $pageIds ): void {
+		$named = array_slice( $pageIds, 0, self::REPORTED_PAGES );
+		$rest = count( $pageIds ) - count( $named );
+
+		$this->error(
+			'Did not reindex pages ' . implode( ', ', $named ) . ( $rest === 0 ? '' : " and $rest more" )
+			. ': their published Subject data cannot be read. The NeoWiki log channel says why; once they are fixed, '
+			. 'run this script again with --force.'
+		);
 	}
 
 	private function indexTablesExist(): bool {

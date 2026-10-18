@@ -10,6 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaries;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummary;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryCursor;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryQuery;
+use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummarySearchTimeoutException;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummarySort;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -19,6 +20,11 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SelectivePageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
+use Wikimedia\Rdbms\DBQueryTimeoutError;
+use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\LikeMatch;
+use Wikimedia\Rdbms\SelectQueryBuilder;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
@@ -161,6 +167,22 @@ class DatabaseSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ self::OLDEST ], $this->idsOf( $this->summaries( search: 'COMPUTERS' ) ) );
 	}
 
+	/**
+	 * In a LIKE pattern, a percent sign matches any text and an underscore any one character.
+	 *
+	 * @dataProvider likeWildcardProvider
+	 */
+	public function testSearchMatchesPercentSignsAndUnderscoresLiterally( string $search, string $match, string $nonMatch ): void {
+		$this->savePage( 'Page one', [ self::subject( self::OLDEST, $match ), self::subject( self::OLDER, $nonMatch ) ] );
+
+		$this->assertSame( [ self::OLDEST ], $this->idsOf( $this->summaries( search: $search ) ) );
+	}
+
+	public static function likeWildcardProvider(): iterable {
+		yield 'percent sign' => [ '100%', 'Rated 100%', 'Rated 1000 times' ];
+		yield 'underscore' => [ 'a_b', 'Key a_b', 'Key axb' ];
+	}
+
 	public function testSearchMatchesTheStartOfAnId(): void {
 		$this->savePage( 'Page one', [
 			self::subject( self::OLDEST, 'A' ),
@@ -176,14 +198,20 @@ class DatabaseSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $this->idsOf( $this->summaries( search: 'TestDSS' ) ) );
 	}
 
-	public function testLeavesOutSubjectsOnPagesTheCallerCannotRead(): void {
-		$this->savePage( 'Page one', [ self::subject( self::OLDEST, 'A' ) ] );
-		$hiddenPageId = $this->savePage( 'Page two', [ self::subject( self::OLDER, 'B' ) ] );
+	public function testASearchThatTimesOutThrowsTheSearchTimeout(): void {
+		$connectionProvider = $this->connectionProviderWhoseQueriesTimeOut();
 
-		$this->assertSame(
-			[ self::OLDEST ],
-			$this->idsOf( $this->summaries( readAuthorizer: new SelectivePageReadAuthorizer( [ $hiddenPageId ] ) ) )
-		);
+		$this->expectException( SubjectSummarySearchTimeoutException::class );
+
+		$this->summaries( search: 'Spectrum', connectionProvider: $connectionProvider );
+	}
+
+	public function testAListingWithoutASearchThatTimesOutThrowsTheDatabaseTimeout(): void {
+		$connectionProvider = $this->connectionProviderWhoseQueriesTimeOut();
+
+		$this->expectException( DBQueryTimeoutError::class );
+
+		$this->summaries( connectionProvider: $connectionProvider );
 	}
 
 	public function testReadsOnInASecondFetchToFillThePage(): void {
@@ -480,6 +508,20 @@ class DatabaseSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	private function connectionProviderWhoseQueriesTimeOut(): IConnectionProvider {
+		$db = $this->createStub( IDatabase::class );
+		$db->method( 'newSelectQueryBuilder' )->willReturnCallback( static fn () => new SelectQueryBuilder( $db ) );
+		$db->method( 'anyString' )->willReturn( new LikeMatch( '%' ) );
+		$db->method( 'select' )->willThrowException(
+			new DBQueryTimeoutError( $db, 'Query execution was interrupted', 1969, 'SELECT', __METHOD__ )
+		);
+
+		$connectionProvider = $this->createStub( IConnectionProvider::class );
+		$connectionProvider->method( 'getReplicaDatabase' )->willReturn( $db );
+
+		return $connectionProvider;
+	}
+
 	private function summaries(
 		?string $schema = null,
 		string $search = '',
@@ -489,9 +531,10 @@ class DatabaseSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 		int $limit = 10,
 		?PageReadAuthorizer $readAuthorizer = null,
 		int $scanBound = 1000,
+		?IConnectionProvider $connectionProvider = null,
 	): SubjectSummaries {
 		$lookup = new DatabaseSubjectSummaryLookup(
-			connectionProvider: $this->getServiceContainer()->getConnectionProvider(),
+			connectionProvider: $connectionProvider ?? $this->getServiceContainer()->getConnectionProvider(),
 			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
 			titleFactory: $this->getServiceContainer()->getTitleFactory(),
 			scanBound: $scanBound,

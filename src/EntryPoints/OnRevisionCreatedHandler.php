@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
-use InvalidArgumentException;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\TitleFormatter;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
@@ -16,11 +15,12 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\PagePropertiesSource;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectsToPublish;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\UnreadableSubjectsException;
 use ProfessionalWiki\NeoWiki\Persistence\PublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIndex;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use TypeError;
 
 class OnRevisionCreatedHandler {
 
@@ -51,18 +51,12 @@ class OnRevisionCreatedHandler {
 			throw new RuntimeException( 'Page ID should not be 0' );
 		}
 
-		$content = $this->readSubjectContent( $revisionRecord );
-
-		if ( $content instanceof PageRefreshOutcome ) {
-			return $content;
-		}
-
 		$pageId = new PageId( $revisionRecord->getPageId() );
 
-		// Indexed before the Subjects are read as Subjects, and outside the projection's failure
-		// isolation: the index is authoritative (ADR 32), so it commits with the revision that changes
-		// it or not at all, and a Subject too broken to deserialize is still indexed.
-		$this->subjectPageIndex->setSubjectsOfPage( $pageId, $content?->getSubjectIds() ?? [] );
+		// Before the Subjects are read as Subjects, and outside the projection's failure isolation: the index is
+		// authoritative, so it commits with the revision that changes it or not at all, and a Subject too broken to
+		// deserialize is still indexed.
+		$this->indexSubjectsOfPage( $pageId, $revisionRecord );
 
 		$published = $this->revisionPolicy->publishedRevision( $revisionRecord );
 
@@ -72,15 +66,22 @@ class OnRevisionCreatedHandler {
 			return PageRefreshOutcome::Unpublished;
 		}
 
-		$publishedContent = $published === $revisionRecord ? $content : $this->readSubjectContent( $published );
+		try {
+			$subjects = SubjectsToPublish::of( $published );
+		} catch ( UnreadableSubjectsException $exception ) {
+			// Logged rather than thrown: refusing the save would refuse the edit that repairs the page too.
+			$this->logger->warning(
+				'NeoWiki did not publish page {page}: its revision {revision} cannot be read as Subject data, so '
+				. 'the graph stores and the published Subject index keep what they held for the page until it '
+				. 'publishes Subject data that can be. {message}',
+				[
+					'page' => $published->getPageId(),
+					'revision' => $published->getId(),
+					'message' => $exception->getMessage(),
+					'exception' => $exception,
+				]
+			);
 
-		if ( $publishedContent instanceof PageRefreshOutcome ) {
-			return $publishedContent;
-		}
-
-		$subjects = $this->deserializeSubjects( $published, $publishedContent );
-
-		if ( $subjects === null ) {
 			return PageRefreshOutcome::SkippedUnreadableSubjects;
 		}
 
@@ -98,64 +99,18 @@ class OnRevisionCreatedHandler {
 	}
 
 	/**
-	 * Null when the slot holds Subject data that does not deserialize. The page is then left as it was:
-	 * dropping what it published would hide its Subjects, and refusing the save would refuse the repair too.
+	 * Content that is not Subject data leaves the page's entries as they are: indexing it as holding none would drop
+	 * the Subjects it holds.
 	 */
-	private function deserializeSubjects( RevisionRecord $published, ?SubjectContent $content ): ?PageSubjects {
-		try {
-			return $content?->getPageSubjects() ?? PageSubjects::newEmpty();
-		} catch ( InvalidArgumentException | TypeError $exception ) {
-			$this->logger->warning(
-				'NeoWiki did not publish page {page}: the Subject data of its revision {revision} does not '
-				. 'deserialize, so the graph stores and the published Subject index keep what they held for '
-				. 'the page until it publishes Subject data that does. {message}',
-				[
-					'page' => $published->getPageId(),
-					'revision' => $published->getId(),
-					'message' => $exception->getMessage(),
-					'exception' => $exception,
-				]
-			);
+	private function indexSubjectsOfPage( PageId $pageId, RevisionRecord $revision ): void {
+		// A slot that exists but cannot be loaded is a failure, not a skip, so it propagates.
+		$content = $revision->hasSlot( MediaWikiSubjectRepository::SLOT_NAME )
+			? $revision->getSlots()->getContent( MediaWikiSubjectRepository::SLOT_NAME )
+			: null;
 
-			return null;
+		if ( $content === null || $content instanceof SubjectContent ) {
+			$this->subjectPageIndex->setSubjectsOfPage( $pageId, $content?->getSubjectIds() ?? [] );
 		}
-	}
-
-	/**
-	 * What the revision holds in its subject slot, or null when it has no such slot.
-	 *
-	 * A slot holding something that is not Subject content — its content model is not registered, or an
-	 * import wrote something else into it — is neither, since reading such a page as holding no Subjects
-	 * would drop the Subjects it does hold. SkippedUnreadableSubjects then says to write nothing at all.
-	 */
-	private function readSubjectContent( RevisionRecord $revision ): SubjectContent|PageRefreshOutcome|null {
-		if ( !$revision->hasSlot( MediaWikiSubjectRepository::SLOT_NAME ) ) {
-			return null;
-		}
-
-		// The slot exists; a read failure here is a genuine error and must propagate —
-		// the refresh contract treats genuine failures as exceptions, not skips.
-		$content = $revision->getSlots()->getContent( MediaWikiSubjectRepository::SLOT_NAME );
-
-		if ( $content instanceof SubjectContent ) {
-			return $content;
-		}
-
-		$this->logSkip(
-			$revision,
-			'its subject slot holds content that is not Subject data, so projecting the page would drop '
-			. 'the Subjects it holds'
-		);
-
-		return PageRefreshOutcome::SkippedUnreadableSubjects;
-	}
-
-	private function logSkip( RevisionRecord $revisionRecord, string $reason ): void {
-		$this->logger->warning(
-			'NeoWiki did not project page ' . $revisionRecord->getPageId() . ' because ' . $reason
-			. '. The graph and the published Subject index are out of sync for that page until the cause is '
-			. 'resolved and the RebuildGraphDatabases and RebuildPublishedSubjectIndex maintenance scripts are run.'
-		);
 	}
 
 	private function projectPage(

@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
+use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
@@ -82,6 +83,24 @@ class PublishedSubjectLookupTest extends NeoWikiIntegrationTestCase {
 			->getSubjects( new SubjectIdList( [ $subject->id ] ) );
 
 		$this->assertTrue( $subjects->isEmpty() );
+	}
+
+	/**
+	 * @dataProvider subjectJsonThatDoesNotDeserializeProvider
+	 */
+	public function testYieldsNoPageSubjectsForAPageWhosePublishedSubjectDataDoesNotDeserialize( string $subjectJson ): void {
+		$revision = $this->writeSubjectSlot( 'PublishedTestBroken', $subjectJson );
+		$this->assertNotNull( $revision );
+
+		$pageSubjects = $this->newLookup( new NullRevisionPolicy(), new InMemoryPageIdentifiersLookup() )
+			->getPageSubjects( new PageId( $revision->getPageId() ) );
+
+		$this->assertTrue( $pageSubjects->isEmpty() );
+	}
+
+	public static function subjectJsonThatDoesNotDeserializeProvider(): iterable {
+		yield 'a Subject that fails validation' => [ TestSubject::jsonThatDoesNotDeserialize( 'sPubTest1111116' ) ];
+		yield 'a Subject that is not an object' => [ '{"mainSubject":"sPubTest1111116","subjects":{"sPubTest1111116":1}}' ];
 	}
 
 	public function testEmptyIdListReadsNoRevision(): void {

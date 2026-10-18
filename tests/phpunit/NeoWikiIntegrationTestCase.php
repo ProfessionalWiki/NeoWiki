@@ -8,12 +8,15 @@ use DumpStringOutput;
 use ImportStringSource;
 use Laudis\Neo4j\Databags\SummarizedResult;
 use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\Content;
 use MediaWiki\Content\TextContent;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\PageIdentityValue;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
@@ -236,6 +239,13 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		$this->assertNotNull(
 			$updater->saveRevision( CommentStoreComment::newUnsavedComment( 'unhooked slot removal' ) )
 		);
+	}
+
+	protected function newRevisionWithSlotContent( int $pageId, Content $content ): RevisionRecord {
+		$revision = new MutableRevisionRecord( PageIdentityValue::localIdentity( $pageId, NS_MAIN, 'Page_' . $pageId ) );
+		$revision->setContent( MediaWikiSubjectRepository::SLOT_NAME, $content );
+
+		return $revision;
 	}
 
 	protected function movePage( string $from, string $to, bool $createRedirect = false ): void {

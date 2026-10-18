@@ -4,7 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests;
 
+use MediaWiki\Content\FallbackContent;
 use MediaWiki\Installer\DatabaseUpdater;
+use MediaWiki\Revision\RevisionAccessException;
+use MediaWiki\Revision\RevisionLookup;
+use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Revision\RevisionSlots;
 use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -29,6 +34,7 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  * Needs the database for the tables it rebuilds and the pages it reads.
  *
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePublishedSubjectIndexRebuilder
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectsToPublish
  * @covers \ProfessionalWiki\NeoWiki\Maintenance\RebuildPublishedSubjectIndex
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onLoadExtensionSchemaUpdates
  * @group Database
@@ -128,6 +134,33 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 		yield 'a Subject that is not an object' => [ '{"mainSubject":"' . self::ADA . '","subjects":{"' . self::ADA . '":1}}' ];
 	}
 
+	public function testRebuildingLeavesAPageWhoseSlotDoesNotHoldSubjectContentAsItWas(): void {
+		$pageId = $this->createPage( 'Ada Lovelace', self::ADA, 'Ada' );
+
+		$this->rebuild( revisionLookup: $this->revisionLookupReading(
+			$pageId,
+			$this->newRevisionWithSlotContent( $pageId, new FallbackContent( '{"subjects":{}}', 'unregistered-model' ) )
+		) );
+
+		$this->assertSame( [ self::ADA => 'Ada' ], $this->displayNamesOf( $pageId ) );
+	}
+
+	public function testRebuildingLeavesAPageWhoseContentCannotBeLoadedAsItWasAndGoesOn(): void {
+		$unloadablePageId = $this->createPage( 'Ada Lovelace', self::ADA, 'Ada' );
+		$gracePageId = $this->createPageWithoutTellingNeoWiki( 'Grace Hopper', $this->slotJson( self::GRACE, 'Grace' ) );
+		$logger = new TestLogger();
+
+		$leftAsTheyWere = $this->rebuild(
+			logger: $logger,
+			revisionLookup: $this->revisionLookupReading( $unloadablePageId, $this->revisionWhoseSubjectSlotCannotBeLoaded() )
+		);
+
+		$this->assertSame( [ self::ADA => 'Ada' ], $this->displayNamesOf( $unloadablePageId ) );
+		$this->assertSame( [ self::GRACE => 'Grace' ], $this->displayNamesOf( $gracePageId ) );
+		$this->assertSame( [ $unloadablePageId ], $leftAsTheyWere );
+		$this->assertTrue( $logger->hasWarningRecords(), 'the page left as it was should be logged' );
+	}
+
 	public function testUpdatePhpCreatesTheTablesAndFillsThem(): void {
 		$tables = [];
 		$postUpdateScripts = [];
@@ -202,14 +235,44 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 		) )->getText();
 	}
 
+	/**
+	 * Hands out $revision as the current revision of $pageId, and every other page's own.
+	 */
+	private function revisionLookupReading( int $pageId, RevisionRecord $revision ): RevisionLookup {
+		$revisionLookup = $this->getServiceContainer()->getRevisionLookup();
+
+		$stub = $this->createStub( RevisionLookup::class );
+		$stub->method( 'getRevisionByPageId' )->willReturnCallback(
+			static fn ( int $id, int $revisionId = 0, int $flags = 0 ): ?RevisionRecord =>
+				$id === $pageId ? $revision : $revisionLookup->getRevisionByPageId( $id, $revisionId, $flags )
+		);
+
+		return $stub;
+	}
+
+	private function revisionWhoseSubjectSlotCannotBeLoaded(): RevisionRecord {
+		$failure = new RevisionAccessException( 'Failed to load data blob' );
+
+		$slots = $this->createStub( RevisionSlots::class );
+		$slots->method( 'getContent' )->willThrowException( $failure );
+
+		$revision = $this->createStub( RevisionRecord::class );
+		$revision->method( 'hasSlot' )->willReturn( true );
+		$revision->method( 'getContent' )->willThrowException( $failure );
+		$revision->method( 'getSlots' )->willReturn( $slots );
+
+		return $revision;
+	}
+
 	private function rebuild(
 		int $batchSize = DatabasePublishedSubjectIndexRebuilder::DEFAULT_BATCH_SIZE,
 		RevisionPolicy $revisionPolicy = new NullRevisionPolicy(),
-		LoggerInterface $logger = new NullLogger()
-	): void {
+		LoggerInterface $logger = new NullLogger(),
+		?RevisionLookup $revisionLookup = null
+	): array {
 		$rebuilder = new DatabasePublishedSubjectIndexRebuilder(
 			db: $this->getDb(),
-			revisionLookup: $this->getServiceContainer()->getRevisionLookup(),
+			revisionLookup: $revisionLookup ?? $this->getServiceContainer()->getRevisionLookup(),
 			revisionPolicy: $revisionPolicy,
 			titleFormatter: $this->getServiceContainer()->getTitleFormatter(),
 			dependentSubjectRules: NeoWikiExtension::getInstance()->newUnrestrictedDependentSubjectRules(),
@@ -217,7 +280,10 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 			batchSize: $batchSize,
 		);
 
-		iterator_to_array( $rebuilder->rebuild() );
+		$rebuild = $rebuilder->rebuild();
+		iterator_to_array( $rebuild );
+
+		return $rebuild->getReturn();
 	}
 
 	private function runUpdateScript(): void {

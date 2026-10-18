@@ -19,9 +19,9 @@ creates a Subject and links to it straight after.
 ## Decision
 
 **Only the query surfaces read Graph Stores**: the Cypher and SPARQL that users write, run from parser functions, Lua
-or the REST API. Every other NeoWiki feature reads Subject data from MediaWiki tables on every wiki, here
-`neowiki_subject` and `neowiki_relation`. A feature that needs Subject data these tables lack adds a column rather
-than reading a Graph Store. This replaces the fallbacks ADR 19 allowed and ADR 32's suggestions from Neo4j.
+or the REST API. The four features read MediaWiki tables on every wiki, here `neowiki_subject` and `neowiki_relation`,
+and a feature that needs Subject data these tables lack extends them. This replaces the fallbacks ADR 19 allowed and
+ADR 32's suggestions from Neo4j.
 
 **The tables follow the published revision**, the one a revision policy chooses, as the Projections do, so lists,
 suggestions and counts show what readers see. `neowiki_subject_page` keeps following the latest revision, so that an
@@ -38,7 +38,7 @@ than the revision they derive from.
   ADR 32's index does.
 * Search in the Subject list matches anywhere in a name, which no index serves, so a term few Subjects match reads
   every row, as does sorting by page or last edit: about a second per million Subjects. On MySQL and MariaDB,
-  `$wgMaxExecutionTimeForExpensiveQueries` caps the search.
+  `$wgMaxExecutionTimeForExpensiveQueries`, off by default, caps each search query; nothing caps the sorts.
 * MediaWiki's web updater does not fill the tables; `RebuildPublishedSubjectIndex.php`, which `update.php` runs, fills
   and repairs them.
 
@@ -49,5 +49,5 @@ than the revision they derive from.
 * **The search index** (CirrusSearch with OpenSearch): its documents are pages, not Subjects; it is updated through the
   job queue, from the latest revision rather than the published one; and it is optional.
 * **More columns on `neowiki_subject_page`**: that index follows the latest revision.
-* **Writing after the save commits**, as MediaWiki's link tables are: a failed write would leave the lists wrong until
-  a rebuild.
+* **Writing after the save commits**, as MediaWiki's link tables are: it would run after the response, so suggestions
+  would lag.
