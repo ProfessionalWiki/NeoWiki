@@ -210,6 +210,14 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ self::ADA => 'Approved name' ], $this->displayNamesOf( $approved->getPageId() ) );
 	}
 
+	public function testTheUpdateScriptNamesThePagesItLeftAsTheyWere(): void {
+		$pageId = $this->createPageWithoutTellingNeoWiki( 'Ada Lovelace', TestSubject::jsonThatDoesNotDeserialize( self::ADA ) );
+
+		$output = $this->runUpdateScript();
+
+		$this->assertStringContainsString( "Did not reindex pages $pageId:", $output );
+	}
+
 	private function createPage( string $pageName, string $subjectId, string $label ): int {
 		$revision = $this->createPageWithSubjects( $pageName, TestSubject::build( id: $subjectId, label: $label ) );
 		$this->assertNotNull( $revision );
@@ -286,7 +294,10 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 		return $rebuild->getReturn();
 	}
 
-	private function runUpdateScript(): void {
+	/**
+	 * @return string What the script printed, including its errors, which go to stdout under PHPUnit
+	 */
+	private function runUpdateScript(): string {
 		$script = new RebuildPublishedSubjectIndex();
 		$script->loadWithArgv( [] );
 
@@ -295,8 +306,10 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 			$this->assertTrue( $script->execute() );
 		} finally {
 			$script->cleanupChanneled();
-			ob_end_clean();
+			$output = (string)ob_get_clean();
 		}
+
+		return $output;
 	}
 
 }
