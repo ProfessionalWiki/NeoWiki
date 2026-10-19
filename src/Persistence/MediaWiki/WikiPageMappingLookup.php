@@ -12,36 +12,22 @@ use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use Wikimedia\ObjectCache\WANObjectCache;
 
-/**
- * Caches the JSON of Mapping pages in the shared WANObjectCache, so that the SPARQL store, which
- * resolves its projection on every page save, does not re-load the Mapping page each time. It holds
- * the JSON rather than the parsed Mapping for the reason given in {@see CachingSchemaLookup}.
- *
- * Entries key on the Mapping page's latest revision id, so an edit transparently invalidates the
- * entry.
- */
-class CachingMappingLookup implements MappingLookup {
-
-	// Bump when what an entry holds changes. Changes to the Mapping classes do not: an entry holds
-	// the page's JSON.
-	private const CACHE_VERSION = 3;
+class WikiPageMappingLookup implements MappingLookup {
 
 	public function __construct(
-		private readonly MappingJsonLookup $mappingJsonLookup,
+		private readonly PublishedPageJsonLookup $jsonLookup,
 		private readonly MappingPersistenceDeserializer $mappingDeserializer,
-		private readonly WANObjectCache $cache,
 		private readonly TitleFactory $titleFactory,
 		private readonly PageReadAuthorizer $readAuthorizer,
-		private readonly ReplicaCacheOptions $cacheOptions,
 	) {
 	}
 
 	public function getMapping( MappingName $name ): ?Mapping {
 		$title = $this->titleFactory->newFromText( $name->getText(), NeoWikiExtension::NS_MAPPING );
 
-		if ( $title === null || !$title->exists() ) {
+		// A namespace prefix in the name takes the title out of the Mapping namespace.
+		if ( $title === null || $title->getNamespace() !== NeoWikiExtension::NS_MAPPING || !$title->exists() ) {
 			return null;
 		}
 
@@ -53,27 +39,13 @@ class CachingMappingLookup implements MappingLookup {
 			return null;
 		}
 
-		$json = $this->getJsonFromSharedCache( $this->makeCacheKey( $title ), $name );
+		$json = $this->jsonLookup->getJson( $title );
 
 		if ( $json === null ) {
 			return null;
 		}
 
 		return $this->deserialize( $title, $json );
-	}
-
-	private function getJsonFromSharedCache( string $cacheKey, MappingName $name ): ?string {
-		/** @var string|null $json */
-		$json = $this->cache->getWithSetCallback(
-			$cacheKey,
-			WANObjectCache::TTL_DAY,
-			function ( mixed $oldValue, int &$ttl, array &$setOpts ) use ( $name ): ?string {
-				$setOpts += $this->cacheOptions->forRead();
-				return $this->mappingJsonLookup->getMappingJson( $name );
-			}
-		);
-
-		return $json;
 	}
 
 	/**
@@ -90,15 +62,6 @@ class CachingMappingLookup implements MappingLookup {
 		catch ( InvalidArgumentException ) {
 			return null;
 		}
-	}
-
-	private function makeCacheKey( Title $title ): string {
-		return $this->cache->makeKey(
-			'neowiki-mapping',
-			self::CACHE_VERSION,
-			$title->getArticleID(),
-			$title->getLatestRevID()
-		);
 	}
 
 }

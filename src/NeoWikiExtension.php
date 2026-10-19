@@ -199,7 +199,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MediaWikiWikiConfigSource;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentFetcher;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\ReplicaCacheOptions;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PublishedPageJsonLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Search\SubjectSearchHitLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Search\SubjectSearchTextLookup;
@@ -211,15 +211,13 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\DatabaseRecentlyEdite
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\StatementDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectInPlaceOfPageTitleLookup;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingMappingLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSubjectCountLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseMappingNameLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\LayoutPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\MappingPersistenceDeserializer;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageMappingJsonLookup;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageSchemaJsonLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageMappingLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
@@ -953,16 +951,11 @@ class NeoWikiExtension {
 	}
 
 	private function newMappingLookup( Authority $authority ): MappingLookup {
-		return new CachingMappingLookup(
-			mappingJsonLookup: new WikiPageMappingJsonLookup(
-				pageContentFetcher: $this->getPageContentFetcher(),
-				authority: $authority,
-			),
+		return new WikiPageMappingLookup(
+			jsonLookup: $this->newPublishedPageJsonLookup( $authority ),
 			mappingDeserializer: $this->getMappingPersistenceDeserializer(),
-			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
-			cacheOptions: $this->newReplicaCacheOptions(),
 		);
 	}
 
@@ -1931,22 +1924,18 @@ class NeoWikiExtension {
 
 	private function newSchemaLookup( Authority $authority ): SchemaLookup {
 		return new CachingSchemaLookup(
-			schemaJsonLookup: new WikiPageSchemaJsonLookup(
-				pageContentFetcher: $this->getPageContentFetcher(),
-				authority: $authority,
-			),
+			jsonLookup: $this->newPublishedPageJsonLookup( $authority ),
 			schemaDeserializer: $this->getPersistenceSchemaDeserializer(),
-			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
-			cacheOptions: $this->newReplicaCacheOptions(),
 		);
 	}
 
-	private function newReplicaCacheOptions(): ReplicaCacheOptions {
-		return new ReplicaCacheOptions(
-			MediaWikiServices::getInstance()->getConnectionProvider(),
-			MW_VERSION
+	private function newPublishedPageJsonLookup( Authority $authority ): PublishedPageJsonLookup {
+		return new PublishedPageJsonLookup(
+			pageContentFetcher: $this->getPageContentFetcher(),
+			authority: $authority,
+			cache: MediaWikiServices::getInstance()->getMainWANObjectCache(),
 		);
 	}
 

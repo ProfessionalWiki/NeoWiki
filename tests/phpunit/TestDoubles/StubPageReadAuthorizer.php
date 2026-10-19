@@ -9,12 +9,12 @@ use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 
 /**
- * Authorizes or denies every page read.
+ * Authorizes or denies every page read, as $allowed says at the time of the read.
  */
 class StubPageReadAuthorizer implements PageReadAuthorizer {
 
 	public function __construct(
-		private bool $allowed
+		public bool $allowed
 	) {
 	}
 

@@ -34,15 +34,18 @@ channel](../operations/installation.md#logging).
 - `revisionIsReadableBy()` is asked when a REST caller names a `revisionId` or asks for `latest`
   ([REST API](../api/rest-api.md)); a refusal answers exactly like a revision that does not exist.
 
-Approval changes outside an edit reach NeoWiki only through
+Approval changes outside an edit reach the graph stores and the subject indexes only through
 [`rebuild()`](page-properties.md#refreshing-a-pages-data-without-an-edit). A newly registered policy reaches the graph
 stores only through a [full rebuild](../operations/maintenance.md#rebuilding-the-graph), and the Subject list,
 suggestions, counts and "Referenced by" only through
 [rebuilding the subject indexes](../operations/maintenance.md#rebuilding-the-subject-indexes).
 
+A long-running process, such as a job runner or a maintenance script, does not see an approval change to a Schema it has
+already read. A change to which revision of a Mapping is published does not rebuild the graph stores holding its
+projection; pages reach it as they are next saved or rebuilt
+([#1392](https://github.com/ProfessionalWiki/NeoWiki/issues/1392)).
+
 Editing reads the latest revision. So do `?action=subjects`, `GET /neowiki/v0/page/{pageId}/subjects`,
 `GET /neowiki/v0/page/{pageId}/mainSubject`, the referenced Subjects on a `revisionId` read
 ([#1390](https://github.com/ProfessionalWiki/NeoWiki/issues/1390)), the parse-time accessors, and the wiki's search
-index, which holds a page's Subjects the way MediaWiki holds its wikitext. Schema and Mapping reads are cached under
-the latest revision id, so an approval change without an edit to that Schema or Mapping page takes effect on its next
-edit or when the entry expires ([#1392](https://github.com/ProfessionalWiki/NeoWiki/issues/1392)).
+index, which holds a page's Subjects the way MediaWiki holds its wikitext.

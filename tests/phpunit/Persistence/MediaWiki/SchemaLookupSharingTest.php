@@ -7,18 +7,18 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 use MediaWiki\MediaWikiServices;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
-use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\ReplicaCacheOptions;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaJsonLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PublishedPageJsonLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyPageContentFetcher;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use Wikimedia\ObjectCache\EmptyBagOStuff;
 use Wikimedia\ObjectCache\WANObjectCache;
@@ -43,9 +43,9 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testProjectingAPageResolvesItsSchemaOnce(): void {
-		$inner = $this->newCountingLookup();
+		$fetcher = $this->newFetcher();
 
-		$this->newCountingProjectionStore( $inner )->savePage(
+		$this->newCountingProjectionStore( $fetcher )->savePage(
 			TestPage::build(
 				mainSubject: $this->newSubject( 'sShrdLookup1111' ),
 				otherSubjects: new SubjectMap(
@@ -56,13 +56,13 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 			)
 		);
 
-		$this->assertSame( 1, $inner->calls );
+		$this->assertSame( 1, $fetcher->fetchCount );
 	}
 
 	public function testValidatingSubjectsResolvesTheirSchemaOnce(): void {
-		$inner = $this->newCountingLookup();
+		$fetcher = $this->newFetcher();
 		$validator = new ProposedSubjectValidator(
-			schemaResolver: TestSources::newSchemaResolver( $this->newCachingLookup( $inner ) ),
+			schemaResolver: TestSources::newSchemaResolver( $this->newCachingLookup( $fetcher ) ),
 			subjectValidator: NeoWikiExtension::getInstance()->newSubjectValidator( $this->getTestUser()->getAuthority() ),
 		);
 
@@ -71,7 +71,7 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 		$validator->validate( $this->newSubject( 'sShrdLookup1117' ) );
 		$validator->validate( $this->newSubject( 'sShrdLookup1118' ) );
 
-		$this->assertSame( 1, $inner->calls );
+		$this->assertSame( 1, $fetcher->fetchCount );
 	}
 
 	public function testServesOneSchemaLookupThroughoutARequest(): void {
@@ -90,23 +90,23 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( $extension->getSchemaReferenceParser(), $extension->getSchemaReferenceParser() );
 	}
 
-	private function newCountingProjectionStore( SchemaJsonLookup $inner ): GraphDatabasePlugin {
-		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore( $this->newCachingLookup( $inner ) );
+	private function newCountingProjectionStore( SpyPageContentFetcher $fetcher ): GraphDatabasePlugin {
+		return NeoWikiExtension::getInstance()->newNeo4jProjectionStore( $this->newCachingLookup( $fetcher ) );
 	}
 
-	private function newCachingLookup( SchemaJsonLookup $inner ): CachingSchemaLookup {
-		$services = MediaWikiServices::getInstance();
-
+	private function newCachingLookup( SpyPageContentFetcher $fetcher ): CachingSchemaLookup {
 		return new CachingSchemaLookup(
-			schemaJsonLookup: $inner,
+			jsonLookup: new PublishedPageJsonLookup(
+				$fetcher,
+				$this->getTestUser()->getAuthority(),
+				// Stores nothing, so every read past the process-local tier reaches the counting fetcher.
+				new WANObjectCache( [ 'cache' => new EmptyBagOStuff() ] )
+			),
 			schemaDeserializer: new SchemaPersistenceDeserializer(
 				NeoWikiExtension::getInstance()->getPropertyTypeLookup()
 			),
-			// Stores nothing, so every read past the process-local tier reaches the counting lookup.
-			cache: new WANObjectCache( [ 'cache' => new EmptyBagOStuff() ] ),
-			titleFactory: $services->getTitleFactory(),
+			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
-			cacheOptions: new ReplicaCacheOptions( $services->getConnectionProvider(), MW_VERSION ),
 		);
 	}
 
@@ -114,18 +114,8 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 		return TestSubject::build( id: $id, schemaName: new SchemaName( self::SCHEMA_NAME ) );
 	}
 
-	/**
-	 * @return SchemaJsonLookup&object{calls: int}
-	 */
-	private function newCountingLookup(): SchemaJsonLookup {
-		return new class() implements SchemaJsonLookup {
-			public int $calls = 0;
-
-			public function getSchemaJson( Title $schemaPage ): string {
-				$this->calls++;
-				return '{"description":"","propertyDefinitions":{}}';
-			}
-		};
+	private function newFetcher(): SpyPageContentFetcher {
+		return new SpyPageContentFetcher( new SchemaContent( '{"description":"","propertyDefinitions":{}}' ) );
 	}
 
 }

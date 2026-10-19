@@ -43,11 +43,20 @@ class PageContentFetcher {
 			return null;
 		}
 
-		$revision = $this->revisionLookup->getRevisionByTitle( Title::newFromLinkTarget( $titleValue ) );
-		$revision = $revision === null ? null : $this->revisionPolicy->publishedRevision( $revision );
+		$revision = $this->getPublishedRevision( Title::newFromLinkTarget( $titleValue ) );
 
+		return $revision === null ? null : $this->getRevisionContent( $revision, $authority, $slotName );
+	}
+
+	public function getPublishedRevision( Title $title ): ?RevisionRecord {
+		$latest = $this->revisionLookup->getRevisionByTitle( $title );
+
+		return $latest === null ? null : $this->revisionPolicy->publishedRevision( $latest );
+	}
+
+	public function getRevisionContent( RevisionRecord $revision, Authority $authority, string $slotName ): ?Content {
 		try {
-			return $revision?->getContent( $slotName, RevisionRecord::FOR_THIS_USER, $authority );
+			return $revision->getContent( $slotName, RevisionRecord::FOR_THIS_USER, $authority );
 		}
 		catch ( RevisionAccessException ) {
 			return null;
