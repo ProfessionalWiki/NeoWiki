@@ -316,6 +316,15 @@ test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-preflight.sh
 	@./Docker/tests/test-services.sh
 
+# ---- Browser tests -----------------------------------------------------------
+
+# Runs Playwright on the host against the dev wiki. Requires Node on the host.
+.PHONY: browser-test
+browser-test: ## Run the browser tests against the dev wiki (use filter=X for matching tests)
+	cd tests/e2e && npm ci --no-audit --no-fund && npx playwright install chromium
+	cd tests/e2e && MW_SCRIPT_PATH=/w MEDIAWIKI_USER=AdminName MEDIAWIKI_PASSWORD=$(MW_ADMIN_PASSWORD) \
+		npx playwright test $(if $(filter),--grep "$(filter)")
+
 # ---- Health gate -------------------------------------------------------------
 
 .PHONY: _wait-mw

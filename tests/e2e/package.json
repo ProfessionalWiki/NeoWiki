@@ -1,0 +1,11 @@
+{
+	"name": "neowiki-e2e",
+	"private": true,
+	"version": "0.0.0",
+	"license": "GPL-2.0-or-later",
+	"type": "module",
+	"devDependencies": {
+		"@playwright/test": "^1.64.1",
+		"@types/node": "^24.13.2"
+	}
+}

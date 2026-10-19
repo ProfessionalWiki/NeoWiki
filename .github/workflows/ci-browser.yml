@@ -1,0 +1,141 @@
+name: NeoWiki CI (browser)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+
+jobs:
+  browser:
+    name: "Browser tests: MW ${{ matrix.mw }}"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mw: 'REL1_43'
+            php: '8.3'
+          - mw: 'REL1_47'
+            php: '8.5'
+
+    runs-on: ubuntu-latest
+
+    env:
+      MW_SERVER: http://127.0.0.1:8080
+      MW_SCRIPT_PATH: /mediawiki
+      MEDIAWIKI_USER: AdminUser
+      MEDIAWIKI_PASSWORD: AdminPassword
+
+    services:
+      test_neo:
+        image: neo4j:5.26-community
+        ports:
+          - 7689:7689
+        env:
+          NEO4J_AUTH: neo4j/password
+          NEO4J_server_bolt_listen__address: :7689
+        options: --name test_neo
+
+    defaults:
+      run:
+        working-directory: mediawiki
+
+    steps:
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, intl
+          tools: composer
+
+      - name: Disable Composer block-insecure
+        working-directory: ~
+        run: composer config --global audit.block-insecure false
+
+      - name: Resolve MediaWiki ${{ matrix.mw }} commit
+        id: mw
+        working-directory: ~
+        run: echo "sha=$(git ls-remote https://github.com/wikimedia/mediawiki refs/heads/${{ matrix.mw }} | cut -f1)" >> "$GITHUB_OUTPUT"
+
+      # Not shared with the PHPUnit job: both edit LocalSettings.php after restoring it, and the cache
+      # keeps whatever the job that saved it first wrote.
+      - name: Cache MediaWiki
+        id: cache-mediawiki
+        uses: actions/cache@v6
+        with:
+          path: |
+            mediawiki
+            !mediawiki/extensions/
+            !mediawiki/vendor/
+          key: mw-browser_${{ matrix.mw }}-php${{ matrix.php }}-${{ steps.mw.outputs.sha }}
+
+      - name: Cache Composer cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.composer/cache
+          key: composer-php${{ matrix.php }}
+
+      - uses: actions/checkout@v6
+        with:
+          path: EarlyCopy
+
+      - name: Install MediaWiki
+        if: steps.cache-mediawiki.outputs.cache-hit != 'true'
+        working-directory: ~
+        run: bash EarlyCopy/.github/workflows/installMediaWiki.sh ${{ matrix.mw }} NeoWiki
+
+      - uses: actions/checkout@v6
+        with:
+          path: mediawiki/extensions/NeoWiki
+
+      - run: composer update
+
+      - name: Point the wiki at the test server
+        run: echo "\$wgServer = '$MW_SERVER';" >> LocalSettings.php
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Build NeoWiki JavaScript
+        working-directory: mediawiki/extensions/NeoWiki/resources/ext.neowiki
+        run: npm ci && npx vite build
+
+      - name: Install Playwright
+        working-directory: mediawiki/extensions/NeoWiki/tests/e2e
+        run: npm ci && npx playwright install --with-deps --only-shell chromium
+
+      - name: Wait for Neo4j
+        run: |
+          timeout 90 bash -c 'until docker exec test_neo cypher-shell -u neo4j -p password -a bolt://localhost:7689 "RETURN 1" >/dev/null 2>&1; do sleep 2; done' \
+            || { echo "Neo4j did not become ready in time; dumping logs:"; docker logs test_neo; exit 1; }
+
+      - name: Run update.php
+        run: php maintenance/update.php --quick
+
+      # Serves the directory above MediaWiki, so the wiki is at the script path install.php defaults to.
+      - name: Start the wiki
+        run: |
+          PHP_CLI_SERVER_WORKERS=4 nohup php -S 127.0.0.1:8080 -t .. > "$RUNNER_TEMP/php-server.log" 2>&1 &
+          timeout 30 bash -c "until curl -fsS -o /dev/null '$MW_SERVER$MW_SCRIPT_PATH/index.php'; do sleep 1; done"
+
+      - name: Run browser tests
+        working-directory: mediawiki/extensions/NeoWiki/tests/e2e
+        run: npx playwright test
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-test-results-${{ matrix.mw }}
+          path: |
+            mediawiki/extensions/NeoWiki/tests/e2e/test-results/
+            ${{ runner.temp }}/php-server.log

@@ -10,3 +10,4 @@ composer.lock
 package-lock.json
 !resources/ext.neowiki/package-lock.json
 !tests/RedHerb/package-lock.json
+!tests/e2e/package-lock.json
