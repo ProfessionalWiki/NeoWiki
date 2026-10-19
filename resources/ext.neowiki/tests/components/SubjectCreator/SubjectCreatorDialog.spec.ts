@@ -812,7 +812,7 @@ describe( 'SubjectCreatorDialog', () => {
 			await toggleDetails( wrapper.find( '.ext-neowiki-subject-creator-page-section' ).element, open );
 		}
 
-		/** A details element reports opening or closing a task later, rendered so or toggled alike. */
+		/** A details element rendered open or closed reports it a task later. */
 		async function toggleReported(): Promise<void> {
 			await new Promise( ( resolve ) => {
 				setTimeout( resolve, 0 );
