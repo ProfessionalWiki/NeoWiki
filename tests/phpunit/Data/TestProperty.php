@@ -122,6 +122,7 @@ class TestProperty {
 
 	/**
 	 * @param SelectOption[] $options
+	 * @param array<string, Severity> $constraintSeverities
 	 */
 	public static function buildSelect(
 		string $description = '',
@@ -129,12 +130,14 @@ class TestProperty {
 		?string $default = null,
 		array $options = [],
 		bool $multiple = false,
+		array $constraintSeverities = [],
 	): SelectProperty {
 		return new SelectProperty(
 			core: new PropertyCore(
 				description: $description,
 				required: $required,
-				default: $default
+				default: $default,
+				constraintSeverities: $constraintSeverities
 			),
 			options: $options,
 			multiple: $multiple

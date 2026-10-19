@@ -143,21 +143,20 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	private function registerSelectSchema(): void {
-		$this->registerSelectSchemaOf( new PropertyCore( description: '', required: false, default: null ) );
+		$this->registerSelectSchemaWithStatus( required: false );
 	}
 
-	private function registerSelectSchemaOf( PropertyCore $core ): void {
+	private function registerSelectSchemaWithStatus( bool $required ): void {
 		$this->schemaLookup->updateSchema( TestSchema::build(
 			name: new SchemaName( self::SELECT_SCHEMA_NAME ),
 			description: '',
 			properties: new PropertyDefinitions( [
-				'Status' => new SelectProperty(
-					core: $core,
+				'Status' => TestProperty::buildSelect(
+					required: $required,
 					options: [
 						new SelectOption( id: 'opt_draft', label: 'Draft' ),
 						new SelectOption( id: 'opt_approved', label: 'Approved' ),
 					],
-					multiple: false,
 				),
 			] )
 		) );
@@ -404,7 +403,7 @@ class CreateSubjectActionTest extends TestCase {
 	}
 
 	private function registerSchemaWithRequiredStatus(): void {
-		$this->registerSelectSchemaOf( new PropertyCore( description: '', required: true, default: null ) );
+		$this->registerSelectSchemaWithStatus( required: true );
 	}
 
 	public function testCreateProducesEmptyViolationsForCleanInput(): void {

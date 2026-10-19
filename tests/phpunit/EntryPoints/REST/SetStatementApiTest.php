@@ -35,22 +35,14 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 	private const string SUBJECT_ID = 'sTestSS11111111';
 
 	private function createSubjectPage( ?StatementList $statements = null ): void {
-		$this->createSchema(
-			'SetStatementSchema',
-			'{"title":"SetStatementSchema","propertyDefinitions":{"Website":{"type":"url"},"Founded at":{"type":"number"}}}'
-		);
-		$this->createPageWithSubjects(
-			'SetStatementApiTest',
-			mainSubject: TestSubject::build(
-				id: self::SUBJECT_ID,
-				label: new SubjectLabel( 'Professional Wiki' ),
-				schemaName: new SchemaName( 'SetStatementSchema' ),
-				statements: $statements,
-			)
-		);
+		$this->createSubjectPageWithLabel( new SubjectLabel( 'Professional Wiki' ), $statements );
 	}
 
 	private function createLabellessSubjectPage(): void {
+		$this->createSubjectPageWithLabel( null, null );
+	}
+
+	private function createSubjectPageWithLabel( ?SubjectLabel $label, ?StatementList $statements ): void {
 		$this->createSchema(
 			'SetStatementSchema',
 			'{"title":"SetStatementSchema","propertyDefinitions":{"Website":{"type":"url"},"Founded at":{"type":"number"}}}'
@@ -59,8 +51,9 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 			'SetStatementApiTest',
 			mainSubject: TestSubject::build(
 				id: self::SUBJECT_ID,
-				label: null,
+				label: $label,
 				schemaName: new SchemaName( 'SetStatementSchema' ),
+				statements: $statements,
 			)
 		);
 	}
