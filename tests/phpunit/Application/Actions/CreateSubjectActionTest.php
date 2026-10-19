@@ -885,7 +885,6 @@ class CreateSubjectActionTest extends TestCase {
 		$this->assertSame( 'Some Label', $this->presenterSpy->subject?->label );
 		$this->assertSame( self::SELECT_SCHEMA_NAME, $this->presenterSpy->subject?->schema );
 		$this->assertSame(
-			// The bare string the request supplied is stored as a list.
 			[ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'opt_approved' ] ] ],
 			$this->presenterSpy->subject?->statements
 		);

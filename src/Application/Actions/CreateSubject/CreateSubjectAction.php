@@ -69,8 +69,6 @@ readonly class CreateSubjectAction {
 		}
 
 		$schemaReference = $this->schemaReference( $request );
-		$schema = $this->schemaResolver->getSchema( $schemaReference );
-
 		$subject = $this->buildSubject( $request, $schemaReference );
 
 		if ( $request->id !== null && $this->newSubjectIdResolver->isInUse( $subject->id ) ) {
@@ -123,7 +121,7 @@ readonly class CreateSubjectAction {
 				SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageName ),
 				hostSubject: null
 			),
-			$schema,
+			$this->schemaResolver->getSchema( $schemaReference ),
 			$violations
 		);
 	}

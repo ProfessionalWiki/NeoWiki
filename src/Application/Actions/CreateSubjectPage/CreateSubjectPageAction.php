@@ -63,8 +63,6 @@ readonly class CreateSubjectPageAction {
 	 */
 	public function createSubjectPage( CreateSubjectPageRequest $request ): void {
 		$schemaReference = $this->schemaReferenceParser->localName( $request->schemaName );
-		$schema = $this->schemaResolver->getSchema( $schemaReference );
-
 		$titleAsked = $this->titleAsked( $request->pageTitle );
 
 		if ( $titleAsked !== null && $this->subjectFirst ) {
@@ -130,7 +128,7 @@ readonly class CreateSubjectPageAction {
 				hostSubject: null
 			),
 			$page,
-			$schema,
+			$this->schemaResolver->getSchema( $schemaReference ),
 			$violations
 		);
 	}

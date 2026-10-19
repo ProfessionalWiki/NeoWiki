@@ -591,7 +591,6 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->assertFalse( $this->presenterSpy->subject?->displayNameIsGenerated );
 		$this->assertSame( self::SCHEMA_NAME, $this->presenterSpy->subject?->schema );
 		$this->assertSame(
-			// The bare string the request supplied is stored as a list.
 			[ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'opt_approved' ] ] ],
 			$this->presenterSpy->subject?->statements
 		);

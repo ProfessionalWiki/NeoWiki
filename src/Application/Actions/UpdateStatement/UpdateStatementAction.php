@@ -189,8 +189,7 @@ readonly class UpdateStatementAction {
 			return;
 		}
 
-		// The proposed Subject is the persisted state: the builder above already normalized what the
-		// request supplied.
+		// The proposed Subject is the persisted state.
 		$this->presenter->presentUpdated(
 			$this->newResponseItem( $proposedSubject, $pageIdentifiers ),
 			$schema,

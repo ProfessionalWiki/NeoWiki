@@ -11,13 +11,9 @@ use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 
 /**
- * Validates a proposed Subject against its current Schema, looking the Schema
- * up by the Subject's Schema name and delegating to {@see SubjectValidator}.
- *
- * When the Schema cannot be found, a single non-blocking `schema-not-found`
- * violation is returned and the write still proceeds: the Subject stays
- * editable (ADR 21), but the response reports that it could not be validated
- * rather than implying it is valid.
+ * When the Schema cannot be found, a non-blocking `schema-not-found` violation
+ * stands in for the Schema-scoped checks, so the Subject stays editable but is
+ * not reported as valid.
  */
 readonly class ProposedSubjectValidator {
 

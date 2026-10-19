@@ -78,8 +78,6 @@ readonly class ReplaceSubjectAction {
 			throw SubjectNotFoundException::forId( $subjectId );
 		}
 
-		$schema = $this->schemaResolver->getSchema( $subject->getSchemaReference() );
-
 		$pageSubjects = $dependentSubjects === [] ?
 			PageSubjects::newEmpty() : $this->subjectRepository->getSubjectsByPageId( $pageIdentifiers->getId() );
 		$newDependentSubjects = $this->dependentSubjectBuilder->build( $dependentSubjects, $subjectId, $pageSubjects );
@@ -122,7 +120,7 @@ readonly class ReplaceSubjectAction {
 		// request supplied.
 		$this->presenter->presentUpdated(
 			$this->newResponseItem( $subject, $pageIdentifiers ),
-			$schema,
+			$this->schemaResolver->getSchema( $subject->getSchemaReference() ),
 			$proposedViolations
 		);
 	}

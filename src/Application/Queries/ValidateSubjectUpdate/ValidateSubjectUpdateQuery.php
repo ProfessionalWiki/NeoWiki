@@ -28,7 +28,8 @@ readonly class ValidateSubjectUpdateQuery {
 	 *
 	 * @return Violation[]
 	 *
-	 * @throws \InvalidArgumentException when the subject id format is invalid.
+	 * @throws \InvalidArgumentException when the subject id format is invalid, or a value does not fit its
+	 *  property type.
 	 * @throws SubjectNotFoundException when the subject does not exist or the caller may not read its page.
 	 */
 	public function validate( string $subjectId, array $statements ): array {
