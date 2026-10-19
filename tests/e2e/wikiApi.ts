@@ -5,8 +5,24 @@ export function uniqueName( prefix: string ): string {
 	return `${ prefix } ${ randomUUID().slice( 0, 8 ) }`;
 }
 
-export async function createSchema( request: APIRequestContext, name: string ): Promise<void> {
-	await savePage( request, `Schema:${ name }`, JSON.stringify( { propertyDefinitions: {} } ) );
+export async function createSchema(
+	request: APIRequestContext,
+	name: string,
+	propertyDefinitions: Record<string, object>
+): Promise<void> {
+	await savePage( request, `Schema:${ name }`, JSON.stringify( { propertyDefinitions } ) );
+}
+
+export async function createSubjectPage(
+	request: APIRequestContext,
+	subject: { pageTitle: string; label: string; schema: string; statements: Record<string, object> }
+): Promise<void> {
+	const response = await request.post( 'rest.php/neowiki/v0/subjects', {
+		data: subject,
+		headers: { 'X-CSRF-TOKEN': await csrfToken( request ) }
+	} );
+
+	await expect( response ).toBeOK();
 }
 
 async function savePage( request: APIRequestContext, title: string, text: string ): Promise<void> {

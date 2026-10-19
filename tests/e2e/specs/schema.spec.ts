@@ -4,7 +4,7 @@ import { createSchema, pageJson, uniqueName } from '../wikiApi';
 test( 'a new Schema saves a Relation property with its target Schema', async ( { page, request } ) => {
 	const targetName = uniqueName( 'Target' );
 	const schemaName = uniqueName( 'Source' );
-	await createSchema( request, targetName );
+	await createSchema( request, targetName, {} );
 
 	await page.goto( 'index.php?title=Special:Schemas' );
 	await page.getByRole( 'button', { name: 'Create schema' } ).click();
