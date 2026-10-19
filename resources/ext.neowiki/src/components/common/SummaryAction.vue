@@ -66,7 +66,7 @@ import { CdxButton, CdxField, CdxIcon, CdxTextArea, CdxAccordion } from '@wikime
 import { cdxIconCheck } from '@wikimedia/codex-icons';
 import type { Icon } from '@wikimedia/codex-icons';
 import { useDialogStack } from '@/composables/useDialogStack.ts';
-import { isAccordionOpen } from '@/presentation/accordionOpen.ts';
+import { isAccordionOpen } from '@/codex/accordionOpen.ts';
 
 const props = withDefaults(
 	defineProps<{

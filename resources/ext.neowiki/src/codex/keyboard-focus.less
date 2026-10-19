@@ -24,6 +24,9 @@
  * Text inputs are out of scope by design: browsers match `:focus-visible` on
  * pointer focus for text entry, so their editing ring never reaches the
  * `:not( :focus-visible )` branch below.
+ *
+ * Remove once the Codex of the oldest MediaWiki NeoWiki supports rings these
+ * controls on `:focus-visible`; Codex 2.7.0 still rings them on bare `:focus`.
  */
 
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';

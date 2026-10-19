@@ -230,7 +230,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { setPendingNotification } from '@/presentation/PendingNotification.ts';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
-import { isAccordionOpen } from '@/presentation/accordionOpen.ts';
+import { isAccordionOpen } from '@/codex/accordionOpen.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
 import { useEditNotices } from '@/composables/useEditNotices.ts';
