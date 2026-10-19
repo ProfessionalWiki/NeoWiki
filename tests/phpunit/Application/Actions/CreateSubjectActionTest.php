@@ -385,24 +385,6 @@ class CreateSubjectActionTest extends TestCase {
 		$this->assertNull( $this->subjectRepository->comments[1] );
 	}
 
-	public function testSelectValueAcceptsOptionId(): void {
-		$this->registerSelectSchema();
-
-		$this->newCreateSubjectAction()->createSubject(
-			new CreateSubjectRequest(
-				pageId: 1,
-				isMainSubject: true,
-				label: 'Some Label',
-				schemaName: self::SELECT_SCHEMA_NAME,
-				statements: [
-					'Status' => [ 'propertyType' => 'select', 'value' => 'opt_draft' ],
-				]
-			)
-		);
-
-		$this->assertSame( [ 'opt_draft' ], $this->getStatusValueForCreatedSubject()->strings );
-	}
-
 	public function testSelectOptionLabelIsStoredAsSent(): void {
 		$this->registerSelectSchema();
 

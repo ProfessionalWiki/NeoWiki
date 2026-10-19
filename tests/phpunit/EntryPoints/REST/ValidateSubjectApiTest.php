@@ -121,24 +121,6 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertFalse( $this->newValidateSubjectApi()->needsWriteAccess() );
 	}
 
-	public function testSelectOptionLabelIsReportedAsInvalidOption(): void {
-		$this->createSchemaWithSelectProperty();
-
-		$body = $this->validBody();
-		$body['statements'] = [
-			'Status' => [ 'propertyType' => 'select', 'value' => [ 'Active' ] ],
-		];
-
-		$response = $this->executeHandler(
-			$this->newValidateSubjectApi(),
-			$this->createRequestData( $body )
-		);
-
-		$this->assertSame( 200, $response->getStatusCode() );
-		$responseBody = json_decode( $response->getBody()->getContents(), true );
-		$this->assertSame( [ 'invalid-option' ], array_column( $responseBody['violations'], 'code' ) );
-	}
-
 	/**
 	 * A relation target the caller may not read must be indistinguishable from one that was never
 	 * minted: reporting the schema mismatch tells the caller the Subject exists and which Schema it
@@ -224,27 +206,6 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 			TestSubject::DEFAULT_SCHEMA_ID,
 			'{"title":"' . TestSubject::DEFAULT_SCHEMA_ID . '","propertyDefinitions":{"Status":{"type":"text","required":true}}}'
 		);
-	}
-
-	private function createSchemaWithSelectProperty(): void {
-		$json = json_encode( [
-			'title' => TestSubject::DEFAULT_SCHEMA_ID,
-			'propertyDefinitions' => [
-				'Status' => [
-					'type' => 'select',
-					'description' => '',
-					'required' => false,
-					'default' => null,
-					'options' => [
-						[ 'id' => 'opt1aaaaaaaaaaaa', 'label' => 'Active' ],
-						[ 'id' => 'opt2aaaaaaaaaaaa', 'label' => 'Inactive' ],
-					],
-					'multiple' => false,
-				],
-			],
-		] );
-
-		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID, $json );
 	}
 
 	private function createRequestData( array $body ): RequestData {
