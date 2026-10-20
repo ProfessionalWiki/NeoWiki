@@ -77,7 +77,7 @@ WHERE nwrr_store = '<name>' AND nwrr_status IN ( 'running', 'queued' );
 
 ## Background rebuilds
 
-Rebuilds can also be started from the wiki, without shell access. **Special:GraphStores** shows each configured
+You can also start rebuilds from the wiki, without shell access. **Special:GraphStores** shows each configured
 store's state and lets you rebuild it or cancel the rebuild it has queued or running. The
 [REST API](../api/rest-api.md#graph-stores) does the same for scripting. Both need the
 [`neowiki-admin`](installation.md#user-rights) right.

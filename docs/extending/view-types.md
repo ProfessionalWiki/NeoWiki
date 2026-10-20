@@ -47,7 +47,7 @@ writes through the Subject store:
 `( subject, dependentSubjects, comment ) => subjectStore.updateSubject( subject, dependentSubjects, comment )`.
 `openEditor` reads the Subject and its Schema fresh, and reports a failed read instead of opening.
 
-Relation fields offer creating the target Subject in place only when the dialog is given an `onCreate` handler
+Relation fields offer creating the target Subject in place only when you pass the dialog an `onCreate` handler
 alongside `onSave`, which decides the page the new Subject goes to; the handler types are in
 [`SubjectEditorDialog.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/components/SubjectEditor/SubjectEditorDialog.vue).
 

@@ -51,7 +51,7 @@ Declare the dependency in your `extension.json`:
 
 ### Backend registration
 
-Backend extension points are registered through the `NeoWikiRegistration` hook:
+Register backend extension points through the `NeoWikiRegistration` hook:
 
 ```json
 "Hooks": {
@@ -72,7 +72,7 @@ and frontend registries independently.
 
 ### Frontend module
 
-Frontend extension points are registered from a ResourceLoader module that depends on `ext.neowiki`. The
+Register frontend extension points from a ResourceLoader module that depends on `ext.neowiki`. The
 `NeoWikiGetFrontendModules` hook loads it wherever NeoWiki's UI loads; on pages of your own, load it as any module.
 
 ```json

@@ -22,7 +22,7 @@ the sandbox ([EDM](https://neowiki.dev/wiki/Mapping:EDM?action=raw),
 [CIDOC-CRM](https://neowiki.dev/wiki/Mapping:CIDOC-CRM?action=raw)) or
 [in the repository](https://github.com/ProfessionalWiki/NeoWiki/tree/master/DemoData/Mapping).
 
-There is no form-based editor: the content is JSON, edited in the normal page editor. Saving validates the mapping
+There is no form-based editor: you edit the JSON in the normal page editor. Saving validates the mapping
 and reports errors, and the page's read view shows a summary of the mapped Schemas and prefixes.
 
 ## 3. See the projection

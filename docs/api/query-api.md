@@ -49,7 +49,7 @@ Content-Type: application/json
 | `cypher` | string | Yes | A read-only Cypher query. Single statement. Queries with write keywords cause a `writeQueryRejected` error. |
 | `parameters` | object | No | Parameter name → value map. Reference as `$name` in the query. Defaults to `{}`. |
 
-Property names containing spaces must be backtick-escaped in Cypher, e.g. `` s.`Birth year` ``. Pass values via
+In Cypher, backtick-escape property names containing spaces, e.g. `` s.`Birth year` ``. Pass values via
 `parameters` rather than concatenating them into the query string — parameters reach the driver injection-safe.
 
 ### Successful response (200)

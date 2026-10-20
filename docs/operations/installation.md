@@ -81,7 +81,7 @@ git clone https://github.com/ProfessionalWiki/NeoWiki.git extensions/NeoWiki
 
 ### 1. Install Composer dependencies
 
-NeoWiki's runtime dependencies are installed through MediaWiki's Composer merge plugin. Add NeoWiki's `composer.json` to
+You install NeoWiki's runtime dependencies through MediaWiki's Composer merge plugin. Add NeoWiki's `composer.json` to
 your wiki's root `composer.local.json`:
 
 ```json
@@ -195,7 +195,7 @@ On a subject-first wiki, Subjects are stored in the `Subject` namespace by defau
 `[ 'de', 'fr', 'it' ]`. When editing [text with language](../api/schema-format.md#text-with-language-monolingualtext),
 the editor offers them in this order beside each text, and starts a new text in the first of them the value lacks.
 Other languages stay one search away, and texts already in them keep their language. The default, an empty list,
-stands for the wiki's content language (`$wgLanguageCode`). The list can also be set in the
+stands for the wiki's content language (`$wgLanguageCode`). You can also set the list in the
 [on-wiki settings](#on-wiki-settings).
 
 ## Logging
@@ -389,7 +389,7 @@ change it. The setting can also be changed at runtime through the store's endpoi
 token, so keep that token secret.
 
 Oxigraph has no equivalent setting and will attempt the outbound request; the stacks' Oxigraph services federate
-for that reason. Other stores vary — consult their documentation. Where the store cannot be restricted, restrict
+for that reason. Other stores vary — consult their documentation. Where you cannot restrict the store, restrict
 around it: block its outbound traffic at the network layer, and narrow who holds the `neowiki-query` right — see
 [Narrowing `neowiki-query`](restricted-content.md#narrowing-neowiki-query).
 

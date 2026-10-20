@@ -52,7 +52,7 @@ php maintenance/run.php update --quick
 php maintenance/run.php NeoWiki:RebuildGraphDatabases
 ```
 
-[Rebuild](maintenance.md#rebuilding-the-graph) after every upgrade: with no release notes there is no way to tell
+[Rebuild](maintenance.md#rebuilding-the-graph) after every upgrade: with no release notes you cannot tell
 whether the new version changed the projected shape, and rebuilds are quick at evaluation scale.
 
 If your wiki runs CirrusSearch, also [update its search index](maintenance.md#making-subjects-searchable).
@@ -127,7 +127,7 @@ graph fails or gives their Relations the wrong type.
 concept URI lands where [Dereferencing subject IRIs](../api/rdf-export.md#dereferencing-subject-iris) says.
 
 A `MediaWiki:NeoWiki` page still carrying `dereferenceSubjectsToHostingPage` keeps working, and the key does
-nothing; saving the page is refused until the key is removed.
+nothing; saving the page is refused until you remove the key.
 
 ## Renamed accessors, September 2026
 
