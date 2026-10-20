@@ -6,10 +6,8 @@ namespace ProfessionalWiki\NeoWiki\Tests;
 
 use MediaWiki\Content\FallbackContent;
 use MediaWiki\Installer\DatabaseUpdater;
-use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\Revision\RevisionSlots;
 use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -152,7 +150,10 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$leftAsTheyWere = $this->rebuild(
 			logger: $logger,
-			revisionLookup: $this->revisionLookupReading( $unloadablePageId, $this->revisionWhoseSubjectSlotCannotBeLoaded() )
+			revisionLookup: $this->revisionLookupReading(
+				$unloadablePageId,
+				$this->newRevisionWhoseSubjectSlotCannotBeLoaded( $unloadablePageId )
+			)
 		);
 
 		$this->assertSame( [ self::ADA => 'Ada' ], $this->displayNamesOf( $unloadablePageId ) );
@@ -256,20 +257,6 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 		);
 
 		return $stub;
-	}
-
-	private function revisionWhoseSubjectSlotCannotBeLoaded(): RevisionRecord {
-		$failure = new RevisionAccessException( 'Failed to load data blob' );
-
-		$slots = $this->createStub( RevisionSlots::class );
-		$slots->method( 'getContent' )->willThrowException( $failure );
-
-		$revision = $this->createStub( RevisionRecord::class );
-		$revision->method( 'hasSlot' )->willReturn( true );
-		$revision->method( 'getContent' )->willThrowException( $failure );
-		$revision->method( 'getSlots' )->willReturn( $slots );
-
-		return $revision;
 	}
 
 	private function rebuild(

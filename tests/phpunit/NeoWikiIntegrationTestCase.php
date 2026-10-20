@@ -17,7 +17,9 @@ use MediaWiki\Page\PageIdentityValue;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Revision\MutableRevisionRecord;
+use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Revision\RevisionSlots;
 use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
@@ -244,6 +246,21 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 	protected function newRevisionWithSlotContent( int $pageId, Content $content ): RevisionRecord {
 		$revision = new MutableRevisionRecord( PageIdentityValue::localIdentity( $pageId, NS_MAIN, 'Page_' . $pageId ) );
 		$revision->setContent( MediaWikiSubjectRepository::SLOT_NAME, $content );
+
+		return $revision;
+	}
+
+	protected function newRevisionWhoseSubjectSlotCannotBeLoaded( int $pageId ): RevisionRecord {
+		$failure = new RevisionAccessException( 'Failed to load data blob' );
+
+		$slots = $this->createStub( RevisionSlots::class );
+		$slots->method( 'getContent' )->willThrowException( $failure );
+
+		$revision = $this->createStub( RevisionRecord::class );
+		$revision->method( 'getPageId' )->willReturn( $pageId );
+		$revision->method( 'hasSlot' )->willReturn( true );
+		$revision->method( 'getContent' )->willThrowException( $failure );
+		$revision->method( 'getSlots' )->willReturn( $slots );
 
 		return $revision;
 	}
