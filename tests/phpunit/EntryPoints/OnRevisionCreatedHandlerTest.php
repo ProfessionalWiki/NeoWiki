@@ -342,6 +342,8 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		yield 'a Subject that is not an object' => [
 			'{"mainSubject":"' . TestSubject::ZERO_GUID . '","subjects":{"' . TestSubject::ZERO_GUID . '":1}}',
 		];
+		yield 'JSON cut off part way' => [ '{"mainSubject":"' . TestSubject::ZERO_GUID . '","subjects":{' ];
+		yield 'JSON that is not an object' => [ '"' . TestSubject::ZERO_GUID . '"' ];
 	}
 
 	private function newCorePropertyRegistry(): PagePropertyProviderRegistry {
