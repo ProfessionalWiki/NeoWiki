@@ -28,8 +28,6 @@ import {
 	accessibleName,
 	createI18nMock,
 	describedAs,
-	listenForDialogKeys,
-	pressKey,
 	reportUnparseableNumber,
 	setupMwMock,
 } from '../../VueTestHelpers.ts';
@@ -326,31 +324,6 @@ describe( 'DependentSubjectsInput', () => {
 		await flushPromises();
 
 		expect( lastValueTargets( wrapper ) ).toEqual( [ MINTED_ID ] );
-	} );
-
-	it( 'keeps the Escape that closes its menu of target Schemas from the dialog', async () => {
-		const wrapper = mountInput( { property: namesProperty } );
-		await flushPromises();
-		const dialogKeyup = listenForDialogKeys();
-
-		addButton( wrapper ).element.focus();
-		await pressKey( 'ArrowDown' );
-		expect( addButton( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'true' );
-		await pressKey( 'Escape' );
-
-		expect( addButton( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'false' );
-		expect( dialogKeyup ).not.toHaveBeenCalledWith( expect.objectContaining( { key: 'Escape' } ) );
-	} );
-
-	it( 'lets an Escape pressed on its closed menu of target Schemas reach the dialog', async () => {
-		const wrapper = mountInput( { property: namesProperty } );
-		await flushPromises();
-		const dialogKeyup = listenForDialogKeys();
-
-		addButton( wrapper ).element.focus();
-		await pressKey( 'Escape' );
-
-		expect( dialogKeyup ).toHaveBeenCalledWith( expect.objectContaining( { key: 'Escape' } ) );
 	} );
 
 	it( 'moves the focus to the first field of the Dependent Subject it adds', async () => {

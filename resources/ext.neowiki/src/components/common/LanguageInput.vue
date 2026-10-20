@@ -1,9 +1,5 @@
 <template>
-	<div
-		class="ext-neowiki-language-input"
-		@keydown.capture="noteEscape"
-		@keyup.esc="keepEscapeFromDialog"
-	>
+	<div class="ext-neowiki-ui ext-neowiki-language-input">
 		<LanguagePicker
 			:model-value="props.modelValue"
 			placement="bottom-end"
@@ -46,7 +42,6 @@ import { CdxSelect } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
 import LanguagePicker from '@/components/common/LanguagePicker.vue';
 import { dataLanguageTags, languageNameOrTag } from '@/presentation/languages.ts';
-import { useListEscapeGuard } from '@/composables/useListEscapeGuard.ts';
 
 // Never a language tag, which has no spaces.
 const OTHER_LANGUAGE = 'other language';
@@ -88,8 +83,6 @@ function onSelect( value: string | number | null, openSearch: () => void ): void
 function commit( tag: string ): void {
 	emit( 'update:modelValue', tag );
 }
-
-const { noteEscape, keepEscapeFromDialog } = useListEscapeGuard();
 </script>
 
 <style lang="less">

@@ -5,6 +5,7 @@ import '@/codex/button-focus.less';
 import '@/codex/menu-button-focus.less';
 import '@/codex/accordion-focus.less';
 import '@/codex/menu-footer.less';
+import { keepMenuEscapesFromDialogs } from '@/codex/menuEscape.ts';
 import NeoWikiApp from '@/components/NeoWikiApp.vue';
 import { CdxTooltip } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -54,7 +55,8 @@ export function registerSubjectCreatorClickHandler( pinia: Pinia, signal?: Abort
  * Mounts a NeoWiki Vue app, tagging its root element with `ext-neowiki-ui`, the scope of the Codex
  * workarounds in codex/: they apply to the Codex controls NeoWiki renders without touching those of
  * MediaWiki core or other extensions. Each CdxDialog NeoWiki opens carries the class itself, since
- * Codex teleports dialogs out of this root, and `ext-neowiki-view` marks the on-page view placeholder.
+ * Codex teleports dialogs out of this root, and so do SubjectEditor and LanguageInput, which other
+ * extensions can render in dialogs of their own; `ext-neowiki-view` marks the on-page view placeholder.
  * Focusable Codex UI NeoWiki renders must sit inside one of these.
  */
 function mountNeoWikiApp( app: App, element: Element ): void {
@@ -340,6 +342,7 @@ const isTestEnvironment = typeof window !== 'undefined' &&
 	( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode === true;
 
 if ( !isTestEnvironment ) {
+	keepMenuEscapesFromDialogs();
 	fireRegistrationHook();
 	initializeNeoWikiApp();
 	initializeSchemaView();

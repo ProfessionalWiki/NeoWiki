@@ -1,5 +1,5 @@
 <template>
-	<div class="ext-neowiki-subject-editor">
+	<div class="ext-neowiki-ui ext-neowiki-subject-editor">
 		<CdxField
 			v-for="( statement, index ) in props.statements"
 			:key="statement.propertyName.toString()"
