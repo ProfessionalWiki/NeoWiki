@@ -88,52 +88,18 @@ jobs:
           extensions: mbstring, intl
           tools: composer
 
-      - name: Disable Composer block-insecure
-        working-directory: ~
-        run: composer config --global audit.block-insecure false
-
-      - name: Resolve MediaWiki ${{ matrix.mw }} commit
-        id: mw
-        # Runs before the mediawiki directory this job defaults into exists.
-        working-directory: ~
-        run: echo "sha=$(git ls-remote https://github.com/wikimedia/mediawiki refs/heads/${{ matrix.mw }} | cut -f1)" >> "$GITHUB_OUTPUT"
-
-      # Keyed on the resolved commit rather than a hand-bumped suffix: the install
-      # step is skipped on a hit and a cache is only written on a miss, so a key
-      # that does not move pins MediaWiki until someone edits the key.
-      - name: Cache MediaWiki
-        id: cache-mediawiki
-        uses: actions/cache@v6
+      - uses: ProfessionalWiki/setup-mediawiki@alistair3149/rewrite
         with:
-          path: |
-            mediawiki
-            !mediawiki/extensions/
-            !mediawiki/vendor/
-          key: mw_${{ matrix.mw }}-php${{ matrix.php }}-${{ steps.mw.outputs.sha }}
-
-      - name: Cache Composer cache
-        uses: actions/cache@v6
-        with:
-          path: ~/.composer/cache
-          key: composer-php${{ matrix.php }}
-
-      - uses: actions/checkout@v6
-        with:
-            path: EarlyCopy
-
-      - name: Install MediaWiki
-        if: steps.cache-mediawiki.outputs.cache-hit != 'true'
-        working-directory: ~
-        run: bash EarlyCopy/.github/workflows/installMediaWiki.sh ${{ matrix.mw }} NeoWiki
-
-      - uses: actions/checkout@v6
-        with:
-          path: mediawiki/extensions/NeoWiki
+          mw-version: ${{ matrix.mw }}
+          extension: NeoWiki
+          dependencies: Scribunto
+          settings: |
+            wfLoadExtension( 'Scribunto' );
+            $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:password@localhost:7689';
+            $wgNeoWikiNeo4jInternalReadUrl = $wgNeoWikiNeo4jInternalWriteUrl;
 
       - name: Load RedHerb test extension
         run: echo 'wfLoadExtension( "RedHerb", "$IP/extensions/NeoWiki/tests/RedHerb/extension.json" );' >> LocalSettings.php
-
-      - run: composer update
 
       # Asks Neo4j to answer a query rather than to open its port, which is what the next step needs of it.
       # Not a `--health-cmd` on the service: that gates every step on it, measured at some 26 seconds a leg.
@@ -273,49 +239,15 @@ jobs:
           extensions: mbstring, intl
           tools: composer
 
-      - name: Disable Composer block-insecure
-        working-directory: ~
-        run: composer config --global audit.block-insecure false
-
-      - name: Resolve MediaWiki ${{ matrix.mw }} commit
-        id: mw
-        # Runs before the mediawiki directory this job defaults into exists.
-        working-directory: ~
-        run: echo "sha=$(git ls-remote https://github.com/wikimedia/mediawiki refs/heads/${{ matrix.mw }} | cut -f1)" >> "$GITHUB_OUTPUT"
-
-      # Keyed on the resolved commit rather than a hand-bumped suffix: the install
-      # step is skipped on a hit and a cache is only written on a miss, so a key
-      # that does not move pins MediaWiki until someone edits the key.
-      - name: Cache MediaWiki
-        id: cache-mediawiki
-        uses: actions/cache@v6
+      - uses: ProfessionalWiki/setup-mediawiki@alistair3149/rewrite
         with:
-          path: |
-            mediawiki
-            !mediawiki/extensions/
-            !mediawiki/vendor/
-          key: mw_${{ matrix.mw }}-php${{ matrix.php }}-${{ steps.mw.outputs.sha }}
-
-      - name: Cache Composer cache
-        uses: actions/cache@v6
-        with:
-          path: ~/.composer/cache
-          key: composer-php${{ matrix.php }}
-
-      - uses: actions/checkout@v6
-        with:
-          path: EarlyCopy
-
-      - name: Install MediaWiki
-        if: steps.cache-mediawiki.outputs.cache-hit != 'true'
-        working-directory: ~
-        run: bash EarlyCopy/.github/workflows/installMediaWiki.sh ${{ matrix.mw }} NeoWiki
-
-      - uses: actions/checkout@v6
-        with:
-          path: mediawiki/extensions/NeoWiki
-
-      - run: composer update
+          mw-version: ${{ matrix.mw }}
+          extension: NeoWiki
+          dependencies: Scribunto
+          settings: |
+            wfLoadExtension( 'Scribunto' );
+            $wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:password@localhost:7689';
+            $wgNeoWikiNeo4jInternalReadUrl = $wgNeoWikiNeo4jInternalWriteUrl;
 
       - name: Composer install
         run: cd extensions/NeoWiki && composer install --no-progress --no-interaction --prefer-dist --optimize-autoloader

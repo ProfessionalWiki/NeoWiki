@@ -54,7 +54,7 @@ jobs:
 
       # MediaWiki's .gitmodules point at gerrit.wikimedia.org, which rate-limits
       # (HTTP 429) partway through these ~40 back-to-back clones and fails the job.
-      # Fetch from the GitHub mirrors instead, as installMediaWiki.sh already does.
+      # Fetch from the GitHub mirrors instead.
       # The rewrites have to be global: git clone, which git submodule update shells
       # out to, ignores the superproject's repository-local config.
       - name: Shallow submodules
