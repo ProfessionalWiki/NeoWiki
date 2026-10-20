@@ -57,8 +57,6 @@
 			<div
 				v-if="addable"
 				class="ext-neowiki-dependent-subjects-input__add"
-				@keydown.capture="noteEscape"
-				@keyup.esc="keepEscapeFromDialog"
 			>
 				<!-- Quiet, as Codex makes the menu button below. -->
 				<CdxButton
@@ -119,7 +117,6 @@ import { localTargetSchemaNames, type RelationProperty } from '@/domain/property
 import { RelationValue, relationValueWithTargets, type Value, ValueType } from '@/domain/Value.ts';
 import type { Schema } from '@/domain/Schema.ts';
 import { useServerViolations, violationStatus } from '@/composables/useServerViolations.ts';
-import { useListEscapeGuard } from '@/composables/useListEscapeGuard.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<RelationProperty>>(),
@@ -190,8 +187,6 @@ const addMenuItems = computed( (): MenuButtonItemData[] =>
 	addableSchemaNames.value.map( ( name ) => ( { value: name, label: name } ) ) );
 
 const menuSelection = ref<string | number | null>( null );
-
-const { noteEscape, keepEscapeFromDialog } = useListEscapeGuard();
 
 const groupRefs = shallowReactive( new Map<string, DependentSubjectEditorExposes>() );
 

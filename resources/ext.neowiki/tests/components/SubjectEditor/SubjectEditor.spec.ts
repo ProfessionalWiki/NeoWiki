@@ -9,11 +9,20 @@ import TextInput from '@/components/Value/TextInput.vue';
 import { newStringValue, RelationValue } from '@/domain/Value.ts';
 import { NumberType } from '@/domain/propertyTypes/Number.ts';
 import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
+import { newSelectProperty } from '@/domain/propertyTypes/Select.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { newSchema } from '@/TestHelpers.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
-import { createI18nMock, createTestWrapper, reportUnparseableNumber } from '../../VueTestHelpers.ts';
+import {
+	createI18nMock,
+	createTestWrapper,
+	dialogOfAnotherExtension,
+	guardMenuEscapes,
+	listenForDialogKeys,
+	openMenuAndPressEscape,
+	reportUnparseableNumber,
+} from '../../VueTestHelpers.ts';
 import DependentSubjectsInput from '@/components/SubjectEditor/DependentSubjectsInput.vue';
 import { DependentSubjectEditingKey, type DependentSubjectEditing } from '@/components/SubjectEditor/DependentSubjectEditing.ts';
 import { createPinia, setActivePinia } from 'pinia';
@@ -109,6 +118,27 @@ describe( 'SubjectEditor', () => {
 		await wrapper.setProps( { schema: withoutNumber, statements: withoutNumber.blankStatements() } );
 
 		expect( editor( wrapper ).saveBlocker() ).toBeNull();
+	} );
+
+	describe( 'in a dialog of another extension', () => {
+		const statusSchema = newSchema( {
+			properties: new PropertyDefinitionList( [
+				newSelectProperty( { name: 'Status', options: [ { id: 'o1', label: 'Active' }, { id: 'o2', label: 'Inactive' } ] } ),
+			] ),
+		} );
+
+		it( 'keeps the Escape that closes the menu of one of its fields from that dialog', async () => {
+			guardMenuEscapes();
+			const dialogKeyup = listenForDialogKeys();
+			const wrapper = createTestWrapper( SubjectEditor, { statements: statusSchema.blankStatements(), schema: statusSchema } );
+			dialogOfAnotherExtension().append( wrapper.element );
+			const trigger = wrapper.find<HTMLElement>( '[role="combobox"]' );
+
+			await openMenuAndPressEscape( trigger.element );
+
+			expect( trigger.attributes( 'aria-expanded' ) ).toBe( 'false' );
+			expect( dialogKeyup ).not.toHaveBeenCalled();
+		} );
 	} );
 
 	// A relation edit is the one that changes the Subject graph, so it is the one the tree

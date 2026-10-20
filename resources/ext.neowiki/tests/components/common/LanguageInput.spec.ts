@@ -3,10 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import LanguageInput from '@/components/common/LanguageInput.vue';
 import {
 	chooseFromLanguageList,
+	dialogOfAnotherExtension,
 	emittedTags,
+	guardMenuEscapes,
 	listenForDialogKeys,
+	openMenuAndPressEscape,
 	pickInLanguageSearch,
-	pressKey,
 	setupMwMock,
 	shownLanguage,
 } from '../../VueTestHelpers.ts';
@@ -153,30 +155,6 @@ describe( 'LanguageInput', () => {
 		expect( document.activeElement ).toBe( list( input ).element );
 	} );
 
-	it( 'keeps the Escape that closes its list from the dialog', async () => {
-		wikiWith( [ 'de', 'fr', 'it' ] );
-		const input = newWrapper( 'fr' );
-		const dialogKeyup = listenForDialogKeys();
-
-		list( input ).element.focus();
-		await pressKey( 'ArrowDown' );
-		await pressKey( 'Escape' );
-
-		expect( list( input ).attributes( 'aria-expanded' ) ).toBe( 'false' );
-		expect( dialogKeyup ).not.toHaveBeenCalledWith( expect.objectContaining( { key: 'Escape' } ) );
-	} );
-
-	it( 'lets an Escape pressed on its closed list reach the dialog', async () => {
-		wikiWith( [ 'de', 'fr', 'it' ] );
-		const input = newWrapper( 'fr' );
-		const dialogKeyup = listenForDialogKeys();
-
-		list( input ).element.focus();
-		await pressKey( 'Escape' );
-
-		expect( dialogKeyup ).toHaveBeenCalledWith( expect.objectContaining( { key: 'Escape' } ) );
-	} );
-
 	it( 'closes the search when the user turns back to its list', async () => {
 		wikiWith( [ 'de', 'fr', 'it' ] );
 		const input = newWrapper( 'fr' );
@@ -186,6 +164,20 @@ describe( 'LanguageInput', () => {
 		await input.vm.$nextTick();
 
 		expect( searchIsOpen( input ) ).toBe( false );
+	} );
+
+	// MonolingualTextInput, which other extensions can mount, renders it.
+	it( 'keeps the Escape that closes its list from a dialog of another extension', async () => {
+		wikiWith( [ 'de', 'fr', 'it' ] );
+		guardMenuEscapes();
+		const dialogKeyup = listenForDialogKeys();
+		const input = newWrapper( 'fr' );
+		dialogOfAnotherExtension().append( input.element );
+
+		await openMenuAndPressEscape( list( input ).element );
+
+		expect( list( input ).attributes( 'aria-expanded' ) ).toBe( 'false' );
+		expect( dialogKeyup ).not.toHaveBeenCalled();
 	} );
 
 } );

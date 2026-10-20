@@ -3,6 +3,7 @@ import { Component, DefineComponent, nextTick } from 'vue';
 import { expect, onTestFinished, vi } from 'vitest';
 import { ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import { NeoWikiTestServices } from './NeoWikiTestServices.ts';
+import { keepMenuEscapesFromDialogs } from '@/codex/menuEscape.ts';
 
 export interface FieldProps {
 	status: ValidationStatusType;
@@ -163,22 +164,55 @@ export function press( element: Element ): MouseEvent {
 	return event;
 }
 
-// Keys go where the focus is, which is what the handlers move: each press follows it.
-export async function pressKey( key: string ): Promise<void> {
-	for ( const type of [ 'keydown', 'keyup' ] ) {
-		document.activeElement?.dispatchEvent( new KeyboardEvent( type, { key: key, bubbles: true, cancelable: true } ) );
-		await nextTick();
-	}
+export async function openMenuAndPressEscape( menuControl: HTMLElement ): Promise<void> {
+	menuControl.focus();
+	await pressKey( 'ArrowDown' );
+	await pressKey( 'Escape' );
 }
 
-// Where a Codex dialog listens: it closes on the Escape keyup that reaches it.
+export async function pressKey( key: string ): Promise<void> {
+	await sendKey( 'keydown', key );
+	await sendKey( 'keyup', key );
+}
+
+// Keys go where the focus is, which is what the handlers move: each key event follows it. Sent alone,
+// as a held key's repeats and a key pressed while another is down arrive.
+export async function sendKey( type: 'keydown' | 'keyup', key: string, init: KeyboardEventInit = {} ): Promise<void> {
+	document.activeElement?.dispatchEvent( new KeyboardEvent( type, { key, bubbles: true, cancelable: true, ...init } ) );
+	await nextTick();
+}
+
+// Where a Codex dialog listens: it closes on the Escape keyup that reaches it, and on no other key.
 export function listenForDialogKeys(): ReturnType<typeof vi.fn> {
 	const dialogKeyup = vi.fn();
+	const listener = ( event: KeyboardEvent ): void => {
+		if ( event.key === 'Escape' ) {
+			dialogKeyup( event );
+		}
+	};
 
-	document.addEventListener( 'keyup', dialogKeyup );
-	onTestFinished( () => document.removeEventListener( 'keyup', dialogKeyup ) );
+	document.addEventListener( 'keyup', listener );
+	onTestFinished( () => document.removeEventListener( 'keyup', listener ) );
 
 	return dialogKeyup;
+}
+
+// For the test that calls it, as NeoWiki installs it on every page it loads on.
+export function guardMenuEscapes(): void {
+	const installation = new AbortController();
+
+	keepMenuEscapesFromDialogs( installation.signal );
+	onTestFinished( () => installation.abort() );
+}
+
+// A Codex dialog of other code, which carries none of NeoWiki's scope.
+export function dialogOfAnotherExtension(): HTMLElement {
+	const dialog = document.createElement( 'div' );
+	dialog.classList.add( 'cdx-dialog' );
+	document.body.append( dialog );
+	onTestFinished( () => dialog.remove() );
+
+	return dialog;
 }
 
 export function findPropertyNameInput( wrapper: VueWrapper ): DOMWrapper<HTMLInputElement> {
