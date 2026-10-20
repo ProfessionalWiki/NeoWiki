@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests;
 
+use InvalidArgumentException;
 use MediaWiki\Content\FallbackContent;
 use MediaWiki\Installer\DatabaseUpdater;
 use MediaWiki\Revision\RevisionLookup;
@@ -98,6 +99,12 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ self::ADA => 'Ada' ], $this->displayNamesOf( $adaPageId ) );
 		$this->assertSame( [ self::GRACE => 'Grace' ], $this->displayNamesOf( $gracePageId ) );
 		$this->assertSame( [ self::TURING => 'Alan' ], $this->displayNamesOf( $turingPageId ) );
+	}
+
+	public function testRefusesBatchesOfNoPages(): void {
+		$this->expectException( InvalidArgumentException::class );
+
+		$this->newRebuilder( batchSize: 0 );
 	}
 
 	public function testRebuildingIndexesTheRevisionThePolicyPublishes(): void {
@@ -265,7 +272,19 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 		LoggerInterface $logger = new NullLogger(),
 		?RevisionLookup $revisionLookup = null
 	): array {
-		$rebuilder = new DatabasePublishedSubjectIndexRebuilder(
+		$rebuild = $this->newRebuilder( $batchSize, $revisionPolicy, $logger, $revisionLookup )->rebuild();
+		iterator_to_array( $rebuild );
+
+		return $rebuild->getReturn();
+	}
+
+	private function newRebuilder(
+		int $batchSize,
+		RevisionPolicy $revisionPolicy = new NullRevisionPolicy(),
+		LoggerInterface $logger = new NullLogger(),
+		?RevisionLookup $revisionLookup = null
+	): DatabasePublishedSubjectIndexRebuilder {
+		return new DatabasePublishedSubjectIndexRebuilder(
 			db: $this->getDb(),
 			revisionLookup: $revisionLookup ?? $this->getServiceContainer()->getRevisionLookup(),
 			revisionPolicy: $revisionPolicy,
@@ -274,11 +293,6 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 			logger: $logger,
 			batchSize: $batchSize,
 		);
-
-		$rebuild = $rebuilder->rebuild();
-		iterator_to_array( $rebuild );
-
-		return $rebuild->getReturn();
 	}
 
 	/**
