@@ -17,33 +17,15 @@ Then, from the repository root:
 make upgrade
 ```
 
-This pulls the latest demo image, restarts the stack on it with an empty Neo4j store, runs MediaWiki's updater, and
+This pulls the latest demo image, restarts the stack on it, runs MediaWiki's updater, and
 [rebuilds](maintenance.md#rebuilding-the-graph) every configured backend's projection.
 
 For a stack started with the `server` profile, run `COMPOSE_PROFILES=server make upgrade` instead.
 
 If the new version can no longer read your evaluation data, start fresh with `make remove && make demo`.
 
-If your stack predates September 2026, run `php maintenance/run.php refreshLinks` and
-`php maintenance/run.php rebuildtextindex` once, in the shell `make bash` opens.
-
 If your Subjects predate the optional Subject label, run
-[clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, in the shell `make bash` opens.
-
-Then read the notes below and the [changes for every install](#changes-for-every-install).
-
-### Docker wiki port bound to localhost, October 2026
-
-The Docker stack's wiki port, 8484 by default, now only accepts connections from the machine the stack runs on. To
-reach the wiki from other machines, use the [`server` profile](installation.md#optional-share-the-demo-with-others),
-which serves it over HTTPS.
-
-### Demo Attendance Subjects now dependent, October 2026
-
-The demo's `Schema:Attendance` now declares its Subjects [dependent](../glossary.md#dependent-subject), which a Schema
-can do only when it is created. On a wiki with the earlier demo content, delete that page before you next
-[refresh the demo content](#optional-refresh-the-demo-content); otherwise the refresh reports it as failed and keeps
-the old Schema.
+[clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once.
 
 ### Optional: refresh the demo content
 
@@ -86,22 +68,40 @@ If your wiki uses MediaWiki's built-in database search on MySQL or SQLite and ha
 length of the run.
 
 If your Subjects predate the optional Subject label, run
-[clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before the graph rebuild.
+[clearing default Subject labels](maintenance.md#clearing-default-subject-labels) once, before that rebuild.
 
-### New database tables, October 2026
+## Docker stack moved to Neo4j Community Edition, October 2026
+
+The Docker stack now runs Neo4j Community Edition, which cannot open graph data written by the Enterprise Edition that
+older stacks ran: their `neo` container keeps restarting, and `make upgrade` fails. Remove the Neo4j volume before
+[upgrading](#upgrading-a-docker-install). That is safe on any stack, since `make upgrade` rebuilds everything Neo4j
+holds from the wiki's pages. For a checkout named `NeoWiki` (otherwise, `docker volume ls` shows the volume's name):
+
+```sh
+make down
+docker volume rm neowiki-neowiki_neo4j-data
+```
+
+## Docker wiki port bound to localhost, October 2026
+
+The Docker stack's wiki port, 8484 by default, now only accepts connections from the machine the stack runs on. To
+reach the wiki from other machines, use the [`server` profile](installation.md#optional-share-the-demo-with-others),
+which serves it over HTTPS.
+
+## New database tables, October 2026
 
 Special:Subjects, relation-target suggestions, "Referenced by" and the Subject counts now read two new tables, and
 work without Neo4j. `update.php` creates and fills them. After upgrading through MediaWiki's web updater, which does not
 fill them, [rebuild the subject indexes](maintenance.md#rebuilding-the-subject-indexes).
 
-### Neo4j 5.26.4 required, October 2026
+## Demo Attendance Subjects now dependent, October 2026
 
-If you use Neo4j, NeoWiki now needs 5.26.4 or later. Upgrade Neo4j first: on an older version, saving Subjects to the
-graph fails or gives their Relations the wrong type.
+The demo's `Schema:Attendance` now declares its Subjects [dependent](../glossary.md#dependent-subject), which a Schema
+can do only when it is created. On a wiki with the earlier demo content, delete that page before you next
+[refresh the demo content](#optional-refresh-the-demo-content); otherwise the refresh reports it as failed and keeps
+the old Schema.
 
-## Changes for every install
-
-### Relations model changed, October 2026
+## Relations model changed, October 2026
 
 A relation property now lists its target Schemas in `targetSchemas` and has no `relation` field
 ([Schema format](../api/schema-format.md#relation-relation)). One that still holds `targetSchema` keeps working; the
@@ -111,12 +111,17 @@ list, in place of `targetSchema` and `relation`, and `SubjectPicker` takes `targ
 
 Relation edges in Neo4j and relation predicates in the native RDF now take the property's name instead of the
 `relation` field's. Cypher and SPARQL that use an old name return nothing until edited: `` -[:`Born in`]-> `` becomes
-`` -[:`Birth place`]-> ``, and `neo-prop:Born_in` becomes `neo-prop:Birth_place`.
-On a Docker install, [refreshing the demo content](#optional-refresh-the-demo-content) covers the demo pages.
+`` -[:`Birth place`]-> ``, and `neo-prop:Born_in` becomes `neo-prop:Birth_place`. `make import-demo-data` covers the
+demo content.
 
 A Relation's `properties` are no longer read, and are dropped when its Subject is next saved.
 
-### Removed setting, September 2026
+## Neo4j 5.26.4 required, October 2026
+
+If you use Neo4j, NeoWiki now needs 5.26.4 or later. Upgrade Neo4j first: on an older version, saving Subjects to the
+graph fails or gives their Relations the wrong type.
+
+## Removed setting, September 2026
 
 `$wgNeoWikiDereferenceSubjectsToHostingPage` is removed, and there is no alias. A browser dereferencing a Subject's
 concept URI lands where [Dereferencing subject IRIs](../api/rdf-export.md#dereferencing-subject-iris) says.
@@ -124,15 +129,14 @@ concept URI lands where [Dereferencing subject IRIs](../api/rdf-export.md#derefe
 A `MediaWiki:NeoWiki` page still carrying `dereferenceSubjectsToHostingPage` keeps working, and the key does
 nothing; saving the page is refused until the key is removed.
 
-### Renamed accessors, September 2026
+## Renamed accessors, September 2026
 
 `nw.getChildSubjects` and `nw.getOtherSubjects` are both now
 [`nw.getSubjects`](../authoring/lua-api.md#nwgetsubjectspagename), and there is no alias. The
 replacement returns the page's Main Subject as well, first in the list, and marks every Subject with
 an `isMainSubject` flag, so a module wanting only the rest filters on that. Modules and templates
 already stored on a wiki keep calling the old names and render a script error until edited, so grep
-your `Module:` namespace for both after upgrading.
-On a Docker install, [refreshing the demo content](#optional-refresh-the-demo-content) covers the demo pages.
+your `Module:` namespace for both after upgrading. `make import-demo-data` covers the demo content.
 
 `nw.getMainSubject` keeps its name and changes one answer. An unlabelled Main Subject on a page
 titled by the id of *another* Subject on that page now reads as its Schema name, where it took the
