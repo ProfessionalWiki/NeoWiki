@@ -88,7 +88,7 @@ jobs:
           extensions: mbstring, intl
           tools: composer
 
-      - uses: ProfessionalWiki/setup-mediawiki@alistair3149/rewrite
+      - uses: alistair3149/setup-mediawiki@alistair3149/rewrite
         with:
           mw-version: ${{ matrix.mw }}
           extension: NeoWiki
@@ -239,7 +239,7 @@ jobs:
           extensions: mbstring, intl
           tools: composer
 
-      - uses: ProfessionalWiki/setup-mediawiki@alistair3149/rewrite
+      - uses: alistair3149/setup-mediawiki@alistair3149/rewrite
         with:
           mw-version: ${{ matrix.mw }}
           extension: NeoWiki
