@@ -1,7 +1,9 @@
 import { createMwApp } from 'vue';
 import type { App } from 'vue';
 import type { Pinia } from 'pinia';
-import '@/codex/keyboard-focus.less';
+import '@/codex/button-focus.less';
+import '@/codex/menu-button-focus.less';
+import '@/codex/accordion-focus.less';
 import '@/codex/menu-footer.less';
 import NeoWikiApp from '@/components/NeoWikiApp.vue';
 import { CdxTooltip } from '@wikimedia/codex';

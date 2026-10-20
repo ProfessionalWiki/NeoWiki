@@ -1,0 +1,14 @@
+/**
+ * Codex: rings a menu button's trigger, a quiet toggle button before Codex 2.3.4, on bare `:focus`.
+ * Remove when: the Codex of the oldest MediaWiki NeoWiki supports is 2.3.4 or later (MediaWiki 1.46), whose
+ *   trigger is a quiet button.
+ */
+
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+
+:is( .ext-neowiki-ui, .ext-neowiki-view ) {
+	.cdx-toggle-button--quiet:enabled:focus:not( :focus-visible ):not( :active ):not( .cdx-toggle-button--is-active ) {
+		border-color: @border-color-transparent;
+		box-shadow: none;
+	}
+}

@@ -1,0 +1,14 @@
+/**
+ * Codex: rings an accordion's header, its `summary`, on bare `:focus`.
+ * Remove when: the Codex of the oldest MediaWiki NeoWiki supports is 1.20.1 or later (MediaWiki 1.44), which
+ *   rings it on `:focus-visible`.
+ */
+
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+
+:is( .ext-neowiki-ui, .ext-neowiki-view ) {
+	.cdx-accordion > summary:focus:not( :focus-visible ):not( :active ) {
+		border-color: @border-color-transparent;
+		box-shadow: none;
+	}
+}

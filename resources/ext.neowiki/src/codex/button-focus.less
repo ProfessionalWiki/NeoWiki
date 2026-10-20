@@ -1,0 +1,56 @@
+/**
+ * Codex: rings a button or a framed toggle button on bare `:focus`, so a mouse click leaves the ring on it.
+ * Remove when: the Codex of the oldest MediaWiki NeoWiki supports rings them on `:focus-visible`; not yet in
+ *   Codex 2.7.0.
+ *
+ * Under `:focus:not( :focus-visible )`, which a mouse click matches, each rule here, as in the other `*-focus.less`
+ * stylesheets, drops the inset ring and restores the control's resting border as Codex 1.14 has it. The scope class
+ * and `:focus-visible` keep each rule more specific than the Codex rule it neutralises, whatever the load order. The
+ * `:not( :active )` guards match Codex's, so pressed states keep Codex's look, as do a toggle's `--toggled-on`
+ * selected state and the transparent Windows High Contrast outline on `:enabled:focus`. Text inputs need none:
+ * browsers match `:focus-visible` on pointer focus for text entry.
+ */
+
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+
+:is( .ext-neowiki-ui, .ext-neowiki-view ) {
+	// Framed default buttons (normal weight, any action): grey resting border.
+	.cdx-button:enabled:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ),
+	.cdx-button.cdx-button--fake-button--enabled:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ) {
+		border-color: @border-color-base;
+		box-shadow: none;
+	}
+
+	// Quiet buttons (any action): transparent resting border.
+	.cdx-button:enabled.cdx-button--weight-quiet:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ),
+	.cdx-button.cdx-button--fake-button--enabled.cdx-button--weight-quiet:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ) {
+		border-color: @border-color-transparent;
+		box-shadow: none;
+	}
+
+	// Primary progressive buttons: progressive resting border.
+	.cdx-button:enabled.cdx-button--weight-primary.cdx-button--action-progressive:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ),
+	.cdx-button.cdx-button--fake-button--enabled.cdx-button--weight-primary.cdx-button--action-progressive:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ) {
+		border-color: @border-color-progressive;
+		box-shadow: none;
+	}
+
+	// Primary destructive buttons: destructive resting border.
+	.cdx-button:enabled.cdx-button--weight-primary.cdx-button--action-destructive:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ),
+	.cdx-button.cdx-button--fake-button--enabled.cdx-button--weight-primary.cdx-button--action-destructive:focus:not( :focus-visible ):not( :active ):not( .cdx-button--is-active ) {
+		border-color: @border-color-destructive;
+		box-shadow: none;
+	}
+
+	// Framed toggle, unselected: grey resting border.
+	.cdx-toggle-button--framed:enabled:focus:not( :focus-visible ):not( :active ):not( .cdx-toggle-button--is-active ):not( .cdx-toggle-button--toggled-on ) {
+		border-color: @border-color-base;
+		box-shadow: none;
+	}
+
+	// Framed toggle, selected: progressive resting border.
+	.cdx-toggle-button--framed.cdx-toggle-button--toggled-on:enabled:focus:not( :focus-visible ):not( :active ):not( .cdx-toggle-button--is-active ) {
+		border-color: @border-color-progressive--active;
+		box-shadow: none;
+	}
+}
