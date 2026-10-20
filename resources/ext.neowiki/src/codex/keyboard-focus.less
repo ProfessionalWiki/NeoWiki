@@ -7,7 +7,7 @@
  * moves away. Focus indication should be shown to keyboard users only.
  *
  * For `:focus:not( :focus-visible )` we drop the inset ring and restore each
- * variant's resting `border-color`, mirroring the per-variant focus selectors
+ * variant's resting `border-color` as Codex 1.14 has it, mirroring the per-variant focus selectors
  * in Codex's own stylesheet with `:focus-visible` and a NeoWiki scope class
  * added. That extra class plus `:focus-visible` keep every rule more specific
  * than the Codex rule it neutralises, so ours win regardless of load order, and
@@ -16,17 +16,15 @@
  * Codex's, so the pressed and toggled states are left alone; the transparent
  * Windows-High-Contrast outline on `:enabled:focus` is likewise untouched.
  *
- * Scope: `.ext-neowiki-ui` marks our Vue app mount roots (added in neowiki.ts)
- * and our dialogs (Codex teleports these out of the mount tree, so each
- * CdxDialog carries the class); `.ext-neowiki-view` is the on-page view
- * placeholder. Focusable Codex UI we render must sit inside one of these.
+ * Scope: see mountNeoWikiApp in neowiki.ts.
  *
  * Text inputs are out of scope by design: browsers match `:focus-visible` on
  * pointer focus for text entry, so their editing ring never reaches the
  * `:not( :focus-visible )` branch below.
  *
- * Remove once the Codex of the oldest MediaWiki NeoWiki supports rings these
- * controls on `:focus-visible`; Codex 2.7.0 still rings them on bare `:focus`.
+ * Remove the button and framed toggle rules once the Codex of the oldest MediaWiki
+ * NeoWiki supports rings those on `:focus-visible`; Codex 2.7.0 still rings them
+ * on bare `:focus`. The quiet toggle and accordion rules can go sooner, as each says.
  */
 
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
@@ -77,7 +75,9 @@
 		box-shadow: none;
 	}
 
-	// Quiet toggle (menu-button trigger): transparent resting border.
+	// Quiet toggle (menu-button trigger): transparent resting border. Remove once the Codex of the
+	// oldest MediaWiki NeoWiki supports is 2.3.4 or later (MediaWiki 1.46), whose menu-button trigger
+	// is a quiet button.
 	.cdx-toggle-button--quiet:enabled:focus:not( :focus-visible ):not( :active ):not( .cdx-toggle-button--is-active ) {
 		border-color: @border-color-transparent;
 		box-shadow: none;
@@ -85,7 +85,9 @@
 
 	// An accordion's header is its `summary`, which Codex rings on bare `:focus` as well, so
 	// clicking one leaves the ring on it (the edit summary section, and the page section of the
-	// subject creator beside it). Its resting border is transparent.
+	// subject creator beside it). Its resting border is transparent. Remove once the Codex of the
+	// oldest MediaWiki NeoWiki supports is 1.20.1 or later (MediaWiki 1.44), which rings it on
+	// `:focus-visible`.
 	.cdx-accordion > summary:focus:not( :focus-visible ):not( :active ) {
 		border-color: @border-color-transparent;
 		box-shadow: none;
