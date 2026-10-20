@@ -59,6 +59,7 @@ make phpunit              # full PHPUnit suite
 make phpunit filter=Foo   # single test class
 make cs                   # phpcs + phpstan
 make tsci                 # vitest + build + lint
+make browser-test         # Playwright against the dev wiki
 make bash                 # shell into the mediawiki container
 make logs                 # tail logs
 make reset                # wipe DB + Neo and reseed demo data
