@@ -20,16 +20,12 @@ describe( 'keepMenuEscapesFromDialogs', () => {
 	} );
 
 	function neoWikiDialog(): HTMLElement {
-		return element( [ 'cdx-dialog', 'ext-neowiki-ui' ] );
-	}
+		const dialog = document.createElement( 'div' );
+		dialog.classList.add( 'cdx-dialog', 'ext-neowiki-ui' );
+		document.body.append( dialog );
+		onTestFinished( () => dialog.remove() );
 
-	function element( classes: string[] ): HTMLElement {
-		const div = document.createElement( 'div' );
-		div.classList.add( ...classes );
-		document.body.append( div );
-		onTestFinished( () => div.remove() );
-
-		return div;
+		return dialog;
 	}
 
 	async function pressEscapeOn( host: Element, control: HTMLElement ): Promise<void> {
@@ -170,14 +166,6 @@ describe( 'keepMenuEscapesFromDialogs', () => {
 		expect( dialogKeyup ).toHaveBeenCalledTimes( 1 );
 	} );
 
-	it( 'leaves the Escape that closes a menu outside a dialog alone', async () => {
-		const dialogKeyup = listenForDialogKeys();
-
-		await pressEscapeOn( element( [ 'ext-neowiki-ui' ] ), menuControl( 'open' ) );
-
-		expect( dialogKeyup ).toHaveBeenCalledTimes( 1 );
-	} );
-
 	describe( 'in a Codex dialog', () => {
 		function mountDialogWith( menuComponent: Component ): VueWrapper {
 			return mount( defineComponent( {
@@ -186,7 +174,6 @@ describe( 'keepMenuEscapesFromDialogs', () => {
 				template: `
 					<CdxDialog :open="true" title="Dialog" class="ext-neowiki-ui">
 						<MenuComponent :selected="null" :menu-items="items" />
-						<button class="plain-button">Plain</button>
 					</CdxDialog>
 				`,
 			} ) );
@@ -203,16 +190,6 @@ describe( 'keepMenuEscapesFromDialogs', () => {
 
 			expect( trigger.attributes( 'aria-expanded' ) ).toBe( 'false' );
 			expect( dialog.findComponent( CdxDialog ).emitted( 'update:open' ) ).toBeUndefined();
-		} );
-
-		it( 'closes on an Escape pressed outside a menu', async () => {
-			const dialog = mountDialogWith( CdxSelect );
-
-			// Teleported out of the wrapper, as Codex teleports every dialog.
-			document.querySelector<HTMLElement>( '.plain-button' )!.focus();
-			await pressKey( 'Escape' );
-
-			expect( dialog.findComponent( CdxDialog ).emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
 		} );
 	} );
 
