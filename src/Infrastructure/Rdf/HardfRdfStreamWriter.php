@@ -43,7 +43,7 @@ class HardfRdfStreamWriter implements RdfStreamWriter {
 				$quad->subject->value,
 				$quad->predicate->value,
 				$this->encodeObject( $quad->object ),
-				$this->writtenGraph( $quad ),
+				$this->includeGraph ? $quad->graph->value : null,
 			);
 		}
 
@@ -59,21 +59,12 @@ class HardfRdfStreamWriter implements RdfStreamWriter {
 		$blocks = [];
 
 		foreach ( $quads->asArray() as $quad ) {
-			$blocks[$this->writtenGraph( $quad )][$quad->subject->value][] = $quad;
+			$blocks[$quad->subject->value][] = $quad;
 		}
 
-		foreach ( $blocks as $graphBlocks ) {
-			foreach ( $graphBlocks as $block ) {
-				yield from $this->typesFirst( $block );
-			}
+		foreach ( $blocks as $block ) {
+			yield from $this->typesFirst( $block );
 		}
-	}
-
-	/**
-	 * hardf treats an empty graph as no graph.
-	 */
-	private function writtenGraph( Quad $quad ): string {
-		return $this->includeGraph ? $quad->graph->value : '';
 	}
 
 	/**

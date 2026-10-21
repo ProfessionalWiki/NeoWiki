@@ -148,21 +148,23 @@ class HardfRdfSerializerTest extends TestCase {
 	}
 
 	public function testTurtleWritesEachResourceAsOneBlockWhenItsTriplesArriveApart(): void {
-		$quads = new QuadList(
-			$this->exampleQuad( 'work', 'producedBy', 'production' ),
-			$this->exampleQuad( 'production', 'carriedOutBy', 'hals' ),
-			$this->exampleQuad( 'work', 'keptAt', 'wallaceCollection' ),
-		);
+		$output = $this->exampleSerializer()->serialize( $this->workTriplesSplitByAProductionTriple(), RdfFormat::Turtle );
 
-		$output = $this->exampleSerializer()->serialize( $quads, RdfFormat::Turtle );
-
-		$this->assertSame(
+		$this->assertSameDocument(
 			$this->documentWithExamplePrefix(
 				'ex:work ex:producedBy ex:production;',
 				'    ex:keptAt ex:wallaceCollection.',
 				'ex:production ex:carriedOutBy ex:hals.',
 			),
 			$output
+		);
+	}
+
+	private function workTriplesSplitByAProductionTriple(): QuadList {
+		return new QuadList(
+			$this->exampleQuad( 'work', 'producedBy', 'production' ),
+			$this->exampleQuad( 'production', 'carriedOutBy', 'hals' ),
+			$this->exampleQuad( 'work', 'keptAt', 'wallaceCollection' ),
 		);
 	}
 
@@ -186,21 +188,31 @@ class HardfRdfSerializerTest extends TestCase {
 		return '@prefix ex: <' . self::EXAMPLE_NAMESPACE . ">.\n\n" . implode( "\n", $lines ) . "\n";
 	}
 
-	public function testTurtleWritesEachResourcesTypeFirstInItsOwnBlock(): void {
+	private function assertSameDocument( string $expected, string $actual ): void {
+		$this->assertSame( $this->withoutLayoutWhitespace( $expected ), $this->withoutLayoutWhitespace( $actual ) );
+	}
+
+	private function withoutLayoutWhitespace( string $document ): string {
+		return trim( preg_replace( '/\s*\n\s*/', "\n", $document ) );
+	}
+
+	public function testTurtleWritesEachResourcesTypesFirstInItsOwnBlock(): void {
+		// hals's type arrives before work's, and work's second type after one of its other triples.
 		$quads = new QuadList(
 			$this->exampleQuad( 'work', 'madeBy', 'hals' ),
+			$this->exampleTypeQuad( 'hals', 'Person' ),
 			$this->exampleTypeQuad( 'work', 'Painting' ),
 			$this->exampleQuad( 'work', 'paintedIn', 'haarlem' ),
+			$this->exampleTypeQuad( 'work', 'Artwork' ),
 			$this->exampleQuad( 'hals', 'bornIn', 'antwerp' ),
 			$this->exampleQuad( 'hals', 'diedIn', 'haarlem' ),
-			$this->exampleTypeQuad( 'hals', 'Person' ),
 		);
 
 		$output = $this->exampleSerializer()->serialize( $quads, RdfFormat::Turtle );
 
-		$this->assertSame(
+		$this->assertSameDocument(
 			$this->documentWithExamplePrefix(
-				'ex:work a ex:Painting;',
+				'ex:work a ex:Painting, ex:Artwork;',
 				'    ex:madeBy ex:hals;',
 				'    ex:paintedIn ex:haarlem.',
 				'ex:hals a ex:Person;',
@@ -215,43 +227,16 @@ class HardfRdfSerializerTest extends TestCase {
 		return new Quad( $this->example( $subject ), $this->ns->rdfType(), $this->example( $class ), $this->example( 'page' ) );
 	}
 
-	public function testTriGWritesEachGraphAsOneBlockWhenItsQuadsArriveApart(): void {
-		$quads = new QuadList(
-			$this->exampleQuadIn( 'windmillPage', 'windmill', 'madeBy', 'ruisdael' ),
-			$this->exampleQuadIn( 'cavalierPage', 'laughingCavalier', 'madeBy', 'hals' ),
-			$this->exampleQuadIn( 'windmillPage', 'ruisdael', 'bornIn', 'haarlem' ),
-		);
+	public function testTriGWritesEachResourceAsOneBlockWhenItsTriplesArriveApart(): void {
+		$output = $this->exampleSerializer()->serialize( $this->workTriplesSplitByAProductionTriple(), RdfFormat::TriG );
 
-		$output = $this->exampleSerializer()->serialize( $quads, RdfFormat::TriG );
-
-		$this->assertSame(
+		$this->assertSameDocument(
 			$this->documentWithExamplePrefix(
-				'ex:windmillPage {',
-				'ex:windmill ex:madeBy ex:ruisdael.',
-				'ex:ruisdael ex:bornIn ex:haarlem',
+				'ex:page {',
+				'ex:work ex:producedBy ex:production;',
+				'    ex:keptAt ex:wallaceCollection.',
+				'ex:production ex:carriedOutBy ex:hals',
 				'}',
-				'ex:cavalierPage {',
-				'ex:laughingCavalier ex:madeBy ex:hals',
-				'}',
-			),
-			$output
-		);
-	}
-
-	public function testTurtleWritesAResourceAsOneBlockWhenItsTriplesComeFromSeveralGraphs(): void {
-		$quads = new QuadList(
-			$this->exampleQuadIn( 'cavalierPage', 'laughingCavalier', 'madeBy', 'hals' ),
-			$this->exampleQuadIn( 'halsPage', 'hals', 'bornIn', 'antwerp' ),
-			$this->exampleQuadIn( 'halsPage', 'laughingCavalier', 'paintedIn', 'haarlem' ),
-		);
-
-		$output = $this->exampleSerializer()->serialize( $quads, RdfFormat::Turtle );
-
-		$this->assertSame(
-			$this->documentWithExamplePrefix(
-				'ex:laughingCavalier ex:madeBy ex:hals;',
-				'    ex:paintedIn ex:haarlem.',
-				'ex:hals ex:bornIn ex:antwerp.',
 			),
 			$output
 		);

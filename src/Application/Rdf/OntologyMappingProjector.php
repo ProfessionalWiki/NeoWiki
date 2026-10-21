@@ -188,21 +188,23 @@ class OntologyMappingProjector implements PageProjector {
 			$this->namespaces
 		);
 
-		$quads = $this->headQuads( $subject, $subjectMapping, $subjectIri, $graph, $displayName );
+		$headQuads = $this->headQuads( $subject, $subjectMapping, $subjectIri, $graph, $displayName );
+		$valueQuads = [];
 
 		foreach ( $subject->getStatements()->asArray() as $statement ) {
 			$propertyMapping = $schemaMapping->properties->get( $statement->getPropertyName()->text );
 
 			if ( $propertyMapping !== null ) {
-				$quads = array_merge(
-					$quads,
+				$valueQuads = array_merge(
+					$valueQuads,
 					$this->statementQuads( $statement, $propertyMapping, $nodes, $subjectIri, $graph )
 				);
 			}
 		}
 
-		// Last, because a node is scaffolded by the statements that reached it.
-		return array_merge( $quads, $nodes->scaffoldQuads() );
+		// RdfStreamWriter::write() orders blocks by each subject's first quad: node types up front put each node
+		// after the resource it hangs off, and links at the end keep each block's values ahead of its links.
+		return array_merge( $headQuads, $nodes->typeQuads(), $valueQuads, $nodes->linkQuads() );
 	}
 
 	/**

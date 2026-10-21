@@ -30,7 +30,10 @@ class SynthesizedNodes {
 	private array $scaffolded = [];
 
 	/** @var list<Quad> */
-	private array $scaffold = [];
+	private array $typeQuads = [];
+
+	/** @var list<Quad> */
+	private array $linkQuads = [];
 
 	/**
 	 * @param array<string, SynthesizedNode> $nodes The resolvable nodes of the Subject's Schema entry,
@@ -89,8 +92,8 @@ class SynthesizedNodes {
 
 		$anchor = $this->anchor( $node );
 
-		$this->scaffold[] = new Quad( $instance, $this->namespaces->rdfType(), $node->class, $this->graph );
-		$this->scaffold[] = $this->linkQuad( $node, $instance, $anchor );
+		$this->typeQuads[] = new Quad( $instance, $this->namespaces->rdfType(), $node->class, $this->graph );
+		$this->linkQuads[] = $this->linkQuad( $node, $instance, $anchor );
 
 		return $instance;
 	}
@@ -115,10 +118,17 @@ class SynthesizedNodes {
 	}
 
 	/**
+	 * @return list<Quad> Each parent's before its children's.
+	 */
+	public function typeQuads(): array {
+		return $this->typeQuads;
+	}
+
+	/**
 	 * @return list<Quad>
 	 */
-	public function scaffoldQuads(): array {
-		return $this->scaffold;
+	public function linkQuads(): array {
+		return $this->linkQuads;
 	}
 
 }

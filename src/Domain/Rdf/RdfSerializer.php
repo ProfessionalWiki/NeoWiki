@@ -10,6 +10,9 @@ namespace ProfessionalWiki\NeoWiki\Domain\Rdf;
  */
 interface RdfSerializer {
 
+	/**
+	 * Orders the quads as {@see RdfStreamWriter::write()} does.
+	 */
 	public function serialize( QuadList $quads, RdfFormat $format ): string;
 
 	/**

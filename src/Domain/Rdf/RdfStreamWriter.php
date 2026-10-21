@@ -11,6 +11,10 @@ namespace ProfessionalWiki\NeoWiki\Domain\Rdf;
  */
 interface RdfStreamWriter {
 
+	/**
+	 * Writes each subject's quads as one block, its `rdf:type` quads first, the blocks in the order of each
+	 * subject's first quad.
+	 */
 	public function write( QuadList $quads ): string;
 
 	public function finish(): string;

@@ -40,4 +40,11 @@ final class ParsedRdf {
 		return is_string( $term ) ? $term : json_encode( $term );
 	}
 
+	/**
+	 * @return list<string> Each subject once, in the order it first appears.
+	 */
+	public static function subjectsInOrder( string $rdf ): array {
+		return array_values( array_unique( array_column( ( new TriGParser() )->parse( $rdf ), 'subject' ) ) );
+	}
+
 }

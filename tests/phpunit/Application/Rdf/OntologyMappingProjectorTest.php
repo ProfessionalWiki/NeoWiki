@@ -845,6 +845,48 @@ class OntologyMappingProjectorTest extends TestCase {
 		$this->logger->assertNoLoggingCallsWhereMade();
 	}
 
+	public function testANodesBlockComesAfterTheBlockOfTheResourceItHangsOff(): void {
+		// The Person's Birth date, attached to the Time-Span, precedes its Birth place, attached to the Birth.
+		$quads = $this->newCrmProjector( 'Person', $this->personMappingWithNestedBirthNodes() )
+			->projectPage( $this->personWithFlatBirthFields() );
+
+		$this->assertSame(
+			[
+				'https://wiki.example/entity/s1janeaaaaaaaa2',
+				'https://wiki.example/node/s1janeaaaaaaaa2/birth',
+				'https://wiki.example/node/s1janeaaaaaaaa2/birth/birthTimespan',
+			],
+			$this->subjectsInWrittenOrder( $quads )
+		);
+	}
+
+	private function personMappingWithNestedBirthNodes(): SchemaMapping {
+		return new SchemaMapping(
+			subject: new SubjectMapping( 'crm:E21_Person' ),
+			properties: new PropertyMappings( [
+				'Birth date' => new PropertyMapping( predicate: 'crm:P82_at_some_time_within', node: 'birthTimespan' ),
+				'Birth place' => new PropertyMapping( predicate: 'crm:P7_took_place_at', node: 'birth' ),
+			] ),
+			nodes: [
+				'birth' => new NodeMapping( class: 'crm:E67_Birth', linkPredicate: 'crm:P98i_was_born' ),
+				'birthTimespan' => new NodeMapping(
+					class: 'crm:E52_Time-Span',
+					linkPredicate: 'crm:P4_has_time-span',
+					parent: 'birth'
+				),
+			],
+		);
+	}
+
+	/**
+	 * @return list<string> The subjects of the Turtle serialization, in the order they first appear.
+	 */
+	private function subjectsInWrittenOrder( QuadList $quads ): array {
+		return ParsedRdf::subjectsInOrder(
+			( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::Turtle )
+		);
+	}
+
 	public function testANodeIsNotEmittedForAPropertyTheSubjectDoesNotHave(): void {
 		// The mapping declares the birth node, but the Person carries no value for the property that
 		// attaches to it, so there must be no empty E67_Birth in the output.
@@ -1383,21 +1425,7 @@ class OntologyMappingProjectorTest extends TestCase {
 	public function testSynthesizedNodeIrisAreIdenticalAcrossProjectionsOfTheSamePage(): void {
 		// Re-projection must be byte-identical, because the per-page store sync replaces a graph with
 		// DROP + INSERT DATA: a node IRI that moved would leave the store inconsistent.
-		$mapping = new SchemaMapping(
-			subject: new SubjectMapping( 'crm:E21_Person' ),
-			properties: new PropertyMappings( [
-				'Birth date' => new PropertyMapping( predicate: 'crm:P82_at_some_time_within', node: 'birthTimespan' ),
-				'Birth place' => new PropertyMapping( predicate: 'crm:P7_took_place_at', node: 'birth' ),
-			] ),
-			nodes: [
-				'birth' => new NodeMapping( class: 'crm:E67_Birth', linkPredicate: 'crm:P98i_was_born' ),
-				'birthTimespan' => new NodeMapping(
-					class: 'crm:E52_Time-Span',
-					linkPredicate: 'crm:P4_has_time-span',
-					parent: 'birth'
-				),
-			],
-		);
+		$mapping = $this->personMappingWithNestedBirthNodes();
 		$page = $this->personWithFlatBirthFields();
 
 		$first = $this->newCrmProjector( 'Person', $mapping )->projectPage( $page );
