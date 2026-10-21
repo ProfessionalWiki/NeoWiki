@@ -57,10 +57,10 @@ Subject, relation, and option IDs:
    [{{fullurl:Some Other Page|action=edit}} Edit some other page]
    ```
 
-3. **Subject pages auto-render their Main Subject infobox** at the top of the page, emitted by
-   `NeoWikiHooks::handleContentPage` (`BeforePageDisplay`). Don't `{{#view}}` the same subject in
-   the page's wikitext, or you get two infoboxes. Use `{{#view}}` only on plain `Page/` hubs (which
-   have no Main Subject) or to embed a different subject.
+3. **Subject pages auto-render their Main Subject**, emitted by `NeoWikiHooks::handleContentPage`
+   (`BeforePageDisplay`). Don't `{{#view}}` the same subject in the page's wikitext, or it shows
+   twice. Use `{{#view}}` only on plain `Page/` hubs (which have no Main Subject) or to embed a
+   different subject.
 4. **`{{#view}}` takes one positional Subject ID plus named args.** Write
    `{{#view:id|layout=LayoutName}}` or `{{#view:subject=id|layout=LayoutName}}`. The old
    positional form `{{#view:id|LayoutName}}` is gone and now renders a visible parser error.
@@ -111,8 +111,8 @@ Use-case hub pages follow a six-section pattern:
 
 1. **Scenario**. One short paragraph framing who the dataset is for and what story it tells.
 2. **Featured**. `{{#invoke:SubjectRow|render|<id>|<id>}}` showing 2 representative subjects.
-   **Skip this section on Subject-as-page hubs** (e.g. `ACME_Inc`). The auto-rendered infobox at
-   the top already serves as the featured view.
+   **Skip this section on Subject-as-page hubs** (e.g. `ACME_Inc`). The auto-rendered Main Subject
+   already serves as the featured view.
 3. **Question Answered**. A natural-language question heading followed by a Cypher result table.
 4. **Browse**. A curated table of subjects in the dataset.
 5. **Add your own**. `{{#create_subject: schema=<Schema> | page=new}}` for the hub's central Schema,
@@ -155,8 +155,8 @@ Prose `.wikitext` files paired with subjects follow Wikipedia conventions:
 - Match the existing `Subject/Claude_Monet.wikitext` style.
 
 Reserve prose for subjects visitors are likely to land on (museums, artists, featured publications,
-ACME entities). Reference data such as attendance records doesn't need prose; the auto-infobox is
-the content.
+ACME entities). Reference data such as attendance records doesn't need prose; the auto-rendered
+Main Subject is the content.
 
 ## Verifying changes
 

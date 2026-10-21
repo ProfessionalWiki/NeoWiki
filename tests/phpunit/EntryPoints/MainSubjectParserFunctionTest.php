@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 use InvalidArgumentException;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Parser\Parser;
-use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
@@ -27,8 +26,6 @@ use TypeError;
 class MainSubjectParserFunctionTest extends TestCase {
 
 	private const int PAGE_ID = 7;
-
-	private ParserOutput $parserOutput;
 
 	/**
 	 * @dataProvider argumentsProvider
@@ -67,15 +64,6 @@ class MainSubjectParserFunctionTest extends TestCase {
 		$this->assertSame( '', $result );
 	}
 
-	public function testAFailedReadIsNotCached(): void {
-		$repository = $this->createStub( SubjectRepository::class );
-		$repository->method( 'getSubjectsByPageId' )->willThrowException( new InvalidArgumentException( 'Invalid schema' ) );
-
-		( new MainSubjectParserFunction( new PageSubjectsLookup( $repository ) ) )->handle( $this->newParser(), '' );
-
-		$this->assertSame( 0, $this->parserOutput->getCacheExpiry() );
-	}
-
 	public static function deserializationFailureProvider(): iterable {
 		yield 'a Subject that fails validation' => [ new InvalidArgumentException( 'Invalid schema' ) ];
 		yield 'a Subject that is not an object' => [ new TypeError( 'Not an array' ) ];
@@ -92,11 +80,8 @@ class MainSubjectParserFunctionTest extends TestCase {
 		$title = $this->createStub( Title::class );
 		$title->method( 'getArticleID' )->willReturn( self::PAGE_ID );
 
-		$this->parserOutput = new ParserOutput();
-
 		$parser = $this->createStub( Parser::class );
 		$parser->method( 'getTitle' )->willReturn( $title );
-		$parser->method( 'getOutput' )->willReturn( $this->parserOutput );
 		$parser->method( 'msg' )->willReturnCallback(
 			static fn ( string $key, ...$params ) => new RawMessage( $key . ': $1', $params )
 		);

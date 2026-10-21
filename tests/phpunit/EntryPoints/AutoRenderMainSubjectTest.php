@@ -22,8 +22,6 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  *
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onBeforePageDisplay
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onDifferenceEngineRenderRevisionAddParserOutput
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onParserAfterTidy
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onOutputPageParserOutput
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\MainSubjectParserFunction
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::shouldAutoRenderMainSubject
  * @group Database
@@ -36,7 +34,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 	private const string PAGE_NAME = 'Auto render page';
 	private const string PAGE_TEXT = 'Text of the page';
 
-	private const string IN_FULL = 'id="ext-neowiki-main-subject"';
+	private const string PLACEHOLDER = 'id="ext-neowiki-main-subject"';
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -117,35 +115,18 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'id="ext-neowiki-app"', $html );
 	}
 
-	public function testAPageFirstWikiShowsTheMainSubjectOfAPageWithoutTextAsAnInfobox(): void {
-		$this->createPageWithText( '' );
-
-		$html = $this->renderRequest( [] );
-
-		$this->assertTrue( $this->showsAnInfobox( $html ) );
-		$this->assertStringNotContainsString( self::IN_FULL, $html );
-	}
-
-	/**
-	 * @dataProvider pageTextProvider
-	 */
-	public function testASubjectFirstWikiShowsTheMainSubjectInFullBelowThePageText( string $text ): void {
+	public function testASubjectFirstWikiShowsTheMainSubjectInFullBelowThePageText(): void {
 		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
-		$this->createPageWithText( $text );
+		$this->createPageWithText( self::PAGE_TEXT );
 
 		$html = $this->renderRequest( [] );
-		$inFull = $this->inFullElement( $html );
+		$inFull = $this->placeholderElement( $html );
 
-		$this->assertAppearsInOrder( $html, $text, self::IN_FULL );
+		$this->assertAppearsInOrder( $html, self::PAGE_TEXT, self::PLACEHOLDER );
 		// The frontend mounts the Subject UI on this element, and the focus styles apply under its class.
 		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $inFull );
 		$this->assertStringContainsString( 'ext-neowiki-ui', $inFull );
 		$this->assertFalse( $this->showsAnInfobox( $html ) );
-	}
-
-	public static function pageTextProvider(): iterable {
-		yield 'with text' => [ self::PAGE_TEXT ];
-		yield 'without text' => [ '' ];
 	}
 
 	public function testASubjectFirstWikiGivesTheSubjectUiItsConfiguration(): void {
@@ -155,11 +136,8 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertArrayHasKey( 'wgNeoWikiSubjectIriBase', $this->viewPage( [] )->getJsConfigVars() );
 	}
 
-	/**
-	 * @dataProvider wikiModeProvider
-	 */
-	public function testAnOldRevisionShowsTheMainSubjectItHeldAsAnInfobox( bool $subjectFirst ): void {
-		$this->overrideConfigValue( 'NeoWikiSubjectFirst', $subjectFirst );
+	public function testAnOldRevisionShowsTheMainSubjectItHeldAsAnInfobox(): void {
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
 		$oldRevision = $this->createPageWithText( self::PAGE_TEXT );
 		$this->changeSubjectsOfPage( self::PAGE_NAME, TestSubject::build( id: self::OTHER_SUBJECT_ID ) );
 
@@ -167,7 +145,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $html );
 		$this->assertTrue( $this->showsAnInfobox( $html ) );
-		$this->assertStringNotContainsString( self::IN_FULL, $html );
+		$this->assertStringNotContainsString( self::PLACEHOLDER, $html );
 	}
 
 	public function testADiffOnASubjectFirstWikiShowsTheMainSubjectAsAnInfobox(): void {
@@ -176,13 +154,13 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		$html = $this->renderDiffOfASubjectEdit();
 
 		$this->assertTrue( $this->showsAnInfobox( $html ) );
-		$this->assertStringNotContainsString( self::IN_FULL, $html );
+		$this->assertStringNotContainsString( self::PLACEHOLDER, $html );
 	}
 
 	/**
 	 * @dataProvider wikiModeProvider
 	 */
-	public function testAPagePlacingItsMainSubjectShowsItInFullThereAndNowhereElse( bool $subjectFirst ): void {
+	public function testAPagePlacingItsMainSubjectShowsItThereAndNowhereElse( bool $subjectFirst ): void {
 		$this->skipWhereParsoidParses();
 		$this->overrideConfigValue( 'NeoWikiSubjectFirst', $subjectFirst );
 		$this->createPageWithText( "Before it.\n\n{{#main_subject: }}\n\nAfter it." );
@@ -190,8 +168,8 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		$html = $this->renderRequest( [] );
 
 		$this->assertSame( 1, substr_count( $html, self::viewOf( self::SUBJECT_ID ) ) );
-		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->inFullElement( $html ) );
-		$this->assertAppearsInOrder( $html, 'Before it.', self::IN_FULL, 'After it.' );
+		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->placeholderElement( $html ) );
+		$this->assertAppearsInOrder( $html, 'Before it.', self::PLACEHOLDER, 'After it.' );
 	}
 
 	public function testAnOldRevisionOfAPagePlacingItsMainSubjectShowsItOnlyWhereItIsPlaced(): void {
@@ -202,7 +180,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		$html = $this->renderRequest( [ 'oldid' => (string)$oldRevision->getId() ] );
 
 		$this->assertSame( 1, substr_count( $html, self::viewOf( self::SUBJECT_ID ) ) );
-		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->inFullElement( $html ) );
+		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->placeholderElement( $html ) );
 	}
 
 	public function testAnOldRevisionPlacesTheMainSubjectItHad(): void {
@@ -220,7 +198,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 
 		$html = $this->renderRequest( [ 'oldid' => (string)$oldRevision->getId() ] );
 
-		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->inFullElement( $html ) );
+		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->placeholderElement( $html ) );
 	}
 
 	/**
@@ -259,7 +237,7 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		$html = $this->renderRequest( [ 'diff' => 'prev', 'oldid' => (string)$edit->getId() ] );
 
 		$this->assertSame( 1, substr_count( $html, self::viewOf( self::SUBJECT_ID ) ) );
-		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->inFullElement( $html ) );
+		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), $this->placeholderElement( $html ) );
 	}
 
 	public function testAPlacementThatDoesNotReachThePageLeavesAutomaticRenderingOn(): void {
@@ -269,18 +247,19 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertTrue( $this->showsAnInfobox( $this->renderRequest( [] ) ) );
 	}
 
-	public function testAPlacementAfterADiscardedOneShowsTheMainSubjectInFull(): void {
+	public function testAPlacementAfterADiscardedOneStillPlacesTheMainSubject(): void {
 		$this->skipWhereParsoidParses();
 		$this->createPageWithText( self::PAGE_TEXT . '{{PLURAL:2|{{#main_subject: }}|{{#main_subject: }}}}' );
 
 		$html = $this->renderRequest( [] );
 
-		$this->assertStringContainsString( self::IN_FULL, $html );
+		$this->assertStringContainsString( self::PLACEHOLDER, $html );
 		$this->assertFalse( $this->showsAnInfobox( $html ) );
 	}
 
 	public function testAPagePlacingItsMainSubjectGivesTheSubjectUiItsConfigurationWithAutomaticRenderingOff(): void {
 		$this->skipWhereParsoidParses();
+		$this->overrideConfigValue( 'NeoWikiSubjectFirst', true );
 		$this->overrideConfigValue( 'NeoWikiAutoRenderMainSubject', false );
 		$this->createPageWithText( '{{#main_subject: }}' );
 
@@ -358,10 +337,10 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * The opening tag of the element the Subject UI is mounted on, or an empty string without one.
+	 * The opening tag of the Main Subject's placeholder, or an empty string without one.
 	 */
-	private function inFullElement( string $html ): string {
-		return preg_match( '/<\w+[^>]*' . self::IN_FULL . '[^>]*>/', $html, $matches ) === 1 ? $matches[0] : '';
+	private function placeholderElement( string $html ): string {
+		return preg_match( '/<\w+[^>]*' . self::PLACEHOLDER . '[^>]*>/', $html, $matches ) === 1 ? $matches[0] : '';
 	}
 
 	private function showsAnInfobox( string $html ): bool {

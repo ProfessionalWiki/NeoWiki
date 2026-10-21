@@ -48,8 +48,6 @@
 		"ParserOptionsRegister": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserOptionsRegister",
 		"PageRenderingHash": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageRenderingHash",
 		"ParserFirstCallInit": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserFirstCallInit",
-		"ParserAfterTidy": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserAfterTidy",
-		"OutputPageParserOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onOutputPageParserOutput",
 
 		"RevisionFromEditComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionFromEditComplete",
 		"SearchIndexFields": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSearchIndexFields",
@@ -277,7 +275,7 @@
 			"value": null
 		},
 		"NeoWikiSubjectFirst": {
-			"description": "Whether this wiki puts Subjects before pages. False by default, which is page-first: a new Subject goes on the page it was created from, and links to Subjects lead to pages. True makes it subject-first: a new Subject gets a page of its own, and links lead to Special:Subject. See https://neowiki.ai/docs/operations/installation#choosing-page-first-or-subject-first",
+			"description": "Whether this wiki puts Subjects before pages. False by default, which is page-first: a new Subject goes on the page it was created from. True makes it subject-first: a new Subject gets a page of its own, which shows it in full. See https://neowiki.ai/docs/operations/installation#choosing-page-first-or-subject-first",
 			"value": false
 		},
 		"NeoWikiDataLanguages": {
@@ -1040,6 +1038,7 @@
 				"neowiki-special-subjects",
 				"comma-separator",
 				"parentheses",
+				"pagetitle",
 				"neowiki-create-subject-default-label",
 				"neowiki-create-subject-denied",
 				"permissionserrors",

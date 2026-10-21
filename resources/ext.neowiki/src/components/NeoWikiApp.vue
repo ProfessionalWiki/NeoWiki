@@ -43,6 +43,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { canEditSubjectOnItsPage } from '@/presentation/subjectEditPermission.ts';
 import { RelationTargetCreationKey } from '@/components/Value/ValueDisplayContract.ts';
+import { isSubjectFirst } from '@/wikiMode.ts';
 
 /** A View placeholder on the page, before its Subject is known. */
 interface View {
@@ -63,9 +64,9 @@ const props = defineProps<{
 
 const viewsData = ref<ViewData[]>( [] );
 
-// Old revisions and diffs show the Main Subject as an infobox, also where the page places it in full.
-const showsOldRevisionOrDiff = !isLatestRevision() || Boolean( mw.config.get( 'wgDiffNewId' ) );
-const mainSubjectInFull = showsOldRevisionOrDiff ? null : findMainSubjectInFull();
+// Must agree with $showsInFull in NeoWikiHooks::handleContentPage, which loads the configuration the full view reads.
+const showsMainSubjectAsInfobox = !isSubjectFirst() || !isLatestRevision() || Boolean( mw.config.get( 'wgDiffNewId' ) );
+const mainSubjectInFull = showsMainSubjectAsInfobox ? null : findMainSubjectPlaceholder();
 
 const shouldShowSubjectCreator = ref( props.showSubjectCreator );
 // The creator is teleported onto the page being viewed, which is the page it offers first.
@@ -97,8 +98,8 @@ function isLatestRevision(): boolean {
 }
 
 onMounted( async (): Promise<void> => {
-	if ( showsOldRevisionOrDiff ) {
-		findMainSubjectInFull()?.element.classList.add( 'ext-neowiki-view' );
+	if ( showsMainSubjectAsInfobox ) {
+		findMainSubjectPlaceholder()?.element.classList.add( 'ext-neowiki-view' );
 	}
 
 	const views = collectViews( document.querySelectorAll( '.ext-neowiki-view' ) );
@@ -131,9 +132,9 @@ function subjectAndSchemaLoaded( view: View ): boolean {
 	return subject !== undefined && useSchemaStore().schemas.has( subject.getSchemaName() );
 }
 
-function findMainSubjectInFull(): { element: HTMLElement; subjectId: string } | null {
+function findMainSubjectPlaceholder(): { element: HTMLElement; subjectId: string } | null {
 	// Wikitext can give an element this id, but not a data-mw-* attribute.
-	const element = document.querySelector<HTMLElement>( '#ext-neowiki-main-subject[data-mw-neowiki-subject-id]' );
+	const element = document.querySelector<HTMLElement>( '[id="ext-neowiki-main-subject"][data-mw-neowiki-subject-id]' );
 	const subjectId = element?.dataset.mwNeowikiSubjectId;
 
 	return element === null || subjectId === undefined ? null : { element, subjectId };

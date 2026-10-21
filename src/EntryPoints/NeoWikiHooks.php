@@ -82,13 +82,6 @@ class NeoWikiHooks {
 
 	private const SEARCH_UPDATE_BEFORE_1_44 = 'MediaWiki\\Deferred\\SearchUpdate';
 
-	/**
-	 * Marks a page whose HTML holds the mount MainSubjectParserFunction places, as extension data on its
-	 * ParserOutput and as a property of the OutputPage showing it. Such a page gets no automatic rendering
-	 * of its Main Subject.
-	 */
-	private const string PLACES_MAIN_SUBJECT = 'neowiki-places-main-subject';
-
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
 		$carriesCreateSubjectButton = self::carriesCreateSubjectButton( $out );
 
@@ -140,17 +133,28 @@ class NeoWikiHooks {
 
 		self::headByMainSubject( $out, $builder, $revisionId );
 
-		if ( $out->getProperty( self::PLACES_MAIN_SUBJECT ) === true ) {
-			self::addSubjectUiConfig( $out );
-			return;
-		}
-
 		// On a diff, the Main Subject is shown atop the revision below the diff instead.
-		if ( !$extension->shouldAutoRenderMainSubject() || $out->getRequest()->getCheck( 'diff' ) ) {
+		if ( $out->getRequest()->getCheck( 'diff' ) ) {
 			return;
 		}
 
-		if ( $extension->isSubjectFirst() && self::pageIsLatestRevision( $out ) ) {
+		$showsInFull = $extension->isSubjectFirst() && self::pageIsLatestRevision( $out );
+
+		// Only a placeholder that reached the page counts: a Lua module or PLURAL can discard what the parser function
+		// returned.
+		if ( ViewHtmlBuilder::containsMainSubjectPlaceholder( $out->getHTML() ) ) {
+			if ( $showsInFull ) {
+				self::addSubjectUiConfig( $out );
+			}
+
+			return;
+		}
+
+		if ( !$extension->shouldAutoRenderMainSubject() ) {
+			return;
+		}
+
+		if ( $showsInFull ) {
 			self::appendMainSubjectInFull( $out, $builder );
 			return;
 		}
@@ -251,7 +255,7 @@ class NeoWikiHooks {
 		}
 
 		// The revision shows its Main Subject where it places it, as an infobox on a diff.
-		if ( $parserOutput->getExtensionData( self::PLACES_MAIN_SUBJECT ) === true ) {
+		if ( ViewHtmlBuilder::containsMainSubjectPlaceholder( $parserOutput->getContentHolderText() ) ) {
 			return;
 		}
 
@@ -588,22 +592,6 @@ class NeoWikiHooks {
 				return $parserFunction->handle( $parser, ...$args );
 			}
 		);
-	}
-
-	/**
-	 * Only a mount that reached the HTML counts: a condition or a Lua module can discard what the parser
-	 * function returned.
-	 */
-	public static function onParserAfterTidy( Parser $parser, string &$text ): void {
-		if ( ViewHtmlBuilder::containsMainSubjectInFull( $text ) ) {
-			$parser->getOutput()->setExtensionData( self::PLACES_MAIN_SUBJECT, true );
-		}
-	}
-
-	public static function onOutputPageParserOutput( OutputPage $out, ParserOutput $parserOutput ): void {
-		if ( $parserOutput->getExtensionData( self::PLACES_MAIN_SUBJECT ) === true ) {
-			$out->setProperty( self::PLACES_MAIN_SUBJECT, true );
-		}
 	}
 
 	/**
@@ -1210,6 +1198,8 @@ class NeoWikiHooks {
 			self::labelSettingsFormTabs( $sktemplate, $title, $links );
 		}
 
+		self::labelTextEditTab( $sktemplate, $links );
+
 		if ( !SubjectsAction::isEligibleTitle( $title ) ) {
 			return;
 		}
@@ -1246,6 +1236,19 @@ class NeoWikiHooks {
 			$links['views']['view']['text'] = $skin->msg( 'skin-view-edit' )->text();
 			$links['views']['edit']['text'] = $skin->msg( 'neowiki-config-editor-edit-source-tab' )->text();
 		}
+	}
+
+	private static function labelTextEditTab( SkinTemplate $skin, array &$links ): void {
+		$tab = isset( $links['views']['ve-edit'] ) ? 've-edit' : 'edit';
+
+		if ( !isset( $links['views'][$tab] )
+			|| !SubjectsAction::isEligibleTitle( $skin->getRelevantTitle() )
+			|| !NeoWikiExtension::getInstance()->isSubjectFirst()
+		) {
+			return;
+		}
+
+		$links['views'][$tab]['text'] = $skin->msg( 'neowiki-edit-text-tab' )->text();
 	}
 
 	private static function handleLayoutPage( OutputPage $out, Skin $skin ): void {

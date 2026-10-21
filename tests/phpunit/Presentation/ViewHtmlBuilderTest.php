@@ -191,14 +191,14 @@ class ViewHtmlBuilderTest extends TestCase {
 		$this->assertSame( 0, $repository->readCount );
 	}
 
-	public function testRecognizesTheMountForTheMainSubjectInFull(): void {
-		$this->assertTrue( ViewHtmlBuilder::containsMainSubjectInFull(
-			'<p>Text</p>' . ViewHtmlBuilder::mainSubjectInFullPlaceholderHtml( self::TITLING_SUBJECT_ID )
+	public function testRecognizesTheMainSubjectPlaceholder(): void {
+		$this->assertTrue( ViewHtmlBuilder::containsMainSubjectPlaceholder(
+			'<p>Text</p>' . ViewHtmlBuilder::mainSubjectPlaceholderHtml( self::TITLING_SUBJECT_ID )
 		) );
 	}
 
-	public function testAViewIsNoMountForTheMainSubjectInFull(): void {
-		$this->assertFalse( ViewHtmlBuilder::containsMainSubjectInFull(
+	public function testAViewIsNoMainSubjectPlaceholder(): void {
+		$this->assertFalse( ViewHtmlBuilder::containsMainSubjectPlaceholder(
 			ViewHtmlBuilder::viewPlaceholderHtml( self::TITLING_SUBJECT_ID )
 		) );
 	}
@@ -206,8 +206,8 @@ class ViewHtmlBuilderTest extends TestCase {
 	/**
 	 * @dataProvider wikitextMarkupProvider
 	 */
-	public function testWikitextCannotFakeAMainSubjectMount( string $sanitizedMarkup ): void {
-		$this->assertFalse( ViewHtmlBuilder::containsMainSubjectInFull( $sanitizedMarkup ) );
+	public function testWikitextCannotFakeAMainSubjectPlaceholder( string $sanitizedMarkup ): void {
+		$this->assertFalse( ViewHtmlBuilder::containsMainSubjectPlaceholder( $sanitizedMarkup ) );
 	}
 
 	public static function wikitextMarkupProvider(): iterable {

@@ -248,6 +248,40 @@ async function openEditorOn( control: ReturnType<VueWrapper['find']> ): Promise<
 	await flushPromises();
 }
 
+/**
+ * Heads the page as SubjectLabelHtml does where the heading shows the Subject's label.
+ */
+function headPageBy( label: string ): void {
+	document.body.innerHTML = `<h1 id="firstHeading"><span class="ext-neowiki-subject-label"><bdi>${ label }</bdi></span></h1>`;
+}
+
+function pageHeading(): string {
+	return document.querySelector( '#firstHeading' )!.textContent!;
+}
+
+/**
+ * The address the page is at after the act, starting at the given one, whether it navigates by assigning `href` or by
+ * `assign()`. Restored by re-stubbing rather than vi.unstubAllGlobals(), which would take the `mw` stub with it, out
+ * from under every component this file leaves mounted.
+ */
+async function addressAfter( href: string, act: () => Promise<void> ): Promise<string> {
+	const realLocation = window.location;
+	const stub = {
+		href,
+		assign: ( url: string ): void => {
+			stub.href = url;
+		},
+	};
+	vi.stubGlobal( 'location', stub );
+
+	try {
+		await act();
+		return stub.href;
+	} finally {
+		vi.stubGlobal( 'location', realLocation );
+	}
+}
+
 async function confirmDelete( wrapper: VueWrapper, control: ReturnType<VueWrapper['find']> ): Promise<void> {
 	await control.trigger( 'click' );
 	// The click first settles where the deletion goes, which on a subject-first wiki is a read.
@@ -280,6 +314,7 @@ describe( 'SubjectPage', () => {
 		canCreateSubjectPageRef.value = false;
 		mayCreateSubjectPage = false;
 		vi.restoreAllMocks();
+		document.body.innerHTML = '';
 	} );
 
 	it( 'reads the Subject its subjectId names', async () => {
@@ -609,19 +644,11 @@ describe( 'SubjectPage', () => {
 			const deleteSubject = vi.fn().mockResolvedValue( undefined );
 			const wrapper = await mountLoadedPage( true );
 			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockImplementation( deleteSubject );
-			// Restored by re-stubbing rather than vi.unstubAllGlobals(), which would take the `mw`
-			// stub with it, out from under every component this file leaves mounted.
-			const realLocation = window.location;
-			vi.stubGlobal( 'location', { href: '' } );
 
-			try {
+			expect( await addressAfter( '', async () => {
 				await wrapper.find( `${ REQUESTED_ROW } ${ DELETE_CONTROL }` ).trigger( 'click' );
 				await flushPromises();
-
-				expect( location.href ).toBe( '/wiki/ACME Inc?action=delete' );
-			} finally {
-				vi.stubGlobal( 'location', realLocation );
-			}
+			} ) ).toBe( '/wiki/ACME Inc?action=delete' );
 
 			expect( wrapper.findComponent( SummaryAction ).exists() ).toBe( false );
 			expect( deleteSubject ).not.toHaveBeenCalled();
@@ -1104,6 +1131,19 @@ describe( 'SubjectPage', () => {
 			expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-special-subject-load-error', { type: 'error' } );
 		} );
 
+		it( 'shows the new label in the page heading once a save renames the Subject', async () => {
+			headPageBy( 'ACME Inc' );
+			const wrapper = await mountLoadedPage();
+			vi.spyOn( useSubjectStore(), 'updateSubject' ).mockResolvedValue( undefined );
+			await openEditorOn( wrapper.find( EDIT_CONTROL ) );
+			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [], subject( { id: SUBJECT_ID, label: 'ACME Corp' } ) ) );
+
+			await wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' )( freshSubject, [], 'a comment' );
+			await flushPromises();
+
+			expect( pageHeading() ).toBe( 'ACME Corp' );
+		} );
+
 		it( 'saves a Schema the editor changed', async () => {
 			const wrapper = await mountLoadedPage();
 			const saveSchema = vi.spyOn( useSchemaStore(), 'saveSchema' ).mockResolvedValue( undefined );
@@ -1286,6 +1326,7 @@ describe( 'SubjectPage', () => {
 		it( 'shows what the latest re-read found when an earlier one lands after it', async () => {
 			const other = subject( { id: OTHER_REFERENCED_ID, label: 'Rocket', schemaName: 'Product' } );
 			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [ referencedSubject, other ] ) );
+			headPageBy( 'ACME Inc' );
 			const wrapper = await mountLoadedPage();
 			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
 			let landFirstReRead!: ( value: SubjectWithReferencedSubjects ) => void;
@@ -1293,7 +1334,7 @@ describe( 'SubjectPage', () => {
 				.mockReturnValueOnce( new Promise( ( resolve ) => {
 					landFirstReRead = resolve;
 				} ) )
-				.mockResolvedValueOnce( bundle() );
+				.mockResolvedValueOnce( bundle( [], subject( { id: SUBJECT_ID, label: 'ACME Corp' } ) ) );
 
 			await confirmDelete( wrapper, wrapper.findAll( DELETE_CONTROL )[ 1 ] );
 			await confirmDelete( wrapper, wrapper.findAll( DELETE_CONTROL )[ 2 ] );
@@ -1301,6 +1342,7 @@ describe( 'SubjectPage', () => {
 			await flushPromises();
 
 			expect( wrapper.find( REFERENCED_ROW ).exists() ).toBe( false );
+			expect( pageHeading() ).toBe( 'ACME Corp' );
 		} );
 
 	} );
@@ -1349,23 +1391,32 @@ describe( 'SubjectPage', () => {
 				.toEqual( { subjectId: new SubjectId( REFERENCED_ID ), schemaNames: [ 'Product' ] } );
 		} );
 
+		it( 'deletes a Subject the shown one references in place, staying on the page', async () => {
+			canDeleteSubjectRef.value = true;
+			const wrapper = await mountLoadedPage( false, false, { onHostingPage: true } );
+			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
+			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle() );
+
+			expect( await addressAfter(
+				'/w/index.php?title=ACME_Inc&oldid=7',
+				() => confirmDelete( wrapper, wrapper.find( `${ REFERENCED_ROW } ${ DELETE_CONTROL }` ) ),
+			) ).toBe( '/w/index.php?title=ACME_Inc&oldid=7' );
+
+			expect( wrapper.find( REFERENCED_ROW ).exists() ).toBe( false );
+		} );
+
 		it( 'shows the page\'s current revision once the Subject it shows is deleted, with the notice still to come', async () => {
 			canDeleteSubjectRef.value = true;
 			const wrapper = await mountLoadedPage( false, false, { onHostingPage: true } );
 			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
-			// Restored by re-stubbing, as above.
-			const realLocation = window.location;
-			vi.stubGlobal( 'location', { href: '/w/index.php?title=ACME_Inc&oldid=7' } );
 
-			try {
-				await confirmDelete( wrapper, wrapper.find( `${ REQUESTED_ROW } ${ DELETE_CONTROL }` ) );
-
-				expect( location.href ).toBe( '/wiki/' + PAGE_NAME );
-			} finally {
-				vi.stubGlobal( 'location', realLocation );
-			}
+			expect( await addressAfter(
+				'/w/index.php?title=ACME_Inc&oldid=7',
+				() => confirmDelete( wrapper, wrapper.find( `${ REQUESTED_ROW } ${ DELETE_CONTROL }` ) ),
+			) ).toBe( '/wiki/' + PAGE_NAME );
 
 			expect( mw.storage.session.set ).toHaveBeenCalledWith( 'neowiki-managesubjects-delete-success', expect.anything() );
+			expect( mw.notify ).not.toHaveBeenCalled();
 		} );
 
 	} );
