@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Infrastructure\Rdf;
 use pietercolpaert\hardf\TriGWriter;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Literal;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\Quad;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\QuadList;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfFormat;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
@@ -37,16 +38,56 @@ class HardfRdfStreamWriter implements RdfStreamWriter {
 	}
 
 	public function write( QuadList $quads ): string {
-		foreach ( $quads->asArray() as $quad ) {
+		foreach ( $this->groupedByResource( $quads ) as $quad ) {
 			$this->writer->addTriple(
 				$quad->subject->value,
 				$quad->predicate->value,
 				$this->encodeObject( $quad->object ),
-				$this->includeGraph ? $quad->graph->value : null,
+				$this->writtenGraph( $quad ),
 			);
 		}
 
 		return $this->writer->read();
+	}
+
+	/**
+	 * hardf merges only consecutive triples that share a subject into one block.
+	 *
+	 * @return iterable<Quad>
+	 */
+	private function groupedByResource( QuadList $quads ): iterable {
+		$blocks = [];
+
+		foreach ( $quads->asArray() as $quad ) {
+			$blocks[$this->writtenGraph( $quad )][$quad->subject->value][] = $quad;
+		}
+
+		foreach ( $blocks as $graphBlocks ) {
+			foreach ( $graphBlocks as $block ) {
+				yield from $this->typesFirst( $block );
+			}
+		}
+	}
+
+	/**
+	 * hardf treats an empty graph as no graph.
+	 */
+	private function writtenGraph( Quad $quad ): string {
+		return $this->includeGraph ? $quad->graph->value : '';
+	}
+
+	/**
+	 * @param Quad[] $block
+	 * @return Quad[]
+	 */
+	private function typesFirst( array $block ): array {
+		$types = array_filter( $block, $this->isTypeTriple( ... ) );
+
+		return array_merge( $types, array_diff_key( $block, $types ) );
+	}
+
+	private function isTypeTriple( Quad $quad ): bool {
+		return $quad->predicate->value === RdfNamespaces::RDF . 'type';
 	}
 
 	public function finish(): string {
