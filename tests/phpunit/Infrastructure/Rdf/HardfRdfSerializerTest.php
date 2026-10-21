@@ -11,11 +11,14 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\Literal;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Quad;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\QuadList;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfFormat;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfLiteralFactory;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Domain\Rdf\ParsedRdf;
+use Psr\Log\LogLevel;
+use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer
@@ -24,15 +27,18 @@ use ProfessionalWiki\NeoWiki\Tests\Domain\Rdf\ParsedRdf;
 class HardfRdfSerializerTest extends TestCase {
 
 	private const string EXAMPLE_NAMESPACE = 'https://example.org/';
+	private const string FORGING_IRI = "rdfs:x;rdfs:label'forged'";
 
 	private RdfNamespaces $ns;
+	private LegacyLoggerSpy $logger;
 
 	protected function setUp(): void {
 		$this->ns = new RdfNamespaces( 'https://wiki.example' );
+		$this->logger = new LegacyLoggerSpy();
 	}
 
 	private function serializer(): HardfRdfSerializer {
-		return new HardfRdfSerializer( $this->ns->prefixMap() );
+		return new HardfRdfSerializer( $this->ns->prefixMap(), $this->logger );
 	}
 
 	private function personQuads( int $pageId, string $subjectId ): QuadList {
@@ -181,7 +187,7 @@ class HardfRdfSerializerTest extends TestCase {
 	}
 
 	private function exampleSerializer(): HardfRdfSerializer {
-		return new HardfRdfSerializer( [ 'ex' => self::EXAMPLE_NAMESPACE ] );
+		return new HardfRdfSerializer( [ 'ex' => self::EXAMPLE_NAMESPACE ], $this->logger );
 	}
 
 	private function documentWithExamplePrefix( string ...$lines ): string {
@@ -260,6 +266,156 @@ class HardfRdfSerializerTest extends TestCase {
 		$output = $writer->write( $cavalierPage ) . $writer->write( $windmillPage ) . $writer->finish();
 
 		$this->assertCount( 2, ParsedRdf::canonicalQuads( $output ) );
+	}
+
+	/**
+	 * @dataProvider misreadableIriProvider
+	 */
+	public function testIriNeverReadsAsAnotherTerm( string $iri ): void {
+		$output = $this->serializer()->serialize(
+			new QuadList( $this->websiteQuad( new Iri( $iri ) ) ),
+			RdfFormat::Turtle
+		);
+
+		$this->assertStatesNothingBeyond(
+			"<https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/Website> <$iri> .",
+			$output
+		);
+	}
+
+	public static function misreadableIriProvider(): iterable {
+		yield 'forging a triple through the rdfs prefix' => [ self::FORGING_IRI ];
+		yield 'reading as another IRI through the rdfs prefix' => [ 'rdfs:label' ];
+		yield 'resembling the rdfs namespace' => [ 'http://wwwxw3.org/2000/01/rdf-schema#true' ];
+	}
+
+	private function websiteQuad( Iri $website ): Quad {
+		return new Quad(
+			$this->ns->subject( new SubjectId( 's1demo8aaaaaab5' ) ),
+			$this->ns->property( 'Website' ),
+			$website,
+			$this->ns->page( new PageId( 1 ) )
+		);
+	}
+
+	private function assertStatesNothingBeyond( string $statedRdf, string $outputRdf ): void {
+		$this->assertSame(
+			[],
+			array_values( array_diff( ParsedRdf::canonicalQuads( $outputRdf ), ParsedRdf::canonicalQuads( $statedRdf ) ) ),
+			'The document holds a triple the serializer was never given.'
+		);
+	}
+
+	/**
+	 * @dataProvider quadWithTheForgingIriProvider
+	 */
+	public function testIriNeverReadsAsAnotherTermInAnyPosition( Quad $quad, string $statedTrig ): void {
+		$output = $this->serializer()->serialize( new QuadList( $quad ), RdfFormat::TriG );
+
+		$this->assertStatesNothingBeyond( $statedTrig, $output );
+	}
+
+	public static function quadWithTheForgingIriProvider(): iterable {
+		$ns = new RdfNamespaces( 'https://wiki.example' );
+		$forging = new Iri( self::FORGING_IRI );
+		$subject = $ns->subject( new SubjectId( 's1demo8aaaaaab5' ) );
+		$graph = $ns->page( new PageId( 1 ) );
+		$label = new Literal( 'Berlin', $ns->xsd( 'string' ) );
+
+		yield 'subject' => [
+			new Quad( $forging, $ns->rdfsLabel(), $label, $graph ),
+			"<https://wiki.example/page/1> { <rdfs:x;rdfs:label'forged'> <http://www.w3.org/2000/01/rdf-schema#label> \"Berlin\" }",
+		];
+		yield 'predicate' => [
+			new Quad( $subject, $forging, $label, $graph ),
+			"<https://wiki.example/page/1> { <https://wiki.example/entity/s1demo8aaaaaab5> <rdfs:x;rdfs:label'forged'> \"Berlin\" }",
+		];
+		yield 'graph' => [
+			new Quad( $subject, $ns->rdfsLabel(), $label, $forging ),
+			"<rdfs:x;rdfs:label'forged'> { <https://wiki.example/entity/s1demo8aaaaaab5> <http://www.w3.org/2000/01/rdf-schema#label> \"Berlin\" }",
+		];
+		yield 'datatype' => [
+			new Quad( $subject, $ns->property( 'Age' ), new Literal( '42', $forging ), $graph ),
+			"<https://wiki.example/page/1> { <https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/Age> \"42\"^^<rdfs:x;rdfs:label'forged'> }",
+		];
+	}
+
+	/**
+	 * @dataProvider schemeLabelledPrefixProvider
+	 * @param array<string, string> $prefixes
+	 */
+	public function testIrisOfASchemeUsedAsAPrefixLabelAreStillWritten( array $prefixes, string $website ): void {
+		$quad = new Quad(
+			new Iri( 'http://wiki.example/entity/s1demo8aaaaaab5' ),
+			new Iri( 'http://wiki.example/prop/Website' ),
+			new Iri( $website ),
+			new Iri( 'http://wiki.example/page/1' )
+		);
+
+		$output = ( new HardfRdfSerializer( $prefixes, $this->logger ) )->serialize( new QuadList( $quad ), RdfFormat::Turtle );
+
+		$this->assertSame(
+			ParsedRdf::canonicalQuads(
+				"<http://wiki.example/entity/s1demo8aaaaaab5> <http://wiki.example/prop/Website> <$website> ."
+			),
+			ParsedRdf::canonicalQuads( $output )
+		);
+	}
+
+	public static function schemeLabelledPrefixProvider(): iterable {
+		yield 'the scheme of its own namespace' => [ [ 'urn' => 'urn:example:ns/' ], 'urn:isbn:0451450523' ];
+		yield 'a web scheme no namespace has' => [ [ 'https' => 'http://schema.org/' ], 'https://www.berlin.de/' ];
+	}
+
+	public function testIriThatWouldCloseItsAngleBracketsIsNotWritten(): void {
+		$output = $this->serializer()->serialize(
+			new QuadList( $this->websiteQuad( new Iri( 'https://evil.example/>,<https://evil.example/forged' ) ) ),
+			RdfFormat::Turtle
+		);
+
+		$this->assertSame( [], ParsedRdf::canonicalQuads( $output ) );
+	}
+
+	public function testTripleWithAnIriThatCannotBeWrittenIsLeftOutWhileTheOthersStay(): void {
+		$quads = new QuadList(
+			$this->websiteQuad( new Iri( 'https://berlin.de/' ) ),
+			$this->websiteQuad( new Iri( self::FORGING_IRI ) ),
+			$this->websiteQuad( new Iri( 'https://visitberlin.de/' ) ),
+		);
+
+		$output = $this->serializer()->serialize( $quads, RdfFormat::Turtle );
+
+		$this->assertSame(
+			ParsedRdf::canonicalQuads( <<<TURTLE
+				<https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/Website> <https://berlin.de/>, <https://visitberlin.de/> .
+				TURTLE ),
+			ParsedRdf::canonicalQuads( $output )
+		);
+	}
+
+	public function testLanguageTaggedLiteralKeepsItsTag(): void {
+		$output = $this->serializer()->serialize(
+			new QuadList( new Quad(
+				$this->ns->subject( new SubjectId( 's1demo8aaaaaab5' ) ),
+				$this->ns->property( 'Name' ),
+				RdfLiteralFactory::languageTagged( 'Zinema', 'eu' ),
+				$this->ns->page( new PageId( 1 ) )
+			) ),
+			RdfFormat::Turtle
+		);
+
+		$this->assertSame(
+			ParsedRdf::canonicalQuads( '<https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/Name> "Zinema"@eu .' ),
+			ParsedRdf::canonicalQuads( $output )
+		);
+	}
+
+	public function testLeavingATripleOutLogsAWarningNamingItsIri(): void {
+		$this->serializer()->serialize( new QuadList( $this->websiteQuad( new Iri( self::FORGING_IRI ) ) ), RdfFormat::Turtle );
+
+		$this->assertCount( 1, $this->logger->getLogCalls()->getMessages() );
+		$this->assertSame( LogLevel::WARNING, $this->logger->getFirstLogCall()->getLevel() );
+		$this->assertStringContainsString( self::FORGING_IRI, $this->logger->getLogCalls()->getMessages()[0] );
 	}
 
 }

@@ -730,7 +730,7 @@ class NeoWikiExtension {
 	}
 
 	public function getRdfSerializer(): RdfSerializer {
-		return new HardfRdfSerializer( $this->getRdfNamespaces()->prefixMap() );
+		return new HardfRdfSerializer( $this->getRdfNamespaces()->prefixMap(), LoggerFactory::getInstance( 'NeoWiki' ) );
 	}
 
 	public function newRdfPageProjector(): RdfPageProjector {
@@ -822,7 +822,7 @@ class NeoWikiExtension {
 					$this->newSubjectIriResolver(),
 					LoggerFactory::getInstance( 'NeoWiki' ),
 				),
-				new HardfRdfSerializer( $this->ontologyPrefixMap( $mapping ) ),
+				new HardfRdfSerializer( $this->ontologyPrefixMap( $mapping ), LoggerFactory::getInstance( 'NeoWiki' ) ),
 			)
 		);
 	}
@@ -1147,6 +1147,7 @@ class NeoWikiExtension {
 			),
 			namespaces: $this->getRdfNamespaces(),
 			httpRequestFactory: MediaWikiServices::getInstance()->getHttpRequestFactory(),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
 

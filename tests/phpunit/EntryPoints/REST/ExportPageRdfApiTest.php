@@ -9,6 +9,7 @@ use MediaWiki\Rest\RequestData;
 use MediaWiki\Title\Title;
 use MediaWiki\Rest\Response;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\UrlType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
@@ -33,6 +34,7 @@ class ExportPageRdfApiTest extends NeoWikiIntegrationTestCase {
 
 	private const string SCHEMA = 'ExportPageRdfApiTestSchema';
 	private const string SUBJECT_ID = 'sTestERA1111111';
+	private const string HAMBURG_ID = 'sTestERA2222222';
 
 	private int $pageId;
 
@@ -45,7 +47,8 @@ class ExportPageRdfApiTest extends NeoWikiIntegrationTestCase {
 {
 	"title": "ExportPageRdfApiTestSchema",
 	"propertyDefinitions": {
-		"population": { "type": "text" }
+		"population": { "type": "text" },
+		"website": { "type": "url" }
 	}
 }
 JSON
@@ -348,6 +351,73 @@ JSON
 			$response->getBody()->getContents(),
 			'An unsafe prefix label from an imported Mapping must be dropped, not emitted into the @prefix table.'
 		);
+	}
+
+	public function testUrlValueCannotForgeATripleInTheExport(): void {
+		$pageId = $this->createHamburgWithWebsite( "rdfs:x;rdfs:label'forged'" );
+
+		$response = $this->export( query: [ 'format' => 'turtle' ], pageId: $pageId );
+
+		$this->assertSame(
+			[ '"Hamburg"' ],
+			$this->objectsOf( self::HAMBURG_ID, 'http://www.w3.org/2000/01/rdf-schema#label', $response->getBody()->getContents() )
+		);
+	}
+
+	private function createHamburgWithWebsite( string $website ): int {
+		return $this->createPageWithSubjects(
+			'ExportPageRdfApiTest_Hamburg',
+			mainSubject: TestSubject::build(
+				id: self::HAMBURG_ID,
+				label: new SubjectLabel( 'Hamburg' ),
+				schemaName: new SchemaName( self::SCHEMA ),
+				statements: new StatementList( [
+					TestStatement::build( 'website', $website, UrlType::NAME ),
+				] )
+			),
+		)->getPage()->getId();
+	}
+
+	/**
+	 * @return list<string> The objects of the Subject's triples with that predicate, as ParsedRdf writes terms.
+	 */
+	private function objectsOf( string $subjectId, string $predicate, string $rdf ): array {
+		$objects = [];
+
+		foreach ( ParsedRdf::canonicalQuads( $rdf ) as $quad ) {
+			[ $subject, $quadPredicate, $object ] = explode( "\t", $quad );
+
+			if ( str_ends_with( $subject, '/entity/' . $subjectId ) && $quadPredicate === $predicate ) {
+				$objects[] = $object;
+			}
+		}
+
+		return $objects;
+	}
+
+	public function testMappingWithAnHttpsPrefixLabelKeepsItsHttpsIrisIntact(): void {
+		$this->createMapping( 'Schemaorg', <<<JSON
+			{
+				"version": 1,
+				"prefixes": { "https": "https://schema.org/" },
+				"schemas": {
+					"{$this->schemaName()}": {
+						"subject": { "class": "https://schema.org/Place" },
+						"properties": { "website": { "predicate": "https:url" } }
+					}
+				}
+			}
+			JSON );
+		$pageId = $this->createHamburgWithWebsite( 'https://www.hamburg.de/' );
+
+		$rdf = $this->export( query: [ 'projection' => 'Schemaorg', 'format' => 'turtle' ], pageId: $pageId )
+			->getBody()->getContents();
+
+		$this->assertSame(
+			[ 'https://schema.org/Place' ],
+			$this->objectsOf( self::HAMBURG_ID, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', $rdf )
+		);
+		$this->assertSame( [ 'https://www.hamburg.de/' ], $this->objectsOf( self::HAMBURG_ID, 'https://schema.org/url', $rdf ) );
 	}
 
 	public function testValidTargetProjectsTheMappedVocabularyWithNativeSubjectIris(): void {

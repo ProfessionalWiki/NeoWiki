@@ -25,6 +25,7 @@ use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Domain\Rdf\ParsedRdf;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\CapturingSparqlUpdateEndpoint;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedPageProjector;
+use Psr\Log\NullLogger;
 use RuntimeException;
 
 /**
@@ -112,7 +113,7 @@ class SparqlProjectionStoreTest extends TestCase {
 		// The store embeds exactly the serializer's escaped output, and parsing that back yields one
 		// triple: proof the escaping is real, not a truncation. (If hardf ever stops escaping literals,
 		// this triple count breaks, flagging a pre-existing export bug.)
-		$turtle = ( new HardfRdfSerializer( [] ) )->serialize( $quads, RdfFormat::Turtle );
+		$turtle = ( new HardfRdfSerializer( [], new NullLogger() ) )->serialize( $quads, RdfFormat::Turtle );
 		$this->assertStringContainsString( $turtle, $update );
 		$this->assertCount( 1, ParsedRdf::canonicalQuads( $turtle ) );
 	}
@@ -159,7 +160,7 @@ class SparqlProjectionStoreTest extends TestCase {
 			endpoint: $this->endpoint,
 			projectionResolver: $resolver,
 			namespaces: $this->ns,
-			serializer: new HardfRdfSerializer( [] ),
+			serializer: new HardfRdfSerializer( [], new NullLogger() ),
 			projectionName: $projectionName,
 			endpointUrl: self::ENDPOINT,
 		);
@@ -171,7 +172,7 @@ class SparqlProjectionStoreTest extends TestCase {
 			// RdfProjection requires one.
 			fn ( string $name ): ?RdfProjection => new RdfProjection(
 				new FixedPageProjector( $quads ),
-				new HardfRdfSerializer( $this->ns->prefixMap() )
+				new HardfRdfSerializer( $this->ns->prefixMap(), new NullLogger() )
 			),
 			fn (): array => [ 'native' ]
 		);

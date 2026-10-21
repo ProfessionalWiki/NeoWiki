@@ -27,11 +27,11 @@ readonly class Iri implements RdfTerm {
 	}
 
 	/**
-	 * Whether the string is a syntactically valid absolute IRI safe to place raw in an RDF document: it
-	 * has a scheme and contains no IRIREF-illegal character. This is a security boundary (the #1029
-	 * lesson) — an unsafe value must be rejected, never escaped, so it can never break out of its IRI or
-	 * forge extra triples. Used when deciding whether a value is an IRI object rather than a literal, and
-	 * (via {@see CurieExpander}) to validate authored Mapping terms and prefix namespaces.
+	 * Whether the string is a syntactically valid absolute IRI safe to place raw between the angle
+	 * brackets of an RDF IRI: it has a scheme and contains no IRIREF-illegal character. This is a security
+	 * boundary (the #1029 lesson) — an unsafe value must be rejected, never escaped, so it can never break
+	 * out of its IRI or forge extra triples. Used when deciding whether a value is an IRI object rather than
+	 * a literal, and (via {@see CurieExpander}) to validate authored Mapping terms and prefix namespaces.
 	 */
 	public static function isSafeAbsolute( string $value ): bool {
 		if ( preg_match( '/^[A-Za-z][A-Za-z0-9+.\-]*:/', $value ) !== 1 ) {

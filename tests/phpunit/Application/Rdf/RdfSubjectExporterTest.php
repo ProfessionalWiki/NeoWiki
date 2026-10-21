@@ -24,6 +24,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedPageProjector;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
+use Psr\Log\NullLogger;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Application\Rdf\RdfSubjectExporter
@@ -92,7 +93,7 @@ class RdfSubjectExporterTest extends TestCase {
 		)->exportBySubjectId( new SubjectId( self::SUBJECT_ID ), RdfFormat::TriG );
 
 		$this->assertSame(
-			( new HardfRdfSerializer( [] ) )->serialize( $quads, RdfFormat::TriG ),
+			( new HardfRdfSerializer( [], new NullLogger() ) )->serialize( $quads, RdfFormat::TriG ),
 			$document,
 			'The document is the projected Subject serialized in the requested format.'
 		);
@@ -108,7 +109,7 @@ class RdfSubjectExporterTest extends TestCase {
 			new SubjectHostingPageResolver( $lookup, new StubPageReadAuthorizer( $authorized ) ),
 			$this->fixedLoader( $loadedPage ),
 			$projector ?? new FixedPageProjector( new QuadList() ),
-			new HardfRdfSerializer( [] ),
+			new HardfRdfSerializer( [], new NullLogger() ),
 		);
 	}
 

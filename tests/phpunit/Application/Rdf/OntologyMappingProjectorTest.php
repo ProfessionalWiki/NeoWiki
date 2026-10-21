@@ -45,6 +45,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Tests\Domain\Rdf\ParsedRdf;
+use Psr\Log\NullLogger;
 use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
 
 /**
@@ -94,7 +95,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		$quads = $this->newProjector( [ 'Person' => $this->personMapping(), 'City' => $this->cityMapping() ] )
 			->projectPage( $this->examplePage() );
 
-		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
+		$output = $this->serializer()->serialize( $quads, RdfFormat::TriG );
 
 		$this->assertSame(
 			ParsedRdf::canonicalQuads( $this->expectedTriG() ),
@@ -176,7 +177,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		$quads = $this->newProjector( [ 'Person' => $this->personMapping(), 'City' => $this->cityMapping() ] )
 			->projectSubject( $this->pagePersonBetweenSiblings(), new SubjectId( self::PERSON_ID ) );
 
-		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
+		$output = $this->serializer()->serialize( $quads, RdfFormat::TriG );
 
 		$this->assertSame(
 			ParsedRdf::canonicalQuads( $this->personOnlyTriG() ),
@@ -388,7 +389,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		$quads = $this->newProjector( [ 'Person' => $this->personMappingWithNameLang( 'en_US' ) ] )
 			->projectPage( TestPage::build( id: 42, mainSubject: $this->examplePersonWithoutRelations() ) );
 
-		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
+		$output = $this->serializer()->serialize( $quads, RdfFormat::TriG );
 
 		$this->assertSame(
 			ParsedRdf::canonicalQuads( $this->expectedPlainNameTriG() ),
@@ -402,7 +403,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		$quads = $this->newProjector( [ 'Person' => $this->personMappingWithNameLang( 'en"^^xsd:evil' ) ] )
 			->projectPage( TestPage::build( id: 42, mainSubject: $this->examplePersonWithoutRelations() ) );
 
-		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
+		$output = $this->serializer()->serialize( $quads, RdfFormat::TriG );
 
 		$this->assertStringNotContainsString( 'xsd:evil', $output, 'The attacker-chosen datatype must not reach the document.' );
 		$this->assertSame(
@@ -452,7 +453,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		$quads = $this->newProjector( [ 'Person' => $this->adversarialMapping() ], $prefixes )
 			->projectPage( TestPage::build( id: 42, mainSubject: $this->adversarialSubject() ) );
 
-		$output = ( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::TriG );
+		$output = $this->serializer()->serialize( $quads, RdfFormat::TriG );
 
 		$this->assertStringNotContainsString( 'evil', $output, 'No injection term survives to the document.' );
 		$this->assertStringNotContainsString(
@@ -730,11 +731,13 @@ class OntologyMappingProjectorTest extends TestCase {
 	}
 
 	/**
-	 * @param array<string, string> $extra
-	 * @return array<string, string>
+	 * @param array<string, string> $extraPrefixes
 	 */
-	private function serializerPrefixes( array $extra = [] ): array {
-		return array_merge( $this->ns->prefixMap(), [ 'edm' => self::EDM, 'dc' => self::DC ], $extra );
+	private function serializer( array $extraPrefixes = [] ): HardfRdfSerializer {
+		return new HardfRdfSerializer(
+			array_merge( $this->ns->prefixMap(), [ 'edm' => self::EDM, 'dc' => self::DC ], $extraPrefixes ),
+			new NullLogger()
+		);
 	}
 
 	// Structural transformation: synthesized nodes (expansion) and contributions (contraction).
@@ -765,8 +768,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		$this->assertSame(
 			ParsedRdf::canonicalQuads( $expectedTriG ),
 			ParsedRdf::canonicalQuads(
-				( new HardfRdfSerializer( $this->serializerPrefixes( [ 'crm' => self::CRM, 'rdaGr2' => self::RDA_GR2 ] ) ) )
-					->serialize( $quads, RdfFormat::TriG )
+				$this->serializer( [ 'crm' => self::CRM, 'rdaGr2' => self::RDA_GR2 ] )->serialize( $quads, RdfFormat::TriG )
 			)
 		);
 	}
@@ -883,7 +885,7 @@ class OntologyMappingProjectorTest extends TestCase {
 	 */
 	private function subjectsInWrittenOrder( QuadList $quads ): array {
 		return ParsedRdf::subjectsInOrder(
-			( new HardfRdfSerializer( $this->serializerPrefixes() ) )->serialize( $quads, RdfFormat::Turtle )
+			$this->serializer()->serialize( $quads, RdfFormat::Turtle )
 		);
 	}
 
@@ -1431,7 +1433,7 @@ class OntologyMappingProjectorTest extends TestCase {
 		$first = $this->newCrmProjector( 'Person', $mapping )->projectPage( $page );
 		$second = $this->newCrmProjector( 'Person', $mapping )->projectPage( $page );
 
-		$serializer = new HardfRdfSerializer( $this->serializerPrefixes( [ 'crm' => self::CRM ] ) );
+		$serializer = $this->serializer( [ 'crm' => self::CRM ] );
 		$this->assertSame(
 			$serializer->serialize( $first, RdfFormat::TriG ),
 			$serializer->serialize( $second, RdfFormat::TriG )

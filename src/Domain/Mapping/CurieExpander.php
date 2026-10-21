@@ -36,9 +36,12 @@ readonly class CurieExpander {
 		}
 
 		$prefix = substr( $term, 0, $colon );
+		$local = substr( $term, $colon + 1 );
 
-		if ( array_key_exists( $prefix, $this->prefixes ) ) {
-			return self::newSafeIri( $this->prefixes[$prefix] . substr( $term, $colon + 1 ) );
+		// As in JSON-LD, a colon followed by `//` makes the term an absolute IRI even when its scheme is a
+		// declared prefix label.
+		if ( array_key_exists( $prefix, $this->prefixes ) && !str_starts_with( $local, '//' ) ) {
+			return self::newSafeIri( $this->prefixes[$prefix] . $local );
 		}
 
 		// Not a declared CURIE. Accept only an explicit absolute IRI with an authority (`scheme://…`);

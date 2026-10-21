@@ -8,6 +8,7 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\QuadList;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfFormat;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfSerializer;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfStreamWriter;
+use Psr\Log\LoggerInterface;
 
 readonly class HardfRdfSerializer implements RdfSerializer {
 
@@ -16,6 +17,7 @@ readonly class HardfRdfSerializer implements RdfSerializer {
 	 */
 	public function __construct(
 		private array $prefixes,
+		private LoggerInterface $logger,
 	) {
 	}
 
@@ -26,7 +28,7 @@ readonly class HardfRdfSerializer implements RdfSerializer {
 	}
 
 	public function newWriter( RdfFormat $format ): RdfStreamWriter {
-		return new HardfRdfStreamWriter( $this->prefixes, $format );
+		return new HardfRdfStreamWriter( $this->prefixes, $format, $this->logger );
 	}
 
 }

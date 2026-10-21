@@ -33,6 +33,20 @@ class CurieExpanderTest extends TestCase {
 		);
 	}
 
+	public function testKeepsAnAbsoluteIriWhoseSchemeIsADeclaredPrefixLabel(): void {
+		$this->assertSame(
+			'https://example.org/ns/creator',
+			( new CurieExpander( [ 'https' => 'https://schema.org/' ] ) )->expand( 'https://example.org/ns/creator' )?->value
+		);
+	}
+
+	public function testExpandsACurieWhosePrefixLabelIsAScheme(): void {
+		$this->assertSame(
+			'https://schema.org/url',
+			( new CurieExpander( [ 'https' => 'https://schema.org/' ] ) )->expand( 'https:url' )?->value
+		);
+	}
+
 	public function testRejectsAnUndeclaredCuriePrefix(): void {
 		// A typo'd prefix must not be silently reinterpreted as the absolute IRI "crm:E12".
 		$this->assertNull( $this->expander()->expand( 'crm:E12_Production' ) );

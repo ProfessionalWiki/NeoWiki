@@ -39,6 +39,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\Domain\Rdf\ParsedRdf;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
+use Psr\Log\NullLogger;
 use WMDE\PsrLogTestDoubles\LegacyLoggerSpy;
 
 /**
@@ -81,7 +82,7 @@ class RdfPageProjectorTest extends TestCase {
 		);
 
 		$quads = $this->newProjector( $schemaLookup )->projectPage( $this->completeExamplePage() );
-		$output = ( new HardfRdfSerializer( $this->ns->prefixMap() ) )->serialize( $quads, RdfFormat::TriG );
+		$output = $this->serialize( $quads );
 
 		$this->assertSame(
 			ParsedRdf::canonicalQuads( $this->completeExampleTriG() ),
@@ -608,7 +609,7 @@ class RdfPageProjectorTest extends TestCase {
 	}
 
 	private function serialize( QuadList $quads ): string {
-		return ( new HardfRdfSerializer( $this->ns->prefixMap() ) )->serialize( $quads, RdfFormat::TriG );
+		return ( new HardfRdfSerializer( $this->ns->prefixMap(), new NullLogger() ) )->serialize( $quads, RdfFormat::TriG );
 	}
 
 	private function companySchema(): Schema {

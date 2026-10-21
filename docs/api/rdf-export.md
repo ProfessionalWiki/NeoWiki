@@ -50,7 +50,7 @@ contains an underscore — `Has author` and `Has_author` share the `neo-prop:Has
 accepts. The base URI is trusted admin config and is not encoded.
 
 A `url` value projects as an **IRI object** (`<https://…>`); a value that is not a valid absolute IRI falls back to
-an `xsd:anyURI` literal, so nothing is lost. The other value types map to `xsd` datatypes: `text`/`select` →
+an `xsd:anyURI` literal. The other value types map to `xsd` datatypes: `text`/`select` →
 `xsd:string`, `number` → `xsd:decimal` (or `xsd:integer` when fractionless), `boolean` → `xsd:boolean`, `date` →
 `xsd:date`, `dateTime` → `xsd:dateTime`. A `monolingualText` value projects instead as one **language-tagged
 literal** per part (`"Zinema"@eu`, datatype `rdf:langString`). Extensions map their own property types via
@@ -58,7 +58,9 @@ literal** per part (`"Zinema"@eu`, datatype `rdf:langString`). Extensions map th
 registered mapper — including an unregistered type — is omitted from the projection.
 
 A Subject whose Schema cannot be loaded (for example, its Schema page was deleted) is omitted from the projection; a
-warning is logged for each on the [`NeoWiki` channel](../operations/installation.md#logging).
+warning is logged for each on the [`NeoWiki` channel](../operations/installation.md#logging). A triple is omitted
+too, with a warning on the same channel, when NeoWiki cannot write one of its IRIs faithfully: for example, the `url`
+value `rdfs:label`, whose scheme is one of the document's `@prefix` labels.
 
 ## Projected triples
 
