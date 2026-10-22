@@ -401,16 +401,19 @@ class SpecialSubjectTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * Covers what instantiating the class directly cannot: that extension.json registers the page, and
-	 * that it is listed for everyone.
+	 * Covers what instantiating the class directly cannot: that extension.json registers the page.
 	 */
-	public function testThePageIsRegisteredAndListedForEveryone(): void {
-		// The context argument is mandatory from MediaWiki 1.47 and ignored before 1.45, so it is always
-		// passed (as in SpecialGraphStoresTest).
-		$this->assertArrayHasKey(
+	public function testThePageIsRegistered(): void {
+		$this->assertInstanceOf(
+			SpecialSubject::class,
+			$this->getServiceContainer()->getSpecialPageFactory()->getPage( 'Subject' )
+		);
+	}
+
+	public function testThePageIsNotListed(): void {
+		$this->assertArrayNotHasKey(
 			'Subject',
-			$this->getServiceContainer()->getSpecialPageFactory()
-				->getUsablePages( RequestContext::getMain()->getUser(), RequestContext::getMain() )
+			$this->getServiceContainer()->getSpecialPageFactory()->getListedPages()
 		);
 	}
 

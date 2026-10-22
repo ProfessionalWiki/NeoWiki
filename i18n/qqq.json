@@ -526,7 +526,7 @@
 	"neowiki-graphstores-outcome-unknownstore": "Error shown on [[Special:GraphStores]] when the named store is not configured.\n\nParameters:\n* $1 - name that was asked for",
 	"neowiki-graphstores-outcome-notqueued": "Error shown on [[Special:GraphStores]] when a rebuild could not be started at all — the job queue refused it, or something else held the store's start lock.\n\nParameters:\n* $1 - name of the graph store",
 	"neowiki-graphstores-outcome-sessionfailure": "Error shown on [[Special:GraphStores]] when the edit token of a rebuild or cancel form did not match.",
-	"neowiki-special-subject": "Name of the [[Special:Subject]] page, which shows one Subject. Used in the list of special pages, and as the page's heading when it shows no Subject.\n{{Identical|Subject}}",
+	"neowiki-special-subject": "Name of the [[Special:Subject]] page, which shows one Subject. Used as the page's heading when it shows no Subject.\n{{Identical|Subject}}",
 	"neowiki-special-subject-invalid-id": "Error shown on [[Special:Subject]] when its subpage is not a subject ID. The example ID stays as it is.",
 	"neowiki-special-subject-page-label": "Inline label shown before a link to the wiki page a Subject is stored on, in the footer of an expanded Subject row.",
 	"neowiki-special-subject-referenced-heading": "Heading on [[Special:Subject]] above the Subjects the displayed Subject's relations point at.",

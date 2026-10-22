@@ -140,8 +140,8 @@ class SpecialSubject extends SpecialPage {
 		$out->setPageTitleMsg( SubjectNameMessage::from( $this, $subjectId, $subject->displayName ) );
 	}
 
-	public function getGroupName(): string {
-		return 'neowiki';
+	public function isListed(): bool {
+		return false;
 	}
 
 	public function getDescription(): Message {
