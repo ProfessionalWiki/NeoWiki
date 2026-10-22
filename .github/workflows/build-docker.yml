@@ -74,7 +74,12 @@ jobs:
       - name: Copy built NeoWiki extension
         run: rsync -a --delete --exclude='Docker/' ./ Docker/mediawiki/extensions/NeoWiki/
 
+      # Without buildx's default provenance attestation, the image is pushed as one manifest. With
+      # it, the push is an index whose child manifests are untagged, so Delete Older Images removes
+      # them and the published tags can no longer be pulled.
       - run: make wiki-production-image
+        env:
+          BUILDX_NO_DEFAULT_ATTESTATIONS: 1
 
       - name: Use CI docker-compose
         run: rm docker-compose.yml && mv docker-compose.ci.yml docker-compose.yml
