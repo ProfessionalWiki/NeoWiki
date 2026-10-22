@@ -1,0 +1,49 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":maintainLockFilesWeekly"
+  ],
+  "description": "config:recommended ignores **/tests/**, which would leave the RedHerb example extension and its lock file unmanaged. RedHerb is a shipped project that happens to live under tests/, so that exclusion is dropped.",
+  "ignorePresets": [
+    ":ignoreModulesAndTests"
+  ],
+  "minimumReleaseAge": "3 days",
+  "dependencyDashboard": true,
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 0,
+  "major": {
+    "description": "Major upgrades are real work rather than a version bump: an eslint or vitest major reshapes configuration and tests, and a mediawiki-codesniffer major rewrites the ruleset. They are surfaced on the dependency dashboard and only get a pull request once ticked there.",
+    "dependencyDashboardApproval": true
+  },
+  "packageRules": [
+    {
+      "description": "One rolling pull request for npm minor and patch updates across the root, frontend and RedHerb projects, rather than one per package. The whole toolchain is covered by CI, so a batch either passes or names the package that broke it.",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "npm dependencies"
+    },
+    {
+      "description": "The same for composer: runtime and dev requirements move together in one pull request.",
+      "matchManagers": ["composer"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "composer dependencies"
+    },
+    {
+      "description": "A workflow edit should never ride along in a dependency pull request, so actions get their own group.",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    },
+    {
+      "description": "Image tags in the dev stack and the Dockerfile choose the PHP, database and Node versions development and CI run on, so even a minor bump (php:8.3-apache to php:8.4-apache) is an environment decision rather than a dependency update. Those go to the dashboard; patch bumps still flow as ordinary pull requests.",
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "matchUpdateTypes": ["minor"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Our own image floats by design: CI pushes :latest and the dev stack pulls it. Matched by namespace rather than by the :latest tag, so an accidental :latest on a third-party image is still surfaced.",
+      "matchPackageNames": ["ghcr.io/professionalwiki/**"],
+      "enabled": false
+    }
+  ]
+}
