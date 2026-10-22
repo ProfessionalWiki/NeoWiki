@@ -6,10 +6,24 @@ on:
       - master
   workflow_dispatch:
 
+# Runs on one ref take turns, so a publish joins the platform images its own run pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+env:
+  IMAGE: ghcr.io/professionalwiki/neowiki
+
 jobs:
 
   build_and_deploy_mediawiki:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-26.04-arm
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
@@ -97,8 +111,44 @@ jobs:
         if: github.ref == 'refs/heads/master'
 
       - name: Push Docker Image
-        run: docker push ghcr.io/professionalwiki/neowiki:latest
+        run: |
+          docker tag "$IMAGE:latest" "$IMAGE:latest-${{ matrix.arch }}"
+          docker push "$IMAGE:latest-${{ matrix.arch }}"
         if: github.ref == 'refs/heads/master'
+
+  publish_mediawiki:
+    needs: build_and_deploy_mediawiki
+    runs-on: ubuntu-latest
+    permissions: {}
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.PAT_write_packages }}
+
+      - name: Publish multi-platform image
+        run: docker buildx imagetools create --tag "$IMAGE:latest" "$IMAGE:latest-amd64" "$IMAGE:latest-arm64"
+
+      # Delete Older Images deletes untagged versions, which includes what a tagged index points at:
+      # provenance attestations, and a platform image whose tag a newer run has already taken.
+      - name: Find the images that tagged versions point at
+        id: children
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.PAT_write_packages }}
+        run: |
+          tagged=$(gh api --paginate /orgs/ProfessionalWiki/packages/container/neowiki/versions \
+            --jq '.[] | select(.metadata.container.tags != []) | .name')
+          children=
+          for digest in $tagged; do
+            children+=$(docker buildx imagetools inspect --raw "$IMAGE@$digest" |
+              jq -j '.manifests[]?.digest | "|" + .')
+          done
+          echo "regex=^(${children#|})\$" >> "$GITHUB_OUTPUT"
 
       - name: Delete Older Images
         uses: actions/delete-package-versions@v5
@@ -106,5 +156,5 @@ jobs:
           package-name: 'neowiki'
           package-type: 'container'
           delete-only-untagged-versions: true
+          ignore-versions: ${{ steps.children.outputs.regex }}
           token: ${{ secrets.PAT_write_packages }}
-        if: github.ref == 'refs/heads/master'
