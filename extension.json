@@ -232,6 +232,10 @@
 		"subjects": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Actions\\SubjectsAction"
 	},
 
+	"TrackingCategories": [
+		"neowiki-functions-category"
+	],
+
 	"config": {
 		"NeoWikiEnableDevelopmentUI": {
 			"description": "Whether development UIs should be enabled",

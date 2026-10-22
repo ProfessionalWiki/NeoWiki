@@ -4,11 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\Scribunto;
 
+use Closure;
 use Exception;
 use InvalidArgumentException;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\EntryPoints\FunctionsTrackingCategory;
 use ProfessionalWiki\NeoWiki\EntryPoints\ParserAuthority;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\CypherErrorMessage;
@@ -79,7 +81,24 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		}
 
 		return $this->getEngine()->registerInterface(
-			__DIR__ . '/mw.neowiki.lua', $lib, []
+			__DIR__ . '/mw.neowiki.lua', $this->trackingCallsOf( $lib ), []
+		);
+	}
+
+	/**
+	 * Tracked per call rather than on registration: Scribunto registers the library for every module
+	 * invocation, whether or not the module uses it.
+	 *
+	 * @param array<string, callable> $functions
+	 * @return array<string, Closure>
+	 */
+	private function trackingCallsOf( array $functions ): array {
+		return array_map(
+			fn ( callable $function ): Closure => function ( mixed ...$args ) use ( $function ): mixed {
+				FunctionsTrackingCategory::addTo( $this->getParser() );
+				return $function( ...$args );
+			},
+			$functions
 		);
 	}
 
