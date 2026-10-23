@@ -44,6 +44,7 @@
 				</template>
 
 				<CdxTextInput
+					ref="minLengthTextInput"
 					:model-value="minLengthInput"
 					input-type="number"
 					min="1"
@@ -67,6 +68,7 @@
 				</template>
 
 				<CdxTextInput
+					ref="maxLengthTextInput"
 					:model-value="maxLengthInput"
 					input-type="number"
 					min="1"
@@ -93,6 +95,7 @@ import { CdxCheckbox, CdxField, CdxTextInput } from '@wikimedia/codex';
 import { minExceedsMax } from '@/components/SchemaEditor/Property/minExceedsMax.ts';
 import NeoNestedField from '@/components/common/NeoNestedField.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
+import { holdsUnparseableInput } from '@/presentation/unparseableInput.ts';
 
 const props = defineProps<AttributesEditorProps<TextProperty>>();
 const emit = defineEmits<AttributesEditorEmits<TextProperty>>();
@@ -101,6 +104,8 @@ const minLengthInput = ref( props.property.minLength?.toString() ?? '' );
 const maxLengthInput = ref( props.property.maxLength?.toString() ?? '' );
 const minLengthError = ref<string | null>( null );
 const maxLengthError = ref<string | null>( null );
+const minLengthTextInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
+const maxLengthTextInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
 
 watch( () => props.property.minLength, ( newVal ) => {
 	minLengthInput.value = newVal?.toString() ?? '';
@@ -126,6 +131,10 @@ const validateValue = ( value: string ): string | null => {
 };
 
 const updateMinLength = ( value: string ): void => {
+	if ( holdsUnparseableInput( minLengthTextInput.value ) ) {
+		return;
+	}
+
 	minLengthInput.value = value;
 
 	const formatError = validateValue( value );
@@ -145,6 +154,10 @@ const updateMinLength = ( value: string ): void => {
 };
 
 const updateMaxLength = ( value: string ): void => {
+	if ( holdsUnparseableInput( maxLengthTextInput.value ) ) {
+		return;
+	}
+
 	maxLengthInput.value = value;
 
 	const formatError = validateValue( value );

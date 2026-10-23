@@ -5,7 +5,7 @@ import DateAttributesEditor from '@/components/SchemaEditor/Property/DateAttribu
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newDateProperty, DateProperty } from '@/domain/propertyTypes/Date';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { createTestWrapper, FieldProps, setupMwMock } from '../../../VueTestHelpers.ts';
+import { clearRemainingDateParts, createTestWrapper, editedProperty, FieldProps, reportPartlyClearedDate, setupMwMock } from '../../../VueTestHelpers.ts';
 
 describe( 'DateAttributesEditor', () => {
 	beforeEach( () => {
@@ -207,6 +207,39 @@ describe( 'DateAttributesEditor', () => {
 			expect( wrapper.emitted( 'update:property' ) ).toEqual( [
 				[ { constraintSeverities: { maximum: 'error', minimum: 'error' } } ],
 			] );
+		} );
+	} );
+
+	// Any report counts as an edit, which enables the save.
+	describe( 'Clearing a date part by part', () => {
+		const bounds = [
+			[ 'minimum', '.date-attributes__minimum', newDateProperty( { minimum: '2020-01-01' } ) ],
+			[ 'maximum', '.date-attributes__maximum', newDateProperty( { maximum: '2030-12-31' } ) ],
+		] as const;
+
+		it.each( bounds )( 'reports nothing for the %s while some parts remain', async ( _, field, property ) => {
+			const wrapper = newWrapper( { property } );
+
+			await reportPartlyClearedDate( wrapper.find( `${ field } input` ) );
+
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
+		} );
+
+		it.each( bounds )( 'drops the %s once every part is cleared', async ( attribute, field, property ) => {
+			const wrapper = newWrapper( { property } );
+			await reportPartlyClearedDate( wrapper.find( `${ field } input` ) );
+
+			await clearRemainingDateParts( wrapper.find( `${ field } input` ), 'Backspace' );
+
+			expect( editedProperty<DateProperty>( wrapper )[ attribute ] ).toBeUndefined();
+		} );
+
+		it.each( bounds )( 'reports nothing for a deletion key released in the %s field while it still shows a date', async ( _, field, property ) => {
+			const wrapper = newWrapper( { property } );
+
+			await wrapper.find( `${ field } input` ).trigger( 'keyup', { key: 'Backspace' } );
+
+			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 	} );
 } );

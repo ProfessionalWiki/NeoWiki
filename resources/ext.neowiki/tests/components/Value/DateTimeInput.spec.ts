@@ -6,7 +6,7 @@ import { newStringValue, StringValue, ValueType } from '@/domain/Value';
 import DateTimeInput from '@/components/Value/DateTimeInput.vue';
 import { newDateTimeProperty, DateTimeProperty } from '@/domain/propertyTypes/DateTime';
 import { ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { createTestWrapper } from '../../VueTestHelpers.ts';
+import { boundValue, clearRemainingDateParts, createTestWrapper, reportPartlyClearedDate } from '../../VueTestHelpers.ts';
 import { toLocalInputValue } from '@/domain/propertyTypes/dateTimeConversion';
 
 describe( 'DateTimeInput', () => {
@@ -236,6 +236,72 @@ describe( 'DateTimeInput', () => {
 			const minCall = findMessageCall( 'neowiki-field-min-value' );
 			expect( minCall?.[ 1 ] ).not.toBe( minimum );
 			expect( minCall?.[ 1 ] ).not.toMatch( /Z$/ );
+		} );
+	} );
+
+	// Any report counts as an edit, which enables the save.
+	describe( 'Clearing the date and time part by part', () => {
+		const dateTime = newStringValue( '2025-06-15T14:00:00.000Z' );
+
+		it( 'reports nothing while some parts remain', async () => {
+			const wrapper = newWrapper( { modelValue: dateTime } );
+
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
+		} );
+
+		it( 'returns the last date and time it could read as the current value while some parts remain', async () => {
+			const wrapper = newWrapper( { modelValue: dateTime } );
+			const local = '2030-03-20T09:15';
+			await wrapper.find( 'input' ).setValue( local );
+
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() )
+				.toEqual( newStringValue( new Date( local ).toISOString() ) );
+		} );
+
+		it( 'empties the value once every part is cleared', async () => {
+			const wrapper = newWrapper( { modelValue: dateTime } );
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			await clearRemainingDateParts( wrapper.find( 'input' ), 'Backspace' );
+
+			expect( boundValue( wrapper ) ).toBeUndefined();
+		} );
+
+		it( 'returns no current value once every part is cleared', async () => {
+			const wrapper = newWrapper( { modelValue: dateTime } );
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			await clearRemainingDateParts( wrapper.find( 'input' ), 'Backspace' );
+
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
+		} );
+
+		it( 'reports nothing for a deletion key released in a field that still shows a date and time', async () => {
+			const wrapper = newWrapper( { modelValue: dateTime } );
+
+			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Backspace' } );
+
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
+		} );
+
+		it( 'leaves a partly cleared date and time as the user left it while it has a server violation', async () => {
+			const wrapper: VueWrapper = createTestWrapper( DateTimeInput, {
+				modelValue: dateTime,
+				property: newDateTimeProperty( { name: 'Foo' } ),
+				serverViolations: [
+					{ propertyName: 'Foo', code: 'min-value', args: [ '2030-01-01T00:00:00Z' ], severity: 'error', valuePartIndex: null },
+				],
+				// Drops the violation as the Subject editor does, which re-renders the field.
+				'onClear-server-violation': () => wrapper.setProps( { serverViolations: [] } ),
+			} );
+
+			await reportPartlyClearedDate( wrapper.find( 'input' ) );
+
+			expect( ( wrapper.find( 'input' ).element as HTMLInputElement ).value ).toBe( '' );
 		} );
 	} );
 } );

@@ -5,7 +5,7 @@ import { newNumberValue } from '@/domain/Value';
 import NumberInput from '@/components/Value/NumberInput.vue';
 import { newNumberProperty, NumberProperty } from '@/domain/propertyTypes/Number';
 import { ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { createTestWrapper } from '../../VueTestHelpers.ts';
+import { boundValue, createTestWrapper } from '../../VueTestHelpers.ts';
 
 enableAutoUnmount( afterEach );
 
@@ -169,6 +169,26 @@ describe( 'NumberInput', () => {
 			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-field-invalid-number' );
 		} );
 
+		// Any report counts as an edit, which enables the save.
+		it( 'reports nothing while the text cannot be parsed', async () => {
+			const wrapper = newWrapper( { modelValue: newNumberValue( 7 ) } );
+			const field = bindNativeNumberField( wrapper );
+
+			await field.reportBadInput();
+
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
+		} );
+
+		it( 'empties the value when the user clears the text it could not parse', async () => {
+			const wrapper = newWrapper( { modelValue: newNumberValue( 7 ) } );
+			const field = bindNativeNumberField( wrapper );
+			await field.reportBadInput();
+
+			await field.reportValue( '' );
+
+			expect( boundValue( wrapper ) ).toBeUndefined();
+		} );
+
 		// The save gates show what they are given, so a message that diverged from the
 		// one on screen would send the user looking for an error the field never showed.
 		it( 'exposes the same message the field renders', async () => {
@@ -192,8 +212,8 @@ describe( 'NumberInput', () => {
 		} );
 
 		// Selecting all and deleting is the natural recovery from bad text: badInput
-		// drops while the reported value stays '', so only the native input event —
-		// not a model-value change — is there to clear the flag.
+		// drops while the reported value stays '', so only the input event itself,
+		// not a change of value, is there to clear the flag.
 		it( 'stops reporting unparseable input when the user clears the field', async () => {
 			const wrapper = newWrapper();
 			const field = bindNativeNumberField( wrapper );

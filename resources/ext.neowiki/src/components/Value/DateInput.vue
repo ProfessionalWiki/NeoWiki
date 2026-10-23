@@ -15,12 +15,14 @@
 			/>
 		</template>
 		<CdxTextInput
+			ref="textInput"
 			input-type="date"
 			:start-icon="cdxIconCalendar"
 			:model-value="internalInputValue"
 			:min="toDateInputValue( props.property.minimum )"
 			:max="toDateInputValue( props.property.maximum )"
 			@update:model-value="onInput"
+			@keyup="updateIfEmptied( $event, internalInputValue, onInput )"
 		/>
 	</CdxField>
 </template>
@@ -38,6 +40,7 @@ import { DateProperty, formatDateForDisplay } from '@/domain/propertyTypes/Date.
 import { fromDateInputValue, toDateInputValue } from '@/domain/propertyTypes/dateConversion.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { useFieldServerViolation } from '@/composables/useFieldServerViolation.ts';
+import { holdsUnparseableInput, updateIfEmptied } from '@/presentation/unparseableInput.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<DateProperty>>(),
@@ -58,6 +61,8 @@ const { validationMessages, validationStatus, clearServerViolation } = useFieldS
 
 const internalInputValue = ref<string>( '' );
 
+const textInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
+
 const initializeInputValue = ( value: Value | undefined ): void => {
 	if ( value && value.type === ValueType.String ) {
 		const str = ( value as StringValue ).parts[ 0 ];
@@ -74,6 +79,10 @@ watch( () => props.modelValue, ( newValue ) => {
 } );
 
 function onInput( newValue: string ): void {
+	if ( holdsUnparseableInput( textInput.value ) ) {
+		return;
+	}
+
 	internalInputValue.value = newValue;
 	const isoValue = fromDateInputValue( newValue );
 	const value = isoValue !== undefined ? newStringValue( isoValue ) : undefined;
