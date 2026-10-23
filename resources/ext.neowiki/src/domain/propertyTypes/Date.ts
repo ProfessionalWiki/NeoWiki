@@ -16,6 +16,11 @@ export interface DateProperty extends PropertyDefinition {
 	 */
 	readonly maximum?: string;
 
+	/**
+	 * Least precise date allowed. Left out, a year alone is allowed.
+	 */
+	readonly minPrecision?: 'month' | 'day';
+
 }
 
 /**
@@ -94,6 +99,7 @@ export class DateType extends BasePropertyType<DateProperty, StringValue> {
 			...base,
 			minimum: json.minimum ?? undefined,
 			maximum: json.maximum ?? undefined,
+			minPrecision: json.minPrecision ?? undefined,
 		} as DateProperty;
 	}
 
@@ -136,5 +142,6 @@ export function newDateProperty( attributes: DatePropertyAttributes = {} ): Date
 		default: attributes.default,
 		minimum: attributes.minimum,
 		maximum: attributes.maximum,
+		minPrecision: attributes.minPrecision,
 	};
 }

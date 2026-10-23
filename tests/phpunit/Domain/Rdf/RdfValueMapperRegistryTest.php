@@ -110,6 +110,20 @@ class RdfValueMapperRegistryTest extends TestCase {
 		);
 	}
 
+	public function testDateDatatypeFollowsThePrecisionOfEachPart(): void {
+		$this->assertEquals(
+			[
+				new Literal( '1984', $this->xsd( 'gYear' ) ),
+				new Literal( '1984-06', $this->xsd( 'gYearMonth' ) ),
+				new Literal( '1984-06-15', $this->xsd( 'date' ) ),
+			],
+			RdfValueMapperRegistry::withCoreMappers()->mapValue(
+				'date',
+				new StringValue( '1984', '1984-06', '1984-06-15' )
+			)
+		);
+	}
+
 	public function testDateTimeMapsValidPartsAndDropsInvalidOnes(): void {
 		$this->assertEquals(
 			[
