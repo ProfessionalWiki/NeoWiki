@@ -15,7 +15,10 @@
 	"descriptionmsg": "neowiki-description",
 
 	"requires": {
-		"MediaWiki": ">= 1.43.0"
+		"MediaWiki": ">= 1.43.0",
+		"platform": {
+			"php": ">= 8.3"
+		}
 	},
 
 	"callback": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::onExtensionRegistration",
