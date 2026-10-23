@@ -35,7 +35,7 @@ class NeoWikiTables {
 	}
 
 	/**
-	 * @return string[]
+	 * @return list<string>
 	 */
 	public function getMissing(): array {
 		return array_values( array_diff( $this->names, $this->getExisting() ) );

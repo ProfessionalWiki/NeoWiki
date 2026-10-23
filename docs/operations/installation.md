@@ -143,12 +143,14 @@ php maintenance/run.php NeoWiki:RebuildGraphDatabases
 
 ### 5. Verify your install
 
-From the MediaWiki root, this reports anything the install lacks, such as the frontend build, NeoWiki's database
-tables or a reachable graph store, and exits with an error if it finds anything:
+Run this from the MediaWiki root to check the frontend build, NeoWiki's database tables and the configured graph
+stores:
 
 ```sh
 php maintenance/run.php NeoWiki:Check
 ```
+
+It exits with an error if any of them is missing or unusable.
 
 Your install is complete once you can walk through [Getting started](../guide/getting-started.md) on it.
 

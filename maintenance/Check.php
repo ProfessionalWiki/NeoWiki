@@ -26,7 +26,7 @@ class Check extends Maintenance {
 
 		$this->requireExtension( 'NeoWiki' );
 		$this->addDescription(
-			'Reports what this NeoWiki install is missing, and fails if anything is. Changes no wiki data, ' .
+			'Reports what this NeoWiki install is missing, and exits with an error if anything is. Changes no wiki data, ' .
 			'though like update.php it may create the constraints a graph store needs.'
 		);
 	}
@@ -49,10 +49,11 @@ class Check extends Maintenance {
 	}
 
 	private function checkFrontendBuild(): bool {
-		$missing = array_values( array_filter(
-			self::FRONTEND_BUILD,
-			fn ( string $path ): bool => !is_file( $this->getExtensionDirectory() . '/' . $path )
-		) );
+		$directory = $this->getExtensionDirectory();
+		$missing = array_filter(
+			array_map( static fn ( string $path ): string => $directory . '/' . $path, self::FRONTEND_BUILD ),
+			static fn ( string $path ): bool => !is_file( $path )
+		);
 
 		if ( $missing === [] ) {
 			$this->output( "Frontend build: present\n" );
@@ -61,7 +62,7 @@ class Check extends Maintenance {
 
 		$this->output(
 			'Frontend build: missing ' . implode( ', ', $missing ) . "\n" .
-			"  Install NeoWiki from a release tarball, or run npm ci && npm run build in resources/ext.neowiki.\n"
+			"  Install NeoWiki from a release tarball, or run npm ci && npm run build in $directory/resources/ext.neowiki.\n"
 		);
 		return false;
 	}
@@ -86,7 +87,7 @@ class Check extends Maintenance {
 	}
 
 	protected function newTables(): NeoWikiTables {
-		return new NeoWikiTables( $this->getReplicaDB(), NeoWikiTables::NAMES );
+		return new NeoWikiTables( $this->getPrimaryDB(), NeoWikiTables::NAMES );
 	}
 
 	private function checkNeo4jConfiguration(): bool {
@@ -102,10 +103,15 @@ class Check extends Maintenance {
 	}
 
 	private function checkGraphStores(): bool {
-		$stores = NeoWikiExtension::getInstance()->getNamedGraphDatabasePlugins();
+		try {
+			$stores = NeoWikiExtension::getInstance()->getNamedGraphDatabasePlugins();
+		} catch ( Exception $e ) {
+			$this->reportStoreError( 'Graph stores', $e );
+			return false;
+		}
 
 		if ( $stores === [] ) {
-			$this->output( "Graph stores: none. NeoWiki works without one; only its query functions need one.\n" );
+			$this->output( "Graph stores: none configured\n" );
 			return true;
 		}
 
@@ -116,15 +122,16 @@ class Check extends Maintenance {
 				$store->initialize();
 				$this->output( "Graph store $storeName: reachable\n" );
 			} catch ( Exception $e ) {
-				$this->output(
-					"Graph store $storeName: cannot be reached: " .
-					BackendFailureMessage::withoutCredentials( $e->getMessage() ) . "\n"
-				);
+				$this->reportStoreError( "Graph store $storeName", $e );
 				$allReached = false;
 			}
 		}
 
 		return $allReached;
+	}
+
+	private function reportStoreError( string $label, Exception $e ): void {
+		$this->output( "$label: error: " . BackendFailureMessage::withoutCredentials( $e->getMessage() ) . "\n" );
 	}
 
 }
