@@ -162,6 +162,39 @@ Serve the Data tab at `/wiki/PageName/subjects` instead of `index.php?action=sub
 $wgActionPaths['subjects'] = "/wiki/$1/subjects";
 ```
 
+### Uninstalling
+
+Uninstalling permanently removes what NeoWiki stored in your wiki: the Subjects, from every revision; every page in the
+Schema, Layout, Mapping and Subject namespaces and their talk namespaces, with its text and history; NeoWiki's database
+tables; and this wiki's data in its graph stores. Other pages keep their own content and history. Back up your database
+first.
+
+1. See what would be removed:
+
+   ```sh
+   php maintenance/run.php NeoWiki:Uninstall
+   ```
+
+   Uninstalling leaves calls to NeoWiki's [parser functions](../authoring/parser-functions.md) and
+   [Lua library](../authoring/lua-api.md) in place, where they show as plain wikitext or, in Lua modules, as script
+   errors. They are easiest to fix now, while the functions still render.
+
+2. While nobody edits the wiki and no job runner is running, remove it:
+
+   ```sh
+   php maintenance/run.php NeoWiki:Uninstall --delete
+   ```
+
+   If something stops it, such as a graph store it cannot reach, it says what, exits with an error and leaves NeoWiki
+   installed. Run it again once that is fixed.
+
+3. Right away, remove `wfLoadExtension( 'NeoWiki' );` and the NeoWiki settings from `LocalSettings.php`, then restart
+   PHP. Until you do, pages fail to load.
+
+4. Delete `extensions/NeoWiki`, remove it from `composer.local.json` if you listed it there, and run `composer update`.
+
+5. Fix the pages that still call NeoWiki functions.
+
 ## Key settings
 
 These are the settings you are most likely to change. For the full list with descriptions and defaults, see the
