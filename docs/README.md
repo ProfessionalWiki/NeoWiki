@@ -47,6 +47,7 @@ For developers building on NeoWiki from outside the wiki.
 * [RDF Export](api/rdf-export.md) — RDF per page, per Subject and in bulk: IRI scheme, endpoint, projections
 * [JSON Schema](api/json-schema.md) — a Schema's Subjects as a JSON Schema document, for validating data before upload
 * [MediaWiki API](api/mediawiki-api.md) — pages, revisions, users, recent changes, and search, through the Action API
+* [MCP](api/mcp.md) — connect AI agents through the MediaWiki MCP Server
 
 ## Extending
 
