@@ -1,0 +1,74 @@
+name: Release tarball
+
+on:
+  release:
+    types:
+      - published
+  pull_request:
+    paths:
+      - '.github/workflows/release-tarball.yml'
+  workflow_dispatch:
+
+env:
+  TARBALL: NeoWiki-${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}-install.tar.gz
+
+jobs:
+
+  # The build runs third-party npm code, so this job cannot write to the repository; only the attach job can.
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install NeoWiki JavaScript dependencies
+        run: npm ci
+        working-directory: resources/ext.neowiki
+
+      - name: Build NeoWiki JavaScript
+        run: npm run build
+        working-directory: resources/ext.neowiki
+
+      - name: Package
+        run: |
+          build=()
+          for file in resources/ext.neowiki/dist/*; do
+            build+=( "--add-file=$file" )
+          done
+
+          # The demo data's importer overwrites a wiki's main page and sidebar, and a shipped .gitignore would hide the
+          # frontend build from a wiki kept in git.
+          git archive --format=tar.gz --output="$RUNNER_TEMP/$TARBALL" \
+            --prefix=NeoWiki/resources/ext.neowiki/dist/ "${build[@]}" \
+            --prefix=NeoWiki/ HEAD -- . ':!DemoData' ':!maintenance/ImportDemoData.php' ':!*.gitignore'
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: ${{ runner.temp }}/${{ env.TARBALL }}
+          archive: false
+
+  attach:
+    if: github.event_name == 'release'
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.TARBALL }}
+
+      - name: Attach to the release
+        run: gh release upload "$TAG" "$TARBALL" --clobber --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
