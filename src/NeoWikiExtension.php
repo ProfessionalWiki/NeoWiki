@@ -22,6 +22,7 @@ use MediaWiki\Session\CsrfTokenSet;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentityValue;
 use MessageLocalizer;
+use Opis\JsonSchema\Validator;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubjectPage\CreateSubjectPageAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubjectPage\CreateSubjectPagePresenter;
@@ -255,6 +256,7 @@ use ProfessionalWiki\NeoWiki\Presentation\JsonSchemaSerializer;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Presentation\LayoutPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectSearchHitHtmlBuilder;
+use RuntimeException;
 use Wikimedia\Rdbms\IDatabase;
 
 class NeoWikiExtension {
@@ -337,6 +339,8 @@ class NeoWikiExtension {
 	}
 
 	public static function onExtensionRegistration(): void {
+		self::requireComposerLibraries( Validator::class );
+
 		// This registration-time gate must agree with NeoWikiConfig::hasNeo4jBackend() at request time,
 		// so both resolve the URLs through the shared NeoWikiConfigFactory::resolveReadUrl/resolveWriteUrl helpers.
 		$readUrl = NeoWikiConfigFactory::resolveReadUrl(
@@ -355,6 +359,16 @@ class NeoWikiExtension {
 		self::registerPoweredByBadge();
 		self::registerCirrusSearchWeight();
 		self::searchTheSubjectNamespaceByDefault();
+	}
+
+	public static function requireComposerLibraries( string $libraryClass ): void {
+		if ( !class_exists( $libraryClass ) ) {
+			throw new RuntimeException(
+				"NeoWiki's Composer libraries are missing. Add extensions/NeoWiki/composer.json to the merge-plugin " .
+				"include list in MediaWiki's composer.local.json, then run composer update --no-dev in MediaWiki's " .
+				'directory.'
+			);
+		}
 	}
 
 	private static function searchTheSubjectNamespaceByDefault(): void {

@@ -6,10 +6,12 @@ namespace ProfessionalWiki\NeoWiki\Tests;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use RuntimeException;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::onExtensionRegistration
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::poweredByBadge
+ * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::requireComposerLibraries
  */
 class OnExtensionRegistrationTest extends TestCase {
 
@@ -189,6 +191,13 @@ class OnExtensionRegistrationTest extends TestCase {
 
 		$this->assertFileExists( $this->fileBehind( $badge['src'] ) );
 		$this->assertFileExists( $this->fileBehind( $badge['sources'][0]['srcset'] ) );
+	}
+
+	public function testStopsWithComposerInstructionsWhenItsLibrariesAreMissing(): void {
+		$this->expectException( RuntimeException::class );
+		$this->expectExceptionMessage( 'composer update' );
+
+		NeoWikiExtension::requireComposerLibraries( 'ProfessionalWiki\NeoWiki\Tests\NoSuchLibraryClass' );
 	}
 
 	public function testWeightsTheSubjectFieldIntoCirrusSearchQueries(): void {
