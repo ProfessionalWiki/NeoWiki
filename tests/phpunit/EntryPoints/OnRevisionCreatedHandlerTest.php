@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
 use MediaWiki\Content\FallbackContent;
+use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
@@ -21,6 +22,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\FailureIsolatingPagePropertiesSource;
 use ProfessionalWiki\NeoWiki\PagePropertiesBuilder;
 use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Persistence\PublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -35,6 +37,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingSubjectPageIndex;
 use Psr\Log\NullLogger;
 use Psr\Log\Test\TestLogger;
 use RuntimeException;
+use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler
@@ -342,8 +345,39 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		yield 'a Subject that is not an object' => [
 			'{"mainSubject":"' . TestSubject::ZERO_GUID . '","subjects":{"' . TestSubject::ZERO_GUID . '":1}}',
 		];
+	}
+
+	/**
+	 * @dataProvider subjectJsonHoldingNoObjectProvider
+	 */
+	public function testPublishesNoSubjectsWhenTheSubjectSlotHoldsNoJsonObject( string $subjectJson ): void {
+		$revision = $this->newRevisionOfAnExistingPageWithSubjectJson( $subjectJson );
+
+		$outcome = $this->newHandler()->onRevisionCreated( $revision );
+
+		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
+		$this->assertSame( [ $revision->getPageId() => [] ], $this->publishedSubjectIndex->indexedSubjectsByPageId );
+		$this->assertCount( 1, $this->graphStore->savedPages );
+		$this->assertFalse( $this->graphStore->savedPages[0]->getSubjects()->hasSubjects() );
+	}
+
+	public static function subjectJsonHoldingNoObjectProvider(): iterable {
 		yield 'JSON cut off part way' => [ '{"mainSubject":"' . TestSubject::ZERO_GUID . '","subjects":{' ];
 		yield 'JSON that is not an object' => [ '"' . TestSubject::ZERO_GUID . '"' ];
+	}
+
+	/**
+	 * Built rather than saved, because saving refuses JSON cut off part way. Building the page's properties needs the
+	 * page to exist and the revision to have a timestamp.
+	 */
+	private function newRevisionOfAnExistingPageWithSubjectJson( string $subjectJson ): RevisionRecord {
+		$parent = $this->newPlainPageRevision( 'Page with imported Subject data' );
+
+		$revision = MutableRevisionRecord::newFromParentRevision( $parent );
+		$revision->setContent( MediaWikiSubjectRepository::SLOT_NAME, new SubjectContent( $subjectJson ) );
+		$revision->setTimestamp( ConvertibleTimestamp::now() );
+
+		return $revision;
 	}
 
 	private function newCorePropertyRegistry(): PagePropertyProviderRegistry {
