@@ -1,6 +1,16 @@
 parameters:
 	ignoreErrors:
 		-
+			message: "#^Call to method doUpdate\\(\\) on an unknown class MediaWiki\\\\Search\\\\SearchUpdate\\.$#"
+			count: 1
+			path: src/Infrastructure/SearchIndexUpdater.php
+
+		-
+			message: "#^Instantiated class MediaWiki\\\\Search\\\\SearchUpdate not found\\.$#"
+			count: 1
+			path: src/Infrastructure/SearchIndexUpdater.php
+
+		-
 			message: "#^Call to static method getMain\\(\\) on an unknown class RequestContext\\.$#"
 			count: 1
 			path: src/NeoWikiExtension.php

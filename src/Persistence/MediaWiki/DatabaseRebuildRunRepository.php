@@ -23,7 +23,7 @@ use Wikimedia\Rdbms\SelectQueryBuilder;
  */
 class DatabaseRebuildRunRepository implements RebuildRunRepository {
 
-	private const TABLE = 'neowiki_rebuild_runs';
+	public const string TABLE = 'neowiki_rebuild_runs';
 
 	/**
 	 * What fits in the error column. A driver quoting the query it choked on can run far longer than
