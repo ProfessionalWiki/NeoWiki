@@ -131,6 +131,11 @@ services:
         # --persist-updates is mandatory: without it every SPARQL update is lost on
         # restart. With it, updates persist to neowiki.update-triples on the named volume
         # and are reloaded on startup.
+        # --rebuild-index-strategy folds the updates into a rebuilt index, in the background,
+        # once they reach a tenth of the index's triples, but at least 10 000 and at most 50 000.
+        # Every update works through all updates not yet folded in, which without rebuilds
+        # grow with the wiki and slow every save. --rebuild-keep-previous-index-dirs none
+        # deletes the index a rebuild replaces, which QLever otherwise keeps on the volume.
         # --service-allowed-iri-prefixes disables SPARQL federation. NeoWiki's query surfaces
         # let wiki users send arbitrary SPARQL, and SERVICE makes the store issue outbound
         # requests from its own network position — here, inside the compose network. QLever
@@ -139,7 +144,7 @@ services:
         # actually want federation, and then list real prefixes rather than removing the flag.
         # Keep it last: it takes an arbitrary number of prefixes, so a bare value placed
         # after it would be read as another prefix.
-        exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G --persist-updates --service-allowed-iri-prefixes -
+        exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G --persist-updates --rebuild-index-strategy automatic:10000:50000:0.1 --rebuild-keep-previous-index-dirs none --service-allowed-iri-prefixes -
     environment:
       # Same default as the mediawiki service above, so the server and the wiki agree on the token
       # even when Docker/.env predates the variable or leaves it empty.

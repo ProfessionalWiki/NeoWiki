@@ -124,6 +124,16 @@ and wipes the updates); NeoWiki fills it at runtime over the SPARQL endpoint, no
 source file. A named volume (not a bind mount) keeps the index clear of host SELinux
 labeling and ownership issues under rootless Podman.
 
+QLever keeps the updates beside the index, in a layer that every later update works through,
+so without rebuilds that layer grows with the wiki and slows every save. The server therefore
+runs with `--rebuild-index-strategy automatic:10000:50000:0.1`: once the layer reaches a tenth
+of the index's triples, but at least 10 000 and at most 50 000, QLever rebuilds the index from
+the current data in the background, while saves continue, and starts the layer over.
+`--rebuild-keep-previous-index-dirs none` deletes the index each rebuild replaces, so the
+volume holds one. Both options need a QLever image from August 2026 or later: an older one
+does not start. [Performance](../docs/operations/performance.md#with-a-sparql-store) has
+what saves and rebuilds cost.
+
 To query it from the host, add the `docker-compose.tools.yml` overlay, which maps `QLEVER_PORT`
 (default 7019) — on the dev stack `make dev-tools` does that for you:
 
