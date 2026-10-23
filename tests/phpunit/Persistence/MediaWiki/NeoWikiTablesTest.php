@@ -32,6 +32,10 @@ class NeoWikiTablesTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ self::SCRATCH_TABLE ], $this->newTables()->getExisting() );
 	}
 
+	public function testListsTheTablesThatAreMissing(): void {
+		$this->assertSame( [ self::MISSING_TABLE ], $this->newTables()->getMissing() );
+	}
+
 	public function testDropsTheTables(): void {
 		$this->newTables()->drop();
 
