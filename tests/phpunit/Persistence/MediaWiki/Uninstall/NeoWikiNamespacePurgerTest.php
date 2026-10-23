@@ -68,8 +68,8 @@ class NeoWikiNamespacePurgerTest extends NeoWikiIntegrationTestCase {
 
 		$this->deletePages();
 
-		$this->assertTrue( Title::makeTitle( NeoWikiExtension::NS_SCHEMA, 'Refused' )->exists() );
-		$this->assertFalse( Title::makeTitle( NeoWikiExtension::NS_SCHEMA, 'Company' )->exists() );
+		$this->assertTrue( $this->schemaPageExists( 'Refused' ) );
+		$this->assertFalse( $this->schemaPageExists( 'Company' ) );
 	}
 
 	public function testReportsWhyAPageCouldNotBeDeleted(): void {
@@ -124,6 +124,13 @@ class NeoWikiNamespacePurgerTest extends NeoWikiIntegrationTestCase {
 				return false;
 			}
 		);
+	}
+
+	/**
+	 * Read from the database: from MediaWiki 1.44, Title::exists() still reports a page the purger has deleted.
+	 */
+	private function schemaPageExists( string $name ): bool {
+		return $this->countRows( 'page', [ 'page_namespace' => NeoWikiExtension::NS_SCHEMA, 'page_title' => $name ] ) > 0;
 	}
 
 	private function deletePages(): void {
