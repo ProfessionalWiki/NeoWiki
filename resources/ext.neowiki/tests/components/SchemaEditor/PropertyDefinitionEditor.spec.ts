@@ -52,6 +52,16 @@ describe( 'PropertyDefinitionEditor', () => {
 		expect( property.multiple ).toBe( false );
 	} );
 
+	it( 'starts a property that becomes Text with language at one value per language', async () => {
+		// The initial value field of such a property starts in the wiki's language.
+		setupMwMock( { config: { wgContentLanguage: 'en' } } );
+		const wrapper = newWrapper( newTextProperty( { name: 'Caption' } ) );
+
+		await changeTypeTo( wrapper, 'monolingualText' );
+
+		expect( lastEmittedProperty( wrapper ) ).toMatchObject( { multiple: true, uniqueLanguages: true } );
+	} );
+
 	it( 'preserves the shared fields when the type changes', async () => {
 		const wrapper = newWrapper( newTextProperty( { name: 'Status', required: true } ) );
 

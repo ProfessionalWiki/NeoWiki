@@ -475,6 +475,18 @@ JSON
 		);
 	}
 
+	public function testUniqueLanguagesObjectFormWithValueKeyFailsValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$this->assertFalse(
+			$validator->validate(
+				$this->schemaWithProperty(
+					'{ "type": "monolingualText", "multiple": true, "uniqueLanguages": { "value": false, "severity": "error" } }'
+				)
+			)
+		);
+	}
+
 	/**
 	 * A custom Property Type's own Constraint keys are not declared here, so only the
 	 * additionalProperties guard checks their severity. Without it the typo saves cleanly and

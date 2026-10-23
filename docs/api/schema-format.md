@@ -78,13 +78,13 @@ an object carrying the severity:
 }
 ```
 
-Boolean Constraints (`required`, `uniqueItems`) take no `value` in the object form — writing the
+Boolean Constraints (`required`, `uniqueItems`, `uniqueLanguages`) take no `value` in the object form — writing the
 object at all implies `true`. `multiple` constrains when it is `false`, so its object form carries
 `"value": false`. Every other Constraint carries its value under `value`, including `options`, whose
 `value` is the options array.
 
 The Constraints that accept a severity are `required`, `multiple`, `minimum`, `maximum`, `minLength`,
-`maxLength`, `uniqueItems`, and `options`. Only `select`, `relation` and `monolingualText` check
+`maxLength`, `uniqueItems`, `uniqueLanguages`, and `options`. Only `select`, `relation` and `monolingualText` check
 `multiple`, so a severity on it is inert elsewhere. Severity is a Constraint concept, so it does not
 apply to Display Attributes such as `precision`, where it is discarded, nor to the shape-declaring
 fields `type` and `targetSchemas`, where it is rejected when the Schema is saved.
@@ -124,6 +124,7 @@ Text values that each carry the language they are in ([ADR 34](../adr/034-monoli
 |-------|------|---------|-------------|
 | `multiple` | boolean or object | `false` | Allow multiple values |
 | `uniqueItems` | boolean | `false` | Reject duplicates, comparing text and language together (only with `multiple`) |
+| `uniqueLanguages` | boolean | `false` | At most one value per language (only with `multiple`) |
 | `minLength` | number | `null` | Minimum trimmed length of each text |
 | `maxLength` | number | `null` | Maximum trimmed length of each text |
 
@@ -131,7 +132,7 @@ Text values that each carry the language they are in ([ADR 34](../adr/034-monoli
 {
   "type": "monolingualText",
   "multiple": true,
-  "uniqueItems": true
+  "uniqueLanguages": true
 }
 ```
 

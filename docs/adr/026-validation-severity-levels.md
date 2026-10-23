@@ -2,7 +2,8 @@
 
 Date: 2026-07-07
 
-Status: Accepted (2026-07-19; `single-value-only` severity made authorable 2026-08-23)
+Status: Accepted (2026-07-19; `single-value-only` severity made authorable 2026-08-23; `single-value-per-language`
+added 2026-10-23)
 
 ## Context
 
@@ -59,11 +60,11 @@ that carries the severity:
 }
 ```
 
-For boolean Constraints (`required`, `uniqueItems`) the object form implies `true`, so it has no `value` key.
-`multiple` is the one Constraint that applies when it is `false`, so its object form carries `"value": false`. For
-`options` the `value` key carries the options array. Canonical serialization emits the shorthand when the severity is
-the default, so existing Schemas round-trip unchanged. Custom Property Types follow the same pattern for their own
-Constraint fields.
+For boolean Constraints (`required`, `uniqueItems`, `uniqueLanguages`) the object form implies `true`, so it has no
+`value` key. `multiple` is the one Constraint that applies when it is `false`, so its object form carries
+`"value": false`. For `options` the `value` key carries the options array. Canonical serialization emits the shorthand
+when the severity is the default, so existing Schemas round-trip unchanged. Custom Property Types follow the same
+pattern for their own Constraint fields.
 
 ### Authorable and fixed severities
 
@@ -78,6 +79,7 @@ Severity is configurable exactly where an authorable Constraint field backs the 
 | `unique` | `uniqueItems` |
 | `invalid-option` | `options` |
 | `single-value-only` | `multiple`, when `false` |
+| `single-value-per-language` | `uniqueLanguages` |
 
 All other codes are system conditions with a fixed severity, generalizing today's hardcoded `schema-not-found`
 carve-out:

@@ -70,6 +70,7 @@ import UnregisteredTypeValueDisplay from '@/components/Value/UnregisteredTypeVal
 import UnregisteredTypeValueInput from '@/components/Value/UnregisteredTypeValueInput.vue';
 import UnregisteredTypeAttributesEditor from '@/components/SchemaEditor/Property/UnregisteredTypeAttributesEditor.vue';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
+import MonolingualTextAttributesEditor from '@/components/SchemaEditor/Property/MonolingualTextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
 import UrlAttributesEditor from '@/components/SchemaEditor/Property/UrlAttributesEditor.vue';
@@ -161,7 +162,7 @@ export class NeoWikiExtension {
 		registry.registerType( MonolingualTextType.typeName, {
 			valueDisplayComponent: MonolingualTextDisplay,
 			valueEditor: MonolingualTextInput,
-			attributesEditor: TextAttributesEditor,
+			attributesEditor: MonolingualTextAttributesEditor,
 			label: 'neowiki-property-type-monolingualtext',
 			icon: cdxIconLanguage,
 		} );

@@ -421,6 +421,12 @@ class JsonSchemaMatchesValidatorTest extends TestCase {
 			self::value( 'monolingualText', [ self::textIn( 'Zinema', 'eu' ), self::textIn( 'Cine', 'es' ) ] ),
 		];
 
+		yield 'two monolingual texts in one language where uniqueLanguages is set' => [
+			$monolingual + [ 'uniqueLanguages' => true ],
+			self::value( 'monolingualText', [ self::textIn( 'Cine', 'es' ), self::textIn( 'Película', 'es' ) ] ),
+			'the document cannot limit each language to one value.',
+		];
+
 		$unique = $monolingual + [ 'uniqueItems' => true ];
 		yield 'the same monolingual text twice where uniqueItems is set' => [
 			$unique,

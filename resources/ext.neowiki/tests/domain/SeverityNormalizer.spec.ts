@@ -97,9 +97,14 @@ describe( 'applySeverities', () => {
 
 	it( 'drops the annotation of an unchecked core boolean Constraint instead of wrapping false', () => {
 		expect( applySeverities(
-			{ required: false, uniqueItems: false, maximum: 100 },
-			{ required: 'error', uniqueItems: 'error', maximum: 'error' },
-		) ).toEqual( { required: false, uniqueItems: false, maximum: { value: 100, severity: 'error' } } );
+			{ required: false, uniqueItems: false, uniqueLanguages: false, maximum: 100 },
+			{ required: 'error', uniqueItems: 'error', uniqueLanguages: 'error', maximum: 'error' },
+		) ).toEqual( {
+			required: false,
+			uniqueItems: false,
+			uniqueLanguages: false,
+			maximum: { value: 100, severity: 'error' },
+		} );
 	} );
 
 	it( 'drops the annotation of the single-value rule while multiple values are allowed', () => {

@@ -75,6 +75,7 @@
 						"required": { "$ref": "#/$defs/booleanConstraint" },
 						"multiple": { "$ref": "#/$defs/booleanConstraintWithFalseValue" },
 						"uniqueItems": { "$ref": "#/$defs/booleanConstraint" },
+						"uniqueLanguages": { "$ref": "#/$defs/booleanConstraint" },
 						"minimum": { "$ref": "#/$defs/scalarConstraint" },
 						"maximum": { "$ref": "#/$defs/scalarConstraint" },
 						"minLength": { "$ref": "#/$defs/scalarConstraint" },

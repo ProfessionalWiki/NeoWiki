@@ -314,7 +314,8 @@ those are set. Beyond that core, the fields depend on `type`:
 
 | Property type | Always present | Present only when set |
 |---------------|----------------|------------------------|
-| `text`, `monolingualText` | `multiple`, `uniqueItems` | `minLength`, `maxLength` |
+| `text` | `multiple`, `uniqueItems` | `minLength`, `maxLength` |
+| `monolingualText` | `multiple`, `uniqueItems`, `uniqueLanguages` | `minLength`, `maxLength` |
 | `url` | `multiple`, `uniqueItems` | — |
 | `number` | — | `precision`, `minimum`, `maximum` |
 | `date`, `dateTime` | — | `minimum`, `maximum` |
@@ -323,10 +324,10 @@ those are set. Beyond that core, the fields depend on `type`:
 | `boolean` | — | — |
 
 Optional fields are **omitted entirely** when unset, so check with `if prop.description then …`.
-`required` is always present, and `multiple`/`uniqueItems` are present for the types the table
+`required` is always present, and `multiple`/`uniqueItems`/`uniqueLanguages` are present for the types the table
 marks under **Always present**; where present, these boolean flags are emitted even when `false`,
-so read them directly rather than testing truthiness. For a type where the table does not list
-`multiple`/`uniqueItems`, they are absent (`nil`), not `false`.
+so read them directly rather than testing truthiness. A flag the table does not list for a type is
+absent (`nil`), not `false`.
 
 #### Errors
 

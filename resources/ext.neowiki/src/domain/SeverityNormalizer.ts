@@ -19,7 +19,7 @@ const RESERVED = [ 'type', 'description', 'default' ];
  * The core boolean Constraints, whose object form carries no `value` key (see
  * docs/api/schema-format.md): `false` is representable only as the bare scalar.
  */
-const VALUE_LESS_BOOLEAN_CONSTRAINTS = [ 'required', 'uniqueItems' ];
+const VALUE_LESS_BOOLEAN_CONSTRAINTS = [ 'required', 'uniqueItems', 'uniqueLanguages' ];
 
 /**
  * The boolean Constraints whose rule applies while they are `false`: `multiple: false`

@@ -55,7 +55,7 @@ Severity decides whether a write can be rejected: warnings never block, errors c
 reference below documents its own severity.
 
 Where a violation is backed by a Constraint the schema author writes — `required`, `multiple`,
-`minimum`, `maximum`, `minLength`, `maxLength`, `uniqueItems`, `options` — that author sets its
+`minimum`, `maximum`, `minLength`, `maxLength`, `uniqueItems`, `uniqueLanguages`, `options` — that author sets its
 severity in the Schema, per Constraint, and the default is `warning`. See
 [Constraint severity](schema-format.md#constraint-severity) for the JSON. Because the default is
 `warning`, an unannotated Schema blocks nothing at all: invalid Subjects are a normal, supported
@@ -141,6 +141,15 @@ On single-valued (`multiple: false`) `select`, `relation` and `monolingualText` 
 one part (`select`, `monolingualText`) or relation target (`relation`) was supplied.
 
 `args`: `[]`. `severity`: set by the `multiple` Constraint (default `warning`).
+
+### `single-value-per-language`
+
+On multi-valued (`multiple: true`) `monolingualText` properties with `uniqueLanguages` enabled: a part
+repeats the language of an earlier part. Tags compare in lowercase and in full: `EN` repeats `en`,
+`en-gb` does not.
+
+`args`: `[]`. `valuePartIndex`: the offending part. `severity`: set by the `uniqueLanguages` Constraint
+(default `warning`).
 
 ### `invalid-datetime`
 

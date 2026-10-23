@@ -2,7 +2,7 @@
 
 Date: 2026-09-19
 
-Status: Accepted
+Status: Accepted. Amended 2026-10-23: a property can limit each language to one text.
 
 ## Context
 
@@ -31,7 +31,8 @@ It is not checked against MediaWiki's language list, so a vocabulary using `und`
 out. Tags are stored lowercase, making `pt-BR` and `pt-br` one language.
 
 **A language may repeat**: a thing can have two names in Spanish. `uniqueItems` therefore compares text and
-language together.
+language together. Where a property takes one text per language, such as a caption, `uniqueLanguages` makes each
+further text in a language a Violation.
 
 **Constraints apply per part.** `minLength` and `maxLength` bound each part's text, and `required` is satisfied by
 any one part. A part whose text is empty is dropped, so no part carries a language and nothing else.

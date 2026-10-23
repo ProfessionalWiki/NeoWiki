@@ -1,33 +1,35 @@
 <template>
 	<!-- cdx-field class is used for spacing -->
 	<div class="text-attributes cdx-field">
-		<CdxField :hide-label="true">
-			<CdxCheckbox
-				:model-value="property.multiple"
-				@update:model-value="updateMultiple"
-			>
-				{{ $i18n( 'neowiki-property-editor-multiple' ).text() }}
-			</CdxCheckbox>
-		</CdxField>
+		<slot name="values">
+			<CdxField :hide-label="true">
+				<CdxCheckbox
+					:model-value="property.multiple"
+					@update:model-value="updateMultiple"
+				>
+					{{ $i18n( 'neowiki-property-editor-multiple' ).text() }}
+				</CdxCheckbox>
+			</CdxField>
 
-		<CdxField
-			v-if="property.multiple"
-			class="text-attributes__unique-items ext-neowiki-severity-row"
-			:hide-label="true"
-		>
-			<CdxCheckbox
-				:model-value="property.uniqueItems"
-				@update:model-value="updateUniqueItems"
+			<CdxField
+				v-if="property.multiple"
+				class="text-attributes__unique-items ext-neowiki-severity-row"
+				:hide-label="true"
 			>
-				{{ $i18n( 'neowiki-property-editor-unique-items' ).text() }}
-			</CdxCheckbox>
-			<SeverityInput
-				v-if="property.uniqueItems"
-				:constraint="$i18n( 'neowiki-property-editor-unique-items' ).text()"
-				:model-value="property.constraintSeverities?.uniqueItems"
-				@update:model-value="updateSeverity( 'uniqueItems', $event )"
-			/>
-		</CdxField>
+				<CdxCheckbox
+					:model-value="property.uniqueItems"
+					@update:model-value="updateUniqueItems"
+				>
+					{{ $i18n( 'neowiki-property-editor-unique-items' ).text() }}
+				</CdxCheckbox>
+				<SeverityInput
+					v-if="property.uniqueItems"
+					:constraint="$i18n( 'neowiki-property-editor-unique-items' ).text()"
+					:model-value="property.constraintSeverities?.uniqueItems"
+					@update:model-value="updateSeverity( 'uniqueItems', $event )"
+				/>
+			</CdxField>
+		</slot>
 
 		<NeoNestedField :optional="true">
 			<template #label>

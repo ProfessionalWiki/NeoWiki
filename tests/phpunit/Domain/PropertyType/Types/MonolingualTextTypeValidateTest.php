@@ -220,6 +220,75 @@ class MonolingualTextTypeValidateTest extends TestCase {
 		$this->assertSame( [], $violations );
 	}
 
+	public function testEveryPartAfterTheFirstInItsLanguageReturnsSingleValuePerLanguageViolation(): void {
+		$violations = $this->type->validate(
+			new MonolingualTextValue(
+				new MonolingualText( 'Eiffel Tower at dusk', 'en' ),
+				new MonolingualText( 'Torre Eiffel ao entardecer', 'pt' ),
+				new MonolingualText( 'Eiffel Tower at sunset', 'en' ),
+				new MonolingualText( 'Eiffel Tower by night', 'en' ),
+			),
+			$this->newProperty( required: false, uniqueLanguages: true ),
+		);
+
+		$this->assertSame(
+			[ 'single-value-per-language', 'single-value-per-language' ],
+			array_column( $violations, 'code' )
+		);
+		$this->assertSame( [ 2, 3 ], array_column( $violations, 'valuePartIndex' ) );
+	}
+
+	public function testLanguageWithARegionSubtagIsALanguageOfItsOwn(): void {
+		$violations = $this->type->validate(
+			new MonolingualTextValue(
+				new MonolingualText( 'Colour', 'en-gb' ),
+				new MonolingualText( 'Color', 'en' ),
+			),
+			$this->newProperty( required: false, uniqueLanguages: true ),
+		);
+
+		$this->assertSame( [], $violations );
+	}
+
+	public function testRepeatedLanguageWithoutUniqueLanguagesReturnsNoViolations(): void {
+		$violations = $this->type->validate(
+			new MonolingualTextValue(
+				new MonolingualText( 'Cine', 'es' ),
+				new MonolingualText( 'Película', 'es' ),
+			),
+			$this->newProperty( required: false, uniqueLanguages: false ),
+		);
+
+		$this->assertSame( [], $violations );
+	}
+
+	public function testUniqueLanguagesOnASingleValuedPropertyAddsNothingToTheSingleValueViolation(): void {
+		$violations = $this->type->validate(
+			new MonolingualTextValue(
+				new MonolingualText( 'Cine', 'es' ),
+				new MonolingualText( 'Película', 'es' ),
+			),
+			$this->newProperty( required: false, multiple: false, uniqueLanguages: true ),
+		);
+
+		$this->assertSame( [ 'single-value-only' ], array_column( $violations, 'code' ) );
+	}
+
+	public function testLengthAndSingleValuePerLanguageViolationsAreBothReturned(): void {
+		$violations = $this->type->validate(
+			new MonolingualTextValue(
+				new MonolingualText( 'Ci', 'es' ),
+				new MonolingualText( 'Cine', 'es' ),
+			),
+			$this->newProperty( required: false, minLength: 3, uniqueLanguages: true ),
+		);
+
+		$this->assertEqualsCanonicalizing(
+			[ 'min-length', 'single-value-per-language' ],
+			array_column( $violations, 'code' )
+		);
+	}
+
 	/**
 	 * @dataProvider annotatedConstraintProvider
 	 *
@@ -266,6 +335,15 @@ class MonolingualTextTypeValidateTest extends TestCase {
 			),
 			'single-value-only',
 		];
+
+		yield 'uniqueLanguages' => [
+			[ 'uniqueLanguages' => [ 'severity' => 'error' ] ],
+			new MonolingualTextValue(
+				new MonolingualText( 'Cine', 'es' ),
+				new MonolingualText( 'Película', 'es' ),
+			),
+			'single-value-per-language',
+		];
 	}
 
 	public function testSearchTextIsTheTexts(): void {
@@ -287,12 +365,14 @@ class MonolingualTextTypeValidateTest extends TestCase {
 		?int $minLength = null,
 		?int $maxLength = null,
 		bool $multiple = true,
+		bool $uniqueLanguages = false,
 	): MonolingualTextProperty {
 		return MonolingualTextProperty::fromPartialJson(
 			new PropertyCore( description: '', required: $required, default: null ),
 			[
 				'multiple' => $multiple,
 				'uniqueItems' => $uniqueItems,
+				'uniqueLanguages' => $uniqueLanguages,
 				'minLength' => $minLength,
 				'maxLength' => $maxLength,
 			],

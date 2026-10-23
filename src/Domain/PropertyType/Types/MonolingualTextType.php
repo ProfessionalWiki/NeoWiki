@@ -66,6 +66,10 @@ class MonolingualTextType implements PropertyType {
 			);
 		}
 
+		if ( $definition->allowsMultipleValues() && $definition->enforcesUniqueLanguages() ) {
+			$violations = array_merge( $violations, $this->validateUniqueLanguages( $value, $definition ) );
+		}
+
 		return $violations;
 	}
 
@@ -101,6 +105,29 @@ class MonolingualTextType implements PropertyType {
 					severity: $definition->severityOf( 'maxLength' ),
 				);
 			}
+		}
+
+		return $violations;
+	}
+
+	/**
+	 * @return Violation[]
+	 */
+	private function validateUniqueLanguages( MonolingualTextValue $value, MonolingualTextProperty $definition ): array {
+		$violations = [];
+		$seenLanguages = [];
+
+		foreach ( $value->parts as $index => $part ) {
+			if ( isset( $seenLanguages[$part->language] ) ) {
+				$violations[] = new Violation(
+					propertyName: null,
+					code: 'single-value-per-language',
+					valuePartIndex: $index,
+					severity: $definition->severityOf( 'uniqueLanguages' ),
+				);
+			}
+
+			$seenLanguages[$part->language] = true;
 		}
 
 		return $violations;

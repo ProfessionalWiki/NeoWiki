@@ -588,6 +588,31 @@ describe( 'MonolingualTextInput', () => {
 			.toEqual( [ [ { propertyName: 'Original title', valuePartIndex: 1 } ] ] );
 	} );
 
+	it( 'asks the parent to drop every indexed violation when a language changes where each language takes one value', async () => {
+		readsIn( 'en', 'en', [ 'en', 'de', 'pt' ] );
+		const wrapper = newWrapper( {
+			property: newMonolingualTextProperty( { name: 'Original title', multiple: true, uniqueLanguages: true } ),
+			modelValue: newMonolingualTextValue( [
+				{ text: 'Eiffel Tower at dusk', language: 'en' },
+				{ text: 'Eiffel Tower at sunset', language: 'en' },
+				{ text: 'Torre Eiffel', language: 'pt' },
+			] ),
+			serverViolations: [ {
+				propertyName: 'Original title',
+				code: 'single-value-per-language',
+				args: [],
+				severity: 'error',
+				valuePartIndex: 1,
+			} ],
+		} );
+
+		// The first text leaves English, which settles the violation of the second one.
+		await chooseFromList( wrapper, 0, 'German' );
+
+		expect( wrapper.emitted( 'clear-server-violation' ) )
+			.toEqual( [ [ { propertyName: 'Original title', valuePartIndex: 1 } ] ] );
+	} );
+
 	it( 'reports what it holds when the parent asks on save', async () => {
 		const wrapper = newWrapper();
 

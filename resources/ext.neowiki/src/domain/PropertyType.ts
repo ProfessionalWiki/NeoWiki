@@ -20,6 +20,15 @@ export abstract class BasePropertyType<P extends PropertyDefinition, V extends V
 
 	public abstract createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): P;
 
+	/**
+	 * A definition of this type for a property that is given this type in the Schema editor, keeping the shared fields
+	 * of the base. Its own fields start as a new property of this type should, which can differ from what a stored
+	 * definition without them means.
+	 */
+	public createPropertyDefinition( base: PropertyDefinition ): P {
+		return this.createPropertyDefinitionFromJson( base, {} );
+	}
+
 	public abstract getExampleValue( property: P ): V;
 
 }

@@ -15,6 +15,7 @@ class MonolingualTextProperty extends PropertyDefinition {
 		PropertyCore $core,
 		private readonly bool $multiple,
 		private readonly bool $uniqueItems,
+		private readonly bool $uniqueLanguages,
 		private readonly ?int $minLength,
 		private readonly ?int $maxLength,
 	) {
@@ -31,6 +32,10 @@ class MonolingualTextProperty extends PropertyDefinition {
 
 	public function enforcesUniqueValues(): bool {
 		return $this->uniqueItems;
+	}
+
+	public function enforcesUniqueLanguages(): bool {
+		return $this->uniqueLanguages;
 	}
 
 	public function getMinLength(): ?int {
@@ -54,6 +59,7 @@ class MonolingualTextProperty extends PropertyDefinition {
 			core: $core,
 			multiple: $property['multiple'] ?? false,
 			uniqueItems: $property['uniqueItems'] ?? false,
+			uniqueLanguages: $property['uniqueLanguages'] ?? false,
 			minLength: $property['minLength'] ?? null,
 			maxLength: $property['maxLength'] ?? null,
 		);
@@ -63,6 +69,7 @@ class MonolingualTextProperty extends PropertyDefinition {
 		return [
 			'multiple' => $this->allowsMultipleValues(),
 			'uniqueItems' => $this->enforcesUniqueValues(),
+			'uniqueLanguages' => $this->enforcesUniqueLanguages(),
 			'minLength' => $this->getMinLength(),
 			'maxLength' => $this->getMaxLength(),
 		];

@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 import { NeoWikiExtension } from '@/NeoWikiExtension';
 import MonolingualTextDisplay from '@/components/Value/MonolingualTextDisplay.vue';
 import MonolingualTextInput from '@/components/Value/MonolingualTextInput.vue';
+import MonolingualTextAttributesEditor from '@/components/SchemaEditor/Property/MonolingualTextAttributesEditor.vue';
 import { MonolingualTextType } from '@/domain/propertyTypes/MonolingualText';
 import { setupMwMock } from './VueTestHelpers.ts';
 
@@ -13,12 +14,13 @@ describe( 'NeoWikiExtension registry caching', () => {
 			.toBe( ext.getTypeSpecificComponentRegistry() );
 	} );
 
-	it( 'offers the monolingual text type with its own display, editor and label', () => {
+	it( 'offers the monolingual text type with its own display, editor, attributes editor and label', () => {
 		const registry = NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry();
 
 		expect( registry.getPropertyTypes() ).toContain( MonolingualTextType.typeName );
 		expect( registry.getValueDisplayComponent( MonolingualTextType.typeName ) ).toBe( MonolingualTextDisplay );
 		expect( registry.getValueEditingComponent( MonolingualTextType.typeName ) ).toBe( MonolingualTextInput );
+		expect( registry.getAttributesEditor( MonolingualTextType.typeName ) ).toBe( MonolingualTextAttributesEditor );
 		expect( registry.getLabel( MonolingualTextType.typeName ) ).toBe( 'neowiki-property-type-monolingualtext' );
 	} );
 

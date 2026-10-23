@@ -181,7 +181,7 @@ const propertyTypeRegistry = NeoWikiServices.getPropertyTypeRegistry();
 function changePropertyType( type: string ): void {
 	const requiredSeverity = localProperty.value.constraintSeverities?.required;
 
-	localProperty.value = propertyTypeRegistry.getType( type ).createPropertyDefinitionFromJson(
+	localProperty.value = propertyTypeRegistry.getType( type ).createPropertyDefinition(
 		{
 			name: localProperty.value.name,
 			type: type,
@@ -189,8 +189,7 @@ function changePropertyType( type: string ): void {
 			required: localProperty.value.required,
 			default: undefined,
 			...( requiredSeverity === undefined ? {} : { constraintSeverities: { required: requiredSeverity } } )
-		} as PropertyDefinition,
-		{}
+		} as PropertyDefinition
 	);
 }
 

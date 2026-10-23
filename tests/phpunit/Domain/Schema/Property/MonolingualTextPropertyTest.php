@@ -21,6 +21,7 @@ class MonolingualTextPropertyTest extends PropertyTestCase {
 	"default": null,
 	"multiple": false,
 	"uniqueItems": false,
+	"uniqueLanguages": false,
 	"minLength": null,
 	"maxLength": null
 }
@@ -45,6 +46,7 @@ JSON
 	"default": [ { "text": "Zinema", "language": "eu" } ],
 	"multiple": true,
 	"uniqueItems": true,
+	"uniqueLanguages": true,
 	"minLength": 2,
 	"maxLength": 40
 }
