@@ -46,6 +46,7 @@ For developers building on NeoWiki from outside the wiki.
 * [Graph Model](api/graph-model.md) — Neo4j node and relationship structure
 * [RDF Export](api/rdf-export.md) — RDF per page, per Subject and in bulk: IRI scheme, endpoint, projections
 * [JSON Schema](api/json-schema.md) — a Schema's Subjects as a JSON Schema document, for validating data before upload
+* [MediaWiki API](api/mediawiki-api.md) — pages, revisions, users, recent changes, and search, through the Action API
 
 ## Extending
 

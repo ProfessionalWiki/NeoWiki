@@ -6,18 +6,21 @@ order: 1
 # REST API
 
 NeoWiki's REST API lives under `/rest.php/neowiki/v0/*`. Requests and responses are JSON; the RDF export endpoints
-return TriG or Turtle instead.
-
-Endpoints that change data act as the user of your session. To log in from a script, use a
-[bot password](https://www.mediawiki.org/wiki/Manual:Bot_passwords) with the Action API's
-[`action=login`](https://www.mediawiki.org/wiki/API:Login). These endpoints also need the session's CSRF token, from
-[`meta=tokens`](https://www.mediawiki.org/wiki/API:Tokens), in an `X-CSRF-TOKEN` header; without a valid one they
-answer `403`.
+return TriG or Turtle instead. For pages, revisions, users, and recent changes, use the
+[MediaWiki API](mediawiki-api.md).
 
 **Pre-1.0.** Endpoints and payloads may change without notice; do not build third-party integrations on
 `/neowiki/v0/*` yet.
 
 Every endpoint is also published as a complete [OpenAPI 3.0 description](#full-specification).
+
+## Authentication
+
+Requests run with the permissions of the user you are logged in as, or of an anonymous visitor when you are not. To log
+in from a script, use a [bot password](https://www.mediawiki.org/wiki/Manual:Bot_passwords) with the Action API's
+[`action=login`](https://www.mediawiki.org/wiki/API:Login). Endpoints that change data also need the session's CSRF
+token, from [`meta=tokens`](https://www.mediawiki.org/wiki/API:Tokens), in an `X-CSRF-TOKEN` header; without a valid one
+they answer `403`.
 
 ## Endpoints
 
