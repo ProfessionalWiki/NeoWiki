@@ -143,6 +143,15 @@ php maintenance/run.php NeoWiki:RebuildGraphDatabases
 
 ### 5. Verify your install
 
+Run this from the MediaWiki root to check the frontend build, NeoWiki's database tables and the configured graph
+stores:
+
+```sh
+php maintenance/run.php NeoWiki:Check
+```
+
+It exits with an error if any of them is missing or unusable.
+
 Your install is complete once you can walk through [Getting started](../guide/getting-started.md) on it.
 
 With Neo4j configured, one more step checks its projection. On any page, add a Cypher query that lists the stored
