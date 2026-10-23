@@ -29,13 +29,12 @@ PORT_RANGE_END := 8499
 
 # ---- Optional-service selection (services=) ----------------------------------
 
-# `make dev services=node,qlever` runs only the named optional services;
-# `services=none` runs core only (mediawiki, db, neo). Absent = the default set
-# below, which is the full status quo. Values are compose service names; see
-# Docker/README.md. A COMPOSE_PROFILES value from the environment is unioned in,
-# so the documented oxigraph escape hatch keeps working.
-OPTIONAL_SERVICES := node qlever mailcatcher oxigraph
-DEFAULT_SERVICES := node qlever mailcatcher
+# `make dev services=node,neo` runs only the named optional services;
+# `services=none` runs core only (mediawiki, db). Absent = the default set
+# below. Values are compose service names; see Docker/README.md. A
+# COMPOSE_PROFILES value from the environment is unioned in.
+OPTIONAL_SERVICES := node oxigraph neo qlever mailcatcher
+DEFAULT_SERVICES := node oxigraph mailcatcher
 
 comma := ,
 empty :=
@@ -69,12 +68,26 @@ DESELECTED_SERVICES := $(filter-out $(ACTIVE_PROFILES),$(OPTIONAL_SERVICES))
 # Wiki-side config follows the selection. Empty means "disabled" to
 # Docker/SettingsTemplate.php; unset means "use the default". Values already
 # present (environment or Docker/.env) always win.
+ifeq ($(origin OXIGRAPH_URL),undefined)
+ifeq ($(filter oxigraph,$(ACTIVE_PROFILES)),)
+OXIGRAPH_URL :=
+else
+OXIGRAPH_URL := http://oxigraph:7878
+endif
+endif
+
 ifeq ($(origin QLEVER_URL),undefined)
 ifeq ($(filter qlever,$(ACTIVE_PROFILES)),)
 QLEVER_URL :=
 else
 QLEVER_URL := http://qlever:7019/
 endif
+endif
+
+# An address, so blank counts as unset, as for MARIADB_HOST above. A host outside this stack enables
+# Neo4j without the neo service.
+ifeq ($(strip $(NEO4J_HOST)),)
+override NEO4J_HOST := $(if $(filter neo,$(ACTIVE_PROFILES)),neo)
 endif
 
 ifeq ($(origin MW_SMTP_HOST),undefined)
@@ -178,7 +191,7 @@ upgrade: _preflight ## Upgrade the demo stack: pull the latest image, restart, m
 dev: _preflight bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
 	@$(MAKE) --no-print-directory _dev-impl
 
-dev-tools: _preflight bootstrap ensure-port ## Like 'dev' but also exposes the Neo4j and SPARQL store ports to host
+dev-tools: _preflight bootstrap ensure-port ## Like 'dev' but also exposes the graph store ports to host
 	@$(MAKE) --no-print-directory _dev-tools-impl
 
 _dev-tools-impl:
@@ -189,19 +202,20 @@ _dev-tools-impl:
 	@$(MAKE) --no-print-directory _first-run-seed
 	@echo ""
 	@echo "Dev wiki ready at:    http://localhost:$$MW_SERVER_PORT"
-	@echo "Neo4j Browser:        http://localhost:$${NEO_BROWSER_PORT:-7474}"
-	@echo "Neo4j Bolt endpoint:  bolt://localhost:$${NEO_BOLT_PORT:-7687}"
-	@# The tools overlay maps the QLever and Oxigraph ports too, but each service only runs
-	@# when its own profile is on (see Docker/docker-compose.yml and .dev.yml), so only then
-	@# is there a URL. Compose trims whitespace around profile names ("test, oxigraph"
-	@# activates both), so strip it here as well or a URL goes missing for a stack that did
-	@# start the service.
+	@# The tools overlay maps a port for each graph store, but each store only runs when its
+	@# own profile is on (see Docker/docker-compose.yml), so only then is there a URL. Compose
+	@# trims whitespace around profile names ("test, oxigraph" activates both), so strip it
+	@# here as well or a URL goes missing for a stack that did start the service.
 	@profiles=$$(printf '%s' "$$COMPOSE_PROFILES" | tr -d '[:space:]'); \
 	case ",$$profiles," in \
-		*,qlever,*) echo "QLever SPARQL:        http://localhost:$${QLEVER_PORT:-7019}/";; \
+		*,oxigraph,*) echo "Oxigraph SPARQL:      http://localhost:$${OXIGRAPH_PORT:-7878}/query";; \
 	esac; \
 	case ",$$profiles," in \
-		*,oxigraph,*) echo "Oxigraph SPARQL:      http://localhost:$${OXIGRAPH_PORT:-7878}/query";; \
+		*,neo,*) echo "Neo4j Browser:        http://localhost:$${NEO_BROWSER_PORT:-7474}"; \
+			echo "Neo4j Bolt endpoint:  bolt://localhost:$${NEO_BOLT_PORT:-7687}";; \
+	esac; \
+	case ",$$profiles," in \
+		*,qlever,*) echo "QLever SPARQL:        http://localhost:$${QLEVER_PORT:-7019}/";; \
 	esac
 	@echo "Project:              $(PROJECT_NAME)"
 
@@ -279,10 +293,13 @@ logs: ## Tail logs from all services
 ps: ## Show service status
 	$(DC_TEST) ps
 
-print-services: ## Show the optional-service selection and resulting profiles
+print-services: ## Show the optional-service selection, resulting profiles and graph store addresses
 	@echo "selected:   $(SELECTED_SERVICES)"
 	@echo "deselected: $(DESELECTED_SERVICES)"
 	@echo "profiles:   $(COMPOSE_PROFILES)"
+	@echo "OXIGRAPH_URL: $(OXIGRAPH_URL)"
+	@echo "NEO4J_HOST:   $(NEO4J_HOST)"
+	@echo "QLEVER_URL:   $(QLEVER_URL)"
 
 bash: ## Shell into the mediawiki container
 	$(DC_DEV) exec mediawiki bash
@@ -374,9 +391,9 @@ _first-run-seed-demo:
 # --dbserver must match MARIADB_HOST: a literal here installs the schema on a different server
 # than SettingsTemplate.php points the wiki at.
 #
-# The Main Page is saved with QLEVER_URL empty, which leaves the stack's SPARQL stores unconfigured:
-# their EDM projection has no Mapping page until the demo data is imported, and a save before then
-# logs an unknown-projection error.
+# The Main Page is saved with OXIGRAPH_URL and QLEVER_URL empty, which leaves the stack's SPARQL
+# stores unconfigured: their EDM projection has no Mapping page until the demo data is imported, and
+# a save before then logs an unknown-projection error.
 install-db:
 	$(EXEC_MW_ROOT) mv LocalSettings.php __LocalSettings.php
 	$(EXEC_MW_ROOT) \
@@ -388,7 +405,7 @@ install-db:
 	$(EXEC_MW_ROOT) rm LocalSettings.php
 	$(EXEC_MW_ROOT) mv __LocalSettings.php LocalSettings.php
 	$(EXEC_MW_ROOT) php maintenance/run.php update --quick
-	echo '{{subst:int:neowiki-main-page-text}}' | $(EXEC_MW_ROOT) env QLEVER_URL= \
+	echo '{{subst:int:neowiki-main-page-text}}' | $(EXEC_MW_ROOT) env OXIGRAPH_URL= QLEVER_URL= \
 		php maintenance/run.php edit --user 'MediaWiki default' --summary 'NeoWiki starter page' 'Main Page'
 
 # Runs before every PHP test target.
@@ -575,7 +592,7 @@ ts-lint: _wait-node ## Run TS linter
 # Wipe and reseed the dev stack. The teardown (make remove) is stack-agnostic —
 # --remove-orphans reaps the dev sidecars too — while the up must be the dev
 # variant, since reset rebuilds the dev stack.
-reset: ## Wipe DB + Neo4j volumes and reseed demo data (recreates the dev stack)
+reset: ## Wipe the stack's volumes and reseed demo data (recreates the dev stack)
 	$(MAKE) --no-print-directory remove
 	$(DC_DEV) up -d
 	@$(MAKE) --no-print-directory _wait-mw
@@ -630,10 +647,16 @@ NEO_START = $(DC) start neo > /dev/null \
 	|| { echo "The neo4j database did not come back online." >&2; exit 1; }
 
 .PHONY: perf-generate perf-import perf-snapshot perf-restore
-.PHONY: _require-pages _require-snapshot
+.PHONY: _require-pages _require-snapshot _require-neo
 
 _require-pages:
 	@[ -n "$(pages)" ] || { echo "Usage: make perf-generate pages=N [subjects=10] [seed=1]" >&2; exit 1; }
+
+# The snapshot targets act on the stack's neo container, which runs only when `services=` names it.
+_require-neo:
+	@docker ps -q --filter label=com.docker.compose.project=$(PROJECT_NAME) \
+		--filter label=com.docker.compose.service=neo | grep -q . \
+		|| { echo "This stack runs no Neo4j: start it with neo in services=, as in 'make dev services=oxigraph,neo'." >&2; exit 1; }
 
 # Generated beside the final name and moved into place on success, for the same reason as the
 # snapshot halves: the generator truncates its output at fopen and writes the header — which
@@ -683,7 +706,7 @@ endif
 # `set -e` still skips them when a dump fails, but a restart that comes back unhealthy — the one
 # thing the trap can fail on — then still fails the target without discarding a snapshot whose
 # halves are both complete.
-perf-snapshot: ## Snapshot MariaDB + Neo4j into perf/snapshot/
+perf-snapshot: _require-neo ## Snapshot MariaDB + Neo4j into perf/snapshot/
 	@mkdir -p $(PERF_SNAPSHOT_DIR)
 	@rm -f $(PERF_SQL).part $(PERF_NEO).part
 	$(DC) exec -T db mariadb-dump -u root -p$(MARIADB_ROOT_PASSWORD) \
@@ -701,7 +724,7 @@ _require-snapshot:
 	@[ -s $(PERF_SQL) ] && [ -s $(PERF_NEO) ] \
 		|| { echo "No snapshot in $(PERF_SNAPSHOT_DIR)/; run 'make perf-snapshot' first." >&2; exit 1; }
 
-perf-restore: _require-snapshot ## Restore perf/snapshot/, replacing this stack's MariaDB and Neo4j data
+perf-restore: _require-snapshot _require-neo ## Restore perf/snapshot/, replacing this stack's MariaDB and Neo4j data
 	$(DC) exec -T db mariadb -u root -p$(MARIADB_ROOT_PASSWORD) < $(PERF_SQL)
 	@set -e; \
 		neo_start() { $(NEO_START); }; \

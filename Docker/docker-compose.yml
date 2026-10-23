@@ -20,15 +20,19 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      # Neo4j is optional, so the wiki waits for it only when it runs.
       neo:
         condition: service_healthy
+        required: false
+    networks:
+      - default
+      - no-egress
     environment:
       # Where the wiki reaches the backing services, defaulted here so a Docker/.env without
       # these still starts a working stack. See Docker/README.md.
       - MARIADB_HOST=${MARIADB_HOST:-db}
       - MARIADB_PORT=${MARIADB_PORT:-3306}
       - NEO4J_SCHEME=${NEO4J_SCHEME:-bolt}
-      - NEO4J_HOST=${NEO4J_HOST:-neo}
       - NEO4J_PORT=${NEO4J_PORT:-7687}
       - MARIADB_DATABASE
       - MARIADB_USER
@@ -37,11 +41,12 @@ services:
       - NEO4J_URL_EXTERNAL
       - NEO4J_USERNAME
       - NEO4J_PASSWORD
-      # Endpoint of the qlever service below; a non-empty value is what makes
-      # SettingsTemplate.php configure $wgNeoWikiSparqlStores. The bundled Makefile
-      # owns the value: the qlever endpoint when the service is selected, empty
-      # ("disabled") when deselected. Without the Makefile it is unset and no
-      # store is configured.
+      # Where the wiki reaches each graph store. A non-empty value is what makes SettingsTemplate.php
+      # configure that store, so these have no defaults: the bundled Makefile sets each one when
+      # `services=` selects the store and empties it otherwise. Without the Makefile they are unset
+      # and no store is configured.
+      - OXIGRAPH_URL
+      - NEO4J_HOST
       - QLEVER_URL
       # Bearer token the wiki sends to authorize SPARQL updates. Defaulted here instead of being
       # required from Docker/.env, so a .env written before the variable existed still works; the
@@ -56,10 +61,10 @@ services:
       timeout: 5s
       retries: 1
 
-  # NOTE (v2 shared-backend mode): in a future iteration, db and neo will
-  # be tagged with a `local-backend` profile so they can be opted out of when
+  # NOTE (v2 shared-backend mode): in a future iteration, db will be
+  # tagged with a `local-backend` profile so it can be opted out of when
   # SHARED_BACKEND=1 is set, allowing multiple worktrees to share an external
-  # MariaDB and Neo4j instance. In v1 they stay on by default (no profile).
+  # MariaDB instance. In v1 it stays on by default (no profile).
   db:
     image: mariadb:11.8
     restart: unless-stopped
@@ -76,7 +81,10 @@ services:
       timeout: 10s
       retries: 4
 
+  # Serves the Cypher query surfaces. Opt-in: the Makefile runs it when `services=` names it.
   neo:
+    profiles:
+      - neo
     # Community Edition, since Enterprise's free licence only covers a 30-day internal evaluation. 5.26 is the
     # LTS line and the oldest one NeoWiki supports; test_neo and CI run the same image, so the test suite
     # covers that line.
@@ -95,13 +103,13 @@ services:
       timeout: 1s
       retries: 10
 
-  # SPARQL 1.1 graph store (QLever) for the SPARQL projection plugin (#586), as a working example
-  # of NeoWiki's SPARQL projection: every page save and RebuildGraphDatabases.php also projects the
-  # page's RDF here as named graphs, and the query surfaces read from it. The wiki is pointed at it
-  # by QLEVER_URL above. Unconditional in this file; the dev overlay gates it behind a `qlever`
-  # profile for `services=` selection — see the comment there. NeoWiki reaches it in-network as
-  # http://qlever:7019/; a host port for manual inspection is opt-in via docker-compose.tools.yml.
+  # A second SPARQL 1.1 graph store (QLever), opt-in like neo: every page save and
+  # RebuildGraphDatabases.php also projects the page's RDF here as named graphs. The wiki is pointed at
+  # it by QLEVER_URL above. NeoWiki reaches it in-network as http://qlever:7019/; a host port for
+  # manual inspection is opt-in via docker-compose.tools.yml.
   qlever:
+    profiles:
+      - qlever
     image: docker.io/adfreiburg/qlever:latest
     restart: unless-stopped
     # Room for QLever's -m 1G query budget (server command below) plus index overhead and rebuilds.
@@ -148,16 +156,11 @@ services:
       timeout: 5s
       retries: 20
 
-  # A second SPARQL 1.1 graph store engine (Oxigraph), alongside the qlever service above, so the
-  # SPARQL projection plugin (#586) can be exercised against more than one implementation. Nothing
-  # points at it by default, so it sits behind its own profile and neither stack starts it: use
-  # `COMPOSE_PROFILES=oxigraph make dev`. QLEVER_URL is what the mediawiki service above is given, so
-  # even a started service holds nothing until you repoint $wgNeoWikiSparqlStores in
-  # Docker/LocalSettings.local.php at http://oxigraph:7878/update and http://oxigraph:7878/query —
-  # separate paths, unlike QLever's single one, so an entry needs both updateUrl and queryUrl. A host
-  # port for manual inspection is opt-in via docker-compose.tools.yml, which is also why this service
-  # is defined here rather than in the dev overlay: that overlay works on either stack, so a service
-  # it maps a port for has to exist in this file.
+  # The stack's default graph store, a SPARQL 1.1 store (Oxigraph): every page save and
+  # RebuildGraphDatabases.php projects the page's RDF here as named graphs, and the query surfaces read
+  # from it. Its profile is in the Makefile's default selection, which also points the wiki at it
+  # through OXIGRAPH_URL above. A host port for manual inspection is opt-in via
+  # docker-compose.tools.yml.
   #
   # No entrypoint script: unlike QLever there is no index to build, and --location below is the whole
   # of persistence.
@@ -168,13 +171,16 @@ services:
   oxigraph:
     profiles:
       - oxigraph
-    image: ghcr.io/oxigraph/oxigraph:latest
+    image: ghcr.io/oxigraph/oxigraph:0.5.13
     restart: unless-stopped
     # Parity with the qlever service, so swapping which engine a stack points at does not change
     # the stack's memory ceiling.
     mem_limit: 1536m
     # --union-default-graph: unscoped queries see every named graph, as QLever does (see Docker/README.md).
     command: serve --location /data --bind 0.0.0.0:7878 --union-default-graph
+    # Only the network below, which has no route out of the stack.
+    networks:
+      - no-egress
     volumes:
       # Named volume, for the same reasons as qlever-index-data above.
       - oxigraph-data:/data
@@ -203,6 +209,18 @@ services:
       - MW_SERVER
     depends_on:
       - mediawiki
+
+networks:
+  # Oxigraph follows every SERVICE clause in a query and has no setting to stop it, and the wiki
+  # passes on queries from anyone holding the neowiki-query right, anonymous visitors by default. On
+  # a network with a route out, anyone allowed to query could make the store send requests to any
+  # host it can reach. Only the wiki shares this one with it.
+  no-egress:
+    internal: true
+    # Docker still gives an internal network's bridge an address on the host, through which the
+    # store could reach the host's own services. This withholds it.
+    driver_opts:
+      com.docker.network.bridge.inhibit_ipv4: "true"
 
 volumes:
   mediawiki-db-data:

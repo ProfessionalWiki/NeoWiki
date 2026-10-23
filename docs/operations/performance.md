@@ -84,6 +84,5 @@ make perf-import                # imports it, reporting pages and Subjects per s
 To time a rebuild of what you imported, run [`NeoWiki:RebuildGraphDatabases`](maintenance.md#rebuilding-the-graph)
 under `time`.
 
-A stock development stack projects into QLever, so this measures the slowest column above. Point
-`$wgNeoWikiSparqlStores` in `Docker/LocalSettings.local.php` at the configuration you are evaluating — `[]` for
-none.
+A stock development stack projects into Oxigraph alone, which matches no column above. Start it with `services=neo`
+for the No SPARQL store column, `services=oxigraph,neo` for With Oxigraph, or `services=neo,qlever` for With QLever.

@@ -237,42 +237,54 @@ if ( $mwIsDev ) {
 
 $wgNeoWikiEnableDevelopmentUI = $mwIsDev;
 
-$neo4jScheme = getenv( 'NEO4J_SCHEME' ) ?: 'bolt';
-$neo4jAddress = ( getenv( 'NEO4J_HOST' ) ?: 'neo' ) . ':' . ( getenv( 'NEO4J_PORT' ) ?: '7687' );
+// A graph store is configured only when the variable holding its address is set and not empty. The
+// bundled Makefile sets it for each store `services=` selects and empties it for the others.
+$neo4jHost = getenv( 'NEO4J_HOST' );
 
-$wgNeoWikiNeo4jInternalWriteUrl = $neo4jScheme . '://' . getenv( 'NEO4J_USERNAME' ) . ':' . getenv( 'NEO4J_PASSWORD' ) . '@' . $neo4jAddress;
-$wgNeoWikiNeo4jInternalReadUrl = $wgNeoWikiNeo4jInternalWriteUrl;
+if ( $neo4jHost !== false && $neo4jHost !== '' ) {
+	$neo4jScheme = getenv( 'NEO4J_SCHEME' ) ?: 'bolt';
+	$neo4jAddress = $neo4jHost . ':' . ( getenv( 'NEO4J_PORT' ) ?: '7687' );
 
-// SPARQL graph store (QLever) for the SPARQL projection plugin (#586). Both the demo stack and the
-// dev stack run the qlever service defined in docker-compose.yml by default and point the wiki at
-// its endpoint via QLEVER_URL. A non-empty value is the gate: an image started outside those stacks
-// gets QLEVER_URL unset rather than a configuration pointing at a host that does not exist, and so
-// does CI, whose docker-compose.ci.yml replaces that file and sets neither variable. The dev stack's
-// Makefile sets it to the empty string when `services=` deselects qlever, which disables the
-// configuration the same way. The access token is an ordinary optional credential, defaulted in the
-// compose file so a Docker/.env written before it existed still yields a working store. Skipped
-// under PHPUnit so integration tests never post updates here — they configure their own stores with
-// mocked HTTP via overrideConfigValue(), so the default must stay empty during tests.
+	$wgNeoWikiNeo4jInternalWriteUrl = $neo4jScheme . '://' . getenv( 'NEO4J_USERNAME' ) . ':' . getenv( 'NEO4J_PASSWORD' ) . '@' . $neo4jAddress;
+	$wgNeoWikiNeo4jInternalReadUrl = $wgNeoWikiNeo4jInternalWriteUrl;
+}
+
+// The SPARQL stores are skipped under PHPUnit so integration tests never post updates to them: those
+// tests configure their own stores with mocked HTTP via overrideConfigValue(), so the default must stay
+// empty during tests.
 //
-// Two entries, one endpoint: the native projection and the EDM projection of the demo data's
-// Mapping:EDM page are kept in the same QLever index as sibling projections. Each lands in its own
-// family of per-page named graphs (#1053), so neither overwrites the other. The query surfaces
-// target the first entry's endpoint, which both entries share, so a query reaches both projections.
+// Each store holds two projections: the native one and the EDM one of the demo data's Mapping:EDM page.
+// Each lands in its own family of per-page named graphs, so neither overwrites the other. The query
+// surfaces target the first entry's endpoint, which both entries of a store share, so a query reaches
+// both projections. Oxigraph comes first, so it answers the queries when both stores run.
+$wgNeoWikiSparqlStores = [];
+
+$oxigraphUrl = getenv( 'OXIGRAPH_URL' );
+
+if ( $oxigraphUrl !== false && $oxigraphUrl !== '' && !defined( 'MW_PHPUNIT_TEST' ) ) {
+	foreach ( [ 'native', 'EDM' ] as $projection ) {
+		$wgNeoWikiSparqlStores[] = [
+			'updateUrl' => "$oxigraphUrl/update",
+			'queryUrl' => "$oxigraphUrl/query",
+			'projection' => $projection,
+		];
+	}
+}
+
+// QLever's entries carry names of their own: a store is named after its projection by default, which
+// the Oxigraph entries already hold. The access token is defaulted in the compose file so a Docker/.env
+// written before it existed still yields a working store.
 $qleverUrl = getenv( 'QLEVER_URL' );
 
 if ( $qleverUrl !== false && $qleverUrl !== '' && !defined( 'MW_PHPUNIT_TEST' ) ) {
-	$wgNeoWikiSparqlStores = [
-		[
+	foreach ( [ 'native', 'EDM' ] as $projection ) {
+		$wgNeoWikiSparqlStores[] = [
+			'name' => "qlever-$projection",
 			'updateUrl' => $qleverUrl,
 			'accessToken' => getenv( 'QLEVER_ACCESS_TOKEN' ) ?: null,
-			'projection' => 'native',
-		],
-		[
-			'updateUrl' => $qleverUrl,
-			'accessToken' => getenv( 'QLEVER_ACCESS_TOKEN' ) ?: null,
-			'projection' => 'EDM',
-		],
-	];
+			'projection' => $projection,
+		];
+	}
 }
 
 // Allow anonymous REST API calls on the wiki.

@@ -30,10 +30,10 @@ are already bound on the host. The demo stack allocates nothing: it uses the val
 | `OXIGRAPH_PORT`    | (see below) | 7878    | Oxigraph SPARQL endpoint (opt-in) |
 
 Neo4j, QLever and Oxigraph ports are only exposed to the host by the `Docker/docker-compose.tools.yml`
-overlay, which works with either stack; `make dev-tools` adds it to the dev stack. Oxigraph also needs
-`COMPOSE_PROFILES=oxigraph`. These ports are not auto-allocated, so the overlay is best used with one
-stack at a time. Override `NEO_BROWSER_PORT` / `NEO_BOLT_PORT` / `QLEVER_PORT` / `OXIGRAPH_PORT` if you
-need to run two tools-mode stacks simultaneously.
+overlay, which works with either stack, for the stores the stack runs; `make dev-tools` adds it to the
+dev stack. These ports are not auto-allocated, so the overlay is best used with one stack at a time.
+Override `NEO_BROWSER_PORT` / `NEO_BOLT_PORT` / `QLEVER_PORT` / `OXIGRAPH_PORT` if you need to run two
+tools-mode stacks simultaneously.
 
 The MariaDB, (default) Neo4j, QLever and Oxigraph ports are not exposed to the host. Reach
 them from inside the stack via `make bash` or `docker compose exec`.
@@ -47,7 +47,7 @@ Where the wiki reaches MariaDB and Neo4j, defaulting to this stack's own `db` an
 | `MARIADB_HOST` | `db`    | Also where `make install-db` installs                    |
 | `MARIADB_PORT` | `3306`  |                                                          |
 | `NEO4J_SCHEME` | `bolt`  | Plaintext. Any host outside this stack wants `bolt+s` or `neo4j+s` |
-| `NEO4J_HOST`   | `neo`   | Both the read and the write URL                          |
+| `NEO4J_HOST`   | `neo` when that service runs | Both the read and the write URL. Empty leaves Neo4j unconfigured |
 | `NEO4J_PORT`   | `7687`  | The port the wiki dials, not the host publish port `NEO_BOLT_PORT` |
 
 Set them in the environment rather than in `Docker/.env`: a value there becomes a makefile
@@ -55,9 +55,10 @@ assignment, which a later `MARIADB_HOST=... make dev` cannot override.
 
 An address outside this stack reaches the wiki, `make install-db` and the first-run seed, but not
 the rest of the tooling. The perf snapshot targets still act on the bundled `neo` and `db`,
-`make remove` still wipes only this stack's volumes, and the `mediawiki` service still waits on both
-bundled services being healthy. An external server also has to already carry the database, user and
-Neo4j account the bundled services create for themselves.
+`make remove` still wipes only this stack's volumes, and the `mediawiki` service still waits on the
+bundled `db`, and on `neo` when it runs, being healthy. An external Neo4j needs no `neo` service. An
+external server also has to already carry the database, user and Neo4j account the bundled services
+create for themselves.
 
 `make reset` is the sharp edge: it wipes the bundled volumes and then reinstalls and reimports the
 demo data over whatever `MARIADB_HOST` and `NEO4J_HOST` point at, so against a populated external
@@ -65,29 +66,34 @@ server it destroys data rather than being inert.
 
 ## Optional services
 
-The dev stack's core is `mediawiki`, `db` and `neo`; everything else is optional. `make dev` (and
-`make dev-tools`) accept a `services=` comma-list naming the optional services to run:
+The core of both stacks is `mediawiki` and `db`; everything else is optional. The targets that start a
+stack (`make dev`, `make dev-tools`, `make up`, `make demo` and `make upgrade`) accept a `services=`
+comma-list naming the optional services to run:
 
 | Service       | Needed for                                                              |
 |---------------|-------------------------------------------------------------------------|
-| `node`        | Frontend work: watches and rebuilds the TS bundle (`dist/`)             |
-| `qlever`      | SPARQL/RDF work: the wiki projects RDF into it on every save            |
-| `mailcatcher` | Testing outgoing email (web UI on `MAILCATCHER_PORT`)                   |
-| `oxigraph`    | Second SPARQL engine; needs manual wiring via `LocalSettings.local.php` |
+| `oxigraph`    | SPARQL queries: the wiki projects RDF into it on every save             |
+| `neo`         | Cypher queries: the wiki projects into Neo4j on every save              |
+| `qlever`      | A second SPARQL store, kept in sync the same way                        |
+| `node`        | Frontend work: watches and rebuilds the TS bundle (`dist/`); dev only   |
+| `mailcatcher` | Testing outgoing email (web UI on `MAILCATCHER_PORT`); dev only         |
 
-Without the flag, `node`, `qlever` and `mailcatcher` run by default; `oxigraph` runs only when named.
-`services=none` runs core only. Examples:
+Without the flag, `oxigraph`, `node` and `mailcatcher` run. `services=none` runs core only, a wiki
+without query surfaces. The selection is not persisted, so pass it whenever you start the stack.
+Examples:
 
 ```sh
-make dev                        # default set
-make dev services=node          # frontend work: watcher only
-make dev services=none          # core only
-make dev services=qlever,node   # SPARQL plus frontend
+make dev                             # default set
+make dev services=node               # frontend work: watcher only
+make dev services=none               # core only
+make dev services=node,oxigraph,neo  # SPARQL and Cypher, plus frontend
+make upgrade services=oxigraph,neo   # a demo stack that keeps Neo4j
 ```
 
 Rerunning `make dev` with a different selection reconfigures a running stack: newly-deselected services
 stop (their volumes survive for reselection) and the wiki's config follows, so a deselected
-store or mail host is never configured. Details:
+store or mail host is never configured. The demo stack's targets leave deselected services running, so
+run `make down` before deselecting a service there. Details:
 
 - Without `node`, `make dev` builds the frontend bundle once in a throwaway container, so the UI
   works; the `ts-*` targets start the watcher on demand. `make ts-build` refreshes a bundle left
@@ -99,21 +105,10 @@ store or mail host is never configured. Details:
 
 ## QLever SPARQL store
 
-Both the demo stack and the dev stack run a [QLever](https://github.com/ad-freiburg/qlever)
-SPARQL 1.1 graph store by default as a working example of NeoWiki's SPARQL projection plugin
-(issue #586). The bundled Makefile passes the store's endpoint to the wiki as `QLEVER_URL`.
-`SettingsTemplate.php` points `$wgNeoWikiSparqlStores` at that endpoint, so every page save and
-`RebuildGraphDatabases.php` also projects the page's RDF into QLever as named graphs.
-
-Two entries point at that one endpoint: the `native` projection and the `EDM` one defined
-by the demo data's `Mapping:EDM` page. Each writes its own per-page named graphs, so one
-index holds both and a query can join across them; the demo data's `EDM queries` page shows
-such queries.
-
-The `EDM` entry needs that Mapping page, so `make import-demo-data` is part of the setup:
-without it every Subject save logs an unknown-projection error and a rebuild reports every
-page as failed. On a stack that predates the second entry, run
-`make rebuild-graph-databases` to fill the EDM graphs for pages already saved.
+`services=qlever` adds a [QLever](https://github.com/ad-freiburg/qlever) SPARQL 1.1 graph store. The
+bundled Makefile passes its endpoint to the wiki as `QLEVER_URL`, and `SettingsTemplate.php` gives it
+the two projections the [Oxigraph store](#oxigraph-sparql-store) holds, as the stores `qlever-native`
+and `qlever-EDM`. With Oxigraph running too, the query surfaces read Oxigraph.
 
 The projected data lives on the `qlever-index-data` named volume, so it survives
 `docker compose restart` and `make down` / `make dev`. If `qlever` does not start, run `make pull`,
@@ -148,31 +143,31 @@ it up on demand via the `test` profile; CI starts it in `.github/workflows/ci-ph
 
 ## Oxigraph SPARQL store
 
-Both stacks also carry [Oxigraph](https://github.com/oxigraph/oxigraph), a second SPARQL engine, so
-the projection plugin can be exercised against more than one implementation. Nothing points at it by
-default, so it sits behind the `oxigraph` compose profile and neither stack starts it on its own:
+Both stacks run an [Oxigraph](https://github.com/oxigraph/oxigraph) SPARQL 1.1 graph store by default.
+The bundled Makefile passes its address to the wiki as `OXIGRAPH_URL`, and `SettingsTemplate.php`
+points `$wgNeoWikiSparqlStores` at it, so every page save and `RebuildGraphDatabases.php` projects the
+page's RDF into Oxigraph as named graphs.
 
-```sh
-COMPOSE_PROFILES=oxigraph make dev
-```
-
-`COMPOSE_PROFILES` is not persisted: a later plain `make dev` deselects Oxigraph again and stops it,
-though its data volume survives.
-
-`SettingsTemplate.php` points `$wgNeoWikiSparqlStores` at `QLEVER_URL`, so nothing reaches Oxigraph until
-you repoint it: `updateUrl` `http://oxigraph:7878/update`, `queryUrl` `http://oxigraph:7878/query`. On the
-dev stack put that in `Docker/LocalSettings.local.php`, which the dev overlay bind-mounts; the demo stack
-has no such file, so use the commented-out `LocalSettings.php` mount in `docker-compose.yml`. Oxigraph
-cannot refuse `SERVICE` requests, so repointing the wiki here enables federation — see
-[Restricting federation](../docs/operations/installation.md#restricting-federation).
+Two entries point at that one store: the `native` projection and the `EDM` one defined by the demo
+data's `Mapping:EDM` page. Each writes its own per-page named graphs, so a query can join across them;
+the demo data's `EDM queries` page shows such queries. The `EDM` entry needs that Mapping page, so
+`make import-demo-data` is part of the setup: without it every Subject save logs an unknown-projection
+error and a rebuild reports every page as failed.
 
 There is no index to build, unlike QLever. Data lives in the `oxigraph-data` named volume, which
 `make remove` clears along with the wiki's own data.
 
-The service runs with `--union-default-graph`, so an unscoped query sees every named graph, matching QLever.
+The service runs with `--union-default-graph`, so an unscoped query sees every named graph, as on
+QLever. Unlike QLever, Oxigraph 0.5 returns a triple once for each graph holding it, and both
+projections hold the `rdfs:label` of a Subject whose Schema is mapped, so an unscoped query can return
+a row twice. Use `SELECT DISTINCT`.
+
+The service sits only on the `no-egress` network, which has no route out of the stack and which only
+the wiki shares. A federated query fails; see
+[Restricting federation](../docs/operations/installation.md#restricting-federation).
 
 To query it from the host, add the `docker-compose.tools.yml` overlay, which maps `OXIGRAPH_PORT`
-(default 7878) — on the dev stack `COMPOSE_PROFILES=oxigraph make dev-tools` does that for you:
+(default 7878) — on the dev stack `make dev-tools` does that for you:
 
 ```sh
 # <project> is this stack's compose project name, which `docker compose ls` lists.
@@ -185,7 +180,8 @@ curl http://localhost:7878/query \
 ```
 
 Oxigraph has no authentication, so the overlay publishes this port on loopback only, unlike the Neo4j
-and QLever ones.
+and QLever ones. The overlay also puts Oxigraph on the default network, where it federates: use the
+overlay only on a stack no one else can query.
 
 ### `test_oxigraph` (SPARQL query system test)
 
@@ -214,13 +210,13 @@ report the backends as missing instead of starting them.
   production `php.ini`; intermediate, no `LocalSettings.php`), `final-mw` (the prebuilt
   demo image published as `ghcr.io/professionalwiki/neowiki:latest`, which bakes in
   `LocalSettings.php`), and `dev-mw` (the dev image with mounted NeoWiki source).
-- `docker-compose.yml` — the demo stack's services (`mediawiki`, `db`, `neo`, `qlever`
-  — SPARQL store, see above) plus the profile-gated `caddy` (the `server` profile, for
-  HTTPS hosting) and `oxigraph` (the `oxigraph` profile, the second SPARQL store, see
-  above). The dev overlay builds on this file, so these services are in both stacks.
+- `docker-compose.yml` — the demo stack's services: `mediawiki` and `db`, the graph stores
+  `oxigraph`, `neo` and `qlever`, each behind the profile of its name (see
+  [Optional services](#optional-services)), and `caddy` behind the `server` profile, for HTTPS
+  hosting. The dev overlay builds on this file, so these services are in both stacks.
 - `docker-compose.dev.yml` — dev overlay; switches `mediawiki` to the dev image, bind-mounts the
   NeoWiki source, sets `MW_MODE=dev`, adds the dev-only sidecars `node` and `mailcatcher`, and gates
-  them plus `qlever` behind their `services=` profiles (see [Optional services](#optional-services));
+  them behind their `services=` profiles (see [Optional services](#optional-services));
   `test_neo`, `test_qlever` and `test_oxigraph` sit behind the `test` profile.
 - `docker-compose.tools.yml` — opt-in overlay that exposes Neo4j, QLever and Oxigraph to the
   host, usable with either stack.

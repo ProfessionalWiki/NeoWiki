@@ -8,11 +8,11 @@ data is curated for demonstration and is not authoritative.
 
 == Which museums have the most visitors? ==
 
-{{#invoke:NeoWikiDemo|query|MATCH (m:Museum) RETURN m.name AS Museum, m.`Annual visitors` AS `Annual visitors` ORDER BY `Annual visitors` DESC|columns=Museum, Annual visitors|linkColumns=Museum}}
+{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Museum ?Annual_visitors WHERE { ?m a neo-schema:Museum ; rdfs:label ?Museum ; neo-prop:Annual_visitors ?Annual_visitors } ORDER BY DESC(?Annual_visitors)|linkColumns=Museum}}
 
 == Browse ==
 
-{{#invoke:NeoWikiDemo|query|MATCH (m:Museum)-[:City]->(c:City) RETURN m.name AS Museum, c.name AS City, m.Founded AS Founded, m.`Annual visitors` AS `Annual visitors` ORDER BY Museum|columns=Museum, City, Founded, Annual visitors|linkColumns=Museum, City}}
+{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Museum ?City ?Founded ?Annual_visitors WHERE { ?m a neo-schema:Museum ; rdfs:label ?Museum ; neo-prop:City ?c . ?c rdfs:label ?City . OPTIONAL { ?m neo-prop:Founded ?Founded } OPTIONAL { ?m neo-prop:Annual_visitors ?Annual_visitors } } ORDER BY ?Museum|linkColumns=Museum, City}}
 
 == Add your own ==
 
@@ -25,4 +25,4 @@ An artwork's Creator and Located at fields offer the existing artists and museum
 * Schemas: [[Schema:Museum]], [[Schema:Artist]], [[Schema:Artwork]], [[Schema:Exhibition]], [[Schema:Annual attendance]], [[Schema:City]]
 * [[Special:Subject/sEpfwJLnxyQy6vR|The Rijksmuseum on Special:Subject]] shows its attendance figures inside it, and lists the artwork and exhibition held there under Referenced by.
 * See the source of one subject: [{{fullurl:Rijksmuseum|action=edit}} Edit Rijksmuseum]
-* The featured museums are embedded with the <code><nowiki>{{#view}}</nowiki></code> parser function. The tables come from Cypher queries via [[Module:NeoWikiDemo]].
+* The featured museums are embedded with the <code><nowiki>{{#view}}</nowiki></code> parser function. The tables come from SPARQL queries via [[Module:NeoWikiDemo]].

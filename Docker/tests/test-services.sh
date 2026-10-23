@@ -19,12 +19,11 @@ assert_eq() {
 }
 
 run_print_services() {
-    # Unset COMPOSE_PROFILES: the Makefile's global `export` means that when this script itself
-    # runs as a recipe of `make test-scripts`, the outer make's computed COMPOSE_PROFILES is
+    # Unset what the Makefile derives from the selection: its global `export` means that when this
+    # script itself runs as a recipe of `make test-scripts`, the outer make's computed values are
     # already in this shell's environment and would otherwise leak into the nested make call
-    # below, unioning itself into every case regardless of services=. Case 4 sets it back
-    # explicitly for the one case that wants it.
-    ( cd "$ROOT" && unset COMPOSE_PROFILES && make -s print-services "$@" )
+    # below, overriding every case regardless of services=. The cases that want one set it back.
+    ( cd "$ROOT" && unset COMPOSE_PROFILES OXIGRAPH_URL NEO4J_HOST QLEVER_URL && make -s print-services "$@" )
 }
 
 # Extracts the value after "<label>:" from print-services output, trimming leading whitespace.
@@ -33,30 +32,30 @@ field() {
 }
 
 echo
-color '36' "Case 1: absent services= flag -> default set, oxigraph deselected"
+color '36' "Case 1: absent services= flag -> default set, neo and qlever deselected"
 out="$(run_print_services 2>&1)"
-assert_eq "$(field "$out" selected)" "node qlever mailcatcher" "Default selection is node, qlever, mailcatcher"
-assert_eq "$(field "$out" deselected)" "oxigraph" "Default deselects only oxigraph"
+assert_eq "$(field "$out" selected)" "node oxigraph mailcatcher" "Default selection is node, oxigraph, mailcatcher"
+assert_eq "$(field "$out" deselected)" "neo qlever" "Default deselects neo and qlever"
 
 echo
-color '36' "Case 2: services=none -> nothing selected, all four deselected"
+color '36' "Case 2: services=none -> nothing selected, all five deselected"
 out="$(run_print_services services=none 2>&1)"
 assert_eq "$(field "$out" selected)" "" "services=none selects nothing"
-assert_eq "$(field "$out" deselected)" "node qlever mailcatcher oxigraph" "services=none deselects all four"
+assert_eq "$(field "$out" deselected)" "node oxigraph neo qlever mailcatcher" "services=none deselects all five"
 
 echo
 color '36' "Case 3: services=node,qlever -> only those two selected"
 out="$(run_print_services services=node,qlever 2>&1)"
 assert_eq "$(field "$out" selected)" "node qlever" "services=node,qlever selects exactly those"
-assert_eq "$(field "$out" deselected)" "mailcatcher oxigraph" "services=node,qlever deselects the rest"
+assert_eq "$(field "$out" deselected)" "oxigraph neo mailcatcher" "services=node,qlever deselects the rest"
 
 echo
-color '36' "Case 4: COMPOSE_PROFILES=oxigraph -> unioned in, not deselected"
-out="$( cd "$ROOT" && unset COMPOSE_PROFILES && COMPOSE_PROFILES=oxigraph make -s print-services 2>&1 )"
-assert_eq "$(field "$out" deselected)" "" "COMPOSE_PROFILES=oxigraph is not deselected"
+color '36' "Case 4: COMPOSE_PROFILES=neo -> unioned in, not deselected"
+out="$( cd "$ROOT" && unset COMPOSE_PROFILES && COMPOSE_PROFILES=neo make -s print-services 2>&1 )"
+assert_eq "$(field "$out" deselected)" "qlever" "COMPOSE_PROFILES=neo is not deselected"
 case ",$(field "$out" profiles)," in
-    *,oxigraph,*) ok "COMPOSE_PROFILES=oxigraph appears in the resulting profiles" ;;
-    *) fail "COMPOSE_PROFILES=oxigraph should appear in the resulting profiles (got '$(field "$out" profiles)')" ;;
+    *,neo,*) ok "COMPOSE_PROFILES=neo appears in the resulting profiles" ;;
+    *) fail "COMPOSE_PROFILES=neo should appear in the resulting profiles (got '$(field "$out" profiles)')" ;;
 esac
 
 echo
@@ -65,6 +64,27 @@ rc=0
 out="$( cd "$ROOT" && unset COMPOSE_PROFILES && make -s print-services services=bogus 2>&1 )" || rc=$?
 if [ "$rc" -ne 0 ]; then ok "services=bogus fails (exit $rc)"; else fail "services=bogus should fail (exit 0)"; fi
 if printf '%s' "$out" | grep -qF "bogus"; then ok "Error message names 'bogus'"; else fail "Error message should name 'bogus' (got: $out)"; fi
+
+echo
+color '36' "Case 6: absent services= flag -> the wiki is pointed at Oxigraph only"
+out="$(run_print_services 2>&1)"
+assert_eq "$(field "$out" OXIGRAPH_URL)" "http://oxigraph:7878" "Default sets OXIGRAPH_URL"
+assert_eq "$(field "$out" NEO4J_HOST)" "" "Default leaves NEO4J_HOST empty"
+assert_eq "$(field "$out" QLEVER_URL)" "" "Default leaves QLEVER_URL empty"
+
+echo
+color '36' "Case 7: services=neo,qlever -> the wiki is pointed at Neo4j and QLever only"
+out="$(run_print_services services=neo,qlever 2>&1)"
+assert_eq "$(field "$out" NEO4J_HOST)" "neo" "services=neo,qlever sets NEO4J_HOST"
+assert_eq "$(field "$out" QLEVER_URL)" "http://qlever:7019/" "services=neo,qlever sets QLEVER_URL"
+assert_eq "$(field "$out" OXIGRAPH_URL)" "" "services=neo,qlever leaves OXIGRAPH_URL empty"
+
+echo
+color '36' "Case 8: NEO4J_HOST from the environment -> kept, with or without the neo service"
+out="$( cd "$ROOT" && unset COMPOSE_PROFILES OXIGRAPH_URL QLEVER_URL && NEO4J_HOST=neo4j.example make -s print-services services=none 2>&1 )"
+assert_eq "$(field "$out" NEO4J_HOST)" "neo4j.example" "An external NEO4J_HOST is kept when neo is deselected"
+out="$( cd "$ROOT" && unset COMPOSE_PROFILES OXIGRAPH_URL QLEVER_URL && NEO4J_HOST= make -s print-services services=neo 2>&1 )"
+assert_eq "$(field "$out" NEO4J_HOST)" "neo" "A blank NEO4J_HOST counts as unset"
 
 echo
 if [ "$FAILS" -eq 0 ]; then color '32' "All $PASSES checks passed."; exit 0

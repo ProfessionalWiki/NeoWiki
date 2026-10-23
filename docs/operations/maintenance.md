@@ -166,14 +166,14 @@ php maintenance/run.php CirrusSearch:UpdateSearchIndexConfig --reindexAndRemoveO
 php maintenance/run.php CirrusSearch:ForceSearchIndex
 ```
 
-## What happens during a Neo4j outage
+## What happens during a graph store outage
 
 - **Editing pages works.** Edits, deletions and undeletions all commit. NeoWiki logs the projection failure on the
   [`NeoWiki` channel](installation.md#logging).
 - **Editing and displaying Subjects works.**
-- **Cypher queries fail.**
+- **Queries against that store fail.**
 
-Once Neo4j is back, [rebuild the graph](#rebuilding-the-graph): it repairs both a failed save and a failed delete.
+Once the store is back, [rebuild the graph](#rebuilding-the-graph): it repairs both a failed save and a failed delete.
 
 ## Backups
 

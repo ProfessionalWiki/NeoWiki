@@ -39,6 +39,10 @@ remove its entry from `$wgNeoWikiSparqlStores`.
 
 Open `http://localhost:8484` and log in as `AdminName` with the password `AdminPassword`.
 
+The stack keeps Oxigraph, a [SPARQL store](#optional-sparql-graph-stores), in sync with the wiki, so SPARQL queries
+work out of the box. Cypher queries need Neo4j, which runs only if you name it each time you start the stack, as in
+`make demo services=oxigraph,neo`; [Optional services](../../Docker/README.md#optional-services) lists the others.
+
 ### Optional: share the demo with others
 
 By default, the stack runs on localhost. To let others reach it, host it on a server. Edit `Docker/.env` and change
@@ -372,8 +376,8 @@ A projection configured on a different endpoint is therefore not reachable from 
 NeoWiki writes pages into named graphs and nothing into the default graph, so whether an unscoped query finds them is
 the store's choice; see [RDF Export](../api/rdf-export.md#iri-scheme).
 
-Both bundled Docker stacks, demo and dev, ship working QLever and Oxigraph examples wired up this way — see
-[`Docker/README.md`](../../Docker/README.md#qlever-sparql-store) for the services and how to query them.
+Both bundled Docker stacks, demo and dev, run Oxigraph wired up this way, and QLever when selected — see
+[`Docker/README.md`](../../Docker/README.md#oxigraph-sparql-store) for the services and how to query them.
 
 ### Restricting federation
 
@@ -396,10 +400,12 @@ The bundled Docker stacks set the deny-all value on their QLever services, so th
 change it. The setting can also be changed at runtime through the store's endpoint by anyone holding its access
 token, so keep that token secret.
 
-Oxigraph has no equivalent setting and will attempt the outbound request; the stacks' Oxigraph services federate
-for that reason. Other stores vary — consult their documentation. Where you cannot restrict the store, restrict
-around it: block its outbound traffic at the network layer, and narrow who holds the `neowiki-query` right — see
-[Narrowing `neowiki-query`](restricted-content.md#narrowing-neowiki-query).
+Oxigraph has no equivalent setting and will attempt the outbound request. Other stores vary — consult their
+documentation. Where you cannot restrict the store, restrict around it: block its outbound traffic at the network
+layer, and narrow who holds the `neowiki-query` right — see
+[Narrowing `neowiki-query`](restricted-content.md#narrowing-neowiki-query). The bundled Docker stacks put their
+Oxigraph services on a network that reaches only the wiki, so a federated query fails unless the stack runs with
+`Docker/docker-compose.tools.yml`.
 
 ## Production hardening
 

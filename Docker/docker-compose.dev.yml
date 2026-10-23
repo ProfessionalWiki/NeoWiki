@@ -50,14 +50,6 @@ services:
     command: --innodb-buffer-pool-size=128M
     mem_limit: 512m
 
-  # `qlever` is defined in the base file (docker-compose.yml) and runs unconditionally there, so
-  # the demo stack and raw `docker compose` invocations always get it. Only the dev stack supports
-  # `services=` selection, so the profile gating it goes in this overlay, not the base file. The
-  # Makefile selects it by default, so `make dev` keeps QLever on unless `services=` deselects it.
-  qlever:
-    profiles:
-      - qlever
-
   # Dev-only sidecars. They live in this overlay (not the base file) so the base
   # "try-it-out" stack stays minimal and so `make down` removes them as orphans
   # regardless of the compose backend. See the Makefile `down` target.
@@ -149,7 +141,8 @@ services:
   test_oxigraph:
     profiles:
       - test
-    image: ghcr.io/oxigraph/oxigraph:latest
+    # The version the oxigraph service runs, so the test suite covers it.
+    image: ghcr.io/oxigraph/oxigraph:0.5.13
     restart: unless-stopped
     mem_limit: 1536m
     # No --location, so the store is in memory. Ephemeral test scaffolding, like test_qlever running
