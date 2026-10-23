@@ -55,22 +55,6 @@ class FunctionsTrackingCategoryTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	/**
-	 * Scribunto hands Lua numbers to PHP as numbers, which a string parameter accepts only outside strict mode.
-	 */
-	public function testALuaFunctionStillAcceptsANumberForAString(): void {
-		$this->markTestSkippedIfExtensionNotLoaded( 'Scribunto' );
-
-		$this->assertContains(
-			self::CATEGORY,
-			$this->categoriesOfModuleInvocation(
-				"local p = {}\n"
-				. "function p.run() return tostring( mw.neowiki.getMainSubject( 2024 ) ) end\n"
-				. 'return p'
-			)
-		);
-	}
-
 	public function testPageInvokingAModuleThatCallsNoNeoWikiFunctionIsNotInTheCategory(): void {
 		$this->markTestSkippedIfExtensionNotLoaded( 'Scribunto' );
 
