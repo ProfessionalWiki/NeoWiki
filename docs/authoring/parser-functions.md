@@ -211,8 +211,8 @@ counts as absent.
 
 Executes a read-only Cypher query and returns the raw results as JSON in a code block, for
 development and debugging. Available only when a Neo4j graph backend is configured; on a wiki
-without one, `{{#cypher_raw: …}}` is not registered and renders as ordinary wikitext. The
-[Graph Model](../api/graph-model.md) describes the node and relationship structure to query.
+without one, `{{#cypher_raw: …}}` shows an error saying so. The [Graph Model](../api/graph-model.md)
+describes the node and relationship structure to query.
 
 For formatted result rendering, build it in a template with Lua
 [`nw.query()`](lua-api.md#nwquerycypher-params).
@@ -250,7 +250,7 @@ For formatted result rendering, build it in a template with Lua
 Executes a read-only SPARQL query against the first configured [SPARQL store](../operations/installation.md#optional-sparql-graph-stores)
 and returns the raw results as JSON in a code block. The SPARQL counterpart of `{{#cypher_raw}}`, for
 development and debugging. Available only when a SPARQL store is configured; on a wiki without one,
-`{{#sparql_raw: …}}` is not registered and renders as ordinary wikitext.
+`{{#sparql_raw: …}}` shows an error saying so.
 
 The JSON is the W3C [`application/sparql-results+json`](https://www.w3.org/TR/sparql11-results-json/)
 document — the standard `head` / `results` structure (or `boolean` for an `ASK` query).

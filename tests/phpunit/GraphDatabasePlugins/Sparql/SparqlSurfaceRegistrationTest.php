@@ -10,9 +10,9 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
- * The wikitext SPARQL surfaces exist only when at least one SPARQL store is configured, and are absent
- * otherwise — both directions, mirroring the Neo4j conditional-registration tests (#1016). The REST
- * route's presence is covered by SparqlRouteRegistrationTest and OnExtensionRegistrationTest.
+ * The wikitext SPARQL surfaces run queries only when at least one SPARQL store is configured: without
+ * one, the Lua function is absent and {{#sparql_raw}} says the wiki has no store. The REST route's
+ * presence is covered by SparqlRouteRegistrationTest and OnExtensionRegistrationTest.
  *
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::getFirstSparqlPlugin
@@ -36,13 +36,16 @@ class SparqlSurfaceRegistrationTest extends NeoWikiIntegrationTestCase {
 		$this->assertContains( 'sparql_raw', $names );
 	}
 
-	public function testParserFunctionNotRegisteredWithoutStore(): void {
+	public function testParserFunctionExplainsItCannotRunWithoutStore(): void {
 		$this->clearSparqlStores();
 
-		$parser = $this->recordingParser( $names );
-		NeoWikiHooks::onParserFirstCallInit( $parser );
+		$html = $this->parseWikitextOn(
+			'NoSparqlStorePage',
+			'{{#sparql_raw: SELECT ?s WHERE { ?s ?p ?o } }}',
+			$this->parserOptionsShowingMessageKeys()
+		);
 
-		$this->assertNotContains( 'sparql_raw', $names );
+		$this->assertStringContainsString( '(neowiki-sparql-raw-error-not-configured)', $html );
 	}
 
 	public function testLuaFunctionOfferedWhenStoreConfigured(): void {

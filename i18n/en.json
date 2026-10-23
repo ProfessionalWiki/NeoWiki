@@ -237,6 +237,7 @@
 	"neowiki-schema-display-required-no": "No",
 
 	"neowiki-cypher-raw-error-json-encode": "Failed to encode query result as JSON",
+	"neowiki-cypher-raw-error-not-configured": "This wiki has no Neo4j database, so Cypher queries cannot run here.",
 
 	"neowiki-cypher-error-permission-denied": "You do not have permission to run Cypher queries.",
 	"neowiki-cypher-error-empty-query": "The Cypher query must not be empty.",
@@ -248,6 +249,7 @@
 	"neowiki-cypher-error-internal": "The Cypher query could not be completed: $1",
 
 	"neowiki-sparql-raw-error-json-encode": "Failed to encode query result as JSON",
+	"neowiki-sparql-raw-error-not-configured": "This wiki has no SPARQL store, so SPARQL queries cannot run here.",
 
 	"neowiki-sparql-error-permission-denied": "You do not have permission to run SPARQL queries.",
 	"neowiki-sparql-error-empty-query": "The SPARQL query must not be empty.",

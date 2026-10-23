@@ -26,19 +26,6 @@ class ParserFunctionRegistrationTest extends NeoWikiIntegrationTestCase {
 		$this->assertContains( 'create_subject', $names );
 	}
 
-	public function testCypherRawNotRegisteredWithoutBackend(): void {
-		$this->runWithoutGraphBackend( function (): void {
-			$parser = $this->recordingParser( $names );
-
-			NeoWikiHooks::onParserFirstCallInit( $parser );
-
-			$this->assertNotContains( 'cypher_raw', $names );
-			$this->assertContains( 'view', $names );
-			$this->assertContains( 'neowiki_value', $names );
-			$this->assertContains( 'create_subject', $names );
-		} );
-	}
-
 	private function recordingParser( ?array &$names ): Parser {
 		$names = [];
 		$parser = $this->createMock( Parser::class );

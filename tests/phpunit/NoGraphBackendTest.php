@@ -36,7 +36,7 @@ use TestLogger;
 
 /**
  * A wiki with no graph backend configured is a supported mode: Subjects are stored, found, read and
- * rendered without one, and only the query surfaces a backend brings are absent (#1040).
+ * rendered without one, and only the query surfaces a backend brings are unavailable (#1040).
  *
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension
  * @group Database
@@ -122,6 +122,18 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 		} );
 
 		$this->assertStringContainsString( self::VALUE, $html );
+	}
+
+	public function testCypherRawExplainsItCannotRunWithoutNeo4j(): void {
+		$html = $this->runWithoutGraphBackend(
+			fn (): string => $this->parseWikitextOn(
+				'NoBackendCypherPage',
+				'{{#cypher_raw: MATCH (n) RETURN n }}',
+				$this->parserOptionsShowingMessageKeys()
+			)
+		);
+
+		$this->assertStringContainsString( '(neowiki-cypher-raw-error-not-configured)', $html );
 	}
 
 	/**
