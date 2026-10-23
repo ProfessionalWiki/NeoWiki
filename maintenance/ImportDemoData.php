@@ -25,10 +25,13 @@ $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) 
 
 require_once $basePath . '/maintenance/Maintenance.php';
 
-class ImportDemoData extends Maintenance {
+class ImportDemoData extends Maintenance implements ImportPresenter {
 
 	// The demo Mapping page whose projection the EdmSparqlPage examples query: DemoData/Mapping/EDM.json.
 	private const string EDM_PROJECTION = 'EDM';
+
+	/** @var string[] */
+	private array $failures = [];
 
 	public function __construct() {
 		parent::__construct();
@@ -37,8 +40,20 @@ class ImportDemoData extends Maintenance {
 		$this->addDescription( 'Creates NeoWiki demo data, including schemas and subjects' );
 	}
 
-	public function execute(): void {
+	/**
+	 * Fails by returning false rather than through fatalError(), which would exit before the runner's
+	 * final commit and deferred updates.
+	 */
+	public function execute(): bool {
 		$this->newImportAction()->import();
+
+		if ( $this->failures === [] ) {
+			return true;
+		}
+
+		$this->error( "The import is incomplete. These pages failed:\n" . implode( "\n", $this->failures ) );
+
+		return false;
 	}
 
 	private function newImportAction(): ImportPagesAction {
@@ -46,7 +61,7 @@ class ImportDemoData extends Maintenance {
 		$services = MediaWikiServices::getInstance();
 
 		return new ImportPagesAction(
-			presenter: $this->newImportPresenter(),
+			presenter: $this,
 			pageContentSaver: new PageContentSaver(
 				wikiPageFactory: $services->getWikiPageFactory(),
 				performer: $user,
@@ -130,47 +145,41 @@ class ImportDemoData extends Maintenance {
 		return User::newSystemUser( 'NeoWiki', [ 'steal' => true ] );
 	}
 
-	private function newImportPresenter(): object {
-		return new class ( $this ) implements ImportPresenter {
+	public function presentDone(): void {
+		$this->outputChanneled( 'Import finished' );
+	}
 
-			public function __construct(
-				private readonly Maintenance $maintenance
-			) {
-			}
+	public function presentImportStarted( string $pageTitle ): void {
+		$this->outputChanneled( "Importing $pageTitle... ", $pageTitle );
+	}
 
-			public function presentDone(): void {
-				$this->maintenance->outputChanneled( 'Import finished' );
-			}
+	public function presentCreatedRevision( string $pageTitle ): void {
+		$this->outputChanneled( "done", $pageTitle );
+	}
 
-			public function presentImportStarted( string $pageTitle ): void {
-				$this->maintenance->outputChanneled( "Importing $pageTitle... ", $pageTitle );
-			}
+	public function presentNoChanges( string $pageTitle ): void {
+		$this->outputChanneled( "done (no changes)", $pageTitle );
+	}
 
-			public function presentCreatedRevision( string $pageTitle ): void {
-				$this->maintenance->outputChanneled( "done", $pageTitle );
-			}
+	public function presentImportFailed( string $pageTitle, string $errorMessage ): void {
+		$this->presentFailure( $pageTitle, $errorMessage );
+	}
 
-			public function presentNoChanges( string $pageTitle ): void {
-				$this->maintenance->outputChanneled( "done (no changes)", $pageTitle );
-			}
+	public function presentDeletionStarted( string $pageTitle ): void {
+		$this->outputChanneled( "Deleting $pageTitle... ", $pageTitle );
+	}
 
-			public function presentImportFailed( string $pageTitle, string $errorMessage ): void {
-				$this->maintenance->outputChanneled( "FAILED: $errorMessage", $pageTitle );
-			}
+	public function presentDeleted( string $pageTitle ): void {
+		$this->outputChanneled( "done", $pageTitle );
+	}
 
-			public function presentDeletionStarted( string $pageTitle ): void {
-				$this->maintenance->outputChanneled( "Deleting $pageTitle... ", $pageTitle );
-			}
+	public function presentDeletionFailed( string $pageTitle, string $errorMessage ): void {
+		$this->presentFailure( $pageTitle, $errorMessage );
+	}
 
-			public function presentDeleted( string $pageTitle ): void {
-				$this->maintenance->outputChanneled( "done", $pageTitle );
-			}
-
-			public function presentDeletionFailed( string $pageTitle, string $errorMessage ): void {
-				$this->maintenance->outputChanneled( "FAILED: $errorMessage", $pageTitle );
-			}
-
-		};
+	private function presentFailure( string $pageTitle, string $errorMessage ): void {
+		$this->outputChanneled( "FAILED: $errorMessage", $pageTitle );
+		$this->failures[] = "$pageTitle: $errorMessage";
 	}
 
 }

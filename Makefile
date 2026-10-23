@@ -334,26 +334,28 @@ _wait-mw:
 # Idempotent: skips if the database already has a wiki installed. The probe has to ask the same
 # server install-db writes to, or pointing MARIADB_HOST at an installed wiki reinstalls over it on
 # every run. It asks from the db container because that is where a mariadb client exists.
+# A failed demo page must not stop a fresh stack from coming up, and the import lists the failures itself.
 .PHONY: _first-run-seed
 _first-run-seed:
 	@if $(DC_DEV) exec -T db sh -c "mariadb -h $$MARIADB_HOST -P $$MARIADB_PORT -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE -e 'SELECT 1 FROM page LIMIT 1' 2>/dev/null" >/dev/null 2>&1; then \
 		echo "Wiki already initialized; skipping install-db."; \
 	else \
-		$(MAKE) --no-print-directory install-db; \
+		$(MAKE) --no-print-directory install-db || exit 1; \
 		$(MAKE) --no-print-directory composer-install; \
-		$(MAKE) --no-print-directory import-demo-data; \
+		$(MAKE) --no-print-directory import-demo-data || true; \
 	fi
 	@# TS install/build are handled by the node sidecar on startup (npm install && npm run build:watch).
 
 # Demo variant of the seed: no dev-only steps (composer install). Uses
-# $(DC) since the demo stack has no dev overlay. Idempotent like _first-run-seed.
+# $(DC) since the demo stack has no dev overlay. Like _first-run-seed, it is idempotent and carries on past
+# failed demo pages.
 .PHONY: _first-run-seed-demo
 _first-run-seed-demo:
 	@if $(DC) exec -T db sh -c "mariadb -h $$MARIADB_HOST -P $$MARIADB_PORT -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE -e 'SELECT 1 FROM page LIMIT 1' 2>/dev/null" >/dev/null 2>&1; then \
 		echo "Wiki already initialized; skipping install."; \
 	else \
-		$(MAKE) --no-print-directory install-db; \
-		$(MAKE) --no-print-directory import-demo-data; \
+		$(MAKE) --no-print-directory install-db || exit 1; \
+		$(MAKE) --no-print-directory import-demo-data || true; \
 	fi
 
 # ---- DB and Neo4j init -------------------------------------------------------

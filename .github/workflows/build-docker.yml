@@ -93,6 +93,9 @@ jobs:
 
       - run: make smoke-test
 
+      # Runs after the smoke test, which checks the starter Main Page that the demo data replaces.
+      - run: make import-demo-data
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v4
         with:
