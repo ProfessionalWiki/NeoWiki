@@ -4,9 +4,9 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests;
 
+use Exception;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use RuntimeException;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::onExtensionRegistration
@@ -194,7 +194,7 @@ class OnExtensionRegistrationTest extends TestCase {
 	}
 
 	public function testStopsWithComposerInstructionsWhenItsLibrariesAreMissing(): void {
-		$this->expectException( RuntimeException::class );
+		$this->expectException( Exception::class );
 		$this->expectExceptionMessage( 'composer update' );
 
 		NeoWikiExtension::requireComposerLibraries( 'ProfessionalWiki\NeoWiki\Tests\NoSuchLibraryClass' );

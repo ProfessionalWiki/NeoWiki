@@ -365,8 +365,7 @@ class NeoWikiExtension {
 		if ( !class_exists( $libraryClass ) ) {
 			throw new RuntimeException(
 				"NeoWiki's Composer libraries are missing. Add extensions/NeoWiki/composer.json to the merge-plugin " .
-				"include list in MediaWiki's composer.local.json, then run composer update --no-dev in MediaWiki's " .
-				'directory.'
+				"include list in MediaWiki's composer.local.json, then run composer update --no-dev there."
 			);
 		}
 	}
