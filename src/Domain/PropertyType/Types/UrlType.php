@@ -23,15 +23,16 @@ class UrlType implements PropertyType {
 	 * ECMA-262, so that the JSON Schema documents can use it as a `pattern`. A `pattern` takes no
 	 * flags, and the inline `(?i)` and `(?i:...)` are a syntax error in most ECMA-262 engines and
 	 * match beyond ASCII where they parse, so the case rules are spelled out rather than left to `/i`.
+	 * The class for path, query and fragment excludes only ASCII characters, so that the validator,
+	 * which matches bytes, and ECMA-262, which matches code units or code points, accept the same
+	 * non-ASCII text.
 	 */
 	public const string URL_PATTERN = '^(?:[Hh][Tt][Tt][Pp][Ss]?://)?'
 		. '(?:(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,}'
 		. '|(?:[0-9]{1,3}\.){3}[0-9]{1,3}'
 		. '|[Ll][Oo][Cc][Aa][Ll][Hh][Oo][Ss][Tt])'
 		. '(?::[0-9]+)?'
-		. '(?:/[-A-Za-z0-9%_.~+]*)*'
-		. '(?:\?[;&A-Za-z0-9%_.~+=-]*)?'
-		. '(?:#[-A-Za-z0-9_]*)?$';
+		. '(?:[/?#][^\x00-\x20\x7F<>"{}|\\\\^`]*)?$';
 
 	public function getTypeName(): string {
 		return self::NAME;

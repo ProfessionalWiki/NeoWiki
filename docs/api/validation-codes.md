@@ -95,10 +95,9 @@ violation reported for that property: per-type checks and `required` are suppres
 
 ### `invalid-url`
 
-On `url` properties. A non-empty value does not match the allowed URL pattern. The pattern accepts
-`http://` and `https://` schemes (or no scheme), domain-like hosts, IPv4 literals, `localhost`,
-port, path, query, and fragment. It rejects other schemes (`ftp://`, `file://`), spaces, and
-disallowed characters.
+On `url` properties. A part is not a web address, which consists of `http://`, `https://` or no scheme;
+a dotted ASCII domain name, IPv4 address or `localhost`; an optional port; and any path, query and
+fragment without spaces, ASCII control characters, `<`, `>`, `"`, `{`, `}`, `|`, `\`, `^` or backticks.
 
 `args`: `[]`. `valuePartIndex`: the offending part. `severity`: `error` (fixed).
 
