@@ -220,6 +220,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageLayoutLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\WikiPageMappingLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MappingNameLookup;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jUrl;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jValueBuilderRegistry;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\CallbackProjectionResolver;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService;
@@ -1228,10 +1229,7 @@ class NeoWikiExtension {
 			if ( $writeUrl === null ) {
 				throw new GraphBackendNotConfiguredException();
 			}
-			$this->neo4jClient = ClientBuilder::create()
-				->withDriver( 'default', $writeUrl )
-				->withDefaultDriver( 'default' )
-				->build();
+			$this->neo4jClient = self::newNeo4jClient( $writeUrl );
 		}
 
 		return $this->neo4jClient;
@@ -1243,13 +1241,19 @@ class NeoWikiExtension {
 			if ( $readUrl === null ) {
 				throw new GraphBackendNotConfiguredException();
 			}
-			$this->readOnlyNeo4jClient = ClientBuilder::create()
-				->withDriver( 'default', $readUrl )
-				->withDefaultDriver( 'default' )
-				->build();
+			$this->readOnlyNeo4jClient = self::newNeo4jClient( $readUrl );
 		}
 
 		return $this->readOnlyNeo4jClient;
+	}
+
+	private static function newNeo4jClient( string $url ): ClientInterface {
+		$neo4jUrl = Neo4jUrl::fromString( $url );
+
+		return ClientBuilder::create()
+			->withDriver( 'default', $neo4jUrl->address, $neo4jUrl->authentication )
+			->withDefaultDriver( 'default' )
+			->build();
 	}
 
 	public function newCypherQueryService( Authority $authority ): Neo4jQueryService {
