@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Uninstall;
 
+use MediaWiki\Cache\HTMLCacheUpdater;
 use MediaWiki\Content\TextContent;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MainConfigNames;
@@ -89,20 +90,32 @@ class SubjectSlotRemoverTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * Purged through an updater of its own: from MediaWiki 1.46, the one MediaWiki's tests provide does nothing.
+	 */
 	public function testPagesThatLostTheirSubjectsArePurgedFromTheCdn(): void {
 		$this->createLivePageWithTwoRevisions();
-		$purgedTitles = [];
-		$this->setTemporaryHook(
-			'HtmlCacheUpdaterAppendUrls',
-			static function ( Title $title ) use ( &$purgedTitles ): void {
-				$purgedTitles[] = $title->getPrefixedText();
+		$cdn = new class() extends HTMLCacheUpdater {
+
+			/**
+			 * @var string[]
+			 */
+			public array $purgedPages = [];
+
+			public function __construct() {
 			}
-		);
 
-		$this->removeSubjectSlots();
-		DeferredUpdates::doUpdates();
+			public function purgeTitleUrls( $pages, $flags = self::PURGE_PRESEND, array $unless = [] ): void {
+				foreach ( $pages as $page ) {
+					$this->purgedPages[] = Title::newFromPageReference( $page )->getPrefixedText();
+				}
+			}
 
-		$this->assertContains( self::LIVE_PAGE, $purgedTitles );
+		};
+
+		iterator_to_array( $this->newRemoverPurgingThrough( $cdn )->remove() );
+
+		$this->assertContains( self::LIVE_PAGE, $cdn->purgedPages );
 	}
 
 	public function testSearchNoLongerFindsAPageByTheSubjectsItHeld(): void {
@@ -182,13 +195,17 @@ class SubjectSlotRemoverTest extends NeoWikiIntegrationTestCase {
 	 * Batches of one, so that every test also covers moving from one batch to the next.
 	 */
 	private function newRemover(): SubjectSlotRemover {
+		return $this->newRemoverPurgingThrough( $this->getServiceContainer()->getHtmlCacheUpdater() );
+	}
+
+	private function newRemoverPurgingThrough( HTMLCacheUpdater $htmlCacheUpdater ): SubjectSlotRemover {
 		$services = $this->getServiceContainer();
 
 		return new SubjectSlotRemover(
 			db: $this->getDb(),
 			slotRoleStore: $services->getSlotRoleStore(),
 			revisionStore: $services->getRevisionStore(),
-			htmlCacheUpdater: $services->getHtmlCacheUpdater(),
+			htmlCacheUpdater: $htmlCacheUpdater,
 			wanCache: $services->getMainWANObjectCache(),
 			batchSize: 1
 		);
