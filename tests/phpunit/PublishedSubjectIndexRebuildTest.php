@@ -4,12 +4,11 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests;
 
+use InvalidArgumentException;
 use MediaWiki\Content\FallbackContent;
 use MediaWiki\Installer\DatabaseUpdater;
-use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\Revision\RevisionSlots;
 use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -102,6 +101,12 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ self::TURING => 'Alan' ], $this->displayNamesOf( $turingPageId ) );
 	}
 
+	public function testRefusesBatchesOfNoPages(): void {
+		$this->expectException( InvalidArgumentException::class );
+
+		$this->newRebuilder( batchSize: 0 );
+	}
+
 	public function testRebuildingIndexesTheRevisionThePolicyPublishes(): void {
 		ConvertibleTimestamp::setFakeTime( self::MONDAY );
 		$approved = $this->writeSubjectSlot( 'Ada Lovelace', $this->slotJson( self::ADA, 'Approved name' ) );
@@ -152,7 +157,10 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 
 		$leftAsTheyWere = $this->rebuild(
 			logger: $logger,
-			revisionLookup: $this->revisionLookupReading( $unloadablePageId, $this->revisionWhoseSubjectSlotCannotBeLoaded() )
+			revisionLookup: $this->revisionLookupReading(
+				$unloadablePageId,
+				$this->newRevisionWhoseSubjectSlotCannotBeLoaded( $unloadablePageId )
+			)
 		);
 
 		$this->assertSame( [ self::ADA => 'Ada' ], $this->displayNamesOf( $unloadablePageId ) );
@@ -210,6 +218,14 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ self::ADA => 'Approved name' ], $this->displayNamesOf( $approved->getPageId() ) );
 	}
 
+	public function testTheUpdateScriptNamesThePagesItLeftAsTheyWere(): void {
+		$pageId = $this->createPageWithoutTellingNeoWiki( 'Ada Lovelace', TestSubject::jsonThatDoesNotDeserialize( self::ADA ) );
+
+		$output = $this->runUpdateScript();
+
+		$this->assertStringContainsString( "Did not reindex pages $pageId:", $output );
+	}
+
 	private function createPage( string $pageName, string $subjectId, string $label ): int {
 		$revision = $this->createPageWithSubjects( $pageName, TestSubject::build( id: $subjectId, label: $label ) );
 		$this->assertNotNull( $revision );
@@ -250,27 +266,25 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 		return $stub;
 	}
 
-	private function revisionWhoseSubjectSlotCannotBeLoaded(): RevisionRecord {
-		$failure = new RevisionAccessException( 'Failed to load data blob' );
-
-		$slots = $this->createStub( RevisionSlots::class );
-		$slots->method( 'getContent' )->willThrowException( $failure );
-
-		$revision = $this->createStub( RevisionRecord::class );
-		$revision->method( 'hasSlot' )->willReturn( true );
-		$revision->method( 'getContent' )->willThrowException( $failure );
-		$revision->method( 'getSlots' )->willReturn( $slots );
-
-		return $revision;
-	}
-
 	private function rebuild(
 		int $batchSize = DatabasePublishedSubjectIndexRebuilder::DEFAULT_BATCH_SIZE,
 		RevisionPolicy $revisionPolicy = new NullRevisionPolicy(),
 		LoggerInterface $logger = new NullLogger(),
 		?RevisionLookup $revisionLookup = null
 	): array {
-		$rebuilder = new DatabasePublishedSubjectIndexRebuilder(
+		$rebuild = $this->newRebuilder( $batchSize, $revisionPolicy, $logger, $revisionLookup )->rebuild();
+		iterator_to_array( $rebuild );
+
+		return $rebuild->getReturn();
+	}
+
+	private function newRebuilder(
+		int $batchSize,
+		RevisionPolicy $revisionPolicy = new NullRevisionPolicy(),
+		LoggerInterface $logger = new NullLogger(),
+		?RevisionLookup $revisionLookup = null
+	): DatabasePublishedSubjectIndexRebuilder {
+		return new DatabasePublishedSubjectIndexRebuilder(
 			db: $this->getDb(),
 			revisionLookup: $revisionLookup ?? $this->getServiceContainer()->getRevisionLookup(),
 			revisionPolicy: $revisionPolicy,
@@ -279,14 +293,12 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 			logger: $logger,
 			batchSize: $batchSize,
 		);
-
-		$rebuild = $rebuilder->rebuild();
-		iterator_to_array( $rebuild );
-
-		return $rebuild->getReturn();
 	}
 
-	private function runUpdateScript(): void {
+	/**
+	 * @return string What the script printed, including its errors, which go to stdout under PHPUnit
+	 */
+	private function runUpdateScript(): string {
 		$script = new RebuildPublishedSubjectIndex();
 		$script->loadWithArgv( [] );
 
@@ -295,8 +307,10 @@ class PublishedSubjectIndexRebuildTest extends NeoWikiIntegrationTestCase {
 			$this->assertTrue( $script->execute() );
 		} finally {
 			$script->cleanupChanneled();
-			ob_end_clean();
+			$output = (string)ob_get_clean();
 		}
+
+		return $output;
 	}
 
 }
