@@ -28,8 +28,8 @@ Concepts:
 Reference for wikitext and Lua authors:
 
 * [Parser Functions](authoring/parser-functions.md) — `{{#view}}`, `{{#neowiki_value}}`, `{{#create_subject}}`,
-  and `{{#cypher_raw}}`
-* [Lua API](authoring/lua-api.md) — the `mw.neowiki` Scribunto library, including `nw.query()` for Cypher
+  `{{#sparql_raw}}` and `{{#cypher_raw}}`
+* [Lua API](authoring/lua-api.md) — the `mw.neowiki` Scribunto library, including SPARQL and Cypher queries
 * [Mapping Format](authoring/mapping-format.md) — the JSON of a Mapping page: projecting Schemas into EDM,
   CIDOC-CRM, or another vocabulary
 * [Edit Notices](authoring/edit-notices.md) — messages shown in the Subject editor and the Subject creator
@@ -42,8 +42,8 @@ For developers building on NeoWiki from outside the wiki.
 * [Schema Format](api/schema-format.md) — JSON format for Schema definitions
 * [Subject Format](api/subject-format.md) — JSON format for Subject data
 * [Validation Codes](api/validation-codes.md) — stable `code` strings returned by backend validation
-* [Query API](api/query-api.md) — read-only Cypher endpoint over the graph backend
-* [Graph Model](api/graph-model.md) — Neo4j node and relationship structure
+* [Query API](api/query-api.md) — read-only SPARQL and Cypher queries over the wiki's data
+* [Graph Model](api/graph-model.md) — the wiki's data as Neo4j nodes and relationships
 * [RDF Export](api/rdf-export.md) — RDF per page, per Subject and in bulk: IRI scheme, endpoint, projections
 * [JSON Schema](api/json-schema.md) — a Schema's Subjects as a JSON Schema document, for validating data before upload
 

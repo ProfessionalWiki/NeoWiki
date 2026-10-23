@@ -4,31 +4,76 @@ order: 5
 ---
 # Query API
 
-`POST /neowiki/v0/query/cypher` runs a read-only Cypher query against the configured Neo4j backend and returns
-results as a structured JSON envelope. The route exists only when a Neo4j backend is configured; on a wiki without
-one it is absent and does not appear in the OpenAPI spec.
+NeoWiki runs read-only queries against the wiki's graph stores, through one endpoint per kind of store:
 
-## Stability
+| Endpoint | Query language | On a wiki with |
+|---|---|---|
+| [`POST /neowiki/v0/query/sparql`](#sparql-query-endpoint) | SPARQL 1.1 | a SPARQL store |
+| [`POST /neowiki/v0/query/cypher`](#cypher-query-endpoint) | Cypher | Neo4j |
 
-Pre-1.0. The endpoint, request shape, response envelope, and error contract may change without notice before 1.0;
-not yet stable for third-party integrations.
+A wiki can have both. On a wiki without that kind of store, the endpoint answers `404`.
 
-## Discovery flow
+Both endpoints need the [`neowiki-query`](#permissions) right but no CSRF token. To call them as a user rather than
+anonymously, log in as for the rest of the [REST API](rest-api.md). The [Schema endpoints](rest-api.md#schemas) list
+the Schema and property names to query.
 
-To write a query you need the graph's labels, properties, and relationships. Learn them from:
+Both report a failed query with a body such as `{ "errorType": "emptyQuery", "message": "Query is empty." }`. Branch
+on `errorType`, not on `message`, which is English and may change between releases. When the store rejects a query,
+the message carries the store's own detail. Besides their own errors, listed below, both endpoints answer:
 
-1. **`GET /neowiki/v0/schemas`** — the available Schema names (e.g. `Person`, `Company`, `Document`).
-2. **`GET /neowiki/v0/schema/{name}`** — one Schema's Property Definitions: the names, types, and constraints of the
-   properties carried by its `:Subject:SchemaName` nodes.
-3. **`GET /neowiki/v0/subject/{id}`** — a live Subject, to see the actual stored data shape (optional).
-4. **[Graph Model](graph-model.md)** — the full Neo4j label, relationship, and node-property structure; required
-   for anything beyond simple `MATCH (s:Subject)` patterns.
+| `errorType` | HTTP | When |
+|---|---|---|
+| `emptyQuery` | 400 | The query is empty or contains only whitespace. |
+| `permissionDenied` | 403 | The caller lacks the `neowiki-query` right. |
+| `rateLimitExceeded` | 429 | The caller exceeded the [rate limit](#rate-limits). |
+| `internalError` | 500 | Anything else. |
 
-## Endpoint contract
+## SPARQL query endpoint
 
-The POST is read-only and needs no CSRF/edit token. Access is governed solely by the `neowiki-query` right; a caller
-with that right on a wiki where it is not granted to anonymous users authenticates with normal MediaWiki session
-credentials.
+The query runs against the wiki's first configured
+[SPARQL store](../operations/installation.md#optional-sparql-graph-stores). It holds one or more projections, in a
+[named graph per page and projection](rdf-export.md#iri-scheme). [RDF Export](rdf-export.md) describes the native
+projection; a [Mapping](../authoring/mapping-format.md) defines the vocabulary of an ontology projection, such as EDM.
+
+### Request
+
+```
+POST /rest.php/neowiki/v0/query/sparql
+Content-Type: application/json
+```
+
+```json
+{
+    "query": "SELECT ?label WHERE { GRAPH ?page { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } } LIMIT 10"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `query` | string | Yes | A SPARQL 1.1 `SELECT` or `ASK` query. `CONSTRUCT` and `DESCRIBE` are not supported. |
+
+### Successful response (200)
+
+The body is the store's W3C [SPARQL results JSON](https://www.w3.org/TR/sparql11-results-json/) document, including
+any extras the store adds, such as QLever's `meta`. NeoWiki caps no rows.
+
+```json
+{
+    "head": { "vars": ["label"] },
+    "results": { "bindings": [ { "label": { "type": "literal", "value": "Johann Sebastian Bach" } } ] }
+}
+```
+
+### Errors
+
+| `errorType` | HTTP | When |
+|---|---|---|
+| `sparqlSyntaxError` | 400 | The store rejected the query, most often for its syntax. |
+| `sparqlStoreUnavailable` | 503 | The store could not be reached, failed, or did not answer within the caller's [timeout](#limits-and-tiers). |
+
+## Cypher query endpoint
+
+[Graph Model](graph-model.md) describes what Neo4j holds: the node labels, relationships and properties to match.
 
 ### Request
 
@@ -46,11 +91,8 @@ Content-Type: application/json
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `cypher` | string | Yes | A read-only Cypher query. Single statement. Queries with write keywords cause a `writeQueryRejected` error. |
-| `parameters` | object | No | Parameter name → value map. Reference as `$name` in the query. Defaults to `{}`. |
-
-In Cypher, backtick-escape property names containing spaces, e.g. `` s.`Birth year` ``. Pass values via
-`parameters` rather than concatenating them into the query string — parameters reach the driver injection-safe.
+| `cypher` | string | Yes | A single read-only Cypher statement. |
+| `parameters` | object | No | Parameter name → value map, referenced as `$name` in the query. Defaults to `{}`. |
 
 ### Successful response (200)
 
@@ -69,155 +111,74 @@ In Cypher, backtick-escape property names containing spaces, e.g. `` s.`Birth ye
 
 | Field | Type | Description |
 |---|---|---|
-| `columns` | array of string | RETURN aliases in declaration order. Row object key order is not guaranteed; use this for column order. |
-| `rows` | array of object | Each row keyed by RETURN alias. |
-| `truncated` | boolean | `true` when the result was cut at `maxRows`; narrow the query or add `LIMIT`. |
+| `columns` | array of string | The column names, in RETURN order. Row object key order is not guaranteed. |
+| `rows` | array of object | Each row keyed by column name. |
+| `truncated` | boolean | `true` when rows beyond the caller's [row cap](#limits-and-tiers) were dropped. |
 | `resultCount` | integer | Number of rows in `rows`. |
-| `durationMs` | integer | Server-measured query execution time in milliseconds, excluding network round-trip. |
+| `durationMs` | integer | Query time in milliseconds, measured by the wiki. |
 
 #### Cell normalization
 
-Scalar Cypher values (strings, integers, floats, booleans, `null`) pass through as-is. Complex types surface as:
+Scalar Cypher values (strings, integers, floats, booleans, `null`) pass through as-is. Other types surface as:
 
 | Cypher type | JSON shape |
 |---|---|
 | Node | `{ "id": ..., "labels": [...], "properties": {...} }` |
 | Relationship | `{ "id": ..., "type": "...", "startNodeId": ..., "endNodeId": ..., "properties": {...} }` |
-| UnboundRelationship | `{ "id": ..., "type": "...", "properties": {...} }` (no start/end node ids; appears in undirected pattern matches) |
-| Path | `{ "nodes": [...], "relationships": [...] }` |
+| Path | `{ "nodes": [...], "relationships": [...] }`, its relationships without `startNodeId` and `endNodeId` |
 | `date` | ISO 8601 date string, e.g. `"2023-10-01"` |
 | `datetime` / zoned `time` | ISO 8601 string with a whole-minute offset, e.g. `"2023-09-13T14:22:23+00:00"` / `"14:22:23+02:00"` |
 | `localdatetime` / `localtime` | ISO 8601 string without offset, e.g. `"2023-09-13T14:22:23"` / `"09:30:00"` |
 | `duration` | `{ "months": ..., "days": ..., "seconds": ..., "nanoseconds": ... }` |
 | `point` | `{ "x": ..., "y": ..., "crs": "...", "srid": ... }` (plus `"z"` for 3D points) |
 
-### Error response
+`id`, `startNodeId` and `endNodeId` are Neo4j's internal ids. The ID of a Subject or Relation is the `id` in its
+`properties`.
 
-```json
-{
-    "errorType": "queryTimeout",
-    "message": "Query exceeded the 30 second timeout."
-}
-```
+### Errors
 
 | `errorType` | HTTP | When |
 |---|---|---|
-| `emptyQuery` | 400 | `cypher` is empty or contains only whitespace. |
-| `parameterMissing` | 400 | Query references `$x` but `parameters` contains no key `x`. |
-| `cypherSyntaxError` | 400 | Neo4j reports a parse or syntax error for the query. |
-| `writeQueryRejected` | 422 | Query contains a write keyword or otherwise fails the read-only validator. |
-| `queryTimeout` | 408 | Query execution exceeded `timeoutSeconds` for the caller's tier. |
-| `rateLimitExceeded` | 429 | Request frequency exceeded the `neowiki-query` rate limit. |
-| `permissionDenied` | 403 | Caller lacks the `neowiki-query` right. |
-| `backendUnavailable` | 503 | No graph backend is reachable. |
-| `internalError` | 500 | Anything else. |
-
-`errorType` strings are stable across releases; branch on them, not on `message`. The `message` is English, may change
-between releases, and is meant for logging, not display. Localized messages are rendered only by the wikitext surfaces
-— `{{#cypher_raw}}` and `nw.query()` — from the same `errorType` classification.
+| `parameterMissing` | 400 | The query references `$x` but `parameters` has no key `x`. |
+| `cypherSyntaxError` | 400 | Neo4j reports a syntax error in the query. |
+| `queryTimeout` | 408 | The query ran past the caller's [timeout](#limits-and-tiers). |
+| `writeQueryRejected` | 422 | The query is not read-only, or uses `CALL` or `SHOW`. |
+| `backendUnavailable` | 503 | Neo4j could not be reached. |
 
 ## Limits and tiers
 
-Two resource tiers control per-query timeout and row cap:
+Unless `$wgNeoWikiQueryLimits` changes them, two tiers cap each query:
 
-| Tier | Who | Timeout | Row cap |
+| Tier | Who | Timeout (`timeoutSeconds`) | Cypher row cap (`maxRows`) |
 |---|---|---|---|
-| `default` | Any user with `neowiki-query` | 30 s | 5,000 rows |
-| `expensive` | Any user with the core `apihighlimits` right | 300 s | 50,000 rows |
+| `default` | Callers without `apihighlimits` | 30 s | 5,000 rows |
+| `expensive` | Callers with the core `apihighlimits` right | 300 s | 50,000 rows |
 
-The tier is selected automatically from the caller's rights; it cannot be requested per call. Queries run from
-wikitext or Lua always use the `default` tier.
+Queries run from wikitext or Lua always use the `default` tier.
 
 ### Rate limits
 
-Request frequency is controlled via MediaWiki's standard `$wgRateLimits` mechanism, keyed as `neowiki-query`.
-Defaults shipped by NeoWiki:
+Calls to either endpoint count against MediaWiki's `$wgRateLimits` key `neowiki-query`. NeoWiki's defaults:
 
-| Caller type | Default limit |
+| Caller | Limit |
 |---|---|
-| Anonymous | 10 requests / 60 s |
-| Logged-in user | 60 requests / 60 s |
-| Bot | 1000 requests / 60 s |
-| Sysop / Bureaucrat | Unlimited (via core `noratelimit` right) |
+| All anonymous callers together | 10 requests / 60 s |
+| Each logged-in user | 60 requests / 60 s |
+| Each bot | 1,000 requests / 60 s |
+| Administrators and bureaucrats | Unlimited (core `noratelimit` right) |
 
 ## Permissions
 
-| Right | Default groups | Purpose |
+| Right | Default groups | Grants |
 |---|---|---|
-| `neowiki-query` | `*` (everyone, including anonymous visitors) | Required to call the query endpoints, to run queries from wikitext or Lua, and to see Subject counts. A holder reads everything the wiki projects into the store; results are not filtered per page. |
-| `apihighlimits` | `bot`, `sysop` (core defaults) | Grants the `expensive` resource tier. |
-
-## SPARQL query endpoint
-
-`POST /neowiki/v0/query/sparql` runs a read-only SPARQL query against the first configured
-[SPARQL store](../operations/installation.md#optional-sparql-graph-stores) and returns its results. Like the Cypher
-endpoint, it exists only when a store is configured; otherwise the route is absent and does not appear in the OpenAPI
-spec.
-
-For the RDF vocabulary (predicates, graph shape) to query, see [RDF Export](rdf-export.md) and
-[Mapping Format](../authoring/mapping-format.md).
-
-### Request
-
-```
-POST /rest.php/neowiki/v0/query/sparql
-Content-Type: application/json
-```
-
-```json
-{
-    "query": "SELECT ?label WHERE { ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label } LIMIT 10"
-}
-```
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `query` | string | Yes | A read-only SPARQL 1.1 `SELECT` or `ASK` query. |
-
-`CONSTRUCT` and `DESCRIBE` are not supported.
-
-### Successful response (200)
-
-The body is the W3C [`application/sparql-results+json`](https://www.w3.org/TR/sparql11-results-json/) document from the
-store, **unmodified** — the standard `head` / `results` structure (or `boolean` for an `ASK`), plus any store-specific
-extras (e.g. QLever's `meta`). NeoWiki wraps no envelope of its own around it.
-
-```json
-{
-    "head": { "vars": ["label"] },
-    "results": { "bindings": [ { "label": { "type": "literal", "value": "Johann Sebastian Bach" } } ] }
-}
-```
-
-### Error response
-
-Same shape as the Cypher endpoint (`{ "errorType", "message" }`); branch on `errorType`, not `message`.
-
-| `errorType` | HTTP | When |
-|---|---|---|
-| `emptyQuery` | 400 | `query` is empty or contains only whitespace. |
-| `sparqlSyntaxError` | 400 | The store rejected the query (a 4xx response, most commonly a SPARQL syntax error). The store's own detail is relayed in `message`. |
-| `sparqlStoreUnavailable` | 503 | The store could not be reached or failed to serve the query (a 5xx response or a transport error). |
-| `internalError` | 500 | The store returned a 2xx response whose body is not a JSON results document, or any other unexpected failure. |
-| `rateLimitExceeded` | 429 | Request frequency exceeded the `neowiki-query` rate limit. |
-| `permissionDenied` | 403 | Caller lacks the `neowiki-query` right. |
-
-### Limits
-
-Reuses the Cypher endpoint's `$wgNeoWikiQueryLimits` tiers, `neowiki-query` right, and rate limits. The per-tier
-timeout applies (as the HTTP client timeout); the `maxRows` cap does not, so bound result size with `LIMIT` in the
-query. There is no distinct timeout `errorType`: a timed-out query surfaces as `sparqlStoreUnavailable` (503), the
-same as an unreachable store.
+| `neowiki-query` | `*` (everyone, including anonymous visitors) | Calling the query endpoints, running queries from wikitext or Lua, and seeing Subject counts. A holder reads whole graph stores: results are not filtered per page. |
+| `apihighlimits` | `bot`, `sysop` (core defaults) | The `expensive` tier. |
 
 ## Related
 
-- [REST API](rest-api.md) — OpenAPI spec and how it is generated; how to browse it with Swagger UI.
-- [Lua API](../authoring/lua-api.md) — `nw.query()` for the same Cypher surface from wikitext templates, and
-  `nw.sparqlQuery()` for the SPARQL surface.
-- [Parser Functions](../authoring/parser-functions.md) — `{{#cypher_raw}}` and `{{#sparql_raw}}` for inline query
-  output in wikitext.
-- [Graph Model](graph-model.md) — Neo4j node labels, relationships, and properties; essential reading before
-  writing Cypher.
-- [ADR 13: Restrict Neo4j Access](../adr/013-restrict-neo4j-access.md) — Why Neo4j is not exposed directly.
-- [ADR 19: Graph Database Architecture](../adr/019-graph-database-architecture.md) — Per-backend query languages,
-  no NeoWiki-specific query abstraction.
+- [REST API](rest-api.md) — the other endpoints, and the OpenAPI spec.
+- [Parser Functions](../authoring/parser-functions.md) — `{{#sparql_raw}}` and `{{#cypher_raw}}` for query output in
+  wikitext.
+- [Lua API](../authoring/lua-api.md) — `nw.sparqlQuery()` and `nw.query()` for queries from Lua modules.
+- [ADR 19: Graph Database Architecture](../adr/019-graph-database-architecture.md) — why each store keeps its own
+  query language, with no NeoWiki query language on top.
