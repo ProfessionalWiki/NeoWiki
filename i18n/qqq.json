@@ -37,7 +37,7 @@
 	"neowiki-special-createsubject": "Title and description of the [[Special:CreateSubject]] page, which creates a page together with its Main Subject. A subpage names the Schema to use, e.g. Special:CreateSubject/Person.",
 	"neowiki-schema-label": "Names a subject's schema. $1 is the schema name or a link to it. Also used as the accessible name of the schema badge, whose visible text is the bare name.",
 	"neowiki-cypher-raw-error-json-encode": "Error message shown when JSON encoding of query results fails.",
-	"neowiki-cypher-raw-error-not-configured": "Error shown in place of the results of the <code>{{#cypher_raw}}</code> parser function on a wiki that has no Neo4j database configured.",
+	"neowiki-cypher-raw-error-not-configured": "Error shown on the <code>{{#cypher_raw}}</code> parser function when the wiki has no Neo4j database configured.",
 
 	"neowiki-cypher-error-permission-denied": "Error shown on the <code>{{#cypher_raw}}</code> parser function when the user the page is parsed for lacks the <code>neowiki-query</code> right.",
 	"neowiki-cypher-error-empty-query": "Error shown on the <code>{{#cypher_raw}}</code> parser function and the <code>nw.query()</code> Lua function when the supplied Cypher query is empty or only whitespace.",
@@ -49,7 +49,7 @@
 	"neowiki-cypher-error-internal": "Generic fallback error shown for a Cypher query run from wikitext that fails for a reason not covered by the more specific cases. $1 is the verbatim underlying detail and is not translatable.",
 
 	"neowiki-sparql-raw-error-json-encode": "Error message shown when JSON encoding of SPARQL query results fails.",
-	"neowiki-sparql-raw-error-not-configured": "Error shown in place of the results of the <code>{{#sparql_raw}}</code> parser function on a wiki that has no SPARQL store configured.",
+	"neowiki-sparql-raw-error-not-configured": "Error shown on the <code>{{#sparql_raw}}</code> parser function when the wiki has no SPARQL store configured.",
 
 	"neowiki-sparql-error-permission-denied": "Error shown on the <code>{{#sparql_raw}}</code> parser function when the user the page is parsed for lacks the <code>neowiki-query</code> right.",
 	"neowiki-sparql-error-empty-query": "Error shown on the <code>{{#sparql_raw}}</code> parser function and the <code>nw.sparqlQuery()</code> Lua function when the supplied SPARQL query is empty or only whitespace.",

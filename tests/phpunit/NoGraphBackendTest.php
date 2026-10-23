@@ -133,6 +133,7 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 			)
 		);
 
+		$this->assertStringContainsString( 'class="error"', $html );
 		$this->assertStringContainsString( '(neowiki-cypher-raw-error-not-configured)', $html );
 	}
 

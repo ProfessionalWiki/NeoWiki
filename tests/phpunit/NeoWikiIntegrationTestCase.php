@@ -106,9 +106,6 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 			->runOutputPipeline( $parserOptions, [] )->getContentHolderText();
 	}
 
-	/**
-	 * Messages the parser renders come out as their keys, as `(message-key)`.
-	 */
 	protected function parserOptionsShowingMessageKeys(): ParserOptions {
 		$parserOptions = ParserOptions::newFromAnon();
 		$parserOptions->setTargetLanguage( $this->getServiceContainer()->getLanguageFactory()->getLanguage( 'qqx' ) );
