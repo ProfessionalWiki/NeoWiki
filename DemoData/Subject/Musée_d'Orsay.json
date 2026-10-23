@@ -56,7 +56,7 @@
 			}
 		},
 		"sEpfwLY8VcdQZJL": {
-			"schema": "Attendance",
+			"schema": "Annual attendance",
 			"statements": {
 				"Year": {
 					"propertyType": "number",
@@ -73,7 +73,7 @@
 			}
 		},
 		"sEpfwLY8WnceT2y": {
-			"schema": "Attendance",
+			"schema": "Annual attendance",
 			"statements": {
 				"Year": {
 					"propertyType": "number",
@@ -90,7 +90,7 @@
 			}
 		},
 		"sEpfwLY8XjJ8gE1": {
-			"schema": "Attendance",
+			"schema": "Annual attendance",
 			"statements": {
 				"Year": {
 					"propertyType": "number",

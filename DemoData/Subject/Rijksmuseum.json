@@ -58,7 +58,7 @@
 			}
 		},
 		"sEpfwJLAtndAaaA": {
-			"schema": "Attendance",
+			"schema": "Annual attendance",
 			"statements": {
 				"Year": { "propertyType": "number", "value": 2024 },
 				"Visitors": { "propertyType": "number", "value": 2500000 },
@@ -66,7 +66,7 @@
 			}
 		},
 		"sEpfwJLAtndBbbB": {
-			"schema": "Attendance",
+			"schema": "Annual attendance",
 			"statements": {
 				"Year": { "propertyType": "number", "value": 2023 },
 				"Visitors": { "propertyType": "number", "value": 2700000 },
@@ -74,7 +74,7 @@
 			}
 		},
 		"sEpfwJLAtndCccC": {
-			"schema": "Attendance",
+			"schema": "Annual attendance",
 			"statements": {
 				"Year": { "propertyType": "number", "value": 2022 },
 				"Visitors": { "propertyType": "number", "value": 1760000 },
@@ -82,7 +82,7 @@
 			}
 		},
 		"sEpfwJLAtndDddD": {
-			"schema": "Attendance",
+			"schema": "Annual attendance",
 			"statements": {
 				"Year": { "propertyType": "number", "value": 2021 },
 				"Visitors": { "propertyType": "number", "value": 625000 },
@@ -90,7 +90,7 @@
 			}
 		},
 		"sEpfwJLAtndEeeE": {
-			"schema": "Attendance",
+			"schema": "Annual attendance",
 			"statements": {
 				"Year": { "propertyType": "number", "value": 2020 },
 				"Visitors": { "propertyType": "number", "value": 675000 },

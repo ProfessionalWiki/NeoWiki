@@ -22,7 +22,7 @@ An artwork's Creator and Located at fields offer the existing artists and museum
 
 == How this is built ==
 
-* Schemas: [[Schema:Museum]], [[Schema:Artist]], [[Schema:Artwork]], [[Schema:Exhibition]], [[Schema:Attendance]], [[Schema:City]]
+* Schemas: [[Schema:Museum]], [[Schema:Artist]], [[Schema:Artwork]], [[Schema:Exhibition]], [[Schema:Annual attendance]], [[Schema:City]]
 * [[Special:Subject/sEpfwJLnxyQy6vR|The Rijksmuseum on Special:Subject]] shows its attendance figures inside it, and lists the artwork and exhibition held there under Referenced by.
 * See the source of one subject: [{{fullurl:Rijksmuseum|action=edit}} Edit Rijksmuseum]
 * The featured museums are embedded with the <code><nowiki>{{#view}}</nowiki></code> parser function. The tables come from Cypher queries via [[Module:NeoWikiDemo]].

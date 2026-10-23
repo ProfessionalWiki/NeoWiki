@@ -39,7 +39,7 @@
 		},
 		"Attendance figures": {
 			"type": "relation",
-			"targetSchemas": [ "Attendance" ],
+			"targetSchemas": [ "Annual attendance" ],
 			"multiple": true
 		}
 	}

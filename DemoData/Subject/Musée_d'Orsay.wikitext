@@ -7,4 +7,4 @@ It is home to the world's largest collection of Impressionist and Post-Impressio
 
 == Annual attendance ==
 
-{{#invoke:NeoWikiDemo|subjectTable|schema=Attendance|columns=Year, Visitors|sortBy=Year|numberColumns=Visitors}}
+{{#invoke:NeoWikiDemo|subjectTable|schema=Annual attendance|columns=Year, Visitors|sortBy=Year|numberColumns=Visitors}}
