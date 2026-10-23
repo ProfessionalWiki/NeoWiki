@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\EntryPoints\Scribunto;
 
-use Closure;
 use Exception;
 use InvalidArgumentException;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
@@ -80,26 +79,22 @@ class ScribuntoLuaLibrary extends LibraryBase {
 			$lib[$name] = [ $this, $name ];
 		}
 
+		$lib['trackCall'] = [ $this, 'trackCall' ];
+
 		return $this->getEngine()->registerInterface(
-			__DIR__ . '/mw.neowiki.lua', $this->trackingCallsOf( $lib ), []
+			__DIR__ . '/mw.neowiki.lua', $lib, []
 		);
 	}
 
 	/**
-	 * Tracked per call rather than on registration: Scribunto registers the library for every module
-	 * invocation, whether or not the module uses it.
-	 *
-	 * @param array<string, callable> $functions
-	 * @return array<string, Closure>
+	 * Called from Lua ahead of each library function rather than on registration, since Scribunto registers
+	 * the library for every module invocation whether or not the module uses it. Kept apart from the
+	 * functions themselves so that Scribunto keeps calling those directly: a call forwarded from this
+	 * strict file would no longer turn the numbers Lua passes into the strings the functions take.
 	 */
-	private function trackingCallsOf( array $functions ): array {
-		return array_map(
-			fn ( callable $function ): Closure => function ( mixed ...$args ) use ( $function ): mixed {
-				FunctionsTrackingCategory::addTo( $this->getParser() );
-				return $function( ...$args );
-			},
-			$functions
-		);
+	public function trackCall(): array {
+		FunctionsTrackingCategory::addTo( $this->getParser() );
+		return [];
 	}
 
 	public function getValue( ?string $propertyName = null, ?array $options = null ): array {
