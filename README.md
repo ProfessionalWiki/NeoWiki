@@ -33,8 +33,8 @@ To work on NeoWiki (edit code, run tests, see changes live), bring up the bundle
 make dev
 ```
 
-This builds a dev-mode image, brings up the stack (mediawiki, db, neo, qlever, node
-watcher, mailcatcher), runs first-time install and seed, and waits until the wiki is
+This builds a dev-mode image, brings up the stack (mediawiki, db, the oxigraph graph store,
+node watcher, mailcatcher), runs first-time install and seed, and waits until the wiki is
 reachable. It prints the URL when ready (the default is `http://localhost:8484` but
 the actual port is auto-allocated; see [Reserved ports](Docker/README.md#reserved-host-ports)).
 To run a different selection of these services, see
@@ -49,8 +49,8 @@ type-check — for that, rely on your IDE while editing, and on `make ts-build` 
 `make tsci`) and CI before pushing. `npm run tsc:watch` runs a standalone type-check
 watcher if you want one.
 
-To also expose Neo4j Browser and the Bolt endpoint to the host (single-worktree use),
-use `make dev-tools` instead. URLs print when the stack comes up.
+To also expose the graph stores to the host (single-worktree use), use `make dev-tools`
+instead. URLs print when the stack comes up.
 
 ### Running tests and tools
 
@@ -62,7 +62,7 @@ make tsci                 # vitest + build + lint
 make browser-test         # Playwright against the dev wiki
 make bash                 # shell into the mediawiki container
 make logs                 # tail logs
-make reset                # wipe DB + Neo and reseed demo data
+make reset                # wipe the stack's data and reseed demo data
 make import-demo-data     # load the latest demo data, overriding your changes
 make test-backends-stop   # stop the test-only backends (make phpunit starts them again on demand)
 ```
@@ -95,19 +95,21 @@ the imported pages. Everything NeoWiki reads is projected during the import, so 
 is fit for measuring reads as well; the number the last line reports is a write-path cost.
 `make reset` returns the stack to demo data.
 
+`perf-snapshot` and `perf-restore` need the stack's Neo4j, so start the stack with `neo` in `services=`.
 Snapshot a wiki nothing else is writing to — the MariaDB and Neo4j halves are not captured at the
 same instant. A snapshot restores into any worktree stack, since they all use the same database
 name. After `perf-restore`:
 
 - Run `make update-dot-php`: the MediaWiki schema is the snapshot's, not this checkout's.
-- QLever is not part of the snapshot, and `make rebuild-graph-databases` only adds to it, so a
-  SPARQL store that has to match the restored wiki must start empty. `make remove` clears it
-  along with the wiki's own data; to empty only QLever, drop its volume while the stack is down:
+- The SPARQL stores are not part of the snapshot, and `make rebuild-graph-databases` only adds to
+  them, so a SPARQL store that has to match the restored wiki must start empty. `make remove` clears
+  them along with the wiki's own data; to empty only Oxigraph, drop its volume while the stack is
+  down (QLever's is `<project>_qlever-index-data`):
 
   ```bash
-  make down                                     # also removes the qlever container
-  docker volume rm <project>_qlever-index-data  # <project> is the name `make dev` prints
-  make dev
+  make down                                 # also removes the oxigraph container
+  docker volume rm <project>_oxigraph-data  # <project> is the name `make dev` prints
+  make dev services=oxigraph,neo
   make perf-restore
   make rebuild-graph-databases
   ```

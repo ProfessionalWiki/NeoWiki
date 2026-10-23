@@ -2,11 +2,11 @@ A fictional company that demonstrates NeoWiki's structured-data features in a co
 
 == Which departments are largest by headcount? ==
 
-{{#invoke:NeoWikiDemo|query|MATCH (d:Department) RETURN d.name AS Department, d.Headcount AS Headcount ORDER BY Headcount DESC|columns=Department, Headcount|linkColumns=Department}}
+{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Department ?Headcount WHERE { ?d a neo-schema:Department ; rdfs:label ?Department . OPTIONAL { ?d neo-prop:Headcount ?Headcount } } ORDER BY DESC(?Headcount)|linkColumns=Department}}
 
 == Browse ==
 
-{{#invoke:NeoWikiDemo|query|MATCH (d:Department) RETURN d.name AS Subject, 'Department' AS Type UNION MATCH (o:Office) RETURN o.name AS Subject, 'Office' AS Type UNION MATCH (p:Product) RETURN p.name AS Subject, 'Product' AS Type|columns=Subject, Type|linkColumns=Subject}}
+{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Subject ?Type WHERE { VALUES ( ?schema ?Type ) { ( neo-schema:Department "Department" ) ( neo-schema:Office "Office" ) ( neo-schema:Product "Product" ) } ?s a ?schema ; rdfs:label ?Subject } ORDER BY ?Type ?Subject|linkColumns=Subject}}
 
 == Add your own ==
 
@@ -17,4 +17,4 @@ A fictional company that demonstrates NeoWiki's structured-data features in a co
 * Schemas: [[Schema:Company]], [[Schema:Department]], [[Schema:Office]], [[Schema:Product]], [[Schema:Employee]]
 * Layout: [[Layout:CompanyOverview]]
 * See the source of this page: [{{fullurl:{{FULLPAGENAME}}|action=edit}} Edit this page]
-* The infobox renders automatically from the Main Subject. The tables come from Cypher queries via [[Module:NeoWikiDemo]].
+* The infobox renders automatically from the Main Subject. The tables come from SPARQL queries via [[Module:NeoWikiDemo]].

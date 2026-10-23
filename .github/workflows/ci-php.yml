@@ -167,13 +167,14 @@ jobs:
       # inherited from the image's default. They mirror the test_oxigraph
       # dev-stack service (see Docker/docker-compose.dev.yml) — no --union-default-graph, so the store
       # is spec-strict; no --location, so it is in memory, which is all a fresh-per-run CI store needs.
+      # The version is the one the Docker stacks run.
       # No access-token flag: Oxigraph has no authentication (oxigraph#88). No federation flag either:
       # Oxigraph federates unconditionally and offers no option to restrict it — see
       # docs/operations/installation.md#restricting-federation.
       - name: Start Oxigraph
         run: |
           docker run -d --name test_oxigraph -p 127.0.0.1:7878:7878 \
-            ghcr.io/oxigraph/oxigraph:latest serve --bind 0.0.0.0:7878
+            ghcr.io/oxigraph/oxigraph:0.5.13 serve --bind 0.0.0.0:7878
 
       # Apache Jena Fuseki, which the same system test runs against a third time. It is here as a
       # conformance target, not as an engine NeoWiki ships: Jena is the most complete SPARQL 1.1

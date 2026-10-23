@@ -40,7 +40,7 @@ Result:
 
 == Set this up ==
 
-Each store entry names one projection, and several entries may point at one endpoint — see [https://neowiki.ai/docs/operations/installation#several-projections-in-one-store Several projections in one store]. The [https://github.com/ProfessionalWiki/NeoWiki/blob/master/Docker/SettingsTemplate.php NeoWiki development stack] points a <code>native</code> and an <code>EDM</code> entry at one QLever, which is why these queries reach both.
+Each store entry names one projection, and several entries may point at one endpoint — see [https://neowiki.ai/docs/operations/installation#several-projections-in-one-store Several projections in one store]. The [https://github.com/ProfessionalWiki/NeoWiki/blob/master/Docker/SettingsTemplate.php NeoWiki development stack] points a <code>native</code> and an <code>EDM</code> entry at one Oxigraph store, which is why these queries reach both.
 
 == Learn more ==
 

@@ -7,22 +7,18 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      neo:
-        condition: service_healthy
+    networks:
+      - default
+      - no-egress
     environment:
       # Duplicated from docker-compose.yml, which the image-build workflow replaces with this file.
       - MARIADB_HOST=${MARIADB_HOST:-db}
       - MARIADB_PORT=${MARIADB_PORT:-3306}
-      - NEO4J_SCHEME=${NEO4J_SCHEME:-bolt}
-      - NEO4J_HOST=${NEO4J_HOST:-neo}
-      - NEO4J_PORT=${NEO4J_PORT:-7687}
       - MARIADB_DATABASE
       - MARIADB_USER
       - MARIADB_PASSWORD
       - MW_SERVER
-      - NEO4J_URL_EXTERNAL
-      - NEO4J_USERNAME
-      - NEO4J_PASSWORD
+      - OXIGRAPH_URL
     healthcheck:
       test: "curl -fsSL http://localhost:80/index.php/Special:Version | grep 'Jeroen De Dauw'"
       interval: 60s
@@ -42,15 +38,14 @@ services:
       timeout: 10s
       retries: 4
 
-  neo:
-    image: neo4j:5.26-community
-    ports:
-      - "127.0.0.1:7474:7474"
-      - "127.0.0.1:7687:7687"
-    environment:
-      - NEO4J_AUTH
-    healthcheck:
-      test: "wget http://localhost:7474/browser -O - | grep 'Neo4j Browser'"
-      interval: 5s
-      timeout: 1s
-      retries: 10
+  oxigraph:
+    image: ghcr.io/oxigraph/oxigraph:0.5.13
+    command: serve --location /data --bind 0.0.0.0:7878 --union-default-graph
+    networks:
+      - no-egress
+
+networks:
+  no-egress:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.inhibit_ipv4: "true"
