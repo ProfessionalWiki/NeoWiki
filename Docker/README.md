@@ -116,8 +116,10 @@ page as failed. On a stack that predates the second entry, run
 `make rebuild-graph-databases` to fill the EDM graphs for pages already saved.
 
 The projected data lives on the `qlever-index-data` named volume, so it survives
-`docker compose restart` and `make down` / `make dev`. The `qlever` service needs an image from
-August 2026 or later: an older one does not start.
+`docker compose restart` and `make down` / `make dev`. If `qlever` does not start, run `make pull`,
+then `make dev`. If its log then says the index is too old or in a previous format, run `make down`,
+`docker volume rm <project>_qlever-index-data` (`<project>` is the name `make dev` prints),
+`make dev` and `make rebuild-graph-databases`.
 
 To query it from the host, add the `docker-compose.tools.yml` overlay, which maps `QLEVER_PORT`
 (default 7019) — on the dev stack `make dev-tools` does that for you:

@@ -34,10 +34,10 @@ carries millions of them, and the wiki behind it held 4 000 pages rather than 10
 
 A [SPARQL store](installation.md#optional-sparql-graph-stores) adds the
 [RDF projection and its SPARQL query surface](../api/rdf-export.md) alongside Neo4j, and every write then pays for
-it — how much depends on the engine. Measured 2026-08-09 on `adbdd656`, the QLever column 2026-10-24 on `3534b882`:
-a fresh wiki grown to 20 000 Subjects / 590 000 triples (~30 triples per Subject), two projections per page into one
-store, whole-run means of two imports per engine. These rates are not comparable to the million-node table above; this
-corpus is fifty times smaller and unpadded.
+it — how much depends on the engine. Measured 2026-08-09 on `adbdd656`, the QLever column 2026-10-24 on `3534b882`
+with QLever's 2026-10-23 build: a fresh wiki grown to 20 000 Subjects / 590 000 triples (~30 triples per Subject),
+two projections per page into one store, whole-run means of two imports per engine. These rates are not comparable to
+the million-node table above; this corpus is fifty times smaller and unpadded.
 
 | Write path | No SPARQL store | With Oxigraph | With QLever |
 |---|---:|---:|---:|
@@ -45,11 +45,11 @@ corpus is fifty times smaller and unpadded.
 | Full rebuild | 1 035 Subjects/second | 415 Subjects/second | 252 Subjects/second |
 | Interactive save | 40 ms | 44–54 ms | 59–61 ms |
 
-The QLever column assumes you enable QLever's automatic background index rebuild, as the bundled Docker stacks do:
-`--rebuild-index-strategy automatic:10000:50000:0.1`. Without it, a save at 20 000 Subjects costs about 0.7 s more
-than without a SPARQL store. With it, at 100 000 Subjects a save costs 26 ms more right after a rebuild and 48 ms
-more just before the next, and a rebuild takes under a second; at 200 000 Subjects a save costs 39–45 ms and
-52–118 ms more respectively. Both engines end up holding the identical projection, triple for triple.
+The QLever column assumes you enable QLever's [automatic background index rebuild](installation.md#qlever), as the
+bundled Docker stacks do. Compared with a wiki of the same size without a SPARQL store, a save then costs 26 ms more
+at 100 000 Subjects right after an index rebuild, which takes under a second, and 48 ms more just before the next; at
+200 000 Subjects, 39–45 ms and 52–118 ms more. Without it, a save at 20 000 Subjects costs about 0.7 s more. Both
+engines end up holding the identical projection, triple for triple.
 
 For an actively edited wiki, project into Oxigraph: at the measured size it meets
 [ADR 29](../adr/029-scalability-targets.md)'s import and interactive-save targets with room and misses its rebuild
@@ -57,8 +57,8 @@ target by about a fifth. QLever meets the same two targets up to at least 100 00
 imported at 128 Subjects/second there), and misses the rebuild target by half, by more as the wiki grows
 (144 Subjects/second at 100 000) — the cost of an engine built for query speed over large corpora, which this page does
 not measure. From about 200 000 Subjects its saves can exceed the interactive-save target. If you configure QLever
-alongside Oxigraph, every save still pays QLever's latency. Beyond the measured sizes both engine columns are
-extrapolation: Oxigraph's curve has stayed near-flat (within one import its rate declined about 1.2×), QLever's rises.
+alongside Oxigraph, every save still pays QLever's latency. Beyond the measured sizes both engines' figures are
+extrapolation: Oxigraph's have stayed near-flat, QLever's keep worsening.
 
 ## How it was measured
 
@@ -68,7 +68,7 @@ run on the import path, so the import figures are unvalidated writes — the RES
 also measured on its own: 20 000 validations of one Subject in a single process. The rebuild figure is
 [`NeoWiki:RebuildGraphDatabases`](maintenance.md#rebuilding-the-graph) re-projecting the whole wiki. Interactive save is
 the median of 60 to 100 REST subject creates and replaces, with the store at the size above; QLever's figures at 100 000
-and 200 000 Subjects come from a wiki grown in 10 000-Subject imports, measured right after and just before a rebuild.
+and 200 000 Subjects come from a wiki grown in 10 000-Subject imports.
 The corpus is synthetic, from `NeoWiki:GeneratePerformanceDump`: ten Subjects per page, twelve Statements per Subject,
 three of them relations to Subjects on other pages.
 

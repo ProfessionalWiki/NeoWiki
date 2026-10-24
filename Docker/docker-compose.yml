@@ -104,7 +104,7 @@ services:
   qlever:
     image: docker.io/adfreiburg/qlever:latest
     restart: unless-stopped
-    # Above QLever's own -m 1G query budget (server command below) plus index overhead.
+    # Room for QLever's -m 1G query budget (server command below) plus index overhead and rebuilds.
     mem_limit: 1536m
     # The image's default entrypoint is an interactive CLI wrapper.
     entrypoint:
@@ -118,20 +118,17 @@ services:
         sudo chown qlever:qlever /index
         cd /index
         # The index starts empty: NeoWiki fills the store over the SPARQL Update endpoint. The
-        # sentinel keeps a restart from re-indexing, which would wipe the persisted updates.
+        # sentinel keeps a restart from re-indexing, which would wipe the store.
         if [ ! -f .neowiki-indexed ]; then
           : > data.nt
           qlever-index -i neowiki -F nt -f data.nt
           touch .neowiki-indexed
         fi
-        # --persist-updates is mandatory: without it every SPARQL update is lost on restart.
-        # --rebuild-index-strategy folds updates into a rebuilt index: every update works through
-        # those not yet folded in, so without rebuilds saves slow as the wiki grows.
-        # --rebuild-keep-previous-index-dirs none deletes the replaced index, kept by default.
-        # --service-allowed-iri-prefixes disables SPARQL federation: wiki users can send arbitrary
-        # SPARQL, and SERVICE would make the store issue requests from inside the compose network.
-        # Omitting it allows every IRI; "-" is the documented deny-all value, a prefix no IRI can
-        # match. To allow federation, list real prefixes. Keep it last: it takes any number of
+        # --persist-updates and the --rebuild-* options: see "QLever" in docs/operations/installation.md.
+        # The rebuild maximum of 50 000 delta triples keeps what a save gains within ADR 29's 100 ms
+        # at 100 000 Subjects; upstream's example of 1 000 000 does not.
+        # --service-allowed-iri-prefixes with "-" denies SPARQL federation; see "Restricting
+        # federation" in docs/operations/installation.md. Keep it last: it takes any number of
         # prefixes, so a bare value after it would be read as another prefix.
         exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G --persist-updates --rebuild-index-strategy automatic:10000:50000:0.1 --rebuild-keep-previous-index-dirs none --service-allowed-iri-prefixes -
     environment:

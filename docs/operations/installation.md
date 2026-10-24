@@ -279,6 +279,15 @@ one of them sets an explicit `name`.
 An entry whose `updateUrl` is missing or empty, or whose name cannot identify it, is skipped with a warning on the
 [`NeoWiki` log channel](#logging) rather than failing the wiki, so its store receives no page changes.
 
+### QLever
+
+Start `qlever-server`, from a build of August 2026 or later, with:
+
+- `--persist-updates`, or a restart loses NeoWiki's writes.
+- `--rebuild-index-strategy automatic:10000:50000:0.1`, or
+  [saves slow as the wiki grows](performance.md#with-a-sparql-store).
+- `--rebuild-keep-previous-index-dirs none`, or each index rebuild leaves the index it replaced on disk.
+
 ### Oxigraph
 
 Oxigraph serves queries on `/query` and updates on `/update`, so an entry needs both:
@@ -364,8 +373,7 @@ NeoWiki writes pages into named graphs and nothing into the default graph, so wh
 the store's choice; see [RDF Export](../api/rdf-export.md#iri-scheme).
 
 Both bundled Docker stacks, demo and dev, ship working QLever and Oxigraph examples wired up this way — see
-[`Docker/README.md`](../../Docker/README.md#qlever-sparql-store) for the services, QLever's `--persist-updates`
-requirement, and how to query them.
+[`Docker/README.md`](../../Docker/README.md#qlever-sparql-store) for the services and how to query them.
 
 ### Restricting federation
 
