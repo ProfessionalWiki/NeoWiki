@@ -64,6 +64,7 @@
 		"PageUndeleteComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageUndeleteComplete",
 		"AfterImportPage": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onAfterImportPage",
 		"ArticleRevisionVisibilitySet": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onArticleRevisionVisibilitySet",
+		"LinksUpdateComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\LinksRefreshHandler::onLinksUpdateComplete",
 		"BlockIpComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onBlockIpComplete",
 		"UnblockUserComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onUnblockUserComplete",
 

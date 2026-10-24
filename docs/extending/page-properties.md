@@ -31,8 +31,9 @@ main-slot `content` and its `contentModel` are exposed for content models the pa
 
 ## Refreshing a page's data without an edit
 
-A page's graph data is written on edit and on full rebuild. When data your extension contributes changes outside an
-edit — an approval extension marking a revision approved — trigger a refresh:
+NeoWiki writes a page's graph data on edit, on full rebuild, and on a MediaWiki links refresh that changes the page's
+`categories` or `parserProperties`, such as one caused by editing a template or module the page uses. When data your
+extension contributes changes outside an edit — an approval extension marking a revision approved — trigger a refresh:
 
 ```php
 $outcome = NeoWikiExtension::getInstance()
