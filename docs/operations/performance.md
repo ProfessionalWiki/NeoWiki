@@ -34,40 +34,43 @@ carries millions of them, and the wiki behind it held 4 000 pages rather than 10
 
 A [SPARQL store](installation.md#optional-sparql-graph-stores) adds the
 [RDF projection and its SPARQL query surface](../api/rdf-export.md) alongside Neo4j, and every write then pays for
-it — how much depends on the engine. Measured 2026-08-09 on `adbdd656`: a fresh wiki grown to 20 000 Subjects /
-590 000 triples (~30 triples per Subject), two projections per page into one store, whole-run means of two imports
-per engine. These rates are not comparable to the million-node table above; this corpus is fifty times smaller and
-unpadded.
+it — how much depends on the engine. Measured 2026-08-09 on `adbdd656`, the QLever column 2026-10-24 on `3534b882`:
+a fresh wiki grown to 20 000 Subjects / 590 000 triples (~30 triples per Subject), two projections per page into one
+store, whole-run means of two imports per engine. These rates are not comparable to the million-node table above; this
+corpus is fifty times smaller and unpadded.
 
 | Write path | No SPARQL store | With Oxigraph | With QLever |
 |---|---:|---:|---:|
-| Bulk import | 402 Subjects/second | 282 Subjects/second | 34 Subjects/second |
-| Full rebuild | 1 035 Subjects/second | 415 Subjects/second | 13 Subjects/second |
-| Interactive save | 40 ms | 44–54 ms | ~1.2 s |
+| Bulk import | 402 Subjects/second | 282 Subjects/second | 206 Subjects/second |
+| Full rebuild | 1 035 Subjects/second | 415 Subjects/second | 252 Subjects/second |
+| Interactive save | 40 ms | 44–54 ms | 59–61 ms |
 
-QLever's per-update cost grows as the store fills: within one such import the rate fell from 102 to
-20 Subjects/second and had not levelled off, so a fuller store is slower still. That is why QLever's rebuild runs
-slower than its import — the import's mean includes the near-empty start, while the rebuild writes into the
-already-full store throughout. Oxigraph declined about 1.2× over the same growth. Both engines end up holding the
-identical projection, triple for triple.
+The QLever column assumes you enable QLever's automatic background index rebuild, as the bundled Docker stacks do:
+`--rebuild-index-strategy automatic:10000:50000:0.1`. Without it, a save at 20 000 Subjects costs about 0.7 s more
+than without a SPARQL store. With it, at 100 000 Subjects a save costs 26 ms more right after a rebuild and 48 ms
+more just before the next, and a rebuild takes under a second; at 200 000 Subjects a save costs 39–45 ms and
+52–118 ms more respectively. Both engines end up holding the identical projection, triple for triple.
 
 For an actively edited wiki, project into Oxigraph: at the measured size it meets
 [ADR 29](../adr/029-scalability-targets.md)'s import and interactive-save targets with room and misses its rebuild
-target by about a fifth. QLever misses all three — the cost of an engine built for query speed over large corpora,
-which this page does not measure — and configuring it alongside Oxigraph still puts its latency on every save, so
-it fits wikis whose writes come as imports and rebuilds that can run unattended. Beyond the measured size both
-engine columns are extrapolation: Oxigraph's curve has stayed near-flat, QLever's rises.
+target by about a fifth. QLever meets the same two targets up to at least 100 000 Subjects, with less room (it
+imported at 128 Subjects/second there), and misses the rebuild target by half, by more as the wiki grows
+(144 Subjects/second at 100 000) — the cost of an engine built for query speed over large corpora, which this page does
+not measure. From about 200 000 Subjects its saves can exceed the interactive-save target. If you configure QLever
+alongside Oxigraph, every save still pays QLever's latency. Beyond the measured sizes both engine columns are
+extrapolation: Oxigraph's curve has stayed near-flat (within one import its rate declined about 1.2×), QLever's rises.
 
 ## How it was measured
 
 Bulk import is MediaWiki's `importDump.php`, run with secondary link updates off (a real import still runs those
-afterwards); loading over the REST API instead pays interactive-save latency per Subject. Backend validation does
-not run on the import path, so the import figures are unvalidated writes — the REST saves are validated — and
-validation is also measured on its own: 20 000 validations of one Subject in a single process. The rebuild figure is
-[`NeoWiki:RebuildGraphDatabases`](maintenance.md#rebuilding-the-graph) re-projecting the whole wiki. Interactive
-save is the median of 60 REST subject creates and replaces, with the store at the size above. The corpus is
-synthetic, from `NeoWiki:GeneratePerformanceDump`: ten Subjects per page, twelve Statements per Subject, three of
-them relations to Subjects on other pages.
+afterwards); loading over the REST API instead pays interactive-save latency per Subject. Backend validation does not
+run on the import path, so the import figures are unvalidated writes — the REST saves are validated — and validation is
+also measured on its own: 20 000 validations of one Subject in a single process. The rebuild figure is
+[`NeoWiki:RebuildGraphDatabases`](maintenance.md#rebuilding-the-graph) re-projecting the whole wiki. Interactive save is
+the median of 60 to 100 REST subject creates and replaces, with the store at the size above; QLever's figures at 100 000
+and 200 000 Subjects come from a wiki grown in 10 000-Subject imports, measured right after and just before a rebuild.
+The corpus is synthetic, from `NeoWiki:GeneratePerformanceDump`: ten Subjects per page, twelve Statements per Subject,
+three of them relations to Subjects on other pages.
 
 ## Measure it yourself
 

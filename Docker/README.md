@@ -115,14 +115,9 @@ without it every Subject save logs an unknown-projection error and a rebuild rep
 page as failed. On a stack that predates the second entry, run
 `make rebuild-graph-databases` to fill the EDM graphs for pages already saved.
 
-The server runs with `--persist-updates`, which is **mandatory**: without it QLever keeps
-SPARQL updates only in memory and loses them on restart. With it, updates are written to
-`neowiki.update-triples` on the `qlever-index-data` named volume and reloaded on startup,
-so the projected data survives `docker compose restart` and `make down` / `make dev`. The
-index itself is built empty once (guarded by a sentinel file so a restart never re-indexes
-and wipes the updates); NeoWiki fills it at runtime over the SPARQL endpoint, not from a
-source file. A named volume (not a bind mount) keeps the index clear of host SELinux
-labeling and ownership issues under rootless Podman.
+The projected data lives on the `qlever-index-data` named volume, so it survives
+`docker compose restart` and `make down` / `make dev`. The `qlever` service needs an image from
+August 2026 or later: an older one does not start.
 
 To query it from the host, add the `docker-compose.tools.yml` overlay, which maps `QLEVER_PORT`
 (default 7019) — on the dev stack `make dev-tools` does that for you:
@@ -144,16 +139,10 @@ Without the tools overlay, run the same query from inside the stack, e.g.
 
 ### `test_qlever` (SPARQL query system test)
 
-A second, dedicated QLever store — `test_qlever` — backs the SPARQL query system test
-(`QueryQLeverEndToEndTest`), isolated from the `qlever` store the way `test_neo` is
-isolated from `neo`: the test writes and deletes Subjects, so it must not touch the wiki's
-data. `phpunit.xml.dist` points the test at it via `QLEVER_TEST_URL=http://test_qlever:7019/`
-(fixed token `neowiki_test_token`); it is reached in-network only, with no host port. Unlike
-the `qlever` store it runs **without** `--persist-updates`: it is ephemeral test scaffolding that
-each run clears (`DROP ALL`), so keeping updates in memory is enough. `make phpunit` brings it
-up on demand via the `test` profile; in CI it is started explicitly (see
-`.github/workflows/ci-php.yml`), because its multi-step bring-up cannot be expressed as a
-GitHub Actions service container.
+This second QLever store is isolated from `qlever` the way `test_neo` is from `neo`, because the
+SPARQL query system test (`QueryQLeverEndToEndTest`) writes and deletes Subjects. It has no host
+port and runs without `--persist-updates`, since each test run clears it. `make phpunit` brings
+it up on demand via the `test` profile; CI starts it in `.github/workflows/ci-php.yml`.
 
 ## Oxigraph SPARQL store
 
