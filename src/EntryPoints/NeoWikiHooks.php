@@ -57,6 +57,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\EntryPoints\Jobs\RebuildLastEditorPagesJob;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
+use ProfessionalWiki\NeoWiki\Maintenance\HideFunctionsTrackingCategory;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildPublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -482,6 +483,8 @@ class NeoWikiHooks {
 		// each backfill runs in the same update.php as the table it fills.
 		$updater->addPostDatabaseUpdateMaintenance( RebuildSubjectPageIndex::class );
 		$updater->addPostDatabaseUpdateMaintenance( RebuildPublishedSubjectIndex::class );
+
+		$updater->addPostDatabaseUpdateMaintenance( HideFunctionsTrackingCategory::class );
 
 		$updater->addExtensionUpdate( [ [ self::class, 'initializeGraphDatabases' ] ] );
 	}
