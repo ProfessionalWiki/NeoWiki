@@ -53,18 +53,44 @@ class UrlTypeValidateTest extends TestCase {
 		$this->assertSame( [], $violations );
 	}
 
-	public function testValidUrlReturnsNoViolations(): void {
+	/**
+	 * @dataProvider webAddressProvider
+	 */
+	public function testValidUrlReturnsNoViolations( string $url ): void {
 		$violations = $this->type->validate(
-			new StringValue( 'https://example.com' ),
+			new StringValue( $url ),
 			$this->newProperty( required: false ),
 		);
 
 		$this->assertSame( [], $violations );
 	}
 
-	public function testInvalidUrlReturnsInvalidUrlViolation(): void {
+	public static function webAddressProvider(): iterable {
+		yield 'https basic' => [ 'https://example.com' ];
+		yield 'http basic' => [ 'http://example.com' ];
+		yield 'domain without protocol' => [ 'example.com' ];
+		yield 'www without protocol' => [ 'www.example.com' ];
+		yield 'localhost with port' => [ 'http://localhost:8080' ];
+		yield 'ip address' => [ 'http://192.168.1.1' ];
+		yield 'https with path' => [ 'https://example.com/path' ];
+		yield 'https with trailing slash' => [ 'https://example.com/' ];
+		yield 'https with query' => [ 'https://example.com?query=value' ];
+		yield 'https with fragment' => [ 'https://example.com#fragment' ];
+		yield 'https with path, query, and fragment' => [ 'https://example.com/path?query=value#fragment' ];
+		yield 'Wikimedia Commons file' => [ 'https://commons.wikimedia.org/wiki/File:Entrada_da_Ba%C3%ADa_de_Guanabara_vista_do_alto_do_Corcovado,_Acervo_do_Instituto_Moreira_Salles.jpg' ];
+		yield 'Wikimedia Commons file with a non-ASCII letter' => [ 'https://commons.wikimedia.org/wiki/File:Entrada_da_Baía_de_Guanabara_vista_do_alto_do_Corcovado,_Acervo_do_Instituto_Moreira_Salles.jpg' ];
+		yield 'parentheses in path' => [ 'https://en.wikipedia.org/wiki/Mercury_(planet)' ];
+		yield 'commas and a url in query' => [ 'https://example.com/search?q=a,b&redirect=https://x.org/' ];
+		yield 'dot in fragment' => [ 'https://en.wikipedia.org/wiki/Foo#Section.2C_bar' ];
+		yield 'at sign in path' => [ 'https://example.com/@user' ];
+	}
+
+	/**
+	 * @dataProvider nonWebAddressProvider
+	 */
+	public function testInvalidUrlReturnsInvalidUrlViolation( string $value ): void {
 		$violations = $this->type->validate(
-			new StringValue( 'not-a-url' ),
+			new StringValue( $value ),
 			$this->newProperty( required: false ),
 		);
 
@@ -72,6 +98,22 @@ class UrlTypeValidateTest extends TestCase {
 		$this->assertSame( 'invalid-url', $violations[0]->code );
 		$this->assertSame( 0, $violations[0]->valuePartIndex );
 		$this->assertSame( Severity::Error, $violations[0]->severity );
+	}
+
+	public static function nonWebAddressProvider(): iterable {
+		yield 'hyphenated word' => [ 'not-a-url' ];
+		yield 'bare word example' => [ 'example' ];
+		yield 'alpha only' => [ 'abc' ];
+		yield 'digits only' => [ '123' ];
+		yield 'underscore url' => [ 'invalid_url' ];
+		yield 'http with underscore' => [ 'http://invalid_url' ];
+		yield 'ftp protocol' => [ 'ftp://example.com' ];
+		yield 'file protocol' => [ 'file:///path/to/file' ];
+		yield 'https with spaces in path' => [ 'https://example.com/path with spaces' ];
+		yield 'tab in query' => [ "https://example.com/?a=1\tb=2" ];
+		yield 'less-than sign in path' => [ 'https://example.com/a<b' ];
+		yield 'backslash in path' => [ 'https://example.com/a\\b' ];
+		yield 'user info before the host' => [ 'https://example.org@example.com' ];
 	}
 
 	public function testEachInvalidPartReturnsIndexedViolation(): void {
@@ -105,47 +147,6 @@ class UrlTypeValidateTest extends TestCase {
 		);
 
 		$this->assertSame( [], $violations );
-	}
-
-	/**
-	 * @dataProvider isValidUrlProvider
-	 */
-	public function testIsValidUrlMatchesTsBehavior( string $url, bool $expected ): void {
-		$violations = $this->type->validate(
-			new StringValue( $url ),
-			$this->newProperty( required: false ),
-		);
-
-		if ( $expected ) {
-			$this->assertSame( [], $violations, "Expected '$url' to be valid" );
-		} else {
-			$this->assertCount( 1, $violations, "Expected '$url' to fail" );
-			$this->assertSame( 'invalid-url', $violations[0]->code );
-		}
-	}
-
-	public static function isValidUrlProvider(): array {
-		return [
-			// Empty string: validate() skips empty trimmed parts, so no violation — tested separately below
-			'https with query' => [ 'https://example.com?query=value', true ],
-			'https with fragment' => [ 'https://example.com#fragment', true ],
-			'https with path, query, and fragment' => [ 'https://example.com/path?query=value#fragment', true ],
-			'https with spaces in path' => [ 'https://example.com/path with spaces', false ],
-			'ftp protocol' => [ 'ftp://example.com', false ],
-			'www without protocol' => [ 'www.example.com', true ],
-			'localhost with port' => [ 'http://localhost:8080', true ],
-			'ip address' => [ 'http://192.168.1.1', true ],
-			'file protocol' => [ 'file:///path/to/file', false ],
-			'https basic' => [ 'https://example.com', true ],
-			'http basic' => [ 'http://example.com', true ],
-			'https with path' => [ 'https://example.com/path', true ],
-			'bare word example' => [ 'example', false ],
-			'domain without protocol' => [ 'example.com', true ],
-			'underscore url' => [ 'invalid_url', false ],
-			'http with underscore' => [ 'http://invalid_url', false ],
-			'digits only' => [ '123', false ],
-			'alpha only' => [ 'abc', false ],
-		];
 	}
 
 	public function testRequiredAndSingleEmptyStringPartReturnsRequiredViolation(): void {

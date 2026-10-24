@@ -143,27 +143,6 @@ function truncateMiddle( text: string, maxLength: number ): string {
 	return text.slice( 0, frontLength ) + '\u2026' + text.slice( -backLength );
 }
 
-export function isValidUrl( urlString: string ): boolean {
-	const protocolMatch = urlString.match( /^([a-z][a-z\d+.-]*):\/\//i );
-	if ( protocolMatch && !ALLOWED_PROTOCOLS.includes( protocolMatch[ 1 ].toLowerCase() + ':' ) ) {
-		return false;
-	}
-
-	const pattern = new RegExp(
-		'^([a-z][a-z\\d+.-]*://)?' +
-		'((?:[a-z\\d](?:[a-z\\d-]*[a-z\\d])?\\.)+[a-z]{2,}|' +
-		'((\\d{1,3}\\.){3}\\d{1,3})|' +
-		'(localhost))' +
-		'(\\:\\d+)?' +
-		'(\\/[-a-z\\d%_.~+]*)*' +
-		'(\\?[;&a-z\\d%_.~+=-]*)?' +
-		'(\\#[-a-z\\d_]*)?$',
-		'i',
-	);
-
-	return pattern.test( urlString );
-}
-
 type UrlPropertyAttributes = Omit<Partial<UrlProperty>, 'name'> & {
 	name?: string | PropertyName;
 };

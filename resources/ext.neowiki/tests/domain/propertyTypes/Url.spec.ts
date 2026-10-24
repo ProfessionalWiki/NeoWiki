@@ -1,5 +1,5 @@
-import { test, expect, describe, it } from 'vitest';
-import { newUrlProperty, UrlType, isValidUrl, formatUrlForDisplay } from '@/domain/propertyTypes/Url';
+import { expect, describe, it } from 'vitest';
+import { newUrlProperty, UrlType, formatUrlForDisplay } from '@/domain/propertyTypes/Url';
 import { newStringValue } from '@/domain/Value';
 import { PropertyName } from '@/domain/PropertyDefinition';
 
@@ -9,31 +9,6 @@ describe( 'UrlType', () => {
 		expect( new UrlType().getDisplayAttributeNames() ).toEqual( [] );
 	} );
 
-} );
-
-test.each( [
-	[ '', false ],
-	[ 'https://example.com?query=value', true ],
-	[ 'https://example.com#fragment', true ],
-	[ 'https://example.com/path?query=value#fragment', true ],
-	[ 'https://example.com/path with spaces', false ],
-	[ 'ftp://example.com', false ],
-	[ 'www.example.com', true ],
-	[ 'http://localhost:8080', true ],
-	[ 'http://192.168.1.1', true ],
-	[ 'file:///path/to/file', false ],
-	[ 'https://example.com', true ],
-	[ 'http://example.com', true ],
-	[ 'https://example.com/path', true ],
-	[ 'example', false ],
-	[ 'example.com', true ],
-	[ 'invalid_url', false ],
-	[ 'http://invalid_url', false ],
-	[ '123', false ],
-	[ 'abc', false ],
-] )( 'isValidUrl should return %s for URL: %s', ( url: string, expected: boolean ) => {
-	const isValid = isValidUrl( url );
-	expect( isValid ).toBe( expected );
 } );
 
 describe( 'formatUrlForDisplay', () => {
