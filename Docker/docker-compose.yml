@@ -97,8 +97,8 @@ services:
       timeout: 1s
       retries: 10
 
-  # A second SPARQL store, opt-in like neo. The wiki reaches it through QLEVER_URL above;
-  # a host port is opt-in via docker-compose.tools.yml.
+  # The default graph store: the Makefile's default selection runs it and points the wiki at
+  # it through QLEVER_URL above. A host port is opt-in via docker-compose.tools.yml.
   qlever:
     profiles:
       - qlever
@@ -148,8 +148,8 @@ services:
       timeout: 5s
       retries: 20
 
-  # The default graph store: the Makefile's default selection runs it and points the wiki at
-  # it through OXIGRAPH_URL above. A host port is opt-in via docker-compose.tools.yml.
+  # A second SPARQL store, opt-in like neo. The wiki reaches it through OXIGRAPH_URL above;
+  # a host port is opt-in via docker-compose.tools.yml.
   #
   # No healthcheck: the image is distroless, its only executable being the oxigraph binary,
   # so a compose healthcheck — which runs inside the container — has no shell or curl to run. Wait

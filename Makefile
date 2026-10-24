@@ -33,8 +33,8 @@ PORT_RANGE_END := 8499
 # `services=none` runs core only (mediawiki, db). Absent = the default set
 # below. Values are compose service names; see Docker/README.md. A
 # COMPOSE_PROFILES value from the environment is unioned in.
-OPTIONAL_SERVICES := node oxigraph neo qlever mailcatcher
-DEFAULT_SERVICES := node oxigraph mailcatcher
+OPTIONAL_SERVICES := node qlever neo oxigraph mailcatcher
+DEFAULT_SERVICES := node qlever mailcatcher
 
 comma := ,
 empty :=
@@ -208,14 +208,14 @@ _dev-tools-impl:
 	@# here as well or a URL goes missing for a stack that did start the service.
 	@profiles=$$(printf '%s' "$$COMPOSE_PROFILES" | tr -d '[:space:]'); \
 	case ",$$profiles," in \
-		*,oxigraph,*) echo "Oxigraph SPARQL:      http://localhost:$${OXIGRAPH_PORT:-7878}/query";; \
+		*,qlever,*) echo "QLever SPARQL:        http://localhost:$${QLEVER_PORT:-7019}/";; \
 	esac; \
 	case ",$$profiles," in \
 		*,neo,*) echo "Neo4j Browser:        http://localhost:$${NEO_BROWSER_PORT:-7474}"; \
 			echo "Neo4j Bolt endpoint:  bolt://localhost:$${NEO_BOLT_PORT:-7687}";; \
 	esac; \
 	case ",$$profiles," in \
-		*,qlever,*) echo "QLever SPARQL:        http://localhost:$${QLEVER_PORT:-7019}/";; \
+		*,oxigraph,*) echo "Oxigraph SPARQL:      http://localhost:$${OXIGRAPH_PORT:-7878}/query";; \
 	esac
 	@echo "Project:              $(PROJECT_NAME)"
 
@@ -656,7 +656,7 @@ _require-pages:
 _require-neo:
 	@docker ps -q --filter label=com.docker.compose.project=$(PROJECT_NAME) \
 		--filter label=com.docker.compose.service=neo | grep -q . \
-		|| { echo "This stack runs no Neo4j: start it with neo in services=, as in 'make dev services=oxigraph,neo'." >&2; exit 1; }
+		|| { echo "This stack runs no Neo4j: start it with neo in services=, as in 'make dev services=qlever,neo'." >&2; exit 1; }
 
 # Generated beside the final name and moved into place on success, for the same reason as the
 # snapshot halves: the generator truncates its output at fopen and writes the header — which

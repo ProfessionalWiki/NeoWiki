@@ -5,8 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Sparql\Integration;
 
 /**
- * {@see QuerySparqlEndToEndTestCase} against Oxigraph — the `test_oxigraph` dev-stack service, the
- * engine both Docker stacks point the wiki itself at, and a second endpoint shape.
+ * {@see QuerySparqlEndToEndTestCase} against Oxigraph — the `test_oxigraph` dev-stack service, a
+ * second engine and a second endpoint shape.
  *
  * It runs without `--union-default-graph`, so it is strict where QLever is lenient: an unscoped query
  * sees only the default graph, never the named graphs NeoWiki projects pages into. That is what SPARQL

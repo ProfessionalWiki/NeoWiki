@@ -23,11 +23,10 @@ NeoWiki in depth.
 
 ### Docker stacks from before 0.1.0
 
-The Docker stack's graph store is now Oxigraph, a SPARQL store. Neo4j, which Cypher queries need, and QLever run only
-if you name them in `services=` each time you start the stack, as in `make upgrade services=oxigraph,neo`.
+The Docker stack no longer runs Neo4j, which Cypher queries need, unless you name it in `services=` each time you start
+the stack, as in `make upgrade services=qlever,neo`. QLever, its SPARQL store, runs as before.
 
-* Run `make down` before `make upgrade`, or the Neo4j and QLever containers keep running unused.
-* `make upgrade` fills Oxigraph from the wiki.
-* Existing demo pages query Neo4j. `make import-demo-data` replaces them with pages that query Oxigraph. Pages
+* Unless you keep Neo4j, run `make down` before `make upgrade`, or its container keeps running unused.
+* Existing demo pages query Neo4j. `make import-demo-data` replaces them with pages that query QLever. Pages
   rendered before the import keep their old errors until MediaWiki runs the jobs it queues;
   `php maintenance/run.php runJobs` in `make bash` runs them at once.

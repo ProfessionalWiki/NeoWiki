@@ -7,9 +7,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - default
-      - no-egress
     environment:
       # Duplicated from docker-compose.yml, which the image-build workflow replaces with this file.
       - MARIADB_HOST=${MARIADB_HOST:-db}
@@ -18,7 +15,8 @@ services:
       - MARIADB_USER
       - MARIADB_PASSWORD
       - MW_SERVER
-      - OXIGRAPH_URL
+      - QLEVER_URL
+      - QLEVER_ACCESS_TOKEN=${QLEVER_ACCESS_TOKEN:-neowiki_dev_token}
     healthcheck:
       test: "curl -fsSL http://localhost:80/index.php/Special:Version | grep 'Jeroen De Dauw'"
       interval: 60s
@@ -38,14 +36,18 @@ services:
       timeout: 10s
       retries: 4
 
-  oxigraph:
-    image: ghcr.io/oxigraph/oxigraph:0.5.13
-    command: serve --location /data --bind 0.0.0.0:7878 --union-default-graph
-    networks:
-      - no-egress
-
-networks:
-  no-egress:
-    internal: true
-    driver_opts:
-      com.docker.network.bridge.inhibit_ipv4: "true"
+  # Without the stacks' index volume the image has no /index, so the index is built in /tmp, as in
+  # .github/workflows/ci-php.yml.
+  qlever:
+    image: docker.io/adfreiburg/qlever:latest
+    entrypoint:
+      - /bin/bash
+      - -lc
+      - |
+        set -e
+        cd /tmp
+        : > data.nt
+        qlever-index -i neowiki -F nt -f data.nt
+        exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G --service-allowed-iri-prefixes -
+    environment:
+      - QLEVER_ACCESS_TOKEN=${QLEVER_ACCESS_TOKEN:-neowiki_dev_token}
