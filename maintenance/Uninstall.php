@@ -10,7 +10,6 @@ use MediaWiki\User\User;
 use ProfessionalWiki\NeoWiki\Application\Uninstall\GraphStoreClearer;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
-use ProfessionalWiki\NeoWiki\EntryPoints\FunctionsTrackingCategory;
 use ProfessionalWiki\NeoWiki\EntryPoints\Jobs\GraphRebuildJob;
 use ProfessionalWiki\NeoWiki\EntryPoints\Jobs\RebuildLastEditorPagesJob;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -104,8 +103,6 @@ class Uninstall extends Maintenance {
 		$this->outputFigure( 'Deleted revisions in NeoWiki namespaces', $survey->countDeletedRevisionsInNeoWikiNamespaces() );
 		$this->outputFigure( 'Graph stores', self::listOrNone( array_keys( $this->getGraphStores() ) ) );
 		$this->outputFigure( 'Database tables', self::listOrNone( $this->newTables()->getExisting() ) );
-
-		$this->reportPagesUsingNeoWikiFunctions( $survey );
 	}
 
 	private function outputFigure( string $label, int|string $value ): void {
@@ -117,36 +114,6 @@ class Uninstall extends Maintenance {
 	 */
 	private static function listOrNone( array $items ): string {
 		return $items === [] ? 'none' : implode( ', ', $items );
-	}
-
-	/**
-	 * Uninstalling leaves these pages in place: what they call is wikitext someone wrote.
-	 */
-	private function reportPagesUsingNeoWikiFunctions( UninstallSurvey $survey ): void {
-		$pages = $survey->getPagesUsingNeoWikiFunctions( self::LISTED_PAGES + 1 );
-
-		if ( $pages === [] ) {
-			return;
-		}
-
-		$this->output(
-			"\nThese pages call NeoWiki functions, which show as plain wikitext, or as script errors in Lua modules, "
-			. "once NeoWiki is removed:\n"
-		);
-		$this->outputPages( $pages, 'Category:' . $this->getFunctionsCategoryName() );
-	}
-
-	/**
-	 * @param string[] $pages One more than are listed, to tell whether there are more
-	 */
-	private function outputPages( array $pages, string $whereTheRestAre ): void {
-		foreach ( array_slice( $pages, 0, self::LISTED_PAGES ) as $page ) {
-			$this->output( "  $page\n" );
-		}
-
-		if ( count( $pages ) > self::LISTED_PAGES ) {
-			$this->output( "  ... and more in $whereTheRestAre\n" );
-		}
 	}
 
 	/**
@@ -262,6 +229,19 @@ class Uninstall extends Maintenance {
 		return false;
 	}
 
+	/**
+	 * @param string[] $pages One more than are listed, to tell whether there are more
+	 */
+	private function outputPages( array $pages, string $whereTheRestAre ): void {
+		foreach ( array_slice( $pages, 0, self::LISTED_PAGES ) as $page ) {
+			$this->output( "  $page\n" );
+		}
+
+		if ( count( $pages ) > self::LISTED_PAGES ) {
+			$this->output( "  ... and more in $whereTheRestAre\n" );
+		}
+	}
+
 	private function dropTables(): void {
 		$this->output( "\nDropping NeoWiki's database tables...\n" );
 		$this->newTables()->drop();
@@ -288,11 +268,7 @@ class Uninstall extends Maintenance {
 	}
 
 	private function newSurvey(): UninstallSurvey {
-		return new UninstallSurvey( $this->getPrimaryDB(), $this->getFunctionsCategoryName() );
-	}
-
-	private function getFunctionsCategoryName(): string {
-		return wfMessage( FunctionsTrackingCategory::MESSAGE_KEY )->inContentLanguage()->text();
+		return new UninstallSurvey( $this->getPrimaryDB() );
 	}
 
 	private function newGraphStoreClearer(): GraphStoreClearer {

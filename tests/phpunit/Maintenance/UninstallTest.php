@@ -5,7 +5,6 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Maintenance;
 
 use JobSpecification;
-use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Permissions\Authority;
@@ -37,7 +36,6 @@ class UninstallTest extends NeoWikiIntegrationTestCase {
 
 	public const string SCRATCH_TABLE = 'neowiki_uninstall_test_scratch';
 	private const string SUBJECT_PAGE = 'UninstallTestSubjectPage';
-	private const string CALLING_PAGE = 'UninstallTestCallingPage';
 
 	private string $scriptOutput = '';
 
@@ -71,15 +69,6 @@ class UninstallTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'Pages holding Subjects: 1', $this->scriptOutput );
 		$this->assertStringContainsString( 'Pages in NeoWiki namespaces: 1', $this->scriptOutput );
 		$this->assertStringContainsString( self::SCRATCH_TABLE, $this->scriptOutput );
-	}
-
-	public function testNamesThePagesThatCallNeoWikiFunctions(): void {
-		$this->editPage( self::CALLING_PAGE, '{{#main_subject:}}' );
-		DeferredUpdates::doUpdates();
-
-		$this->runUninstall();
-
-		$this->assertStringContainsString( self::CALLING_PAGE, $this->scriptOutput );
 	}
 
 	public function testRemovesTheSubjectsFromEveryRevision(): void {

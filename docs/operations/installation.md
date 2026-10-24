@@ -175,17 +175,15 @@ $wgActionPaths['subjects'] = "/wiki/$1/subjects";
 
 Uninstalling permanently removes what NeoWiki stored in your wiki: the Subjects, from every revision; every page in the
 Schema, Layout, Mapping and Subject namespaces and their talk namespaces, with its text and history; NeoWiki's database
-tables; and this wiki's data in its graph stores. Other pages keep their own content and history. Back up your database
-first.
+tables; and this wiki's data in its graph stores. Other pages keep their own content and history. Calls they make to
+NeoWiki's parser functions or Lua library stay in place, where they show as plain wikitext or, in Lua modules, as script
+errors. Back up your database first.
 
 1. See what would be removed:
 
    ```sh
    php maintenance/run.php NeoWiki:Uninstall
    ```
-
-   The report also names the pages that call NeoWiki's parser functions or Lua library. Uninstalling leaves those
-   calls in place, where they show as plain wikitext or, in Lua modules, as script errors.
 
 2. While nobody edits the wiki and no job runner is running, remove it:
 

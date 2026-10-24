@@ -4,21 +4,18 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Uninstall;
 
-use MediaWiki\Deferred\DeferredUpdates;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Uninstall\UninstallSurvey;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
- * Counts rows in the test wiki's page, slot and archive tables, and reads category membership.
+ * Counts rows in the test wiki's page, slot and archive tables.
  *
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Uninstall\UninstallSurvey
  * @group Database
  */
 class UninstallSurveyTest extends NeoWikiIntegrationTestCase {
-
-	private const string FUNCTIONS_CATEGORY = 'Pages using NeoWiki functions';
 
 	public function testCountsThePagesHoldingSubjectsNow(): void {
 		$this->createSubjectPages( 'Holds Subjects', 'Also holds Subjects' );
@@ -53,29 +50,13 @@ class UninstallSurveyTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 1, $this->newSurvey()->countDeletedRevisionsInNeoWikiNamespaces() );
 	}
 
-	public function testNamesThePagesThatCallNeoWikiFunctions(): void {
-		$this->editPage( 'Template:Calls a function', '{{#main_subject:}}' );
-		$this->editPage( 'Calls no function', 'Plain' );
-		DeferredUpdates::doUpdates();
-
-		$this->assertSame( [ 'Template:Calls a function' ], $this->newSurvey()->getPagesUsingNeoWikiFunctions( 10 ) );
-	}
-
-	public function testNamesNoMorePagesThatCallNeoWikiFunctionsThanAsked(): void {
-		$this->editPage( 'Calls a function', '{{#main_subject:}}' );
-		$this->editPage( 'Also calls a function', '{{#main_subject:}}' );
-		DeferredUpdates::doUpdates();
-
-		$this->assertCount( 1, $this->newSurvey()->getPagesUsingNeoWikiFunctions( 1 ) );
-	}
-
 	private function createDeletedPageWithSubjects(): void {
 		$this->createPageWithSubjects( 'Deleted with Subjects', TestSubject::build() );
 		$this->deletePageByName( 'Deleted with Subjects' );
 	}
 
 	private function newSurvey(): UninstallSurvey {
-		return new UninstallSurvey( $this->getDb(), self::FUNCTIONS_CATEGORY );
+		return new UninstallSurvey( $this->getDb() );
 	}
 
 }

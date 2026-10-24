@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Uninstall;
 
-use MediaWiki\Category\Category;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SubjectSlotPages;
@@ -12,14 +11,12 @@ use stdClass;
 use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
- * What uninstalling NeoWiki would remove from the wiki, and the pages it would leave calling functions
- * that no longer exist.
+ * What uninstalling NeoWiki would remove from the wiki.
  */
 class UninstallSurvey {
 
 	public function __construct(
 		private readonly IReadableDatabase $db,
-		private readonly string $functionsCategoryName,
 	) {
 	}
 
@@ -67,26 +64,6 @@ class UninstallSurvey {
 
 	public function countDeletedRevisionsInNeoWikiNamespaces(): int {
 		return $this->countRows( 'archive', [ 'ar_namespace' => NeoWikiNamespacePurger::NAMESPACES ] );
-	}
-
-	/**
-	 * @return string[] Page titles, as they are written in wikitext
-	 */
-	public function getPagesUsingNeoWikiFunctions( int $limit ): array {
-		$category = Category::newFromName( $this->functionsCategoryName );
-
-		if ( !( $category instanceof Category ) ) {
-			return [];
-		}
-
-		$titles = [];
-
-		/** @var Title $title */
-		foreach ( $category->getMembers( $limit ) as $title ) {
-			$titles[] = $title->getPrefixedText();
-		}
-
-		return $titles;
 	}
 
 	private function countRows( string $table, array $conditions ): int {
