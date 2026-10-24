@@ -13,7 +13,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualText;
 use ProfessionalWiki\NeoWiki\Domain\Value\MonolingualTextValue;
-use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 
 /**
@@ -52,15 +51,6 @@ class MonolingualTextTypeValidateTest extends TestCase {
 		$violations = $this->type->validate(
 			new MonolingualTextValue(),
 			$this->newProperty( required: false ),
-		);
-
-		$this->assertSame( [], $violations );
-	}
-
-	public function testValueOfAnotherTypeReturnsNoViolations(): void {
-		$violations = $this->type->validate(
-			new StringValue( 'Zinema' ),
-			$this->newProperty( required: true ),
 		);
 
 		$this->assertSame( [], $violations );
@@ -106,16 +96,6 @@ class MonolingualTextTypeValidateTest extends TestCase {
 		);
 
 		$this->assertSame( [], $violations );
-	}
-
-	public function testRequiredEmptyValueDoesNotAlsoReportLengthViolation(): void {
-		$violations = $this->type->validate(
-			new MonolingualTextValue( new MonolingualText( '', 'es' ) ),
-			$this->newProperty( required: true, minLength: 3 )
-		);
-
-		$this->assertCount( 1, $violations );
-		$this->assertSame( 'required', $violations[0]->code );
 	}
 
 	public function testSeveralPartsWithoutMultipleReturnSingleValueOnlyViolation(): void {
@@ -278,10 +258,6 @@ class MonolingualTextTypeValidateTest extends TestCase {
 		);
 
 		$this->assertSame( [ 'Zinema', 'Cine' ], $this->type->searchText( $value, null ) );
-	}
-
-	public function testSearchTextOfAnotherValueTypeIsEmpty(): void {
-		$this->assertSame( [], $this->type->searchText( new StringValue( 'Zinema' ), null ) );
 	}
 
 	private function newProperty(

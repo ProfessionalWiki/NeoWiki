@@ -78,11 +78,8 @@ export function applySeverities(
 			continue;
 		}
 
-		// Unchecking an annotated required/uniqueItems in the schema editor leaves
-		// the severity entry behind on a now-false value. Their object form cannot
-		// carry false, so drop the annotation rather than emit a form the backend
-		// rejects. The PHP mirror has no such branch: only the editor can create
-		// this state, since authoring-time validation forbids it in stored JSON.
+		// The editor keeps the severity of `uniqueLanguages` while another option is chosen, and
+		// emitting it would send `{ "value": false, "severity": … }`, which the backend rejects.
 		if ( result[ key ] === false && VALUE_LESS_BOOLEAN_CONSTRAINTS.includes( key ) ) {
 			continue;
 		}

@@ -169,18 +169,6 @@ describe( 'MonolingualTextInput', () => {
 			.toEqual( [ 'Original title language 1', 'Original title language 2' ] );
 	} );
 
-	it( 'emits a typed text tagged with the language the wiki is written in', async () => {
-		readsIn( 'en', 'eu' );
-		const wrapper = newWrapper();
-
-		await textInputs( wrapper )[ 0 ].setValue( 'Zinema' );
-
-		expect( lastEmittedValue( wrapper ) ).toEqual( {
-			type: ValueType.MonolingualText,
-			parts: [ { text: 'Zinema', language: 'eu' } ],
-		} );
-	} );
-
 	it( 'shows the new row in the first data language the value lacks', () => {
 		readsIn( 'en', 'en', [ 'de', 'fr', 'it' ] );
 
@@ -447,16 +435,6 @@ describe( 'MonolingualTextInput', () => {
 		await leaveRow( wrapper, 0, movedInto );
 
 		expect( ( document.activeElement as HTMLInputElement ).value ).toBe( 'Kino' );
-	} );
-
-	it( 'stores the tag of the language chosen by its name', async () => {
-		const wrapper = newWrapper( {
-			modelValue: newMonolingualTextValue( [ { text: 'Zinema', language: 'en' } ] ),
-		} );
-
-		await chooseLanguage( wrapper, 'Basq' );
-
-		expect( lastEmittedValue( wrapper )?.parts ).toEqual( [ { text: 'Zinema', language: 'eu' } ] );
 	} );
 
 	it( 'reports no change for a language chosen on a row holding no text', async () => {

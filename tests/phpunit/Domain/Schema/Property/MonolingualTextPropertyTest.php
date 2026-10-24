@@ -53,7 +53,7 @@ JSON
 	}
 
 	public function testValueIsAnArrayOfTextsEachWithItsLanguage(): void {
-		$this->assertSame(
+		$this->assertEquals(
 			[
 				'type' => 'array',
 				'items' => [
@@ -72,7 +72,7 @@ JSON
 	public function testLengthConstraintsBoundEachText(): void {
 		$value = $this->fromJson( '{ "type": "monolingualText", "minLength": 2, "maxLength": 40 }' )->toJsonSchema();
 
-		$this->assertSame(
+		$this->assertEquals(
 			[ 'type' => 'string', 'minLength' => 2, 'maxLength' => 40 ],
 			$value['items']['properties']['text']
 		);

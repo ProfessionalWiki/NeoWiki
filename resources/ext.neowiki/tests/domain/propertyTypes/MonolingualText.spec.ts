@@ -6,7 +6,7 @@ describe( 'MonolingualTextType', () => {
 	const type = new MonolingualTextType();
 	const base = { name: new PropertyName( 'Title' ), type: 'monolingualText', description: '', required: false };
 
-	it( 'reads a single-valued property without uniqueness Constraints when the JSON sets none', () => {
+	it( 'reads a single-valued property without unique languages when the JSON sets neither', () => {
 		const property = type.createPropertyDefinitionFromJson( base, { type: 'monolingualText' } );
 
 		expect( property.multiple ).toBe( false );

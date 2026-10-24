@@ -122,7 +122,7 @@ Each `monolingualText` value is an array of objects, one per value part:
 | `text` | string | Yes | The text. Stored trimmed; a part whose text is empty is dropped. |
 | `language` | string | Yes | BCP-47-shaped language tag (`^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$`, e.g. `eu`, `pt-BR`). Stored lowercase. |
 
-The same language may appear more than once; on a property with `uniqueLanguages`, each repeat draws a
+The same language may appear more than once; a repeat can draw a
 [`single-value-per-language`](validation-codes.md#single-value-per-language) violation. A `language` that does not
 match the pattern is rejected with `400`.
 

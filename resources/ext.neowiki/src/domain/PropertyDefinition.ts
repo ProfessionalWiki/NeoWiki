@@ -82,7 +82,7 @@ export function withConstraintSeverity(
  *
  * So does `uniqueLanguages`, which turns false whenever another option for the number of values is
  * picked: like the one for `multiple` beside it, its severity survives the author trying the other
- * options while the dialog is open.
+ * options.
  *
  * A bound cleared to undefined keeps its entry: a number input reports interim text such as "1."
  * as empty, so pruning there would lose the choice while the author is still typing. Serialization
