@@ -45,13 +45,11 @@ corpus is fifty times smaller and unpadded.
 | Full rebuild | 1 035 Subjects/second | 415 Subjects/second | 252 Subjects/second |
 | Interactive save | 40 ms | 44–54 ms | 59–61 ms |
 
-The QLever column assumes you enable QLever's automatic index rebuild, which runs in the background, as the bundled
-Docker stacks do: `--rebuild-index-strategy automatic:10000:50000:0.1`. Without it, a save at 20 000 Subjects costs
-about 0.7 s more than without a SPARQL store. Between rebuilds a save costs more as writes accumulate: at 100 000
-Subjects it costs 26 ms more than without a SPARQL store right after a rebuild and 48 ms more just before the next,
-and a rebuild takes under a second. Rebuilds do not stop the cost from rising with the wiki: at 200 000 Subjects a
-save costs 39–45 ms more right after a rebuild and 52–118 ms more just before one. Both engines end up holding the
-identical projection, triple for triple.
+The QLever column assumes you enable QLever's automatic background index rebuild, as the bundled Docker stacks do:
+`--rebuild-index-strategy automatic:10000:50000:0.1`. Without it, a save at 20 000 Subjects costs about 0.7 s more
+than without a SPARQL store. With it, at 100 000 Subjects a save costs 26 ms more right after a rebuild and 48 ms
+more just before the next, and a rebuild takes under a second; at 200 000 Subjects a save costs 39–45 ms and
+52–118 ms more respectively. Both engines end up holding the identical projection, triple for triple.
 
 For an actively edited wiki, project into Oxigraph: at the measured size it meets
 [ADR 29](../adr/029-scalability-targets.md)'s import and interactive-save targets with room and misses its rebuild
