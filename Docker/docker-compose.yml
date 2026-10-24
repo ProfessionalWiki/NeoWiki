@@ -41,10 +41,8 @@ services:
       - NEO4J_URL_EXTERNAL
       - NEO4J_USERNAME
       - NEO4J_PASSWORD
-      # Where the wiki reaches each graph store. A non-empty value is what makes SettingsTemplate.php
-      # configure that store, so these have no defaults: the bundled Makefile sets each one when
-      # `services=` selects the store and empties it otherwise. Without the Makefile they are unset
-      # and no store is configured.
+      # Where the wiki reaches each graph store; empty or unset leaves that store unconfigured.
+      # The bundled Makefile sets each one `services=` selects, so these have no defaults.
       - OXIGRAPH_URL
       - NEO4J_HOST
       - QLEVER_URL
@@ -61,10 +59,6 @@ services:
       timeout: 5s
       retries: 1
 
-  # NOTE (v2 shared-backend mode): in a future iteration, db will be
-  # tagged with a `local-backend` profile so it can be opted out of when
-  # SHARED_BACKEND=1 is set, allowing multiple worktrees to share an external
-  # MariaDB instance. In v1 it stays on by default (no profile).
   db:
     image: mariadb:11.8
     restart: unless-stopped
@@ -103,10 +97,8 @@ services:
       timeout: 1s
       retries: 10
 
-  # A second SPARQL 1.1 graph store (QLever), opt-in like neo: every page save and
-  # RebuildGraphDatabases.php also projects the page's RDF here as named graphs. The wiki is pointed at
-  # it by QLEVER_URL above. NeoWiki reaches it in-network as http://qlever:7019/; a host port for
-  # manual inspection is opt-in via docker-compose.tools.yml.
+  # A second SPARQL store, opt-in like neo. The wiki reaches it through QLEVER_URL above;
+  # a host port is opt-in via docker-compose.tools.yml.
   qlever:
     profiles:
       - qlever
@@ -156,16 +148,10 @@ services:
       timeout: 5s
       retries: 20
 
-  # The stack's default graph store, a SPARQL 1.1 store (Oxigraph): every page save and
-  # RebuildGraphDatabases.php projects the page's RDF here as named graphs, and the query surfaces read
-  # from it. Its profile is in the Makefile's default selection, which also points the wiki at it
-  # through OXIGRAPH_URL above. A host port for manual inspection is opt-in via
-  # docker-compose.tools.yml.
+  # The default graph store: the Makefile's default selection runs it and points the wiki at
+  # it through OXIGRAPH_URL above. A host port is opt-in via docker-compose.tools.yml.
   #
-  # No entrypoint script: unlike QLever there is no index to build, and --location below is the whole
-  # of persistence.
-  #
-  # No healthcheck either. The image is distroless, its only executable being the oxigraph binary,
+  # No healthcheck: the image is distroless, its only executable being the oxigraph binary,
   # so a compose healthcheck — which runs inside the container — has no shell or curl to run. Wait
   # for it from outside instead, as `make test-backends` and .github/workflows/ci-php.yml do.
   oxigraph:
@@ -211,10 +197,9 @@ services:
       - mediawiki
 
 networks:
-  # Oxigraph follows every SERVICE clause in a query and has no setting to stop it, and the wiki
-  # passes on queries from anyone holding the neowiki-query right, anonymous visitors by default. On
-  # a network with a route out, anyone allowed to query could make the store send requests to any
-  # host it can reach. Only the wiki shares this one with it.
+  # Oxigraph follows every SERVICE clause and has no setting to stop it, and anyone holding
+  # neowiki-query, anonymous visitors by default, can query it. This network has no route out
+  # and only the wiki shares it.
   no-egress:
     internal: true
     # Docker still gives an internal network's bridge an address on the host, through which the
