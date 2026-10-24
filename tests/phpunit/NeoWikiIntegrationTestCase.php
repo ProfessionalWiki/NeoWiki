@@ -658,4 +658,38 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		return $result->first()->toRecursiveArray()['namespaceId'] ?? null;
 	}
 
+	/**
+	 * Every revision holding Subjects, current, old or deleted.
+	 */
+	protected function countSubjectSlots(): int {
+		return $this->getDb()->newSelectQueryBuilder()
+			->from( 'slots' )
+			->join( 'slot_roles', null, 'slot_role_id = role_id' )
+			->where( [ 'role_name' => MediaWikiSubjectRepository::SLOT_NAME ] )
+			->caller( __METHOD__ )
+			->fetchRowCount();
+	}
+
+	protected function countRows( string $table, array $conditions ): int {
+		return $this->getDb()->newSelectQueryBuilder()
+			->from( $table )
+			->where( $conditions )
+			->caller( __METHOD__ )
+			->fetchRowCount();
+	}
+
+	/**
+	 * A table for a test to drop in place of one other tests need. The test drops it again in tearDown.
+	 */
+	protected function createScratchTable( string $name ): void {
+		$this->getDb()->query( 'CREATE TABLE ' . $this->getDb()->tableName( $name ) . ' (scratch_id INTEGER)', __METHOD__ );
+	}
+
+	protected function readExtensionJson(): array {
+		return json_decode(
+			(string)file_get_contents( NeoWikiExtension::getInstance()->getNeoWikiRootDirectory() . '/extension.json' ),
+			true
+		);
+	}
+
 }
