@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { withConstraintSeverity, withoutSeveritiesOfClearedConstraints } from '@/domain/PropertyDefinition';
+import { newMonolingualTextProperty } from '@/domain/propertyTypes/MonolingualText';
 import { newNumberProperty } from '@/domain/propertyTypes/Number';
 import { newSelectProperty } from '@/domain/propertyTypes/Select';
 import { newTextProperty } from '@/domain/propertyTypes/Text';
@@ -92,6 +93,17 @@ describe( 'withoutSeveritiesOfClearedConstraints', () => {
 
 		expect( withoutSeveritiesOfClearedConstraints( property, { multiple: false } ) ).toEqual( {
 			constraintSeverities: { multiple: 'error' },
+		} );
+	} );
+
+	it( 'keeps the severity of one value per language when another option for the number of values is picked', () => {
+		const property = {
+			...newMonolingualTextProperty( { multiple: true, uniqueLanguages: true } ),
+			constraintSeverities: { uniqueLanguages: 'error' as const },
+		};
+
+		expect( withoutSeveritiesOfClearedConstraints( property, { multiple: false, uniqueLanguages: false } ) ).toEqual( {
+			constraintSeverities: { uniqueLanguages: 'error' },
 		} );
 	} );
 

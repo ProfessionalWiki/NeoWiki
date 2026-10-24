@@ -80,6 +80,10 @@ export function withConstraintSeverity(
  * A Constraint whose rule applies while it is false, such as `multiple`, keeps its entry too:
  * unticking it sets the rule rather than clearing it.
  *
+ * So does `uniqueLanguages`, which turns false whenever another option for the number of values is
+ * picked: like the one for `multiple` beside it, its severity survives the author trying the other
+ * options while the dialog is open.
+ *
  * A bound cleared to undefined keeps its entry: a number input reports interim text such as "1."
  * as empty, so pruning there would lose the choice while the author is still typing. Serialization
  * drops it if the bound is still empty when saving.
@@ -91,15 +95,15 @@ export function withoutSeveritiesOfClearedConstraints<T extends PropertyDefiniti
 	const severities: Record<string, Severity> = { ...property.constraintSeverities };
 
 	for ( const [ key, value ] of Object.entries( changes ) ) {
-		// `multiple` is active when false: unticking it turns the single-value rule on
-		// rather than off, so its severity is a live choice, not one to prune.
-		if ( key !== 'constraintSeverities' && key !== 'multiple' && constraintIsCleared( value ) ) {
+		if ( key !== 'constraintSeverities' && !SEVERITY_SURVIVES_CLEARING.includes( key ) && constraintIsCleared( value ) ) {
 			delete severities[ key ];
 		}
 	}
 
 	return { constraintSeverities: Object.keys( severities ).length > 0 ? severities : undefined };
 }
+
+const SEVERITY_SURVIVES_CLEARING = [ 'multiple', 'uniqueLanguages' ];
 
 function constraintIsCleared( value: unknown ): boolean {
 	return value === false || ( Array.isArray( value ) && value.length === 0 );
