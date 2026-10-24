@@ -102,7 +102,9 @@ services:
   qlever:
     profiles:
       - qlever
-    image: docker.io/adfreiburg/qlever:latest
+    # The build of 2026-10-23 (commit 42b25c3), by digest: QLever's last release, v0.6.0, cannot load
+    # the index format its builds have written since September 2026.
+    image: docker.io/adfreiburg/qlever@sha256:881f3762f89fdb831b085503d61c87c9894dad6e6769f1774dd253925fbb4e4c
     restart: unless-stopped
     # Room for QLever's -m 1G query budget (server command below) plus index overhead and rebuilds.
     mem_limit: 1536m
@@ -127,10 +129,12 @@ services:
         # --persist-updates and the --rebuild-* options: see "QLever" in docs/operations/installation.md.
         # The rebuild maximum of 50 000 delta triples keeps what a save gains within ADR 29's 100 ms
         # at 100 000 Subjects; upstream's example of 1 000 000 does not.
+        # --no-metrics-log: without it QLever writes every request's full text to a log next to the
+        # index, which grows without bound.
         # --service-allowed-iri-prefixes with "-" denies SPARQL federation; see "Restricting
         # federation" in docs/operations/installation.md. Keep it last: it takes any number of
         # prefixes, so a bare value after it would be read as another prefix.
-        exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G --persist-updates --rebuild-index-strategy automatic:10000:50000:0.1 --rebuild-keep-previous-index-dirs none --service-allowed-iri-prefixes -
+        exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G --persist-updates --rebuild-index-strategy automatic:10000:50000:0.1 --rebuild-keep-previous-index-dirs none --no-metrics-log --service-allowed-iri-prefixes -
     environment:
       # Same default as the mediawiki service above, so the server and the wiki agree on the token
       # even when Docker/.env predates the variable or leaves it empty.

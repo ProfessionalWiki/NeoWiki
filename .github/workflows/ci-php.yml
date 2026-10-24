@@ -152,10 +152,11 @@ jobs:
       # --service-allowed-iri-prefixes disables SPARQL federation, matching the dev stack (see
       # Docker/docker-compose.dev.yml): QLever allows every SERVICE IRI unless the option is given, and "-"
       # is the documented deny-all value (an invalid prefix no IRI matches). No test federates.
+      # The build is the one the Docker stacks run.
       - name: Start QLever
         run: |
           docker run -d --name test_qlever -p 7019:7019 -e QLEVER_ACCESS_TOKEN=neowiki_test_token \
-            --entrypoint /bin/bash docker.io/adfreiburg/qlever:latest -lc '
+            --entrypoint /bin/bash docker.io/adfreiburg/qlever@sha256:881f3762f89fdb831b085503d61c87c9894dad6e6769f1774dd253925fbb4e4c -lc '
               set -e
               cd /tmp
               : > data.nt
