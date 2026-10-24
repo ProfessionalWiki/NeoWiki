@@ -16,7 +16,7 @@
 				<SummaryAction
 					help-text=""
 					:save-button-label="$i18n( 'neowiki-layout-creator-save' ).text()"
-					:save-disabled="!hasChanged"
+					:save-disabled="!hasChanged || saving"
 					@save="handleSave"
 				/>
 			</template>
@@ -41,6 +41,7 @@ import { Layout } from '@/domain/Layout.ts';
 import type { LayoutSaveHandler } from '@/components/LayoutEditor/LayoutEditorDialog.vue';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
+import { useSaveGuard } from '@/composables/useSaveGuard.ts';
 
 const props = defineProps<{
 	open: boolean;
@@ -75,7 +76,9 @@ watch( () => props.open, ( isOpen ) => {
 	}
 } );
 
-async function handleSave( summary: string ): Promise<void> {
+const { saving, save: handleSave } = useSaveGuard( createLayout );
+
+async function createLayout( summary: string ): Promise<void> {
 	if ( !layoutCreatorRef.value ) {
 		return;
 	}

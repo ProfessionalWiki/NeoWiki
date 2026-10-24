@@ -23,7 +23,7 @@
 				<SummaryAction
 					help-text=""
 					:save-button-label="$i18n( 'neowiki-schema-creator-save' ).text()"
-					:save-disabled="!hasChanged && !props.initialName"
+					:save-disabled="( !hasChanged && !props.initialName ) || saving"
 					@save="handleSave"
 				/>
 			</template>
@@ -59,6 +59,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { useSchemaCreation } from '@/composables/useSchemaCreation.ts';
+import { useSaveGuard } from '@/composables/useSaveGuard.ts';
 
 const props = withDefaults( defineProps<{
 	open: boolean;
@@ -113,7 +114,9 @@ watch( () => props.open, ( isOpen ) => {
 	}
 } );
 
-async function handleSave( summary: string ): Promise<void> {
+const { saving, save: handleSave } = useSaveGuard( createSchema );
+
+async function createSchema( summary: string ): Promise<void> {
 	if ( !schemaCreatorRef.value ) {
 		return;
 	}

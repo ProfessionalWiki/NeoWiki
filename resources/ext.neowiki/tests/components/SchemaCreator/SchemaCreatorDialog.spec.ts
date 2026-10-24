@@ -162,6 +162,20 @@ describe( 'SchemaCreatorDialog', () => {
 
 			expect( saveDisabled( wrapper ) ).toBe( false );
 		} );
+
+		it( 'holds it back while a save is in flight', async () => {
+			const wrapper = mountComponent();
+			const creator = wrapper.findComponent( SchemaCreatorStub );
+			( creator.vm as any ).validate.mockReturnValue( new Promise( () => {
+				// Left in flight at the check that the name is free, the first request a save waits on.
+			} ) );
+			await creator.vm.$emit( 'change' );
+
+			wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( saveDisabled( wrapper ) ).toBe( true );
+		} );
 	} );
 
 	it( 'does not save when validation fails', async () => {

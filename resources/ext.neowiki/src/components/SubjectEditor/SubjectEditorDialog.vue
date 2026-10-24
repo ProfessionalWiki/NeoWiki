@@ -150,6 +150,7 @@ import PaneDivider, { PANE_DIVIDER_SIZE } from '@/components/common/PaneDivider.
 import { usePaneSize } from '@/composables/usePaneSize.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
+import { useSaveGuard } from '@/composables/useSaveGuard.ts';
 import { useEditNotices } from '@/composables/useEditNotices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
@@ -649,7 +650,7 @@ const { confirmationOpen, requestClose, confirmClose, cancelClose } = useCloseCo
 // Bound as `undefined` rather than `false` where it is off. A browser that knows `inert`
 // exposes it as a property, which Vue sets, so `false` would do there; where it is only an
 // attribute, as in jsdom, Vue would write inert="false", which an element reads as present.
-const saving = ref( false );
+const { saving, save: handleSave } = useSaveGuard( writeDirtyPanes );
 
 function closeRequested(): void {
 	if ( saving.value ) {
@@ -807,18 +808,6 @@ const saveScopeText = computed( (): string => {
 
 	return mw.message( 'neowiki-subject-editor-save-scope', dirty.length, dirtyPageCount.value ).text();
 } );
-
-const handleSave = async ( summary: string ): Promise<void> => {
-	if ( saving.value ) {
-		return;
-	}
-	saving.value = true;
-	try {
-		await writeDirtyPanes( summary );
-	} finally {
-		saving.value = false;
-	}
-};
 
 // A pane stops being new the moment its Subject exists on the wiki, so a save that fails further
 // down re-runs as an update rather than offering the same id to the server a second time. The

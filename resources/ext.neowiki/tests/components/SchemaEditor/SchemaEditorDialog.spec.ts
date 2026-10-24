@@ -121,6 +121,19 @@ describe( 'SchemaEditorDialog', () => {
 
 			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
 		} );
+
+		it( 'disables save while a save is in flight', async () => {
+			onSave.mockReturnValue( new Promise( () => {
+				// Left in flight, so the dialog is observed while it saves.
+			} ) );
+			const wrapper = mountComponent();
+			await wrapper.findComponent( SchemaEditor ).vm.$emit( 'change' );
+
+			wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+		} );
 	} );
 
 	describe( 'Description', () => {

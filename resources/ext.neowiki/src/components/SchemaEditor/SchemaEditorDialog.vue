@@ -63,7 +63,7 @@
 				<SummaryAction
 					:help-text="$i18n( 'neowiki-edit-summary-help-text-schema' ).text()"
 					:save-button-label="$i18n( 'neowiki-save-schema' ).text()"
-					:save-disabled="!hasChanged"
+					:save-disabled="!hasChanged || saving"
 					@save="handleSave"
 				/>
 			</template>
@@ -100,6 +100,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { useSchemaCreation } from '@/composables/useSchemaCreation.ts';
+import { useSaveGuard } from '@/composables/useSaveGuard.ts';
 
 export type SchemaSaveHandler = ( schema: Schema, comment: string ) => Promise<void>;
 
@@ -163,7 +164,9 @@ watch( () => props.open, ( isOpen ) => {
 	}
 } );
 
-const handleSave = async ( summary: string ): Promise<void> => {
+const { saving, save: handleSave } = useSaveGuard( writeSchema );
+
+async function writeSchema( summary: string ): Promise<void> {
 	// A save that moves no focus has not committed a description still being typed. The editor
 	// reads the description as a prop, which reaches it with the next render.
 	descriptionField.value?.commit();
@@ -201,7 +204,7 @@ const handleSave = async ( summary: string ): Promise<void> => {
 			}
 		);
 	}
-};
+}
 
 defineExpose( { hasChanged } );
 </script>
