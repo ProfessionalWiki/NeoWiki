@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+*'
   workflow_dispatch:
 
 jobs:
@@ -13,6 +15,10 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      # A run on another branch builds as master too, but only master and tags publish.
+      NEOWIKI_IMAGE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || 'master' }}
+      PUBLISH: ${{ github.ref == 'refs/heads/master' || github.ref_type == 'tag' }}
 
     steps:
       - uses: actions/checkout@v6
@@ -99,11 +105,20 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.PAT_write_packages }}
-        if: github.ref == 'refs/heads/master'
+        if: env.PUBLISH == 'true'
 
       - name: Push Docker Image
-        run: docker push ghcr.io/professionalwiki/neowiki:latest
-        if: github.ref == 'refs/heads/master'
+        run: |
+          image=ghcr.io/professionalwiki/neowiki
+          tags=$NEOWIKI_IMAGE_TAG
+          if [[ $NEOWIKI_IMAGE_TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            tags="$tags latest"
+          fi
+          for tag in $tags; do
+            docker tag "$image:$NEOWIKI_IMAGE_TAG" "$image:$tag"
+            docker push "$image:$tag"
+          done
+        if: env.PUBLISH == 'true'
 
       - name: Delete Older Images
         uses: actions/delete-package-versions@v5
@@ -112,4 +127,4 @@ jobs:
           package-type: 'container'
           delete-only-untagged-versions: true
           token: ${{ secrets.PAT_write_packages }}
-        if: github.ref == 'refs/heads/master'
+        if: env.PUBLISH == 'true'

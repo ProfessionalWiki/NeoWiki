@@ -1,0 +1,27 @@
+name: NeoWiki CI (shell scripts)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/ci-scripts.yml'
+      - 'Makefile'
+      - 'Docker/**'
+  pull_request:
+    paths:
+      - '.github/workflows/ci-scripts.yml'
+      - 'Makefile'
+      - 'Docker/**'
+
+jobs:
+  test:
+    name: "Tests"
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Test
+        run: make test-scripts

@@ -73,7 +73,7 @@ For developers of MediaWiki extensions that build on NeoWiki.
 For the people who operate the server.
 
 * [Installation](operations/installation.md) — the Docker demo, or adding NeoWiki to an existing MediaWiki
-* [Upgrading](operations/upgrading.md) — moving your wiki to the latest NeoWiki
+* [Upgrading](operations/upgrading.md) — moving your wiki to a newer NeoWiki
 * [Maintenance](operations/maintenance.md) — rebuilding the graph and search index, Neo4j outage behavior, and backups
 * [Performance](operations/performance.md) — measured write throughput
 * [Restricted content](operations/restricted-content.md) — wikis where some content is readable only by certain
