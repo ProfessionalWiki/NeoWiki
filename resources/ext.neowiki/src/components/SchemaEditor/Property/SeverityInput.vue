@@ -31,7 +31,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 /**
  * Picks the severity of one Constraint (ADR 26): a quiet menu button whose face is the current
  * level's icon, opening a menu that names both levels. Sized to sit at the end of a Constraint's
- * label row or checkbox row without making it taller (see the placement helpers in the styles).
+ * label row, checkbox row or radio row without making it taller (see the placement helpers in the styles).
  */
 const props = defineProps<{
 	/** Absent means the default severity, warning. */
@@ -180,6 +180,20 @@ function onSelected( value: string | number | null ): void {
 	// The checkbox is no longer the field's last child, which is what Codex keys its
 	// bottom margin on; drop it so the row stays a single checkbox row high.
 	> .cdx-checkbox {
+		margin-bottom: 0;
+	}
+}
+
+// Placement helper for a row holding a radio and the input, such as one option of a choice. The
+// input aligns with the radio's label, above the description that may follow it.
+.ext-neowiki-severity-radio-row {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: @spacing-50;
+
+	// As for the checkbox above: the radio is no longer its row's last child.
+	> .cdx-radio:not( .cdx-radio--inline ) {
 		margin-bottom: 0;
 	}
 }

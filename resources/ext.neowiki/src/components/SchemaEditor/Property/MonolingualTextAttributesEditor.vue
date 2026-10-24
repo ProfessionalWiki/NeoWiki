@@ -1,6 +1,6 @@
 <template>
 	<TextAttributesEditor
-		class="monolingual-text-attributes"
+		class="ext-neowiki-monolingual-text-attributes"
 		:property="property"
 		@update:property="emit( 'update:property', $event )"
 	>
@@ -13,7 +13,7 @@
 				<div
 					v-for="{ label, example, attributes, constraint } in OPTIONS"
 					:key="label"
-					class="monolingual-text-attributes__option"
+					class="ext-neowiki-monolingual-text-attributes__option ext-neowiki-severity-radio-row"
 				>
 					<CdxRadio
 						:model-value="chosenOption.label"
@@ -102,22 +102,9 @@ function updateSeverity( constraint: 'multiple' | 'uniqueLanguages', severity: S
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
-.monolingual-text-attributes {
-	&__option {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: @spacing-50;
-	}
-
+.ext-neowiki-monolingual-text-attributes {
 	&__option + &__option {
 		margin-top: @spacing-75;
-	}
-
-	// Codex spaces stacked radios by a bottom margin on all but the last one in their container.
-	// Each radio has a row of its own here, followed by the severity input on the chosen one.
-	&__option > .cdx-radio:not( .cdx-radio--inline ) {
-		margin-bottom: 0;
 	}
 }
 </style>

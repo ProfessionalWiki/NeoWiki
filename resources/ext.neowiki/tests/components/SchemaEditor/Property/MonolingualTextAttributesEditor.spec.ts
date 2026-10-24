@@ -41,7 +41,7 @@ describe( 'MonolingualTextAttributesEditor', () => {
 	function offeredSeverities( wrapper: VueWrapper ): [ string, Severity | undefined ][] {
 		return wrapper.findAllComponents( SeverityInput ).map( ( severityInput ) => [
 			accessibleName(
-				severityInput.element.closest( '.monolingual-text-attributes__option' )!.querySelector( 'input[type="radio"]' )!,
+				severityInput.element.closest( '.ext-neowiki-monolingual-text-attributes__option' )!.querySelector( 'input[type="radio"]' )!,
 			),
 			severityInput.props( 'modelValue' ),
 		] );

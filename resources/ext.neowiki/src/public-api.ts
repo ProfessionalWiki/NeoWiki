@@ -118,6 +118,7 @@ export { default as SchemaDisplayHeader } from './components/SchemaDisplay/Schem
 export { default as BooleanAttributesEditor } from './components/SchemaEditor/Property/BooleanAttributesEditor.vue';
 export { default as DateTimeAttributesEditor } from './components/SchemaEditor/Property/DateTimeAttributesEditor.vue';
 export { default as DateAttributesEditor } from './components/SchemaEditor/Property/DateAttributesEditor.vue';
+export { default as MonolingualTextAttributesEditor } from './components/SchemaEditor/Property/MonolingualTextAttributesEditor.vue';
 export { default as NumberAttributesEditor } from './components/SchemaEditor/Property/NumberAttributesEditor.vue';
 export { default as RelationAttributesEditor } from './components/SchemaEditor/Property/RelationAttributesEditor.vue';
 export { default as SelectAttributesEditor } from './components/SchemaEditor/Property/SelectAttributesEditor.vue';
