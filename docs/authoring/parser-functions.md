@@ -17,9 +17,6 @@ NeoWiki provides these parser functions for use in wikitext.
 
 For programmatic access from Lua modules, see the [Lua API](lua-api.md).
 
-A page that calls any NeoWiki function, including from Lua, is listed in the
-[tracking category](https://www.mediawiki.org/wiki/Help:Tracking_categories) *Pages using NeoWiki functions*.
-
 For definitions of terms like Subject, Schema, and Layout, see the [Glossary](../glossary.md).
 
 ## Permissions

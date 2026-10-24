@@ -9,7 +9,6 @@ use InvalidArgumentException;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
-use ProfessionalWiki\NeoWiki\EntryPoints\FunctionsTrackingCategory;
 use ProfessionalWiki\NeoWiki\EntryPoints\ParserAuthority;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\CypherErrorMessage;
@@ -79,22 +78,9 @@ class ScribuntoLuaLibrary extends LibraryBase {
 			$lib[$name] = [ $this, $name ];
 		}
 
-		$lib['trackCall'] = [ $this, 'trackCall' ];
-
 		return $this->getEngine()->registerInterface(
 			__DIR__ . '/mw.neowiki.lua', $lib, []
 		);
-	}
-
-	/**
-	 * Called from Lua ahead of each library function rather than on registration, since Scribunto registers
-	 * the library for every module invocation whether or not the module uses it. Kept apart from the
-	 * functions themselves so that Scribunto keeps calling those directly: a call forwarded from this
-	 * strict file would no longer turn the numbers Lua passes into the strings the functions take.
-	 */
-	public function trackCall(): array {
-		FunctionsTrackingCategory::addTo( $this->getParser() );
-		return [];
 	}
 
 	public function getValue( ?string $propertyName = null, ?array $options = null ): array {

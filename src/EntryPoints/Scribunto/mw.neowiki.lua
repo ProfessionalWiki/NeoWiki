@@ -18,14 +18,6 @@ function neowiki.setupInterface()
 		neowiki.sparqlQuery = nil
 	end
 
-	-- Lists the page in NeoWiki's tracking category whenever one of these functions is called.
-	for name, func in pairs( neowiki ) do
-		neowiki[name] = function ( ... )
-			php.trackCall()
-			return func( ... )
-		end
-	end
-
 	mw = mw or {}
 	mw.neowiki = neowiki
 

@@ -9,7 +9,6 @@ use MediaWiki\Parser\Parser;
 use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
-use ProfessionalWiki\NeoWiki\EntryPoints\FunctionsTrackingCategory;
 use ProfessionalWiki\NeoWiki\EntryPoints\ParserAuthority;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\ProjectionResolver;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryLimits;
@@ -90,11 +89,9 @@ readonly class SparqlPlugin {
 	public function registerParserFunctions( Parser $parser ): void {
 		$parser->setFunctionHook(
 			'sparql_raw',
-			FunctionsTrackingCategory::trackingCallsOf(
-				function ( Parser $parser, string $query ): array {
-					return $this->newRawParserFunction( $parser )->handle( $parser, $query );
-				}
-			)
+			function ( Parser $parser, string $query ): array {
+				return $this->newRawParserFunction( $parser )->handle( $parser, $query );
+			}
 		);
 	}
 
