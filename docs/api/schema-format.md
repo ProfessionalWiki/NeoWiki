@@ -103,7 +103,7 @@ Plain text values.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `multiple` | boolean or object | `false` | Allow multiple values |
-| `uniqueItems` | boolean | `false` | Reject duplicate values (only with `multiple`) |
+| `uniqueItems` | boolean or object | `false` | Reject duplicate values (only with `multiple`) |
 | `minLength` | number | `null` | Minimum trimmed length of each value |
 | `maxLength` | number | `null` | Maximum trimmed length of each value |
 
@@ -123,7 +123,7 @@ Text values that each carry the language they are in ([ADR 34](../adr/034-monoli
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `multiple` | boolean or object | `false` | Allow multiple values |
-| `uniqueLanguages` | boolean | `false` | At most one value per language (only with `multiple`) |
+| `uniqueLanguages` | boolean or object | `false` | At most one value per language (only with `multiple`) |
 | `minLength` | number | `null` | Minimum trimmed length of each text |
 | `maxLength` | number | `null` | Maximum trimmed length of each text |
 
@@ -142,7 +142,7 @@ URL values.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `multiple` | boolean or object | `false` | Allow multiple values |
-| `uniqueItems` | boolean | `false` | Reject duplicate values (only with `multiple`) |
+| `uniqueItems` | boolean or object | `false` | Reject duplicate values (only with `multiple`) |
 
 ### Number (`number`)
 

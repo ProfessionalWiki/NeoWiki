@@ -143,8 +143,7 @@ one part (`select`, `monolingualText`) or relation target (`relation`) was suppl
 ### `single-value-per-language`
 
 On multi-valued (`multiple: true`) `monolingualText` properties with `uniqueLanguages` enabled: a part
-repeats the language of an earlier part. Tags compare in lowercase and in full: `EN` repeats `en`,
-`en-gb` does not.
+repeats the language of an earlier part. Tags compare in full: `en-gb` does not repeat `en`.
 
 `args`: `[]`. `valuePartIndex`: the offending part. `severity`: set by the `uniqueLanguages` Constraint
 (default `warning`).
