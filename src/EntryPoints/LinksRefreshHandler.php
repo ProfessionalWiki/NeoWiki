@@ -12,9 +12,8 @@ use MediaWiki\Page\PageReference;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 /**
- * MediaWiki refreshes a page's links without saving it after an edit to a template or module the page
- * uses, on a null edit, and from refreshLinks.php. No revision hook fires for those, so the categories
- * and page properties such a refresh changes would otherwise stay out of the graph until the next edit.
+ * No revision hook fires when MediaWiki refreshes a page's links without saving it: after an edit to a template
+ * or module the page uses, on a null edit, and from refreshLinks.php.
  */
 class LinksRefreshHandler {
 
@@ -29,14 +28,13 @@ class LinksRefreshHandler {
 		$title = $linksUpdate->getTitle();
 
 		DeferredUpdates::addCallableUpdate( static function () use ( $title ): void {
-			NeoWikiExtension::getInstance()->newPageRebuilder()->rebuild( $title );
+			NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuild( $title );
 		} );
 	}
 
 	/**
-	 * A save that changed the page's content runs a recursive links update, which refreshes the pages
-	 * transcluding it as well, and has projected the page itself. A deletion runs its links update once the
-	 * page has left the graph, and by then another page can hold the title.
+	 * A recursive links update belongs to a save that changed the page's content, and that save projected the
+	 * page. A deletion's links update can run after a move has given the title to another page.
 	 */
 	private static function isRefresh( LinksUpdate $linksUpdate ): bool {
 		return !$linksUpdate->isRecursive() && !( $linksUpdate instanceof LinksDeletionUpdate );

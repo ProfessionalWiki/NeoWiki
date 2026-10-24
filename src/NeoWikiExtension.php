@@ -1549,8 +1549,8 @@ class NeoWikiExtension {
 
 	/**
 	 * Hook paths that project a page they did not themselves write a revision for: import, undeletion,
-	 * and a revision-visibility change. Projects the current revision like the rebuild path, but with
-	 * the hook path's failure isolation, since a projection failure must not abort the user's operation.
+	 * a revision-visibility change, and a links refresh. Projects the current revision like the rebuild path,
+	 * but with the hook path's failure isolation, since a projection failure must not abort the user's operation.
 	 * The page is indexed as an edit does it, which costs reads but no write where, as on the visibility
 	 * path, no Subject changed.
 	 */

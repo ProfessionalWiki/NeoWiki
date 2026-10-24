@@ -12,9 +12,6 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 
 /**
- * Needs the database and the job queue for what a template edit sets off: MediaWiki refreshes the links
- * of the pages using the template in jobs, without saving those pages.
- *
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\LinksRefreshHandler
  * @group Database
  */
@@ -57,9 +54,6 @@ class LinksRefreshGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'After', $this->readPageNodeProperty( $pageId, 'defaultSort' ) );
 	}
 
-	/**
-	 * MediaWiki records a new sort key as the category removed and added again.
-	 */
 	public function testTemplateEditThatOnlyChangesASortKeyWritesNothing(): void {
 		$this->savePage( self::TEMPLATE, '[[Category:Sorted|first]]' );
 		$this->savePage( self::PAGE, self::PAGE_TEXT );
@@ -81,8 +75,7 @@ class LinksRefreshGraphProjectionTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * From MediaWiki 1.44 on, the links update of a move does not recurse, and it removes and adds again
-	 * every category the moved page is in.
+	 * From MediaWiki 1.44 on, a move's links update does not recurse.
 	 */
 	public function testMovingAPageInACategoryProjectsItOnce(): void {
 		$pageId = $this->savePage( 'Categorized move source', '[[Category:Moved]]' );
@@ -93,10 +86,6 @@ class LinksRefreshGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ $pageId ], self::savedPageIds( $store ) );
 	}
 
-	/**
-	 * The move deletes the redirect, and MediaWiki empties the deleted redirect's links only once the
-	 * moved page holds its title.
-	 */
 	public function testMovingAPageOverARedirectInACategoryProjectsItOnce(): void {
 		$pageId = $this->savePage( 'Moved over a redirect', 'No categories.' );
 		$this->savePage( 'Redirect moved over', '#REDIRECT [[Moved over a redirect]] [[Category:Redirects]]' );
