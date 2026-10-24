@@ -102,7 +102,9 @@ services:
   qlever:
     profiles:
       - qlever
-    image: docker.io/adfreiburg/qlever:latest
+    # The build of 2026-10-23 (commit 42b25c3), by digest: QLever's last release, v0.6.0, cannot load
+    # the index format its builds have written since September 2026.
+    image: docker.io/adfreiburg/qlever@sha256:881f3762f89fdb831b085503d61c87c9894dad6e6769f1774dd253925fbb4e4c
     restart: unless-stopped
     # Above QLever's own -m 1G query budget (server command below) plus index overhead.
     mem_limit: 1536m
@@ -131,6 +133,8 @@ services:
         # --persist-updates is mandatory: without it every SPARQL update is lost on
         # restart. With it, updates persist to neowiki.update-triples on the named volume
         # and are reloaded on startup.
+        # --no-metrics-log: without it QLever writes every request's full text to a log next to
+        # the index, which grows without bound.
         # --service-allowed-iri-prefixes disables SPARQL federation. NeoWiki's query surfaces
         # let wiki users send arbitrary SPARQL, and SERVICE makes the store issue outbound
         # requests from its own network position — here, inside the compose network. QLever
@@ -139,7 +143,7 @@ services:
         # actually want federation, and then list real prefixes rather than removing the flag.
         # Keep it last: it takes an arbitrary number of prefixes, so a bare value placed
         # after it would be read as another prefix.
-        exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G --persist-updates --service-allowed-iri-prefixes -
+        exec qlever-server -i neowiki -p 7019 -a "$$QLEVER_ACCESS_TOKEN" -m 1G --persist-updates --no-metrics-log --service-allowed-iri-prefixes -
     environment:
       # Same default as the mediawiki service above, so the server and the wiki agree on the token
       # even when Docker/.env predates the variable or leaves it empty.
