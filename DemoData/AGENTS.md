@@ -32,7 +32,7 @@ the old file, whose page the import then deletes. Wikis seeded earlier refuse th
 
 - **Filenames must match the entity's label exactly**, including UTF-8 accents and apostrophes.
   Examples: `Diego_Velázquez.json`, `Musée_d'Orsay.json`, `Starry_Night_Over_the_Rhône.json`.
-  Otherwise auto-linked Cypher results and wikilinks dead-end.
+  Otherwise auto-linked query results and wikilinks dead-end.
 - Underscores in filenames render as spaces in page titles.
 - **Avoid colons in labels.** MediaWiki interprets a colon in a page title as a namespace prefix.
   Rephrase, e.g. "Lessons from MARC to RDF migration" rather than "MARC to RDF: Lessons learned".
@@ -83,27 +83,28 @@ Subject, relation, and option IDs:
    permission dialog on click, so a hub needs no sign-in note. Two buttons side by side need a flex
    `<div>` wrapper, since each renders as a block.
 
-## Cypher gotchas
+## SPARQL gotchas
 
-- **Text properties land in Neo4j as arrays even when declared `"multiple": false`.** Cypher queries
-  on text properties must index: `p.Venue[0] AS Venue`. Otherwise the cell renders as the literal
-  string `table` (Lua `tostring()` on a list).
-- A relation is an edge named after its property. Use backticks for property names with spaces:
+- Schema and property names become IRIs with their spaces as underscores. A relation is a triple
+  straight to the target Subject:
 
-  ```cypher
-  MATCH (m:Museum) RETURN m.`Annual visitors`
-  MATCH (a:Artwork)-[:`Located at`]->(m:Museum) RETURN m.name
+  ```sparql
+  SELECT DISTINCT ?Museum ?City WHERE { ?m a neo-schema:Museum ; rdfs:label ?Museum ; neo-prop:City ?c . ?c rdfs:label ?City }
   ```
 
-- The Neo4j projection can lag after edits. If a query returns 0 rows when you expect data, run
+- Select `DISTINCT`: on Oxigraph, a Subject whose Schema has an EDM mapping has its `rdfs:label` in both
+  projections, so a query that joins on it returns each row twice.
+- In a query passed to a module, MediaWiki takes an `=` for a named argument and `}}` for the end of
+  the call. Pass a query that needs `=` as `1=<query>`, and write `}}` as `} }`.
+- The graph stores can lag after edits. If a query returns 0 rows when you expect data, run
   `make rebuild-graph-databases` from the repo root, then reload.
 
 ## Reusable modules
 
 | Module | Purpose | Example invocation |
 |---|---|---|
-| `Module:NeoWikiDemo` `query` | Renders Cypher results as a wikitable. `columns=Col1, Col2` orders columns; `linkColumns=Col1` wraps cells in `[[...]]`. | `{{#invoke:NeoWikiDemo\|query\|MATCH (m:Museum) RETURN m.name AS Museum, m.Founded AS Founded\|columns=Museum, Founded\|linkColumns=Museum}}` |
-| `Module:NeoWikiDemo` `subjectTable` | Builds a wikitable from the current page's Subjects (via `mw.neowiki.getSubjects`). Avoids a Cypher query when the data is page-local. Optional `schema=` filter, `sortBy=`/`sortDir=` (default `desc`), `numberColumns=` for thousand-separator formatting. | `{{#invoke:NeoWikiDemo\|subjectTable\|schema=Annual attendance\|columns=Year, Visitors\|sortBy=Year\|numberColumns=Visitors}}` |
+| `Module:NeoWikiDemo` `query` | Renders SPARQL results as a wikitable, a column per selected variable, an underscore in its name shown as a space. The query may use the `rdfs:`, `neo-subj:`, `neo-prop:` and `neo-schema:` prefixes without declaring them. `linkColumns=Col1` wraps the cells of the columns it names, as headed, in `[[...]]`. | `{{#invoke:NeoWikiDemo\|query\|SELECT DISTINCT ?Museum ?Founded WHERE { ?m a neo-schema:Museum ; rdfs:label ?Museum ; neo-prop:Founded ?Founded }\|linkColumns=Museum}}` |
+| `Module:NeoWikiDemo` `subjectTable` | Builds a wikitable from the current page's Subjects (via `mw.neowiki.getSubjects`). Avoids a query when the data is page-local. Optional `schema=` filter, `sortBy=`/`sortDir=` (default `desc`), `numberColumns=` for thousand-separator formatting. | `{{#invoke:NeoWikiDemo\|subjectTable\|schema=Annual attendance\|columns=Year, Visitors\|sortBy=Year\|numberColumns=Visitors}}` |
 | `Module:SubjectRow` | Renders a row of Subject views in a centered, scrollable container. Optional `layout=` named arg sets a row default. Append `@LayoutName` to a subject ID to override per view. | `{{#invoke:SubjectRow\|render\|<id1>\|<id2>@LayoutName}}` |
 | `Module:Card` | Renders a row of styled cards (used by `Main_Page`). | `{{#invoke:Card\|cards\|card1_title=...\|card1_link=...}}` |
 | `Module:LuaExample` | Educational example for the Developers hub showing direct `mw.neowiki` use. | `{{#invoke:LuaExample\|foundedYear\|Rijksmuseum}}` |
@@ -116,14 +117,14 @@ Use-case hub pages follow a six-section pattern:
 2. **Featured**. `{{#invoke:SubjectRow|render|<id>|<id>}}` showing 2 representative subjects.
    **Skip this section on Subject-as-page hubs** (e.g. `ACME_Inc`). The auto-rendered infobox at
    the top already serves as the featured view.
-3. **Question Answered**. A natural-language question heading followed by a Cypher result table.
+3. **Question Answered**. A natural-language question heading followed by a SPARQL result table.
 4. **Browse**. A curated table of subjects in the dataset.
 5. **Add your own**. `{{#create_subject: schema=<Schema> | page=new}}` for the hub's central Schema,
    optionally with one sentence on what the form will ask for (relation fields, say).
 6. **How this is built**. Links to schemas and layouts, a `Special:Subject/<id>` link for a featured
    Subject whose incoming relations make the point, and an "Edit this page" link.
 
-Use `linkColumns=` on hub-page Cypher tables so subject names render as wikilinks.
+Use `linkColumns=` on hub-page query tables so subject names render as wikilinks.
 
 ## Codex CSS
 

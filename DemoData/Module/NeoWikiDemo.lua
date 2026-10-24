@@ -127,10 +127,28 @@ local function renderRowsAsTable( rows, columns, linkColumns )
 	return table.concat( out, '\n' )
 end
 
+-- The prefixes of NeoWiki's native RDF vocabulary, under this wiki's IRIs.
+local function sparqlPrefixes()
+	local base = mw.site.server
+	return 'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ..
+		'PREFIX neo-subj: <' .. base .. '/entity/> ' ..
+		'PREFIX neo-prop: <' .. base .. '/prop/> ' ..
+		'PREFIX neo-schema: <' .. base .. '/schema/> '
+end
+
+-- SPARQL variables and NeoWiki's property IRIs write a space as an underscore.
+local function withSpaces( name )
+	return ( name:gsub( '_', ' ' ) )
+end
+
+-- Renders a SPARQL query's results as a wikitable, one column per selected variable, in the order
+-- the query selects them, with an underscore in a variable's name shown as a space. The query may use
+-- the rdfs:, neo-subj:, neo-prop: and neo-schema: prefixes without declaring them.
+-- Args: 1 = the query
+--       linkColumns=Col1, Col2 (optional, wraps those columns' cells in [[...]])
 function p.query( frame )
-	local columns = nil
-	if frame.args.columns then
-		columns = mw.text.split( frame.args.columns, ',%s*' )
+	if not nw.sparqlQuery then
+		return "''This table needs a SPARQL store.''"
 	end
 
 	local linkColumns = nil
@@ -138,7 +156,23 @@ function p.query( frame )
 		linkColumns = mw.text.split( frame.args.linkColumns, ',%s*' )
 	end
 
-	return renderRowsAsTable( nw.query( frame.args[1] ), columns, linkColumns )
+	local result = nw.sparqlQuery( sparqlPrefixes() .. frame.args[1] )
+
+	local columns = {}
+	for _, variable in ipairs( result.head.vars ) do
+		columns[#columns + 1] = withSpaces( variable )
+	end
+
+	local rows = {}
+	for _, binding in ipairs( result.results.bindings ) do
+		local row = {}
+		for variable, term in pairs( binding ) do
+			row[withSpaces( variable )] = term.value
+		end
+		rows[#rows + 1] = row
+	end
+
+	return renderRowsAsTable( rows, columns, linkColumns )
 end
 
 local function statementValue( stmt )
@@ -210,16 +244,6 @@ function p.subjectTable( frame )
 	end
 
 	return renderRowsAsTable( rows, columns, nil )
-end
-
-function p.productsFoundedSince( frame )
-	local year = tonumber( frame.args[1] ) or 2000
-
-	return renderRowsAsTable( nw.query(
-		'MATCH (n:Product) WHERE n.`Available since` >= $year ' ..
-			'RETURN n.name AS name, n.`Available since` AS year ORDER BY year',
-		{ year = year }
-	) )
 end
 
 -- A Schema of this wiki arrives as its name, one from another Source as a { source, name } table.
@@ -309,31 +333,38 @@ local PERSON_EVENTS_ROLES = {
 }
 
 -- Renders the current Person page's life events as a table by reverse-querying
--- the graph: the canonical edges run Birth -> Person, so a person's role in each
--- event ("was born" / CIDOC P98i, mother, father) is derived here rather than
--- stored as an inverse edge. The `date` property is stored as a native Neo4j
--- date list; the result normalizer renders b.Date[0] as a Y-m-d string.
+-- the graph: the canonical relations run Birth -> Person, so a person's role in
+-- each event ("was born" / CIDOC P98i, mother, father) is derived here rather
+-- than stored as an inverse relation. Dates come back as xsd:date, Y-m-d.
 function p.personEvents( frame )
-	local name = mw.title.getCurrentTitle().text
+	local person = nw.getMainSubject()
 
-	local events = nw.query(
-		'MATCH (b:Birth)-[r]->(p:Person {name: $name}) ' ..
-		'OPTIONAL MATCH (b)-[:`Took place at`]->(pl:Place) ' ..
-		'RETURN type(r) AS role, b.name AS event, b.Date[0] AS date, pl.name AS place ORDER BY date',
-		{ name = name }
+	if not person or not nw.sparqlQuery then
+		return ''
+	end
+
+	local result = nw.sparqlQuery( sparqlPrefixes() ..
+		'SELECT DISTINCT ?role ?event ?date ?place WHERE { ' ..
+		'?b a neo-schema:Birth ; ?role neo-subj:' .. person.id .. ' ; rdfs:label ?event . ' ..
+		'OPTIONAL { ?b neo-prop:Date ?date } ' ..
+		'OPTIONAL { ?b neo-prop:Took_place_at ?pl . ?pl rdfs:label ?place } ' ..
+		'} ORDER BY ?date'
 	)
 
-	if not events or #events == 0 then
+	local events = result.results.bindings
+
+	if #events == 0 then
 		return ''
 	end
 
 	local rows = {}
 	for _, e in ipairs( events ) do
+		local property = withSpaces( e.role.value:match( '/prop/(.+)$' ) )
 		rows[#rows + 1] = {
-			Role = PERSON_EVENTS_ROLES[e.role] or e.role,
-			Event = e.event,
-			Date = e.date and personEventsFormatDate( e.date ) or '',
-			Place = e.place or '',
+			Role = PERSON_EVENTS_ROLES[property] or property,
+			Event = e.event.value,
+			Date = e.date and personEventsFormatDate( e.date.value ) or '',
+			Place = e.place and e.place.value or '',
 		}
 	end
 

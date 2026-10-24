@@ -51,13 +51,13 @@ rest, and Layouts control which properties a View shows ([Glossary](../glossary.
 
 ## 4. Query
 
-Add a query to any page. This one lists the stored pages, whatever your data model:
+Add a query to any page. This one lists the labels of the stored Subjects, whatever your data model:
 
 ```
-{{#cypher_raw: MATCH (p:Page) RETURN p.name }}
+{{#sparql_raw: SELECT DISTINCT ?label WHERE { ?subject <http://www.w3.org/2000/01/rdf-schema#label> ?label } }}
 ```
 
-This needs a Neo4j backend; the sandbox and the Docker install have one.
+This needs a SPARQL store; the sandbox and the Docker install have one.
 
 ## Where next
 

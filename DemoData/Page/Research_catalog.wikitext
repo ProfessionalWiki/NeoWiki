@@ -6,11 +6,11 @@ A fictional research-output catalog showing NeoWiki's relations across instituti
 
 == Publications per project ==
 
-{{#invoke:NeoWikiDemo|query|MATCH (p:Publication)-[:Project]->(pr:Project) RETURN pr.name AS Project, count(p) AS Publications ORDER BY Publications DESC|columns=Project, Publications|linkColumns=Project}}
+{{#invoke:NeoWikiDemo|query|SELECT ?Project (COUNT(DISTINCT ?p) AS ?Publications) WHERE { ?p a neo-schema:Publication ; neo-prop:Project ?pr . ?pr rdfs:label ?Project } GROUP BY ?Project ORDER BY DESC(?Publications) ?Project|linkColumns=Project}}
 
 == Browse ==
 
-{{#invoke:NeoWikiDemo|query|MATCH (p:Publication) RETURN p.name AS Title, p.Year AS Year, p.Venue[0] AS Venue ORDER BY Year DESC, Title|columns=Title, Year, Venue|linkColumns=Title}}
+{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Title ?Year ?Venue WHERE { ?p a neo-schema:Publication ; rdfs:label ?Title . OPTIONAL { ?p neo-prop:Year ?Year } OPTIONAL { ?p neo-prop:Venue ?Venue } } ORDER BY DESC(?Year) ?Title|linkColumns=Title}}
 
 == Add your own ==
 
@@ -21,4 +21,4 @@ A fictional research-output catalog showing NeoWiki's relations across instituti
 * Schemas: [[Schema:Publication]], [[Schema:Author]], [[Schema:Institution]], [[Schema:Project]]
 * Layout: [[Layout:PublicationOverview]]
 * See the source of one publication: [{{fullurl:Linked Bibliography Mappings for European Archives|action=edit}} Edit Linked Bibliography Mappings for European Archives]
-* The featured infoboxes use <code><nowiki>{{#view}}</nowiki></code>. The tables come from Cypher queries via [[Module:NeoWikiDemo]].
+* The featured infoboxes use <code><nowiki>{{#view}}</nowiki></code>. The tables come from SPARQL queries via [[Module:NeoWikiDemo]].

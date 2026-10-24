@@ -17,12 +17,18 @@ services:
     ports:
       - "${QLEVER_PORT:-7019}:7019"
 
-  # Exposes the stack's Oxigraph SPARQL endpoint on the host, once the `oxigraph` profile starts that
-  # service (see docker-compose.yml); until then there is no container to map a port for. Its
-  # query and update operations live on separate paths, unlike QLever's single one, e.g.
+  # Exposes the stack's Oxigraph SPARQL endpoint on the host, when the `oxigraph` profile starts that
+  # service (see docker-compose.yml). Its query and update operations live on separate paths, unlike
+  # QLever's single one, e.g.
   #   curl http://localhost:7878/query --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' -H 'Accept: application/sparql-results+json'
   # Bound to the loopback interface, unlike the services above: Oxigraph has no authentication, so a
   # published port is an open read-write SPARQL endpoint to everything that can route to this host.
+  #
+  # A port needs a network that reaches the host, which docker-compose.yml's no-egress one does not,
+  # so this also puts Oxigraph on the default network. That gives it a route out as well, and with it
+  # federation: use this overlay on a stack only you can query.
   oxigraph:
+    networks:
+      - default
     ports:
       - "127.0.0.1:${OXIGRAPH_PORT:-7878}:7878"

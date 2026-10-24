@@ -10,19 +10,25 @@ NeoWiki exposes a programmable surface: a graph database, parser functions, a Lu
 
 == Query the graph ==
 
-The <code><nowiki>{{#cypher_raw}}</nowiki></code> parser function runs a Cypher query and returns the raw JSON.
+The <code><nowiki>{{#sparql_raw}}</nowiki></code> parser function runs a SPARQL query and returns the raw JSON.
 
 Source:
 
 <syntaxhighlight lang="mediawiki">
-{{#cypher_raw:MATCH (m:Museum) RETURN m.name AS name, m.`Annual visitors` AS visitors ORDER BY visitors DESC LIMIT 5}}
+{{#sparql_raw:SELECT ?museum ?visitors WHERE { ?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Museum> . ?m <http://www.w3.org/2000/01/rdf-schema#label> ?museum . ?m <{{SERVER}}/prop/Annual_visitors> ?visitors } ORDER BY DESC(?visitors) LIMIT 5}}
 </syntaxhighlight>
 
 Result:
 
-{{#cypher_raw:MATCH (m:Museum) RETURN m.name AS name, m.`Annual visitors` AS visitors ORDER BY visitors DESC LIMIT 5}}
+{{#sparql_raw:SELECT ?museum ?visitors WHERE { ?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Museum> . ?m <http://www.w3.org/2000/01/rdf-schema#label> ?museum . ?m <{{SERVER}}/prop/Annual_visitors> ?visitors } ORDER BY DESC(?visitors) LIMIT 5}}
 
-{{#ifexist:SPARQL queries|This wiki also projects its structured data to RDF, queryable with SPARQL: see [[SPARQL queries]].}}
+{{#ifexist:SPARQL queries|[[SPARQL queries]] has more examples, from Lua and over REST too.}}
+
+Cypher queries need a Neo4j backend. On a wiki with one, the <code><nowiki>{{#cypher_raw}}</nowiki></code> parser function runs the same query in Cypher:
+
+<syntaxhighlight lang="mediawiki">
+{{#cypher_raw:MATCH (m:Museum) RETURN m.name AS name, m.`Annual visitors` AS visitors ORDER BY visitors DESC LIMIT 5}}
+</syntaxhighlight>
 
 == Read values in wikitext ==
 
@@ -60,7 +66,7 @@ Result:
 
 == Read values in Lua ==
 
-The <code>mw.neowiki</code> Lua library exposes structured data to your Scribunto modules. The example below reads a single property and runs a Cypher query.
+The <code>mw.neowiki</code> Lua library exposes structured data to your Scribunto modules. The example below reads a single property and runs a SPARQL query.
 
 [[Module:LuaExample]]:
 
@@ -73,14 +79,19 @@ function p.foundedYear( frame )
 	return tostring( year or '' )
 end
 
-function p.oldestMuseums( frame )
-	local rows = nw.query(
-		'MATCH (m:Museum) RETURN m.name AS name, m.Founded AS year ORDER BY year LIMIT 3'
+function p.largestMuseums( frame )
+	local base = mw.site.server
+	local result = nw.sparqlQuery(
+		'SELECT ?label ?visitors WHERE { ' ..
+		'?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <' .. base .. '/schema/Museum> . ' ..
+		'?m <http://www.w3.org/2000/01/rdf-schema#label> ?label . ' ..
+		'?m <' .. base .. '/prop/Annual_visitors> ?visitors ' ..
+		'} ORDER BY DESC(?visitors) LIMIT 3'
 	)
 
 	local list = {}
-	for _, row in ipairs( rows ) do
-		list[#list + 1] = '* ' .. row.name .. ' (' .. row.year .. ')'
+	for _, binding in ipairs( result.results.bindings ) do
+		list[#list + 1] = '* ' .. binding.label.value .. ' (' .. binding.visitors.value .. ' visitors)'
 	end
 	return table.concat( list, '\n' )
 end
@@ -93,16 +104,16 @@ Invoke it from wikitext:
 <syntaxhighlight lang="mediawiki">
 {{#invoke:LuaExample|foundedYear|Rijksmuseum}}
 
-{{#invoke:LuaExample|oldestMuseums}}
+{{#invoke:LuaExample|largestMuseums}}
 </syntaxhighlight>
 
 Result:
 
 Rijksmuseum was founded in {{#invoke:LuaExample|foundedYear|Rijksmuseum}}.
 
-Oldest museums in this demo:
+Museums with the most visitors in this demo:
 
-{{#invoke:LuaExample|oldestMuseums}}
+{{#invoke:LuaExample|largestMuseums}}
 
 For the full library reference, see the [https://neowiki.ai/docs/authoring/lua-api Lua API documentation].
 

@@ -6,13 +6,13 @@ A demo dataset that models people and their births as separate Subjects, in the 
 
 == Who was born where, and when? ==
 
-{{#invoke:NeoWikiDemo|query|MATCH (b:Birth)-[:`Brought into life`]->(p:Person) OPTIONAL MATCH (b)-[:`Took place at`]->(pl:Place) RETURN p.name AS Person, pl.name AS Place, b.Date[0] AS Date ORDER BY Date|columns=Person, Place, Date|linkColumns=Person, Place}}
+{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Person ?Place ?Date WHERE { ?b a neo-schema:Birth ; neo-prop:Brought_into_life ?p . ?p rdfs:label ?Person . OPTIONAL { ?b neo-prop:Took_place_at ?pl . ?pl rdfs:label ?Place } OPTIONAL { ?b neo-prop:Date ?Date } } ORDER BY ?Date|linkColumns=Person, Place}}
 
 == Browse ==
 
 Each birth is its own Subject linking a child, mother, father, place, and date. Johann Sebastian Bach appears in four births, once as a child and three times as a father, which a person-centric model could not express cleanly.
 
-{{#invoke:NeoWikiDemo|query|MATCH (b:Birth)-[:`Brought into life`]->(c:Person) OPTIONAL MATCH (b)-[:`By mother`]->(m:Person) OPTIONAL MATCH (b)-[:`From father`]->(f:Person) OPTIONAL MATCH (b)-[:`Took place at`]->(pl:Place) RETURN c.name AS Child, m.name AS Mother, f.name AS Father, pl.name AS Place, b.Date[0] AS Date ORDER BY Date|columns=Child, Mother, Father, Place, Date|linkColumns=Child, Mother, Father, Place}}
+{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Child ?Mother ?Father ?Place ?Date WHERE { ?b a neo-schema:Birth ; neo-prop:Brought_into_life ?c . ?c rdfs:label ?Child . OPTIONAL { ?b neo-prop:By_mother ?m . ?m rdfs:label ?Mother } OPTIONAL { ?b neo-prop:From_father ?f . ?f rdfs:label ?Father } OPTIONAL { ?b neo-prop:Took_place_at ?pl . ?pl rdfs:label ?Place } OPTIONAL { ?b neo-prop:Date ?Date } } ORDER BY ?Date|linkColumns=Child, Mother, Father, Place}}
 
 == Add your own ==
 
@@ -66,6 +66,6 @@ A person who carries the flat Birth date and Birth place fields instead of a Bir
 * Schemas: [[Schema:Person]], [[Schema:Birth]], [[Schema:Place]]
 * Under Referenced by, [[Special:Subject/s1bachaaaaaaaa3|Johann Sebastian Bach on Special:Subject]] lists the four births that reference him, as child and as father.
 * The "was born" line on each person page is computed by [[Module:NeoWikiDemo]] (the <code>personEvents</code> function), which reverse-queries the graph rather than storing an inverse edge. This Lua reverse-query is the display approach available today; using the view system for first-class display is an open task.
-* The tables above come from Cypher queries via [[Module:NeoWikiDemo]].
+* The tables above come from SPARQL queries via [[Module:NeoWikiDemo]].
 * See the source of one subject: [{{fullurl:Birth of Johann Sebastian Bach|action=edit}} Edit Birth of Johann Sebastian Bach]
 * [{{fullurl:{{FULLPAGENAME}}|action=edit}} Edit this page]

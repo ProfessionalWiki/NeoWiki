@@ -152,10 +152,11 @@ jobs:
       # --service-allowed-iri-prefixes disables SPARQL federation, matching the dev stack (see
       # Docker/docker-compose.dev.yml): QLever allows every SERVICE IRI unless the option is given, and "-"
       # is the documented deny-all value (an invalid prefix no IRI matches). No test federates.
+      # The build is the one the Docker stacks run.
       - name: Start QLever
         run: |
           docker run -d --name test_qlever -p 7019:7019 -e QLEVER_ACCESS_TOKEN=neowiki_test_token \
-            --entrypoint /bin/bash docker.io/adfreiburg/qlever:latest -lc '
+            --entrypoint /bin/bash docker.io/adfreiburg/qlever@sha256:881f3762f89fdb831b085503d61c87c9894dad6e6769f1774dd253925fbb4e4c -lc '
               set -e
               cd /tmp
               : > data.nt
@@ -167,13 +168,14 @@ jobs:
       # inherited from the image's default. They mirror the test_oxigraph
       # dev-stack service (see Docker/docker-compose.dev.yml) — no --union-default-graph, so the store
       # is spec-strict; no --location, so it is in memory, which is all a fresh-per-run CI store needs.
+      # The version is the one the Docker stacks run.
       # No access-token flag: Oxigraph has no authentication (oxigraph#88). No federation flag either:
       # Oxigraph federates unconditionally and offers no option to restrict it — see
       # docs/operations/installation.md#restricting-federation.
       - name: Start Oxigraph
         run: |
           docker run -d --name test_oxigraph -p 127.0.0.1:7878:7878 \
-            ghcr.io/oxigraph/oxigraph:latest serve --bind 0.0.0.0:7878
+            ghcr.io/oxigraph/oxigraph:0.5.13 serve --bind 0.0.0.0:7878
 
       # Apache Jena Fuseki, which the same system test runs against a third time. It is here as a
       # conformance target, not as an engine NeoWiki ships: Jena is the most complete SPARQL 1.1
