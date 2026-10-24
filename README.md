@@ -33,7 +33,7 @@ To work on NeoWiki (edit code, run tests, see changes live), bring up the bundle
 make dev
 ```
 
-This builds a dev-mode image, brings up the stack (mediawiki, db, the oxigraph graph store,
+This builds a dev-mode image, brings up the stack (mediawiki, db, the qlever graph store,
 node watcher, mailcatcher), runs first-time install and seed, and waits until the wiki is
 reachable. It prints the URL when ready (the default is `http://localhost:8484` but
 the actual port is auto-allocated; see [Reserved ports](Docker/README.md#reserved-host-ports)).
@@ -103,13 +103,13 @@ name. After `perf-restore`:
 - Run `make update-dot-php`: the MediaWiki schema is the snapshot's, not this checkout's.
 - The SPARQL stores are not part of the snapshot, and `make rebuild-graph-databases` only adds to
   them, so a SPARQL store that has to match the restored wiki must start empty. `make remove` clears
-  them along with the wiki's own data; to empty only Oxigraph, drop its volume while the stack is
-  down (QLever's is `<project>_qlever-index-data`):
+  them along with the wiki's own data; to empty only QLever, drop its volume while the stack is
+  down (Oxigraph's is `<project>_oxigraph-data`):
 
   ```bash
-  make down                                 # also removes the oxigraph container
-  docker volume rm <project>_oxigraph-data  # <project> is the name `make dev` prints
-  make dev services=oxigraph,neo
+  make down                                     # also removes the qlever container
+  docker volume rm <project>_qlever-index-data  # <project> is the name `make dev` prints
+  make dev services=qlever,neo
   make perf-restore
   make rebuild-graph-databases
   ```

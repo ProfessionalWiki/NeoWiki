@@ -72,13 +72,13 @@ comma-list naming the optional services to run:
 
 | Service       | Needed for                                                              |
 |---------------|-------------------------------------------------------------------------|
-| `oxigraph`    | SPARQL queries: the wiki projects RDF into it on every save             |
+| `qlever`      | SPARQL queries: the wiki projects RDF into it on every save             |
 | `neo`         | Cypher queries: the wiki projects into Neo4j on every save              |
-| `qlever`      | A second SPARQL store, kept in sync the same way                        |
+| `oxigraph`    | A second SPARQL store, kept in sync the same way                        |
 | `node`        | Frontend work: watches and rebuilds the TS bundle (`dist/`); dev only   |
 | `mailcatcher` | Testing outgoing email (web UI on `MAILCATCHER_PORT`); dev only         |
 
-Without the flag, `oxigraph`, `node` and `mailcatcher` run. `services=none` runs core only, a wiki
+Without the flag, `qlever`, `node` and `mailcatcher` run. `services=none` runs core only, a wiki
 without query surfaces. The selection is not persisted, so pass it whenever you start the stack.
 Examples:
 
@@ -86,8 +86,8 @@ Examples:
 make dev                             # default set
 make dev services=node               # frontend work: watcher only
 make dev services=none               # core only
-make dev services=node,oxigraph,neo  # SPARQL and Cypher, plus frontend
-make upgrade services=oxigraph,neo   # a demo stack that keeps Neo4j
+make dev services=node,qlever,neo    # SPARQL and Cypher, plus frontend
+make upgrade services=qlever,neo     # a demo stack that keeps Neo4j
 ```
 
 Rerunning `make dev` with a different selection stops newly deselected services, keeping their
@@ -104,10 +104,16 @@ running, so run `make down` before deselecting a service there. Details:
 
 ## QLever SPARQL store
 
-`services=qlever` adds a [QLever](https://github.com/ad-freiburg/qlever) SPARQL 1.1 graph store. The
-bundled Makefile passes its endpoint to the wiki as `QLEVER_URL`, and `SettingsTemplate.php` gives it
-the two projections the [Oxigraph store](#oxigraph-sparql-store) holds, as the stores `qlever-native`
-and `qlever-EDM`. With Oxigraph running too, the query surfaces read Oxigraph.
+Both stacks run a [QLever](https://github.com/ad-freiburg/qlever) SPARQL 1.1 graph store by default.
+The bundled Makefile passes its endpoint to the wiki as `QLEVER_URL`, and `SettingsTemplate.php`
+points `$wgNeoWikiSparqlStores` at it, so every page save and `RebuildGraphDatabases.php` projects the
+page's RDF into QLever as named graphs.
+
+Two entries point at that one store: the `native` projection and the `EDM` one defined by the demo
+data's `Mapping:EDM` page. Each writes its own per-page named graphs, so a query can join across them;
+the demo data's `EDM queries` page shows such queries. The `EDM` entry needs that Mapping page, so
+`make import-demo-data` is part of the setup: without it every Subject save logs an unknown-projection
+error and a rebuild reports every page as failed.
 
 The server runs with `--persist-updates`, which is **mandatory**: without it QLever keeps
 SPARQL updates only in memory and loses them on restart. With it, updates are written to
@@ -151,16 +157,10 @@ GitHub Actions service container.
 
 ## Oxigraph SPARQL store
 
-Both stacks run an [Oxigraph](https://github.com/oxigraph/oxigraph) SPARQL 1.1 graph store by default.
-The bundled Makefile passes its address to the wiki as `OXIGRAPH_URL`, and `SettingsTemplate.php`
-points `$wgNeoWikiSparqlStores` at it, so every page save and `RebuildGraphDatabases.php` projects the
-page's RDF into Oxigraph as named graphs.
-
-Two entries point at that one store: the `native` projection and the `EDM` one defined by the demo
-data's `Mapping:EDM` page. Each writes its own per-page named graphs, so a query can join across them;
-the demo data's `EDM queries` page shows such queries. The `EDM` entry needs that Mapping page, so
-`make import-demo-data` is part of the setup: without it every Subject save logs an unknown-projection
-error and a rebuild reports every page as failed.
+`services=oxigraph` adds an [Oxigraph](https://github.com/oxigraph/oxigraph) SPARQL 1.1 graph store.
+The bundled Makefile passes its address to the wiki as `OXIGRAPH_URL`, and `SettingsTemplate.php` gives
+it the two projections the [QLever store](#qlever-sparql-store) holds, as the stores `oxigraph-native`
+and `oxigraph-EDM`. With QLever running too, the query surfaces read QLever.
 
 Data lives in the `oxigraph-data` named volume, which `make remove` clears along with the wiki's
 own data.

@@ -5,7 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Sparql\Integration;
 
 /**
- * {@see QuerySparqlEndToEndTestCase} against QLever — the `test_qlever` dev-stack service.
+ * {@see QuerySparqlEndToEndTestCase} against QLever — the `test_qlever` dev-stack service, and the
+ * engine both Docker stacks point the wiki itself at.
  *
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryService
  * @covers \ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Persistence\HttpSparqlQueryEndpoint

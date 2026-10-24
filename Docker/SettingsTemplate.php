@@ -256,32 +256,33 @@ if ( $neo4jHost !== false && $neo4jHost !== '' ) {
 // Each store holds two projections: the native one and the EDM one of the demo data's Mapping:EDM page.
 // Each lands in its own family of per-page named graphs, so neither overwrites the other. The query
 // surfaces target the first entry's endpoint, which both entries of a store share, so a query reaches
-// both projections. Oxigraph comes first, so it answers the queries when both stores run.
+// both projections. QLever comes first, so it answers the queries when both stores run.
 $wgNeoWikiSparqlStores = [];
 
-$oxigraphUrl = getenv( 'OXIGRAPH_URL' );
-
-if ( $oxigraphUrl !== false && $oxigraphUrl !== '' && !defined( 'MW_PHPUNIT_TEST' ) ) {
-	foreach ( [ 'native', 'EDM' ] as $projection ) {
-		$wgNeoWikiSparqlStores[] = [
-			'updateUrl' => "$oxigraphUrl/update",
-			'queryUrl' => "$oxigraphUrl/query",
-			'projection' => $projection,
-		];
-	}
-}
-
-// QLever's entries carry names of their own: a store is named after its projection by default, which
-// the Oxigraph entries already hold. The access token is defaulted in the compose file so a Docker/.env
-// written before it existed still yields a working store.
+// The access token is defaulted in the compose file so a Docker/.env written before it existed still
+// yields a working store.
 $qleverUrl = getenv( 'QLEVER_URL' );
 
 if ( $qleverUrl !== false && $qleverUrl !== '' && !defined( 'MW_PHPUNIT_TEST' ) ) {
 	foreach ( [ 'native', 'EDM' ] as $projection ) {
 		$wgNeoWikiSparqlStores[] = [
-			'name' => "qlever-$projection",
 			'updateUrl' => $qleverUrl,
 			'accessToken' => getenv( 'QLEVER_ACCESS_TOKEN' ) ?: null,
+			'projection' => $projection,
+		];
+	}
+}
+
+// Oxigraph's entries carry names of their own: a store is named after its projection by default, which
+// the QLever entries already hold.
+$oxigraphUrl = getenv( 'OXIGRAPH_URL' );
+
+if ( $oxigraphUrl !== false && $oxigraphUrl !== '' && !defined( 'MW_PHPUNIT_TEST' ) ) {
+	foreach ( [ 'native', 'EDM' ] as $projection ) {
+		$wgNeoWikiSparqlStores[] = [
+			'name' => "oxigraph-$projection",
+			'updateUrl' => "$oxigraphUrl/update",
+			'queryUrl' => "$oxigraphUrl/query",
 			'projection' => $projection,
 		];
 	}

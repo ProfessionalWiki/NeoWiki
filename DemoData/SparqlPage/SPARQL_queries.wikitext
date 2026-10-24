@@ -1,4 +1,4 @@
-NeoWiki keeps a [https://neowiki.ai/docs/operations/installation#optional-sparql-graph-stores SPARQL 1.1 graph store] such as [https://github.com/oxigraph/oxigraph Oxigraph] in sync with the wiki's structured data on every edit, so it can be queried live. This page shows the three ways to query it, using the native vocabulary. {{#ifexist:EDM queries|The store also holds the EDM projection: see [[EDM queries]] to query it, or to join across both.}}
+NeoWiki keeps a [https://neowiki.ai/docs/operations/installation#optional-sparql-graph-stores SPARQL 1.1 graph store] such as [https://qlever.dev/ QLever] in sync with the wiki's structured data on every edit, so it can be queried live. This page shows the three ways to query it, using the native vocabulary. {{#ifexist:EDM queries|The store also holds the EDM projection: see [[EDM queries]] to query it, or to join across both.}}
 
 == Query with a parser function ==
 

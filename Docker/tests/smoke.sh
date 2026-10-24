@@ -48,7 +48,7 @@ testContains "$apiPhp" "/api.php?action=" "Can reach api.php"
 
 testContains "$(sparqlQuery 'SELECT * WHERE { ?s ?p ?o } LIMIT 1')" '"results"' "The SPARQL store answers queries"
 
-# The store follows every SERVICE clause, so only its network keeps a query from reaching other hosts.
+# A SERVICE clause would have the store fetch from another host, so the stack's store refuses it.
 federated=$(sparqlQuery 'SELECT * WHERE { SERVICE <https://query.wikidata.org/sparql> { SELECT ?x WHERE { BIND(1 AS ?x) } } }')
 testDoesNotContain "$federated" '"bindings":\[{' "The SPARQL store cannot reach the internet"
 
