@@ -178,9 +178,8 @@ describe( 'SchemaSerializer', () => {
 		} );
 
 		it( 'serializes an unchecked core boolean Constraint as bare false, dropping its annotation', () => {
-			// The schema editor can uncheck an annotated required/uniqueItems while its
-			// severity entry survives on the domain object. The object form cannot carry
-			// false, so serialization must emit the bare scalar the backend accepts.
+			// The object form of these Constraints cannot carry false, so serialization must emit
+			// the bare scalar the backend accepts.
 			const schema = new SchemaDeserializer().deserialize( 'Test', {
 				description: '',
 				propertyDefinitions: {

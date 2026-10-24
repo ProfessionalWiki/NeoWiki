@@ -90,11 +90,11 @@ describe( 'MonolingualTextInput', () => {
 	}
 
 	// The messages render as they do in a wiki, so an assertion on a label reads as what a user hears.
-	function readsIn( userLanguage: string, contentLanguage: string, dataLanguages: string[] = [] ): void {
+	function setUpWiki( dataLanguages: string[] = [] ): void {
 		setupMwMock( {
 			config: {
-				wgUserLanguage: userLanguage,
-				wgContentLanguage: contentLanguage,
+				wgUserLanguage: 'en',
+				wgContentLanguage: 'en',
 				wgNeoWikiDataLanguages: dataLanguages,
 			},
 			messages: {
@@ -107,7 +107,7 @@ describe( 'MonolingualTextInput', () => {
 	}
 
 	beforeEach( () => {
-		readsIn( 'en', 'en' );
+		setUpWiki();
 		// jsdom reports a page without focus, which is the user being away in another tab.
 		vi.spyOn( document, 'hasFocus' ).mockReturnValue( true );
 	} );
@@ -170,7 +170,7 @@ describe( 'MonolingualTextInput', () => {
 	} );
 
 	it( 'shows the new row in the first data language the value lacks', () => {
-		readsIn( 'en', 'en', [ 'de', 'fr', 'it' ] );
+		setUpWiki( [ 'de', 'fr', 'it' ] );
 
 		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Kino', language: 'de' } ] ) } );
 
@@ -178,7 +178,7 @@ describe( 'MonolingualTextInput', () => {
 	} );
 
 	it( 'emits a part typed into the new row in the first data language the value lacks', async () => {
-		readsIn( 'en', 'en', [ 'de', 'fr', 'it' ] );
+		setUpWiki( [ 'de', 'fr', 'it' ] );
 		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Kino', language: 'de' } ] ) } );
 
 		await textInputs( wrapper )[ 1 ].setValue( 'Cinéma' );
@@ -190,7 +190,7 @@ describe( 'MonolingualTextInput', () => {
 	} );
 
 	it( 'moves the new row on to the data language a part leaves', async () => {
-		readsIn( 'en', 'en', [ 'de', 'fr', 'it' ] );
+		setUpWiki( [ 'de', 'fr', 'it' ] );
 		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Kino', language: 'de' } ] ) } );
 
 		await chooseFromList( wrapper, 0, 'French' );
@@ -203,7 +203,7 @@ describe( 'MonolingualTextInput', () => {
 	} );
 
 	it( 'keeps the language picked for the new row when the value changes', async () => {
-		readsIn( 'en', 'en', [ 'de', 'fr', 'it' ] );
+		setUpWiki( [ 'de', 'fr', 'it' ] );
 		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Kino', language: 'de' } ] ) } );
 
 		await chooseFromList( wrapper, 1, 'Italian' );
@@ -214,7 +214,7 @@ describe( 'MonolingualTextInput', () => {
 	} );
 
 	it( 'keeps a typed part in its language when another part changes language', async () => {
-		readsIn( 'en', 'en', [ 'de', 'fr', 'it' ] );
+		setUpWiki( [ 'de', 'fr', 'it' ] );
 		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Kino', language: 'de' } ] ) } );
 
 		await textInputs( wrapper )[ 1 ].setValue( 'Cinéma' );
@@ -568,7 +568,7 @@ describe( 'MonolingualTextInput', () => {
 	} );
 
 	it( 'asks the parent to drop every indexed violation when a language changes where each language takes one value', async () => {
-		readsIn( 'en', 'en', [ 'en', 'de', 'pt' ] );
+		setUpWiki( [ 'en', 'de', 'pt' ] );
 		const wrapper = newWrapper( {
 			property: newMonolingualTextProperty( { name: 'Original title', multiple: true, uniqueLanguages: true } ),
 			modelValue: newMonolingualTextValue( [

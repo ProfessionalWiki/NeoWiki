@@ -78,16 +78,18 @@ export function applySeverities(
 			continue;
 		}
 
-		// The editor keeps the severity of `uniqueLanguages` while another option is chosen, and
-		// emitting it would send `{ "value": false, "severity": … }`, which the backend rejects.
+		// The backend rejects `{ "value": false, "severity": … }`. The editor keeps the severity of
+		// `uniqueLanguages` when another option for the number of values turns it off, and an imported
+		// Schema file can annotate any of these booleans while false. Stored Schemas cannot hold this
+		// state, so the PHP mirror has no such branch.
 		if ( result[ key ] === false && VALUE_LESS_BOOLEAN_CONSTRAINTS.includes( key ) ) {
 			continue;
 		}
 
 		// The mirror of the branch above for the Constraints that are active when false:
 		// the editor keeps the severity of a rule the author switched off, so that it
-		// survives switching it back on while the dialog is open. Emitting it would fail
-		// the save: schemaContentSchema.json pins `multiple`'s object form to `false`.
+		// survives switching it back on. Emitting it would fail the save:
+		// schemaContentSchema.json pins `multiple`'s object form to `false`.
 		if ( result[ key ] === true && CONSTRAINTS_ACTIVE_WHEN_FALSE.includes( key ) ) {
 			continue;
 		}

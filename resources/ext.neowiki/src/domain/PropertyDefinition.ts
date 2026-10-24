@@ -73,9 +73,8 @@ export function withConstraintSeverity(
 
 /**
  * The severity map without the entries of Constraints that the given change deliberately unsets:
- * an unticked boolean (false) or an emptied list ([]). Such a Constraint carries no severity, and
- * serialization drops the entry anyway; pruning it here keeps the in-memory definition equal to
- * what a save would store, so the Constraint set again starts at the default.
+ * an unticked boolean (false) or an emptied list ([]). Such a Constraint carries no severity, so
+ * the Constraint set again starts at the default.
  *
  * A Constraint whose rule applies while it is false, such as `multiple`, keeps its entry too:
  * unticking it sets the rule rather than clearing it.
