@@ -13,10 +13,12 @@ use MediaWiki\Message\Message;
 use MediaWiki\Title\Title;
 use MediaWiki\Parser\ParserOutput;
 use ProfessionalWiki\NeoWiki\Domain\Schema\DependentSubjectSchemaRules;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyNameRules;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
+use ProfessionalWiki\NeoWiki\Presentation\PropertyNameProblemMessage;
 use StatusValue;
 
 class SchemaContentHandler extends JsonContentHandler {
@@ -54,6 +56,10 @@ class SchemaContentHandler extends JsonContentHandler {
 			);
 		}
 
+		if ( $status->isOK() ) {
+			$this->checkPropertyNames( $status, $content->getText() );
+		}
+
 		if ( $schemaName !== null && $status->isOK() ) {
 			$this->checkDependentSubjectRules(
 				$status,
@@ -62,6 +68,25 @@ class SchemaContentHandler extends JsonContentHandler {
 		}
 
 		return $status;
+	}
+
+	/**
+	 * Read from the JSON rather than from the Schema it holds, which leaves out integer names.
+	 */
+	private function checkPropertyNames( StatusValue $status, string $json ): void {
+		/** @var array{propertyDefinitions: array<array-key, mixed>} $schema */
+		$schema = json_decode( $json, true );
+		$problems = PropertyNameRules::problemsInSchema(
+			array_map( 'strval', array_keys( $schema['propertyDefinitions'] ) )
+		);
+
+		if ( $problems !== [] ) {
+			$this->reportErrors(
+				$status,
+				'neowiki-schema-invalid',
+				array_map( PropertyNameProblemMessage::from( ... ), $problems )
+			);
+		}
 	}
 
 	private function checkDependentSubjectRules( StatusValue $status, Schema $schema ): void {

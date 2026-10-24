@@ -12,9 +12,6 @@ use Wikimedia\Message\MessageValue;
 trait ReportsValidationErrors {
 
 	/**
-	 * One message carrying every error rather than one message per error: MediaWiki's REST
-	 * layer forwards only the first message a Status holds.
-	 *
 	 * @param array<string, string> $errors Validation message by JSON pointer
 	 */
 	private function reportValidationErrors( StatusValue $status, string $messageKey, string $detailKey, array $errors ): void {
@@ -24,7 +21,17 @@ trait ReportsValidationErrors {
 			$details[] = MessageValue::new( $detailKey )->params( $pointer, $message );
 		}
 
-		$status->fatal( $messageKey, count( $errors ), Message::listParam( $details, ListType::SEMICOLON ) );
+		$this->reportErrors( $status, $messageKey, $details );
+	}
+
+	/**
+	 * One message carrying every error rather than one message per error: MediaWiki's REST
+	 * layer forwards only the first message a Status holds.
+	 *
+	 * @param MessageValue[] $errors
+	 */
+	private function reportErrors( StatusValue $status, string $messageKey, array $errors ): void {
+		$status->fatal( $messageKey, count( $errors ), Message::listParam( $errors, ListType::SEMICOLON ) );
 	}
 
 }

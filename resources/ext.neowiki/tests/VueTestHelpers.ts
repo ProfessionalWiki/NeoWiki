@@ -498,6 +498,10 @@ export function setupMwMock(
 			// MediaWiki formats a number the way the interface language writes it; the fake groups its digits the
 			// English way, so a spec can tell a formatted number from a bare one.
 			convertNumber: vi.fn( ( number: number ) => number.toLocaleString( 'en-US' ) ),
+			// MediaWiki joins a list the way the interface language does; the fake joins it the English way.
+			listToText: vi.fn( ( list: string[] ) => list.length < 2 ?
+				list.join( '' ) :
+				`${ list.slice( 0, -1 ).join( ', ' ) } and ${ list[ list.length - 1 ] }` ),
 		} ),
 		util: () => ( {
 			wikiScript: vi.fn( () => '/rest.php' ),

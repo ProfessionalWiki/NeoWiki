@@ -88,8 +88,8 @@ The PropertyType determines the value's Neo4j type:
 | `monolingualText` | list of `text@language` strings (`['Zinema@eu']`); split on the last `@` |
 | `relation` | stored as a [relationship](#typed-relations), not a node property |
 
-A Property Name that collides with a fixed property (`id`, `name`, `wiki_id`) does not override it: the fixed value
-wins and the Statement's value is not projected.
+A Property cannot be named after a fixed property: their names are [reserved](schema-format.md#property-names). Names
+are case-sensitive, so `s.name` is the Subject's label and `s.Name` a Property named "Name".
 
 Values a PropertyType cannot represent are dropped from the projection: a property whose type has no registered
 PropertyType produces no node property, and non-ISO 8601 `date`/`dateTime` parts are omitted from the stored value.

@@ -331,19 +331,18 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
-	 * A property named like a year is ordinary, and the name reaches the write path as an array
-	 * key, which PHP hands on as an int.
+	 * Read as a property name, the path would lose its spaces and write the Statement of another property.
 	 */
-	public function testPropertyNameThatLooksLikeAnIntegerIsStored(): void {
+	public function testPropertyNameNotInCanonicalFormReturns400(): void {
 		$this->createSubjectPage();
 
 		$response = $this->executeHandler(
 			$this->newSetStatementApi(),
-			$this->newRequest( '2024', [ 'statement' => [ 'propertyType' => 'url', 'value' => [ 'https://pro.wiki' ] ] ] )
+			$this->newRequest( ' Website', [ 'statement' => [ 'propertyType' => 'url', 'value' => [ 'https://pro.wiki' ] ] ] )
 		);
 
-		$this->assertSame( 200, $response->getStatusCode() );
-		$this->assertSame( [ 'https://pro.wiki' ], $this->getStoredValue( '2024' ) );
+		$this->assertSame( 400, $response->getStatusCode() );
+		$this->assertNull( $this->getStoredValue( 'Website' ) );
 	}
 
 	/**

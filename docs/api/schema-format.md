@@ -27,7 +27,27 @@ Per-type value constraints (`options`, ranges, string formats, `uniqueItems`) ar
 |-------|------|----------|-------------|
 | `description` | string | No | Human-readable description of the schema |
 | `subjectsAreDependent` | boolean | No | Whether the Schema's Subjects are [Dependent Subjects](subject-format.md#dependent-subjects). Set when the Schema is created: a save that changes it is refused. Omitted when `false`. |
-| `propertyDefinitions` | object | Yes | Map of property names to property definition objects |
+| `propertyDefinitions` | object | Yes | Map of [property names](#property-names) to property definition objects |
+
+## Property names
+
+Property names, the keys of `propertyDefinitions`, match exactly wherever they are used: case, spaces and underscores
+count. A save is refused, naming each offending name, when a name:
+
+- is not in canonical form: without Unicode white space (`White_Space`) at either end, with each run of it inside as
+  one space (U+0020), in Unicode NFC, and without U+00AD, U+061C, U+115F, U+1160, U+200B, U+200E, U+200F,
+  U+202A–U+202E, U+2060–U+2064, U+2066–U+206F, U+3164, U+FEFF, U+FFA0, U+FFF9–U+FFFB, U+1D173–U+1D17A and U+E0001
+- is empty
+- holds a control character (Unicode `Cc`), a noncharacter, U+FFFD, or one of `# < > [ ] | { }`
+- consists of ASCII digits, optionally after `-`, such as `2024`, `-1` or `007`, or is `.` or `..`
+- is longer than 255 bytes in UTF-8
+- is `id`, `name`, `wiki_id` or `__proto__`; `Name` and `ID` are allowed
+- is a near-duplicate of another name of the Schema: the two are equal after NFKC, lowercasing, removing
+  default-ignorable code points (Unicode `Default_Ignorable_Code_Point`), replacing each run of `_` and white space
+  with one space, trimming, and NFKC again
+
+`Birth date` and `Birth_date` cannot share a Schema; `Straße` and `STRASSE` can. The rules apply when a Schema is
+saved; reading returns names as stored.
 
 ## Schema references
 

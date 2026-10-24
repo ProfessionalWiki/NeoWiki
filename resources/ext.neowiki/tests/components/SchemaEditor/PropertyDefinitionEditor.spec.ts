@@ -354,6 +354,64 @@ describe( 'PropertyDefinitionEditor', () => {
 			expect( nameFieldProps( wrapper ).messages ).toEqual( { error: 'neowiki-property-editor-name-required' } );
 		} );
 
+		it( 'renames the property to the canonical form of the name typed', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ) );
+
+			await typeName( wrapper, 'Birth\u{00A0}date\u{200B}' );
+
+			expect( lastEmittedProperty( wrapper ).name.toString() ).toBe( 'Birth date' );
+		} );
+
+		it( 'says which rule the name typed breaks', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ) );
+
+			await typeName( wrapper, 'id' );
+
+			expect( nameFieldProps( wrapper ).messages ).toEqual( { error: 'neowiki-property-name-reservedid' } );
+		} );
+
+		it( 'says the name typed is too similar to the name of another property', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ), { otherPropertyNames: [ 'Birth date' ] } );
+
+			await typeName( wrapper, 'birth_date' );
+
+			expect( nameFieldProps( wrapper ).messages ).toEqual( {
+				error: 'neowiki-property-name-near-duplicatebirth_dateBirth date',
+			} );
+		} );
+
+		it( 'renames the property to its own name in another case', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Birth date' } ), { otherPropertyNames: [ 'Title' ] } );
+
+			await typeName( wrapper, 'birth_date' );
+
+			expect( lastEmittedProperty( wrapper ).name.toString() ).toBe( 'birth_date' );
+		} );
+
+		it( 'says how to write a name it opens with in another spelling', () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Birth  date' } ) );
+
+			expect( nameFieldProps( wrapper ).messages ).toEqual( {
+				error: 'neowiki-property-name-not-canonicalBirth  dateBirth date',
+			} );
+		} );
+
+		it( 'names the invisible characters of a name it opens with in another spelling', () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Birth\u{200B}date' } ) );
+
+			expect( nameFieldProps( wrapper ).messages ).toEqual( {
+				error: 'neowiki-property-name-not-canonical-invisibleBirth\u{200B}dateBirthdateU+200B',
+			} );
+		} );
+
+		it( 'renames a property it opens with in another spelling once that spelling is typed', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Birth\u{200B}date' } ) );
+
+			await typeName( wrapper, 'Birthdate' );
+
+			expect( lastEmittedProperty( wrapper ).name.toString() ).toBe( 'Birthdate' );
+		} );
+
 		it( 'reports the name field message as input the save has to wait for', async () => {
 			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ), { otherPropertyNames: [ 'Title' ] } );
 

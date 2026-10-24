@@ -659,6 +659,43 @@ describe( 'SchemaEditor', () => {
 		} );
 	} );
 
+	describe( 'Property names', () => {
+		function schemaWithPropertiesNamed( ...names: string[] ): Schema {
+			return newSchema( {
+				properties: new PropertyDefinitionList( names.map( ( name ) => newTextProperty( { name } ) ) ),
+			} );
+		}
+
+		// A Schema saved before the rules, or written outside the editor, opens with such a name.
+		it( 'names a property whose name breaks a rule, also when it is not the selected one', () => {
+			const wrapper = createWrapper( schemaWithPropertiesNamed( 'Title', 'id', 'Score' ) );
+
+			expect( saveBlocker( wrapper ) ).toEqual( {
+				propertyName: 'id',
+				message: 'neowiki-property-name-reserved',
+			} );
+		} );
+
+		it( 'names the later of two properties whose names are near-duplicates', () => {
+			const wrapper = createWrapper( schemaWithPropertiesNamed( 'Birth date', 'birth date', 'Score' ) );
+
+			expect( saveBlocker( wrapper ) ).toEqual( {
+				propertyName: 'birth date',
+				message: 'neowiki-property-name-near-duplicate',
+			} );
+		} );
+
+		it( 'names each added property so that it is no near-duplicate of a name already taken', async () => {
+			const wrapper = createWrapper( schemaWithPropertiesNamed( 'new property 1' ) );
+
+			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'addProperty' );
+
+			const schema = ( wrapper.vm as unknown as SchemaEditorExposes ).getSchema();
+			expect( Object.keys( schema.getPropertyDefinitions().asRecord() ) )
+				.toEqual( [ 'new property 1', 'New Property 2' ] );
+		} );
+	} );
+
 	describe( 'Incomplete property definition', () => {
 		function schemaWith( ...properties: PropertyDefinition[] ): Schema {
 			return newSchema( { title: 'Test', description: '', properties: new PropertyDefinitionList( properties ) } );

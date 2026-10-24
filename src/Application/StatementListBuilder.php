@@ -9,6 +9,7 @@ use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyNameRules;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
@@ -36,30 +37,34 @@ readonly class StatementListBuilder {
 	/**
 	 * @param array<string, mixed> $statements
 	 *
-	 * @throws InvalidArgumentException When a value does not fit the property type it declares.
+	 * @throws InvalidArgumentException When a property name breaks a rule for writing it, or a value does not fit
+	 *  the property type it declares.
 	 */
 	public function build( array $statements ): StatementList {
 		$built = [];
 
-		foreach ( $statements as $propertyName => $entry ) {
+		foreach ( $statements as $key => $entry ) {
 			if ( !is_array( $entry ) || !isset( $entry['propertyType'] ) ) {
 				continue;
 			}
 
+			$propertyName = (string)$key;
 			$propertyType = $entry['propertyType'];
 
 			if ( !is_string( $propertyType ) ) {
 				throw new InvalidArgumentException( "Property type of \"{$propertyName}\" must be a string" );
 			}
 
-			$value = $this->deserializeValue( (string)$propertyName, $propertyType, $entry['value'] ?? null );
+			$value = $this->deserializeValue( $propertyName, $propertyType, $entry['value'] ?? null );
 
 			if ( $value->isEmpty() ) {
 				continue;
 			}
 
+			PropertyNameRules::assertValid( $propertyName );
+
 			$built[$propertyName] = new Statement(
-				property: new PropertyName( (string)$propertyName ),
+				property: new PropertyName( $propertyName ),
 				propertyType: $propertyType,
 				value: $value
 			);

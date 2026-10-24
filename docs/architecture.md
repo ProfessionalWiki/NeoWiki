@@ -84,3 +84,4 @@ Every architectural decision on record, in the order it was made.
 * [ADR 34: Monolingual Text Value Type](adr/034-monolingual-text-value-type.md)
 * [ADR 35: Dependent Subjects](adr/035-dependent-subjects.md)
 * [ADR 37: Subject Lookups in MediaWiki Tables](adr/037-subject-lookups-in-mediawiki-tables.md)
+* [ADR 38: Property Names](adr/038-property-names.md)

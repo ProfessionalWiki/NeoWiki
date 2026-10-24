@@ -223,8 +223,9 @@ main-namespace title. A subject-first wiki titles it by the Subject's ID, in the
 | `comment` | No | Edit summary. |
 
 On every endpoint that takes `statements`, an entry without `propertyType`, or whose value is empty for its type, is
-dropped without error. A value whose shape does not match its `propertyType` (see
-[Value formats](#value-formats)) is rejected with `400`. For schema/value validation outcomes see
+dropped without error. A value whose shape does not match its `propertyType` (see [Value formats](#value-formats)) is
+rejected with `400`, and so is a Statement whose key breaks a [property name rule](schema-format.md#property-names);
+Statement keys are not checked for near-duplicates. For schema/value validation outcomes see
 [Validation Codes](validation-codes.md).
 
 A relation may omit `id`; the server generates one. The Subject's `id` and `schema` are immutable and ignored if
@@ -256,9 +257,9 @@ not have succeeds and changes nothing.
 
 Violations in the response cover the whole Subject, not only the property written.
 
-`{propertyName}` is URL-encoded, so `Founded at` is `Founded%20at`. A property name containing `/` is not
-addressable this way on servers that reject `%2F` in paths; write those Statements with
-`PUT /subject/{subjectId}`.
+`{propertyName}` is the name, URL-encoded: `Founded at` is `Founded%20at`, not `Founded_at`. `PUT` holds it to the
+same rules as a Statement key. A property name containing `/` is not addressable this way on servers that reject
+`%2F` in paths; write those Statements with `PUT /subject/{subjectId}`.
 
 ### Dependent Subjects
 

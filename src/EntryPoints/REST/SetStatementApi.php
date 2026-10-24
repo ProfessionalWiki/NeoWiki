@@ -11,6 +11,7 @@ use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyNameRules;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
@@ -46,6 +47,9 @@ class SetStatementApi extends SimpleHandler {
 		$presenter = new RestUpdateStatementPresenter();
 
 		try {
+			// Checked before PropertyName trims it.
+			PropertyNameRules::assertValid( $propertyName );
+
 			$extension = NeoWikiExtension::getInstance();
 			$extension->newUpdateStatementAction( $presenter, $this->getAuthority() )->setStatement(
 				$extension->getSubjectIdParser()->parseOrThrow( $subjectId ),

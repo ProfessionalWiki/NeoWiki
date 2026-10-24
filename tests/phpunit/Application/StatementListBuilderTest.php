@@ -298,16 +298,20 @@ class StatementListBuilderTest extends TestCase {
 	}
 
 	/**
-	 * PHP turns a decimal-integer array key into an int, so a property named like a year
-	 * reaches the value objects as one.
+	 * PHP hands the key on as an int.
 	 */
-	public function testPropertyNameThatLooksLikeAnIntegerIsBuilt(): void {
-		$list = $this->newBuilder()->build( [ '2024' => [ 'propertyType' => 'text', 'value' => 'yes' ] ] );
+	public function testStatementUnderIntegerPropertyNameIsRejected(): void {
+		$builder = $this->newBuilder();
 
-		$this->assertSame(
-			[ 'yes' ],
-			$list->getStatement( new PropertyName( '2024' ) )?->getValue()->toScalars()
-		);
+		$this->expectException( InvalidArgumentException::class );
+
+		$builder->build( [ '2024' => [ 'propertyType' => 'text', 'value' => 'yes' ] ] );
+	}
+
+	public function testEmptyValueIsDroppedWhateverItsPropertyName(): void {
+		$list = $this->newBuilder()->build( [ '2024' => [ 'propertyType' => 'text', 'value' => [] ] ] );
+
+		$this->assertSame( [], $list->asArray() );
 	}
 
 	/**

@@ -81,6 +81,8 @@ import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue';
 import { localTargetSchemaNames, type RelationProperty, RelationType, targetsDependentSubjects } from '@/domain/propertyTypes/Relation.ts';
 import { type SchemaSummary, subjectsAreDependentIn } from '@/application/SchemaLookup.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { canonicalPropertyName, propertyNameProblemBeside } from '@/domain/propertyNameRules.ts';
+import { propertyNameProblemMessage } from '@/components/SchemaEditor/propertyNameProblemMessage.ts';
 
 const props = defineProps<{
 	property: PropertyDefinition;
@@ -118,24 +120,32 @@ onMounted( () => {
 	} );
 } );
 
-const nameText = ref( props.property.name.toString() );
+const openedName = props.property.name.toString();
+
+const nameText = ref( openedName );
+
+const canonicalName = computed( (): string => canonicalPropertyName( nameText.value ) );
 
 const nameError = computed( (): string | null => {
-	if ( !PropertyName.isValid( nameText.value ) ) {
+	const name = canonicalName.value;
+
+	if ( name === '' ) {
 		return mw.message( 'neowiki-property-editor-name-required' ).text();
 	}
-
-	const name = new PropertyName( nameText.value ).toString();
 
 	if ( props.otherPropertyNames.includes( name ) ) {
 		return mw.message( 'neowiki-property-editor-name-taken', name ).text();
 	}
 
-	return null;
+	// What the user types is stored in its canonical form, so only the name the editor opened with can be spelled
+	// otherwise.
+	const problem = propertyNameProblemBeside( nameText.value === openedName ? openedName : name, props.otherPropertyNames );
+
+	return problem === null ? null : propertyNameProblemMessage( problem );
 } );
 
 const typedName = computed( (): string | null =>
-	nameError.value === null ? new PropertyName( nameText.value ).toString() : null
+	nameError.value === null ? canonicalName.value : null
 );
 
 // Renames on a change of typedName rather than on input, so that a name typed while another

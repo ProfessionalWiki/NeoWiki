@@ -1,0 +1,709 @@
+{
+ "comment": "Property name vectors, consumed by both the PHP and the TypeScript suite so the Schema editor and the wiki refuse the same names. \"valid\" and \"invalid\" are single names and the first rule each breaks; \"schemas\" are the names of one Schema, near-duplicates included. See docs/api/schema-format.md.",
+ "valid": [
+  {
+   "case": "a name with spaces",
+   "name": "Birth date"
+  },
+  {
+   "case": "camelCase stays as written",
+   "name": "datePublished"
+  },
+  {
+   "case": "an underscore stays as written",
+   "name": "first_name"
+  },
+  {
+   "case": "a reserved name in another case is not reserved",
+   "name": "Name"
+  },
+  {
+   "case": "dots and hyphens are allowed",
+   "name": "Inv.-Nr."
+  },
+  {
+   "case": "a slash is allowed",
+   "name": "Weight/height"
+  },
+  {
+   "case": "digits next to letters are allowed",
+   "name": "Year 2024"
+  },
+  {
+   "case": "a decimal number is not an integer",
+   "name": "1.5"
+  },
+  {
+   "case": "a zero-width non-joiner stays, as scripts need it",
+   "name": "\u0645\u06cc\u200c\u062e\u0648\u0627\u0647\u0645"
+  },
+  {
+   "case": "a variation selector stays, as emoji need it",
+   "name": "\u2764\ufe0f"
+  },
+  {
+   "case": "the Mongolian vowel separator stays, as it is not white space",
+   "name": "\u1820\u180e\u1821"
+  },
+  {
+   "case": "a character outside the Basic Multilingual Plane",
+   "name": "\ud83d\udcc5 Date"
+  },
+  {
+   "case": "255 bytes of three-byte characters is not too long",
+   "name": "\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac\u20ac"
+  }
+ ],
+ "invalid": [
+  {
+   "case": "a leading space",
+   "name": " Birth date",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "Birth date"
+    ]
+   }
+  },
+  {
+   "case": "a leading space before a letter outside ASCII",
+   "name": " Stra\u00dfe",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "Stra\u00dfe"
+    ]
+   }
+  },
+  {
+   "case": "a trailing space",
+   "name": "Birth date ",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "Birth date"
+    ]
+   }
+  },
+  {
+   "case": "two spaces in a row",
+   "name": "Birth  date",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "Birth date"
+    ]
+   }
+  },
+  {
+   "case": "a tab",
+   "name": "Birth\tdate",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "Birth date",
+     "U+0009"
+    ]
+   }
+  },
+  {
+   "case": "a no-break space",
+   "name": "Birth\u00a0date",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "Birth date",
+     "U+00A0"
+    ]
+   }
+  },
+  {
+   "case": "a zero-width space",
+   "name": "Birth\u200bdate",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "Birthdate",
+     "U+200B"
+    ]
+   }
+  },
+  {
+   "case": "a zero-width space after a letter outside ASCII",
+   "name": "Stra\u00dfe\u200b",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "Stra\u00dfe",
+     "U+200B"
+    ]
+   }
+  },
+  {
+   "case": "a zero-width space between spaces leaves one space",
+   "name": "Birth \u200b date",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "Birth date",
+     "U+200B"
+    ]
+   }
+  },
+  {
+   "case": "a soft hyphen",
+   "name": "Birth\u00addate",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "Birthdate",
+     "U+00AD"
+    ]
+   }
+  },
+  {
+   "case": "a bidirectional override",
+   "name": "\u202eBirth date",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "Birth date",
+     "U+202E"
+    ]
+   }
+  },
+  {
+   "case": "a Hangul filler",
+   "name": "Birth\u3164date",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "Birthdate",
+     "U+3164"
+    ]
+   }
+  },
+  {
+   "case": "a decomposed accent",
+   "name": "Cafe\u0301",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "Caf\u00e9",
+     "U+0301"
+    ]
+   }
+  },
+  {
+   "case": "combining marks out of order, naming every character outside printable ASCII",
+   "name": "x\u0301\u0323",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "x\u0323\u0301",
+     "U+0301",
+     "U+0323"
+    ]
+   }
+  },
+  {
+   "case": "no characters",
+   "name": "",
+   "problem": {
+    "rule": "empty",
+    "details": []
+   }
+  },
+  {
+   "case": "only invisible characters",
+   "name": "\u200b\u00ad",
+   "problem": {
+    "rule": "empty",
+    "details": []
+   }
+  },
+  {
+   "case": "a number sign",
+   "name": "Phone #",
+   "problem": {
+    "rule": "characters",
+    "details": [
+     "#"
+    ]
+   }
+  },
+  {
+   "case": "square brackets",
+   "name": "Height [cm]",
+   "problem": {
+    "rule": "characters",
+    "details": [
+     "[",
+     "]"
+    ]
+   }
+  },
+  {
+   "case": "each forbidden character once, in order",
+   "name": "a>b<c|d}e{f>g",
+   "problem": {
+    "rule": "characters",
+    "details": [
+     ">",
+     "<",
+     "|",
+     "}",
+     "{"
+    ]
+   }
+  },
+  {
+   "case": "a control character",
+   "name": "Bell\u0007",
+   "problem": {
+    "rule": "characters",
+    "details": [
+     "U+0007"
+    ]
+   }
+  },
+  {
+   "case": "a delete character",
+   "name": "a\u007fb",
+   "problem": {
+    "rule": "characters",
+    "details": [
+     "U+007F"
+    ]
+   }
+  },
+  {
+   "case": "a noncharacter",
+   "name": "a\ufdd0b",
+   "problem": {
+    "rule": "characters",
+    "details": [
+     "U+FDD0"
+    ]
+   }
+  },
+  {
+   "case": "a noncharacter at the end of a plane",
+   "name": "a\ufffeb",
+   "problem": {
+    "rule": "characters",
+    "details": [
+     "U+FFFE"
+    ]
+   }
+  },
+  {
+   "case": "the replacement character",
+   "name": "a\ufffdb",
+   "problem": {
+    "rule": "characters",
+    "details": [
+     "U+FFFD"
+    ]
+   }
+  },
+  {
+   "case": "forbidden characters outrank a spelling to fix",
+   "name": " Phone # ",
+   "problem": {
+    "rule": "characters",
+    "details": [
+     "#"
+    ]
+   }
+  },
+  {
+   "case": "an integer",
+   "name": "2024",
+   "problem": {
+    "rule": "integer",
+    "details": []
+   }
+  },
+  {
+   "case": "a negative integer",
+   "name": "-1",
+   "problem": {
+    "rule": "integer",
+    "details": []
+   }
+  },
+  {
+   "case": "a dot",
+   "name": ".",
+   "problem": {
+    "rule": "dot-segment",
+    "details": []
+   }
+  },
+  {
+   "case": "two dots",
+   "name": "..",
+   "problem": {
+    "rule": "dot-segment",
+    "details": []
+   }
+  },
+  {
+   "case": "256 bytes in 128 characters",
+   "name": "\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc\u00fc",
+   "problem": {
+    "rule": "length",
+    "details": []
+   }
+  },
+  {
+   "case": "over 255 bytes before trimming",
+   "name": "Birth date                                                                                                                                                                                                                                                          ",
+   "problem": {
+    "rule": "length",
+    "details": []
+   }
+  },
+  {
+   "case": "the Neo4j id key",
+   "name": "id",
+   "problem": {
+    "rule": "reserved",
+    "details": []
+   }
+  },
+  {
+   "case": "the Neo4j name key",
+   "name": "name",
+   "problem": {
+    "rule": "reserved",
+    "details": []
+   }
+  },
+  {
+   "case": "the Neo4j wiki_id key",
+   "name": "wiki_id",
+   "problem": {
+    "rule": "reserved",
+    "details": []
+   }
+  },
+  {
+   "case": "the JavaScript prototype key",
+   "name": "__proto__",
+   "problem": {
+    "rule": "reserved",
+    "details": []
+   }
+  },
+  {
+   "case": "a reserved name once spaces are trimmed",
+   "name": " name",
+   "problem": {
+    "rule": "reserved",
+    "details": []
+   }
+  }
+ ],
+ "schemas": [
+  {
+   "case": "names that differ in more than case and spacing",
+   "names": [
+    "Birth date",
+    "Birthdate",
+    "Date of birth"
+   ],
+   "problems": []
+  },
+  {
+   "case": "a name in another case",
+   "names": [
+    "Birth date",
+    "birth date"
+   ],
+   "problems": [
+    {
+     "name": "birth date",
+     "rule": "near-duplicate",
+     "details": [
+      "Birth date"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "an underscore for a space",
+   "names": [
+    "Birth date",
+    "Birth_date"
+   ],
+   "problems": [
+    {
+     "name": "Birth_date",
+     "rule": "near-duplicate",
+     "details": [
+      "Birth date"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "an underscore next to a space",
+   "names": [
+    "Birth date",
+    "Birth_ date"
+   ],
+   "problems": [
+    {
+     "name": "Birth_ date",
+     "rule": "near-duplicate",
+     "details": [
+      "Birth date"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "words joined by underscores",
+   "names": [
+    "Date of birth",
+    "date_of_birth"
+   ],
+   "problems": [
+    {
+     "name": "date_of_birth",
+     "rule": "near-duplicate",
+     "details": [
+      "Date of birth"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "full-width letters",
+   "names": [
+    "Birth date",
+    "\uff22\uff49\uff52\uff54\uff48 date"
+   ],
+   "problems": [
+    {
+     "name": "\uff22\uff49\uff52\uff54\uff48 date",
+     "rule": "near-duplicate",
+     "details": [
+      "Birth date"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "a zero-width non-joiner",
+   "names": [
+    "Birthdate",
+    "Birth\u200cdate"
+   ],
+   "problems": [
+    {
+     "name": "Birth\u200cdate",
+     "rule": "near-duplicate",
+     "details": [
+      "Birthdate"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "a combining grapheme joiner, which the key ignores like every default-ignorable code point",
+   "names": [
+    "Birthdate",
+    "Birth\u034fdate"
+   ],
+   "problems": [
+    {
+     "name": "Birth\u034fdate",
+     "rule": "near-duplicate",
+     "details": [
+      "Birthdate"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "a dotted capital I",
+   "names": [
+    "\u0130stanbul",
+    "i\u0307stanbul"
+   ],
+   "problems": [
+    {
+     "name": "i\u0307stanbul",
+     "rule": "near-duplicate",
+     "details": [
+      "\u0130stanbul"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "a final sigma",
+   "names": [
+    "\u03a3\u039f\u03a6\u039f\u03a3",
+    "\u03c3\u03bf\u03c6\u03bf\u03c2"
+   ],
+   "problems": [
+    {
+     "name": "\u03c3\u03bf\u03c6\u03bf\u03c2",
+     "rule": "near-duplicate",
+     "details": [
+      "\u03a3\u039f\u03a6\u039f\u03a3"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "a sharp s and a double s, which lowercasing keeps apart",
+   "names": [
+    "Stra\u00dfe",
+    "STRASSE"
+   ],
+   "problems": []
+  },
+  {
+   "case": "each later name named after the first",
+   "names": [
+    "Birth date",
+    "birth date",
+    "BIRTH DATE"
+   ],
+   "problems": [
+    {
+     "name": "birth date",
+     "rule": "near-duplicate",
+     "details": [
+      "Birth date"
+     ]
+    },
+    {
+     "name": "BIRTH DATE",
+     "rule": "near-duplicate",
+     "details": [
+      "Birth date"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "a name with a spelling to fix is still compared",
+   "names": [
+    "BIRTH  DATE",
+    "Birth date"
+   ],
+   "problems": [
+    {
+     "name": "BIRTH  DATE",
+     "rule": "near-duplicate",
+     "details": [
+      "Birth date"
+     ]
+    },
+    {
+     "name": "Birth date",
+     "rule": "near-duplicate",
+     "details": [
+      "BIRTH  DATE"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "a name to respell into an earlier name",
+   "names": [
+    "Birth date",
+    "Birth  date"
+   ],
+   "problems": [
+    {
+     "name": "Birth  date",
+     "rule": "near-duplicate",
+     "details": [
+      "Birth date"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "a name to respell into a later name",
+   "names": [
+    "Birth  date",
+    "Birth date"
+   ],
+   "problems": [
+    {
+     "name": "Birth  date",
+     "rule": "near-duplicate",
+     "details": [
+      "Birth date"
+     ]
+    },
+    {
+     "name": "Birth date",
+     "rule": "near-duplicate",
+     "details": [
+      "Birth  date"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "a name to respell by dropping a hidden character",
+   "names": [
+    "Birthdate",
+    "Birth\u200bdate"
+   ],
+   "problems": [
+    {
+     "name": "Birth\u200bdate",
+     "rule": "near-duplicate",
+     "details": [
+      "Birthdate"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "a name too long to compare",
+   "names": [
+    "Birth  date",
+    "Birth date                                                                                                                                                                                                                                                          "
+   ],
+   "problems": [
+    {
+     "name": "Birth  date",
+     "rule": "canonical-form",
+     "details": [
+      "Birth date"
+     ]
+    },
+    {
+     "name": "Birth date                                                                                                                                                                                                                                                          ",
+     "rule": "length",
+     "details": []
+    }
+   ]
+  },
+  {
+   "case": "a near-duplicate that breaks another rule reports that rule",
+   "names": [
+    "Name",
+    "name"
+   ],
+   "problems": [
+    {
+     "name": "name",
+     "rule": "reserved",
+     "details": []
+    }
+   ]
+  }
+ ]
+}

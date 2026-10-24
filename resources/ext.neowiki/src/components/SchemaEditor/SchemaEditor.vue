@@ -69,6 +69,8 @@ import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { missingRelationAttribute } from '@/components/SchemaEditor/Property/missingRelationAttribute.ts';
 import { invalidSelectOption } from '@/components/SchemaEditor/Property/selectOptionProblems.ts';
 import { ErrorsRevealedKey } from '@/components/SchemaEditor/ErrorsRevealed.ts';
+import { propertyNameProblemBeside, propertyNameProblemsInSchema } from '@/domain/propertyNameRules.ts';
+import { propertyNameProblemMessage } from '@/components/SchemaEditor/propertyNameProblemMessage.ts';
 
 const props = withDefaults( defineProps<{
 	initialSchema: Schema;
@@ -153,9 +155,12 @@ const selectedProperty = computed( () => {
 	);
 } );
 
-const otherPropertyNames = computed( (): string[] =>
+const propertyNames = computed( (): string[] =>
 	Object.keys( currentSchema.value.getPropertyDefinitions().asRecord() )
-		.filter( ( name ) => name !== selectedPropertyName.value )
+);
+
+const otherPropertyNames = computed( (): string[] =>
+	propertyNames.value.filter( ( name ) => name !== selectedPropertyName.value )
 );
 
 function onSubjectLabelSelected(): void {
@@ -187,7 +192,7 @@ function createNewProperty(): PropertyDefinition {
 function generateUniquePropertyName(): PropertyName {
 	let counter = 1;
 
-	while ( propertyExists( `New Property ${ counter }` ) ) {
+	while ( propertyNameProblemBeside( `New Property ${ counter }`, propertyNames.value ) !== null ) {
 		counter++;
 	}
 
@@ -271,7 +276,7 @@ export interface SchemaEditorExposes {
  * The first reason the save must not proceed, or null. Unparseable text comes first: the
  * user is looking at the field holding it.
  */
-const saveBlocker = (): SaveBlocker | null => unparseableInput() ?? incompleteProperty();
+const saveBlocker = (): SaveBlocker | null => unparseableInput() ?? invalidPropertyName() ?? incompleteProperty();
 
 /**
  * The property with a field showing text that getSchema() leaves out. Only the
@@ -285,6 +290,16 @@ const unparseableInput = (): SaveBlocker | null => {
 	}
 
 	return { propertyName: selectedPropertyName.value, message };
+};
+
+/**
+ * The first property whose name the wiki would refuse to store, or null. Read from the Schema: it can open with
+ * such a name, and only the selected property has an editor mounted.
+ */
+const invalidPropertyName = (): SaveBlocker | null => {
+	const problem = propertyNameProblemsInSchema( propertyNames.value )[ 0 ];
+
+	return problem === undefined ? null : { propertyName: problem.name, message: propertyNameProblemMessage( problem ) };
 };
 
 /**
