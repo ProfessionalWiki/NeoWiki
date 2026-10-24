@@ -1,10 +1,11 @@
-import type { MultiStringProperty, PropertyDefinition } from '@/domain/PropertyDefinition';
+import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { type MonolingualTextValue, newMonolingualTextValue, ValueType } from '@/domain/Value';
 import { BasePropertyType } from '@/domain/PropertyType';
 
-export interface MonolingualTextProperty extends MultiStringProperty {
+export interface MonolingualTextProperty extends PropertyDefinition {
 
+	readonly multiple: boolean;
 	readonly uniqueLanguages: boolean;
 	readonly maxLength?: number;
 	readonly minLength?: number;
@@ -29,7 +30,6 @@ export class MonolingualTextType extends BasePropertyType<MonolingualTextPropert
 		return {
 			...base,
 			multiple: json.multiple ?? false,
-			uniqueItems: json.uniqueItems ?? false,
 			uniqueLanguages: json.uniqueLanguages ?? false,
 			minLength: json.minLength ?? undefined,
 			maxLength: json.maxLength ?? undefined,
@@ -58,7 +58,6 @@ export function newMonolingualTextProperty(
 		required: attributes.required ?? false,
 		default: attributes.default,
 		multiple: attributes.multiple ?? false,
-		uniqueItems: attributes.uniqueItems ?? true,
 		uniqueLanguages: attributes.uniqueLanguages ?? false,
 		maxLength: attributes.maxLength,
 		minLength: attributes.minLength,

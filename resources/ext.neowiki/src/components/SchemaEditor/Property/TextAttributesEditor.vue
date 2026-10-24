@@ -96,8 +96,11 @@ import { minExceedsMax } from '@/components/SchemaEditor/Property/minExceedsMax.
 import NeoNestedField from '@/components/common/NeoNestedField.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 
-const props = defineProps<AttributesEditorProps<TextProperty>>();
-const emit = defineEmits<AttributesEditorEmits<TextProperty>>();
+// Text with language has no uniqueItems: it puts its own control in the values slot.
+type TextLikeProperty = Omit<TextProperty, 'uniqueItems'> & Partial<Pick<TextProperty, 'uniqueItems'>>;
+
+const props = defineProps<AttributesEditorProps<TextLikeProperty>>();
+const emit = defineEmits<AttributesEditorEmits<TextLikeProperty>>();
 
 const minLengthInput = ref( props.property.minLength?.toString() ?? '' );
 const maxLengthInput = ref( props.property.maxLength?.toString() ?? '' );

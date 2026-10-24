@@ -315,7 +315,7 @@ those are set. Beyond that core, the fields depend on `type`:
 | Property type | Always present | Present only when set |
 |---------------|----------------|------------------------|
 | `text` | `multiple`, `uniqueItems` | `minLength`, `maxLength` |
-| `monolingualText` | `multiple`, `uniqueItems`, `uniqueLanguages` | `minLength`, `maxLength` |
+| `monolingualText` | `multiple`, `uniqueLanguages` | `minLength`, `maxLength` |
 | `url` | `multiple`, `uniqueItems` | — |
 | `number` | — | `precision`, `minimum`, `maximum` |
 | `date`, `dateTime` | — | `minimum`, `maximum` |

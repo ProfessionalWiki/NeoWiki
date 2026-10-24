@@ -2,7 +2,8 @@
 
 Date: 2026-09-19
 
-Status: Accepted. Amended 2026-10-23: a property can limit each language to one text.
+Status: Accepted. Amended 2026-10-23: a property can limit each language to one text, and `uniqueItems` no longer
+applies to this type.
 
 ## Context
 
@@ -30,9 +31,8 @@ it has — the writer's schema on the Statement ([ADR 11](011-include-writers-sc
 It is not checked against MediaWiki's language list, so a vocabulary using `und` or a script subtag is not locked
 out. Tags are stored lowercase, making `pt-BR` and `pt-br` one language.
 
-**A language may repeat**: a thing can have two names in Spanish. `uniqueItems` therefore compares text and
-language together. Where a property takes one text per language, such as a caption, `uniqueLanguages` makes each
-further text in a language a Violation.
+**A language may repeat**: a thing can have two names in Spanish. Where a property takes one text per language, such
+as a caption, `uniqueLanguages` makes each further text in a language a Violation.
 
 **Constraints apply per part.** `minLength` and `maxLength` bound each part's text, and `required` is satisfied by
 any one part. A part whose text is empty is dropped, so no part carries a language and nothing else.

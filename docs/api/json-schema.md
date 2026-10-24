@@ -25,7 +25,6 @@ values, except for what the document cannot express:
 - for a Property Type an extension adds, whatever its own description of its values leaves out
 - whitespace: the wiki trims each part of a value and drops empty parts before checking it
 - `uniqueLanguages` on `monolingualText` properties
-- letter case in a `monolingualText` language tag, which the wiki ignores when it checks `uniqueItems`
 
 [`POST /neowiki/v0/subject/validate`](validation-codes.md) checks a proposed Subject against the wiki
 itself.

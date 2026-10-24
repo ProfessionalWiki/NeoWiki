@@ -14,7 +14,6 @@ class MonolingualTextProperty extends PropertyDefinition {
 	public function __construct(
 		PropertyCore $core,
 		private readonly bool $multiple,
-		private readonly bool $uniqueItems,
 		private readonly bool $uniqueLanguages,
 		private readonly ?int $minLength,
 		private readonly ?int $maxLength,
@@ -28,10 +27,6 @@ class MonolingualTextProperty extends PropertyDefinition {
 
 	public function allowsMultipleValues(): bool {
 		return $this->multiple;
-	}
-
-	public function enforcesUniqueValues(): bool {
-		return $this->uniqueItems;
 	}
 
 	public function enforcesUniqueLanguages(): bool {
@@ -58,7 +53,6 @@ class MonolingualTextProperty extends PropertyDefinition {
 		return new self(
 			core: $core,
 			multiple: $property['multiple'] ?? false,
-			uniqueItems: $property['uniqueItems'] ?? false,
 			uniqueLanguages: $property['uniqueLanguages'] ?? false,
 			minLength: $property['minLength'] ?? null,
 			maxLength: $property['maxLength'] ?? null,
@@ -68,7 +62,6 @@ class MonolingualTextProperty extends PropertyDefinition {
 	public function nonCoreToJson(): array {
 		return [
 			'multiple' => $this->allowsMultipleValues(),
-			'uniqueItems' => $this->enforcesUniqueValues(),
 			'uniqueLanguages' => $this->enforcesUniqueLanguages(),
 			'minLength' => $this->getMinLength(),
 			'maxLength' => $this->getMaxLength(),
@@ -95,8 +88,7 @@ class MonolingualTextProperty extends PropertyDefinition {
 			],
 		];
 
-		return $this->listValueSchema( $part )
-			+ ( $this->enforcesUniqueValues() ? [ 'uniqueItems' => true ] : [] );
+		return $this->listValueSchema( $part );
 	}
 
 }

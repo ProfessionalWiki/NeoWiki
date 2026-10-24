@@ -123,7 +123,6 @@ Text values that each carry the language they are in ([ADR 34](../adr/034-monoli
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `multiple` | boolean or object | `false` | Allow multiple values |
-| `uniqueItems` | boolean | `false` | Reject duplicates, comparing text and language together (only with `multiple`) |
 | `uniqueLanguages` | boolean | `false` | At most one value per language (only with `multiple`) |
 | `minLength` | number | `null` | Minimum trimmed length of each text |
 | `maxLength` | number | `null` | Maximum trimmed length of each text |

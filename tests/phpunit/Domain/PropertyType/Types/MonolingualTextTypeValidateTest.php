@@ -60,58 +60,7 @@ class MonolingualTextTypeValidateTest extends TestCase {
 	public function testValueOfAnotherTypeReturnsNoViolations(): void {
 		$violations = $this->type->validate(
 			new StringValue( 'Zinema' ),
-			$this->newProperty( required: true, uniqueItems: true ),
-		);
-
-		$this->assertSame( [], $violations );
-	}
-
-	public function testUniqueItemsWithSameTextAndLanguageReturnsUniqueViolation(): void {
-		$violations = $this->type->validate(
-			new MonolingualTextValue(
-				new MonolingualText( 'Zinema', 'eu' ),
-				new MonolingualText( 'Cine', 'es' ),
-				new MonolingualText( 'Zinema', 'eu' ),
-			),
-			$this->newProperty( required: false, uniqueItems: true ),
-		);
-
-		$this->assertCount( 1, $violations );
-		$this->assertSame( 'unique', $violations[0]->code );
-		$this->assertNull( $violations[0]->valuePartIndex );
-	}
-
-	public function testUniqueItemsWithSameTextInDifferentLanguagesReturnsNoViolation(): void {
-		$violations = $this->type->validate(
-			new MonolingualTextValue(
-				new MonolingualText( 'Cine', 'es' ),
-				new MonolingualText( 'Cine', 'gl' ),
-			),
-			$this->newProperty( required: false, uniqueItems: true ),
-		);
-
-		$this->assertSame( [], $violations );
-	}
-
-	public function testUniqueItemsWithDifferentTextsInOneLanguageReturnsNoViolation(): void {
-		$violations = $this->type->validate(
-			new MonolingualTextValue(
-				new MonolingualText( 'Cine', 'es' ),
-				new MonolingualText( 'Película', 'es' ),
-			),
-			$this->newProperty( required: false, uniqueItems: true ),
-		);
-
-		$this->assertSame( [], $violations );
-	}
-
-	public function testUniqueItemsFalseWithDuplicatesReturnsNoViolation(): void {
-		$violations = $this->type->validate(
-			new MonolingualTextValue(
-				new MonolingualText( 'Zinema', 'eu' ),
-				new MonolingualText( 'Zinema', 'eu' ),
-			),
-			$this->newProperty( required: false, uniqueItems: false ),
+			$this->newProperty( required: true ),
 		);
 
 		$this->assertSame( [], $violations );
@@ -167,21 +116,6 @@ class MonolingualTextTypeValidateTest extends TestCase {
 
 		$this->assertCount( 1, $violations );
 		$this->assertSame( 'required', $violations[0]->code );
-	}
-
-	public function testLengthAndUniqueViolationsBothReturnedWhenBothConditionsTrigger(): void {
-		$violations = $this->type->validate(
-			new MonolingualTextValue(
-				new MonolingualText( 'Ci', 'es' ),
-				new MonolingualText( 'Ci', 'es' ),
-			),
-			$this->newProperty( required: false, uniqueItems: true, minLength: 3 ),
-		);
-
-		$this->assertEquals(
-			[ 'min-length' => 2, 'unique' => 1 ],
-			array_count_values( array_column( $violations, 'code' ) )
-		);
 	}
 
 	public function testSeveralPartsWithoutMultipleReturnSingleValueOnlyViolation(): void {
@@ -306,15 +240,6 @@ class MonolingualTextTypeValidateTest extends TestCase {
 	}
 
 	public static function annotatedConstraintProvider(): iterable {
-		yield 'uniqueItems' => [
-			[ 'uniqueItems' => [ 'severity' => 'error' ] ],
-			new MonolingualTextValue(
-				new MonolingualText( 'Zinema', 'eu' ),
-				new MonolingualText( 'Zinema', 'eu' ),
-			),
-			'unique',
-		];
-
 		yield 'minLength' => [
 			[ 'minLength' => [ 'value' => 3, 'severity' => 'error' ] ],
 			new MonolingualTextValue( new MonolingualText( 'Ci', 'es' ) ),
@@ -361,7 +286,6 @@ class MonolingualTextTypeValidateTest extends TestCase {
 
 	private function newProperty(
 		bool $required,
-		bool $uniqueItems = false,
 		?int $minLength = null,
 		?int $maxLength = null,
 		bool $multiple = true,
@@ -371,7 +295,6 @@ class MonolingualTextTypeValidateTest extends TestCase {
 			new PropertyCore( description: '', required: $required, default: null ),
 			[
 				'multiple' => $multiple,
-				'uniqueItems' => $uniqueItems,
 				'uniqueLanguages' => $uniqueLanguages,
 				'minLength' => $minLength,
 				'maxLength' => $maxLength,

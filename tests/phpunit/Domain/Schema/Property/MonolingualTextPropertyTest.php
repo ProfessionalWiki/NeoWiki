@@ -20,7 +20,6 @@ class MonolingualTextPropertyTest extends PropertyTestCase {
 	"required": false,
 	"default": null,
 	"multiple": false,
-	"uniqueItems": false,
 	"uniqueLanguages": false,
 	"minLength": null,
 	"maxLength": null
@@ -45,7 +44,6 @@ JSON
 	"required": true,
 	"default": [ { "text": "Zinema", "language": "eu" } ],
 	"multiple": true,
-	"uniqueItems": true,
 	"uniqueLanguages": true,
 	"minLength": 2,
 	"maxLength": 40
@@ -78,12 +76,6 @@ JSON
 			[ 'type' => 'string', 'minLength' => 2, 'maxLength' => 40 ],
 			$value['items']['properties']['text']
 		);
-	}
-
-	public function testUniqueItemsConstraintForbidsDuplicateParts(): void {
-		$value = $this->fromJson( '{ "type": "monolingualText", "multiple": true, "uniqueItems": true }' )->toJsonSchema();
-
-		$this->assertTrue( $value['uniqueItems'] );
 	}
 
 }

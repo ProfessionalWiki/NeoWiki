@@ -10,14 +10,13 @@ describe( 'MonolingualTextType', () => {
 		const property = type.createPropertyDefinitionFromJson( base, { type: 'monolingualText' } );
 
 		expect( property.multiple ).toBe( false );
-		expect( property.uniqueItems ).toBe( false );
 		expect( property.uniqueLanguages ).toBe( false );
 	} );
 
 	it( 'reads the attributes the JSON sets, keeping the ones every property type shares', () => {
 		const property = type.createPropertyDefinitionFromJson(
 			{ ...base, description: 'The title it was released under', required: true },
-			{ type: 'monolingualText', multiple: true, uniqueItems: true, uniqueLanguages: true, minLength: 2, maxLength: 50 },
+			{ type: 'monolingualText', multiple: true, uniqueLanguages: true, minLength: 2, maxLength: 50 },
 		);
 
 		expect( property ).toMatchObject( {
@@ -26,7 +25,6 @@ describe( 'MonolingualTextType', () => {
 			description: 'The title it was released under',
 			required: true,
 			multiple: true,
-			uniqueItems: true,
 			uniqueLanguages: true,
 			minLength: 2,
 			maxLength: 50,

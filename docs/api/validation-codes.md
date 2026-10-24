@@ -104,9 +104,7 @@ disallowed characters.
 
 ### `unique`
 
-On `text`, `url` and `monolingualText` properties with `uniqueItems` enabled: the value contains
-duplicate parts. On `monolingualText` a part duplicates another only when both its text and its
-language repeat.
+On `text` and `url` properties with `uniqueItems` enabled: the value contains duplicate parts.
 
 `args`: `[]`. `severity`: set by the `uniqueItems` Constraint (default `warning`).
 

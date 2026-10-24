@@ -303,7 +303,7 @@ const rowViews = computed<RowView[]>( () => {
 } );
 
 /**
- * A server violation with no part to attach to (`required`, `unique`) is shown under the whole
+ * A server violation with no part to attach to, such as `required`, is shown under the whole
  * field. On a single-valued property the field is also where the one part's violation goes, there
  * being no row of its own to put it under.
  */
