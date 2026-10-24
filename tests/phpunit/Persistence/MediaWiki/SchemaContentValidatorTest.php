@@ -284,11 +284,14 @@ JSON
 		);
 	}
 
-	public function testRequiredWithSeverityObjectFormPassesValidation(): void {
+	/**
+	 * @dataProvider booleanConstraintProvider
+	 */
+	public function testBooleanConstraintWithSeverityObjectFormPassesValidation( string $type, string $constraint ): void {
 		$validator = SchemaContentValidator::newInstance();
 
 		$valid = $validator->validate(
-			$this->schemaWithProperty( '{ "type": "text", "required": { "severity": "error" } }' )
+			$this->schemaWithProperty( '{ "type": "' . $type . '", "multiple": true, "' . $constraint . '": { "severity": "error" } }' )
 		);
 
 		if ( !$valid ) {
@@ -459,32 +462,30 @@ JSON
 	/**
 	 * The boolean object form implies true and carries no value key. Permitting a stray
 	 * one would let "value": false round-trip back as true, silently flipping the Constraint.
+	 *
+	 * @dataProvider booleanConstraintProvider
 	 */
-	public function testBooleanConstraintObjectFormWithValueKeyFailsValidation(): void {
-		$validator = SchemaContentValidator::newInstance();
-
-		$this->assertFalse(
-			$validator->validate(
-				$this->schemaWithProperty( '{ "type": "text", "required": { "value": false, "severity": "error" } }' )
-			)
-		);
-
-		$this->assertSame(
-			[ '/propertyDefinitions/offending/required' => 'Additional object properties are not allowed: value' ],
-			$validator->getErrors()
-		);
-	}
-
-	public function testUniqueLanguagesObjectFormWithValueKeyFailsValidation(): void {
+	public function testBooleanConstraintObjectFormWithValueKeyFailsValidation( string $type, string $constraint ): void {
 		$validator = SchemaContentValidator::newInstance();
 
 		$this->assertFalse(
 			$validator->validate(
 				$this->schemaWithProperty(
-					'{ "type": "monolingualText", "multiple": true, "uniqueLanguages": { "value": false, "severity": "error" } }'
+					'{ "type": "' . $type . '", "multiple": true, "' . $constraint . '": { "value": false, "severity": "error" } }'
 				)
 			)
 		);
+
+		$this->assertSame(
+			[ '/propertyDefinitions/offending/' . $constraint => 'Additional object properties are not allowed: value' ],
+			$validator->getErrors()
+		);
+	}
+
+	public static function booleanConstraintProvider(): iterable {
+		yield 'required' => [ 'text', 'required' ];
+		yield 'uniqueItems' => [ 'text', 'uniqueItems' ];
+		yield 'uniqueLanguages' => [ 'monolingualText', 'uniqueLanguages' ];
 	}
 
 	/**

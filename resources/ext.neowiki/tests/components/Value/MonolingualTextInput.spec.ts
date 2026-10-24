@@ -571,13 +571,14 @@ describe( 'MonolingualTextInput', () => {
 			.toEqual( [ [ { propertyName: 'Original title', valuePartIndex: 1 } ] ] );
 	} );
 
-	it( 'asks the parent to drop the violation of a part whose language changes', async () => {
+	it( 'asks the parent to drop the violation of a part whose language changes, and only that one', async () => {
 		const wrapper = newWrapper( {
 			modelValue: newMonolingualTextValue( [
-				{ text: 'Zinema', language: 'eu' },
+				{ text: 'Zi', language: 'eu' },
 				{ text: 'Ci', language: 'es' },
 			] ),
 			serverViolations: [
+				{ propertyName: 'Original title', code: 'min-length', args: [ 3 ], severity: 'error', valuePartIndex: 0 },
 				{ propertyName: 'Original title', code: 'min-length', args: [ 3 ], severity: 'error', valuePartIndex: 1 },
 			],
 		} );
