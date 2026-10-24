@@ -57,6 +57,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\EntryPoints\Jobs\RebuildLastEditorPagesJob;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
+use ProfessionalWiki\NeoWiki\Maintenance\HideFunctionsTrackingCategory;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildPublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -483,6 +484,8 @@ class NeoWikiHooks {
 		$updater->addPostDatabaseUpdateMaintenance( RebuildSubjectPageIndex::class );
 		$updater->addPostDatabaseUpdateMaintenance( RebuildPublishedSubjectIndex::class );
 
+		$updater->addPostDatabaseUpdateMaintenance( HideFunctionsTrackingCategory::class );
+
 		$updater->addExtensionUpdate( [ [ self::class, 'initializeGraphDatabases' ] ] );
 	}
 
@@ -563,41 +566,49 @@ class NeoWikiHooks {
 
 		$parser->setFunctionHook(
 			'view',
-			static function ( Parser $parser, string ...$args ): string|array {
-				$parserFunction = new ViewParserFunction( NeoWikiExtension::getInstance()->newPageSubjectsLookup() );
-				return $parserFunction->handle( $parser, ...$args );
-			}
+			FunctionsTrackingCategory::trackingCallsOf(
+				static function ( Parser $parser, string ...$args ): string|array {
+					$parserFunction = new ViewParserFunction( NeoWikiExtension::getInstance()->newPageSubjectsLookup() );
+					return $parserFunction->handle( $parser, ...$args );
+				}
+			)
 		);
 
 		$parser->setFunctionHook(
 			'main_subject',
-			static function ( Parser $parser, string ...$args ): string|array {
-				$parserFunction = new MainSubjectParserFunction( NeoWikiExtension::getInstance()->newPageSubjectsLookup() );
-				return $parserFunction->handle( $parser, ...$args );
-			}
+			FunctionsTrackingCategory::trackingCallsOf(
+				static function ( Parser $parser, string ...$args ): string|array {
+					$parserFunction = new MainSubjectParserFunction( NeoWikiExtension::getInstance()->newPageSubjectsLookup() );
+					return $parserFunction->handle( $parser, ...$args );
+				}
+			)
 		);
 
 		$parser->setFunctionHook(
 			'neowiki_value',
-			static function ( Parser $parser, string ...$args ): string|array {
-				$parserFunction = new NeoWikiValueParserFunction(
-					NeoWikiExtension::getInstance()->newSubjectResolver( $parser )
-				);
-				return $parserFunction->handle( $parser, ...$args );
-			}
+			FunctionsTrackingCategory::trackingCallsOf(
+				static function ( Parser $parser, string ...$args ): string|array {
+					$parserFunction = new NeoWikiValueParserFunction(
+						NeoWikiExtension::getInstance()->newSubjectResolver( $parser )
+					);
+					return $parserFunction->handle( $parser, ...$args );
+				}
+			)
 		);
 
 		$parser->setFunctionHook(
 			'create_subject',
-			static function ( Parser $parser, string ...$args ): string|array {
-				$parserFunction = new CreateSubjectParserFunction(
-					NeoWikiExtension::getInstance()->newPageSubjectsLookup(),
-					NeoWikiExtension::getInstance()->isSubjectFirst(),
-					static fn ( Parser $parser ): SchemaLookup => NeoWikiExtension::getInstance()
-						->getSchemaLookupFor( ParserAuthority::of( $parser ) )
-				);
-				return $parserFunction->handle( $parser, ...$args );
-			}
+			FunctionsTrackingCategory::trackingCallsOf(
+				static function ( Parser $parser, string ...$args ): string|array {
+					$parserFunction = new CreateSubjectParserFunction(
+						NeoWikiExtension::getInstance()->newPageSubjectsLookup(),
+						NeoWikiExtension::getInstance()->isSubjectFirst(),
+						static fn ( Parser $parser ): SchemaLookup => NeoWikiExtension::getInstance()
+							->getSchemaLookupFor( ParserAuthority::of( $parser ) )
+					);
+					return $parserFunction->handle( $parser, ...$args );
+				}
+			)
 		);
 	}
 

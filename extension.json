@@ -35,7 +35,8 @@
 
 	"AutoloadClasses": {
 		"ProfessionalWiki\\NeoWiki\\Maintenance\\RebuildSubjectPageIndex": "maintenance/RebuildSubjectPageIndex.php",
-		"ProfessionalWiki\\NeoWiki\\Maintenance\\RebuildPublishedSubjectIndex": "maintenance/RebuildPublishedSubjectIndex.php"
+		"ProfessionalWiki\\NeoWiki\\Maintenance\\RebuildPublishedSubjectIndex": "maintenance/RebuildPublishedSubjectIndex.php",
+		"ProfessionalWiki\\NeoWiki\\Maintenance\\HideFunctionsTrackingCategory": "maintenance/HideFunctionsTrackingCategory.php"
 	},
 
 	"TestAutoloadNamespaces": {
@@ -234,6 +235,10 @@
 	"Actions": {
 		"subjects": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Actions\\SubjectsAction"
 	},
+
+	"TrackingCategories": [
+		"neowiki-functions-category"
+	],
 
 	"config": {
 		"NeoWikiEnableDevelopmentUI": {
