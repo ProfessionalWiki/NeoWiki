@@ -90,10 +90,9 @@ make dev services=node,oxigraph,neo  # SPARQL and Cypher, plus frontend
 make upgrade services=oxigraph,neo   # a demo stack that keeps Neo4j
 ```
 
-Rerunning `make dev` with a different selection reconfigures a running stack: newly-deselected services
-stop (their volumes survive for reselection) and the wiki's config follows, so a deselected
-store or mail host is never configured. The demo stack's targets leave deselected services running, so
-run `make down` before deselecting a service there. Details:
+Rerunning `make dev` with a different selection stops newly deselected services, keeping their
+volumes, and reconfigures the wiki to match. The demo stack's targets leave deselected services
+running, so run `make down` before deselecting a service there. Details:
 
 - Without `node`, `make dev` builds the frontend bundle once in a throwaway container, so the UI
   works; the `ts-*` targets start the watcher on demand. `make ts-build` refreshes a bundle left
@@ -163,13 +162,12 @@ the demo data's `EDM queries` page shows such queries. The `EDM` entry needs tha
 `make import-demo-data` is part of the setup: without it every Subject save logs an unknown-projection
 error and a rebuild reports every page as failed.
 
-There is no index to build, unlike QLever. Data lives in the `oxigraph-data` named volume, which
-`make remove` clears along with the wiki's own data.
+Data lives in the `oxigraph-data` named volume, which `make remove` clears along with the wiki's
+own data.
 
-The service runs with `--union-default-graph`, so an unscoped query sees every named graph, as on
-QLever. Unlike QLever, Oxigraph 0.5 returns a triple once for each graph holding it, and both
-projections hold the `rdfs:label` of a Subject whose Schema is mapped, so an unscoped query can return
-a row twice. Use `SELECT DISTINCT`.
+The service runs with `--union-default-graph`, so an unscoped query sees every named graph. Oxigraph
+0.5 returns a triple once per graph holding it, and both projections hold the `rdfs:label` of a
+Subject whose Schema is mapped, so use `SELECT DISTINCT`.
 
 The service sits only on the `no-egress` network, which has no route out of the stack and which only
 the wiki shares. A federated query fails; see
