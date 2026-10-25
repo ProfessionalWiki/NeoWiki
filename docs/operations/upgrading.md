@@ -23,7 +23,7 @@ This pulls the latest demo image, restarts the stack on it, runs MediaWiki's upd
 
 For a stack started with the `server` profile, run `COMPOSE_PROFILES=server make upgrade` instead.
 
-If the new version can no longer read your evaluation data, start fresh with `make remove && make demo`.
+If the new version cannot read your pre-0.1 data, start fresh with `make remove && make demo`, which deletes that data.
 
 ### Optional: refresh the demo content
 

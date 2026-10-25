@@ -5,8 +5,8 @@ order: 1
 
 # Installing NeoWiki
 
-NeoWiki is pre-release software. It is not production ready, and breaking changes can land at any time without a
-migration path. Treat any install as an evaluation or pilot and run it on disposable data.
+NeoWiki is not production-ready yet. From 0.1 on, every breaking change to stored data ships with a migration script or
+written upgrade steps. To pilot with real data, install a release on a separate wiki, not your production one.
 
 The Docker stack is self-contained and the fastest way to a working wiki, so use it for evaluation. The manual
 install adds NeoWiki to a MediaWiki you already run.
@@ -403,7 +403,7 @@ around it: block its outbound traffic at the network layer, and narrow who holds
 
 ## Production hardening
 
-NeoWiki is pre-release, so this is not needed for an evaluation. It applies later, when NeoWiki is production-ready.
+This applies once NeoWiki is production-ready.
 
 ### Separate read and write Neo4j users
 

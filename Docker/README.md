@@ -1,8 +1,5 @@
 # NeoWiki Docker
 
-NeoWiki is in the experimental proof of concept phase. It is not production ready, public interfaces will change,
-big structural changes will happen, and key functionality is still missing.
-
 This directory contains files for the Dockerized development environment and for the pre-built demo Docker image.
 
 ## Installing and running

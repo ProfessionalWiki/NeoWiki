@@ -16,9 +16,8 @@ A helpful report includes:
 
 ## Supported Versions
 
-NeoWiki is in active pre-release development and is not yet intended for
-production use. There are no released versions with separate maintenance
-branches; security fixes are applied to the latest `master`.
+NeoWiki is not yet intended for production use. Security fixes are applied
+to `master` and ship in the next release.
 
 ## Disclosure
 
