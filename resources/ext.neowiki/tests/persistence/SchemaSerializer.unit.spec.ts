@@ -114,6 +114,16 @@ describe( 'SchemaSerializer', () => {
 				},
 			} );
 		} );
+
+		it( 'keeps a property named __proto__', () => {
+			const schema = newSchema( {
+				properties: new PropertyDefinitionList( [ newTextProperty( { name: '__proto__' } ) ] ),
+			} );
+
+			const parsed = JSON.parse( serializer.serializeSchema( schema ) );
+
+			expect( Object.keys( parsed.propertyDefinitions ) ).toEqual( [ '__proto__' ] );
+		} );
 	} );
 
 	describe( 'unregistered-type round-trip', () => {

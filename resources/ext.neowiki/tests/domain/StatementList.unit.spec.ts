@@ -47,6 +47,20 @@ describe( 'StatementList', () => {
 		expect( statementList.has( new PropertyName( 'property2' ) ) ).toBe( true );
 	} );
 
+	const objectMemberNames = [ 'constructor', '__proto__' ];
+
+	it.each( objectMemberNames )( 'holds a statement for a property named %s', ( name ) => {
+		const statement = textStatement( name );
+
+		expect( [ ...new StatementList( [ statement ] ) ] ).toEqual( [ statement ] );
+	} );
+
+	it.each( objectMemberNames )( 'does not have a statement for a property named %s it was not given', ( name ) => {
+		const statementList = new StatementList( [ statement1 ] );
+
+		expect( statementList.has( new PropertyName( name ) ) ).toBe( false );
+	} );
+
 	it( 'puts a statement in place of the one with its property name', () => {
 		const statement3 = new Statement( new PropertyName( 'property3' ), TextType.typeName, newStringValue( 'value3' ) );
 		const replacement = new Statement( property2, TextType.typeName, newStringValue( 'replaced' ) );
@@ -231,6 +245,20 @@ describe( 'statementsToJson', () => {
 		} );
 	} );
 
+	it( 'converts a statement without a value to null', () => {
+		const json = statementsToJson( new StatementList( [
+			new Statement( new PropertyName( 'Name' ), TextType.typeName, undefined ),
+		] ) );
+
+		expect( json ).toEqual( { Name: null } );
+	} );
+
+	it( 'keeps a statement for a property named __proto__', () => {
+		const json = statementsToJson( new StatementList( [ textStatement( '__proto__' ) ] ) );
+
+		expect( Object.keys( json ) ).toEqual( [ '__proto__' ] );
+	} );
+
 } );
 
 describe( 'unregistered-type round-trip', () => {
@@ -252,3 +280,7 @@ describe( 'unregistered-type round-trip', () => {
 	} );
 
 } );
+
+function textStatement( propertyName: string ): Statement {
+	return new Statement( new PropertyName( propertyName ), TextType.typeName, newStringValue( 'value' ) );
+}

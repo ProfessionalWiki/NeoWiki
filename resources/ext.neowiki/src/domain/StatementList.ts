@@ -5,36 +5,34 @@ import { RelationValue, type Value, valueToJson } from '@/domain/Value';
 
 export class StatementList implements Iterable<Statement> {
 
-	private readonly statements: Record<string, Statement>;
+	private readonly statements = new Map<string, Statement>();
 
 	public constructor( statements: Statement[] ) {
-		this.statements = {};
-
 		for ( const statement of statements ) {
 			const propertyName = statement.propertyName.toString();
 
-			if ( this.statements[ propertyName ] ) {
+			if ( this.statements.has( propertyName ) ) {
 				throw new Error( `Cannot have two statements with property name: ${ propertyName }` );
 			}
 
-			this.statements[ propertyName ] = statement;
+			this.statements.set( propertyName, statement );
 		}
 	}
 
 	public get( name: PropertyName ): Statement {
-		return this.statements[ name.toString() ];
+		return this.statements.get( name.toString() ) as Statement;
 	}
 
 	public has( name: PropertyName ): boolean {
-		return name.toString() in this.statements;
+		return this.statements.has( name.toString() );
 	}
 
 	public [ Symbol.iterator ](): IterableIterator<Statement> {
-		return Object.values( this.statements )[ Symbol.iterator ]();
+		return this.statements.values();
 	}
 
 	public getPropertyNames(): PropertyName[] {
-		return Object.keys( this.statements ).map( ( name ) => new PropertyName( name ) );
+		return [ ...this.statements.keys() ].map( ( name ) => new PropertyName( name ) );
 	}
 
 	public withNonEmptyValues(): StatementList {
@@ -60,18 +58,14 @@ export class StatementList implements Iterable<Statement> {
 
 	private filter( callback: ( property: Statement ) => boolean ): StatementList {
 		return new StatementList(
-			Object.values( this.statements ).filter( callback ),
+			[ ...this ].filter( callback ),
 		);
 	}
 
 	public asPropertyValueRecord(): Record<string, Value|undefined> {
-		const record: Record<string, Value|undefined> = {};
-
-		for ( const statement of this ) {
-			record[ statement.propertyName.toString() ] = statement.value;
-		}
-
-		return record;
+		return Object.fromEntries(
+			[ ...this ].map( ( statement ) => [ statement.propertyName.toString(), statement.value ] ),
+		);
 	}
 
 	public getIdsOfReferencedSubjects(): Set<SubjectId> {
@@ -90,26 +84,24 @@ export class StatementList implements Iterable<Statement> {
 }
 
 export function statementsToJson( statements: StatementList ): Record<string, unknown> {
-	const valuesJson: Record<string, unknown> = {};
+	return Object.fromEntries(
+		[ ...statements ].map( ( statement ) => [ statement.propertyName.toString(), statementToJson( statement ) ] ),
+	);
+}
 
-	for ( const statement of statements ) {
-		if ( statement.value === undefined ) {
-			valuesJson[ statement.propertyName.toString() ] = null;
-			continue;
-		}
-
-		const value = valueToJson( statement.value );
-
-		if ( typeof value === 'number' && isNaN( value ) ) {
-			valuesJson[ statement.propertyName.toString() ] = null;
-			continue;
-		}
-
-		valuesJson[ statement.propertyName.toString() ] = {
-			value: value,
-			propertyType: statement.propertyType,
-		};
+function statementToJson( statement: Statement ): unknown {
+	if ( statement.value === undefined ) {
+		return null;
 	}
 
-	return valuesJson;
+	const value = valueToJson( statement.value );
+
+	if ( typeof value === 'number' && isNaN( value ) ) {
+		return null;
+	}
+
+	return {
+		value: value,
+		propertyType: statement.propertyType,
+	};
 }

@@ -4,10 +4,15 @@ import { ProductionHttpClient } from '@/infrastructure/HttpClient/ProductionHttp
  * axios leaves applying validateStatus to the adapter, so this stand-in for the network applies the client's own,
  * and rejects as axios does when it says no.
  */
-export function productionClientAnswering( status: number, body: unknown ): ProductionHttpClient {
+export function productionClientAnswering(
+	status: number,
+	body: unknown,
+	onRequest?: ( config: any ) => void,
+): ProductionHttpClient {
 	const httpClient = new ProductionHttpClient();
 
 	( httpClient.getAxiosInstance() as any ).defaults.adapter = ( config: any ): Promise<unknown> => {
+		onRequest?.( config );
 		const response = { data: body, status, statusText: '', headers: {}, config };
 
 		if ( config.validateStatus( status ) ) {

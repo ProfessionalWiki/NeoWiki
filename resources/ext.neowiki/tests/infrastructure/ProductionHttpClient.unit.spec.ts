@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ProductionHttpClient } from '@/infrastructure/HttpClient/ProductionHttpClient';
+import { productionClientAnswering } from './productionClientAnswering.ts';
 
 /**
  * Which statuses come back as a Response the persistence layer can read, and which reject. Axios
@@ -41,3 +42,37 @@ describe( 'ProductionHttpClient', () => {
 	} );
 
 } );
+
+describe( 'ProductionHttpClient request bodies', () => {
+
+	const methods = [ 'post', 'put', 'patch' ] as const;
+
+	it.each( methods )( 'sends fields named after Object members in a %s body', async ( method ) => {
+		const body = { statements: { constructor: 'a', prototype: 'b', [ '__proto__' ]: 'c' } };
+
+		const request = await requestSentBy( method, body );
+
+		expect( request.body ).toEqual( body );
+	} );
+
+	it.each( methods )( 'labels a %s body as JSON', async ( method ) => {
+		const request = await requestSentBy( method, { label: 'Berlin' } );
+
+		expect( request.contentType ).toBe( 'application/json' );
+	} );
+
+} );
+
+async function requestSentBy(
+	method: 'post' | 'put' | 'patch',
+	body: Record<string, unknown>,
+): Promise<{ body: unknown; contentType: string }> {
+	let sent: any;
+	const client = productionClientAnswering( 200, {}, ( config ) => {
+		sent = config;
+	} );
+
+	await client[ method ]( '/rest.php/neowiki', body );
+
+	return { body: JSON.parse( sent.data ), contentType: sent.headers.getContentType() };
+}

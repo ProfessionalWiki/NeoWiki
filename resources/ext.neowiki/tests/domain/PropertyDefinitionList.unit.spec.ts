@@ -49,6 +49,26 @@ describe( 'PropertyDefinitionList', () => {
 		expect( collection.has( new PropertyName( 'test3' ) ) ).toBe( false );
 	} );
 
+	const objectMemberNames = [ 'constructor', '__proto__' ];
+
+	it.each( objectMemberNames )( 'holds a property named %s', ( name ) => {
+		const property = newTextProperty( { name } );
+
+		expect( [ ...new PropertyDefinitionList( [ property ] ) ] ).toEqual( [ property ] );
+	} );
+
+	it.each( objectMemberNames )( 'does not have a property named %s it was not given', ( name ) => {
+		const collection = new PropertyDefinitionList( [ property1 ] );
+
+		expect( collection.has( new PropertyName( name ) ) ).toBe( false );
+	} );
+
+	it( 'keeps integer-like property names in the order given', () => {
+		const year = newTextProperty( { name: '2024' } );
+
+		expect( [ ...new PropertyDefinitionList( [ property1, year ] ) ] ).toEqual( [ property1, year ] );
+	} );
+
 	describe( 'withNames', () => {
 
 		const collection = new PropertyDefinitionList( [ property1, property2 ] );

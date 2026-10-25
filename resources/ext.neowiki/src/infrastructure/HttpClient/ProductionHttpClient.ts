@@ -13,6 +13,12 @@ export class ProductionHttpClient implements HttpClient {
 		this.axiosInstance = axios.create( {
 			validateStatus: ( status: number ) =>
 				status === 422 || status === 409 || ( status >= 200 && status < 300 ),
+			// axios labels the string bodies of jsonBody() as form data unless told otherwise.
+			headers: {
+				post: { 'Content-Type': 'application/json' },
+				put: { 'Content-Type': 'application/json' },
+				patch: { 'Content-Type': 'application/json' },
+			},
 		} );
 	}
 
@@ -26,7 +32,7 @@ export class ProductionHttpClient implements HttpClient {
 	}
 
 	public async post( url: string, data?: Record<string, any>, config?: Record<string, any> ): Promise<Response> {
-		const response = await this.axiosInstance.post( url, data, config );
+		const response = await this.axiosInstance.post( url, jsonBody( data ), config );
 		return new Response( JSON.stringify( response.data ), {
 			status: response.status,
 			statusText: response.statusText,
@@ -34,7 +40,7 @@ export class ProductionHttpClient implements HttpClient {
 	}
 
 	public async patch( url: string, data?: Record<string, any>, config?: Record<string, any> ): Promise<Response> {
-		const response = await this.axiosInstance.patch( url, data, config );
+		const response = await this.axiosInstance.patch( url, jsonBody( data ), config );
 		return new Response( JSON.stringify( response.data ), {
 			status: response.status,
 			statusText: response.statusText,
@@ -42,7 +48,7 @@ export class ProductionHttpClient implements HttpClient {
 	}
 
 	public async put( url: string, data?: Record<string, any>, config?: Record<string, any> ): Promise<Response> {
-		const response = await this.axiosInstance.put( url, data, config );
+		const response = await this.axiosInstance.put( url, jsonBody( data ), config );
 		return new Response( JSON.stringify( response.data ), {
 			status: response.status,
 			statusText: response.statusText,
@@ -60,4 +66,10 @@ export class ProductionHttpClient implements HttpClient {
 	public getAxiosInstance(): Axios {
 		return this.axiosInstance;
 	}
+}
+
+// axios copies an object body key by key, at every depth, and the copy skips the keys __proto__,
+// constructor and prototype, which can be Property names. A string body is sent as it is.
+function jsonBody( data?: Record<string, any> ): string | undefined {
+	return data === undefined ? undefined : JSON.stringify( data );
 }

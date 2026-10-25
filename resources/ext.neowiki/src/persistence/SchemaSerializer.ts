@@ -19,11 +19,11 @@ export class SchemaSerializer {
 	}
 
 	private serializePropertyDefinitions( propertyDefinitions: PropertyDefinitionList ): Record<string, any> {
-		const serializedDefinitions: Record<string, any> = {};
-		for ( const property of propertyDefinitions ) {
-			serializedDefinitions[ property.name.toString() ] = this.serializePropertyDefinition( property );
-		}
-		return serializedDefinitions;
+		return Object.fromEntries(
+			[ ...propertyDefinitions ].map(
+				( property ) => [ property.name.toString(), this.serializePropertyDefinition( property ) ],
+			),
+		);
 	}
 
 	private serializePropertyDefinition( property: PropertyDefinition ): any {
