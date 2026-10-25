@@ -222,9 +222,8 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 
 	/**
 	 * Returns the subset of the given subject ids that still have an incoming relation from a *different*
-	 * subject. HasSubject relations do not count, and neither does a self-loop: a subject whose only
-	 * incoming relation is its own outgoing self-reference has no external referrer, so it is deleted
-	 * rather than kept as an unreachable stub.
+	 * subject. A self-loop does not count: a subject whose only incoming relation is its own outgoing
+	 * self-reference has no external referrer, so it is deleted rather than kept as an unreachable stub.
 	 *
 	 * @param string[] $subjectIds
 	 * @return string[]
@@ -235,8 +234,8 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		 */
 		$result = $transaction->run(
 			'UNWIND $subjectIds AS subjectId
-				MATCH (subject:Subject {id: subjectId})<-[incomingRelation]-(other)
-				WHERE NOT incomingRelation:HasSubject AND other <> subject
+				MATCH (subject:Subject {id: subjectId})<--(other:Subject)
+				WHERE other <> subject
 				RETURN DISTINCT subject.id AS id',
 			[ 'subjectIds' => $subjectIds ]
 		);
@@ -312,7 +311,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		$result = $transaction->run(
 			'UNWIND $subjectIds AS subjectId
 				MATCH (subject:Subject {id: subjectId})
-				OPTIONAL MATCH ()-[hasSubject:HasSubject]->(subject)
+				OPTIONAL MATCH (:Page)-[hasSubject:HasSubject]->(subject)
 				OPTIONAL MATCH (subject)-[outgoingRelation]->(target)
 				DELETE hasSubject, outgoingRelation
 				WITH subjectId, subject, collect(DISTINCT target.id) AS targetIds

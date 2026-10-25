@@ -334,6 +334,25 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertRelationExists( self::GUID_2, self::LOCATION_PROPERTY, self::GUID_1, 'rTestNQS1111rr1' );
 	}
 
+	public function testRelationNamedHasSubjectSurvivesRemovingItsTarget(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
+		) );
+
+		// The relation's edge gets the type HasSubject, the same as the edges from pages to their subjects.
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithRelation( self::GUID_2, 'HasSubject', self::GUID_1, 'rTestNQS1111rr1' ),
+		) );
+
+		$store->savePage( TestPage::build( id: 1 ) );
+
+		$this->assertRelationExists( self::GUID_2, 'HasSubject', self::GUID_1, 'rTestNQS1111rr1' );
+	}
+
 	public function testSavingPageWithoutAReferencedSubjectReducesItToAStub(): void {
 		$store = $this->newProjectionStoreWithLocationRelation();
 
@@ -867,11 +886,15 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function buildSubjectWithLocationRelation( string $id, string $targetId, string $relationId ): Subject {
+		return $this->buildSubjectWithRelation( $id, self::LOCATION_PROPERTY, $targetId, $relationId );
+	}
+
+	private function buildSubjectWithRelation( string $id, string $property, string $targetId, string $relationId ): Subject {
 		return TestSubject::build(
 			id: $id,
 			statements: new StatementList( [
 				TestStatement::buildRelation(
-					property: self::LOCATION_PROPERTY,
+					property: $property,
 					relations: [
 						TestRelation::build( id: $relationId, targetId: $targetId ),
 					],
@@ -988,7 +1011,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 	private function assertHasNoIncomingHasSubjectRelation( string $subjectId ): void {
 		$result = $this->readGraph(
-			'MATCH (subject {id: $id}) RETURN EXISTS { ()-[:HasSubject]->(subject) } AS isLinked',
+			'MATCH (subject {id: $id}) RETURN EXISTS { (:Page)-[:HasSubject]->(subject) } AS isLinked',
 			[ 'id' => $subjectId ]
 		);
 
