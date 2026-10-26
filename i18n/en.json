@@ -619,7 +619,7 @@
 	"neowiki-sidebar-overview": "Overview",
 	"neowiki-overview-layouts-description": "Configure how subjects are displayed.",
 	"neowiki-overview-mappings-description": "Express your data in standard ontologies.",
-	"neowiki-overview-graph-stores-description": "Check and rebuild the databases that answer queries.",
+	"neowiki-overview-graph-stores-description": "Check and rebuild your query databases.",
 	"neowiki-overview-configuration": "Settings",
 	"neowiki-overview-configuration-description": "Change how NeoWiki works on this wiki.",
 	"neowiki-overview-schemas-description": "Define the types of subjects and their properties.",
