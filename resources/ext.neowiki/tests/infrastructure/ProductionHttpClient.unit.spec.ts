@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import { ProductionHttpClient } from '@/infrastructure/HttpClient/ProductionHttpClient';
 import { productionClientAnswering } from './productionClientAnswering.ts';
@@ -47,17 +48,36 @@ describe( 'ProductionHttpClient request bodies', () => {
 
 	const url = '/rest.php/neowiki';
 
-	const bodySenders = {
-		post: ( client: ProductionHttpClient, body: any ): Promise<Response> => client.post( url, body ),
-		put: ( client: ProductionHttpClient, body: any ): Promise<Response> => client.put( url, body ),
-		patch: ( client: ProductionHttpClient, body: any ): Promise<Response> => client.patch( url, body ),
-		delete: ( client: ProductionHttpClient, body: any ): Promise<Response> => client.delete( url, { data: body } ),
+	const bodySenders: Record<string, BodySender> = {
+		post: ( client, body ) => client.post( url, body ),
+		put: ( client, body ) => client.put( url, body ),
+		patch: ( client, body ) => client.patch( url, body ),
+		delete: ( client, body ) => client.delete( url, { data: body } ),
 	};
 
 	it.each( Object.entries( bodySenders ) )( 'sends fields named after Object members in a %s body', async ( _, send ) => {
 		const body = { statements: { constructor: 'a', prototype: 'b', [ '__proto__' ]: 'c' } };
 
 		const request = await requestSentBy( send, body );
+
+		expect( JSON.parse( request.body ) ).toEqual( body );
+	} );
+
+	it( 'sends fields named after Object members in a body made in another realm', async () => {
+		const body = runInNewContext( '( { statements: { constructor: "a", prototype: "b", [ "__proto__" ]: "c" } } )' );
+
+		const request = await requestSentBy( bodySenders.post, body );
+
+		expect( JSON.parse( request.body ) ).toEqual( { statements: { constructor: 'a', prototype: 'b', [ '__proto__' ]: 'c' } } );
+	} );
+
+	it( 'sends fields named after Object members in a body the caller labels JSON', async () => {
+		const body = { statements: { constructor: 'a', prototype: 'b', [ '__proto__' ]: 'c' } };
+
+		const request = await requestSentBy(
+			( client ) => client.post( url, body, { headers: { 'Content-Type': 'application/json' } } ),
+			body,
+		);
 
 		expect( JSON.parse( request.body ) ).toEqual( body );
 	} );
@@ -75,19 +95,21 @@ describe( 'ProductionHttpClient request bodies', () => {
 		expect( request.contentType ).toMatch( /^application\/x-www-form-urlencoded/ );
 	} );
 
-	it( 'labels form data sent straight through its axios instance as form data', async () => {
+	it( 'sends a plain-object body as form data when the caller labels it so', async () => {
 		const request = await requestSentBy(
-			( client, body ) => client.getAxiosInstance().post( url, body ),
-			new URLSearchParams( 'label=Berlin' ),
+			( client, body ) => client.post( url, body, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } } ),
+			{ label: 'Berlin' },
 		);
 
-		expect( request.contentType ).toMatch( /^application\/x-www-form-urlencoded/ );
+		expect( request.body ).toBe( 'label=Berlin' );
 	} );
 
 } );
 
+type BodySender = ( client: ProductionHttpClient, body: any ) => Promise<unknown>;
+
 async function requestSentBy(
-	send: ( client: ProductionHttpClient, body: any ) => Promise<unknown>,
+	send: BodySender,
 	body: unknown,
 ): Promise<{ body: string; contentType: string }> {
 	let sent: any;

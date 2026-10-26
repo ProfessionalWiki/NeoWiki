@@ -1,3 +1,6 @@
+/**
+ * Sends a plain-object request body as JSON, unless the request is labelled with another content type.
+ */
 export interface HttpClient {
 	get( url: string, config?: Record<string, any> ): Promise<Response>;
 	post( url: string, data?: Record<string, any>, config?: Record<string, any> ): Promise<Response>;
