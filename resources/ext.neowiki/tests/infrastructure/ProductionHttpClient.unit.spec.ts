@@ -45,34 +45,57 @@ describe( 'ProductionHttpClient', () => {
 
 describe( 'ProductionHttpClient request bodies', () => {
 
-	const methods = [ 'post', 'put', 'patch' ] as const;
+	const url = '/rest.php/neowiki';
 
-	it.each( methods )( 'sends fields named after Object members in a %s body', async ( method ) => {
+	const bodySenders = {
+		post: ( client: ProductionHttpClient, body: any ): Promise<Response> => client.post( url, body ),
+		put: ( client: ProductionHttpClient, body: any ): Promise<Response> => client.put( url, body ),
+		patch: ( client: ProductionHttpClient, body: any ): Promise<Response> => client.patch( url, body ),
+		delete: ( client: ProductionHttpClient, body: any ): Promise<Response> => client.delete( url, { data: body } ),
+	};
+
+	it.each( Object.entries( bodySenders ) )( 'sends fields named after Object members in a %s body', async ( _, send ) => {
 		const body = { statements: { constructor: 'a', prototype: 'b', [ '__proto__' ]: 'c' } };
 
-		const request = await requestSentBy( method, body );
+		const request = await requestSentBy( send, body );
 
-		expect( request.body ).toEqual( body );
+		expect( JSON.parse( request.body ) ).toEqual( body );
 	} );
 
-	it.each( methods )( 'labels a %s body as JSON', async ( method ) => {
-		const request = await requestSentBy( method, { label: 'Berlin' } );
+	it.each( Object.entries( bodySenders ) )( 'labels a %s body as JSON', async ( _, send ) => {
+		const request = await requestSentBy( send, { label: 'Berlin' } );
 
 		expect( request.contentType ).toBe( 'application/json' );
+	} );
+
+	it( 'sends a form body as form data', async () => {
+		const request = await requestSentBy( bodySenders.post, new URLSearchParams( 'label=Berlin' ) );
+
+		expect( request.body ).toBe( 'label=Berlin' );
+		expect( request.contentType ).toMatch( /^application\/x-www-form-urlencoded/ );
+	} );
+
+	it( 'labels form data sent straight through its axios instance as form data', async () => {
+		const request = await requestSentBy(
+			( client, body ) => client.getAxiosInstance().post( url, body ),
+			new URLSearchParams( 'label=Berlin' ),
+		);
+
+		expect( request.contentType ).toMatch( /^application\/x-www-form-urlencoded/ );
 	} );
 
 } );
 
 async function requestSentBy(
-	method: 'post' | 'put' | 'patch',
-	body: Record<string, unknown>,
-): Promise<{ body: unknown; contentType: string }> {
+	send: ( client: ProductionHttpClient, body: any ) => Promise<unknown>,
+	body: unknown,
+): Promise<{ body: string; contentType: string }> {
 	let sent: any;
 	const client = productionClientAnswering( 200, {}, ( config ) => {
 		sent = config;
 	} );
 
-	await client[ method ]( '/rest.php/neowiki', body );
+	await send( client, body );
 
-	return { body: JSON.parse( sent.data ), contentType: sent.headers.getContentType() };
+	return { body: sent.data, contentType: sent.headers.getContentType() };
 }
