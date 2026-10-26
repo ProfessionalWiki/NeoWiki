@@ -57,6 +57,12 @@ describe( 'PropertyDefinitionList', () => {
 		expect( [ ...new PropertyDefinitionList( [ property ] ) ] ).toEqual( [ property ] );
 	} );
 
+	it.each( objectMemberNames )( 'lists a property named %s in its record', ( name ) => {
+		const property = newTextProperty( { name } );
+
+		expect( Object.keys( new PropertyDefinitionList( [ property ] ).asRecord() ) ).toEqual( [ name ] );
+	} );
+
 	it.each( objectMemberNames )( 'does not have a property named %s it was not given', ( name ) => {
 		const collection = new PropertyDefinitionList( [ property1 ] );
 
