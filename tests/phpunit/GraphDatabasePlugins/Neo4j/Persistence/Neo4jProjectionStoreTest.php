@@ -316,7 +316,10 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testSavingPageWithoutAReferencedSubjectPreservesIncomingRelations(): void {
+	/**
+	 * @dataProvider relationPropertyNameProvider
+	 */
+	public function testSavingPageWithoutAReferencedSubjectPreservesIncomingRelations( string $propertyName ): void {
 		$store = $this->newProjectionStoreWithLocationRelation();
 
 		$store->savePage( TestPage::build(
@@ -326,31 +329,17 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 		$store->savePage( TestPage::build(
 			id: 2,
-			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
+			mainSubject: $this->buildSubjectWithRelation( self::GUID_2, $propertyName, self::GUID_1, 'rTestNQS1111rr1' ),
 		) );
 
 		$store->savePage( TestPage::build( id: 1 ) );
 
-		$this->assertRelationExists( self::GUID_2, self::LOCATION_PROPERTY, self::GUID_1, 'rTestNQS1111rr1' );
+		$this->assertRelationExists( self::GUID_2, $propertyName, self::GUID_1, 'rTestNQS1111rr1' );
 	}
 
-	public function testRelationNamedHasSubjectSurvivesRemovingItsTarget(): void {
-		$store = $this->newProjectionStoreWithLocationRelation();
-
-		$store->savePage( TestPage::build(
-			id: 1,
-			mainSubject: TestSubject::build( id: self::GUID_1 ),
-		) );
-
-		// The relation's edge gets the type HasSubject, the same as the edges from pages to their subjects.
-		$store->savePage( TestPage::build(
-			id: 2,
-			mainSubject: $this->buildSubjectWithRelation( self::GUID_2, 'HasSubject', self::GUID_1, 'rTestNQS1111rr1' ),
-		) );
-
-		$store->savePage( TestPage::build( id: 1 ) );
-
-		$this->assertRelationExists( self::GUID_2, 'HasSubject', self::GUID_1, 'rTestNQS1111rr1' );
+	public static function relationPropertyNameProvider(): iterable {
+		yield 'an ordinary name' => [ self::LOCATION_PROPERTY ];
+		yield 'the type of the edges from pages to their subjects' => [ 'HasSubject' ];
 	}
 
 	public function testSavingPageWithoutAReferencedSubjectReducesItToAStub(): void {
@@ -717,9 +706,9 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		) );
 
 		// Re-saving GUID_1 under a schema this store's lookup does not know makes the projection skip it,
-		// so it keeps its data while losing its HasSubject relation. newProjectionStoreWithLocationRelation
+		// so it keeps its data while losing its link to the page. newProjectionStoreWithLocationRelation
 		// hands its store an InMemorySchemaLookup holding the default schema alone, so SCHEMA_ID_A does not
-		// resolve here despite setUp creating a Schema page for it: no store in this class reads those pages.
+		// resolve here.
 		$store->savePage( TestPage::build(
 			id: 1,
 			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
@@ -727,7 +716,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 		// The skip is what gives this test its teeth, so assert it happened rather than assuming it.
 		$this->assertSubjectIsNotStub( self::GUID_1 );
-		$this->assertHasNoIncomingHasSubjectRelation( self::GUID_1 );
+		$this->assertNotLinkedToAnyPage( self::GUID_1 );
 
 		// Removing GUID_2 takes GUID_1's last incoming relation with it, leaving a subject that has
 		// no incoming relation at all but still carries data.
@@ -759,7 +748,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			)
 		) );
 
-		$this->assertHasNoIncomingHasSubjectRelation( self::GUID_1 );
+		$this->assertNotLinkedToAnyPage( self::GUID_1 );
 
 		$store->savePage( TestPage::build( id: 2 ) );
 
@@ -1009,7 +998,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	private function assertHasNoIncomingHasSubjectRelation( string $subjectId ): void {
+	private function assertNotLinkedToAnyPage( string $subjectId ): void {
 		$result = $this->readGraph(
 			'MATCH (subject {id: $id}) RETURN EXISTS { (:Page)-[:HasSubject]->(subject) } AS isLinked',
 			[ 'id' => $subjectId ]
@@ -1017,7 +1006,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertFalse(
 			$result->first()->toRecursiveArray()['isLinked'],
-			"Subject {$subjectId} should have no HasSubject relation"
+			"Subject {$subjectId} should not be linked to a page"
 		);
 	}
 
