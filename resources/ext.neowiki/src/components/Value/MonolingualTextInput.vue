@@ -22,19 +22,22 @@
 				class="ext-neowiki-monolingual-text-input__row"
 				@focusout="onRowFocusOut( index, $event )"
 			>
-				<CdxTextInput
-					class="ext-neowiki-monolingual-text-input__text"
-					:model-value="view.row.text"
-					:status="view.severity ?? 'default'"
-					:aria-label="view.textLabel"
-					@update:model-value="( text: string ) => onTextInput( index, text )"
-				/>
-				<LanguageInput
-					class="ext-neowiki-monolingual-text-input__language"
-					:model-value="view.language"
-					:label="view.languageLabel"
-					@update:model-value="( tag: string ) => commitLanguage( index, tag )"
-				/>
+				<div class="ext-neowiki-monolingual-text-input__field">
+					<CdxTextInput
+						class="ext-neowiki-monolingual-text-input__text"
+						:model-value="view.row.text"
+						:status="view.severity ?? 'default'"
+						:aria-label="view.textLabel"
+						:style="{ '--ext-neowiki-language-tag-length': view.language.length }"
+						@update:model-value="( text: string ) => onTextInput( index, text )"
+					/>
+					<LanguageInput
+						class="ext-neowiki-monolingual-text-input__language"
+						:model-value="view.language"
+						:label="view.languageLabel"
+						@update:model-value="( tag: string ) => commitLanguage( index, tag )"
+					/>
+				</div>
 				<!-- Can't use CdxField because the message belongs under this row, not the field -->
 				<CdxMessage
 					v-if="view.severity !== undefined"
@@ -330,31 +333,40 @@ defineExpose<ValueInputExposes>( { getCurrentValue: currentValue } );
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-monolingual-text-input {
-	/* A column of texts and a column of their languages, so every text ends where the others do,
-		whether its language is a list or a link. Not positioned: a `position: relative` here would
-		recapture the containing block of the language panel and of Codex's menus inside a dialog,
-		and silently clip them. */
-	display: grid;
-	grid-template-columns: minmax( 0, 1fr ) auto;
-	align-items: center;
-	gap: @spacing-25 @spacing-50;
+	display: flex;
+	flex-direction: column;
+	gap: @spacing-25;
 
-	&__row {
-		display: contents;
-	}
+	/* One cell holding the text field and the language list over its end, so the language reads
+		as belonging to the text. Overlapped by grid placement rather than by positioning: a
+		`position: relative` here would recapture the containing block of the language panel and
+		of Codex's menus inside a dialog, and silently clip them. */
+	&__field {
+		display: grid;
+		grid-template-columns: minmax( 0, 1fr );
+		align-items: center;
 
-	&__row > .cdx-message {
-		grid-column: 1 / -1;
+		> * {
+			grid-area: 1 / 1;
+		}
 	}
 
 	/* Codex gives every text input a 256px minimum, which a narrow pane cannot hold. Nested to
 		outrank Codex's own rule, which loads later at the same specificity. */
-	&__row > &__text {
+	&__field > &__text {
 		min-width: 0;
 	}
 
+	/* Room for the language list, so a long text ends before it rather than running under it.
+		The list shows the tag, whose small capitals come out about as wide as the field's `ch`, plus
+		its chevron and padding; the tag's length is set on the field, since tags run from `en` to
+		`zh-hant-tw`. */
+	&__field > &__text .cdx-text-input__input {
+		padding-inline-end: calc( var( --ext-neowiki-language-tag-length ) * 1ch + @size-250 );
+	}
+
 	&__language {
-		justify-self: start;
+		justify-self: end;
 	}
 }
 </style>

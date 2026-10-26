@@ -45,23 +45,22 @@ export function findNextPageButton( wrapper: VueWrapper ): DOMWrapper<Element> {
 }
 
 /**
- * The language a LanguageInput shows, which is also what a screen reader announces: the list's name
- * for it. The labels that only size the list are hidden from both, and the list's menu and the
- * search panel are closed.
+ * The language a LanguageInput announces to a screen reader: its name, where the eye sees its tag.
+ * The list's menu and the search panel are closed.
  */
-export function shownLanguage( languageInput: Element ): string {
-	const shown = languageInput.cloneNode( true ) as Element;
+export function announcedLanguage( languageInput: Element ): string {
+	const announced = languageInput.cloneNode( true ) as Element;
 
-	shown.querySelectorAll(
-		'[aria-hidden="true"], .ext-neowiki-language-input__width, .cdx-menu, .ext-neowiki-language-picker__panel',
+	announced.querySelectorAll(
+		'[aria-hidden="true"], .cdx-menu, .ext-neowiki-language-picker__panel',
 	).forEach( ( hidden ) => hidden.remove() );
 
-	return shown.textContent?.trim() ?? '';
+	return announced.textContent?.trim() ?? '';
 }
 
 export async function chooseFromLanguageList( languageInput: VueWrapper | DOMWrapper<Element>, language: string ): Promise<void> {
 	await languageInput.find( '.ext-neowiki-language-input [role="combobox"]' ).trigger( 'click' );
-	await languageInput.findAll( '.ext-neowiki-language-input__select .cdx-menu-item' )
+	await languageInput.findAll( '.ext-neowiki-language-input__menu .cdx-menu-item' )
 		.find( ( item ) => item.text() === language )
 		?.trigger( 'click' );
 }

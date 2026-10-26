@@ -2,6 +2,7 @@ import { DOMWrapper, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import LanguageInput from '@/components/common/LanguageInput.vue';
 import {
+	announcedLanguage,
 	chooseFromLanguageList,
 	dialogOfAnotherExtension,
 	emittedTags,
@@ -10,7 +11,6 @@ import {
 	openMenuAndPressEscape,
 	pickInLanguageSearch,
 	setupMwMock,
-	shownLanguage,
 } from '../../VueTestHelpers.ts';
 
 // Mounted with the real Codex components, and attached, because where the focus goes is part of
@@ -42,11 +42,16 @@ describe( 'LanguageInput', () => {
 	}
 
 	function list( input: VueWrapper ): DOMWrapper<HTMLElement> {
-		return input.find( '.ext-neowiki-language-input__select [role="combobox"]' );
+		return input.find( '.ext-neowiki-language-input__handle' );
+	}
+
+	// What the eye sees, where a screen reader hears the name.
+	function shownTag( input: VueWrapper ): string {
+		return list( input ).find( '[aria-hidden="true"]' ).text();
 	}
 
 	function listedLanguages( input: VueWrapper ): string[] {
-		return input.findAll( '.ext-neowiki-language-input__select .cdx-menu-item' ).map( ( item ) => item.text() );
+		return input.findAll( '.ext-neowiki-language-input__menu .cdx-menu-item' ).map( ( item ) => item.text() );
 	}
 
 	function search( input: VueWrapper ): DOMWrapper<HTMLInputElement> {
@@ -75,16 +80,22 @@ describe( 'LanguageInput', () => {
 			.toEqual( [ 'German', 'French', 'Italian', 'Spanish', 'Other language…' ] );
 	} );
 
-	it( 'shows the language the text is in by its name', () => {
+	it( 'shows the language by its tag', () => {
 		wikiWith( [ 'de', 'fr', 'it' ] );
 
-		expect( shownLanguage( newWrapper( 'fr' ).element ) ).toBe( 'French' );
+		expect( shownTag( newWrapper( 'fr' ) ) ).toBe( 'FR' );
 	} );
 
-	it( 'shows a language MediaWiki has no name for by its tag', () => {
+	it( 'announces the language the text is in by its name', () => {
 		wikiWith( [ 'de', 'fr', 'it' ] );
 
-		expect( shownLanguage( newWrapper( 'und' ).element ) ).toBe( 'und' );
+		expect( announcedLanguage( newWrapper( 'fr' ).element ) ).toBe( 'French' );
+	} );
+
+	it( 'announces a language MediaWiki has no name for by its tag', () => {
+		wikiWith( [ 'de', 'fr', 'it' ] );
+
+		expect( announcedLanguage( newWrapper( 'und' ).element ) ).toBe( 'und' );
 	} );
 
 	it( 'names its list after the field it belongs to', () => {
@@ -97,7 +108,7 @@ describe( 'LanguageInput', () => {
 		wikiWith( [ 'de' ] );
 		const input = newWrapper( 'de' );
 
-		expect( shownLanguage( input.element ) ).toBe( 'German' );
+		expect( announcedLanguage( input.element ) ).toBe( 'German' );
 		expect( listedLanguages( input ) ).toEqual( [ 'German', 'Other language…' ] );
 	} );
 

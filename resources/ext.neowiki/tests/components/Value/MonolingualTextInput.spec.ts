@@ -8,11 +8,11 @@ import {
 } from '@/domain/propertyTypes/MonolingualText';
 import { ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import {
+	announcedLanguage,
 	chooseFromLanguageList,
 	createTestWrapper,
 	pickInLanguageSearch,
 	setupMwMock,
-	shownLanguage,
 } from '../../VueTestHelpers.ts';
 
 // Every row's language picker listens to the document while it is open, so no mount is left standing.
@@ -38,7 +38,7 @@ describe( 'MonolingualTextInput', () => {
 	}
 
 	function rowLanguages( wrapper: VueWrapper ): string[] {
-		return rowElements( wrapper ).map( ( row ) => shownLanguage( row.find( '.ext-neowiki-language-input' ).element ) );
+		return rowElements( wrapper ).map( ( row ) => announcedLanguage( row.find( '.ext-neowiki-language-input' ).element ) );
 	}
 
 	function languageControlNames( wrapper: VueWrapper ): ( string | undefined )[] {
