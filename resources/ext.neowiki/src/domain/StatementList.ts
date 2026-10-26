@@ -32,7 +32,7 @@ export class StatementList implements Iterable<Statement> {
 	}
 
 	public getPropertyNames(): PropertyName[] {
-		return [ ...this.statements.keys() ].map( ( name ) => new PropertyName( name ) );
+		return [ ...this ].map( ( statement ) => statement.propertyName );
 	}
 
 	public withNonEmptyValues(): StatementList {

@@ -45,8 +45,8 @@ export class PropertyDefinitionList implements Iterable<PropertyDefinition> {
 	public reordered( names: PropertyName[] ): PropertyDefinitionList {
 		return new PropertyDefinitionList(
 			names
-				.map( ( name ): PropertyDefinition | undefined => this.properties.get( name.toString() ) )
-				.filter( ( property ): property is PropertyDefinition => property !== undefined ),
+				.filter( ( name ): boolean => this.has( name ) )
+				.map( ( name ): PropertyDefinition => this.get( name ) ),
 		);
 	}
 
