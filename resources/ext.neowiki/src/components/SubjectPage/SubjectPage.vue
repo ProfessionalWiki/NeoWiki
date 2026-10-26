@@ -23,29 +23,6 @@
 				/>
 			</ul>
 
-			<template v-if="referencedSubjects.length > 0">
-				<h2 class="ext-neowiki-subject-page__referenced-heading">
-					{{ $i18n( 'neowiki-special-subject-referenced-heading' ).text() }}
-				</h2>
-
-				<ul class="ext-neowiki-subject-page__referenced">
-					<SubjectRow
-						v-for="referenced in referencedSubjects"
-						:key="referenced.getId().text"
-						:subject="referenced"
-						:subject-page-url="subjectPageUrl( referenced.getId().text )"
-						:expanded="expandedIds.has( referenced.getId().text )"
-						:can-edit="canEditSubject"
-						:can-delete="canDeleteSubject"
-						:page="pageOf( referenced )"
-						@toggle="toggleExpanded"
-						@edit="editSubject"
-						@delete="confirmDelete"
-						@copy-link="copySubjectLink"
-					/>
-				</ul>
-			</template>
-
 			<template v-if="referencingSubjects.length > 0">
 				<h2 class="ext-neowiki-subject-page__referencing-heading">
 					{{ $i18n( 'neowiki-special-subject-referenced-by-heading' ).text() }}
@@ -79,6 +56,29 @@
 						referencingSubjects.length
 					).text() }}
 				</p>
+			</template>
+
+			<template v-if="referencedSubjects.length > 0">
+				<h2 class="ext-neowiki-subject-page__referenced-heading">
+					{{ $i18n( 'neowiki-special-subject-referenced-heading' ).text() }}
+				</h2>
+
+				<ul class="ext-neowiki-subject-page__referenced">
+					<SubjectRow
+						v-for="referenced in referencedSubjects"
+						:key="referenced.getId().text"
+						:subject="referenced"
+						:subject-page-url="subjectPageUrl( referenced.getId().text )"
+						:expanded="expandedIds.has( referenced.getId().text )"
+						:can-edit="canEditSubject"
+						:can-delete="canDeleteSubject"
+						:page="pageOf( referenced )"
+						@toggle="toggleExpanded"
+						@edit="editSubject"
+						@delete="confirmDelete"
+						@copy-link="copySubjectLink"
+					/>
+				</ul>
 			</template>
 		</template>
 

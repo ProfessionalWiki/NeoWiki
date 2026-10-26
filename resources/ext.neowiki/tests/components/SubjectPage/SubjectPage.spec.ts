@@ -515,6 +515,17 @@ describe( 'SubjectPage', () => {
 			expect( isOpen( wrapper.find( REFERENCING_ROW ) ) ).toBe( false );
 		} );
 
+		// The Subject's own statements already link the Subjects it references; nothing above names these.
+		it( 'lists them right below the Subject, above the Subjects it references', async () => {
+			getSubjectWithReferencedSubjectsMock.mockResolvedValue( bundle( [ referencedSubject ] ) );
+			getReferencingSubjectsMock.mockResolvedValue( referencing( [ referrer ] ) );
+
+			const wrapper = await mountLoadedPage();
+
+			expect( wrapper.findAll( ROW_LABEL ).map( ( label ) => label.text() ) )
+				.toEqual( [ 'ACME Inc', 'Rocket', 'Anvil' ] );
+		} );
+
 		// Which property points here is the whole reason the row is in the list.
 		it( 'names the properties through which each one points here', async () => {
 			getReferencingSubjectsMock.mockResolvedValue(
@@ -1148,7 +1159,7 @@ describe( 'SubjectPage', () => {
 			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
 			getReferencingSubjectsMock.mockClear().mockResolvedValue( referencing( [] ) );
 
-			await confirmDelete( wrapper, wrapper.findAll( DELETE_CONTROL )[ 2 ] );
+			await confirmDelete( wrapper, wrapper.find( `${ REFERENCING_ROW } ${ DELETE_CONTROL }` ) );
 
 			expect( getReferencingSubjectsMock ).toHaveBeenCalledTimes( 1 );
 			expect( wrapper.find( REFERENCING_ROW ).exists() ).toBe( false );
@@ -1165,7 +1176,7 @@ describe( 'SubjectPage', () => {
 			vi.spyOn( useSubjectStore(), 'deleteSubject' ).mockResolvedValue( undefined );
 			getReferencingSubjectsMock.mockRejectedValue( new Error( 'Backend down' ) );
 
-			await confirmDelete( wrapper, wrapper.findAll( DELETE_CONTROL )[ 1 ] );
+			await confirmDelete( wrapper, wrapper.find( `${ REFERENCED_ROW } ${ DELETE_CONTROL }` ) );
 
 			expect( logged ).toHaveBeenCalledWith(
 				'Failed to load referencing subjects:', expect.any( Error ) );

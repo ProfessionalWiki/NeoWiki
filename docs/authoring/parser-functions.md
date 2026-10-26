@@ -75,8 +75,8 @@ Subject both positionally and as `subject=` produce a visible parser error.
 
 ## `{{#main_subject}}`
 
-Shows the page's Main Subject where the wikitext places it, in full as Special:Subject does: with the Subjects it
-references and those referencing it.
+Shows the page's Main Subject where the wikitext places it, in full as Special:Subject does: with the Subjects
+referencing it and those it references.
 
 ### Syntax
 
