@@ -768,7 +768,7 @@ describe( 'SchemaEditor', () => {
 		} );
 
 		it( 'names the later of two properties whose names are near-duplicates', () => {
-			const wrapper = createWrapper( schemaWithPropertiesNamed( 'Birth date', 'birth date', 'Score' ) );
+			const wrapper = createWrapper( schemaWithPropertiesNamed( 'Score', 'Birth date', 'birth date' ) );
 
 			expect( saveBlocker( wrapper ) ).toEqual( {
 				propertyName: 'birth date',
