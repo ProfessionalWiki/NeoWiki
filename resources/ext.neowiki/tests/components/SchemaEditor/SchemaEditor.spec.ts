@@ -761,6 +761,12 @@ describe( 'SchemaEditor', () => {
 			} );
 		} );
 
+		it( 'names the first of several properties whose names break a rule', () => {
+			const wrapper = createWrapper( schemaWithPropertiesNamed( 'Title', 'id', 'wiki_id' ) );
+
+			expect( saveBlocker( wrapper )?.propertyName ).toBe( 'id' );
+		} );
+
 		it( 'names the later of two properties whose names are near-duplicates', () => {
 			const wrapper = createWrapper( schemaWithPropertiesNamed( 'Birth date', 'birth date', 'Score' ) );
 
