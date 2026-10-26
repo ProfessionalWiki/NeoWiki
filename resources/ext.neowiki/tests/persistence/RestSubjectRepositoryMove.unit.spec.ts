@@ -56,7 +56,6 @@ describe( 'RestSubjectRepository.moveSubject', () => {
 		expect( post ).toHaveBeenCalledWith(
 			MOVE_URL,
 			{ targetPageId: 12, makeMainSubject: true, comment: 'Filed properly' },
-			{ headers: { 'Content-Type': 'application/json' } },
 		);
 	} );
 

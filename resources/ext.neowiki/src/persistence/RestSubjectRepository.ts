@@ -148,11 +148,6 @@ export class RestSubjectRepository implements SubjectRepository {
 				subjectId: subjectId === null ? null : subjectId.text,
 				comment,
 			},
-			{
-				headers: {
-					'Content-Type': 'application/json',
-				},
-			},
 		);
 
 		if ( !response.ok ) {
@@ -172,11 +167,6 @@ export class RestSubjectRepository implements SubjectRepository {
 				mainSubjectId: mainSubjectId === null ? null : mainSubjectId.text,
 				otherSubjectIds: otherSubjectIds.map( ( id ) => id.text ),
 				comment,
-			},
-			{
-				headers: {
-					'Content-Type': 'application/json',
-				},
 			},
 		);
 
@@ -322,11 +312,6 @@ export class RestSubjectRepository implements SubjectRepository {
 		const response = await this.httpClient.post(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/page/${ pageId }/mainSubject`,
 			payload,
-			{
-				headers: {
-					'Content-Type': 'application/json',
-				},
-			},
 		);
 
 		await throwOn422IfPossible( response );
@@ -359,11 +344,6 @@ export class RestSubjectRepository implements SubjectRepository {
 		const response = await this.httpClient.post(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/page/${ pageId }/subjects`,
 			payload,
-			{
-				headers: {
-					'Content-Type': 'application/json',
-				},
-			},
 		);
 
 		await throwOn422IfPossible( response );
@@ -406,11 +386,6 @@ export class RestSubjectRepository implements SubjectRepository {
 					id: id?.text,
 					...dependentSubjectsField( dependentSubjects ),
 				},
-				{
-					headers: {
-						'Content-Type': 'application/json',
-					},
-				},
 			);
 		} catch ( error ) {
 			const refusedTitle = this.refusedPageTitleOf( error );
@@ -448,11 +423,6 @@ export class RestSubjectRepository implements SubjectRepository {
 		const response = await this.httpClient.post(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject-ids`,
 			{ count: 1 },
-			{
-				headers: {
-					'Content-Type': 'application/json',
-				},
-			},
 		);
 
 		if ( !response.ok ) {
@@ -487,11 +457,6 @@ export class RestSubjectRepository implements SubjectRepository {
 				comment,
 				...dependentSubjectsField( dependentSubjects ),
 			},
-			{
-				headers: {
-					'Content-Type': 'application/json',
-				},
-			},
 		);
 
 		await throwOn422IfPossible( response );
@@ -506,12 +471,7 @@ export class RestSubjectRepository implements SubjectRepository {
 	public async deleteSubject( id: SubjectId, comment?: string ): Promise<boolean> {
 		const response = await this.httpClient.delete(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`,
-			{
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				data: { comment },
-			},
+			{ data: { comment } },
 		);
 
 		if ( !response.ok ) {
@@ -540,11 +500,6 @@ export class RestSubjectRepository implements SubjectRepository {
 					targetPageId,
 					makeMainSubject,
 					comment,
-				},
-				{
-					headers: {
-						'Content-Type': 'application/json',
-					},
 				},
 			);
 		} catch ( error ) {
@@ -615,7 +570,7 @@ export class RestSubjectRepository implements SubjectRepository {
 	private async runValidation( url: string, payload: Record<string, unknown> ): Promise<SubjectViolation[]> {
 		let response: Response;
 		try {
-			response = await this.httpClient.post( url, payload, { headers: { 'Content-Type': 'application/json' } } );
+			response = await this.httpClient.post( url, payload );
 		} catch {
 			// 400/404 (malformed input / missing schema) reject in ProductionHttpClient — no live feedback, fall back silently.
 			return [];

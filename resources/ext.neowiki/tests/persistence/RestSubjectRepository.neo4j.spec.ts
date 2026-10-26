@@ -1106,7 +1106,7 @@ describe( 'RestSubjectRepository', () => {
 			return new Response( JSON.stringify( body ), { status: 200 } );
 		}
 
-		it( 'asks the id endpoint for one id as JSON', async () => {
+		it( 'asks the id endpoint for one id', async () => {
 			const inMemoryHttpClient = new InMemoryHttpClient( {
 				[ mintUrl ]: mintedResponse( { subjectIds: [ 's44444444444444' ] } ),
 			} );
@@ -1116,9 +1116,6 @@ describe( 'RestSubjectRepository', () => {
 
 			expect( postSpy.mock.calls[ 0 ][ 0 ] ).toEqual( mintUrl );
 			expect( postSpy.mock.calls[ 0 ][ 1 ] ).toEqual( { count: 1 } );
-			expect( postSpy.mock.calls[ 0 ][ 2 ] ).toMatchObject( {
-				headers: { 'Content-Type': 'application/json' },
-			} );
 		} );
 
 		it( 'returns the first of the ids the server minted', async () => {
