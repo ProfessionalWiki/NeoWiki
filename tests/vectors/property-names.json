@@ -184,6 +184,17 @@
    }
   },
   {
+   "case": "a language tag, outside the Basic Multilingual Plane",
+   "name": "Birth\udb40\udc01date",
+   "problem": {
+    "rule": "canonical-form",
+    "details": [
+     "Birthdate",
+     "U+E0001"
+    ]
+   }
+  },
+  {
    "case": "a decomposed accent",
    "name": "Cafe\u0301",
    "problem": {
@@ -278,6 +289,17 @@
    }
   },
   {
+   "case": "the last character of each control range",
+   "name": "a\u001fb\u009fc",
+   "problem": {
+    "rule": "characters",
+    "details": [
+     "U+001F",
+     "U+009F"
+    ]
+   }
+  },
+  {
    "case": "a noncharacter",
    "name": "a\ufdd0b",
    "problem": {
@@ -294,6 +316,18 @@
     "rule": "characters",
     "details": [
      "U+FFFE"
+    ]
+   }
+  },
+  {
+   "case": "the last noncharacter of each kind, and one outside the Basic Multilingual Plane",
+   "name": "a\ufdefb\uffffc\ud83f\udfffd",
+   "problem": {
+    "rule": "characters",
+    "details": [
+     "U+FDEF",
+     "U+FFFF",
+     "U+1FFFF"
     ]
    }
   },
@@ -497,6 +531,22 @@
    ]
   },
   {
+   "case": "a letter without case until compatibility variants are read as plain",
+   "names": [
+    "Birth date",
+    "\ud835\udc01irth date"
+   ],
+   "problems": [
+    {
+     "name": "\ud835\udc01irth date",
+     "rule": "near-duplicate",
+     "details": [
+      "Birth date"
+     ]
+    }
+   ]
+  },
+  {
    "case": "a zero-width non-joiner",
    "names": [
     "Birthdate",
@@ -524,6 +574,22 @@
      "rule": "near-duplicate",
      "details": [
       "Birthdate"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "an accent that composes once a combining grapheme joiner is ignored",
+   "names": [
+    "Caf\u00e9",
+    "Cafe\u034f\u0301"
+   ],
+   "problems": [
+    {
+     "name": "Cafe\u034f\u0301",
+     "rule": "near-duplicate",
+     "details": [
+      "Caf\u00e9"
      ]
     }
    ]
