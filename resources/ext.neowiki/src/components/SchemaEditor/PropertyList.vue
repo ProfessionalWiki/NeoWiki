@@ -13,7 +13,7 @@
 				:class="{ 'ext-neowiki-property-list__item--selected': isSubjectLabelSelected }"
 				:aria-selected="isSubjectLabelSelected"
 				:tabindex="isSubjectLabelTabStop ? 0 : -1"
-				@click="emit( 'subjectLabelSelected' )"
+				@click="selectAndFocus( -1 )"
 			>
 				<CdxIcon
 					class="ext-neowiki-property-list__item__icon"
@@ -29,14 +29,14 @@
 				</span>
 			</li>
 			<li
-				v-for="property in propertyArray"
+				v-for="( property, index ) in propertyArray"
 				:key="property.name.toString()"
 				role="option"
 				class="ext-neowiki-property-list__item"
 				:class="{ 'ext-neowiki-property-list__item--selected': isSelected( property ) }"
 				:aria-selected="isSelected( property )"
 				:tabindex="isTabStop( property ) ? 0 : -1"
-				@click="emit( 'propertySelected', property.name )"
+				@click="selectAndFocus( index )"
 			>
 				<CdxIcon
 					v-if="getPropertyIcon( property )"
@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconDraggable, cdxIconTag, cdxIconTrash } from '@wikimedia/codex-icons';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
@@ -164,14 +164,20 @@ function focusItem( index: number ): void {
 	items?.[ index + firstPropertyRow.value ]?.focus();
 }
 
-function selectAndFocus( index: number ): void {
+// The focus follows the selection the parent makes of it, which the parent may refuse.
+async function selectAndFocus( index: number ): Promise<void> {
 	if ( index === -1 ) {
 		emit( 'subjectLabelSelected' );
 	} else {
 		emit( 'propertySelected', propertyArray.value[ index ].name );
 	}
 
-	focusItem( index );
+	await focusSelectedItem();
+}
+
+async function focusSelectedItem(): Promise<void> {
+	await nextTick();
+	focusItem( getSelectedIndex() );
 }
 
 function moveProperty( fromIndex: number, toIndex: number ): void {
@@ -189,7 +195,7 @@ function onKeydown( event: KeyboardEvent ): void {
 		event.preventDefault();
 		if ( event.altKey && currentIndex > -1 && currentIndex < lastIndex ) {
 			moveProperty( currentIndex, currentIndex + 1 );
-			selectAndFocus( currentIndex + 1 );
+			focusSelectedItem();
 		} else if ( !event.altKey && currentIndex < lastIndex ) {
 			selectAndFocus( currentIndex + 1 );
 		}
@@ -197,7 +203,7 @@ function onKeydown( event: KeyboardEvent ): void {
 		event.preventDefault();
 		if ( event.altKey && currentIndex > 0 ) {
 			moveProperty( currentIndex, currentIndex - 1 );
-			selectAndFocus( currentIndex - 1 );
+			focusSelectedItem();
 		} else if ( !event.altKey && currentIndex > firstSelectableIndex.value ) {
 			selectAndFocus( currentIndex - 1 );
 		}

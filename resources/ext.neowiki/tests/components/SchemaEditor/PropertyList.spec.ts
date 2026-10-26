@@ -1,4 +1,4 @@
-import { DOMWrapper, enableAutoUnmount, mount, VueWrapper } from '@vue/test-utils';
+import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
 import { useSortable, type UseSortableOptions } from '@/composables/useSortable.ts';
@@ -31,12 +31,14 @@ function createWrapper(
 	selectedPropertyName?: string,
 	attachTo?: HTMLElement,
 	showsLabelRow: boolean = true,
+	listeners: Record<string, ( ...args: never[] ) => unknown> = {},
 ): VueWrapper {
 	return mount( PropertyList, {
 		props: {
 			properties,
 			selectedPropertyName,
 			showsLabelRow,
+			...listeners,
 		},
 		attachTo,
 		global: {
@@ -45,6 +47,17 @@ function createWrapper(
 			},
 		},
 	} );
+}
+
+// The Schema editor's part: it makes each selection and reordering the list asks for, unless it refuses a selection.
+function selecting( wrapper: () => VueWrapper ): Record<string, ( ...args: never[] ) => unknown> {
+	return {
+		onPropertySelected: ( name: PropertyName ) => wrapper().setProps( { selectedPropertyName: name.toString() } ),
+		onSubjectLabelSelected: () => wrapper().setProps( { selectedPropertyName: undefined } ),
+		onPropertyReordered: ( names: PropertyName[] ) => wrapper().setProps( {
+			properties: ( wrapper().props() as { properties: PropertyDefinitionList } ).properties.reordered( names ),
+		} ),
+	};
 }
 
 const LABEL_ROW_TITLE = 'neowiki-schema-editor-subject-label';
@@ -266,9 +279,10 @@ describe( 'PropertyList', () => {
 		} );
 
 		it( 'moves the focus to the Label row on ArrowUp from the first property', async () => {
-			const wrapper = createWrapper( properties, 'Alpha', document.body );
+			const wrapper: VueWrapper = createWrapper( properties, 'Alpha', document.body, true, selecting( () => wrapper ) );
 
 			await wrapper.find( '[role="listbox"]' ).trigger( 'keydown', { key: 'ArrowUp' } );
+			await flushPromises();
 
 			expect( document.activeElement ).toBe( findRow( wrapper, LABEL_ROW_TITLE ).element );
 		} );
@@ -280,6 +294,15 @@ describe( 'PropertyList', () => {
 			await list.trigger( 'keydown', { key: 'ArrowDown', altKey: true } );
 
 			expect( reorderedNames( wrapper ) ).toEqual( [ 'Beta', 'Alpha', 'Gamma' ] );
+		} );
+
+		it( 'keeps the property it moves selected on Alt+ArrowDown', async () => {
+			const wrapper: VueWrapper = createWrapper( properties, 'Alpha', document.body, true, selecting( () => wrapper ) );
+
+			await wrapper.find( '[role="listbox"]' ).trigger( 'keydown', { key: 'ArrowDown', altKey: true } );
+			await flushPromises();
+
+			expect( selectedRowTitles( wrapper ) ).toEqual( [ 'Alpha' ] );
 		} );
 
 		it( 'emits propertyReordered on Alt+ArrowUp', async () => {
@@ -372,11 +395,30 @@ describe( 'PropertyList', () => {
 		} );
 
 		it( 'moves the focus with the selection to the next property', async () => {
+			const wrapper: VueWrapper = createWrapper( properties, 'Alpha', document.body, false, selecting( () => wrapper ) );
+
+			await wrapper.find( '[role="listbox"]' ).trigger( 'keydown', { key: 'ArrowDown' } );
+			await flushPromises();
+
+			expect( document.activeElement ).toBe( findRow( wrapper, 'Beta' ).element );
+		} );
+
+		it( 'keeps the focus on the selected property when a click on another is refused', async () => {
+			const wrapper = createWithoutLabelRow( 'Alpha', document.body );
+
+			await findRow( wrapper, 'Beta' ).trigger( 'click' );
+			await flushPromises();
+
+			expect( document.activeElement ).toBe( findRow( wrapper, 'Alpha' ).element );
+		} );
+
+		it( 'keeps the focus on the selected property when the selection is refused', async () => {
 			const wrapper = createWithoutLabelRow( 'Alpha', document.body );
 
 			await wrapper.find( '[role="listbox"]' ).trigger( 'keydown', { key: 'ArrowDown' } );
+			await flushPromises();
 
-			expect( document.activeElement ).toBe( findRow( wrapper, 'Beta' ).element );
+			expect( document.activeElement ).toBe( findRow( wrapper, 'Alpha' ).element );
 		} );
 
 		it( 'selects nothing above the first property on ArrowUp', async () => {

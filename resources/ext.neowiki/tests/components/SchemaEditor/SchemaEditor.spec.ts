@@ -89,6 +89,11 @@ function afterQueuedTasks(): Promise<void> {
 	} );
 }
 
+async function selectProperty( wrapper: VueWrapper, name: string ): Promise<void> {
+	await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertySelected', new PropertyName( name ) );
+	await flushPromises();
+}
+
 function saveBlocker( wrapper: VueWrapper ): ReturnType<SchemaEditorExposes['saveBlocker']> {
 	return ( wrapper.vm as unknown as SchemaEditorExposes ).saveBlocker();
 }
@@ -104,6 +109,7 @@ describe( 'SchemaEditor', () => {
 
 		vi.stubGlobal( 'mw', {
 			config: { get: vi.fn() },
+			notify: vi.fn(),
 			message: vi.fn( ( str ) => ( {
 				text: () => messages[ str ] ?? str,
 				parse: () => messages[ str ] ?? str,
@@ -546,12 +552,91 @@ describe( 'SchemaEditor', () => {
 			expect( saveBlocker( wrapper ) ).toBeNull();
 		} );
 	} );
-	describe( 'property editor', () => {
-		async function selectProperty( wrapper: VueWrapper, name: string ): Promise<void> {
-			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertySelected', new PropertyName( name ) );
-			await flushPromises();
+
+	// Choosing another row rebuilds the property editor, which would drop that text while it is on screen.
+	describe( 'Leaving a property whose editor holds text it cannot read', () => {
+		async function editorHoldingUnreadableScore(): Promise<VueWrapper> {
+			const wrapper = createWrapperWithPropertyEditor( newSchema( {
+				properties: new PropertyDefinitionList( [
+					newNumberProperty( { name: 'Score' } ),
+					newTextProperty( { name: 'Rank' } ),
+				] ),
+			} ) );
+			await reportUnparseableNumber( wrapper.findComponent( NumberInput ).find( 'input' ) );
+
+			return wrapper;
 		}
 
+		function propertyList( wrapper: VueWrapper ): VueWrapper {
+			return wrapper.findComponent( { name: 'PropertyList' } );
+		}
+
+		it( 'stays on the property when another is chosen', async () => {
+			const wrapper = await editorHoldingUnreadableScore();
+
+			await selectProperty( wrapper, 'Rank' );
+
+			expect( selectedPropertyName( wrapper ) ).toBe( 'Score' );
+		} );
+
+		it( 'stays on the property when the Label row is chosen', async () => {
+			const wrapper = await editorHoldingUnreadableScore();
+
+			await propertyList( wrapper ).vm.$emit( 'subjectLabelSelected' );
+
+			expect( selectedPropertyName( wrapper ) ).toBe( 'Score' );
+		} );
+
+		it( 'adds no property', async () => {
+			const wrapper = await editorHoldingUnreadableScore();
+
+			await propertyList( wrapper ).vm.$emit( 'addProperty' );
+
+			expect( Object.keys( ( wrapper.vm as unknown as SchemaEditorExposes ).getSchema().getPropertyDefinitions().asRecord() ) )
+				.toEqual( [ 'Score', 'Rank' ] );
+		} );
+
+		it( 'says why it stays on the property', async () => {
+			const wrapper = await editorHoldingUnreadableScore();
+
+			await selectProperty( wrapper, 'Rank' );
+
+			expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-field-invalid-number', expect.objectContaining( { title: 'Score' } ) );
+		} );
+
+		it( 'says nothing when the property itself is chosen again', async () => {
+			const wrapper = await editorHoldingUnreadableScore();
+
+			await selectProperty( wrapper, 'Score' );
+
+			expect( mw.notify ).not.toHaveBeenCalled();
+		} );
+
+		// The property keeps the last name it could take, as a field keeps the last value it could read.
+		it( 'stays on a property whose name is taken', async () => {
+			const wrapper = createWrapperWithPropertyEditor( newSchema( {
+				properties: new PropertyDefinitionList( [
+					newTextProperty( { name: 'Score' } ),
+					newTextProperty( { name: 'Rank' } ),
+				] ),
+			} ) );
+			await findPropertyNameInput( wrapper ).setValue( 'Rank' );
+
+			await selectProperty( wrapper, 'Rank' );
+
+			expect( selectedPropertyName( wrapper ) ).toBe( 'Score' );
+		} );
+
+		it( 'moves on once the property is deleted', async () => {
+			const wrapper = await editorHoldingUnreadableScore();
+
+			await propertyList( wrapper ).vm.$emit( 'propertyDeleted', new PropertyName( 'Score' ) );
+
+			expect( selectedPropertyName( wrapper ) ).toBe( 'Rank' );
+		} );
+	} );
+
+	describe( 'property editor', () => {
 		it( 'opens on a property just added with its generated name selected, so typing replaces it', async () => {
 			const wrapper = createWrapperWithPropertyEditor( newSchema( {
 				properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Alpha' } ) ] ),

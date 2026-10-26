@@ -159,19 +159,40 @@ const otherPropertyNames = computed( (): string[] =>
 );
 
 function onSubjectLabelSelected(): void {
-	selectProperty( undefined );
+	moveSelectionTo( undefined );
 }
 
 function onPropertySelected( name: PropertyName ): void {
-	selectProperty( name.toString() );
+	moveSelectionTo( name.toString() );
+}
+
+function moveSelectionTo( name: string | undefined ): void {
+	if ( name !== selectedPropertyName.value ) {
+		leaveSelectedProperty( () => selectProperty( name ) );
+	}
+}
+
+// Leaving the selected property rebuilds the property editor, which would drop text its fields
+// cannot read while the user can still see it: the user is told to deal with that text first.
+function leaveSelectedProperty( leave: () => void ): void {
+	const blocker = unparseableInput();
+
+	if ( blocker !== null ) {
+		mw.notify( blocker.message, { title: blocker.propertyName, type: 'error' } );
+		return;
+	}
+
+	leave();
 }
 
 function addProperty(): void {
-	const newProperty = createNewProperty();
-	currentSchema.value = currentSchema.value.withAddedPropertyDefinition( newProperty );
-	createdPropertyName.value = newProperty.name.toString();
-	selectProperty( newProperty.name.toString() );
-	emit( 'change' );
+	leaveSelectedProperty( () => {
+		const newProperty = createNewProperty();
+		currentSchema.value = currentSchema.value.withAddedPropertyDefinition( newProperty );
+		createdPropertyName.value = newProperty.name.toString();
+		selectProperty( newProperty.name.toString() );
+		emit( 'change' );
+	} );
 }
 
 function createNewProperty(): PropertyDefinition {
