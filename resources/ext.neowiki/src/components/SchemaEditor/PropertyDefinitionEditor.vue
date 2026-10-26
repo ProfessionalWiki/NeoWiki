@@ -146,9 +146,15 @@ const nameError = computed( (): string | null => {
 	return problem === null ? null : propertyNameProblemMessage( problem );
 } );
 
-const typedName = computed( (): string | null =>
-	nameError.value === null ? canonicalName.value : null
-);
+// Typing the opened name back restores it as it is, even a name the wiki refuses: the save then says why, rather than
+// storing a name typed on the way.
+const typedName = computed( (): string | null => {
+	if ( nameText.value === openedName ) {
+		return openedName;
+	}
+
+	return nameError.value === null ? canonicalName.value : null;
+} );
 
 // Renames on a change of typedName rather than on input, so that a name typed while another
 // property had it is taken once that property is deleted.

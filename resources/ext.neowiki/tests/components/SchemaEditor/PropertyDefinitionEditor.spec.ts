@@ -452,6 +452,15 @@ describe( 'PropertyDefinitionEditor', () => {
 			expect( lastEmittedProperty( wrapper ).name.toString() ).toBe( 'Birthdate' );
 		} );
 
+		it( 'renames the property back to the name it opens with once that name is typed again', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'id' } ), { otherPropertyNames: [ 'Title' ] } );
+
+			await typeName( wrapper, 'idx' );
+			await typeName( wrapper, 'id' );
+
+			expect( lastEmittedProperty( wrapper ).name.toString() ).toBe( 'id' );
+		} );
+
 		it( 'reports the name field message as input the save has to wait for', async () => {
 			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ), { otherPropertyNames: [ 'Title' ] } );
 
