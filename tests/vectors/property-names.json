@@ -561,6 +561,38 @@
    ]
   },
   {
+   "case": "a final sigma written as a middle sigma",
+   "names": [
+    "\u03a3\u039f\u03a6\u039f\u03a3",
+    "\u03c3\u03bf\u03c6\u03bf\u03c3"
+   ],
+   "problems": [
+    {
+     "name": "\u03c3\u03bf\u03c6\u03bf\u03c3",
+     "rule": "near-duplicate",
+     "details": [
+      "\u03a3\u039f\u03a6\u039f\u03a3"
+     ]
+    }
+   ]
+  },
+  {
+   "case": "a sigma before a letter that Unicode versions disagree is cased",
+   "names": [
+    "\u0391\u03a3\u0295\u0391",
+    "\u03b1\u03c3\u0295\u03b1"
+   ],
+   "problems": [
+    {
+     "name": "\u03b1\u03c3\u0295\u03b1",
+     "rule": "near-duplicate",
+     "details": [
+      "\u0391\u03a3\u0295\u0391"
+     ]
+    }
+   ]
+  },
+  {
    "case": "a sharp s and a double s, which lowercasing keeps apart",
    "names": [
     "Stra\u00dfe",

@@ -200,9 +200,11 @@ function nearDuplicateKey( name: string ): string | null {
 		return null;
 	}
 
+	// Lowercasing writes Σ as ς or σ by the letters around it, which PHP and browsers judge by different Unicode
+	// versions.
 	const key = withoutCodePointsIn(
 		DEFAULT_IGNORABLE_CODE_POINTS,
-		canonicalPropertyName( name ).normalize( 'NFKC' ).toLowerCase(),
+		canonicalPropertyName( name ).normalize( 'NFKC' ).toLowerCase().replace( /ς/g, 'σ' ),
 	);
 
 	return collapseWhiteSpace( key.replace( /_/g, ' ' ) ).normalize( 'NFKC' );

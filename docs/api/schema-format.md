@@ -42,9 +42,9 @@ count. A save is refused, naming each offending name, when a name:
 - consists of ASCII digits, optionally after `-`, such as `2024`, `-1` or `007`, or is `.` or `..`
 - is longer than 255 bytes in UTF-8
 - is `id`, `name`, `wiki_id` or `__proto__`; `Name` and `ID` are allowed
-- is a near-duplicate of another name of the Schema: the two are equal after NFKC, lowercasing, removing
-  default-ignorable code points (Unicode `Default_Ignorable_Code_Point`), replacing each run of `_` and white space
-  with one space, trimming, and NFKC again
+- is a near-duplicate of another name of the Schema: the two are equal after NFKC, lowercasing, replacing `ς` with
+  `σ`, removing default-ignorable code points (Unicode `Default_Ignorable_Code_Point`), replacing each run of `_` and
+  white space with one space, trimming, and NFKC again
 
 `Birth date` and `Birth_date` cannot share a Schema; `Straße` and `STRASSE` can. The rules apply when a Schema is
 saved; reading returns names as stored.

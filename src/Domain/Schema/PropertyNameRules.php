@@ -204,6 +204,9 @@ class PropertyNameRules {
 		}
 
 		$key = mb_strtolower( (string)Normalizer::normalize( self::canonicalForm( $name ), Normalizer::NFKC ), 'UTF-8' );
+		// Lowercasing writes Σ as ς or σ by the letters around it, which PHP and browsers judge by different Unicode
+		// versions.
+		$key = str_replace( "\u{03C2}", "\u{03C3}", $key );
 		$key = (string)preg_replace( self::DEFAULT_IGNORABLE_CODE_POINTS, '', $key );
 
 		return (string)Normalizer::normalize(
