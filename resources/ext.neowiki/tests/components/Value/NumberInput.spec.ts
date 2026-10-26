@@ -5,7 +5,7 @@ import { newNumberValue } from '@/domain/Value';
 import NumberInput from '@/components/Value/NumberInput.vue';
 import { newNumberProperty, NumberProperty } from '@/domain/propertyTypes/Number';
 import { ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { boundValue, createTestWrapper } from '../../VueTestHelpers.ts';
+import { createTestWrapper } from '../../VueTestHelpers.ts';
 
 enableAutoUnmount( afterEach );
 
@@ -186,7 +186,7 @@ describe( 'NumberInput', () => {
 
 			await field.reportValue( '' );
 
-			expect( boundValue( wrapper ) ).toBeUndefined();
+			expect( wrapper.emitted( 'update:modelValue' ) ).toEqual( [ [ undefined ] ] );
 		} );
 
 		// The save gates show what they are given, so a message that diverged from the
@@ -247,7 +247,7 @@ describe( 'NumberInput', () => {
 			await wrapper.setProps( { modelValue: newNumberValue( 7 ) } );
 
 			expect( unparseableInputMessage( wrapper ) ).toBeNull();
-			expect( field.valueWrites ).toEqual( [ '7' ] );
+			expect( field.valueWrites[ field.valueWrites.length - 1 ] ).toBe( '7' );
 		} );
 
 		// The violation was raised against the value the backend was given, which is

@@ -38,19 +38,19 @@
 
 			<CdxField
 				class="text-attributes__min-length ext-neowiki-severity-field"
-				:status="minLengthError === null ? 'default' : 'error'"
-				:messages="minLengthError === null ? {} : { error: minLengthError }"
+				:status="minLengthMessage === null ? 'default' : 'error'"
+				:messages="minLengthMessage === null ? {} : { error: minLengthMessage }"
 			>
 				<template #label>
 					{{ $i18n( 'neowiki-property-editor-minimum' ).text() }}
 				</template>
 
-				<CdxTextInput
-					ref="minLengthTextInput"
+				<NeoNativeInput
 					:model-value="minLengthInput"
 					input-type="number"
 					min="1"
 					@update:model-value="updateMinLength"
+					@unparseable-change="minLengthUnparseable = $event"
 				/>
 				<SeverityInput
 					v-if="property.minLength !== undefined"
@@ -62,19 +62,19 @@
 
 			<CdxField
 				class="text-attributes__max-length ext-neowiki-severity-field"
-				:status="maxLengthError === null ? 'default' : 'error'"
-				:messages="maxLengthError === null ? {} : { error: maxLengthError }"
+				:status="maxLengthMessage === null ? 'default' : 'error'"
+				:messages="maxLengthMessage === null ? {} : { error: maxLengthMessage }"
 			>
 				<template #label>
 					{{ $i18n( 'neowiki-property-editor-maximum' ).text() }}
 				</template>
 
-				<CdxTextInput
-					ref="maxLengthTextInput"
+				<NeoNativeInput
 					:model-value="maxLengthInput"
 					input-type="number"
 					min="1"
 					@update:model-value="updateMaxLength"
+					@unparseable-change="maxLengthUnparseable = $event"
 				/>
 				<SeverityInput
 					v-if="property.maxLength !== undefined"
@@ -88,16 +88,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { TextProperty } from '@/domain/propertyTypes/Text.ts';
 import { withConstraintSeverity } from '@/domain/PropertyDefinition.ts';
 import type { Severity } from '@/domain/Severity.ts';
-import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { CdxCheckbox, CdxField, CdxTextInput } from '@wikimedia/codex';
+import { AttributesEditorEmits, AttributesEditorExposes, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
+import { CdxCheckbox, CdxField } from '@wikimedia/codex';
 import { minExceedsMax } from '@/components/SchemaEditor/Property/minExceedsMax.ts';
 import NeoNestedField from '@/components/common/NeoNestedField.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
-import { holdsUnparseableInput } from '@/presentation/unparseableInput.ts';
+import NeoNativeInput from '@/components/common/NeoNativeInput.vue';
 
 // Text with language has no uniqueItems: it puts its own control in the values slot.
 type TextLikeProperty = Omit<TextProperty, 'uniqueItems'> & Partial<Pick<TextProperty, 'uniqueItems'>>;
@@ -109,8 +109,11 @@ const minLengthInput = ref( props.property.minLength?.toString() ?? '' );
 const maxLengthInput = ref( props.property.maxLength?.toString() ?? '' );
 const minLengthError = ref<string | null>( null );
 const maxLengthError = ref<string | null>( null );
-const minLengthTextInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
-const maxLengthTextInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
+const minLengthUnparseable = ref<string | null>( null );
+const maxLengthUnparseable = ref<string | null>( null );
+
+const minLengthMessage = computed( () => minLengthUnparseable.value ?? minLengthError.value );
+const maxLengthMessage = computed( () => maxLengthUnparseable.value ?? maxLengthError.value );
 
 watch( () => props.property.minLength, ( newVal ) => {
 	minLengthInput.value = newVal?.toString() ?? '';
@@ -136,10 +139,6 @@ const validateValue = ( value: string ): string | null => {
 };
 
 const updateMinLength = ( value: string ): void => {
-	if ( holdsUnparseableInput( minLengthTextInput.value ) ) {
-		return;
-	}
-
 	minLengthInput.value = value;
 
 	const formatError = validateValue( value );
@@ -159,10 +158,6 @@ const updateMinLength = ( value: string ): void => {
 };
 
 const updateMaxLength = ( value: string ): void => {
-	if ( holdsUnparseableInput( maxLengthTextInput.value ) ) {
-		return;
-	}
-
 	maxLengthInput.value = value;
 
 	const formatError = validateValue( value );
@@ -192,4 +187,8 @@ const updateUniqueItems = ( value: boolean ): void => {
 const updateSeverity = ( constraint: 'minLength' | 'maxLength' | 'uniqueItems', severity: Severity ): void => {
 	emit( 'update:property', withConstraintSeverity( props.property, constraint, severity ) );
 };
+
+defineExpose<AttributesEditorExposes>( {
+	unparseableInputMessage: (): string | null => minLengthUnparseable.value ?? maxLengthUnparseable.value
+} );
 </script>

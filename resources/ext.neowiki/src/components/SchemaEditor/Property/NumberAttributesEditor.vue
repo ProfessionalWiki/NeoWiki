@@ -8,18 +8,18 @@
 
 			<CdxField
 				class="number-attributes__minimum ext-neowiki-severity-field"
-				:status="minimumError === null ? 'default' : 'error'"
-				:messages="minimumError === null ? {} : { error: minimumError }"
+				:status="minimumMessage === null ? 'default' : 'error'"
+				:messages="minimumMessage === null ? {} : { error: minimumMessage }"
 			>
 				<template #label>
 					{{ $i18n( 'neowiki-property-editor-minimum' ).text() }}
 				</template>
 
-				<CdxTextInput
-					ref="minimumTextInput"
+				<NeoNativeInput
 					:model-value="minimumInput"
 					input-type="number"
 					@update:model-value="updateMinimum"
+					@unparseable-change="minimumUnparseable = $event"
 				/>
 				<SeverityInput
 					v-if="property.minimum !== undefined"
@@ -31,18 +31,18 @@
 
 			<CdxField
 				class="number-attributes__maximum ext-neowiki-severity-field"
-				:status="maximumError === null ? 'default' : 'error'"
-				:messages="maximumError === null ? {} : { error: maximumError }"
+				:status="maximumMessage === null ? 'default' : 'error'"
+				:messages="maximumMessage === null ? {} : { error: maximumMessage }"
 			>
 				<template #label>
 					{{ $i18n( 'neowiki-property-editor-maximum' ).text() }}
 				</template>
 
-				<CdxTextInput
-					ref="maximumTextInput"
+				<NeoNativeInput
 					:model-value="maximumInput"
 					input-type="number"
 					@update:model-value="updateMaximum"
+					@unparseable-change="maximumUnparseable = $event"
 				/>
 				<SeverityInput
 					v-if="property.maximum !== undefined"
@@ -55,34 +55,34 @@
 
 		<CdxField
 			class="number-attributes__precision"
-			:status="precisionError === null ? 'default' : 'error'"
-			:messages="precisionError === null ? {} : { error: precisionError }"
+			:status="precisionMessage === null ? 'default' : 'error'"
+			:messages="precisionMessage === null ? {} : { error: precisionMessage }"
 		>
 			<template #label>
 				{{ $i18n( 'neowiki-property-editor-precision' ).text() }}
 			</template>
-			<CdxTextInput
-				ref="precisionTextInput"
+			<NeoNativeInput
 				:model-value="precisionInput"
 				input-type="number"
 				min="0"
 				@update:model-value="updatePrecision"
+				@unparseable-change="precisionUnparseable = $event"
 			/>
 		</CdxField>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { CdxField, CdxTextInput } from '@wikimedia/codex';
+import { computed, ref, watch } from 'vue';
+import { CdxField } from '@wikimedia/codex';
 import { NumberProperty } from '@/domain/propertyTypes/Number.ts';
 import { withConstraintSeverity } from '@/domain/PropertyDefinition.ts';
 import type { Severity } from '@/domain/Severity.ts';
-import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
+import { AttributesEditorEmits, AttributesEditorExposes, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { minExceedsMax } from '@/components/SchemaEditor/Property/minExceedsMax.ts';
 import NeoNestedField from '@/components/common/NeoNestedField.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
-import { holdsUnparseableInput } from '@/presentation/unparseableInput.ts';
+import NeoNativeInput from '@/components/common/NeoNativeInput.vue';
 
 const props = defineProps<AttributesEditorProps<NumberProperty>>();
 const emit = defineEmits<AttributesEditorEmits<NumberProperty>>();
@@ -93,9 +93,13 @@ const precisionInput = ref( props.property.precision?.toString() ?? '' );
 const minimumError = ref<string | null>( null );
 const maximumError = ref<string | null>( null );
 const precisionError = ref<string | null>( null );
-const minimumTextInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
-const maximumTextInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
-const precisionTextInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
+const minimumUnparseable = ref<string | null>( null );
+const maximumUnparseable = ref<string | null>( null );
+const precisionUnparseable = ref<string | null>( null );
+
+const minimumMessage = computed( () => minimumUnparseable.value ?? minimumError.value );
+const maximumMessage = computed( () => maximumUnparseable.value ?? maximumError.value );
+const precisionMessage = computed( () => precisionUnparseable.value ?? precisionError.value );
 
 watch( () => props.property.minimum, ( newVal ) => {
 	minimumInput.value = newVal?.toString() ?? '';
@@ -116,10 +120,6 @@ const isValidPrecision = ( value: number | undefined ): boolean =>
 	value === undefined || value >= 0;
 
 const updateMinimum = ( value: string ): void => {
-	if ( holdsUnparseableInput( minimumTextInput.value ) ) {
-		return;
-	}
-
 	minimumInput.value = value;
 
 	if ( minExceedsMax( value, maximumInput.value ) ) {
@@ -133,10 +133,6 @@ const updateMinimum = ( value: string ): void => {
 };
 
 const updateMaximum = ( value: string ): void => {
-	if ( holdsUnparseableInput( maximumTextInput.value ) ) {
-		return;
-	}
-
 	maximumInput.value = value;
 
 	if ( minExceedsMax( minimumInput.value, value ) ) {
@@ -154,10 +150,6 @@ const updateSeverity = ( constraint: 'minimum' | 'maximum', severity: Severity )
 };
 
 const updatePrecision = ( value: string ): void => {
-	if ( holdsUnparseableInput( precisionTextInput.value ) ) {
-		return;
-	}
-
 	precisionInput.value = value;
 	const numValue = parseNumber( value );
 
@@ -169,4 +161,8 @@ const updatePrecision = ( value: string ): void => {
 
 	precisionError.value = mw.message( 'neowiki-property-editor-precision-non-negative' ).text();
 };
+
+defineExpose<AttributesEditorExposes>( {
+	unparseableInputMessage: (): string | null => minimumUnparseable.value ?? maximumUnparseable.value ?? precisionUnparseable.value
+} );
 </script>

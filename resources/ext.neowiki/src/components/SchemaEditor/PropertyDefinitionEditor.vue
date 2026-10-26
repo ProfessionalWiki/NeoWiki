@@ -55,6 +55,7 @@
 
 		<component
 			:is="componentRegistry.getAttributesEditor( localProperty.type )"
+			ref="attributesEditor"
 			:property="localProperty"
 			@update:property="updatePropertyAttributes"
 		/>
@@ -77,6 +78,7 @@ import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue'
 import { CdxCheckbox, CdxField, CdxSelect, CdxTextArea, CdxTextInput, type MenuItemData } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
+import type { AttributesEditorExposes } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue';
 import { localTargetSchemaNames, type RelationProperty, RelationType, targetsDependentSubjects } from '@/domain/propertyTypes/Relation.ts';
 import { type SchemaSummary, subjectsAreDependentIn } from '@/application/SchemaLookup.ts';
@@ -248,6 +250,7 @@ const takesInitialValue = computed( (): boolean => targetSchemaNames.value.lengt
 	targetsDependentSubjects( targetSchemaNames.value, subjectsAreDependentIn( schemaSummaries.value ) ) !== true
 ) );
 
+const attributesEditor = ref<AttributesEditorExposes | null>( null );
 const defaultValueInput = ref<ValueInputExposes | null>( null );
 
 export interface PropertyDefinitionEditorExposes {
@@ -256,10 +259,14 @@ export interface PropertyDefinitionEditorExposes {
 
 /**
  * The message a field is showing because the definition cannot take its text, or
- * null. Callers hold the save rather than persist what the user cannot see.
+ * null. Callers hold the save, and stay on the property, rather than persist what
+ * the user cannot see.
  */
 function unparseableInputMessage(): string | null {
-	return nameError.value ?? defaultValueInput.value?.unparseableInputMessage?.() ?? null;
+	return nameError.value ??
+		attributesEditor.value?.unparseableInputMessage?.() ??
+		defaultValueInput.value?.unparseableInputMessage?.() ??
+		null;
 }
 
 defineExpose<PropertyDefinitionEditorExposes>( { unparseableInputMessage } );

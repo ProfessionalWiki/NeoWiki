@@ -5,7 +5,13 @@ import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAtt
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newNumberProperty, NumberProperty } from '@/domain/propertyTypes/Number';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { createTestWrapper, FieldProps, reportUnparseableNumber, setupMwMock } from '../../../VueTestHelpers.ts';
+import {
+	createTestWrapper,
+	FieldProps,
+	reportUnparseableNumber,
+	setupMwMock,
+	unparseableAttributeMessage,
+} from '../../../VueTestHelpers.ts';
 
 describe( 'NumberAttributesEditor', () => {
 	beforeEach( () => {
@@ -272,20 +278,62 @@ describe( 'NumberAttributesEditor', () => {
 		} );
 	} );
 
+	// The browser reads the field's text as the number 0, which is no less a value than any other.
+	it.each( [
+		[ 'minimum', '.number-attributes__minimum' ],
+		[ 'maximum', '.number-attributes__maximum' ],
+		[ 'precision', '.number-attributes__precision' ],
+	] as const )( 'takes a %s of 0', async ( attribute, field ) => {
+		const wrapper = newWrapper( { property: newNumberProperty( {} ) } );
+
+		await wrapper.find( `${ field } input` ).setValue( '0' );
+
+		expect( wrapper.emitted( 'update:property' ) ).toEqual( [ [ { [ attribute ]: 0 } ] ] );
+	} );
+
 	// Any report counts as an edit, which enables the save.
 	describe( 'Text that cannot be parsed', () => {
 		const property = newNumberProperty( { minimum: 1, maximum: 100, precision: 2 } );
-
-		it.each( [
+		const fields = [
 			[ 'minimum', '.number-attributes__minimum' ],
 			[ 'maximum', '.number-attributes__maximum' ],
 			[ 'precision', '.number-attributes__precision' ],
-		] as const )( 'reports nothing for the %s while its text cannot be parsed', async ( _, field ) => {
+		] as const;
+
+		it.each( fields )( 'reports nothing for the %s while its text cannot be parsed', async ( _, field ) => {
 			const wrapper = newWrapper( { property } );
 
 			await reportUnparseableNumber( wrapper.find( `${ field } input` ) );
 
 			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
+		} );
+
+		it.each( fields )( 'shows that it cannot read the %s', async ( _, field ) => {
+			const wrapper = newWrapper( { property } );
+
+			await reportUnparseableNumber( wrapper.find( `${ field } input` ) );
+
+			expect( ( wrapper.findComponent( field ) as VueWrapper ).props() ).toMatchObject( {
+				status: 'error',
+				messages: { error: 'neowiki-field-invalid-number' },
+			} );
+		} );
+
+		it( 'shows that it cannot read the minimum in place of a range error', async () => {
+			const wrapper = newWrapper( { property: newNumberProperty( { maximum: 5 } ) } );
+			await wrapper.find( '.number-attributes__minimum input' ).setValue( '8' );
+
+			await reportUnparseableNumber( wrapper.find( '.number-attributes__minimum input' ) );
+
+			expect( getMinimumFieldProps( wrapper ).messages ).toEqual( { error: 'neowiki-field-invalid-number' } );
+		} );
+
+		it.each( fields )( 'holds the save while it cannot read the %s', async ( _, field ) => {
+			const wrapper = newWrapper( { property } );
+
+			await reportUnparseableNumber( wrapper.find( `${ field } input` ) );
+
+			expect( unparseableAttributeMessage( wrapper ) ).toBe( 'neowiki-field-invalid-number' );
 		} );
 
 		it( 'refuses a maximum below the minimum it kept', async () => {

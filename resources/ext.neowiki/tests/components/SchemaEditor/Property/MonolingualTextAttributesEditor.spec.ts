@@ -4,7 +4,13 @@ import MonolingualTextAttributesEditor from '@/components/SchemaEditor/Property/
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { MonolingualTextProperty, newMonolingualTextProperty } from '@/domain/propertyTypes/MonolingualText';
 import type { Severity } from '@/domain/Severity';
-import { accessibleName, createTestWrapper, setupMwMock } from '../../../VueTestHelpers.ts';
+import {
+	accessibleName,
+	createTestWrapper,
+	reportUnparseableNumber,
+	setupMwMock,
+	unparseableAttributeMessage,
+} from '../../../VueTestHelpers.ts';
 
 const ONE = 'neowiki-property-editor-values-one';
 const ONE_PER_LANGUAGE = 'neowiki-property-editor-values-one-per-language';
@@ -144,5 +150,13 @@ describe( 'MonolingualTextAttributesEditor', () => {
 		await inputNamed( wrapper, 'neowiki-property-editor-maximum' ).setValue( '40' );
 
 		expect( wrapper.emitted( 'update:property' ) ).toEqual( [ [ { maxLength: 40 } ] ] );
+	} );
+
+	it( 'holds the save while it cannot read a character length', async () => {
+		const wrapper = newWrapper( newMonolingualTextProperty( {} ) );
+
+		await reportUnparseableNumber( inputNamed( wrapper, 'neowiki-property-editor-maximum' ) );
+
+		expect( unparseableAttributeMessage( wrapper ) ).toBe( 'neowiki-field-invalid-number' );
 	} );
 } );

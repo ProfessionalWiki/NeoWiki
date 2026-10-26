@@ -2,8 +2,7 @@ import { mount, VueWrapper, DOMWrapper } from '@vue/test-utils';
 import { Component, DefineComponent, nextTick } from 'vue';
 import { expect, onTestFinished, vi } from 'vitest';
 import { ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
-import type { Value } from '@/domain/Value';
-import type { PropertyDefinition } from '@/domain/PropertyDefinition';
+import type { AttributesEditorExposes } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { NeoWikiTestServices } from './NeoWikiTestServices.ts';
 import { keepMenuEscapesFromDialogs } from '@/codex/menuEscape.ts';
 
@@ -244,39 +243,16 @@ export async function reportPartlyClearedDate( input: DOMWrapper<Element> ): Pro
 	await reportUnparseableNumber( input );
 }
 
-/**
- * Clears the parts a partly cleared date input still shows with the given key, which leaves it
- * empty without validity.badInput. Browsers fire no input event for this, only the key's release.
- */
-export async function clearRemainingDateParts( input: DOMWrapper<Element>, key: 'Backspace' | 'Delete' ): Promise<void> {
-	stubBadInput( input, false );
-	await input.trigger( 'keyup', { key } );
-}
-
-function stubBadInput( input: DOMWrapper<Element>, badInput: boolean ): void {
+export function stubBadInput( input: DOMWrapper<Element>, badInput: boolean ): void {
 	Object.defineProperty( input.element, 'validity', {
 		configurable: true,
 		get: () => ( { badInput } ),
 	} );
 }
 
-/** The value a value input leaves its v-model holding: the last one it reported, else the one it was given. */
-export function boundValue( valueInput: VueWrapper ): Value | undefined {
-	const reported = valueInput.emitted( 'update:modelValue' ) ?? [];
-
-	return reported.length === 0 ?
-		( valueInput.props() as { modelValue?: Value } ).modelValue :
-		reported[ reported.length - 1 ][ 0 ] as Value | undefined;
-}
-
-/**
- * The property definition an attributes editor leaves the property editor holding: the one it was
- * given, with each change it reported applied in turn.
- */
-export function editedProperty<T extends PropertyDefinition>( attributesEditor: VueWrapper ): T {
-	const changes = ( attributesEditor.emitted( 'update:property' ) ?? [] ).map( ( event ) => event[ 0 ] as Partial<T> );
-
-	return Object.assign( { ...( attributesEditor.props() as { property: T } ).property }, ...changes );
+/** The message an attributes editor holds the save with, as the property editor asks it. */
+export function unparseableAttributeMessage( attributesEditor: VueWrapper ): string | null {
+	return ( attributesEditor.vm as unknown as AttributesEditorExposes ).unparseableInputMessage?.() ?? null;
 }
 
 export function createTestWrapper<TComponent extends DefineComponent<any, any, any>>(

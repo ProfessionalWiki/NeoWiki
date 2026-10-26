@@ -28,8 +28,8 @@ import type { Subject } from '@/domain/Subject.ts';
 export interface SubjectEditorExposes {
 	/**
 	 * The statements as the fields currently hold them. A field showing text it
-	 * cannot turn into a Value yields a statement with no value and that text is
-	 * lost — check saveBlocker() first and hold the save while it is non-null.
+	 * cannot turn into a Value yields the last value it could read rather than
+	 * that text — check saveBlocker() first and hold the save while it is non-null.
 	 */
 	getSubjectData(): StatementList;
 	/**

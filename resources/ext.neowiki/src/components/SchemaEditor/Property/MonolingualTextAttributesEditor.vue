@@ -1,5 +1,6 @@
 <template>
 	<TextAttributesEditor
+		ref="textAttributesEditor"
 		class="ext-neowiki-monolingual-text-attributes"
 		:property="property"
 		@update:property="emit( 'update:property', $event )"
@@ -39,12 +40,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { CdxField, CdxRadio, useGeneratedId } from '@wikimedia/codex';
 import type { MonolingualTextProperty } from '@/domain/propertyTypes/MonolingualText.ts';
 import { withConstraintSeverity } from '@/domain/PropertyDefinition.ts';
 import type { Severity } from '@/domain/Severity.ts';
-import { AttributesEditorEmits, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
+import { AttributesEditorEmits, AttributesEditorExposes, AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 
@@ -97,6 +98,12 @@ function choose( attributes: ValuesOption[ 'attributes' ] ): void {
 function updateSeverity( constraint: 'multiple' | 'uniqueLanguages', severity: Severity ): void {
 	emit( 'update:property', withConstraintSeverity( props.property, constraint, severity ) );
 }
+
+const textAttributesEditor = ref<AttributesEditorExposes | null>( null );
+
+defineExpose<AttributesEditorExposes>( {
+	unparseableInputMessage: (): string | null => textAttributesEditor.value?.unparseableInputMessage?.() ?? null
+} );
 </script>
 
 <style lang="less">

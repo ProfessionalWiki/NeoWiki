@@ -5,7 +5,13 @@ import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttribu
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newTextProperty, TextProperty } from '@/domain/propertyTypes/Text';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { createTestWrapper, FieldProps, reportUnparseableNumber, setupMwMock } from '../../../VueTestHelpers.ts';
+import {
+	createTestWrapper,
+	FieldProps,
+	reportUnparseableNumber,
+	setupMwMock,
+	unparseableAttributeMessage,
+} from '../../../VueTestHelpers.ts';
 
 describe( 'TextAttributesEditor', () => {
 	beforeEach( () => {
@@ -293,16 +299,45 @@ describe( 'TextAttributesEditor', () => {
 	// Any report counts as an edit, which enables the save.
 	describe( 'Text that cannot be parsed', () => {
 		const property = newTextProperty( { minLength: 2, maxLength: 50 } );
-
-		it.each( [
+		const fields = [
 			[ 'minLength', '.text-attributes__min-length' ],
 			[ 'maxLength', '.text-attributes__max-length' ],
-		] as const )( 'reports nothing for the %s while its text cannot be parsed', async ( _, field ) => {
+		] as const;
+
+		it.each( fields )( 'reports nothing for the %s while its text cannot be parsed', async ( _, field ) => {
 			const wrapper = newWrapper( { property } );
 
 			await reportUnparseableNumber( wrapper.find( `${ field } input` ) );
 
 			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
+		} );
+
+		it.each( fields )( 'shows that it cannot read the %s', async ( _, field ) => {
+			const wrapper = newWrapper( { property } );
+
+			await reportUnparseableNumber( wrapper.find( `${ field } input` ) );
+
+			expect( ( wrapper.findComponent( field ) as VueWrapper ).props() ).toMatchObject( {
+				status: 'error',
+				messages: { error: 'neowiki-field-invalid-number' },
+			} );
+		} );
+
+		it( 'shows that it cannot read the minimum length in place of a range error', async () => {
+			const wrapper = newWrapper( { property: newTextProperty( { maxLength: 5 } ) } );
+			await wrapper.find( '.text-attributes__min-length input' ).setValue( '8' );
+
+			await reportUnparseableNumber( wrapper.find( '.text-attributes__min-length input' ) );
+
+			expect( getMinLengthFieldProps( wrapper ).messages ).toEqual( { error: 'neowiki-field-invalid-number' } );
+		} );
+
+		it.each( fields )( 'holds the save while it cannot read the %s', async ( _, field ) => {
+			const wrapper = newWrapper( { property } );
+
+			await reportUnparseableNumber( wrapper.find( `${ field } input` ) );
+
+			expect( unparseableAttributeMessage( wrapper ) ).toBe( 'neowiki-field-invalid-number' );
 		} );
 
 		it( 'refuses a maximum length below the minimum length it kept', async () => {

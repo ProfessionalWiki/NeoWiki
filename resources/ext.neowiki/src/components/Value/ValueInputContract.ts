@@ -39,12 +39,12 @@ export interface ValueInputExposes {
 	getCurrentValue(): Value | undefined;
 	/**
 	 * The message the widget is showing because it holds text it cannot turn
-	 * into a Value, or null when it holds none. A native number input reaches
-	 * this state: text like "5foo" stays on screen while the value reads as
-	 * empty, so getCurrentValue() has nothing to return. Callers hold the save
-	 * while any input reports a message, and surface that same message, rather
-	 * than dropping text the user can still see. Inputs that omit this keep
-	 * returning the last value their widget could read.
+	 * into a Value, or null when it holds none. Native number and date inputs
+	 * reach this state: text like "5foo", or a date with a part cleared, stays
+	 * on screen while getCurrentValue() returns the last value the widget could
+	 * read. Callers hold the save while any input reports a message, and surface
+	 * that same message, rather than saving a value the field does not show.
+	 * Inputs whose widget cannot reach such a state omit this.
 	 */
 	unparseableInputMessage?(): string | null;
 }

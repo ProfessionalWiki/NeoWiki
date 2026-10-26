@@ -5,7 +5,13 @@ import DateTimeAttributesEditor from '@/components/SchemaEditor/Property/DateTim
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { newDateTimeProperty, DateTimeProperty } from '@/domain/propertyTypes/DateTime';
 import { AttributesEditorProps } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
-import { clearRemainingDateParts, createTestWrapper, editedProperty, FieldProps, reportPartlyClearedDate, setupMwMock } from '../../../VueTestHelpers.ts';
+import {
+	createTestWrapper,
+	FieldProps,
+	reportPartlyClearedDate,
+	setupMwMock,
+	unparseableAttributeMessage,
+} from '../../../VueTestHelpers.ts';
 
 describe( 'DateTimeAttributesEditor', () => {
 	beforeEach( () => {
@@ -235,21 +241,32 @@ describe( 'DateTimeAttributesEditor', () => {
 			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
 		} );
 
-		it.each( bounds )( 'drops the %s once every part is cleared', async ( attribute, field, property ) => {
+		it.each( bounds )( 'shows that it cannot read the %s while some parts remain', async ( _, field, property ) => {
 			const wrapper = newWrapper( { property } );
+
 			await reportPartlyClearedDate( wrapper.find( `${ field } input` ) );
 
-			await clearRemainingDateParts( wrapper.find( `${ field } input` ), 'Backspace' );
-
-			expect( editedProperty<DateTimeProperty>( wrapper )[ attribute ] ).toBeUndefined();
+			expect( ( wrapper.findComponent( field ) as VueWrapper ).props() ).toMatchObject( {
+				status: 'error',
+				messages: { error: 'neowiki-field-invalid-datetime' },
+			} );
 		} );
 
-		it.each( bounds )( 'reports nothing for a deletion key released in the %s field while it still shows a date and time', async ( _, field, property ) => {
+		it( 'shows that it cannot read the minimum in place of a range error', async () => {
+			const wrapper = newWrapper( { property: newDateTimeProperty( { maximum: '2020-01-01T00:00:00Z' } ) } );
+			await getInputs( wrapper )[ 0 ].setValue( '2030-01-01T00:00' );
+
+			await reportPartlyClearedDate( getInputs( wrapper )[ 0 ] );
+
+			expect( getMinimumFieldProps( wrapper ).messages ).toEqual( { error: 'neowiki-field-invalid-datetime' } );
+		} );
+
+		it.each( bounds )( 'holds the save while some parts of the %s remain', async ( _, field, property ) => {
 			const wrapper = newWrapper( { property } );
 
-			await wrapper.find( `${ field } input` ).trigger( 'keyup', { key: 'Backspace' } );
+			await reportPartlyClearedDate( wrapper.find( `${ field } input` ) );
 
-			expect( wrapper.emitted( 'update:property' ) ).toBeUndefined();
+			expect( unparseableAttributeMessage( wrapper ) ).toBe( 'neowiki-field-invalid-datetime' );
 		} );
 	} );
 } );
