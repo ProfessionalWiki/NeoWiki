@@ -53,10 +53,8 @@ describe( 'RestSubjectRepository.moveSubject', () => {
 
 		await newRepository( { post } ).moveSubject( SUBJECT_ID, 12, true, 'Filed properly' );
 
-		expect( post ).toHaveBeenCalledWith(
-			MOVE_URL,
-			{ targetPageId: 12, makeMainSubject: true, comment: 'Filed properly' },
-		);
+		expect( post.mock.calls[ 0 ][ 0 ] ).toBe( MOVE_URL );
+		expect( post.mock.calls[ 0 ][ 1 ] ).toEqual( { targetPageId: 12, makeMainSubject: true, comment: 'Filed properly' } );
 	} );
 
 	it( 'carries the server\'s own reason through a rejection', async () => {

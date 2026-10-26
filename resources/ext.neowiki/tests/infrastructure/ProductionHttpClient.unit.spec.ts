@@ -85,7 +85,16 @@ describe( 'ProductionHttpClient request bodies', () => {
 	it.each( Object.entries( bodySenders ) )( 'labels a %s body as JSON', async ( _, send ) => {
 		const request = await requestSentBy( send, { label: 'Berlin' } );
 
-		expect( request.contentType ).toBe( 'application/json' );
+		expect( request.contentType ).toMatch( /^application\/json/ );
+	} );
+
+	it( 'keeps the JSON type the caller labels a body with', async () => {
+		const request = await requestSentBy(
+			( client, body ) => client.patch( url, body, { headers: { 'Content-Type': 'application/merge-patch+json' } } ),
+			{ label: 'Berlin' },
+		);
+
+		expect( request.contentType ).toMatch( /^application\/merge-patch\+json/ );
 	} );
 
 	it( 'sends a form body as form data', async () => {
