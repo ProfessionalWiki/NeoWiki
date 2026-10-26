@@ -307,14 +307,15 @@ endif
 
 # ---- Shell-script tests ------------------------------------------------------
 
-# Runs the bash test suites for Docker/scripts/. Requires python3 on the host;
-# does not need docker. Kept out of the default PHP/TS test targets so the host
-# can opt in.
+# Runs the bash test suites for Docker/scripts/ and scripts/. Requires python3
+# and ssh-keygen on the host; does not need docker. Kept out of the default
+# PHP/TS test targets so the host can opt in.
 .PHONY: test-scripts
 test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-set-port.sh
 	@./Docker/tests/test-preflight.sh
 	@./Docker/tests/test-services.sh
+	@./scripts/tests/test-tag-release.sh
 
 # ---- Browser tests -----------------------------------------------------------
 
