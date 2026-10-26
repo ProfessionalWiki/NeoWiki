@@ -77,7 +77,7 @@ class SchemaContentHandler extends JsonContentHandler {
 		/** @var array{propertyDefinitions: array<array-key, mixed>} $schema */
 		$schema = json_decode( $json, true );
 		$problems = PropertyNameRules::problemsInSchema(
-			array_map( 'strval', array_keys( $schema['propertyDefinitions'] ) )
+			array_map( strval( ... ), array_keys( $schema['propertyDefinitions'] ) )
 		);
 
 		if ( $problems !== [] ) {

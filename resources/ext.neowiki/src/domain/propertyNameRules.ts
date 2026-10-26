@@ -140,8 +140,10 @@ function ruleBrokenBy( canonicalForm: string ): PropertyNameRule | null {
 	return null;
 }
 
+const UTF8_ENCODER = new TextEncoder();
+
 function byteLength( text: string ): number {
-	return new TextEncoder().encode( text ).length;
+	return UTF8_ENCODER.encode( text ).length;
 }
 
 /**
