@@ -308,6 +308,14 @@ class StatementListBuilderTest extends TestCase {
 		$builder->build( [ '2024' => [ 'propertyType' => 'text', 'value' => 'yes' ] ] );
 	}
 
+	public function testStatementUnderPropertyNameWithSurroundingSpaceIsRejectedRatherThanTrimmed(): void {
+		$builder = $this->newBuilder();
+
+		$this->expectException( InvalidArgumentException::class );
+
+		$builder->build( [ ' Website' => [ 'propertyType' => 'text', 'value' => 'yes' ] ] );
+	}
+
 	public function testEmptyValueIsDroppedWhateverItsPropertyName(): void {
 		$list = $this->newBuilder()->build( [ '2024' => [ 'propertyType' => 'text', 'value' => [] ] ] );
 
