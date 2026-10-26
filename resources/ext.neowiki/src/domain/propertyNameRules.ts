@@ -166,10 +166,32 @@ function hiddenDifference( name: string, canonicalForm: string ): string[] {
  */
 export function propertyNameProblemsInSchema( names: readonly string[] ): PropertyNameProblem[] {
 	const keys = names.map( nearDuplicateKey );
+	const indices = indicesByKey( keys );
 
 	return names
-		.map( ( _name, index ) => problemInSchema( names, keys, index ) )
+		.map( ( _name, index ) => problemInSchema( names, indices.get( keys[ index ] ) ?? [], index ) )
 		.filter( ( problem ): problem is PropertyNameProblem => problem !== null );
+}
+
+// The indices of the names with each key, in order. Names too long to compare have none.
+function indicesByKey( keys: readonly ( string | null )[] ): Map<string | null, number[]> {
+	const indices = new Map<string | null, number[]>();
+
+	keys.forEach( ( key, index ) => {
+		if ( key === null ) {
+			return;
+		}
+
+		const sameKey = indices.get( key );
+
+		if ( sameKey === undefined ) {
+			indices.set( key, [ index ] );
+		} else {
+			sameKey.push( index );
+		}
+	} );
+
+	return indices;
 }
 
 // Null for a name too long to compare, which is never normalized.
@@ -187,17 +209,18 @@ function nearDuplicateKey( name: string ): string | null {
 }
 
 // A name to respell is a near-duplicate of a later name too, so that no problem advises a spelling another name has.
-function problemInSchema( names: readonly string[], keys: readonly ( string | null )[], index: number ): PropertyNameProblem | null {
+// sameKeyIndices are the indices of the names with this name's near-duplicate key, in order.
+function problemInSchema( names: readonly string[], sameKeyIndices: readonly number[], index: number ): PropertyNameProblem | null {
 	const problem = propertyNameProblem( names[ index ] );
 
 	if ( problem !== null && problem.rule !== 'canonical-form' ) {
 		return problem;
 	}
 
-	const otherIndex = keys.findIndex( ( key, otherIndex ) => key === keys[ index ] &&
-		( otherIndex < index || ( problem !== null && otherIndex > index ) ) );
+	const otherIndex = sameKeyIndices.find( ( otherIndex ) =>
+		otherIndex < index || ( problem !== null && otherIndex > index ) );
 
-	return otherIndex === -1 ?
+	return otherIndex === undefined ?
 		problem :
 		{ name: names[ index ], rule: 'near-duplicate', details: [ names[ otherIndex ] ] };
 }
@@ -208,6 +231,7 @@ function problemInSchema( names: readonly string[], keys: readonly ( string | nu
  */
 export function propertyNameProblemBeside( name: string, otherNames: readonly string[] ): PropertyNameProblem | null {
 	const names = [ ...otherNames, name ];
+	const keys = names.map( nearDuplicateKey );
 
-	return problemInSchema( names, names.map( nearDuplicateKey ), otherNames.length );
+	return problemInSchema( names, indicesByKey( keys ).get( keys[ otherNames.length ] ) ?? [], otherNames.length );
 }
