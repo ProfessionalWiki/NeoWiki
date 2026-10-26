@@ -400,6 +400,16 @@ describe( 'PropertyDefinitionEditor', () => {
 			expect( nameFieldProps( wrapper ).messages ).toEqual( { error: 'neowiki-property-name-reservedid' } );
 		} );
 
+		it( 'says which characters the name typed cannot contain', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ) );
+
+			await typeName( wrapper, 'Phone #|' );
+
+			expect( nameFieldProps( wrapper ).messages ).toEqual( {
+				error: 'neowiki-property-name-charactersPhone #|# and |',
+			} );
+		} );
+
 		it( 'says the name typed is too similar to the name of another property', async () => {
 			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ), { otherPropertyNames: [ 'Birth date' ] } );
 
