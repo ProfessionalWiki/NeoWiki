@@ -38,7 +38,7 @@ $wgGroupPermissions['user']['neowiki-query'] = true;
 Check `Special:ListGroupRights`, then load a page with a raw query while logged out. OAuth consumers and bot
 passwords need no separate change.
 
-Saves, job-queue parses and Parsoid renders run as the anonymous user, so a page using `{{#cypher_raw}}` or
+Saves, job-queue parses and Parsoid's REST renders run as the anonymous user, so a page using `{{#cypher_raw}}` or
 `{{#sparql_raw}}` shows an error box in place of the results to readers without the right, and `nw.query` and
 `nw.sparqlQuery` return no rows to them. Category membership a module derives from query results is recorded from
 those empty results. Readers who hold the right get [their own cached parse](../authoring/parser-functions.md) and see

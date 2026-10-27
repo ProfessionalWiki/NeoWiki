@@ -51,7 +51,7 @@
 		"ParserOptionsRegister": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserOptionsRegister",
 		"PageRenderingHash": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageRenderingHash",
 		"ParserFirstCallInit": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserFirstCallInit",
-		"ParserAfterTidy": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserAfterTidy",
+		"ContentAlterParserOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentAlterParserOutput",
 		"OutputPageParserOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onOutputPageParserOutput",
 
 		"RevisionFromEditComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionFromEditComplete",
