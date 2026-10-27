@@ -7,6 +7,10 @@ namespace ProfessionalWiki\NeoWiki\Tests\Maintenance;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildGraphDatabases;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
@@ -94,6 +98,21 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 			],
 			$this->readGraph( 'SHOW CONSTRAINTS YIELD name ORDER BY name' )->toRecursiveArray()
 		);
+	}
+
+	/**
+	 * Maintenance scripts run as an anonymous user, who on a wiki only members may read can read no Schema.
+	 */
+	public function testTheRebuildPutsEachSubjectOnItsPageInNeo4jOnAWikiOnlyMembersMayRead(): void {
+		$pageId = $this->createPageWithoutTellingNeoWiki(
+			'Members-only page',
+			SubjectContent::newFromData( new PageSubjects( TestSubject::build(), new SubjectMap() ) )->getText()
+		);
+		$this->setGroupPermissions( '*', 'read', false );
+
+		$this->runRebuild( [ '--store=' . Neo4jPlugin::STORE_NAME ] );
+
+		$this->assertSame( [ TestSubject::ZERO_GUID ], $this->subjectIdsOnPageInNeo4j( $pageId ) );
 	}
 
 	/**
@@ -381,6 +400,19 @@ class RebuildGraphDatabasesTest extends NeoWikiIntegrationTestCase {
 
 	private function getScriptOutput(): string {
 		return $this->scriptOutput;
+	}
+
+	/**
+	 * @return string[]
+	 */
+	private function subjectIdsOnPageInNeo4j( int $pageId ): array {
+		return array_column(
+			$this->readGraph(
+				'MATCH (:Page {id: $pageId})-[:HasSubject]->(subject:Subject) RETURN subject.id AS id',
+				[ 'pageId' => $pageId ]
+			)->toRecursiveArray(),
+			'id'
+		);
 	}
 
 }

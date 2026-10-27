@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki;
 
+use Closure;
 use Exception;
 use InvalidArgumentException;
 use LogicException;
@@ -317,6 +318,7 @@ class NeoWikiExtension {
 	private ClientInterface $readOnlyNeo4jClient;
 	private ?WikiConfigSource $wikiConfigSource = null;
 	private ?SchemaLookup $schemaLookup = null;
+	private ?SchemaResolver $unrestrictedSchemaResolver = null;
 	private ?SubjectSearchHitLookup $subjectSearchHitLookup = null;
 	private ?SchemaReferenceParser $schemaReferenceParser = null;
 	private ?SubjectInPlaceOfPageTitleLookup $subjectInPlaceOfPageTitleLookup = null;
@@ -573,7 +575,7 @@ class NeoWikiExtension {
 			$this->sourceRegistry->registerSource(
 				$this->config->wikiId,
 				fn (): LocalSource => $this->newLocalSource(
-					$this->getSubjectRepository(),
+					fn (): SubjectLookup => $this->getSubjectRepository(),
 					$this->getSchemaLookup()
 				)
 			);
@@ -584,9 +586,12 @@ class NeoWikiExtension {
 		return $this->sourceRegistry;
 	}
 
-	private function newLocalSource( SubjectLookup $subjectLookup, SchemaLookup $schemaLookup ): LocalSource {
+	/**
+	 * @param Closure(): SubjectLookup $subjectLookup
+	 */
+	private function newLocalSource( Closure $subjectLookup, SchemaLookup $schemaLookup ): LocalSource {
 		return new LocalSource(
-			subjectLookup: fn (): SubjectLookup => $subjectLookup,
+			subjectLookup: $subjectLookup,
 			schemaLookup: $schemaLookup,
 			baseUri: $this->getRdfNamespaces()->subjectIriBase(),
 		);
@@ -615,7 +620,7 @@ class NeoWikiExtension {
 	public function getSourceRoutingSubjectLookup( SubjectLookup $localSubjectLookup ): SubjectLookup {
 		return new SourceRoutingSubjectLookup(
 			$this->getSourceRegistry()->withLocalSource(
-				$this->newLocalSource( $localSubjectLookup, $this->getSchemaLookup() )
+				$this->newLocalSource( fn (): SubjectLookup => $localSubjectLookup, $this->getSchemaLookup() )
 			),
 			LoggerFactory::getInstance( 'NeoWiki' )
 		);
@@ -634,7 +639,7 @@ class NeoWikiExtension {
 	private function newSchemaResolver( SchemaLookup $localSchemaLookup ): SchemaResolver {
 		return new SchemaResolver(
 			$this->getSourceRegistry()->withLocalSource(
-				$this->newLocalSource( $this->getSubjectRepository(), $localSchemaLookup )
+				$this->newLocalSource( fn (): SubjectLookup => $this->getSubjectRepository(), $localSchemaLookup )
 			),
 			LoggerFactory::getInstance( 'NeoWiki' )
 		);
@@ -725,9 +730,28 @@ class NeoWikiExtension {
 	 * rows, and maintenance scripts, which write it too, run as an anonymous user.
 	 */
 	public function newUnrestrictedDependentSubjectRules(): DependentSubjectRules {
+		// A lookup of its own rather than the pinned one, so that a long-running job runner sees a Schema's
+		// approval change, which leaves the revision the pinned lookup caches by as it was.
 		return new DependentSubjectRules( $this->newSchemaResolver(
-			$this->newSchemaLookup( new UltimateAuthority( new UserIdentityValue( 0, 'NeoWiki' ) ) )
+			$this->newSchemaLookup( $this->newUnrestrictedAuthority() )
 		) );
+	}
+
+	/**
+	 * Resolves every Schema, whoever makes the request, for the graph stores and the RDF dump: maintenance
+	 * scripts and job runners write them as an anonymous user. Pinned for the process, as getSchemaLookup() is,
+	 * so that a rebuild builds each Source once.
+	 */
+	private function getUnrestrictedSchemaResolver(): SchemaResolver {
+		$this->unrestrictedSchemaResolver ??= $this->newSchemaResolver(
+			$this->newSchemaLookup( $this->newUnrestrictedAuthority() )
+		);
+
+		return $this->unrestrictedSchemaResolver;
+	}
+
+	private function newUnrestrictedAuthority(): Authority {
+		return new UltimateAuthority( new UserIdentityValue( 0, 'NeoWiki' ) );
 	}
 
 	public function getPagePropertiesBuilder(): PagePropertiesBuilder {
@@ -747,11 +771,11 @@ class NeoWikiExtension {
 		return new HardfRdfSerializer( $this->getRdfNamespaces()->prefixMap(), LoggerFactory::getInstance( 'NeoWiki' ) );
 	}
 
-	public function newRdfPageProjector(): RdfPageProjector {
+	private function newRdfPageProjector( SchemaResolver $schemaResolver ): RdfPageProjector {
 		return new RdfPageProjector(
 			$this->getRdfValueMapperRegistry(),
 			$this->getRdfNamespaces(),
-			$this->getSchemaResolver(),
+			$schemaResolver,
 			$this->newSubjectIriResolver(),
 			LoggerFactory::getInstance( 'NeoWiki' ),
 		);
@@ -800,12 +824,18 @@ class NeoWikiExtension {
 	/**
 	 * The projection for a name, or null when the name is neither "native" nor a target any Mapping page
 	 * declares. The seam the SPARQL store plugin (#586) consumes for its own store (it needs only
-	 * {@see RdfProjection::$projector}); the RDF export surfaces use {@see self::resolveRdfProjection()}
-	 * instead, which also reports the known names on the unknown-target path. Ontology mappings hold only
-	 * the target vocabulary; Subject IRIs stay native, so the native prefixes always seed the serializer.
+	 * {@see RdfProjection::$projector}), and DumpRdf for the dump; both read every Schema and Mapping,
+	 * whoever makes the request. The RDF export surfaces use {@see self::resolveRdfProjection()} instead,
+	 * which reads them as the requester and also reports the known names on the unknown-target path.
+	 * Ontology mappings hold only the target vocabulary; Subject IRIs stay native, so the native prefixes
+	 * always seed the serializer.
 	 */
-	public function newRdfProjection( string $projectionName ): ?RdfProjection {
-		return $this->resolveRdfProjection( $projectionName )->projection;
+	public function newUnrestrictedRdfProjection( string $projectionName ): ?RdfProjection {
+		return $this->resolveRdfProjectionWith(
+			$projectionName,
+			$this->getUnrestrictedSchemaResolver(),
+			$this->newMappingLookup( $this->newUnrestrictedAuthority() )
+		)->projection;
 	}
 
 	/**
@@ -815,13 +845,21 @@ class NeoWikiExtension {
 	 * unknown path and reads just the page names (no content parsing).
 	 */
 	public function resolveRdfProjection( string $projectionName ): RdfProjectionResolution {
+		return $this->resolveRdfProjectionWith( $projectionName, $this->getSchemaResolver(), $this->getMappingLookup() );
+	}
+
+	private function resolveRdfProjectionWith(
+		string $projectionName,
+		SchemaResolver $schemaResolver,
+		MappingLookup $mappingLookup
+	): RdfProjectionResolution {
 		if ( $projectionName === RdfPageProjector::PROJECTION ) {
 			return RdfProjectionResolution::projection(
-				new RdfProjection( $this->newRdfPageProjector(), $this->getRdfSerializer() )
+				new RdfProjection( $this->newRdfPageProjector( $schemaResolver ), $this->getRdfSerializer() )
 			);
 		}
 
-		$mapping = $this->loadMappingByName( $projectionName );
+		$mapping = $this->loadMappingByName( $projectionName, $mappingLookup );
 
 		if ( $mapping === null ) {
 			return RdfProjectionResolution::unknownTarget( $this->getRdfProjectionNames() );
@@ -846,14 +884,14 @@ class NeoWikiExtension {
 	 * or reserved) or no such page exists. Title normalization applies inside the lookup, so first-letter
 	 * case behaves exactly like a `[[Mapping:...]]` link.
 	 */
-	private function loadMappingByName( string $projectionName ): ?Mapping {
+	private function loadMappingByName( string $projectionName, MappingLookup $mappingLookup ): ?Mapping {
 		try {
 			$name = new MappingName( $projectionName );
 		} catch ( InvalidArgumentException ) {
 			return null;
 		}
 
-		return $this->getMappingLookup()->getMapping( $name );
+		return $mappingLookup->getMapping( $name );
 	}
 
 	/**
@@ -1156,7 +1194,7 @@ class NeoWikiExtension {
 			// the store tracks the current Mapping definitions. Closures, not $this, keep the store
 			// depending on the narrow resolver rather than the whole extension.
 			projectionResolver: new CallbackProjectionResolver(
-				fn ( string $projectionName ): ?RdfProjection => $this->newRdfProjection( $projectionName ),
+				fn ( string $projectionName ): ?RdfProjection => $this->newUnrestrictedRdfProjection( $projectionName ),
 				fn (): array => $this->getRdfProjectionNames(),
 			),
 			namespaces: $this->getRdfNamespaces(),
@@ -1184,7 +1222,7 @@ class NeoWikiExtension {
 		}
 
 		if ( $this->neo4jPlugin === null ) {
-			$this->neo4jPlugin = $this->buildNeo4jPlugin( $this->getSchemaResolver() );
+			$this->neo4jPlugin = $this->buildNeo4jPlugin( $this->getUnrestrictedSchemaResolver() );
 		}
 
 		return $this->neo4jPlugin;
@@ -1913,7 +1951,7 @@ class NeoWikiExtension {
 		);
 	}
 
-	// Pinned to the authority of first use, like getNeo4jPlugin(). The pin fixes the authority behind
+	// Pinned to the authority of first use. The pin fixes the authority behind
 	// both the Schema read gate and the inner lookup's revision-audience filter, and it lives as long
 	// as this singleton, so its scope is the PHP process: one request under mod_php, a whole run under
 	// a maintenance script. It narrows ADR 027's "every access decision runs against the caller's

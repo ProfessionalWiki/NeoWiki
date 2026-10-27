@@ -5,11 +5,21 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Maintenance;
 
 use Exception;
+use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\WikitextContent;
 use MediaWiki\Maintenance\MaintenanceFatalError;
+use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Tests\Maintenance\MaintenanceBaseTestCase;
+use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
+use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\Maintenance\DumpRdf;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingPagePropertyProvider;
 use RuntimeException;
 use Wikimedia\Rdbms\DBUnexpectedError;
@@ -49,6 +59,16 @@ class DumpRdfTest extends MaintenanceBaseTestCase {
 		$this->insertPage( 'DumpRdfTest plain page', 'No subjects here.' );
 
 		$this->assertStringContainsString( 'DumpRdfTest plain page', $this->runDump() );
+	}
+
+	/**
+	 * Maintenance scripts run as an anonymous user, who on a wiki only members may read can read no Schema.
+	 */
+	public function testDumpsEachSubjectOnAWikiOnlyMembersMayRead(): void {
+		$this->insertPageWithASubjectAndItsSchema( 'DumpRdfTest subject page' );
+		$this->setGroupPermissions( '*', 'read', false );
+
+		$this->assertStringContainsString( TestSubject::ZERO_GUID, $this->runDump() );
 	}
 
 	public function testKeepsTheDocumentWellFormedWhenAPageInTheMiddleIsSkipped(): void {
@@ -113,6 +133,23 @@ class DumpRdfTest extends MaintenanceBaseTestCase {
 		$this->assertTrue( $reportedIncomplete, 'the run reports the dump as incomplete' );
 
 		return $output;
+	}
+
+	private function insertPageWithASubjectAndItsSchema( string $pageName ): void {
+		$this->editPage(
+			Title::makeTitle( NeoWikiExtension::NS_SCHEMA, TestSubject::DEFAULT_SCHEMA_ID ),
+			new SchemaContent( '{"title":"' . TestSubject::DEFAULT_SCHEMA_ID . '","propertyDefinitions":{}}' )
+		);
+
+		$updater = $this->getServiceContainer()->getWikiPageFactory()
+			->newFromTitle( Title::newFromText( $pageName ) )
+			->newPageUpdater( $this->getTestSysop()->getUser() );
+		$updater->setContent( SlotRecord::MAIN, new WikitextContent( '' ) );
+		$updater->setContent(
+			MediaWikiSubjectRepository::SLOT_NAME,
+			SubjectContent::newFromData( new PageSubjects( TestSubject::build(), new SubjectMap() ) )
+		);
+		$updater->saveRevision( CommentStoreComment::newUnsavedComment( 'DumpRdfTest' ) );
 	}
 
 	private function failPagePropertiesFor( string $pageTitle, Exception $failure ): void {

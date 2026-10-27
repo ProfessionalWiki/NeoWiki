@@ -15,7 +15,7 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 /**
  * Holds each Schema parsed from PublishedPageJsonLookup's JSON for as long as the PHP process lasts,
  * keyed on the Schema page's latest revision id from the LinkCache, so a hit costs no I/O.
- * NeoWikiExtension pins one lookup in its singleton, so that is a single request under mod_php and an
+ * NeoWikiExtension pins its lookups in its singleton, so that is a single request under mod_php and an
  * entire run under a maintenance script. Such a long-running process does not see an approval change,
  * which leaves the latest revision id as it was, and a maintenance script does not see another
  * process's edit either; a job runner clears the LinkCache before every job.

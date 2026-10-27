@@ -42,7 +42,7 @@ class DumpRdf extends Maintenance {
 		$extension = NeoWikiExtension::getInstance();
 
 		$projectionName = $this->getOption( 'projection', RdfPageProjector::PROJECTION );
-		$projection = $extension->newRdfProjection( $projectionName );
+		$projection = $extension->newUnrestrictedRdfProjection( $projectionName );
 
 		if ( $projection === null ) {
 			$this->fatalError(

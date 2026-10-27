@@ -14,6 +14,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportPageRdfApi;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\Domain\Rdf\ParsedRdf;
@@ -261,6 +262,35 @@ JSON
 		);
 
 		$this->assertSame( 200, $response->getStatusCode() );
+	}
+
+	public function testLeavesOutASubjectWhoseSchemaTheReaderMayNotRead(): void {
+		$this->denyReadingPagesIn( NeoWikiExtension::NS_SCHEMA );
+
+		$body = $this->export()->getBody()->getContents();
+
+		$this->assertStringContainsString( 'ExportPageRdfApiTest Berlin', $body );
+		$this->assertStringNotContainsString( self::SUBJECT_ID, $body );
+	}
+
+	public function testAMappingTheReaderMayNotReadIsAnUnknownProjection(): void {
+		$this->createEdmMapping();
+		$this->denyReadingPagesIn( NeoWikiExtension::NS_MAPPING );
+
+		$this->assertSame( 400, $this->export( query: [ 'projection' => 'EDM' ] )->getStatusCode() );
+	}
+
+	private function denyReadingPagesIn( int $namespace ): void {
+		$this->setTemporaryHook(
+			'getUserPermissionsErrors',
+			static function ( Title $title, $user, string $action, &$result ) use ( $namespace ): bool {
+				if ( $action === 'read' && $title->getNamespace() === $namespace ) {
+					$result = [ 'badaccess-group0' ];
+					return false;
+				}
+				return true;
+			}
+		);
 	}
 
 	public function testUnknownProjectionStillReturns400ForAnUnreadablePage(): void {

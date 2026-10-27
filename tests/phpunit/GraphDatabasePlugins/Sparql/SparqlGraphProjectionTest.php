@@ -13,9 +13,15 @@ use ProfessionalWiki\NeoWiki\Application\GraphRebuild\NullRebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
+use ProfessionalWiki\NeoWiki\Domain\Page\Page;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Domain\Source\Source;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySource;
 
 /**
  * Proves that a configured SPARQL store participates in the real write paths: a page edit that stores
@@ -79,6 +85,68 @@ class SparqlGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertReceivedInsertForPage( self::ENDPOINT, $pageId );
 		$this->assertReceivedInsertForPage( self::SECOND_ENDPOINT, $pageId );
+	}
+
+	public function testTheStoreReceivesTheSubjectsOfAnEditOnAWikiOnlyMembersMayRead(): void {
+		$this->installMockHttp( $this->capturingHttp() );
+		$this->overrideConfigValue( 'NeoWikiSparqlStores', [ [ 'updateUrl' => self::ENDPOINT ] ] );
+
+		$this->editAPageOnAWikiOnlyMembersMayRead();
+
+		$this->assertStringContainsString( '/entity/' . TestSubject::ZERO_GUID, $this->lastUpdateFor( self::ENDPOINT ) );
+	}
+
+	public function testAStoreHoldingAMappingReceivesTheSubjectsOfAnEditOnAWikiOnlyMembersMayRead(): void {
+		$this->installMockHttp( $this->capturingHttp() );
+		$this->overrideConfigValue( 'NeoWikiSparqlStores', [ [ 'updateUrl' => self::ENDPOINT, 'projection' => 'EDM' ] ] );
+		$this->createMapping( 'EDM', '{"version":1,"prefixes":{"edm":"http://www.europeana.eu/schemas/edm/"},'
+			. '"schemas":{"' . TestSubject::DEFAULT_SCHEMA_ID . '":{"subject":{"class":"edm:Place"}}}}' );
+
+		$this->editAPageOnAWikiOnlyMembersMayRead();
+
+		$this->assertStringContainsString( 'http://www.europeana.eu/schemas/edm/Place', $this->lastUpdateFor( self::ENDPOINT ) );
+	}
+
+	/**
+	 * The test's request, like a job runner's or a maintenance script's, runs as an anonymous user, who on a wiki
+	 * only members may read can read no Schema or Mapping.
+	 */
+	private function editAPageOnAWikiOnlyMembersMayRead(): void {
+		$this->setGroupPermissions( '*', 'read', false );
+
+		$this->runWithoutGraphBackend(
+			fn () => $this->createPageWithSubjects( 'Members-only page', TestSubject::build() )
+		);
+	}
+
+	/**
+	 * A Source registers as a factory when it holds a client or a cache, which building it for every page would lose.
+	 */
+	public function testTheStoreBuildsASourceRegisteredAsAFactoryOnceForAllThePagesItSaves(): void {
+		$this->installMockHttp( $this->capturingHttp() );
+		$this->overrideConfigValue( 'NeoWikiSparqlStores', [ [ 'updateUrl' => self::ENDPOINT ] ] );
+		$builds = 0;
+		$this->registerSources( [
+			'catalog' => function () use ( &$builds ): Source {
+				$builds++;
+				return new InMemorySource();
+			},
+		] );
+
+		$this->runWithoutGraphBackend( function (): void {
+			$store = NeoWikiExtension::getInstance()->getNamedGraphDatabasePlugins()['native'];
+			$store->savePage( $this->pageWithASubjectOfACatalogSchema( 1 ) );
+			$store->savePage( $this->pageWithASubjectOfACatalogSchema( 2 ) );
+		} );
+
+		$this->assertSame( 1, $builds );
+	}
+
+	private function pageWithASubjectOfACatalogSchema( int $pageId ): Page {
+		return TestPage::build(
+			id: $pageId,
+			mainSubject: TestSubject::build( schemaName: SchemaReference::sourced( 'catalog', new SchemaName( 'Widget' ) ) )
+		);
 	}
 
 	public function testDeletingPageSendsDropToSparqlStore(): void {
