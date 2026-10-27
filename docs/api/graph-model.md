@@ -51,6 +51,11 @@ with `wiki_id` to filter those unambiguously.
 Each Subject stored on a page gets a `:Subject` node. Subject nodes carry two labels: `Subject` and the name of their
 Schema (e.g. `:Subject:Person`, `:Subject:Company`). The Schema label changes if a Subject's type changes.
 
+A Subject whose Schema cannot be loaded, for example because its Schema page was deleted, has no node from the next
+save of its page or [rebuild](../operations/maintenance.md#rebuilding-the-graph) on, or only a
+[stub](#stub-subject-nodes) while other Subjects relate to it. A warning on the
+[`NeoWiki` channel](../operations/installation.md#logging) names the Schema.
+
 ### Fixed properties
 
 | Property | Neo4j Type | Description |

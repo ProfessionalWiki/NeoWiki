@@ -32,11 +32,16 @@ class Neo4jSubjectUpdater {
 	) {
 	}
 
-	public function updateSubjects( Page $page ): void {
+	/**
+	 * Reports the ids of the Subjects it wrote, which leave out those whose Schema does not resolve.
+	 *
+	 * @return string[]
+	 */
+	public function updateSubjects( Page $page ): array {
 		$subjects = $this->subjectsWithSchema( $page->getSubjects() );
 
 		if ( $subjects === [] ) {
-			return;
+			return [];
 		}
 
 		// updateNodeProperties must precede updateHasSubjectRelations and updateNodeLabels: those two
@@ -47,6 +52,8 @@ class Neo4jSubjectUpdater {
 		$this->updateRelations( $subjects );
 		$this->updateHasSubjectRelations( $subjects );
 		$this->updateNodeLabels( $subjects, $currentLabels );
+
+		return array_map( fn ( Neo4jPageSubject $pageSubject ) => $pageSubject->getId(), $subjects );
 	}
 
 	/**

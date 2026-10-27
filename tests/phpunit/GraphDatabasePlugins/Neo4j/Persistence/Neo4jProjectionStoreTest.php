@@ -46,6 +46,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 	private const GUID_5 = 'sTestNQS1111115';
 	private const SCHEMA_ID_A = 'sTestNQS111111A';
 	private const SCHEMA_ID_Z = 'sTestNQS111111Z';
+	private const UNRESOLVABLE_SCHEMA = 'sTestNQS111111U';
 	private const WIKI_ID = 'my_wiki';
 	private const LOCATION_PROPERTY = 'Located in';
 
@@ -379,6 +380,35 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectDoesNotExist( self::GUID_2 );
 	}
 
+	public function testSavingASubjectWhoseSchemaStoppedResolvingDeletesIt(): void {
+		$store = $this->newProjectionStore();
+		$store->savePage( TestPage::build( id: 1, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
+
+		$this->saveSubjectUnderUnresolvableSchema( $store );
+
+		$this->assertSubjectDoesNotExist( self::GUID_1 );
+	}
+
+	public function testSavingAReferencedSubjectWhoseSchemaStoppedResolvingReducesItToAStub(): void {
+		$store = $this->newProjectionStoreWithLocationRelation();
+		$store->savePage( TestPage::build( id: 1, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
+		$store->savePage( TestPage::build(
+			id: 2,
+			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
+		) );
+
+		$this->saveSubjectUnderUnresolvableSchema( $store );
+
+		$this->assertSubjectIsStub( self::GUID_1 );
+	}
+
+	private function saveSubjectUnderUnresolvableSchema( GraphDatabasePlugin $store ): void {
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::UNRESOLVABLE_SCHEMA ) )
+		) );
+	}
+
 	public function testDeletingPageReducesAReferencedSubjectToAStub(): void {
 		$store = $this->newProjectionStoreWithLocationRelation();
 
@@ -705,18 +735,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
 		) );
 
-		// Re-saving GUID_1 under a schema this store's lookup does not know makes the projection skip it,
-		// so it keeps its data while losing its link to the page. newProjectionStoreWithLocationRelation
-		// hands its store an InMemorySchemaLookup holding the default schema alone, so SCHEMA_ID_A does not
-		// resolve here.
-		$store->savePage( TestPage::build(
-			id: 1,
-			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::SCHEMA_ID_A ) ),
-		) );
-
-		// The skip is what gives this test its teeth, so assert it happened rather than assuming it.
-		$this->assertSubjectIsNotStub( self::GUID_1 );
-		$this->assertNotLinkedToAnyPage( self::GUID_1 );
+		$this->unlinkFromItsPage( self::GUID_1 );
 
 		// Removing GUID_2 takes GUID_1's last incoming relation with it, leaving a subject that has
 		// no incoming relation at all but still carries data.
@@ -725,6 +744,14 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		// Asserting the data survives, not merely the node: a sweep that reduced unreachable
 		// candidates to stubs instead of deleting them would leave a node behind either way.
 		$this->assertSubjectIsNotStub( self::GUID_1 );
+	}
+
+	/**
+	 * The projection itself leaves no Subject with data but no page link; a node written to the graph by
+	 * other means can be one.
+	 */
+	private function unlinkFromItsPage( string $subjectId ): void {
+		$this->writeGraph( "MATCH (:Page)-[hasSubject:HasSubject]->(:Subject {id: '$subjectId'}) DELETE hasSubject" );
 	}
 
 	public function testRemovingASubjectLeavesAnUnlinkedLabellessSubjectAlone(): void {
@@ -741,14 +768,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
 		) );
 
-		$store->savePage( TestPage::build(
-			id: 1,
-			otherSubjects: new SubjectMap(
-				TestSubject::build( id: self::GUID_1, label: null, schemaName: new SchemaName( self::SCHEMA_ID_A ) )
-			)
-		) );
-
-		$this->assertNotLinkedToAnyPage( self::GUID_1 );
+		$this->unlinkFromItsPage( self::GUID_1 );
 
 		$store->savePage( TestPage::build( id: 2 ) );
 
@@ -995,18 +1015,6 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			TestSubject::DEFAULT_SCHEMA_ID,
 			$row['labels'],
 			"Subject {$subjectId} should keep its Schema label"
-		);
-	}
-
-	private function assertNotLinkedToAnyPage( string $subjectId ): void {
-		$result = $this->readGraph(
-			'MATCH (subject {id: $id}) RETURN EXISTS { (:Page)-[:HasSubject]->(subject) } AS isLinked',
-			[ 'id' => $subjectId ]
-		);
-
-		$this->assertFalse(
-			$result->first()->toRecursiveArray()['isLinked'],
-			"Subject {$subjectId} should not be linked to a page"
 		);
 	}
 

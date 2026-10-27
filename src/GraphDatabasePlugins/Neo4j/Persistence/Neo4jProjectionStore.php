@@ -36,9 +36,9 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 			$this->upsertPageNode( $transaction, $page );
 
 			$detachedSubjectIds = $this->detachSubjectsFromPage( $transaction, $page->getId() );
+			$projectedSubjectIds = $this->updateSubjects( $transaction, $page, $orphanCandidates );
 
-			$this->removeAbsentSubjects( $transaction, $detachedSubjectIds, $page, $orphanCandidates );
-			$this->updateSubjects( $transaction, $page, $orphanCandidates );
+			$this->removeUnprojectedSubjects( $transaction, $detachedSubjectIds, $projectedSubjectIds, $orphanCandidates );
 			$this->deleteOrphanStubs( $transaction, $orphanCandidates );
 		} );
 	}
@@ -73,26 +73,26 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	}
 
 	/**
-	 * Removes the subjects that were attached to the page in the graph but are no longer present on the
-	 * page. This reuses removeSubjects so that a removed subject still referenced by other subjects is
-	 * kept as a stub instead of being deleted, keeping the incoming relations valid.
+	 * Removes the subjects that were attached to the page in the graph but that this save did not project:
+	 * those gone from the page, and those whose Schema no longer resolves. Left in place, the latter would
+	 * keep their stale data with nothing linking them to a page, beyond the reach of any later removal.
+	 * This reuses removeSubjects so that a removed subject still referenced by other subjects is kept as a
+	 * stub instead of being deleted, keeping the incoming relations valid.
 	 *
 	 * @param string[] $attachedSubjectIds
+	 * @param string[] $projectedSubjectIds
 	 */
-	private function removeAbsentSubjects(
+	private function removeUnprojectedSubjects(
 		TransactionInterface $transaction,
 		array $attachedSubjectIds,
-		Page $page,
+		array $projectedSubjectIds,
 		Neo4jOrphanCandidates $orphanCandidates
 	): void {
-		$presentSubjectIds = $page->getSubjects()->getAllSubjects()->getIdsAsTextArray();
-
-		$absentSubjectIds = array_values( array_filter(
-			$attachedSubjectIds,
-			fn( string $subjectId ) => !in_array( $subjectId, $presentSubjectIds, true )
-		) );
-
-		$this->removeSubjects( $transaction, $absentSubjectIds, $orphanCandidates );
+		$this->removeSubjects(
+			$transaction,
+			array_values( array_diff( $attachedSubjectIds, $projectedSubjectIds ) ),
+			$orphanCandidates
+		);
 	}
 
 	/**
@@ -164,12 +164,15 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		return $date->format( 'Y-m-d\TH:i:s' );
 	}
 
+	/**
+	 * @return string[]
+	 */
 	private function updateSubjects(
 		TransactionInterface $transaction,
 		Page $page,
 		Neo4jOrphanCandidates $orphanCandidates
-	): void {
-		$this->subjectUpdaterFactory
+	): array {
+		return $this->subjectUpdaterFactory
 			->newSubjectUpdater( $transaction, $page->getId(), $orphanCandidates )
 			->updateSubjects( $page );
 	}
@@ -341,11 +344,10 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 	 *
 	 * A candidate is confirmed to be a stub by carrying no node label beyond :Subject, not by the absence
 	 * of a link from a page. Both hold for a stub, but only the first holds for a stub alone: a removed
-	 * subject commonly references normal subjects, and a subject whose schema failed to resolve keeps its
-	 * data while losing its link to the page. The node labels are the oracle rather than the absence of a
-	 * name because a Subject nobody named has no name either, and that combination of conditions is
-	 * reachable. One pass then suffices, since a stub has no outgoing relations and so cannot orphan
-	 * another node when deleted.
+	 * subject commonly references normal subjects, and a Subject node written other than through this
+	 * projection can carry data without a link from a page. The node labels are the oracle rather than
+	 * the absence of a name because a Subject nobody named has no name either. One pass then suffices,
+	 * since a stub has no outgoing relations and so cannot orphan another node when deleted.
 	 *
 	 * A candidate that gained a new incoming relation later in the same transaction has one by the time
 	 * this runs, and survives.
