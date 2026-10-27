@@ -51,9 +51,9 @@ with `wiki_id` to filter those unambiguously.
 Each Subject stored on a page gets a `:Subject` node. Subject nodes carry two labels: `Subject` and the name of their
 Schema (e.g. `:Subject:Person`, `:Subject:Company`). The Schema label changes if a Subject's type changes.
 
-A Subject whose Schema cannot be loaded, for example because its Schema page was deleted, has no node from the next
-save of its page or [rebuild](../operations/maintenance.md#rebuilding-the-graph) on, or only a
-[stub](#stub-subject-nodes) while other Subjects relate to it. A warning on the
+A Subject whose Schema cannot be loaded, for example because its Schema page was deleted, has no node, or only a
+[stub](#stub-subject-nodes) while other Subjects relate to it, once its page is next saved or the graph
+[rebuilt](../operations/maintenance.md#rebuilding-the-graph). A warning on the
 [`NeoWiki` channel](../operations/installation.md#logging) names the Schema.
 
 ### Fixed properties
@@ -109,9 +109,10 @@ not by a missing `name`: a Subject with no label has none either.
 
 Stubs arise in two ways:
 
-- **Referenced but removed.** When a Subject is removed from its page (or its page is deleted) but other Subjects
-  still hold relations to it, its node is reduced to a stub rather than deleted, and its `HasSubject` and outgoing
-  relationships are removed. This keeps the incoming references valid.
+- **Referenced but removed.** When a Subject is removed from its page (or its page is deleted, or its Schema
+  [cannot be loaded](#subject-nodes)) but other Subjects still hold relations to it, its node is reduced to a stub
+  rather than deleted, and its `HasSubject` and outgoing relationships are removed. This keeps the incoming references
+  valid.
 - **Referenced but not yet created.** When a Relation targets a Subject that does not exist yet, a stub target node
   is created so the relationship can be stored.
 

@@ -382,9 +382,17 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 
 	public function testSavingASubjectWhoseSchemaStoppedResolvingDeletesIt(): void {
 		$store = $this->newProjectionStore();
-		$store->savePage( TestPage::build( id: 1, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
+			otherSubjects: new SubjectMap( TestSubject::build( id: self::GUID_2 ) )
+		) );
 
-		$this->saveSubjectUnderUnresolvableSchema( $store );
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: $this->subjectWithUnresolvableSchema(),
+			otherSubjects: new SubjectMap( TestSubject::build( id: self::GUID_2 ) )
+		) );
 
 		$this->assertSubjectDoesNotExist( self::GUID_1 );
 	}
@@ -397,16 +405,13 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			mainSubject: $this->buildSubjectWithLocationRelation( self::GUID_2, self::GUID_1, 'rTestNQS1111rr1' ),
 		) );
 
-		$this->saveSubjectUnderUnresolvableSchema( $store );
+		$store->savePage( TestPage::build( id: 1, mainSubject: $this->subjectWithUnresolvableSchema() ) );
 
 		$this->assertSubjectIsStub( self::GUID_1 );
 	}
 
-	private function saveSubjectUnderUnresolvableSchema( GraphDatabasePlugin $store ): void {
-		$store->savePage( TestPage::build(
-			id: 1,
-			mainSubject: TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::UNRESOLVABLE_SCHEMA ) )
-		) );
+	private function subjectWithUnresolvableSchema(): Subject {
+		return TestSubject::build( id: self::GUID_1, schemaName: new SchemaName( self::UNRESOLVABLE_SCHEMA ) );
 	}
 
 	public function testDeletingPageReducesAReferencedSubjectToAStub(): void {
