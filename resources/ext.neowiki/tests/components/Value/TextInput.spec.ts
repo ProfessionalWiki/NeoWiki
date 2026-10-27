@@ -145,15 +145,13 @@ describe( 'TextInput', () => {
 			expect( field.props( 'status' ) ).toBe( 'default' );
 		} );
 
-		it( 'CdxField status remains default for multiple inputs even with fieldMessages.error', () => {
-			mockFieldMessages.value = { error: 'Error that should not set status for multiple' };
+		it( 'shows the field message of a multi-valued property', () => {
+			mockFieldMessages.value = { error: 'All values must be unique.' };
 			const wrapper = newWrapper( {
 				property: newTextProperty( { multiple: true } ),
 			} );
-			const field = wrapper.findComponent( CdxField );
 
-			expect( field.props( 'status' ) ).toBe( 'default' );
-			expect( field.props( 'messages' ) ).toEqual( mockFieldMessages.value );
+			expect( wrapper.text() ).toContain( 'All values must be unique.' );
 		} );
 	} );
 

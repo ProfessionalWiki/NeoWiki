@@ -2,7 +2,7 @@
 	<CdxField
 		:is-fieldset="true"
 		:messages="fieldMessages"
-		:status="props.property.multiple ? 'default' : violationStatus( fieldMessages )"
+		:status="violationStatus( fieldMessages )"
 		:optional="props.property.required === false"
 	>
 		<template #label>
