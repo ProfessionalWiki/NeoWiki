@@ -430,7 +430,7 @@ else
 			| grep -cE '^(test_neo|test_qlever|test_oxigraph)$$')" = "3" ]; then \
 		exit 0; \
 	fi; \
-	$(DC_TEST) up -d; \
+	$(DC_TEST) up -d test_neo test_qlever test_oxigraph; \
 	$(EXEC_MW_ROOT) bash -c '/wait-for-it.sh test_neo:7689 -t 60 && /wait-for-it.sh test_qlever:7019 -t 120 \
 		&& /wait-for-it.sh test_oxigraph:7878 -t 120'
 endif
