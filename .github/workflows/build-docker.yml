@@ -23,6 +23,20 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # The bundled Makefile runs the image that a copy's Docker/image-tag names. scripts/tag-release.sh writes that
+      # file into each version tag's commit and master never holds it, so a tag made any other way publishes nothing.
+      - name: Check Docker/image-tag
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            if [ "$(cat Docker/image-tag 2>/dev/null)" != "$GITHUB_REF_NAME" ]; then
+              echo "Docker/image-tag does not name $GITHUB_REF_NAME: tag with scripts/tag-release.sh" >&2
+              exit 1
+            fi
+          elif [ -e Docker/image-tag ]; then
+            echo "Only version tags hold Docker/image-tag" >&2
+            exit 1
+          fi
+
       - uses: actions/setup-node@v6
         with:
           node-version: 24

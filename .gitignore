@@ -1,5 +1,6 @@
 Docker/mediawiki/
 Docker/.env
+Docker/image-tag
 Docker/LocalSettings.local.php
 node_modules/
 /perf/

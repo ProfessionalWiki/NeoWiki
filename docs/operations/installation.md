@@ -34,8 +34,7 @@ This pulls the demo image of that release, starts the stack, installs the wiki, 
 `make down` stops and removes the containers, and `make remove` also deletes the data volumes. To move a running stack
 to a newer NeoWiki, see [Upgrading](upgrading.md).
 
-A git checkout of a commit without a version tag runs master's image instead, and a copy without git runs the newest
-release's.
+A checkout of master, or of any other branch, runs master's image instead.
 
 For an empty wiki without the sample data, run `make up && make install-db` instead. That wiki has no `Mapping:EDM`
 page, so the stack's preconfigured EDM projection reports a failure on every save until you create that Mapping or

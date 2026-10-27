@@ -209,10 +209,11 @@ report the backends as missing instead of starting them.
 
 Push version tags one at a time: a push of more than three starts no workflow.
 
-The bundled Makefile picks the tag from the checkout, preferring a release over a pre-release on the same commit; see
-[Installation](../docs/operations/installation.md#method-a-docker). To run another image, put its tag on every `make`
-command, as in `make upgrade NEOWIKI_IMAGE_TAG=master`. A `docker compose` command run without the Makefile gets
-`latest` unless `NEOWIKI_IMAGE_TAG` is set.
+A version tag's commit names its image in `Docker/image-tag`, which `scripts/tag-release.sh` writes, and the workflow
+publishes nothing for a tag that file does not name. The bundled Makefile runs the image the file names, and `master` in
+a git checkout without it; see [Installation](../docs/operations/installation.md#method-a-docker). To run another
+image, put its tag on every `make` command, as in `make upgrade NEOWIKI_IMAGE_TAG=master`. A `docker compose` command
+run without the Makefile gets `latest` unless `NEOWIKI_IMAGE_TAG` is set.
 
 ## Files
 

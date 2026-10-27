@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Exercise what the Makefile derives from the checkout, the demo image tag (NEOWIKI_IMAGE_TAG) and
-# the compose project name, and the guards of the goals that run the image, in throwaway copies of
-# the repository. Docker is a stub that logs its calls, so no stack starts.
+# Exercise what the Makefile derives from the copy, the demo image tag (NEOWIKI_IMAGE_TAG) and the
+# compose project name, and the guards of the goals that run the image, in throwaway copies of the
+# repository. Docker is a stub that logs its calls, so no stack starts.
 
 set -u
 
 # Git exports GIT_DIR and its kin to the commands it runs, such as `git rebase -x` and hooks; left
 # set, they point the git calls below at the developer's repository.
+# shellcheck disable=SC2046 # one variable name per word
 unset $(git rev-parse --local-env-vars)
 
 # When `make test-scripts` runs this script, the outer make's global `export` hands it that make's
@@ -72,6 +73,9 @@ git_in() {
         -c tag.gpgSign=false -c core.hooksPath=/dev/null "${@:2}" >/dev/null
 }
 
+# Writes the Docker/image-tag that scripts/tag-release.sh puts in a version tag's commit.
+name_image() { printf '%s\n' "$2" > "$1/Docker/image-tag"; }
+
 new_checkout() {
     local dir
     dir="$(new_copy "$1")"
@@ -93,6 +97,7 @@ make_in() {
 
 # A makefile of its own rather than --eval, which the make 3.81 of stock macOS lacks.
 PRINT_IMAGE_TAG="$WORK/print-image-tag.mk"
+# shellcheck disable=SC2016 # make, not the shell, expands the $$
 printf '%s\n' 'print-image-tag: ; @echo "$$NEOWIKI_IMAGE_TAG"' > "$PRINT_IMAGE_TAG"
 
 # What docker compose receives from the Makefile in copy $1; the further arguments go to make.
@@ -125,135 +130,110 @@ failed_with() {
 echo
 color '36' "Case 1: checkout of a release tag -> that release"
 dir="$(new_checkout release)"
-git_in "$dir" tag -a -m 'NeoWiki 0.1.0' 0.1.0
+name_image "$dir" 0.1.0
 assert_eq "$(image_tag "$dir")" "0.1.0" "A release tag checkout runs that release's image"
 
 echo
 color '36' "Case 2: checkout of a pre-release tag -> that pre-release"
 dir="$(new_checkout pre-release)"
-git_in "$dir" tag 0.1.0-rc.1
+name_image "$dir" 0.1.0-rc.1
 assert_eq "$(image_tag "$dir")" "0.1.0-rc.1" "A pre-release tag checkout runs that pre-release's image"
 
 echo
-color '36' "Case 3: release tag on a pre-release's commit -> the release"
-dir="$(new_checkout release-on-rc)"
-git_in "$dir" tag -a -m 'NeoWiki 0.1.0-rc.1' 0.1.0-rc.1
-git_in "$dir" tag 0.1.0
-assert_eq "$(image_tag "$dir")" "0.1.0" "A release tag wins over a pre-release tag on the same commit"
-
-echo
-color '36' "Case 3b: release tag made from a pre-release's tag -> the release"
-dir="$(new_checkout release-from-rc-tag)"
-git_in "$dir" tag -a -m 'NeoWiki 0.1.0-rc.1' 0.1.0-rc.1
-git_in "$dir" tag 0.1.0 0.1.0-rc.1
-assert_eq "$(image_tag "$dir")" "0.1.0" "A release tag pointing at a pre-release's tag runs the release's image"
-
-echo
-color '36' "Case 3c: two releases on one commit -> the higher"
-dir="$(new_checkout two-releases)"
-git_in "$dir" tag 0.1.0
-git_in "$dir" tag 0.1.1
-assert_eq "$(image_tag "$dir")" "0.1.1" "The higher of two release tags on one commit wins"
-
-echo
-color '36' "Case 4: commit after a release tag -> master"
-dir="$(new_checkout after-release)"
-git_in "$dir" tag 0.1.0
-git_in "$dir" commit -q --allow-empty -m 'Second commit'
-assert_eq "$(image_tag "$dir")" "master" "A commit after a release runs master's image"
-
-echo
-color '36' "Case 5: checkout of a tag that is not a version -> master"
-dir="$(new_checkout perf-tag)"
-git_in "$dir" tag perf/2026-07-31-batching
-assert_eq "$(image_tag "$dir")" "master" "A non-version tag runs master's image"
-
-echo
-color '36' "Case 6: copy without .git, as unpacked from a release archive -> latest, fixed project name"
+color '36' "Case 3: copy without .git, as unpacked from a release archive -> that release, fixed project name"
 dir="$(new_copy NeoWiki-0.1.0)"
-assert_eq "$(image_tag "$dir")" "latest" "A copy without .git runs the newest release's image"
+name_image "$dir" 0.1.0
+assert_eq "$(image_tag "$dir")" "0.1.0" "A release archive runs that release's image"
 assert_eq "$(project_name "$dir")" "neowiki" "A copy without .git runs as project neowiki"
 
 echo
-color '36' "Case 7: git worktree -> master, project named after its directory"
+color '36' "Case 4: git checkout without Docker/image-tag -> master"
+dir="$(new_checkout plain)"
+assert_eq "$(image_tag "$dir")" "master" "A git checkout without Docker/image-tag runs master's image"
+dir="$(new_checkout hand-made-tag)"
+git_in "$dir" tag 0.1.0
+assert_eq "$(image_tag "$dir")" "master" "A version tag made without tag-release.sh runs master's image"
+
+echo
+color '36' "Case 5: copy without .git or Docker/image-tag, as master's Download ZIP -> the image goals stop"
+dir="$(new_copy NeoWiki-master)"
+for goal in pull up demo upgrade wiki-production-image; do
+    run_make "$dir" "$goal"
+    if failed_with 'releases/latest' NEOWIKI_IMAGE_TAG && ! ran_image_command; then
+        ok "make $goal stops, pointing to the latest release and NEOWIKI_IMAGE_TAG"
+    else
+        fail "make $goal should stop, pointing to the latest release and NEOWIKI_IMAGE_TAG (exit $RC, got: $OUT)"
+    fi
+done
+image_tag "$dir" >/dev/null 2>&1
+assert_eq "$?" 0 "A goal that runs no image still works"
+assert_eq "$(project_name "$dir")" "neowiki" "A copy without .git runs as project neowiki"
+
+echo
+color '36' "Case 6: git worktree -> master, project named after its directory"
 dir="$(new_worktree NeoWiki-feature-x)"
 assert_eq "$(image_tag "$dir")" "master" "A git worktree runs master's image"
 assert_eq "$(project_name "$dir")" "neowiki-neowiki-feature-x" "A git worktree's project is named after its directory"
 
 echo
-color '36' "Case 8: git checkout in a directory with dots -> a project name compose accepts"
+color '36' "Case 7: git checkout in a directory with dots -> a project name compose accepts"
 dir="$(new_checkout NeoWiki-0.1.0-clone)"
 assert_eq "$(project_name "$dir")" "neowiki-neowiki-0-1-0-clone" "Dots in the directory name become hyphens"
 
 echo
-color '36' "Case 9: NEOWIKI_IMAGE_TAG from the environment -> that tag"
+color '36' "Case 8: NEOWIKI_IMAGE_TAG from the environment -> that tag"
 dir="$(new_checkout override)"
-git_in "$dir" tag 0.1.0
+name_image "$dir" 0.1.0
 assert_eq "$(NEOWIKI_IMAGE_TAG=0.0.9 image_tag "$dir")" "0.0.9" \
-    "NEOWIKI_IMAGE_TAG from the environment wins over the checkout's tag"
+    "NEOWIKI_IMAGE_TAG from the environment wins over Docker/image-tag"
 
 echo
-color '36' "Case 10: blank NEOWIKI_IMAGE_TAG -> derived from the checkout"
+color '36' "Case 9: blank NEOWIKI_IMAGE_TAG -> Docker/image-tag"
 dir="$(new_checkout blank)"
-git_in "$dir" tag 0.1.0
+name_image "$dir" 0.1.0
 assert_eq "$(image_tag "$dir" NEOWIKI_IMAGE_TAG=)" "0.1.0" "A blank NEOWIKI_IMAGE_TAG counts as unset"
 
 echo
-color '36' "Case 11: NEOWIKI_IMAGE_TAG in Docker/.env with a comment -> that tag"
+color '36' "Case 10: NEOWIKI_IMAGE_TAG in Docker/.env with a comment -> that tag"
 dir="$(new_checkout env-file)"
 printf 'NEOWIKI_IMAGE_TAG=0.0.9   # pinned\n' >> "$dir/Docker/.env.dist"
 assert_eq "$(image_tag "$dir")" "0.0.9" "Spaces before a comment in Docker/.env are not part of the tag"
 
 echo
-color '36' "Case 12: .git that git cannot read -> the image goals stop, other goals run"
-dir="$(new_copy unreadable)"
-printf 'gitdir: %s\n' "$WORK/missing" > "$dir/.git"
-for goal in pull up demo upgrade wiki-production-image; do
-    run_make "$dir" "$goal"
-    if failed_with 'git status' NEOWIKI_IMAGE_TAG && ! ran_image_command; then
-        ok "make $goal stops, pointing to git status and NEOWIKI_IMAGE_TAG"
-    else
-        fail "make $goal should stop, pointing to git status and NEOWIKI_IMAGE_TAG (exit $RC, got: $OUT)"
-    fi
-done
-image_tag "$dir" >/dev/null 2>&1
-assert_eq "$?" 0 "A goal that runs no image still works"
-
-echo
-color '36' "Case 13: checkout that git can read -> the image goals run"
+color '36' "Case 11: git checkout -> the image goals run"
 dir="$(new_checkout readable)"
 run_make "$dir" pull
 if [ "$RC" -eq 0 ] && ran_image_command; then ok "make pull pulls"; else fail "make pull should pull (exit $RC, got: $OUT)"; fi
 
 echo
-color '36' "Case 14: production image -> built under the checkout's tag"
+color '36' "Case 12: production image -> built under the copy's tag"
 dir="$(new_checkout production)"
-git_in "$dir" tag 0.1.0
+name_image "$dir" 0.1.0
 run_make "$dir" wiki-production-image
 if grep -qF -- '-t ghcr.io/professionalwiki/neowiki:0.1.0' "$DOCKER_LOG"; then
-    ok "make wiki-production-image tags the image with the checkout's tag"
+    ok "make wiki-production-image tags the image with the copy's tag"
 else
     fail "make wiki-production-image should tag the image 0.1.0 (docker calls: $(cat "$DOCKER_LOG"))"
 fi
 
 echo
-color '36' "Case 15: stack on another version's image -> up and demo stop, upgrade moves it"
+color '36' "Case 13: stack on another version's image -> up and demo stop, upgrade moves it"
 dir="$(new_checkout moved)"
-git_in "$dir" tag 0.2.0
+name_image "$dir" 0.2.0
 MEDIAWIKI_RUNS=id-of-0.1.0
 for goal in up demo; do
     run_make "$dir" "$goal"
     if failed_with 'neowiki:0.2.0' 'make upgrade' && ! started; then
-        ok "make $goal stops, naming this checkout's image and make upgrade"
+        ok "make $goal stops, naming this copy's image and make upgrade"
     else
-        fail "make $goal should stop, naming this checkout's image and make upgrade (exit $RC, got: $OUT)"
+        fail "make $goal should stop, naming this copy's image and make upgrade (exit $RC, got: $OUT)"
     fi
 done
 run_make "$dir" upgrade
 if [ "$RC" -eq 0 ] && started; then ok "make upgrade moves the stack"; else fail "make upgrade should move the stack (exit $RC, got: $OUT)"; fi
 
 echo
-color '36' "Case 16: stack on this checkout's image, or no stack -> up starts it"
+color '36' "Case 14: stack on this copy's image, or no stack -> up starts it"
 MEDIAWIKI_RUNS=id-of-0.2.0
 run_make "$dir" up
 if [ "$RC" -eq 0 ] && started; then ok "make up starts a stack on the same image"; else fail "make up should start a stack on the same image (exit $RC, got: $OUT)"; fi
@@ -262,7 +242,7 @@ run_make "$dir" up
 if [ "$RC" -eq 0 ] && started; then ok "make up starts a new stack"; else fail "make up should start a new stack (exit $RC, got: $OUT)"; fi
 
 echo
-color '36' "Case 17: newer image pulled under the same tag -> demo stops before starting it"
+color '36' "Case 15: newer image pulled under the same tag -> demo stops before starting it"
 dir="$(new_checkout master-moved)"
 MEDIAWIKI_RUNS=id-of-master
 PULL_MOVES=1

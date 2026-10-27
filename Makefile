@@ -106,20 +106,13 @@ endif
 
 # ---- Demo image --------------------------------------------------------------
 
-# Of the version tags on the commit, the highest wins, a release over its pre-releases; the pattern
-# skips tags that are not versions, such as the perf/ ones. Without .git, as in a downloaded archive, there is
-# no tag to read, so it is latest: the newest release. When git cannot read the checkout, it stays
-# empty, which _require-image-tag refuses. Blank counts as unset, as for MARIADB_HOST above, and a
-# set value loses the spaces an inline comment in Docker/.env leaves behind it.
+# A version tag's commit names its image in Docker/image-tag, which scripts/tag-release.sh writes and master never
+# holds. Without that file, a git checkout runs master's image, and a copy without .git, such as master's "Download
+# ZIP", runs none, which _require-image-tag refuses. Blank counts as unset, as for MARIADB_HOST above, and a set value
+# loses the spaces an inline comment in Docker/.env leaves behind it.
 DEMO_IMAGE := ghcr.io/professionalwiki/neowiki
 ifeq ($(strip $(NEOWIKI_IMAGE_TAG)),)
-ifeq ($(wildcard .git),)
-override NEOWIKI_IMAGE_TAG := latest
-else ifeq ($(shell git rev-parse --git-dir 2>/dev/null),)
-override NEOWIKI_IMAGE_TAG :=
-else
-override NEOWIKI_IMAGE_TAG := $(or $(shell git -c versionsort.suffix=- for-each-ref --count=1 --contains HEAD --merged HEAD --sort=-v:refname --format='%(refname:strip=2)' 'refs/tags/[0-9]*.[0-9]*.[0-9]*' 2>/dev/null),master)
-endif
+override NEOWIKI_IMAGE_TAG := $(strip $(or $(shell cat Docker/image-tag 2>/dev/null),$(if $(wildcard .git),master)))
 else
 override NEOWIKI_IMAGE_TAG := $(strip $(NEOWIKI_IMAGE_TAG))
 endif
@@ -194,10 +187,10 @@ doctor: ## Diagnose dev-environment prerequisites (Docker runtime)
 	@PREFLIGHT_VERBOSE=1 ./Docker/scripts/preflight.sh
 
 # Empty would fall through to docker-compose.yml's latest default: the newest release, whatever
-# version this checkout holds. Only the targets that pull, run or build the image depend on this:
-# the PHP targets re-run make inside the mediawiki container, where a worktree's .git points nowhere.
+# version this copy holds. Only the targets that pull, run or build the image depend on this, so
+# down, logs and remove still work.
 _require-image-tag:
-	$(if $(NEOWIKI_IMAGE_TAG),,$(error Cannot tell which demo image to run, since git cannot read this checkout: see `git status`, or set NEOWIKI_IMAGE_TAG))
+	$(if $(NEOWIKI_IMAGE_TAG),,$(error This copy names no demo image: get a release from https://github.com/ProfessionalWiki/NeoWiki/releases/latest, or set NEOWIKI_IMAGE_TAG))
 
 # up and demo run no migration, so they refuse a stack whose mediawiki container runs another image
 # than the one they would start, as after checking out another version or pulling a newer master;

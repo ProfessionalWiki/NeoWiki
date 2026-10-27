@@ -195,11 +195,13 @@ assert_refused() {
 
 # ---- Cases -------------------------------------------------------------------
 
-color '36' "Case 1: the build commit adds the bundle on top of master's head"
+color '36' "Case 1: the build commit adds the bundle and the image tag on top of master's head"
 setup_case head
 run_sut 0.1.0
 assert_eq "Parent is master's head" "$(tag_parent 0.1.0)" "$SECOND"
-assert_eq "Adds only the bundle" "$(added_files "$SECOND" 0.1.0)" "$BUNDLE_DIR/neowiki.css $BUNDLE_DIR/neowiki.js "
+assert_eq "Adds only the bundle and the image tag" "$(added_files "$SECOND" 0.1.0)" \
+    "Docker/image-tag $BUNDLE_DIR/neowiki.css $BUNDLE_DIR/neowiki.js "
+assert_eq "Names the version's demo image" "$(git -C "$CLONE" show 0.1.0:Docker/image-tag 2>&1)" '0.1.0'
 assert_eq "Holds the successful master run's JavaScript" \
     "$(git -C "$CLONE" show "0.1.0:$BUNDLE_DIR/neowiki.js" 2>&1)" 'console.log( "built" );'
 assert_eq "Holds the successful master run's stylesheet" \
@@ -222,8 +224,8 @@ setup_case older
 BUILT_COMMIT=$FIRST
 run_sut 0.1.0 "$FIRST"
 assert_eq "Parent is the given commit" "$(tag_parent 0.1.0)" "$FIRST"
-assert_eq "Adds only the bundle to it" "$(added_files "$FIRST" 0.1.0)" \
-    "$BUNDLE_DIR/neowiki.css $BUNDLE_DIR/neowiki.js "
+assert_eq "Adds only the bundle and the image tag to it" "$(added_files "$FIRST" 0.1.0)" \
+    "Docker/image-tag $BUNDLE_DIR/neowiki.css $BUNDLE_DIR/neowiki.js "
 
 echo
 color '36' "Case 4: the default is origin's current master, whatever the clone tracks"
@@ -292,20 +294,18 @@ assert_eq "Alpha is a build commit on master's head" "$(tag_parent 0.1.0-alpha.1
 assert_eq "Beta is a build commit on master's head" "$(tag_parent 0.1.0-beta.1)" "$SECOND"
 
 echo
-color '36' "Case 12: a pre-release's build commit, tagged in another clone, is tagged as is"
+color '36' "Case 12: a release on a pre-release's build commit, tagged in another clone, builds on its master commit"
 setup_case promote
 git clone -q "$ORIGIN" "$WORK/promote/older-clone" 2>/dev/null
-# SSH signatures are deterministic, so a build commit made again within the same
-# second would get the pre-release's hash; an older date keeps them apart.
-GIT_COMMITTER_DATE='2026-01-01T00:00:00Z' run_sut 0.1.0-rc.1
-pre_release=$(tagged_commit 0.1.0-rc.1)
+run_sut 0.1.0-rc.1
 git -C "$CLONE" push -q origin 0.1.0-rc.1
 push_to_master later >/dev/null
 CLONE="$WORK/promote/older-clone"
 run_sut 0.1.0 0.1.0-rc.1
-assert_eq "Pre-release is a build commit on master" "$(git -C "$CLONE" rev-parse "$pre_release^" 2>&1)" "$SECOND"
-assert_eq "Release tag points at the pre-release's commit" \
-    "$(git -C "$CLONE" cat-file tag 0.1.0 2>/dev/null | sed -n 's/^object //p')" "$pre_release"
+assert_eq "Release builds on the pre-release's master commit" "$(tag_parent 0.1.0)" "$SECOND"
+assert_eq "Release differs from the pre-release only in the image tag" "$(added_files 0.1.0-rc.1 0.1.0)" \
+    "Docker/image-tag "
+assert_eq "Release names its own demo image" "$(git -C "$CLONE" show 0.1.0:Docker/image-tag 2>&1)" '0.1.0'
 
 echo
 color '36' "Case 13: commits that are neither on master nor its run's build commit are refused"
