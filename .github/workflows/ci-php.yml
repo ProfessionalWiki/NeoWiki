@@ -156,7 +156,7 @@ jobs:
       - name: Start QLever
         run: |
           docker run -d --name test_qlever -p 7019:7019 -e QLEVER_ACCESS_TOKEN=neowiki_test_token \
-            --entrypoint /bin/bash docker.io/adfreiburg/qlever@sha256:881f3762f89fdb831b085503d61c87c9894dad6e6769f1774dd253925fbb4e4c -lc '
+            --entrypoint /bin/bash docker.io/adfreiburg/qlever@sha256:60f37fcbfb1bedc911ffc99d26ac404bf6a877ffb2413ee4fb6e41b9e426e2af -lc '
               set -e
               cd /tmp
               : > data.nt

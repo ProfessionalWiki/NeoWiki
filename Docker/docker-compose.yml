@@ -103,9 +103,9 @@ services:
   qlever:
     profiles:
       - qlever
-    # The build of 2026-10-23 (commit 42b25c3), by digest: QLever's last release, v0.6.0, cannot load
+    # The build of 2026-10-24 (commit 346c604), by digest: QLever's last release, v0.6.0, cannot load
     # the index format its builds have written since September 2026.
-    image: docker.io/adfreiburg/qlever@sha256:881f3762f89fdb831b085503d61c87c9894dad6e6769f1774dd253925fbb4e4c
+    image: docker.io/adfreiburg/qlever@sha256:60f37fcbfb1bedc911ffc99d26ac404bf6a877ffb2413ee4fb6e41b9e426e2af
     restart: unless-stopped
     # Room for QLever's -m 1G query budget (server command below) plus index overhead and rebuilds.
     mem_limit: 1536m
