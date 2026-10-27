@@ -89,6 +89,27 @@ composer update --no-dev -o
 
 This installs the newest 0.1 release at `extensions/NeoWiki/`.
 
+#### If your wiki runs Wikibase
+
+Wikibase requires version 1 of `psr/simple-cache` and NeoWiki needs version 3, so `composer update` fails. Patch
+Wikibase from the MediaWiki root. On MediaWiki 1.43:
+
+```sh
+COMPOSER=extensions/Wikibase/composer.json composer require --no-update "psr/simple-cache:^1.0.1 || ^3.0"
+curl -fsSL https://raw.githubusercontent.com/ProfessionalWiki/NeoWiki/master/patches/wikibase-simple-cache-1.43.patch | patch -p1 -d extensions/Wikibase
+composer update --no-dev -o
+```
+
+On MediaWiki 1.44 and later:
+
+```sh
+COMPOSER=extensions/Wikibase/composer.json composer require --no-update "psr/simple-cache:^1.0.1 || ^3.0"
+curl -fsSL https://raw.githubusercontent.com/ProfessionalWiki/NeoWiki/master/patches/wikibase-simple-cache.patch | patch -p1 -d extensions/Wikibase
+composer update --no-dev -o
+```
+
+Run these again after each Wikibase update.
+
 ### 2. Load the extension
 
 Add the following to your `LocalSettings.php`:
@@ -154,6 +175,8 @@ Master holds the changes not yet in a release. To run it:
   ```json
   { "extra": { "merge-plugin": { "include": [ "extensions/NeoWiki/composer.json" ] } } }
   ```
+
+  On a wiki that runs Wikibase, this fails until you [patch Wikibase](#if-your-wiki-runs-wikibase).
 
   Master holds no frontend bundle, so build it, with Node.js 24 or later:
 
