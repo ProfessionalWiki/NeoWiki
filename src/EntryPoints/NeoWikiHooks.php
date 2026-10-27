@@ -31,7 +31,6 @@ use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
-use MediaWiki\Search\SearchUpdate;
 use MediaWiki\Specials\SpecialSearch;
 use MediaWiki\Title\ForeignTitle;
 use MediaWiki\Title\Title;
@@ -59,7 +58,9 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Jobs\RebuildLastEditorPagesJob;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildPublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildSubjectPageIndex;
+use ProfessionalWiki\NeoWiki\Infrastructure\SearchIndexUpdater;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\NeoWikiTables;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
@@ -79,8 +80,6 @@ use WikiPage;
 class NeoWikiHooks {
 
 	private const SPECIAL_PAGE_CLASS_PREFIX = 'ProfessionalWiki\\NeoWiki\\EntryPoints\\SpecialPages\\';
-
-	private const SEARCH_UPDATE_BEFORE_1_44 = 'MediaWiki\\Deferred\\SearchUpdate';
 
 	/**
 	 * Marks a page whose HTML holds the mount MainSubjectParserFunction places, as extension data on its
@@ -468,15 +467,15 @@ class NeoWikiHooks {
 	public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ): void {
 		$sqlDirectory = dirname( __DIR__, 2 ) . '/sql/' . $updater->getDB()->getType();
 
-		$updater->addExtensionTable( 'neowiki_rebuild_runs', $sqlDirectory . '/neowiki_rebuild_runs.sql' );
+		foreach ( NeoWikiTables::NAMES as $table ) {
+			$updater->addExtensionTable( $table, $sqlDirectory . '/' . $table . '.sql' );
+		}
+
 		$updater->addExtensionField(
 			'neowiki_rebuild_runs',
 			'nwrr_phase',
 			$sqlDirectory . '/patch-neowiki_rebuild_runs-nwrr_phase.sql'
 		);
-		$updater->addExtensionTable( 'neowiki_subject_page', $sqlDirectory . '/neowiki_subject_page.sql' );
-		$updater->addExtensionTable( 'neowiki_subject', $sqlDirectory . '/neowiki_subject.sql' );
-		$updater->addExtensionTable( 'neowiki_relation', $sqlDirectory . '/neowiki_relation.sql' );
 
 		// Between creating a table and filling it, no Subject that existed before is found through it, so
 		// each backfill runs in the same update.php as the table it fills.
@@ -678,19 +677,7 @@ class NeoWikiHooks {
 	}
 
 	private static function scheduleSearchUpdate( RevisionRecord $revision ): void {
-		// MediaWiki 1.44 moved SearchUpdate to MediaWiki\Search without an alias and stopped it being a
-		// DeferrableUpdate, so the class this wiki has is named at runtime and run from a callable.
-		$searchUpdate = class_exists( SearchUpdate::class ) ? SearchUpdate::class : self::SEARCH_UPDATE_BEFORE_1_44;
-
-		DeferredUpdates::addCallableUpdate(
-			static function () use ( $searchUpdate, $revision ): void {
-				( new $searchUpdate(
-					$revision->getPageId(),
-					$revision->getPage(),
-					$revision->getSlot( SlotRecord::MAIN, RevisionRecord::RAW )->getContent()
-				) )->doUpdate();
-			}
-		);
+		DeferredUpdates::addCallableUpdate( static fn () => SearchIndexUpdater::updateFor( $revision ) );
 	}
 
 	/**
