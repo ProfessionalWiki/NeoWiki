@@ -2,6 +2,11 @@
 # Single entry point for both the Docker dev stack and developer tooling.
 # Issue #120.
 
+# The variables this Makefile derives below, and what the user's environment set them to, captured before .env and
+# the derivations change them: upgrade's handoff passes a new make the user's values, since it derives its own.
+DERIVED_VARIABLES := COMPOSE_PROFILES MARIADB_HOST MARIADB_PORT NEO4J_HOST OXIGRAPH_URL QLEVER_URL MW_SMTP_HOST
+USER_ENVIRONMENT := $(foreach v,$(DERIVED_VARIABLES),$(if $(filter environment%,$(origin $(v))),$(v)='$(subst ','\'',$(value $(v)))'))
+
 # Bootstrap a local .env from .env.dist on first run.
 ifeq ($(wildcard Docker/.env),)
 $(shell cp Docker/.env.dist Docker/.env)
@@ -222,7 +227,12 @@ demo: _require-image-tag _preflight ## One-command demo: pull image, start stack
 	@echo "Demo wiki ready at: http://localhost:$$MW_SERVER_PORT"
 	@echo "Log in as AdminName (password: $$MW_ADMIN_PASSWORD)."
 
-upgrade: _require-image-tag _preflight ## Move the demo stack to this checkout's image: pull, restart, migrate, rebuild the graph
+# version=X first moves this copy to release X (Docker/scripts/move-to-version.sh), then hands the upgrade to a new
+# make, since this one read the old copy's Makefile and Docker/image-tag. The handoff clears version and
+# NEOWIKI_IMAGE_TAG, which MAKEFLAGS and the global `export` would otherwise carry into it, and passes the derived
+# variables on as the user set them; services= goes along.
+ifeq ($(strip $(version)),)
+upgrade: _require-image-tag _preflight ## Move the demo stack to this checkout's image, or with version=X (or latest) to release X: pull, restart, migrate, rebuild the graph
 	$(DC) pull
 	$(DC) up -d
 	@$(MAKE) --no-print-directory _wait-mw
@@ -230,6 +240,11 @@ upgrade: _require-image-tag _preflight ## Move the demo stack to this checkout's
 	@$(MAKE) --no-print-directory rebuild-graph-databases
 	@echo ""
 	@echo "Upgrade complete: http://localhost:$$MW_SERVER_PORT"
+else
+upgrade: _preflight
+	@./Docker/scripts/move-to-version.sh "$(version)"
+	@unset $(DERIVED_VARIABLES); $(USER_ENVIRONMENT) $(MAKE) --no-print-directory upgrade version= NEOWIKI_IMAGE_TAG=
+endif
 
 dev: _preflight bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
 	@$(MAKE) --no-print-directory _dev-impl
@@ -376,6 +391,7 @@ test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-preflight.sh
 	@./Docker/tests/test-services.sh
 	@./Docker/tests/test-image-tag.sh
+	@./Docker/tests/test-move-to-version.sh
 	@./scripts/tests/test-tag-release.sh
 
 # ---- Browser tests -----------------------------------------------------------

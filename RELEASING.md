@@ -52,11 +52,18 @@ scripts/tag-release.sh 0.1.0 0.1.0-rc.2
 git diff --stat 0.1.0-rc.2 0.1.0
 ```
 
-Then push it and publish its release with the version's section of `RELEASE-NOTES.md` as its notes, each paragraph and
-list item on one line: GitHub breaks release notes at every newline. Its image is `:0.1.0`, and `:latest` moves to it.
+Then push it. The push builds its image, `:0.1.0`, and moves `:latest` to it.
 
 ```bash
 git push origin refs/tags/0.1.0
+```
+
+Once the tag's [Build Docker image][build-docker] run succeeds, and not before, publish the release:
+`make upgrade version=latest` moves a copy to the newest published release even before its image exists, and the stack
+then cannot start. Use the version's section of `RELEASE-NOTES.md` as its notes, each paragraph and list item on one
+line: GitHub breaks release notes at every newline.
+
+```bash
 gh release create 0.1.0 --verify-tag
 ```
 
@@ -67,5 +74,8 @@ gh release create 0.1.0 --verify-tag
 * Never move, delete or reuse a pushed tag, since Packagist keeps the version. Fix forward with a new pre-release.
 * Tags build only on master commits, and both tagging and releasing need the run's bundle, which expires 90 days
   after the run. After that, start from a newer master commit.
+* Older copies upgrade with `make upgrade version=X`, which moves the copy to release X and then runs X's own
+  `make upgrade version= NEOWIKI_IMAGE_TAG=`. Keep that doing a plain upgrade onto the image `Docker/image-tag` names,
+  and `Docker/image-tag` holding the release's version.
 
 [build-docker]: https://github.com/ProfessionalWiki/NeoWiki/actions/workflows/build-docker.yml
