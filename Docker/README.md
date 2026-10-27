@@ -124,7 +124,7 @@ To query it from the host, add the `docker-compose.tools.yml` overlay, which map
 ```sh
 # <project> is this stack's compose project name, which `docker compose ls` lists.
 docker compose -p <project> --env-file Docker/.env \
-  -f Docker/docker-compose.yml -f Docker/docker-compose.tools.yml up -d
+  -f Docker/docker-compose.yml -f Docker/docker-compose.tools.yml up -d qlever
 
 curl http://localhost:7019/ \
   --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' \
@@ -167,7 +167,7 @@ To query it from the host, add the `docker-compose.tools.yml` overlay, which map
 ```sh
 # <project> is this stack's compose project name, which `docker compose ls` lists.
 COMPOSE_PROFILES=oxigraph docker compose -p <project> --env-file Docker/.env \
-  -f Docker/docker-compose.yml -f Docker/docker-compose.tools.yml up -d
+  -f Docker/docker-compose.yml -f Docker/docker-compose.tools.yml up -d oxigraph
 
 curl http://localhost:7878/query \
   --data-urlencode 'query=SELECT (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } }' \
@@ -199,12 +199,31 @@ the stack comes up waits for Neo4j to boot. `make test-backends` starts them on 
 Run these from the host. Inside the mediawiki container there is no compose to drive, so they
 report the backends as missing instead of starting them.
 
+## Demo image tags
+
+`.github/workflows/build-docker.yml` publishes the demo image as `ghcr.io/professionalwiki/neowiki`:
+
+- `master` on every push to master.
+- The git tag's name on each version tag: a release, such as `0.1.0`, or a pre-release, such as `0.1.0-rc.1`. A
+  release also moves `latest`, which is therefore the most recently published release, not the highest version.
+
+Each holds an amd64 and an arm64 image, which the package also lists on their own, as in `master-arm64` or
+`0.1.0-amd64`.
+
+Push version tags one at a time: a push of more than three starts no workflow.
+
+A version tag's commit names its image in `Docker/image-tag`, which `scripts/tag-release.sh` writes, and the workflow
+publishes nothing for a tag that file does not name. The bundled Makefile runs the image the file names, and `master` in
+a git checkout without it; see [Installation](../docs/operations/installation.md#method-a-docker). To run another
+image, put its tag on every `make` command, as in `make upgrade NEOWIKI_IMAGE_TAG=master`. A `docker compose` command
+run without the Makefile gets `latest` unless `NEOWIKI_IMAGE_TAG` is set.
+
 ## Files
 
 - `Dockerfile` — multi-stage build: `production-mw` (MediaWiki + NeoWiki on the
   production `php.ini`; intermediate, no `LocalSettings.php`), `final-mw` (the prebuilt
-  demo image published as `ghcr.io/professionalwiki/neowiki:latest`, which bakes in
-  `LocalSettings.php`), and `dev-mw` (the dev image with mounted NeoWiki source).
+  [demo image](#demo-image-tags), which bakes in `LocalSettings.php`), and `dev-mw` (the
+  dev image with mounted NeoWiki source).
 - `docker-compose.yml` — the demo stack's services: `mediawiki` and `db`, the graph stores
   `oxigraph`, `neo` and `qlever`, each behind the profile of its name (see
   [Optional services](#optional-services)), and `caddy` behind the `server` profile, for HTTPS

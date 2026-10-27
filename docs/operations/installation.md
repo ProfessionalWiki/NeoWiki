@@ -23,15 +23,18 @@ Prerequisites:
 
 The below commands assume a Unix-like shell, so on Windows run them under WSL.
 
-Download the `ProfessionalWiki/NeoWiki` repository and run this from its root:
+Get the newest [release](https://github.com/ProfessionalWiki/NeoWiki/releases/latest): unpack its source archive, or
+check out its tag in a clone of the repository. Then run this from its root:
 
 ```sh
 make demo
 ```
 
-This pulls the latest demo image, starts the stack, installs the wiki, and loads the demo data. Later, `make down`
-stops and removes the containers, and `make remove` also deletes the data volumes. To move a running stack to the
-latest NeoWiki, see [Upgrading](upgrading.md).
+This pulls the demo image of that release, starts the stack, installs the wiki, and loads the demo data. Later,
+`make down` stops and removes the containers, and `make remove` also deletes the data volumes. To move a running stack
+to a newer NeoWiki, see [Upgrading](upgrading.md).
+
+A checkout of master, or of any other branch, runs master's image instead.
 
 For an empty wiki without the sample data, run `make up && make install-db` instead. That wiki has no `Mapping:EDM`
 page, so the stack's preconfigured EDM projection reports a failure on every save until you create that Mapping or
@@ -47,15 +50,13 @@ work out of the box. Cypher queries need Neo4j, which runs only if you name it e
 
 By default, the stack runs on localhost. To let others reach it, host it on a server. Edit `Docker/.env` and change
 every value marked `# Change for production`, which covers the passwords and `MW_SERVER`. Then start the stack with the
-`server` profile, which adds automatic HTTPS through Caddy. Run it from the repository root so the follow-up `make`
-commands target the same stack:
+`server` profile, which adds automatic HTTPS through Caddy:
 
 ```sh
-docker compose -p neowiki-neowiki --env-file Docker/.env -f Docker/docker-compose.yml --profile server up -d
+COMPOSE_PROFILES=server make demo
 ```
 
-Then run `make install-db` and `make import-demo-data` against it. This is still an evaluation setup, not a production
-deployment.
+This is still an evaluation setup, not a production deployment.
 
 ## Method B: Add to an existing MediaWiki
 

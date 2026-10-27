@@ -5,10 +5,8 @@ order: 4
 
 # Keep your wiki current
 
-NeoWiki has no releases yet: the latest state is master, and upgrading means moving to it.
-
-On a Docker install, back up anything you care about ([backups](../operations/maintenance.md#backups)), `git pull`
-the repository the stack runs from, then:
+On a Docker install, back up anything you care about ([backups](../operations/maintenance.md#backups)), move the
+repository the stack runs from to the [version you want](../operations/upgrading.md#upgrading-a-docker-install), then:
 
 ```sh
 make upgrade

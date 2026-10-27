@@ -1,7 +1,8 @@
 # Releasing NeoWiki
 
-A release is a signed tag on a commit that adds the frontend bundle CI built for a master commit, kept off master.
-`scripts/tag-release.sh` makes that commit and signs the tag; you check the result and push it.
+A release is a signed tag on a commit that adds two files to a master commit, both kept off master: the frontend bundle
+CI built for it, and `Docker/image-tag`, which names the version's demo image. `scripts/tag-release.sh` makes that
+commit and signs the tag; you check the result and push it.
 
 You need this repository as your `origin` remote with push access, an authenticated `gh`, and a signing key in your
 git config.
@@ -10,7 +11,7 @@ git config.
 
 1. Merge a pull request that sets `version` in `extension.json` to the release's version and replaces "Not released
    yet" in the version's `RELEASE-NOTES.md` section with the planned release date. Use `0.1.0`, not `0.1.0-rc.1`,
-   even for pre-releases: the release reuses the last pre-release's commit unchanged.
+   even for pre-releases: the release builds on the last pre-release's master commit.
 2. Wait for that commit's [Build Docker image][build-docker] run to succeed. It uploads the bundle the tag will hold.
 
 ## Tag a pre-release
@@ -22,8 +23,8 @@ git show --stat 0.1.0-rc.1
 
 The script builds on origin's master head; to build on an earlier master commit, pass it as a second argument. It
 prints the master commit it used, which should be the one from step 1, and `git show` should list only
-`resources/ext.neowiki/dist/neowiki.css` and `resources/ext.neowiki/dist/neowiki.js`. If anything is off, run
-`git tag -d 0.1.0-rc.1`: nothing is pushed yet. Otherwise:
+`Docker/image-tag`, `resources/ext.neowiki/dist/neowiki.css` and `resources/ext.neowiki/dist/neowiki.js`. If anything
+is off, run `git tag -d 0.1.0-rc.1`: nothing is pushed yet. Otherwise:
 
 ```bash
 git push origin refs/tags/0.1.0-rc.1
@@ -42,11 +43,13 @@ To fix something, merge the fix, wait for its run as in step 2, and tag `0.1.0-r
 
 ## Release
 
-Sign the release on the last pre-release, here `0.1.0-rc.2`, and check that both tags name the same commit:
+Sign the release on the last pre-release, here `0.1.0-rc.2`. The script builds it on that pre-release's master commit
+and refuses a result that differs from the pre-release in more than `Docker/image-tag`, the only file `git diff` should
+list:
 
 ```bash
 scripts/tag-release.sh 0.1.0 0.1.0-rc.2
-git rev-parse '0.1.0^{commit}' '0.1.0-rc.2^{commit}'
+git diff --stat 0.1.0-rc.2 0.1.0
 ```
 
 Then push it and publish its release, again with the version's notes. Its image is `:0.1.0`, and `:latest` moves to it.
@@ -58,8 +61,8 @@ gh release create 0.1.0 --verify-tag
 
 ## Rules
 
-* Tag only with the script. A tag made by hand, or by `gh release create` without `--verify-tag`, has no bundle, and
-  Packagist publishes it all the same.
+* Tag only with the script. A tag made by hand, or by `gh release create` without `--verify-tag`, has no bundle and
+  gets no image, and Packagist publishes it all the same.
 * Never move, delete or reuse a pushed tag, since Packagist keeps the version. Fix forward with a new pre-release.
 * Tags build only on master commits, and both tagging and releasing need the run's bundle, which expires 90 days
   after the run. After that, start from a newer master commit.
