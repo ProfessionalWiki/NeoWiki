@@ -9,9 +9,9 @@ git config.
 
 ## Prepare master
 
-1. Merge a pull request that sets `version` in `extension.json` to the release's version and replaces "Not released
-   yet" in the version's `RELEASE-NOTES.md` section with the planned release date. Use `0.1.0`, not `0.1.0-rc.1`,
-   even for pre-releases: the release builds on the last pre-release's master commit.
+1. Merge a pull request that sets `version` in `extension.json` to the release's version and removes "Not released
+   yet" from the version's `RELEASE-NOTES.md` section. Use `0.1.0`, not `0.1.0-rc.1`, even for pre-releases: the
+   release builds on the last pre-release's master commit.
 2. Wait for that commit's [Build Docker image][build-docker] run to succeed. It uploads the bundle the tag will hold.
 
 ## Tag a pre-release

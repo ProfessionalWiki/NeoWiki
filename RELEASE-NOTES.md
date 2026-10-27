@@ -4,8 +4,6 @@ To move an install to a newer version, see [Upgrading](https://neowiki.ai/docs/o
 
 ## NeoWiki 0.1.0
 
-Not released yet.
-
 The first release, a beta. Highlights:
 
 * Structured data on wiki pages: Subjects, edited in forms generated from their Schema and versioned with the page
