@@ -6,8 +6,11 @@ function p.foundedYear( frame )
 	return tostring( year or '' )
 end
 
--- Needs a SPARQL store: on a wiki without one, mw.neowiki.sparqlQuery is nil.
 function p.largestMuseums( frame )
+	if not nw.sparqlQuery then
+		return "''This list needs a SPARQL store.''"
+	end
+
 	local base = mw.site.server
 	local result = nw.sparqlQuery(
 		'SELECT ?label ?visitors WHERE { ' ..

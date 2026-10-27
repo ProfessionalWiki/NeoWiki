@@ -80,6 +80,10 @@ function p.foundedYear( frame )
 end
 
 function p.largestMuseums( frame )
+	if not nw.sparqlQuery then
+		return "''This list needs a SPARQL store.''"
+	end
+
 	local base = mw.site.server
 	local result = nw.sparqlQuery(
 		'SELECT ?label ?visitors WHERE { ' ..
