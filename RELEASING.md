@@ -52,7 +52,8 @@ scripts/tag-release.sh 0.1.0 0.1.0-rc.2
 git diff --stat 0.1.0-rc.2 0.1.0
 ```
 
-Then push it and publish its release, again with the version's notes. Its image is `:0.1.0`, and `:latest` moves to it.
+Then push it and publish its release with the version's section of `RELEASE-NOTES.md` as its notes, each paragraph and
+list item on one line: GitHub breaks release notes at every newline. Its image is `:0.1.0`, and `:latest` moves to it.
 
 ```bash
 git push origin refs/tags/0.1.0
