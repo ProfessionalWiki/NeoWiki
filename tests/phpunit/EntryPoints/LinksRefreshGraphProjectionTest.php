@@ -33,25 +33,50 @@ class LinksRefreshGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		NeoWikiExtension::resetInstance();
 	}
 
-	public function testTemplateEditUpdatesTheCategoriesOfThePagesUsingIt(): void {
-		$this->savePage( self::TEMPLATE, '[[Category:Before]]' );
+	/**
+	 * @dataProvider categoryChangeProvider
+	 * @param string[] $expectedCategories
+	 */
+	public function testTemplateEditUpdatesTheCategoriesOfThePagesUsingIt(
+		string $templateBefore,
+		string $templateAfter,
+		array $expectedCategories
+	): void {
+		$this->savePage( self::TEMPLATE, $templateBefore );
 		$pageId = $this->savePage( self::PAGE, self::PAGE_TEXT );
 
-		$this->savePage( self::TEMPLATE, '[[Category:After]]' );
+		$this->savePage( self::TEMPLATE, $templateAfter );
 		$this->runRefreshJobs();
 
-		$this->assertSame( [ 'After' ], $this->readPageNodeProperty( $pageId, 'categories' ) );
+		$this->assertSame( $expectedCategories, $this->readPageNodeProperty( $pageId, 'categories' ) );
 	}
 
-	public function testTemplateEditUpdatesPagePropertiesTakenFromTheParse(): void {
+	public static function categoryChangeProvider(): iterable {
+		yield 'category added' => [ '[[Category:Kept]]', '[[Category:Kept]] [[Category:Added]]', [ 'Kept', 'Added' ] ];
+		yield 'category removed' => [ '[[Category:Kept]] [[Category:Removed]]', '[[Category:Kept]]', [ 'Kept' ] ];
+	}
+
+	/**
+	 * @dataProvider defaultSortChangeProvider
+	 */
+	public function testTemplateEditUpdatesPagePropertiesTakenFromTheParse(
+		string $templateBefore,
+		string $templateAfter,
+		string $expectedDefaultSort
+	): void {
 		$this->registerPagePropertyProviders( self::newDefaultSortProvider() );
-		$this->savePage( self::TEMPLATE, '{{DEFAULTSORT:Before}}' );
+		$this->savePage( self::TEMPLATE, $templateBefore );
 		$pageId = $this->savePage( self::PAGE, self::PAGE_TEXT );
 
-		$this->savePage( self::TEMPLATE, '{{DEFAULTSORT:After}}' );
+		$this->savePage( self::TEMPLATE, $templateAfter );
 		$this->runRefreshJobs();
 
-		$this->assertSame( 'After', $this->readPageNodeProperty( $pageId, 'defaultSort' ) );
+		$this->assertSame( $expectedDefaultSort, $this->readPageNodeProperty( $pageId, 'defaultSort' ) );
+	}
+
+	public static function defaultSortChangeProvider(): iterable {
+		yield 'page property added' => [ 'No sort key', '{{DEFAULTSORT:Added}}', 'Added' ];
+		yield 'page property removed' => [ '{{DEFAULTSORT:Removed}}', 'No sort key', '' ];
 	}
 
 	public function testTemplateEditThatOnlyChangesASortKeyWritesNothing(): void {
