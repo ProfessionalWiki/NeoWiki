@@ -68,9 +68,9 @@ Use this to add NeoWiki to a MediaWiki you already run. You provide the surround
 |---------------------------------|--|
 | MediaWiki 1.43.0 or later       | |
 | PHP 8.3 with `ext-json`         | |
-| Composer                        | Installs NeoWiki's runtime dependencies. No `vendor/` is shipped. |
+| Composer                        | Installs NeoWiki and its runtime dependencies. |
 | Neo4j 5.26.4 or later over Bolt | Optional. Needed for Cypher queries. |
-| Node.js 24 or later             | Needed only to build the frontend bundle in step 2. |
+| Node.js 24 or later             | Needed only to run a branch, such as master. |
 
 These extensions are recommended. NeoWiki runs without them, but you lose the matching functionality:
 
@@ -78,39 +78,37 @@ These extensions are recommended. NeoWiki runs without them, but you lose the ma
 - **CodeEditor** adds JSON syntax highlighting when you edit Schema, Layout, and Mapping pages.
 - **ParserFunctions** is commonly used alongside NeoWiki's parser functions.
 
-Check the extension out at `extensions/NeoWiki/` under your MediaWiki root:
+### 1. Install the extension
+
+Run this from the MediaWiki root:
+
+```sh
+COMPOSER=composer.local.json composer require --no-update neowiki/neowiki:^0.1
+composer update neowiki/neowiki --no-dev -o
+```
+
+This installs the newest 0.1 release, frontend bundle included, at `extensions/NeoWiki/`.
+
+To run unreleased code from a branch, such as master, check it out there instead:
 
 ```sh
 git clone https://github.com/ProfessionalWiki/NeoWiki.git extensions/NeoWiki
 ```
 
-### 1. Install Composer dependencies
-
-You install NeoWiki's runtime dependencies through MediaWiki's Composer merge plugin. Add NeoWiki's `composer.json` to
-your wiki's root `composer.local.json`:
+Add its `composer.json` to your wiki's `composer.local.json`:
 
 ```json
 { "extra": { "merge-plugin": { "include": [ "extensions/NeoWiki/composer.json" ] } } }
 ```
 
-Then run this from the MediaWiki root:
-
-```sh
-composer update
-```
-
-### 2. Build the frontend bundle
-
-A fresh checkout ships no compiled frontend, so there is no UI until you build it:
+Then run `composer update` from the MediaWiki root. A branch holds no frontend bundle, so build it:
 
 ```sh
 cd extensions/NeoWiki/resources/ext.neowiki
 npm ci && npm run build
 ```
 
-This produces `dist/neowiki.js` and `dist/neowiki.css`.
-
-### 3. Load and configure the extension
+### 2. Load and configure the extension
 
 Add the following to your `LocalSettings.php`:
 
@@ -130,7 +128,7 @@ wfLoadExtension( 'ParserFunctions' );
 Without both Neo4j URLs set, NeoWiki's structured-data features still work. You lose the Cypher query surfaces
 (`{{#cypher_raw}}`, `nw.query`, `POST /neowiki/v0/query/cypher`).
 
-### 4. Run the updater
+### 3. Run the updater
 
 Run this from the MediaWiki root:
 
@@ -146,7 +144,7 @@ normal edit (such as an import):
 php maintenance/run.php NeoWiki:RebuildGraphDatabases
 ```
 
-### 5. Verify your install
+### 4. Verify your install
 
 Your install is complete once you can walk through [Getting started](../guide/getting-started.md) on it.
 
