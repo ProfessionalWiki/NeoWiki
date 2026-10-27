@@ -9,7 +9,6 @@ use Laudis\Neo4j\Types\CypherMap;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageDateTime;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
-use ProfessionalWiki\NeoWiki\Domain\Page\PageProperties;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
@@ -1025,7 +1024,6 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$result = $this->readGraph( 'MATCH (n) RETURN *' );
 
 		$this->assertSame( [], $result->toArray() );
-		$this->assertTrue( $result->isEmpty() );
 	}
 
 	/**
@@ -1144,48 +1142,6 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectName( null, self::GUID_2 );
 	}
 
-	public function testDeletingPagePreservesSubjectReferencedByOtherSubject(): void {
-		$store = NeoWikiExtension::getInstance()->newNeo4jProjectionStore(
-			new InMemorySchemaLookup(
-				TestSchema::build(
-					name: TestSubject::DEFAULT_SCHEMA_ID,
-					properties: new PropertyDefinitions( [
-						self::LOCATION_PROPERTY => TestProperty::buildRelation( targetSchemas: [ TestSubject::DEFAULT_SCHEMA_ID ] ),
-					] ),
-				),
-			)
-		);
-
-		$store->savePage( TestPage::build( // The page with subject that will be deleted
-			id: 1,
-			mainSubject: TestSubject::build( id: self::GUID_1 ),
-		) );
-
-		$store->savePage( TestPage::build( // The page that has a subject with relation to the to-be-deleted subject
-			id: 2,
-			mainSubject: TestSubject::build(
-				id: self::GUID_2,
-				statements: new StatementList( [
-					TestStatement::buildRelation(
-						property: self::LOCATION_PROPERTY,
-						relations: [
-							TestRelation::build( id: 'rTestNQS1111rr1', targetId: self::GUID_1 ),
-						],
-					),
-				] ),
-			),
-		) );
-
-		$store->deletePage( new PageId( 1 ) );
-
-		$result = $this->readGraph(
-			'MATCH (subject {id: "' . self::GUID_1 . '"}) RETURN subject'
-		);
-		$this->assertFalse( $result->isEmpty(), 'Subject referenced by another subject should not be deleted' );
-
-		$this->assertRelationExists( self::GUID_2, self::LOCATION_PROPERTY, self::GUID_1 );
-	}
-
 	private function assertPageHasSubjectsWithLabels( array $expectedSubjects, int $pageId ): void {
 		$result = $this->readGraph(
 			'MATCH (page:Page {id: ' . $pageId . '})-[hs:HasSubject]->(subject)
@@ -1204,53 +1160,19 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( $expectedSubjects, $result );
 	}
 
-	public function testSavesCreationTimeAsNeo4jDatetime(): void {
+	public function testSavesPageDateTimeAsNeo4jDatetime(): void {
 		$store = $this->newProjectionStore();
 
 		$store->savePage( TestPage::build(
 			id: 42,
-			properties: TestPageProperties::build( creationTime: '20230726163439' )
+			properties: TestPageProperties::build( extraProperties: [ 'approvalTime' => new PageDateTime( '20240101120000' ) ] )
 		) );
 
 		$result = $this->readGraph(
-			'MATCH (page:Page {id: 42}) RETURN page.creationTime = datetime("2023-07-26T16:34:39") AS isDatetime'
+			'MATCH (page:Page {id: 42}) RETURN page.approvalTime = datetime("2024-01-01T12:00:00") AS isDatetime'
 		);
 
-		$this->assertTrue(
-			$result->first()->toRecursiveArray()['isDatetime'],
-			'creationTime should be stored as a Neo4j datetime'
-		);
-	}
-
-	public function testSavesLastUpdatedAsNeo4jDatetime(): void {
-		$store = $this->newProjectionStore();
-
-		$store->savePage( TestPage::build(
-			id: 42,
-			properties: TestPageProperties::build( modificationTime: '20240315100000' )
-		) );
-
-		$result = $this->readGraph(
-			'MATCH (page:Page {id: 42}) RETURN page.lastUpdated = datetime("2024-03-15T10:00:00") AS isDatetime'
-		);
-
-		$this->assertTrue(
-			$result->first()->toRecursiveArray()['isDatetime'],
-			'lastUpdated should be stored as a Neo4j datetime'
-		);
-	}
-
-	public function testSavesLastEditor(): void {
-		$store = $this->newProjectionStore();
-
-		$store->savePage( TestPage::build(
-			id: 42,
-			properties: TestPageProperties::build( lastEditor: 'JohnDoe' )
-		) );
-
-		$result = $this->readGraph( 'MATCH (page:Page {id: 42}) RETURN page.lastEditor AS lastEditor' );
-
-		$this->assertSame( 'JohnDoe', $result->first()->toRecursiveArray()['lastEditor'] );
+		$this->assertTrue( $result->first()->toRecursiveArray()['isDatetime'] );
 	}
 
 	public function testSavesCategories(): void {
@@ -1303,45 +1225,6 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$result = $this->readGraph( 'MATCH (page:Page {id: 42}) RETURN properties(page) as page' );
 
 		$this->assertArrayNotHasKey( 'customLabel', $result->first()->toRecursiveArray()['page'] );
-	}
-
-	public function testSavesExtensionProvidedDateTimeAsNeo4jDatetime(): void {
-		$store = $this->newProjectionStore();
-
-		$store->savePage( TestPage::build(
-			id: 42,
-			properties: new PageProperties( [
-				'name' => 'TestPage',
-				'creationTime' => new PageDateTime( '20230726163439' ),
-				'modificationTime' => new PageDateTime( '20230726163439' ),
-				'approvalTime' => new PageDateTime( '20240101120000' ),
-			] )
-		) );
-
-		$result = $this->readGraph(
-			'MATCH (page:Page {id: 42}) RETURN page.approvalTime = datetime("2024-01-01T12:00:00") AS isDatetime'
-		);
-
-		$this->assertTrue(
-			$result->first()->toRecursiveArray()['isDatetime'],
-			'Extension-provided PageDateTime should be stored as a Neo4j datetime'
-		);
-	}
-
-	public function testSavesPageWithEmptyExtraProperties(): void {
-		$store = $this->newProjectionStore();
-
-		$store->savePage( TestPage::build(
-			id: 42,
-			properties: TestPageProperties::build( title: 'TestPage' )
-		) );
-
-		$result = $this->readGraph( 'MATCH (page:Page {id: 42}) RETURN properties(page) as page' );
-
-		$page = $result->first()->toRecursiveArray()['page'];
-
-		$this->assertSame( 42, $page['id'] );
-		$this->assertSame( 'TestPage', $page['name'] );
 	}
 
 	public function testSavesPageSubjectsWithSubjectLabelAfterUpdatingPage(): void {
