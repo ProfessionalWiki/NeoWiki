@@ -10,10 +10,11 @@
 
 ## Installation
 
-NeoWiki is not production ready yet. We support two installation use cases:
+NeoWiki is not production ready yet. You can install it in three ways:
 
-* A **demo environment** for evaluation and experimentation. See [installation.md](docs/operations/installation.md).
-* A **development environment** with configuration and tools for enhancing NeoWiki. See the "Development" section below.
+* A **Docker demo** for evaluation and experimentation. See [Installation](docs/operations/installation.md).
+* **On an existing MediaWiki**, with Composer. See [Installation](docs/operations/installation.md).
+* A **development environment** with configuration and tools for enhancing NeoWiki. See [Development](#development).
 
 ## Technical Documentation
 

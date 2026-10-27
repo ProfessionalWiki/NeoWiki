@@ -110,7 +110,9 @@ Two entries point at that one store: the `native` projection and the `EDM` one d
 data's `Mapping:EDM` page. Each writes its own per-page named graphs, so a query can join across them;
 the demo data's `EDM queries` page shows such queries. The `EDM` entry needs that Mapping page, so
 `make import-demo-data` is part of the setup: without it every Subject save logs an unknown-projection
-error and a rebuild reports every page as failed.
+error and a rebuild reports every page as failed. For a wiki without the demo data, start the stack with
+`make up && make install-db`, then create `Mapping:EDM` or remove the `EDM` entry from
+`$wgNeoWikiSparqlStores`.
 
 The projected data lives on the `qlever-index-data` named volume, so it survives
 `docker compose restart` and `make down` / `make dev`. If `qlever` does not start, run `make pull`,
@@ -214,7 +216,7 @@ Push version tags one at a time: a push of more than three starts no workflow.
 
 A version tag's commit names its image in `Docker/image-tag`, which `scripts/tag-release.sh` writes, and the workflow
 publishes nothing for a tag that file does not name. The bundled Makefile runs the image the file names, and `master` in
-a git checkout without it; see [Installation](../docs/operations/installation.md#method-a-docker). To run another
+a git checkout without it; see [Installation](../docs/operations/installation.md#try-neowiki-in-docker). To run another
 image, put its tag on every `make` command, as in `make upgrade NEOWIKI_IMAGE_TAG=master`. A `docker compose` command
 run without the Makefile gets `latest` unless `NEOWIKI_IMAGE_TAG` is set.
 

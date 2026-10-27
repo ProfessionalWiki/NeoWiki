@@ -8,45 +8,50 @@ order: 1
 NeoWiki is not production-ready yet. From 0.1 on, every breaking change to stored data ships with a migration script or
 written upgrade steps.
 
-The Docker stack is self-contained and the fastest way to a working wiki, so use it for evaluation. The manual
-install adds NeoWiki to a MediaWiki you already run.
+Install the newest release in one of two ways:
 
-To set up the development environment instead, see the [README on GitHub](https://github.com/ProfessionalWiki/NeoWiki/blob/master/README.md).
+- [Try NeoWiki in Docker](#try-neowiki-in-docker): a self-contained wiki with demo data, the fastest way to evaluate
+  NeoWiki.
+- [Add NeoWiki to an existing wiki](#add-neowiki-to-an-existing-wiki): install it with Composer into a MediaWiki you
+  already run.
 
-## Method A: Docker
+To run master, or to work on NeoWiki itself, see [Unreleased code](#unreleased-code).
 
-Prerequisites:
+## Try NeoWiki in Docker
+
+Requirements:
 
 - Docker (or a compatible runtime such as Podman)
 - Docker Compose v2+ (with the `docker compose` subcommand, not the legacy standalone `docker-compose` v1. Verify with `docker compose version`)
-- GNU Make
+- GNU Make, in a Unix-like shell (on Windows, WSL)
 
-The below commands assume a Unix-like shell, so on Windows run them under WSL.
+### 1. Download the release
 
-Get the newest [release](https://github.com/ProfessionalWiki/NeoWiki/releases/latest): unpack its source archive, or
-check out its tag in a clone of the repository. Then run this from its root:
+Download and unpack the newest [release](https://github.com/ProfessionalWiki/NeoWiki/releases/latest).
+
+### 2. Start the demo
+
+Run this from the release's root:
 
 ```sh
 make demo
 ```
 
-This pulls the demo image of that release, starts the stack, installs the wiki, and loads the demo data. Later,
-`make down` stops and removes the containers, and `make remove` also deletes the data volumes. To move a running stack
-to a newer NeoWiki, see [Upgrading](upgrading.md).
+This pulls the demo image of that release, starts the stack, installs the wiki, and loads the demo data.
 
-A checkout of master, or of any other branch, runs master's image instead.
+The stack runs QLever as its graph store. For other graph stores, such as Neo4j, see
+[Optional services](../../Docker/README.md#optional-services).
 
-For an empty wiki without the sample data, run `make up && make install-db` instead. That wiki has no `Mapping:EDM`
-page, so the stack's preconfigured EDM projection reports a failure on every save until you create that Mapping or
-remove its entry from `$wgNeoWikiSparqlStores`.
+### 3. Log in
 
 Open `http://localhost:8484` and log in as `AdminName` with the password `AdminPassword`.
 
-The stack keeps QLever, a [SPARQL store](#optional-sparql-graph-stores), in sync with the wiki, so SPARQL queries
-work out of the box. Cypher queries need Neo4j, which runs only if you name it each time you start the stack, as in
-`make demo services=qlever,neo`; [Optional services](../../Docker/README.md#optional-services) lists the others.
+### Stop, remove or upgrade the demo
 
-### Optional: share the demo with others
+`make down` stops and removes the containers, and `make remove` also deletes the data volumes. To move a running stack
+to a newer NeoWiki, see [Upgrading](upgrading.md).
+
+### Share the demo with others
 
 By default, the stack runs on localhost. To let others reach it, host it on a server. Edit `Docker/.env` and change
 every value marked `# Change for production`, which covers the passwords and `MW_SERVER`. Then start the stack with the
@@ -58,19 +63,13 @@ COMPOSE_PROFILES=server make demo
 
 This is still an evaluation setup, not a production deployment.
 
-## Method B: Add to an existing MediaWiki
+## Add NeoWiki to an existing wiki
 
-Use this to add NeoWiki to a MediaWiki you already run. You provide the surrounding services yourself.
+Requirements:
 
-### Requirements
-
-| Requirement                     | Notes |
-|---------------------------------|--|
-| MediaWiki 1.43.0 or later       | |
-| PHP 8.3 with `ext-json`         | |
-| Composer                        | Installs NeoWiki and its runtime dependencies. |
-| Neo4j 5.26.4 or later over Bolt | Optional. Needed for Cypher queries. |
-| Node.js 24 or later             | Needed only to run a branch, such as master. |
+- MediaWiki 1.43.0 or later
+- PHP 8.3 or later
+- Composer
 
 These extensions are recommended. NeoWiki runs without them, but you lose the matching functionality:
 
@@ -89,44 +88,18 @@ composer update neowiki/neowiki --no-dev -o
 
 This installs the newest 0.1 release at `extensions/NeoWiki/`.
 
-To run unreleased code from a branch, such as master, check it out there instead:
-
-```sh
-git clone https://github.com/ProfessionalWiki/NeoWiki.git extensions/NeoWiki
-```
-
-Add its `composer.json` to your wiki's `composer.local.json`:
-
-```json
-{ "extra": { "merge-plugin": { "include": [ "extensions/NeoWiki/composer.json" ] } } }
-```
-
-Then run `composer update` from the MediaWiki root. A branch holds no frontend bundle, so build it:
-
-```sh
-cd extensions/NeoWiki/resources/ext.neowiki
-npm ci && npm run build
-```
-
-### 2. Load and configure the extension
+### 2. Load the extension
 
 Add the following to your `LocalSettings.php`:
 
 ```php
 wfLoadExtension( 'NeoWiki' );
 
-// Point both at your Neo4j instance; for a simple setup, use the same user for both.
-$wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:SECRET@neo4j-host:7687';
-$wgNeoWikiNeo4jInternalReadUrl  = 'bolt://neo4j:SECRET@neo4j-host:7687';
-
-// Recommended soft dependencies.
+// Recommended soft dependencies, unless your wiki already loads them.
 wfLoadExtension( 'Scribunto' );
 wfLoadExtension( 'CodeEditor' );
 wfLoadExtension( 'ParserFunctions' );
 ```
-
-Without both Neo4j URLs set, NeoWiki's structured-data features still work. You lose the Cypher query surfaces
-(`{{#cypher_raw}}`, `nw.query`, `POST /neowiki/v0/query/cypher`).
 
 ### 3. Run the updater
 
@@ -136,26 +109,22 @@ Run this from the MediaWiki root:
 php maintenance/run.php update --quick
 ```
 
-Build the Neo4j projection from MediaWiki whenever it is out of sync with the wiki — after installing on a wiki that
-already has pages, since a page is otherwise projected on its next edit, and after data arrives by a path other than a
-normal edit (such as an import):
+### 4. Verify your install
+
+Your install is complete once you can walk through [Getting started](../guide/getting-started.md) on it. Its query
+step needs a SPARQL store.
+
+### Optional: connect a graph store
+
+Queries run against graph stores that NeoWiki keeps in sync with the wiki: [Neo4j](#optional-neo4j) for Cypher, and
+[SPARQL stores](#optional-sparql-graph-stores) for SPARQL. Without one, everything but the query surfaces works.
+
+A store receives a page when it is next saved. Fill it with the wiki's existing pages after connecting it, and again
+after pages arrive by a path other than an edit, such as an import. From the MediaWiki root:
 
 ```sh
 php maintenance/run.php NeoWiki:RebuildGraphDatabases
 ```
-
-### 4. Verify your install
-
-Your install is complete once you can walk through [Getting started](../guide/getting-started.md) on it.
-
-With Neo4j configured, one more step checks its projection. On any page, add a Cypher query that lists the stored
-pages, independent of your data model:
-
-```
-{{#cypher_raw: MATCH (p:Page) RETURN p.name }}
-```
-
-The result renders as JSON. If Neo4j is unreachable, it renders an error instead.
 
 ### Optional: Pretty URLs for the Data tab
 
@@ -164,6 +133,37 @@ Serve the Data tab at `/wiki/PageName/subjects` instead of `index.php?action=sub
 ```php
 $wgActionPaths['subjects'] = "/wiki/$1/subjects";
 ```
+
+## Unreleased code
+
+Master holds the changes not yet in a release. To run it:
+
+- **Docker:** run `make demo` in a clone of the repository on master. It runs master's demo image, rebuilt on every
+  push to master.
+- **An existing wiki:** in place of step 1 of [Add NeoWiki to an existing wiki](#add-neowiki-to-an-existing-wiki),
+  clone the repository from the MediaWiki root:
+
+  ```sh
+  git clone https://github.com/ProfessionalWiki/NeoWiki.git extensions/NeoWiki
+  ```
+
+  Add its `composer.json` to your wiki's `composer.local.json`, then run `composer update` from the MediaWiki root:
+
+  ```json
+  { "extra": { "merge-plugin": { "include": [ "extensions/NeoWiki/composer.json" ] } } }
+  ```
+
+  Master holds no frontend bundle, so build it, with Node.js 24 or later:
+
+  ```sh
+  cd extensions/NeoWiki/resources/ext.neowiki
+  npm ci && npm run build
+  ```
+
+  Then continue with step 2.
+
+To work on NeoWiki itself, use the development stack in the
+[README on GitHub](https://github.com/ProfessionalWiki/NeoWiki/blob/master/README.md#development).
 
 ## Key settings
 
@@ -217,7 +217,7 @@ Add a `level` to drop everything below it:
 $wgDebugLogGroups['NeoWiki'] = [ 'destination' => '/var/log/mediawiki/neowiki.log', 'level' => 'warning' ];
 ```
 
-The [Docker install](#method-a-docker) routes the channel to stderr: entries logged while serving requests appear in
+The [Docker install](#try-neowiki-in-docker) routes the channel to stderr: entries logged while serving requests appear in
 `make logs`, and those logged by a maintenance command, such as `make rebuild-graph-databases`, print only in the
 terminal that ran it.
 
@@ -247,11 +247,50 @@ Set `$wgNeoWikiEnableInWikiConfig` to `false` to disable on-wiki settings.
 Per setting, a valid value on the page overrides `LocalSettings.php`. Pages rendered before a change can lag behind it
 until purged with `?action=purge`.
 
+## Optional: Neo4j
+
+Cypher queries (`{{#cypher_raw}}`, `nw.query` and `POST /neowiki/v0/query/cypher`) need Neo4j 5.26.4 or later. Connect
+NeoWiki to it over Bolt in `LocalSettings.php`. NeoWiki uses Neo4j only when both URLs are set; for a simple setup, use
+the same user for both:
+
+```php
+$wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:SECRET@neo4j-host:7687';
+$wgNeoWikiNeo4jInternalReadUrl  = 'bolt://neo4j:SECRET@neo4j-host:7687';
+```
+
+To check the connection once you [filled it](#optional-connect-a-graph-store), add a Cypher query that lists the
+stored pages, independent of your data model, to any page:
+
+```
+{{#cypher_raw: MATCH (p:Page) RETURN p.name }}
+```
+
+The result renders as JSON. If Neo4j is unreachable, it renders an error instead.
+
+### Separate read and write Neo4j users
+
+On Neo4j Enterprise, you can give read and query traffic its own user that cannot modify the graph. Create a
+read-only user:
+
+```cypher
+CREATE USER neowiki_read SET PASSWORD 'SECRET' CHANGE NOT REQUIRED;
+GRANT ROLE reader TO neowiki_read;
+```
+
+Then update the read URL to use it. Leave the write URL on the full-access user:
+
+```php
+$wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:SECRET@neo4j-host:7687';
+$wgNeoWikiNeo4jInternalReadUrl  = 'bolt://neowiki_read:SECRET@neo4j-host:7687';
+```
+
+On Community Edition, keep both URLs on the same user.
+
 ## Optional: SPARQL graph stores
 
-With or without Neo4j, NeoWiki can keep one or more SPARQL 1.1 graph stores in sync with page changes. This works with
-QLever, Oxigraph, Fuseki and any other SPARQL 1.1 store. Each configured store receives the NeoWiki data as RDF:
-every page becomes a named graph, replaced on each edit and dropped on deletion.
+NeoWiki can keep one or more SPARQL 1.1 graph stores in sync with page changes. This works with QLever, Oxigraph,
+Fuseki and any other SPARQL 1.1 store. Each configured store receives the NeoWiki data as RDF: every page becomes a
+named graph, replaced on each edit and dropped on deletion.
 
 Configure the stores with `$wgNeoWikiSparqlStores`, a list of objects:
 
@@ -405,25 +444,3 @@ layer, and narrow who holds the `neowiki-query` right — see
 [Narrowing `neowiki-query`](restricted-content.md#narrowing-neowiki-query). The bundled Docker stacks put their
 Oxigraph services on a network that reaches only the wiki, so a federated query fails unless the stack runs with
 `Docker/docker-compose.tools.yml`.
-
-## Production hardening
-
-This applies once NeoWiki is production-ready.
-
-### Separate read and write Neo4j users
-
-Give read and query traffic its own Neo4j user that cannot modify the graph. Create a read-only user:
-
-```cypher
-CREATE USER neowiki_read SET PASSWORD 'SECRET' CHANGE NOT REQUIRED;
-GRANT ROLE reader TO neowiki_read;
-```
-
-Then update the read URL to use it. Leave the write URL on the full-access user:
-
-```php
-$wgNeoWikiNeo4jInternalWriteUrl = 'bolt://neo4j:SECRET@neo4j-host:7687';
-$wgNeoWikiNeo4jInternalReadUrl  = 'bolt://neowiki_read:SECRET@neo4j-host:7687';
-```
-
-This needs Neo4j Enterprise. On Community Edition, keep both URLs on the same user.
