@@ -87,7 +87,7 @@ COMPOSER=composer.local.json composer require --no-update neowiki/neowiki:^0.1
 composer update neowiki/neowiki --no-dev -o
 ```
 
-This installs the newest 0.1 release, frontend bundle included, at `extensions/NeoWiki/`.
+This installs the newest 0.1 release at `extensions/NeoWiki/`.
 
 To run unreleased code from a branch, such as master, check it out there instead:
 
