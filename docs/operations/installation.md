@@ -74,16 +74,17 @@ Requirements:
 These extensions are recommended. NeoWiki runs without them, but you lose the matching functionality:
 
 - **Scribunto** adds the Lua API and its `nw.*` functions.
-- **CodeEditor** adds JSON syntax highlighting when you edit Schema, Layout, and Mapping pages.
+- **CodeEditor** adds JSON syntax highlighting when you edit Schema, Layout, and Mapping pages. It needs **WikiEditor**.
 - **ParserFunctions** is commonly used alongside NeoWiki's parser functions.
 
 ### 1. Install the extension
 
-Run this from the MediaWiki root:
+Run this from the MediaWiki root. If your wiki has no `composer.local.json` yet, as after a tarball install, first run
+`cp composer.local.json-sample composer.local.json`.
 
 ```sh
 COMPOSER=composer.local.json composer require --no-update neowiki/neowiki:^0.1
-composer update neowiki/neowiki --no-dev -o
+composer update --no-dev -o
 ```
 
 This installs the newest 0.1 release at `extensions/NeoWiki/`.
@@ -97,6 +98,7 @@ wfLoadExtension( 'NeoWiki' );
 
 // Recommended soft dependencies, unless your wiki already loads them.
 wfLoadExtension( 'Scribunto' );
+wfLoadExtension( 'WikiEditor' );
 wfLoadExtension( 'CodeEditor' );
 wfLoadExtension( 'ParserFunctions' );
 ```
