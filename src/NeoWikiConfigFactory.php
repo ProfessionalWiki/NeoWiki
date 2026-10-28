@@ -15,6 +15,12 @@ use Psr\Log\NullLogger;
 class NeoWikiConfigFactory {
 
 	/**
+	 * Bounds how long a store that never answers can hold up a page's projection, with headroom over
+	 * the largest pages NeoWiki aims to support.
+	 */
+	private const int DEFAULT_SPARQL_UPDATE_TIMEOUT_SECONDS = 10;
+
+	/**
 	 * What a graph rebuild's run records can file a store under. A longer name would be truncated there
 	 * without a word, so two stores could end up sharing one row — and with it the check that stops two
 	 * rebuilds of one store running at once.
@@ -141,7 +147,29 @@ class NeoWikiConfigFactory {
 			// The projection is unique for as long as each store holds one, which makes it the name that
 			// needs no configuring. Entries that would collide name themselves.
 			name: self::stringValue( $entry, 'name' ) ?? $projection,
+			updateTimeoutSeconds: $this->updateTimeoutSeconds( $entry, $index ),
 		);
+	}
+
+	/**
+	 * @param array<mixed> $entry
+	 */
+	private function updateTimeoutSeconds( array $entry, int|string $index ): int {
+		$value = $entry['updateTimeoutSeconds'] ?? null;
+
+		if ( is_int( $value ) && $value > 0 ) {
+			return $value;
+		}
+
+		if ( $value !== null ) {
+			$this->logger->warning(
+				'NeoWikiSparqlStores entry {index} has an "updateTimeoutSeconds" that is not a positive whole number of '
+				. 'seconds, so its store uses the default of ' . self::DEFAULT_SPARQL_UPDATE_TIMEOUT_SECONDS . '.',
+				[ 'index' => $index ]
+			);
+		}
+
+		return self::DEFAULT_SPARQL_UPDATE_TIMEOUT_SECONDS;
 	}
 
 	/**
