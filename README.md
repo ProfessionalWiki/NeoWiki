@@ -12,8 +12,10 @@
 
 NeoWiki is not production ready yet. You can install it in three ways:
 
-* A **Docker demo** for evaluation and experimentation. See [Installation](docs/operations/installation.md).
-* **On an existing MediaWiki**, with Composer. See [Installation](docs/operations/installation.md).
+* A **Docker demo** for evaluation and experimentation. See
+  [Try NeoWiki in Docker](docs/operations/installation.md#try-neowiki-in-docker).
+* **On an existing MediaWiki**, with Composer. See
+  [Add NeoWiki to an existing wiki](docs/operations/installation.md#add-neowiki-to-an-existing-wiki).
 * A **development environment** with configuration and tools for enhancing NeoWiki. See [Development](#development).
 
 ## Technical Documentation
