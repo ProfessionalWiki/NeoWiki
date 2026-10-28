@@ -18,11 +18,6 @@ services:
       # extensions; when unset, falls back to a tracked empty dir so the mount is
       # always valid. Files here are not auto-loaded.
       - ${MW_EXTRA_EXTENSIONS_DIR:-./empty-extensions-extra}:/var/www/html/w/extensions-extra:ro,z
-      # Per-worktree opt-in override that the user edits to load extra extensions,
-      # tweak debug toggles, etc. The Makefile's bootstrap target touches this file
-      # on the host so the bind mount is always valid; SettingsTemplate.php's
-      # require_once is gated on file_exists so an empty file is harmless.
-      - ./LocalSettings.local.php:/var/www/html/w/LocalSettings.local.php:z
       # Bind-mount MW core's vendor directory back to the host so the entrypoint's
       # composer update (which merges NeoWiki deps via composer-merge-plugin) writes
       # through. Result: host's Docker/mediawiki/vendor/ ends up with the full

@@ -23,8 +23,9 @@ MediaWiki's updater, and [rebuilds](maintenance.md#rebuilding-the-graph) every c
 a release, name it, as in `version=0.2.0`; a release older than yours is refused.
 
 In a clone of the repository, this checks out the release's tag, and stops if that would overwrite a change of yours.
-Otherwise it unpacks the release over the directory: files of your own, such as `Docker/.env`, stay, and changes to the
-release's files, such as uncommenting the `LocalSettings.php` mount in `Docker/docker-compose.yml`, are overwritten.
+Otherwise it unpacks the release over the directory: your own files, such as `Docker/.env` and your
+[settings](installation.md#change-mediawiki-settings), stay, and changes to the release's files, such as
+`Docker/docker-compose.yml`, are overwritten.
 
 `make upgrade` keeps the optional services the stack last started with.
 
@@ -37,11 +38,16 @@ once:
 
 - **From an unpacked release:** download and unpack the newest
   [release](https://github.com/ProfessionalWiki/NeoWiki/releases/latest). Copy your `Docker/.env` into it, and carry
-  over any other change you made to the old copy, such as a mounted `LocalSettings.php`. Then delete the old copy's
-  directory; running `make remove` in it would delete your data.
-- **From a clone of the repository:** check out the release's tag, as in `git fetch --tags && git checkout 0.2.0`.
+  over any other change you made to the old copy.
+- **From a clone of the repository:** undo your changes to `Docker/docker-compose.yml`, if any, then check out the
+  release's tag, as in `git fetch --tags && git checkout 0.2.0`.
 
-Then run `make upgrade` from the release's root.
+If you mounted a `LocalSettings.php` of your own by uncommenting its line in `Docker/docker-compose.yml`, copy the
+settings you changed or added into the new release's
+[`Docker/LocalSettings.local.php`](installation.md#change-mediawiki-settings): the new release has no such line.
+
+Then run `make upgrade` from the release's root. Once it has worked, delete an unpacked old copy's directory; running
+`make remove` in it would delete your data.
 
 ### Optional: refresh the demo content
 
