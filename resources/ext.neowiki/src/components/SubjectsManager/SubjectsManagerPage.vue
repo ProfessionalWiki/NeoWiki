@@ -103,7 +103,10 @@
 				</li>
 			</ul>
 
-			<h2 class="ext-neowiki-subjects-manager__section-heading">
+			<h2
+				v-if="hasOtherSubjects || canEdit"
+				class="ext-neowiki-subjects-manager__section-heading"
+			>
 				{{ $i18n( 'neowiki-managesubjects-other-subjects-heading' ).text() }}
 			</h2>
 

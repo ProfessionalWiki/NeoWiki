@@ -585,6 +585,44 @@ describe( 'SubjectsManagerPage main subject controls', () => {
 
 } );
 
+describe( 'SubjectsManagerPage Other Subjects heading', () => {
+
+	const HEADING = 'neowiki-managesubjects-other-subjects-heading';
+
+	beforeEach( () => {
+		storeSubjects = [ subject( ID_A ) ];
+		mainSubjectId = new SubjectId( ID_A );
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+		canEditSubjectRef.value = false;
+	} );
+
+	it( 'is hidden from a user who cannot edit a page holding only its Main Subject', async () => {
+		const wrapper = await mountPage();
+
+		expect( wrapper.text() ).not.toContain( HEADING );
+	} );
+
+	it( 'is shown to a user who can edit a page holding only its Main Subject', async () => {
+		canEditSubjectRef.value = true;
+
+		const wrapper = await mountPage();
+
+		expect( wrapper.text() ).toContain( HEADING );
+	} );
+
+	it( 'is shown to a user who cannot edit a page holding other Subjects', async () => {
+		storeSubjects = [ subject( ID_A ), subject( ID_B ) ];
+
+		const wrapper = await mountPage();
+
+		expect( wrapper.text() ).toContain( HEADING );
+	} );
+
+} );
+
 describe( 'SubjectsManagerPage rows of Dependent Subjects', () => {
 
 	beforeEach( () => {
