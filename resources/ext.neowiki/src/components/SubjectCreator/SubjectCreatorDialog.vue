@@ -1024,6 +1024,11 @@ function handleSaved(): void {
 	setPendingNotification( 'neowiki-subject-creator-success' );
 
 	if ( writtenRoot.pageTitle === null ) {
+		// Assigning a URL that differs only in its fragment would not reload.
+		if ( mw.config.get( 'wgAction' ) === 'subjects' ) {
+			history.replaceState( null, '', '#' + writtenRoot.subjectId.text );
+		}
+
 		window.location.reload();
 		return;
 	}

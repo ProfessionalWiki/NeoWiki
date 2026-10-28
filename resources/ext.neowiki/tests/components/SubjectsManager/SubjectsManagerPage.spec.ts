@@ -10,7 +10,7 @@ import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
-import { subjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
+import { subjectIdFromRowDomId, subjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vue';
@@ -25,9 +25,10 @@ import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
 
 enableAutoUnmount( afterEach );
 
-// Two subject-id-shaped ids (s + 14 base58 chars), so the deep-link fragment parser accepts them.
+// Subject-id-shaped ids (s + 14 base58 chars), so the deep-link fragment parser accepts them.
 const ID_A = 's1aaaaaaaaaaaa1';
 const ID_B = 's1bbbbbbbbbbbb1';
+const ID_C = 's1cccccccccccc1';
 const PAGE_ID = 42;
 
 function subject( id: string ): Subject {
@@ -127,6 +128,16 @@ const EXPANDED_CLASS = 'ext-neowiki-subject-row--expanded';
 
 function rowFor( wrapper: VueWrapper, id: string ): VueWrapper {
 	return wrapper.find( '#' + subjectRowDomId( id ) ) as unknown as VueWrapper;
+}
+
+function openRowIds( wrapper: VueWrapper ): ( string | null )[] {
+	return wrapper.findAll( '.ext-neowiki-subject-row' )
+		.filter( ( row ) => ( row.find( 'details' ).element as HTMLDetailsElement ).open )
+		.map( ( row ) => subjectIdFromRowDomId( row.element.id ) );
+}
+
+function highlightedRowIds( wrapper: VueWrapper ): ( string | null )[] {
+	return wrapper.findAll( '.' + HIGHLIGHT_CLASS ).map( ( row ) => subjectIdFromRowDomId( row.element.id ) );
 }
 
 // Taken before any test stands in for the extension singleton.
@@ -280,6 +291,103 @@ describe( 'SubjectsManagerPage deep-link / hash wiring', () => {
 		wrapper.unmount();
 
 		expect( removeListener ).toHaveBeenCalledWith( 'hashchange', expect.any( Function ) );
+	} );
+
+} );
+
+describe( 'SubjectsManagerPage rows open on arrival', () => {
+
+	beforeEach( () => {
+		storeSubjects = [ subject( ID_A ), subject( ID_B ), subject( ID_C ) ];
+		mainSubjectId = new SubjectId( ID_B );
+		window.location.hash = '';
+		Element.prototype.scrollIntoView = vi.fn();
+		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+		window.location.hash = '';
+		vi.restoreAllMocks();
+	} );
+
+	it( 'opens the Main Subject\'s row and no other', async () => {
+		const wrapper = await mountPage();
+
+		expect( openRowIds( wrapper ) ).toEqual( [ ID_B ] );
+	} );
+
+	it( 'leaves the address bar without a fragment', async () => {
+		await mountPage();
+
+		expect( window.location.hash ).toBe( '' );
+	} );
+
+	it( 'opens the row a fragment names beside the Main Subject\'s, highlighting only that one', async () => {
+		// Arriving with a fragment fires no hashchange, which assigning location.hash would.
+		history.replaceState( null, '', '#' + ID_C );
+
+		const wrapper = await mountPage();
+
+		expect( openRowIds( wrapper ) ).toEqual( [ ID_B, ID_C ] );
+		expect( highlightedRowIds( wrapper ) ).toEqual( [ ID_C ] );
+	} );
+
+	it( 'opens no row on a page without a Main Subject', async () => {
+		mainSubjectId = null;
+
+		const wrapper = await mountPage();
+
+		expect( openRowIds( wrapper ) ).toEqual( [] );
+	} );
+
+} );
+
+describe( 'SubjectsManagerPage rows after arrival', () => {
+
+	function pageWithMainSubject( mainId: string ): unknown {
+		return {
+			pageSubjects: new PageSubjects( PAGE_ID, new SubjectId( mainId ), [ subject( ID_A ), subject( ID_B ) ] ),
+			referencedSubjects: [],
+			notFoundTargetIds: [],
+			schemas: [],
+		};
+	}
+
+	beforeEach( () => {
+		// The real store, because only its re-read after the write can move the Main Subject.
+		useRealSubjectStore = true;
+		canEditSubjectRef.value = true;
+		window.location.hash = '';
+		Element.prototype.scrollIntoView = vi.fn();
+		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+
+		getPageSubjectsRepoMock.mockReset().mockResolvedValue( pageWithMainSubject( ID_A ) );
+		vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue( {
+			getSubjectRepository: () => ( {
+				getPageSubjects: getPageSubjectsRepoMock,
+				setMainSubject: vi.fn().mockResolvedValue( undefined ),
+			} ),
+		} as unknown as NeoWikiExtension );
+	} );
+
+	afterEach( () => {
+		document.body.innerHTML = '';
+		window.location.hash = '';
+		canEditSubjectRef.value = false;
+		useRealSubjectStore = false;
+		vi.restoreAllMocks();
+	} );
+
+	it( 'opens and closes no row when another Subject becomes the Main Subject', async () => {
+		const wrapper = await mountPage();
+		getPageSubjectsRepoMock.mockResolvedValue( pageWithMainSubject( ID_B ) );
+
+		await rowFor( wrapper, ID_B ).find( '[aria-label="neowiki-managesubjects-row-promote"]' ).trigger( 'click' );
+		await flushPromises();
+
+		expect( wrapper.get( '.ext-neowiki-subjects-manager__main-slot' ).text() ).toContain( 'Label ' + ID_B );
+		expect( openRowIds( wrapper ) ).toEqual( [ ID_A ] );
 	} );
 
 } );
@@ -758,7 +866,7 @@ describe( 'SubjectsManagerPage move action', () => {
 		expect( wrapper.findComponent( MoveSubjectDialog ).props( 'open' ) ).toBe( true );
 	} );
 
-	it( 'reports the move once the dialog says it landed, naming the subject and linking its new page', async () => {
+	it( 'reports the move once the dialog says it landed, naming the subject and linking its row on the new page', async () => {
 		const wrapper = await mountPage();
 		await wrapper.findAll( '[aria-label="neowiki-managesubjects-row-move"]' )[ 1 ].trigger( 'click' );
 		await flushPromises();
@@ -770,7 +878,7 @@ describe( 'SubjectsManagerPage move action', () => {
 		const [ content, options ] = ( mw.notify as ReturnType<typeof vi.fn> ).mock.calls[ 0 ];
 		const link = ( content as HTMLElement ).querySelector( 'a' );
 		expect( ( content as HTMLElement ).textContent ).toContain( 'neowiki-managesubjects-move-success' );
-		expect( link?.getAttribute( 'href' ) ).toBe( '/wiki/Rembrandt van Rijn?action=subjects' );
+		expect( link?.getAttribute( 'href' ) ).toBe( '/wiki/Rembrandt van Rijn?action=subjects#' + ID_B );
 		expect( link?.textContent ).toBe( 'Rembrandt van Rijn' );
 		expect( options ).toEqual( { type: 'success' } );
 

@@ -198,7 +198,7 @@ import { subjectRowDomId, subjectIdFromHash } from '@/presentation/subjectRowAnc
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
-import { dataTabUrl } from '@/presentation/subjectRowUrl.ts';
+import { subjectRowUrl } from '@/presentation/subjectRowUrl.ts';
 import { pageDeleteFormUrl } from '@/presentation/subjectDeletion.ts';
 import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
@@ -521,10 +521,11 @@ function openMoveDialog( subject: Subject ): void {
 // the Subject from the registry before the listing stops naming it is what crashes the render.
 function onSubjectMoved( targetTitle: string ): void {
 	const subjectName = movingSubjectName.value;
+	const subjectId = movingSubject.value?.getId().text ?? '';
 	movingSubject.value = null;
 
 	const link = document.createElement( 'a' );
-	link.href = dataTabUrl( targetTitle );
+	link.href = subjectRowUrl( targetTitle, subjectId );
 	link.textContent = targetTitle;
 
 	// parseDom rather than a message string: it takes the link as a node, which leaves the subject
@@ -569,6 +570,13 @@ async function executeDelete( comment: string ): Promise<void> {
 	}
 }
 
+// Arrival only: a promote or a re-read of the page must not open or close rows.
+function expandMainSubject(): void {
+	if ( mainSubject.value !== null ) {
+		expandedIds.value = new Set( [ mainSubject.value.getId().text ] );
+	}
+}
+
 function applyHash(): void {
 	const id = subjectIdFromHash( window.location.hash.slice( 1 ) );
 	if ( id === null ) {
@@ -593,6 +601,7 @@ function applyHash(): void {
 onMounted( async () => {
 	await checkPermissions( pageId );
 	await loadSubjects();
+	expandMainSubject();
 	applyHash();
 	window.addEventListener( 'hashchange', applyHash );
 } );

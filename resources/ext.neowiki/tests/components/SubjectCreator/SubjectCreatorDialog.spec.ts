@@ -627,6 +627,59 @@ describe( 'SubjectCreatorDialog', () => {
 		expect( reloadMock ).toHaveBeenCalled();
 	} );
 
+	describe( 'reloading the page being viewed', () => {
+		const pageUrl = document.URL;
+		let reloadedAt: URL | null;
+
+		beforeEach( () => {
+			reloadedAt = null;
+			reloadMock.mockImplementation( () => {
+				reloadedAt = new URL( document.URL );
+			} );
+			vi.stubGlobal( 'location', { href: pageUrl, reload: reloadMock } );
+			subjectStore.createMainSubject = vi.fn().mockResolvedValue( new SubjectId( MINTED_ID ) );
+		} );
+
+		afterEach( () => {
+			history.replaceState( null, '', pageUrl );
+		} );
+
+		async function saveOntoThePage(): Promise<void> {
+			const wrapper = mountComponent();
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+			await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+
+			await save( wrapper );
+		}
+
+		it( 'reloads the Data tab with the new Subject\'s id as its fragment', async () => {
+			stubMw( { wgAction: 'subjects' } );
+
+			await saveOntoThePage();
+
+			expect( reloadedAt?.hash ).toBe( '#' + MINTED_ID );
+		} );
+
+		it( 'reloads the Data tab without adding a step to the browser history', async () => {
+			stubMw( { wgAction: 'subjects' } );
+			const steps = history.length;
+
+			await saveOntoThePage();
+
+			expect( history.length ).toBe( steps );
+		} );
+
+		it( 'reloads a content page at the address it was viewed at', async () => {
+			stubMw( { wgAction: 'view' } );
+
+			await saveOntoThePage();
+
+			expect( reloadedAt?.href ).toBe( pageUrl );
+		} );
+	} );
+
 	it( 'lets a refused write reach the editor, and stays open', async () => {
 		subjectStore.createMainSubject = vi.fn().mockRejectedValue( new Error( 'Server error' ) );
 
