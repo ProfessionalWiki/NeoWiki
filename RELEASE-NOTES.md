@@ -15,6 +15,8 @@ The first release, a beta. Highlights:
 * Parser functions, a Lua library, a REST API, and extension points for new Property Types, View Types and graph stores
 * A Docker stack with demo data, to try NeoWiki in one command
 
+The [announcement](https://professional.wiki/en/news/introducing-neowiki) covers these and more.
+
 Try NeoWiki at [neowiki.dev](https://neowiki.dev), or start with
 [Installation](https://neowiki.ai/docs/operations/installation). [Capabilities](https://neowiki.ai/capabilities) tours
 NeoWiki in depth.
