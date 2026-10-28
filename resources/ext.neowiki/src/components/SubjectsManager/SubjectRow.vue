@@ -740,11 +740,13 @@ function copySubjectIri(): Promise<void> {
 			opacity: 0;
 			transition: opacity @transition-duration-medium @transition-timing-function-system;
 
+			/* esbuild's CSS minifier warns on spaces inside attribute brackets (css-syntax-error). */
+			/* stylelint-disable-next-line @stylistic/selector-attribute-brackets-space-inside */
 			.ext-neowiki-subject-row:hover &,
 			.ext-neowiki-subject-row:has( :focus-visible ) &,
 			.ext-neowiki-subject-row--highlighted &,
 			.ext-neowiki-subject-row--expanded &,
-			&:has( [ aria-expanded='true' ] ) {
+			&:has( [aria-expanded='true'] ) {
 				// Keyboard-only focus reveal for the same reason as __actions above.
 				opacity: 1;
 			}
