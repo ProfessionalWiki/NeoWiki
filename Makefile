@@ -12,6 +12,11 @@ ifeq ($(wildcard Docker/.env),)
 $(shell cp Docker/.env.dist Docker/.env)
 endif
 
+# Docker/docker-compose.yml mounts this file, and Docker would mount a directory in place of a missing one.
+ifeq ($(wildcard Docker/LocalSettings.local.php),)
+$(shell touch Docker/LocalSettings.local.php)
+endif
+
 include Docker/.env
 export
 
@@ -279,16 +284,15 @@ _dev-tools-impl:
 
 # ---- Bootstrap (one-time, idempotent) ----------------------------------------
 
-# Populates the gitignored prerequisites that the build context needs:
-# Docker/mediawiki/ (a vendored MediaWiki core checkout) and an empty
-# Docker/LocalSettings.local.php for the per-worktree override bind-mount.
+# Populates the gitignored prerequisite that the build context needs:
+# Docker/mediawiki/, a vendored MediaWiki core checkout.
 #
 # Only the bundled extensions/skins that Docker/SettingsTemplate.php loads are
 # fetched as submodules, not MediaWiki's full bundle, to keep the clone fast and
 # small. When you wfLoadExtension/wfLoadSkin something new there, add its
 # submodule to the list below.
 .PHONY: bootstrap
-bootstrap: ## Clone MW core into Docker/mediawiki/ and prep gitignored files (idempotent)
+bootstrap: ## Clone MW core into Docker/mediawiki/ (idempotent)
 	@if [ ! -d Docker/mediawiki/.git ]; then \
 		echo "Cloning MediaWiki $${MW_BRANCH:-REL1_43} into Docker/mediawiki/..."; \
 		git clone --depth 1 \
@@ -307,7 +311,6 @@ bootstrap: ## Clone MW core into Docker/mediawiki/ and prep gitignored files (id
 			skins/Timeless \
 			skins/Vector; \
 	fi
-	@touch Docker/LocalSettings.local.php
 
 _dev-impl:
 	@$(MAKE) --no-print-directory _stop-deselected

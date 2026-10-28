@@ -23,8 +23,9 @@ MediaWiki's updater, and [rebuilds](maintenance.md#rebuilding-the-graph) every c
 a release, name it, as in `version=0.2.0`; a release older than yours is refused.
 
 In a clone of the repository, this checks out the release's tag, and stops if that would overwrite a change of yours.
-Otherwise it unpacks the release over the directory: files of your own, such as `Docker/.env`, stay, and changes to the
-release's files, such as uncommenting the `LocalSettings.php` mount in `Docker/docker-compose.yml`, are overwritten.
+Otherwise it unpacks the release over the directory: your own files, such as `Docker/.env` and your
+[settings](installation.md#change-mediawiki-settings), stay, and changes to the release's files, such as
+`Docker/docker-compose.yml`, are overwritten.
 
 If the new version cannot read your pre-0.1 data, start fresh with `make remove && make demo`, which deletes that data.
 
