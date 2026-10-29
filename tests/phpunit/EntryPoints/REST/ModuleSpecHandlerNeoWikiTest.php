@@ -197,16 +197,21 @@ class ModuleSpecHandlerNeoWikiTest extends NeoWikiIntegrationTestCase {
 
 	/**
 	 * The spec also holds the routes of MediaWiki and of other extensions, which are not NeoWiki's to
-	 * judge. NeoWiki's include the query routes it adds outside extension.json.
+	 * judge.
 	 *
 	 * @return array<string, mixed>
 	 */
 	private function neoWikiPaths( array $spec ): array {
-		return array_filter(
+		self::assertIsArray( $spec['paths'] );
+
+		$paths = array_filter(
 			$spec['paths'],
 			static fn ( string $path ): bool => str_starts_with( $path, '/neowiki/' ),
 			ARRAY_FILTER_USE_KEY
 		);
+
+		self::assertNotEmpty( $paths, 'Emitted OpenAPI spec must contain NeoWiki paths' );
+		return $paths;
 	}
 
 	/**
