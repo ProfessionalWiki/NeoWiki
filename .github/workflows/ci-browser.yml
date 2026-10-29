@@ -13,6 +13,9 @@ on:
       - 'docs/**'
       - '**.md'
 
+permissions:
+  contents: read
+
 jobs:
   browser:
     name: "Browser tests: MW ${{ matrix.mw }}"
