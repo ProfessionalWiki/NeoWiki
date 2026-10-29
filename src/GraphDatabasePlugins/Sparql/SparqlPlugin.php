@@ -48,6 +48,7 @@ readonly class SparqlPlugin {
 				httpRequestFactory: $httpRequestFactory,
 				updateUrl: $store->updateUrl,
 				accessToken: $store->accessToken,
+				timeoutSeconds: $store->updateTimeoutSeconds,
 			),
 			projectionResolver: $projectionResolver,
 			namespaces: $namespaces,

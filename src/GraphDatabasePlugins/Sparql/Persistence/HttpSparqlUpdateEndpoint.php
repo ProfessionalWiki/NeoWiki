@@ -7,6 +7,8 @@ namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Persistence;
 use MediaWiki\Http\HttpRequestFactory;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlUpdateFailedException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlUpdateEndpoint;
+use StatusValue;
+use Wikimedia\Message\MessageSpecifier;
 
 /**
  * Posts SPARQL 1.1 Update requests over HTTP: the update text is the request body with a
@@ -24,13 +26,14 @@ readonly class HttpSparqlUpdateEndpoint implements SparqlUpdateEndpoint {
 		private HttpRequestFactory $httpRequestFactory,
 		private string $updateUrl,
 		private ?string $accessToken,
+		private int $timeoutSeconds,
 	) {
 	}
 
 	public function postUpdate( string $update ): void {
 		$request = $this->httpRequestFactory->create(
 			$this->updateUrl,
-			[ 'method' => 'POST', 'postData' => $update ],
+			[ 'method' => 'POST', 'postData' => $update, 'timeout' => $this->timeoutSeconds ],
 			__METHOD__
 		);
 
@@ -40,12 +43,30 @@ readonly class HttpSparqlUpdateEndpoint implements SparqlUpdateEndpoint {
 			$request->setHeader( 'Authorization', 'Bearer ' . $this->accessToken );
 		}
 
-		$request->execute();
+		$outcome = $request->execute();
 
 		$status = $request->getStatus();
 		if ( $status < 200 || $status >= 300 ) {
-			throw new SparqlUpdateFailedException( $this->updateUrl, $status, $request->getContent() );
+			throw new SparqlUpdateFailedException(
+				$this->updateUrl,
+				$status,
+				self::failureReasons( $outcome ),
+				$request->getContent()
+			);
 		}
+	}
+
+	/**
+	 * Tells a store that took too long to answer (http-timed-out) from one that could not be reached
+	 * (http-curl-error).
+	 *
+	 * @return string[]
+	 */
+	private static function failureReasons( StatusValue $outcome ): array {
+		return array_map(
+			static fn ( MessageSpecifier $message ): string => $message->getKey(),
+			$outcome->getMessages( 'error' )
+		);
 	}
 
 }

@@ -15,9 +15,13 @@ class SparqlUpdateFailedException extends RuntimeException {
 
 	private const int MAX_BODY_SNIPPET_LENGTH = 500;
 
-	public function __construct( string $endpointUrl, int $httpStatus, string $responseBody ) {
+	/**
+	 * @param string[] $failureReasons
+	 */
+	public function __construct( string $endpointUrl, int $httpStatus, array $failureReasons, string $responseBody ) {
 		parent::__construct(
 			'The SPARQL update to <' . $endpointUrl . '> failed with HTTP status ' . $httpStatus
+			. ( $failureReasons === [] ? '' : ' (' . implode( ', ', $failureReasons ) . ')' )
 			. '. Response body: ' . self::snippet( $responseBody )
 		);
 	}

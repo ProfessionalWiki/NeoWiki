@@ -330,6 +330,9 @@ $wgNeoWikiSparqlStores = [
 		// Optional: sent as an HTTP Bearer token (e.g. a QLever access token) on both update and
 		// query requests — QLever only requires it for updates, but a read-protected store needs it too.
 		'accessToken' => 'SECRET',
+		// Optional: how long one page's update may take before it counts as failed. Defaults to 10;
+		// raise it for a store that is slow to answer.
+		'updateTimeoutSeconds' => 10,
 		// Optional: the RDF vocabulary written to this store. Defaults to 'native'; otherwise a
 		// Mapping page title without the prefix ('EDM' for Mapping:EDM). As with any page title,
 		// only the first letter is case-insensitive.
