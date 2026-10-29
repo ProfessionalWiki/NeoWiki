@@ -42,7 +42,7 @@ class PageUndeleteGraphProjectionTest extends NeoWikiIntegrationTestCase {
 			$this->countSubjectsOfPage( $revision->getPageId() ),
 			'restoring the archived history must not project the page as its stale revision left it'
 		);
-		$this->assertSame( 'Recreated page', $this->readPageNodeName( $revision->getPageId() ) );
+		$this->assertSame( 'Recreated page', $this->readPageNodeProperty( $revision->getPageId(), 'name' ) );
 	}
 
 	public function testRestoringADeletedPageWithSubjectsBringsBackItsNodeAndSubjects(): void {
@@ -64,7 +64,7 @@ class PageUndeleteGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		$this->undeletePageByName( 'Deleted plain page' );
 
 		$this->assertSame( 1, $this->countPageNodes( $pageId ) );
-		$this->assertSame( 'Deleted plain page', $this->readPageNodeName( $pageId ) );
+		$this->assertSame( 'Deleted plain page', $this->readPageNodeProperty( $pageId, 'name' ) );
 	}
 
 	/**

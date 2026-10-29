@@ -44,13 +44,13 @@ class RevisionVisibilityGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		$revision = $this->editPageAs( $author );
 		$this->assertSame(
 			$author->getName(),
-			$this->readLastEditor( $revision->getPageId() ),
+			$this->readPageNodeProperty( $revision->getPageId(), 'lastEditor' ),
 			'precondition: the graph names the author'
 		);
 
 		$this->hideRevisionAuthor( $this->pageTitle(), $revision->getId() );
 
-		$this->assertSame( '', $this->readLastEditor( $revision->getPageId() ) );
+		$this->assertSame( '', $this->readPageNodeProperty( $revision->getPageId(), 'lastEditor' ) );
 	}
 
 	public function testShowingTheAuthorOfTheCurrentRevisionAgainPutsTheirNameBack(): void {
@@ -59,13 +59,13 @@ class RevisionVisibilityGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		$this->hideRevisionAuthor( $this->pageTitle(), $revision->getId() );
 		$this->assertSame(
 			'',
-			$this->readLastEditor( $revision->getPageId() ),
+			$this->readPageNodeProperty( $revision->getPageId(), 'lastEditor' ),
 			'precondition: the name is gone'
 		);
 
 		$this->showRevisionAuthor( $this->pageTitle(), $revision->getId() );
 
-		$this->assertSame( $author->getName(), $this->readLastEditor( $revision->getPageId() ) );
+		$this->assertSame( $author->getName(), $this->readPageNodeProperty( $revision->getPageId(), 'lastEditor' ) );
 	}
 
 	/**
@@ -81,7 +81,7 @@ class RevisionVisibilityGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$this->hideRevisionAuthor( $this->pageTitle(), $firstRevision->getId() );
 
-		$this->assertSame( $lastAuthor->getName(), $this->readLastEditor( $lastRevision->getPageId() ) );
+		$this->assertSame( $lastAuthor->getName(), $this->readPageNodeProperty( $lastRevision->getPageId(), 'lastEditor' ) );
 	}
 
 	/**
@@ -112,15 +112,6 @@ class RevisionVisibilityGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 	private function pageTitle(): Title {
 		return Title::newFromText( self::PAGE_NAME );
-	}
-
-	private function readLastEditor( int $pageId ): ?string {
-		$result = $this->readGraph(
-			'MATCH (page:Page {id: $pageId}) RETURN page.lastEditor AS lastEditor',
-			[ 'pageId' => $pageId ]
-		);
-
-		return $result->first()->toRecursiveArray()['lastEditor'] ?? null;
 	}
 
 }

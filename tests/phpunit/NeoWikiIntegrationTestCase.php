@@ -653,16 +653,11 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 		}
 	}
 
-	protected function readPageNodeName( int $pageId ): ?string {
-		$result = $this->readGraph( 'MATCH (page:Page {id: $pageId}) RETURN page.name AS name', [ 'pageId' => $pageId ] );
-
-		return $result->first()->toRecursiveArray()['name'] ?? null;
-	}
-
-	protected function readPageNodeNamespaceId( int $pageId ): ?int {
-		$result = $this->readGraph( 'MATCH (page:Page {id: $pageId}) RETURN page.namespaceId AS namespaceId', [ 'pageId' => $pageId ] );
-
-		return $result->first()->toRecursiveArray()['namespaceId'] ?? null;
+	protected function readPageNodeProperty( int $pageId, string $property ): mixed {
+		return $this->readGraph(
+			'MATCH (page:Page {id: $pageId}) RETURN page[$property] AS value',
+			[ 'pageId' => $pageId, 'property' => $property ]
+		)->first()->toRecursiveArray()['value'] ?? null;
 	}
 
 }

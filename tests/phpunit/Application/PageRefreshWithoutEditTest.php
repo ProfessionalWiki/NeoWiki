@@ -45,13 +45,13 @@ class PageRefreshWithoutEditTest extends NeoWikiIntegrationTestCase {
 
 	public function testRefreshUpdatesThePagePropertiesOfAPageWithoutSubjects(): void {
 		$pageId = $this->insertPage( self::PAGE_NAME, 'No subjects here.' )['id'];
-		$this->assertSame( 'draft', $this->readApprovalState( $pageId ), 'precondition: the page starts as a draft' );
+		$this->assertSame( 'draft', $this->readPageNodeProperty( $pageId, 'approvalState' ), 'precondition: the page starts as a draft' );
 
 		$this->provider->properties = [ 'approvalState' => 'approved' ];
 		$outcome = $this->refreshPage();
 
 		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
-		$this->assertSame( 'approved', $this->readApprovalState( $pageId ) );
+		$this->assertSame( 'approved', $this->readPageNodeProperty( $pageId, 'approvalState' ) );
 	}
 
 	/**
@@ -111,15 +111,6 @@ class PageRefreshWithoutEditTest extends NeoWikiIntegrationTestCase {
 		);
 
 		return ( $result->first()->toRecursiveArray()['pages'] ?? 0 ) > 0;
-	}
-
-	private function readApprovalState( int $pageId ): ?string {
-		$result = $this->readGraph(
-			'MATCH (page:Page {id: $pageId}) RETURN page.approvalState AS approvalState',
-			[ 'pageId' => $pageId ]
-		);
-
-		return $result->first()->toRecursiveArray()['approvalState'] ?? null;
 	}
 
 }

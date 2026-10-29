@@ -47,7 +47,7 @@ class ImportGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$this->importXml( str_replace( 'Rename source', 'Rename target', $xml ) );
 
-		$this->assertSame( 'Rename target', $this->readPageNodeName( $this->pageIdOf( 'Rename target' ) ) );
+		$this->assertSame( 'Rename target', $this->readPageNodeProperty( $this->pageIdOf( 'Rename target' ), 'name' ) );
 	}
 
 	public function testImportingNewerRevisionUpdatesProjectionOfExistingPage(): void {
