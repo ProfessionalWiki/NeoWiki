@@ -226,6 +226,7 @@ upgrade: _require-image-tag _preflight ## Move the demo stack to this checkout's
 	$(DC) pull
 	$(DC) up -d
 	@$(MAKE) --no-print-directory _wait-mw
+	@$(MAKE) --no-print-directory _wipe-unreadable-qlever-index
 	@$(MAKE) --no-print-directory update-dot-php
 	@$(MAKE) --no-print-directory rebuild-graph-databases
 	@echo ""
@@ -243,6 +244,7 @@ _dev-tools-impl:
 	@$(MAKE) --no-print-directory _ensure-frontend-bundle
 	@$(MAKE) --no-print-directory _wait-mw
 	@$(MAKE) --no-print-directory _first-run-seed
+	@$(MAKE) --no-print-directory _reset-unreadable-qlever-index
 	@echo ""
 	@echo "Dev wiki ready at:    http://localhost:$$MW_SERVER_PORT"
 	@# The tools overlay maps a port for each graph store, but each store only runs when its
@@ -300,6 +302,7 @@ _dev-impl:
 	@$(MAKE) --no-print-directory _ensure-frontend-bundle
 	@$(MAKE) --no-print-directory _wait-mw
 	@$(MAKE) --no-print-directory _first-run-seed
+	@$(MAKE) --no-print-directory _reset-unreadable-qlever-index
 	@echo ""
 	@echo "Dev wiki ready at: http://localhost:$$MW_SERVER_PORT"
 	@echo "Project:           $(PROJECT_NAME)"
@@ -376,6 +379,7 @@ test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-preflight.sh
 	@./Docker/tests/test-services.sh
 	@./Docker/tests/test-image-tag.sh
+	@./Docker/tests/test-qlever-index.sh
 	@./scripts/tests/test-tag-release.sh
 
 # ---- Browser tests -----------------------------------------------------------
@@ -652,6 +656,44 @@ rebuild-graph-databases: ## Rebuild every configured backend's projection from M
 
 update-dot-php: ## Run MW maintenance/update.php
 	$(EXEC_MW_ROOT) php maintenance/run.php update --quick
+
+# A QLever build cannot read an index that a build from before an index format change wrote, and then
+# exits on every start. QLever's upgrade-index refuses an index holding persisted updates, which every
+# saved page leaves, so these targets wipe the index instead. That loses nothing once the wiki refills
+# it: the store holds only a copy of the wiki's data.
+.PHONY: reset-qlever _wipe-qlever-index _wipe-unreadable-qlever-index _reset-unreadable-qlever-index
+
+reset-qlever: ## Wipe QLever's index and refill it from the wiki
+	@$(MAKE) --no-print-directory _wipe-qlever-index
+	@$(MAKE) --no-print-directory rebuild-graph-databases
+
+# Without a qlever container, as after make down, start could not bring QLever back to be refilled.
+# Without COMPOSE_IGNORE_ORPHANS, the run calls the dev stack's own services, such as node, orphans
+# and suggests --remove-orphans, which would delete them.
+_wipe-qlever-index:
+	@$(DC) ps -a -q qlever | grep -q . \
+		|| { echo "This stack has no QLever container: start the stack before wiping QLever's index." >&2; exit 1; }
+	$(DC) stop qlever
+	COMPOSE_IGNORE_ORPHANS=1 $(DC) run --rm --no-deps -T --entrypoint find qlever /index -mindepth 1 -delete
+	$(DC) start qlever
+	@./Docker/scripts/wait-for-qlever.sh $(PROJECT_NAME)
+
+# For a goal that rebuilds the graph stores next.
+_wipe-unreadable-qlever-index:
+ifneq ($(filter qlever,$(ACTIVE_PROFILES)),)
+	@./Docker/scripts/wait-for-qlever.sh $(PROJECT_NAME); \
+	if [ $$? -eq 2 ]; then $(MAKE) --no-print-directory _wipe-qlever-index; fi
+endif
+
+# A later make dev finds the wiped index readable, so it would not retry a refill that failed.
+_reset-unreadable-qlever-index:
+ifneq ($(filter qlever,$(ACTIVE_PROFILES)),)
+	@./Docker/scripts/wait-for-qlever.sh $(PROJECT_NAME); \
+	if [ $$? -eq 2 ]; then \
+		$(MAKE) --no-print-directory reset-qlever \
+			|| { echo "QLever's index is wiped but not refilled: run make reset-qlever once the cause is fixed." >&2; exit 1; }; \
+	fi
+endif
 
 smoke-test: ## Hit the running wiki from outside and verify it responds (CI smoke test)
 	bash Docker/tests/smoke.sh
