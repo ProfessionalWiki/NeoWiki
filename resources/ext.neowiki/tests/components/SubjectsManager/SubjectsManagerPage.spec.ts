@@ -199,22 +199,32 @@ async function mountPage( subjectFirst = false, renderValues = false ): Promise<
 	return wrapper;
 }
 
+beforeEach( () => {
+	window.location.hash = '';
+	// jsdom implements neither of these; the component calls both while landing on a row.
+	Element.prototype.scrollIntoView = vi.fn();
+	window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
+} );
+
+afterEach( () => {
+	document.body.innerHTML = '';
+	window.location.hash = '';
+	mappings = [];
+	schemaStoreSchemas.clear();
+	useRealSubjectStore = false;
+	subjectCreatorOpen = false;
+	canEditSubjectRef.value = false;
+	canDeleteSubjectRef.value = false;
+	canCreateOtherSubjectRef.value = false;
+	vi.restoreAllMocks();
+} );
+
 describe( 'SubjectsManagerPage deep-link / hash wiring', () => {
 
 	beforeEach( () => {
 		storeSubjects = [ subject( ID_A ), subject( ID_B ) ];
 		mainSubjectId = null;
 		loadPageSubjectsMock.mockClear();
-		window.location.hash = '';
-		// jsdom implements neither of these; the component calls both while landing on a row.
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
-	} );
-
-	afterEach( () => {
-		document.body.innerHTML = '';
-		window.location.hash = '';
-		vi.restoreAllMocks();
 	} );
 
 	it( 'expands, highlights, and scrolls to the row named by a subject-id fragment', async () => {
@@ -300,15 +310,6 @@ describe( 'SubjectsManagerPage rows open on arrival', () => {
 	beforeEach( () => {
 		storeSubjects = [ subject( ID_A ), subject( ID_B ), subject( ID_C ) ];
 		mainSubjectId = new SubjectId( ID_B );
-		window.location.hash = '';
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
-	} );
-
-	afterEach( () => {
-		document.body.innerHTML = '';
-		window.location.hash = '';
-		vi.restoreAllMocks();
 	} );
 
 	it( 'opens the Main Subject\'s row and no other', async () => {
@@ -358,9 +359,6 @@ describe( 'SubjectsManagerPage rows after arrival', () => {
 		// The real store, because only its re-read after the write can move the Main Subject.
 		useRealSubjectStore = true;
 		canEditSubjectRef.value = true;
-		window.location.hash = '';
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
 
 		getPageSubjectsRepoMock.mockReset().mockResolvedValue( pageWithMainSubject( ID_A ) );
 		vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue( {
@@ -369,14 +367,6 @@ describe( 'SubjectsManagerPage rows after arrival', () => {
 				setMainSubject: vi.fn().mockResolvedValue( undefined ),
 			} ),
 		} as unknown as NeoWikiExtension );
-	} );
-
-	afterEach( () => {
-		document.body.innerHTML = '';
-		window.location.hash = '';
-		canEditSubjectRef.value = false;
-		useRealSubjectStore = false;
-		vi.restoreAllMocks();
 	} );
 
 	it( 'opens and closes no row when another Subject becomes the Main Subject', async () => {
@@ -401,15 +391,6 @@ describe( 'SubjectsManagerPage rows without a stored label', () => {
 		];
 		mainSubjectId = new SubjectId( ID_A );
 		loadPageSubjectsMock.mockClear();
-		window.location.hash = '';
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
-	} );
-
-	afterEach( () => {
-		document.body.innerHTML = '';
-		window.location.hash = '';
-		vi.restoreAllMocks();
 	} );
 
 	// The main row took its page's title, which someone chose; only the other row is named after
@@ -435,15 +416,6 @@ describe( 'SubjectsManagerPage rows and the Subject pages behind them', () => {
 	beforeEach( () => {
 		storeSubjects = [ subject( ID_A ), subject( ID_B ) ];
 		mainSubjectId = new SubjectId( ID_A );
-		window.location.hash = '';
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
-	} );
-
-	afterEach( () => {
-		document.body.innerHTML = '';
-		window.location.hash = '';
-		vi.restoreAllMocks();
 	} );
 
 	it( 'links every row to that Subject itself', async () => {
@@ -478,11 +450,6 @@ describe( 'SubjectsManagerPage export of all Subjects', () => {
 		mainSubjectId = new SubjectId( ID_A );
 	} );
 
-	afterEach( () => {
-		mappings = [];
-		document.body.innerHTML = '';
-	} );
-
 	it( 'offers RDF in the projections whose Mapping maps the Schema of any Subject on the page', async () => {
 		const wrapper = await mountPage();
 
@@ -499,21 +466,12 @@ describe( 'SubjectsManagerPage row copy-link action', () => {
 		storeSubjects = [ subject( ID_A ) ];
 		mainSubjectId = null;
 		loadPageSubjectsMock.mockClear();
-		window.location.hash = '';
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
 
 		writeText = vi.fn().mockResolvedValue( undefined );
 		Object.defineProperty( navigator, 'clipboard', {
 			value: { writeText },
 			configurable: true,
 		} );
-	} );
-
-	afterEach( () => {
-		document.body.innerHTML = '';
-		window.location.hash = '';
-		vi.restoreAllMocks();
 	} );
 
 	it( 'offers the ungated actions in the overflow menu to a read-only user on every row', async () => {
@@ -593,19 +551,9 @@ describe( 'SubjectsManagerPage edit flow', () => {
 		storeSubjects = [ subject( ID_A ) ];
 		mainSubjectId = null;
 		canEditSubjectRef.value = true;
-		window.location.hash = '';
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
 
 		getSubjectForEditingRepoMock.mockReset();
 		getSchemaRepoMock.mockReset();
-	} );
-
-	afterEach( () => {
-		document.body.innerHTML = '';
-		window.location.hash = '';
-		canEditSubjectRef.value = false;
-		vi.restoreAllMocks();
 	} );
 
 	it( 'opens the editor on the subject and schema fetched from the repositories', async () => {
@@ -650,16 +598,6 @@ describe( 'SubjectsManagerPage main subject controls', () => {
 		mainSubjectId = new SubjectId( ID_A );
 		canEditSubjectRef.value = true;
 		setPageMainSubjectMock.mockClear();
-		window.location.hash = '';
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
-	} );
-
-	afterEach( () => {
-		document.body.innerHTML = '';
-		window.location.hash = '';
-		canEditSubjectRef.value = false;
-		vi.restoreAllMocks();
 	} );
 
 	// Which pin a row carries is the page's to decide, not the row's: only the main slot's row can be
@@ -702,11 +640,6 @@ describe( 'SubjectsManagerPage Other Subjects heading', () => {
 		mainSubjectId = new SubjectId( ID_A );
 	} );
 
-	afterEach( () => {
-		document.body.innerHTML = '';
-		canEditSubjectRef.value = false;
-	} );
-
 	it( 'is hidden from a user who cannot edit a page holding only its Main Subject', async () => {
 		const wrapper = await mountPage();
 
@@ -742,18 +675,6 @@ describe( 'SubjectsManagerPage rows of Dependent Subjects', () => {
 		schemaStoreSchemas.set( 'Birth', newSchema( { title: 'Birth', subjectsAreDependent: true } ) );
 		canEditSubjectRef.value = true;
 		canDeleteSubjectRef.value = true;
-		window.location.hash = '';
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
-	} );
-
-	afterEach( () => {
-		document.body.innerHTML = '';
-		window.location.hash = '';
-		schemaStoreSchemas.delete( 'Birth' );
-		canEditSubjectRef.value = false;
-		canDeleteSubjectRef.value = false;
-		vi.restoreAllMocks();
 	} );
 
 	it( 'offers no promotion and no move, only editing, copying a link and deleting', async () => {
@@ -785,17 +706,6 @@ describe( 'SubjectsManagerPage move action', () => {
 		mainSubjectId = new SubjectId( ID_A );
 		canEditSubjectRef.value = true;
 		canDeleteSubjectRef.value = true;
-		window.location.hash = '';
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
-	} );
-
-	afterEach( () => {
-		document.body.innerHTML = '';
-		window.location.hash = '';
-		canEditSubjectRef.value = false;
-		canDeleteSubjectRef.value = false;
-		vi.restoreAllMocks();
 	} );
 
 	it( 'offers the move on both the main row and the other rows', async () => {
@@ -953,19 +863,8 @@ describe( 'SubjectsManagerPage move action', () => {
 describe( 'SubjectsManagerPage subject creator', () => {
 
 	beforeEach( () => {
-		useRealSubjectStore = false;
 		canCreateOtherSubjectRef.value = true;
 		subjectCreatorOpen = true;
-		window.location.hash = '';
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
-	} );
-
-	afterEach( () => {
-		canCreateOtherSubjectRef.value = false;
-		subjectCreatorOpen = false;
-		document.body.innerHTML = '';
-		vi.restoreAllMocks();
 	} );
 
 	it( 'shows the creator open while the store says so', async () => {
@@ -991,8 +890,6 @@ describe( 'SubjectsManagerPage red links', () => {
 	beforeEach( () => {
 		useRealSubjectStore = true;
 		canCreateOtherSubjectRef.value = true;
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
 		schemaStoreSchemas.set( 'Person', newSchema( {
 			title: 'Person',
 			properties: new PropertyDefinitionList( [
@@ -1012,14 +909,6 @@ describe( 'SubjectsManagerPage red links', () => {
 		vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue( {
 			getSubjectRepository: () => ( { getPageSubjects: getPageSubjectsRepoMock } ),
 		} as unknown as NeoWikiExtension );
-	} );
-
-	afterEach( () => {
-		useRealSubjectStore = false;
-		canCreateOtherSubjectRef.value = false;
-		schemaStoreSchemas.clear();
-		document.body.innerHTML = '';
-		vi.restoreAllMocks();
 	} );
 
 	it( 'opens the creator on the target of a red link', async () => {
@@ -1044,9 +933,6 @@ describe( 'SubjectsManagerPage saves from the editor', () => {
 	beforeEach( () => {
 		useRealSubjectStore = true;
 		canEditSubjectRef.value = true;
-		window.location.hash = '';
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
 
 		getSubjectForEditingRepoMock.mockReset().mockResolvedValue( host );
 		getSchemaRepoMock.mockReset().mockResolvedValue( newSchema( { title: 'Person' } ) );
@@ -1062,13 +948,6 @@ describe( 'SubjectsManagerPage saves from the editor', () => {
 				updateSubject: vi.fn().mockResolvedValue( { subjectId: host.getId(), subject: host, schema: null } ),
 			} ),
 		} as unknown as NeoWikiExtension );
-	} );
-
-	afterEach( () => {
-		document.body.innerHTML = '';
-		canEditSubjectRef.value = false;
-		useRealSubjectStore = false;
-		vi.restoreAllMocks();
 	} );
 
 	it( 'reads the page once after a save from the editor', async () => {
@@ -1095,9 +974,6 @@ describe( 'SubjectsManagerPage delete flow', () => {
 		// semantics, which the plain-object mock the other describes use cannot reproduce.
 		useRealSubjectStore = true;
 		canDeleteSubjectRef.value = true;
-		window.location.hash = '';
-		Element.prototype.scrollIntoView = vi.fn();
-		window.matchMedia = vi.fn().mockReturnValue( { matches: false } ) as unknown as typeof window.matchMedia;
 
 		deleteSubjectRepoMock = vi.fn().mockResolvedValue( true );
 		// Serves the mount's own loadSubjects() call. Tests that need to inspect the post-delete
@@ -1131,14 +1007,6 @@ describe( 'SubjectsManagerPage delete flow', () => {
 		// stubbed `location` (frozen at this describe's first beforeEach) could break.
 		reloadMock = vi.fn();
 		vi.stubGlobal( 'location', { ...window.location, reload: reloadMock } );
-	} );
-
-	afterEach( () => {
-		document.body.innerHTML = '';
-		window.location.hash = '';
-		canDeleteSubjectRef.value = false;
-		useRealSubjectStore = false;
-		vi.restoreAllMocks();
 	} );
 
 	it( 'deletes the subject, notifies success, and never reloads', async () => {
