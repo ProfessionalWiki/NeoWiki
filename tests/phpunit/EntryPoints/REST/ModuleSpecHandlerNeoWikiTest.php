@@ -196,6 +196,25 @@ class ModuleSpecHandlerNeoWikiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	/**
+	 * The spec also holds the routes of MediaWiki and of other extensions, which are not NeoWiki's to
+	 * judge.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function neoWikiPaths( array $spec ): array {
+		self::assertIsArray( $spec['paths'] );
+
+		$paths = array_filter(
+			$spec['paths'],
+			static fn ( string $path ): bool => str_starts_with( $path, '/neowiki/' ),
+			ARRAY_FILTER_USE_KEY
+		);
+
+		self::assertNotEmpty( $paths, 'Emitted OpenAPI spec must contain NeoWiki paths' );
+		return $paths;
+	}
+
+	/**
 	 * @return list<string>
 	 */
 	private function emittedParameterNames( array $operation ): array {
@@ -298,11 +317,7 @@ class ModuleSpecHandlerNeoWikiTest extends NeoWikiIntegrationTestCase {
 		// Body param descriptions are not checked here: Validator::getParameterSchema() (used to
 		// render requestBody.content.application/json.schema.properties) does not emit the
 		// PARAM_DESCRIPTION value. This is an MW framework limitation, not a gap in our handlers.
-		$spec = $this->fetchSpec();
-		$paths = $spec['paths'];
-		self::assertIsArray( $paths );
-
-		foreach ( $paths as $specPath => $operations ) {
+		foreach ( $this->neoWikiPaths( $this->fetchSpec() ) as $specPath => $operations ) {
 			self::assertIsString( $specPath );
 			self::assertIsArray( $operations );
 
@@ -322,13 +337,9 @@ class ModuleSpecHandlerNeoWikiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testMutatingRoutesHaveRequestBody(): void {
-		$spec = $this->fetchSpec();
-		$paths = $spec['paths'];
-		self::assertIsArray( $paths );
-
 		$mutating = [ 'post', 'put', 'patch', 'delete' ];
 
-		foreach ( $paths as $specPath => $operations ) {
+		foreach ( $this->neoWikiPaths( $this->fetchSpec() ) as $specPath => $operations ) {
 			self::assertIsString( $specPath );
 			self::assertIsArray( $operations );
 
