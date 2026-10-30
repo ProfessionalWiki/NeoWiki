@@ -57,4 +57,13 @@ class NamespacedPageGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testPageNodeStoresTitleWithoutNamespaceAsDbKey(): void {
+		$revision = $this->createPageWithSubjects( self::PAGE_NAME, TestSubject::build() );
+
+		$this->assertSame(
+			'Namespaced_subject_page',
+			$this->readPageNodeProperty( $revision->getPageId(), 'dbKey' )
+		);
+	}
+
 }

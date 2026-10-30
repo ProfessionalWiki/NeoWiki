@@ -88,6 +88,17 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testInitializeCreatesThePageTitleIndex(): void {
+		$this->newProjectionStore()->initialize();
+
+		$this->assertSame(
+			[ [ 'name' => 'Page namespaceId dbKey' ] ],
+			$this->readGraph(
+				'SHOW INDEXES YIELD name WHERE name = "Page namespaceId dbKey" RETURN name'
+			)->toRecursiveArray()
+		);
+	}
+
 	public function testSavesPageIdAndTitle(): void {
 		$store = $this->newProjectionStore();
 
