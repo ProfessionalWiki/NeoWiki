@@ -232,7 +232,7 @@ const dialogElement = computed( (): HTMLElement | undefined =>
 	content.value?.closest<HTMLElement>( '.cdx-dialog' ) ?? undefined );
 
 // Held at the tallest it has been this session, so that neither a field taken away nor a switch to a shorter Subject
-// moves its footer up: it only grows, and from its pinned top only downwards.
+// moves its footer up: it only grows.
 const grownHeight = useGrowOnlyHeight( dialogElement );
 
 const grownHeightStyle = computed( () => grownHeight.tallest.value === null ?
@@ -1035,9 +1035,8 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 @import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-subject-editor-dialog {
-	/* Fixed: the form beside it keeps its width, so resizing the navigator would resize the
-		dialog. In a window too narrow for both, the form gives up width first, and the navigator
-		only once the form would have less than 60% of the dialog.
+	/* In a window too narrow for both, the form gives up width first, and the navigator only once
+		the form would have less than 60% of the dialog.
 		A literal because Codex's size scale has no step between `@size-1600` and `@size-2400`. */
 	@navigator-width: 20rem;
 	/* The form's width plus the navigator and the divider beside it. */
@@ -1199,8 +1198,8 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 /* A new root is what the creator opens this dialog on, in place of its Schema step, whose backdrop
 	already dims the page. Codex fades every dialog's backdrop in, the dialog with it, which would
 	take the dimming away and bring it back; it offers no dialog that opens without the fade. Where
-	the creator is opened on a Schema, the step is on screen only while the Schema loads, so this
-	dialog appears without the fade the step had barely begun. */
+	the creator is opened on a Schema, this dialog replaces the step without a fade however far the
+	step's own fade had got, which depends on how soon the Schema and the edit notices answer. */
 .cdx-dialog-backdrop.cdx-dialog-fade-enter-from:has( > .ext-neowiki-subject-editor-dialog--new-root ) {
 	opacity: 1;
 }
