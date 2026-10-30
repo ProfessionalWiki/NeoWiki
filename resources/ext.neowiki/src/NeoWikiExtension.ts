@@ -4,6 +4,7 @@ import { SubjectPermissionHints } from '@/application/SubjectPermissionHints.ts'
 import { RightsFetcher, UserObjectBasedRightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import TextDisplay from '@/components/Value/TextDisplay.vue';
+import EdtfDisplay from '@/components/Value/EdtfDisplay.vue';
 import { UrlType } from '@/domain/propertyTypes/Url.ts';
 import UrlDisplay from '@/components/Value/UrlDisplay.vue';
 import { NumberType } from '@/domain/propertyTypes/Number.ts';
@@ -50,6 +51,8 @@ import { SchemaPermissionHints } from '@/application/SchemaPermissionHints.ts';
 import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
+import { EdtfHumanizer } from '@/domain/EdtfHumanizer.ts';
+import { RestEdtfHumanizer } from '@/persistence/RestEdtfHumanizer.ts';
 import type { PageTitleSearch } from '@/domain/PageTitleSearch.ts';
 import { RestSubjectLabelSearch } from '@/persistence/RestSubjectLabelSearch.ts';
 import { RestPageTitleSearch } from '@/persistence/RestPageTitleSearch.ts';
@@ -156,7 +159,7 @@ export class NeoWikiExtension {
 		} );
 
 		registry.registerType( EdtfType.typeName, {
-			valueDisplayComponent: TextDisplay,
+			valueDisplayComponent: EdtfDisplay,
 			valueEditor: TextInput,
 			attributesEditor: BooleanAttributesEditor,
 			label: 'neowiki-property-type-edtf',
@@ -299,6 +302,13 @@ export class NeoWikiExtension {
 
 	public getSubjectLabelSearch(): SubjectLabelSearch {
 		return new RestSubjectLabelSearch(
+			this.getMediaWiki().util.wikiScript( 'rest' ),
+			this.newHttpClient(),
+		);
+	}
+
+	public getEdtfHumanizer(): EdtfHumanizer {
+		return new RestEdtfHumanizer(
 			this.getMediaWiki().util.wikiScript( 'rest' ),
 			this.newHttpClient(),
 		);

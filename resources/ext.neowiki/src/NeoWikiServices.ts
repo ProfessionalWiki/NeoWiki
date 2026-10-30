@@ -7,7 +7,8 @@ import { PropertyTypeRegistry } from '@/domain/PropertyType.ts';
 import { SchemaRepository } from '@/application/SchemaRepository.ts';
 import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
-import { PageTitleSearch } from '@/domain/PageTitleSearch.ts';
+import { EdtfHumanizer } from '@/domain/EdtfHumanizer.ts';
+import type { PageTitleSearch } from '@/domain/PageTitleSearch.ts';
 import { ViewTypeRegistry } from '@/ViewTypeRegistry.ts';
 import { LayoutPermissionHints } from '@/application/LayoutPermissionHints.ts';
 import { LayoutRepository } from '@/application/LayoutRepository.ts';
@@ -21,6 +22,7 @@ export enum Service { // TODO: make private
 	SchemaRepository = 'SchemaRepository',
 	SubjectRepository = 'SubjectRepository',
 	SubjectLabelSearch = 'SubjectLabelSearch',
+	EdtfHumanizer = 'EdtfHumanizer',
 	PageTitleSearch = 'PageTitleSearch',
 	ViewTypeRegistry = 'ViewTypeRegistry',
 	LayoutPermissionHints = 'LayoutPermissionHints',
@@ -47,6 +49,7 @@ export class NeoWikiServices {
 			[ Service.SchemaRepository ]: neoWiki.getSchemaRepository(),
 			[ Service.SubjectRepository ]: neoWiki.getSubjectRepository(),
 			[ Service.SubjectLabelSearch ]: neoWiki.getSubjectLabelSearch(),
+			[ Service.EdtfHumanizer ]: neoWiki.getEdtfHumanizer(),
 			[ Service.PageTitleSearch ]: neoWiki.getPageTitleSearch(),
 			[ Service.ViewTypeRegistry ]: neoWiki.getViewTypeRegistry(),
 			[ Service.LayoutPermissionHints ]: neoWiki.newLayoutPermissionHints(),
@@ -81,6 +84,10 @@ export class NeoWikiServices {
 
 	public static getSubjectLabelSearch(): SubjectLabelSearch {
 		return inject( Service.SubjectLabelSearch ) as SubjectLabelSearch;
+	}
+
+	public static getEdtfHumanizer(): EdtfHumanizer {
+		return inject( Service.EdtfHumanizer ) as EdtfHumanizer;
 	}
 
 	public static getPageTitleSearch(): PageTitleSearch {
