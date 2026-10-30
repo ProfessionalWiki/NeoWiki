@@ -18,6 +18,14 @@ function neowiki.setupInterface()
 		neowiki.sparqlQuery = nil
 	end
 
+	-- Marks the page as calling NeoWiki functions whenever one of these is called.
+	for name, func in pairs( neowiki ) do
+		neowiki[name] = function ( ... )
+			php.trackCall()
+			return func( ... )
+		end
+	end
+
 	mw = mw or {}
 	mw.neowiki = neowiki
 
