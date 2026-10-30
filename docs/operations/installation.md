@@ -63,6 +63,18 @@ COMPOSE_PROFILES=server make demo
 
 This is still an evaluation setup, not a production deployment.
 
+### Change MediaWiki settings
+
+Add your own settings to `Docker/LocalSettings.local.php`, as in:
+
+```php
+<?php
+$wgGroupPermissions['*']['createaccount'] = false;
+```
+
+The wiki loads this file after its own settings, so yours win, and an upgrade keeps it. To apply a change, run
+`make down`, then start the stack again.
+
 ## Add NeoWiki to an existing wiki
 
 Requirements:
