@@ -26,24 +26,19 @@ export function useEditNotices( resolveRepository: () => EditNoticeRepository ):
 	// Only the newest request may write, or a slower earlier one lands on top of it.
 	let latestRequest = 0;
 
-	// Advisory to the last step: an editor must open whether or not its notices could be fetched.
 	async function loadNotices( pageId: number, schemaName?: string ): Promise<void> {
 		const request = ++latestRequest;
 		loading.value = true;
+		let fetched: EditNotice[] = [];
 
 		try {
-			const fetched = await resolveRepository().getNotices( pageId, schemaName );
-
-			if ( request === latestRequest ) {
-				notices.value = fetched;
-			}
+			fetched = await resolveRepository().getNotices( pageId, schemaName );
 		} catch {
-			if ( request === latestRequest ) {
-				notices.value = [];
-			}
+			// Advisory to the last step: an editor must open whether or not its notices could be fetched.
 		}
 
 		if ( request === latestRequest ) {
+			notices.value = fetched;
 			loading.value = false;
 		}
 	}
