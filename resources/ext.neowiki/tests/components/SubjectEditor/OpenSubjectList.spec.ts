@@ -24,6 +24,24 @@ const birth = newSubject( {
 
 const place = newSubject( { id: PLACE_ID, label: 'Amsterdam', schemaName: 'Place' } );
 
+// A page's Main Subject without a label of its own, which the server names after the page (ADR 31).
+const museum = newSubject( { id: 's4museum1111111', label: null, displayName: 'Rijksmuseum', schemaName: 'Museum' } );
+
+const attendance = newSubject( {
+	id: 's5attendance111',
+	label: null,
+	displayName: 'Attendance',
+	displayNameIsGenerated: true,
+	schemaName: 'Attendance',
+	hostSubject: {
+		id: 's4museum1111111',
+		schemaName: 'Museum',
+		displayName: 'Rijksmuseum',
+		displayNameIsGenerated: false,
+		hostSubject: null,
+	},
+} );
+
 function mountList( overrides: {
 	subjects?: Subject[];
 	activeId?: string;
@@ -51,6 +69,10 @@ function names( wrapper: VueWrapper ): string[] {
 	return options( wrapper ).map( ( option ) => option.get( '.ext-neowiki-open-subject-list__name' ).text() );
 }
 
+function schemaNames( wrapper: VueWrapper ): string[] {
+	return options( wrapper ).map( ( option ) => option.find( '.ext-neowiki-schema-name__text' ).text() );
+}
+
 function selectedIds( wrapper: VueWrapper ): string[] {
 	return wrapper.emitted( 'select' )?.map(
 		( event ) => ( event[ 0 ] as SubjectId ).text,
@@ -71,8 +93,20 @@ describe( 'OpenSubjectList', () => {
 			.toStrictEqual( [ 'Rembrandt', 'Amsterdam' ] );
 	} );
 
-	it( 'marks a subject nobody named as carrying a name the system supplied', () => {
-		expect( names( mountList( { subjects: [ birth ] } ) ) ).toStrictEqual( [ `(${ BIRTH_ID })` ] );
+	it( 'says a subject nobody named has no label, rather than naming it by its id', () => {
+		expect( names( mountList( { subjects: [ birth ] } ) ) ).toStrictEqual( [ 'neowiki-subject-no-label' ] );
+	} );
+
+	it( 'names a subject without a label after the page it is shown under', () => {
+		expect( names( mountList( { subjects: [ museum ] } ) ) ).toStrictEqual( [ 'Rijksmuseum' ] );
+	} );
+
+	it( 'names a dependent subject after its host subject', () => {
+		expect( names( mountList( { subjects: [ attendance ] } ) ) ).toStrictEqual( [ 'Attendance of Rijksmuseum' ] );
+	} );
+
+	it( 'shows the schema of each subject, named or not', () => {
+		expect( schemaNames( mountList() ) ).toStrictEqual( [ 'Person', 'Birth event', 'Place' ] );
 	} );
 
 	it( 'selects the active subject and nothing else', () => {
