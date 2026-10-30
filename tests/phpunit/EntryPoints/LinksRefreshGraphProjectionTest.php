@@ -134,11 +134,4 @@ class LinksRefreshGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		};
 	}
 
-	private function readPageNodeProperty( int $pageId, string $property ): mixed {
-		return $this->readGraph(
-			'MATCH (page:Page {id: $pageId}) RETURN page[$property] AS value',
-			[ 'pageId' => $pageId, 'property' => $property ]
-		)->first()->toRecursiveArray()['value'] ?? null;
-	}
-
 }

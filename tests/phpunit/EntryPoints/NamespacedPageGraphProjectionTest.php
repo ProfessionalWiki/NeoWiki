@@ -31,7 +31,7 @@ class NamespacedPageGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame(
 			self::PAGE_NAME,
-			$this->readPageNodeName( $revision->getPageId() )
+			$this->readPageNodeProperty( $revision->getPageId(), 'name' )
 		);
 	}
 
@@ -44,7 +44,7 @@ class NamespacedPageGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		// stored name uses the content-language prefix, not a canonical or interface-language one.
 		$this->assertSame(
 			'Hilfe:Namespaced subject page',
-			$this->readPageNodeName( $revision->getPageId() )
+			$this->readPageNodeProperty( $revision->getPageId(), 'name' )
 		);
 	}
 
@@ -53,7 +53,7 @@ class NamespacedPageGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame(
 			NS_HELP,
-			$this->readPageNodeNamespaceId( $revision->getPageId() )
+			$this->readPageNodeProperty( $revision->getPageId(), 'namespaceId' )
 		);
 	}
 

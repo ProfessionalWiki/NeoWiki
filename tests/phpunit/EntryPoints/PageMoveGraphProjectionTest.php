@@ -44,7 +44,7 @@ class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame(
 			'Renamed move target',
-			$this->readPageNodeName( $pageId )
+			$this->readPageNodeProperty( $pageId, 'name' )
 		);
 	}
 
@@ -72,7 +72,7 @@ class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertSame(
 			NS_HELP,
-			$this->readPageNodeNamespaceId( $pageId )
+			$this->readPageNodeProperty( $pageId, 'namespaceId' )
 		);
 	}
 
@@ -81,8 +81,8 @@ class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$this->movePage( 'Subjectless move source', 'Help:Subjectless move target' );
 
-		$this->assertSame( 'Help:Subjectless move target', $this->readPageNodeName( $pageId ) );
-		$this->assertSame( NS_HELP, $this->readPageNodeNamespaceId( $pageId ) );
+		$this->assertSame( 'Help:Subjectless move target', $this->readPageNodeProperty( $pageId, 'name' ) );
+		$this->assertSame( NS_HELP, $this->readPageNodeProperty( $pageId, 'namespaceId' ) );
 	}
 
 	public function testRedirectLeftBehindByAMoveGetsItsOwnNode(): void {
@@ -92,7 +92,7 @@ class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$redirectPageId = Title::newFromText( 'Redirect leaving move source' )->getArticleID();
 		$this->assertNotSame( 0, $redirectPageId, 'precondition: the move left a redirect page behind' );
-		$this->assertSame( 'Redirect leaving move source', $this->readPageNodeName( $redirectPageId ) );
+		$this->assertSame( 'Redirect leaving move source', $this->readPageNodeProperty( $redirectPageId, 'name' ) );
 	}
 
 	public function testMoveProjectsTheMovedPageOnceAndRemovesNothing(): void {

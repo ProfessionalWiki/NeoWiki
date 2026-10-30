@@ -1196,9 +1196,7 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 			properties: TestPageProperties::build( categories: [ 'CatA', 'CatB' ] )
 		) );
 
-		$result = $this->readGraph( 'MATCH (page:Page {id: 42}) RETURN page.categories AS categories' );
-
-		$this->assertSame( [ 'CatA', 'CatB' ], $result->first()->toRecursiveArray()['categories'] );
+		$this->assertSame( [ 'CatA', 'CatB' ], $this->readPageNodeProperty( 42, 'categories' ) );
 	}
 
 	public function testSavesPageExtraProperties(): void {
