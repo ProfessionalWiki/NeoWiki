@@ -3806,6 +3806,15 @@ describe( 'SubjectEditorDialog', () => {
 		} );
 	} );
 
+	// So the save-scope note, which comes and goes as Subjects are switched, does not move Save.
+	it( 'keeps Save compact while it has no save-scope note to show', async () => {
+		const wrapper = mountComponent( false, {} );
+		await flushPromises();
+
+		expect( wrapper.find( '.ext-neowiki-summary-action__footer-text' ).exists() ).toBe( false );
+		expect( wrapper.find( '.ext-neowiki-summary-action__actions--compact' ).exists() ).toBe( true );
+	} );
+
 	describe( 'Height held through a session', () => {
 		// jsdom has no ResizeObserver, and Codex's useResizeObserver reports nothing without one.
 		const observers: FakeResizeObserver[] = [];
