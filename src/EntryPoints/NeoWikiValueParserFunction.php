@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use MediaWiki\Parser\Parser;
-use MediaWiki\RequestContext\RequestContext;
+use MediaWiki\Context\RequestContext;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\EdtfHumanizer;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\EdtfType;
