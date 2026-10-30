@@ -22,6 +22,8 @@ const props = defineProps<ValueDisplayProps<EdtfProperty>>();
 
 const language = userLanguageTag();
 
+const edtfHumanizer = NeoWikiServices.getEdtfHumanizer();
+
 const parts = computed( (): string[] => {
 	if ( props.value.type !== ValueType.String ) {
 		return [];
@@ -31,11 +33,17 @@ const parts = computed( (): string[] => {
 
 const readings = ref<( string | null )[]>( [] );
 
+let requestId = 0;
+
 watch( parts, async ( current ) => {
-	readings.value = await Promise.all(
-		current.map( ( part ) => NeoWikiServices.getEdtfHumanizer().humanize( part, language )
+	const request = ++requestId;
+	const results = await Promise.all(
+		current.map( ( part ) => edtfHumanizer.humanize( part, language )
 			.catch( () => null ) )
 	);
+	if ( request === requestId ) {
+		readings.value = results;
+	}
 }, { immediate: true } );
 </script>
 
