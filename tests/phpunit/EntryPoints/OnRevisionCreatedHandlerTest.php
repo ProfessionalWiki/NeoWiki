@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 use MediaWiki\Content\FallbackContent;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\Revision\RevisionSlots;
 use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
@@ -155,13 +154,7 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testPropagatesReadFailureWhenSubjectSlotIsPresentButUnreadable(): void {
-		$slots = $this->createStub( RevisionSlots::class );
-		$slots->method( 'getContent' )->willThrowException( new RevisionAccessException( 'blob read failed' ) );
-
-		$revision = $this->createStub( RevisionRecord::class );
-		$revision->method( 'getPageId' )->willReturn( 42 );
-		$revision->method( 'hasSlot' )->willReturn( true );
-		$revision->method( 'getSlots' )->willReturn( $slots );
+		$revision = $this->newRevisionWhoseSubjectSlotCannotBeLoaded( self::STUB_PAGE_ID );
 
 		$this->expectException( RevisionAccessException::class );
 
@@ -349,6 +342,8 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		yield 'a Subject that is not an object' => [
 			'{"mainSubject":"' . TestSubject::ZERO_GUID . '","subjects":{"' . TestSubject::ZERO_GUID . '":1}}',
 		];
+		yield 'JSON cut off part way' => [ '{"mainSubject":"' . TestSubject::ZERO_GUID . '","subjects":{' ];
+		yield 'JSON that is not an object' => [ '"' . TestSubject::ZERO_GUID . '"' ];
 	}
 
 	private function newCorePropertyRegistry(): PagePropertyProviderRegistry {
