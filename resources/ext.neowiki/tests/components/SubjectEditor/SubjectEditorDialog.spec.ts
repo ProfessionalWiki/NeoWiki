@@ -1,7 +1,7 @@
 import { mount, VueWrapper, DOMWrapper, enableAutoUnmount, flushPromises } from '@vue/test-utils';
 import { inject, nextTick, proxyRefs } from 'vue';
 import type { ComponentInternalInstance } from 'vue';
-import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi, type Mock } from 'vitest';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -1235,6 +1235,32 @@ describe( 'SubjectEditorDialog', () => {
 			await wrapper.setProps( { open: true } );
 
 			await vi.waitFor( () => expect( document.activeElement ).toBe( controlOf( wrapper, 'First', 'input' ) ) );
+		} );
+
+		// In a browser the closing dialog stays on screen through its fade, and focus taken into it goes with it when it
+		// is removed. jsdom removes it at once, so a panel of the same id stands in for it.
+		it( 'leaves the focus where it was while the dialog of the last opening fades out', async () => {
+			const opener = document.body.appendChild( document.createElement( 'button' ) );
+			onTestFinished( () => opener.remove() );
+			opener.focus();
+			const wrapper = mountOpenOn( schemaStartingWith( { type: TextType.typeName } ) );
+			await vi.waitFor( () => expect( document.activeElement ).toBe( controlOf( wrapper, 'First', 'input' ) ) );
+			const repository = vi.spyOn( NeoWikiExtension.getInstance(), 'getEditNoticeRepository' ).mockReturnValue( {
+				getNotices: () => new Promise<EditNotice[]>( () => {
+					// Intentionally never settles.
+				} ),
+			} );
+			onTestFinished( () => repository.mockRestore() );
+
+			await wrapper.setProps( { open: false } );
+			const fadingPanel = document.body.appendChild( document.createElement( 'div' ) );
+			onTestFinished( () => fadingPanel.remove() );
+			fadingPanel.id = `ext-neowiki-panel-${ rootSubjectId }`;
+			fadingPanel.tabIndex = -1;
+			await wrapper.setProps( { open: true } );
+			await openingFocusPlaced();
+
+			expect( document.activeElement ).toBe( opener );
 		} );
 
 		it( 'opens on the first field once the notices it waited for are in', async () => {
