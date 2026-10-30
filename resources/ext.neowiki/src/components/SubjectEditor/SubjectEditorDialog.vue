@@ -1042,10 +1042,14 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 	@navigator-width: 20rem;
 	/* The form's width plus the navigator and the divider beside it. */
 	@wide-width: calc( @size-3200 + @navigator-width + @spacing-75 );
+	@height-limit: calc( @size-viewport-height-full - @size-250 );
 
+	/* The height limit is set here, not left to Codex, whose limit differs between versions: a Subject
+		that reached a limit above the height held would make its dialog move on every switch. */
 	&.cdx-dialog {
 		.ext-neowiki-subject-dialog-header();
-		min-height: min( var( --ext-neowiki-dialog-grown-height, 0px ), calc( @size-viewport-height-full - @size-250 ) );
+		max-height: @height-limit;
+		min-height: min( var( --ext-neowiki-dialog-grown-height, 0px ), @height-limit );
 	}
 
 	/* The id on the title's line, where Codex stacks a subtitle below it, and centred on the
