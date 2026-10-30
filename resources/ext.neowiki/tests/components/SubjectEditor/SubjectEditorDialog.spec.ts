@@ -3785,8 +3785,118 @@ describe( 'SubjectEditorDialog', () => {
 
 				expect( wrapper.find( '.ext-neowiki-edit-notice' ).text() ).toBe( 'Heads up' );
 			} );
+
+			it( 'waits for them again on a later opening, however long the last one stayed open', async () => {
+				const wrapper = mountComponent( false, saveButtonTestStubs );
+				await flushPromises();
+				await vi.advanceTimersByTimeAsync( 300 );
+				releaseNotices( [] );
+				await flushPromises();
+
+				await wrapper.setProps( { open: false } );
+				await wrapper.setProps( { open: true } );
+				await flushPromises();
+
+				expect( exposedToHost( wrapper ).shown ).toBe( false );
+			} );
 		} );
 	} );
+
+	describe( 'Height held through a session', () => {
+		// jsdom has no ResizeObserver, and Codex's useResizeObserver reports nothing without one.
+		const observers: FakeResizeObserver[] = [];
+
+		class FakeResizeObserver {
+			private readonly observed = new Set<Element>();
+
+			public constructor( private readonly report: ( entries: unknown[] ) => void ) {
+				observers.push( this );
+			}
+
+			public observe( element: Element ): void {
+				this.observed.add( element );
+			}
+
+			public disconnect(): void {
+				this.observed.clear();
+			}
+
+			public measure( element: Element, height: number ): void {
+				if ( this.observed.has( element ) ) {
+					this.report( [ { borderBoxSize: [ { inlineSize: 0, blockSize: height } ] } ] );
+				}
+			}
+		}
+
+		beforeEach( () => {
+			observers.length = 0;
+			vi.stubGlobal( 'ResizeObserver', FakeResizeObserver );
+			vi.stubGlobal( 'ResizeObserverEntry', class {} );
+		} );
+
+		// Not vi.unstubAllGlobals(), which would also take away the `mw` the whole spec shares.
+		afterEach( () => {
+			Reflect.deleteProperty( globalThis, 'ResizeObserver' );
+			Reflect.deleteProperty( globalThis, 'ResizeObserverEntry' );
+		} );
+
+		// Looked up each time: the stubbed Teleport renders the dialog anew when it updates.
+		function dialogOf( wrapper: VueWrapper ): HTMLElement {
+			return wrapper.get<HTMLElement>( '.cdx-dialog' ).element;
+		}
+
+		async function measureDialog( wrapper: VueWrapper, height: number ): Promise<void> {
+			observers.forEach( ( observer ) => observer.measure( dialogOf( wrapper ), height ) );
+			await nextTick();
+		}
+
+		function heldHeight( wrapper: VueWrapper ): string {
+			return dialogOf( wrapper ).style.getPropertyValue( '--ext-neowiki-dialog-grown-height' );
+		}
+
+		it( 'holds the dialog at the height it is measured at', async () => {
+			const wrapper = mountComponent( false, saveButtonTestStubs );
+			await flushPromises();
+
+			await measureDialog( wrapper, 500 );
+
+			expect( heldHeight( wrapper ) ).toBe( '500px' );
+		} );
+
+		it( 'holds a later opening at its own height, not at the one before it', async () => {
+			const wrapper = mountComponent( false, saveButtonTestStubs );
+			await flushPromises();
+			await measureDialog( wrapper, 500 );
+
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+			await measureDialog( wrapper, 300 );
+
+			expect( heldHeight( wrapper ) ).toBe( '300px' );
+		} );
+	} );
+
+	describe( 'Fade when the Subject creator hands over', () => {
+		const NEW_ROOT_CLASS = 'ext-neowiki-subject-editor-dialog--new-root';
+
+		it( 'names a dialog on a new root, for the stylesheet to leave its fade out', async () => {
+			const wrapper = mountComponent(
+				false, saveButtonTestStubs, undefined, mockSchema, {}, mockSubject, undefined, undefined, { rootIsNew: true },
+			);
+			await flushPromises();
+
+			expect( wrapper.get( '.cdx-dialog' ).classes() ).toContain( NEW_ROOT_CLASS );
+		} );
+
+		it( 'leaves an edit of an existing Subject with its fade', async () => {
+			const wrapper = mountComponent( false, saveButtonTestStubs );
+			await flushPromises();
+
+			expect( wrapper.get( '.cdx-dialog' ).classes() ).not.toContain( NEW_ROOT_CLASS );
+		} );
+	} );
+
 	describe( 'Dependent Subjects', () => {
 		const BIRTH_ID = 's1birthAAAAAAA1';
 		const MINTED_ID = 'smintedAAAAAAA1';
