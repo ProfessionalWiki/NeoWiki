@@ -1128,12 +1128,12 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 
 	/* The list carries no inset of its own; this dialog gives it the form's, on its padded
 		element rather than on the scroller around it. The gutter is the dialog's 24px less the
-		12px a row already carries, so a row's leading column, where its unsaved dot goes, lands on
-		that gutter, in line with the notices above and the form beside it, while the row's hover
-		and selected backgrounds keep reaching the 12px further out. Nothing on the end side, so the
-		scrollbar sits flush with the divider. */
+		16px a row carries before its name, so a row's name lands on that gutter, in line with the
+		dialog's title, the notices above and the form beside it, while the row's hover and selected
+		backgrounds reach the 16px further out. That leaves those backgrounds 8px from the dialog's
+		edge; the end side's 2px, with half the divider's 12px track, matches it. */
 	& .ext-neowiki-open-subject-list {
-		padding: @spacing-100 0 @spacing-100 calc( @spacing-150 - @spacing-75 );
+		padding: @spacing-100 @spacing-12 @spacing-100 calc( @spacing-150 - @spacing-100 );
 	}
 
 	/* Every inset the form has, on this padded element rather than on the scroller around it:
