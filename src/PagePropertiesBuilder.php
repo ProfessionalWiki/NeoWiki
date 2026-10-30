@@ -27,8 +27,8 @@ readonly class PagePropertiesBuilder implements PagePropertiesSource {
 	) {
 	}
 
-	public function getPagePropertiesFor( RevisionRecord $revision ): PageProperties {
-		$context = $this->buildContext( $revision );
+	public function getPagePropertiesFor( RevisionRecord $revision, ?ParserOutput $parserOutput ): PageProperties {
+		$context = $this->buildContext( $revision, $parserOutput );
 
 		$properties = [];
 
@@ -39,10 +39,10 @@ readonly class PagePropertiesBuilder implements PagePropertiesSource {
 		return new PageProperties( $properties );
 	}
 
-	private function buildContext( RevisionRecord $revision ): PagePropertyProviderContext {
+	private function buildContext( RevisionRecord $revision, ?ParserOutput $parserOutput ): PagePropertyProviderContext {
 		$linkTarget = $revision->getPageAsLinkTarget();
 		$content = $revision->getContent( SlotRecord::MAIN );
-		$parserOutput = $content === null ? null : $this->parse( $content, $revision );
+		$parserOutput ??= $content === null ? null : $this->parse( $content, $revision );
 
 		return new PagePropertyProviderContext(
 			pageId: new PageId( $revision->getPageId() ),

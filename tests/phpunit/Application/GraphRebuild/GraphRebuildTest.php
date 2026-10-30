@@ -15,7 +15,7 @@ use ProfessionalWiki\NeoWiki\Application\GraphRebuild\NullRebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildAlreadyRunningException;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\RebuildBatchObserver;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\UnknownGraphStoreException;
-use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
+use ProfessionalWiki\NeoWiki\Application\GraphStorePageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildPhase;
@@ -498,7 +498,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		return $executor->executeOneBatch(
 			run: $run,
 			store: $store,
-			pageRebuilder: NeoWikiExtension::getInstance()->newPageRebuilderFor( $store ),
+			pageRebuilder: NeoWikiExtension::getInstance()->newGraphStorePageRebuilder( $store ),
 			batchSize: 200,
 			observer: new NullRebuildBatchObserver()
 		);
@@ -966,7 +966,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 			startLock: $this->newStartLock(),
 			executor: $this->newExecutor( new InMemoryPageIdsLookup(), new NullLogger() ),
 			jobQueue: new SpyRebuildJobQueue(),
-			newPageRebuilder: static fn (): PageRebuilder => throw new LogicException( 'unresolvable backend' ),
+			newPageRebuilder: static fn (): GraphStorePageRebuilder => throw new LogicException( 'unresolvable backend' ),
 			logger: new NullLogger(),
 		);
 	}
@@ -985,8 +985,8 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 			startLock: new RefusingRebuildStartLock(),
 			executor: $this->newExecutor( new InMemoryPageIdsLookup(), new NullLogger() ),
 			jobQueue: new SpyRebuildJobQueue(),
-			newPageRebuilder: static fn ( GraphDatabasePlugin $store ): PageRebuilder
-				=> NeoWikiExtension::getInstance()->newPageRebuilderFor( $store ),
+			newPageRebuilder: static fn ( GraphDatabasePlugin $store ): GraphStorePageRebuilder
+				=> NeoWikiExtension::getInstance()->newGraphStorePageRebuilder( $store ),
 			logger: new NullLogger(),
 		);
 	}
@@ -1002,7 +1002,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$store = new SpyGraphDatabasePlugin();
 		$logger = new TestLogger( true );
 
-		$rebuilder = $this->createStub( PageRebuilder::class );
+		$rebuilder = $this->createStub( GraphStorePageRebuilder::class );
 		$rebuilder->method( 'rebuildFromReplica' )->willReturn( PageRefreshOutcome::SkippedMissingRevision );
 
 		$run = $this->newExecutor( new InMemoryPageIdsLookup( $pageId ), $logger )->execute(
@@ -1033,7 +1033,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		$pageId = $this->getExistingTestPage( 'Withdrawn page' )->getId();
 		$logger = new TestLogger( true );
 
-		$rebuilder = $this->createStub( PageRebuilder::class );
+		$rebuilder = $this->createStub( GraphStorePageRebuilder::class );
 		$rebuilder->method( 'rebuildFromReplica' )->willReturn( PageRefreshOutcome::Unpublished );
 
 		$run = $this->newExecutor( new InMemoryPageIdsLookup( $pageId ), $logger )->execute(
@@ -1066,7 +1066,7 @@ class GraphRebuildTest extends NeoWikiIntegrationTestCase {
 		return $this->newExecutor( $pageIds, $logger )->execute(
 			run: $this->newRunRepository()->startRun( self::STORE, RebuildTrigger::Cli, RebuildStatus::Running ),
 			store: $store,
-			pageRebuilder: NeoWikiExtension::getInstance()->newPageRebuilderFor( $store ),
+			pageRebuilder: NeoWikiExtension::getInstance()->newGraphStorePageRebuilder( $store ),
 			batchSize: $batchSize,
 			observer: $observer
 		);

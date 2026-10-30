@@ -19,7 +19,7 @@ use RuntimeException;
  * rebuilt.
  *
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension
- * @covers \ProfessionalWiki\NeoWiki\Application\PageRebuilder
+ * @covers \ProfessionalWiki\NeoWiki\Application\GraphStorePageRebuilder
  * @group Database
  */
 class RebuildPathPropagatesProjectionFailureTest extends NeoWikiIntegrationTestCase {
@@ -33,12 +33,12 @@ class RebuildPathPropagatesProjectionFailureTest extends NeoWikiIntegrationTestC
 	public function testRebuildPropagatesBackendFailureSoTheRebuildCanReportIt(): void {
 		$this->createPageWithSubjects( 'Rebuild failure page', TestSubject::build() );
 
-		$rebuilder = NeoWikiExtension::getInstance()->newPageRebuilderFor( new ThrowingGraphDatabasePlugin() );
+		$rebuilder = NeoWikiExtension::getInstance()->newGraphStorePageRebuilder( new ThrowingGraphDatabasePlugin() );
 
 		$this->expectException( RuntimeException::class );
 		$this->expectExceptionMessage( ThrowingGraphDatabasePlugin::FAILURE_MESSAGE );
 
-		$rebuilder->rebuild( Title::newFromText( 'Rebuild failure page' ) );
+		$rebuilder->rebuildFromReplica( Title::newFromText( 'Rebuild failure page' ) );
 	}
 
 }
