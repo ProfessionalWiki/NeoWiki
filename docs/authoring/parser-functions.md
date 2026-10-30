@@ -98,7 +98,8 @@ Returns the value of a single property from a Subject, formatted as a string.
 
 | Type | Output |
 |------|--------|
-| `text`, `url`, `select`, `date`, `dateTime`, `edtf` | The string value. Multiple values joined with `separator`. |
+| `text`, `url`, `select`, `date`, `dateTime` | The string value. Multiple values joined with `separator`. |
+| `edtf` | Each value with its humanized reading in parentheses when the library provides one. Multiple values joined with `separator`. |
 | `number` | The number, e.g. `42` or `19.99`. |
 | `boolean` | `true` or `false`. |
 | `relation` | The target Subject's display name. Multiple targets joined with `separator`. Falls back to the target Subject ID when the target cannot be looked up or its page is not readable. |

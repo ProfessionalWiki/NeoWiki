@@ -5,7 +5,10 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\EntryPoints;
 
 use MediaWiki\Parser\Parser;
+use MediaWiki\RequestContext\RequestContext;
 use ProfessionalWiki\NeoWiki\Application\SubjectResolver;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\EdtfHumanizer;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\EdtfType;
 use ProfessionalWiki\NeoWiki\Domain\Relation\Relation;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -50,7 +53,12 @@ class NeoWikiValueParserFunction {
 		}
 
 		$separator = $params['separator'] ?? self::DEFAULT_SEPARATOR;
-		$formatted = $this->formatValue( $statement->getValue(), $separator );
+		$formatted = $this->formatValue(
+			$statement->getValue(),
+			$separator,
+			$statement->getPropertyType(),
+			RequestContext::getMain()->getLanguage()->getCode()
+		);
 
 		if ( $formatted === '' ) {
 			return '';
@@ -97,13 +105,13 @@ class NeoWikiValueParserFunction {
 		return $this->subjectResolver->resolveMainByTitle( $title );
 	}
 
-	private function formatValue( NeoValue $value, string $separator ): string {
+	private function formatValue( NeoValue $value, string $separator, string $propertyType, string $language ): string {
 		if ( $value->isEmpty() ) {
 			return '';
 		}
 
 		if ( $value instanceof StringValue ) {
-			return implode( $separator, $value->strings );
+			return $this->formatStrings( $value->strings, $separator, $propertyType, $language );
 		}
 
 		if ( $value instanceof NumberValue ) {
@@ -123,6 +131,25 @@ class NeoWikiValueParserFunction {
 		}
 
 		return '';
+	}
+
+	/**
+	 * @param string[] $strings
+	 */
+	private function formatStrings( array $strings, string $separator, string $propertyType, string $language ): string {
+		if ( $propertyType !== EdtfType::NAME ) {
+			return implode( $separator, $strings );
+		}
+
+		$humanizer = new EdtfHumanizer();
+		$parts = [];
+
+		foreach ( $strings as $part ) {
+			$humanized = $humanizer->humanize( $part, $language );
+			$parts[] = $humanized === null ? $part : "{$part} ({$humanized})";
+		}
+
+		return implode( $separator, $parts );
 	}
 
 	private function formatRelationValue( RelationValue $value, string $separator ): string {
