@@ -734,13 +734,14 @@ async function loadRoot(): Promise<void> {
 
 // A task later: Codex focuses the dialog's first focusable element one or two ticks after it opens, depending on its
 // version, and would otherwise win. Without scrolling: the form is at its top already, and focusing the pane itself
-// would shift it by its padding.
+// would shift it by its padding. Post-flush, because a reopening reads as shown until its session has started over,
+// and the closing dialog, still fading out, would take the focus and lose it.
 watch( shown, ( isShown ) => {
 	if ( isShown ) {
 		clearTimeout( focusTimer );
 		focusTimer = setTimeout( () => focusPane( rootPaneId.value, { preventScroll: true } ) );
 	}
-} );
+}, { flush: 'post' } );
 
 // Fetched per opening: approval state and the viewer's permissions both change
 // without an edit. Keyed on the page being viewed and on the root Subject's Schema.
